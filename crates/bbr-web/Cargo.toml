@@ -1,0 +1,16 @@
+[package]
+name = "bbr-web"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Platform-neutral contracts for the BBR browser (no frameworks, no GPUI, no unsafe)."
+
+[features]
+default = []
+# Derives serde for the contract types so the E2E protocol can serialize
+# events and snapshots without leaking framework types into the wire format.
+serde = ["dep:serde"]
+
+[dependencies]
+serde = { workspace = true, optional = true }

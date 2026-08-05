@@ -1,0 +1,38 @@
+[workspace]
+resolver = "2"
+members = ["crates/bbr-web"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+bbr-fixtures = { path = "crates/bbr-fixtures" }
+bbr-testkit = { path = "crates/bbr-testkit" }
+bbr-web = { path = "crates/bbr-web" }
+bbr-web-macos = { path = "crates/bbr-web-macos" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Small, single-thread-friendly channel used by the app's main-loop test
+# gateway (commands/events are pumped through async channels on GPUI's
+# foreground executor; the socket server thread blocks on per-request replies).
+smol = "2"
+
+# GPUI 0.2.2. `default-features = false` drops the Linux/Windows compositor
+# features; `font-kit` is required for text rendering on every platform.
+# On Linux/FreeBSD we additionally enable `wayland` so the workspace still
+# evaluates (see crates/bbr-app/Cargo.toml for the target-specific dep).
+gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
+
+# Native bridge crates (macOS only). Pinned to the versions verified against
+# gpui 0.2.2's `raw-window-handle 0.6` / `objc2 0.6` in ARCHITECTURE.md.
+objc2 = { version = "0.6.4", default-features = false, features = ["std"] }
+block2 = { version = "0.6.2", default-features = false, features = ["alloc", "std"] } # reserved for a later phase (decision handlers)
+raw-window-handle = "0.6"
+
+objc2-foundation = { version = "0.3.2", default-features = false }
+objc2-app-kit = { version = "0.3.2", default-features = false }
+objc2-web-kit = { version = "0.3.2", default-features = false }
