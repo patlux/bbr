@@ -1,0 +1,466 @@
+//! The portable [`BrowserController`]: owns the domain [`Browser`], maps
+//! every live tab to exactly one disposable web session, routes navigation
+//! commands to the focused tab or split pane, and applies engine
+//! [`WebEvent`]s to the owning tab.
+//!
+//! Ownership shape (see `lib.rs`): the controller drives the engine through
+//! `Rc<RefCell<dyn WebEngine>>` and allocates `WebViewId`s through an
+//! injected generator, so E2E runs can rely on deterministic sequential ids.
+//!
+//! Session policy (the crate's core invariant, also enforced by
+//! [`SessionRegistry`]):
+//!
+//! - Every `Active`/`Warm` tab owns exactly one live session in its profile.
+//! - `Suspended`/`Discarded` tabs own no session; activation recreates one.
+//! - Closing, suspending, or crashing a tab destroys its session.
+//! - Moving across profiles destroys and recreates in the destination profile.
+//! - Only visible tabs (single-pane selection or split panes) are shown.
+
+use std::collections::HashMap;
+
+use bbr_domain::{Browser, TabId, TabLifecycle};
+use bbr_web::{ProfileId, WebAction, WebEvent, WebViewId};
+
+use crate::nav::NavState;
+use crate::outcome::ControllerEvent;
+use crate::session::SessionRegistry;
+use crate::{ControllerError, EngineRef, ViewIdAllocator};
+
+/// Platform-neutral owner of the browser model and its web sessions.
+pub struct BrowserController {
+    engine: EngineRef,
+    browser: Browser,
+    registry: SessionRegistry,
+    /// Fresh `WebViewId` allocation (injected so E2E is deterministic).
+    allocate_view: ViewIdAllocator,
+    /// The space all tab operations currently target.
+    active_space: bbr_domain::SpaceId,
+    /// Profile each live session was created in (cross-profile move policy).
+    session_profiles: HashMap<WebViewId, ProfileId>,
+    /// Desired engine visibility per live session (avoids redundant shows).
+    visibility: HashMap<WebViewId, bool>,
+    /// Live-session navigation state (url/title/loading/history/crashed),
+    /// reset whenever a session is recreated.
+    nav: HashMap<WebViewId, NavState>,
+}
+
+impl std::fmt::Debug for BrowserController {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BrowserController")
+            .field("active_space", &self.active_space)
+            .field("live_sessions", &self.registry.live_sessions())
+            .field("tabs", &self.browser.tabs().count())
+            .finish_non_exhaustive()
+    }
+}
+
+impl BrowserController {
+    /// Create the controller and its initial profile + space through setup.
+    pub fn new(engine: EngineRef, allocate_view: ViewIdAllocator) -> Self {
+        let mut browser = Browser::new();
+        let profile = browser.create_profile("Default");
+        let space = browser
+            .create_space(profile, "Default")
+            .expect("fresh profile exists");
+        Self {
+            engine,
+            browser,
+            registry: SessionRegistry::new(),
+            allocate_view,
+            active_space: space,
+            session_profiles: HashMap::new(),
+            visibility: HashMap::new(),
+            nav: HashMap::new(),
+        }
+    }
+
+    // ---- Setup helpers (profile/space creation for multi-profile tests) ----
+
+    pub fn create_profile(&mut self, title: impl Into<String>) -> ProfileId {
+        self.browser.create_profile(title)
+    }
+
+    pub fn create_space(
+        &mut self,
+        profile: ProfileId,
+        title: impl Into<String>,
+    ) -> Result<bbr_domain::SpaceId, ControllerError> {
+        Ok(self.browser.create_space(profile, title)?)
+    }
+
+    /// The profile backing the active space.
+    pub fn active_profile(&self) -> ProfileId {
+        self.browser
+            .space(self.active_space)
+            .expect("active space exists")
+            .profile
+    }
+
+    // ---- First vertical slice ---------------------------------------------
+
+    /// Open a tab in the active space: domain tab + fresh session + visible.
+    pub fn open_tab(&mut self, url: impl Into<String>) -> Result<ControllerEvent, ControllerError> {
+        let url = url.into();
+        let tab = self.browser.open_tab(self.active_space, "", url)?;
+        self.sync_views();
+        let index = self.index_of(tab).expect("tab was just opened");
+        let url = self
+            .browser
+            .tab(tab)
+            .map(|t| t.url.clone())
+            .unwrap_or_default();
+        self.check_invariants();
+        Ok(ControllerEvent::TabOpened { index, url })
+    }
+
+    /// Select the tab at `index` in the active space: previous session hidden
+    /// and warm, selected session shown (recreated when suspended/discarded).
+    pub fn select_tab(&mut self, index: usize) -> Result<ControllerEvent, ControllerError> {
+        let tab = self.tab_at(index)?;
+        self.browser.select_tab(self.active_space, tab)?;
+        self.sync_views();
+        self.check_invariants();
+        Ok(ControllerEvent::TabSelected { index })
+    }
+
+    /// Close the tab at `index`: session destroyed, domain neighbor activated
+    /// (recreating its session when needed and shown).
+    pub fn close_tab(&mut self, index: usize) -> Result<ControllerEvent, ControllerError> {
+        let tab = self.tab_at(index)?;
+        self.destroy_session_of(tab);
+        self.browser.close_tab(self.active_space, tab)?;
+        self.sync_views();
+        self.check_invariants();
+        Ok(ControllerEvent::TabClosed { index })
+    }
+
+    /// Reopen the most recently closed tab with its preserved URL/title
+    /// identity; a new session is created and shown.
+    pub fn reopen_tab(&mut self) -> Result<ControllerEvent, ControllerError> {
+        let tab = self.browser.reopen_tab(self.active_space)?;
+        self.sync_views();
+        self.check_invariants();
+        let index = self.index_of(tab).expect("tab was just reopened");
+        let url = self
+            .browser
+            .tab(tab)
+            .map(|t| t.url.clone())
+            .unwrap_or_default();
+        Ok(ControllerEvent::TabReopened { index, url })
+    }
+
+    /// Route one navigation action to the focused tab (the active tab, or the
+    /// focused split pane). A suspended/discarded focused tab is reactivated
+    /// first, recreating its session.
+    pub fn navigate(&mut self, action: WebAction) -> Result<ControllerEvent, ControllerError> {
+        let tab = self.focused_tab().ok_or(ControllerError::NoActiveTab)?;
+        let needs_reactivate = match self.browser.tab(tab) {
+            Some(state) => matches!(
+                state.lifecycle,
+                TabLifecycle::Suspended | TabLifecycle::Discarded
+            ),
+            None => {
+                return Err(ControllerError::Domain(
+                    bbr_domain::DomainError::UnknownTab(tab),
+                ))
+            }
+        };
+        if needs_reactivate {
+            self.browser.select_tab(self.active_space, tab)?;
+        }
+        self.sync_views();
+        let view = self
+            .registry
+            .view_for_tab(tab)
+            .ok_or(ControllerError::NoSession(tab))?;
+        self.engine.borrow_mut().action(view, action);
+        self.check_invariants();
+        Ok(ControllerEvent::NavigationRouted { view })
+    }
+
+    // ---- Lifecycle and moves ----------------------------------------------
+
+    /// Suspend a hidden tab: session destroyed, identity kept suspended.
+    pub fn suspend_tab(&mut self, index: usize) -> Result<ControllerEvent, ControllerError> {
+        let tab = self.tab_at(index)?;
+        self.browser
+            .transition_tab_lifecycle(tab, TabLifecycle::Suspended)?;
+        self.sync_views();
+        self.check_invariants();
+        Ok(ControllerEvent::TabSuspended { index })
+    }
+
+    /// Move the tab at `index` into `to_space`. Within one profile the live
+    /// session is kept; across profiles it is destroyed and recreated in the
+    /// destination profile's store.
+    pub fn move_tab(
+        &mut self,
+        index: usize,
+        to_space: bbr_domain::SpaceId,
+    ) -> Result<ControllerEvent, ControllerError> {
+        let tab = self.tab_at(index)?;
+        let from_profile = self.active_profile();
+        let to_profile = self
+            .browser
+            .space(to_space)
+            .ok_or(ControllerError::UnknownSpace(to_space))?
+            .profile;
+        self.browser.move_tab(tab, to_space)?;
+        self.sync_views();
+        self.check_invariants();
+        Ok(ControllerEvent::TabMoved {
+            tab,
+            to_space,
+            recreated: from_profile != to_profile,
+        })
+    }
+
+    /// Handle a WebKit process termination: mark the owning tab discarded and
+    /// destroy its session; the next activation recreates it.
+    fn on_page_crash(&mut self, view: WebViewId) -> ControllerEvent {
+        let Some(tab) = self.registry.tab_for_view(view) else {
+            return ControllerEvent::UnknownWebView { view };
+        };
+        let _ = self.browser.discard_tab(tab);
+        self.destroy_session_of(tab);
+        self.check_invariants();
+        ControllerEvent::TabDiscarded { tab }
+    }
+
+    // ---- Split behavior ---------------------------------------------------
+
+    /// Open a two-pane split over the two given tab indices: both pane
+    /// sessions are activated and shown.
+    pub fn open_split(
+        &mut self,
+        primary_index: usize,
+        secondary_index: usize,
+    ) -> Result<ControllerEvent, ControllerError> {
+        let primary = self.tab_at(primary_index)?;
+        let secondary = self.tab_at(secondary_index)?;
+        self.browser
+            .set_split(self.active_space, primary, secondary)?;
+        self.sync_views();
+        self.check_invariants();
+        Ok(ControllerEvent::SplitOpened {
+            primary: primary_index,
+            secondary: secondary_index,
+        })
+    }
+
+    /// Close the active space's split: the non-selected pane is hidden and
+    /// warmed without closing its tab; the focused pane keeps its session.
+    pub fn close_split(&mut self) -> Result<ControllerEvent, ControllerError> {
+        self.browser.close_split(self.active_space)?;
+        self.sync_views();
+        self.check_invariants();
+        Ok(ControllerEvent::SplitClosed)
+    }
+
+    // ---- Event application ------------------------------------------------
+
+    /// Apply one engine event to its owning tab. Events for unknown/stale
+    /// `WebViewId`s are reported without corrupting any state.
+    pub fn apply_event(&mut self, event: WebEvent) -> ControllerEvent {
+        let view = event_view(&event);
+        let Some(tab) = self.registry.tab_for_view(view) else {
+            return ControllerEvent::UnknownWebView { view };
+        };
+        match &event {
+            WebEvent::PageCrashed(_) => return self.on_page_crash(view),
+            WebEvent::UrlChanged(_, url) => {
+                let _ = self.browser.apply_navigation(tab, url, "");
+            }
+            WebEvent::TitleChanged(_, title) => {
+                let _ = self.browser.apply_navigation(tab, "", title);
+            }
+            _ => {}
+        }
+        // Loading/history/crashed live only in the session's nav state.
+        self.nav.entry(view).or_default().apply(&event);
+        self.check_invariants();
+        ControllerEvent::WebEvent { event }
+    }
+
+    // ---- Snapshots --------------------------------------------------------
+
+    /// Read-only snapshot of the controller's observable state.
+    pub fn snapshot(&self) -> crate::snapshot::ControllerSnapshot {
+        let tabs: Vec<bbr_domain::TabId> = self
+            .browser
+            .space(self.active_space)
+            .map(|s| s.tabs.clone())
+            .unwrap_or_default();
+        let active_tab = self
+            .browser
+            .space(self.active_space)
+            .and_then(|s| s.active_tab);
+        let tab_snapshots = tabs
+            .iter()
+            .enumerate()
+            .filter_map(|(index, &tab)| {
+                let state = self.browser.tab(tab)?;
+                Some(crate::snapshot::TabSnapshot {
+                    index,
+                    url: state.url.clone(),
+                    title: state.title.clone(),
+                    active: active_tab == Some(tab),
+                })
+            })
+            .collect();
+        let active_index = active_tab.and_then(|t| tabs.iter().position(|x| *x == t));
+        let active_view = active_tab.and_then(|t| self.registry.view_for_tab(t));
+        let nav = active_view
+            .and_then(|v| self.nav.get(&v).cloned())
+            .unwrap_or_default();
+        crate::snapshot::ControllerSnapshot {
+            active_space: self.active_space,
+            tabs: tab_snapshots,
+            active_index,
+            nav,
+            web_view_hosted: active_view.is_some(),
+            engine_sessions: self.engine.borrow().live_session_count(),
+            active_view,
+        }
+    }
+
+    // ---- Internal session policy -------------------------------------------
+
+    /// Reconcile engine state with the domain: live sessions for every
+    /// Active/Warm tab in its profile, destruction for Suspended/Discarded
+    /// tabs, and show/hide matching domain visibility.
+    ///
+    /// Domain order is used everywhere so the recorded engine op log stays
+    /// deterministic (map iteration order is not).
+    fn sync_views(&mut self) {
+        let tabs: Vec<TabId> = self.browser.tabs().map(|t| t.id).collect();
+        for tab in tabs.iter().copied() {
+            let _ = self.ensure_session(tab);
+        }
+        for tab in tabs {
+            let Some(view) = self.registry.view_for_tab(tab) else {
+                continue;
+            };
+            let want = self.browser.is_visible(tab);
+            if self.visibility.get(&view) != Some(&want) {
+                self.engine.borrow_mut().show(view, want);
+                self.visibility.insert(view, want);
+            }
+        }
+    }
+
+    /// Create or destroy a tab's session to match its domain lifecycle and
+    /// profile. Returns the tab's live view, if any.
+    fn ensure_session(&mut self, tab: TabId) -> Result<Option<WebViewId>, ControllerError> {
+        let info = {
+            let state = self.browser.tab(tab).ok_or(ControllerError::Domain(
+                bbr_domain::DomainError::UnknownTab(tab),
+            ))?;
+            let profile = self
+                .browser
+                .space(state.space)
+                .expect("table tab's space exists")
+                .profile;
+            (state.lifecycle, state.url.clone(), profile)
+        };
+        let (lifecycle, url, profile) = info;
+        match lifecycle {
+            TabLifecycle::Suspended | TabLifecycle::Discarded => {
+                self.destroy_session_of(tab);
+                Ok(None)
+            }
+            TabLifecycle::Active | TabLifecycle::Warm => {
+                if let Some(view) = self.registry.view_for_tab(tab) {
+                    if self.session_profiles.get(&view) != Some(&profile) {
+                        // Cross-profile move: destroy and recreate in the
+                        // destination profile's store.
+                        self.destroy_session_of(tab);
+                        let view = self.create_session(tab, profile, &url);
+                        return Ok(Some(view));
+                    }
+                    Ok(Some(view))
+                } else {
+                    let view = self.create_session(tab, profile, &url);
+                    Ok(Some(view))
+                }
+            }
+        }
+    }
+
+    /// Allocate a fresh session for `tab`: engine create + registry mapping.
+    fn create_session(&mut self, tab: TabId, profile: ProfileId, url: &str) -> WebViewId {
+        let view = WebViewId((self.allocate_view)());
+        self.engine.borrow_mut().create_web_view(view, profile, url);
+        self.visibility.insert(view, false);
+        self.session_profiles.insert(view, profile);
+        self.registry
+            .insert(tab, view)
+            .expect("freshly allocated web view id cannot collide");
+        view
+    }
+
+    /// Destroy a tab's session if it has one (engine + registry + nav state).
+    fn destroy_session_of(&mut self, tab: TabId) {
+        if let Some(view) = self.registry.remove_tab(tab) {
+            self.engine.borrow_mut().destroy_web_view(view);
+            self.visibility.remove(&view);
+            self.session_profiles.remove(&view);
+            self.nav.remove(&view);
+        }
+    }
+
+    /// The focused navigation target: the active tab, which is also the
+    /// focused pane while a split is open.
+    fn focused_tab(&self) -> Option<TabId> {
+        self.browser
+            .space(self.active_space)
+            .and_then(|s| s.active_tab)
+    }
+
+    /// Resolve a space-local tab index to its [`TabId`].
+    fn tab_at(&self, index: usize) -> Result<TabId, ControllerError> {
+        let space = self
+            .browser
+            .space(self.active_space)
+            .ok_or(ControllerError::NoActiveSpace)?;
+        space
+            .tabs
+            .get(index)
+            .copied()
+            .ok_or(ControllerError::IndexOutOfBounds {
+                index,
+                len: space.tabs.len(),
+            })
+    }
+
+    fn index_of(&self, tab: TabId) -> Option<usize> {
+        self.browser
+            .space(self.active_space)
+            .and_then(|s| s.tabs.iter().position(|t| *t == tab))
+    }
+
+    /// Registry + engine structural agreement after every mutation.
+    fn check_invariants(&self) {
+        self.registry
+            .check_invariants()
+            .expect("registry bijection");
+        assert_eq!(
+            self.registry.live_sessions(),
+            self.engine.borrow().live_session_count(),
+            "registry and engine must agree on live sessions"
+        );
+    }
+}
+
+/// The [`WebViewId`] an event names.
+fn event_view(event: &WebEvent) -> WebViewId {
+    match event {
+        WebEvent::UrlChanged(v, _) => *v,
+        WebEvent::TitleChanged(v, _) => *v,
+        WebEvent::LoadingChanged(v, _) => *v,
+        WebEvent::CanGoBackChanged(v, _) => *v,
+        WebEvent::CanGoForwardChanged(v, _) => *v,
+        WebEvent::PageCrashed(v) => *v,
+        WebEvent::NavigationFailed(v, _) => *v,
+    }
+}

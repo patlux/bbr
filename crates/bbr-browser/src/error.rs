@@ -25,8 +25,6 @@ pub enum ControllerError {
     NoSession(TabId),
     /// The target space is unknown.
     UnknownSpace(SpaceId),
-    /// A WebEvent named a view with no owning tab (stale/unknown).
-    StaleWebView(bbr_web::WebViewId),
 }
 
 impl std::fmt::Display for ControllerError {
@@ -41,7 +39,6 @@ impl std::fmt::Display for ControllerError {
             Self::NoActiveTab => write!(f, "no active tab to target"),
             Self::NoSession(tab) => write!(f, "tab {tab:?} has no live session"),
             Self::UnknownSpace(space) => write!(f, "unknown space {space:?}"),
-            Self::StaleWebView(view) => write!(f, "stale web view {view:?} has no owning tab"),
         }
     }
 }

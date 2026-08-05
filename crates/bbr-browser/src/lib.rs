@@ -18,6 +18,13 @@
 //! engine handle between the controller and the GPUI web-view slot, so the
 //! same engine backs both the command path and layout. Contract tests drive
 //! the fake engine through the very same `dyn WebEngine` seam.
+//!
+//! ## Session policy
+//!
+//! Every live tab maps 1:1 to a disposable web session ([`SessionRegistry`]).
+//! Active/warm tabs own a live session; suspended/discarded tabs own none and
+//! recreate one on activation; closing, suspending, crashing, or crossing a
+//! profile destroys the session.
 
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
@@ -30,10 +37,27 @@ pub type EngineRef = std::rc::Rc<std::cell::RefCell<dyn bbr_web::WebEngine>>;
 /// by the composition root so E2E runs can use the sequential id generator.
 pub type ViewIdAllocator = Box<dyn FnMut() -> u64>;
 
+mod controller;
 mod error;
+#[cfg(test)]
+pub(crate) mod fake;
+#[cfg(test)]
+pub(crate) mod harness;
+mod nav;
+mod outcome;
 mod session;
+mod snapshot;
 #[cfg(test)]
 mod testing;
 
+#[cfg(test)]
+mod controller_event_tests;
+#[cfg(test)]
+mod controller_tests;
+
+pub use controller::BrowserController;
 pub use error::ControllerError;
+pub use nav::NavState;
+pub use outcome::ControllerEvent;
 pub use session::{SessionError, SessionRegistry};
+pub use snapshot::{ControllerSnapshot, TabSnapshot};
