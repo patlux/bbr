@@ -242,9 +242,11 @@ and actual chrome/web native focus.
 ### Existing and planned shortcuts
 
 - `Cmd-L` — focus the command bar in location mode. **Contract**
-- `Cmd-T` — create a real new tab and enter the new-tab flow. **Planned**
-- `Cmd-W` — close the focused tab or split target. **Planned; exact focus
-  aftermath remains open above.**
+- `Cmd-T` — create a real new tab and enter the new-tab flow. **Contract;
+  currently implemented by opening `about:blank` and focusing the command bar.**
+- `Cmd-W` — close the active tab or focused split target. **Contract; the
+  single-pane action exists, while split routing and exact focus aftermath
+  remain open above.**
 - Back, Forward, Reload, and Stop — target the active tab or focused pane.
   **Contract**
 - Reopen closed tab — restore the most recently closed tab of the relevant
