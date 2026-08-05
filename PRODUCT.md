@@ -47,8 +47,26 @@ The existing Swift reference implementation is at `/Users/patwoz/dev/Personal/ma
 - Existing reference behavior: profile-specific `WKWebsiteDataStore`, retained WKWebViews, bounded background loading, tab pinning/reordering, recently closed tabs, zoom persistence, history, command palette, and space gestures.
 - No final product name, logo, public claims, benchmarks, or cross-platform implementation exists yet.
 
+## Interaction Contract
+
+Detailed, canonical behavior for tab selection, close/reopen, spaces, splits,
+keyboard focus, and unresolved UX decisions lives in
+[docs/product/browser-interactions.md](docs/product/browser-interactions.md).
+Implementation and UI changes must preserve that contract or update it
+explicitly together with tests.
+
+## Performance Contract
+
+Perceived responsiveness is a product invariant from the first browser shell,
+not a final optimization pass. Canonical startup, tab/space switching, sidebar,
+and interaction budgets plus benchmark methodology live in
+[docs/product/performance-contract.md](docs/product/performance-contract.md).
+Implementation must distinguish BBR presentation latency from external network
+or page-load latency.
+
 ## Product Principles
 
+- Instant shell and selected-content presentation, continuously protected by real-app performance E2E.
 - Native engine efficiency over engine ownership.
 - Portable product logic; explicitly platform-native integration edges.
 - Keyboard-first without making pointer workflows secondary.
