@@ -6,19 +6,19 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 
 ## Current focus
 
-> **Phase 3 — finish native profile/session isolation.** Real tabs now run through the portable controller and multiple WKWebViews; next prove profile-separated website data, cross-profile recreation, and suspended-session cleanup.
+> **Phase 4 — establish BBR's interaction and visual foundation.** Native profile/session isolation is proven; next resolve tab-focus behavior, define the visual system, then expose real controller-backed tabs and spaces in the GPUI sidebar.
 
-- [ ] Real-app two-profile cookie-isolation scenario.
-- [ ] Cross-profile tab move recreates the native session in the destination store.
-- [ ] Suspending a warm tab removes its native view, delegate, and KVO observation.
+- [ ] Resolve the tab-mutation focus matrix in the [browser interaction contract](docs/product/browser-interactions.md).
+- [ ] Create `DESIGN.md` with a distinct native macOS visual direction and semantic tokens.
+- [ ] Implement the first controller-backed vertical-tab and space-switching UI slice with real-app E2E.
 
 ## Product phases
 
 - [x] [0 — Reproducible foundation](docs/roadmap/phases/00-foundation.md)
 - [x] [1 — Native GPUI + WKWebView integration baseline](docs/roadmap/phases/01-native-integration.md)
 - [x] [2 — Portable browser orchestration](docs/roadmap/phases/02-browser-core.md)
-- [ ] [3 — Multi-session macOS WebKit adapter](docs/roadmap/phases/03-multi-session-webkit.md) **← current**
-- [ ] [4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
+- [x] [3 — Multi-session macOS WebKit adapter](docs/roadmap/phases/03-multi-session-webkit.md)
+- [ ] [4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md) **← current**
 - [ ] [5 — Unified command bar](docs/roadmap/phases/05-command-bar.md)
 - [ ] [6 — Two-pane split view](docs/roadmap/phases/06-split-view.md)
 - [ ] [7 — Persistence and crash recovery](docs/roadmap/phases/07-persistence.md)
@@ -54,10 +54,14 @@ Completed today:
 - Deterministic Unix-socket testkit, fixture server, event replay/cursors, deadlines, and cleanup.
 - Real-app WKWebView smoke covering load, navigation, back/forward, reload, resize, focus, and shutdown.
 - Portable profile/space/tab/split/lifecycle domain model with 40 tests.
-- Portable `bbr-browser` controller + deterministic fake engine: 46 tests
-  covering the first tab/session/navigation/split/lifecycle slices, session
-  policy invariants, and typed controller events (`just verify` green).
+- Portable `bbr-browser` controller + deterministic fake engine: 47 tests
+  covering tab/session/navigation/split/lifecycle policy, active-space visibility,
+  profile moves, and typed controller events (`just verify` green).
+- Real-app profiles suite proving cookie isolation across two WKWebsiteDataStores,
+  same-profile WebView reuse, cross-profile recreation, and suspend cleanup.
 
 Next release-shaped outcome:
 
-- Use the same site in two profiles without sharing cookies, then move a tab across the profile boundary and prove its native session is recreated in the destination data store.
+- A coherent vertical-tab and space shell whose visual hierarchy, focus behavior,
+  profile identity, and pointer/keyboard paths are defined before implementation
+  and proven through the real app.
