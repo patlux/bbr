@@ -107,11 +107,15 @@ fn handle_connection(
     // Read the request line only (we close each connection after one
     // response; keep-alive is unnecessary for tests).
     let _ = reader.read_line(&mut request_line)?;
-    // Drain remaining headers.
+    // Capture headers needed by stateful WebKit fixtures, then drain the rest.
+    let mut headers = HashMap::new();
     loop {
         let mut line = String::new();
         if reader.read_line(&mut line)? == 0 || line == "\r\n" || line == "\n" {
             break;
+        }
+        if let Some((name, value)) = line.split_once(':') {
+            headers.insert(name.trim().to_ascii_lowercase(), value.trim().to_string());
         }
     }
 
@@ -127,19 +131,24 @@ fn handle_connection(
 
     // Path-only target (strip any query string).
     let path = target.split('?').next().unwrap_or("/");
-    match route(root, path)? {
+    match route(root, path, &headers)? {
         Route::File { data, content_type } => {
             let mut h = hits.lock().unwrap();
             *h.entry(path.to_string()).or_insert(0) += 1;
             drop(h);
-            respond(&mut stream, 200, "OK", &data)?;
-            let _ = content_type;
+            respond_with_headers(
+                &mut stream,
+                200,
+                "OK",
+                &[("Content-Type".into(), content_type)],
+                &data,
+            )?;
         }
-        Route::Dynamic { body } => {
+        Route::Dynamic { body, headers } => {
             let mut h = hits.lock().unwrap();
             *h.entry(path.to_string()).or_insert(0) += 1;
             drop(h);
-            respond(&mut stream, 200, "OK", body)?;
+            respond_with_headers(&mut stream, 200, "OK", &headers, &body)?;
         }
         Route::NotFound => {
             respond(&mut stream, 404, "Not Found", b"not found")?;
@@ -149,24 +158,49 @@ fn handle_connection(
 }
 
 enum Route {
-    File { data: Vec<u8>, content_type: String },
-    Dynamic { body: &'static [u8] },
+    File {
+        data: Vec<u8>,
+        content_type: String,
+    },
+    Dynamic {
+        body: Vec<u8>,
+        headers: Vec<(String, String)>,
+    },
     NotFound,
 }
 
-fn route(root: &Path, path: &str) -> std::io::Result<Route> {
+fn route(
+    root: &Path,
+    path: &str,
+    request_headers: &HashMap<String, String>,
+) -> std::io::Result<Route> {
     // Dynamic deterministic routes.
     match path {
         "/__fx/hello" => {
             return Ok(Route::Dynamic {
-                body: b"hello from bbr-fixtures",
+                body: b"hello from bbr-fixtures".to_vec(),
+                headers: vec![("Content-Type".into(), "text/plain; charset=utf-8".into())],
             });
         }
         "/__fx/robots" => {
             // Content-addressed: length always the same, content stable.
             return Ok(Route::Dynamic {
-                body: b"user-agent: *\ndisallow: /\n",
+                body: b"user-agent: *\ndisallow: /\n".to_vec(),
+                headers: vec![("Content-Type".into(), "text/plain; charset=utf-8".into())],
             });
+        }
+        "/__fx/cookie/set-alpha" => {
+            return Ok(cookie_set_route("alpha"));
+        }
+        "/__fx/cookie/set-beta" => {
+            return Ok(cookie_set_route("beta"));
+        }
+        "/__fx/cookie/read" => {
+            let value = cookie_value(request_headers.get("cookie"), "bbr_profile")
+                .unwrap_or_else(|| "none".into());
+            return Ok(html_route(&format!(
+                "<html><title>Cookie {value}</title><body>{value}</body></html>"
+            )));
         }
         _ => {}
     }
@@ -202,6 +236,34 @@ fn content_type_for(path: &Path) -> String {
     .to_string()
 }
 
+fn cookie_set_route(value: &str) -> Route {
+    Route::Dynamic {
+        body: format!("<html><title>Cookie Set {value}</title><body>{value}</body></html>")
+            .into_bytes(),
+        headers: vec![
+            ("Content-Type".into(), "text/html; charset=utf-8".into()),
+            (
+                "Set-Cookie".into(),
+                format!("bbr_profile={value}; Path=/; SameSite=Lax"),
+            ),
+        ],
+    }
+}
+
+fn html_route(html: &str) -> Route {
+    Route::Dynamic {
+        body: html.as_bytes().to_vec(),
+        headers: vec![("Content-Type".into(), "text/html; charset=utf-8".into())],
+    }
+}
+
+fn cookie_value(header: Option<&String>, name: &str) -> Option<String> {
+    header?.split(';').find_map(|part| {
+        let (key, value) = part.trim().split_once('=')?;
+        (key == name).then(|| value.to_string())
+    })
+}
+
 fn parse_request_line(line: &str) -> Option<(&str, &str)> {
     let mut parts = line.split_whitespace();
     let method = parts.next()?;
@@ -210,10 +272,27 @@ fn parse_request_line(line: &str) -> Option<(&str, &str)> {
 }
 
 fn respond(stream: &mut TcpStream, status: u16, reason: &str, body: &[u8]) -> std::io::Result<()> {
-    let head = format!(
-        "HTTP/1.1 {status} {reason}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+    respond_with_headers(stream, status, reason, &[], body)
+}
+
+fn respond_with_headers(
+    stream: &mut TcpStream,
+    status: u16,
+    reason: &str,
+    headers: &[(String, String)],
+    body: &[u8],
+) -> std::io::Result<()> {
+    let mut head = format!(
+        "HTTP/1.1 {status} {reason}\r\nContent-Length: {}\r\n",
         body.len()
     );
+    for (name, value) in headers {
+        head.push_str(name);
+        head.push_str(": ");
+        head.push_str(value);
+        head.push_str("\r\n");
+    }
+    head.push_str("Connection: close\r\n\r\n");
     stream.write_all(head.as_bytes())?;
     stream.write_all(body)?;
     stream.flush()
@@ -221,13 +300,28 @@ fn respond(stream: &mut TcpStream, status: u16, reason: &str, body: &[u8]) -> st
 
 /// Convenience for tests: read a URL synchronously.
 pub fn get(url: &str) -> std::io::Result<(u16, Vec<u8>)> {
+    get_with_headers(url, &[])
+}
+
+/// Convenience for tests that need request headers (for example cookies).
+pub fn get_with_headers(
+    url: &str,
+    headers: &[(String, String)],
+) -> std::io::Result<(u16, Vec<u8>)> {
     let rest = url.trim_start_matches("http://");
     let (authority, path) = match rest.find('/') {
         Some(i) => (&rest[..i], &rest[i..]),
         None => (rest, "/"),
     };
     let mut stream = TcpStream::connect(authority)?;
-    let req = format!("GET {path} HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n");
+    let mut req = format!("GET {path} HTTP/1.1\r\nHost: {authority}\r\n");
+    for (name, value) in headers {
+        req.push_str(name);
+        req.push_str(": ");
+        req.push_str(value);
+        req.push_str("\r\n");
+    }
+    req.push_str("Connection: close\r\n\r\n");
     stream.write_all(req.as_bytes())?;
     let mut reader = BufReader::new(stream);
     let mut status = String::new();
@@ -304,6 +398,23 @@ mod tests {
         assert_eq!(code2, 404);
         let (code3, _) = get(&server.url("/")).unwrap();
         assert_eq!(code3, 404);
+    }
+
+    #[test]
+    fn cookie_routes_reflect_only_the_supplied_cookie_jar() {
+        let sb = Sandbox::new();
+        let server = FixtureServer::start(sb.dir.clone()).unwrap();
+        let (none_code, none) = get(&server.url("/__fx/cookie/read")).unwrap();
+        assert_eq!(none_code, 200);
+        assert!(String::from_utf8(none).unwrap().contains("Cookie none"));
+
+        let (alpha_code, alpha) = get_with_headers(
+            &server.url("/__fx/cookie/read"),
+            &[("Cookie".into(), "bbr_profile=alpha".into())],
+        )
+        .unwrap();
+        assert_eq!(alpha_code, 200);
+        assert!(String::from_utf8(alpha).unwrap().contains("Cookie alpha"));
     }
 
     #[test]

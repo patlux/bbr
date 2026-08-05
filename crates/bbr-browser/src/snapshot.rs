@@ -1,7 +1,7 @@
 //! Read-only snapshots of controller state for the UI and E2E harness.
 
 use bbr_domain::SpaceId;
-use bbr_web::WebViewId;
+use bbr_web::{ProfileId, WebViewId};
 
 use crate::nav::NavState;
 
@@ -21,7 +21,8 @@ pub struct TabSnapshot {
 /// A snapshot of the controller's observable state.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ControllerSnapshot {
-    /// The space all tab operations currently target.
+    /// The profile and space all tab operations currently target.
+    pub active_profile: ProfileId,
     pub active_space: SpaceId,
     /// Tabs of the active space, in order.
     pub tabs: Vec<TabSnapshot>,
@@ -46,7 +47,8 @@ mod tests {
     #[test]
     fn snapshot_is_a_plain_value() {
         let s = ControllerSnapshot {
-            active_space: SpaceId(1),
+            active_profile: ProfileId(1),
+            active_space: SpaceId(2),
             tabs: Vec::new(),
             active_index: None,
             nav: NavState::default(),

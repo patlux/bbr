@@ -40,6 +40,44 @@ fn setup_creates_a_profile_space_and_empty_snapshot() {
 }
 
 #[test]
+fn profile_setup_and_space_activation_are_typed() {
+    let (mut c, h) = plain();
+    let event = c.create_profile_space("Private", "Private").unwrap();
+    let (profile, space) = match event {
+        ControllerEvent::ProfileCreated { profile, space } => (profile, space),
+        other => panic!("unexpected event: {other:?}"),
+    };
+    assert_eq!(profile, ProfileId(3));
+    open(&mut c, "https://default");
+    let default_view = c.snapshot().active_view.unwrap();
+    h.reset_ops();
+
+    assert_eq!(
+        c.activate_space(space).unwrap(),
+        ControllerEvent::SpaceActivated { space }
+    );
+    assert!(c.snapshot().tabs.is_empty());
+    assert!(h.recorded(&[EngineOp::Show {
+        view: default_view,
+        visible: false,
+    }]));
+
+    h.reset_ops();
+    open(&mut c, "https://private");
+    assert!(h.recorded(&[
+        EngineOp::Create {
+            view: WebViewId(2),
+            profile,
+            url: "https://private".into(),
+        },
+        EngineOp::Show {
+            view: WebViewId(2),
+            visible: true,
+        },
+    ]));
+}
+
+#[test]
 fn injected_allocator_yields_deterministic_sequential_ids() {
     let (mut c, h) = plain();
     open(&mut c, "https://a");
@@ -384,8 +422,18 @@ fn moving_within_one_profile_keeps_the_live_session() {
             recreated: false
         }
     );
-    assert!(h.ops().is_empty(), "session must be kept across the move");
+    assert!(h.recorded(&[EngineOp::Show {
+        view: WebViewId(1),
+        visible: false,
+    }]));
     assert_eq!(c.snapshot().engine_sessions, 1);
+    h.reset_ops();
+    c.activate_space(space2).unwrap();
+    assert!(h.recorded(&[EngineOp::Show {
+        view: WebViewId(1),
+        visible: true,
+    }]));
+    assert_eq!(c.snapshot().active_view, Some(WebViewId(1)));
 }
 
 #[test]
@@ -413,12 +461,15 @@ fn moving_across_profiles_recreates_the_session_in_the_destination_store() {
             profile: ProfileId(3),
             url: "https://secret.example".into()
         },
-        EngineOp::Show {
-            view: WebViewId(2),
-            visible: true
-        },
     ]));
     assert_eq!(c.snapshot().engine_sessions, 1);
+    h.reset_ops();
+    c.activate_space(space_p2).unwrap();
+    assert!(h.recorded(&[EngineOp::Show {
+        view: WebViewId(2),
+        visible: true,
+    }]));
+    assert_eq!(c.snapshot().active_view, Some(WebViewId(2)));
 }
 
 #[test]

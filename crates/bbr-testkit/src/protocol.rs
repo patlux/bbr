@@ -9,7 +9,11 @@ use bbr_web::{ProfileId, WebAction, WebViewId};
 use serde::{Deserialize, Serialize};
 
 /// Current protocol version understood by this crate.
-pub const PROTOCOL_VERSION: u32 = 2;
+pub const PROTOCOL_VERSION: u32 = 3;
+
+/// Stable space identity on the portable test wire.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TestSpaceId(pub u64);
 
 /// One tab in the active space, including its disposable native session id.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -35,6 +39,8 @@ pub struct Snapshot {
     pub can_go_forward: bool,
     /// A live native web view backs the active tab.
     pub web_view_hosted: bool,
+    pub active_profile: ProfileId,
+    pub active_space: TestSpaceId,
     /// Active-space tabs and their current disposable session ids.
     pub tabs: Vec<TabSnapshot>,
     pub active_tab_index: Option<usize>,
@@ -70,9 +76,33 @@ pub enum Event {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BrowserChange {
-    TabOpened { index: usize },
-    TabSelected { index: usize },
-    TabClosed { index: usize },
+    ProfileCreated {
+        profile: ProfileId,
+        space: TestSpaceId,
+    },
+    SpaceCreated {
+        profile: ProfileId,
+        space: TestSpaceId,
+    },
+    SpaceActivated {
+        space: TestSpaceId,
+    },
+    TabOpened {
+        index: usize,
+    },
+    TabSelected {
+        index: usize,
+    },
+    TabClosed {
+        index: usize,
+    },
+    TabMoved {
+        to_space: TestSpaceId,
+        recreated: bool,
+    },
+    TabSuspended {
+        index: usize,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -88,12 +118,25 @@ pub enum Request {
     Attach { since: Option<u64> },
     /// Navigate the active web view to a URL.
     Navigate { url: String },
+    /// Create an isolated profile with one initial space.
+    CreateProfile {
+        profile_title: String,
+        space_title: String,
+    },
+    /// Create another workspace in an existing profile.
+    CreateSpace { profile: ProfileId, title: String },
+    /// Activate a workspace by stable id.
+    ActivateSpace { space: TestSpaceId },
     /// Open a new tab and make it active.
     OpenTab { url: String },
     /// Select an existing tab by active-space index.
     SelectTab { index: usize },
     /// Close a tab by active-space index.
     CloseTab { index: usize },
+    /// Move an active-space tab into another space.
+    MoveTab { index: usize, to_space: TestSpaceId },
+    /// Suspend a hidden tab and destroy its native session.
+    SuspendTab { index: usize },
     /// Drive a [`WebAction`] on the active web view (Back/Forward/Reload/…).
     WebAction(WebAction),
     /// Focus the GPUI command bar (chrome) — the E2E reader of Cmd-L.
@@ -189,6 +232,27 @@ pub mod dsl {
         Request::Navigate { url: url.into() }
     }
 
+    pub fn create_profile(
+        profile_title: impl Into<String>,
+        space_title: impl Into<String>,
+    ) -> Request {
+        Request::CreateProfile {
+            profile_title: profile_title.into(),
+            space_title: space_title.into(),
+        }
+    }
+
+    pub fn create_space(profile: ProfileId, title: impl Into<String>) -> Request {
+        Request::CreateSpace {
+            profile,
+            title: title.into(),
+        }
+    }
+
+    pub fn activate_space(space: TestSpaceId) -> Request {
+        Request::ActivateSpace { space }
+    }
+
     pub fn open_tab(url: impl Into<String>) -> Request {
         Request::OpenTab { url: url.into() }
     }
@@ -199,6 +263,14 @@ pub mod dsl {
 
     pub fn close_tab(index: usize) -> Request {
         Request::CloseTab { index }
+    }
+
+    pub fn move_tab(index: usize, to_space: TestSpaceId) -> Request {
+        Request::MoveTab { index, to_space }
+    }
+
+    pub fn suspend_tab(index: usize) -> Request {
+        Request::SuspendTab { index }
     }
 
     pub fn back() -> Request {

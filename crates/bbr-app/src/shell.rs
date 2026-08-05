@@ -38,6 +38,8 @@ pub struct TestSnapshot {
     pub can_go_back: bool,
     pub can_go_forward: bool,
     pub web_view_hosted: bool,
+    pub active_profile: bbr_web::ProfileId,
+    pub active_space: bbr_testkit::protocol::TestSpaceId,
     pub tabs: Vec<bbr_browser::TabSnapshot>,
     pub active_tab_index: Option<usize>,
     pub active_web_view: Option<bbr_web::WebViewId>,

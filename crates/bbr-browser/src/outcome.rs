@@ -6,11 +6,17 @@
 //! [`WebViewId`]s are reported explicitly rather than corrupting state.
 
 use bbr_domain::SpaceId;
-use bbr_web::{WebEvent, WebViewId};
+use bbr_web::{ProfileId, WebEvent, WebViewId};
 
 /// Outcome of one controller operation (mutation, routing, or event).
 #[derive(Debug, Clone, PartialEq)]
 pub enum ControllerEvent {
+    /// A profile and its initial space were created.
+    ProfileCreated { profile: ProfileId, space: SpaceId },
+    /// A space was created in an existing profile.
+    SpaceCreated { profile: ProfileId, space: SpaceId },
+    /// The controller switched its active workspace.
+    SpaceActivated { space: SpaceId },
     /// A tab was opened at `index` in the active space.
     TabOpened { index: usize, url: String },
     /// The tab at `index` became the active tab.

@@ -129,9 +129,14 @@ mod tests {
     #[test]
     fn tab_commands_round_trip_through_the_request_envelope() {
         for request in [
+            dsl::create_profile("Private", "Private"),
+            dsl::create_space(crate::protocol::TestProfileId(1), "Second"),
+            dsl::activate_space(crate::protocol::TestSpaceId(4)),
             dsl::open_tab("https://example.com/two"),
             dsl::select_tab(1),
             dsl::close_tab(0),
+            dsl::move_tab(0, crate::protocol::TestSpaceId(4)),
+            dsl::suspend_tab(0),
         ] {
             let bytes = encode_client_frame(&request);
             let value = read_frame(&mut Cursor::new(bytes)).unwrap();

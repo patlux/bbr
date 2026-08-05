@@ -85,6 +85,44 @@ impl BbrApp {
         }
     }
 
+    #[cfg(feature = "testkit")]
+    pub fn create_profile_space(
+        &mut self,
+        profile_title: &str,
+        space_title: &str,
+        cx: &mut Context<Self>,
+    ) -> Option<ControllerEvent> {
+        let result = self
+            .controller
+            .create_profile_space(profile_title, space_title);
+        self.apply_mutation(result, cx)
+    }
+
+    #[cfg(feature = "testkit")]
+    pub fn create_space(
+        &mut self,
+        profile: bbr_web::ProfileId,
+        title: &str,
+        cx: &mut Context<Self>,
+    ) -> Option<ControllerEvent> {
+        let result = self.controller.create_space_event(profile, title);
+        self.apply_mutation(result, cx)
+    }
+
+    #[cfg(feature = "testkit")]
+    pub fn activate_space(
+        &mut self,
+        space: bbr_browser::SpaceId,
+        cx: &mut Context<Self>,
+    ) -> Option<ControllerEvent> {
+        let result = self.controller.activate_space(space);
+        let outcome = self.apply_mutation(result, cx);
+        if outcome.is_some() {
+            self.sync_command_bar();
+        }
+        outcome
+    }
+
     pub fn open_tab(&mut self, url: &str, cx: &mut Context<Self>) -> Option<ControllerEvent> {
         let result = self
             .controller
@@ -135,6 +173,23 @@ impl BbrApp {
             cx.notify();
         }
         result
+    }
+
+    #[cfg(feature = "testkit")]
+    pub fn move_tab(
+        &mut self,
+        index: usize,
+        to_space: bbr_browser::SpaceId,
+        cx: &mut Context<Self>,
+    ) -> Option<ControllerEvent> {
+        let result = self.controller.move_tab(index, to_space);
+        self.apply_mutation(result, cx)
+    }
+
+    #[cfg(feature = "testkit")]
+    pub fn suspend_tab(&mut self, index: usize, cx: &mut Context<Self>) -> Option<ControllerEvent> {
+        let result = self.controller.suspend_tab(index);
+        self.apply_mutation(result, cx)
     }
 
     pub fn close_active_tab(&mut self, cx: &mut Context<Self>) -> Option<ControllerEvent> {
@@ -244,6 +299,25 @@ impl BbrApp {
         *self.browser_sink.borrow_mut() = Some(sink);
     }
 
+    #[cfg(feature = "testkit")]
+    fn apply_mutation(
+        &mut self,
+        result: Result<ControllerEvent, bbr_browser::ControllerError>,
+        cx: &mut Context<Self>,
+    ) -> Option<ControllerEvent> {
+        let outcome = result
+            .map_err(|error| {
+                log::error!("browser mutation failed: {error}");
+                error
+            })
+            .ok();
+        if let Some(event) = &outcome {
+            self.emit_browser(event);
+            cx.notify();
+        }
+        outcome
+    }
+
     fn emit_browser(&mut self, event: &ControllerEvent) {
         if let Some(sink) = self.browser_sink.borrow_mut().as_mut() {
             sink(event);
@@ -313,6 +387,8 @@ impl BbrApp {
             can_go_back: browser.nav.can_go_back,
             can_go_forward: browser.nav.can_go_forward,
             web_view_hosted: browser.web_view_hosted,
+            active_profile: browser.active_profile,
+            active_space: bbr_testkit::protocol::TestSpaceId(browser.active_space.0),
             tabs: browser.tabs,
             active_tab_index: browser.active_index,
             active_web_view: browser.active_view,

@@ -154,6 +154,25 @@ fn dispatch(
         }
     };
     match req {
+        Request::CreateProfile {
+            profile_title,
+            space_title,
+        } => browser_mutation(window.update(cx, |view, _window, cx| {
+            view.create_profile_space(&profile_title, &space_title, cx)
+        })),
+
+        Request::CreateSpace { profile, title } => {
+            browser_mutation(window.update(cx, |view, _window, cx| {
+                view.create_space(profile, &title, cx)
+            }))
+        }
+
+        Request::ActivateSpace { space } => {
+            browser_mutation(window.update(cx, |view, _window, cx| {
+                view.activate_space(bbr_browser::SpaceId(space.0), cx)
+            }))
+        }
+
         Request::OpenTab { url } => {
             browser_mutation(window.update(cx, |view, _window, cx| view.open_tab(&url, cx)))
         }
@@ -173,6 +192,16 @@ fn dispatch(
                 .unwrap_or_else(err_response);
             broadcast(&server, Event::CommandBarChanged { text: url });
             r
+        }
+
+        Request::MoveTab { index, to_space } => {
+            browser_mutation(window.update(cx, |view, _window, cx| {
+                view.move_tab(index, bbr_browser::SpaceId(to_space.0), cx)
+            }))
+        }
+
+        Request::SuspendTab { index } => {
+            browser_mutation(window.update(cx, |view, _window, cx| view.suspend_tab(index, cx)))
         }
 
         Request::WebAction(action) => window
@@ -270,6 +299,17 @@ fn browser_mutation<E: std::fmt::Display>(update: Result<Option<ControllerEvent>
 
 pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange> {
     match outcome {
+        ControllerEvent::ProfileCreated { profile, space } => Some(BrowserChange::ProfileCreated {
+            profile: *profile,
+            space: bbr_testkit::protocol::TestSpaceId(space.0),
+        }),
+        ControllerEvent::SpaceCreated { profile, space } => Some(BrowserChange::SpaceCreated {
+            profile: *profile,
+            space: bbr_testkit::protocol::TestSpaceId(space.0),
+        }),
+        ControllerEvent::SpaceActivated { space } => Some(BrowserChange::SpaceActivated {
+            space: bbr_testkit::protocol::TestSpaceId(space.0),
+        }),
         ControllerEvent::TabOpened { index, .. } => {
             Some(BrowserChange::TabOpened { index: *index })
         }
@@ -277,6 +317,17 @@ pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange>
             Some(BrowserChange::TabSelected { index: *index })
         }
         ControllerEvent::TabClosed { index } => Some(BrowserChange::TabClosed { index: *index }),
+        ControllerEvent::TabMoved {
+            to_space,
+            recreated,
+            ..
+        } => Some(BrowserChange::TabMoved {
+            to_space: bbr_testkit::protocol::TestSpaceId(to_space.0),
+            recreated: *recreated,
+        }),
+        ControllerEvent::TabSuspended { index } => {
+            Some(BrowserChange::TabSuspended { index: *index })
+        }
         _ => None,
     }
 }
@@ -299,6 +350,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             can_go_back: self.can_go_back,
             can_go_forward: self.can_go_forward,
             web_view_hosted: self.web_view_hosted,
+            active_profile: self.active_profile,
+            active_space: self.active_space,
             tabs: self
                 .tabs
                 .iter()
