@@ -345,11 +345,21 @@ mod tests {
         );
         harness.engine.borrow_mut().show(WebViewId(1), true);
         harness.engine.borrow_mut().show(WebViewId(1), false);
-        assert!(harness.recorded(&[EngineOp::Create {
-            view: WebViewId(1),
-            profile: ProfileId(7),
-            url: "https://a.example".into()
-        }]));
+        assert!(harness.recorded(&[
+            EngineOp::Create {
+                view: WebViewId(1),
+                profile: ProfileId(7),
+                url: "https://a.example".into()
+            },
+            EngineOp::Show {
+                view: WebViewId(1),
+                visible: true
+            },
+            EngineOp::Show {
+                view: WebViewId(1),
+                visible: false
+            },
+        ]));
         assert_eq!(
             harness.engine.borrow().live_session_count(),
             1,
@@ -489,7 +499,10 @@ mod tests {
                 "certificate refused".into()
             )]
         );
-        assert!(!f.session(WebViewId(1)).unwrap().loading, "failure stops loading");
+        assert!(
+            !f.session(WebViewId(1)).unwrap().loading,
+            "failure stops loading"
+        );
     }
 
     #[test]
