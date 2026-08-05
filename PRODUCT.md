@@ -55,18 +55,8 @@ keyboard focus, and unresolved UX decisions lives in
 Implementation and UI changes must preserve that contract or update it
 explicitly together with tests.
 
-## Performance Contract
-
-Perceived responsiveness is a product invariant from the first browser shell,
-not a final optimization pass. Canonical startup, tab/space switching, sidebar,
-and interaction budgets plus benchmark methodology live in
-[docs/product/performance-contract.md](docs/product/performance-contract.md).
-Implementation must distinguish BBR presentation latency from external network
-or page-load latency.
-
 ## Product Principles
 
-- Instant shell and selected-content presentation, continuously protected by real-app performance E2E.
 - Native engine efficiency over engine ownership.
 - Portable product logic; explicitly platform-native integration edges.
 - Keyboard-first without making pointer workflows secondary.
