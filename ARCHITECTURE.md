@@ -374,7 +374,8 @@ just fmt        # cargo fmt --all -- --check
 just check      # cargo check --workspace --all-targets
 just test       # cargo test --workspace
 just clippy     # cargo clippy --workspace --all-targets -- -D warnings
-just verify     # fmt + check + test + clippy
+just roadmap    # validate hierarchical roadmap Markdown links
+just verify     # fmt + check + test + clippy + roadmap
 just e2e-smoke  # cargo test -p bbr --features testkit --test e2e_smoke -- --ignored --nocapture
 ```
 
@@ -392,6 +393,7 @@ just test    → exit 0  — bbr-app 4 passed · bbr-domain 34 passed ·
                         bbr-fixtures 3 passed · bbr-testkit 10 passed ·
                         bbr-web 9 passed · e2e_smoke 1 ignored (GUI, run explicitly)
 just clippy  → exit 0 (-D warnings)
+just roadmap → exit 0 (hierarchical roadmap links valid)
 just e2e-smoke → exit 0 — "SMOKE PASSED", 1 passed (real WKWebView, 1.53s)
 ```
 
@@ -425,5 +427,6 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 6. **The release-exclusion failsafe is not implemented**: under a non-testkit
    build the `--bbr-*` test flags are silently ignored rather than rejected at
    startup (E2E §12's exit-64 gate is future work).
-7. `browser.rs`/`tests.rs` in `bbr-domain` slightly exceed the ~500-line soft
-   guideline; kept as cohesive units.
+7. The portable controller (`bbr-browser`) and its fake engine are not yet
+   implemented; `bbr-domain` is intentionally split into files below the
+   repository's ~500-line guideline.

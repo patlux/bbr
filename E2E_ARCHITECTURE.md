@@ -43,8 +43,8 @@ responder).
   `dispatch_keystroke` path — no accessibility permission, no OS event posting.
 - **Event waits/state snapshots, no sleep-based product assertions.** Web and
   focus state use sequence-numbered events with deadlines. Bounded short sleeps
-  exist only for socket/process polling; resize currently uses a bounded
-  quiet-period helper until a semantic window-resized event is added.
+  exist only for socket/process polling; resize uses bounded typed-snapshot
+  polling until a semantic window-resized event is added.
 - **No production network listener.** Gateway = loopback-unix-socket only,
   token-authenticated, `testkit`-feature-gated.
 
@@ -216,7 +216,7 @@ is not needed by the smoke and was not built.
 One `#[ignore]`d macOS-only test that spawns the real binary with
 `--features testkit` and drives product state via events and snapshots (no
 sleep-based WebKit or focus assertions; bounded polling is limited to process
-lifecycle and the current resize quiet period):
+lifecycle and typed resize snapshots):
 
 1. `AppReady` (from replay, or waited).
 2. Initial load warm-up (title "BBR Fixture One" + `LoadingChanged(false)`) —
