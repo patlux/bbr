@@ -481,6 +481,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bbr-domain"
+version = "0.1.0"
+dependencies = [
+ "bbr-web",
+]
+
+[[package]]
 name = "bbr-fixtures"
 version = "0.1.0"
 

@@ -1,0 +1,10 @@
+[package]
+name = "bbr-domain"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Portable browser core model: profiles, spaces, tabs, tab lifecycle, two-pane splits (no frameworks, no GPUI, no persistence, no unsafe)."
+
+[dependencies]
+bbr-web = { workspace = true }
