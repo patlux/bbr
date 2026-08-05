@@ -22,8 +22,18 @@
 #![forbid(unsafe_code)]
 #![deny(missing_debug_implementations)]
 
+/// The engine handle the controller drives (and the composition root shares
+/// with the GPUI web-view slot): main-thread-only, interior-mutable.
+pub type EngineRef = std::rc::Rc<std::cell::RefCell<dyn bbr_web::WebEngine>>;
+
+/// Determines the next `WebViewId` for a fresh session incarnation. Injected
+/// by the composition root so E2E runs can use the sequential id generator.
+pub type ViewIdAllocator = Box<dyn FnMut() -> u64>;
+
 mod error;
 mod session;
+#[cfg(test)]
+mod testing;
 
 pub use error::ControllerError;
 pub use session::{SessionError, SessionRegistry};
