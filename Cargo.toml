@@ -1,6 +1,10 @@
 [workspace]
 resolver = "2"
-members = ["crates/bbr-web"]
+members = [
+    "crates/bbr-web",
+    "crates/bbr-testkit",
+    "crates/bbr-fixtures",
+]
 
 [workspace.package]
 version = "0.1.0"

@@ -1,0 +1,12 @@
+[package]
+name = "bbr-testkit"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Typed automation protocol, gateway server, and client for BBR E2E tests (portable: unix sockets only)."
+
+[dependencies]
+bbr-web = { workspace = true, features = ["serde"] }
+serde.workspace = true
+serde_json.workspace = true

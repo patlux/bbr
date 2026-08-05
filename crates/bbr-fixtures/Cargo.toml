@@ -1,0 +1,11 @@
+[package]
+name = "bbr-fixtures"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Deterministic local HTTP fixture server for BBR E2E tests (std-only, loopback)."
+
+[[bin]]
+name = "bbr-fixtures"
+path = "src/main.rs"
