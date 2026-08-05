@@ -67,6 +67,15 @@ A browser that retains one live WKWebView per tab will eventually become expensi
 
 Initial policy: active split panes stay active; recently used tabs stay warm; background tabs suspend after memory pressure or an inactivity threshold. Pinned status alone must not force a permanently live web view.
 
+## Cross-cutting performance rule
+
+Perceived responsiveness is measured before broad UI growth, not retrofitted in
+the final hardening phase. Before the Phase-4 sidebar expands, add optimized
+real-app performance E2E for startup and warm-tab presentation. Every later
+latency-sensitive interaction extends that benchmark matrix in the same feature
+slice. Canonical budgets and methodology live in
+[docs/product/performance-contract.md](docs/product/performance-contract.md).
+
 ## Delivery phases
 
 ### Phase 0 — reproducible environment
@@ -141,7 +150,9 @@ Acceptance:
 
 ### Phase 4 — vertical sidebar and spaces
 
-Implement the first complete browser shell.
+First establish real-app benchmark instrumentation and prove that startup
+presents sidebar plus the selected native content together within budget. Then
+implement the first complete browser shell.
 
 Sidebar hierarchy:
 
@@ -164,6 +175,8 @@ Behavior:
 Acceptance:
 
 - All actions are available by keyboard.
+- Startup, warm tab/space switching, active-tab close, and sidebar visibility
+  changes pass functional and performance E2E budgets.
 - Lists remain responsive with at least 500 persisted tabs and 50 live/warm tabs.
 - Sidebar changes do not trigger needless web-view recreation.
 
@@ -256,7 +269,8 @@ Extensions, cloud sync, mobile clients, AI features, reader mode, ad blocking, a
 
 ### Phase 9 — performance and energy hardening
 
-Measure before tuning. Track:
+Harden and tighten the continuously collected baselines established before
+Phase 4; this is not the first performance measurement phase. Track:
 
 - Cold and warm startup.
 - Time to first usable chrome and first visible page.

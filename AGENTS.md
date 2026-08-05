@@ -51,6 +51,7 @@ Every new or changed browser feature must include automated real-app E2E coverag
 - Manual testing may supplement automation, especially for VoiceOver, IME, media, passkeys, and OS panels, but it does not replace required E2E.
 - Pure refactors with no behavior change do not require a new E2E scenario, but all existing E2E coverage must remain green.
 - If the harness cannot express a feature, extending the harness is part of the feature—not a reason to omit E2E.
+- Every user-visible interaction must add or extend real-app performance E2E in the same implementation group. Follow [docs/product/performance-contract.md](docs/product/performance-contract.md): optimized app, typed monotonic production-path milestones, semantic presentation commit, deterministic fixtures, and no testkit/network latency in application timings.
 
 ### Bug fixes
 
@@ -67,9 +68,10 @@ just verify
 just e2e              # canonical sequential real-app GUI gate
 just e2e-smoke        # baseline native integration when affected
 just e2e-tabs         # real multi-tab/session behavior when affected
+just e2e-perf         # real-app performance regression gate once implemented
 ```
 
-Run every affected individual suite as well as the canonical sequential gate. GUI suites must not run in parallel because AppKit window geometry can interfere through screen clamping. Add another bounded `just e2e-<suite>` recipe when a new browser feature introduces a suite; a generic selector can wait until suite count justifies it.
+Run every affected individual suite as well as the canonical sequential gate. Until `just e2e-perf` exists, performance-sensitive roadmap items remain unproven. GUI suites must not run in parallel because AppKit window geometry can interfere through screen clamping. Add another bounded `just e2e-<suite>` recipe when a new browser feature introduces a suite; a generic selector can wait until suite count justifies it.
 
 All long-running commands must use the repository's bounded `just` recipes or an explicit hard timeout with process-tree cleanup.
 
@@ -172,4 +174,4 @@ For a small self-explanatory docs or formatting commit, a short body is acceptab
 
 ## Current next step
 
-Follow [docs/roadmap/tasks/browser-controller.md](docs/roadmap/tasks/browser-controller.md) together with [docs/roadmap/tasks/fake-web-engine.md](docs/roadmap/tasks/fake-web-engine.md). Do not begin broad UI-shell work until the portable controller and multi-session native adapter make real tabs reliable.
+Follow [docs/roadmap/tasks/performance-e2e-foundation.md](docs/roadmap/tasks/performance-e2e-foundation.md) before broad Phase-4 sidebar implementation. Preserve the proven controller and multi-session adapter while adding startup and interaction presentation benchmarks through the real optimized app.

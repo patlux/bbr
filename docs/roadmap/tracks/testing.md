@@ -27,7 +27,7 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 - [ ] `webkit`: profile isolation is covered; popups, permissions, downloads, and process recovery remain with Phase 8.
 - [ ] `persistence`: restore, force quit, migrations, corrupt optional state.
 - [ ] `accessibility`: semantic ids, labels, order, real input.
-- [ ] `performance`: startup, command latency, tab switching, memory lifecycle.
+- [ ] `performance`: optimized real-app startup, first usable sidebar + selected native content presentation, tab/space switching, active-tab close, sidebar open/close/toggle/resize, command latency, and memory lifecycle; see the [foundation task](../tasks/performance-e2e-foundation.md).
 
 ## Harness improvements
 
@@ -38,6 +38,8 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 - [x] Add bounded individual `just e2e-smoke` / `just e2e-tabs` / `just e2e-profiles` recipes and a canonical sequential `just e2e` gate.
 - [ ] Add suite manifests and a generic `just e2e <suite>` runner when more suites justify it.
 - [ ] Add testkit release-exclusion gate.
+- [ ] Add optimized benchmark mode, typed presentation-commit milestones, raw-sample artifacts, and baseline comparison.
+- [ ] Add bounded `just e2e-perf` / `just e2e-perf-full`; include the short gate in canonical sequential `just e2e` once stable.
 - [ ] Add a small Appium Mac2 packaged-app blackbox suite in Phase 9.
 
 ## Definition of done for feature work
@@ -50,3 +52,5 @@ These are mandatory rules, not future roadmap items:
 - If the harness cannot express the behavior, extending the harness is part of the feature.
 - No sleep/pixel assertion is the primary synchronization mechanism.
 - Relevant bounded checks and affected E2E suites pass before a roadmap item is checked or an implementation group is committed.
+- Every user-visible interaction adds or extends a real-app performance scenario in the same implementation group; timings never replace functional state assertions.
+- Benchmarks measure monotonic in-process production-path work through semantic presentation commit, excluding testkit transport and external network latency.

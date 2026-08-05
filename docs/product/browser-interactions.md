@@ -3,7 +3,10 @@
 Status: **canonical product behavior** for tabs, spaces, splits, and browser
 focus. This document describes what users should observe. Implementation facts
 remain in [ARCHITECTURE.md](../../ARCHITECTURE.md), while delivery status and
-acceptance evidence remain in [ROADMAP.md](../../ROADMAP.md).
+acceptance evidence remain in [ROADMAP.md](../../ROADMAP.md). Perceived response
+time for these interactions is governed by the
+[performance contract](performance-contract.md); correctness and latency must
+both pass.
 
 ## How to read this document
 
@@ -316,7 +319,9 @@ Any implementation change to this contract requires:
 - real-app E2E for user-visible browser behavior;
 - assertions for selected tab, session lifecycle, visible native view(s), and
   focused pane;
-- native chrome/web focus assertions when focus behavior changes; and
+- native chrome/web focus assertions when focus behavior changes;
+- a real-app performance scenario for the affected visible transition, measured
+  through semantic presentation commit rather than command receipt; and
 - corresponding roadmap and architecture updates after evidence passes.
 
 Do not change interaction behavior only by changing a UI component. The domain,

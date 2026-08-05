@@ -24,6 +24,7 @@ The complete alpha feature set receives a deliberate product-wide quality pass a
 ## Performance and energy
 
 - [ ] Complete the [Performance/release track](../tracks/performance-release.md).
+- [ ] Tighten and harden the performance budgets established before Phase 4; do not introduce the first benchmark harness here.
 - [ ] Measure cold/warm startup, command latency, sidebar frame time, idle CPU/wakeups, memory per lifecycle state, and suspend/resume latency.
 - [ ] Compare representative workflows with Safari and the Swift reference.
 

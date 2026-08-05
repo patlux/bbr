@@ -6,11 +6,12 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 
 ## Current focus
 
-> **Phase 4 — establish BBR's interaction and visual foundation.** Native profile/session isolation is proven; next resolve tab-focus behavior, define the visual system, then expose real controller-backed tabs and spaces in the GPUI sidebar.
+> **Phase 4 — establish BBR's interaction, performance, and visual foundation.** Native profile/session isolation is proven; next establish real-app startup and interaction benchmarks, resolve tab-focus behavior, define the visual system, then expose real controller-backed tabs and spaces in the GPUI sidebar.
 
+- [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation.
 - [ ] Resolve the tab-mutation focus matrix in the [browser interaction contract](docs/product/browser-interactions.md).
 - [ ] Create `DESIGN.md` with a distinct native macOS visual direction and semantic tokens.
-- [ ] Implement the first controller-backed vertical-tab and space-switching UI slice with real-app E2E.
+- [ ] Implement the first controller-backed vertical-tab and space-switching UI slice with functional and performance E2E.
 
 ## Product phases
 
@@ -41,7 +42,7 @@ This avoids polishing placeholder UI now, while also preventing a functional-but
 - [Testing and deterministic E2E](docs/roadmap/tracks/testing.md)
 - [Accessibility and input](docs/roadmap/tracks/accessibility.md)
 - [UI design system and visual quality](docs/roadmap/tracks/ui-design-system.md)
-- [Performance, energy, and release safety](docs/roadmap/tracks/performance-release.md)
+- [Performance, energy, and release safety](docs/roadmap/tracks/performance-release.md) · [performance contract](docs/product/performance-contract.md)
 
 ## Status snapshot
 
@@ -62,6 +63,7 @@ Completed today:
 
 Next release-shaped outcome:
 
-- A coherent vertical-tab and space shell whose visual hierarchy, focus behavior,
-  profile identity, and pointer/keyboard paths are defined before implementation
-  and proven through the real app.
+- A benchmark-protected vertical-tab and space shell that opens with sidebar and
+  selected web content presented together, keeps warm tab/space switching and
+  sidebar interaction within explicit latency budgets, and has defined visual,
+  focus, profile-identity, pointer, and keyboard behavior proven through the real app.
