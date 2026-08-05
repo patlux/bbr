@@ -1,10 +1,11 @@
 # BBR — Architecture (current implementation)
 
-Status: **describes the implemented workspace** (Phase 1 native-view spike + the
-portable domain slice from PLAN.md Phase 2). Verified against the actual GPUI
-crate (`gpui 0.2.2`), the `objc2-web-kit 0.3.2` bindings, the Swift reference at
-`PWBrowser`, and a green verification run (`just verify` + `just e2e-smoke`,
-2026-08-05).
+Status: **describes the implemented workspace through Phase 3**: native GPUI +
+WKWebView embedding, portable browser orchestration, controller-backed real
+tabs, and profile-isolated multi-session WebKit. Verified against the actual
+GPUI crate (`gpui 0.2.2`), the `objc2-web-kit 0.3.2` bindings, the Swift
+reference at `PWBrowser`, and green `just verify` + sequential `just e2e` runs
+(2026-08-05).
 
 ---
 
@@ -413,9 +414,9 @@ Testability: the deterministic `FakeEngine` (in `crate::fake`,
 `#[cfg(test)]`-only) records every engine call into an op log, owns fake
 sessions, rejects duplicate creation and missing-session actions, and emits
 controlled `WebEvent`s through the registered sink. Because the controller
-drives the engine through the same `dyn` seam the app uses, the 46 crate tests
-(17 fake/registry contract tests + 28 controller behavior tests + one snapshot test) prove policy
-without a display server.
+drives the engine through the same `dyn` seam the app uses, 47 crate tests
+prove registry, controller, event-routing, active-space visibility, profile
+move, split, lifecycle, and snapshot policy without a display server.
 
 ---
 
@@ -432,7 +433,8 @@ just roadmap    # validate hierarchical roadmap Markdown links
 just verify     # fmt + check + test + clippy + roadmap
 just e2e-smoke  # baseline real-WKWebView navigation/focus/resize
 just e2e-tabs   # real multi-tab/session behavior
-just e2e        # canonical sequential GUI gate (smoke, then tabs)
+just e2e-profiles # real profile isolation, moves, and suspend lifecycle
+just e2e        # canonical sequential GUI gate (smoke, tabs, then profiles)
 ```
 
 All recipes are wrapped in GNU `timeout --kill-after=10s` with
@@ -446,12 +448,13 @@ overrides, and pin `DEVELOPER_DIR` to Xcode 16.4. On headless CI,
 just fmt     → exit 0
 just check   → exit 0 (workspace, all targets)
 just test    → exit 0  — bbr-app 2 passed · bbr-domain 40 passed ·
-                        bbr-browser 46 passed · bbr-fixtures 3 passed ·
+                        bbr-browser 47 passed · bbr-fixtures 4 passed ·
                         bbr-testkit 12 passed · bbr-web 9 passed ·
-                        bbr-web-macos 1 passed · 2 GUI E2E tests ignored
+                        bbr-web-macos 1 passed · 3 GUI E2E tests ignored
 just clippy  → exit 0 (-D warnings)
 just roadmap → exit 0 (hierarchical roadmap links valid)
-just e2e       → exit 0 — "SMOKE PASSED" + "TABS E2E PASSED" (sequential real WKWebViews)
+just e2e     → exit 0 — "SMOKE PASSED" + "TABS E2E PASSED" +
+                        "PROFILES E2E PASSED" (sequential real WKWebViews)
 ```
 
 The testkit-feature path also passes `cargo clippy -p bbr --features testkit
@@ -472,22 +475,18 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
    `WebEngineWk` open, switch, preserve, navigate, and close multiple real
    sessions; Cmd-T/Cmd-W and testkit expose them. The vertical tab list and
    pointer selection arrive with the intentional Phase-4 shell.
-2. **Persistent store ids are deterministic, but profile isolation lacks real-app evidence.**
-   Production derives the WebKit store UUID from `ProfileId`; E2E uses
-   `nonPersistentDataStore`. A two-profile cookie-isolation scenario remains
-   required before the Phase-3 exit can be checked.
+2. **Profile and space operations have no visible UI yet.** Protocol v3 and the
+   production controller path can create/activate profiles and spaces and move
+   tabs between them, but the intentional sidebar surfaces arrive in Phase 4.
+   The real profiles suite already proves isolated cookies and session policy.
 3. **`--bbr-clock` is a no-op**; the `TimeSource` seam is intentionally not
    added until time-based logic exists (debounces in Phase 5/7).
 4. **Popups/new windows are suppressed** (`createWebViewWithConfiguration` →
    `None`); wired popups land in a later phase.
 5. **No find-in-page, zoom, downloads, permission prompts, WebAuthn, or
-   process-termination recovery UI yet** (Phases 3/8). `PageCrashed` is
+   process-termination recovery UI yet** (Phase 8). `PageCrashed` is
    observable in the status line and snapshot, but there is no recovery
    surface.
 6. **The release-exclusion failsafe is not implemented**: under a non-testkit
    build the `--bbr-*` test flags are silently ignored rather than rejected at
    startup (E2E §12's exit-64 gate is future work).
-7. **Profile operations are not composed into the app/testkit yet.** The
-   controller's cross-profile recreation policy and deterministic WebKit store
-   mapping are proven separately, but two-profile cookie isolation and a real
-   cross-profile move remain the current Phase-3 focus.

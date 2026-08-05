@@ -11,6 +11,7 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 - [x] KVO title observation is balanced during teardown.
 - [x] Real-app smoke covers load, navigation, reload, resize, focus, and quit.
 - [x] Real-app tabs suite covers two native sessions, warm-tab reuse, focused navigation, and destruction on close.
+- [x] Real-app profiles suite covers cookie isolation, same-profile session reuse, cross-profile recreation, and suspend cleanup.
 
 ## Manual integration matrix
 
@@ -27,7 +28,7 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 
 - [x] Multi-WebView session registry.
 - [x] Deterministic persistent ProfileId → WKWebsiteDataStore mapping.
-- [ ] Popup/new-window policy.
-- [ ] Download, permission, authentication, and file-panel events.
-- [ ] Web-process recovery.
+- [ ] Popup/new-window policy. *(Phase 8)*
+- [ ] Download, permission, authentication, and file-panel events. *(Phase 8)*
+- [ ] Web-process recovery. *(Phase 8)*
 - [ ] Per-view split geometry.

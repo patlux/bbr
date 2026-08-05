@@ -18,8 +18,8 @@ responder).
 
 | Fact | Evidence |
 |---|---|
-| Workspace compiles and all unit/contract tests pass | `just verify` green: bbr-app 2, **bbr-domain 40**, **bbr-browser 46**, bbr-fixtures 3, bbr-testkit 12, bbr-web 9, bbr-web-macos 1 passed |
-| Real-app GUI suites pass sequentially | `just e2e` → `SMOKE PASSED` then `TABS E2E PASSED`: navigation/focus/resize plus two WKWebViews, warm-session reuse, focused navigation, and close destruction |
+| Workspace compiles and all unit/contract tests pass | `just verify` green: bbr-app 2, **bbr-domain 40**, **bbr-browser 47**, bbr-fixtures 4, bbr-testkit 12, bbr-web 9, bbr-web-macos 1 passed |
+| Real-app GUI suites pass sequentially | `just e2e` → `SMOKE PASSED`, `TABS E2E PASSED`, `PROFILES E2E PASSED`: navigation/focus/resize, warm-session reuse and close destruction, cookie isolation, profile-boundary recreation, and suspend cleanup |
 | All previously-missing files exist | `crates/bbr-app/Cargo.toml`, `crates/bbr-app/src/webview|delegate…` under `bbr-web-macos` are present; the workspace memberships are complete |
 | `bbr-web` contract crate | `#![forbid(unsafe_code)]`, unit tests incl. `flip_rect`, `normalize_url`, object-safety proof |
 | GPUI 0.2.2 public synthetic input | `Window::dispatch_keystroke(…, cx)` (window.rs) and `Window::dispatch_event(PlatformInput, cx)`; the smoke drives `cmd-l`/`escape` through the real input path |
@@ -53,7 +53,7 @@ responder).
 ## 2. Implemented E2E topology
 
 ```text
-bbr-app/tests/e2e_smoke.rs + e2e_tabs.rs (two #[ignore]d macOS tests)
+bbr-app/tests/e2e_smoke.rs + e2e_tabs.rs + e2e_profiles.rs (three #[ignore]d macOS tests)
   │  1. fixture server in-process (bbr-fixtures) on 127.0.0.1:<ephemeral>
   │  2. temp profile dir + artifacts dir
   │  3. spawn app: bbr --bbr-initial-url <page1> --bbr-profile-dir <dir>
@@ -74,7 +74,7 @@ process); the `bbr-fixtures` **binary** exists for the FUTURE runner topology
 
 ---
 
-## 3. The testkit protocol (implemented: `bbr-testkit`, version 2)
+## 3. The testkit protocol (implemented: `bbr-testkit`, version 3)
 
 Single source of truth: `crates/bbr-testkit` (portable: unix sockets + serde
 JSON; no macOS, no GPUI, no WebKit).
@@ -90,7 +90,7 @@ JSON; no macOS, no GPUI, no WebKit).
 
 ### Handshake & auth
 
-- Client → `Hello { protocol_version: 2, token, capabilities }`. Wrong version
+- Client → `Hello { protocol_version: 3, token, capabilities }`. Wrong version
   → `Error("protocol_mismatch")`; wrong token → connection dropped. Correct →
   `Welcome { app_version, pid, capabilities, next_seq }`.
 - Token comes from `--bbr-test-token` (random per spawn, in the harness).
@@ -102,7 +102,8 @@ JSON; no macOS, no GPUI, no WebKit).
 |---|---|
 | `Attach { since: Option<u64> }` | Replays seq-numbered events from the server ring with seq > `since`; live delivery continues after |
 | `Navigate { url }` | Load the controller's active tab (same path as the command bar) + broadcasts `CommandBarChanged` |
-| `OpenTab { url }` / `SelectTab { index }` / `CloseTab { index }` | Semantic controller mutations; Cmd-T/Cmd-W use the same app methods |
+| `CreateProfile` / `CreateSpace` / `ActivateSpace` | Create isolated identities/workspaces and switch the controller's active space |
+| `OpenTab` / `SelectTab` / `CloseTab` / `MoveTab` / `SuspendTab` | Semantic controller mutations; Cmd-T/Cmd-W use the same app methods |
 | `WebAction(Back/Forward/Reload/Stop)` | Engine action on the active view |
 | `ActivateCommandBar` / `FocusWeb` | The E2E readers of Cmd-L / Escape |
 | `SetCommandBarText { text }` | Set command-bar text directly (avoids per-keystroke round trips) + broadcasts `CommandBarChanged` |
@@ -119,7 +120,8 @@ JSON; no macOS, no GPUI, no WebKit).
 canGoForward/page-crash/navigation-failure) · `ChromeFocusChanged {
 chrome_focused }` (emitted by the app's focus sink after every focus mutation,
 so it always agrees with the snapshot) · `CommandBarChanged { text }` ·
-`BrowserChanged { TabOpened/TabSelected/TabClosed }` from the shared app mutation path.
+`BrowserChanged` with typed profile/space creation and activation plus tab
+open/select/close/move/suspend outcomes from the shared app mutation path.
 `Event::Quitting` is declared in the protocol but **not yet emitted** (the
 harness asserts clean exit by process status instead).
 
@@ -130,7 +132,8 @@ Snapshot {
   url, title: Option<String>, loading: bool,
   can_go_back, can_go_forward: bool,
   web_view_hosted: bool,        // active tab has a live native session
-  tabs: Vec<TabSnapshot>,       // index/url/title/active/current WebViewId
+  active_profile: ProfileId, active_space: TestSpaceId,
+  tabs: Vec<TabSnapshot>,       // active-space index/url/title/active/current WebViewId
   active_tab_index: Option<usize>, active_web_view: Option<WebViewId>,
   engine_sessions: usize,       // native destruction / warm-session evidence
   engine_kind: String,          // "native-wkwebview" (macOS) | "fake" elsewhere
@@ -141,8 +144,8 @@ Snapshot {
 }
 ```
 
-FUTURE (planned protocol growth, not yet implemented): profile/space/split manipulation
-(`CreateProfile/CreateSpace/ActivateSpace/PinTab/MoveTab/SplitTabs/CloseSplit`),
+FUTURE (planned protocol growth, not yet implemented): remaining tab/split manipulation
+(`PinTab/ReorderTab/ReopenTab/SplitTabs/CloseSplit`),
 `WebEvaluate` (whitelisted DOM helpers), `AdvanceClock`/
 `ResetIds`, `TerminateWebProcess`, `Screenshot`, and the richer event set
 (`TabAdded/TabClosed/…`, `PersistenceFlushed`, …). `--bbr-clock` is parsed but
@@ -252,7 +255,18 @@ One `#[ignore]`d macOS-only test proves the production controller/native path:
 5. `DispatchKeystroke("cmd-w")` closes tab 2; native count falls to one and tab 1 keeps its id.
 6. Quit exits cleanly; failures preserve event-ring and stderr artifacts.
 
-FUTURE: the remaining suite plan (spaces/splits/dialogs/routing/commandbar/
+## 7b. The profiles test (`bbr-app/tests/e2e_profiles.rs`)
+
+One `#[ignore]`d macOS-only test proves real profile and lifecycle boundaries:
+
+1. Set and read cookie `alpha` in the default profile's native data store.
+2. Create a second profile/space, set cookie `beta`, and prove each store reads only its own value.
+3. Move the default tab between two spaces of one profile and retain its original `WebViewId`.
+4. Move the private tab across profiles and observe a fresh `WebViewId` backed by the destination store.
+5. Suspend a hidden warm tab, assert its native session disappears, then select it and assert fresh-session recreation.
+6. Quit exits cleanly; failures preserve event-ring and stderr artifacts.
+
+FUTURE: the remaining suite plan (visible spaces/splits/dialogs/routing/commandbar/
 webkit/persistence/perf), the `bbr-e2e` crate with
 `manifest.toml` per suite, `scripts/run_e2e.py` runner, `nextest.toml`
 `[profile.e2e]`, and `docs/e2e-protocol.md` are the planned growth path; none
@@ -280,15 +294,16 @@ exist yet. Each product phase is expected to ship its suite in the same PR
 ## 9. Commands (implemented)
 
 ```bash
-just e2e           # canonical sequential GUI gate: smoke then tabs
+just e2e           # canonical sequential GUI gate: smoke, tabs, then profiles
 just e2e-smoke     # baseline navigation/focus/resize
 just e2e-tabs      # multi-tab/session behavior
+just e2e-profiles  # native profile isolation, moves, and suspension
 just verify        # fmt + check + test + clippy + roadmap
 BBR_SKIP_GUI_TESTS=1 just e2e   # skip GUI suites on headless CI
 ```
 
 ```text
-just e2e       → exit 0 — "SMOKE PASSED" then "TABS E2E PASSED"
+just e2e       → exit 0 — "SMOKE PASSED", "TABS E2E PASSED", then "PROFILES E2E PASSED"
 just verify    → exit 0 — fmt/check/test/clippy/roadmap all green, 2026-08-05
 ```
 
@@ -308,7 +323,7 @@ runner + suites.
 | Synthetic keystroke fidelity drift | `DispatchKeystroke` goes through GPUI's real `dispatch_keystroke` path; FUTURE: tier-2 NSEvent posting in the webkit suite |
 | macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner |
 | Event-ring memory growth | Fixed cap (4096) + client cursors; snapshot on demand |
-| Protocol evolution | `PROTOCOL_VERSION = 2` makes the new tab/session snapshot fields and semantic tab commands explicit; future additive growth stays typed |
+| Protocol evolution | `PROTOCOL_VERSION = 3` makes profile/space identity, lifecycle commands, and semantic browser outcomes explicit; future additive growth stays typed |
 
 ---
 
@@ -319,12 +334,12 @@ runner + suites.
 2. ✅ Testkit protocol + gateway + client (`bbr-testkit`), `bbr-fixtures`,
    smoke test with attach-replay, `_since` cursors, resize + focus asserts,
    graceful-quit assert (this doc's §3–§7).
-3. ▶ portable domain slice (`bbr-domain`, 40 tests) — done; `bbr-browser`
-   orchestration (controller + in-memory fake `WebEngine`) — done at the
-   framework-free contract level (46 tests); real-app controller composition,
-   Protocol v2, and multi-session tab E2E are done.
-4. ▶ Suite growth: profile isolation is current; spaces/splits/dialogs/routing/commandbar model events
-   land with their phases; webkit/persistence/perf suites follow Phases 3/7/9.
+3. ✅ Portable domain (`bbr-domain`, 40 tests) and browser orchestration
+   (`bbr-browser`, 47 tests), real-app controller composition, Protocol v3,
+   multi-session tabs, and native profile-isolation/lifecycle E2E.
+4. ▶ Suite growth: visible spaces, splits, dialogs, routing, and command-bar
+   model events land with their phases; remaining WebKit essentials,
+   persistence, accessibility, and performance suites follow Phases 8/7/9.
 5. ⏳ Release-exclusion gate in CI (exit 64 + symbol/socket checks).
 
 Principle: **BBR's first executable ships with testkit sockets, sequential

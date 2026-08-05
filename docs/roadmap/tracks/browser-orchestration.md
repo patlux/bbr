@@ -30,8 +30,11 @@ Own the portable boundary between persistent browser objects (`bbr-domain`) and 
 
 - [x] Framework-free fake-engine contract suite.
 - [x] Multi-session native integration suite for the tab slice.
-- [ ] Real-app spaces/splits E2E as each UI slice lands.
+- [x] Real-app profile/space session-policy suite before visible Spaces UI.
+- [ ] Real-app visible spaces/splits E2E as each UI slice lands.
 
-Evidence: 46 `bbr-browser` tests cover portable policy; `just e2e-tabs` proves
+Evidence: 47 `bbr-browser` tests cover portable policy; `just e2e-tabs` proves
 two real WKWebViews, stable warm-session identities, focused navigation, and
-native destruction. Spaces and split UI remain owned by their later phases.
+native destruction; `just e2e-profiles` proves profile isolation,
+same-profile reuse, cross-profile recreation, and suspend cleanup. Visible
+spaces and split UI remain owned by their later phases.

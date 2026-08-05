@@ -4,7 +4,7 @@ Parent phases: [Phase 4](../phases/04-ui-shell.md), [Phase 5](../phases/05-comma
 
 ## Strategy
 
-Do not spend a major polish pass on the current single-view spike. Establish BBR's visual world immediately before the real multi-tab shell in Phase 4, then hold every UI feature to that system. Run a final product-wide polish pass in Phase 9.
+Do not polish the current placeholder sidebar incrementally. Establish BBR's visual world before exposing the already-controller-backed tabs and spaces in Phase 4, then hold every UI feature to that system. Run a final product-wide polish pass in Phase 9.
 
 ## Visual direction and tokens — Phase 4 start
 

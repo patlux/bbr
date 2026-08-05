@@ -12,18 +12,21 @@ The macOS adapter hosts multiple profile-isolated WKWebViews and implements the 
 - [x] Keep one retained delegate and balanced KVO observation per web view.
 - [x] Create, show, hide, focus, action, and destroy by WebViewId.
 - [x] Keep persistent website-data-store identity deterministic per ProfileId.
-- [x] Reuse sessions across tab switches within one profile; same-profile space moves remain covered portably until Spaces UI lands.
-- [ ] Recreate sessions when a tab crosses a profile boundary.
-- [ ] Add progress and favicon-candidate events.
-- [ ] Model target-blank/new-window requests.
-- [ ] Model downloads, permissions, authentication challenges, and file panels.
-- [ ] Recover a terminated WebKit process into the `Discarded`/reload flow.
-- [ ] Add profile-isolation integration tests.
+- [x] Reuse sessions across tab switches and same-profile space moves.
+- [x] Recreate sessions when a tab crosses a profile boundary.
+- [x] Add profile-isolation integration tests using real cookie behavior in two native data stores.
 - [x] Add a real-app multi-session tab integration suite.
+- [x] Destroy and recreate native sessions through the suspend/reactivate lifecycle.
 - [x] Keep portable crates free of macOS imports.
+- [ ] Add progress and favicon-candidate events. *(deferred to [Phase 4](04-ui-shell.md), where the shell consumes them)*
+- [ ] Model target-blank/new-window requests. *(deferred to [Phase 8](08-daily-driver.md))*
+- [ ] Model downloads, permissions, authentication challenges, and file panels. *(deferred to [Phase 8](08-daily-driver.md))*
+- [ ] Recover a terminated WebKit process into the `Discarded`/reload flow. *(deferred to [Phase 8](08-daily-driver.md))*
 
 ## Phase exit
 
-- [ ] Two profiles can use the same site without sharing login state.
+- [x] Two profiles can use the same site without sharing login state.
 - [x] Switching warm tabs does not reload or recreate their WKWebViews.
-- [ ] Closing or suspending a tab leaves no native view, delegate, or KVO observer.
+- [x] Closing or suspending a tab leaves no native view, delegate, or KVO observer.
+
+Evidence: `direnv exec . just verify`, `direnv exec . just e2e`, commit `f51cde6`.
