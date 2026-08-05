@@ -16,56 +16,62 @@ Create `crates/bbr-browser`, a platform-neutral controller that owns `bbr-domain
 
 ## API slice
 
-- [ ] Define `BrowserController<E: WebEngine>` or an equivalent testable ownership shape.
-- [ ] Define `SessionRegistry` with forward and reverse unique mappings.
-- [ ] Define focused target for single-pane and split navigation.
-- [ ] Define typed controller errors and mutation outcomes/events.
-- [ ] Allocate deterministic WebViewIds through an injected generator.
-- [ ] Expose read-only domain/session snapshots needed by future UI and E2E.
+- [x] Define `BrowserController<E: WebEngine>` or an equivalent testable ownership shape.
+- [x] Define `SessionRegistry` with forward and reverse unique mappings.
+- [x] Define focused target for single-pane and split navigation.
+- [x] Define typed controller errors and mutation outcomes/events.
+- [x] Allocate deterministic WebViewIds through an injected generator.
+- [x] Expose read-only domain/session snapshots needed by future UI and E2E.
 
 ## First vertical slice
 
-- [ ] Create a profile and initial space through controller setup.
-- [ ] Open a tab → domain tab + native/fake session + visible state.
-- [ ] Select another tab → previous session hidden/warm, selected session shown/active.
-- [ ] Close active tab → session destroyed, domain neighbor activated and shown.
-- [ ] Reopen tab → new session created with preserved URL/title identity.
-- [ ] Route Back, Forward, Reload, Stop, and Navigate to the active tab.
+- [x] Create a profile and initial space through controller setup.
+- [x] Open a tab → domain tab + native/fake session + visible state.
+- [x] Select another tab → previous session hidden/warm, selected session shown/active.
+- [x] Close active tab → session destroyed, domain neighbor activated and shown.
+- [x] Reopen tab → new session created with preserved URL/title identity.
+- [x] Route Back, Forward, Reload, Stop, and Navigate to the active tab.
 
 ## Lifecycle and moves
 
-- [ ] Suspend hidden tab → session destroyed, domain remains suspended.
-- [ ] Activate suspended/discarded tab → session recreated and shown.
-- [ ] Move within one profile → keep the existing session.
-- [ ] Move across profiles → destroy and recreate with destination ProfileId.
-- [ ] Page crash → mark owning tab discarded and remove/replace session according to policy.
+- [x] Suspend hidden tab → session destroyed, domain remains suspended.
+- [x] Activate suspended/discarded tab → session recreated and shown.
+- [x] Move within one profile → keep the existing session.
+- [x] Move across profiles → destroy and recreate with destination ProfileId.
+- [x] Page crash → mark owning tab discarded and remove/replace session according to policy.
 
 ## Split behavior
 
-- [ ] Opening a split activates and shows both pane sessions.
-- [ ] Explicit focused pane receives navigation commands.
-- [ ] Closing the split hides/warms the non-selected pane without closing its tab.
-- [ ] Moving/closing a pane dissolves the split without orphaning sessions.
+- [x] Opening a split activates and shows both pane sessions.
+- [x] Explicit focused pane receives navigation commands.
+- [x] Closing the split hides/warms the non-selected pane without closing its tab.
+- [x] Moving/closing a pane dissolves the split without orphaning sessions.
 
 ## Event application
 
-- [ ] Map UrlChanged and TitleChanged to the correct tab.
-- [ ] Track loading and history availability outside persistent domain data where appropriate.
-- [ ] Handle NavigationFailed and PageCrashed with typed outcomes.
-- [ ] Reject or report events for unknown/stale WebViewIds.
+- [x] Map UrlChanged and TitleChanged to the correct tab.
+- [x] Track loading and history availability outside persistent domain data where appropriate.
+- [x] Handle NavigationFailed and PageCrashed with typed outcomes.
+- [x] Reject or report events for unknown/stale WebViewIds.
 
 ## Tests and evidence
 
-- [ ] Use the [fake engine](fake-web-engine.md) for portable controller contract tests.
-- [ ] Cover open/select/close/reopen and navigation routing.
-- [ ] Cover warm/suspend/discard lifecycle.
-- [ ] Cover same-profile and cross-profile moves.
-- [ ] Cover split focus and teardown.
-- [ ] Assert registry invariants after every mutation.
+- [x] Use the [fake engine](fake-web-engine.md) for portable controller contract tests.
+- [x] Cover open/select/close/reopen and navigation routing.
+- [x] Cover warm/suspend/discard lifecycle.
+- [x] Cover same-profile and cross-profile moves.
+- [x] Cover split focus and teardown.
+- [x] Assert registry invariants after every mutation.
 - [ ] Add a real-app E2E vertical slice that composes the controller in BBR and proves open/select/close plus navigation routing through the production path.
 - [ ] Extend the testkit protocol/snapshot/events as needed; missing harness capability is part of this task.
 - [ ] Run `just verify`, `just e2e-smoke`, and the new controller/tab E2E scenario.
-- [ ] Update `ARCHITECTURE.md`, `E2E_ARCHITECTURE.md`, and roadmap checkboxes.
+- [x] Update `ARCHITECTURE.md`, `E2E_ARCHITECTURE.md`, and roadmap checkboxes.
+
+Evidence so far (framework-free): `just verify` green, `just e2e-smoke` green,
+46 bbr-browser tests; 28 controller behavior tests plus one snapshot test drive the fake engine through
+the same `Rc<RefCell<dyn WebEngine>>` seam the app will use. The three
+unchecked evidence items require wiring the controller into the real app via
+the Phase 3 multi-session native adapter; they stay open until then.
 
 ## Suggested commit groups
 

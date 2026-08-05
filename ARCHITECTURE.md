@@ -12,7 +12,7 @@ crate (`gpui 0.2.2`), the `objc2-web-kit 0.3.2` bindings, the Swift reference at
 
 | Decision | Choice | Why |
 |---|---|---|
-| Workspace shape | Cargo workspace, six crates: `bbr-web`, `bbr-web-macos`, `bbr-app`, `bbr-domain`, `bbr-testkit`, `bbr-fixtures` | Minimal set that exercises the full integration (chrome, native engine, portable model, E2E control) |
+| Workspace shape | Cargo workspace, seven crates: `bbr-web`, `bbr-web-macos`, `bbr-app`, `bbr-domain`, `bbr-browser`, `bbr-testkit`, `bbr-fixtures` | Minimal set that exercises the full integration (chrome, native engine, portable model, orchestration, E2E control) |
 | Chrome vs. pages | GPUI owns chrome; `WKWebView` is a native AppKit child view | Product principle; never texture-capture web content |
 | Embedding strategy | WKWebView is a **subview of GPUI's root `NSView`**, sized by a bounds-reporting GPUI element | Keeps the responder chain, key equivalents, accessibility, video/IME/process isolation intact |
 | Native-view slot | A custom public GPUI `Element` (`NativeWebViewSlot`) publishes its own window-relative bounds each frame | Uses only public GPUI APIs; no GPUI fork. **Fulfils the "no forking GPUI" stop-condition path** |
@@ -27,7 +27,7 @@ crate (`gpui 0.2.2`), the `objc2-web-kit 0.3.2` bindings, the Swift reference at
 
 ```
 bbr/
-  Cargo.toml            # [workspace] members = the six crates below; resolver = "2"
+  Cargo.toml            # [workspace] members = the seven crates below; resolver = "2"
   flake.nix             # dev shell for aarch64/x86_64 darwin + linux
   justfile              # bounded local verification: fmt/check/test/clippy/verify/e2e-smoke
   crates/
@@ -35,6 +35,7 @@ bbr/
     bbr-web-macos/      # lib: WKWebView + AppKit bridge (target_os = "macos" only)
     bbr-app/            # bin `bbr`: composition root, GPUI window, E2E gateway glue
     bbr-domain/         # lib: portable browser core model (Phase 2 slice)
+    bbr-browser/        # lib: portable controller: tabs ↔ disposable web sessions
     bbr-testkit/        # lib: typed E2E protocol, gateway server + client (unix sockets)
     bbr-fixtures/       # lib+bin: deterministic loopback HTTP fixture server
 ```
@@ -44,6 +45,7 @@ bbr/
 ```text
 bbr-web-macos  ──uses──▶  bbr-web        (implement the WebEngine trait)
 bbr-domain     ──uses──▶  bbr-web        (ProfileId for profile identity)
+bbr-browser    ──uses──▶  bbr-domain, bbr-web (orchestration + engine contract)
 bbr-testkit    ──uses──▶  bbr-web        (serde feature: WebEvent/WebAction/ids)
 bbr-app        ──uses──▶  bbr-web, bbr-web-macos (macOS), bbr-testkit (testkit
                           feature), bbr-fixtures (dev-dep)
@@ -52,7 +54,7 @@ bbr-fixtures   ──uses──▶  (std only)
 
 - `bbr-web` **must not** depend on `gpui`, `objc2*`, `raw-window-handle`, or any
   AppKit/WebKit symbol. It is a pure contract crate — the only crate portable
-  crates (`bbr-domain`, and later `bbr-browser`/`bbr-ui`) may depend on. It
+  crates (`bbr-domain`, `bbr-browser`, and later `bbr-ui`) may depend on. It
   carries `#![forbid(unsafe_code)]`.
 - `bbr-web-macos` is gated `#[cfg(target_os = "macos")]` at the crate and module
   level (`bbr-web-macos/src/lib.rs` is empty elsewhere), so the workspace still
@@ -225,8 +227,9 @@ pub trait WebEngine {            // object-safe; main-thread-only
     fn show(&mut self, id: WebViewId, visible: bool);
     fn action(&mut self, id: WebViewId, action: WebAction);
     fn set_events(&mut self, sink: Box<dyn FnMut(WebEvent)>);
-    fn focus_native_web(&mut self);
+    fn focus_native_web(&mut self, id: WebViewId);
     fn focus_host_chrome(&mut self);
+    fn live_session_count(&self) -> usize;
 }
 ```
 
@@ -359,9 +362,57 @@ lifecycle transition/visibility policy, and tamper detection through
 `check_invariants`. All run without macOS frameworks
 or a display server.
 
-Not yet present (per PLAN.md Phase 2, next milestones): the `bbr-browser`
-orchestration crate (in-memory fake `WebEngine` drive), command routing, and
-the `bbr-ui` layer that renders domain state.
+Not yet present (per PLAN.md Phase 2, next milestones): command routing was
+shipped in the `bbr-browser` controller (§9a below); still missing are the
+`bbr-ui` layer that renders domain state and the real-app composition path
+that hosts the controller behind the multi-session native adapter (Phase 3).
+
+---
+
+## 9a. `bbr-browser` — portable controller (Phase 2 slice)
+
+`crates/bbr-browser` owns orchestration between the persistent domain model and
+disposable web sessions. It is fully portable: no GPUI, AppKit/WebKit,
+filesystem, SQLite, or `unsafe`; it depends only on `bbr-domain`, `bbr-web`,
+and the standard library.
+
+Ownership shape:
+
+- The controller drives the engine through `Rc<RefCell<dyn WebEngine>>` — the
+  "equivalent testable ownership shape" chosen over a generic `E: WebEngine` so
+  the composition root can share one engine handle between the controller and
+  the GPUI web-view slot (same engine backs the command path and layout).
+- `WebViewId`s come from an injected generator (`ViewIdAllocator`) so E2E runs
+  can rely on deterministic sequential ids.
+- `SessionRegistry` maintains the forward (tab → view) and reverse (view →
+  tab) bijection; `check_invariants` re-verifies registry + engine agreement
+  after every mutation.
+
+Session policy (the crate's core invariant):
+
+- Every `Active`/`Warm` tab owns exactly one live session in its profile;
+  `Suspended`/`Discarded` tabs own none and recreate one on activation.
+- Closing, suspending, or crashing a tab destroys its session; moving across
+  profiles destroys and recreates it in the destination profile's store, while
+  same-profile moves keep it.
+- Only visible tabs (the single-pane selection or both split panes) are shown.
+
+`BrowserController` exposes the first vertical slice (open/select/close/reopen),
+navigation routing to the focused tab or split pane, suspend, profile moves,
+split open/close with no-session-orphan teardown, and `apply_event` for
+`WebEvent`s (URL/title map to the owning tab; loading/history/crash/failure are
+tracked per session in `NavState`; unknown or stale `WebViewId`s are reported
+as `ControllerEvent::UnknownWebView` without corrupting state). Every mutation
+returns exactly one typed `ControllerEvent`, and a read-only `snapshot()`
+publishes the tab list, active view, and live-session count for UI and E2E.
+
+Testability: the deterministic `FakeEngine` (in `crate::fake`,
+`#[cfg(test)]`-only) records every engine call into an op log, owns fake
+sessions, rejects duplicate creation and missing-session actions, and emits
+controlled `WebEvent`s through the registered sink. Because the controller
+drives the engine through the same `dyn` seam the app uses, the 46 crate tests
+(17 fake/registry contract tests + 28 controller behavior tests + one snapshot test) prove policy
+without a display server.
 
 ---
 
@@ -389,12 +440,20 @@ overrides, and pin `DEVELOPER_DIR` to Xcode 16.4. On headless CI,
 ```
 just fmt     → exit 0
 just check   → exit 0 (workspace, all targets)
-just test    → exit 0  — bbr-app 4 passed · bbr-domain 34 passed ·
-                        bbr-fixtures 3 passed · bbr-testkit 10 passed ·
-                        bbr-web 9 passed · e2e_smoke 1 ignored (GUI, run explicitly)
+just test    → exit 0  — bbr-app 4 passed · bbr-domain 40 passed ·
+                        bbr-browser 46 passed · bbr-fixtures 3 passed ·
+                        bbr-testkit 10 passed · bbr-web 9 passed ·
+                        e2e_smoke 1 ignored (GUI, run explicitly)
 just clippy  → exit 0 (-D warnings)
 just roadmap → exit 0 (hierarchical roadmap links valid)
 just e2e-smoke → exit 0 — "SMOKE PASSED", 1 passed (real WKWebView, 1.53s)
+```
+
+Post-controller remediation (controller + fake-engine commit group):
+
+```
+just verify    → exit 0 (fmt + check + test + clippy + roadmap)
+just e2e-smoke → exit 0 — "SMOKE PASSED", 1 passed (real WKWebView, 1.25s)
 ```
 
 ### Run the app
@@ -427,6 +486,8 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 6. **The release-exclusion failsafe is not implemented**: under a non-testkit
    build the `--bbr-*` test flags are silently ignored rather than rejected at
    startup (E2E §12's exit-64 gate is future work).
-7. The portable controller (`bbr-browser`) and its fake engine are not yet
-   implemented; `bbr-domain` is intentionally split into files below the
-   repository's ~500-line guideline.
+7. **The controller is not composed into the real app yet.** `bbr-browser` is
+tested by its fake-engine contract suite (46 tests, no display server), but
+`bbr-app` still hosts a single view: wiring `BrowserController` behind the
+multi-session native adapter and adding the real-app tab E2E vertical slice is
+the Phase 3 path (task packet: browser-controller.md "Tests and evidence").

@@ -52,7 +52,10 @@ Completed today:
 - Real focus hand-off, title observation, resize synchronization, and navigation events.
 - Deterministic Unix-socket testkit, fixture server, event replay/cursors, deadlines, and cleanup.
 - Real-app WKWebView smoke covering load, navigation, back/forward, reload, resize, focus, and shutdown.
-- Portable profile/space/tab/split/lifecycle domain model with 34 tests.
+- Portable profile/space/tab/split/lifecycle domain model with 40 tests.
+- Portable `bbr-browser` controller + deterministic fake engine: 46 tests
+  covering the first tab/session/navigation/split/lifecycle slices, session
+  policy invariants, and typed controller events (`just verify` green).
 
 Next release-shaped outcome:
 

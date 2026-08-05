@@ -18,7 +18,7 @@ responder).
 
 | Fact | Evidence |
 |---|---|
-| Workspace compiles and all unit/contract tests pass | `just verify` green: `cargo check --workspace --all-targets` exit 0; `cargo test --workspace` exit 0 — bbr-app 4, **bbr-domain 34**, bbr-fixtures 3, bbr-testkit 10, bbr-web 9 passed |
+| Workspace compiles and all unit/contract tests pass | `just verify` green: `cargo check --workspace --all-targets` exit 0; `cargo test --workspace` exit 0 — bbr-app 4, **bbr-domain 40**, **bbr-browser 46**, bbr-fixtures 3, bbr-testkit 10, bbr-web 9 passed |
 | Real-app E2E smoke passes against a real WKWebView | `just e2e-smoke` → `SMOKE PASSED`, 1 passed (1.53s), including navigation, back/forward/reload, resize, focus round-trip, graceful quit |
 | All previously-missing files exist | `crates/bbr-app/Cargo.toml`, `crates/bbr-app/src/webview|delegate…` under `bbr-web-macos` are present; the workspace memberships are complete |
 | `bbr-web` contract crate | `#![forbid(unsafe_code)]`, unit tests incl. `flip_rect`, `normalize_url`, object-safety proof |
@@ -301,8 +301,10 @@ runner + suites.
 2. ✅ Testkit protocol + gateway + client (`bbr-testkit`), `bbr-fixtures`,
    smoke test with attach-replay, `_since` cursors, resize + focus asserts,
    graceful-quit assert (this doc's §3–§7).
-3. ▶ portable domain slice (`bbr-domain`, 34 tests) — done; `bbr-browser`
-   orchestration (in-memory fake `WebEngine`) is the next phase.
+3. ▶ portable domain slice (`bbr-domain`, 40 tests) — done; `bbr-browser`
+   orchestration (controller + in-memory fake `WebEngine`) — done at the
+   framework-free contract level (46 tests, no display server); the real-app
+   multi-session composition and its tab E2E are Phase 3.
 4. ⏳ Suite growth: tabs/spaces/splits/dialogs/routing/commandbar model events
    land with their phases; webkit/persistence/perf suites follow Phases 3/7/9.
 5. ⏳ Release-exclusion gate in CI (exit 64 + symbol/socket checks).
