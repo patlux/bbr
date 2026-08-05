@@ -18,7 +18,10 @@ test:
 clippy:
     DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{check_timeout}} cargo clippy --workspace --all-targets -- -D warnings
 
+roadmap:
+    timeout --kill-after=10s {{check_timeout}} python3 scripts/check_roadmap.py
+
 e2e-smoke:
     DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_smoke -- --ignored --nocapture
 
-verify: fmt check test clippy
+verify: fmt check test clippy roadmap

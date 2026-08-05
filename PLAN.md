@@ -1,5 +1,7 @@
 # BBR implementation plan
 
+> This document explains the architectural sequence and target behavior. The live, hierarchical checklist is [ROADMAP.md](ROADMAP.md); implemented facts are recorded in [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Product target
 
 A macOS-first, keyboard-oriented desktop browser with native WebKit content and GPUI browser chrome. The first daily-driver loop is:
