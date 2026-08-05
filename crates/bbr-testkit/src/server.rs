@@ -316,17 +316,15 @@ fn _connection_requests(
 mod tests {
     use super::*;
     use std::path::PathBuf;
-    use std::time::{SystemTime, UNIX_EPOCH};
+    use std::sync::atomic::{AtomicU64, Ordering};
 
     fn tmp_profile() -> PathBuf {
-        std::env::temp_dir().join(format!(
-            "bbr-testkit-server-{}-{}",
-            std::process::id(),
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ))
+        // macOS limits sockaddr_un paths to SUN_LEN. `$TMPDIR` under direnv
+        // can already be long, so socket tests must use an explicitly short
+        // root rather than appending identifiers to `std::env::temp_dir()`.
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        let n = COUNTER.fetch_add(1, Ordering::SeqCst);
+        PathBuf::from(format!("/tmp/bbr-ts-{}-{n}", std::process::id()))
     }
 
     #[test]
@@ -334,10 +332,18 @@ mod tests {
         let dir = tmp_profile();
         let server =
             GatewayServer::start(&dir, "tok-1", "0.1.0", |_| Response::Ok).expect("start server");
+        assert!(
+            server.socket_path().as_os_str().len() < 100,
+            "test socket path must stay safely below macOS SUN_LEN: {}",
+            server.socket_path().display()
+        );
         let meta = std::fs::metadata(server.socket_path()).unwrap();
         assert_eq!(meta.permissions().mode() & 0o777, 0o700);
         let dir_meta = std::fs::metadata(&dir).unwrap();
         assert_eq!(dir_meta.permissions().mode() & 0o777, 0o700);
+        server.stop();
+        drop(server);
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]
@@ -365,5 +371,8 @@ mod tests {
             assert!(!err.to_string().is_empty());
         });
         handle.join().unwrap();
+        server.stop();
+        drop(server);
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }

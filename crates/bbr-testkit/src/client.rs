@@ -259,7 +259,9 @@ mod tests {
         // same clock tick (the fixture suite grew to >9 tests).
         static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let n = COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        std::env::temp_dir().join(format!("bbr-testkit-client-{}-{n}", std::process::id()))
+        // Keep the resulting Unix socket below macOS SUN_LEN even when the
+        // caller's `$TMPDIR` is a long direnv path.
+        PathBuf::from(format!("/tmp/bbr-tc-{}-{n}", std::process::id()))
     }
 
     fn server_with(ping_reply: Response) -> (crate::server::GatewayServer, PathBuf) {
