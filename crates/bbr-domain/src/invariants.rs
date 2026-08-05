@@ -70,7 +70,19 @@ impl Browser {
                 let tab = self.tab(*tid).expect("membership checked above");
                 let visible = space.split.is_some_and(|split| split.contains(*tid))
                     || (space.split.is_none() && space.active_tab == Some(*tid));
-                if visible != (tab.lifecycle == TabLifecycle::Active) {
+                // A visible tab is either actively served (Active) or is a
+                // crashed/recoverable entry (Discarded); it must never be
+                // Suspended or Warm while shown. A hidden tab must never be
+                // Active. Discarded hidden tabs are valid (recoverable).
+                let agreement = if visible {
+                    matches!(
+                        tab.lifecycle,
+                        TabLifecycle::Active | TabLifecycle::Discarded
+                    )
+                } else {
+                    tab.lifecycle != TabLifecycle::Active
+                };
+                if !agreement {
                     return Err(fail(format!(
                         "tab {:?} lifecycle {:?} disagrees with visible={visible}",
                         tid, tab.lifecycle

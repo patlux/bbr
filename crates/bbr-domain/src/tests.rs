@@ -3,7 +3,7 @@
 //! pinned close semantics, recently closed tabs, and split teardown.
 //! These tests run without macOS frameworks or a display server.
 
-use crate::{Browser, DomainError, ProfileId, SpaceId, TabId};
+use crate::{Browser, DomainError, ProfileId, SpaceId, TabId, TabLifecycle};
 
 /// A browser with one profile, one space, and three tabs [t1, t2, t3],
 /// with `active = t3` (the last opened).
@@ -419,4 +419,89 @@ fn move_tab_into_same_space_is_noop() {
     let t = ids(&b, s)[0];
     b.move_tab(t, s).unwrap();
     assert_eq!(b, before);
+}
+
+// ---- Crash discard (WebKit process termination) -----------------------------
+
+#[test]
+fn visible_tab_can_be_discarded_and_reactivated() {
+    let mut b = populated();
+    let s = b.spaces().next().unwrap().id;
+    let [hidden, _t2, visible] = ids(&b, s)[..] else {
+        unreachable!()
+    };
+    // A crash can hit the visible (Active) tab; discard bypasses the
+    // visibility guard because it is an external event.
+    b.discard_tab(visible).unwrap();
+    assert_eq!(b.tab(visible).unwrap().lifecycle, TabLifecycle::Discarded);
+    b.check_invariants().unwrap();
+    // A crash can also hit a hidden (Warm) tab.
+    b.discard_tab(hidden).unwrap();
+    assert_eq!(b.tab(hidden).unwrap().lifecycle, TabLifecycle::Discarded);
+    b.check_invariants().unwrap();
+
+    // Selection reactivates a discarded tab; the previously-discarded tab
+    // that becomes hidden stays recoverable (Discarded), not Warm.
+    b.select_tab(s, hidden).unwrap();
+    assert_eq!(b.tab(hidden).unwrap().lifecycle, TabLifecycle::Active);
+    assert_eq!(b.tab(visible).unwrap().lifecycle, TabLifecycle::Discarded);
+    b.check_invariants().unwrap();
+}
+
+#[test]
+fn discard_unknown_tab_fails() {
+    let mut b = populated();
+    assert!(matches!(
+        b.discard_tab(TabId(999)),
+        Err(DomainError::UnknownTab(TabId(999)))
+    ));
+}
+
+// ---- Navigation application -----------------------------------------------
+
+#[test]
+fn apply_navigation_updates_persistent_identity() {
+    let mut b = populated();
+    let s = b.spaces().next().unwrap().id;
+    let t = ids(&b, s)[0];
+    assert_eq!(b.tab(t).unwrap().url, "https://one.example");
+    b.apply_navigation(t, "https://two.example", "Two").unwrap();
+    assert_eq!(b.tab(t).unwrap().url, "https://two.example");
+    assert_eq!(b.tab(t).unwrap().title, "Two");
+    b.check_invariants().unwrap();
+}
+
+#[test]
+fn apply_navigation_ignores_empty_parts() {
+    let mut b = populated();
+    let s = b.spaces().next().unwrap().id;
+    let t = ids(&b, s)[0];
+    b.apply_navigation(t, "https://two.example", "").unwrap();
+    assert_eq!(b.tab(t).unwrap().url, "https://two.example");
+    assert_eq!(b.tab(t).unwrap().title, "One"); // title untouched
+    b.apply_navigation(t, "", "Empty-url-keeps-old").unwrap();
+    assert_eq!(b.tab(t).unwrap().url, "https://two.example");
+}
+
+#[test]
+fn apply_navigation_unknown_tab_fails() {
+    let mut b = populated();
+    assert!(matches!(
+        b.apply_navigation(TabId(999), "https://x", "X"),
+        Err(DomainError::UnknownTab(TabId(999)))
+    ));
+}
+
+#[test]
+fn discarded_visible_tab_survives_other_mutations() {
+    let mut b = populated();
+    let s = b.spaces().next().unwrap().id;
+    let [a, b_id, c] = ids(&b, s)[..] else {
+        unreachable!()
+    };
+    b.discard_tab(c).unwrap(); // visible tab crashed
+                               // A split operation must not silently resurrect the crashed tab.
+    b.set_split(s, a, b_id).unwrap();
+    assert_eq!(b.tab(c).unwrap().lifecycle, TabLifecycle::Discarded);
+    b.check_invariants().unwrap();
 }

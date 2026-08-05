@@ -93,7 +93,10 @@ impl Browser {
             .ok_or(DomainError::TabNotInSpace { tab, space })
     }
 
-    fn is_visible(&self, tab: TabId) -> bool {
+    /// Whether `tab` is currently visible (selected single pane, or either
+    /// split pane). Public because the orchestration layer derives engine
+    /// visibility directly from domain state.
+    pub fn is_visible(&self, tab: TabId) -> bool {
         let Some(tab_state) = self.tab(tab) else {
             return false;
         };
@@ -124,7 +127,12 @@ impl Browser {
         for id in members {
             if let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == id) {
                 if visible.contains(&id) {
-                    tab.lifecycle = TabLifecycle::Active;
+                    // Discarded (crashed) visible tabs stay recoverable until
+                    // explicitly re-activated; everything else visible becomes
+                    // Active.
+                    if tab.lifecycle != TabLifecycle::Discarded {
+                        tab.lifecycle = TabLifecycle::Active;
+                    }
                 } else if tab.lifecycle == TabLifecycle::Active {
                     tab.lifecycle = TabLifecycle::Warm;
                 }
@@ -253,6 +261,13 @@ impl Browser {
         if sp.split.is_some_and(|split| !split.contains(tab)) {
             sp.split = None;
         }
+        // Selection reactivates a suspended/discarded tab: the orchestration
+        // layer recreates its session (lifecycle drives session policy).
+        if let Some(state) = self.tabs.iter_mut().find(|state| state.id == tab) {
+            if state.lifecycle != TabLifecycle::Active {
+                state.lifecycle = TabLifecycle::Active;
+            }
+        }
         self.sync_lifecycles(space);
         Ok(())
     }
@@ -288,6 +303,50 @@ impl Browser {
             .find(|state| state.id == tab)
             .expect("tab validated above")
             .lifecycle = next;
+        Ok(())
+    }
+
+    /// Mark a tab discarded after its WebKit process terminated (or explicit
+    /// resource discard). Unlike [`Browser::transition_tab_lifecycle`], this
+    /// bypasses the visibility guard: a crash is an external event and can
+    /// hit a visible/warm tab, which must become recoverable (session
+    /// destroyed) rather than be forced back to `Active`. Reactivation is a
+    /// normal selection. The orchestration layer destroys the session.
+    pub fn discard_tab(&mut self, tab: TabId) -> Result<(), DomainError> {
+        if !self.tabs.iter().any(|t| t.id == tab) {
+            return Err(DomainError::UnknownTab(tab));
+        }
+        self.tabs
+            .iter_mut()
+            .find(|state| state.id == tab)
+            .expect("tab validated above")
+            .lifecycle = TabLifecycle::Discarded;
+        Ok(())
+    }
+
+    /// Persist a navigation result onto the tab's persistent identity.
+    ///
+    /// The engine reports the live URL/title asynchronously; without this the
+    /// domain would keep the tab's original URL and a reopen would restore a
+    /// stale address. Only non-empty values are written so a transient empty
+    /// title cannot clobber a known one.
+    pub fn apply_navigation(
+        &mut self,
+        tab: TabId,
+        url: &str,
+        title: &str,
+    ) -> Result<(), DomainError> {
+        let state = self
+            .tabs
+            .iter_mut()
+            .find(|state| state.id == tab)
+            .ok_or(DomainError::UnknownTab(tab))?;
+        if !url.is_empty() {
+            state.url = url.to_string();
+        }
+        if !title.is_empty() {
+            state.title = title.to_string();
+        }
         Ok(())
     }
 
@@ -390,6 +449,15 @@ impl Browser {
         if !matches!(sp.active_tab, Some(active) if active == primary || active == secondary) {
             sp.active_tab = Some(primary);
         }
+        // Both panes must own live sessions: reactivate discarded/suspended
+        // members when the split is opened.
+        for pane in [primary, secondary] {
+            if let Some(state) = self.tabs.iter_mut().find(|state| state.id == pane) {
+                if state.lifecycle != TabLifecycle::Active {
+                    state.lifecycle = TabLifecycle::Active;
+                }
+            }
+        }
         self.sync_lifecycles(space);
         Ok(())
     }
@@ -458,6 +526,11 @@ impl Browser {
 
         if let Some(t) = self.tabs.iter_mut().find(|t| t.id == tab) {
             t.space = to_space;
+            // Destination activation: the moved tab becomes visible there, so
+            // its session is recreated if it was suspended/discarded.
+            if t.lifecycle != TabLifecycle::Active {
+                t.lifecycle = TabLifecycle::Active;
+            }
         }
         self.sync_lifecycles(from_space);
         self.sync_lifecycles(to_space);

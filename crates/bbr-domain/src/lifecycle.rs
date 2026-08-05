@@ -19,6 +19,11 @@ pub enum TabLifecycle {
 
 impl TabLifecycle {
     /// Whether the state machine permits a direct transition to `next`.
+    ///
+    /// The explicit resource-policy transitions stay gradual (`Warm` must
+    /// pass through `Suspended` before `Discarded`); a process crash is not a
+    /// gradual move and is applied directly by [`crate::Browser::discard_tab`],
+    /// which bypasses the matrix and the visibility guard.
     pub fn can_transition_to(self, next: Self) -> bool {
         self == next
             || matches!(
