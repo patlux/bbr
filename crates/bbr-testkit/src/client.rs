@@ -1,10 +1,11 @@
 //! E2E client: drives a spawned `bbr` process over the testkit socket.
 //!
 //! Synchronous and single-threaded by design: the harness thread writes one
-//! request, then reads frames until the matching response — any event frames
-//! encountered in between are skipped. Independent event *waits* poll the
-//! socket directly with a deadline, so nothing sleeps blindly.
+//! request, then reads frames until the matching response. Event frames that
+//! arrive during that round trip are queued and consumed by later event waits,
+//! so fast app events cannot be lost. Event waits always use deadlines.
 
+use std::collections::VecDeque;
 use std::io::{self, Write};
 use std::os::unix::net::UnixStream;
 use std::path::Path;
@@ -23,6 +24,7 @@ pub struct WelcomeInfo {
 
 pub struct Client {
     stream: UnixStream,
+    pending_events: VecDeque<(u64, Event)>,
 }
 
 impl Client {
@@ -31,6 +33,7 @@ impl Client {
     pub fn connect(socket_path: &Path) -> io::Result<Client> {
         Ok(Client {
             stream: UnixStream::connect(socket_path)?,
+            pending_events: VecDeque::new(),
         })
     }
 
@@ -86,7 +89,10 @@ impl Client {
             match decode_server_frame(value)
                 .map_err(|e| crate::ProtocolError::new("proto", e.to_string()))?
             {
-                ServerFrame::Event { .. } => continue, // not the response
+                ServerFrame::Event { seq, event } => {
+                    self.pending_events.push_back((seq, event));
+                    continue;
+                }
                 ServerFrame::Response(resp) => return Ok(resp),
             }
         }
@@ -112,6 +118,16 @@ impl Client {
         deadline: Instant,
     ) -> Result<(u64, Event), WaitError> {
         loop {
+            if let Some(index) = self
+                .pending_events
+                .iter()
+                .position(|(_, event)| predicate(event))
+            {
+                return Ok(self
+                    .pending_events
+                    .remove(index)
+                    .expect("queued event index must exist"));
+            }
             let now = Instant::now();
             if now >= deadline {
                 return Err(WaitError::Timeout);
@@ -134,7 +150,9 @@ impl Client {
                 Ok(ServerFrame::Event { seq, event }) if predicate(&event) => {
                     return Ok((seq, event));
                 }
-                Ok(ServerFrame::Event { .. }) => continue,
+                Ok(ServerFrame::Event { seq, event }) => {
+                    self.pending_events.push_back((seq, event));
+                }
                 Ok(ServerFrame::Response(_)) => continue,
                 Err(e) => return Err(WaitError::Io(e)),
             }
@@ -243,6 +261,34 @@ mod tests {
         client.hello("tok").unwrap();
         assert!(client.send_ok(&Request::Ping).is_ok());
         assert!(client.send_ok(&Request::GetSnapshot).is_err());
+    }
+
+    #[test]
+    fn request_queues_events_that_arrive_before_its_response() {
+        let (server, path) = server_with(Response::Ok);
+        let mut client = Client::connect(&path).unwrap();
+        client.hello("tok").unwrap();
+
+        server.broadcast(Event::ChromeFocusChanged {
+            chrome_focused: true,
+        });
+        client.send_ok(&Request::Ping).unwrap();
+
+        let (seq, event) = client
+            .wait_for_event(
+                |event| {
+                    matches!(
+                        event,
+                        Event::ChromeFocusChanged {
+                            chrome_focused: true
+                        }
+                    )
+                },
+                Instant::now() + Duration::from_millis(100),
+            )
+            .unwrap();
+        assert_eq!(seq, 1);
+        assert!(matches!(event, Event::ChromeFocusChanged { .. }));
     }
 
     #[test]
