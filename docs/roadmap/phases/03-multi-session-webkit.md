@@ -8,10 +8,10 @@ The macOS adapter hosts multiple profile-isolated WKWebViews and implements the 
 
 ## Checklist
 
-- [ ] Replace the single-view storage with `WebViewId → NativeWebSession` ownership.
-- [ ] Keep one retained delegate and balanced KVO observation per web view.
-- [ ] Create, show, hide, focus, action, and destroy by WebViewId.
-- [ ] Keep persistent website-data-store identity deterministic per ProfileId.
+- [x] Replace the single-view storage with `WebViewId → NativeWebSession` ownership.
+- [x] Keep one retained delegate and balanced KVO observation per web view.
+- [x] Create, show, hide, focus, action, and destroy by WebViewId.
+- [x] Keep persistent website-data-store identity deterministic per ProfileId.
 - [ ] Reuse sessions across spaces within one profile.
 - [ ] Recreate sessions when a tab crosses a profile boundary.
 - [ ] Add progress and favicon-candidate events.

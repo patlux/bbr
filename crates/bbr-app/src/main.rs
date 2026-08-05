@@ -158,7 +158,7 @@ fn main() {
                     non_persistent: cli.test_token.as_ref().is_some(),
                 };
                 // SAFETY: `ns_view` is the live GPUI root view on the main thread.
-                let engine = unsafe { build_engine(ns_view, &config, view_id, engine_kind) };
+                let engine = unsafe { build_engine(ns_view, &config, engine_kind) };
                 cx.new(|cx| BbrApp::new(engine, shell.clone(), evt_tx.clone(), cx))
             })
             .expect("open window");

@@ -24,8 +24,8 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 
 ## Adapter growth
 
-- [ ] Multi-WebView session registry.
-- [ ] Deterministic persistent ProfileId → WKWebsiteDataStore mapping.
+- [x] Multi-WebView session registry.
+- [x] Deterministic persistent ProfileId → WKWebsiteDataStore mapping.
 - [ ] Popup/new-window policy.
 - [ ] Download, permission, authentication, and file-panel events.
 - [ ] Web-process recovery.

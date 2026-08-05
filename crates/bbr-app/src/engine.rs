@@ -34,7 +34,6 @@ pub struct EngineConfig {
 pub(crate) unsafe fn build_engine(
     ns_view: *mut std::ffi::c_void,
     config: &EngineConfig,
-    web_view_id: WebViewId,
     engine_kind: &'static str,
 ) -> EngineRef {
     #[cfg(target_os = "macos")]
@@ -44,7 +43,6 @@ pub(crate) unsafe fn build_engine(
             bbr_web_macos::WebEngineWk::attach(
                 mtm,
                 ns_view,
-                web_view_id,
                 bbr_web_macos::EngineOptions {
                     non_persistent: config.non_persistent,
                 },

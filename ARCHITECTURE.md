@@ -254,14 +254,18 @@ src/
   lib.rs            # re-exports WebEngineWk; modules cfg(target_os="macos")-gated
   host.rs           # HostBridge: retained root view, y-flip frame math,
                     #   first-responder hand-off, ChromeResponder overlay class
-  webview.rs        # WebEngineWk: WKWebView cache, profile→data-store map, actions
+  webview.rs        # WebEngineWk: WebViewId→NativeWebSession registry, profile stores, actions
   delegate.rs       # define_class! WKNavigationDelegate + WKUIDelegate + KVO title
 ```
 
-- **Profile stores:** `dataStoreForIdentifier` (persistent, identifier-backed,
-  via `NSUUID`) or `nonPersistentDataStore` when `EngineOptions.non_persistent`
+- **Native sessions:** `HashMap<WebViewId, NativeWebSession>`; each entry owns
+  the WKWebView, its retained delegate, profile identity, and visibility. Every
+  create/show/action/focus/destroy operation resolves the requested id first;
+  teardown removes KVO before detaching and releasing the view.
+- **Profile stores:** `dataStoreForIdentifier` uses a stable UUID derived from
+  `ProfileId`, or `nonPersistentDataStore` when `EngineOptions.non_persistent`
   is set — the app enables non-persistent mode whenever a `--bbr-test-token`
-  is present (E2E hermeticity). Stores cached in a `HashMap<ProfileId, …>`.
+  is present (E2E hermeticity). Stores are cached per profile and outlive views.
 - **WebView creation:** `initWithFrame_configuration`, per-view delegate
   (`WKNavigationDelegate` + `WKUIDelegate`), KVO `title` observation
   (`observe_title` registers with `Initial` so the shell learns startup state
@@ -466,15 +470,14 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 
 ## 11. Known limitations (current implementation)
 
-1. **Exactly one profile + one live web view.** No tab list, spaces, splits,
-   or multi-view UI yet — `ShellState` is the whole identity. `Cmd-T` is a
-   placeholder that focuses the command bar (Phase 5 new-tab mode).
-2. **Persistent store identity is not yet deterministic.** Production mode
-   creates a fresh `NSUUID` identifier per profile per launch
-   (`dataStoreForIdentifier`), so browsing data persists but the PLAN §4
-   "deterministic per-profile mapping" is deferred; E2E always uses
-   `nonPersistentDataStore`. Cookies/credentials cross profile boundaries only
-   via WebKit store isolation (engine layer), not domain policy.
+1. **The native adapter is multi-session, but the app still composes one tab.**
+   `WebEngineWk` owns ID-addressed `NativeWebSession`s, while `ShellState` and
+   `Cmd-T` still expose the Phase-1 single-tab shell until controller/testkit
+   composition lands in the next Phase-3 slice.
+2. **Persistent store ids are deterministic, but profile isolation lacks real-app evidence.**
+   Production derives the WebKit store UUID from `ProfileId`; E2E uses
+   `nonPersistentDataStore`. A two-profile cookie-isolation scenario remains
+   required before the Phase-3 exit can be checked.
 3. **`--bbr-clock` is a no-op**; the `TimeSource` seam is intentionally not
    added until time-based logic exists (debounces in Phase 5/7).
 4. **Popups/new windows are suppressed** (`createWebViewWithConfiguration` →
@@ -487,7 +490,7 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
    build the `--bbr-*` test flags are silently ignored rather than rejected at
    startup (E2E §12's exit-64 gate is future work).
 7. **The controller is not composed into the real app yet.** `bbr-browser` is
-tested by its fake-engine contract suite (46 tests, no display server), but
-`bbr-app` still hosts a single view: wiring `BrowserController` behind the
-multi-session native adapter and adding the real-app tab E2E vertical slice is
-the Phase 3 path (task packet: browser-controller.md "Tests and evidence").
+tested by its fake-engine contract suite (46 tests, no display server), and
+the adapter can now host multiple ID-addressed views, but `bbr-app` still
+drives one view directly. Controller composition plus real-app tab E2E is the
+next Phase-3 slice (task packet: browser-controller.md "Tests and evidence").

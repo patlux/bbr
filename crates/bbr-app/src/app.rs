@@ -79,6 +79,7 @@ impl BbrApp {
             self.shell.profile,
             initial_url,
         );
+        self.engine.borrow_mut().show(self.shell.active_view, true);
         self.shell.web_view_hosted = true;
     }
 
