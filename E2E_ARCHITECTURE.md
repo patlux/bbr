@@ -1,8 +1,8 @@
 # BBR — E2E Architecture (current implementation)
 
 Status: **describes what is implemented and verified** — the testkit gateway
-protocol, the fixture server, and the first executable smoke test that drives
-the real `bbr` binary with a real WKWebView. Planned-but-unbuilt parts are
+protocol, the fixture server, and executable smoke + multi-tab tests that drive
+the real `bbr` binary with real WKWebViews. Planned-but-unbuilt parts are
 explicitly marked **FUTURE**; nothing here claims green checks without the
 evidence in §9.
 
@@ -18,8 +18,8 @@ responder).
 
 | Fact | Evidence |
 |---|---|
-| Workspace compiles and all unit/contract tests pass | `just verify` green: `cargo check --workspace --all-targets` exit 0; `cargo test --workspace` exit 0 — bbr-app 4, **bbr-domain 40**, **bbr-browser 46**, bbr-fixtures 3, bbr-testkit 10, bbr-web 9 passed |
-| Real-app E2E smoke passes against a real WKWebView | `just e2e-smoke` → `SMOKE PASSED`, 1 passed (1.53s), including navigation, back/forward/reload, resize, focus round-trip, graceful quit |
+| Workspace compiles and all unit/contract tests pass | `just verify` green: bbr-app 2, **bbr-domain 40**, **bbr-browser 46**, bbr-fixtures 3, bbr-testkit 12, bbr-web 9, bbr-web-macos 1 passed |
+| Real-app GUI suites pass sequentially | `just e2e` → `SMOKE PASSED` then `TABS E2E PASSED`: navigation/focus/resize plus two WKWebViews, warm-session reuse, focused navigation, and close destruction |
 | All previously-missing files exist | `crates/bbr-app/Cargo.toml`, `crates/bbr-app/src/webview|delegate…` under `bbr-web-macos` are present; the workspace memberships are complete |
 | `bbr-web` contract crate | `#![forbid(unsafe_code)]`, unit tests incl. `flip_rect`, `normalize_url`, object-safety proof |
 | GPUI 0.2.2 public synthetic input | `Window::dispatch_keystroke(…, cx)` (window.rs) and `Window::dispatch_event(PlatformInput, cx)`; the smoke drives `cmd-l`/`escape` through the real input path |
@@ -53,7 +53,7 @@ responder).
 ## 2. Implemented E2E topology
 
 ```text
-bbr-app/tests/e2e_smoke.rs (harness, one #[ignore]d test, macOS-only)
+bbr-app/tests/e2e_smoke.rs + e2e_tabs.rs (two #[ignore]d macOS tests)
   │  1. fixture server in-process (bbr-fixtures) on 127.0.0.1:<ephemeral>
   │  2. temp profile dir + artifacts dir
   │  3. spawn app: bbr --bbr-initial-url <page1> --bbr-profile-dir <dir>
@@ -74,7 +74,7 @@ process); the `bbr-fixtures` **binary** exists for the FUTURE runner topology
 
 ---
 
-## 3. The testkit protocol (implemented: `bbr-testkit`, version 1)
+## 3. The testkit protocol (implemented: `bbr-testkit`, version 2)
 
 Single source of truth: `crates/bbr-testkit` (portable: unix sockets + serde
 JSON; no macOS, no GPUI, no WebKit).
@@ -90,7 +90,7 @@ JSON; no macOS, no GPUI, no WebKit).
 
 ### Handshake & auth
 
-- Client → `Hello { protocol_version: 1, token, capabilities }`. Wrong version
+- Client → `Hello { protocol_version: 2, token, capabilities }`. Wrong version
   → `Error("protocol_mismatch")`; wrong token → connection dropped. Correct →
   `Welcome { app_version, pid, capabilities, next_seq }`.
 - Token comes from `--bbr-test-token` (random per spawn, in the harness).
@@ -101,7 +101,8 @@ JSON; no macOS, no GPUI, no WebKit).
 | Request | Effect |
 |---|---|
 | `Attach { since: Option<u64> }` | Replays seq-numbered events from the server ring with seq > `since`; live delivery continues after |
-| `Navigate { url }` | Load the active web view (same path as the command bar; keeps command-bar text consistent) + broadcasts `CommandBarChanged` |
+| `Navigate { url }` | Load the controller's active tab (same path as the command bar) + broadcasts `CommandBarChanged` |
+| `OpenTab { url }` / `SelectTab { index }` / `CloseTab { index }` | Semantic controller mutations; Cmd-T/Cmd-W use the same app methods |
 | `WebAction(Back/Forward/Reload/Stop)` | Engine action on the active view |
 | `ActivateCommandBar` / `FocusWeb` | The E2E readers of Cmd-L / Escape |
 | `SetCommandBarText { text }` | Set command-bar text directly (avoids per-keystroke round trips) + broadcasts `CommandBarChanged` |
@@ -117,7 +118,8 @@ JSON; no macOS, no GPUI, no WebKit).
 `Web(bbr_web::WebEvent)` (every engine event: url/title/loading/canGoBack/
 canGoForward/page-crash/navigation-failure) · `ChromeFocusChanged {
 chrome_focused }` (emitted by the app's focus sink after every focus mutation,
-so it always agrees with the snapshot) · `CommandBarChanged { text }`.
+so it always agrees with the snapshot) · `CommandBarChanged { text }` ·
+`BrowserChanged { TabOpened/TabSelected/TabClosed }` from the shared app mutation path.
 `Event::Quitting` is declared in the protocol but **not yet emitted** (the
 harness asserts clean exit by process status instead).
 
@@ -127,7 +129,10 @@ harness asserts clean exit by process status instead).
 Snapshot {
   url, title: Option<String>, loading: bool,
   can_go_back, can_go_forward: bool,
-  web_view_hosted: bool,        // a live native WKWebView is hosted
+  web_view_hosted: bool,        // active tab has a live native session
+  tabs: Vec<TabSnapshot>,       // index/url/title/active/current WebViewId
+  active_tab_index: Option<usize>, active_web_view: Option<WebViewId>,
+  engine_sessions: usize,       // native destruction / warm-session evidence
   engine_kind: String,          // "native-wkwebview" (macOS) | "fake" elsewhere
   chrome_focused: bool,
   command_bar_text: String,
@@ -136,9 +141,9 @@ Snapshot {
 }
 ```
 
-FUTURE (planned protocol growth, not yet implemented): model manipulation
-(`CreateProfile/CreateSpace/AddTab/ActivateTab/CloseTab/PinTab/MoveTab/
-SplitTabs/CloseSplit`), `WebEvaluate` (whitelisted DOM helpers), `AdvanceClock`/
+FUTURE (planned protocol growth, not yet implemented): profile/space/split manipulation
+(`CreateProfile/CreateSpace/ActivateSpace/PinTab/MoveTab/SplitTabs/CloseSplit`),
+`WebEvaluate` (whitelisted DOM helpers), `AdvanceClock`/
 `ResetIds`, `TerminateWebProcess`, `Screenshot`, and the richer event set
 (`TabAdded/TabClosed/…`, `PersistenceFlushed`, …). `--bbr-clock` is parsed but
 a no-op until the `TimeSource` seam lands.
@@ -236,8 +241,19 @@ lifecycle and typed resize snapshots):
    to the web view).
 9. `Quit` → process exits with success status within 10 s.
 
-FUTURE: the 12-suite plan from the original design (smoke/tabs/spaces/splits/
-dialogs/routing/commandbar/webkit/persistence/perf), the `bbr-e2e` crate with
+## 7a. The tabs test (`bbr-app/tests/e2e_tabs.rs`)
+
+One `#[ignore]`d macOS-only test proves the production controller/native path:
+
+1. Initial tab owns `WebViewId(1)` and one native session.
+2. `DispatchKeystroke("cmd-t")` emits `TabOpened`; two native sessions exist.
+3. Command-bar Enter navigates tab 2; Back/Forward/Reload events all carry tab 2's id.
+4. Select tab 1 and tab 2 through the semantic command; both original ids remain.
+5. `DispatchKeystroke("cmd-w")` closes tab 2; native count falls to one and tab 1 keeps its id.
+6. Quit exits cleanly; failures preserve event-ring and stderr artifacts.
+
+FUTURE: the remaining suite plan (spaces/splits/dialogs/routing/commandbar/
+webkit/persistence/perf), the `bbr-e2e` crate with
 `manifest.toml` per suite, `scripts/run_e2e.py` runner, `nextest.toml`
 `[profile.e2e]`, and `docs/e2e-protocol.md` are the planned growth path; none
 exist yet. Each product phase is expected to ship its suite in the same PR
@@ -264,14 +280,16 @@ exist yet. Each product phase is expected to ship its suite in the same PR
 ## 9. Commands (implemented)
 
 ```bash
-just e2e-smoke     # the smoke above (CI fast lane), DEVELOPER_DIR=Xcode 16.4, 2m timeout
-just verify        # fmt + check + test + clippy (unit/contract gate)
-BBR_SKIP_GUI_TESTS=1 just e2e-smoke   # skip on headless CI
+just e2e           # canonical sequential GUI gate: smoke then tabs
+just e2e-smoke     # baseline navigation/focus/resize
+just e2e-tabs      # multi-tab/session behavior
+just verify        # fmt + check + test + clippy + roadmap
+BBR_SKIP_GUI_TESTS=1 just e2e   # skip GUI suites on headless CI
 ```
 
 ```text
-just e2e-smoke  → exit 0 — "SMOKE PASSED", 1 passed, 1.53s (real WKWebView)
-just verify     → exit 0 — fmt/check/test/clippy all green, 2026-08-05
+just e2e       → exit 0 — "SMOKE PASSED" then "TABS E2E PASSED"
+just verify    → exit 0 — fmt/check/test/clippy/roadmap all green, 2026-08-05
 ```
 
 FUTURE: `just e2e [suite [::case]]`, `cargo nextest run -p bbr-e2e`, and
@@ -290,7 +308,7 @@ runner + suites.
 | Synthetic keystroke fidelity drift | `DispatchKeystroke` goes through GPUI's real `dispatch_keystroke` path; FUTURE: tier-2 NSEvent posting in the webkit suite |
 | macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner |
 | Event-ring memory growth | Fixed cap (4096) + client cursors; snapshot on demand |
-| Future model-driven events vs. current single-view snapshot | The protocol types are versioned (`PROTOCOL_VERSION = 1`); growth is additive (`Setup`-style new requests/events) until a breaking bump |
+| Protocol evolution | `PROTOCOL_VERSION = 2` makes the new tab/session snapshot fields and semantic tab commands explicit; future additive growth stays typed |
 
 ---
 
@@ -303,9 +321,9 @@ runner + suites.
    graceful-quit assert (this doc's §3–§7).
 3. ▶ portable domain slice (`bbr-domain`, 40 tests) — done; `bbr-browser`
    orchestration (controller + in-memory fake `WebEngine`) — done at the
-   framework-free contract level (46 tests, no display server); the real-app
-   multi-session composition and its tab E2E are Phase 3.
-4. ⏳ Suite growth: tabs/spaces/splits/dialogs/routing/commandbar model events
+   framework-free contract level (46 tests); real-app controller composition,
+   Protocol v2, and multi-session tab E2E are done.
+4. ▶ Suite growth: profile isolation is current; spaces/splits/dialogs/routing/commandbar model events
    land with their phases; webkit/persistence/perf suites follow Phases 3/7/9.
 5. ⏳ Release-exclusion gate in CI (exit 64 + symbol/socket checks).
 

@@ -16,11 +16,11 @@ Profiles, spaces, tabs, lifecycle, navigation, and splits drive disposable web s
 - [x] `Active`, `Warm`, `Suspended`, and `Discarded` lifecycle policy.
 - [x] 40 framework-free domain tests.
 
-## Orchestration — current work
+## Orchestration — complete
 
-- [ ] [Implement the portable BrowserController](../tasks/browser-controller.md).
-- [ ] [Implement a deterministic fake WebEngine](../tasks/fake-web-engine.md).
-- [ ] Close the [browser-orchestration durable checklist](../tracks/browser-orchestration.md#durable-checklist) (TabId↔WebViewId mapping, command routing, profile moves, session policy, WebEvent application, and invariant tests are owned there, not duplicated here).
+- [x] [Implement the portable BrowserController](../tasks/browser-controller.md).
+- [x] [Implement a deterministic fake WebEngine](../tasks/fake-web-engine.md).
+- [x] Close the [browser-orchestration durable checklist](../tracks/browser-orchestration.md#durable-checklist) (TabId↔WebViewId mapping, command routing, profile moves, session policy, WebEvent application, and invariant tests are owned there, not duplicated here).
 
 ## Phase exit
 
@@ -28,8 +28,7 @@ Profiles, spaces, tabs, lifecycle, navigation, and splits drive disposable web s
 - [x] `just verify` remains green.
 - [x] Architecture docs describe controller ownership and event flow.
 
-Exit items above are individually proven (46 framework-free bbr-browser tests;
-`just verify` + `just e2e-smoke` green; `ARCHITECTURE.md` §9a). The phase
-roll-up in `ROADMAP.md` stays `[ ]` until the linked packets close — notably
-the real-app tab E2E vertical slice of `browser-controller.md`, which needs
-the Phase 3 multi-session macOS adapter.
+Evidence: 46 framework-free `bbr-browser` tests, Protocol v2 controller
+snapshots/events, `just verify`, and sequential `just e2e` with both the real
+WKWebView smoke and multi-tab suite green. The controller is composed into
+`bbr-app`; Phase 2 is closed.

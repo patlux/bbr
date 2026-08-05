@@ -6,17 +6,18 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 
 ## Current focus
 
-> **Phase 2 — finish the portable browser core.** Build `bbr-browser`, a deterministic fake `WebEngine`, and the first controller tests before connecting real multi-tab UI.
+> **Phase 3 — finish native profile/session isolation.** Real tabs now run through the portable controller and multiple WKWebViews; next prove profile-separated website data, cross-profile recreation, and suspended-session cleanup.
 
-- [ ] [Browser controller packet](docs/roadmap/tasks/browser-controller.md)
-- [ ] [Fake WebEngine packet](docs/roadmap/tasks/fake-web-engine.md)
+- [ ] Real-app two-profile cookie-isolation scenario.
+- [ ] Cross-profile tab move recreates the native session in the destination store.
+- [ ] Suspending a warm tab removes its native view, delegate, and KVO observation.
 
 ## Product phases
 
 - [x] [0 — Reproducible foundation](docs/roadmap/phases/00-foundation.md)
 - [x] [1 — Native GPUI + WKWebView integration baseline](docs/roadmap/phases/01-native-integration.md)
-- [ ] [2 — Portable browser orchestration](docs/roadmap/phases/02-browser-core.md) **← current**
-- [ ] [3 — Multi-session macOS WebKit adapter](docs/roadmap/phases/03-multi-session-webkit.md)
+- [x] [2 — Portable browser orchestration](docs/roadmap/phases/02-browser-core.md)
+- [ ] [3 — Multi-session macOS WebKit adapter](docs/roadmap/phases/03-multi-session-webkit.md) **← current**
 - [ ] [4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 - [ ] [5 — Unified command bar](docs/roadmap/phases/05-command-bar.md)
 - [ ] [6 — Two-pane split view](docs/roadmap/phases/06-split-view.md)
@@ -59,4 +60,4 @@ Completed today:
 
 Next release-shaped outcome:
 
-- Open, switch, and close multiple real tabs without unnecessary WKWebView recreation, driven by a portable controller and covered by fake-engine tests plus real-app E2E.
+- Use the same site in two profiles without sharing cookies, then move a tab across the profile boundary and prove its native session is recreated in the destination data store.

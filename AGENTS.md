@@ -64,11 +64,12 @@ Before marking a roadmap item complete or committing an implementation group:
 
 ```bash
 just verify
-just e2e-smoke        # baseline native integration
-just e2e <suite>      # once selective suites exist; run every affected suite
+just e2e              # canonical sequential real-app GUI gate
+just e2e-smoke        # baseline native integration when affected
+just e2e-tabs         # real multi-tab/session behavior when affected
 ```
 
-Until `just e2e <suite>` exists, run the relevant explicit ignored Rust E2E test command in addition to `just e2e-smoke` and document it in the commit body.
+Run every affected individual suite as well as the canonical sequential gate. GUI suites must not run in parallel because AppKit window geometry can interfere through screen clamping. Add another bounded `just e2e-<suite>` recipe when a new browser feature introduces a suite; a generic selector can wait until suite count justifies it.
 
 All long-running commands must use the repository's bounded `just` recipes or an explicit hard timeout with process-tree cleanup.
 

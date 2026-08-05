@@ -45,10 +45,8 @@ Provide a framework-free `WebEngine` implementation that records exact calls, ow
 
 Decide during implementation, based on dependency direction:
 
-- [x] Put the fake in `bbr-browser::testing` when it exists only to test controller policy; *or*
-- [ ] Create `bbr-web-fake` if multiple portable crates/integration harnesses need it.
-
-Do not create a separate crate speculatively before a second real consumer exists.
+- [x] Put the fake in `bbr-browser::testing` because it currently exists only to test controller policy.
+- A future second portable consumer may justify extracting `bbr-web-fake`; do not create that crate speculatively.
 
 ## Evidence
 

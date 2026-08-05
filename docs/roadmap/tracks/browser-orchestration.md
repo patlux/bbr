@@ -6,10 +6,10 @@ Parent phases: [Phase 2](../phases/02-browser-core.md), [Phase 3](../phases/03-m
 
 Own the portable boundary between persistent browser objects (`bbr-domain`) and disposable native web sessions (`bbr-web`).
 
-## Current task packets
+## Completed task packets
 
-- [ ] [BrowserController](../tasks/browser-controller.md)
-- [ ] [Deterministic fake WebEngine](../tasks/fake-web-engine.md)
+- [x] [BrowserController](../tasks/browser-controller.md)
+- [x] [Deterministic fake WebEngine](../tasks/fake-web-engine.md)
 
 ## Durable checklist
 
@@ -29,11 +29,9 @@ Own the portable boundary between persistent browser objects (`bbr-domain`) and 
 ## Verification
 
 - [x] Framework-free fake-engine contract suite.
-- [ ] Multi-session native integration suite.
-- [ ] Real-app tabs/spaces/splits E2E as each UI slice lands.
+- [x] Multi-session native integration suite for the tab slice.
+- [ ] Real-app spaces/splits E2E as each UI slice lands.
 
-Evidence: 46 bbr-browser tests (17 fake-engine/registry contract tests + 28
-controller behavior tests + one snapshot test) cover the durable checklist against the deterministic
-fake engine; `just verify` + `just e2e-smoke` green. The two unchecked
-verification items land with the Phase 3 multi-session macOS adapter and its
-real-app tab E2E slice.
+Evidence: 46 `bbr-browser` tests cover portable policy; `just e2e-tabs` proves
+two real WKWebViews, stable warm-session identities, focused navigation, and
+native destruction. Spaces and split UI remain owned by their later phases.

@@ -62,16 +62,16 @@ Create `crates/bbr-browser`, a platform-neutral controller that owns `bbr-domain
 - [x] Cover same-profile and cross-profile moves.
 - [x] Cover split focus and teardown.
 - [x] Assert registry invariants after every mutation.
-- [ ] Add a real-app E2E vertical slice that composes the controller in BBR and proves open/select/close plus navigation routing through the production path.
-- [ ] Extend the testkit protocol/snapshot/events as needed; missing harness capability is part of this task.
-- [ ] Run `just verify`, `just e2e-smoke`, and the new controller/tab E2E scenario.
+- [x] Add a real-app E2E vertical slice that composes the controller in BBR and proves open/select/close plus navigation routing through the production path.
+- [x] Extend the testkit protocol/snapshot/events as needed; missing harness capability is part of this task.
+- [x] Run `just verify`, `just e2e-smoke`, and the new controller/tab E2E scenario.
 - [x] Update `ARCHITECTURE.md`, `E2E_ARCHITECTURE.md`, and roadmap checkboxes.
 
-Evidence so far (framework-free): `just verify` green, `just e2e-smoke` green,
-46 bbr-browser tests; 28 controller behavior tests plus one snapshot test drive the fake engine through
-the same `Rc<RefCell<dyn WebEngine>>` seam the app will use. The three
-unchecked evidence items require wiring the controller into the real app via
-the Phase 3 multi-session native adapter; they stay open until then.
+Evidence: 46 `bbr-browser` tests; Protocol v2 tab commands, semantic
+`BrowserChanged` events, and snapshots containing active/tab `WebViewId`s;
+`just verify` green; sequential `just e2e` green. The real-app tab suite proves
+Cmd-T/Cmd-W, open/select/close, stable warm-session ids, active-tab
+Back/Forward/Reload routing, and native destruction on close.
 
 ## Suggested commit groups
 

@@ -13,11 +13,13 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 - [x] stderr drainage, panic-safe cleanup, and failure artifacts.
 - [x] Short Unix-socket test paths work under direnv and `nix develop`.
 - [x] Real WKWebView smoke test.
+- [x] Protocol v2 semantic browser events and typed tab/session snapshots.
+- [x] Sequential real-app tabs suite with stable native-session identity assertions.
 
 ## Suite growth
 
-- [ ] `browser-controller`: framework-free orchestration contracts.
-- [ ] `tabs`: open/select/close/reopen/pin/reorder/move.
+- [x] `browser-controller`: framework-free orchestration contracts.
+- [ ] `tabs`: open/select/close and native session lifecycle are covered; reopen/pin/reorder/move remain with their visible UI slices.
 - [ ] `spaces`: switch/profile identity/last-active restoration.
 - [ ] `splits`: create/focus/resize/close/move teardown.
 - [ ] `commandbar`: mode, ranking, keyboard, cancellation, focus restore.
@@ -30,9 +32,10 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 
 - [ ] Emit semantic window-resized events instead of snapshot polling.
 - [ ] Emit `Quitting` before graceful shutdown.
-- [ ] Add model snapshots for profiles/spaces/tabs/splits.
-- [ ] Add protocol commands as product capabilities land.
-- [ ] Add suite manifests and selective `just e2e <suite>` runner.
+- [ ] Add model snapshots for profiles/spaces/splits; tab/session snapshots exist.
+- [ ] Add protocol commands as product capabilities land; open/select/close tabs exist.
+- [x] Add bounded individual `just e2e-smoke` / `just e2e-tabs` recipes and a canonical sequential `just e2e` gate.
+- [ ] Add suite manifests and a generic `just e2e <suite>` runner when more suites justify it.
 - [ ] Add testkit release-exclusion gate.
 - [ ] Add a small Appium Mac2 packaged-app blackbox suite in Phase 9.
 

@@ -10,6 +10,7 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 - [x] Navigation/title/loading/history/crash/failure events cross the adapter.
 - [x] KVO title observation is balanced during teardown.
 - [x] Real-app smoke covers load, navigation, reload, resize, focus, and quit.
+- [x] Real-app tabs suite covers two native sessions, warm-tab reuse, focused navigation, and destruction on close.
 
 ## Manual integration matrix
 

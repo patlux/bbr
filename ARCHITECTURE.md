@@ -297,14 +297,14 @@ src/
      --bbr-ids=sequential|random   IdGen mode (SequentialIdGen/RandomIdGen)
      --bbr-clock=system|fake       parsed; NO-OP in Phase 1 (no time-based logic)
      --bbr-window-size=WxH         initial window size (default 1080x700)
-2. Build the id generator; allocate ProfileId + WebViewId.
+2. Build the id generator and inject it as the controller's WebViewId allocator.
 3. gpui::Application::new().run: open one window (centered, options from flags).
-4. In the open_window callback: capture the GPUI root NSView, build the engine
-   (WebEngineWk on macOS, NullEngine elsewhere), create BbrApp.
-5. create_web_view(initial_url) after the first frame (the first prepaint frames it).
-6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B/Cmd-T actions.
-7. Under testkit: start the gateway on the profile dir socket, pump the
-   event/command channels on the main thread, broadcast AppReady + focus events.
+4. In the open_window callback: capture the GPUI root NSView, build the engine,
+   create `BrowserController(engine.clone(), allocator)`, then create BbrApp.
+5. Open the initial controller-backed tab after the window exists.
+6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B plus real Cmd-T/Cmd-W tab mutations.
+7. Under testkit: start the gateway, pump engine events into the controller,
+   and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
 
 The chrome (`bbr-app/src/app.rs`) renders a fixed-width sidebar
@@ -315,10 +315,10 @@ backspace, enter), a status line (`NavigationState.status_line()`, incl.
 ("bbr_chrome") routes printable input to the command bar only while
 `command_bar_active`. The content area is entirely the `NativeWebViewSlot`.
 
-The `shell.rs` module holds `ShellState` (one profile + one active view —
-the whole Phase-1 identity) and `NavigationState`, which mirrors `WebEvent`s
-(including crash/failure) into what the chrome renders and the E2E snapshot
-reads.
+`BrowserController` is the sole owner of product tab/navigation state. The
+GPUI root renders a controller snapshot; `shell.rs` contains only formatting
+and the app-local typed E2E snapshot adapter, so tab switching cannot leave a
+second navigation-state copy stale.
 
 ---
 
@@ -357,7 +357,7 @@ membership and distinctness, recently-closed exclusion, and unique ids.
 `SplitRequiresDistinctTabs`, `SplitAlreadyExists`, `NothingToReopen`); errors
 reject invalid input before any mutation.
 
-The slice ships **34 unit tests** (crate-level `tests.rs` + lib docs): creation
+The slice ships **40 unit tests** (crate-level test modules + lib docs): creation
 and ordering, close-focus semantics (next sibling, else previous, else none),
 pinned close, reopen position/clamping/pinned-region, reorder bounds and
 boundary rejection, pin/unpin round-trips, move across spaces and profiles,
@@ -366,10 +366,9 @@ lifecycle transition/visibility policy, and tamper detection through
 `check_invariants`. All run without macOS frameworks
 or a display server.
 
-Not yet present (per PLAN.md Phase 2, next milestones): command routing was
-shipped in the `bbr-browser` controller (§9a below); still missing are the
-`bbr-ui` layer that renders domain state and the real-app composition path
-that hosts the controller behind the multi-session native adapter (Phase 3).
+The controller is composed into the real GPUI app and multi-session adapter.
+Still missing is the intentional vertical-tab/space UI layer (Phase 4); the
+current shell exposes real tab shortcuts and testkit state before visual tabs.
 
 ---
 
@@ -431,7 +430,9 @@ just test       # cargo test --workspace
 just clippy     # cargo clippy --workspace --all-targets -- -D warnings
 just roadmap    # validate hierarchical roadmap Markdown links
 just verify     # fmt + check + test + clippy + roadmap
-just e2e-smoke  # cargo test -p bbr --features testkit --test e2e_smoke -- --ignored --nocapture
+just e2e-smoke  # baseline real-WKWebView navigation/focus/resize
+just e2e-tabs   # real multi-tab/session behavior
+just e2e        # canonical sequential GUI gate (smoke, then tabs)
 ```
 
 All recipes are wrapped in GNU `timeout --kill-after=10s` with
@@ -444,21 +445,18 @@ overrides, and pin `DEVELOPER_DIR` to Xcode 16.4. On headless CI,
 ```
 just fmt     → exit 0
 just check   → exit 0 (workspace, all targets)
-just test    → exit 0  — bbr-app 4 passed · bbr-domain 40 passed ·
+just test    → exit 0  — bbr-app 2 passed · bbr-domain 40 passed ·
                         bbr-browser 46 passed · bbr-fixtures 3 passed ·
-                        bbr-testkit 10 passed · bbr-web 9 passed ·
-                        e2e_smoke 1 ignored (GUI, run explicitly)
+                        bbr-testkit 12 passed · bbr-web 9 passed ·
+                        bbr-web-macos 1 passed · 2 GUI E2E tests ignored
 just clippy  → exit 0 (-D warnings)
 just roadmap → exit 0 (hierarchical roadmap links valid)
-just e2e-smoke → exit 0 — "SMOKE PASSED", 1 passed (real WKWebView, 1.53s)
+just e2e       → exit 0 — "SMOKE PASSED" + "TABS E2E PASSED" (sequential real WKWebViews)
 ```
 
-Post-controller remediation (controller + fake-engine commit group):
-
-```
-just verify    → exit 0 (fmt + check + test + clippy + roadmap)
-just e2e-smoke → exit 0 — "SMOKE PASSED", 1 passed (real WKWebView, 1.25s)
-```
+The testkit-feature path also passes `cargo clippy -p bbr --features testkit
+--all-targets -- -D warnings`. GUI suites are deliberately sequential: two
+AppKit windows resizing concurrently can interfere through screen clamping.
 
 ### Run the app
 
@@ -470,10 +468,10 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 
 ## 11. Known limitations (current implementation)
 
-1. **The native adapter is multi-session, but the app still composes one tab.**
-   `WebEngineWk` owns ID-addressed `NativeWebSession`s, while `ShellState` and
-   `Cmd-T` still expose the Phase-1 single-tab shell until controller/testkit
-   composition lands in the next Phase-3 slice.
+1. **Real tabs exist without visible tab UI yet.** `BrowserController` and
+   `WebEngineWk` open, switch, preserve, navigate, and close multiple real
+   sessions; Cmd-T/Cmd-W and testkit expose them. The vertical tab list and
+   pointer selection arrive with the intentional Phase-4 shell.
 2. **Persistent store ids are deterministic, but profile isolation lacks real-app evidence.**
    Production derives the WebKit store UUID from `ProfileId`; E2E uses
    `nonPersistentDataStore`. A two-profile cookie-isolation scenario remains
@@ -489,8 +487,7 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 6. **The release-exclusion failsafe is not implemented**: under a non-testkit
    build the `--bbr-*` test flags are silently ignored rather than rejected at
    startup (E2E §12's exit-64 gate is future work).
-7. **The controller is not composed into the real app yet.** `bbr-browser` is
-tested by its fake-engine contract suite (46 tests, no display server), and
-the adapter can now host multiple ID-addressed views, but `bbr-app` still
-drives one view directly. Controller composition plus real-app tab E2E is the
-next Phase-3 slice (task packet: browser-controller.md "Tests and evidence").
+7. **Profile operations are not composed into the app/testkit yet.** The
+   controller's cross-profile recreation policy and deterministic WebKit store
+   mapping are proven separately, but two-profile cookie isolation and a real
+   cross-profile move remain the current Phase-3 focus.
