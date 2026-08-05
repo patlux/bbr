@@ -1,0 +1,48 @@
+[package]
+name = "bbr"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "BBR browser — composition root (GPUI chrome + native WebKit engine)."
+
+[[bin]]
+name = "bbr"
+path = "src/main.rs"
+
+[features]
+default = []
+# Test-only instrumentation: the E2E testkit gateway, deterministic id
+# generation, and CLI flags that seed them. NEVER enabled in release
+# profiles — the gateway binds a local unix socket authenticated with a
+# per-spawn token (see crates/bbr-testkit).
+testkit = ["dep:bbr-testkit", "dep:serde_json"]
+
+[dependencies]
+anyhow = "1"
+bbr-web.workspace = true
+gpui.workspace = true
+log = "0.4"
+smol.workspace = true
+
+# Test-support crates (portable; only the gateway under `testkit`).
+bbr-testkit = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+
+# macOS: native WebKit engine + raw window handle to attach it to the GPUI
+# root view. On other targets the app uses a portable null engine so the
+# workspace still evaluates.
+[target.'cfg(target_os = "macos")'.dependencies]
+bbr-web-macos.workspace = true
+objc2.workspace = true
+raw-window-handle.workspace = true
+
+# Linux/FreeBSD: keep the workspace evaluating (GPUI needs a backend to
+# compile its platform layer).
+[target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
+gpui = { workspace = true, features = ["wayland"] }
+
+[dev-dependencies]
+bbr-fixtures.workspace = true
+bbr-testkit.workspace = true
+serde_json.workspace = true
