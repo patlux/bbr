@@ -127,6 +127,32 @@ mod tests {
     }
 
     #[test]
+    fn tab_commands_round_trip_through_the_request_envelope() {
+        for request in [
+            dsl::open_tab("https://example.com/two"),
+            dsl::select_tab(1),
+            dsl::close_tab(0),
+        ] {
+            let bytes = encode_client_frame(&request);
+            let value = read_frame(&mut Cursor::new(bytes)).unwrap();
+            let frame: ClientFrame = serde_json::from_value(value).unwrap();
+            assert_eq!(frame, ClientFrame::Request(request));
+        }
+    }
+
+    #[test]
+    fn browser_change_event_round_trips_with_typed_payload() {
+        let frame = ServerFrame::Event {
+            seq: 9,
+            event: Event::BrowserChanged {
+                kind: crate::protocol::BrowserChange::TabSelected { index: 1 },
+            },
+        };
+        let value = serde_json::to_value(&frame).unwrap();
+        assert_eq!(serde_json::from_value::<ServerFrame>(value).unwrap(), frame);
+    }
+
+    #[test]
     fn server_frame_envelope_is_tagged() {
         let value = serde_json::to_value(ServerFrame::Event {
             seq: 3,

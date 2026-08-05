@@ -8,7 +8,7 @@ use std::path::PathBuf;
 #[cfg(feature = "testkit")]
 use std::sync::Arc;
 
-use bbr_web::{ProfileId, WebViewId};
+use bbr_browser::BrowserController;
 use gpui::prelude::*;
 use gpui::{px, size, App, Bounds, KeyBinding, Window, WindowBounds, WindowOptions};
 
@@ -21,11 +21,10 @@ mod slot;
 #[cfg(feature = "testkit")]
 mod testkit;
 
-use actions::{Back, FocusCommandBar, FocusWeb, Forward, NewTab, Reload, ToggleSidebar};
+use actions::{Back, CloseTab, FocusCommandBar, FocusWeb, Forward, NewTab, Reload, ToggleSidebar};
 use app::BbrApp;
 use engine::{build_engine, EngineConfig};
 use inject::{IdGen, RandomIdGen, SequentialIdGen};
-use shell::ShellState;
 
 /// Parsed command-line flags (all `--bbr-*` are test/injection knobs).
 struct Cli {
@@ -132,8 +131,9 @@ fn main() {
         IdMode::Sequential => Box::new(SequentialIdGen::default()),
         IdMode::Random => Box::new(RandomIdGen::default()),
     };
-    let profile = ProfileId(idgen.next_u64());
-    let view_id = WebViewId(idgen.next_u64());
+    // WebViewId allocation is injected into the portable controller so E2E
+    // can assert stable native-session identity across tab switches.
+    let allocate_view: bbr_browser::ViewIdAllocator = Box::new(move || idgen.next_u64());
 
     gpui::Application::new().run(move |cx: &mut App| {
         let bounds = Bounds::centered(None, size(px(cli.window_size.0), px(cli.window_size.1)), cx);
@@ -145,8 +145,6 @@ fn main() {
         };
 
         let engine_kind = current_engine_kind();
-        let shell = ShellState::new(profile, view_id, engine_kind);
-
         let (evt_tx, evt_rx) = smol::channel::unbounded::<bbr_web::WebEvent>();
 
         let window = cx
@@ -159,13 +157,14 @@ fn main() {
                 };
                 // SAFETY: `ns_view` is the live GPUI root view on the main thread.
                 let engine = unsafe { build_engine(ns_view, &config, engine_kind) };
-                cx.new(|cx| BbrApp::new(engine, shell.clone(), evt_tx.clone(), cx))
+                let controller = BrowserController::new(engine.clone(), allocate_view);
+                cx.new(|cx| BbrApp::new(engine, controller, engine_kind, evt_tx.clone(), cx))
             })
             .expect("open window");
 
         // Create the web view with the initial URL (first prepaint will frame it).
         window
-            .update(cx, |view, _w, _cx| view.create_web_view(&cli.initial_url))
+            .update(cx, |view, _w, _cx| view.open_initial_tab(&cli.initial_url))
             .ok();
 
         // Keyboard actions (fire even while the WKWebView is first responder,
@@ -207,6 +206,14 @@ fn main() {
                             broadcaster.broadcast(
                                 bbr_testkit::protocol::Event::ChromeFocusChanged { chrome_focused },
                             );
+                        }));
+                        let broadcaster = server.clone();
+                        view.set_browser_sink(Box::new(move |outcome| {
+                            if let Some(kind) = testkit::browser_change(outcome) {
+                                broadcaster.broadcast(
+                                    bbr_testkit::protocol::Event::BrowserChanged { kind },
+                                );
+                            }
                         }));
                     })
                     .ok();
@@ -335,8 +342,19 @@ fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
     cx.on_action(move |_: &NewTab, cx| {
         let win = win;
         cx.defer(move |cx| {
-            // Phase 5: command bar new-tab mode. For now, focus the command bar.
-            let _ = win.update(cx, |view, window, cx| view.activate_command_bar(window, cx));
+            let _ = win.update(cx, |view, window, cx| {
+                let _ = view.open_tab("about:blank", cx);
+                view.activate_command_bar(window, cx);
+            });
+        });
+    });
+    let win = *window;
+    cx.on_action(move |_: &CloseTab, cx| {
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, _window, cx| {
+                let _ = view.close_active_tab(cx);
+            });
         });
     });
 
@@ -348,6 +366,7 @@ fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
         KeyBinding::new("cmd-r", Reload, None),
         KeyBinding::new("cmd-b", ToggleSidebar, None),
         KeyBinding::new("cmd-t", NewTab, None),
+        KeyBinding::new("cmd-w", CloseTab, None),
     ]);
 }
 

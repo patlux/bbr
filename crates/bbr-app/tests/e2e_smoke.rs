@@ -428,8 +428,18 @@ fn run_smoke(
     // fixed large target can be clamped by macOS to the existing size on a
     // small display and would not prove that resize works.
     let before = client.snapshot()?;
-    let target_width = (before.window_size[0] - 140.0).max(520.0);
-    let target_height = (before.window_size[1] - 100.0).max(360.0);
+    // When AppKit already clamped a narrow window to BBR's minimum width,
+    // shrinking again is a no-op. Grow small windows; shrink larger ones.
+    let target_width = if before.window_size[0] < 700.0 {
+        before.window_size[0] + 120.0
+    } else {
+        before.window_size[0] - 140.0
+    };
+    let target_height = if before.window_size[1] < 460.0 {
+        before.window_size[1] + 80.0
+    } else {
+        before.window_size[1] - 100.0
+    };
     client.send_ok(&Request::SetWindowSize {
         width: target_width,
         height: target_height,

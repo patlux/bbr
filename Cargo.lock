@@ -468,6 +468,7 @@ name = "bbr"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bbr-browser",
  "bbr-fixtures",
  "bbr-testkit",
  "bbr-web",

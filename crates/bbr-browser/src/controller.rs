@@ -305,6 +305,7 @@ impl BrowserController {
                     url: state.url.clone(),
                     title: state.title.clone(),
                     active: active_tab == Some(tab),
+                    web_view: self.registry.view_for_tab(tab),
                 })
             })
             .collect();

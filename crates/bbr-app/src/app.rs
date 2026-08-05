@@ -2,6 +2,7 @@
 //! the native web-view slot; also owns focus choreography and navigation
 //! command routing.
 
+use bbr_browser::{BrowserController, ControllerEvent};
 use bbr_web::{WebAction, WebEvent};
 use gpui::{
     div, prelude::*, px, rgb, App, Context, FocusHandle, Focusable, KeyDownEvent, MouseButton,
@@ -11,7 +12,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::engine::EngineRef;
-use crate::shell::ShellState;
 #[cfg(feature = "testkit")]
 use crate::shell::TestSnapshot;
 use crate::slot::NativeWebViewSlot;
@@ -19,9 +19,10 @@ use crate::slot::NativeWebViewSlot;
 /// Fixed sidebar width in points (Phase-4 will make this adjustable).
 pub const SIDEBAR_WIDTH_PX: f32 = 260.0;
 
-/// Focus-change sink: invoked on the main thread after any focus mutation
-/// with the actual chrome-focus state. Used by the testkit gateway glue.
+/// Focus-change sink: invoked on the main thread after any focus mutation.
 pub type FocusSink = Box<dyn FnMut(bool)>;
+/// Semantic browser-mutation sink shared by shortcuts and testkit commands.
+pub type BrowserSink = Box<dyn FnMut(&ControllerEvent)>;
 
 /// Default window size for the spike.
 pub const DEFAULT_WINDOW_SIZE: (f32, f32) = (1080.0, 700.0);
@@ -29,7 +30,9 @@ pub const DEFAULT_WINDOW_SIZE: (f32, f32) = (1080.0, 700.0);
 /// The root view of the browser window.
 pub struct BbrApp {
     engine: EngineRef,
-    shell: ShellState,
+    controller: BrowserController,
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
+    engine_kind: &'static str,
     /// GPUI focus handle for the chrome (sidebar/command bar).
     chrome_handle: FocusHandle,
     /// Whether the command bar is the active input surface.
@@ -41,12 +44,14 @@ pub struct BbrApp {
     /// the actual chrome-focus state. Wired by the testkit glue to broadcast
     /// `ChromeFocusChanged`; unused in production builds.
     focus_sink: Rc<RefCell<Option<FocusSink>>>,
+    browser_sink: Rc<RefCell<Option<BrowserSink>>>,
 }
 
 impl BbrApp {
     pub fn new(
         engine: EngineRef,
-        shell: ShellState,
+        controller: BrowserController,
+        engine_kind: &'static str,
         evt_tx: smol::channel::Sender<WebEvent>,
         cx: &mut Context<Self>,
     ) -> Self {
@@ -62,44 +67,93 @@ impl BbrApp {
 
         BbrApp {
             engine: engine.clone(),
-            shell,
+            controller,
+            engine_kind,
             chrome_handle: cx.focus_handle(),
             command_bar_active: false,
             command_bar_text: String::new(),
             sidebar_visible: true,
             focus_sink: Rc::new(RefCell::new(None)),
+            browser_sink: Rc::new(RefCell::new(None)),
         }
     }
 
-    /// Start the actual web view; the initial URL is loaded by the caller
-    /// AFTER the window's first frame so `attach_slot` can frame it.
-    pub fn create_web_view(&mut self, initial_url: &str) {
-        self.engine.borrow_mut().create_web_view(
-            self.shell.active_view,
-            self.shell.profile,
-            initial_url,
-        );
-        self.engine.borrow_mut().show(self.shell.active_view, true);
-        self.shell.web_view_hosted = true;
+    /// Open the initial controller-backed tab after the first window frame.
+    pub fn open_initial_tab(&mut self, initial_url: &str) {
+        if let Err(error) = self.controller.open_tab(initial_url) {
+            log::error!("could not open initial tab: {error}");
+        }
     }
 
-    /// Route a generic [`WebAction`] to the engine (E2E gateway + unit tests).
+    pub fn open_tab(&mut self, url: &str, cx: &mut Context<Self>) -> Option<ControllerEvent> {
+        let result = self
+            .controller
+            .open_tab(url)
+            .map_err(|error| {
+                log::error!("could not open tab: {error}");
+                error
+            })
+            .ok();
+        if let Some(outcome) = &result {
+            self.sync_command_bar();
+            self.emit_browser(outcome);
+            cx.notify();
+        }
+        result
+    }
+
     #[cfg(feature = "testkit")]
-    pub fn web_action(&mut self, action: WebAction) {
-        match &action {
-            WebAction::Load { url } => {
-                // Load goes through the same path as the command bar so the
-                // command-bar text + focus stay consistent.
-                let url = url.clone();
-                self.engine
-                    .borrow_mut()
-                    .action(self.shell.active_view, WebAction::Load { url });
-            }
-            _ => self
-                .engine
-                .borrow_mut()
-                .action(self.shell.active_view, action),
+    pub fn select_tab(&mut self, index: usize, cx: &mut Context<Self>) -> Option<ControllerEvent> {
+        let result = self
+            .controller
+            .select_tab(index)
+            .map_err(|error| {
+                log::error!("could not select tab {index}: {error}");
+                error
+            })
+            .ok();
+        if let Some(outcome) = &result {
+            self.sync_command_bar();
+            self.emit_browser(outcome);
+            cx.notify();
         }
+        result
+    }
+
+    pub fn close_tab(&mut self, index: usize, cx: &mut Context<Self>) -> Option<ControllerEvent> {
+        let result = self
+            .controller
+            .close_tab(index)
+            .map_err(|error| {
+                log::error!("could not close tab {index}: {error}");
+                error
+            })
+            .ok();
+        if let Some(outcome) = &result {
+            self.sync_command_bar();
+            self.emit_browser(outcome);
+            cx.notify();
+        }
+        result
+    }
+
+    pub fn close_active_tab(&mut self, cx: &mut Context<Self>) -> Option<ControllerEvent> {
+        self.controller
+            .snapshot()
+            .active_index
+            .and_then(|index| self.close_tab(index, cx))
+    }
+
+    /// Route a generic [`WebAction`] through the focused controller session.
+    #[cfg(feature = "testkit")]
+    pub fn web_action(&mut self, action: WebAction) -> Option<ControllerEvent> {
+        self.controller
+            .navigate(action)
+            .map_err(|error| {
+                log::error!("could not route web action: {error}");
+                error
+            })
+            .ok()
     }
 
     /// Navigate the active view (used by Enter in the command bar, and by
@@ -109,38 +163,34 @@ impl BbrApp {
         if url.is_empty() {
             return;
         }
-        self.engine
-            .borrow_mut()
-            .action(self.shell.active_view, WebAction::Load { url: url.clone() });
+        if self
+            .controller
+            .navigate(WebAction::Load { url: url.clone() })
+            .is_err()
+        {
+            return;
+        }
         self.command_bar_text = url;
         self.focus_web(window, cx);
     }
 
     pub fn go_back(&mut self) {
-        self.engine
-            .borrow_mut()
-            .action(self.shell.active_view, WebAction::Back);
+        let _ = self.controller.navigate(WebAction::Back);
     }
 
     pub fn go_forward(&mut self) {
-        self.engine
-            .borrow_mut()
-            .action(self.shell.active_view, WebAction::Forward);
+        let _ = self.controller.navigate(WebAction::Forward);
     }
 
     pub fn reload(&mut self) {
-        self.engine
-            .borrow_mut()
-            .action(self.shell.active_view, WebAction::Reload);
+        let _ = self.controller.navigate(WebAction::Reload);
     }
 
-    /// Mirror one engine event into the shell and the command-bar display.
+    /// Apply an engine event to the owning controller tab and refresh chrome.
     pub fn on_web_event(&mut self, event: WebEvent, cx: &mut Context<Self>) {
-        self.shell.nav.apply(&event);
-        if let WebEvent::UrlChanged(_, url) = &event {
-            if !self.command_bar_active {
-                self.command_bar_text = url.clone();
-            }
+        let _ = self.controller.apply_event(event);
+        if !self.command_bar_active {
+            self.sync_command_bar();
         }
         cx.notify();
     }
@@ -158,9 +208,9 @@ impl BbrApp {
     pub fn focus_web(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_active = false;
         window.blur();
-        self.engine
-            .borrow_mut()
-            .focus_native_web(self.shell.active_view);
+        if let Some(view) = self.controller.snapshot().active_view {
+            self.engine.borrow_mut().focus_native_web(view);
+        }
         cx.notify();
         self.emit_focus(window);
     }
@@ -187,6 +237,30 @@ impl BbrApp {
     #[cfg(feature = "testkit")]
     pub fn set_focus_sink(&mut self, sink: FocusSink) {
         *self.focus_sink.borrow_mut() = Some(sink);
+    }
+
+    #[cfg(feature = "testkit")]
+    pub fn set_browser_sink(&mut self, sink: BrowserSink) {
+        *self.browser_sink.borrow_mut() = Some(sink);
+    }
+
+    fn emit_browser(&mut self, event: &ControllerEvent) {
+        if let Some(sink) = self.browser_sink.borrow_mut().as_mut() {
+            sink(event);
+        }
+    }
+
+    fn sync_command_bar(&mut self) {
+        let snapshot = self.controller.snapshot();
+        self.command_bar_text = snapshot
+            .nav
+            .url
+            .or_else(|| {
+                snapshot
+                    .active_index
+                    .and_then(|index| snapshot.tabs.get(index).map(|tab| tab.url.clone()))
+            })
+            .unwrap_or_default();
     }
 
     pub fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {
@@ -231,14 +305,19 @@ impl BbrApp {
     /// A snapshot for the E2E protocol (also used by unit tests).
     #[cfg(feature = "testkit")]
     pub fn snapshot(&self, window: &Window) -> TestSnapshot {
+        let browser = self.controller.snapshot();
         TestSnapshot {
-            url: self.shell.nav.url.clone(),
-            title: self.shell.nav.title.clone(),
-            loading: self.shell.nav.loading,
-            can_go_back: self.shell.nav.can_go_back,
-            can_go_forward: self.shell.nav.can_go_forward,
-            web_view_hosted: self.shell.web_view_hosted,
-            engine_kind: self.shell.engine_kind,
+            url: browser.nav.url.clone(),
+            title: browser.nav.title.clone(),
+            loading: browser.nav.loading,
+            can_go_back: browser.nav.can_go_back,
+            can_go_forward: browser.nav.can_go_forward,
+            web_view_hosted: browser.web_view_hosted,
+            tabs: browser.tabs,
+            active_tab_index: browser.active_index,
+            active_web_view: browser.active_view,
+            engine_sessions: browser.engine_sessions,
+            engine_kind: self.engine_kind,
             chrome_focused: self.chrome_handle.is_focused(window),
             command_bar_text: self.command_bar_text.clone(),
             sidebar_visible: self.sidebar_visible,
@@ -259,7 +338,8 @@ impl Focusable for BbrApp {
 impl Render for BbrApp {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let chrome_focused = self.chrome_handle.is_focused(window);
-        let status_text: SharedString = self.shell.nav.status_line().into();
+        let browser = self.controller.snapshot();
+        let status_text: SharedString = crate::shell::status_line(&browser).into();
 
         let nav_dot = |label: &'static str, enabled: bool| {
             let (color, bg) = if enabled {
@@ -307,11 +387,11 @@ impl Render for BbrApp {
                     .gap_8()
                     .px_12()
                     .py_8()
-                    .child(nav_dot("◀", self.shell.nav.can_go_back).on_mouse_down(
+                    .child(nav_dot("◀", browser.nav.can_go_back).on_mouse_down(
                         MouseButton::Left,
                         cx.listener(|this, _e: &MouseDownEvent, _w, _cx| this.go_back()),
                     ))
-                    .child(nav_dot("▶", self.shell.nav.can_go_forward).on_mouse_down(
+                    .child(nav_dot("▶", browser.nav.can_go_forward).on_mouse_down(
                         MouseButton::Left,
                         cx.listener(|this, _e: &MouseDownEvent, _w, _cx| this.go_forward()),
                     ))

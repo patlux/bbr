@@ -16,7 +16,10 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
-use bbr_testkit::protocol::{Error, Event, Request, Response, Snapshot};
+use bbr_browser::ControllerEvent;
+use bbr_testkit::protocol::{
+    BrowserChange, Error, Event, Request, Response, Snapshot, TabSnapshot,
+};
 use bbr_testkit::GatewayServer;
 use gpui::{px, size, App, Keystroke, WindowHandle};
 
@@ -92,7 +95,7 @@ pub fn spawn_pump(
     cmd_rx: smol::channel::Receiver<GatewayCommand>,
     server: Option<Arc<GatewayServer>>,
 ) {
-    let window = window.clone();
+    let window = *window;
     let server = server.clone();
     cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
         enum Incoming {
@@ -151,6 +154,18 @@ fn dispatch(
         }
     };
     match req {
+        Request::OpenTab { url } => {
+            browser_mutation(window.update(cx, |view, _window, cx| view.open_tab(&url, cx)))
+        }
+
+        Request::SelectTab { index } => {
+            browser_mutation(window.update(cx, |view, _window, cx| view.select_tab(index, cx)))
+        }
+
+        Request::CloseTab { index } => {
+            browser_mutation(window.update(cx, |view, _window, cx| view.close_tab(index, cx)))
+        }
+
         Request::Navigate { url } => {
             let r = window
                 .update(cx, |view, window, cx| view.navigate(&url, window, cx))
@@ -162,7 +177,13 @@ fn dispatch(
 
         Request::WebAction(action) => window
             .update(cx, |view, _w, _cx| view.web_action(action))
-            .map(|_| Response::Ok)
+            .map(|outcome| {
+                if outcome.is_some() {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new("browser_error", "web action was rejected"))
+                }
+            })
             .unwrap_or_else(err_response),
 
         Request::ActivateCommandBar => window
@@ -239,6 +260,27 @@ fn dispatch(
     }
 }
 
+fn browser_mutation<E: std::fmt::Display>(update: Result<Option<ControllerEvent>, E>) -> Response {
+    match update {
+        Ok(Some(_)) => Response::Ok,
+        Ok(None) => Response::Error(Error::new("browser_error", "browser mutation was rejected")),
+        Err(error) => err_response(error),
+    }
+}
+
+pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange> {
+    match outcome {
+        ControllerEvent::TabOpened { index, .. } => {
+            Some(BrowserChange::TabOpened { index: *index })
+        }
+        ControllerEvent::TabSelected { index } => {
+            Some(BrowserChange::TabSelected { index: *index })
+        }
+        ControllerEvent::TabClosed { index } => Some(BrowserChange::TabClosed { index: *index }),
+        _ => None,
+    }
+}
+
 fn err_response<E: std::fmt::Display>(e: E) -> Response {
     Response::Error(Error::new("app_error", e.to_string()))
 }
@@ -257,6 +299,20 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             can_go_back: self.can_go_back,
             can_go_forward: self.can_go_forward,
             web_view_hosted: self.web_view_hosted,
+            tabs: self
+                .tabs
+                .iter()
+                .map(|tab| TabSnapshot {
+                    index: tab.index,
+                    url: tab.url.clone(),
+                    title: tab.title.clone(),
+                    active: tab.active,
+                    web_view: tab.web_view,
+                })
+                .collect(),
+            active_tab_index: self.active_tab_index,
+            active_web_view: self.active_web_view,
+            engine_sessions: self.engine_sessions,
             engine_kind: self.engine_kind.to_string(),
             chrome_focused: self.chrome_focused,
             command_bar_text: self.command_bar_text.clone(),

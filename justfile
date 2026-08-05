@@ -24,4 +24,11 @@ roadmap:
 e2e-smoke:
     DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_smoke -- --ignored --nocapture
 
+e2e-tabs:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_tabs -- --ignored --nocapture
+
+# GUI suites must stay sequential: parallel AppKit window resizing can make
+# one suite observe another suite's screen-clamped geometry.
+e2e: e2e-smoke e2e-tabs
+
 verify: fmt check test clippy roadmap

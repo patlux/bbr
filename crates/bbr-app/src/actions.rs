@@ -11,8 +11,10 @@ gpui::actions!(
     [
         /// `Cmd-L`: focus the command bar (location mode).
         FocusCommandBar,
-        /// `Cmd-T`: new-tab placeholder (Phase 5 command bar).
+        /// `Cmd-T`: open a new controller-backed tab.
         NewTab,
+        /// `Cmd-W`: close the active tab.
+        CloseTab,
         /// `Cmd-B`: toggle the sidebar.
         ToggleSidebar,
         /// `Cmd-[`: go back.

@@ -14,6 +14,8 @@ pub struct TabSnapshot {
     pub title: String,
     /// Whether this tab is the active one.
     pub active: bool,
+    /// Current disposable session identity, absent when suspended/discarded.
+    pub web_view: Option<WebViewId>,
 }
 
 /// A snapshot of the controller's observable state.

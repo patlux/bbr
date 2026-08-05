@@ -9,7 +9,17 @@ use bbr_web::{ProfileId, WebAction, WebViewId};
 use serde::{Deserialize, Serialize};
 
 /// Current protocol version understood by this crate.
-pub const PROTOCOL_VERSION: u32 = 1;
+pub const PROTOCOL_VERSION: u32 = 2;
+
+/// One tab in the active space, including its disposable native session id.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TabSnapshot {
+    pub index: usize,
+    pub url: String,
+    pub title: String,
+    pub active: bool,
+    pub web_view: Option<WebViewId>,
+}
 
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
@@ -23,8 +33,14 @@ pub struct Snapshot {
     pub loading: bool,
     pub can_go_back: bool,
     pub can_go_forward: bool,
-    /// A live native web view is hosted in the chrome slot.
+    /// A live native web view backs the active tab.
     pub web_view_hosted: bool,
+    /// Active-space tabs and their current disposable session ids.
+    pub tabs: Vec<TabSnapshot>,
+    pub active_tab_index: Option<usize>,
+    pub active_web_view: Option<WebViewId>,
+    /// Number of native sessions currently owned by the engine.
+    pub engine_sessions: usize,
     /// Engine implementation tag, e.g. "native-wkwebview" or "fake".
     pub engine_kind: String,
     /// GPUI chrome focus (command bar focused\).
@@ -46,8 +62,17 @@ pub enum Event {
     ChromeFocusChanged { chrome_focused: bool },
     /// The command bar's text changed.
     CommandBarChanged { text: String },
+    /// One semantic browser-controller mutation completed.
+    BrowserChanged { kind: BrowserChange },
     /// The app received a quit request (graceful shutdown started).
     Quitting,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BrowserChange {
+    TabOpened { index: usize },
+    TabSelected { index: usize },
+    TabClosed { index: usize },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -63,6 +88,12 @@ pub enum Request {
     Attach { since: Option<u64> },
     /// Navigate the active web view to a URL.
     Navigate { url: String },
+    /// Open a new tab and make it active.
+    OpenTab { url: String },
+    /// Select an existing tab by active-space index.
+    SelectTab { index: usize },
+    /// Close a tab by active-space index.
+    CloseTab { index: usize },
     /// Drive a [`WebAction`] on the active web view (Back/Forward/Reload/…).
     WebAction(WebAction),
     /// Focus the GPUI command bar (chrome) — the E2E reader of Cmd-L.
@@ -156,6 +187,18 @@ pub mod dsl {
 
     pub fn navigate(url: impl Into<String>) -> Request {
         Request::Navigate { url: url.into() }
+    }
+
+    pub fn open_tab(url: impl Into<String>) -> Request {
+        Request::OpenTab { url: url.into() }
+    }
+
+    pub fn select_tab(index: usize) -> Request {
+        Request::SelectTab { index }
+    }
+
+    pub fn close_tab(index: usize) -> Request {
+        Request::CloseTab { index }
     }
 
     pub fn back() -> Request {
