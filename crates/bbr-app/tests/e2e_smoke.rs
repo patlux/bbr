@@ -22,7 +22,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use bbr_fixtures::FixtureServer;
-use bbr_testkit::protocol::{dsl, Event, Request, Response};
+use bbr_testkit::protocol::{dsl, Event, Request, Response, Snapshot};
 use bbr_testkit::Client;
 
 /// Fixture page titles (deterministic content).
@@ -424,23 +424,20 @@ fn run_smoke(
     )?;
 
     // 10. Resize the window; the native slot re-frames on the next layout.
-    // GPUI applies the resize asynchronously, so wait for the event stream to
-    // go quiet before snapshotting the new geometry.
+    // Choose a target relative to the current, screen-clamped geometry. A
+    // fixed large target can be clamped by macOS to the existing size on a
+    // small display and would not prove that resize works.
     let before = client.snapshot()?;
+    let target_width = (before.window_size[0] - 140.0).max(520.0);
+    let target_height = (before.window_size[1] - 100.0).max(360.0);
     client.send_ok(&Request::SetWindowSize {
-        width: 900.0,
-        height: 600.0,
+        width: target_width,
+        height: target_height,
     })?;
-    client.wait_until_stable(Duration::from_millis(600))?;
-    let after = client.snapshot()?;
-    assert_ne!(
-        after.window_size, before.window_size,
-        "resize must change the window geometry (was {:?})",
-        before.window_size
-    );
+    let after = wait_for_window_resize(&mut client, &before, event_deadline())?;
     assert!(
         (after.window_size[0] - before.window_size[0]).abs() > 50.0,
-        "width must actually shrink, got {before:?} -> {after:?}"
+        "width must actually change, got {before:?} -> {after:?}"
     );
 
     // 11. Focus round-trip via synthetic keystrokes (permission-free). The
@@ -512,6 +509,30 @@ fn run_smoke(
         .unwrap_or(false));
 
     Ok(())
+}
+
+fn wait_for_window_resize(
+    client: &mut Client,
+    before: &Snapshot,
+    deadline: Instant,
+) -> Result<Snapshot, Box<dyn std::error::Error>> {
+    loop {
+        let snapshot = client.snapshot()?;
+        if (snapshot.window_size[0] - before.window_size[0]).abs() > 50.0 {
+            return Ok(snapshot);
+        }
+        if Instant::now() >= deadline {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                format!(
+                    "window did not resize before deadline: {:?} -> {:?}",
+                    before.window_size, snapshot.window_size
+                ),
+            )
+            .into());
+        }
+        std::thread::yield_now();
+    }
 }
 
 fn wait_timeout(child: &mut Child, dur: Duration) -> Option<std::process::ExitStatus> {

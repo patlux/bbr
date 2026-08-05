@@ -176,8 +176,9 @@ a no-op until the `TimeSource` seam lands.
   re-renders the root view (double-lease panic otherwise).
 - **Harness (e2e_smoke.rs):**
   - Connect loop with a 60 s overall deadline (100 ms retries).
-  - Event waits: 30 s deadlines via the client; `wait_until_stable(600 ms)`
-    for layout re-flow after resize.
+  - Event waits: 30 s deadlines via the client. Resize chooses a target
+    relative to the screen-clamped starting geometry and polls typed snapshots
+    until the width changes or the same deadline expires.
   - Exit: `Quit` then up to 10 s for a clean `success()` status; otherwise the
     test fails.
   - `Drop` guarantee: the harness `Drop` runs regardless of assertion result —
@@ -227,8 +228,8 @@ lifecycle and the current resize quiet period):
 5. `Back` → page1 (+ `CanGoForwardChanged(true)`), `Forward` → page2.
 6. `Reload` → fresh `LoadingChanged(true)` → `LoadingChanged(false)` (`since`
    cursor forbids leftovers from the forward step).
-7. `SetWindowSize{900×600}` → `wait_until_stable(600ms)` → snapshot geometry
-   changed (width shrank > 50 pt).
+7. `SetWindowSize` with a target relative to the current screen-clamped size
+   → bounded snapshot polling → geometry changed (width delta > 50 pt).
 8. `DispatchKeystroke("cmd-l")` → `ChromeFocusChanged{true}` → snapshot
    `chrome_focused`; `SetCommandBarText(page2)` → snapshot text; then
    `DispatchKeystroke("escape")` → `ChromeFocusChanged{false}` (focus returned
