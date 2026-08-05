@@ -1,0 +1,65 @@
+[package]
+name = "bbr-web-macos"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "WKWebView + AppKit bridge for BBR (macOS only; empty crate on other targets)."
+
+[dependencies]
+bbr-web.workspace = true
+log = "0.4"
+
+# raw-window-handle must match gpui 0.2.2 (0.6.x) so the AppKitWindowHandle
+# we extract from the GPUI root view is the same type the bridge consumes.
+raw-window-handle.workspace = true
+
+# All native dependencies are macOS-only so the workspace still evaluates on
+# Linux (the crate body is #[cfg(target_os = "macos")] gated too).
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2.workspace = true
+block2.workspace = true
+
+# objc2-foundation: NSUUID (deterministic data-store ids), NSString, NSURL,
+# NSURLRequest, NSError, NSGeometry (NSRect), and the core-foundation CG types.
+objc2-foundation = { workspace = true, features = [
+    "NSString",
+    "NSURL",
+    "NSURLRequest",
+    "NSError",
+    "NSUUID",
+    "NSGeometry",
+    "NSObject",
+    "objc2-core-foundation",
+    "std",
+] }
+
+# objc2-app-kit: NSView, NSWindow, NSApplication, NSResponder, NSEvent.
+# NSGeometry/CG types come transitively via these features (see how the
+# workspace's objc2-foundation enables `NSGeometry` + `objc2-core-foundation`).
+objc2-app-kit = { workspace = true, features = [
+    "NSApplication",
+    "NSResponder",
+    "NSView",
+    "NSWindow",
+    "NSEvent",
+] }
+
+# objc2-web-kit: WKWebView + configuration + delegates + data store.
+# `objc2-app-kit` is a feature of objc2-web-kit that gates the delegate
+# protocol method definitions (they reference NSView/NSWindow).
+objc2-web-kit = { workspace = true, features = [
+    "WKWebView",
+    "WKWebViewConfiguration",
+    "WKWebsiteDataStore",
+    "WKNavigation",
+    "WKNavigationDelegate",
+    "WKNavigationAction",
+    "WKUIDelegate",
+    "WKWindowFeatures",
+    "WKPreferences",
+    "WKProcessPool",
+    "objc2-app-kit",
+    "objc2-core-foundation",
+    "std",
+] }

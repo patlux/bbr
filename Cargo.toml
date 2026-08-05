@@ -4,6 +4,7 @@ members = [
     "crates/bbr-web",
     "crates/bbr-testkit",
     "crates/bbr-fixtures",
+    "crates/bbr-web-macos",
 ]
 
 [workspace.package]
