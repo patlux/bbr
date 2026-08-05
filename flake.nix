@@ -47,6 +47,7 @@
                 cargo-watch
                 clang
                 cmake
+                coreutils
                 git
                 just
                 llvmPackages.libclang
