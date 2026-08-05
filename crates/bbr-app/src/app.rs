@@ -157,7 +157,9 @@ impl BbrApp {
     pub fn focus_web(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_active = false;
         window.blur();
-        self.engine.borrow_mut().focus_native_web();
+        self.engine
+            .borrow_mut()
+            .focus_native_web(self.shell.active_view);
         cx.notify();
         self.emit_focus(window);
     }

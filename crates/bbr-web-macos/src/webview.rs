@@ -281,7 +281,7 @@ impl WebEngine for WebEngineWk {
         *self.sink.borrow_mut() = Some(sink);
     }
 
-    fn focus_native_web(&mut self) {
+    fn focus_native_web(&mut self, _id: WebViewId) {
         self.assert_main_thread();
         if let Some(web_view) = self.web_view.as_deref() {
             let mtm = MainThreadMarker::new().expect("main thread");
@@ -293,5 +293,9 @@ impl WebEngine for WebEngineWk {
         self.assert_main_thread();
         let mtm = MainThreadMarker::new().expect("main thread");
         self.host.focus_chrome(mtm);
+    }
+
+    fn live_session_count(&self) -> usize {
+        usize::from(self.web_view.is_some())
     }
 }

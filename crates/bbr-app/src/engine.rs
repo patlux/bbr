@@ -119,12 +119,16 @@ impl WebEngine for NullEngine {
         *self.events.borrow_mut() = Some(sink);
     }
 
-    fn focus_native_web(&mut self) {
+    fn focus_native_web(&mut self, _id: WebViewId) {
         self.actions.push("focus_web".into());
     }
 
     fn focus_host_chrome(&mut self) {
         self.actions.push("focus_chrome".into());
+    }
+
+    fn live_session_count(&self) -> usize {
+        0
     }
 }
 

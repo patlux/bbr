@@ -147,13 +147,20 @@ pub trait WebEngine {
     /// Hand all subsequent [`WebEvent`]s to `sink`. Replaces any previous sink.
     fn set_events(&mut self, sink: Box<dyn FnMut(WebEvent)>);
 
-    /// Move the AppKit first responder to the web view (native keyboard focus).
-    fn focus_native_web(&mut self);
+    /// Move the AppKit first responder to the **specific** web view
+    /// (multi-session: the selected tab's view is the focus target, not
+    /// "whichever view exists").
+    fn focus_native_web(&mut self, id: WebViewId);
 
     /// Move the AppKit first responder back to the GPUI chrome host view.
     /// GPUI's own focus tree is managed by GPUI; this only fixes the native
     /// side so key events stop going to the web view.
     fn focus_host_chrome(&mut self);
+
+    /// Number of currently live (hosted, not yet destroyed) web views.
+    /// Used by the controller and E2E snapshots as native destruction
+    /// evidence.
+    fn live_session_count(&self) -> usize;
 }
 
 /// Default the scheme on user-typed URLs.
@@ -266,8 +273,9 @@ mod tests {
         let mut engine: Box<dyn WebEngine> = Box::new(MockEngine::default());
         let _sink: Box<dyn FnMut(WebEvent)> = Box::new(|_| {});
         engine.set_events(_sink);
-        engine.focus_native_web();
+        engine.focus_native_web(WebViewId(7));
         engine.focus_host_chrome();
+        assert_eq!(engine.live_session_count(), 0);
     }
 
     /// A minimal mock used to prove the trait is usable without any platform.
@@ -300,12 +308,16 @@ mod tests {
 
         fn set_events(&mut self, _sink: Box<dyn FnMut(WebEvent)>) {}
 
-        fn focus_native_web(&mut self) {
-            self.logs.push("focus web".into());
+        fn focus_native_web(&mut self, id: WebViewId) {
+            self.logs.push(format!("focus web {id:?}"));
         }
 
         fn focus_host_chrome(&mut self) {
             self.logs.push("focus chrome".into());
+        }
+
+        fn live_session_count(&self) -> usize {
+            0
         }
     }
 }
