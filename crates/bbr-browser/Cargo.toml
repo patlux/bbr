@@ -1,0 +1,11 @@
+[package]
+name = "bbr-browser"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Portable browser orchestration: owns the Browser model, maps tabs to disposable web sessions, routes commands, applies WebEvents (no frameworks, no GPUI, no unsafe)."
+
+[dependencies]
+bbr-domain = { workspace = true }
+bbr-web = { workspace = true }
