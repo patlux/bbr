@@ -196,6 +196,20 @@ fn main() {
                     pid: std::process::id(),
                     app_version: env!("CARGO_PKG_VERSION").to_string(),
                 });
+                // Route real focus changes (Cmd-L / Escape / clicks) to the
+                // gateway. The focus is queried from GPUI's actual focus tree
+                // after each mutation, so the emitted event always matches the
+                // snapshot's `chrome_focused`.
+                let broadcaster = server.clone();
+                window
+                    .update(cx, |view, _w, _cx| {
+                        view.set_focus_sink(Box::new(move |chrome_focused| {
+                            broadcaster.broadcast(
+                                bbr_testkit::protocol::Event::ChromeFocusChanged { chrome_focused },
+                            );
+                        }));
+                    })
+                    .ok();
             }
         }
         #[cfg(not(feature = "testkit"))]
@@ -267,35 +281,63 @@ fn current_engine_kind() -> &'static str {
 }
 
 /// Register global action handlers (bubble phase) that reach the app view.
+///
+/// These run while the keystroke dispatch already holds the window borrowed
+/// (see [`gpui::Window::dispatch_keystroke`]), so a direct `win.update` would
+/// re-enter the window update and fail with "window not found". The update is
+/// therefore deferred to the effect flush — the same pattern GPUI's own
+/// [`gpui::Window::dispatch_action`] uses — so the view is updated once the
+/// keystroke dispatch has released the window.
 fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
     let win = *window;
     cx.on_action(move |_: &FocusCommandBar, cx| {
-        let _ = win.update(cx, |view, window, cx| view.activate_command_bar(window, cx));
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, window, cx| view.activate_command_bar(window, cx));
+        });
     });
     let win = *window;
     cx.on_action(move |_: &FocusWeb, cx| {
-        let _ = win.update(cx, |view, window, cx| view.focus_web(window, cx));
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, window, cx| view.focus_web(window, cx));
+        });
     });
     let win = *window;
     cx.on_action(move |_: &Back, cx| {
-        let _ = win.update(cx, |view, _w, _cx| view.go_back());
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, _w, _cx| view.go_back());
+        });
     });
     let win = *window;
     cx.on_action(move |_: &Forward, cx| {
-        let _ = win.update(cx, |view, _w, _cx| view.go_forward());
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, _w, _cx| view.go_forward());
+        });
     });
     let win = *window;
     cx.on_action(move |_: &Reload, cx| {
-        let _ = win.update(cx, |view, _w, _cx| view.reload());
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, _w, _cx| view.reload());
+        });
     });
     let win = *window;
     cx.on_action(move |_: &ToggleSidebar, cx| {
-        let _ = win.update(cx, |view, _w, cx| view.toggle_sidebar(cx));
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, _w, cx| view.toggle_sidebar(cx));
+        });
     });
     let win = *window;
     cx.on_action(move |_: &NewTab, cx| {
-        // Phase 5: command bar new-tab mode. For now, focus the command bar.
-        let _ = win.update(cx, |view, window, cx| view.activate_command_bar(window, cx));
+        let win = win;
+        cx.defer(move |cx| {
+            // Phase 5: command bar new-tab mode. For now, focus the command bar.
+            let _ = win.update(cx, |view, window, cx| view.activate_command_bar(window, cx));
+        });
     });
 
     cx.bind_keys([

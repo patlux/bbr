@@ -9,14 +9,69 @@
 //! [`Retained<WebViewDelegate>`] alive for the view's lifetime.
 
 use std::cell::RefCell;
+use std::ffi::c_void;
 use std::rc::Rc;
 
 use objc2::rc::Retained;
-use objc2::{define_class, msg_send, DefinedClass, MainThreadMarker, MainThreadOnly};
-use objc2_foundation::{NSObject, NSObjectProtocol};
+use objc2::runtime::AnyObject;
+use objc2::{define_class, msg_send, ClassType, DefinedClass, MainThreadMarker, MainThreadOnly};
+use objc2_foundation::{
+    NSKeyValueObservingOptions, NSObject, NSObjectNSKeyValueObserverRegistration, NSObjectProtocol,
+    NSString,
+};
 use objc2_web_kit::{WKNavigation, WKNavigationDelegate, WKUIDelegate, WKWebView};
 
 use bbr_web::{WebEvent, WebViewId};
+
+/// The `title` key path observed on the WKWebView (see [`WebViewDelegate::new`]).
+const TITLE_KEY_PATH: &str = "title";
+
+/// Opaque KVO context for the `title` observation. Never dereferenced; used
+/// only to scope the delegate's `observeValueForKeyPath:ofObject:change:context:`
+/// callback to the observation we registered.
+static TITLE_KVO_CONTEXT: u8 = 0;
+
+fn title_kvo_context() -> *mut c_void {
+    (&TITLE_KVO_CONTEXT as *const u8).cast_mut().cast()
+}
+
+/// Register KVO observation of the WKWebView `title` property with `observer`
+/// (the navigation delegate). Registering with `Initial` yields one immediate
+/// callback with the current title, so the shell learns the startup state even
+/// when the page has already begun loading.
+///
+/// # Safety
+///
+/// Must be called on the main thread with a live `web_view` and a retained
+/// `observer` (the delegate). The observer is not retained by KVO, so it must
+/// outlive `web_view`.
+pub(crate) unsafe fn observe_title(web_view: &WKWebView, observer: &NSObject) {
+    let key = NSString::from_str(TITLE_KEY_PATH);
+    let web_obj = web_view.as_super().as_super().as_super(); // &NSObject
+    unsafe {
+        web_obj.addObserver_forKeyPath_options_context(
+            observer,
+            &key,
+            NSKeyValueObservingOptions::New | NSKeyValueObservingOptions::Initial,
+            title_kvo_context(),
+        );
+    }
+}
+
+/// Remove the KVO `title` observation registered by [`observe_title`]. Must be
+/// called (with the same observer and context) before `web_view` is deallocated.
+///
+/// # Safety
+///
+/// Same preconditions as [`observe_title`]; must pair one-to-one with a prior
+/// successful [`observe_title`] call on the same view/observer.
+pub(crate) unsafe fn unobserve_title(web_view: &WKWebView, observer: &NSObject) {
+    let key = NSString::from_str(TITLE_KEY_PATH);
+    let web_obj = web_view.as_super().as_super().as_super(); // &NSObject
+    unsafe {
+        web_obj.removeObserver_forKeyPath_context(observer, &key, title_kvo_context());
+    }
+}
 
 /// How the delegate reports navigation observations back to the engine.
 pub(crate) type EventSink = Rc<RefCell<Option<Box<dyn FnMut(WebEvent)>>>>;
@@ -37,6 +92,28 @@ define_class!(
     pub(crate) struct WebViewDelegate;
 
     unsafe impl NSObjectProtocol for WebViewDelegate {}
+
+    impl WebViewDelegate {
+        #[unsafe(method(observeValueForKeyPath:ofObject:change:context:))]
+        fn observe_value_for_key_path(
+            &self,
+            _key_path: Option<&NSString>,
+            object: Option<&AnyObject>,
+            _change: Option<&AnyObject>,
+            context: *mut c_void,
+        ) {
+            // Scope to our own `title` observation; ignore everyone else's.
+            if context != title_kvo_context() {
+                return;
+            }
+            // WebKit pushes the `title` property asynchronously, so it may
+            // not be populated at `didFinishNavigation`. Re-emit the full
+            // navigation state whenever the title actually lands.
+            if let Some(web_view) = object.and_then(|o| o.downcast_ref::<WKWebView>()) {
+                self.emit_state(web_view);
+            }
+        }
+    }
 
     unsafe impl WKNavigationDelegate for WebViewDelegate {
         #[unsafe(method(webView:didStartProvisionalNavigation:))]

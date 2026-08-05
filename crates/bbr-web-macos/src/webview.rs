@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2::{MainThreadMarker, MainThreadOnly};
+use objc2::{ClassType, MainThreadMarker, MainThreadOnly};
 use objc2_foundation::{NSString, NSURLRequest, NSURL, NSUUID};
 use objc2_web_kit::{WKWebView, WKWebViewConfiguration, WKWebsiteDataStore};
 
@@ -199,6 +199,12 @@ impl WebEngine for WebEngineWk {
             web_view.setNavigationDelegate(Some(ProtocolObject::from_ref(&*delegate)));
             web_view.setUIDelegate(Some(ProtocolObject::from_ref(&*delegate)));
         }
+        // Observe `title`: WebKit pushes it asynchronously (after didFinish),
+        // so the snapshot at didFinish may be empty. The KVO callback re-emits
+        // full navigation state when the title actually lands.
+        unsafe {
+            delegate::observe_title(&web_view, delegate.as_super());
+        }
 
         if let Some(root) = self.host.root_view() {
             root.addSubview(&web_view);
@@ -215,6 +221,13 @@ impl WebEngine for WebEngineWk {
     fn destroy_web_view(&mut self, _id: WebViewId) {
         self.assert_main_thread();
         if let Some(web_view) = self.web_view.take() {
+            if let Some(delegate) = self.delegate.as_deref() {
+                // Remove the KVO observer before the view is deallocated
+                // (leaving it registered would raise NSKVODeallocateException).
+                unsafe {
+                    delegate::unobserve_title(&web_view, delegate.as_super());
+                }
+            }
             web_view.removeFromSuperview();
         }
         self.delegate = None;

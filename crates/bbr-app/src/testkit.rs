@@ -18,7 +18,7 @@ use std::time::Duration;
 
 use bbr_testkit::protocol::{Error, Event, Request, Response, Snapshot};
 use bbr_testkit::GatewayServer;
-use gpui::{App, Keystroke, WindowHandle};
+use gpui::{px, size, App, Keystroke, WindowHandle};
 
 use crate::app::BbrApp;
 
@@ -165,33 +165,15 @@ fn dispatch(
             .map(|_| Response::Ok)
             .unwrap_or_else(err_response),
 
-        Request::ActivateCommandBar => {
-            let r = window
-                .update(cx, |view, window, cx| view.activate_command_bar(window, cx))
-                .map(|_| Response::Ok)
-                .unwrap_or_else(err_response);
-            broadcast(
-                &server,
-                Event::ChromeFocusChanged {
-                    chrome_focused: true,
-                },
-            );
-            r
-        }
+        Request::ActivateCommandBar => window
+            .update(cx, |view, window, cx| view.activate_command_bar(window, cx))
+            .map(|_| Response::Ok)
+            .unwrap_or_else(err_response),
 
-        Request::FocusWeb => {
-            let r = window
-                .update(cx, |view, window, cx| view.focus_web(window, cx))
-                .map(|_| Response::Ok)
-                .unwrap_or_else(err_response);
-            broadcast(
-                &server,
-                Event::ChromeFocusChanged {
-                    chrome_focused: false,
-                },
-            );
-            r
-        }
+        Request::FocusWeb => window
+            .update(cx, |view, window, cx| view.focus_web(window, cx))
+            .map(|_| Response::Ok)
+            .unwrap_or_else(err_response),
 
         Request::SetCommandBarText { text } => {
             let r = window
@@ -212,17 +194,35 @@ fn dispatch(
                     return Response::Error(Error::new("bad_keystroke", e.to_string()));
                 }
             };
-            window
-                .update(cx, |_view, window, cx| {
+            // Dispatch through the untyped `AnyWindowHandle` path, NOT
+            // `WindowHandle::update`. Dispatching a keystroke synchronously
+            // re-renders the root view (the keystroke can invalidate focus or
+            // layout), and rendering leases the `BbrApp` entity. `WindowHandle::update`
+            // already holds that entity lease for the whole closure, so the
+            // nested render would double-lease and panic ("cannot update BbrApp
+            // while it is already being updated"). `AnyWindowHandle::update`
+            // borrows only the window, leaving the entity free for the render.
+            // Note the double deref: `window` is `&WindowHandle<BbrApp>` (Copy),
+            // so `*window` is the typed handle again; `**window` reaches the
+            // deref target `AnyWindowHandle`.
+            (**window)
+                .update(cx, |_root, window, cx| {
                     window.dispatch_keystroke(ks, cx);
                 })
                 .map(|_| Response::Ok)
-                .unwrap_or_else(err_response)
+                .unwrap_or_else(|e| Response::Error(Error::new("app_error", e.to_string())))
         }
 
         Request::GetSnapshot => window
             .update(cx, |view, window, _cx| view.snapshot(window).to_protocol())
             .map(Response::Snapshot)
+            .unwrap_or_else(err_response),
+
+        Request::SetWindowSize { width, height } => window
+            .update(cx, |_view, window, _cx| {
+                window.resize(size(px(width), px(height)));
+            })
+            .map(|_| Response::Ok)
             .unwrap_or_else(err_response),
 
         Request::Ping => Response::Ok,

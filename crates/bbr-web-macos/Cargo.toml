@@ -30,6 +30,7 @@ objc2-foundation = { workspace = true, features = [
     "NSUUID",
     "NSGeometry",
     "NSObject",
+    "NSKeyValueObserving",
     "objc2-core-foundation",
     "std",
 ] }

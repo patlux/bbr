@@ -7,6 +7,8 @@ use gpui::{
     div, prelude::*, px, rgb, App, Context, FocusHandle, Focusable, KeyDownEvent, MouseButton,
     MouseDownEvent, Render, SharedString, Window,
 };
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use crate::engine::EngineRef;
 use crate::shell::ShellState;
@@ -16,6 +18,10 @@ use crate::slot::NativeWebViewSlot;
 
 /// Fixed sidebar width in points (Phase-4 will make this adjustable).
 pub const SIDEBAR_WIDTH_PX: f32 = 260.0;
+
+/// Focus-change sink: invoked on the main thread after any focus mutation
+/// with the actual chrome-focus state. Used by the testkit gateway glue.
+pub type FocusSink = Box<dyn FnMut(bool)>;
 
 /// Default window size for the spike.
 pub const DEFAULT_WINDOW_SIZE: (f32, f32) = (1080.0, 700.0);
@@ -31,6 +37,10 @@ pub struct BbrApp {
     /// Current command-bar text (mirrors the live URL when not editing).
     pub command_bar_text: String,
     pub sidebar_visible: bool,
+    /// Focus-change sink (main thread): called after any focus mutation with
+    /// the actual chrome-focus state. Wired by the testkit glue to broadcast
+    /// `ChromeFocusChanged`; unused in production builds.
+    focus_sink: Rc<RefCell<Option<FocusSink>>>,
 }
 
 impl BbrApp {
@@ -54,9 +64,10 @@ impl BbrApp {
             engine: engine.clone(),
             shell,
             chrome_handle: cx.focus_handle(),
-            command_bar_active: true,
+            command_bar_active: false,
             command_bar_text: String::new(),
             sidebar_visible: true,
+            focus_sink: Rc::new(RefCell::new(None)),
         }
     }
 
@@ -139,6 +150,7 @@ impl BbrApp {
         window.focus(&self.chrome_handle);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
+        self.emit_focus(window);
     }
 
     /// Move GPUI focus + AppKit first responder back to the web view.
@@ -147,6 +159,7 @@ impl BbrApp {
         window.blur();
         self.engine.borrow_mut().focus_native_web();
         cx.notify();
+        self.emit_focus(window);
     }
 
     /// GPUI chrome gained focus without activating the command bar (click).
@@ -155,6 +168,22 @@ impl BbrApp {
         window.focus(&self.chrome_handle);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
+        self.emit_focus(window);
+    }
+
+    /// Report the actual chrome-focus state through the focus sink (main
+    /// thread). No-op when no sink is installed.
+    fn emit_focus(&mut self, window: &Window) {
+        if let Some(sink) = self.focus_sink.borrow_mut().as_mut() {
+            let focused = self.chrome_handle.is_focused(window);
+            sink(focused);
+        }
+    }
+
+    /// Install a focus-change sink (used by the E2E gateway).
+    #[cfg(feature = "testkit")]
+    pub fn set_focus_sink(&mut self, sink: FocusSink) {
+        *self.focus_sink.borrow_mut() = Some(sink);
     }
 
     pub fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {

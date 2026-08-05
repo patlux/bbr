@@ -117,11 +117,34 @@ impl Client {
         predicate: impl Fn(&Event) -> bool,
         deadline: Instant,
     ) -> Result<(u64, Event), WaitError> {
+        self.wait_for_event_where(|_, event| predicate(event), deadline)
+    }
+
+    /// Like [`Client::wait_for_event`], but only matches events with
+    /// `seq > since` (a consumed-event cursor). Use this to assert a *fresh*
+    /// emission of an event kind that may also have occurred earlier in the
+    /// run (e.g. reload's `LoadingChanged` after a forward already produced
+    /// one) — stale queued events are ignored, so the assertion cannot be
+    /// satisfied by a leftover from a previous step.
+    pub fn wait_for_event_since(
+        &mut self,
+        predicate: impl Fn(&Event) -> bool,
+        since: u64,
+        deadline: Instant,
+    ) -> Result<(u64, Event), WaitError> {
+        self.wait_for_event_where(|seq, event| seq > since && predicate(event), deadline)
+    }
+
+    fn wait_for_event_where(
+        &mut self,
+        matches: impl Fn(u64, &Event) -> bool,
+        deadline: Instant,
+    ) -> Result<(u64, Event), WaitError> {
         loop {
             if let Some(index) = self
                 .pending_events
                 .iter()
-                .position(|(_, event)| predicate(event))
+                .position(|(seq, event)| matches(*seq, event))
             {
                 return Ok(self
                     .pending_events
@@ -147,7 +170,7 @@ impl Client {
                 Err(e) => return Err(WaitError::Io(e)),
             };
             match decode_server_frame(value) {
-                Ok(ServerFrame::Event { seq, event }) if predicate(&event) => {
+                Ok(ServerFrame::Event { seq, event }) if matches(seq, &event) => {
                     return Ok((seq, event));
                 }
                 Ok(ServerFrame::Event { seq, event }) => {
@@ -229,17 +252,14 @@ mod tests {
     use super::*;
     use crate::protocol::Error as ProtoError;
     use std::path::PathBuf;
-    use std::time::{SystemTime, UNIX_EPOCH};
 
     fn tmp_profile() -> PathBuf {
-        std::env::temp_dir().join(format!(
-            "bbr-testkit-client-{}-{}",
-            std::process::id(),
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ))
+        // A per-process counter guarantees uniqueness across parallel tests;
+        // a wall-clock timestamp alone can collide when tests start in the
+        // same clock tick (the fixture suite grew to >9 tests).
+        static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let n = COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        std::env::temp_dir().join(format!("bbr-testkit-client-{}-{n}", std::process::id()))
     }
 
     fn server_with(ping_reply: Response) -> (crate::server::GatewayServer, PathBuf) {
@@ -325,5 +345,62 @@ mod tests {
             )
             .unwrap_err();
         assert!(matches!(err, WaitError::Timeout));
+    }
+
+    #[test]
+    fn wait_for_event_since_requires_a_fresh_event() {
+        let (server, path) = server_with(Response::Ok);
+        let mut client = Client::connect(&path).unwrap();
+        client.hello("tok").unwrap();
+
+        // A stale event (seq 1) matching the predicate is queued during the
+        // Ping round trip, before any cursor is recorded.
+        server.broadcast(Event::ChromeFocusChanged {
+            chrome_focused: true,
+        });
+        client.send_ok(&Request::Ping).unwrap();
+        let since = 1; // cursor after the stale event
+
+        // A *fresh* event with the same payload must still be matched.
+        server.broadcast(Event::ChromeFocusChanged {
+            chrome_focused: true,
+        });
+        server.broadcast(Event::ChromeFocusChanged {
+            chrome_focused: false,
+        });
+        let (seq, ev) = client
+            .wait_for_event_since(
+                |e| {
+                    matches!(
+                        e,
+                        Event::ChromeFocusChanged {
+                            chrome_focused: true
+                        }
+                    )
+                },
+                since,
+                Instant::now() + Duration::from_secs(5),
+            )
+            .unwrap();
+        assert_eq!(seq, 2, "must ignore the stale seq-1 event");
+        assert!(matches!(ev, Event::ChromeFocusChanged { .. }));
+
+        // Advancing the cursor past seq 2 means the earlier matching event is
+        // no longer eligible, so the wait times out.
+        let last = client
+            .wait_for_event_since(
+                |e| {
+                    matches!(
+                        e,
+                        Event::ChromeFocusChanged {
+                            chrome_focused: true
+                        }
+                    )
+                },
+                2,
+                Instant::now() + Duration::from_millis(300),
+            )
+            .unwrap_err();
+        assert!(matches!(last, WaitError::Timeout));
     }
 }

@@ -74,6 +74,10 @@ pub enum Request {
     /// Dispatch a synthetic keystroke through GPUI's real input path
     /// (e.g. "cmd-l", "escape"). Zero permissions, zero OS event posting.
     DispatchKeystroke { keystroke: String },
+    /// Resize the window content area (points). Used to observe layout
+    /// re-flow via the snapshot; the native view is re-framed on the next
+    /// frame.
+    SetWindowSize { width: f32, height: f32 },
     /// Full app snapshot.
     GetSnapshot,
     /// Liveness probe.
