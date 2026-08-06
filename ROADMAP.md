@@ -6,13 +6,14 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 
 ## Current focus
 
-> **Phase 4 — establish BBR's interaction, performance, and visual foundation.** Native profile/session isolation is proven; the real-app startup/interaction benchmark foundation, the focus contract, the visual system, and the first controller-backed vertical-tab shell are in place. Next: visible space hierarchy/switching on the proven shell.
+> **Phase 4 — establish BBR's interaction, performance, and visual foundation.** Native profile/session isolation is proven; the real-app startup/interaction benchmark foundation, the focus contract, the visual system, the controller-backed vertical-tab shell, and visible space switching are in place. Next: the adjustable, collapsible sidebar slice (drag/keyboard resize, collapse memory, compact-window clamping) — then tab drag/reorder UI.
 
 - [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation. *(Benchmark path, budgets, trend/artifact machinery, and the warm space-switch scenario shipped; persisted warm-startup samples await the persistence repository.)*
 - [x] Resolve the tab-mutation focus matrix in the [browser interaction contract](docs/product/browser-interactions.md).
 - [x] [Create `DESIGN.md`](DESIGN.md) with a distinct native macOS visual direction and semantic tokens.
 - [x] [Implement the first controller-backed vertical-tab shell slice](docs/roadmap/phases/04-ui-shell.md) — visible tab rows (pointer + keyboard open/select/close/reopen), pinned/regular regions, states, empty space, crash recovery — with functional and performance E2E. *(Space switching is the next shell slice.)*
-- [x] [Render and switch spaces with unmistakable profile identity](docs/roadmap/phases/04-ui-shell.md) — visible profile/space navigation with round-robin identity hues, pointer + keyboard activation, per-space active-tab restoration without recreating warm sessions, and real-app E2E + warm-switch performance coverage. *(Sidebar resize and tab drag/move UI remain.)*
+- [x] [Render and switch spaces with unmistakable profile identity](docs/roadmap/phases/04-ui-shell.md) — visible profile/space navigation with round-robin identity hues, pointer + keyboard activation, per-space active-tab restoration without recreating warm sessions, and real-app E2E + warm-switch performance coverage. *(Tab drag/move UI remains.)*
+- [x] [Add an adjustable, collapsible sidebar with stable native-content geometry](docs/roadmap/phases/04-ui-shell.md) — DESIGN §5/§11.4 widths (200–360 pt, default 260), a visible 4 pt drag hairline with pointer drag through the production GPUI listener path, keyboard equivalents on the focused divider (`←`/`→` step, `0` reset), Cmd-B collapse/expand that restores the last expanded width, narrow-window clamping that keeps the native content at its 64 pt floor (never zero/negative), typed snapshot state (visible, width, min/default/max, divider id/state, content rect), and real-app E2E + resize/restore performance coverage. *(Tab drag/move UI remains.)*
 
 ## Product phases
 
@@ -72,10 +73,22 @@ Completed today:
   pane naming, and cross-profile switches that preserve cookie isolation — proven
   by `just e2e-shell-spaces` and the `space_switch` performance scenario
   (p95 ≈ 0.1 ms against the 50 ms warm budget).
+- Adjustable/collapsible sidebar slice: DESIGN §5/§11.4 width contract
+  (200–360 pt adjustable, 260 default, 64 pt native-content floor), the visible
+  4 pt drag hairline with pointer drag through the production listener path,
+  keyboard resize/reset parity on the focused divider, Cmd-B collapse/expand
+  restoring the last expanded width, and narrow-window clamping that keeps the
+  native WKWebView geometry strictly positive — proven by
+  `just e2e-shell-sidebar` (pointer drag, keyboard parity, collapse/reopen,
+  compact-window clamp, native content rect, WebViewId/session preservation,
+  focus contract) and the `sidebar_resize`/`sidebar_restore` performance
+  scenarios (p95 ≈ 0.002 ms against the 50 ms next-frame budget).
 
 Next release-shaped outcome:
 
 - A benchmark-protected vertical-tab and space shell that opens with sidebar and
   selected web content presented together, keeps warm tab/space switching and
-  sidebar interaction within explicit latency budgets, and has defined visual,
-  focus, profile-identity, pointer, and keyboard behavior proven through the real app.
+  sidebar interaction (toggle, drag resize, keyboard resize/reset, collapse /
+  restore) within explicit latency budgets, and has defined visual, focus,
+  profile-identity, pointer, and keyboard behavior proven through the real app.
+  Next shell slice: tab drag/reorder and move-between-spaces UI.

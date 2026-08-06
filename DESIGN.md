@@ -245,7 +245,9 @@ sheets over content, no `radius` on scrollable list backgrounds.
 - **Sidebar widths:** `win:sidebar.S` 216, `.N` 260, `.XL` 320 pt; adjustable
   between 200 and 360 pt via a 4 px drag hairline (cursor `ew-resize`),
   minimum width enforced; collapse (Cmd-B) yields 0 with the glass full-bleed
-  (§11.4).
+  (§11.4). In windows too narrow to host the requested width plus the §13
+  content floor, the rail yields below the minimum so the native slot never
+  goes zero or negative.
 
 ## 6. Motion
 
@@ -488,6 +490,11 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Behavior:** width per §5 (`win:sidebar.*`), draggable 4 pt hairline,
   collapse Cmd-B to 0 **instantly** (performance contract next-frame; the
   opening glass gets no animation), expand restores the previous width.
+  Collapse memory is **global in v1** — one last-expanded width per window,
+  restored on expand; per-space memory is an open decision (§17). The
+  divider carries the stable `bbr-sidebar-divider` id and a label shared
+  with the future Accessibility slice, and keyboard focus on it provides
+  `←`/`→` resize and `0` reset (DESIGN §9 pointer/keyboard parity).
   Resize commits geometry on the next frame; drag previews no intermediate
   chrome states.
 - **500-tab rule:** the sidebar remains responsive with 500 persisted tabs
@@ -675,7 +682,11 @@ palette result grouping polish; peek choreography (its own task).
    platform-native vs GPUI-drawn.
 3. **Pinned S-density titles:** icon-only rows are memorable for ≤ ~12 pins;
    decide a "pinned overflow" fold.
-4. **Sidebar collapse memory:** restore width per space or globally?
+4. ~~**Sidebar collapse memory**~~ **Resolved (2026-08-06): global.** One
+   last-expanded width per window, restored on expand; collapse preserves it
+   and hidden width mutations never clobber it. Per-space memory would
+   require a space-scoped geometry map and is explicitly out of scope for
+   the Phase-4 sidebar slice.
 5. **Crash auto-reload policy** (currently none).
 6. **Command palette opening surface** (footer hints, result grouping) rides
    the Phase-5 command-bar work.

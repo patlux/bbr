@@ -264,6 +264,12 @@ visible UI slices land.
 - Tab-list keyboard: `↑`/`↓` move selection through the visible rows, `⌫`
   closes the active tab, Enter activates. **Contract** (rows stay in browser
   chrome while traversed).
+- Sidebar-divider keyboard: with the divider focused (pointer entry or
+  keyboard focus on the resize hairline), `←`/`→` decrease/increase the
+  sidebar width by the 16 pt step and `0` resets to the §8 default. The
+  divider is part of the browser-chrome focus domain, and pointer drag and
+  the keyboard equivalents mutate the same requested width, so parity holds
+  by construction. **Contract**
 
 Every pointer operation must eventually have a keyboard equivalent, and every
 shortcut must expose an understandable menu, tooltip, or help representation.

@@ -108,7 +108,9 @@ JSON; no macOS, no GPUI, no WebKit).
 | `ActivateCommandBar` / `FocusWeb` | The E2E readers of Cmd-L / Escape |
 | `SetCommandBarText { text }` | Set command-bar text directly (avoids per-keystroke round trips) + broadcasts `CommandBarChanged` |
 | `DispatchKeystroke { keystroke }` | GPUI `Keystroke::parse` + `Window::dispatch_keystroke` (real input path) |
-| `BenchmarkSelectTab` / `BenchmarkToggleSidebar` / `BenchmarkDispatchKeystroke` | Start typed in-process production-path measurements and finish only after the scenario's semantic presentation milestone |
+| `BenchmarkSelectTab` / `BenchmarkToggleSidebar` / `BenchmarkDispatchKeystroke` / `BenchmarkResizeSidebar` / `BenchmarkRestoreSidebar` | Start typed in-process production-path measurements and finish only after the scenario's semantic presentation milestone |
+| `DragSidebarDivider { dx }` / `FocusSidebarDivider` | Drive the exact production pointer/focus listener methods the divider element handlers call (never a controller mutation) |
+| `FlushFrame` | Force one synchronous real GPUI draw (`Window::draw`) so paint-driven native geometry callbacks fire under the hidden harness (no display link) |
 | `SetWindowSize { width, height }` | `window.resize`; native view re-framed next frame |
 | `GetSnapshot` | Full typed `Snapshot` |
 | `Ping` | Liveness |
@@ -150,7 +152,13 @@ Snapshot {
   command_bar_mode: Inactive | Location | NewTab | NewSpace,
   command_bar_text: String,
   sidebar_visible: bool,
-  window_size: [f32; 2],        // points
+  sidebar_width: f32,        // effective rail width (0 when collapsed)
+  sidebar_min / sidebar_default / sidebar_max: f32,  // DESIGN §5 adjustable range
+  content_min: f32,          // native-content floor (never zero/negative geometry)
+  divider_dragging: bool,    // §15 divider drag state
+  divider_label: String,     // stable label shared with future Accessibility
+  content_rect: [f32; 4],    // last engine-received WKWebView frame (x,y,w,h)
+  window_size: [f32; 2],     // points
 }
 ```
 
@@ -369,6 +377,42 @@ asserting the destination space, its own active view, the unchanged live-
 session count, chrome focus, and the rendered selected space row + chip ids;
 it is part of `just e2e-perf` and the full gate.
 
+## 7e. The shell-sidebar suite (`bbr-app/tests/e2e_shell_sidebar.rs`)
+
+One `#[ignore]`d macOS-only suite (shared harness in `tests/e2e_common/`)
+proves the adjustable/collapsible sidebar surface over real WKWebViews. GPUI
+0.2.2 exposes no public mouse-event dispatch, so the testkit
+`DragSidebarDivider` seam walks the exact app methods the divider/root
+element handlers call — pointer drag, drag-move, drag-end — never a
+controller mutation; `FlushFrame` forces the real production `Window::draw`
+path so the paint-driven native geometry callbacks fire under the hidden
+harness (no display link, no sleeps, no pixels):
+
+1. **Pointer drag** (`just e2e-shell-sidebar`): relative deltas resize within
+   the DESIGN §5 range (clamps at 200/360), the engine-received native
+   content rect tracks the rail exactly (x == rail width, width == window
+   minus rail, stable height — no drift), the divider focus reports the
+   chrome domain, and the selected WebViewId + session count never change.
+2. **Keyboard parity**: real `←`/`→` keystrokes on the focused divider step
+   the same requested width the pointer path mutated, `0` resets to the §8
+   default, and the native content follows every step.
+3. **Collapse/reopen + compact window**: real Cmd-B yields an instant
+   full-bleed slot (width 0) and expand restores the last expanded width
+   (not the default); in compact windows the rail yields below the requested
+   width so the native content keeps exactly the 64 pt content floor —
+   positive geometry in every state, and the full requested width returns
+   when the window widens.
+
+The `sidebar_resize` and `sidebar_restore` interaction benchmarks (in
+`tests/perf_common/benchmarks.rs`) measure the width-commit and
+collapse→expand paths through `BenchmarkResizeSidebar` /
+`BenchmarkRestoreSidebar`: the resize sample commits only at the exact
+clamped geometry (typed min/default/max + content floor let the drivers
+compute the same expectation the render enforces, so a fast-but-wrong sample
+is rejected in the app before it leaves); the restore sample asserts the
+last-expanded width after an unmeasured production collapse. Both join the
+30-sample matrix with the 50 ms p95 / 100 ms max next-frame budget.
+
 ---
 
 ## 8. Security & release exclusion
@@ -390,12 +434,13 @@ it is part of `just e2e-perf` and the full gate.
 ## 9. Commands (implemented)
 
 ```bash
-just e2e           # canonical sequential GUI gate: smoke, tabs, profiles, shell-tabs, shell-spaces, performance
+just e2e           # canonical sequential GUI gate: smoke, tabs, profiles, shell-tabs, shell-spaces, shell-sidebar, performance
 just e2e-smoke     # baseline navigation/focus/resize
 just e2e-tabs      # multi-tab/session behavior
 just e2e-profiles  # native profile isolation, moves, and suspension
 just e2e-shell-tabs    # visible vertical-tab surface (pointer/keyboard/empty)
 just e2e-shell-spaces  # visible profile/space surface (pointer + keyboard suites)
+just e2e-shell-sidebar # adjustable/collapsible sidebar surface (drag, keys, collapse, clamp)
 just e2e-perf      # optimized startup and interaction latency budgets
 just e2e-perf-full # bounded repeated canonical gate (COLD_STARTUP_SAMPLES launches + 30-sample interactions)
 just e2e-perf-inject # deterministic injected-delay self-test (fails under injection, green after removal)
@@ -404,7 +449,7 @@ BBR_SKIP_GUI_TESTS=1 just e2e   # skip GUI suites on headless CI
 ```
 
 ```text
-just e2e-perf  → exit 0 — startup p50 452.8 ms (< 750 max ceiling); page-ready p50 572.2 ms; warm-tab p95 0.09 ms; space-switch p95 ≈ 0.08 ms; sidebar p95 0.74 ms; Cmd-T p95 0.51 ms; new-tab open p95 22.94 ms; active-close p95 1.95 ms (2026-08-06, released-testkit build on this host)
+just e2e-perf  → exit 0 — startup p50 ≈ 393 ms (< 750 max ceiling); page-ready p50 ≈ 520 ms; warm-tab p95 0.07 ms; space-switch p95 ≈ 0.07 ms; sidebar-toggle p95 0.82 ms; sidebar-resize p95 ≈ 0.002 ms; sidebar-restore p95 ≈ 0.002 ms (both against the 50 ms next-frame budget); Cmd-T p95 ≈ 1.0 ms; new-tab open p95 ≈ 48 ms; active-close p95 ≈ 1.3 ms (2026-08-06, released-testkit build on this host)
 just verify    → exit 0 — fmt/check/test/clippy/roadmap all green, 2026-08-06
 ```
 
@@ -424,7 +469,7 @@ runner + suites.
 | Synthetic keystroke fidelity drift | `DispatchKeystroke` goes through GPUI's real `dispatch_keystroke` path; FUTURE: tier-2 NSEvent posting in the webkit suite |
 | macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner. Verified locally on the Xcode 16.4.0 Metal toolchain in a display-attached session |
 | Event-ring memory growth | Fixed cap (4096) + client cursors; snapshot on demand |
-| Protocol evolution | `PROTOCOL_VERSION = 5` added command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types. `PROTOCOL_VERSION = 6` adds per-tab `pinned`/`loading`/`crashed` flags and per-row `tab_states` + resolved `shell_modes` to snapshots, the pointer-path `ClickTab`/`ClickTabClose` and `ReopenTab`/`PinTab` requests, deterministic `InjectWebEvent` (rides the real event transport), and the `TabSelectPointer`/`TabReopen` benchmark kinds. Additive growth after v6 (still version 6): snapshots expose the rendered `bbr-*` `visible_ids`, per-row `row_titles` (after §4 truncation), and `active_profile_title`; `TabActivateKeyboard` joins the benchmark kinds; `ServerFrame::Response` is boxed internally (JSON wire shape unchanged); future additive growth stays typed |
+| Protocol evolution | `PROTOCOL_VERSION = 5` added command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types. `PROTOCOL_VERSION = 6` adds per-tab `pinned`/`loading`/`crashed` flags and per-row `tab_states` + resolved `shell_modes` to snapshots, the pointer-path `ClickTab`/`ClickTabClose` and `ReopenTab`/`PinTab` requests, deterministic `InjectWebEvent` (rides the real event transport), and the `TabSelectPointer`/`TabReopen` benchmark kinds. Additive growth after v6 (still version 6): snapshots expose the rendered `bbr-*` `visible_ids`, per-row `row_titles` (after §4 truncation), `active_profile_title`, the typed sidebar geometry (`sidebar_width`/`sidebar_min`/`sidebar_default`/`sidebar_max`, `content_min`, `divider_dragging`, `divider_label`) and the last engine-received native `content_rect`; `TabActivateKeyboard`, `SidebarResize`, and `SidebarRestore` join the benchmark kinds; `DragSidebarDivider`/`FocusSidebarDivider` join the pointer seams and `FlushFrame` the paint drivers; `ServerFrame::Response` is boxed internally (JSON wire shape unchanged); future additive growth stays typed |
 | Dedicated-runner / external gaps | No dedicated stable macOS runner or public trend publication is provisioned yet. `canonical_host_model` is therefore empty, so the >15% relative baseline rule stays report-only until a runner is named; display refresh is recorded `null` with an explicit reason (window is offscreen and the OS refresh API is not linked). Absolute ceilings are enforced on every machine. Persisted warm startup stays open until the persistence repository lands — a test-only seed that bypasses the future persistence path is not acceptance evidence. |
 
 ---
@@ -440,8 +485,10 @@ runner + suites.
    (`bbr-browser`, 47 tests), real-app controller composition, Protocol v5,
    multi-session tabs, and native profile-isolation/lifecycle E2E.
 4. ▶ Suite growth: visible space switching landed with the shell-spaces
-   suites and the `space_switch` benchmark; splits, dialogs, routing, and
-   complete command-bar results land with their phases; remaining WebKit
+   suites and the `space_switch` benchmark; the adjustable/collapsible
+   sidebar landed with the shell-sidebar suite and the
+   `sidebar_resize`/`sidebar_restore` benchmarks; splits, dialogs, routing,
+   and complete command-bar results land with their phases; remaining WebKit
    essentials, persistence, accessibility, and broader performance scenarios
    follow Phases 8/7/9 on top of the implemented performance foundation.
 5. ⏳ Release-exclusion gate in CI (exit 64 + symbol/socket checks).

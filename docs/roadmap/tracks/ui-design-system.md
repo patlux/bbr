@@ -27,7 +27,7 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 - [ ] Profile identity is clear whenever tabs/spaces cross contexts. *(Every space row keeps its §12 chip with a round-robin hue and monogram, profile groups stack under hairlines, and the empty pane names the owning profile; the command-field destination hint during switching remains with the cross-context slice.)*
 - [ ] Hover, press, drag, selection, loading, attention, crash, and disabled states are coherent.
 - [ ] Long titles, missing favicons, narrow windows, empty spaces, and 500-tab density remain usable.
-- [ ] Sidebar collapse/resize feels stable and preserves native content geometry.
+- [x] Sidebar collapse/resize feels stable and preserves native content geometry. *(The DESIGN §5/§11.4 slice pins the rail at its exact effective width (the flex_shrink fix) and proves through the real app that the native WKWebView slot always keeps strictly positive geometry — exact rail/content boundary, 64 pt content floor in compact windows, no drift across drags/resizes — see `just e2e-shell-sidebar`.)*
 
 ## Feature-level polish — Phases 5–8
 

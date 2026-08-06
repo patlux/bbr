@@ -39,7 +39,7 @@ completion.
       fallback. Verified live via `just e2e-perf`/`-full`: `page_ready` p95
       ≈ 0.43 s cold on this host.)*
 - [ ] Emit interaction presentation commits for tab/space selection, close,
-      sidebar visibility/resize, focus target, and later split mutations. *(Initial tab selection, active close, Cmd-T, sidebar toggle, pointer tab
+      sidebar visibility/resize, focus target, and later split mutations. *(Initial tab selection, active close, Cmd-T, sidebar toggle, sidebar drag resize, collapse/restore, pointer tab
       selection, and reopen are covered; each commits synchronously against the
       authoritative post-mutation state because the offscreen harness never
       yields an `on_next_frame` frame callback. Reopen is a session-recreation
@@ -90,6 +90,7 @@ completion.
 - [x] Warm tab switch in both directions with stable WebViewIds and no reload.
 - [x] Active-tab close → correct neighbor visible and focused.
 - [x] Sidebar open/close toggle with resulting geometry and state assertions.
+- [x] Sidebar drag-resize commit and collapse/restore through the production path. *(The `sidebar_resize` scenario commits at the exact clamped geometry — typed min/default/max plus the content floor let the drivers compute the same expectation the render enforces, so a fast-but-wrong sample is rejected in the app; the `sidebar_restore` scenario measures expand restoring the last expanded width after an unmeasured production collapse. Both join the 30-sample matrix with the 50 ms p95 / 100 ms max next-frame budget; p95 ≈ 0.002 ms on this host.)*
 - [x] Space switching with already-warm selected sessions when Spaces land. *(The `space_switch` scenario alternates two warm spaces of one profile through the production activation path, asserting the destination space, its own WebViewId, the unchanged session count, chrome focus, and the rendered selected space row; p95 ≈ 0.1 ms on this host against the gate-enforced 50 ms p95 / 100 ms max warm budget.)*
 - [ ] Dense sidebar scroll/frame-time benchmark when the real Phase-4 list
       lands.

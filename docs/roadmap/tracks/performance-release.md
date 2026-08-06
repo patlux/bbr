@@ -24,7 +24,7 @@ Parent phases: [Phase 0](../phases/00-foundation.md), [Phase 4](../phases/04-ui-
 - [x] Time to deterministic local fixture readiness, measured separately from shell presentation.
 - [ ] Tab/space switch latency for active, warm, suspended, and discarded states. *(Warm tab and warm space switching are measured through the production presentation path; active/suspended/discarded space states remain.)*
 - [x] Active-tab close to correct neighbor presentation.
-- [ ] Sidebar open, close/toggle, resize, and restoration latency. *(Toggle implemented; resize/restoration remain.)*
+- [x] Sidebar open, close/toggle, resize, and restoration latency. *(Toggle, drag resize, and collapse/restore are measured through the production presentation path; `sidebar_resize`/`sidebar_restore` join the 30-sample interaction matrix with the same 50/100 ms next-frame budget.)*
 - [ ] Command-bar first-result and full-search latency.
 - [ ] Sidebar frame time with 500 tabs.
 - [ ] Idle CPU, wakeups, and energy impact.

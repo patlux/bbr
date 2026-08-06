@@ -311,15 +311,26 @@ src/
    and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
 
-The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs`) renders the
+The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs` + the split
+`app/sidebar.rs`/`app/sidebar_view.rs`/`app/spaces.rs`/`app/tab.rs`/
+`app/interaction.rs` + the `shell/` presentation modules) renders the
 Chassis-tokenized sidebar (`crates/bbr-app/src/theme.rs` tokens, `palette.rs`
 ramps, `components.rs` reusable typed components — never local magic values):
 brand block, command bar (mirrors the live URL; inline cursor; accepts typing,
 backspace, enter), the controller-backed tab surface, a status line
-(`shell.rs::status_line`, incl. "⚠ Web content process terminated"), and the
-sidebar toggle. `CommandBarMode` separates `Inactive`, current-tab `Location`,
-and staged `NewTab` intent. The content area is the `NativeWebViewSlot`, the
-empty-space pane (§11.8), or the crash panel (§10.7).
+(`shell::status_line`, incl. "⚠ Web content process terminated"), and the
+sidebar toggle. `CommandBarMode` separates `Inactive`, current-tab
+`Location`, and staged `NewTab` intent. The content area is the
+`NativeWebViewSlot`, the empty-space pane (§11.8), or the crash panel (§10.7).
+The sidebar rail itself is the adjustable, collapsible `SidebarGeometry`
+(`crates/bbr-app/src/sidebar.rs`): DESIGN §5/§11.4 min/default/max widths
+(200/260/360 pt) with a 64 pt native-content floor, narrow-window clamping
+that never yields zero or negative native geometry, collapse memory that
+expand restores, and a 4 pt divider surface (`bbr-sidebar-divider`) carrying
+pointer drag and the focused-divider keyboard equivalents (`←`/`→`/`0`).
+`crates/bbr-app/src/shell.rs` was split into `shell/` (presentation, tab,
+space, snapshot modules) so the touched presentation code stays below the
+~500-line budget.
 
 The tab surface (DESIGN.md §11.1/§11.2) renders the active space's pinned
 region above the regular region, both derived from the controller snapshot
@@ -405,8 +416,13 @@ scenarios. The space slice adds visible profile/space navigation with
 round-robin identity hues, pointer + keyboard activation, per-space
 active-tab restoration without recreating warm sessions, and cross-profile
 view-only switches — proven by `just e2e-shell-spaces` and the
-`space_switch` performance scenario. Still missing: sidebar resize/drag, tab
-drag/reorder UI, and 500-tab density.
+`space_switch` performance scenario. The adjustable/collapsible sidebar slice
+adds the DESIGN §5/§11.4 width contract, pointer drag + keyboard resize/
+reset parity, Cmd-B collapse/expand with last-expanded-width restoration, and
+compact-window clamping that keeps the native WKWebView geometry strictly
+positive — proven by `just e2e-shell-sidebar` and the `sidebar_resize` /
+`sidebar_restore` performance scenarios. Still missing: tab drag/reorder UI
+and 500-tab density.
 
 ---
 
@@ -517,8 +533,8 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 2. **Profile/space visibility is complete; cross-context polish remains.** The
    sidebar renders every profile's spaces with chips, activation works through
    pointer + keyboard, and empty spaces name their profile; the §11.3 command-
-   field destination hint during switching, sidebar resize, and tab drag/move
-   UI remain Phase-4 slices.
+   field destination hint during switching and tab drag/move UI remain
+   Phase-4 slices.
 3. **`--bbr-clock` is a no-op**; the `TimeSource` seam is intentionally not
    added until time-based logic exists (debounces in Phase 5/7).
 4. **Popups/new windows are suppressed** (`createWebViewWithConfiguration` →

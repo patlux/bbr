@@ -43,7 +43,7 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
       *(Per-space active tab + live session are restored on activation; warm
       switching only show/hides. Same-profile moves keep the WebViewId;
       cross-profile moves follow the recreation policy.)*
-- [ ] Add adjustable, collapsible sidebar behavior with presentation-commit benchmarks for open, close/toggle, and resize. *(Cmd-B toggle exists; resize/drag and the remaining benchmarks land with the sidebar slice.)*
+- [x] Add adjustable, collapsible sidebar behavior with presentation-commit benchmarks for open, close/toggle, and resize. *(Cmd-B toggle existed; the slice adds the DESIGN §5/§11.4 width contract (200–360 pt adjustable, 260 default, 64 pt native-content floor), a visible 4 pt drag hairline with pointer drag through the production GPUI listener path, keyboard equivalents on the focused divider (`←`/`→` step, `0` reset), collapse that preserves the last expanded width and expand that restores it, and narrow-window clamping that never hands the native slot zero or negative geometry. Proven by `just e2e-shell-sidebar` (pointer drag, keyboard parity, collapse/reopen restoration, compact-window clamp, engine-received native content rect, selected WebViewId/session preservation, chrome focus contract) and the `sidebar_resize`/`sidebar_restore` performance scenarios with the toggle already gate-enforced.)*
 - [ ] Add drag reorder and move between spaces after keyboard equivalents exist.
 - [ ] Handle empty space, first launch, many tabs, long titles, missing favicons, and crashed pages. *(Empty space, long titles, missing favicons, and crashed
       pages are covered with E2E evidence; 500-tab density remains with the dense-list slice — do not mark complete without measured frame-time evidence.)*
@@ -53,8 +53,8 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 - [ ] Shell follows the [UI design-system track](../tracks/ui-design-system.md).
 - [ ] Keyboard and VoiceOver acceptance in [Accessibility track](../tracks/accessibility.md) is green.
 - [ ] Tab/space E2E covers open, switch, close, reopen, pin, reorder, and profile labels.
-- [ ] Performance E2E covers warm tab/space switching, active-tab close, and sidebar open/close/toggle through the production presentation path. *(Warm tab switching, warm space switching, active-tab close, sidebar toggle, pointer selection, reopen, and keyboard activation are all measured; sidebar resize and dense-list scenarios remain.)*
-- [ ] Warm tab/space switching and sidebar visibility changes meet the budgets in the [performance contract](../../product/performance-contract.md). *(Warm tab/space switching and sidebar toggle are gate-enforced against the 50/100 ms warm budgets; resize/restoration remain.)*
+- [x] Performance E2E covers warm tab/space switching, active-tab close, and sidebar open/close/toggle through the production presentation path. *(Warm tab switching, warm space switching, active-tab close, sidebar toggle, pointer selection, reopen, keyboard activation, sidebar drag resize, and collapse/restore are all measured through the production presentation path.)*
+- [x] Warm tab/space switching and sidebar visibility changes meet the budgets in the [performance contract](../../product/performance-contract.md). *(Warm tab/space switching, sidebar toggle, sidebar drag resize, and collapse/restore are gate-enforced against the 50/100 ms warm budgets; the dense-list scenario remains.)*
 - [ ] Sidebar remains responsive with 500 persisted tabs and 50 live/warm sessions, with measured frame-time evidence.
 
 ## When this UI pass happens
