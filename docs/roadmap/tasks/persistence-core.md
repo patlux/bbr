@@ -249,17 +249,17 @@ Functional evidence: cargo test -p bbr-persistence: 11 contract tests passed
   newer_schema, and failed_migration. Inventory assertions compare main/-wal/-shm
   existence and bytes, user_version, schema, and ordered logical table contents.
 Real-app E2E: not applicable; later app-composition packet owns it.
-Performance evidence: release artifact
+Performance evidence: integrated-main release artifact
   target/bbr-persistence-artifacts/repository-benchmark.txt, fresh run
-  1786049427549-97691; 10 warmups + 100 samples each. migration load
-  p50/p95/max 468250/620542/6022833 ns; current load
-  170333/178334/180166 ns; dense write 1536375/1667667/1740625 ns with exactly
+  1786049611324-8922; 10 warmups + 100 samples each. migration load
+  p50/p95/max 504458/611583/5815958 ns; current load
+  173000/179458/192459 ns; dense write 1595833/1846208/5951291 ns with exactly
   1 committed transaction, 511 SQL statements, 0 deleted rows, 505 inserted rows.
-Roadmap/documentation updates: this packet evidence and delivery ledger only;
-  Phase 7 and ROADMAP.md intentionally unchanged. just roadmap passed.
+Roadmap/documentation updates: packet evidence plus serial integration status
+  in Phase 7 and ROADMAP.md. just roadmap passed.
 Open blockers and non-goals: no app startup/shutdown, native hydration,
   force-quit E2E, history/provider composition, debounce, or product startup
   latency claim; those remain serial integration/later Phase-7 work.
-Worktree state: verified and independently reviewed on
-  parallel/persistence-core at 01f0d39; root Cargo.toml and Cargo.lock untouched.
+Worktree state: lane settled and writer-free at cc7d6b5; integrated on main at
+  3a3c7f1. Root Cargo.toml and Cargo.lock untouched.
 ```

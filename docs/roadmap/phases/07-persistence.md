@@ -8,28 +8,27 @@ Browser organization restores safely after normal quit, force quit, and schema u
 
 ## Parallel lane
 
-After the [parallel-delivery foundation](../tasks/parallel-delivery-foundation.md)
-lands, activate persistence core as a bounded lane rooted at that clean commit.
-`crates/bbr-persistence/**` plus checked-in migration fixtures are its exclusive
-surface; domain DTOs, app startup/shutdown composition, future migration
-numbering, and command-history provider integration remain serial integration
-points. The serial [SQLite dependency contract](../tasks/persistence-sqlite-contract.md)
-is complete. The reviewed [portable persistence-core packet](../tasks/persistence-core.md)
-records schema version 1 and the exact post-promotion implementation anchor
-`aed5bc77d416f69b913876e3977020d99abffe26`. It is ready for lane settlement
-and remains writer-free.
+The bounded [portable persistence-core packet](../tasks/persistence-core.md)
+landed on `main` at `3a3c7f1f51759aa68ecf84b519b0c7acd3826889` after independent review and
+focused correctness remediation. It owns schema version 1, repository DTOs,
+transactional complete-snapshot writes, read-only restore/recovery, checked-in
+migration fixtures, and dense repository distributions. The former
+`parallel/persistence-core` lane is settled and writer-free. Domain mapping,
+app startup/shutdown composition, future migration numbering, lazy native
+session hydration, force-quit E2E, and command-history provider integration
+remain serial integration points.
 
 ## Checklist
 
-- [ ] Add `bbr-persistence` with SQLite repository interfaces and versioned migrations. *(The dependency-free crate landing zone exists with the parallel-delivery foundation; repository/schema behavior remains open.)*
-- [ ] Persist profiles, spaces, tabs, pin/order state, active tabs, and recently closed tabs.
-- [ ] Persist window geometry, sidebar state, and split layouts.
+- [x] Add `bbr-persistence` with SQLite repository interfaces and versioned migrations. *(Schema v1, strict validation, typed errors, and fixture-backed `0 -> 1` migration are integrated.)*
+- [x] Persist profiles, spaces, tabs, pin/order state, active tabs, and recently closed tabs.
+- [x] Persist window geometry, sidebar state, and split layouts.
 - [ ] Persist history and per-site settings/zoom.
-- [ ] Write structural changes transactionally.
+- [x] Write structural changes transactionally.
 - [ ] Debounce transient title/favicon/history metadata writes.
 - [ ] Restore browser chrome first and hydrate only visible sessions.
-- [ ] Recover optional corrupt session state without deleting profile browsing data.
-- [ ] Add checked-in migration fixtures and force-quit recovery tests.
+- [x] Recover optional corrupt session state without deleting profile browsing data. *(Repository projection returns ordered typed warnings without mutating persisted state.)*
+- [ ] Add checked-in migration fixtures and force-quit recovery tests. *(Migration/recovery fixtures are integrated; real-app force-quit recovery remains in the composition slice.)*
 - [ ] Add first-run, empty, migration-error, and recovery UI states.
 
 ## Phase exit
