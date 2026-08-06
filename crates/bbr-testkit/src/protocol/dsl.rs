@@ -1,6 +1,7 @@
 //! Context-free request helpers, so harness code reads as a script.
 
 use super::*;
+use bbr_web::{ProfileId, WebAction, WebViewId};
 
 pub fn hello(token: &str, capabilities: &[&str]) -> Request {
     Request::Hello {
