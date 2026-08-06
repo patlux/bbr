@@ -47,6 +47,9 @@ responder).
   polling until a semantic window-resized event is added.
 - **No production network listener.** Gateway = loopback-unix-socket only,
   token-authenticated, `testkit`-feature-gated.
+- **One host-wide GUI gate across worktrees.** Every bounded real-app and
+  performance recipe runs through `scripts/with_gui_lock.py`; the lock key is
+  Git's common directory, so sibling worktrees cannot overlap AppKit windows.
 
 ---
 
@@ -354,9 +357,9 @@ the >15% relative rule activates, and the `bbr-e2e` crate with `manifest.toml`
 per suite, `scripts/run_e2e.py` runner, `nextest.toml` `[profile.e2e]`, and
 `docs/e2e-protocol.md` remain planned.
 
-## 7d. The shell-spaces suites (`bbr-app/tests/e2e_shell_spaces{,_keyboard}.rs`)
+## 7d. The shell-spaces suites (`bbr-app/tests/e2e_shell_spaces{,_hint,_keyboard}.rs`)
 
-Two `#[ignore]`d macOS-only suites (the shared harness lives in
+Three `#[ignore]`d macOS-only suites (the shared harness lives in
 `tests/e2e_common/`) prove the visible profile/space surface over real
 WKWebViews:
 
@@ -376,16 +379,23 @@ WKWebViews:
    broadcast), real `↑/↓` traversal of the focused space list, and same-
    profile moves that keep the WebViewId (`recreated: false`) versus
    cross-profile moves that recreate it.
+3. **Hint suite** (`just e2e-shell-spaces` third binary,
+   `e2e_shell_spaces_hint.rs`): the DESIGN §11.3 cross-context rule over real
+   WKWebViews — a cross-profile space activation renders the destination
+   profile chip + `"in Profile · <title>"` at the top of the command field
+   for one interaction, same-profile switching never announces a profile
+   transition, the hint clears at a deterministic user-interaction boundary
+   (a tab mutation or a command-bar mode entry), chrome focus and the warm
+   session count/WebViewIds are untouched, the staged-`MoveTab`
+   `command_bar_hint` is a separate surface that never coexists, and
+   activating an *empty* space of another profile announces the destination
+   (hint + chip + semantic node) while the empty pane names the owning
+   profile and renders no web view, with the hint re-set on a reverse
+   cross-profile activation and cleared by the command-bar boundary.
 
-Both suites also cover the DESIGN §11.3 cross-context rule over real
-WKWebViews: a cross-profile space activation renders the destination profile
-chip + `"in Profile · <title>"` at the top of the command field for one
-interaction (pointer and keyboard paths), same-profile switching never
-announces a profile transition, the hint clears at a deterministic
-user-interaction boundary (a tab mutation or a command-bar mode entry),
-chrome focus and the warm session count/WebViewIds are untouched, and the
-staged-`MoveTab` `command_bar_hint` is a separate surface that never coexists
-with it.
+Both activation paths (pointer rows and keyboard traversal) assert the
+§11.3 rule; the hint suite covers the pointer path plus the empty-space
+branch, the keyboard suite the `↑/↓` traversal path.
 
 The `space_switch` interaction benchmark (in `tests/perf_common/benchmarks.rs`)
 measures alternating warm-space activation through `BenchmarkActivateSpace`,
@@ -539,6 +549,25 @@ p95 / 100 ms max warm budget, and is asserted in the full-gate sample counts.
   future work.
 
 ---
+
+## 8a. Worktree-safe GUI serialization
+
+A sequential `just e2e` inside one process does not prevent another worktree
+from starting a second AppKit suite. `scripts/with_gui_lock.py` closes that gap:
+
+- all `just e2e-*` and performance recipes acquire one advisory `flock` derived
+  from `git rev-parse --git-common-dir` before starting their existing bounded
+  command;
+- holder metadata records PID, Pi session id, and cwd for diagnostics;
+- the OS releases the lock when a process exits, so no stale lock-file cleanup
+  or destructive recovery is needed;
+- lock waiting is bounded (default 1800 seconds, configurable through
+  `BBR_GUI_LOCK_TIMEOUT_SECONDS`) and exits 75 with holder metadata on timeout;
+- unit contract tests prove command exit forwarding, cross-process
+  serialization, and timeout behavior before real-app validation.
+
+The gate serializes execution only; it does not alter fixtures, presentation
+milestones, samples, budgets, testkit transport, or product assertions.
 
 ## 9. Commands (implemented)
 

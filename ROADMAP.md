@@ -131,9 +131,13 @@ Completed today:
   separate surface that never coexists with it. The hint renders through the
   production command-field path with a stable `bbr-command-profile-hint` id,
   typed snapshot exposure, and a §15 `Chip` semantic node — proven by
-  `just e2e-shell-spaces` (pointer + keyboard suites) and the new
+  `just e2e-shell-spaces` (pointer, keyboard, and hint suites — the hint
+  suite covers the pointer path, the keyboard path, and the empty cross-
+  profile branch) and the new
   `space_switch_cross_profile` scenario in the gate-enforced perf matrix
-  (p95 ≈ 0.195 ms against the 50 ms warm budget, sessions never recreated).
+  (stored artifact `crates/bbr-app/target/bbr-perf-artifacts/short/performance.json`,
+  Mac16,5, canonical=false: samples 30, p95 0.066125 ms, max 0.079875 ms
+  against the 50/100 ms warm budget, sessions never recreated).
   Full slice: [cross-context profile-hint task packet](docs/roadmap/tasks/cross-context-profile-hint.md).
 
 Next release-shaped outcome:

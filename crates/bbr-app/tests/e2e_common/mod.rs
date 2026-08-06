@@ -2,7 +2,8 @@
 //! testkit gateway, drive it over the typed protocol, and keep failure
 //! artifacts (event ring + app stderr) in the profile dir.
 //!
-//! Used by the shell-tabs and shell-spaces suites. GUI suites must not run in
+//! Used by the shell-tabs and shell-spaces suites (including the
+//! shell-spaces-hint and shell-spaces-keyboard binaries). GUI suites must not run in
 //! parallel: AppKit window geometry interferes through screen clamping, so
 //! every test in a suite takes the serial lock. No sleeps: steps synchronize
 //! on semantic events or snapshot state under deadlines.

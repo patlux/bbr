@@ -66,27 +66,34 @@ mode entry). It is a distinct transient from the `MoveTab` staged
 
 ### Unit and contract
 
-- [x] App-level unit tests for hint derivation (cross-profile sets, same-profile
-      clears, lifetime boundary clears, distinct from `command_bar_hint`).
-      *(The app derives the hint exclusively in `activate_space` from the
-      source/destination profile comparison; the lifetime boundary (tab
-      mutation, command-bar mode entry, staged move) is the single
-      `clear_command_profile_hint` seam. The real-app E2E asserts the
-      derivation and both clear boundaries; the snapshot `visible_ids` and
-      semantic-tree unit tests assert the typed exposure.)*
-- [x] Semantic-tree unit tests for the `bbr-command-profile-hint` node.
+- [x] §15 semantic-tree unit tests for the `bbr-command-profile-hint` node:
+      the hint renders as a `Chip` role under the command field with the
+      `"in Profile · <title>"` name and the §12 monogram chip child, and is
+      absent when no hint is set.
       *(`cross_context_profile_hint_exposes_chip_and_label_under_the_field`)*
-- [x] Snapshot `visible_ids` derivation includes the hint ids only when shown.
+- [x] Snapshot `visible_ids` derivation unit tests: the hint id is exposed
+      only while the hint is shown.
       *(`visible_ids_expose_the_cross_context_profile_hint_when_shown`)*
 
 ### Real-app E2E
 
-- [x] Pointer suite (`just e2e-shell-spaces`): cross-profile activation shows
-      the hint with copy `in Profile · <title>`, the chip + hint ids, typed
-      semantic node, chrome focus preserved, sessions/WebView unchanged; the
-      hint clears on the next interaction; same-profile activation shows no
-      hint; MoveTab staging is a separate hint.
+- [x] Pointer hint suite (`just e2e-shell-spaces`, dedicated
+      `e2e_shell_spaces_hint.rs` binary): the app derives the hint
+      exclusively in `activate_space` from the source/destination profile
+      comparison — cross-profile activation shows the hint with copy
+      `in Profile · <title>`, the chip + hint ids, the typed semantic node,
+      chrome focus preserved, sessions/WebView unchanged; the hint clears at
+      the deterministic lifetime boundary (command-bar mode entry, tab
+      mutation, staged move) and same-profile activation never sets it.
       *(`cross_profile_switch_shows_and_clears_the_command_field_profile_hint`)*
+- [x] Empty-branch real-app assertion: activating an empty space of a
+      different profile renders the profile chip + explicit
+      `in Profile · <title>` hint while the empty pane names the owning
+      profile (`active_profile_title`/hue) and renders no web view; a
+      reverse cross-profile activation re-sets the hint for the new
+      destination (never stale copy) and the command-bar boundary clears it,
+      with chrome focus and the warm session count invariant.
+      *(`cross_profile_activation_of_an_empty_space_announces_the_destination_profile`)*
 - [x] Keyboard suite (`just e2e-shell-spaces` second binary): `↑`/`↓`
       traversal across profiles sets/clears the hint deterministically.
       *(`keyboard_cross_profile_traversal_sets_and_clears_the_profile_hint`)*
@@ -97,15 +104,21 @@ mode entry). It is a distinct transient from the `MoveTab` staged
       30 samples of alternating cross-profile activation with the hint
       asserted in the driver snapshot and guarded in-app; 50/100 ms warm
       budget, same session count across the alternation.
-      *(Measured p95 ≈ 0.195 ms / max ≈ 0.48 ms against the 50/100 ms warm
-      budget; 30 raw samples recorded.)*
+      *(Named stored artifact
+      `crates/bbr-app/target/bbr-perf-artifacts/short/performance.json`,
+      host Mac16,5, canonical=false: samples 30, p50 0.030166 ms,
+      p95 0.066125 ms, max 0.079875 ms — well under the
+      50/100 ms warm budget; same-profile `space_switch` p95 0.070166 ms in
+      the same run. The artifact's recorded build revision is adb9a5c, the
+      clean main that precedes this remediation commit; canonical=false is
+      stated in the artifact.)*
 
 ## Completion gates
 
 ```bash
 just verify
 cargo clippy -p bbr --features testkit --all-targets -- -D warnings
-just e2e-shell-spaces
+just e2e-shell-spaces   # runs all three binaries: spaces, spaces_keyboard, spaces_hint
 just e2e-perf
 just e2e
 just roadmap
@@ -139,14 +152,23 @@ lifetime ruling that contradicts the interaction-driven boundary).
 ```text
 Outcome:       §11.3 cross-context command-field profile hint, one-interaction lifetime.
 Commits:       b91f6a9 "feat(shell): announce the cross-profile destination in the command field".
-Functional evidence:  unit + semantic-tree + snapshot tests.
-Real-app E2E:  just e2e-shell-spaces (pointer + keyboard suites).
-Performance evidence: space_switch_cross_profile in the gate matrix (p95 ≈ 0.195 ms).
+               Remediation follow-up (this commit): split the hint responsibility into a
+               dedicated `e2e_shell_spaces_hint.rs` binary (pointer + empty-branch real-app
+               assertions), wired into `just e2e-shell-spaces` and the canonical `just e2e`;
+               the ordinary spaces suite returned below 500 lines.
+Functional evidence:  semantic-tree + snapshot visible_ids unit tests (typed exposure);
+               derivation + lifetime asserted by the real-app hint suites.
+Real-app E2E:  just e2e-shell-spaces (pointer, keyboard, and hint binaries — the hint
+               binary includes the empty cross-profile branch).
+Performance evidence: space_switch_cross_profile in the gate matrix; stored artifact
+               crates/bbr-app/target/bbr-perf-artifacts/short/performance.json
+               (Mac16,5, canonical=false): samples 30, p50 0.030166 ms,
+               p95 0.066125 ms, max 0.079875 ms.
 Roadmap/documentation updates: ROADMAP, phase 04, ui/accessibility/testing/
                performance tracks, ARCHITECTURE, E2E_ARCHITECTURE,
                browser-interactions, task packet.
 Open blockers and non-goals: no timed expiry, no generic notifications,
                no platform Accessibility (Phase 9), canonical dense
                frame-time evidence and Phase-7 persistence remain open.
-Worktree state: main @ f570a7c or later, single writer.
+Worktree state: main @ remediation commit, single writer.
 ```
