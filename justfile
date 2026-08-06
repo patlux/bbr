@@ -5,6 +5,11 @@ check_timeout := env_var_or_default("BBR_CHECK_TIMEOUT", "5m")
 test_timeout := env_var_or_default("BBR_TEST_TIMEOUT", "5m")
 e2e_timeout := env_var_or_default("BBR_E2E_TIMEOUT", "2m")
 e2e_full_timeout := env_var_or_default("BBR_E2E_FULL_TIMEOUT", "15m")
+# The dense suite seeds hundreds of real WKWebView sessions through the
+# production controller open path (each transient session is destroyed before
+# the next open), so it legitimately needs more than the 2-minute interaction
+# budget; the per-wait deadlines inside the suite stay bounded.
+e2e_dense_timeout := env_var_or_default("BBR_E2E_DENSE_TIMEOUT", "8m")
 run_timeout := env_var_or_default("BBR_RUN_TIMEOUT", "8h")
 xcode_developer_dir := env_var_or_default("BBR_XCODE_DEVELOPER_DIR", "/Applications/Xcode-16.4.0.app/Contents/Developer")
 
@@ -49,6 +54,10 @@ e2e-shell-sidebar:
 e2e-shell-organize:
     DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_organize -- --ignored --nocapture
 
+e2e-shell-dense:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_dense -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_dense_edge -- --ignored --nocapture
+
 e2e-perf:
     DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance -- --ignored --nocapture
 
@@ -65,6 +74,6 @@ e2e-perf-inject:
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-organize e2e-perf
+e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-organize e2e-shell-dense e2e-perf
 
 verify: fmt check test clippy roadmap
