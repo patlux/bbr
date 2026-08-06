@@ -9,15 +9,18 @@
 //!
 //! The components are split by concern so no module outgrows the ~500-line
 //! budget: [`tab_row`] owns the row anatomy and its controls, [`space`] the
-//! profile chips and space rows, [`pane`] the empty/crash panes, and
-//! [`section`] the section labels. Everything callers reference keeps the
-//! single `crate::components::*` path through the re-exports below.
+//! profile chips and space rows, [`pane`] the empty/crash panes, [`section`]
+//! the section labels, and [`icons`] the §7 drawn glyph catalog. Everything
+//! callers reference keeps the single `crate::components::*` path through the
+//! re-exports below.
 
+pub mod icons;
 pub mod pane;
 pub mod section;
 pub mod space;
 pub mod tab_row;
 
+pub use icons::Icon;
 pub use pane::{crash_panel, empty_space_pane};
 pub use section::section_label;
 #[cfg(feature = "testkit")]

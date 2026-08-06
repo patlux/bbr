@@ -4,6 +4,8 @@ use gpui::{div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, Stateful,
 
 use crate::theme::{Spacing, Theme};
 
+use super::Icon;
+
 /// §11.8 empty space pane: `material:canvas` mark, `type:display` headline,
 /// profile line, and a primary "New Tab ⌘T" button that focuses the command
 /// bar in NewTab mode. `profile_line` names the owning profile (§11.8).
@@ -22,19 +24,7 @@ pub fn empty_space_pane(
         .justify_center()
         .gap(Spacing::sp3())
         .bg(theme.palette.surface_canvas)
-        .child(
-            div()
-                .size(px(64.0))
-                .rounded(theme.radius.large())
-                .bg(theme.palette.surface_sidebar)
-                .flex()
-                .items_center()
-                .justify_center()
-                .text_size(theme.type_.display.size)
-                .font_weight(theme.type_.display.weight)
-                .text_color(theme.palette.ink_secondary)
-                .child("B"),
-        )
+        .child(Icon::ChassisMark.canvas(theme, px(64.0)))
         .child(
             div()
                 .text_size(theme.type_.display.size)
@@ -65,8 +55,9 @@ pub fn empty_space_pane(
 }
 
 /// §11.8 crash panel: replaces the glass area of a crashed tab with the
-/// lifering glyph, copy, and Reload / Close tab actions. The crashed tab row
-/// stays selected and listed; the native view is hidden.
+/// 32 pt §7 lifering glyph (outer + inner ring in `status.error`), copy, and
+/// Reload / Close tab actions. The crashed tab row stays selected and listed;
+/// the native view is hidden.
 pub fn crash_panel(
     theme: &Theme,
     on_reload: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
@@ -85,15 +76,10 @@ pub fn crash_panel(
         .child(
             div()
                 .size(px(32.0))
-                .rounded(theme.radius.full())
-                .border_2()
-                .border_color(theme.palette.status_error)
                 .flex()
                 .items_center()
                 .justify_center()
-                .text_size(theme.type_.label.size)
-                .text_color(theme.palette.status_error)
-                .child("!"),
+                .child(Icon::Lifering.canvas(theme, px(32.0))),
         )
         .child(
             div()
