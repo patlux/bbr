@@ -15,36 +15,56 @@ pub struct Profile {
     pub spaces: Vec<Space>,
 }
 
+/// The six DESIGN.md §12 profile hues.
+///
+/// Assignment is round-robin and stable for the profile's lifetime: the hue
+/// is a portable identity fact, while the concrete tile/letter colors are a
+/// presentation concern resolved by the shell's palette from this name. The
+/// variant set and machine-readable names mirror `bbr-domain` exactly; the
+/// persistence crate must not depend on `bbr-domain`, so the enum and its
+/// serialization are duplicated here as the repository's persisted contract.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProfileHue {
-    Red,
-    Orange,
-    Yellow,
-    Green,
-    Blue,
-    Purple,
+    Cobalt,
+    Violet,
+    Fuchsia,
+    Amber,
+    Terracotta,
+    Slate,
 }
 
 impl ProfileHue {
+    /// All hues in round-robin assignment order (DESIGN.md §12).
+    pub const ALL: [ProfileHue; 6] = [
+        ProfileHue::Cobalt,
+        ProfileHue::Violet,
+        ProfileHue::Fuchsia,
+        ProfileHue::Amber,
+        ProfileHue::Terracotta,
+        ProfileHue::Slate,
+    ];
+
+    /// The canonical machine-readable name used by persisted rows and E2E
+    /// assertions (DESIGN.md §12 allowed values).
     pub(crate) const fn as_str(self) -> &'static str {
         match self {
-            Self::Red => "red",
-            Self::Orange => "orange",
-            Self::Yellow => "yellow",
-            Self::Green => "green",
-            Self::Blue => "blue",
-            Self::Purple => "purple",
+            Self::Cobalt => "cobalt",
+            Self::Violet => "violet",
+            Self::Fuchsia => "fuchsia",
+            Self::Amber => "amber",
+            Self::Terracotta => "terracotta",
+            Self::Slate => "slate",
         }
     }
 
     pub(crate) fn parse(value: &str) -> Option<Self> {
         match value {
-            "red" => Some(Self::Red),
-            "orange" => Some(Self::Orange),
-            "yellow" => Some(Self::Yellow),
-            "green" => Some(Self::Green),
-            "blue" => Some(Self::Blue),
-            "purple" => Some(Self::Purple),
+            "cobalt" => Some(Self::Cobalt),
+            "violet" => Some(Self::Violet),
+            "fuchsia" => Some(Self::Fuchsia),
+            "amber" => Some(Self::Amber),
+            "terracotta" => Some(Self::Terracotta),
+            "slate" => Some(Self::Slate),
             _ => None,
         }
     }

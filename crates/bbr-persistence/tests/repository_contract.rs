@@ -60,6 +60,7 @@ struct Inventory {
     wal: Option<Vec<u8>>,
     shm: Option<Vec<u8>>,
     user_version: i64,
+    schema: Vec<(String, String, String)>,
     logical: Vec<(String, Vec<Vec<String>>)>,
 }
 
@@ -72,13 +73,27 @@ fn inventory(path: &Path) -> Inventory {
     let user_version = connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    let tables = connection
-        .prepare("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name")
+    let schema = connection
+        .prepare(
+            "SELECT type, name, sql FROM sqlite_schema \
+             WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name",
+        )
         .unwrap()
-        .query_map([], |row| row.get::<_, String>(0))
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, Option<String>>(2)?.unwrap_or_default(),
+            ))
+        })
         .unwrap()
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
+    let tables = schema
+        .iter()
+        .filter(|(entry_type, ..)| entry_type == "table")
+        .map(|(_, name, _)| name.clone())
+        .collect::<Vec<_>>();
     let logical = tables
         .into_iter()
         .map(|table| {
@@ -117,6 +132,7 @@ fn inventory(path: &Path) -> Inventory {
         wal: fs::read(sidecar(path, "-wal")).ok(),
         shm: fs::read(sidecar(path, "-shm")).ok(),
         user_version,
+        schema,
         logical,
     }
 }
@@ -138,7 +154,7 @@ fn sample_snapshot(tab_count: usize) -> Snapshot {
         profiles: vec![Profile {
             id: 1,
             title: "Personal".into(),
-            hue: ProfileHue::Blue,
+            hue: ProfileHue::Cobalt,
             spaces: vec![Space {
                 id: 10,
                 title: "Main".into(),
@@ -285,6 +301,110 @@ fn invalid_write_rejects_whole_snapshot() {
         PersistenceError::InvalidSnapshot(InvalidSnapshotIssue::InvalidUrl { tab_id: 100 })
     );
     assert_eq!(inventory(&db.0), before);
+}
+
+#[test]
+fn recently_closed_identity_collisions_reject_whole_write_across_every_kind() {
+    // Table-driven regression: every persisted identity kind — profile, space,
+    // live tab, window, and another recently-closed entry — participates in the
+    // same global identity set, so a recently-closed `tab_id` that collides
+    // with any of them must be rejected with the typed InvalidSnapshot error
+    // before any write, and the previously persisted complete inventory must
+    // remain byte-for-byte untouched (main, -wal, -shm, user_version, schema,
+    // and ordered logical rows).
+    let cases = [
+        ("profile", 1_u64),
+        ("space", 10_u64),
+        ("live tab", 100_u64),
+        ("window", 50_u64),
+        ("another recently closed", 900_u64),
+    ];
+    for (kind, colliding_id) in cases {
+        let db = TempDb::new("closed-collision");
+        let repository = db.repository();
+        repository.initialize_and_restore().unwrap();
+        let valid = sample_snapshot(3);
+        repository.replace_snapshot(&valid).unwrap();
+        let before = inventory(&db.0);
+
+        let mut invalid = valid.clone();
+        let space = &mut invalid.profiles[0].spaces[0];
+        space.recently_closed.push(RecentlyClosedTab {
+            tab_id: colliding_id,
+            title: "Collision".into(),
+            url: "https://collision.test/".into(),
+            pinned: false,
+            former_position: 0,
+        });
+        assert_eq!(
+            repository.replace_snapshot(&invalid).unwrap_err(),
+            PersistenceError::InvalidSnapshot(
+                InvalidSnapshotIssue::RecentlyClosedIdentityCollision {
+                    tab_id: colliding_id
+                }
+            )
+        );
+        // The rejected write left the persisted complete inventory unchanged:
+        // main/-wal/-shm existence and bytes, user_version, schema, and the
+        // ordered logical rows of every table.
+        assert_eq!(inventory(&db.0), before, "kind: {kind}");
+    }
+}
+
+#[test]
+fn all_six_profile_hues_round_trip_without_domain_dependency() {
+    let db = TempDb::new("hue-round-trip");
+    let repository = db.repository();
+    repository.initialize_and_restore().unwrap();
+    let hues = [
+        (ProfileHue::Cobalt, "cobalt"),
+        (ProfileHue::Violet, "violet"),
+        (ProfileHue::Fuchsia, "fuchsia"),
+        (ProfileHue::Amber, "amber"),
+        (ProfileHue::Terracotta, "terracotta"),
+        (ProfileHue::Slate, "slate"),
+    ];
+    assert_eq!(
+        ProfileHue::ALL,
+        hues.map(|(hue, _)| hue),
+        "assignment order stays aligned with the persisted contract"
+    );
+    for (position, (hue, expected_name)) in hues.into_iter().enumerate() {
+        let snapshot = Snapshot {
+            profiles: vec![Profile {
+                id: 1 + position as u64,
+                title: format!("Hue {position}"),
+                hue,
+                spaces: Vec::new(),
+            }],
+            windows: Vec::new(),
+        };
+        repository.replace_snapshot(&snapshot).unwrap();
+        let connection = rusqlite::Connection::open(&db.0).unwrap();
+        let persisted_name = connection
+            .query_row("SELECT hue FROM profiles", [], |row| {
+                row.get::<_, String>(0)
+            })
+            .unwrap();
+        drop(connection);
+        assert_eq!(persisted_name, expected_name, "hue: {hue:?}");
+        assert_eq!(
+            repository.restore_read_only().unwrap().snapshot,
+            snapshot,
+            "hue: {hue:?}"
+        );
+    }
+    // A stale legacy persisted name is no longer accepted: a database row
+    // carrying the pre-remediation "blue" value fails restore as corruption.
+    let connection = rusqlite::Connection::open(&db.0).unwrap();
+    connection
+        .execute("UPDATE profiles SET hue = 'blue'", [])
+        .unwrap();
+    drop(connection);
+    assert!(matches!(
+        db.repository().restore_read_only(),
+        Err(PersistenceError::Corruption(_))
+    ));
 }
 
 #[test]

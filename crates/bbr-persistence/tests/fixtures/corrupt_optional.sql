@@ -6,7 +6,7 @@ CREATE TABLE recently_closed (tab_id INTEGER PRIMARY KEY NOT NULL, space_id INTE
 CREATE TABLE splits (space_id INTEGER PRIMARY KEY NOT NULL, primary_tab_id INTEGER NOT NULL, secondary_tab_id INTEGER NOT NULL);
 CREATE TABLE windows (id INTEGER PRIMARY KEY NOT NULL, position INTEGER NOT NULL, x REAL, y REAL, width REAL, height REAL, sidebar_width REAL NOT NULL, sidebar_collapsed INTEGER NOT NULL, last_expanded_width REAL NOT NULL);
 PRAGMA user_version = 1;
-INSERT INTO profiles VALUES (1, 'Personal', 'blue', 0);
+INSERT INTO profiles VALUES (1, 'Personal', 'cobalt', 0);
 INSERT INTO spaces VALUES (10, 1, 'Main', 0, 999);
 INSERT INTO tabs VALUES (100, 10, 'Pinned', 'https://example.test/pinned', 0, 1);
 INSERT INTO tabs VALUES (101, 10, 'Regular', 'https://example.test/regular', 1, 0);

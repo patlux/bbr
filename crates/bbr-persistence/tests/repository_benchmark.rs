@@ -372,7 +372,7 @@ fn dense_snapshot() -> Snapshot {
         profiles: vec![Profile {
             id: 1,
             title: "Dense".into(),
-            hue: ProfileHue::Purple,
+            hue: ProfileHue::Slate,
             spaces: vec![Space {
                 id: 10,
                 title: "500 tabs".into(),

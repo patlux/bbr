@@ -6,9 +6,26 @@ pub(crate) const MAX_SQLITE_ID: u64 = i64::MAX as u64;
 pub(crate) const SIDEBAR_MIN: f64 = 200.0;
 pub(crate) const SIDEBAR_MAX: f64 = 360.0;
 
+/// Validates a snapshot before any repository write.
+///
+/// The write side must reject exactly what restore would reject. All
+/// persisted identity kinds — profiles, spaces, live tabs, recently closed
+/// tabs, and windows — therefore share one global identity set, so a
+/// recently closed `tab_id` that collides with a profile, space, live tab,
+/// window, or another recently closed entry is rejected here instead of
+/// surfacing as corruption on the next restore.
 pub(crate) fn validate_snapshot(snapshot: &Snapshot) -> Result<(), InvalidSnapshotIssue> {
     let mut identities = HashSet::new();
     let mut live_tabs = HashSet::new();
+
+    // Window identities join the global identity set before recently-closed
+    // validation so a closed tab id colliding with a window id is rejected
+    // before writing. Restore discovers the same collision in the opposite
+    // phase: recently-closed ids enter the shared set before windows load.
+    for window in &snapshot.windows {
+        validate_id("window", window.id)?;
+        insert_identity(&mut identities, window.id)?;
+    }
 
     for profile in &snapshot.profiles {
         validate_id("profile", profile.id)?;
@@ -58,7 +75,13 @@ pub(crate) fn validate_snapshot(snapshot: &Snapshot) -> Result<(), InvalidSnapsh
         for space in &profile.spaces {
             for closed in &space.recently_closed {
                 validate_id("recently closed tab", closed.tab_id)?;
-                if live_tabs.contains(&closed.tab_id) || !closed_tabs.insert(closed.tab_id) {
+                // The same global identity set restore uses: a recently closed
+                // tab id must not collide with a live tab, another recently
+                // closed id, or any profile/space/window identity.
+                if live_tabs.contains(&closed.tab_id)
+                    || identities.contains(&closed.tab_id)
+                    || !closed_tabs.insert(closed.tab_id)
+                {
                     return Err(InvalidSnapshotIssue::RecentlyClosedIdentityCollision {
                         tab_id: closed.tab_id,
                     });
@@ -74,8 +97,6 @@ pub(crate) fn validate_snapshot(snapshot: &Snapshot) -> Result<(), InvalidSnapsh
     }
 
     for window in &snapshot.windows {
-        validate_id("window", window.id)?;
-        insert_identity(&mut identities, window.id)?;
         if let Some(geometry) = window.geometry {
             if !valid_geometry(geometry) {
                 return Err(InvalidSnapshotIssue::InvalidGeometry {
@@ -130,7 +151,12 @@ fn validate_url(tab_id: u64, url: &str) -> Result<(), InvalidSnapshotIssue> {
     }
 }
 
-const fn validate_hue(_hue: ProfileHue) {}
+fn validate_hue(hue: ProfileHue) {
+    // `ProfileHue` is an exhaustive closed enum whose every variant has a
+    // canonical persisted name; constructing a snapshot already guarantees a
+    // valid hue, so this stays an identity constraint on the write path.
+    let _ = hue.as_str();
+}
 
 pub(crate) fn valid_geometry(geometry: WindowGeometry) -> bool {
     geometry.x.is_finite()
