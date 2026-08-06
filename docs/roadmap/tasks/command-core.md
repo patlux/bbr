@@ -139,9 +139,10 @@ Outcome: Portable bbr-command core: typed modes/identities, deterministic
          activations, and a release-mode first-result benchmark (500 tabs +
          10,000 history entries) enforcing the 50 ms ceiling with raw
          distribution output.
-Commits: 5 verified groups — parsing/identities; corpus/registry; ranking;
-         parser/ranking contract tests; first-result benchmark; roadmap/phase
-         documentation (subjects recorded in the branch log).
+Commits: 6 verified groups — parsing/identities; corpus/registry; ranking;
+         private collector split (refactor); parser/ranking contract tests;
+         first-result benchmark; roadmap/phase documentation (subjects
+         recorded in the branch log).
 Functional evidence: cargo test -p bbr-command (11 lib + 5 parse + 23 rank + 1
          doc = 40 tests) green; cargo clippy -p bbr-command --all-targets --
          -D warnings clean; cargo fmt --all -- --check green; every Phase-5

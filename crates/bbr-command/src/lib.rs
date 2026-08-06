@@ -73,6 +73,8 @@ pub mod parse;
 pub mod rank;
 pub mod registry;
 
+mod collect;
+
 pub use corpus::{Corpus, HistoryEntry, ProfileEntry, SpaceEntry, TabEntry};
 pub use id::{ActionId, HistoryId, ProfileId, SpaceId, TabId};
 pub use parse::{Destination, Mode, Query, QueryContext};
