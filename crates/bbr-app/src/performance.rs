@@ -6,7 +6,7 @@
 //! transport and harness scheduling are excluded.
 
 use std::cell::RefCell;
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
@@ -37,8 +37,6 @@ struct State {
     page_ready: Option<PageReady>,
     /// Last fixture title observed per view (drives deterministic page-ready).
     seen_titles: BTreeMap<WebViewId, String>,
-    /// Views whose navigation has finished (LoadingChanged -> false).
-    ready_views: BTreeSet<WebViewId>,
     queued: VecDeque<PresentationMeasurement>,
     sink: Option<PresentationSink>,
 }
@@ -87,7 +85,6 @@ impl PerformanceProbe {
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
-                ready_views: BTreeSet::new(),
                 queued: VecDeque::new(),
                 sink: None,
             })),
@@ -181,11 +178,13 @@ impl PerformanceProbe {
         state.latest_command_bar_mode = command_bar_mode;
     }
 
-    /// Arm a deterministic-page-ready measurement. Commits immediately when the
-    /// expected fixture title/loading is already observed (the harness often
-    /// arms after the deterministic page finished loading), otherwise it
-    /// commits on the next matching web event. Start reference is process
-    /// spawn so it is comparable to the startup milestone.
+    /// Arm a deterministic-page-ready measurement. Commits immediately when
+    /// the expected fixture title is already observed (the harness often arms
+    /// after the deterministic page finished loading), otherwise it commits on
+    /// the next matching title event. Start reference is process spawn so it is
+    /// comparable to the startup milestone. Page readiness is a genuine content
+    /// signal: the expected fixture title must actually have been observed, not
+    /// merely that navigation reported loading-finished.
     pub fn arm_page_ready(
         &self,
         operation_id: BenchmarkOperationId,
@@ -203,31 +202,25 @@ impl PerformanceProbe {
     }
 
     /// Observe a native engine event. Under testkit, records the deterministic
-    /// fixture readiness signals and drives the page-ready milestone.
+    /// fixture title and drives the page-ready milestone.
     pub fn note_web_event(&self, event: &WebEvent) {
         let mut state = self.inner.borrow_mut();
-        match event {
-            WebEvent::TitleChanged(view, title) => {
-                state.seen_titles.insert(*view, title.clone());
-            }
-            WebEvent::LoadingChanged(view, false) => {
-                state.ready_views.insert(*view);
-            }
-            _ => {}
+        if let WebEvent::TitleChanged(view, title) = event {
+            state.seen_titles.insert(*view, title.clone());
         }
         Self::try_commit_page_ready(&mut state);
     }
 
     /// Commit a pending page-ready measurement once the expected deterministic
-    /// fixture title has been seen on the expected view, or that view's
-    /// navigation has finished loading.
+    /// fixture title has actually been observed on the expected view. Falling
+    /// back on a loading-finished signal would record the expectation, not the
+    /// observation, and turn the content guard into a shell-only check.
     fn try_commit_page_ready(state: &mut State) {
         let Some(ready) = state.page_ready.as_ref() else {
             return;
         };
         let title_ok = state.seen_titles.get(&ready.expected_view) == Some(&ready.expected_title);
-        let idle_ok = state.ready_views.contains(&ready.expected_view);
-        if !(title_ok || idle_ok) {
+        if !title_ok {
             return;
         }
         let ready = state.page_ready.take().expect("checked just above");
@@ -302,8 +295,14 @@ impl PerformanceProbe {
         let pending = state.pending.take().expect("pending measurement exists");
         // Testkit-only injection: block the measured production path before
         // sampling so budget/self tests prove the gate detects real latency.
+        // Applied only to interaction kinds (not Startup) so a delayed machine
+        // does not fail the startup ceiling for the wrong reason; page-ready
+        // already runs on a separate non-injected path, so this keeps startup
+        // and page-ready measured with a consistent clock.
         if let Some(delay) = state.inject_delay {
-            std::thread::sleep(delay);
+            if pending.kind != BenchmarkKind::Startup {
+                std::thread::sleep(delay);
+            }
         }
         let duration_ns = pending
             .started_at
@@ -391,10 +390,53 @@ mod tests {
         assert_eq!(samples.len(), 1);
         assert_eq!(samples[0].kind, BenchmarkKind::PageReady);
         assert_eq!(samples[0].page_title.as_deref(), Some("Fixture"));
-        // Idle completion also fires only once.
+        // A later unrelated event must not emit a duplicate.
         probe.note_web_event(&WebEvent::LoadingChanged(WebViewId(1), false));
         assert_eq!(samples.len(), 1);
         drop(samples);
+    }
+
+    #[test]
+    fn page_ready_requires_observed_title_not_idle_signal() {
+        // L4 regression: a loading-finished (idle) signal with no matching
+        // title must NOT commit page-ready, otherwise the milestone records the
+        // expectation instead of genuine fixture-content evidence.
+        let (probe, collected) = probe_with_sink();
+        probe.observe_render_state(Some(WebViewId(1)), true, false, CommandBarMode::Inactive);
+        probe.arm_page_ready(BenchmarkOperationId(0), WebViewId(1), "Fixture");
+        probe.note_web_event(&WebEvent::LoadingChanged(WebViewId(1), false));
+        assert_eq!(
+            collected.borrow().len(),
+            0,
+            "idle-only must not satisfy the page-ready content guard"
+        );
+        // The observed title is what commits it.
+        probe.note_web_event(&WebEvent::TitleChanged(WebViewId(1), "Fixture".into()));
+        assert_eq!(collected.borrow().len(), 1);
+    }
+
+    #[test]
+    fn startup_is_not_injected() {
+        // L5: injection targets interaction latency, not the cold-startup
+        // ceiling, so a delayed self-test run still yields an honest startup
+        // sample that shares the page-ready (uninjected) clock.
+        let probe = PerformanceProbe::new(Instant::now(), Some(Duration::from_millis(40)));
+        let collected = Rc::new(RefCell::new(Vec::new()));
+        let sink_collected = collected.clone();
+        probe.set_sink(Box::new(move |m| sink_collected.borrow_mut().push(m)));
+        probe.observe_render_state(Some(WebViewId(1)), true, false, CommandBarMode::Inactive);
+        probe.commit_presentation(WebRect::new(260.0, 0.0, 820.0, 700.0));
+        assert_eq!(
+            collected.borrow().len(),
+            1,
+            "initial startup presentation must commit"
+        );
+        let sample = collected.borrow()[0].clone();
+        assert_eq!(sample.kind, BenchmarkKind::Startup);
+        assert!(
+            sample.duration_ns < 40_000_000,
+            "startup must not absorb the injected delay"
+        );
     }
 
     #[test]
@@ -404,6 +446,9 @@ mod tests {
         let sink_collected = collected.clone();
         probe.set_sink(Box::new(move |m| sink_collected.borrow_mut().push(m)));
         probe.observe_render_state(Some(WebViewId(1)), true, false, CommandBarMode::Inactive);
+        // A fresh probe starts with an armed startup pending; clear it so the
+        // interaction measurement below is the only one collected.
+        probe.cancel();
         probe
             .begin(BenchmarkOperationId(1), BenchmarkKind::WarmTabSwitch)
             .unwrap();
