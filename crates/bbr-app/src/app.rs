@@ -14,7 +14,10 @@ use crate::engine::EngineRef;
 use crate::performance::PerformanceProbe;
 mod interaction;
 mod render;
+mod sidebar;
+mod sidebar_view;
 mod spaces;
+mod tab;
 #[cfg(feature = "testkit")]
 mod testkit;
 
@@ -41,7 +44,6 @@ pub struct BbrApp {
     /// GPUI focus handle for the visible tab list (arrow/backspace keys).
     tab_list_handle: FocusHandle,
     /// GPUI focus handle for the sidebar resize divider (←/→ resize, 0 reset).
-    #[allow(dead_code)] // wired by the sidebar interaction slice that follows this group
     divider_handle: FocusHandle,
     /// Adjustable sidebar geometry (DESIGN.md §5/§11.4): min/default/max
     /// widths, narrow-window clamping, collapse memory, drag state.

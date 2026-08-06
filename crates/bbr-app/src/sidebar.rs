@@ -92,7 +92,14 @@ impl SidebarGeometry {
     /// [`SIDEBAR_MIN`] would starve the content, the rail yields below the
     /// minimum rather than let the native geometry go zero or negative.
     pub fn effective_width(&self, window_width: f32) -> f32 {
-        let requested = self.requested.clamp(SIDEBAR_MIN, SIDEBAR_MAX);
+        Self::effective_width_for(self.requested, window_width)
+    }
+
+    /// The pure clamp: what [`Self::effective_width`] would render for an
+    /// arbitrary requested width (used by the benchmark drivers to compute
+    /// the expected geometry before a mutation commits).
+    pub fn effective_width_for(requested: f32, window_width: f32) -> f32 {
+        let requested = requested.clamp(SIDEBAR_MIN, SIDEBAR_MAX);
         let max_for_window = (window_width - CONTENT_MIN).max(0.0);
         requested.min(max_for_window)
     }

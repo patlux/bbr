@@ -29,6 +29,11 @@ pub struct NativeWebViewSlot {
     presentation_pending: Option<Rc<dyn Fn() -> bool>>,
     #[cfg(feature = "testkit")]
     presented: Option<Rc<dyn Fn(WebRect)>>,
+    /// Testkit-only: observes every engine-received rect (not only during a
+    /// pending measurement) so the semantic snapshot can assert the actual
+    /// native content geometry after layout changes.
+    #[cfg(feature = "testkit")]
+    geometry: Option<Rc<dyn Fn(WebRect)>>,
 }
 
 impl NativeWebViewSlot {
@@ -43,6 +48,8 @@ impl NativeWebViewSlot {
             presentation_pending: None,
             #[cfg(feature = "testkit")]
             presented: None,
+            #[cfg(feature = "testkit")]
+            geometry: None,
         }
     }
 
@@ -54,6 +61,15 @@ impl NativeWebViewSlot {
     ) -> Self {
         self.presentation_pending = Some(pending);
         self.presented = Some(callback);
+        self
+    }
+
+    /// Testkit-only: observe every rect this slot hands to the engine (the
+    /// WKWebView frame), so the snapshot's `content_rect` is the real native
+    /// geometry, never a computed estimate.
+    #[cfg(feature = "testkit")]
+    pub fn on_geometry(mut self, callback: Rc<dyn Fn(WebRect)>) -> Self {
+        self.geometry = Some(callback);
         self
     }
 }
@@ -114,6 +130,10 @@ impl Element for NativeWebViewSlot {
         );
         let content_height = f32::from(window.bounds().size.height);
         (self.publish)(rect, content_height);
+        #[cfg(feature = "testkit")]
+        if let Some(geometry) = self.geometry.clone() {
+            geometry(rect);
+        }
     }
 
     fn paint(

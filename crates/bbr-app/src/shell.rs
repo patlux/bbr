@@ -301,6 +301,20 @@ pub struct TestSnapshot {
     pub command_bar_mode: bbr_testkit::protocol::CommandBarMode,
     pub command_bar_text: String,
     pub sidebar_visible: bool,
+    /// The effective sidebar rail width: the DESIGN §5 adjustable width
+    /// clamped to the window (0 when collapsed — the rail is gone).
+    pub sidebar_width: f32,
+    /// The DESIGN §5 adjustable-range contract, exposed so E2E asserts the
+    /// same constants the render enforces.
+    pub sidebar_min: f32,
+    pub sidebar_default: f32,
+    pub sidebar_max: f32,
+    /// The resize divider drag state (idle vs dragging).
+    pub divider_dragging: bool,
+    /// The stable divider label (future Accessibility; §15 shared identity).
+    pub divider_label: String,
+    /// The last native slot rect handed to the engine (WKWebView frame).
+    pub content_rect: [f32; 4],
     pub window_size: [f32; 2],
 }
 
@@ -329,6 +343,7 @@ pub fn visible_ids(
             "bbr-space-list",
             "bbr-space-new",
             "bbr-tab-list",
+            "bbr-sidebar-divider",
         ] {
             ids.push(id.into());
         }

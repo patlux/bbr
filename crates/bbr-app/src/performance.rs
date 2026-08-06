@@ -60,6 +60,9 @@ struct Pending {
     expected_active_web_view: Option<Option<WebViewId>>,
     expected_active_space: Option<TestSpaceId>,
     expected_sidebar_visible: Option<bool>,
+    /// The sidebar width (content-rect x) the presentation must show; the
+    /// geometry check rejects fast-but-wrong resize/restore samples.
+    expected_sidebar_width: Option<f32>,
     expected_chrome_focused: Option<bool>,
     expected_command_bar_mode: Option<CommandBarMode>,
 }
@@ -84,6 +87,7 @@ impl PerformanceProbe {
                     expected_active_web_view: None,
                     expected_active_space: None,
                     expected_sidebar_visible: Some(true),
+                    expected_sidebar_width: None,
                     expected_chrome_focused: None,
                     expected_command_bar_mode: None,
                 }),
@@ -120,6 +124,7 @@ impl PerformanceProbe {
             expected_active_web_view: None,
             expected_active_space: None,
             expected_sidebar_visible: None,
+            expected_sidebar_width: None,
             expected_chrome_focused: None,
             expected_command_bar_mode: None,
         });
@@ -167,6 +172,36 @@ impl PerformanceProbe {
         if let Some(pending) = self.inner.borrow_mut().pending.as_mut() {
             pending.expected_active_space = Some(space);
         }
+    }
+
+    /// Require the pending presentation to show `width` as the sidebar width
+    /// (the content-rect x); used by resize/restore samples so a wrong
+    /// geometry is rejected even when the visibility flag is right.
+    pub fn expect_sidebar_width(&self, width: f32) {
+        if let Some(pending) = self.inner.borrow_mut().pending.as_mut() {
+            pending.expected_sidebar_width = Some(width);
+        }
+    }
+
+    /// Observe the rect the native slot actually handed to the engine on the
+    /// last paint (the WKWebView frame), for the semantic snapshot.
+    pub fn observe_slot_rect(&self, rect: WebRect) {
+        self.inner.borrow_mut().content_rect = Some(rect);
+    }
+
+    /// The last engine-received native content rect, as `[x, y, w, h]`.
+    pub fn content_rect(&self) -> Option<[f32; 4]> {
+        self.inner
+            .borrow()
+            .content_rect
+            .map(|r| [r.x, r.y, r.width, r.height])
+    }
+
+    /// A callback that observes every slot rect (testkit-only geometry
+    /// observation, independent of any pending measurement).
+    pub fn slot_geometry_callback(&self) -> Rc<dyn Fn(WebRect)> {
+        let probe = self.clone();
+        Rc::new(move |rect| probe.observe_slot_rect(rect))
     }
 
     pub fn arm_browser_state_if_pending(
@@ -285,6 +320,23 @@ impl PerformanceProbe {
         }
     }
 
+    /// Commit the pending presentation from authoritative geometry instead of
+    /// the last painted rect: the interaction benchmarks run synchronously
+    /// after the mutation, before the next paint, so the stored rect would be
+    /// the stale pre-mutation geometry. The computed rect (sidebar rail on
+    /// the left, native content filling the remainder) is what the next
+    /// layout hands the slot, and the semantic width check still rejects
+    /// fast-but-wrong samples.
+    pub fn commit_geometry(&self, window_width: f32, sidebar_width: f32, window_height: f32) {
+        let rect = WebRect::new(
+            sidebar_width,
+            0.0,
+            (window_width - sidebar_width).max(0.0),
+            window_height,
+        );
+        self.commit_presentation(rect);
+    }
+
     fn commit_presentation(&self, rect: WebRect) {
         let mut state = self.inner.borrow_mut();
         state.content_rect = Some(rect);
@@ -305,6 +357,9 @@ impl PerformanceProbe {
             || pending
                 .expected_sidebar_visible
                 .is_some_and(|expected| expected != state.latest_sidebar_visible)
+            || pending
+                .expected_sidebar_width
+                .is_some_and(|expected| (expected - rect.x).abs() > 0.5)
             || pending
                 .expected_chrome_focused
                 .is_some_and(|expected| expected != state.latest_chrome_focused)

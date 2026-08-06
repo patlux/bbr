@@ -116,6 +116,13 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             command_bar_mode: self.command_bar_mode,
             command_bar_text: self.command_bar_text.clone(),
             sidebar_visible: self.sidebar_visible,
+            sidebar_width: self.sidebar_width,
+            sidebar_min: self.sidebar_min,
+            sidebar_default: self.sidebar_default,
+            sidebar_max: self.sidebar_max,
+            divider_dragging: self.divider_dragging,
+            divider_label: self.divider_label.clone(),
+            content_rect: self.content_rect,
             window_size: self.window_size,
         }
     }

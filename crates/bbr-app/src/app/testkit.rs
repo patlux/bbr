@@ -248,7 +248,20 @@ impl BbrApp {
             chrome_focused,
             mode,
         );
-        self.performance.commit_current_presentation();
+        // The stored slot rect is the *pre-mutation* paint when the mutation
+        // commits synchronously, so the interaction samples commit from the
+        // authoritative geometry (rail width + window bounds) instead: that is
+        // exactly the rect the next layout hands the native slot, and the
+        // expected-width semantic check rejects wrong geometry.
+        let window_width = f32::from(window.bounds().size.width);
+        let window_height = f32::from(window.bounds().size.height);
+        let sidebar_width = if self.sidebar_visible {
+            self.sidebar.effective_width(window_width)
+        } else {
+            0.0
+        };
+        self.performance
+            .commit_geometry(window_width, sidebar_width, window_height);
     }
 
     /// Apply a controller mutation result: log errors, broadcast the outcome,
@@ -293,12 +306,90 @@ impl BbrApp {
         true
     }
 
+    /// Benchmark the production sidebar resize path: the width mutation the
+    /// pointer and keyboard listeners share, measured until the resulting
+    /// native geometry commits with the exact expected width. The expected
+    /// width is the clamped effective width the rail renders at, so a
+    /// fast-but-wrong sample (wrong width or wrong visibility) is rejected.
+    pub fn benchmark_resize_sidebar(
+        &mut self,
+        operation_id: bbr_testkit::protocol::BenchmarkOperationId,
+        width: f32,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if self
+            .performance
+            .begin(
+                operation_id,
+                bbr_testkit::protocol::BenchmarkKind::SidebarResize,
+            )
+            .is_err()
+        {
+            return false;
+        }
+        let window_width = f32::from(window.bounds().size.width);
+        let expected = crate::sidebar::SidebarGeometry::effective_width_for(width, window_width);
+        self.performance
+            .expect_browser_state(self.controller.snapshot().active_view, true);
+        self.performance.expect_sidebar_width(expected);
+        // The production mutation; its synchronous commit observes the armed
+        // expectations and rejects a wrong geometry.
+        self.resize_sidebar_to(width, window, cx);
+        true
+    }
+
+    /// Benchmark sidebar restoration: collapse through the production Cmd-B
+    /// path (unmeasured setup), then expand through the same path and measure
+    /// the presentation that restores the last expanded width.
+    pub fn benchmark_restore_sidebar(
+        &mut self,
+        operation_id: bbr_testkit::protocol::BenchmarkOperationId,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        // Unmeasured setup: collapse through the production path with no
+        // pending measurement, so the toggle commits nothing.
+        if self.sidebar_visible {
+            self.toggle_sidebar(window, cx);
+        }
+        if self
+            .performance
+            .begin(
+                operation_id,
+                bbr_testkit::protocol::BenchmarkKind::SidebarRestore,
+            )
+            .is_err()
+        {
+            return false;
+        }
+        let window_width = f32::from(window.bounds().size.width);
+        let expected = crate::sidebar::SidebarGeometry::effective_width_for(
+            self.sidebar.last_expanded(),
+            window_width,
+        );
+        self.performance
+            .expect_browser_state(self.controller.snapshot().active_view, true);
+        self.performance.expect_sidebar_width(expected);
+        // The measured expand; the toggle auto-commits the restored
+        // presentation synchronously.
+        self.toggle_sidebar(window, cx);
+        true
+    }
+
     /// A snapshot for the E2E protocol (also used by unit tests).
     pub fn snapshot(&self, window: &Window) -> TestSnapshot {
         let browser = self.controller.snapshot();
         let theme = self.theme();
         let rows = self.row_visuals(&browser.tabs);
         let budget = crate::shell::space_title_budget_chars(&theme);
+        let window_width = f32::from(window.bounds().size.width);
+        let window_height = f32::from(window.bounds().size.height);
+        let sidebar_width = if self.sidebar_visible {
+            self.sidebar.effective_width(window_width)
+        } else {
+            0.0
+        };
         TestSnapshot {
             url: browser.nav.url.clone(),
             title: browser.nav.title.clone(),
@@ -372,10 +463,14 @@ impl BbrApp {
             command_bar_mode: self.command_bar_mode.into(),
             command_bar_text: self.command_bar_text.clone(),
             sidebar_visible: self.sidebar_visible,
-            window_size: [
-                f32::from(window.bounds().size.width),
-                f32::from(window.bounds().size.height),
-            ],
+            sidebar_width,
+            sidebar_min: crate::sidebar::SIDEBAR_MIN,
+            sidebar_default: crate::sidebar::SIDEBAR_DEFAULT,
+            sidebar_max: crate::sidebar::SIDEBAR_MAX,
+            divider_dragging: self.sidebar.is_dragging(),
+            divider_label: crate::sidebar::SIDEBAR_DIVIDER_LABEL.to_string(),
+            content_rect: self.performance.content_rect().unwrap_or([0.0; 4]),
+            window_size: [window_width, window_height],
         }
     }
 }

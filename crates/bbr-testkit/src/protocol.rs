@@ -78,7 +78,16 @@ pub enum BenchmarkKind {
     /// Activation of a space with an already-warm selected tab (production
     /// activation path, warm sessions preserved).
     WarmSpaceSwitch,
+    /// The sidebar visibility changed through the production Cmd-B path
+    /// (collapse and open/toggle share this kind).
     SidebarToggle,
+    /// The sidebar width changed through the production resize path (pointer
+    /// drag or keyboard step); the sample commits only at the expected
+    /// clamped geometry.
+    SidebarResize,
+    /// Expand restored the last expanded sidebar width through the production
+    /// Cmd-B path.
+    SidebarRestore,
     NewTabCommandBar,
     NewTabOpened,
     ActiveTabClose,
@@ -211,6 +220,20 @@ pub struct Snapshot {
     pub command_bar_mode: CommandBarMode,
     pub command_bar_text: String,
     pub sidebar_visible: bool,
+    /// The effective sidebar rail width (DESIGN §5 range, window-clamped;
+    /// 0 when collapsed).
+    pub sidebar_width: f32,
+    /// The DESIGN §5 adjustable-range contract, exposed so E2E asserts the
+    /// same constants the render enforces.
+    pub sidebar_min: f32,
+    pub sidebar_default: f32,
+    pub sidebar_max: f32,
+    /// The resize divider drag state (idle vs dragging).
+    pub divider_dragging: bool,
+    /// The stable divider label (future Accessibility; §15 shared identity).
+    pub divider_label: String,
+    /// The last native slot rect handed to the engine (WKWebView frame).
+    pub content_rect: [f32; 4],
     /// Window content size in points (diagnostics only).
     pub window_size: [f32; 2],
 }
@@ -377,6 +400,24 @@ pub enum Request {
     /// re-flow via the snapshot; the native view is re-framed on the next
     /// frame.
     SetWindowSize { width: f32, height: f32 },
+    /// Real pointer drag on the sidebar resize divider through GPUI's
+    /// production mouse-event pipeline: mouse-down at the divider center,
+    /// mouse-move by `dx` with the left button held, mouse-up. The same
+    /// element listeners a physical drag drives.
+    DragSidebarDivider { dx: f32 },
+    /// Focus the resize divider through the production focus path (the same
+    /// entry a pointer click uses), the anchor for the keyboard resize keys.
+    FocusSidebarDivider,
+    /// Measure the production sidebar resize mutation until the resulting
+    /// native geometry commits at the expected clamped width.
+    BenchmarkResizeSidebar {
+        operation_id: BenchmarkOperationId,
+        width: f32,
+    },
+    /// Measure the production sidebar restoration: collapse (unmeasured
+    /// setup), then expand and commit when the last expanded width is
+    /// restored.
+    BenchmarkRestoreSidebar { operation_id: BenchmarkOperationId },
     /// Full app snapshot.
     GetSnapshot,
     /// Liveness probe.
@@ -446,118 +487,4 @@ impl std::error::Error for Error {}
 pub use bbr_web::{ProfileId as TestProfileId, WebViewId as TestWebViewId};
 
 /// Context-free request helpers, so harness code reads as a script.
-pub mod dsl {
-    use super::*;
-
-    pub fn hello(token: &str, capabilities: &[&str]) -> Request {
-        Request::Hello {
-            protocol_version: PROTOCOL_VERSION,
-            token: token.to_string(),
-            capabilities: capabilities.iter().map(|s| s.to_string()).collect(),
-        }
-    }
-
-    pub fn navigate(url: impl Into<String>) -> Request {
-        Request::Navigate { url: url.into() }
-    }
-
-    pub fn create_profile(
-        profile_title: impl Into<String>,
-        space_title: impl Into<String>,
-    ) -> Request {
-        Request::CreateProfile {
-            profile_title: profile_title.into(),
-            space_title: space_title.into(),
-        }
-    }
-
-    pub fn create_space(profile: ProfileId, title: impl Into<String>) -> Request {
-        Request::CreateSpace {
-            profile,
-            title: title.into(),
-        }
-    }
-
-    pub fn activate_space(space: TestSpaceId) -> Request {
-        Request::ActivateSpace { space }
-    }
-
-    pub fn open_tab(url: impl Into<String>) -> Request {
-        Request::OpenTab { url: url.into() }
-    }
-
-    pub fn select_tab(index: usize) -> Request {
-        Request::SelectTab { index }
-    }
-
-    pub fn close_tab(index: usize) -> Request {
-        Request::CloseTab { index }
-    }
-
-    pub fn reopen_tab() -> Request {
-        Request::ReopenTab
-    }
-
-    pub fn pin_tab(index: usize) -> Request {
-        Request::PinTab { index }
-    }
-
-    pub fn click_tab(index: usize) -> Request {
-        Request::ClickTab { index }
-    }
-
-    pub fn click_tab_close(index: usize) -> Request {
-        Request::ClickTabClose { index }
-    }
-
-    pub fn click_space(space: TestSpaceId) -> Request {
-        Request::ClickSpace { space }
-    }
-
-    pub fn click_space_new() -> Request {
-        Request::ClickSpaceNew
-    }
-
-    pub fn benchmark_activate_space(
-        operation_id: BenchmarkOperationId,
-        space: TestSpaceId,
-    ) -> Request {
-        Request::BenchmarkActivateSpace {
-            operation_id,
-            space,
-        }
-    }
-
-    pub fn inject_web_event(event: bbr_web::WebEvent) -> Request {
-        Request::InjectWebEvent { event }
-    }
-
-    pub fn move_tab(index: usize, to_space: TestSpaceId) -> Request {
-        Request::MoveTab { index, to_space }
-    }
-
-    pub fn suspend_tab(index: usize) -> Request {
-        Request::SuspendTab { index }
-    }
-
-    pub fn back() -> Request {
-        Request::WebAction(WebAction::Back)
-    }
-
-    pub fn forward() -> Request {
-        Request::WebAction(WebAction::Forward)
-    }
-
-    pub fn reload() -> Request {
-        Request::WebAction(WebAction::Reload)
-    }
-
-    pub fn stop() -> Request {
-        Request::WebAction(WebAction::Stop)
-    }
-
-    /// The canonical ids used by the Phase-1 spike (one profile, one view).
-    pub fn test_ids() -> (ProfileId, WebViewId) {
-        (ProfileId(1), WebViewId(1))
-    }
-}
+pub mod dsl;
