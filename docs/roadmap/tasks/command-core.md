@@ -133,49 +133,52 @@ or persistence contracts to unblock the pure core.
 ## Delivery ledger
 
 ```text
-Outcome: Portable bbr-command core: typed modes/identities, deterministic
-         URL-vs-search parsing, provider-neutral owned corpus, ordered command
-         registry, Phase-5 group ranking with cross-profile identity, typed
-         activations, and a release-mode first-result benchmark (500 tabs +
-         10,000 history entries) enforcing the 50 ms ceiling with raw
-         distribution output.
-Commits: 7 verified groups — parsing/identities; corpus/registry; ranking;
-         private collector split (refactor); parser/ranking contract tests;
-         first-result benchmark; roadmap/phase documentation; score/key
-         encoding fix (subjects recorded in the branch log).
-Functional evidence: cargo test -p bbr-command (11 lib + 5 parse + 23 rank + 1
-         doc = 40 tests) green; cargo clippy -p bbr-command --all-targets --
-         -D warnings clean; cargo fmt --all -- --check green; every Phase-5
-         group, cross-profile label, dedup, fallback, unicode, empty-input,
-         and determinism case locked by table-driven tests.
+Outcome: Portable bbr-command core: typed modes/identities, strict deterministic
+         URL-vs-search authority parsing, provider-neutral owned corpus,
+         13-action registry, standalone tab/space/history/action/fallback
+         ranking with explicit profile identity, typed activations, and a
+         release-mode first-result benchmark (500 tabs + 10,000 history)
+         enforcing strict p95/max <50 ms with raw distribution output.
+Commits: 11 total branch commits from 9352ded through the settled remediation:
+         1 packet-definition commit plus 10 subsequent product/test/refactor/
+         documentation/remediation commits. Coherent product/remediation work
+         groups: parsing/identities; corpus/registry; ranking; parser/ranking/
+         benchmark evidence; collector split; score/key correction; five-
+         finding remediation; documentation/ledger truth. Exact subjects remain
+         authoritative in `git log 9352ded..HEAD`.
+Functional evidence: cargo test -p bbr-command: 11 lib + 1 benchmark + 5 parse
+         + 24 rank + 7 standalone-space + 1 doc = 49 green tests. Public parser
+         regressions cover invalid IPv4, strict domain labels, ports, bracketed
+         IPv6, unbracketed IPv6, and punycode. Ranking covers standalone empty
+         spaces, current-space exclusion, same/cross/unknown profile labels,
+         duplicate names, SelectSpace activation, explicit index/id ordering,
+         reversed provider vectors, all groups, dedup, fallback, Unicode, empty
+         input, and limits. The built-in registry is locked by an exact 13-row
+         id/title/category/shortcut table.
 Real-app E2E: not applicable; later app-composition packet owns it.
-Performance evidence: cargo test -p bbr-command --release — benchmark
-         first_correct_result_below_50ms_for_500_tabs_and_10k_history: 400 raw
-         samples, p50 ≈ 0.12 ms, p95 ≈ 1.45–1.5 ms, max ≈ 1.6–1.75 ms (≈ 30×
-         headroom under the 50 ms ceiling), raw per-sample distribution
-         printed with --nocapture and retained in the run output.
-Roadmap/documentation updates: Phase-5 checklist items 1/2/5/6/11 marked with
-         truthful scope notes; this packet's evidence/ledger completed; crate
-         docs in crates/bbr-command/src/lib.rs document the pipeline and
-         boundaries. ARCHITECTURE.md crate-table wording stays owned by the
-         serial integration lane per the parallel-delivery contract.
-Open blockers and non-goals: no GPUI/real-app command-bar surface, focus
-         routing, keyboard selection, E2E, SQLite/history repository, debounce/
-         cancellation runtime, fuzzy-search dependency, or product budget
-         change; real-app presentation measurement remains the app-composition
-         packet. No root manifest, Cargo.lock, justfile, testkit, or shared
-         surface modified.
-Worktree state: parallel/command-core with 5 coherent verified commits; no
-         remote configured, so nothing pushed; sibling worktrees untouched.
+Performance evidence: cargo test -p bbr-command --release --test
+         benchmark_50ms -- --nocapture: 400 raw samples; p50 0.113250 ms, p95
+         1.463667 ms, max 1.516334 ms, min 0.001375 ms. Both p95 and max remain
+         enforced below 50 ms; corpus remains 500 tabs + 10,000 history and
+         fixture setup remains outside timed samples.
+Roadmap/documentation updates: Phase-5 detail now states standalone-space
+         ranking/activation and exact remediation benchmark evidence; this
+         ledger distinguishes total branch commits from coherent work groups.
+         ARCHITECTURE.md remains owned by serial integration.
+Open blockers and non-goals: no GPUI/real-app surface, focus routing, keyboard
+         selection, E2E, SQLite/history provider, debounce/cancellation runtime,
+         fuzzy dependency, or product-budget change. No root manifest,
+         Cargo.lock, justfile, testkit, shared crate, ROADMAP.md, performance
+         baseline, or URL-input surface modified.
+Worktree state: parallel/command-core; 11 commits ahead of 9352ded after this
+         final documentation commit; no remote configured and nothing pushed;
+         sibling worktrees untouched. Final gate/status evidence is recorded in
+         the remediation handoff.
 
-Planning/read-only: ~20 min (packet + product/performance/interaction
-         contracts read).
-Implementation: ~4 h (design + 8 source/test files + iteration).
-Test execution: ~1 h (gates + benchmark stability runs).
-Review: pending (one independent read-only reviewer maps Phase-5 requirements
-         to tests and benchmark evidence).
-Remediation: none yet.
-Waiting/retries: none.
-Total elapsed: ~6 h (estimates; no workflow timestamps captured).
+Planning/read-only: original estimates retained as estimates; remediation
+         runtime not reconstructed because exact workflow timing was not
+         captured.
+Review: independent result was REMEDIATE with five findings.
+Remediation: all five findings addressed in the bounded owned paths.
 Human intervention: none.
 ```

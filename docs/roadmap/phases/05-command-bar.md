@@ -23,13 +23,13 @@ serial app-composition slice.
 - [x] Implement the full location, new-tab, switcher, and action result modes. *(Portable result modes are complete — mode-aware ranking with the navigate/search fallback; the parenthetical gap “ranking/results do not [exist]” is closed. Location editing, staging, focus, and GPUI wiring remain the app-composition slice.)*
 - [ ] Select the current URL on `Cmd-L`.
 - [x] Make `Cmd-T` enter a distinct new-tab flow without creating a tab before Enter.
-- [x] Rank exact/open tabs, current-space/pinned tabs, other spaces, history, actions, and navigate/search fallback. *(Deterministic Phase-5 group order proven by the ranking contract suite.)*
-- [x] Label cross-space results with profile identity. *(Cross-space results carry profile/space names in a subtitle — same-profile results name the space, cross-profile results name profile and space.)*
+- [x] Rank exact/open tabs, current-space/pinned tabs, other-space tabs, standalone spaces, history, actions, and navigate/search fallback. *(Deterministic Phase-5 group order proven by the ranking contract suite; standalone spaces activate by `SpaceId` and exclude the current space.)*
+- [x] Label cross-space results with profile identity. *(Other-space tabs carry profile/space names; standalone spaces use `Space` in the current profile and `Profile <name>` across or without known profile context.)*
 - [ ] Support arrows, Enter, modified Enter, Escape, and origin-focus restoration.
 - [ ] Add cancellable debounce without blocking the render path.
 - [ ] Design loading, empty, no-result, error, and destructive-command states.
 - [ ] Add table-driven parser/ranking tests and real-app command-bar E2E. *(Table-driven parser/ranking tests ship with the core; real-app command-bar E2E is owned by the app-composition packet.)*
-- [x] Keep first local result below 50 ms for 10,000 history entries and 500 tabs. *(Portable release-mode benchmark: p95 ≈ 1.45–1.5 ms, max ≈ 1.6–1.75 ms against the 50 ms ceiling; in-process real-app presentation measurement is the app-composition packet's.)*
+- [x] Keep first local result below 50 ms for 10,000 history entries and 500 tabs. *(Remediation rerun, release mode: 400 samples, p50 0.113250 ms, p95 1.463667 ms, max 1.516334 ms against the strict p95/max <50 ms ceiling; in-process real-app presentation measurement is the app-composition packet's.)*
 
 ## Phase exit
 
