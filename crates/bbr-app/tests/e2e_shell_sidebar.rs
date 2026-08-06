@@ -77,7 +77,7 @@ fn assert_view_and_sessions_preserved(
 #[test]
 #[ignore]
 fn pointer_drag_resizes_with_stable_native_content_and_focus() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if !allow_gui() {
         return;
     }
@@ -94,18 +94,24 @@ fn pointer_drag_resizes_with_stable_native_content_and_focus() {
         let initial = client.snapshot().expect("initial snapshot");
         let first_view = initial.active_web_view.expect("first native view");
         let sessions = initial.engine_sessions;
-        let window_w = initial.window_size[0];
+        // AppKit clamps the spawned window frame shortly after orderFront
+        // (GPUI first reports the requested bounds, then the clamped frame
+        // lands via windowDidResize), and the clamped width differs per run
+        // and per screen on this host — capture geometry only after the
+        // frame settles so every downstream expectation is stable.
+        let settled = wait_for_window_settled(&mut client, deadline());
+        let window_w = settled.window_size[0];
         assert!(window_w > 400.0, "spawned window is comfortably wide");
         // Typed geometry contract: visible at the §8 default with typed
         // min/default/max and the stable divider identity (§15).
-        assert!(initial.sidebar_visible);
-        assert_eq!(initial.sidebar_width, SIDEBAR_DEFAULT);
-        assert_eq!(initial.sidebar_min, SIDEBAR_MIN);
-        assert_eq!(initial.sidebar_default, SIDEBAR_DEFAULT);
-        assert_eq!(initial.sidebar_max, SIDEBAR_MAX);
-        assert_eq!(initial.divider_label, "Sidebar divider");
-        assert!(!initial.divider_dragging);
-        assert_ids(&initial, &["bbr-sidebar", "bbr-sidebar-divider"]);
+        assert!(settled.sidebar_visible);
+        assert_eq!(settled.sidebar_width, SIDEBAR_DEFAULT);
+        assert_eq!(settled.sidebar_min, SIDEBAR_MIN);
+        assert_eq!(settled.sidebar_default, SIDEBAR_DEFAULT);
+        assert_eq!(settled.sidebar_max, SIDEBAR_MAX);
+        assert_eq!(settled.divider_label, "Sidebar divider");
+        assert!(!settled.divider_dragging);
+        assert_ids(&settled, &["bbr-sidebar", "bbr-sidebar-divider"]);
 
         // The native slot reports the real WKWebView frame: rail 260, content
         // filling the remainder — never zero or negative. The slot's own
@@ -204,7 +210,7 @@ fn pointer_drag_resizes_with_stable_native_content_and_focus() {
 #[test]
 #[ignore]
 fn keyboard_resize_and_reset_match_pointer_parity() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if !allow_gui() {
         return;
     }
@@ -221,7 +227,10 @@ fn keyboard_resize_and_reset_match_pointer_parity() {
         let initial = client.snapshot().expect("initial snapshot");
         let first_view = initial.active_web_view.expect("first native view");
         let sessions = initial.engine_sessions;
-        let window_w = initial.window_size[0];
+        // Geometry captured only after the AppKit frame clamp settles (see
+        // the pointer-drag test for the same host quirk).
+        let settled = wait_for_window_settled(&mut client, deadline());
+        let window_w = settled.window_size[0];
         let initial_rect = wait_for_content_rect_x(
             &mut client,
             SIDEBAR_DEFAULT,
@@ -324,7 +333,7 @@ fn keyboard_resize_and_reset_match_pointer_parity() {
 #[test]
 #[ignore]
 fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if !allow_gui() {
         return;
     }
@@ -341,7 +350,10 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
         let initial = client.snapshot().expect("initial snapshot");
         let first_view = initial.active_web_view.expect("first native view");
         let sessions = initial.engine_sessions;
-        let wide_w = initial.window_size[0];
+        // Geometry captured only after the AppKit frame clamp settles (see
+        // the pointer-drag test for the same host quirk).
+        let settled = wait_for_window_settled(&mut client, deadline());
+        let wide_w = settled.window_size[0];
         assert!(wide_w > 400.0);
         let initial_rect = wait_for_content_rect_x(
             &mut client,
@@ -353,7 +365,7 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
         // The GPUI window bounds include the macOS titlebar; the native slot
         // fills the content area below it. The delta is stable across
         // resizes, so the compact-window slot height derives from it.
-        let titlebar_h = initial.window_size[1] - height;
+        let titlebar_h = settled.window_size[1] - height;
         assert!(titlebar_h >= 0.0);
 
         // Remember a non-default width for the collapse test.
@@ -427,26 +439,25 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
             })
             .expect("compact window");
         flush_frame(&mut client);
-        let compact = wait_for_window_size(&mut client, 340.0, deadline());
+        // The compact state is asserted from ONE frame where the window
+        // width AND the native content rect agree (some hosts re-assert the
+        // initial frame shortly after a programmatic resize, so the narrow
+        // state is only observable transiently — a fast-but-wrong sample
+        // must never pass).
+        let compact = wait_for_window_and_content(&mut client, 340.0, CONTENT_MIN, deadline());
         let compact_w = compact.window_size[0];
-        let compact_h = compact.window_size[1] - titlebar_h;
         let expected_compact = SIDEBAR_MAX.min((compact_w - CONTENT_MIN).max(0.0));
         assert_eq!(
             compact.sidebar_width, expected_compact,
             "rail yields to the window"
         );
         assert_view_and_sessions_preserved(&compact, first_view, sessions);
-        let compact_rect = wait_for_content_rect(
-            &mut client,
-            content_rect_for(expected_compact, compact_w, compact_h),
-            deadline(),
-        );
         assert_eq!(
-            compact_rect.content_rect[2], CONTENT_MIN,
+            compact.content_rect[2], CONTENT_MIN,
             "native content keeps exactly the floor"
         );
-        assert!(compact_rect.content_rect[2] > 0.0);
-        assert!(compact_rect.content_rect[3] > 0.0);
+        assert!(compact.content_rect[2] > 0.0);
+        assert!(compact.content_rect[3] > 0.0);
 
         // Even narrower: the content floor still holds (positive geometry).
         client
@@ -456,19 +467,13 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
             })
             .expect("narrower window");
         flush_frame(&mut client);
-        let narrow = wait_for_window_size(&mut client, 300.0, deadline());
+        let narrow = wait_for_window_and_content(&mut client, 300.0, CONTENT_MIN, deadline());
         let narrow_w = narrow.window_size[0];
-        let narrow_h = narrow.window_size[1] - titlebar_h;
         let expected_narrow = SIDEBAR_MAX.min((narrow_w - CONTENT_MIN).max(0.0));
         assert_eq!(narrow.sidebar_width, expected_narrow);
         assert_view_and_sessions_preserved(&narrow, first_view, sessions);
-        let narrow_rect = wait_for_content_rect(
-            &mut client,
-            content_rect_for(expected_narrow, narrow_w, narrow_h),
-            deadline(),
-        );
-        assert_eq!(narrow_rect.content_rect[2], CONTENT_MIN);
-        assert!(narrow_rect.content_rect[2] > 0.0);
+        assert_eq!(narrow.content_rect[2], CONTENT_MIN);
+        assert!(narrow.content_rect[2] > 0.0);
 
         // Widening the window again restores the full requested width.
         client
@@ -478,16 +483,17 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
             })
             .expect("restore window");
         flush_frame(&mut client);
-        let restored = wait_for_window_size(&mut client, wide_w, deadline());
-        let restored_w = restored.window_size[0];
-        let restored_h = restored.window_size[1] - titlebar_h;
-        let expected_restored = SIDEBAR_MAX.min((restored_w - CONTENT_MIN).max(0.0));
-        assert_eq!(restored.sidebar_width, expected_restored);
-        wait_for_content_rect(
+        let expected_restored_width = SIDEBAR_MAX.min((wide_w - CONTENT_MIN).max(0.0));
+        let restored = wait_for_window_and_content(
             &mut client,
-            content_rect_for(expected_restored, restored_w, restored_h),
+            wide_w,
+            wide_w - expected_restored_width,
             deadline(),
         );
+        let restored_w = restored.window_size[0];
+        let expected_restored = SIDEBAR_MAX.min((restored_w - CONTENT_MIN).max(0.0));
+        assert_eq!(restored.sidebar_width, expected_restored);
+        assert_view_and_sessions_preserved(&restored, first_view, sessions);
 
         // Reset returns to the §8 default from the max.
         keystroke(&mut client, "0");

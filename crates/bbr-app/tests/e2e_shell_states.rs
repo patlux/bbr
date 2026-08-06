@@ -14,7 +14,7 @@ use e2e_common::*;
 #[test]
 #[ignore]
 fn shell_renders_regions_fallbacks_and_crash_recovery() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if std::env::var("BBR_SKIP_GUI_TESTS").is_ok_and(|value| value != "0" && value != "false") {
         return;
     }

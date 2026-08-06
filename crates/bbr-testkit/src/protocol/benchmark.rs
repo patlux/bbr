@@ -69,6 +69,15 @@ pub enum BenchmarkKind {
     /// frame that renders the selection with the active row inside the
     /// bounded window (instant scroll-into-view, no animation).
     DenseSelect,
+    /// The pointer entered a visible tab row through the production `on_hover`
+    /// listener path (`set_row_hover`): the §10.2 hover wash + close reveal
+    /// commit on the next frame. Transient indication, warm-interaction
+    /// class — a dense-list hover regression trips this gate.
+    TabHover,
+    /// The pointer pressed a visible tab row through the production
+    /// mouse-down listener path (`set_row_pressed`): the §10.3 active wash
+    /// commits on the next frame, warm-interaction class.
+    TabPress,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

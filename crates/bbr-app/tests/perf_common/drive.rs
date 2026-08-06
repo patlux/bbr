@@ -16,10 +16,10 @@ use bbr_testkit::protocol::{BenchmarkKind, BrowserChange, Request};
 use bbr_testkit::Client;
 
 use super::benchmarks::{
-    benchmark_click, benchmark_dense_scroll, benchmark_dense_select, benchmark_keystroke,
-    benchmark_move_tab, benchmark_pin_tab, benchmark_reopen, benchmark_reorder_tab,
-    benchmark_resize_sidebar, benchmark_restore_sidebar, benchmark_select, benchmark_sidebar,
-    benchmark_space_switch, wait_browser_change, wait_title,
+    benchmark_click, benchmark_dense_scroll, benchmark_dense_select, benchmark_hover,
+    benchmark_keystroke, benchmark_move_tab, benchmark_pin_tab, benchmark_press, benchmark_reopen,
+    benchmark_reorder_tab, benchmark_resize_sidebar, benchmark_restore_sidebar, benchmark_select,
+    benchmark_sidebar, benchmark_space_switch, wait_browser_change, wait_title,
 };
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
@@ -347,6 +347,60 @@ fn drive_matrix_inner(
                 .entry("tab_activate_keyboard".into())
                 .or_default()
                 .push(measured.duration_ns);
+        }
+
+        // Pointer-state transitions through the production hover/press
+        // listener methods (§10.2 hover wash + close reveal, §10.3 active
+        // wash). Transient chrome-pointer indication: never a selection
+        // mutation and never touches sessions. The pointer state is cleared
+        // between samples (unmeasured setup) so every sample measures the
+        // entry transition into the wash, not a no-op stay. Hover targets a
+        // row that is NOT the selected tab: the composed §10 state lets the
+        // more specific `selected` win over `hover`, so hovering the active
+        // row legitimately renders `selected` and the in-app guard would
+        // reject it. Always target the original fixture-ready row 0 while
+        // row 1 is selected: reopen presents its fresh WKWebView before its
+        // deferred background navigation necessarily starts, and `loading`
+        // correctly outranks `hover`. Alternating onto that row made the
+        // benchmark depend on when WebKit chose to begin the late load.
+        let mut hover_samples = Vec::with_capacity(config.interaction_samples);
+        let mut press_samples = Vec::with_capacity(config.interaction_samples);
+        for _ in 0..config.interaction_samples {
+            let pointer_index = 0;
+            client
+                .send_ok(&Request::ClickTab { index: 1 })
+                .expect("select the non-hovered row");
+            client
+                .send_ok(&Request::UnhoverTabRow)
+                .expect("unhover before hover benchmark");
+            client
+                .send_ok(&Request::ReleaseTabRow)
+                .expect("release before hover benchmark");
+            let measured = benchmark_hover(client, &mut since, operation, pointer_index);
+            hover_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("tab_hover".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+
+            client
+                .send_ok(&Request::UnhoverTabRow)
+                .expect("unhover before press benchmark");
+            client
+                .send_ok(&Request::ReleaseTabRow)
+                .expect("release before press benchmark");
+            let measured = benchmark_press(client, &mut since, operation, pointer_index);
+            press_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("tab_press".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
         }
 
         // Warm space switching: create a second space in the default profile
@@ -866,6 +920,8 @@ fn drive_matrix_inner(
         raw.insert("space_switch".to_string(), space_samples);
         raw.insert("tab_pin".to_string(), pin_samples);
         raw.insert("tab_reorder".to_string(), reorder_samples);
+        raw.insert("tab_hover".to_string(), hover_samples);
+        raw.insert("tab_press".to_string(), press_samples);
         raw.insert("tab_move_same_profile".to_string(), same_move_samples);
         raw.insert("tab_move_cross_profile".to_string(), cross_move_samples);
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);

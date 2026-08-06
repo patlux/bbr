@@ -1,0 +1,259 @@
+use super::*;
+
+fn browser() -> ControllerSnapshot {
+    let tab = |index: usize, active: bool, url: &str, title: &str| bbr_browser::TabSnapshot {
+        index,
+        url: url.into(),
+        title: title.into(),
+        pinned: false,
+        loading: false,
+        crashed: false,
+        active,
+        web_view: Some(bbr_web::WebViewId(1)),
+        lifecycle: bbr_browser::TabLifecycle::Warm,
+        last_used: 0,
+    };
+    ControllerSnapshot {
+        active_profile: bbr_web::ProfileId(1),
+        active_profile_title: Some("Default".into()),
+        active_profile_hue: Some(bbr_browser::ProfileHue::Cobalt),
+        active_space: bbr_browser::SpaceId(1),
+        tabs: vec![tab(0, true, "https://example.com", "Example")],
+        profiles: vec![bbr_browser::ProfileSnapshot {
+            index: 0,
+            id: bbr_web::ProfileId(1),
+            title: "Default".into(),
+            hue: bbr_browser::ProfileHue::Cobalt,
+        }],
+        spaces: vec![bbr_browser::SpaceSnapshot {
+            index: 0,
+            id: bbr_browser::SpaceId(1),
+            profile: bbr_web::ProfileId(1),
+            title: "Default".into(),
+            active_tab: Some(0),
+            active_view: Some(bbr_web::WebViewId(1)),
+            active: true,
+            tab_count: 1,
+        }],
+        active_index: Some(0),
+        nav: Default::default(),
+        web_view_hosted: true,
+        engine_sessions: 1,
+        active_view: Some(bbr_web::WebViewId(1)),
+        lifecycle_counts: bbr_browser::LifecycleCounts::default(),
+    }
+}
+
+fn row(index: usize, state: TabVisualState) -> RowVisuals {
+    RowVisuals {
+        index,
+        title: "Example".into(),
+        state,
+        favicon: Some(crate::components::FaviconSpec {
+            letter: 'E',
+            hue: 0,
+        }),
+        pinned: false,
+        show_close: true,
+        reveal_close: true,
+    }
+}
+
+fn space_row() -> SpaceRowVisuals {
+    SpaceRowVisuals {
+        index: 0,
+        profile_index: 0,
+        title: "Default".into(),
+        count: 1,
+        state: SpaceVisualState::Selected,
+        chip: crate::components::ProfileChipSpec {
+            letter: "DE".into(),
+            hue: bbr_browser::ProfileHue::Cobalt,
+        },
+    }
+}
+
+fn input<'a>(
+    focus: SemanticFocus,
+    browser: &'a ControllerSnapshot,
+    rows: &'a [RowVisuals],
+    space_rows: &'a [SpaceRowVisuals],
+) -> SemanticInput<'a> {
+    SemanticInput {
+        browser,
+        focus,
+        command: SemanticCommand {
+            mode: "inactive".into(),
+            text: "".into(),
+            hint: None,
+        },
+        sidebar_visible: true,
+        sidebar_width: 260.0,
+        divider_label: "bbr-sidebar-divider".into(),
+        rows,
+        space_rows,
+        content: SemanticContent::Native,
+    }
+}
+
+fn find<'a>(nodes: &'a [SemanticNode], id: &str) -> Option<&'a SemanticNode> {
+    for node in nodes {
+        if node.id == id {
+            return Some(node);
+        }
+        if let Some(found) = find(&node.children, id) {
+            return Some(found);
+        }
+    }
+    None
+}
+
+#[test]
+fn tree_exposes_roles_names_values_and_hierarchy() {
+    let browser = browser();
+    let rows = [row(0, TabVisualState::Selected)];
+    let space_rows = [space_row()];
+    let tree = semantic_tree(&input(
+        SemanticFocus {
+            command: false,
+            spaces: false,
+            tabs: false,
+            divider: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    ));
+    let root = &tree[0];
+    assert_eq!(root.role, SemanticRole::Root);
+    let sidebar = find(&tree, "bbr-sidebar").expect("sidebar node");
+    assert_eq!(sidebar.role, SemanticRole::Sidebar);
+    // The hierarchy: sidebar → tab-list → tab-row → close button.
+    let tab_list = find(&tree, "bbr-tab-list").expect("tab list");
+    assert_eq!(tab_list.role, SemanticRole::List);
+    let row = find(&tree, "bbr-tab-row-0").expect("tab row");
+    assert_eq!(row.role, SemanticRole::Row);
+    assert_eq!(row.name.as_deref(), Some("Example"));
+    assert!(row.selected, "active tab renders selected");
+    let close = find(&tree, "bbr-tab-close-0").expect("close control");
+    assert_eq!(close.role, SemanticRole::Button);
+    assert_eq!(close.name.as_deref(), Some("Close tab"));
+    assert!(close.enabled);
+    // The space row + its chip and count.
+    let space = find(&tree, "bbr-space-row-0").expect("space row");
+    assert_eq!(space.role, SemanticRole::Row);
+    assert!(space.selected);
+    assert_eq!(space.value.as_deref(), Some("1"));
+    let chip = find(&tree, "bbr-profile-chip-0").expect("chip");
+    assert_eq!(chip.role, SemanticRole::Chip);
+    let count = find(&tree, "bbr-space-count-0").expect("count");
+    assert_eq!(count.value.as_deref(), Some("1"));
+    // The divider exposes its width value and stable id.
+    let divider = find(&tree, "bbr-sidebar-divider").expect("divider");
+    assert_eq!(divider.role, SemanticRole::Divider);
+    assert_eq!(divider.value.as_deref(), Some("260 pt"));
+}
+
+#[test]
+fn focus_lands_on_the_owning_list_and_selected_row() {
+    let browser = browser();
+    let rows = [row(0, TabVisualState::Selected)];
+    let space_rows = [space_row()];
+    let tree = semantic_tree(&input(
+        SemanticFocus {
+            command: false,
+            spaces: false,
+            tabs: true,
+            divider: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    ));
+    let tab_list = find(&tree, "bbr-tab-list").expect("tab list");
+    assert!(tab_list.focused, "the focused list is exposed typed");
+    let row = find(&tree, "bbr-tab-row-0").expect("tab row");
+    assert!(
+        row.focused,
+        "the selected row of the focused list is focused"
+    );
+    let space_list = find(&tree, "bbr-space-list").expect("space list");
+    assert!(!space_list.focused, "only the owning list is focused");
+}
+
+#[test]
+fn dragged_row_disables_its_controls() {
+    let browser = browser();
+    let rows = [row(0, TabVisualState::Dragging)];
+    let space_rows = [space_row()];
+    let input = input(
+        SemanticFocus {
+            command: false,
+            spaces: false,
+            tabs: false,
+            divider: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    );
+    let tree = semantic_tree(&input);
+    let close = find(&tree, "bbr-tab-close-0").expect("close control");
+    assert!(!close.enabled, "a dragged row's controls are disabled");
+    let pin = find(&tree, "bbr-tab-pin-0").expect("pin control");
+    assert!(!pin.enabled);
+}
+
+#[test]
+fn content_branch_mirrors_the_render() {
+    let browser = browser();
+    let rows = [row(0, TabVisualState::Selected)];
+    let space_rows = [space_row()];
+    let mut input = input(
+        SemanticFocus {
+            command: false,
+            spaces: false,
+            tabs: false,
+            divider: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    );
+    input.content = SemanticContent::Empty {
+        profile_line: "in Profile · Default".into(),
+    };
+    let tree = semantic_tree(&input);
+    let pane = find(&tree, "bbr-empty-new-tab").expect("empty pane");
+    assert_eq!(pane.role, SemanticRole::Content);
+    assert_eq!(pane.value.as_deref(), Some("in Profile · Default"));
+    assert!(find(&tree, "bbr-empty-new-tab-button").is_some());
+
+    input.content = SemanticContent::Crash;
+    let tree = semantic_tree(&input);
+    assert!(find(&tree, "bbr-crash-reload").is_some());
+    assert!(find(&tree, "bbr-crash-close").is_some());
+}
+
+#[test]
+fn collapsed_sidebar_leaves_only_root_and_content() {
+    let browser = browser();
+    let rows = [row(0, TabVisualState::Selected)];
+    let space_rows = [space_row()];
+    let mut input = input(
+        SemanticFocus {
+            command: false,
+            spaces: false,
+            tabs: false,
+            divider: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    );
+    input.sidebar_visible = false;
+    let tree = semantic_tree(&input);
+    let sidebar = find(&tree, "bbr-sidebar");
+    assert!(sidebar.is_none(), "a collapsed sidebar renders no nodes");
+    assert!(find(&tree, "bbr-native-web-slot").is_some());
+}

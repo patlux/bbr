@@ -121,6 +121,17 @@ impl HostBridge {
         );
         root.addSubview(&overlay);
 
+        // Present the window without AppKit's grow-from-corner appearance
+        // animation: the animation frames are driven by the display link and
+        // freeze at arbitrary intermediate sizes while the app runs in the
+        // background (the E2E/benchmark harness, `--bbr-hidden`), which made
+        // window geometry nondeterministic under test. BBR windows are
+        // chrome-like; appearing at their final frame matches the product's
+        // "instant shell" principle and keeps programmatic geometry stable.
+        if let Some(window) = root.window() {
+            window.setAnimationBehavior(objc2_app_kit::NSWindowAnimationBehavior::None);
+        }
+
         self.root_view = Some(root);
         self.responder_overlay = Some(overlay);
     }

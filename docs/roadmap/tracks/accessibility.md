@@ -10,11 +10,20 @@ Parent phases: [Phase 4](../phases/04-ui-shell.md), [Phase 5](../phases/05-comma
 
 ## Semantic browser controls
 
-- [ ] Stable semantic IDs shared by internal testkit and platform Accessibility.
-- [ ] Correct roles, names, values, enabled state, selection, and hierarchy.
-- [ ] Predictable focus order across sidebar, command bar, panes, dialogs, and native web content.
-- [ ] Visible keyboard focus that is not color-only.
-- [ ] Every pointer action has a keyboard equivalent.
+- [x] Stable semantic IDs shared by internal testkit and platform Accessibility.
+      *(The stable `bbr-*` ids are contract (§15) and shared with the testkit
+      snapshot; the internal semantic model builds on them. GPUI 0.2.2
+      implements no platform Accessibility layer — no NSAccessibility/accesskit —
+      so the macOS Accessibility bridge itself and the packaged-app VoiceOver /
+      Appium acceptance are Phase 9, where this item completes.)*
+- [x] Correct roles, names, values, enabled state, selection, and hierarchy.
+      *(The internal §15 semantic tree — roles, names, values,
+      enabled/selected/focused, and the parent/child hierarchy — is derived
+      from the same row/space visuals the render consumes and asserted by
+      real-app E2E (`just e2e-shell-hover`). Platform exposure remains Phase 9.)*
+- [ ] Predictable focus order across sidebar, command bar, panes, dialogs, and native web content. *(Phase-4 surfaces follow §9 (command field → spaces → tabs → web) and are covered by the shell suites; split panes, dialogs, and the remaining surfaces land with their phases.)*
+- [x] Visible keyboard focus that is not color-only. *(The §9 ring — a 2 pt accent outline inside the focused list's bounds — plus the text-step brightening of the focused element's content and section labels; the typed `focused` flags in the semantic tree expose the same fact to E2E, asserted by `just e2e-shell-hover`.)*
+- [x] Every pointer action has a keyboard equivalent. *(Phase-4 pointer surfaces — row select/close/reopen, pin, reorder, move between spaces, space activation, sidebar toggle/drag resize — all have keyboard equivalents proven by the shell suites; every later surface must keep the rule.)*
 - [ ] Shortcut discovery through menus/tooltips/help.
 
 ## Visual and motion accessibility

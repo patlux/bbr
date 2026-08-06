@@ -135,6 +135,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             space_states: self.space_states.clone(),
             space_titles: self.space_titles.clone(),
             visible_ids: self.visible_ids.clone(),
+            semantics: self.semantics.clone(),
             command_bar_mode: self.command_bar_mode,
             command_bar_text: self.command_bar_text.clone(),
             sidebar_visible: self.sidebar_visible,

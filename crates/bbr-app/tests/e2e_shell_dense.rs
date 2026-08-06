@@ -41,7 +41,7 @@ use e2e_dense_common::*;
 #[test]
 #[ignore]
 fn dense_500_keeps_exactly_50_sessions_with_bounded_render_and_recreation() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if !allow_gui() {
         return;
     }
@@ -229,7 +229,7 @@ fn dense_500_keeps_exactly_50_sessions_with_bounded_render_and_recreation() {
 #[test]
 #[ignore]
 fn keyboard_navigation_scrolls_large_collections_without_wrapping() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if !allow_gui() {
         return;
     }

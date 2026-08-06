@@ -220,7 +220,8 @@ impl BbrApp {
     /// within the active profile, "in Profile · <profile> → Space" when the
     /// destination crosses a profile boundary (the contract's cross-context
     /// communication). `None` when no move is staged or nothing matches.
-    #[cfg(feature = "testkit")]
+    /// Rendered in the command field so the user sees the destination before
+    /// committing.
     pub(super) fn command_bar_hint(&self) -> Option<String> {
         if self.command_bar_mode != CommandBarMode::MoveTab {
             return None;
@@ -252,6 +253,48 @@ impl BbrApp {
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
         self.emit_focus(window);
+    }
+
+    /// DESIGN.md §10.2 production hover path: the pointer entered row
+    /// `index` (`hovered == true`) or left it (`false`). This is the exact
+    /// app method the row's `on_hover` element listener calls, so the
+    /// testkit seam drives the same path a real pointer move runs.
+    pub fn set_row_hover(&mut self, index: usize, hovered: bool, cx: &mut Context<Self>) {
+        let changed = if hovered {
+            self.hovered_row != Some(index)
+        } else {
+            self.hovered_row == Some(index)
+        };
+        self.hovered_row = if hovered { Some(index) } else { None };
+        if changed {
+            cx.notify();
+        }
+    }
+
+    /// Clear the hover state regardless of the row (the `UnhoverTabRow` seam
+    /// and a pointer leaving the window).
+    pub fn clear_row_hover(&mut self, cx: &mut Context<Self>) {
+        if self.hovered_row.take().is_some() {
+            cx.notify();
+        }
+    }
+
+    /// DESIGN.md §10.3 production press path: the row's primary button went
+    /// down. The exact app method the row's mouse-down listener calls.
+    pub fn set_row_pressed(&mut self, index: usize, cx: &mut Context<Self>) {
+        if self.pressed_row != Some(index) {
+            self.pressed_row = Some(index);
+            cx.notify();
+        }
+    }
+
+    /// DESIGN.md §10.3 production release path: the primary button went up
+    /// (or left the window). The exact app method the row's mouse-up / the
+    /// root's mouse-up-out listeners call.
+    pub fn clear_row_pressed(&mut self, cx: &mut Context<Self>) {
+        if self.pressed_row.take().is_some() {
+            cx.notify();
+        }
     }
 
     /// Escape cancels a staged tab, space, or move; location mode returns to

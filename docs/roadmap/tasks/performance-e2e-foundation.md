@@ -40,8 +40,9 @@ completion.
       ≈ 0.43 s cold on this host.)*
 - [x] Emit interaction presentation commits for tab/space selection, close,
       sidebar visibility/resize, focus target, and later split mutations. *(Initial tab selection, active close, Cmd-T, sidebar toggle, sidebar drag resize, collapse/restore, pointer tab
-      selection, reopen, the tab pin toggle, region-bounded reorder, and
-      same-profile/cross-profile moves are covered; each commits synchronously against the
+      selection, reopen, the tab pin toggle, region-bounded reorder,
+      same-profile/cross-profile moves, and the §10.2 hover / §10.3 press
+      pointer-state entries are covered; each commits synchronously against the
       authoritative post-mutation state because the offscreen harness never
       yields an `on_next_frame` frame callback. Reopen and cross-profile moves
       are session-recreation class with their own documented budget — see the
@@ -104,6 +105,12 @@ completion.
       30 samples each (`just e2e-perf`). The measured frame-time evidence for
       the 500/50 acceptance on the canonical benchmark runner remains open in
       the phase.)*
+- [x] Pointer hover/press presentation benchmarks when the states land. *(The
+      §10.2 hover and §10.3 press transitions are measured through the
+      production listener methods (`tab_hover`/`tab_press`), commit only when
+      the derived row state shows the wash, and join the interaction matrix,
+      the baseline seed, and the full-gate sample-count asserts with the
+      50/100 ms warm budgets.)*
 
 ## Commands and continuous monitoring
 

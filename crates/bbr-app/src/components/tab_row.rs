@@ -176,6 +176,12 @@ pub fn tab_row(
         TabVisualState::Selected => p.tint_selected,
         TabVisualState::Error => p.status_error_surface,
         TabVisualState::DragTarget => p.tint_selected,
+        // §10.2/§10.3: the pointer-state washes blend over the sidebar
+        // material exactly as DESIGN.md defines (token `wash_hover` /
+        // `wash_active`); the more specific composed state already won in
+        // the caller, so these arms never fight selection/error/loading.
+        TabVisualState::Hover => p.wash_hover,
+        TabVisualState::Active => p.wash_active,
         _ => p.surface_sidebar,
     };
     let dragging = visuals.state == TabVisualState::Dragging;
@@ -184,7 +190,11 @@ pub fn tab_row(
         .on_mouse_down(MouseButton::Left, on_close)
         .when(visuals.show_close && !controls_disabled, |el| {
             el.cursor_pointer()
-        });
+        })
+        // §10.2 hover-reveal: the close control fades in on interaction and
+        // fades out at rest (transient indication; the row keeps its hit
+        // square so the id and the pointer path are stable).
+        .opacity(if visuals.reveal_close { 1.0 } else { 0.0 });
     let pin = pin_control(theme, visuals.index, visuals.pinned, controls_disabled)
         .on_mouse_down(MouseButton::Left, on_pin);
     div()
@@ -198,6 +208,11 @@ pub fn tab_row(
         .rounded(Radius.medium())
         .bg(bg)
         .cursor_pointer()
+        // §10.3: a pressed row deepens its wash with a 1 px inner hairline
+        // (no translation, no "press down" motion).
+        .when(visuals.state == TabVisualState::Active, |el| {
+            el.border_1().border_color(p.hairline)
+        })
         .when(dragging, |el| {
             // §10.9: the dragged row recedes (92% opacity) with an elev:2
             // shadow + strong outline, and its own controls are disabled.

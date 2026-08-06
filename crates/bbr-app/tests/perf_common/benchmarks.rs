@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use bbr_testkit::protocol::{
     BenchmarkKind, BenchmarkOperationId, BrowserChange, CommandBarMode, Event,
-    PresentationMeasurement, Request, SpaceVisualState, TestSpaceId,
+    PresentationMeasurement, Request, SpaceVisualState, TabVisualState, TestSpaceId,
 };
 use bbr_testkit::Client;
 use bbr_web::{WebEvent, WebViewId};
@@ -521,6 +521,81 @@ pub(crate) fn benchmark_move_tab(
     let snapshot = client.snapshot().expect("move snapshot");
     assert_eq!(snapshot.active_web_view, Some(source_repair_view));
     assert!(snapshot.chrome_focused);
+    measured
+}
+
+/// Pointer hover entry on a visible tab row through the production `on_hover`
+/// listener path (`BenchmarkHoverTab` → `set_row_hover`, the exact app
+/// method the row's element handler calls): the §10.2 hover wash + close
+/// reveal must be present in the accepted sample's render state. The hover
+/// never touches selection or sessions (transient indication).
+pub(crate) fn benchmark_hover(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    index: usize,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    let before = client.snapshot().expect("hover before snapshot");
+    let sessions_before = before.engine_sessions;
+    client
+        .send_ok(&Request::BenchmarkHoverTab {
+            operation_id,
+            index,
+        })
+        .expect("benchmark hover");
+    let (seq, measured) = wait_measurement(client, BenchmarkKind::TabHover, operation_id, *since);
+    *since = seq;
+    let snapshot = client.snapshot().expect("hover snapshot");
+    assert_eq!(
+        snapshot.tab_states.get(index),
+        Some(&TabVisualState::Hover),
+        "hover renders the §10.2 wash on the hovered row"
+    );
+    assert_eq!(
+        snapshot.engine_sessions, sessions_before,
+        "hovering never touches the session population"
+    );
+    measured
+}
+
+/// Pointer press on a visible tab row through the production mouse-down
+/// listener path (`BenchmarkPressTab` → `set_row_pressed`): the §10.3
+/// active wash must be present in the accepted sample's render state.
+/// Pressing is a chrome-pointer state, not a selection mutation — selection
+/// and sessions stay untouched.
+pub(crate) fn benchmark_press(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    index: usize,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    let before = client.snapshot().expect("press before snapshot");
+    let sessions_before = before.engine_sessions;
+    let active_before = before.active_tab_index;
+    client
+        .send_ok(&Request::BenchmarkPressTab {
+            operation_id,
+            index,
+        })
+        .expect("benchmark press");
+    let (seq, measured) = wait_measurement(client, BenchmarkKind::TabPress, operation_id, *since);
+    *since = seq;
+    let snapshot = client.snapshot().expect("press snapshot");
+    assert_eq!(
+        snapshot.tab_states.get(index),
+        Some(&TabVisualState::Active),
+        "press renders the §10.3 active wash on the pressed row"
+    );
+    assert_eq!(
+        snapshot.active_tab_index, active_before,
+        "the press state alone never selects"
+    );
+    assert_eq!(
+        snapshot.engine_sessions, sessions_before,
+        "pressing never touches the session population"
+    );
     measured
 }
 

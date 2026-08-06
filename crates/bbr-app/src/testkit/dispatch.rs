@@ -124,6 +124,37 @@ pub(crate) fn dispatch(
             })
             .unwrap_or_else(err_response),
 
+        // Pointer hover/press state through the production listener methods
+        // (the exact app handlers the row's `on_hover` and mouse-down/up
+        // element listeners call): the row renders the §10.2 hover wash +
+        // close reveal and the §10.3 pressed wash. Never a direct snapshot
+        // mutation — the states mutate the same app fields the real pointer
+        // paths drive, and the render derives the visual from them.
+        Request::HoverTabRow { index } => window
+            .update(cx, |view, _window, cx| {
+                view.set_row_hover(index, true, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+        Request::UnhoverTabRow => window
+            .update(cx, |view, _window, cx| {
+                view.clear_row_hover(cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+        Request::PressTabRow { index } => window
+            .update(cx, |view, _window, cx| {
+                view.set_row_pressed(index, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+        Request::ReleaseTabRow => window
+            .update(cx, |view, _window, cx| {
+                view.clear_row_pressed(cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+
         // Pointer drag on a tab row through the production listener methods
         // (the same begin/move/end handlers the element listeners drive),
         // exactly like the `DragSidebarDivider` seam: never a direct
@@ -405,7 +436,9 @@ pub(crate) fn dispatch(
         | Request::BenchmarkReorderTab { .. }
         | Request::BenchmarkMoveTab { .. }
         | Request::BenchmarkDenseScroll { .. }
-        | Request::BenchmarkDenseSelect { .. } => {
+        | Request::BenchmarkDenseSelect { .. }
+        | Request::BenchmarkHoverTab { .. }
+        | Request::BenchmarkPressTab { .. } => {
             unreachable!("benchmark requests route through dispatch_benchmark")
         }
     }

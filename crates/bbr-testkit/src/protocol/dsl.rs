@@ -93,6 +93,22 @@ pub fn click_tab_close(index: usize) -> Request {
     Request::ClickTabClose { index }
 }
 
+pub fn hover_tab_row(index: usize) -> Request {
+    Request::HoverTabRow { index }
+}
+
+pub fn unhover_tab_row() -> Request {
+    Request::UnhoverTabRow
+}
+
+pub fn press_tab_row(index: usize) -> Request {
+    Request::PressTabRow { index }
+}
+
+pub fn release_tab_row() -> Request {
+    Request::ReleaseTabRow
+}
+
 pub fn click_space(space: TestSpaceId) -> Request {
     Request::ClickSpace { space }
 }
@@ -158,4 +174,18 @@ pub fn benchmark_resize_sidebar(operation_id: BenchmarkOperationId, width: f32) 
 
 pub fn benchmark_restore_sidebar(operation_id: BenchmarkOperationId) -> Request {
     Request::BenchmarkRestoreSidebar { operation_id }
+}
+
+pub fn benchmark_hover_tab(operation_id: BenchmarkOperationId, index: usize) -> Request {
+    Request::BenchmarkHoverTab {
+        operation_id,
+        index,
+    }
+}
+
+pub fn benchmark_press_tab(operation_id: BenchmarkOperationId, index: usize) -> Request {
+    Request::BenchmarkPressTab {
+        operation_id,
+        index,
+    }
 }

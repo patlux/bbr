@@ -16,6 +16,8 @@ use crate::performance::PerformanceProbe;
 mod benchmarks;
 #[cfg(feature = "testkit")]
 mod benchmarks_dense;
+#[cfg(feature = "testkit")]
+mod benchmarks_pointer;
 mod drag;
 mod drag_target;
 mod interaction;
@@ -67,6 +69,12 @@ pub struct BbrApp {
     /// In-flight tab drag state (DESIGN.md §10.9/§11.2): the pointer drag
     /// for reorder and move-between-spaces. Idle when no drag is active.
     tab_drag: drag::TabDrag,
+    /// DESIGN.md §10.2 hover state: the row the pointer currently hovers
+    /// (driven by the production `on_hover` listeners). `None` at rest.
+    hovered_row: Option<usize>,
+    /// DESIGN.md §10.3 pressed state: the row whose primary button is
+    /// currently down (driven by the production mouse-down/up listeners).
+    pressed_row: Option<usize>,
     /// Current command-bar intent. `NewTab` stages navigation without creating
     /// a domain tab or native session until Enter commits it.
     pub command_bar_mode: CommandBarMode,
@@ -114,6 +122,8 @@ impl BbrApp {
             dense_window: std::cell::Cell::new(crate::dense::DenseRenderState::default()),
             sidebar: crate::sidebar::SidebarGeometry::new(),
             tab_drag: drag::TabDrag::default(),
+            hovered_row: None,
+            pressed_row: None,
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
             command_bar_text: String::new(),

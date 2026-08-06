@@ -27,18 +27,33 @@ pub fn title_budget_chars(theme: &Theme) -> usize {
     (area / per_char).floor().max(1.0) as usize
 }
 
-/// DESIGN.md §10 row state for the E2E snapshot's `tab_states` field:
-/// error (crash) wins over loading; loading wins over selected; the active
-/// row renders `selected`; everything else is `default`.
-pub fn row_state(active: bool, loading: bool, crashed: bool) -> crate::components::TabVisualState {
+/// DESIGN.md §10 row state for the E2E snapshot's `tab_states` field.
+/// Composition (the more specific state wins, §10) is: error (crash), then
+/// loading, then pressed (`active`), then selected, then hover, then
+/// default. The `active` press wash wins over `selected` so the pointer-down
+/// wash is visible on the row being pressed, and `hover` never overrides an
+/// already-selected or pressed row.
+pub fn row_state(
+    active: bool,
+    loading: bool,
+    crashed: bool,
+    pressed: bool,
+    hovered: bool,
+) -> crate::components::TabVisualState {
     if crashed {
         return crate::components::TabVisualState::Error;
     }
     if loading {
         return crate::components::TabVisualState::Loading;
     }
+    if pressed {
+        return crate::components::TabVisualState::Active;
+    }
     if active {
         return crate::components::TabVisualState::Selected;
+    }
+    if hovered {
+        return crate::components::TabVisualState::Hover;
     }
     crate::components::TabVisualState::Default
 }
@@ -54,25 +69,39 @@ mod tests {
     use super::*;
 
     #[test]
-    fn row_state_ordering_is_error_then_loading_then_selected() {
+    fn row_state_ordering_is_error_then_loading_then_pressed_then_selected() {
         assert_eq!(
-            row_state(true, false, true),
+            row_state(true, false, true, false, false),
             crate::components::TabVisualState::Error
         );
         assert_eq!(
-            row_state(true, true, false),
+            row_state(true, true, false, false, false),
             crate::components::TabVisualState::Loading
         );
+        // A pressed row shows the §10.3 active wash even when it is (or
+        // just became) selected; hover never overrides press or selection.
         assert_eq!(
-            row_state(true, false, false),
+            row_state(true, false, false, true, true),
+            crate::components::TabVisualState::Active
+        );
+        assert_eq!(
+            row_state(true, false, false, false, true),
             crate::components::TabVisualState::Selected
         );
         assert_eq!(
-            row_state(false, false, false),
+            row_state(false, false, false, true, false),
+            crate::components::TabVisualState::Active
+        );
+        assert_eq!(
+            row_state(false, false, false, false, true),
+            crate::components::TabVisualState::Hover
+        );
+        assert_eq!(
+            row_state(false, false, false, false, false),
             crate::components::TabVisualState::Default
         );
         assert_eq!(
-            row_state(false, true, true),
+            row_state(false, true, true, false, false),
             crate::components::TabVisualState::Error
         );
     }

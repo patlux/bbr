@@ -26,7 +26,7 @@ use e2e_common::*;
 #[test]
 #[ignore]
 fn pointer_switches_spaces_with_identity_and_warm_sessions() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if std::env::var("BBR_SKIP_GUI_TESTS").is_ok_and(|value| value != "0" && value != "false") {
         return;
     }

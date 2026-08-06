@@ -18,7 +18,7 @@ use e2e_common::*;
 #[test]
 #[ignore]
 fn pointer_opens_selects_closes_reopens_visible_tabs() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if std::env::var("BBR_SKIP_GUI_TESTS").is_ok_and(|value| value != "0" && value != "false") {
         return;
     }
@@ -220,7 +220,7 @@ fn pointer_opens_selects_closes_reopens_visible_tabs() {
 #[test]
 #[ignore]
 fn keyboard_navigates_visible_tab_list() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if std::env::var("BBR_SKIP_GUI_TESTS").is_ok_and(|value| value != "0" && value != "false") {
         return;
     }
@@ -377,7 +377,7 @@ fn keyboard_navigates_visible_tab_list() {
 #[test]
 #[ignore]
 fn keyboard_close_of_final_tab_opens_empty_new_tab_surface() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if std::env::var("BBR_SKIP_GUI_TESTS").is_ok_and(|value| value != "0" && value != "false") {
         return;
     }

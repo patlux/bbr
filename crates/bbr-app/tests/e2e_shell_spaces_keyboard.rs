@@ -22,7 +22,7 @@ use e2e_common::*;
 #[test]
 #[ignore]
 fn keyboard_selects_and_creates_spaces_and_moves_tabs_between_spaces() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if std::env::var("BBR_SKIP_GUI_TESTS").is_ok_and(|value| value != "0" && value != "false") {
         return;
     }

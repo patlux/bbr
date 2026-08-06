@@ -29,6 +29,7 @@ impl BbrApp {
         } else {
             0.0
         };
+        let semantics = self.semantic_snapshot(&browser, &rows, window, sidebar_width, &budget);
         TestSnapshot {
             url: browser.nav.url.clone(),
             title: browser.nav.title.clone(),
@@ -138,9 +139,11 @@ impl BbrApp {
                 self.chrome_focused(window),
                 self.command_bar_mode,
                 self.sidebar_visible,
+                self.command_bar_hint().as_deref(),
                 drag_slot,
                 self.dense_window.get(),
             ),
+            semantics,
             command_bar_mode: self.command_bar_mode.into(),
             command_bar_text: self.command_bar_text.clone(),
             sidebar_visible: self.sidebar_visible,
@@ -154,6 +157,77 @@ impl BbrApp {
             content_rect: self.performance.content_rect().unwrap_or([0.0; 4]),
             window_size: [window_width, window_height],
         }
+    }
+
+    /// The typed semantic tree of the current render (DESIGN.md §15 /
+    /// accessibility track). Mirrors the shell: only rows the render
+    /// actually built (the pinned block + the bounded regular window), the
+    /// space rows grouped as rendered, and the content-pane branch. The
+    /// focus state comes from GPUI's real focus tree.
+    fn semantic_snapshot(
+        &self,
+        browser: &bbr_browser::ControllerSnapshot,
+        rows: &[crate::components::RowVisuals],
+        window: &Window,
+        sidebar_width: f32,
+        budget: &usize,
+    ) -> Vec<bbr_testkit::protocol::SemanticNode> {
+        // Intersect the row visuals with the render's bounded window, like
+        // `visible_ids`: a dense collection never exposes rows it did not
+        // render.
+        let total = browser.tabs.len();
+        let pinned = crate::shell::pinned_count(&browser.tabs);
+        let dense = self.dense_window.get();
+        let mut rendered_indices: Vec<usize> = (0..pinned.min(total)).collect();
+        rendered_indices.extend(
+            (dense.first_rendered..dense.first_rendered + dense.rendered_rows)
+                .filter(|&index| index < total),
+        );
+        let rendered_rows: Vec<crate::components::RowVisuals> = rendered_indices
+            .into_iter()
+            .filter_map(|index| rows.get(index).cloned())
+            .collect();
+        let space_rows: Vec<crate::components::SpaceRowVisuals> =
+            crate::shell::space_groups(browser, *budget)
+                .into_iter()
+                .flat_map(|group| group.rows.into_iter())
+                .collect();
+        let content = if browser.active_view.is_some() {
+            crate::shell::semantics::SemanticContent::Native
+        } else if browser
+            .active_index
+            .and_then(|index| browser.tabs.get(index))
+            .is_some_and(|tab| tab.crashed)
+        {
+            crate::shell::semantics::SemanticContent::Crash
+        } else {
+            crate::shell::semantics::SemanticContent::Empty {
+                profile_line: crate::shell::profile_line(
+                    browser.active_profile_title.as_deref().unwrap_or("Default"),
+                ),
+            }
+        };
+        let input = crate::shell::semantics::SemanticInput {
+            browser,
+            focus: crate::shell::semantics::SemanticFocus {
+                command: self.chrome_handle.is_focused(window),
+                spaces: self.space_list_handle.is_focused(window),
+                tabs: self.tab_list_handle.is_focused(window),
+                divider: self.divider_handle.is_focused(window),
+            },
+            command: crate::shell::semantics::SemanticCommand {
+                mode: format!("{:?}", self.command_bar_mode).to_lowercase(),
+                text: self.command_bar_text.clone(),
+                hint: self.command_bar_hint(),
+            },
+            sidebar_visible: self.sidebar_visible,
+            sidebar_width,
+            divider_label: crate::sidebar::SIDEBAR_DIVIDER_LABEL.to_string(),
+            rows: &rendered_rows,
+            space_rows: &space_rows,
+            content,
+        };
+        crate::shell::semantics::semantic_tree(&input)
     }
 
     /// The dense-list render contract from the last frame's render state and

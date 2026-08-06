@@ -132,6 +132,76 @@ pub struct DenseListSnapshot {
     pub active_row: Option<usize>,
 }
 
+/// DESIGN.md §15 semantic role of one chrome element in the internal
+/// semantic model. This is the **internal** contract shared by the testkit
+/// and the future platform Accessibility bridge — GPUI 0.2.2 implements no
+/// platform accessibility layer (verified in its source: no NSAccessibility,
+/// no accesskit), so these nodes are not exposed to macOS Accessibility
+/// today. The platform bridge + packaged-app VoiceOver/Appium acceptance
+/// are Phase 9; the model itself ships with the shell.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SemanticRole {
+    /// The window root (`bbr-root`).
+    Root,
+    /// The sidebar rail (`bbr-sidebar`).
+    Sidebar,
+    /// The brand block (`bbr-brand`).
+    Brand,
+    /// A text field / command surface (`bbr-command-bar`).
+    Field,
+    /// A keyboard-focusable list (`bbr-space-list` / `bbr-tab-list`).
+    List,
+    /// A selectable row (`bbr-tab-row-*` / `bbr-space-row-*`).
+    Row,
+    /// A profile identity chip (`bbr-profile-chip-*`).
+    Chip,
+    /// An interactive control (close, pin, toggle, New Space, pane buttons).
+    Button,
+    /// A section label ("Pinned" / "Tabs").
+    Section,
+    /// The status line (`bbr-status`).
+    Status,
+    /// The sidebar resize divider (`bbr-sidebar-divider`).
+    Divider,
+    /// The glass content area: native slot, empty pane, or crash panel.
+    Content,
+    /// A row's favicon / monogram tile (`bbr-tab-favicon-*`).
+    Favicon,
+    /// A row's title text (`bbr-tab-title-*` / `bbr-space-title-*`).
+    Title,
+    /// A row's count column (`bbr-space-count-*`).
+    Count,
+    /// A row's trailing state slot (`bbr-tab-state-*`).
+    State,
+    /// The command-bar cursor (`bbr-command-cursor`).
+    Cursor,
+}
+
+/// One typed semantic node of the chrome (DESIGN.md §15 / accessibility
+/// track): the stable `bbr-*` id, role, name, value, enabled/selected/
+/// focused state, and children. The tree is derived from the same structures
+/// the render consumes, so the E2E semantic assertions cannot drift from the
+/// shell.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SemanticNode {
+    /// The stable `bbr-*` element id (DESIGN.md §15).
+    pub id: String,
+    pub role: SemanticRole,
+    /// Human-readable name (e.g. the truncated row title).
+    pub name: Option<String>,
+    /// A value (e.g. the row URL, the space tab count, the divider width).
+    pub value: Option<String>,
+    /// Whether the control accepts interaction (a dragged row disables its
+    /// own controls).
+    pub enabled: bool,
+    /// Whether the element is selected (active tab / active space).
+    pub selected: bool,
+    /// Whether the element owns keyboard focus (GPUI focus tree; §9 ring).
+    pub focused: bool,
+    pub children: Vec<SemanticNode>,
+}
+
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
 /// Deliberately typed (no free-form JSON) so the harness can assert on
@@ -205,6 +275,12 @@ pub struct Snapshot {
     pub space_titles: Vec<String>,
     /// The stable `bbr-*` ids present in the current render (DESIGN.md §15).
     pub visible_ids: Vec<String>,
+    /// The typed semantic tree of the current render (DESIGN.md §15 /
+    /// accessibility track): roles, names, values, enabled/selected/focused
+    /// state, and hierarchy. Internal model — GPUI 0.2.2 has no platform
+    /// accessibility layer, so these are not macOS Accessibility nodes; the
+    /// platform bridge is Phase 9.
+    pub semantics: Vec<SemanticNode>,
     pub command_bar_mode: CommandBarMode,
     pub command_bar_text: String,
     pub sidebar_visible: bool,

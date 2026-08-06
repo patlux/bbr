@@ -109,6 +109,8 @@ JSON; no macOS, no GPUI, no WebKit).
 | `SetCommandBarText { text }` | Set command-bar text directly (avoids per-keystroke round trips) + broadcasts `CommandBarChanged` |
 | `DispatchKeystroke { keystroke }` | GPUI `Keystroke::parse` + `Window::dispatch_keystroke` (real input path) |
 | `BenchmarkSelectTab` / `BenchmarkToggleSidebar` / `BenchmarkDispatchKeystroke` / `BenchmarkResizeSidebar` / `BenchmarkRestoreSidebar` | Start typed in-process production-path measurements and finish only after the scenario's semantic presentation milestone |
+| `HoverTabRow { index }` / `UnhoverTabRow` / `PressTabRow { index }` / `ReleaseTabRow` | Drive the exact production hover/press app methods the row `on_hover` and mouse-down/up element handlers call — the §10.2 hover wash + close reveal and the §10.3 pressed wash (never a snapshot mutation) |
+| `BenchmarkHoverTab { index }` / `BenchmarkPressTab { index }` | Measure the production pointer hover/press entry transitions; the sample commits only when the derived row state actually shows the §10.2 `hover` / §10.3 `active` wash |
 | `DragSidebarDivider { dx }` / `FocusSidebarDivider` | Drive the exact production pointer/focus listener methods the divider element handlers call (never a controller mutation) |
 | `FlushFrame` | Force one synchronous real GPUI draw (`Window::draw`) so paint-driven native geometry callbacks fire under the hidden harness (no display link) |
 | `SetWindowSize { width, height }` | `window.resize`; native view re-framed next frame |
@@ -159,6 +161,10 @@ Snapshot {
   divider_label: String,     // stable label shared with future Accessibility
   content_rect: [f32; 4],    // last engine-received WKWebView frame (x,y,w,h)
   window_size: [f32; 2],     // points
+  semantics: Vec<SemanticNode>, // §15 internal semantic tree (roles/names/values/
+                               // enabled/selected/focused + hierarchy); internal model
+                               // only — GPUI 0.2.2 has no platform Accessibility layer,
+                               // the macOS bridge is Phase 9
 }
 ```
 
@@ -461,6 +467,49 @@ budget; the other three share the 50/100 ms warm ceiling.
 
 ---
 
+## 7g. The shell-hover and semantic suites
+
+Three focused `#[ignore]`d macOS-only binaries —
+`bbr-app/tests/e2e_shell_semantics.rs`, `e2e_shell_hover.rs`, and
+`e2e_shell_semantic_branches.rs` — share `tests/e2e_common/` plus the small
+`tests/e2e_semantics_common/` assertion module. The sequential
+`just e2e-shell-hover` recipe proves the pointer-state slice (§10.2/§10.3)
+and the internal §15 semantic tree over real WKWebViews:
+
+1. **Hover/press through the production listener paths**: `HoverTabRow` /
+   `PressTabRow` mutate the exact app state the row `on_hover` and
+   mouse-down/up element handlers drive — the snapshot's `tab_states` show
+   `hover` / `active` and the composed §10 order holds (error > loading >
+   pressed > selected > hover > default; hovering the selected row keeps
+   `selected`). Hover and press never select.
+2. **Typed semantic tree**: one root node (`bbr-root`, role `Root`); the
+   sidebar (`Sidebar`) with brand, command field (`Field`, typed mode/value),
+   space list (`List` → `Row` + `Chip` + `Count`), tab list (`List` → section
+   labels (`Section`) + rows with `Favicon`/`Title`/`Button` pin + `State` +
+   `Button` close children), status (`Status`), toggle, and divider
+   (`Divider` with the width value); the glass content branch (`Content` =
+   native slot, crash panel, or empty pane naming the profile).
+3. **Focus clarity**: after pointer selection the owning list and its
+   selected row expose `focused: true` (the space list and command field do
+   not); web focus renders the chrome at ease (nothing focused); Cmd-L
+   focuses the field and exposes the `bbr-command-cursor` node; section
+   labels never own focus.
+4. **Disabled coherence**: a dragged row's close/pin nodes flip `enabled`
+   false and back after cancel.
+5. **Identity and edge states**: profile chips carry the §12 monogram, the
+   long-title row name is the truncated §4 title, the hostless row falls back
+   to the §11.9 scheme title and §7.2 monogram letter, the crash branch and
+   the empty-space branch render their typed panes, and a collapsed sidebar
+   leaves only root + glass.
+
+The `tab_hover`/`tab_press` interaction benchmarks (in
+`tests/perf_common/benchmarks.rs`) measure the entry transitions through
+`BenchmarkHoverTab`/`BenchmarkPressTab`; each sample commits only when the
+derived row state shows the wash, joins the 30-sample matrix with the 50 ms
+p95 / 100 ms max warm budget, and is asserted in the full-gate sample counts.
+
+---
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature
@@ -480,13 +529,14 @@ budget; the other three share the 50/100 ms warm ceiling.
 ## 9. Commands (implemented)
 
 ```bash
-just e2e           # canonical sequential GUI gate: smoke, tabs, profiles, shell-tabs, shell-spaces, shell-sidebar, performance
+just e2e           # canonical sequential GUI gate: smoke, tabs, profiles, shell-tabs, shell-spaces, shell-sidebar, shell-organize, shell-hover, shell-dense, performance
 just e2e-smoke     # baseline navigation/focus/resize
 just e2e-tabs      # multi-tab/session behavior
 just e2e-profiles  # native profile isolation, moves, and suspension
 just e2e-shell-tabs    # visible vertical-tab surface (pointer/keyboard/empty)
 just e2e-shell-spaces  # visible profile/space surface (pointer + keyboard suites)
 just e2e-shell-sidebar # adjustable/collapsible sidebar surface (drag, keys, collapse, clamp)
+just e2e-shell-hover    # pointer hover/press states + the internal §15 semantic tree
 just e2e-perf      # optimized startup and interaction latency budgets
 just e2e-perf-full # bounded repeated canonical gate (COLD_STARTUP_SAMPLES launches + 30-sample interactions)
 just e2e-perf-inject # deterministic injected-delay self-test (fails under injection, green after removal)
@@ -515,7 +565,7 @@ runner + suites.
 | Synthetic keystroke fidelity drift | `DispatchKeystroke` goes through GPUI's real `dispatch_keystroke` path; FUTURE: tier-2 NSEvent posting in the webkit suite |
 | macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner. Verified locally on the Xcode 16.4.0 Metal toolchain in a display-attached session |
 | Event-ring memory growth | Fixed cap (4096) + client cursors; snapshot on demand |
-| Protocol evolution | `PROTOCOL_VERSION = 5` added command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types. `PROTOCOL_VERSION = 6` adds per-tab `pinned`/`loading`/`crashed` flags and per-row `tab_states` + resolved `shell_modes` to snapshots, the pointer-path `ClickTab`/`ClickTabClose` and `ReopenTab`/`PinTab` requests, deterministic `InjectWebEvent` (rides the real event transport), and the `TabSelectPointer`/`TabReopen` benchmark kinds. Additive growth after v6 (still version 6): snapshots expose the rendered `bbr-*` `visible_ids`, per-row `row_titles` (after §4 truncation), `active_profile_title`, the typed sidebar geometry (`sidebar_width`/`sidebar_min`/`sidebar_default`/`sidebar_max`, `content_min`, `divider_dragging`, `divider_label`) and the last engine-received native `content_rect`; `TabActivateKeyboard`, `SidebarResize`, and `SidebarRestore` join the benchmark kinds; `DragSidebarDivider`/`FocusSidebarDivider` join the pointer seams and `FlushFrame` the paint drivers; `ServerFrame::Response` is boxed internally (JSON wire shape unchanged); future additive growth stays typed |
+| Protocol evolution | `PROTOCOL_VERSION = 5` added command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types. `PROTOCOL_VERSION = 6` adds per-tab `pinned`/`loading`/`crashed` flags and per-row `tab_states` + resolved `shell_modes` to snapshots, the pointer-path `ClickTab`/`ClickTabClose` and `ReopenTab`/`PinTab` requests, deterministic `InjectWebEvent` (rides the real event transport), and the `TabSelectPointer`/`TabReopen` benchmark kinds. Additive growth after v6 (still version 6): snapshots expose the rendered `bbr-*` `visible_ids`, per-row `row_titles` (after §4 truncation), `active_profile_title`, the typed sidebar geometry (`sidebar_width`/`sidebar_min`/`sidebar_default`/`sidebar_max`, `content_min`, `divider_dragging`, `divider_label`) and the last engine-received native `content_rect`; `TabActivateKeyboard`, `SidebarResize`, and `SidebarRestore` join the benchmark kinds; `DragSidebarDivider`/`FocusSidebarDivider` join the pointer seams and `FlushFrame` the paint drivers; the hover/press seams (`HoverTabRow`/`UnhoverTabRow`/`PressTabRow`/`ReleaseTabRow`) plus the `BenchmarkHoverTab`/`BenchmarkPressTab` kinds and the typed §15 `semantics` tree join the protocol; `ServerFrame::Response` is boxed internally (JSON wire shape unchanged); future additive growth stays typed |
 | Dedicated-runner / external gaps | No dedicated stable macOS runner or public trend publication is provisioned yet. `canonical_host_model` is therefore empty, so the >15% relative baseline rule stays report-only until a runner is named; display refresh is recorded `null` with an explicit reason (window is offscreen and the OS refresh API is not linked). Absolute ceilings are enforced on every machine. Persisted warm startup stays open until the persistence repository lands — a test-only seed that bypasses the future persistence path is not acceptance evidence. |
 
 ---

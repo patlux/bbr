@@ -54,6 +54,21 @@ pub enum Request {
     /// Toggle the visible tab row's pin control through the production
     /// pointer path (the pointer half of the pin/unpin command).
     ClickTabPin { index: usize },
+    /// Pointer hover over a visible tab row through the production `on_hover`
+    /// listener path (the exact app method the element handler calls): the
+    /// row renders the DESIGN §10.2 hover wash and reveals its close control.
+    HoverTabRow { index: usize },
+    /// Pointer leave through the same production hover listener path: clears
+    /// the row's hover state.
+    UnhoverTabRow,
+    /// Pointer press on a visible tab row through the production mouse-down
+    /// listener path: the row renders the DESIGN §10.3 active (pressed) wash
+    /// while the button is down. Selection is not implied — the press
+    /// listener is a separate production handler from the select listener.
+    PressTabRow { index: usize },
+    /// Pointer release through the production mouse-up listener path: clears
+    /// the pressed row state.
+    ReleaseTabRow,
     /// Pointer drag entry: press on a visible tab row through the production
     /// mouse-down listener path (the same method the row's listener calls),
     /// anchored at `y` so the subsequent moves are relative to the press.
@@ -233,6 +248,20 @@ pub enum Request {
     /// path): the sample commits after the frame that renders the selection
     /// with the active row inside the bounded window.
     BenchmarkDenseSelect {
+        operation_id: BenchmarkOperationId,
+        index: usize,
+    },
+    /// Measure the production pointer hover entry on a visible tab row
+    /// (`set_row_hover`, the exact app method the row's `on_hover` element
+    /// listener calls): the §10.2 hover wash + close reveal commit.
+    BenchmarkHoverTab {
+        operation_id: BenchmarkOperationId,
+        index: usize,
+    },
+    /// Measure the production pointer press on a visible tab row
+    /// (`set_row_pressed`, the exact app method the row's mouse-down
+    /// listener calls): the §10.3 active wash commits.
+    BenchmarkPressTab {
         operation_id: BenchmarkOperationId,
         index: usize,
     },

@@ -18,6 +18,15 @@ use std::sync::{Arc, Mutex};
 /// through screen clamping, so every test in this binary takes the lock.
 pub static SERIAL_GUI: Mutex<()> = Mutex::new(());
 
+/// Take the serial GUI lock, recovering from a poisoned mutex: a panicked
+/// sibling test must not cascade into the remaining tests of the binary —
+/// the failure is diagnosed once, in the panicking test itself.
+pub fn serial_gui() -> std::sync::MutexGuard<'static, ()> {
+    SERIAL_GUI
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 pub use bbr_fixtures::FixtureServer;
 #[allow(unused_imports)] // shared helper module: each suite uses a subset
 pub use bbr_testkit::protocol::{dsl, BrowserChange, Event, TabVisualState};
@@ -213,6 +222,13 @@ pub fn open_tab(client: &mut Client, since: &mut u64, url: &str, title: Option<&
             *since = wait_title(client, view, title, *since);
         }
     }
+    // Force the production draw so the render-derived snapshot fields
+    // (visible_ids / dense window) reflect the new tab: the harness window
+    // runs in the background, where the display link is throttled and a
+    // mutation alone does not guarantee a render before the next snapshot.
+    client
+        .send_ok(&bbr_testkit::Request::FlushFrame)
+        .expect("flush after open tab");
     view
 }
 
@@ -350,6 +366,71 @@ pub fn wait_for_window_size(
             Instant::now() < deadline,
             "window width did not reach {expected_width}; last {:?}",
             snapshot.window_size
+        );
+        std::thread::yield_now();
+    }
+}
+
+/// Poll until the window width stops changing (macOS clamps the spawned
+/// window frame shortly after `orderFront` — GPUI reports the requested
+/// bounds first, then the clamped frame lands via `windowDidResize`).
+/// Suites that assert absolute geometry (default sidebar width, native
+/// content rect) must wait for this settle first; snapshots taken mid-
+/// clamp observe transient widths and flake. Returns the settled snapshot.
+pub fn wait_for_window_settled(
+    client: &mut Client,
+    deadline: Instant,
+) -> bbr_testkit::protocol::Snapshot {
+    let mut previous: Option<f32> = None;
+    loop {
+        let snapshot = client.snapshot().expect("window-settle snapshot");
+        let width = snapshot.window_size[0];
+        if let Some(prev) = previous {
+            if (width - prev).abs() <= 0.5 {
+                return snapshot;
+            }
+        }
+        previous = Some(width);
+        assert!(
+            Instant::now() < deadline,
+            "window width did not settle; last {:?}",
+            snapshot.window_size
+        );
+        // Ask GPUI to complete another production draw instead of sleeping:
+        // two consecutive frame-derived snapshots with the same width are
+        // the settle condition, while a later AppKit clamp remains observable.
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush while waiting for window settle");
+    }
+}
+
+/// Poll until a SINGLE snapshot shows the window at `target_width` with the
+/// native content rect at `content_width` — both fields from the same frame,
+/// so a mid-transition snapshot can never satisfy the geometry contract.
+/// The BBR platform adapter disables AppKit's grow-from-corner appearance
+/// animation (see `bbr-web-macos/src/host.rs`), so a shown window keeps its
+/// requested frame; a mismatch here is a real geometry regression and fails
+/// loudly.
+pub fn wait_for_window_and_content(
+    client: &mut Client,
+    target_width: f32,
+    content_width: f32,
+    deadline: Instant,
+) -> bbr_testkit::protocol::Snapshot {
+    loop {
+        let snapshot = client.snapshot().expect("window+content snapshot");
+        let close = |a: f32, b: f32| (a - b).abs() <= 0.5;
+        if close(snapshot.window_size[0], target_width)
+            && close(snapshot.content_rect[2], content_width)
+        {
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "window never reached width {target_width} with {content_width} pt native content (last window {:?}, rect {:?}); see E2E_ARCHITECTURE risks",
+            snapshot.window_size,
+            snapshot.content_rect
         );
         std::thread::yield_now();
     }

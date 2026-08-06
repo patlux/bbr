@@ -87,6 +87,28 @@ impl Render for BbrApp {
             .on_mouse_move(cx.listener(Self::on_sidebar_drag_move))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::on_sidebar_drag_end))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_sidebar_drag_end))
+            // §10.3 release path: a pointer press ends with the primary
+            // button up anywhere over (or out of) the window.
+            .on_mouse_up(
+                MouseButton::Left,
+                cx.listener(|this, _e: &gpui::MouseUpEvent, _window, cx| {
+                    this.clear_row_pressed(cx)
+                }),
+            )
+            .on_mouse_up_out(
+                MouseButton::Left,
+                cx.listener(|this, _e: &gpui::MouseUpEvent, _window, cx| {
+                    this.clear_row_pressed(cx)
+                }),
+            )
+            .on_hover(cx.listener(|this, hovered: &bool, _window, cx| {
+                // The pointer left the whole GPUI chrome (e.g. into the
+                // native web view): clear the row hover. Entering the root
+                // never clears a row the pointer is already over.
+                if !*hovered {
+                    this.clear_row_hover(cx);
+                }
+            }))
             // The tab-drag listeners run alongside the sidebar-drag ones on
             // the same root; each handler is a no-op unless its own drag is
             // active, so the two drag surfaces never interfere.

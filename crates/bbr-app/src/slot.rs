@@ -88,7 +88,9 @@ impl Element for NativeWebViewSlot {
 
     fn id(&self) -> Option<ElementId> {
         // Publish a stable id so the inspector and tests can target the slot.
-        Some(ElementId::Name("native-web-slot".into()))
+        // The `bbr-` prefix follows DESIGN.md §15 (the semantic id shared by
+        // the testkit snapshot and the future platform Accessibility bridge).
+        Some(ElementId::Name("bbr-native-web-slot".into()))
     }
 
     fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {

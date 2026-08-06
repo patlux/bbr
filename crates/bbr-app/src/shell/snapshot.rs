@@ -52,6 +52,12 @@ pub struct TestSnapshot {
     /// §11.3 space row titles in render order, after §4 truncation.
     pub space_titles: Vec<String>,
     pub visible_ids: Vec<String>,
+    /// The typed semantic tree of the current render (DESIGN.md §15 /
+    /// accessibility track): roles, names, values, enabled/selected/focused
+    /// state, and hierarchy. Internal model — GPUI 0.2.2 has no platform
+    /// accessibility layer, so these are not macOS Accessibility nodes; the
+    /// platform bridge is Phase 9.
+    pub semantics: Vec<bbr_testkit::protocol::SemanticNode>,
     pub command_bar_mode: bbr_testkit::protocol::CommandBarMode,
     pub command_bar_text: String,
     /// Lifecycle population counts of the active space (dense-list evidence).
@@ -93,6 +99,7 @@ pub fn visible_ids(
     chrome_focused: bool,
     command_bar_mode: crate::command_bar::CommandBarMode,
     sidebar_visible: bool,
+    command_bar_hint: Option<&str>,
     drag_slot: Option<usize>,
     dense: crate::dense::DenseRenderState,
 ) -> Vec<String> {
@@ -113,6 +120,18 @@ pub fn visible_ids(
         ] {
             ids.push(id.into());
         }
+        if command_bar_hint.is_some() {
+            ids.push("bbr-command-hint".into());
+        }
+        // The §11.2 section labels the render shows (hidden when empty).
+        let total = browser.tabs.len();
+        let pinned = crate::shell::pinned_count(&browser.tabs);
+        if pinned > 0 {
+            ids.push("bbr-section-pinned".into());
+        }
+        if total > pinned {
+            ids.push("bbr-section-tabs".into());
+        }
         for space in &browser.spaces {
             ids.push(format!("bbr-space-row-{}", space.index));
             ids.push(format!("bbr-space-title-{}", space.index));
@@ -124,6 +143,11 @@ pub fn visible_ids(
     }
     if chrome_focused && command_bar_mode.is_active() {
         ids.push("bbr-command-cursor".into());
+    }
+    // The native content slot renders whenever the selected tab hosts a
+    // live native session (DESIGN.md §13: the glass).
+    if browser.active_view.is_some() {
+        ids.push("bbr-native-web-slot".into());
     }
     // Rendered rows only: every pinned row (the fixed block) plus the
     // bounded regular window the shell actually built (§11.6) — a dense
@@ -266,6 +290,7 @@ mod tests {
             crate::command_bar::CommandBarMode::Inactive,
             true,
             None,
+            None,
             dense_all(tabs.len()),
         );
         for required in [
@@ -311,6 +336,7 @@ mod tests {
             crate::command_bar::CommandBarMode::Inactive,
             true,
             None,
+            None,
             dense_all(1),
         );
         for required in ["bbr-crash-panel", "bbr-crash-reload", "bbr-crash-close"] {
@@ -327,6 +353,7 @@ mod tests {
             true,
             crate::command_bar::CommandBarMode::NewTab,
             true,
+            None,
             None,
             dense_all(1),
         );
@@ -347,6 +374,7 @@ mod tests {
             false,
             crate::command_bar::CommandBarMode::Inactive,
             true,
+            None,
             None,
             dense_all(0),
         );
@@ -384,6 +412,7 @@ mod tests {
             crate::command_bar::CommandBarMode::Inactive,
             true,
             None,
+            None,
             dense_all(0),
         );
         for required in [
@@ -408,6 +437,7 @@ mod tests {
             false,
             crate::command_bar::CommandBarMode::Inactive,
             false,
+            None,
             None,
             dense_all(0),
         );
@@ -437,6 +467,7 @@ mod tests {
             false,
             crate::command_bar::CommandBarMode::Inactive,
             true,
+            None,
             None,
             stale,
         );

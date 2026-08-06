@@ -43,7 +43,7 @@ const ROW_H: f32 = 32.0;
 #[test]
 #[ignore]
 fn dense_edge_states_stay_usable() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if !allow_gui() {
         return;
     }

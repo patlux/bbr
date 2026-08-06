@@ -12,6 +12,8 @@
 //! - [`tab`] — the vertical tab row presentation (one-line budgets, row
 //!   states, the pinned/regular boundary).
 //! - [`space`] — the profile-grouped space surface (§11.3) and its budgets.
+//! - [`semantics`] — the typed §15 semantic tree (roles/names/values/
+//!   enabled/selected/focused/hierarchy).
 //! - [`snapshot`] — the testkit `TestSnapshot` and `visible_ids`.
 //!
 //! Everything callers reference keeps the single `crate::shell::*` path
@@ -19,6 +21,8 @@
 //! items themselves).
 
 pub mod presentation;
+#[cfg(feature = "testkit")]
+pub mod semantics;
 pub mod snapshot;
 pub mod space;
 pub mod tab;

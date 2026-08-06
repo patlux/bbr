@@ -63,7 +63,7 @@ fn assert_tab_order(snapshot: &bbr_testkit::protocol::Snapshot, urls: &[&str], p
 #[test]
 #[ignore]
 fn keyboard_pins_unpins_reorders_and_moves_tabs() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if !allow_gui() {
         return;
     }
@@ -423,7 +423,7 @@ fn keyboard_pins_unpins_reorders_and_moves_tabs() {
 #[test]
 #[ignore]
 fn pointer_pin_control_and_drag_reorder_respect_regions() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if !allow_gui() {
         return;
     }
@@ -618,7 +618,7 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
 #[test]
 #[ignore]
 fn pointer_drag_moves_tab_between_spaces() {
-    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    let _serial = serial_gui();
     if !allow_gui() {
         return;
     }

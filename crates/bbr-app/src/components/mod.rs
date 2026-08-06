@@ -68,6 +68,11 @@ pub struct RowVisuals {
     /// control's region identity).
     pub pinned: bool,
     pub show_close: bool,
+    /// §10.2 hover-reveal: the close control is visible when the pointer
+    /// hovers or presses the row, the row is selected (keyboard users), or
+    /// the row is being dragged — never at rest, so the row stays quiet
+    /// until interaction.
+    pub reveal_close: bool,
 }
 
 /// The one space-row visual state the shell renders (DESIGN.md §10/§11.3):

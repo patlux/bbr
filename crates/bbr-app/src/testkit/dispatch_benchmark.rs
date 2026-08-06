@@ -244,6 +244,50 @@ pub(crate) fn dispatch_benchmark(
             })
             .unwrap_or_else(err_response),
 
+        // Pointer-state benchmarks: the production hover/press listener
+        // methods (`set_row_hover` / `set_row_pressed`) render the §10.2
+        // hover wash + close reveal and the §10.3 active wash. Each sample
+        // commits only when the derived row state actually shows the wash;
+        // a broken path cancels with an explicit no-op error instead of
+        // committing fast-but-wrong.
+        Request::BenchmarkHoverTab {
+            operation_id,
+            index,
+        } => window
+            .update(cx, |view, window, cx| {
+                view.benchmark_hover_tab(*operation_id, *index, window, cx)
+            })
+            .map(|committed| {
+                if committed {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "hover did not render the hover state",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response),
+
+        Request::BenchmarkPressTab {
+            operation_id,
+            index,
+        } => window
+            .update(cx, |view, window, cx| {
+                view.benchmark_press_tab(*operation_id, *index, window, cx)
+            })
+            .map(|committed| {
+                if committed {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "press did not render the active state",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response),
+
         // Dense scroll: begin the measurement on the entity, drive the
         // production dense scroll state through the app's tracked handle,
         // draw the resulting frame through the untyped path, then commit

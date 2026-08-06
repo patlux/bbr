@@ -14,7 +14,7 @@ use gpui::{
 
 use crate::components::{self, RowVisuals};
 use crate::sidebar::sidebar_divider;
-use crate::theme::{Spacing, Theme};
+use crate::theme::{Radius, Spacing, Theme};
 
 use super::BbrApp;
 
@@ -32,8 +32,8 @@ impl BbrApp {
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let p = theme.palette;
-        let tab_surface = self.tab_surface(theme, cx);
-        let space_surface = self.space_surface(theme, cx);
+        let tab_surface = self.tab_surface(theme, window, cx);
+        let space_surface = self.space_surface(theme, window, cx);
         let command_bar = self.command_bar(theme, chrome_focused);
         let status_text: SharedString =
             crate::shell::status_line(&self.controller.snapshot()).into();
@@ -125,8 +125,13 @@ impl BbrApp {
     }
 
     /// The command bar component (mirrors the live URL / staged destination).
+    /// While a move is staged (`Cmd-Shift-M`), the §11.3 destination hint
+    /// renders after the text so the destination profile/space is visible
+    /// before Enter commits — the cross-context identity the interaction
+    /// contract requires.
     fn command_bar(&self, theme: &Theme, chrome_focused: bool) -> Stateful<Div> {
         let p = theme.palette;
+        let hint = self.command_bar_hint();
         div()
             .id("bbr-command-bar")
             .mx(Spacing::sp3())
@@ -139,7 +144,10 @@ impl BbrApp {
             } else {
                 p.surface_sidebar
             })
-            .border_1()
+            // §9 ring: the focused command field gets the accent outline at
+            // ring thickness (2 pt), never color-only — the §10 text step
+            // brightens the field's own content.
+            .border_2()
             .border_color(if chrome_focused { p.accent } else { p.hairline })
             .flex()
             .flex_row()
@@ -171,6 +179,15 @@ impl BbrApp {
                         .bg(p.accent),
                 )
             })
+            .when(hint.is_some(), |el| {
+                el.child(
+                    div()
+                        .id("bbr-command-hint")
+                        .text_size(theme.type_.meta.size)
+                        .text_color(p.ink_secondary)
+                        .child(hint.expect("hint is some")),
+                )
+            })
     }
 
     /// The controller-backed tab surface: the pinned region as a fixed block
@@ -187,33 +204,35 @@ impl BbrApp {
     /// as if every row were laid out, while a 500-tab list never lays out
     /// 500 rows per frame. The pinned region renders all of its rows: it is
     /// a small, stable block and must never shift on selection (§11.2).
-    fn tab_surface(&self, theme: &Theme, cx: &mut Context<Self>) -> Stateful<Div> {
+    fn tab_surface(&self, theme: &Theme, window: &Window, cx: &mut Context<Self>) -> Stateful<Div> {
         let browser = self.controller.snapshot();
         let pinned = crate::shell::pinned_count(&browser.tabs);
         let regular = &browser.tabs[pinned..];
         let row_h = theme.density.row();
         let offset_y = self.dense_scroll.offset().y;
         let anchor = crate::dense::anchor_from_offset(offset_y, row_h, regular.len());
-        let window = crate::dense::window_for(anchor, regular.len());
+        let row_window = crate::dense::window_for(anchor, regular.len());
         let drag_source = self.tab_drag.source();
         let pinned_rows = self.row_visuals(&browser.tabs[..pinned], drag_source);
-        let window_rows = self.row_visuals(&regular[window.clone()], drag_source);
+        let window_rows = self.row_visuals(&regular[row_window.clone()], drag_source);
         let tick = self.tab_drag.tab_slot();
         let tick_valid = self.tab_drag.valid();
+        let list_focused = self.tab_list_handle.is_focused(window);
+        let p = theme.palette;
 
         // Record what this render built so the testkit snapshot reports the
         // bounded window and the deterministic scroll anchor (the snapshot is
         // taken on demand; the recorded state mirrors the last frame).
         self.dense_window.set(crate::dense::DenseRenderState {
-            first_rendered: pinned + window.start,
-            rendered_rows: window.len(),
+            first_rendered: pinned + row_window.start,
+            rendered_rows: row_window.len(),
             item_count: regular.len(),
             scroll_anchor: anchor,
         });
 
         let mut children: Vec<gpui::AnyElement> = Vec::new();
         if !pinned_rows.is_empty() {
-            children.push(components::section_label(theme, "Pinned").into_any());
+            children.push(components::section_label(theme, "Pinned", list_focused).into_any());
             for row in &pinned_rows {
                 if tick == Some(row.index) {
                     children.push(components::drag_tick(theme, row.index, !tick_valid).into_any());
@@ -232,14 +251,14 @@ impl BbrApp {
             );
         }
         if !regular.is_empty() {
-            children.push(components::section_label(theme, "Tabs").into_any());
+            children.push(components::section_label(theme, "Tabs", list_focused).into_any());
         }
 
         // The scroll container: spacers keep the total content height equal
         // to the full collection, the rendered window follows the production
         // scroll offset, and the drag tick renders only inside the window.
-        let top = crate::dense::scroll_top_for_anchor(window.start, row_h);
-        let bottom = (regular.len().saturating_sub(window.end)) as f32 * f32::from(row_h);
+        let top = crate::dense::scroll_top_for_anchor(row_window.start, row_h);
+        let bottom = (regular.len().saturating_sub(row_window.end)) as f32 * f32::from(row_h);
         let mut scroll_children: Vec<gpui::AnyElement> = Vec::new();
         if top > 0.0 {
             scroll_children.push(div().h(px(top)).into_any());
@@ -274,6 +293,14 @@ impl BbrApp {
             .flex_col()
             .min_w_0()
             .min_h_0()
+            // §9 keyboard-focus ring: 2 pt accent outline inside the focused
+            // list's bounds + the brightened section labels — focus is a
+            // shape and a text step, never color-only.
+            .when(list_focused, |el| {
+                el.border_2()
+                    .border_color(p.accent)
+                    .rounded(Radius.medium())
+            })
             .on_key_down(cx.listener(Self::on_tab_list_key_down))
             .children(children)
     }
@@ -300,7 +327,23 @@ impl BbrApp {
         let begin_drag = cx.listener(move |this, e: &MouseDownEvent, window, cx| {
             this.begin_tab_drag(e, index, window, cx);
         });
+        // §10.2/§10.3 production pointer-state paths: the press wash while
+        // the primary button is down, the hover wash + close reveal on
+        // enter/leave. Separate listeners from select/drag so the visual
+        // states never interfere with the mutations.
+        let press = cx.listener(move |this, _e: &MouseDownEvent, _window, cx| {
+            this.set_row_pressed(index, cx);
+        });
+        let release = cx.listener(move |this, _e: &gpui::MouseUpEvent, _window, cx| {
+            this.clear_row_pressed(cx);
+        });
+        let hover = cx.listener(move |this, hovered: &bool, _window, cx| {
+            this.set_row_hover(index, *hovered, cx);
+        });
         components::tab_row(theme, row, select, close, pin, begin_drag)
+            .on_mouse_down(MouseButton::Left, press)
+            .on_mouse_up(MouseButton::Left, release)
+            .on_hover(hover)
     }
 
     /// The controller-backed space surface (DESIGN.md §11.3): every space
@@ -309,7 +352,12 @@ impl BbrApp {
     /// renders the selected rail; rows run the production pointer activation
     /// path. The list owns its own GPUI focus handle so `↑/↓`/Enter traverse
     /// the spaces region (DESIGN.md §9 order: command field → spaces → tabs).
-    fn space_surface(&self, theme: &Theme, cx: &mut Context<Self>) -> Stateful<Div> {
+    fn space_surface(
+        &self,
+        theme: &Theme,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
         let browser = self.controller.snapshot();
         let budget = crate::shell::space_title_budget_chars(theme);
         let drag_target_space = self.tab_drag.space_target();
@@ -352,6 +400,13 @@ impl BbrApp {
             .flex()
             .flex_col()
             .px(Spacing::sp1())
+            // §9 keyboard-focus ring on the focused space list (the same
+            // structural cue the tab list uses).
+            .when(self.space_list_handle.is_focused(window), |el| {
+                el.border_2()
+                    .border_color(theme.palette.accent)
+                    .rounded(theme.radius.medium())
+            })
             .on_key_down(cx.listener(Self::on_space_list_key_down))
             .children(children)
     }
@@ -360,7 +415,10 @@ impl BbrApp {
     /// one-line title truncation is applied here so the snapshot's row
     /// titles and the rendered rows share one source. `drag_source` marks
     /// the row currently being dragged (§10.9 `dragging` state); the row's
-    /// `pinned` region identity drives the pin control.
+    /// `pinned` region identity drives the pin control. The pointer-state
+    /// fields (hover/press) and the §10.2 close-reveal derive from the same
+    /// app state the production listeners mutate, so the snapshot's
+    /// `tab_states` always match the render.
     pub fn row_visuals(
         &self,
         tabs: &[bbr_browser::TabSnapshot],
@@ -377,7 +435,13 @@ impl BbrApp {
                 state: if drag_source == Some(tab.index) {
                     crate::components::TabVisualState::Dragging
                 } else {
-                    crate::shell::row_state(tab.active, tab.loading, tab.crashed)
+                    crate::shell::row_state(
+                        tab.active,
+                        tab.loading,
+                        tab.crashed,
+                        self.pressed_row == Some(tab.index),
+                        self.hovered_row == Some(tab.index),
+                    )
                 },
                 favicon: Some(components::FaviconSpec {
                     letter: crate::shell::monogram_letter(&tab.url),
@@ -385,6 +449,9 @@ impl BbrApp {
                 }),
                 pinned: tab.pinned,
                 show_close: true,
+                reveal_close: self.hovered_row == Some(tab.index)
+                    || self.pressed_row == Some(tab.index)
+                    || tab.active,
             })
             .collect()
     }

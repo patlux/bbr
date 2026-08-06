@@ -31,8 +31,8 @@ pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
 pub use request::Request;
 pub use snapshot::{
-    DenseListSnapshot, LifecycleCounts, ProfileSnapshot, Snapshot, SpaceSnapshot, SpaceVisualState,
-    TabSnapshot, TabVisualState,
+    DenseListSnapshot, LifecycleCounts, ProfileSnapshot, SemanticNode, SemanticRole, Snapshot,
+    SpaceSnapshot, SpaceVisualState, TabSnapshot, TabVisualState,
 };
 
 /// Current protocol version understood by this crate.

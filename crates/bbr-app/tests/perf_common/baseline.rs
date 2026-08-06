@@ -117,6 +117,17 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Pointer-state transitions (hover/press) commit the §10.2/§10.3
+        // wash on the next frame — transient indication in the warm
+        // next-frame presentation class, same as any tab-row mutation.
+        "tab_hover" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "tab_press" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -289,6 +300,8 @@ impl Baseline {
             "active_tab_close",
             "dense_scroll",
             "dense_select",
+            "tab_hover",
+            "tab_press",
         ] {
             let b = contract_budget(kind).expect("known kind");
             entries.insert(
@@ -403,6 +416,34 @@ mod tests {
         // as a must-measure interaction.
         let b = Baseline::seed();
         for kind in ["dense_scroll", "dense_select"] {
+            let entry = b
+                .entries
+                .get(kind)
+                .unwrap_or_else(|| panic!("seed baseline must carry the {kind} contract budget"));
+            assert_eq!(entry.budget_p95_ms, 50.0, "{kind} warm p95 ceiling");
+            assert_eq!(entry.budget_max_ms, Some(100.0), "{kind} warm max ceiling");
+            let mut slow = BTreeMap::new();
+            slow.insert(kind.into(), measured(120.0, 160.0));
+            let r = evaluate(&slow, &b, false);
+            assert!(
+                r.iter().any(|x| x.rule == "abs_p95"),
+                "{kind} absolute p95 ceiling enforced"
+            );
+            assert!(
+                r.iter().any(|x| x.rule == "abs_max"),
+                "{kind} absolute max ceiling enforced"
+            );
+        }
+    }
+
+    #[test]
+    fn pointer_state_budgets_are_seeded_and_enforced() {
+        // Regression guard: the §10.2 hover / §10.3 press scenarios must
+        // carry their contract budgets in the seed so a future pointer-state
+        // render regression trips the gate instead of being silently
+        // unreported dead code. Both are warm next-frame presentation class.
+        let b = Baseline::seed();
+        for kind in ["tab_hover", "tab_press"] {
             let entry = b
                 .entries
                 .get(kind)

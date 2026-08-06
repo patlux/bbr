@@ -1,11 +1,12 @@
 # BBR — Architecture (current implementation)
 
-Status: **describes the implemented workspace through Phase 3**: native GPUI +
+Status: **describes the implemented workspace through the Phase-4 shell slices**: native GPUI +
 WKWebView embedding, portable browser orchestration, controller-backed real
-tabs, and profile-isolated multi-session WebKit. Verified against the actual
+tabs, profile-isolated multi-session WebKit, the adjustable/collapsible
+sidebar, tab organization, the dense-500 list, and the pointer-state +
+internal-semantic-model slice. Verified against the actual
 GPUI crate (`gpui 0.2.2`), the `objc2-web-kit 0.3.2` bindings, the Swift
-reference at `PWBrowser`, and green `just verify` + sequential `just e2e` runs
-(2026-08-05).
+reference at `PWBrowser`, and green `just verify` + sequential `just e2e` runs.
 
 ---
 
@@ -329,8 +330,8 @@ that never yields zero or negative native geometry, collapse memory that
 expand restores, and a 4 pt divider surface (`bbr-sidebar-divider`) carrying
 pointer drag and the focused-divider keyboard equivalents (`←`/`→`/`0`).
 `crates/bbr-app/src/shell.rs` was split into `shell/` (presentation, tab,
-space, snapshot modules) so the touched presentation code stays below the
-~500-line budget.
+space, snapshot, semantics modules) so the touched presentation code stays
+below the ~500-line budget.
 
 The tab surface (DESIGN.md §11.1/§11.2) renders the active space's pinned
 region above the regular region, both derived from the controller snapshot
@@ -343,6 +344,23 @@ traversal (`↑`/`↓`, `⌫`) lives on the focused tab list; `Cmd-T`/Enter open
 `Cmd-W` closes, and `Cmd-Shift-T` reopens (fresh session, focus domain
 preserved). A crashed tab keeps its identity and its §10.7 error state until a
 fresh session loads; closing the final tab opens the empty New Tab surface.
+
+Pointer-state polish (§10.2/§10.3) is wired through the production listeners:
+the row's `on_hover` handler drives `set_row_hover`/`clear_row_hover` and the
+mouse-down/up handlers drive `set_row_pressed`/`clear_row_pressed` (with the
+root's mouse-up/up-out/hover listeners clearing both when the pointer leaves
+chrome), and `row_visuals` composes the §10 state so the more specific state
+wins (error > loading > pressed > selected > hover > default). The §15 typed
+semantic model (`shell/semantics`, testkit-gated) derives roles, names,
+values, enabled/selected/focused state, and the parent/child hierarchy from
+the same row/space visuals the render consumes (bounded by the dense window,
+so a dense collection never exposes rows it did not render). **Scope honesty:**
+this is the internal contract shared with the testkit snapshot and the future
+platform Accessibility bridge — GPUI 0.2.2 implements no platform
+accessibility layer (verified in its source: no NSAccessibility, no
+accesskit), so the nodes are not exposed to macOS Accessibility / VoiceOver
+today; the platform bridge and the packaged-app VoiceOver/Appium/manual
+acceptance are Phase 9.
 
 Tab organization (the Phase-4 drag/reorder slice) is routed through the same
 controller mutations as every other input path. `Cmd-Shift-P` toggles the
@@ -571,7 +589,8 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 
 ## 11. Known limitations (current implementation)
 
-1. **The vertical tab shell and the dense-500 list are in; measured frame-time
+1. **The vertical tab shell, the dense-500 list, and the pointer-state +
+   internal-semantic-model slice are in; the canonical measured frame-time
    evidence remains.**
    `BrowserController` and `WebEngineWk` open, switch, preserve, navigate,
    and close multiple real sessions; Cmd-T stages a tab destination and Cmd-W
@@ -579,10 +598,14 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
    pinned/regular regions, pointer + keyboard interaction, drag reorder, and
    move-between-spaces arrived with the Phase-4 shell slices; the dense-list
    slice added the bounded lifecycle, windowed rendering, recency keep set,
-   and the gate-wired `dense_scroll`/`dense_select` scenarios. The open
-   acceptances are the measured frame-time evidence for 500 tabs / 50 live
-   sessions on the canonical runner, persisted-restore acceptance, and drag
-   auto-scroll (an off-window drag target shows no tick today).
+   and the gate-wired `dense_scroll`/`dense_select` scenarios; the closeout
+   slice added the §10.2 hover / §10.3 press states through the production
+   listeners and the internal §15 semantic tree (`tab_hover`/`tab_press`
+   benchmark scenarios + `just e2e-shell-hover`). The open acceptances are
+   the measured frame-time evidence for 500 tabs / 50 live sessions on the
+   canonical runner, persisted-restore acceptance (Phase 7 — the dense state
+   is in-memory only), drag auto-scroll (an off-window drag target shows no
+   tick today), and the platform Accessibility bridge (Phase 9).
 2. **Profile/space visibility is complete; cross-context polish remains.** The
    sidebar renders every profile's spaces with chips, activation works through
    pointer + keyboard, empty spaces name their profile, and the command-field
