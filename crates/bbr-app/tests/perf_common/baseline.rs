@@ -36,6 +36,10 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        "tab_activate_keyboard" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         "tab_reopen" => Budget {
             p95_ms: 100.0,
             max_ms: Some(150.0),
@@ -215,6 +219,7 @@ impl Baseline {
             "page_ready",
             "warm_tab_switch",
             "tab_select_pointer",
+            "tab_activate_keyboard",
             "tab_reopen",
             "sidebar_toggle",
             "new_tab_command_bar",

@@ -309,8 +309,9 @@ impl BbrApp {
     }
 
     /// Keyboard navigation of the visible tab list (DESIGN.md §11.1):
-    /// `↑/↓` move selection, `backspace` closes the active tab. Runs only
-    /// while the tab list owns chrome focus and no command mode is active.
+    /// `↑/↓` move selection, `backspace` closes the active tab, Enter
+    /// activates. Runs only while the tab list owns chrome focus and no
+    /// command mode is active.
     pub(super) fn on_tab_list_key_down(
         &mut self,
         event: &gpui::KeyDownEvent,
@@ -336,11 +337,36 @@ impl BbrApp {
                 }
                 cx.stop_propagation();
             }
+            "enter" => {
+                // DESIGN.md §11.1 / interaction contract: Enter activates the
+                // selected tab — the chrome traversal commits and keyboard
+                // focus moves into the page (the same outcome as a committed
+                // New-Tab command). No-op when no live view is presented
+                // (crashed tab or empty space); selection never changes here.
+                if self.controller.snapshot().active_view.is_some() {
+                    self.focus_web(window, cx);
+                    #[cfg(feature = "testkit")]
+                    {
+                        self.performance.expect_state(
+                            self.controller.snapshot().active_view,
+                            self.sidebar_visible,
+                            self.chrome_focused(window),
+                            self.command_bar_mode.into(),
+                        );
+                        self.commit_benchmark_sync(window);
+                    }
+                }
+                cx.stop_propagation();
+            }
             "backspace" => {
                 let _ = self.close_active_tab(window, cx);
-                // Stay in the tab list so repeated keys keep working; the
-                // close already preserved the chrome focus domain.
-                self.focus_tab_list(window, cx);
+                // Closing the final tab already opened the empty New Tab
+                // command surface (command-bar focus, NewTab mode — the same
+                // outcome as the pointer path). Only a close that leaves tabs
+                // behind keeps the list focused so repeated keys keep working.
+                if self.controller.snapshot().active_view.is_some() {
+                    self.focus_tab_list(window, cx);
+                }
                 cx.stop_propagation();
             }
             _ => {}

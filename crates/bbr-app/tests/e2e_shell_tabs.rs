@@ -501,6 +501,144 @@ fn keyboard_navigates_visible_tab_list() {
             PAGE_ONE_TITLE
         );
 
+        // Enter activates the selected row: the chrome traversal commits and
+        // keyboard focus moves into the page (DESIGN.md §11.1 / interaction
+        // contract). Selection and session identity are untouched.
+        keystroke(&mut client, "enter");
+        since = wait_chrome_focus(&mut client, false, since);
+        let activated = client.snapshot().expect("activated snapshot");
+        assert_eq!(activated.active_tab_index, Some(0));
+        assert_eq!(activated.active_web_view, Some(fresh_view));
+        assert_eq!(activated.engine_sessions, 2, "activation never recreates");
+        assert!(!activated.chrome_focused, "Enter moves focus into the page");
+        assert_eq!(activated.command_bar_mode, CommandBarMode::Inactive);
+
+        // The page keeps keyboard focus afterwards; a later pointer row click
+        // returns to the tab list (chrome domain) without losing selection.
+        assert!(!client.snapshot().expect("web focus stays").chrome_focused);
+        client
+            .send_ok(&dsl::click_tab(1))
+            .expect("click second row after activation");
+        let _ = wait_browser_change(&mut client, BrowserChange::TabSelected { index: 1 }, since);
+        let back = client.snapshot().expect("back in chrome");
+        assert!(back.chrome_focused);
+        assert_eq!(back.active_tab_index, Some(1));
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+
+    finish(result, &mut harness, &socket, &token);
+}
+
+/// Keyboard close of the final tab must open the empty New Tab command
+/// surface exactly like the pointer path (interaction contract: closing the
+/// final tab leaves the space empty and offers an obvious way to open a new
+/// tab; no about:blank is created). Regression for the keyboard path that
+/// used to reset the staged surface back to the tab list.
+#[test]
+#[ignore]
+fn keyboard_close_of_final_tab_opens_empty_new_tab_surface() {
+    let _serial = SERIAL_GUI.lock().expect("gui lock");
+    if std::env::var("BBR_SKIP_GUI_TESTS").is_ok_and(|value| value != "0" && value != "false") {
+        return;
+    }
+
+    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("bbr-fixtures")
+        .join("html");
+    let fixtures = FixtureServer::start(&fixtures_dir).expect("fixture server");
+    let page_one = fixtures.url("/page1.html");
+
+    let (mut harness, socket, token) = spawn_harness("empty-keyboard", &page_one);
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let replay = client.attach(None).expect("attach");
+        let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+
+        let initial = client.snapshot().expect("initial snapshot");
+        let first_view = initial.active_web_view.expect("first view");
+        if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {
+            since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
+        }
+
+        let keystroke = |client: &mut Client, key: &str| {
+            client
+                .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                    keystroke: key.into(),
+                })
+                .expect("keystroke")
+        };
+
+        // Seed a second tab so the final close is the unambiguous last one.
+        client
+            .send_ok(&bbr_testkit::Request::OpenTab {
+                url: page_one.clone(),
+            })
+            .expect("open second tab");
+        since = wait_browser_change(&mut client, BrowserChange::TabOpened { index: 1 }, since);
+        let two = client.snapshot().expect("two-tab snapshot");
+        assert_eq!(two.tabs.len(), 2);
+        let second_view = two.active_web_view.expect("second view");
+        if two.title.as_deref() != Some(PAGE_ONE_TITLE) {
+            since = wait_title(&mut client, second_view, PAGE_ONE_TITLE, since);
+        }
+
+        // Focus the tab list through the production pointer path, then close
+        // the active row. The first close leaves a tab behind, so the list
+        // keeps focus for repeated keys.
+        client
+            .send_ok(&dsl::click_tab(1))
+            .expect("focus list on row 1");
+        let _ = wait_browser_change(&mut client, BrowserChange::TabSelected { index: 1 }, since);
+        assert!(client.snapshot().expect("list focused").chrome_focused);
+        keystroke(&mut client, "backspace");
+        since = wait_browser_change(&mut client, BrowserChange::TabClosed { index: 1 }, since);
+        let one = client.snapshot().expect("one-tab snapshot");
+        assert_eq!(one.tabs.len(), 1);
+        assert_eq!(one.active_web_view, Some(first_view));
+        assert!(one.chrome_focused, "repeated keys stay in the tab list");
+        assert_eq!(one.command_bar_mode, CommandBarMode::Inactive);
+
+        // The final backspace must open the empty New Tab command surface and
+        // keep it open: NewTab mode + chrome (command-bar) focus, no session.
+        keystroke(&mut client, "backspace");
+        since = wait_browser_change(&mut client, BrowserChange::TabClosed { index: 0 }, since);
+        let empty = client.snapshot().expect("empty keyboard snapshot");
+        assert!(empty.tabs.is_empty());
+        assert_eq!(empty.engine_sessions, 0);
+        assert_eq!(empty.active_web_view, None);
+        assert_eq!(empty.command_bar_mode, CommandBarMode::NewTab);
+        assert!(empty.chrome_focused, "command surface owns chrome focus");
+
+        // Enter on the empty command surface with no destination creates
+        // nothing; the staged surface stays open for the next destination.
+        keystroke(&mut client, "enter");
+        let still_empty = client.snapshot().expect("still empty after Enter");
+        assert!(still_empty.tabs.is_empty());
+        assert_eq!(still_empty.engine_sessions, 0);
+        assert_eq!(still_empty.command_bar_mode, CommandBarMode::NewTab);
+
+        // A committed destination re-opens the flow from the empty state.
+        client
+            .send_ok(&bbr_testkit::Request::SetCommandBarText {
+                text: page_one.clone(),
+            })
+            .expect("set destination");
+        keystroke(&mut client, "enter");
+        let _ = wait_browser_change(&mut client, BrowserChange::TabOpened { index: 0 }, since);
+        let reborn = client.snapshot().expect("reborn snapshot");
+        assert_eq!(reborn.tabs.len(), 1);
+        assert_eq!(reborn.engine_sessions, 1);
+        assert!(
+            !reborn.chrome_focused,
+            "committed New Tab moves to the page"
+        );
+
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
         assert!(status.success(), "app exit: {status}");

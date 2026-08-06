@@ -360,7 +360,7 @@ impl BbrApp {
             self.performance.expect_state(
                 self.controller.snapshot().active_view,
                 self.sidebar_visible,
-                self.chrome_handle.is_focused(window),
+                self.chrome_focused(window),
                 self.command_bar_mode.into(),
             );
             self.commit_benchmark_sync(window);

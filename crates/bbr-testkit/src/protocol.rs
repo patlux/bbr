@@ -58,6 +58,9 @@ pub enum BenchmarkKind {
     /// Visual pointer selection of a visible tab row (production listener
     /// path, chrome focus preserved).
     TabSelectPointer,
+    /// Enter on the focused tab list activates the selected tab (chrome
+    /// traversal commits, keyboard focus moves into the page).
+    TabActivateKeyboard,
     /// Reopen of the most recently closed tab (fresh session presented).
     TabReopen,
     SidebarToggle,

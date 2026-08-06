@@ -394,12 +394,65 @@ pub fn run_cold_trial_raw(
             let _ = measured.1; // fresh view id retained for diagnostics
         }
 
+        // Keyboard activation: Enter on the focused tab list activates the
+        // selected tab — the chrome traversal commits and keyboard focus
+        // moves into the page (interaction contract "Enter activates"). The
+        // unmeasured production pointer path re-focuses the list between
+        // samples; only the Enter transition itself is sampled. The reopen
+        // cycle recreated tab 1, so capture the live view ids after it.
+        let after_reopen = client.snapshot().expect("state after reopen cycle");
+        let tab0_view = after_reopen.tabs[0].web_view.expect("tab 0 view");
+        let tab1_view = after_reopen.tabs[1].web_view.expect("tab 1 view");
+        let mut activate_samples = Vec::with_capacity(config.new_tab_samples);
+        for sample in 0..config.new_tab_samples {
+            let (index, expected) = if sample % 2 == 0 {
+                (0, tab0_view)
+            } else {
+                (1, tab1_view)
+            };
+            client
+                .send_ok(&Request::ClickTab { index })
+                .expect("focus tab list before Enter");
+            let focused = client.snapshot().expect("tab list focused");
+            assert!(focused.chrome_focused, "pointer click focuses the list");
+            assert_eq!(focused.active_web_view, Some(expected));
+            let measured = benchmark_keystroke(
+                &mut client,
+                &mut since,
+                operation,
+                BenchmarkKind::TabActivateKeyboard,
+                "enter",
+            );
+            operation += 1;
+            assert_eq!(
+                measured.active_web_view,
+                Some(expected),
+                "Enter keeps the selected tab's view"
+            );
+            assert!(
+                !measured.chrome_focused,
+                "Enter activates into the page (web focus)"
+            );
+            assert_eq!(measured.command_bar_mode, CommandBarMode::Inactive);
+            let after = client.snapshot().expect("after Enter snapshot");
+            assert_eq!(after.active_web_view, Some(expected));
+            assert!(!after.chrome_focused);
+            activate_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("tab_activate_keyboard".into())
+                .or_default()
+                .push(measured.duration_ns);
+        }
+
         client.quit().expect("quit");
         wait_for_exit(&mut harness.child, deadline());
 
         let mut raw = BTreeMap::new();
         raw.insert("warm_tab_switch".to_string(), tab_samples);
         raw.insert("tab_select_pointer".to_string(), pointer_samples);
+        raw.insert("tab_activate_keyboard".to_string(), activate_samples);
         raw.insert("tab_reopen".to_string(), reopen_samples);
         raw.insert("sidebar_toggle".to_string(), sidebar_samples);
         raw.insert("new_tab_command_bar".to_string(), new_tab_command_samples);

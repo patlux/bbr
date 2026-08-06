@@ -65,6 +65,7 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let warm = report.results["warm_tab_switch"].samples;
         let new_tab = report.results["new_tab_command_bar"].samples;
         let pointer = report.results["tab_select_pointer"].samples;
+        let activate = report.results["tab_activate_keyboard"].samples;
         let reopen = report.results["tab_reopen"].samples;
         assert!(
             warm >= INTERACTION_SAMPLES,
@@ -73,6 +74,10 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             pointer >= INTERACTION_SAMPLES,
             "pointer-select samples {pointer} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            activate >= NEW_TAB_SAMPLES,
+            "keyboard-activate samples {activate} < {NEW_TAB_SAMPLES}"
         );
         assert!(
             new_tab >= NEW_TAB_SAMPLES,
