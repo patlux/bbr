@@ -202,6 +202,31 @@ impl BrowserController {
         Ok(ControllerEvent::TabPinned { index })
     }
 
+    /// Unpin the tab at `index` (moves it to the end of the regular region)
+    /// and keep it active; the live session is preserved.
+    pub fn unpin_tab(&mut self, index: usize) -> Result<ControllerEvent, ControllerError> {
+        let tab = self.tab_at(index)?;
+        self.browser.unpin_tab(self.active_space, tab)?;
+        self.sync_views();
+        self.check_invariants();
+        let index = self.index_of(tab).expect("tab stays in the space");
+        Ok(ControllerEvent::TabUnpinned { index })
+    }
+
+    /// Reorder the tab at `from` to `to` within the active space. The domain
+    /// rejects a move across the pinned/regular boundary and out-of-range
+    /// indices; the selected tab stays selected and the session is preserved.
+    pub fn reorder_tab(
+        &mut self,
+        from: usize,
+        to: usize,
+    ) -> Result<ControllerEvent, ControllerError> {
+        self.browser.reorder_tab(self.active_space, from, to)?;
+        self.sync_views();
+        self.check_invariants();
+        Ok(ControllerEvent::TabReordered { from, to })
+    }
+
     /// Route one navigation action to the focused tab (the active tab, or the
     /// focused split pane). A suspended/discarded focused tab is reactivated
     /// first, recreating its session.

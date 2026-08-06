@@ -559,6 +559,82 @@ fn pin_moves_the_tab_into_the_pinned_region_without_recreating_its_session() {
 }
 
 #[test]
+fn unpin_moves_the_tab_to_the_regular_region_without_touching_sessions() {
+    let (mut c, h) = plain();
+    open(&mut c, "https://a");
+    open(&mut c, "https://b");
+    let _ = c.pin_tab(1).unwrap();
+    let b_view = c.snapshot().tabs[0].web_view;
+    h.reset_ops();
+    let event = c.unpin_tab(0).unwrap();
+    assert_eq!(event, ControllerEvent::TabUnpinned { index: 1 });
+    let snap = c.snapshot();
+    assert!(
+        !snap.tabs[0].pinned,
+        "unpinned tab leaves the pinned region"
+    );
+    assert!(!snap.tabs[1].pinned);
+    assert_eq!(snap.tabs[1].web_view, b_view, "session identity preserved");
+    assert_eq!(snap.engine_sessions, 2, "unpin never touches sessions");
+    // Unpinning an already-regular tab is a no-op (domain guard).
+    assert!(c.unpin_tab(1).is_ok());
+}
+
+#[test]
+fn reorder_within_a_region_preserves_selection_session_and_order_elsewhere() {
+    let (mut c, h) = plain();
+    open(&mut c, "https://a");
+    open(&mut c, "https://b");
+    open(&mut c, "https://c");
+    let _ = c.pin_tab(2).unwrap(); // pinned: [c, a, b] -> pinned [c], regular [a, b]
+    let views: Vec<_> = c.snapshot().tabs.iter().map(|t| t.web_view).collect();
+    h.reset_ops();
+    // Reorder within the regular region: [c, a, b] -> [c, b, a].
+    let event = c.reorder_tab(2, 1).unwrap();
+    assert_eq!(event, ControllerEvent::TabReordered { from: 2, to: 1 });
+    let snap = c.snapshot();
+    let urls: Vec<&str> = snap.tabs.iter().map(|t| t.url.as_str()).collect();
+    assert_eq!(urls, vec!["https://c", "https://b", "https://a"]);
+    assert!(snap.tabs[0].pinned, "pinned region untouched");
+    assert_eq!(
+        snap.tabs.iter().map(|t| t.web_view).collect::<Vec<_>>(),
+        [views[0], views[2], views[1]],
+        "reorder never recreates sessions; each view follows its tab"
+    );
+    assert_eq!(snap.engine_sessions, 3);
+}
+
+#[test]
+fn reorder_across_the_pinned_boundary_is_rejected_whole() {
+    let (mut c, _h) = plain();
+    open(&mut c, "https://a");
+    open(&mut c, "https://b");
+    let _ = c.pin_tab(1).unwrap(); // [b(pinned), a]
+    let before: Vec<String> = c.snapshot().tabs.iter().map(|t| t.title.clone()).collect();
+    // Moving the pinned tab into the regular region and vice versa are both
+    // rejected; the complete operation is a no-op (no partial mutation).
+    assert!(c.reorder_tab(0, 1).is_err());
+    assert!(c.reorder_tab(1, 0).is_err());
+    let after: Vec<String> = c.snapshot().tabs.iter().map(|t| t.title.clone()).collect();
+    assert_eq!(before, after, "rejected reorder mutates nothing");
+    assert_eq!(c.snapshot().engine_sessions, 2, "sessions untouched");
+}
+
+#[test]
+fn reorder_keeps_the_selected_tab_selected() {
+    let (mut c, _h) = plain();
+    open(&mut c, "https://a");
+    open(&mut c, "https://b");
+    open(&mut c, "https://c");
+    // Select the last tab, then reorder it to the front.
+    let _ = c.select_tab(2).unwrap();
+    let _ = c.reorder_tab(2, 0).unwrap();
+    let snap = c.snapshot();
+    assert_eq!(snap.active_index, Some(0), "selected tab follows the move");
+    assert!(snap.tabs[0].active);
+}
+
+#[test]
 fn reopen_restores_identity_with_a_fresh_session() {
     // `wired()` routes engine events through `apply_event` exactly like the
     // composition root; `plain()` has no sink, so emitted title/loading

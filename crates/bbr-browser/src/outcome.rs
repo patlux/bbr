@@ -25,6 +25,11 @@ pub enum ControllerEvent {
     TabClosed { index: usize },
     /// The tab at `index` was pinned (moved into the pinned region).
     TabPinned { index: usize },
+    /// The tab at `index` was unpinned (moved out of the pinned region).
+    TabUnpinned { index: usize },
+    /// The tab at `from` was reordered within its region to `to` (same
+    /// region only; the pinned-first invariant is enforced by the domain).
+    TabReordered { from: usize, to: usize },
     /// The most recently closed tab was reopened at `index`.
     TabReopened { index: usize, url: String },
     /// A tab was suspended (session destroyed, identity kept).
