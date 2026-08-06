@@ -138,7 +138,7 @@ lifetime ruling that contradicts the interaction-driven boundary).
 
 ```text
 Outcome:       §11.3 cross-context command-field profile hint, one-interaction lifetime.
-Commits:       (recorded on completion)
+Commits:       b91f6a9 "feat(shell): announce the cross-profile destination in the command field".
 Functional evidence:  unit + semantic-tree + snapshot tests.
 Real-app E2E:  just e2e-shell-spaces (pointer + keyboard suites).
 Performance evidence: space_switch_cross_profile in the gate matrix (p95 ≈ 0.195 ms).
