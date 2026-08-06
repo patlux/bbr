@@ -41,6 +41,7 @@ impl BbrApp {
             self.sync_command_bar();
             self.emit_browser(outcome);
             self.focus_space_list(window, cx);
+            self.ensure_active_visible();
             #[cfg(feature = "testkit")]
             self.commit_benchmark_sync(window);
             cx.notify();

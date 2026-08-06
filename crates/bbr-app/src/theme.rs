@@ -293,6 +293,23 @@ impl Theme {
         Self::new(ThemeMode::Dark, ContrastMode::Standard, Density::Normal)
     }
 
+    /// Automatic density from the regular-tab collection size (DESIGN.md §8:
+    /// "Density is a product of the machine, not a slider" — the shell
+    /// crosses to Small at 200 regular tabs and ExtraLarge at 600). Row
+    /// heights are uniform per density, so a density change never happens
+    /// mid-scroll; the collection crossing a threshold at seed time flips the
+    /// geometry once for the whole session view.
+    pub fn for_collection(mode: ThemeMode, contrast: ContrastMode, regular_tabs: usize) -> Self {
+        let density = if regular_tabs >= 600 {
+            Density::ExtraLarge
+        } else if regular_tabs >= 200 {
+            Density::Small
+        } else {
+            Density::Normal
+        };
+        Self::new(mode, contrast, density)
+    }
+
     pub fn new(mode: ThemeMode, contrast: ContrastMode, density: Density) -> Self {
         let palette = match (mode, contrast) {
             (ThemeMode::Dark, ContrastMode::Standard) => Palette::dark_standard(),

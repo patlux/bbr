@@ -88,6 +88,8 @@ mod tests {
             crashed: false,
             active: index == 0,
             web_view: None,
+            lifecycle: bbr_browser::TabLifecycle::Warm,
+            last_used: 0,
         };
         let tabs = vec![snap(0, true), snap(1, true), snap(2, false)];
         assert_eq!(pinned_count(&tabs), 2);

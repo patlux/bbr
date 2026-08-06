@@ -18,6 +18,7 @@ mod actions;
 mod app;
 mod command_bar;
 mod components;
+mod dense;
 mod engine;
 mod inject;
 #[allow(dead_code)] // foundation tokens; consumed by the shell slices that follow this group

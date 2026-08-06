@@ -83,6 +83,13 @@ impl SnapshotExt for crate::shell::TestSnapshot {
                     crashed: tab.crashed,
                     active: tab.active,
                     web_view: tab.web_view,
+                    lifecycle: match tab.lifecycle {
+                        bbr_browser::TabLifecycle::Active => "active".into(),
+                        bbr_browser::TabLifecycle::Warm => "warm".into(),
+                        bbr_browser::TabLifecycle::Suspended => "suspended".into(),
+                        bbr_browser::TabLifecycle::Discarded => "discarded".into(),
+                    },
+                    last_used: tab.last_used,
                 })
                 .collect(),
             profiles: self
@@ -112,6 +119,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             active_tab_index: self.active_tab_index,
             active_web_view: self.active_web_view,
             engine_sessions: self.engine_sessions,
+            lifecycle_counts: self.lifecycle_counts,
+            dense: self.dense,
             engine_kind: self.engine_kind.to_string(),
             chrome_focused: self.chrome_focused,
             shell_modes: self.shell_modes.clone(),

@@ -54,6 +54,11 @@ pub struct TestSnapshot {
     pub visible_ids: Vec<String>,
     pub command_bar_mode: bbr_testkit::protocol::CommandBarMode,
     pub command_bar_text: String,
+    /// Lifecycle population counts of the active space (dense-list evidence).
+    pub lifecycle_counts: bbr_testkit::protocol::LifecycleCounts,
+    /// The dense-list render contract (§11.6): bounded rendered window,
+    /// deterministic scroll anchor, active-row visibility.
+    pub dense: bbr_testkit::protocol::DenseListSnapshot,
     pub sidebar_visible: bool,
     /// The effective sidebar rail width: the DESIGN §5 adjustable width
     /// clamped to the window (0 when collapsed — the rail is gone).
@@ -89,6 +94,7 @@ pub fn visible_ids(
     command_bar_mode: crate::command_bar::CommandBarMode,
     sidebar_visible: bool,
     drag_slot: Option<usize>,
+    dense: crate::dense::DenseRenderState,
 ) -> Vec<String> {
     let mut ids: Vec<String> = vec!["bbr-root".into()];
     if sidebar_visible {
@@ -102,6 +108,7 @@ pub fn visible_ids(
             "bbr-space-list",
             "bbr-space-new",
             "bbr-tab-list",
+            "bbr-tab-scroll",
             "bbr-sidebar-divider",
         ] {
             ids.push(id.into());
@@ -118,8 +125,22 @@ pub fn visible_ids(
     if chrome_focused && command_bar_mode.is_active() {
         ids.push("bbr-command-cursor".into());
     }
-    for tab in &browser.tabs {
-        let index = tab.index;
+    // Rendered rows only: every pinned row (the fixed block) plus the
+    // bounded regular window the shell actually built (§11.6) — a dense
+    // collection never exposes ids for rows it did not render. The window is
+    // the last frame's render state, which can lag the model by a frame
+    // (snapshots are taken on demand, right after a mutation, before GPUI
+    // draws the next frame), so the exposed rows are intersected with the
+    // current model: a row the mutation just removed (e.g. the final close
+    // into the empty pane) is never exposed by a stale window.
+    let total = browser.tabs.len();
+    let pinned = crate::shell::pinned_count(&browser.tabs);
+    let mut rendered: Vec<usize> = (0..pinned.min(total)).collect();
+    rendered.extend(
+        (dense.first_rendered..dense.first_rendered + dense.rendered_rows)
+            .filter(|&index| index < total),
+    );
+    for index in rendered {
         ids.push(format!("bbr-tab-row-{index}"));
         ids.push(format!("bbr-tab-title-{index}"));
         ids.push(format!("bbr-tab-favicon-{index}"));
@@ -195,6 +216,17 @@ mod tests {
             web_view_hosted: false,
             engine_sessions: 0,
             active_view: None,
+            lifecycle_counts: bbr_browser::LifecycleCounts::default(),
+        }
+    }
+
+    /// A dense render state that covers every row (small-list default).
+    fn dense_all(len: usize) -> crate::dense::DenseRenderState {
+        crate::dense::DenseRenderState {
+            first_rendered: 0,
+            rendered_rows: len,
+            item_count: len,
+            scroll_anchor: 0,
         }
     }
 
@@ -209,6 +241,8 @@ mod tests {
             crashed,
             active: index == 0,
             web_view: None,
+            lifecycle: bbr_browser::TabLifecycle::Warm,
+            last_used: 0,
         };
         let tabs = vec![snap(0, false), snap(1, false)];
         let browser = ControllerSnapshot {
@@ -224,6 +258,7 @@ mod tests {
             web_view_hosted: false,
             engine_sessions: 0,
             active_view: None,
+            lifecycle_counts: bbr_browser::LifecycleCounts::default(),
         };
         let ids = visible_ids(
             &browser,
@@ -231,11 +266,13 @@ mod tests {
             crate::command_bar::CommandBarMode::Inactive,
             true,
             None,
+            dense_all(tabs.len()),
         );
         for required in [
             "bbr-root",
             "bbr-sidebar",
             "bbr-tab-list",
+            "bbr-tab-scroll",
             "bbr-tab-row-0",
             "bbr-tab-row-1",
             "bbr-tab-title-1",
@@ -266,6 +303,7 @@ mod tests {
             web_view_hosted: false,
             engine_sessions: 0,
             active_view: None,
+            lifecycle_counts: bbr_browser::LifecycleCounts::default(),
         };
         let ids = visible_ids(
             &browser,
@@ -273,6 +311,7 @@ mod tests {
             crate::command_bar::CommandBarMode::Inactive,
             true,
             None,
+            dense_all(1),
         );
         for required in ["bbr-crash-panel", "bbr-crash-reload", "bbr-crash-close"] {
             assert!(
@@ -289,6 +328,7 @@ mod tests {
             crate::command_bar::CommandBarMode::NewTab,
             true,
             None,
+            dense_all(1),
         );
         assert!(ids.contains(&"bbr-command-cursor".to_string()));
     }
@@ -308,6 +348,7 @@ mod tests {
             crate::command_bar::CommandBarMode::Inactive,
             true,
             None,
+            dense_all(0),
         );
         let chips = crate::shell::space::space_groups(&browser, usize::MAX)
             .into_iter()
@@ -343,6 +384,7 @@ mod tests {
             crate::command_bar::CommandBarMode::Inactive,
             true,
             None,
+            dense_all(0),
         );
         for required in [
             "bbr-space-list",
@@ -367,7 +409,44 @@ mod tests {
             crate::command_bar::CommandBarMode::Inactive,
             false,
             None,
+            dense_all(0),
         );
         assert!(!hidden.iter().any(|id| id.starts_with("bbr-space")));
+    }
+
+    #[test]
+    fn stale_dense_window_never_exposes_rows_the_model_removed() {
+        // Regression (dense slice): closing the final tab into the empty pane
+        // can leave the last frame's dense window non-empty (snapshots are
+        // taken on demand, right after the mutation, before GPUI draws the
+        // next frame). The empty space must not expose row ids from the
+        // stale window — the exposed set is the rendered window intersected
+        // with the current model.
+        let mut browser = space_snapshot();
+        browser.active_index = None;
+        browser.active_view = None;
+        browser.lifecycle_counts = bbr_browser::LifecycleCounts::default();
+        let stale = crate::dense::DenseRenderState {
+            first_rendered: 0,
+            rendered_rows: 2,
+            item_count: 2,
+            scroll_anchor: 0,
+        };
+        let ids = visible_ids(
+            &browser,
+            false,
+            crate::command_bar::CommandBarMode::Inactive,
+            true,
+            None,
+            stale,
+        );
+        assert!(
+            !ids.iter().any(|id| id.starts_with("bbr-tab-row")),
+            "a stale window must not expose rows the model removed: {ids:?}"
+        );
+        assert!(
+            ids.contains(&"bbr-empty-new-tab".to_string()),
+            "the empty pane replaces the rows: {ids:?}"
+        );
     }
 }

@@ -48,6 +48,13 @@ impl BbrApp {
             engine_sessions: browser.engine_sessions,
             engine_kind: self.engine_kind,
             chrome_focused: self.chrome_focused(window),
+            lifecycle_counts: bbr_testkit::protocol::LifecycleCounts {
+                active: browser.lifecycle_counts.active,
+                warm: browser.lifecycle_counts.warm,
+                suspended: browser.lifecycle_counts.suspended,
+                discarded: browser.lifecycle_counts.discarded,
+            },
+            dense: self.dense_snapshot(&browser),
             shell_modes: bbr_testkit::protocol::ShellModes {
                 theme: match theme.mode {
                     crate::theme::ThemeMode::Light => "light".into(),
@@ -132,6 +139,7 @@ impl BbrApp {
                 self.command_bar_mode,
                 self.sidebar_visible,
                 drag_slot,
+                self.dense_window.get(),
             ),
             command_bar_mode: self.command_bar_mode.into(),
             command_bar_text: self.command_bar_text.clone(),
@@ -145,6 +153,42 @@ impl BbrApp {
             divider_label: crate::sidebar::SIDEBAR_DIVIDER_LABEL.to_string(),
             content_rect: self.performance.content_rect().unwrap_or([0.0; 4]),
             window_size: [window_width, window_height],
+        }
+    }
+
+    /// The dense-list render contract from the last frame's render state and
+    /// the active tab: bounded rendered window, deterministic scroll anchor,
+    /// and whether the active row is inside the rendered window.
+    fn dense_snapshot(
+        &self,
+        browser: &bbr_browser::ControllerSnapshot,
+    ) -> bbr_testkit::protocol::DenseListSnapshot {
+        let dense = self.dense_window.get();
+        let pinned = crate::shell::pinned_count(&browser.tabs);
+        let active_row = browser
+            .active_index
+            .map(|index| index.saturating_sub(pinned));
+        let rendered_range = dense.first_rendered..dense.first_rendered + dense.rendered_rows;
+        // A pinned active row is always on screen: the pinned block renders
+        // fully above the scroll view (§11.2), so visibility never depends on
+        // the scroll position. A regular-row selection is visible when it
+        // lies inside the bounded window the render actually built.
+        let active_visible = match browser.active_index {
+            Some(index) if index < pinned => true,
+            Some(_) => active_row
+                .map(|row| rendered_range.contains(&(pinned + row)))
+                .unwrap_or(false),
+            None => false,
+        };
+        bbr_testkit::protocol::DenseListSnapshot {
+            item_count: dense.item_count,
+            pinned_rows: pinned,
+            first_rendered: dense.first_rendered,
+            rendered_rows: dense.rendered_rows,
+            window_rows: crate::dense::DENSE_WINDOW_ROWS,
+            scroll_anchor: dense.scroll_anchor,
+            active_visible,
+            active_row,
         }
     }
 }

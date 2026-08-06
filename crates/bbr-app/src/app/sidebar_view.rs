@@ -70,6 +70,12 @@ impl BbrApp {
                     .flex()
                     .flex_col()
                     .min_w_0()
+                    // Strict height bound: the column must never grow to its
+                    // content, or the dense scroll container below would be
+                    // laid out at the full collection height (a 500-tab list
+                    // would hand the container ~16 000 pt) and the container's
+                    // prepaint would clamp the production scroll offset to 0.
+                    .min_h_0()
                     .child(
                         div()
                             .id("bbr-brand")
@@ -167,20 +173,44 @@ impl BbrApp {
             })
     }
 
-    /// The controller-backed tab surface: the focused tab list with the
-    /// pinned region fixed above the regular region (§11.2). Rows are wired
-    /// to the production pointer path (`select_row_via_pointer` /
-    /// `close_row_via_pointer` / `toggle_row_pin` / `begin_tab_drag`), and
-    /// an active drag renders the §10.9 insertion tick at its target slot
+    /// The controller-backed tab surface: the pinned region as a fixed block
+    /// above the regular region's scroll view (DESIGN.md §11.2/§11.6). Rows
+    /// are wired to the production pointer path (`select_row_via_pointer` /
+    /// `close_row_via_pointer` / `toggle_row_pin` / `begin_tab_drag`), and an
+    /// active drag renders the §10.9 insertion tick at its target slot
     /// (muted when the drop would be illegal).
+    ///
+    /// The regular region renders only the bounded window around the
+    /// production scroll anchor (`dense::window_for`, ≤ `DENSE_WINDOW_ROWS`
+    /// rows) plus spacers that keep the container's content height equal to
+    /// the full collection — the native scrollbar and wheel listener behave
+    /// as if every row were laid out, while a 500-tab list never lays out
+    /// 500 rows per frame. The pinned region renders all of its rows: it is
+    /// a small, stable block and must never shift on selection (§11.2).
     fn tab_surface(&self, theme: &Theme, cx: &mut Context<Self>) -> Stateful<Div> {
         let browser = self.controller.snapshot();
-        let pinned_count = crate::shell::pinned_count(&browser.tabs);
+        let pinned = crate::shell::pinned_count(&browser.tabs);
+        let regular = &browser.tabs[pinned..];
+        let row_h = theme.density.row();
+        let offset_y = self.dense_scroll.offset().y;
+        let anchor = crate::dense::anchor_from_offset(offset_y, row_h, regular.len());
+        let window = crate::dense::window_for(anchor, regular.len());
         let drag_source = self.tab_drag.source();
-        let pinned_rows = self.row_visuals(&browser.tabs[..pinned_count], drag_source);
-        let regular_rows = self.row_visuals(&browser.tabs[pinned_count..], drag_source);
+        let pinned_rows = self.row_visuals(&browser.tabs[..pinned], drag_source);
+        let window_rows = self.row_visuals(&regular[window.clone()], drag_source);
         let tick = self.tab_drag.tab_slot();
         let tick_valid = self.tab_drag.valid();
+
+        // Record what this render built so the testkit snapshot reports the
+        // bounded window and the deterministic scroll anchor (the snapshot is
+        // taken on demand; the recorded state mirrors the last frame).
+        self.dense_window.set(crate::dense::DenseRenderState {
+            first_rendered: pinned + window.start,
+            rendered_rows: window.len(),
+            item_count: regular.len(),
+            scroll_anchor: anchor,
+        });
+
         let mut children: Vec<gpui::AnyElement> = Vec::new();
         if !pinned_rows.is_empty() {
             children.push(components::section_label(theme, "Pinned").into_any());
@@ -190,8 +220,8 @@ impl BbrApp {
                 }
                 children.push(self.render_row(theme, row, cx).into_any());
             }
-            if tick == Some(pinned_count) {
-                children.push(components::drag_tick(theme, pinned_count, !tick_valid).into_any());
+            if tick == Some(pinned) {
+                children.push(components::drag_tick(theme, pinned, !tick_valid).into_any());
             }
             children.push(
                 div()
@@ -201,19 +231,40 @@ impl BbrApp {
                     .into_any(),
             );
         }
-        if !regular_rows.is_empty() {
+        if !regular.is_empty() {
             children.push(components::section_label(theme, "Tabs").into_any());
-            for row in &regular_rows {
-                if tick == Some(row.index) {
-                    children.push(components::drag_tick(theme, row.index, !tick_valid).into_any());
-                }
-                children.push(self.render_row(theme, row, cx).into_any());
-            }
-            if tick == Some(browser.tabs.len()) {
-                children
-                    .push(components::drag_tick(theme, browser.tabs.len(), !tick_valid).into_any());
-            }
         }
+
+        // The scroll container: spacers keep the total content height equal
+        // to the full collection, the rendered window follows the production
+        // scroll offset, and the drag tick renders only inside the window.
+        let top = crate::dense::scroll_top_for_anchor(window.start, row_h);
+        let bottom = (regular.len().saturating_sub(window.end)) as f32 * f32::from(row_h);
+        let mut scroll_children: Vec<gpui::AnyElement> = Vec::new();
+        if top > 0.0 {
+            scroll_children.push(div().h(px(top)).into_any());
+        }
+        for row in &window_rows {
+            if tick == Some(row.index) {
+                scroll_children
+                    .push(components::drag_tick(theme, row.index, !tick_valid).into_any());
+            }
+            scroll_children.push(self.render_row(theme, row, cx).into_any());
+        }
+        if bottom > 0.0 {
+            scroll_children.push(div().h(px(bottom)).into_any());
+        }
+        children.push(
+            div()
+                .id("bbr-tab-scroll")
+                .flex_1()
+                .min_h_0()
+                .min_w_0()
+                .overflow_y_scroll()
+                .track_scroll(&self.dense_scroll)
+                .children(scroll_children)
+                .into_any(),
+        );
 
         div()
             .id("bbr-tab-list")
@@ -221,7 +272,8 @@ impl BbrApp {
             .flex_1()
             .flex()
             .flex_col()
-            .overflow_y_scroll()
+            .min_w_0()
+            .min_h_0()
             .on_key_down(cx.listener(Self::on_tab_list_key_down))
             .children(children)
     }

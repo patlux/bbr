@@ -11,7 +11,7 @@ use gpui::{App, Keystroke, WindowHandle};
 
 use crate::app::BbrApp;
 
-use super::dispatch::{browser_mutation, err_response};
+use super::dispatch::{browser_mutation, err_response, flush_dense_frame};
 
 /// Handle `Request::Benchmark*` arms; `None` for every other request so
 /// `super::dispatch` falls through to its own routing.
@@ -243,6 +243,110 @@ pub(crate) fn dispatch_benchmark(
                 }
             })
             .unwrap_or_else(err_response),
+
+        // Dense scroll: begin the measurement on the entity, drive the
+        // production dense scroll state through the app's tracked handle,
+        // draw the resulting frame through the untyped path, then commit
+        // only if the scroll moved the rendered anchor (a no-op cancels).
+        Request::BenchmarkDenseScroll {
+            operation_id,
+            delta_px,
+        } => {
+            let started = window
+                .update(cx, |view, _window, _cx| {
+                    view.begin_dense_scroll_benchmark(*operation_id)
+                })
+                .unwrap_or(false);
+            if !started {
+                return Some(Response::Error(Error::new(
+                    "benchmark_busy",
+                    "another presentation measurement is pending",
+                )));
+            }
+            let anchor_before = window
+                .update(cx, |view, _window, _cx| {
+                    view.dense_window.get().scroll_anchor
+                })
+                .unwrap_or(0);
+            let scrolled = window
+                .update(cx, |view, _window, _cx| view.scroll_dense_list(*delta_px))
+                .map(|_| true)
+                .unwrap_or(false);
+            if !scrolled {
+                let _ = window.update(cx, |view, _window, _cx| view.cancel_benchmark());
+                return Some(Response::Error(Error::new(
+                    "app_error",
+                    "dense scroll failed",
+                )));
+            }
+            // Draw the frame that renders the bounded window for the new
+            // anchor (untyped: the draw re-borrows the root entity).
+            flush_dense_frame(window, cx);
+            let committed = window
+                .update(cx, |view, window, _cx| {
+                    view.commit_dense_scroll_benchmark(window, anchor_before)
+                })
+                .unwrap_or(false);
+            if committed {
+                Response::Ok
+            } else {
+                Response::Error(Error::new(
+                    "benchmark_noop",
+                    "dense scroll did not move the rendered anchor",
+                ))
+            }
+        }
+
+        // Dense select: begin on the entity, run the production selection
+        // path (pointer row activation), draw the resulting frame through the
+        // untyped path so `dense_window` reflects the instant
+        // scroll-into-view, then commit only when the selected row lies
+        // inside the bounded window the render built.
+        Request::BenchmarkDenseSelect {
+            operation_id,
+            index,
+        } => {
+            let started = window
+                .update(cx, |view, _window, _cx| {
+                    view.begin_dense_select_benchmark(*operation_id)
+                })
+                .unwrap_or(false);
+            if !started {
+                return Some(Response::Error(Error::new(
+                    "benchmark_busy",
+                    "another presentation measurement is pending",
+                )));
+            }
+            let selected = window
+                .update(cx, |view, window, cx| {
+                    view.select_row_via_pointer(*index, window, cx);
+                    true
+                })
+                .unwrap_or(false);
+            if !selected {
+                let _ = window.update(cx, |view, _window, _cx| view.cancel_benchmark());
+                return Some(Response::Error(Error::new(
+                    "app_error",
+                    "dense selection failed",
+                )));
+            }
+            // Draw the frame that renders the selection with the bounded
+            // window (untyped: the draw re-borrows the root entity).
+            flush_dense_frame(window, cx);
+            let committed = window
+                .update(cx, |view, window, _cx| {
+                    view.commit_dense_select_benchmark(window, *index)
+                })
+                .unwrap_or(false);
+            if committed {
+                Response::Ok
+            } else {
+                Response::Error(Error::new(
+                    "benchmark_noop",
+                    "selected row is not inside the rendered window",
+                ))
+            }
+        }
 
         _ => return None,
     };

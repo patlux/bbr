@@ -8,7 +8,7 @@
 //! the interaction contract.
 
 use bbr_browser::ControllerEvent;
-use gpui::{Context, Window};
+use gpui::{px, Context, Window};
 
 use super::BbrApp;
 
@@ -55,10 +55,14 @@ impl BbrApp {
         self.emit_focus(window);
     }
 
-    /// Keyboard navigation of the visible tab list (DESIGN.md §11.1):
-    /// `↑/↓` move selection, `backspace` closes the active tab, Enter
-    /// activates. Runs only while the tab list owns chrome focus and no
-    /// command mode is active.
+    /// Keyboard navigation of the visible tab list (DESIGN.md §11.1/§11.6):
+    /// `↑/↓` move selection, `PgUp/PgDn` move both selection and viewport,
+    /// `backspace` closes the active tab, Enter activates. In a dense
+    /// collection the arrow keys clamp at the list edges instead of wrapping
+    /// (a wrap would teleport the viewport across 500 rows); small
+    /// collections keep the established wrap-around traversal. Every move
+    /// scrolls the selection into view instantly. Runs only while the tab
+    /// list owns chrome focus and no command mode is active.
     pub(super) fn on_tab_list_key_down(
         &mut self,
         event: &gpui::KeyDownEvent,
@@ -72,13 +76,35 @@ impl BbrApp {
         let Some(active) = snapshot.active_index else {
             return;
         };
+        let len = snapshot.tabs.len();
         match event.keystroke.key.as_str() {
             "up" | "down" => {
-                let len = snapshot.tabs.len();
                 if len > 1 {
                     let delta = if event.keystroke.key == "up" { -1 } else { 1 };
-                    let next = (active as isize + delta).rem_euclid(len as isize) as usize;
+                    let next = if len > crate::dense::DENSE_WINDOW_ROWS {
+                        // Dense: clamp at the edges (no wrap across the
+                        // collection).
+                        (active as isize + delta).clamp(0, len as isize - 1) as usize
+                    } else {
+                        (active as isize + delta).rem_euclid(len as isize) as usize
+                    };
                     if self.select_tab(next, cx).is_some() {
+                        self.ensure_active_visible();
+                        cx.notify();
+                    }
+                }
+                cx.stop_propagation();
+            }
+            "pageup" | "pagedown" => {
+                if len > 1 {
+                    let delta = if event.keystroke.key == "pageup" {
+                        -(self.dense_page_rows() as isize)
+                    } else {
+                        self.dense_page_rows() as isize
+                    };
+                    let next = (active as isize + delta).clamp(0, len as isize - 1) as usize;
+                    if next != active && self.select_tab(next, cx).is_some() {
+                        self.ensure_active_visible();
                         cx.notify();
                     }
                 }
@@ -120,6 +146,64 @@ impl BbrApp {
         }
     }
 
+    /// DESIGN.md §11.6 selection visibility: after any selection or space
+    /// activation, the selected row is scrolled into view **instantly** (no
+    /// animated scroll) within the same frame. Runs after every selection
+    /// mutation; the pinned region is always visible, and a regular-row
+    /// selection outside the rendered window sets the production scroll
+    /// offset so the next frame renders it. A no-op while the sidebar is
+    /// collapsed (there is no scroll container to move).
+    pub(super) fn ensure_active_visible(&self) {
+        if !self.sidebar_visible {
+            return;
+        }
+        let browser = self.controller.snapshot();
+        let Some(active) = browser.active_index else {
+            return;
+        };
+        let pinned = crate::shell::pinned_count(&browser.tabs);
+        if active < pinned {
+            return; // the pinned block is always on screen
+        }
+        let regular = active - pinned;
+        let total = browser.tabs.len() - pinned;
+        let row_h = self.theme().density.row();
+        let anchor = self.dense_scroll.offset().y;
+        let current = crate::dense::anchor_from_offset(anchor, row_h, total);
+        if !crate::dense::window_contains(&crate::dense::window_for(current, total), regular) {
+            let target = crate::dense::clamp_anchor(regular, total);
+            self.dense_scroll.set_offset(gpui::point(
+                px(0.0),
+                crate::dense::offset_for_anchor(target, row_h),
+            ));
+        }
+    }
+
+    /// The dense page step for `PgUp`/`PgDn`: one rendered window of rows
+    /// (DESIGN.md §11.6 keyboard scroll moves both selection and viewport by
+    /// a page).
+    fn dense_page_rows(&self) -> usize {
+        crate::dense::DENSE_WINDOW_ROWS.max(1)
+    }
+
+    /// Dense-list scroll entry (DESIGN.md §11.6): move the tracked
+    /// production scroll state by `delta_px` in the same units and sign as
+    /// the native wheel listener (`delta_px < 0` scrolls down; the container
+    /// offset is negative as the user scrolls down). This mutates the exact
+    /// `ScrollHandle` the wheel listener, the keyboard traversal
+    /// (`ensure_active_visible`), and the render share — the render derives
+    /// the bounded row window from it identically for a wheel, a `PgDn`, or
+    /// this entry. GPUI 0.2.2 exposes no public synthetic wheel dispatch
+    /// (`Window::dispatch_event` returns a crate-private result type), so
+    /// E2E drives this production scroll state instead; the container's own
+    /// prepaint clamps it to the collection extent like any other source.
+    #[cfg(feature = "testkit")]
+    pub fn scroll_dense_list(&self, delta_px: f32) {
+        let current = self.dense_scroll.offset().y;
+        self.dense_scroll
+            .set_offset(gpui::point(px(0.0), current + px(delta_px)));
+    }
+
     /// Reload the crashed active tab from the crash panel (fresh session).
     pub fn reload_active_from_panel(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
         self.reload();
@@ -152,6 +236,7 @@ impl BbrApp {
             } else {
                 self.focus_web(window, cx);
             }
+            self.ensure_active_visible();
             cx.notify();
         }
         result
@@ -327,6 +412,7 @@ impl BbrApp {
             self.sync_command_bar();
             self.emit_browser(outcome);
             self.focus_tab_list(window, cx);
+            self.ensure_active_visible();
             cx.notify();
         }
         result

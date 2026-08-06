@@ -4,7 +4,7 @@
 
 use bbr_browser::{BrowserController, ControllerEvent};
 use bbr_web::WebEvent;
-use gpui::{App, Context, FocusHandle, Focusable, Window};
+use gpui::{App, Context, FocusHandle, Focusable, ScrollHandle, Window};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -14,6 +14,8 @@ use crate::engine::EngineRef;
 use crate::performance::PerformanceProbe;
 #[cfg(feature = "testkit")]
 mod benchmarks;
+#[cfg(feature = "testkit")]
+mod benchmarks_dense;
 mod drag;
 mod drag_target;
 mod interaction;
@@ -49,6 +51,16 @@ pub struct BbrApp {
     tab_list_handle: FocusHandle,
     /// GPUI focus handle for the sidebar resize divider (←/→ resize, 0 reset).
     divider_handle: FocusHandle,
+    /// Production scroll state of the regular tab region (DESIGN.md §11.6):
+    /// the native wheel listener and the keyboard traversal mutate the same
+    /// tracked offset, and the render derives its bounded row window from it.
+    dense_scroll: ScrollHandle,
+    /// The last render's dense window, recorded during `Render::render` so
+    /// the testkit snapshot reports exactly what the shell built (bounded
+    /// rendered rows, active-row visibility). `pub(crate)` because the
+    /// gateway dispatch (`crate::testkit`) reads the anchor for the dense
+    /// benchmark and the app testkit snapshot mirrors the full state.
+    pub(crate) dense_window: std::cell::Cell<crate::dense::DenseRenderState>,
     /// Adjustable sidebar geometry (DESIGN.md §5/§11.4): min/default/max
     /// widths, narrow-window clamping, collapse memory, drag state.
     pub sidebar: crate::sidebar::SidebarGeometry,
@@ -98,6 +110,8 @@ impl BbrApp {
             space_list_handle: cx.focus_handle(),
             tab_list_handle: cx.focus_handle(),
             divider_handle: cx.focus_handle(),
+            dense_scroll: ScrollHandle::new(),
+            dense_window: std::cell::Cell::new(crate::dense::DenseRenderState::default()),
             sidebar: crate::sidebar::SidebarGeometry::new(),
             tab_drag: drag::TabDrag::default(),
             command_bar_mode: CommandBarMode::Inactive,
@@ -130,6 +144,7 @@ impl BbrApp {
         if let Some(outcome) = &result {
             self.sync_command_bar();
             self.emit_browser(outcome);
+            self.ensure_active_visible();
             cx.notify();
         }
         result
@@ -147,6 +162,7 @@ impl BbrApp {
         if let Some(outcome) = &result {
             self.sync_command_bar();
             self.emit_browser(outcome);
+            self.ensure_active_visible();
             cx.notify();
         }
         result
@@ -164,6 +180,7 @@ impl BbrApp {
         if let Some(outcome) = &result {
             self.sync_command_bar();
             self.emit_browser(outcome);
+            self.ensure_active_visible();
             cx.notify();
         }
         result

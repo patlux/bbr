@@ -12,7 +12,7 @@ use gpui::{div, prelude::*, Context, MouseButton, Render, Window};
 
 use crate::components;
 use crate::slot::NativeWebViewSlot;
-use crate::theme::Theme;
+use crate::theme::{ContrastMode, Theme, ThemeMode};
 
 use super::BbrApp;
 
@@ -99,11 +99,13 @@ impl Render for BbrApp {
 }
 
 impl BbrApp {
-    /// The resolved theme tokens for the current shell mode. Fixed
-    /// dark/standard/normal density until the light, contrast, and density
-    /// slices introduce mode switching; the §15 mode fields are already
-    /// reported by the snapshot.
+    /// The resolved theme tokens for the current shell mode. Density is
+    /// automatic from the regular-tab collection size (DESIGN.md §8); the
+    /// §15 mode fields are already reported by the snapshot.
     pub fn theme(&self) -> Theme {
-        Theme::dark()
+        let browser = self.controller.snapshot();
+        let pinned = crate::shell::pinned_count(&browser.tabs);
+        let regular = browser.tabs.len().saturating_sub(pinned);
+        Theme::for_collection(ThemeMode::Dark, ContrastMode::Standard, regular)
     }
 }

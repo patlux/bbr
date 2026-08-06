@@ -226,6 +226,50 @@ pub(crate) fn dispatch(
             browser_mutation(window.update(cx, |view, _window, cx| view.suspend_tab(index, cx)))
         }
 
+        // Deterministic dense-list seeding (DESIGN.md §11.6): open
+        // `tab_count` tabs through the production controller open path,
+        // suspend every tab outside the keep set immediately (each transient
+        // session is destroyed before the next open, so the concurrent
+        // live-session population never approaches `tab_count`), then
+        // activate the pinned tab 0. Batches keep the same final keep set
+        // because the keep rule uses the global index. In-memory state;
+        // persisted-restore acceptance stays open.
+        Request::SeedDenseState {
+            tab_count,
+            pinned_count,
+            recent_start,
+            url,
+        } => browser_mutation(window.update(cx, |view, _window, cx| {
+            view.seed_dense_state(tab_count, pinned_count, recent_start, &url, cx)
+        })),
+
+        // Deterministic session-budget convergence (testkit-only setup; the
+        // policy is the production lifecycle path).
+        Request::EnforceSessionBudget { cap } => browser_mutation(
+            window.update(cx, |view, _window, cx| view.enforce_session_budget(cap, cx)),
+        ),
+
+        // A real scroll of the dense regular tab region through the
+        // production scroll state: the tracked `ScrollHandle` the native
+        // wheel listener, the keyboard traversal, and the render share
+        // (GPUI 0.2.2 exposes no public synthetic wheel dispatch —
+        // `Window::dispatch_event` returns a crate-private result type). The
+        // app method mutates the offset in the wheel listener's units and
+        // sign; a frame is drawn afterwards so the snapshot observes the
+        // bounded window the scroll produced. Never a direct snapshot
+        // mutation.
+        Request::ScrollDenseTabs { delta_px } => {
+            let scrolled = window
+                .update(cx, |view, _window, _cx| view.scroll_dense_list(delta_px))
+                .map(|_| Response::Ok)
+                .unwrap_or_else(err_response);
+            let _ = (**window).update(cx, |_root, window, cx| {
+                let app: &mut App = cx;
+                let _ = window.draw(app);
+            });
+            scrolled
+        }
+
         Request::WebAction(action) => window
             .update(cx, |view, _w, _cx| view.web_action(action))
             .map(|outcome| {
@@ -359,10 +403,23 @@ pub(crate) fn dispatch(
         | Request::BenchmarkRestoreSidebar { .. }
         | Request::BenchmarkPinTab { .. }
         | Request::BenchmarkReorderTab { .. }
-        | Request::BenchmarkMoveTab { .. } => {
+        | Request::BenchmarkMoveTab { .. }
+        | Request::BenchmarkDenseScroll { .. }
+        | Request::BenchmarkDenseSelect { .. } => {
             unreachable!("benchmark requests route through dispatch_benchmark")
         }
     }
+}
+
+/// Draw one real GPUI frame synchronously through the untyped window path
+/// (the draw re-borrows the root entity, so the typed `WindowHandle::update`
+/// path would double-lease). Used by the dense scroll/select arms so the
+/// snapshot's dense window state reflects the post-mutation render.
+pub(crate) fn flush_dense_frame(window: &WindowHandle<BbrApp>, cx: &mut App) {
+    let _ = (**window).update(cx, |_root, window, cx| {
+        let app: &mut App = cx;
+        let _ = window.draw(app);
+    });
 }
 
 pub(crate) fn browser_mutation<E: std::fmt::Display>(
