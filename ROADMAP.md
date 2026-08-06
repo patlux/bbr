@@ -30,7 +30,7 @@ root-roadmap contracts remain serial integration surfaces.
 | Lane | Phase/track owner | Readiness |
 |---|---|---|
 | Parallel-delivery foundation | [task packet](docs/roadmap/tasks/parallel-delivery-foundation.md) | implemented and verified; anchor recorded in its ledger |
-| Command core | [Phase 5](docs/roadmap/phases/05-command-bar.md) · [task packet](docs/roadmap/tasks/command-core.md) | implemented, independently reviewed, remediated, and integrated at `b7c475a`; branch writer-free; serial app-composition contract next |
+| Command core / composition | [Phase 5](docs/roadmap/phases/05-command-bar.md) · [portable core](docs/roadmap/tasks/command-core.md) · [app composition](docs/roadmap/tasks/command-composition.md) | core integrated at `b7c475a`; serial dependency/ownership anchor active; sibling composition writer starts from the recorded clean commit |
 | Persistence core | [Phase 7](docs/roadmap/phases/07-persistence.md) · [task packet](docs/roadmap/tasks/persistence-core.md) | implemented, independently reviewed, remediated, and integrated at `3a3c7f1`; branch writer-free; serial app composition next |
 | Split shared contract / core | [Phase 6](docs/roadmap/phases/06-split-view.md) · [shared contract](docs/roadmap/tasks/split-shared-contract.md) · [portable core](docs/roadmap/tasks/split-core.md) | per-view geometry/controller anchor integrated at `29c34e6`; reviewed portable split planning integrated at `9eeb6b2`; production GPUI composition remains serial |
 | Performance runner | [performance track](docs/roadmap/tracks/performance-release.md) | external infrastructure lane |

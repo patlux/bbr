@@ -14,8 +14,10 @@ lands, activate command core as a bounded lane rooted at that clean commit.
 history-provider wiring, testkit snapshots, and command-bar GPUI remain serial
 integration points. Active packet: [portable command core](../tasks/command-core.md),
 rooted at the exact foundation anchor and integrated before command UI. The
-portable core is implemented and verified; the remaining items below are the
-serial app-composition slice.
+portable core is implemented and verified. The bounded
+[command app-composition packet](../tasks/command-composition.md) now owns the
+remaining serial dependency, GPUI, focus, testkit, E2E, and performance work;
+a sibling writer starts only from its recorded clean anchor.
 
 ## Checklist
 
