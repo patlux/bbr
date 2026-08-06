@@ -5,6 +5,7 @@
 
 pub mod baseline;
 mod benchmarks;
+mod drive;
 pub mod harness;
 pub mod machine;
 mod report;
