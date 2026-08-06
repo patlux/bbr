@@ -268,6 +268,25 @@ impl BrowserController {
         Ok(ControllerEvent::TabSuspended { index })
     }
 
+    /// Deterministic live-session budget for the active space (the dense-list
+    /// session cap). Keeps visible, pinned, and recently used identities live
+    /// and suspends the least recently used warm tabs so the total
+    /// Active + Warm population never exceeds `cap`; the suspended sessions
+    /// are destroyed. A no-op when the population already fits.
+    pub fn enforce_session_budget(
+        &mut self,
+        cap: usize,
+    ) -> Result<ControllerEvent, ControllerError> {
+        let suspended = self.browser.suspend_least_recently_used(cap);
+        self.sync_views();
+        self.check_invariants();
+        let snapshot = self.snapshot();
+        Ok(ControllerEvent::LifecycleBudgetApplied {
+            live: snapshot.lifecycle_counts.live(),
+            suspended: suspended.len(),
+        })
+    }
+
     /// Move the tab at `index` into `to_space`. Within one profile the live
     /// session is kept; across profiles it is destroyed and recreated in the
     /// destination profile's store.
@@ -375,7 +394,7 @@ impl BrowserController {
             .browser
             .space(self.active_space)
             .and_then(|s| s.active_tab);
-        let tab_snapshots = tabs
+        let tab_snapshots: Vec<crate::snapshot::TabSnapshot> = tabs
             .iter()
             .enumerate()
             .filter_map(|(index, &tab)| {
@@ -391,6 +410,8 @@ impl BrowserController {
                     crashed: self.crashed_tabs.contains(&tab),
                     active: active_tab == Some(tab),
                     web_view: view,
+                    lifecycle: state.lifecycle,
+                    last_used: state.last_used,
                 })
             })
             .collect();
@@ -431,6 +452,7 @@ impl BrowserController {
             })
             .collect();
         let active_profile = self.active_profile();
+        let lifecycle_counts = crate::snapshot::LifecycleCounts::tally(&tab_snapshots);
         crate::snapshot::ControllerSnapshot {
             active_profile,
             active_profile_title: self
@@ -447,6 +469,7 @@ impl BrowserController {
             web_view_hosted: active_view.is_some(),
             engine_sessions: self.engine.borrow().live_session_count(),
             active_view,
+            lifecycle_counts,
         }
     }
 

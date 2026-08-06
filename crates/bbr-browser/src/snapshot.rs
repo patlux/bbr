@@ -1,9 +1,41 @@
 //! Read-only snapshots of controller state for the UI and E2E harness.
 
-use bbr_domain::{ProfileHue, SpaceId};
+use bbr_domain::{ProfileHue, SpaceId, TabLifecycle};
 use bbr_web::{ProfileId, WebViewId};
 
 use crate::nav::NavState;
+
+/// Per-tab lifecycle counts of the active model (the dense-list session
+/// budget evidence): `active + warm` is the live-session population and must
+/// never exceed the enforced budget; `suspended + discarded` own no session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct LifecycleCounts {
+    pub active: usize,
+    pub warm: usize,
+    pub suspended: usize,
+    pub discarded: usize,
+}
+
+impl LifecycleCounts {
+    /// Tally the lifecycle of every tab in `tabs`.
+    pub fn tally(tabs: &[TabSnapshot]) -> Self {
+        let mut counts = Self::default();
+        for tab in tabs {
+            match tab.lifecycle {
+                TabLifecycle::Active => counts.active += 1,
+                TabLifecycle::Warm => counts.warm += 1,
+                TabLifecycle::Suspended => counts.suspended += 1,
+                TabLifecycle::Discarded => counts.discarded += 1,
+            }
+        }
+        counts
+    }
+
+    /// The number of tabs that own a live session.
+    pub fn live(self) -> usize {
+        self.active + self.warm
+    }
+}
 
 /// One tab of the active space as presented to the UI/E2E.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,6 +55,12 @@ pub struct TabSnapshot {
     pub active: bool,
     /// Current disposable session identity, absent when suspended/discarded.
     pub web_view: Option<WebViewId>,
+    /// Resource policy state of the tab's disposable session (the dense-list
+    /// lifecycle contract).
+    pub lifecycle: TabLifecycle,
+    /// Deterministic recency stamp (the session-budget policy's "recently
+    /// used" order).
+    pub last_used: u64,
 }
 
 /// One profile's identity as presented to the UI/E2E (DESIGN.md §12).
@@ -83,6 +121,9 @@ pub struct ControllerSnapshot {
     pub engine_sessions: usize,
     /// Active session id (when a session backs the active tab).
     pub active_view: Option<WebViewId>,
+    /// Lifecycle population counts of the active space (the dense-list
+    /// session-budget evidence).
+    pub lifecycle_counts: LifecycleCounts,
 }
 
 #[cfg(test)]
@@ -104,6 +145,7 @@ mod tests {
             web_view_hosted: false,
             engine_sessions: 0,
             active_view: None,
+            lifecycle_counts: LifecycleCounts::default(),
         };
         assert_eq!(s.clone(), s);
     }

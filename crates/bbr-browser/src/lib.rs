@@ -51,14 +51,18 @@ mod snapshot;
 mod testing;
 
 #[cfg(test)]
+mod controller_dense_tests;
+#[cfg(test)]
 mod controller_event_tests;
 #[cfg(test)]
 mod controller_tests;
 
-pub use bbr_domain::{ProfileHue, SpaceId};
+pub use bbr_domain::{ProfileHue, SpaceId, TabLifecycle};
 pub use controller::BrowserController;
 pub use error::ControllerError;
 pub use nav::NavState;
 pub use outcome::ControllerEvent;
 pub use session::{SessionError, SessionRegistry};
-pub use snapshot::{ControllerSnapshot, ProfileSnapshot, SpaceSnapshot, TabSnapshot};
+pub use snapshot::{
+    ControllerSnapshot, LifecycleCounts, ProfileSnapshot, SpaceSnapshot, TabSnapshot,
+};

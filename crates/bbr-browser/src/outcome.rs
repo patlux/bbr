@@ -34,6 +34,10 @@ pub enum ControllerEvent {
     TabReopened { index: usize, url: String },
     /// A tab was suspended (session destroyed, identity kept).
     TabSuspended { index: usize },
+    /// The deterministic dense-list session budget was applied: `live` is the
+    /// resulting Active + Warm population and `suspended` the number of
+    /// sessions destroyed to reach it (0 when already within budget).
+    LifecycleBudgetApplied { live: usize, suspended: usize },
     /// A tab's WebKit process terminated; its session was destroyed.
     TabDiscarded { tab: bbr_domain::TabId },
     /// The tab moved into another space; `recreated` says whether the session
