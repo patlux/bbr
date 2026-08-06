@@ -29,7 +29,7 @@ serial app-composition slice.
 - [ ] Add cancellable debounce without blocking the render path.
 - [ ] Design loading, empty, no-result, error, and destructive-command states.
 - [ ] Add table-driven parser/ranking tests and real-app command-bar E2E. *(Table-driven parser/ranking tests ship with the core; real-app command-bar E2E is owned by the app-composition packet.)*
-- [x] Keep first local result below 50 ms for 10,000 history entries and 500 tabs. *(Portable release-mode benchmark: p95 ≈ 1.45 ms, max ≈ 1.6 ms against the 50 ms ceiling; in-process real-app presentation measurement is the app-composition packet's.)*
+- [x] Keep first local result below 50 ms for 10,000 history entries and 500 tabs. *(Portable release-mode benchmark: p95 ≈ 1.45–1.5 ms, max ≈ 1.6–1.75 ms against the 50 ms ceiling; in-process real-app presentation measurement is the app-composition packet's.)*
 
 ## Phase exit
 

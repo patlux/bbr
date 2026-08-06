@@ -139,10 +139,10 @@ Outcome: Portable bbr-command core: typed modes/identities, deterministic
          activations, and a release-mode first-result benchmark (500 tabs +
          10,000 history entries) enforcing the 50 ms ceiling with raw
          distribution output.
-Commits: 6 verified groups — parsing/identities; corpus/registry; ranking;
+Commits: 7 verified groups — parsing/identities; corpus/registry; ranking;
          private collector split (refactor); parser/ranking contract tests;
-         first-result benchmark; roadmap/phase documentation (subjects
-         recorded in the branch log).
+         first-result benchmark; roadmap/phase documentation; score/key
+         encoding fix (subjects recorded in the branch log).
 Functional evidence: cargo test -p bbr-command (11 lib + 5 parse + 23 rank + 1
          doc = 40 tests) green; cargo clippy -p bbr-command --all-targets --
          -D warnings clean; cargo fmt --all -- --check green; every Phase-5
@@ -151,9 +151,9 @@ Functional evidence: cargo test -p bbr-command (11 lib + 5 parse + 23 rank + 1
 Real-app E2E: not applicable; later app-composition packet owns it.
 Performance evidence: cargo test -p bbr-command --release — benchmark
          first_correct_result_below_50ms_for_500_tabs_and_10k_history: 400 raw
-         samples, p50 ≈ 0.12 ms, p95 ≈ 1.45 ms, max ≈ 1.6 ms (≈ 30× headroom
-         under the 50 ms ceiling), raw per-sample distribution printed with
-         --nocapture and retained in the run output.
+         samples, p50 ≈ 0.12 ms, p95 ≈ 1.45–1.5 ms, max ≈ 1.6–1.75 ms (≈ 30×
+         headroom under the 50 ms ceiling), raw per-sample distribution
+         printed with --nocapture and retained in the run output.
 Roadmap/documentation updates: Phase-5 checklist items 1/2/5/6/11 marked with
          truthful scope notes; this packet's evidence/ledger completed; crate
          docs in crates/bbr-command/src/lib.rs document the pipeline and
