@@ -8,15 +8,14 @@ its contracts, ownership, evidence, and integration order are explicit.
 
 ## Stable integration anchor
 
-The Phase-4 cross-context slice settled on clean `main` at `adb9a5c` after its
-writer and independent reviewer completed. It is the historical input to the
-parallel-delivery foundation, not a branch from which new feature worktrees
-should be created after that foundation lands.
+The final Phase-4 cross-context closeout settled at `20628ff`; the verified
+parallel-delivery implementation landed at `03b9e8b`, and its delivery-ledger
+follow-up `9352ded` is the exact branch point for prepared feature lanes.
 
 A new feature worktree must name the **current clean foundation commit** in its
-task packet and branch from that exact commit. The foundation delivery ledger
-records that commit after verification. Never infer the anchor from a stale
-worktree or from an uncommitted `main`.
+task packet and branch from that exact commit. For the first prepared lanes that
+commit is `9352ded94075d3c82f90c682fb7ff248d0ee2fe6`. Never infer the anchor
+from a stale worktree or from an uncommitted `main`.
 
 The existing `/Users/patwoz/dev/Personal/macos/bbr-url-input` worktree on
 `parallel/url-input` predates the foundation (`5fcebb8`). It remains preserved
@@ -32,16 +31,17 @@ contracts do not overlap.
 | Lane | Canonical owner | Parallel-safe owned surface | Shared integration point | State |
 |---|---|---|---|---|
 | Parallel-delivery foundation | [task packet](roadmap/tasks/parallel-delivery-foundation.md) | workflow docs, portable crate landing zones, GUI lock | workspace manifest, `justfile`, `ROADMAP.md` | active until its completion gates pass |
-| Command core | [Phase 5](roadmap/phases/05-command-bar.md) | `crates/bbr-command/**`, portable parser/ranking tests and benchmarks | app composition, history provider, command snapshot | ready for a bounded task packet after foundation |
-| Persistence core | [Phase 7](roadmap/phases/07-persistence.md) | `crates/bbr-persistence/**`, schema/repository/migration fixtures | domain export/import DTOs, app startup/shutdown | ready for a bounded task packet after foundation |
+| Command core | [Phase 5](roadmap/phases/05-command-bar.md) | `crates/bbr-command/**`, portable parser/ranking tests and benchmarks | app composition, history provider, command snapshot | prepared at `/Users/patwoz/dev/Personal/macos/bbr-command-core`, branch `parallel/command-core`, packet commit `7ccf7ff`; no writer active |
+| Persistence core | [Phase 7](roadmap/phases/07-persistence.md) | `crates/bbr-persistence/**`, schema/repository/migration fixtures | domain export/import DTOs, app startup/shutdown | prepared at `/Users/patwoz/dev/Personal/macos/bbr-persistence-core`, branch `parallel/persistence-core`, packet commit `9bb0a3b`; no writer active |
 | Split core | [Phase 6](roadmap/phases/06-split-view.md) | new split-focused domain/controller modules and tests | `WebEngine` geometry, controller facade, app composition | blocked on a serial contract-extraction packet |
 | Performance runner | [performance track](roadmap/tracks/performance-release.md) | runner provisioning, accepted metadata/trends | canonical baseline acceptance | externally provisioned; does not block portable core lanes |
 | Phase-8 WebKit capabilities | [Phase 8](roadmap/phases/08-daily-driver.md) | one native adapter module per accepted capability contract | `bbr-web` events/actions, testkit wire, app surfaces | blocked on serial capability contracts |
 
-A lane marked “ready” still needs its own bounded task packet before a branch or
-writer starts. The packet must state base commit, dependencies, provided API,
-exclusive paths, shared integration points, E2E/performance evidence, and merge
-order.
+A prepared lane still needs its packet promoted through the serial roadmap
+integration surface before a product writer starts. The packet must state base
+commit, dependencies, provided API, exclusive paths, shared integration points,
+E2E/performance evidence, and merge order. Packet-only worktrees may exist for
+review, but they are writer-free and make no product implementation claim.
 
 ## Serial integration kernel
 
