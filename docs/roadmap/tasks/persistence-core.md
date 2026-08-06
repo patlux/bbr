@@ -131,35 +131,35 @@ and logical state after rollback.
 
 ### Unit and contract
 
-- [ ] Empty/schema-v0 databases migrate to schema v1 and round-trip the bounded
+- [x] Empty/schema-v0 databases migrate to schema v1 and round-trip the bounded
       structural model with stable ordering and identities.
-- [ ] Checked-in schema-v1 data opens without writes; newer schema is rejected
+- [x] Checked-in schema-v1 data opens without writes; newer schema is rejected
       unchanged; an injected failed migration rolls back schema, data, and
       `user_version`.
-- [ ] Foreign-key/invariant violations fail whole, while each optional-state
+- [x] Foreign-key/invariant violations fail whole, while each optional-state
       fixture returns the exact projection and ordered typed warnings defined by
       the recovery matrix without deleting browsing data.
-- [ ] Dense 500-tab data restores as identities with no engine/native types.
-- [ ] Structural writes are transactional and expose deterministic statement /
+- [x] Dense 500-tab data restores as identities with no engine/native types.
+- [x] Structural writes are transactional and expose deterministic statement /
       transaction counts asserted by normal contract tests.
 
 ### Real-app E2E
 
-- [ ] Not applicable to this repository-core packet: it creates no app startup
+- [x] Not applicable to this repository-core packet: it creates no app startup
       behavior. The later Phase-7 composition packet owns normal quit,
       force-quit, chrome-first restore, lazy WKWebView hydration, recovery UI,
       typed testkit events, and production E2E.
 
 ### Performance
 
-- [ ] The exact optimized repository benchmark command completes and writes a
+- [x] The exact optimized repository benchmark command completes and writes a
       reviewable artifact for schema-v0 migration load, schema-v1 current load,
       and transactional structural write over the dense 500-tab fixture.
-- [ ] The artifact contains 10 discarded warm-ups plus at least 100 raw samples
+- [x] The artifact contains 10 discarded warm-ups plus at least 100 raw samples
       per operation, p50/p95/max in monotonic nanoseconds, operation and sample
       counts, release profile/package version, target OS/architecture, available
       parallelism, and repository write counts.
-- [ ] No product startup threshold is claimed or changed; later real-app
+- [x] No product startup threshold is claimed or changed; later real-app
       persisted startup measures production milestones under the performance
       contract.
 
@@ -235,12 +235,28 @@ mutate sibling or root shared surfaces to bypass the blocker.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
+Outcome: Portable schema-v1 SQLite repository with strict migrations/schema
+  validation, atomic complete-snapshot writes, read-only restore/recovery, and
+  checked-in fixture contracts.
+Commits: 53fdab9 feat(persistence): add versioned structural repository;
+  970a42d perf(persistence): record dense repository distributions.
+Functional evidence: cargo test -p bbr-persistence: 9 contract tests passed;
+  cargo clippy -p bbr-persistence --all-targets -- -D warnings passed. Fixtures
+  cover schema_v0, schema_v1, corrupt_optional, invalid_structural,
+  newer_schema, and failed_migration. Inventory assertions compare main/-wal/-shm
+  existence and bytes, user_version, schema, and ordered logical table contents.
 Real-app E2E: not applicable; later app-composition packet owns it.
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Performance evidence: release artifact
+  target/bbr-persistence-artifacts/repository-benchmark.txt, run
+  1786042522587-99412; 10 warmups + 100 samples each. migration load
+  p50/p95/max 486375/611375/941542 ns; current load
+  176375/188458/202666 ns; dense write 1597125/1971917/3283833 ns with exactly
+  1 committed transaction, 511 SQL statements, 0 deleted rows, 505 inserted rows.
+Roadmap/documentation updates: this packet evidence and delivery ledger only;
+  Phase 7 and ROADMAP.md intentionally unchanged. just roadmap passed.
+Open blockers and non-goals: no app startup/shutdown, native hydration,
+  force-quit E2E, history/provider composition, debounce, or product startup
+  latency claim; those remain serial integration/later Phase-7 work.
+Worktree state: final gate run and documentation commit recorded in handoff;
+  root Cargo.toml and Cargo.lock byte-identical to c8c446b.
 ```
