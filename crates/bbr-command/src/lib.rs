@@ -16,8 +16,12 @@
 //! Real-app presentation E2E, keyboard focus, and command-bar GPUI are owned
 //! by the later serial app-composition packet, not by this crate.
 
+pub mod corpus;
 pub mod id;
 pub mod parse;
+pub mod registry;
 
+pub use corpus::{Corpus, HistoryEntry, ProfileEntry, SpaceEntry, TabEntry};
 pub use id::{ActionId, HistoryId, ProfileId, SpaceId, TabId};
 pub use parse::{Destination, Mode, Query, QueryContext};
+pub use registry::{Action, ActionCategory, CommandRegistry};
