@@ -163,7 +163,15 @@ fn type_scale(density: Density) -> TypeScale {
     };
     TypeScale {
         // display: 22/24, title/label/meta/mono/key/badge per the §8 row.
-        display: step(if density == Density::ExtraLarge { 24.0 } else { 22.0 }, 600.0, 1.2),
+        display: step(
+            if density == Density::ExtraLarge {
+                24.0
+            } else {
+                22.0
+            },
+            600.0,
+            1.2,
+        ),
         title: step(s.0, 500.0, 1.2),
         label: step(s.1, 500.0, 1.2),
         meta: step(s.2, 400.0, 1.2),
@@ -178,14 +186,30 @@ fn type_scale(density: Density) -> TypeScale {
 pub struct Spacing;
 
 impl Spacing {
-    pub const fn sp1() -> Pixels { px(4.0) }
-    pub const fn sp2() -> Pixels { px(8.0) }
-    pub const fn sp3() -> Pixels { px(12.0) }
-    pub const fn sp4() -> Pixels { px(16.0) }
-    pub const fn sp5() -> Pixels { px(20.0) }
-    pub const fn sp6() -> Pixels { px(24.0) }
-    pub const fn sp7() -> Pixels { px(32.0) }
-    pub const fn sp8() -> Pixels { px(40.0) }
+    pub const fn sp1() -> Pixels {
+        px(4.0)
+    }
+    pub const fn sp2() -> Pixels {
+        px(8.0)
+    }
+    pub const fn sp3() -> Pixels {
+        px(12.0)
+    }
+    pub const fn sp4() -> Pixels {
+        px(16.0)
+    }
+    pub const fn sp5() -> Pixels {
+        px(20.0)
+    }
+    pub const fn sp6() -> Pixels {
+        px(24.0)
+    }
+    pub const fn sp7() -> Pixels {
+        px(32.0)
+    }
+    pub const fn sp8() -> Pixels {
+        px(40.0)
+    }
 }
 
 /// Corner radii (DESIGN.md §5): chrome stays in 4–8 px, never pill-cards.
@@ -193,11 +217,21 @@ impl Spacing {
 pub struct Radius;
 
 impl Radius {
-    pub const fn small() -> Pixels { px(4.0) }
-    pub const fn medium() -> Pixels { px(6.0) }
-    pub const fn large() -> Pixels { px(8.0) }
-    pub const fn xlarge() -> Pixels { px(12.0) }
-    pub const fn full() -> Pixels { px(9999.0) }
+    pub const fn small(self) -> Pixels {
+        px(4.0)
+    }
+    pub const fn medium(self) -> Pixels {
+        px(6.0)
+    }
+    pub const fn large(self) -> Pixels {
+        px(8.0)
+    }
+    pub const fn xlarge(self) -> Pixels {
+        px(12.0)
+    }
+    pub const fn full(self) -> Pixels {
+        px(9999.0)
+    }
 }
 
 /// Motion durations (DESIGN.md §6). State changes are `instant`; the rest
@@ -206,13 +240,25 @@ impl Radius {
 pub struct Motion;
 
 impl Motion {
-    pub const fn instant() -> std::time::Duration { std::time::Duration::ZERO }
-    pub const fn micro() -> std::time::Duration { std::time::Duration::from_millis(70) }
-    pub const fn fine() -> std::time::Duration { std::time::Duration::from_millis(120) }
-    pub const fn standard() -> std::time::Duration { std::time::Duration::from_millis(180) }
-    pub const fn emphasis() -> std::time::Duration { std::time::Duration::from_millis(260) }
+    pub const fn instant() -> std::time::Duration {
+        std::time::Duration::ZERO
+    }
+    pub const fn micro() -> std::time::Duration {
+        std::time::Duration::from_millis(70)
+    }
+    pub const fn fine() -> std::time::Duration {
+        std::time::Duration::from_millis(120)
+    }
+    pub const fn standard() -> std::time::Duration {
+        std::time::Duration::from_millis(180)
+    }
+    pub const fn emphasis() -> std::time::Duration {
+        std::time::Duration::from_millis(260)
+    }
     /// Indeterminate loading loop (DESIGN.md §10.5).
-    pub const fn load_loop() -> std::time::Duration { std::time::Duration::from_millis(580) }
+    pub const fn load_loop() -> std::time::Duration {
+        std::time::Duration::from_millis(580)
+    }
 }
 
 /// Elevation (DESIGN.md §2). `elev:1` is a hairline border on the same
@@ -221,9 +267,15 @@ impl Motion {
 pub struct Elevation;
 
 impl Elevation {
-    pub const fn base() -> u8 { 0 }
-    pub const fn raised() -> u8 { 1 }
-    pub const fn floating() -> u8 { 2 }
+    pub const fn base() -> u8 {
+        0
+    }
+    pub const fn raised() -> u8 {
+        1
+    }
+    pub const fn floating() -> u8 {
+        2
+    }
 }
 
 impl Theme {
@@ -253,7 +305,6 @@ impl Theme {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -276,13 +327,25 @@ mod tests {
 
     #[test]
     fn spacing_and_radius_are_4pt_multiples() {
-        for sp in [Spacing::sp1(), Spacing::sp2(), Spacing::sp3(), Spacing::sp4()] {
+        for sp in [
+            Spacing::sp1(),
+            Spacing::sp2(),
+            Spacing::sp3(),
+            Spacing::sp4(),
+        ] {
             let pts = f32::from(sp);
-            assert_eq!(pts, (pts / 4.0).round() * 4.0, "spacing stays on the 4 pt grid");
+            assert_eq!(
+                pts,
+                (pts / 4.0).round() * 4.0,
+                "spacing stays on the 4 pt grid"
+            );
         }
-        for r in [Radius::small(), Radius::medium(), Radius::large(), Radius::xlarge()] {
-            let pts = f32::from(r);
-            assert!((4.0..=12.0).contains(&pts), "chrome radii stay 4–12 px, got {pts}");
+        for r in [Radius, Radius, Radius, Radius] {
+            let pts = f32::from(r.small());
+            assert!(
+                (4.0..=12.0).contains(&pts),
+                "chrome radii stay 4–12 px, got {pts}"
+            );
         }
     }
 }

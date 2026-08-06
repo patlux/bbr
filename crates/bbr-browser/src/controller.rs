@@ -42,6 +42,10 @@ pub struct BrowserController {
     /// Live-session navigation state (url/title/loading/history/crashed),
     /// reset whenever a session is recreated.
     nav: HashMap<WebViewId, NavState>,
+    /// Tabs whose web process terminated. Survives the session destruction
+    /// (the crash destroys the session but the tab identity stays); cleared
+    /// when a fresh session is created or loads.
+    crashed_tabs: std::collections::HashSet<TabId>,
 }
 
 impl std::fmt::Debug for BrowserController {
@@ -71,6 +75,7 @@ impl BrowserController {
             session_profiles: HashMap::new(),
             visibility: HashMap::new(),
             nav: HashMap::new(),
+            crashed_tabs: std::collections::HashSet::new(),
         }
     }
 
@@ -186,6 +191,17 @@ impl BrowserController {
         Ok(ControllerEvent::TabReopened { index, url })
     }
 
+    /// Pin the tab at `index` (moves it into the pinned region) and keep it
+    /// active; the live session is preserved.
+    pub fn pin_tab(&mut self, index: usize) -> Result<ControllerEvent, ControllerError> {
+        let tab = self.tab_at(index)?;
+        self.browser.pin_tab(self.active_space, tab)?;
+        self.sync_views();
+        self.check_invariants();
+        let index = self.index_of(tab).expect("tab stays in the space");
+        Ok(ControllerEvent::TabPinned { index })
+    }
+
     /// Route one navigation action to the focused tab (the active tab, or the
     /// focused split pane). A suspended/discarded focused tab is reactivated
     /// first, recreating its session.
@@ -253,13 +269,15 @@ impl BrowserController {
     }
 
     /// Handle a WebKit process termination: mark the owning tab discarded and
-    /// destroy its session; the next activation recreates it.
+    /// destroy its session; the next activation recreates it. The tab's crash
+    /// flag survives so the shell can render the §10.7 error state.
     fn on_page_crash(&mut self, view: WebViewId) -> ControllerEvent {
         let Some(tab) = self.registry.tab_for_view(view) else {
             return ControllerEvent::UnknownWebView { view };
         };
         let _ = self.browser.discard_tab(tab);
         self.destroy_session_of(tab);
+        self.crashed_tabs.insert(tab);
         self.check_invariants();
         ControllerEvent::TabDiscarded { tab }
     }
@@ -337,12 +355,17 @@ impl BrowserController {
             .enumerate()
             .filter_map(|(index, &tab)| {
                 let state = self.browser.tab(tab)?;
+                let view = self.registry.view_for_tab(tab);
+                let session = view.and_then(|v| self.nav.get(&v));
                 Some(crate::snapshot::TabSnapshot {
                     index,
                     url: state.url.clone(),
                     title: state.title.clone(),
+                    pinned: state.pinned,
+                    loading: session.is_some_and(|n| n.loading),
+                    crashed: self.crashed_tabs.contains(&tab),
                     active: active_tab == Some(tab),
-                    web_view: self.registry.view_for_tab(tab),
+                    web_view: view,
                 })
             })
             .collect();
@@ -431,7 +454,10 @@ impl BrowserController {
     }
 
     /// Allocate a fresh session for `tab`: engine create + registry mapping.
+    /// A fresh session clears the tab's crash flag (the recovered page is no
+    /// longer in the §10.7 error state).
     fn create_session(&mut self, tab: TabId, profile: ProfileId, url: &str) -> WebViewId {
+        self.crashed_tabs.remove(&tab);
         let view = WebViewId((self.allocate_view)());
         self.engine.borrow_mut().create_web_view(view, profile, url);
         self.visibility.insert(view, false);

@@ -12,6 +12,13 @@ pub struct TabSnapshot {
     pub index: usize,
     pub url: String,
     pub title: String,
+    /// The pinned region occupies the leading `pinned` tabs of the space.
+    pub pinned: bool,
+    /// Live-session loading flag (url/title/loading live on the session).
+    pub loading: bool,
+    /// The tab's web process terminated; its identity survives until a fresh
+    /// session loads (DESIGN.md §10.7 error state).
+    pub crashed: bool,
     /// Whether this tab is the active one.
     pub active: bool,
     /// Current disposable session identity, absent when suspended/discarded.

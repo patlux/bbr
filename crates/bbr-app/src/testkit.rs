@@ -59,11 +59,11 @@ fn dispatch_from_worker(req: Request, cmd_tx: &smol::channel::Sender<GatewayComm
     }
     smol::block_on(async {
         enum WorkerReply {
-            Response(Result<Response, smol::channel::RecvError>),
+            Response(Box<Result<Response, smol::channel::RecvError>>),
             Timeout,
         }
         match smol::future::race(
-            async { WorkerReply::Response(reply_rx.recv().await) },
+            async { WorkerReply::Response(Box::new(reply_rx.recv().await)) },
             async {
                 smol::Timer::after(Duration::from_secs(30)).await;
                 WorkerReply::Timeout
@@ -71,10 +71,10 @@ fn dispatch_from_worker(req: Request, cmd_tx: &smol::channel::Sender<GatewayComm
         )
         .await
         {
-            WorkerReply::Response(Ok(response)) => response,
-            WorkerReply::Response(Err(_)) => {
-                Response::Error(Error::new("app_gone", "app reply channel closed"))
-            }
+            WorkerReply::Response(boxed) => match *boxed {
+                Ok(response) => response,
+                Err(_) => Response::Error(Error::new("app_gone", "app reply channel closed")),
+            },
             WorkerReply::Timeout => Response::Error(Error::new(
                 "timeout",
                 "command timed out on the main thread",
@@ -92,6 +92,7 @@ pub fn spawn_pump(
     cx: &App,
     window: &WindowHandle<BbrApp>,
     evt_rx: smol::channel::Receiver<bbr_web::WebEvent>,
+    inject_tx: smol::channel::Sender<bbr_web::WebEvent>,
     cmd_rx: smol::channel::Receiver<GatewayCommand>,
     server: Option<Arc<GatewayServer>>,
 ) {
@@ -110,7 +111,18 @@ pub fn spawn_pump(
             .await;
         match incoming {
             Incoming::Command(Ok(msg)) => {
-                let resp = handle_command(msg.req, &window, &server, async_cx).await;
+                // Deterministic event injection rides the same channel the
+                // real engine sink uses: the pump broadcasts it to E2E and
+                // applies it through `on_web_event`, exactly like a native
+                // delegate event. Testkit-only request; production builds
+                // never see it.
+                let resp = match &msg.req {
+                    Request::InjectWebEvent { event } => {
+                        let _ = inject_tx.try_send(event.clone());
+                        Response::Ok
+                    }
+                    _ => handle_command(msg.req, &window, &server, async_cx).await,
+                };
                 let _ = msg.reply_tx.send(resp).await;
             }
             Incoming::Event(Ok(ev)) => {
@@ -185,6 +197,31 @@ fn dispatch(
             browser_mutation(window.update(cx, |view, _window, cx| view.close_tab(index, cx)))
         }
 
+        Request::ReopenTab => {
+            browser_mutation(window.update(cx, |view, window, cx| view.reopen_tab(window, cx)))
+        }
+
+        Request::PinTab { index } => {
+            browser_mutation(window.update(cx, |view, _window, cx| view.pin_tab(index, cx)))
+        }
+
+        // Pointer-path activation of visible rows: the same app methods the
+        // row mouse-down listeners call, so the asserted scenario exercises
+        // the production listener path rather than a direct controller call.
+        Request::ClickTab { index } => window
+            .update(cx, |view, window, cx| {
+                view.select_row_via_pointer(index, window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+
+        Request::ClickTabClose { index } => window
+            .update(cx, |view, window, cx| {
+                view.close_row_via_pointer(index, window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+
         Request::Navigate { url } => {
             let r = window
                 .update(cx, |view, window, cx| view.navigate(&url, window, cx))
@@ -216,6 +253,41 @@ fn dispatch(
         } => browser_mutation(window.update(cx, |view, window, cx| {
             view.benchmark_select_tab(operation_id, index, window, cx)
         })),
+
+        Request::BenchmarkClickTab {
+            operation_id,
+            index,
+        } => window
+            .update(cx, |view, window, cx| {
+                view.benchmark_click_tab(operation_id, index, window, cx)
+            })
+            .map(|started| {
+                if started {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_busy",
+                        "another presentation measurement is pending",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response),
+
+        Request::BenchmarkReopenTab { operation_id } => window
+            .update(cx, |view, window, cx| {
+                view.benchmark_reopen_tab(operation_id, window, cx)
+            })
+            .map(|started| {
+                if started {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_busy",
+                        "another presentation measurement is pending",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response),
 
         Request::BenchmarkPageReady {
             operation_id,
@@ -368,6 +440,11 @@ fn dispatch(
         Request::Hello { .. } | Request::Attach { .. } => {
             Response::Error(Error::new("server_only", "handled by gateway server"))
         }
+
+        // Handled by the pump before dispatch (rides the real event transport).
+        Request::InjectWebEvent { .. } => {
+            Response::Error(Error::new("pump_only", "handled by the event pump"))
+        }
     }
 }
 
@@ -399,6 +476,10 @@ pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange>
             Some(BrowserChange::TabSelected { index: *index })
         }
         ControllerEvent::TabClosed { index } => Some(BrowserChange::TabClosed { index: *index }),
+        ControllerEvent::TabPinned { index } => Some(BrowserChange::TabPinned { index: *index }),
+        ControllerEvent::TabReopened { index, .. } => {
+            Some(BrowserChange::TabReopened { index: *index })
+        }
         ControllerEvent::TabMoved {
             to_space,
             recreated,
@@ -441,6 +522,9 @@ impl SnapshotExt for crate::shell::TestSnapshot {
                     index: tab.index,
                     url: tab.url.clone(),
                     title: tab.title.clone(),
+                    pinned: tab.pinned,
+                    loading: tab.loading,
+                    crashed: tab.crashed,
                     active: tab.active,
                     web_view: tab.web_view,
                 })
@@ -450,6 +534,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             engine_sessions: self.engine_sessions,
             engine_kind: self.engine_kind.to_string(),
             chrome_focused: self.chrome_focused,
+            shell_modes: self.shell_modes.clone(),
+            tab_states: self.tab_states.clone(),
             command_bar_mode: self.command_bar_mode,
             command_bar_text: self.command_bar_text.clone(),
             sidebar_visible: self.sidebar_visible,

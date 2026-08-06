@@ -91,7 +91,7 @@ impl BbrApp {
             self.command_bar_return = Some(CommandBarReturn {
                 mode: self.command_bar_mode,
                 text: self.command_bar_text.clone(),
-                chrome_focused: self.chrome_handle.is_focused(window),
+                chrome_focused: self.chrome_focused(window),
             });
         }
         self.command_bar_mode = CommandBarMode::NewTab;

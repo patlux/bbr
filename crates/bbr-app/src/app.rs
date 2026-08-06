@@ -37,6 +37,8 @@ pub struct BbrApp {
     engine_kind: &'static str,
     /// GPUI focus handle for the chrome (sidebar/command bar).
     chrome_handle: FocusHandle,
+    /// GPUI focus handle for the visible tab list (arrow/backspace keys).
+    tab_list_handle: FocusHandle,
     /// Current command-bar intent. `NewTab` stages navigation without creating
     /// a domain tab or native session until Enter commits it.
     pub command_bar_mode: CommandBarMode,
@@ -77,6 +79,7 @@ impl BbrApp {
             controller,
             engine_kind,
             chrome_handle: cx.focus_handle(),
+            tab_list_handle: cx.focus_handle(),
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
             command_bar_text: String::new(),
@@ -150,7 +153,6 @@ impl BbrApp {
         result
     }
 
-    #[cfg(feature = "testkit")]
     pub fn select_tab(&mut self, index: usize, cx: &mut Context<Self>) -> Option<ControllerEvent> {
         let result = self
             .controller
@@ -195,7 +197,7 @@ impl BbrApp {
             // presentation commit sees the real state and cannot silently drop
             // a sample when the selection changes views.
             let active_view = self.controller.snapshot().active_view;
-            let chrome_focused = self.chrome_handle.is_focused(window);
+            let chrome_focused = self.chrome_focused(window);
             let mode = self.command_bar_mode.into();
             self.performance.observe_render_state(
                 active_view,
@@ -230,6 +232,85 @@ impl BbrApp {
     }
 
     #[cfg(feature = "testkit")]
+    pub fn benchmark_click_tab(
+        &mut self,
+        operation_id: bbr_testkit::protocol::BenchmarkOperationId,
+        index: usize,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if self
+            .performance
+            .begin(
+                operation_id,
+                bbr_testkit::protocol::BenchmarkKind::TabSelectPointer,
+            )
+            .is_err()
+        {
+            return false;
+        }
+        // The production pointer path, exactly as the row mouse-down listener
+        // drives it: chrome focus domain preserved while the controller
+        // selects. The benchmark commits synchronously from the authoritative
+        // post-mutation snapshot (same rationale as `benchmark_select_tab`).
+        self.select_row_via_pointer(index, window, cx);
+        let active_view = self.controller.snapshot().active_view;
+        let chrome_focused = self.chrome_focused(window);
+        let mode = self.command_bar_mode.into();
+        self.performance.observe_render_state(
+            active_view,
+            self.sidebar_visible,
+            chrome_focused,
+            mode,
+        );
+        self.performance
+            .expect_browser_state(active_view, self.sidebar_visible);
+        self.performance.commit_current_presentation();
+        true
+    }
+
+    #[cfg(feature = "testkit")]
+    pub fn benchmark_reopen_tab(
+        &mut self,
+        operation_id: bbr_testkit::protocol::BenchmarkOperationId,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if self
+            .performance
+            .begin(
+                operation_id,
+                bbr_testkit::protocol::BenchmarkKind::TabReopen,
+            )
+            .is_err()
+        {
+            return false;
+        }
+        // Production reopen path (contract: preserved identity, fresh session,
+        // focus domain untouched). The benchmark arms and commits synchronously
+        // from the authoritative post-mutation snapshot, like the other
+        // interaction benchmarks.
+        let outcome = self.reopen_tab(window, cx);
+        if outcome.is_none() {
+            self.performance.cancel();
+            return false;
+        }
+        let active_view = self.controller.snapshot().active_view;
+        let chrome_focused = self.chrome_focused(window);
+        let mode = self.command_bar_mode.into();
+        self.performance.observe_render_state(
+            active_view,
+            self.sidebar_visible,
+            chrome_focused,
+            mode,
+        );
+        self.performance
+            .expect_browser_state(active_view, self.sidebar_visible);
+        self.performance.commit_current_presentation();
+        true
+    }
+
+    #[cfg(feature = "testkit")]
     pub fn move_tab(
         &mut self,
         index: usize,
@@ -251,7 +332,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let chrome_focused = self.chrome_handle.is_focused(window);
+        let chrome_focused = self.chrome_focused(window);
         let prior_mode = self.command_bar_mode;
         let outcome = self
             .controller
@@ -303,9 +384,17 @@ impl BbrApp {
     /// thread). No-op when no sink is installed.
     fn emit_focus(&mut self, window: &Window) {
         if let Some(sink) = self.focus_sink.borrow_mut().as_mut() {
-            let focused = self.chrome_handle.is_focused(window);
+            let focused = self.chrome_focused(window);
             sink(focused);
         }
+    }
+
+    /// True when any chrome control owns GPUI focus (command bar, sidebar, or
+    /// the visible tab list). The interaction contract's "browser chrome"
+    /// domain is the union: the tab list handle is a chrome control, so a
+    /// pointer-selected row keeps `chrome_focused` true.
+    pub(super) fn chrome_focused(&self, window: &Window) -> bool {
+        self.chrome_handle.is_focused(window) || self.tab_list_handle.is_focused(window)
     }
 
     /// Install a focus-change sink (used by the E2E gateway).
@@ -354,7 +443,7 @@ impl BbrApp {
         // silently dropped interaction samples. The semantic state check inside
         // `commit_current_presentation` still rejects fast-but-wrong results.
         let active_view = self.controller.snapshot().active_view;
-        let chrome_focused = self.chrome_handle.is_focused(window);
+        let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(
             active_view,
@@ -437,6 +526,7 @@ impl BbrApp {
     #[cfg(feature = "testkit")]
     pub fn snapshot(&self, window: &Window) -> TestSnapshot {
         let browser = self.controller.snapshot();
+        let theme = self.theme();
         TestSnapshot {
             url: browser.nav.url.clone(),
             title: browser.nav.title.clone(),
@@ -446,12 +536,45 @@ impl BbrApp {
             web_view_hosted: browser.web_view_hosted,
             active_profile: browser.active_profile,
             active_space: bbr_testkit::protocol::TestSpaceId(browser.active_space.0),
-            tabs: browser.tabs,
+            tabs: browser.tabs.clone(),
             active_tab_index: browser.active_index,
             active_web_view: browser.active_view,
             engine_sessions: browser.engine_sessions,
             engine_kind: self.engine_kind,
-            chrome_focused: self.chrome_handle.is_focused(window),
+            chrome_focused: self.chrome_focused(window),
+            shell_modes: bbr_testkit::protocol::ShellModes {
+                theme: match theme.mode {
+                    crate::theme::ThemeMode::Light => "light".into(),
+                    crate::theme::ThemeMode::Dark => "dark".into(),
+                },
+                contrast: match theme.contrast {
+                    crate::theme::ContrastMode::Standard => "standard".into(),
+                    crate::theme::ContrastMode::Increased => "increased".into(),
+                },
+                density: match theme.density {
+                    crate::theme::Density::Small => "small".into(),
+                    crate::theme::Density::Normal => "normal".into(),
+                    crate::theme::Density::ExtraLarge => "extralarge".into(),
+                },
+            },
+            tab_states: self
+                .row_visuals(&browser.tabs)
+                .iter()
+                .map(|row| match row.state {
+                    crate::components::TabVisualState::Default => {
+                        bbr_testkit::protocol::TabVisualState::Default
+                    }
+                    crate::components::TabVisualState::Selected => {
+                        bbr_testkit::protocol::TabVisualState::Selected
+                    }
+                    crate::components::TabVisualState::Loading => {
+                        bbr_testkit::protocol::TabVisualState::Loading
+                    }
+                    crate::components::TabVisualState::Error => {
+                        bbr_testkit::protocol::TabVisualState::Error
+                    }
+                })
+                .collect(),
             command_bar_mode: self.command_bar_mode.into(),
             command_bar_text: self.command_bar_text.clone(),
             sidebar_visible: self.sidebar_visible,

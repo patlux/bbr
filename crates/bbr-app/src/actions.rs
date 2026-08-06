@@ -15,6 +15,8 @@ gpui::actions!(
         NewTab,
         /// `Cmd-W`: close the active tab.
         CloseTab,
+        /// `Cmd-Shift-T`: reopen the most recently closed tab.
+        ReopenTab,
         /// `Cmd-B`: toggle the sidebar.
         ToggleSidebar,
         /// `Cmd-[`: go back.

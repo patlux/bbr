@@ -525,3 +525,111 @@ fn discarding_via_crash_reuses_the_tab_id_for_recreation() {
     h.emit(WebEvent::UrlChanged(WebViewId(2), "https://new".into()));
     assert_eq!(c.borrow().snapshot().tabs[0].url, "https://new");
 }
+
+// ---------------------------------------------------------------------------
+// Visible-tab shell slice: pinned region, reopen, and per-tab visual state.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn pin_moves_the_tab_into_the_pinned_region_without_recreating_its_session() {
+    let (mut c, h) = plain();
+    open(&mut c, "https://a");
+    open(&mut c, "https://b");
+    let a_view = c.snapshot().tabs[0].web_view;
+    h.reset_ops();
+    let event = c.pin_tab(1).unwrap();
+    // `TabPinned.index` reports the tab's new position: the domain moves the
+    // pinned tab to the end of the pinned region (index 0 when empty).
+    assert_eq!(event, ControllerEvent::TabPinned { index: 0 });
+    let snap = c.snapshot();
+    assert!(snap.tabs[0].pinned, "pinned tab moves to the front");
+    assert!(!snap.tabs[1].pinned);
+    assert_eq!(snap.tabs[1].web_view, a_view, "session identity preserved");
+    assert_eq!(snap.engine_sessions, 2, "pin never touches sessions");
+    // Re-pinning an already-pinned tab is a no-op (domain guard).
+    assert!(c.pin_tab(0).is_ok());
+}
+
+#[test]
+fn reopen_restores_identity_with_a_fresh_session() {
+    // `wired()` routes engine events through `apply_event` exactly like the
+    // composition root; `plain()` has no sink, so emitted title/loading
+    // events would be dropped.
+    let (controller, h) = wired();
+    let (a_view, a_title) = {
+        let mut c = controller.borrow_mut();
+        open(&mut c, "https://a");
+        let a_view = c.snapshot().active_view.unwrap();
+        drop(c);
+        // The wired sink routes the emitted event into `apply_event`; the
+        // controller borrow must be released first (single-threaded Rc).
+        h.emit(WebEvent::TitleChanged(a_view, "Alpha".into()));
+        (a_view, controller.borrow().snapshot().tabs[0].title.clone())
+    };
+    assert_eq!(a_title, "Alpha", "title event reached the domain state");
+    {
+        let mut c = controller.borrow_mut();
+        let _ = c.close_tab(0).unwrap();
+        assert_eq!(c.snapshot().engine_sessions, 0);
+    }
+    h.reset_ops();
+    let event = controller.borrow_mut().reopen_tab().unwrap();
+    assert_eq!(
+        event,
+        ControllerEvent::TabReopened {
+            index: 0,
+            url: "https://a".into()
+        }
+    );
+    let snap = controller.borrow().snapshot();
+    assert_eq!(snap.tabs.len(), 1);
+    assert_eq!(snap.tabs[0].title, "Alpha", "preserved title identity");
+    assert_eq!(snap.tabs[0].url, "https://a");
+    assert_ne!(snap.active_view, Some(a_view), "fresh session incarnation");
+    assert_eq!(snap.engine_sessions, 1);
+    assert!(h.recorded(&[
+        EngineOp::Create {
+            view: WebViewId(2),
+            profile: ProfileId(1),
+            url: "https://a".into()
+        },
+        EngineOp::Show {
+            view: WebViewId(2),
+            visible: true
+        },
+    ]));
+}
+
+#[test]
+fn snapshot_exposes_loading_and_crash_state_per_tab() {
+    let (c, h) = wired();
+    let view = {
+        let mut inner = c.borrow_mut();
+        open(&mut inner, "https://a");
+        let view = inner.snapshot().active_view.unwrap();
+        drop(inner);
+        // Crash events arrive through the engine sink; release the borrow
+        // so `apply_event` can take it.
+        view
+    };
+    h.emit(WebEvent::LoadingChanged(view, true));
+    let snap = c.borrow().snapshot();
+    assert!(snap.tabs[0].loading);
+    assert!(!snap.tabs[0].crashed);
+    assert!(snap.tabs[0].active);
+    // A crash marks the tab error until a fresh session loads.
+    h.emit(WebEvent::PageCrashed(view));
+    let snap = c.borrow().snapshot();
+    assert!(
+        snap.tabs[0].crashed,
+        "crash flag survives session destruction"
+    );
+    assert!(!snap.tabs[0].loading);
+    assert_eq!(snap.tabs[0].web_view, None);
+    c.borrow_mut().select_tab(0).unwrap(); // recreation clears the flag
+    let snap = c.borrow().snapshot();
+    assert!(
+        !snap.tabs[0].crashed,
+        "fresh session clears the crash state"
+    );
+}

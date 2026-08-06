@@ -40,8 +40,8 @@ impl Hex {
 
     /// Linearized sRGB channel for WCAG relative luminance (§3.1 gate).
     fn channel(self, idx: usize) -> f64 {
-        let value = u8::from_str_radix(&self.0[idx * 2..idx * 2 + 2], 16).expect("hex byte") as f64
-            / 255.0;
+        let value =
+            u8::from_str_radix(&self.0[idx * 2..idx * 2 + 2], 16).expect("hex byte") as f64 / 255.0;
         if value <= 0.04045 {
             value / 12.92
         } else {
@@ -292,11 +292,10 @@ impl FaviconSlate {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::theme::{Theme, ThemeMode, ContrastMode, Density};
+    use crate::theme::Theme;
 
     /// §3.1 contrast gate — derived from the tokens, never copied ratios.
     /// Asserts the documented pairs on their real surfaces.
@@ -305,9 +304,15 @@ mod tests {
         let theme = Theme::dark();
         let sidebar = SURFACE_SIDEBAR_DARK;
         assert!(INK_DARK.contrast(sidebar) >= 14.0, "ink ≥ 14:1 on sidebar");
-        assert!(SECONDARY_DARK.contrast(sidebar) >= 5.9, "ink.secondary ≥ 5.9:1");
+        assert!(
+            SECONDARY_DARK.contrast(sidebar) >= 5.9,
+            "ink.secondary ≥ 5.9:1"
+        );
         assert!(ACCENT_DARK.contrast(sidebar) >= 3.0, "accent rail ≥ 3:1");
-        assert!(ACCENT_INK_DARK.contrast(sidebar) >= 9.0, "accent.ink ≥ 9:1 dark");
+        assert!(
+            ACCENT_INK_DARK.contrast(sidebar) >= 9.0,
+            "accent.ink ≥ 9:1 dark"
+        );
         for (name, token) in [
             ("error", ERROR_DARK),
             ("attention", ATTENTION_DARK),
@@ -325,8 +330,14 @@ mod tests {
     #[test]
     fn increased_contrast_hardens_text_and_hairlines() {
         let sidebar = SURFACE_SIDEBAR_DARK;
-        assert!(SECONDARY_IC_DARK.contrast(sidebar) >= 9.0, "IC secondary ≥ 9:1");
-        assert!(HAIRLINE_IC_DARK.contrast(sidebar) >= 1.8, "IC hairline ≥ 1.8:1");
+        assert!(
+            SECONDARY_IC_DARK.contrast(sidebar) >= 9.0,
+            "IC secondary ≥ 9:1"
+        );
+        assert!(
+            HAIRLINE_IC_DARK.contrast(sidebar) >= 1.8,
+            "IC hairline ≥ 1.8:1"
+        );
         assert!(ACCENT_INK_IC_DARK.contrast(sidebar) >= 9.0, "IC accent.ink");
         assert!(INK_IC_DARK.contrast(sidebar) >= INK_DARK.contrast(sidebar));
     }
@@ -360,9 +371,13 @@ mod tests {
         let white_l = lum(1.0);
         for hue_index in 0..6 {
             let bg = FaviconSlate::dark(hue_index);
-            let bg_l = 0.2126 * lum(bg.r as f64) + 0.7152 * lum(bg.g as f64) + 0.0722 * lum(bg.b as f64);
+            let bg_l =
+                0.2126 * lum(bg.r as f64) + 0.7152 * lum(bg.g as f64) + 0.0722 * lum(bg.b as f64);
             let ratio = (white_l + 0.05) / (bg_l + 0.05);
-            assert!(ratio >= 3.0, "monogram tile {hue_index} letter ≥ 3:1, got {ratio:.2}");
+            assert!(
+                ratio >= 3.0,
+                "monogram tile {hue_index} letter ≥ 3:1, got {ratio:.2}"
+            );
         }
     }
 }

@@ -23,6 +23,8 @@ pub enum ControllerEvent {
     TabSelected { index: usize },
     /// The tab at `index` was closed (session destroyed).
     TabClosed { index: usize },
+    /// The tab at `index` was pinned (moved into the pinned region).
+    TabPinned { index: usize },
     /// The most recently closed tab was reopened at `index`.
     TabReopened { index: usize, url: String },
     /// A tab was suspended (session destroyed, identity kept).

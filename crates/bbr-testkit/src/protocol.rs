@@ -9,7 +9,7 @@ use bbr_web::{ProfileId, WebAction, WebViewId};
 use serde::{Deserialize, Serialize};
 
 /// Current protocol version understood by this crate.
-pub const PROTOCOL_VERSION: u32 = 5;
+pub const PROTOCOL_VERSION: u32 = 6;
 
 /// Observable command-bar intent, independent from native focus ownership.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -17,6 +17,26 @@ pub enum CommandBarMode {
     Inactive,
     Location,
     NewTab,
+}
+
+/// Visual state of one tab row, mirroring the DESIGN.md §10 vocabulary that
+/// the shell renders. Asserted by E2E via the snapshot's `tab_states`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TabVisualState {
+    Default,
+    Selected,
+    Loading,
+    Error,
+}
+
+/// The shell's resolved §15 mode fields (theme/contrast/density).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ShellModes {
+    pub theme: String,
+    pub contrast: String,
+    pub density: String,
 }
 
 /// Harness-assigned identity for one measured production-path mutation.
@@ -35,6 +55,11 @@ pub enum BenchmarkKind {
     /// the expected fixture title), measured separately from shell readiness.
     PageReady,
     WarmTabSwitch,
+    /// Visual pointer selection of a visible tab row (production listener
+    /// path, chrome focus preserved).
+    TabSelectPointer,
+    /// Reopen of the most recently closed tab (fresh session presented).
+    TabReopen,
     SidebarToggle,
     NewTabCommandBar,
     NewTabOpened,
@@ -73,6 +98,11 @@ pub struct TabSnapshot {
     pub index: usize,
     pub url: String,
     pub title: String,
+    /// Leading tabs of the space are pinned (DESIGN.md §11.2).
+    pub pinned: bool,
+    pub loading: bool,
+    /// The tab's web process terminated (DESIGN.md §10.7 error state).
+    pub crashed: bool,
     pub active: bool,
     pub web_view: Option<WebViewId>,
 }
@@ -101,8 +131,12 @@ pub struct Snapshot {
     pub engine_sessions: usize,
     /// Engine implementation tag, e.g. "native-wkwebview" or "fake".
     pub engine_kind: String,
-    /// GPUI chrome focus (command bar focused\).
+    /// GPUI chrome focus (command bar focused\) and the shell's resolved
+    /// mode fields (theme/contrast/density) for §15 assertions.
     pub chrome_focused: bool,
+    pub shell_modes: ShellModes,
+    /// Per-row visual states (selected/loading/error/default) in tab order.
+    pub tab_states: Vec<TabVisualState>,
     pub command_bar_mode: CommandBarMode,
     pub command_bar_text: String,
     pub sidebar_visible: bool,
@@ -152,6 +186,12 @@ pub enum BrowserChange {
     TabClosed {
         index: usize,
     },
+    TabPinned {
+        index: usize,
+    },
+    TabReopened {
+        index: usize,
+    },
     TabMoved {
         to_space: TestSpaceId,
         recreated: bool,
@@ -185,10 +225,25 @@ pub enum Request {
     ActivateSpace { space: TestSpaceId },
     /// Open a new tab and make it active.
     OpenTab { url: String },
-    /// Select an existing tab by active-space index.
+    /// Select an existing tab by active-space index (semantic setups).
     SelectTab { index: usize },
     /// Close a tab by active-space index.
     CloseTab { index: usize },
+    /// Reopen the most recently closed tab (fresh session, preserved identity).
+    ReopenTab,
+    /// Pin the tab at the active-space index (moves into the pinned region).
+    PinTab { index: usize },
+    /// Activate a visible tab row through the production pointer path: the
+    /// same app method the row's mouse-down listener calls, with chrome focus.
+    ClickTab { index: usize },
+    /// Activate the visible tab row's close control through the production
+    /// pointer path.
+    ClickTabClose { index: usize },
+    /// Deterministic engine-event injection (testkit-only): pushes a native
+    /// `WebEvent` through the exact event transport the real engine uses, so
+    /// E2E can exercise the production crash/error path without killing a
+    /// real WKWebView process.
+    InjectWebEvent { event: bbr_web::WebEvent },
     /// Move an active-space tab into another space.
     MoveTab { index: usize, to_space: TestSpaceId },
     /// Suspend a hidden tab and destroy its native session.
@@ -198,6 +253,15 @@ pub enum Request {
         operation_id: BenchmarkOperationId,
         index: usize,
     },
+    /// Activate a visible tab row through the pointer path and measure until
+    /// the correct native view is presented with chrome focus preserved.
+    BenchmarkClickTab {
+        operation_id: BenchmarkOperationId,
+        index: usize,
+    },
+    /// Reopen the most recently closed tab and measure until its fresh native
+    /// session is presented.
+    BenchmarkReopenTab { operation_id: BenchmarkOperationId },
     /// Arm a deterministic-page-ready measurement for `expected_view`; it
     /// commits once the fixture navigation finishes with `expected_title`.
     /// The start reference is process spawn, so latency is comparable to
@@ -239,6 +303,10 @@ pub enum Request {
     Quit,
 }
 
+// The `Snapshot` payload grew with the §15 mode fields and per-row states;
+// boxing it would churn the wire format for a lint that only measures enum
+// size on the harness side.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Response {
     /// Reply to [`Request::Hello`].
@@ -342,6 +410,26 @@ pub mod dsl {
 
     pub fn close_tab(index: usize) -> Request {
         Request::CloseTab { index }
+    }
+
+    pub fn reopen_tab() -> Request {
+        Request::ReopenTab
+    }
+
+    pub fn pin_tab(index: usize) -> Request {
+        Request::PinTab { index }
+    }
+
+    pub fn click_tab(index: usize) -> Request {
+        Request::ClickTab { index }
+    }
+
+    pub fn click_tab_close(index: usize) -> Request {
+        Request::ClickTabClose { index }
+    }
+
+    pub fn inject_web_event(event: bbr_web::WebEvent) -> Request {
+        Request::InjectWebEvent { event }
     }
 
     pub fn move_tab(index: usize, to_space: TestSpaceId) -> Request {

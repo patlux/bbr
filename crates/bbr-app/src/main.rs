@@ -17,8 +17,11 @@ use gpui::{px, size, App, Bounds, KeyBinding, Window, WindowBounds, WindowOption
 mod actions;
 mod app;
 mod command_bar;
+mod components;
 mod engine;
 mod inject;
+#[allow(dead_code)] // foundation tokens; consumed by the shell slices that follow this group
+mod palette;
 #[cfg(feature = "testkit")]
 mod performance;
 mod shell;
@@ -26,11 +29,11 @@ mod slot;
 #[cfg(feature = "testkit")]
 mod testkit;
 #[allow(dead_code)] // foundation tokens; consumed by the shell slices that follow this group
-mod palette;
-#[allow(dead_code)] // foundation tokens; consumed by the shell slices that follow this group
 mod theme;
 
-use actions::{Back, CloseTab, FocusCommandBar, FocusWeb, Forward, NewTab, Reload, ToggleSidebar};
+use actions::{
+    Back, CloseTab, FocusCommandBar, FocusWeb, Forward, NewTab, Reload, ReopenTab, ToggleSidebar,
+};
 use app::BbrApp;
 use engine::{build_engine, EngineConfig};
 use inject::{IdGen, RandomIdGen, SequentialIdGen};
@@ -229,7 +232,7 @@ fn main() {
                 } else {
                     None
                 };
-            testkit::spawn_pump(cx, &window, evt_rx, cmd_rx, server.clone());
+            testkit::spawn_pump(cx, &window, evt_rx, evt_tx.clone(), cmd_rx, server.clone());
             if let Some(server) = &server {
                 let broadcaster = server.clone();
                 performance.set_sink(Box::new(move |measurement| {
@@ -403,6 +406,16 @@ fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
         });
     });
 
+    let win = *window;
+    cx.on_action(move |_: &ReopenTab, cx| {
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, window, cx| {
+                let _ = view.reopen_tab(window, cx);
+            });
+        });
+    });
+
     cx.bind_keys([
         KeyBinding::new("cmd-l", FocusCommandBar, None),
         KeyBinding::new("escape", FocusWeb, None),
@@ -412,6 +425,7 @@ fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
         KeyBinding::new("cmd-b", ToggleSidebar, None),
         KeyBinding::new("cmd-t", NewTab, None),
         KeyBinding::new("cmd-w", CloseTab, None),
+        KeyBinding::new("cmd-shift-t", ReopenTab, None),
     ]);
 }
 
