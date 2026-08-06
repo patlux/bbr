@@ -117,6 +117,9 @@ impl Render for BbrApp {
         } else {
             components::empty_space_pane(
                 &theme,
+                &crate::shell::profile_line(
+                    browser.active_profile_title.as_deref().unwrap_or("Default"),
+                ),
                 cx.listener(|this, _e, window, cx| this.activate_new_tab(window, cx)),
             )
             .into_any()
@@ -250,12 +253,18 @@ impl BbrApp {
         components::tab_row(theme, row, select, close)
     }
 
-    /// Map a tab slice to per-row visuals for the current theme.
+    /// Map a tab slice to per-row visuals for the current theme. The §4
+    /// one-line title truncation is applied here so the snapshot's row
+    /// titles and the rendered rows share one source.
     pub fn row_visuals(&self, tabs: &[bbr_browser::TabSnapshot]) -> Vec<RowVisuals> {
+        let budget = crate::shell::title_budget_chars(&self.theme());
         tabs.iter()
             .map(|tab| RowVisuals {
                 index: tab.index,
-                title: SharedString::from(crate::shell::display_title(&tab.url, &tab.title)),
+                title: SharedString::from(crate::shell::truncate_title(
+                    &crate::shell::display_title(&tab.url, &tab.title),
+                    budget,
+                )),
                 state: crate::shell::row_state(tab.active, tab.loading, tab.crashed),
                 favicon: Some(components::FaviconSpec {
                     letter: crate::shell::monogram_letter(&tab.url),

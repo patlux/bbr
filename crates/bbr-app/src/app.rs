@@ -527,6 +527,7 @@ impl BbrApp {
     pub fn snapshot(&self, window: &Window) -> TestSnapshot {
         let browser = self.controller.snapshot();
         let theme = self.theme();
+        let rows = self.row_visuals(&browser.tabs);
         TestSnapshot {
             url: browser.nav.url.clone(),
             title: browser.nav.title.clone(),
@@ -535,6 +536,7 @@ impl BbrApp {
             can_go_forward: browser.nav.can_go_forward,
             web_view_hosted: browser.web_view_hosted,
             active_profile: browser.active_profile,
+            active_profile_title: browser.active_profile_title.clone(),
             active_space: bbr_testkit::protocol::TestSpaceId(browser.active_space.0),
             tabs: browser.tabs.clone(),
             active_tab_index: browser.active_index,
@@ -557,8 +559,7 @@ impl BbrApp {
                     crate::theme::Density::ExtraLarge => "extralarge".into(),
                 },
             },
-            tab_states: self
-                .row_visuals(&browser.tabs)
+            tab_states: rows
                 .iter()
                 .map(|row| match row.state {
                     crate::components::TabVisualState::Default => {
@@ -575,6 +576,13 @@ impl BbrApp {
                     }
                 })
                 .collect(),
+            row_titles: rows.iter().map(|row| row.title.to_string()).collect(),
+            visible_ids: crate::shell::visible_ids(
+                &browser,
+                self.chrome_focused(window),
+                self.command_bar_mode,
+                self.sidebar_visible,
+            ),
             command_bar_mode: self.command_bar_mode.into(),
             command_bar_text: self.command_bar_text.clone(),
             sidebar_visible: self.sidebar_visible,

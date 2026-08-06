@@ -305,7 +305,7 @@ fn _connection_requests(
             other => handler(other),
         };
 
-        let json = encode_server_frame(&super::framing::ServerFrame::Response(response));
+        let json = encode_server_frame(&super::framing::ServerFrame::Response(Box::new(response)));
         if out_tx.send(OutMsg::Response(json)).is_err() {
             return;
         }

@@ -93,7 +93,7 @@ impl Client {
                     self.pending_events.push_back((seq, event));
                     continue;
                 }
-                ServerFrame::Response(resp) => return Ok(resp),
+                ServerFrame::Response(resp) => return Ok(*resp),
             }
         }
     }

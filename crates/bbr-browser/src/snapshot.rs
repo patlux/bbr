@@ -30,6 +30,8 @@ pub struct TabSnapshot {
 pub struct ControllerSnapshot {
     /// The profile and space all tab operations currently target.
     pub active_profile: ProfileId,
+    /// Display title of the active profile (DESIGN.md §11.8 pane naming).
+    pub active_profile_title: Option<String>,
     pub active_space: SpaceId,
     /// Tabs of the active space, in order.
     pub tabs: Vec<TabSnapshot>,
@@ -55,6 +57,7 @@ mod tests {
     fn snapshot_is_a_plain_value() {
         let s = ControllerSnapshot {
             active_profile: ProfileId(1),
+            active_profile_title: Some("Default".into()),
             active_space: SpaceId(2),
             tabs: Vec::new(),
             active_index: None,

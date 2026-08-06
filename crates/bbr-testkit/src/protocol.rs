@@ -125,6 +125,8 @@ pub struct Snapshot {
     /// A live native web view backs the active tab.
     pub web_view_hosted: bool,
     pub active_profile: ProfileId,
+    /// Display title of the active profile (DESIGN.md §11.8 pane naming).
+    pub active_profile_title: Option<String>,
     pub active_space: TestSpaceId,
     /// Active-space tabs and their current disposable session ids.
     pub tabs: Vec<TabSnapshot>,
@@ -140,6 +142,11 @@ pub struct Snapshot {
     pub shell_modes: ShellModes,
     /// Per-row visual states (selected/loading/error/default) in tab order.
     pub tab_states: Vec<TabVisualState>,
+    /// Per-row rendered titles (after §4 separator-aware truncation) in tab
+    /// order, from the same `row_visuals` source the shell renders.
+    pub row_titles: Vec<String>,
+    /// The stable `bbr-*` ids present in the current render (DESIGN.md §15).
+    pub visible_ids: Vec<String>,
     pub command_bar_mode: CommandBarMode,
     pub command_bar_text: String,
     pub sidebar_visible: bool,

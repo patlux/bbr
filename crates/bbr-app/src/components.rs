@@ -92,7 +92,8 @@ pub fn favicon_tile(
 }
 
 /// §11.1 row title: one line, end-ellipsis, `type:title`; the §11.9 fallback
-/// has already been applied by the caller. Loading dims to `ink.secondary`.
+/// and the §4 separator-aware truncation have already been applied by the
+/// caller. Loading dims to `ink.secondary`.
 pub fn row_title(theme: &Theme, index: usize, text: &str, state: TabVisualState) -> Stateful<Div> {
     let color = if state == TabVisualState::Loading {
         theme.palette.ink_secondary
@@ -108,6 +109,20 @@ pub fn row_title(theme: &Theme, index: usize, text: &str, state: TabVisualState)
         .font_weight(theme.type_.title.weight)
         .text_color(color)
         .child(SharedString::from(text.to_string()))
+}
+
+/// §11.1 state slot: the fixed 8 pt trailing slot that later holds the
+/// `attention` dot (§10.6). Present on every row so the `bbr-tab-state-<n>`
+/// assert id (§15) exists; empty until an attention surface ships.
+pub fn row_state_slot(theme: &Theme, index: usize) -> Stateful<Div> {
+    div()
+        .id(("bbr-tab-state", index))
+        .size(px(8.0))
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_size(theme.type_.meta.size)
+        .text_color(theme.palette.ink_faint)
 }
 
 /// §11.1 close control: 16 pt glyph in a ≥ 24 pt hit square. Always
@@ -182,15 +197,17 @@ pub fn tab_row(
             &visuals.title,
             visuals.state,
         ))
+        .child(row_state_slot(theme, visuals.index))
         .child(close)
         .on_mouse_down(MouseButton::Left, on_select)
 }
 
 /// §11.8 empty space pane: `material:canvas` mark, `type:display` headline,
 /// profile line, and a primary "New Tab ⌘T" button that focuses the command
-/// bar in NewTab mode.
+/// bar in NewTab mode. `profile_line` names the owning profile (§11.8).
 pub fn empty_space_pane(
     theme: &Theme,
+    profile_line: &str,
     on_new_tab: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     div()
@@ -227,7 +244,7 @@ pub fn empty_space_pane(
             div()
                 .text_size(theme.type_.meta.size)
                 .text_color(theme.palette.ink_secondary)
-                .child("in Profile · Default"),
+                .child(profile_line.to_string()),
         )
         .child(
             div()

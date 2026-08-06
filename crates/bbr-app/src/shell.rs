@@ -2,10 +2,59 @@
 //!
 //! Product state lives in `bbr-browser::BrowserController`; this module owns
 //! presentation-only derivation (title/URL fallbacks per DESIGN.md §11.9,
-//! deterministic favicon monograms per §7.2, per-row visual states per §10)
-//! and the app-local typed E2E snapshot adapter.
+//! separator-aware one-line truncation per §4, deterministic favicon
+//! monograms per §7.2, per-row visual states per §10, the §15 semantic ids of
+//! the current render) and the app-local typed E2E snapshot adapter.
 
 use bbr_browser::ControllerSnapshot;
+
+use crate::theme::{Spacing, Theme};
+
+/// DESIGN.md §4 one-line row budget: the title area is the sidebar width
+/// minus the fixed row anatomy (2× row padding, the favicon tile, 3
+/// inter-item gaps, the 8 pt state slot, and the close control). Per-char
+/// width is a conservative 0.45 × the `type:title` size (SF Pro averages
+/// ≈0.5 em), so [`truncate_title`] never fires for a title that would fit:
+/// GPUI's `text_ellipsis` stays the pixel-exact backstop for the visual cut.
+pub fn title_budget_chars(theme: &Theme) -> usize {
+    let density = theme.density;
+    let padding = f32::from(Spacing::sp2()) * 2.0;
+    let favicon = f32::from(density.icon());
+    let gaps = f32::from(Spacing::sp2()) * 3.0;
+    let state_slot = 8.0;
+    let close = f32::from(density.icon());
+    let fixed = padding + favicon + gaps + state_slot + close;
+    let area = f32::from(density.sidebar_width()) - fixed;
+    let per_char = f32::from(theme.type_.title.size) * 0.45;
+    (area / per_char).floor().max(1.0) as usize
+}
+
+/// DESIGN.md §4 truncation preference: one line, end-ellipsis; when the full
+/// title exceeds the row budget and contains a separator (`" – "`, `" - "`,
+/// or `" | "`), cut at the first separator so the site name survives;
+/// otherwise keep the full title and let GPUI's `text_ellipsis` do the
+/// pixel-exact cut. The separator cut fires only when the pre-separator head
+/// plus the ellipsis fits within the budget, so short titles are never
+/// truncated.
+pub fn truncate_title(title: &str, budget: usize) -> String {
+    if title.chars().count() <= budget {
+        return title.to_string();
+    }
+    for sep in [" – ", " - ", " | "] {
+        if let Some(index) = title.find(sep) {
+            let head = &title[..index];
+            if head.chars().count() < budget {
+                return format!("{head}…");
+            }
+        }
+    }
+    title.to_string()
+}
+
+/// DESIGN.md §11.8 empty-pane profile line ("in Profile · Work").
+pub fn profile_line(profile_title: &str) -> String {
+    format!("in Profile · {profile_title}")
+}
 
 pub fn status_line(snapshot: &ControllerSnapshot) -> String {
     // A crash destroyed the session (and its nav state); the error surface
@@ -131,6 +180,7 @@ pub struct TestSnapshot {
     pub can_go_forward: bool,
     pub web_view_hosted: bool,
     pub active_profile: bbr_web::ProfileId,
+    pub active_profile_title: Option<String>,
     pub active_space: bbr_testkit::protocol::TestSpaceId,
     pub tabs: Vec<bbr_browser::TabSnapshot>,
     pub active_tab_index: Option<usize>,
@@ -140,10 +190,65 @@ pub struct TestSnapshot {
     pub chrome_focused: bool,
     pub shell_modes: bbr_testkit::protocol::ShellModes,
     pub tab_states: Vec<bbr_testkit::protocol::TabVisualState>,
+    pub row_titles: Vec<String>,
+    pub visible_ids: Vec<String>,
     pub command_bar_mode: bbr_testkit::protocol::CommandBarMode,
     pub command_bar_text: String,
     pub sidebar_visible: bool,
     pub window_size: [f32; 2],
+}
+
+/// The stable `bbr-*` ids present in the current shell render (DESIGN.md
+/// §15). Derived from the same structures the renderer consumes — rows via
+/// the row-visual indices, the content-pane branch mirroring `Render::render`
+/// (native slot / crash panel / empty pane), the command cursor mirroring the
+/// command-bar component — so the E2E id assertion cannot drift from the
+/// shell: if a spec row's ids are not present here, the E2E fails.
+#[cfg(feature = "testkit")]
+pub fn visible_ids(
+    browser: &ControllerSnapshot,
+    chrome_focused: bool,
+    command_bar_mode: crate::command_bar::CommandBarMode,
+    sidebar_visible: bool,
+) -> Vec<String> {
+    let mut ids: Vec<String> = vec!["bbr-root".into()];
+    if sidebar_visible {
+        for id in [
+            "bbr-sidebar",
+            "bbr-brand",
+            "bbr-command-bar",
+            "bbr-command-text",
+            "bbr-status",
+            "bbr-sidebar-toggle",
+            "bbr-tab-list",
+        ] {
+            ids.push(id.into());
+        }
+    }
+    if chrome_focused && command_bar_mode.is_active() {
+        ids.push("bbr-command-cursor".into());
+    }
+    for tab in &browser.tabs {
+        let index = tab.index;
+        ids.push(format!("bbr-tab-row-{index}"));
+        ids.push(format!("bbr-tab-title-{index}"));
+        ids.push(format!("bbr-tab-favicon-{index}"));
+        ids.push(format!("bbr-tab-state-{index}"));
+        ids.push(format!("bbr-tab-close-{index}"));
+    }
+    let active_tab = browser
+        .active_index
+        .and_then(|index| browser.tabs.get(index));
+    if browser.active_view.is_none() {
+        if active_tab.is_some_and(|tab| tab.crashed) {
+            ids.extend(
+                ["bbr-crash-panel", "bbr-crash-reload", "bbr-crash-close"].map(String::from),
+            );
+        } else {
+            ids.extend(["bbr-empty-new-tab", "bbr-empty-new-tab-button"].map(String::from));
+        }
+    }
+    ids
 }
 
 #[cfg(test)]
@@ -219,5 +324,164 @@ mod tests {
         // No pinned rows → boundary at zero.
         let tabs = vec![snap(0, false)];
         assert_eq!(pinned_count(&tabs), 0);
+    }
+
+    #[test]
+    fn truncate_title_cuts_at_separator_when_long() {
+        // Long title with an early separator: the site name survives.
+        let long = "Site Name – A long descriptive suffix that surely pushes the row past its one-line budget";
+        assert_eq!(truncate_title(long, 30), "Site Name…");
+        // Hyphen and pipe separators are recognized.
+        assert_eq!(
+            truncate_title(
+                "gitlab - merge request details go on and on beyond the budget",
+                30
+            ),
+            "gitlab…"
+        );
+        assert_eq!(
+            truncate_title(
+                "News | an article headline that keeps going well past the budget",
+                30
+            ),
+            "News…"
+        );
+    }
+
+    #[test]
+    fn truncate_title_leaves_short_or_fitting_titles_alone() {
+        // Short titles with separators fit and are never cut.
+        assert_eq!(truncate_title("GitHub – My Repo", 30), "GitHub – My Repo");
+        assert_eq!(truncate_title("Short", 30), "Short");
+        // Titles exactly at the budget stay whole.
+        let at_budget: String = "x".repeat(30);
+        assert_eq!(truncate_title(&at_budget, 30), at_budget);
+    }
+
+    #[test]
+    fn truncate_title_falls_back_to_plain_when_head_does_not_fit() {
+        // A separator so late that the pre-separator head itself overflows:
+        // the full title is kept and GPUI's text_ellipsis does the visual cut.
+        let late =
+            "an extremely long first segment that by itself exceeds the row budget – with a suffix";
+        assert_eq!(truncate_title(late, 30), late);
+        // No separator at all: plain end-ellipsis (visual backstop).
+        let plain =
+            "just one very long unbroken descriptive phrase with no separator anywhere at all";
+        assert_eq!(truncate_title(plain, 30), plain);
+    }
+
+    #[test]
+    fn title_budget_tracks_density_geometry() {
+        let normal = Theme::dark();
+        let small = Theme::new(
+            crate::theme::ThemeMode::Dark,
+            crate::theme::ContrastMode::Standard,
+            crate::theme::Density::Small,
+        );
+        let xl = Theme::new(
+            crate::theme::ThemeMode::Dark,
+            crate::theme::ContrastMode::Standard,
+            crate::theme::Density::ExtraLarge,
+        );
+        // Normal density ships the 260 pt sidebar: ~30 chars at 13 pt title.
+        assert!(title_budget_chars(&normal) >= 25);
+        assert!(title_budget_chars(&normal) <= 40);
+        // Wider sidebars get a larger budget than narrow ones.
+        assert!(title_budget_chars(&xl) > title_budget_chars(&small));
+    }
+
+    #[test]
+    fn profile_line_names_the_owning_profile() {
+        assert_eq!(profile_line("Default"), "in Profile · Default");
+        assert_eq!(profile_line("Private"), "in Profile · Private");
+    }
+
+    #[cfg(feature = "testkit")]
+    #[test]
+    fn visible_ids_mirror_the_render_for_each_pane_branch() {
+        let snap = |index: usize, crashed: bool| bbr_browser::TabSnapshot {
+            index,
+            url: "https://example.com".into(),
+            title: format!("tab {index}"),
+            pinned: false,
+            loading: false,
+            crashed,
+            active: index == 0,
+            web_view: None,
+        };
+        let tabs = vec![snap(0, false), snap(1, false)];
+        let browser = ControllerSnapshot {
+            active_profile: bbr_web::ProfileId(1),
+            active_profile_title: Some("Default".into()),
+            active_space: bbr_browser::SpaceId(1),
+            tabs: tabs.clone(),
+            active_index: Some(0),
+            nav: Default::default(),
+            web_view_hosted: false,
+            engine_sessions: 0,
+            active_view: None,
+        };
+        let ids = visible_ids(
+            &browser,
+            false,
+            crate::command_bar::CommandBarMode::Inactive,
+            true,
+        );
+        for required in [
+            "bbr-root",
+            "bbr-sidebar",
+            "bbr-tab-list",
+            "bbr-tab-row-0",
+            "bbr-tab-row-1",
+            "bbr-tab-title-1",
+            "bbr-tab-favicon-1",
+            "bbr-tab-state-1",
+            "bbr-tab-close-1",
+            "bbr-empty-new-tab",
+        ] {
+            assert!(
+                ids.contains(&required.to_string()),
+                "missing {required}: {ids:?}"
+            );
+        }
+        assert!(!ids.iter().any(|id| id.starts_with("bbr-crash")));
+
+        // Crashed active tab: the crash panel ids replace the empty pane.
+        let mut crashed = tabs;
+        crashed[0].crashed = true;
+        let browser = ControllerSnapshot {
+            active_profile: bbr_web::ProfileId(1),
+            active_profile_title: Some("Default".into()),
+            active_space: bbr_browser::SpaceId(1),
+            tabs: crashed,
+            active_index: Some(0),
+            nav: Default::default(),
+            web_view_hosted: false,
+            engine_sessions: 0,
+            active_view: None,
+        };
+        let ids = visible_ids(
+            &browser,
+            false,
+            crate::command_bar::CommandBarMode::Inactive,
+            true,
+        );
+        for required in ["bbr-crash-panel", "bbr-crash-reload", "bbr-crash-close"] {
+            assert!(
+                ids.contains(&required.to_string()),
+                "missing {required}: {ids:?}"
+            );
+        }
+        assert!(!ids.iter().any(|id| id.starts_with("bbr-empty")));
+
+        // Active command bar in NewTab mode: the cursor id appears.
+        let ids = visible_ids(
+            &browser,
+            true,
+            crate::command_bar::CommandBarMode::NewTab,
+            true,
+        );
+        assert!(ids.contains(&"bbr-command-cursor".to_string()));
     }
 }

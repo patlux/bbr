@@ -514,6 +514,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             can_go_forward: self.can_go_forward,
             web_view_hosted: self.web_view_hosted,
             active_profile: self.active_profile,
+            active_profile_title: self.active_profile_title.clone(),
             active_space: self.active_space,
             tabs: self
                 .tabs
@@ -536,6 +537,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             chrome_focused: self.chrome_focused,
             shell_modes: self.shell_modes.clone(),
             tab_states: self.tab_states.clone(),
+            row_titles: self.row_titles.clone(),
+            visible_ids: self.visible_ids.clone(),
             command_bar_mode: self.command_bar_mode,
             command_bar_text: self.command_bar_text.clone(),
             sidebar_visible: self.sidebar_visible,

@@ -37,6 +37,9 @@ fn setup_creates_a_profile_space_and_empty_snapshot() {
     // Profile identity flows into created sessions (ProfileId(1) by domain
     // setup allocates the first profile before any tab).
     assert_eq!(c.active_profile(), ProfileId(1));
+    // The empty pane names the owning profile from the snapshot (§11.8), so
+    // the shell never hardcodes a profile label.
+    assert_eq!(snap.active_profile_title.as_deref(), Some("Default"));
 }
 
 #[test]
@@ -57,6 +60,11 @@ fn profile_setup_and_space_activation_are_typed() {
         ControllerEvent::SpaceActivated { space }
     );
     assert!(c.snapshot().tabs.is_empty());
+    // The active profile title follows activation into the new space.
+    assert_eq!(
+        c.snapshot().active_profile_title.as_deref(),
+        Some("Private")
+    );
     assert!(h.recorded(&[EngineOp::Show {
         view: default_view,
         visible: false,

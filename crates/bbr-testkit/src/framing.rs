@@ -29,8 +29,13 @@ pub(crate) enum ClientFrame {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub(crate) enum ServerFrame {
-    Response(Response),
-    Event { seq: u64, event: Event },
+    /// Boxed: `Snapshot` carries per-row/rendered vectors and is the largest
+    /// frame; the JSON wire shape is unchanged by the box.
+    Response(Box<Response>),
+    Event {
+        seq: u64,
+        event: Event,
+    },
 }
 
 /// Write one JSON frame to `w`.

@@ -376,6 +376,10 @@ impl BrowserController {
             .unwrap_or_default();
         crate::snapshot::ControllerSnapshot {
             active_profile: self.active_profile(),
+            active_profile_title: self
+                .browser
+                .profile(self.active_profile())
+                .map(|p| p.title.clone()),
             active_space: self.active_space,
             tabs: tab_snapshots,
             active_index,
