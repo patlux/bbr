@@ -59,12 +59,13 @@ impl Browser {
                     )));
                 }
             }
-            if space.active_tab.is_some() && !space.tabs.contains(&space.active_tab.unwrap()) {
-                return Err(fail(format!(
-                    "space {:?} active tab {:?} is not a member",
-                    space.id,
-                    space.active_tab.unwrap()
-                )));
+            if let Some(active_tab) = space.active_tab {
+                if !space.tabs.contains(&active_tab) {
+                    return Err(fail(format!(
+                        "space {:?} active tab {:?} is not a member",
+                        space.id, active_tab
+                    )));
+                }
             }
             for tid in &space.tabs {
                 let tab = self.tab(*tid).expect("membership checked above");
