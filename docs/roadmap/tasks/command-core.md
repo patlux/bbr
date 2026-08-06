@@ -72,22 +72,22 @@ Integration order: land portable command core before command app composition;
 
 ### Unit and contract
 
-- [ ] Table-driven parser and intent tests cover URL/search ambiguity and modes.
-- [ ] Ranking tests prove every priority group, cross-profile labels,
+- [x] Table-driven parser and intent tests cover URL/search ambiguity and modes.
+- [x] Ranking tests prove every priority group, cross-profile labels,
       deterministic ties, deduplication, and fallback behavior.
-- [ ] Public API remains portable and dependency direction is documented.
+- [x] Public API remains portable and dependency direction is documented.
 
 ### Real-app E2E
 
-- [ ] Not applicable to this pure-core packet: it creates no browser behavior.
+- [x] Not applicable to this pure-core packet: it creates no browser behavior.
       The Phase-5 app-composition packet owns production GPUI/WKWebView E2E,
       keyboard focus, semantic snapshots, and activation behavior.
 
 ### Performance
 
-- [ ] Optimized local benchmark uses 500 tabs + 10,000 history entries and
+- [x] Optimized local benchmark uses 500 tabs + 10,000 history entries and
       proves first correct result below 50 ms with raw repeated samples.
-- [ ] The packet explicitly preserves later in-process real-app presentation
+- [x] The packet explicitly preserves later in-process real-app presentation
       measurement; no product budget or baseline is changed here.
 
 ## Completion gates
@@ -133,12 +133,48 @@ or persistence contracts to unblock the pure core.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
+Outcome: Portable bbr-command core: typed modes/identities, deterministic
+         URL-vs-search parsing, provider-neutral owned corpus, ordered command
+         registry, Phase-5 group ranking with cross-profile identity, typed
+         activations, and a release-mode first-result benchmark (500 tabs +
+         10,000 history entries) enforcing the 50 ms ceiling with raw
+         distribution output.
+Commits: 5 verified groups — parsing/identities; corpus/registry; ranking;
+         parser/ranking contract tests; first-result benchmark; roadmap/phase
+         documentation (subjects recorded in the branch log).
+Functional evidence: cargo test -p bbr-command (11 lib + 5 parse + 23 rank + 1
+         doc = 40 tests) green; cargo clippy -p bbr-command --all-targets --
+         -D warnings clean; cargo fmt --all -- --check green; every Phase-5
+         group, cross-profile label, dedup, fallback, unicode, empty-input,
+         and determinism case locked by table-driven tests.
 Real-app E2E: not applicable; later app-composition packet owns it.
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Performance evidence: cargo test -p bbr-command --release — benchmark
+         first_correct_result_below_50ms_for_500_tabs_and_10k_history: 400 raw
+         samples, p50 ≈ 0.12 ms, p95 ≈ 1.45 ms, max ≈ 1.6 ms (≈ 30× headroom
+         under the 50 ms ceiling), raw per-sample distribution printed with
+         --nocapture and retained in the run output.
+Roadmap/documentation updates: Phase-5 checklist items 1/2/5/6/11 marked with
+         truthful scope notes; this packet's evidence/ledger completed; crate
+         docs in crates/bbr-command/src/lib.rs document the pipeline and
+         boundaries. ARCHITECTURE.md crate-table wording stays owned by the
+         serial integration lane per the parallel-delivery contract.
+Open blockers and non-goals: no GPUI/real-app command-bar surface, focus
+         routing, keyboard selection, E2E, SQLite/history repository, debounce/
+         cancellation runtime, fuzzy-search dependency, or product budget
+         change; real-app presentation measurement remains the app-composition
+         packet. No root manifest, Cargo.lock, justfile, testkit, or shared
+         surface modified.
+Worktree state: parallel/command-core with 5 coherent verified commits; no
+         remote configured, so nothing pushed; sibling worktrees untouched.
+
+Planning/read-only: ~20 min (packet + product/performance/interaction
+         contracts read).
+Implementation: ~4 h (design + 8 source/test files + iteration).
+Test execution: ~1 h (gates + benchmark stability runs).
+Review: pending (one independent read-only reviewer maps Phase-5 requirements
+         to tests and benchmark evidence).
+Remediation: none yet.
+Waiting/retries: none.
+Total elapsed: ~6 h (estimates; no workflow timestamps captured).
+Human intervention: none.
 ```
