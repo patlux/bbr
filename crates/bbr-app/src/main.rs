@@ -25,8 +25,10 @@ mod palette;
 #[cfg(feature = "testkit")]
 mod performance;
 mod shell;
+// `SidebarGeometry::{decrease,increase,reset,last_expanded}` and the divider
+// label are consumed by the unit tests and the testkit-only snapshot/keyboard
+// seams; non-testkit builds need the module allowance to stay clean.
 #[allow(dead_code)]
-// foundation tokens; consumed by the sidebar interaction slice that follows this group
 mod sidebar;
 mod slot;
 #[cfg(feature = "testkit")]

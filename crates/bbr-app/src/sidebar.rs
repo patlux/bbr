@@ -175,7 +175,6 @@ impl SidebarGeometry {
 /// pointer begin-drag listener and the focused keyboard handler; the id and
 /// label are the stable §15 surface identity shared with the snapshot and
 /// the future Accessibility slice.
-#[allow(dead_code)] // wired by the interaction slice that follows this group
 pub fn sidebar_divider(
     theme: &Theme,
     divider_handle: FocusHandle,
