@@ -4,8 +4,10 @@
 //! `e2e_performance_inject.rs`) for the two gate modes and the self-test.
 
 pub mod baseline;
+mod benchmarks;
 pub mod harness;
 pub mod machine;
+mod report;
 pub mod scenarios;
 pub mod stats;
 

@@ -1,28 +1,34 @@
-//! Real-app benchmark scenario driving and report aggregation.
-#![allow(dead_code)]
+//! Real-app benchmark trial orchestration.
 //!
 //! Each cold trial spawns the optimized real `bbr` process with a fresh test
 //! profile, measures the process-spawn → first-usable-presentation and
 //! process-spawn → deterministic-fixture-ready milestones on the production
-//! path, then (optionally) drives the warm interaction matrix. Ratios are
-//! never asserted on testkit transport; the app reports presentation commits.
+//! path, then (optionally) drives the warm interaction matrix: tab selection,
+//! sidebar toggle, New-Tab commands, pointer selection, reopen, keyboard
+//! activation, and warm space switching. Ratios are never asserted on testkit
+//! transport; the app reports presentation commits.
+//!
+//! Per-interaction benchmark drivers live in [`super::benchmarks`]; report
+//! aggregation and baseline evaluation in [`super::report`].
+#![allow(dead_code)]
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Child;
 use std::time::{Duration, Instant};
 
 use bbr_fixtures::FixtureServer;
-use bbr_testkit::protocol::{
-    BenchmarkKind, BenchmarkOperationId, CommandBarMode, Event, PresentationMeasurement, Request,
-};
-use bbr_testkit::Client;
-use bbr_web::{WebEvent, WebViewId};
+use bbr_testkit::protocol::{BenchmarkKind, BenchmarkOperationId, BrowserChange, Request};
+use bbr_web::WebViewId;
 
-use super::baseline::{self, Baseline};
-use super::harness::{self, AppHarness, PerfReport};
-use super::machine::MachineInfo;
-use super::stats::{stats_from_ms, Stats};
+use super::benchmarks::{
+    self, benchmark_click, benchmark_keystroke, benchmark_reopen, benchmark_select,
+    benchmark_sidebar, benchmark_space_switch, connect, deadline, wait_browser_change, wait_title,
+};
+use super::harness::{self, AppHarness};
+use super::report::{self, Aggregated};
+
+pub use super::report::{aggregate, evaluate_aggregate};
 
 /// Deterministic fixture page titles (see `crates/bbr-fixtures/html`).
 pub const PAGE_ONE_TITLE: &str = "BBR Fixture One";
@@ -53,36 +59,6 @@ pub struct ColdSample {
     pub page_ready_ms: f64,
     /// Interaction raw samples (empty when the trial only measured startup).
     pub interactions: BTreeMap<String, Vec<u64>>,
-}
-
-/// Aggregated measurements across one or more cold trials.
-#[derive(Default)]
-pub struct Aggregated {
-    pub startup_ms: Vec<f64>,
-    pub page_ready_ms: Vec<f64>,
-    pub interactions: BTreeMap<String, Vec<u64>>,
-}
-
-impl Aggregated {
-    fn push(&mut self, sample: ColdSample) {
-        self.startup_ms.push(sample.startup_ms);
-        self.page_ready_ms.push(sample.page_ready_ms);
-        for (kind, raw) in sample.interactions {
-            self.interactions.entry(kind).or_default().extend(raw);
-        }
-    }
-}
-
-/// Aggregate the live sample log a harness keeps so a failure-path report can
-/// include everything a panicking trial had already collected.
-impl From<&super::harness::RawLog> for Aggregated {
-    fn from(log: &super::harness::RawLog) -> Self {
-        Self {
-            startup_ms: log.startup_ms.clone(),
-            page_ready_ms: log.page_ready_ms.clone(),
-            interactions: log.interactions.clone(),
-        }
-    }
 }
 
 /// Drive a cold fresh-profile trial and return its measurements.
@@ -145,10 +121,10 @@ pub fn run_cold_trial_raw(
         let startup = replay
             .iter()
             .find_map(|(_, event)| {
-                measurement(event, BenchmarkKind::Startup, BenchmarkOperationId(0))
+                benchmarks::measurement(event, BenchmarkKind::Startup, BenchmarkOperationId(0))
             })
             .unwrap_or_else(|| {
-                wait_measurement(
+                benchmarks::wait_measurement(
                     &mut client,
                     BenchmarkKind::Startup,
                     BenchmarkOperationId(0),
@@ -175,7 +151,7 @@ pub fn run_cold_trial_raw(
                 expected_title: PAGE_ONE_TITLE.to_string(),
             })
             .expect("arm page ready");
-        let (seq, page_ready) = wait_measurement(
+        let (seq, page_ready) = benchmarks::wait_measurement(
             &mut client,
             BenchmarkKind::PageReady,
             BenchmarkOperationId(1),
@@ -275,11 +251,17 @@ pub fn run_cold_trial_raw(
             operation += 1;
             let staged_snapshot = client.snapshot().expect("staged Cmd-T snapshot");
             assert_eq!(staged.active_web_view, Some(previous_view));
-            assert_eq!(staged.command_bar_mode, CommandBarMode::NewTab);
+            assert_eq!(
+                staged.command_bar_mode,
+                bbr_testkit::protocol::CommandBarMode::NewTab
+            );
             assert!(staged.chrome_focused);
             assert_eq!(staged_snapshot.tabs.len(), before_tabs);
             assert_eq!(staged_snapshot.engine_sessions, before_sessions);
-            assert_eq!(staged_snapshot.command_bar_mode, CommandBarMode::NewTab);
+            assert_eq!(
+                staged_snapshot.command_bar_mode,
+                bbr_testkit::protocol::CommandBarMode::NewTab
+            );
             new_tab_command_samples.push(staged.duration_ns);
             harness
                 .raw_log
@@ -304,7 +286,10 @@ pub fn run_cold_trial_raw(
             let opened_snapshot = client.snapshot().expect("opened tab snapshot");
             assert_eq!(opened_snapshot.tabs.len(), before_tabs + 1);
             assert_eq!(opened_snapshot.engine_sessions, before_sessions + 1);
-            assert_eq!(opened_snapshot.command_bar_mode, CommandBarMode::Inactive);
+            assert_eq!(
+                opened_snapshot.command_bar_mode,
+                bbr_testkit::protocol::CommandBarMode::Inactive
+            );
             assert!(!opened_snapshot.chrome_focused);
             assert_ne!(opened.active_web_view, Some(previous_view));
             new_tab_open_samples.push(opened.duration_ns);
@@ -329,7 +314,10 @@ pub fn run_cold_trial_raw(
             assert_eq!(closed_snapshot.active_web_view, Some(previous_view));
             assert_eq!(closed.active_web_view, Some(previous_view));
             assert!(!closed.chrome_focused);
-            assert_eq!(closed.command_bar_mode, CommandBarMode::Inactive);
+            assert_eq!(
+                closed.command_bar_mode,
+                bbr_testkit::protocol::CommandBarMode::Inactive
+            );
             active_close_samples.push(closed.duration_ns);
             harness
                 .raw_log
@@ -433,7 +421,10 @@ pub fn run_cold_trial_raw(
                 !measured.chrome_focused,
                 "Enter activates into the page (web focus)"
             );
-            assert_eq!(measured.command_bar_mode, CommandBarMode::Inactive);
+            assert_eq!(
+                measured.command_bar_mode,
+                bbr_testkit::protocol::CommandBarMode::Inactive
+            );
             let after = client.snapshot().expect("after Enter snapshot");
             assert_eq!(after.active_web_view, Some(expected));
             assert!(!after.chrome_focused);
@@ -444,6 +435,95 @@ pub fn run_cold_trial_raw(
                 .entry("tab_activate_keyboard".into())
                 .or_default()
                 .push(measured.duration_ns);
+        }
+
+        // Warm space switching: create a second space in the default profile
+        // with its own warm tab, then measure alternating activation between
+        // the two spaces through the production activation path (DESIGN.md
+        // §11.3 / interaction contract "each space remembers its own active
+        // tab"). Every measured presentation must show the destination
+        // space's warm selected tab with the same native session (no
+        // recreation), keep the chrome focus domain, and expose the
+        // destination space row as selected (§11.3/§15).
+        let before_space = client.snapshot().expect("state before space setup");
+        let default_profile = before_space.active_profile;
+        let default_space = before_space.active_space;
+        let default_space_view = before_space.active_web_view.expect("default space view");
+        client
+            .send_ok(&Request::CreateSpace {
+                profile: default_profile,
+                title: "Benchmark".into(),
+            })
+            .expect("create second space");
+        let (seq, created) = wait_browser_change(
+            &mut client,
+            |kind| matches!(kind, BrowserChange::SpaceCreated { .. }),
+            since,
+        );
+        since = seq;
+        let benchmark_space = match created {
+            BrowserChange::SpaceCreated { space, .. } => space,
+            other => panic!("unexpected change: {other:?}"),
+        };
+        // Activate the empty space and warm its own tab through the
+        // production controller path (unmeasured setup).
+        client
+            .send_ok(&Request::ActivateSpace {
+                space: benchmark_space,
+            })
+            .expect("activate benchmark space");
+        let (seq, _) = wait_browser_change(
+            &mut client,
+            |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == benchmark_space),
+            since,
+        );
+        since = seq;
+        client
+            .send_ok(&Request::OpenTab {
+                url: page_two.clone(),
+            })
+            .expect("open benchmark space tab");
+        let second_space = client.snapshot().expect("benchmark space tab snapshot");
+        let benchmark_space_view = second_space.active_web_view.expect("benchmark space view");
+        if second_space.title.as_deref() != Some(PAGE_TWO_TITLE) {
+            since = wait_title(&mut client, benchmark_space_view, PAGE_TWO_TITLE, since);
+        }
+        let expected_sessions = second_space.engine_sessions;
+        client
+            .send_ok(&Request::ActivateSpace {
+                space: default_space,
+            })
+            .expect("back to default space");
+        let (seq, _) = wait_browser_change(
+            &mut client,
+            |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == default_space),
+            since,
+        );
+        since = seq;
+
+        let mut space_samples = Vec::with_capacity(config.interaction_samples);
+        for sample in 0..config.interaction_samples {
+            let (space, expected) = if sample % 2 == 0 {
+                (default_space, default_space_view)
+            } else {
+                (benchmark_space, benchmark_space_view)
+            };
+            let measured = benchmark_space_switch(
+                &mut client,
+                &mut since,
+                operation,
+                space,
+                expected,
+                expected_sessions,
+            );
+            space_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("space_switch".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
         }
 
         client.quit().expect("quit");
@@ -458,6 +538,7 @@ pub fn run_cold_trial_raw(
         raw.insert("new_tab_command_bar".to_string(), new_tab_command_samples);
         raw.insert("new_tab_open".to_string(), new_tab_open_samples);
         raw.insert("active_tab_close".to_string(), active_close_samples);
+        raw.insert("space_switch".to_string(), space_samples);
         (startup_ms, page_ready_ms, raw)
     }));
 
@@ -472,8 +553,8 @@ pub fn run_cold_trial_raw(
             // assert trips inside the trial, before `evaluate_aggregate` would
             // have written full artifacts. Event ring + app stderr follow.
             let partial = Aggregated::from(&harness.raw_log);
-            let failure = panic_message(&panic);
-            let (report, _baseline) = report_from_agg(
+            let failure = report::panic_message(&panic);
+            let (report, _baseline) = report::report_from_agg(
                 &partial,
                 config,
                 &super::baseline_path(),
@@ -488,315 +569,6 @@ pub fn run_cold_trial_raw(
             std::panic::resume_unwind(panic);
         }
     }
-}
-
-/// Best-effort human-readable message from a caught panic.
-fn panic_message(panic: &Box<dyn std::any::Any + Send>) -> String {
-    if let Some(s) = panic.downcast_ref::<&str>() {
-        (*s).to_string()
-    } else if let Some(s) = panic.downcast_ref::<String>() {
-        s.clone()
-    } else {
-        "non-string panic".to_string()
-    }
-}
-
-/// Aggregate one or more cold trials into raw distributions.
-pub fn aggregate(samples: Vec<ColdSample>) -> Aggregated {
-    let mut agg = Aggregated::default();
-    for sample in samples {
-        agg.push(sample);
-    }
-    agg
-}
-
-/// Evaluate baseline regressions for an aggregated run and return the report.
-pub fn evaluate_aggregate(
-    agg: &Aggregated,
-    config: &TrialConfig,
-    baseline_path: &Path,
-    artifacts_dir: &Path,
-    trend_dir: &Path,
-    fixture_mode: &str,
-) -> PerfReport {
-    let (report, _baseline) = report_from_agg(
-        agg,
-        config,
-        baseline_path,
-        artifacts_dir,
-        fixture_mode,
-        None,
-    );
-    harness::write_artifacts(artifacts_dir, &report);
-    // Inject self-test runs deliberately inflate latencies; they must never be
-    // indistinguishable from a real regression in the persistent trend.
-    if config.inject_delay_ms.is_none() {
-        harness::append_trend(&report, trend_dir);
-    }
-    report
-}
-
-/// Build a [`PerfReport`] from raw aggregate data, evaluating absolute and
-/// canonical-relative baselines. Shared by the success path and the failure
-/// path (which passes a partial log + a failure note).
-fn report_from_agg(
-    agg: &Aggregated,
-    config: &TrialConfig,
-    baseline_path: &Path,
-    artifacts_dir: &Path,
-    fixture_mode: &str,
-    failure: Option<String>,
-) -> (PerfReport, Baseline) {
-    let baseline = Baseline::load_or_seed(baseline_path);
-    let info = MachineInfo::collect(
-        config.bin,
-        config.engine_kind,
-        fixture_mode,
-        &baseline.canonical_host_model,
-    );
-
-    let mut results = BTreeMap::new();
-    let mut raw_ns = BTreeMap::new();
-    results.insert("startup".into(), stats_from_ms(&agg.startup_ms));
-    results.insert("page_ready".into(), stats_from_ms(&agg.page_ready_ms));
-    for (kind, raw) in &agg.interactions {
-        results.insert(kind.clone(), harness::KindStats::from(&Stats::from_ns(raw)));
-        raw_ns.insert(kind.clone(), raw.clone());
-    }
-
-    let measured = aggregate_measured(&results);
-    let regressions = baseline::evaluate(&measured, &baseline, info.canonical);
-
-    let kept_at = artifacts_dir.display().to_string();
-    let report = PerfReport {
-        machine: info,
-        fixture_mode: fixture_mode.to_string(),
-        results,
-        raw_ns,
-        regressions,
-        baseline_generated_revision: baseline.generated_revision.clone(),
-        interaction_p95_ms: INTERACTION_P95_MS,
-        interaction_max_ms: INTERACTION_MAX_MS,
-        kept_at,
-        failure,
-    };
-    (report, baseline)
-}
-
-fn aggregate_measured(
-    results: &BTreeMap<String, harness::KindStats>,
-) -> BTreeMap<String, baseline::Measured> {
-    results
-        .iter()
-        .map(|(kind, s)| {
-            (
-                kind.clone(),
-                baseline::Measured {
-                    samples: s.samples,
-                    p50_ms: s.p50_ms,
-                    p95_ms: s.p95_ms,
-                    max_ms: s.max_ms,
-                },
-            )
-        })
-        .collect()
-}
-
-fn connect(socket: &Path) -> Client {
-    let until = Instant::now() + Duration::from_secs(60);
-    loop {
-        match Client::connect(socket) {
-            Ok(client) => return client,
-            Err(_) if Instant::now() < until => std::thread::sleep(Duration::from_millis(20)),
-            Err(error) => panic!("could not connect to gateway: {error}"),
-        }
-    }
-}
-
-fn deadline() -> Instant {
-    Instant::now() + Duration::from_secs(30)
-}
-
-fn measurement(
-    event: &Event,
-    kind: BenchmarkKind,
-    operation_id: BenchmarkOperationId,
-) -> Option<PresentationMeasurement> {
-    match event {
-        Event::PresentationCommitted(measured)
-            if measured.kind == kind && measured.operation_id == operation_id =>
-        {
-            Some(measured.clone())
-        }
-        _ => None,
-    }
-}
-
-fn wait_measurement(
-    client: &mut Client,
-    kind: BenchmarkKind,
-    operation_id: BenchmarkOperationId,
-    since: u64,
-) -> (u64, PresentationMeasurement) {
-    let (seq, event) = client
-        .wait_for_event_since(
-            |event| measurement(event, kind, operation_id).is_some(),
-            since,
-            deadline(),
-        )
-        .expect("presentation measurement");
-    (seq, measurement(&event, kind, operation_id).unwrap())
-}
-
-fn benchmark_select(
-    client: &mut Client,
-    since: &mut u64,
-    operation: u64,
-    index: usize,
-    expected_view: WebViewId,
-) -> PresentationMeasurement {
-    let operation_id = BenchmarkOperationId(operation);
-    client
-        .send_ok(&Request::BenchmarkSelectTab {
-            operation_id,
-            index,
-        })
-        .expect("benchmark tab selection");
-    let (seq, measured) =
-        wait_measurement(client, BenchmarkKind::WarmTabSwitch, operation_id, *since);
-    *since = seq;
-    assert_eq!(measured.active_web_view, Some(expected_view));
-    let snapshot = client.snapshot().expect("selected snapshot");
-    assert_eq!(snapshot.active_tab_index, Some(index));
-    assert_eq!(snapshot.active_web_view, Some(expected_view));
-    measured
-}
-
-fn benchmark_keystroke(
-    client: &mut Client,
-    since: &mut u64,
-    operation: u64,
-    kind: BenchmarkKind,
-    keystroke: &str,
-) -> PresentationMeasurement {
-    let operation_id = BenchmarkOperationId(operation);
-    client
-        .send_ok(&Request::BenchmarkDispatchKeystroke {
-            operation_id,
-            kind,
-            keystroke: keystroke.into(),
-        })
-        .expect("benchmark keystroke");
-    let (seq, measured) = wait_measurement(client, kind, operation_id, *since);
-    *since = seq;
-    measured
-}
-
-fn benchmark_sidebar(
-    client: &mut Client,
-    since: &mut u64,
-    operation: u64,
-    expected_visible: bool,
-) -> PresentationMeasurement {
-    let operation_id = BenchmarkOperationId(operation);
-    client
-        .send_ok(&Request::BenchmarkDispatchKeystroke {
-            operation_id,
-            kind: BenchmarkKind::SidebarToggle,
-            keystroke: "cmd-b".into(),
-        })
-        .expect("benchmark sidebar toggle");
-    let (seq, measured) =
-        wait_measurement(client, BenchmarkKind::SidebarToggle, operation_id, *since);
-    *since = seq;
-    assert_eq!(measured.sidebar_visible, expected_visible);
-    let snapshot = client.snapshot().expect("sidebar snapshot");
-    assert_eq!(snapshot.sidebar_visible, expected_visible);
-    measured
-}
-
-/// Visual pointer selection of a visible tab row through the production
-/// listener path. Chrome focus must be preserved (the interaction contract's
-/// pointer-select domain) and the measured presentation must show the
-/// expected native view without recreating sessions.
-fn benchmark_click(
-    client: &mut Client,
-    since: &mut u64,
-    operation: u64,
-    index: usize,
-    expected_view: WebViewId,
-) -> PresentationMeasurement {
-    let operation_id = BenchmarkOperationId(operation);
-    client
-        .send_ok(&Request::BenchmarkClickTab {
-            operation_id,
-            index,
-        })
-        .expect("benchmark pointer tab selection");
-    let (seq, measured) = wait_measurement(
-        client,
-        BenchmarkKind::TabSelectPointer,
-        operation_id,
-        *since,
-    );
-    *since = seq;
-    assert_eq!(measured.active_web_view, Some(expected_view));
-    assert!(
-        measured.chrome_focused,
-        "pointer selection keeps the chrome focus domain"
-    );
-    let snapshot = client.snapshot().expect("pointer selection snapshot");
-    assert_eq!(snapshot.active_tab_index, Some(index));
-    assert_eq!(snapshot.active_web_view, Some(expected_view));
-    assert!(snapshot.chrome_focused);
-    assert_eq!(
-        snapshot.engine_sessions, 2,
-        "warm pointer select keeps sessions"
-    );
-    measured
-}
-
-/// Reopen of the most recently closed tab: fresh session presented with the
-/// preserved URL while the invoking focus domain is untouched (chrome stays
-/// chrome, web stays web — the interaction contract's reopen rule).
-fn benchmark_reopen(
-    client: &mut Client,
-    since: &mut u64,
-    operation: u64,
-    neighbor_view: WebViewId,
-    expected_chrome_focused: bool,
-) -> (PresentationMeasurement, WebViewId) {
-    let operation_id = BenchmarkOperationId(operation);
-    client
-        .send_ok(&Request::BenchmarkReopenTab { operation_id })
-        .expect("benchmark reopen");
-    let (seq, measured) = wait_measurement(client, BenchmarkKind::TabReopen, operation_id, *since);
-    *since = seq;
-    let fresh = measured
-        .active_web_view
-        .expect("reopen presents a fresh native session");
-    assert_ne!(fresh, neighbor_view, "reopen creates a fresh incarnation");
-    assert_eq!(
-        measured.chrome_focused, expected_chrome_focused,
-        "reopen preserves the invoking focus domain"
-    );
-    let snapshot = client.snapshot().expect("reopened snapshot");
-    assert_eq!(snapshot.tabs.len(), 2);
-    assert_eq!(snapshot.engine_sessions, 2);
-    assert_eq!(snapshot.active_web_view, Some(fresh));
-    assert_eq!(snapshot.chrome_focused, expected_chrome_focused);
-    (measured, fresh)
-}
-
-fn wait_title(client: &mut Client, view: WebViewId, title: &str, since: u64) -> u64 {
-    client
-        .wait_for_event_since(
-            |event| matches!(event, Event::Web(WebEvent::TitleChanged(id, value)) if *id == view && value == title),
-            since,
-            deadline(),
-        )
-        .expect("title event")
-        .0
 }
 
 fn wait_for_exit(child: &mut Child, deadline: Instant) -> std::process::ExitStatus {
