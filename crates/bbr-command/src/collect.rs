@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use crate::corpus::{Corpus, HistoryEntry, TabEntry};
+use crate::corpus::{Corpus, HistoryEntry, SpaceEntry, TabEntry};
 use crate::id::SpaceId;
 use crate::parse::{Destination, Query, QueryContext};
 use crate::rank::{Activation, CommandResult, MatchQuality, RankKey, ResultGroup};
@@ -136,6 +136,60 @@ fn other_space_label(corpus: &Corpus, context: &QueryContext, tab: &TabEntry) ->
             .map(str::to_owned)
             .unwrap_or_else(|| format!("profile {}", tab.profile.0));
         format!("Profile {profile_name} · Space {space_name}")
+    }
+}
+
+pub(crate) fn collect_space_matches(
+    corpus: &Corpus,
+    context: &QueryContext,
+    needle: &str,
+    rows: &mut Vec<(RankKey, CommandResult)>,
+) {
+    for space in &corpus.spaces {
+        if Some(space.id) == context.current_space {
+            continue;
+        }
+        let Some(quality) = match_quality([space.name_lower()], needle) else {
+            continue;
+        };
+        let key = RankKey {
+            group: ResultGroup::Space.rank(),
+            quality,
+            secondary: space.index,
+            tie: space.id.0,
+        };
+        rows.push((key, space_result(corpus, context, space, key)));
+    }
+}
+
+fn space_result(
+    corpus: &Corpus,
+    context: &QueryContext,
+    space: &SpaceEntry,
+    score: RankKey,
+) -> CommandResult {
+    let title = if space.name.is_empty() {
+        format!("space {}", space.id.0)
+    } else {
+        space.name.clone()
+    };
+    let subtitle = if Some(space.profile) == context.current_profile {
+        "Space".to_owned()
+    } else {
+        let profile_name = corpus
+            .profile_name(space.profile)
+            .map(str::to_owned)
+            .unwrap_or_else(|| format!("profile {}", space.profile.0));
+        format!("Profile {profile_name}")
+    };
+    CommandResult {
+        activation: Activation::SelectSpace { space: space.id },
+        group: ResultGroup::Space,
+        title,
+        subtitle: Some(subtitle),
+        profile: Some(space.profile),
+        key: format!("space:{}", space.id.0),
+        score,
     }
 }
 

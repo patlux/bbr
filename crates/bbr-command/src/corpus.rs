@@ -223,11 +223,11 @@ impl Corpus {
             .map(|s| s.profile)
     }
 
-    /// The corpus order index of a space, when present.
+    /// The explicit deterministic order of a space, when present.
     pub fn space_order(&self, space: SpaceId) -> Option<u64> {
         self.spaces
             .iter()
-            .position(|s| s.id == space)
-            .map(|i| i as u64)
+            .find(|entry| entry.id == space)
+            .map(|entry| entry.index)
     }
 }

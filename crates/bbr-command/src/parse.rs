@@ -110,25 +110,15 @@ impl QueryContext {
 
 /// Classifies raw text as a navigation destination or a search query.
 ///
-/// The rules are deliberately small and deterministic:
+/// Scheme-prefixed input always navigates unchanged. Without a scheme, the
+/// parser validates only the authority before the first path, query, or
+/// fragment separator. Accepted authorities are `localhost`, an IPv4 literal,
+/// a bracketed IPv6 literal, or a strict ASCII domain, each with an optional
+/// numeric port in `1..=65535`. Unbracketed IPv6 and Unicode IDNs remain
+/// searches; callers may navigate them by supplying a scheme.
 ///
-/// 1. Empty or whitespace-only text is [`Destination::Empty`].
-/// 2. A scheme prefix (`[A-Za-z][A-Za-z0-9+.-]*:`) names a URL. This covers
-///    `http://`, `https://`, `about:blank`, `file:///...`, `mailto:`, and
-///    custom schemes.
-/// 3. Raw whitespace inside the text means it cannot be a single URL, so it
-///    is a search.
-/// 4. `localhost` (with an optional port) names a URL.
-/// 5. An IPv4 literal (four dotted decimal groups, optional port) names a
-///    URL.
-/// 6. A domain-like host (two or more dotted labels, final label at least
-///    two characters, at least one letter anywhere, no port surprises) names
-///    a URL. Internationalized domain names without a scheme are treated as
-///    search text because the punycode conversion is an app concern.
-/// 7. Anything else is a search.
-///
-/// No rule consults the network, DNS, or any external table, so the outcome
-/// is identical on every platform.
+/// No rule consults the network, DNS, or an external suffix table, so the
+/// outcome is identical on every platform.
 pub fn parse_destination(text: &str) -> Destination {
     let trimmed = text.trim();
     if trimmed.is_empty() {
@@ -142,16 +132,18 @@ pub fn parse_destination(text: &str) -> Destination {
 }
 
 fn is_url_candidate(text: &str) -> bool {
-    if text.contains(char::is_whitespace) {
+    if text.parse::<std::net::Ipv6Addr>().is_ok() {
         return false;
     }
     if has_scheme(text) {
         return true;
     }
-    let Some(host) = host_candidate(text) else {
+    if text.contains(char::is_whitespace) {
         return false;
-    };
-    is_local_host(host) || is_ipv4(host) || looks_like_domain(host)
+    }
+    let end = text.find(['/', '?', '#']).unwrap_or(text.len());
+    let authority = &text[..end];
+    is_bracketed_ipv6_authority(authority) || is_host_authority(authority)
 }
 
 /// True when the text starts with `scheme:` where the scheme is an ASCII
@@ -166,7 +158,13 @@ fn has_scheme(text: &str) -> bool {
     }
     for (i, ch) in chars {
         if ch == ':' {
-            return i > 0;
+            let prefix = &text[..i];
+            let suffix = &text[i + 1..];
+            // A domain-like or localhost prefix followed by a bare colon is
+            // an authority with a port, not an opaque custom scheme. `://`
+            // remains an explicit scheme even when its name contains dots.
+            return suffix.starts_with("//")
+                || (!is_local_host(prefix) && !looks_like_domain(prefix));
         }
         if !(ch.is_ascii_alphanumeric() || ch == '+' || ch == '.' || ch == '-') {
             return false;
@@ -175,59 +173,70 @@ fn has_scheme(text: &str) -> bool {
     false
 }
 
-/// The host-like prefix up to the first path/query/fragment/port separator.
-fn host_candidate(text: &str) -> Option<&str> {
-    let end = text.find(['/', '?', '#']).unwrap_or(text.len());
-    let segment = &text[..end];
-    let host = segment.split(':').next().unwrap_or(segment);
-    if host.is_empty() {
-        None
-    } else {
-        Some(host)
+fn is_bracketed_ipv6_authority(authority: &str) -> bool {
+    let Some(literal_and_suffix) = authority.strip_prefix('[') else {
+        return false;
+    };
+    let Some(close) = literal_and_suffix.find(']') else {
+        return false;
+    };
+    let literal = &literal_and_suffix[..close];
+    let suffix = &literal_and_suffix[close + 1..];
+    if literal.parse::<std::net::Ipv6Addr>().is_err() {
+        return false;
     }
+    suffix.is_empty() || suffix.strip_prefix(':').is_some_and(valid_port)
+}
+
+fn is_host_authority(authority: &str) -> bool {
+    let mut parts = authority.split(':');
+    let Some(host) = parts.next() else {
+        return false;
+    };
+    let port = parts.next();
+    if host.is_empty() || parts.next().is_some() || port.is_some_and(|value| !valid_port(value)) {
+        return false;
+    }
+    is_local_host(host) || host.parse::<std::net::Ipv4Addr>().is_ok() || looks_like_domain(host)
+}
+
+fn valid_port(port: &str) -> bool {
+    !port.is_empty()
+        && port.bytes().all(|byte| byte.is_ascii_digit())
+        && port.parse::<u16>().is_ok_and(|value| value > 0)
 }
 
 fn is_local_host(host: &str) -> bool {
     host.eq_ignore_ascii_case("localhost")
 }
 
-/// True when the host is four dotted decimal groups, optionally followed by
-/// a `:port` that `host_candidate` has already stripped.
-fn is_ipv4(host: &str) -> bool {
-    let parts: Vec<&str> = host.split('.').collect();
-    parts.len() == 4
-        && parts.iter().all(|part| {
-            !part.is_empty() && part.len() <= 3 && part.bytes().all(|b| b.is_ascii_digit())
-        })
-}
-
-/// True when the host looks like a registered domain: at least two dotted
-/// labels, every label non-empty and ASCII alphanumeric/hyphen, the final
-/// label at least two characters, and at least one letter somewhere (so
-/// version strings like `12.34` stay searches). A single trailing root dot
-/// is accepted (`example.com.`).
+/// True when the host is a strict ASCII domain: no more than 253 bytes after
+/// removing one optional trailing root dot, at least two labels, labels of
+/// 1..=63 alphanumeric/hyphen bytes without edge hyphens, a final label of at
+/// least two bytes, and at least one ASCII letter across the name. Valid
+/// punycode labels therefore remain accepted while raw Unicode IDNs do not.
 fn looks_like_domain(host: &str) -> bool {
+    if !host.is_ascii() {
+        return false;
+    }
     let host = host.strip_suffix('.').unwrap_or(host);
+    if host.is_empty() || host.len() > 253 {
+        return false;
+    }
     let parts: Vec<&str> = host.split('.').collect();
-    if parts.len() < 2 {
+    if parts.len() < 2 || parts.last().is_none_or(|part| part.len() < 2) {
         return false;
     }
     let mut has_letter = false;
-    for (i, part) in parts.iter().enumerate() {
-        if part.is_empty() {
+    for part in parts {
+        if part.is_empty() || part.len() > 63 || part.starts_with('-') || part.ends_with('-') {
             return false;
         }
-        for b in part.bytes() {
-            if b.is_ascii_alphanumeric() || b == b'-' {
-                if b.is_ascii_alphabetic() {
-                    has_letter = true;
-                }
-            } else {
+        for byte in part.bytes() {
+            if !byte.is_ascii_alphanumeric() && byte != b'-' {
                 return false;
             }
-        }
-        if i == parts.len() - 1 && part.len() < 2 {
-            return false;
+            has_letter |= byte.is_ascii_alphabetic();
         }
     }
     has_letter

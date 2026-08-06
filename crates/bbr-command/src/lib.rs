@@ -21,9 +21,9 @@
 //!   [`CommandRegistry`] into typed [`CommandResult`]s ordered by the
 //!   Phase-5 groups, with deterministic tie-breaking that never depends on
 //!   hash-map iteration order.
-//! - Results carry typed [`Activation`]s (select a tab, open history, run an
-//!   action, navigate, search) plus a stable `key` string suitable for later
-//!   snapshot/testkit identity.
+//! - Results carry typed [`Activation`]s (select a tab or space, open history,
+//!   run an action, navigate, search) plus a stable `key` string suitable for
+//!   later snapshot/testkit identity.
 //!
 //! ## Boundaries
 //!

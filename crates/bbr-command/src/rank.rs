@@ -14,9 +14,10 @@
 //! 3. other tabs of the current space ([`ResultGroup::CurrentTab`]);
 //! 4. tabs in other spaces, labeled with profile/space identity
 //!    ([`ResultGroup::OtherSpace`]);
-//! 5. local history ([`ResultGroup::History`]);
-//! 6. browser commands ([`ResultGroup::Action`]);
-//! 7. navigate/search fallback ([`ResultGroup::Fallback`]).
+//! 5. standalone spaces ([`ResultGroup::Space`]);
+//! 6. local history ([`ResultGroup::History`]);
+//! 7. browser commands ([`ResultGroup::Action`]);
+//! 8. navigate/search fallback ([`ResultGroup::Fallback`]).
 //!
 //! The per-group collection passes live in the private [`collect`] module.
 
@@ -24,7 +25,7 @@ use std::cmp::Ordering;
 
 use crate::collect::{
     collect_action_matches, collect_all_actions, collect_empty_current_tabs, collect_fallback,
-    collect_history_matches, collect_tab_matches,
+    collect_history_matches, collect_space_matches, collect_tab_matches,
 };
 
 use crate::corpus::Corpus;
@@ -43,6 +44,8 @@ pub enum ResultGroup {
     CurrentTab,
     /// A tab in another space; labeled with profile/space identity.
     OtherSpace,
+    /// A selectable standalone space.
+    Space,
     /// A local history record.
     History,
     /// A registered browser command.
@@ -59,9 +62,10 @@ impl ResultGroup {
             ResultGroup::CurrentPinned => 1,
             ResultGroup::CurrentTab => 2,
             ResultGroup::OtherSpace => 3,
-            ResultGroup::History => 4,
-            ResultGroup::Action => 5,
-            ResultGroup::Fallback => 6,
+            ResultGroup::Space => 4,
+            ResultGroup::History => 5,
+            ResultGroup::Action => 6,
+            ResultGroup::Fallback => 7,
         }
     }
 }
@@ -115,6 +119,8 @@ impl PartialOrd for RankKey {
 pub enum Activation {
     /// Select the given tab inside its space.
     SelectTab { tab: TabId, space: SpaceId },
+    /// Activate the given space.
+    SelectSpace { space: SpaceId },
     /// Open the given local history record.
     OpenHistory { history: HistoryId },
     /// Run the given browser command.
@@ -175,6 +181,7 @@ pub fn rank(
             }
         } else {
             collect_tab_matches(corpus, context, needle, &mut rows);
+            collect_space_matches(corpus, context, needle, &mut rows);
             collect_history_matches(corpus, needle, &mut rows);
             collect_action_matches(registry, needle, &mut rows);
             collect_fallback(query, &mut rows);

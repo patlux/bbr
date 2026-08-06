@@ -188,7 +188,7 @@ fn empty_location_and_newtab_yield_nothing() {
 fn empty_action_lists_all_actions_in_registry_order() {
     let corpus = fixture_corpus();
     let results = rank_all(&corpus, "", Mode::Action);
-    let expected: Vec<String> = (1..=11).map(|id| format!("action:{id}")).collect();
+    let expected: Vec<String> = (1..=13).map(|id| format!("action:{id}")).collect();
     assert_eq!(keys(&results), expected);
     assert!(results.iter().all(|r| r.group == ResultGroup::Action));
 }
@@ -248,7 +248,7 @@ fn exact_url_cross_profile_labels_identity() {
 fn same_profile_other_space_labels_space_only() {
     let corpus = fixture_corpus();
     let results = rank_all(&corpus, "research", Mode::Switcher);
-    assert_eq!(keys(&results), ["tab:3", "search:research"]);
+    assert_eq!(keys(&results), ["tab:3", "space:11", "search:research"]);
     let first = &results[0];
     assert_eq!(first.group, ResultGroup::OtherSpace);
     assert_eq!(first.subtitle.as_deref(), Some("Space Research"));
@@ -259,7 +259,10 @@ fn same_profile_other_space_labels_space_only() {
 fn cross_space_tabs_ordered_by_position() {
     let corpus = fixture_corpus();
     let results = rank_all(&corpus, "work", Mode::Switcher);
-    assert_eq!(keys(&results), ["tab:4", "tab:5", "search:work"]);
+    assert_eq!(
+        keys(&results),
+        ["tab:4", "tab:5", "space:12", "search:work"]
+    );
     for result in &results[..2] {
         assert_eq!(result.group, ResultGroup::OtherSpace);
         assert_eq!(
@@ -411,11 +414,33 @@ fn ranking_is_deterministic_across_repeated_and_reordered_runs() {
         assert_eq!(keys(&first.results), keys(&again.results));
     }
 
-    // Same corpus with the tab Vec in a different order must rank identically
-    // (ordering comes from explicit index/space keys, never Vec iteration
-    // order).
+    // Same corpus with provider vectors in a different order must rank
+    // identically (ordering comes from explicit index/id keys).
     let mut reversed = fixture_corpus();
     reversed.tabs.reverse();
+    reversed.spaces.reverse();
+    let reordered = rank(
+        &reversed,
+        &CommandRegistry::builtin(),
+        &query,
+        &context(),
+        16,
+    );
+    assert_eq!(keys(&first.results), keys(&reordered.results));
+}
+
+#[test]
+fn reversed_space_vector_preserves_other_space_tab_order() {
+    let query = Query::new(Mode::Switcher, "work");
+    let first = rank(
+        &fixture_corpus(),
+        &CommandRegistry::builtin(),
+        &query,
+        &context(),
+        16,
+    );
+    let mut reversed = fixture_corpus();
+    reversed.spaces.reverse();
     let reordered = rank(
         &reversed,
         &CommandRegistry::builtin(),

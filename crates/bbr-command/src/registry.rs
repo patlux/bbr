@@ -130,7 +130,7 @@ impl CommandRegistry {
                 "New Space",
                 ["new", "space"],
                 ActionCategory::Space,
-                None,
+                Some("⇧⌘N"),
             ),
             Action::new(
                 ActionId(7),
@@ -158,7 +158,7 @@ impl CommandRegistry {
                 "Stop",
                 ["stop"],
                 ActionCategory::Navigation,
-                Some("⎋"),
+                None,
             ),
             Action::new(
                 ActionId(11),
@@ -166,6 +166,20 @@ impl CommandRegistry {
                 ["sidebar", "toggle", "collapse", "expand"],
                 ActionCategory::View,
                 Some("⌘B"),
+            ),
+            Action::new(
+                ActionId(12),
+                "Reorder Tab Up",
+                ["reorder", "move", "tab", "up"],
+                ActionCategory::Tab,
+                Some("⇧⌘↑"),
+            ),
+            Action::new(
+                ActionId(13),
+                "Reorder Tab Down",
+                ["reorder", "move", "tab", "down"],
+                ActionCategory::Tab,
+                Some("⇧⌘↓"),
             ),
         ];
         CommandRegistry { actions }
@@ -197,21 +211,35 @@ mod tests {
     use super::*;
 
     #[test]
-    fn builtin_catalog_is_ordered_and_unique() {
+    fn builtin_catalog_matches_the_interaction_contract() {
+        let expected = [
+            (1, "New Tab", ActionCategory::Tab, Some("⌘T")),
+            (2, "Close Tab", ActionCategory::Tab, Some("⌘W")),
+            (3, "Reopen Closed Tab", ActionCategory::Tab, Some("⇧⌘T")),
+            (4, "Pin or Unpin Tab", ActionCategory::Tab, Some("⇧⌘P")),
+            (5, "Move Tab to Space", ActionCategory::Tab, Some("⇧⌘M")),
+            (6, "New Space", ActionCategory::Space, Some("⇧⌘N")),
+            (7, "Back", ActionCategory::Navigation, Some("⌘[")),
+            (8, "Forward", ActionCategory::Navigation, Some("⌘]")),
+            (9, "Reload", ActionCategory::Navigation, Some("⌘R")),
+            (10, "Stop", ActionCategory::Navigation, None),
+            (11, "Toggle Sidebar", ActionCategory::View, Some("⌘B")),
+            (12, "Reorder Tab Up", ActionCategory::Tab, Some("⇧⌘↑")),
+            (13, "Reorder Tab Down", ActionCategory::Tab, Some("⇧⌘↓")),
+        ];
         let registry = CommandRegistry::builtin();
-        let mut seen = std::collections::HashSet::new();
-        let mut last = 0;
-        for action in registry.actions() {
-            assert!(
-                seen.insert(action.id),
-                "duplicate action id {:?}",
-                action.id
-            );
-            assert!(action.id.0 > last, "ids must be strictly increasing");
-            last = action.id.0;
-        }
-        assert_eq!(registry.len(), 11);
-        assert!(!registry.is_empty());
+        let actual: Vec<_> = registry
+            .actions()
+            .map(|action| {
+                (
+                    action.id.0,
+                    action.title.as_str(),
+                    action.category,
+                    action.shortcut,
+                )
+            })
+            .collect();
+        assert_eq!(actual, expected);
     }
 
     #[test]
