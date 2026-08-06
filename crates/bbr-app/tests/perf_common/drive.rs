@@ -3,7 +3,9 @@
 //! After the startup and page-ready milestones, a driving trial exercises the
 //! production interaction paths: warm tab selection, sidebar
 //! toggle/resize/restoration, New-Tab command staging/open/close, pointer
-//! selection, reopen, keyboard activation, and warm space switching. Each measured mutation is driven
+//! selection, reopen, keyboard activation, warm space switching, tab
+//! organization, and the dense-list scroll/selection of the bounded-window
+//! render (Phase-4 dense slice). Each measured mutation is driven
 //! through the typed benchmark drivers in [`super::benchmarks`], which assert
 //! the semantic state of every accepted sample; raw samples accumulate in the
 //! harness log and are returned for aggregation.
@@ -14,9 +16,10 @@ use bbr_testkit::protocol::{BenchmarkKind, BrowserChange, Request};
 use bbr_testkit::Client;
 
 use super::benchmarks::{
-    benchmark_click, benchmark_keystroke, benchmark_move_tab, benchmark_pin_tab, benchmark_reopen,
-    benchmark_reorder_tab, benchmark_resize_sidebar, benchmark_restore_sidebar, benchmark_select,
-    benchmark_sidebar, benchmark_space_switch, wait_browser_change, wait_title,
+    benchmark_click, benchmark_dense_scroll, benchmark_dense_select, benchmark_keystroke,
+    benchmark_move_tab, benchmark_pin_tab, benchmark_reopen, benchmark_reorder_tab,
+    benchmark_resize_sidebar, benchmark_restore_sidebar, benchmark_select, benchmark_sidebar,
+    benchmark_space_switch, wait_browser_change, wait_title,
 };
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
@@ -749,6 +752,106 @@ fn drive_matrix_inner(
             );
         }
 
+        // Dense-list scroll + selection through the bounded-window render
+        // (Phase-4 dense slice, performance contract "dense-list scrolling"):
+        // seed an S-density collection (230 identities, 10 pinned, 20 live)
+        // through the production controller open path with a deterministic
+        // keep set, converge the session budget, then measure the production
+        // scroll state (alternating deltas keep the anchor moving mid-list
+        // so no sample hits the clamped edges) and warm selections (pinned
+        // tab 0 plus one live recent tab — never a recreation). The 500-tab /
+        // 50-session lifecycle contract stays with the functional dense E2E;
+        // this scenario proves the bounded-window frame path stays inside the
+        // warm budgets while the list is genuinely dense.
+        let dense_recent_start = 230 - (20 - 10);
+        client
+            .send_ok(&Request::SeedDenseState {
+                tab_count: 230,
+                pinned_count: 10,
+                recent_start: dense_recent_start,
+                url: page_two.to_string(),
+            })
+            .expect("seed dense list");
+        client
+            .send_ok(&Request::EnforceSessionBudget { cap: 20 })
+            .expect("enforce dense session budget");
+        // Draw a frame so the render records the dense bounded window (the
+        // seed/budget requests are model mutations; `dense` snapshot fields
+        // mirror the last rendered frame, like the functional dense E2E).
+        client
+            .send_ok(&Request::FlushFrame)
+            .expect("flush dense seed frame");
+        let dense_seeded = client.snapshot().expect("dense seeded snapshot");
+        assert_eq!(
+            dense_seeded.shell_modes.density, "small",
+            "the dense collection flips to S density"
+        );
+        assert_eq!(dense_seeded.dense.item_count, dense_seeded.tabs.len() - 10);
+        assert_eq!(dense_seeded.engine_sessions, 20);
+        assert!(
+            dense_seeded.dense.rendered_rows <= 64,
+            "dense render stays bounded after seeding"
+        );
+        // A live warm regular row (the recency keep set) is the warm-select
+        // target; pinned tab 0 is the always-on-screen target.
+        let dense_warm_index = dense_seeded
+            .tabs
+            .iter()
+            .position(|tab| tab.lifecycle == "warm")
+            .expect("dense keep set owns warm sessions");
+        let dense_warm_view = dense_seeded.tabs[dense_warm_index]
+            .web_view
+            .expect("warm dense view");
+        let dense_pinned_view = dense_seeded.tabs[0].web_view.expect("pinned dense view");
+        let dense_sessions = dense_seeded.engine_sessions;
+
+        // Unmeasured setup: scroll to the top so the alternating deltas move
+        // the anchor mid-list (a down-scroll from the bottom clamp would be a
+        // no-op and cancel the first sample).
+        client
+            .send_ok(&Request::ScrollDenseTabs {
+                delta_px: 1_000_000.0,
+            })
+            .expect("dense scroll to top");
+        let mut dense_scroll_samples = Vec::with_capacity(config.interaction_samples);
+        for sample in 0..config.interaction_samples {
+            let delta_px = if sample % 2 == 0 { -2500.0 } else { 2500.0 };
+            let measured = benchmark_dense_scroll(client, &mut since, operation, delta_px);
+            dense_scroll_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("dense_scroll".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+        }
+
+        let mut dense_select_samples = Vec::with_capacity(config.interaction_samples);
+        for sample in 0..config.interaction_samples {
+            let (index, expected_view) = if sample % 2 == 0 {
+                (0, dense_pinned_view)
+            } else {
+                (dense_warm_index, dense_warm_view)
+            };
+            let measured = benchmark_dense_select(
+                client,
+                &mut since,
+                operation,
+                index,
+                expected_view,
+                dense_sessions,
+            );
+            dense_select_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("dense_select".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+        }
+
         let mut raw = BTreeMap::new();
         raw.insert("warm_tab_switch".to_string(), tab_samples);
         raw.insert("tab_select_pointer".to_string(), pointer_samples);
@@ -765,6 +868,8 @@ fn drive_matrix_inner(
         raw.insert("tab_reorder".to_string(), reorder_samples);
         raw.insert("tab_move_same_profile".to_string(), same_move_samples);
         raw.insert("tab_move_cross_profile".to_string(), cross_move_samples);
+        raw.insert("dense_scroll".to_string(), dense_scroll_samples);
+        raw.insert("dense_select".to_string(), dense_select_samples);
         raw
     };
     *cursor = since;

@@ -72,6 +72,8 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let reorder = report.results["tab_reorder"].samples;
         let same_move = report.results["tab_move_same_profile"].samples;
         let cross_move = report.results["tab_move_cross_profile"].samples;
+        let dense_scroll = report.results["dense_scroll"].samples;
+        let dense_select = report.results["dense_select"].samples;
         assert!(
             warm >= INTERACTION_SAMPLES,
             "warm-tab samples {warm} < {INTERACTION_SAMPLES}"
@@ -99,6 +101,14 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             cross_move >= INTERACTION_SAMPLES,
             "cross-profile move samples {cross_move} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            dense_scroll >= INTERACTION_SAMPLES,
+            "dense-scroll samples {dense_scroll} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            dense_select >= INTERACTION_SAMPLES,
+            "dense-select samples {dense_select} < {INTERACTION_SAMPLES}"
         );
         assert!(
             activate >= NEW_TAB_SAMPLES,

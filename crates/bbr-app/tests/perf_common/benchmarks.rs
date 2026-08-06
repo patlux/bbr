@@ -523,3 +523,101 @@ pub(crate) fn benchmark_move_tab(
     assert!(snapshot.chrome_focused);
     measured
 }
+
+/// A dense-list scroll through the production scroll state
+/// (`BenchmarkDenseScroll`): the tracked offset the
+/// native wheel listener mutates is moved by `delta_px`, the resulting frame
+/// is drawn through the production path, and the sample commits only when
+/// the render actually moved the deterministic scroll anchor (a no-op at the
+/// collection edges cancels instead of committing fast-but-wrong). The
+/// rendered window must stay bounded (`rendered_rows ≤ 64`) and the pinned
+/// block must survive; scrolling never touches the session population.
+pub(crate) fn benchmark_dense_scroll(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    delta_px: f32,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    let before = client.snapshot().expect("dense scroll before snapshot");
+    let anchor_before = before.dense.scroll_anchor;
+    let sessions_before = before.engine_sessions;
+    client
+        .send_ok(&Request::BenchmarkDenseScroll {
+            operation_id,
+            delta_px,
+        })
+        .expect("benchmark dense scroll");
+    let (seq, measured) =
+        wait_measurement(client, BenchmarkKind::DenseScroll, operation_id, *since);
+    *since = seq;
+    let snapshot = client.snapshot().expect("dense scroll snapshot");
+    assert_ne!(
+        snapshot.dense.scroll_anchor, anchor_before,
+        "the measured scroll moved the deterministic anchor"
+    );
+    assert!(
+        snapshot.dense.rendered_rows <= 64,
+        "dense render stays bounded after scroll ({} rows)",
+        snapshot.dense.rendered_rows
+    );
+    assert_eq!(
+        snapshot.engine_sessions, sessions_before,
+        "scrolling the dense list never touches sessions"
+    );
+    assert!(
+        snapshot.visible_ids.iter().any(|id| id == "bbr-tab-row-0"),
+        "the pinned block stays rendered above the scroll view"
+    );
+    measured
+}
+
+/// A production selection inside the dense collection
+/// (`BenchmarkDenseSelect`): the pointer row path selects `index`, the frame
+/// that renders the selection is drawn through the production path, and the
+/// sample commits only when the selected row lies inside the bounded window
+/// the render actually built (pinned rows are always on screen; a regular
+/// row outside the window cancels — the instant scroll-into-view must have
+/// run). `expected_view`/`expected_sessions` assert the warm-selection
+/// contract: the existing session is reused and the live population is
+/// untouched.
+pub(crate) fn benchmark_dense_select(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    index: usize,
+    expected_view: WebViewId,
+    expected_sessions: usize,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkDenseSelect {
+            operation_id,
+            index,
+        })
+        .expect("benchmark dense select");
+    let (seq, measured) =
+        wait_measurement(client, BenchmarkKind::DenseSelect, operation_id, *since);
+    *since = seq;
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(
+        measured.chrome_focused,
+        "pointer selection keeps the chrome focus domain"
+    );
+    let snapshot = client.snapshot().expect("dense select snapshot");
+    assert_eq!(snapshot.active_tab_index, Some(index));
+    assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert!(
+        snapshot.dense.active_visible,
+        "the selected row is inside the rendered window"
+    );
+    assert!(
+        snapshot.dense.rendered_rows <= 64,
+        "dense render stays bounded after selection"
+    );
+    assert_eq!(
+        snapshot.engine_sessions, expected_sessions,
+        "warm dense selection never recreates sessions"
+    );
+    measured
+}

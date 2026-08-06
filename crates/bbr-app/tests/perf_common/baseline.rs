@@ -103,6 +103,20 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
         },
         // Contract covers presentation commits; default to the interaction
         // ceiling for any operation without an explicit separate budget.
+        // Dense-list scrolling and dense selection are warm-interaction
+        // class (the performance contract lists "dense-list scrolling" as a
+        // must-measure interaction; selection of a warm dense row is the same
+        // next-frame presentation class as any warm tab selection), so they
+        // carry the explicit warm budgets below rather than relying on the
+        // fallback.
+        "dense_scroll" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "dense_select" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -273,6 +287,8 @@ impl Baseline {
             "new_tab_command_bar",
             "new_tab_open",
             "active_tab_close",
+            "dense_scroll",
+            "dense_select",
         ] {
             let b = contract_budget(kind).expect("known kind");
             entries.insert(
@@ -376,6 +392,35 @@ mod tests {
         let mut good = BTreeMap::new();
         good.insert("space_switch".into(), measured(45.0, 90.0));
         assert!(evaluate(&good, &b, false).is_empty());
+    }
+
+    #[test]
+    fn dense_budgets_are_seeded_and_enforced() {
+        // Regression guard (HIGH-1): the dense scroll/select scenarios must
+        // carry their contract budgets in the seed so a future dense-frame
+        // regression trips the gate instead of being silently unreported
+        // dead code. The performance contract names "dense-list scrolling"
+        // as a must-measure interaction.
+        let b = Baseline::seed();
+        for kind in ["dense_scroll", "dense_select"] {
+            let entry = b
+                .entries
+                .get(kind)
+                .unwrap_or_else(|| panic!("seed baseline must carry the {kind} contract budget"));
+            assert_eq!(entry.budget_p95_ms, 50.0, "{kind} warm p95 ceiling");
+            assert_eq!(entry.budget_max_ms, Some(100.0), "{kind} warm max ceiling");
+            let mut slow = BTreeMap::new();
+            slow.insert(kind.into(), measured(120.0, 160.0));
+            let r = evaluate(&slow, &b, false);
+            assert!(
+                r.iter().any(|x| x.rule == "abs_p95"),
+                "{kind} absolute p95 ceiling enforced"
+            );
+            assert!(
+                r.iter().any(|x| x.rule == "abs_max"),
+                "{kind} absolute max ceiling enforced"
+            );
+        }
     }
 
     #[test]
