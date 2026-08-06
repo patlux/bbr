@@ -39,8 +39,8 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 - [x] Add bounded individual `just e2e-smoke` / `just e2e-tabs` / `just e2e-profiles` recipes and a canonical sequential `just e2e` gate.
 - [ ] Add suite manifests and a generic `just e2e <suite>` runner when more suites justify it.
 - [ ] Add testkit release-exclusion gate.
-- [ ] Add optimized benchmark mode, typed presentation milestones, raw-sample artifacts, and baseline comparison. *(Mode/milestones/raw samples implemented; checked-in baseline comparison remains.)*
-- [x] Add bounded `just e2e-perf` / `just e2e-perf-full` and include the short gate in canonical sequential `just e2e`. *(`e2e-perf-full` currently aliases the short gate.)*
+- [x] Add optimized benchmark mode, typed presentation milestones, raw-sample artifacts, and canonical-gated baseline comparison. *(Mode/milestones/raw samples and the >15% p95 relative policy are implemented; the relative rule activates once a canonical machine is named.)*
+- [x] Add bounded `just e2e-perf` / `just e2e-perf-full` and include the short gate in canonical sequential `just e2e`. *(`e2e-perf-full` is the repeated cold gate, not an alias, and `just e2e-perf-inject` proves delay detection.)*
 - [ ] Add a small Appium Mac2 packaged-app blackbox suite in Phase 9.
 
 ## Definition of done for feature work

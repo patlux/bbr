@@ -90,7 +90,7 @@ JSON; no macOS, no GPUI, no WebKit).
 
 ### Handshake & auth
 
-- Client → `Hello { protocol_version: 4, token, capabilities }`. Wrong version
+- Client → `Hello { protocol_version: 5, token, capabilities }`. Wrong version
   → `Error("protocol_mismatch")`; wrong token → connection dropped. Correct →
   `Welcome { app_version, pid, capabilities, next_seq }`.
 - Token comes from `--bbr-test-token` (random per spawn, in the harness).
@@ -269,37 +269,66 @@ One `#[ignore]`d macOS-only test proves real profile and lifecycle boundaries:
 5. Suspend a hidden warm tab, assert its native session disappears, then select it and assert fresh-session recreation.
 6. Quit exits cleanly; failures preserve event-ring and stderr artifacts.
 
-## 7c. The performance test (`bbr-app/tests/e2e_performance.rs`)
+## 7c. The performance test suite (`bbr-app/tests/`)
 
-One `#[ignore]`d macOS-only test runs the optimized real app and currently covers:
+The performance foundation is split into a shared support module
+(`tests/perf_common/`) and three `#[ignore]`d macOS-only suites. All measure
+through the optimized real app with testkit transport excluded (`Benchmark*`
+operation IDs start inside the process; startup uses the shared macOS
+monotonic clock to include process spawn).
+
+`tests/e2e_performance.rs` (short gate):
 
 1. Process spawn to the first presentation-ready state containing the sidebar,
    selected `WebViewId`, and non-zero native content geometry.
-2. Thirty measured warm-tab switches after discarded warm-up iterations.
-3. Thirty sidebar toggles through the real `Cmd-B` GPUI input/action path.
-4. Ten staged `Cmd-T` command-bar activations, ten Enter/new-tab creations, and
+2. A distinct deterministic-page-ready milestone (`BenchmarkKind::PageReady`),
+   measured from process spawn to the fixture title/loading on the expected
+   view — separate from shell/native-view presentation.
+3. Thirty measured warm-tab switches after discarded warm-up iterations.
+4. Thirty sidebar toggles through the real `Cmd-B` GPUI input/action path.
+5. Ten staged `Cmd-T` command-bar activations, ten Enter/new-tab creations, and
    ten active-tab closes through the real shortcuts.
-5. Semantic state assertions for active view/tab, sidebar, native session count,
+6. Semantic state assertions for active view/tab, sidebar, native session count,
    focus, command-bar mode, and geometry before accepting each sample.
-6. Raw nanosecond samples plus p50/p95/max JSON output and absolute budget gates.
+7. Machine metadata (build revision, build profile, host model, arch, OS,
+   fixture mode, binary/engine identity, display refresh or `null`+reason) and
+   canonical-vs-report-only classification stamped on the report.
+8. Baseline evaluation: absolute ceilings always enforced; the >15% p95
+   relative rule only when `host_model` matches `canonical_host_model` and the
+   entry source is `accepted`. On success a trend frame is appended to
+   `target/bbr-perf-trend/`; on failure `performance.json` + `raw_samples.csv`
+   + `event-ring.txt` + `app-stderr.txt` are retained under
+   `target/bbr-perf-artifacts/<run>`.
 
-Typed operation IDs start inside the app process, so interaction measurements
-exclude Unix-socket and harness scheduling time. Startup uses the shared macOS
-monotonic clock to include process spawn.
+`tests/e2e_performance_full.rs` (`just e2e-perf-full`): a bounded repeated
+canonical gate — `COLD_STARTUP_SAMPLES=10` cold fresh-profile launches build
+`startup`/`page_ready` distributions and the 30-sample interaction matrix; it
+asserts the contract-required repetition counts.
+
+`tests/e2e_performance_inject.rs` (`just e2e-perf-inject`): a deterministic
+self-test that arms the testkit-only `--bbr-bench-inject-delay-ms` flag,
+asserts the budget gate detects the injected latency (warm-tab p95 exceeds the
+50 ms ceiling), then runs without injection and asserts green — without
+changing any budget or baseline. The injection is compiled only under
+`#[cfg(feature = "testkit")]`, so it is impossible in
+release-without-testkit builds.
 
 GPUI 0.2.2 exposes no public platform-presentation completion callback. Startup
 and geometry-changing chrome operations therefore commit at the end of the
 `NativeWebViewSlot` paint path, after native WKWebView geometry attachment and
 immediately before GPUI presents the frame. Warm-tab switching commits after the
 synchronous native visibility mutation because it intentionally does not
-invalidate GPUI chrome. The suite does not claim post-scanout timing.
+invalidate GPUI chrome. The suite does not claim post-scanout timing. The real
+GUI E2E gates require the macOS Metal toolchain (to build GPUI) plus a
+stable display-attached runner; in an environment without them the suites cannot
+run (see §10).
 
-FUTURE: visible spaces/splits/dialogs/routing/webkit/persistence scenarios,
-persisted-profile startup, canonical machine baselines/trends and metadata, and
-the `bbr-e2e` crate with `manifest.toml` per suite, `scripts/run_e2e.py` runner,
-`nextest.toml` `[profile.e2e]`, and `docs/e2e-protocol.md` remain planned. Each
-product phase is expected to ship its functional and performance coverage in
-the same implementation group.
+FUTURE: visible spaces/splits/dialogs/routing/persistence scenarios,
+persisted-profile warm startup (depends on the absent persistence repository),
+naming a dedicated canonical runner so `canonical_host_model` is populated and
+the >15% relative rule activates, and the `bbr-e2e` crate with `manifest.toml`
+per suite, `scripts/run_e2e.py` runner, `nextest.toml` `[profile.e2e]`, and
+`docs/e2e-protocol.md` remain planned.
 
 ---
 
@@ -327,7 +356,8 @@ just e2e-smoke     # baseline navigation/focus/resize
 just e2e-tabs      # multi-tab/session behavior
 just e2e-profiles  # native profile isolation, moves, and suspension
 just e2e-perf      # optimized startup and interaction latency budgets
-just e2e-perf-full # currently aliases the short gate; trend mode remains future
+just e2e-perf-full # bounded repeated canonical gate (COLD_STARTUP_SAMPLES launches + 30-sample interactions)
+just e2e-perf-inject # deterministic injected-delay self-test (fails under injection, green after removal)
 just verify        # fmt + check + test + clippy + roadmap
 BBR_SKIP_GUI_TESTS=1 just e2e   # skip GUI suites on headless CI
 ```
@@ -353,7 +383,8 @@ runner + suites.
 | Synthetic keystroke fidelity drift | `DispatchKeystroke` goes through GPUI's real `dispatch_keystroke` path; FUTURE: tier-2 NSEvent posting in the webkit suite |
 | macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner |
 | Event-ring memory growth | Fixed cap (4096) + client cursors; snapshot on demand |
-| Protocol evolution | `PROTOCOL_VERSION = 4` adds command-bar modes plus typed benchmark operation IDs and presentation measurements; future additive growth stays typed |
+| Protocol evolution | `PROTOCOL_VERSION = 5` adds command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types; future additive growth stays typed |
+| Dedicated-runner / external gaps | No dedicated stable macOS runner or public trend publication is provisioned yet. `canonical_host_model` is therefore empty, so the >15% relative baseline rule stays report-only until a runner is named; display refresh is recorded `null` with an explicit reason (window is offscreen and the OS refresh API is not linked). Absolute ceilings are enforced on every machine. Persisted warm startup stays open until the persistence repository lands — a test-only seed that bypasses the future persistence path is not acceptance evidence. |
 
 ---
 
@@ -365,7 +396,7 @@ runner + suites.
    smoke test with attach-replay, `_since` cursors, resize + focus asserts,
    graceful-quit assert (this doc's §3–§7).
 3. ✅ Portable domain (`bbr-domain`, 40 tests) and browser orchestration
-   (`bbr-browser`, 47 tests), real-app controller composition, Protocol v4,
+   (`bbr-browser`, 47 tests), real-app controller composition, Protocol v5,
    multi-session tabs, and native profile-isolation/lifecycle E2E.
 4. ▶ Suite growth: visible spaces, splits, dialogs, routing, and complete
    command-bar results land with their phases; remaining WebKit essentials,
