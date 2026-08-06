@@ -27,6 +27,7 @@ bbr-browser = { path = "crates/bbr-browser" }
 bbr-web-macos = { path = "crates/bbr-web-macos" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+rusqlite = { version = "0.40.1", default-features = false, features = ["bundled"] }
 
 # Small, single-thread-friendly channel used by the app's main-loop test
 # gateway (commands/events are pumped through async channels on GPUI's
