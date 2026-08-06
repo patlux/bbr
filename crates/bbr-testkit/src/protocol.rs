@@ -9,7 +9,7 @@ use bbr_web::{ProfileId, WebAction, WebViewId};
 use serde::{Deserialize, Serialize};
 
 /// Current protocol version understood by this crate.
-pub const PROTOCOL_VERSION: u32 = 4;
+pub const PROTOCOL_VERSION: u32 = 5;
 
 /// Observable command-bar intent, independent from native focus ownership.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -26,8 +26,14 @@ pub struct BenchmarkOperationId(pub u64);
 /// Initial real-app performance scenarios. Extend this enum with each visible
 /// interaction rather than inventing string labels in individual harnesses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum BenchmarkKind {
+    /// Process start → first usable shell presentation (sidebar + selected
+    /// native web view).
     Startup,
+    /// Deterministic local fixture content ready (navigation finished with
+    /// the expected fixture title), measured separately from shell readiness.
+    PageReady,
     WarmTabSwitch,
     SidebarToggle,
     NewTabCommandBar,
@@ -52,6 +58,9 @@ pub struct PresentationMeasurement {
     pub chrome_focused: bool,
     pub command_bar_mode: CommandBarMode,
     pub content_rect: [f32; 4],
+    /// Deterministic fixture title observed for [`BenchmarkKind::PageReady`]
+    /// samples; `None` for shell presentation samples.
+    pub page_title: Option<String>,
 }
 
 /// Stable space identity on the portable test wire.
@@ -188,6 +197,15 @@ pub enum Request {
     BenchmarkSelectTab {
         operation_id: BenchmarkOperationId,
         index: usize,
+    },
+    /// Arm a deterministic-page-ready measurement for `expected_view`; it
+    /// commits once the fixture navigation finishes with `expected_title`.
+    /// The start reference is process spawn, so latency is comparable to
+    /// [`BenchmarkKind::Startup`].
+    BenchmarkPageReady {
+        operation_id: BenchmarkOperationId,
+        expected_view: WebViewId,
+        expected_title: String,
     },
     /// Toggle the sidebar and measure until chrome plus native content geometry
     /// are presented in the resulting state.

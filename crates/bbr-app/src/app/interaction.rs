@@ -68,10 +68,12 @@ impl BbrApp {
 
     /// Apply an engine event to the owning controller tab and refresh chrome.
     pub fn on_web_event(&mut self, event: WebEvent, cx: &mut Context<Self>) {
-        let _ = self.controller.apply_event(event);
+        let _ = self.controller.apply_event(event.clone());
         if !self.command_bar_mode.is_active() {
             self.sync_command_bar();
         }
+        #[cfg(feature = "testkit")]
+        self.performance.note_web_event(&event);
         cx.notify();
     }
 

@@ -7,6 +7,8 @@
 use std::path::PathBuf;
 #[cfg(feature = "testkit")]
 use std::sync::Arc;
+#[cfg(feature = "testkit")]
+use std::time::Duration;
 
 use bbr_browser::BrowserController;
 use gpui::prelude::*;
@@ -40,6 +42,10 @@ struct Cli {
     #[allow(dead_code)] // parsed; no-op until Phase 5 debounces
     clock: ClockMode,
     window_size: (f32, f32),
+    /// Testkit-only deterministic presentation delay under test (ms). Armed
+    /// only from `--bbr-bench-inject-delay-ms`; impossible without `testkit`.
+    #[cfg(feature = "testkit")]
+    bench_inject_delay_ms: Option<u64>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -63,6 +69,8 @@ impl Cli {
         let mut ids = IdMode::Random;
         let mut clock = ClockMode::System;
         let mut window_size = app::DEFAULT_WINDOW_SIZE;
+        #[cfg(feature = "testkit")]
+        let mut bench_inject_delay_ms = None;
 
         let mut args = std::env::args();
         let _bin = args.next();
@@ -101,6 +109,10 @@ impl Cli {
                         }
                     }
                 }
+                #[cfg(feature = "testkit")]
+                "--bbr-bench-inject-delay-ms" => {
+                    bench_inject_delay_ms = take(&mut value_opt).parse::<u64>().ok();
+                }
                 _ => {}
             }
         }
@@ -117,6 +129,8 @@ impl Cli {
             ids,
             clock,
             window_size,
+            #[cfg(feature = "testkit")]
+            bench_inject_delay_ms,
         }
     }
 }
@@ -152,7 +166,10 @@ fn main() {
         let engine_kind = current_engine_kind();
         let (evt_tx, evt_rx) = smol::channel::unbounded::<bbr_web::WebEvent>();
         #[cfg(feature = "testkit")]
-        let performance = performance::PerformanceProbe::new(process_started);
+        let performance = performance::PerformanceProbe::new(
+            process_started,
+            cli.bench_inject_delay_ms.map(Duration::from_millis),
+        );
         #[cfg(feature = "testkit")]
         let view_performance = performance.clone();
 

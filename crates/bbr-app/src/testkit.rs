@@ -217,6 +217,23 @@ fn dispatch(
             view.benchmark_select_tab(operation_id, index, cx)
         })),
 
+        Request::BenchmarkPageReady {
+            operation_id,
+            expected_view,
+            expected_title,
+        } => window
+            .update(cx, |view, _window, _cx| {
+                view.benchmark_page_ready(operation_id, expected_view, expected_title)
+            })
+            .map(|started| {
+                if started {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new("benchmark_busy", "page-ready already pending"))
+                }
+            })
+            .unwrap_or_else(err_response),
+
         Request::BenchmarkToggleSidebar { operation_id } => window
             .update(cx, |view, window, cx| {
                 view.benchmark_toggle_sidebar(operation_id, window, cx)

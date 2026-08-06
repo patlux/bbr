@@ -306,6 +306,18 @@ impl BbrApp {
     }
 
     #[cfg(feature = "testkit")]
+    pub fn benchmark_page_ready(
+        &self,
+        operation_id: bbr_testkit::protocol::BenchmarkOperationId,
+        expected_view: bbr_web::WebViewId,
+        expected_title: impl Into<String>,
+    ) -> bool {
+        self.performance
+            .arm_page_ready(operation_id, expected_view, expected_title);
+        true
+    }
+
+    #[cfg(feature = "testkit")]
     pub fn begin_benchmark(
         &self,
         operation_id: bbr_testkit::protocol::BenchmarkOperationId,
