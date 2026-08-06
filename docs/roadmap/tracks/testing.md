@@ -21,7 +21,7 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 
 - [x] `browser-controller`: framework-free orchestration contracts.
 - [ ] `tabs`: open/select/close and native session lifecycle are covered; reopen/pin/reorder/move remain with their visible UI slices.
-- [x] `spaces`: visible switching UI and last-active restoration are covered. *(The shell-spaces and shell-spaces-keyboard suites assert profile identity (hues/chips/ids), pointer + keyboard activation through the production paths, per-space active-tab restoration with warm WebViewIds and no reloads, empty-space pane naming, and the cross-profile recreation policy; the `space_switch` performance scenario measures warm switching.)*
+- [x] `spaces`: visible switching UI and last-active restoration are covered. *(The shell-spaces and shell-spaces-keyboard suites assert profile identity (hues/chips/ids), pointer + keyboard activation through the production paths, per-space active-tab restoration with warm WebViewIds and no reloads, empty-space pane naming, and the cross-profile recreation policy; the `space_switch` performance scenario measures warm switching against the gate-enforced 50/100 ms budget.)*
 - [ ] `splits`: create/focus/resize/close/move teardown.
 - [ ] `commandbar`: staged New Tab mode, cancellation, and initial focus restore are covered; ranking, result navigation, and complete mode UX remain.
 - [ ] `webkit`: profile isolation is covered; popups, [Link Preview / Peek](../tasks/link-preview-peek.md), permissions, downloads, and process recovery remain with Phase 8.

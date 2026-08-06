@@ -37,7 +37,8 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
       rails, pointer + `↑/↓`/Enter + `Cmd-Shift-N` activation through the
       production paths, empty-space pane naming, and cross-profile view-only
       switches that never recreate warm sessions. Proven by `just
-      e2e-shell-spaces` and the `space_switch` performance scenario.)*
+      e2e-shell-spaces` and the gate-enforced `space_switch` performance
+      scenario.)*
 - [x] Preserve the active tab per space without recreating warm sessions.
       *(Per-space active tab + live session are restored on activation; warm
       switching only show/hides. Same-profile moves keep the WebViewId;
@@ -53,7 +54,7 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 - [ ] Keyboard and VoiceOver acceptance in [Accessibility track](../tracks/accessibility.md) is green.
 - [ ] Tab/space E2E covers open, switch, close, reopen, pin, reorder, and profile labels.
 - [ ] Performance E2E covers warm tab/space switching, active-tab close, and sidebar open/close/toggle through the production presentation path. *(Warm tab switching, warm space switching, active-tab close, sidebar toggle, pointer selection, reopen, and keyboard activation are all measured; sidebar resize and dense-list scenarios remain.)*
-- [ ] Warm tab/space switching and sidebar visibility changes meet the budgets in the [performance contract](../../product/performance-contract.md). *(Warm tab/space switching and sidebar toggle are proven against the 50/100 ms warm budgets; resize/restoration remain.)*
+- [ ] Warm tab/space switching and sidebar visibility changes meet the budgets in the [performance contract](../../product/performance-contract.md). *(Warm tab/space switching and sidebar toggle are gate-enforced against the 50/100 ms warm budgets; resize/restoration remain.)*
 - [ ] Sidebar remains responsive with 500 persisted tabs and 50 live/warm sessions, with measured frame-time evidence.
 
 ## When this UI pass happens

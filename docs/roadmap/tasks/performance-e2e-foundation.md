@@ -90,7 +90,7 @@ completion.
 - [x] Warm tab switch in both directions with stable WebViewIds and no reload.
 - [x] Active-tab close → correct neighbor visible and focused.
 - [x] Sidebar open/close toggle with resulting geometry and state assertions.
-- [x] Space switching with already-warm selected sessions when Spaces land. *(The `space_switch` scenario alternates two warm spaces of one profile through the production activation path, asserting the destination space, its own WebViewId, the unchanged session count, chrome focus, and the rendered selected space row; p95 ≈ 0.1 ms on this host against the 50 ms warm budget.)*
+- [x] Space switching with already-warm selected sessions when Spaces land. *(The `space_switch` scenario alternates two warm spaces of one profile through the production activation path, asserting the destination space, its own WebViewId, the unchanged session count, chrome focus, and the rendered selected space row; p95 ≈ 0.1 ms on this host against the gate-enforced 50 ms p95 / 100 ms max warm budget.)*
 - [ ] Dense sidebar scroll/frame-time benchmark when the real Phase-4 list
       lands.
 
