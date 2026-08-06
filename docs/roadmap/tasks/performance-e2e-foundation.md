@@ -136,8 +136,9 @@ completion.
 - [x] Functional smoke/tabs/profile suites remain green. *(Verified on this
       host: `just e2e-smoke`, `just e2e-tabs`, `just e2e-profiles` all pass.)*
 - [x] `just verify`, affected individual E2E suites, and canonical sequential
-      `just e2e` pass. *(`just verify` green plus all four sequential real-app
-      GUI suites — smoke, tabs, profiles, and the optimized performance gate.)*
+      `just e2e` pass. *(`just verify` green plus all seven sequential real-app
+      GUI suites — smoke, tabs, profiles, shell-tabs, shell-spaces,
+      shell-sidebar, and the optimized performance gate.)*
 - [x] `ARCHITECTURE.md`, `E2E_ARCHITECTURE.md`, and roadmap status describe only
       the implemented, evidenced benchmark path.
 

@@ -6,7 +6,7 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 
 ## Current focus
 
-> **Phase 4 — establish BBR's interaction, performance, and visual foundation.** Native profile/session isolation is proven; the real-app startup/interaction benchmark foundation, the focus contract, the visual system, the controller-backed vertical-tab shell, and visible space switching are in place. Next: the adjustable, collapsible sidebar slice (drag/keyboard resize, collapse memory, compact-window clamping) — then tab drag/reorder UI.
+> **Phase 4 — establish BBR's interaction, performance, and visual foundation.** Native profile/session isolation is proven; the real-app startup/interaction benchmark foundation, the focus contract, the visual system, the controller-backed vertical-tab shell, visible space switching, and the adjustable, collapsible sidebar are in place. Next: tab drag/reorder and move-between-spaces UI.
 
 - [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation. *(Benchmark path, budgets, trend/artifact machinery, and the warm space-switch scenario shipped; persisted warm-startup samples await the persistence repository.)*
 - [x] Resolve the tab-mutation focus matrix in the [browser interaction contract](docs/product/browser-interactions.md).
@@ -56,8 +56,8 @@ Completed today:
 - Real focus hand-off, title observation, resize synchronization, and navigation events.
 - Deterministic Unix-socket testkit, fixture server, event replay/cursors, deadlines, and cleanup.
 - Real-app WKWebView smoke covering load, navigation, back/forward, reload, resize, focus, and shutdown.
-- Portable profile/space/tab/split/lifecycle domain model with 40 tests.
-- Portable `bbr-browser` controller + deterministic fake engine: 47 tests
+- Portable profile/space/tab/split/lifecycle domain model with 41 tests.
+- Portable `bbr-browser` controller + deterministic fake engine: 54 tests
   covering tab/session/navigation/split/lifecycle policy, active-space visibility,
   profile moves, and typed controller events (`just verify` green).
 - Real-app profiles suite proving cookie isolation across two WKWebsiteDataStores,

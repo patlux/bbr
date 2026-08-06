@@ -487,8 +487,12 @@ just verify     # fmt + check + test + clippy + roadmap
 just e2e-smoke  # baseline real-WKWebView navigation/focus/resize
 just e2e-tabs   # real multi-tab/session behavior
 just e2e-profiles # real profile isolation, moves, and suspend lifecycle
+just e2e-shell-tabs    # real vertical-tab surface: open/select/close/reopen
+just e2e-shell-spaces  # real profile/space switching (pointer + keyboard)
+just e2e-shell-sidebar # real sidebar drag/keyboard/collapse/geometry clamp
 just e2e-perf   # optimized startup and production-path interaction budgets
-just e2e        # canonical sequential GUI gate (smoke, tabs, profiles, performance)
+just e2e        # canonical sequential GUI gate (smoke, tabs, profiles,
+                 # shell-tabs, shell-spaces, shell-sidebar, performance)
 ```
 
 All recipes are wrapped in GNU `timeout --kill-after=10s` with
@@ -501,13 +505,14 @@ overrides, and pin `DEVELOPER_DIR` to Xcode 16.4. On headless CI,
 ```
 just fmt     → exit 0
 just check   → exit 0 (workspace, all targets)
-just test    → exit 0  — bbr-app 2 passed · bbr-domain 40 passed ·
-                        bbr-browser 47 passed · bbr-fixtures 4 passed ·
-                        bbr-testkit 13 passed · bbr-web 9 passed ·
-                        bbr-web-macos 1 passed · 4 GUI E2E tests ignored
+just test    → exit 0  — bbr-app 29 passed · bbr-domain 41 passed ·
+                        bbr-browser 54 passed · bbr-fixtures 4 passed ·
+                        bbr-testkit 13 passed · bbr-web 10 passed ·
+                        bbr-web-macos 1 passed · 15 GUI E2E tests ignored
 just clippy  → exit 0 (-D warnings)
 just roadmap → exit 0 (hierarchical roadmap links valid)
-just e2e     → exit 0 — smoke + tabs + profiles + optimized performance
+just e2e     → exit 0 — smoke, tabs, profiles, shell-tabs, shell-spaces,
+                        shell-sidebar, and optimized performance
                         (sequential real GPUI + WKWebViews)
 ```
 
