@@ -1,0 +1,302 @@
+//! Checked-in accepted-baseline schema and regression policy for real-app
+#![allow(dead_code)]
+//! performance gates.
+//!
+//! The relative (>&nbsp;15% p95) regression rule is enforced **only** on the
+//! explicitly identifiable canonical machine (`canonical_host_model` in the
+//! checked-in baseline). Non-canonical machines stay report-only for the
+//! relative rule but always enforce the absolute ceilings. A baseline entry
+//! whose `source` is `contract-budget` is a seed (not yet measured on the
+//! canonical runner) and is excluded from relative enforcement.
+
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::path::Path;
+
+/// Percentage threshold for the canonical relative-regression rule.
+pub const DEFAULT_RELATIVE_REGRESSION_PCT: f64 = 15.0;
+
+/// Absolute ceilings from the product performance contract, used to seed the
+/// checked-in baseline and as the always-enforced safety floor.
+pub fn contract_budget(kind: &str) -> Option<Budget> {
+    let b = match kind {
+        "startup" => Budget {
+            p95_ms: 500.0,
+            max_ms: Some(750.0),
+        },
+        "page_ready" => Budget {
+            p95_ms: 1500.0,
+            max_ms: None,
+        },
+        "warm_tab_switch" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "sidebar_toggle" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "new_tab_command_bar" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "new_tab_open" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "active_tab_close" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        // Contract covers presentation commits; default to the interaction
+        // ceiling for any operation without an explicit separate budget.
+        _ => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+    };
+    Some(b)
+}
+
+#[derive(Debug, Clone)]
+pub struct Budget {
+    pub p95_ms: f64,
+    pub max_ms: Option<f64>,
+}
+
+/// One measured distribution for a benchmark kind.
+#[derive(Debug, Clone)]
+pub struct Measured {
+    pub samples: usize,
+    pub p50_ms: f64,
+    pub p95_ms: f64,
+    pub max_ms: f64,
+}
+
+/// A failed gate with the exact rule that tripped it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Regression {
+    pub kind: String,
+    pub measured_p95_ms: f64,
+    pub measured_max_ms: f64,
+    pub budget_p95_ms: f64,
+    pub budget_max_ms: Option<f64>,
+    /// `abs_max`, `abs_p95`, or `relative_p95` (canonical-only).
+    pub rule: String,
+    /// Mean for the measurement when the rule is not on the hot path.
+    pub detail: String,
+}
+
+fn regression(kind: &str, m: &Measured, budget: &Budget, rule: &str, detail: String) -> Regression {
+    Regression {
+        kind: kind.to_string(),
+        measured_p95_ms: m.p95_ms,
+        measured_max_ms: m.max_ms,
+        budget_p95_ms: budget.p95_ms,
+        budget_max_ms: budget.max_ms,
+        rule: rule.to_string(),
+        detail,
+    }
+}
+
+/// Evaluate the measured distributions against the absolute ceilings and,
+/// when canonical, the checked-in accepted baseline. Returns every triggered
+/// rule; an empty vector means green.
+pub fn evaluate(
+    measured: &BTreeMap<String, Measured>,
+    baseline: &Baseline,
+    is_canonical: bool,
+) -> Vec<Regression> {
+    let mut regressions = Vec::new();
+    for (kind, m) in measured {
+        let Some(budget_entry) = baseline.entries.get(kind) else {
+            continue;
+        };
+        // Absolute ceilings: always enforced.
+        let budget_abs = Budget {
+            p95_ms: budget_entry.budget_p95_ms,
+            max_ms: budget_entry.budget_max_ms,
+        };
+        if let Some(max_ms) = budget_abs.max_ms {
+            if m.max_ms > max_ms {
+                regressions.push(regression(
+                    kind,
+                    m,
+                    &budget_abs,
+                    "abs_max",
+                    format!("max {:.2}ms exceeded the {:.0}ms ceiling", m.max_ms, max_ms),
+                ));
+            }
+        }
+        if m.p95_ms > budget_abs.p95_ms {
+            regressions.push(regression(
+                kind,
+                m,
+                &budget_abs,
+                "abs_p95",
+                format!(
+                    "p95 {:.2}ms exceeded the {:.0}ms ceiling",
+                    m.p95_ms, budget_abs.p95_ms
+                ),
+            ));
+        }
+        // Relative > 15% p95 regression: canonical machine + established baseline only.
+        if is_canonical && budget_entry.source == "accepted" {
+            let threshold = budget_entry.p95_ms * (1.0 + baseline.relative_regression_pct / 100.0);
+            if m.p95_ms > threshold {
+                regressions.push(regression(
+                    kind,
+                    m,
+                    &budget_abs,
+                    "relative_p95",
+                    format!(
+                        "p95 {:.2}ms regressed past the accepted {:.2}ms +{:.0}% threshold",
+                        m.p95_ms, budget_entry.p95_ms, baseline.relative_regression_pct
+                    ),
+                ));
+            }
+        }
+    }
+    regressions
+}
+
+/// The checked-in accepted-baseline document.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Baseline {
+    pub schema_version: u32,
+    pub canonical_host_model: String,
+    pub generated_revision: String,
+    #[serde(default = "default_relative_pct")]
+    pub relative_regression_pct: f64,
+    pub entries: BTreeMap<String, BaselineEntry>,
+}
+
+fn default_relative_pct() -> f64 {
+    DEFAULT_RELATIVE_REGRESSION_PCT
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BaselineEntry {
+    pub samples: usize,
+    pub p50_ms: f64,
+    pub p95_ms: f64,
+    pub max_ms: f64,
+    pub budget_p95_ms: f64,
+    pub budget_max_ms: Option<f64>,
+    /// `accepted` = measured on the canonical machine (relative rule applies),
+    /// `contract-budget` = seed, not yet measured.
+    pub source: String,
+}
+
+impl Baseline {
+    /// Load from a JSON path; falls back to a contract-budget seed when the
+    /// file is absent or unreadable so local runs stay functional.
+    pub fn load_or_seed(path: &Path) -> Self {
+        std::fs::read_to_string(path)
+            .ok()
+            .and_then(|text| serde_json::from_str(&text).ok())
+            .unwrap_or_else(Self::seed)
+    }
+
+    /// A baseline whose entries are all contract-budget seeds. Used before the
+    /// first canonical run establishes a measured accepted baseline.
+    pub fn seed() -> Self {
+        let mut entries = BTreeMap::new();
+        for kind in [
+            "startup",
+            "page_ready",
+            "warm_tab_switch",
+            "sidebar_toggle",
+            "new_tab_command_bar",
+            "new_tab_open",
+            "active_tab_close",
+        ] {
+            let b = contract_budget(kind).expect("known kind");
+            entries.insert(
+                kind.to_string(),
+                BaselineEntry {
+                    samples: 0,
+                    p50_ms: 0.0,
+                    p95_ms: b.p95_ms,
+                    max_ms: b.max_ms.unwrap_or(b.p95_ms),
+                    budget_p95_ms: b.p95_ms,
+                    budget_max_ms: b.max_ms,
+                    source: "contract-budget".to_string(),
+                },
+            );
+        }
+        Self {
+            schema_version: 1,
+            canonical_host_model: String::new(),
+            generated_revision: "seed".to_string(),
+            relative_regression_pct: DEFAULT_RELATIVE_REGRESSION_PCT,
+            entries,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn measured(p95: f64, max: f64) -> Measured {
+        Measured {
+            samples: 30,
+            p50_ms: p95 * 0.5,
+            p95_ms: p95,
+            max_ms: max,
+        }
+    }
+
+    fn baseline_accepted() -> Baseline {
+        let mut b = Baseline::seed();
+        b.canonical_host_model = "Mac16,5".to_string();
+        for e in b.entries.values_mut() {
+            e.source = "accepted".to_string();
+            e.p95_ms = e.budget_p95_ms; // accepted == budget ceiling for the test
+        }
+        b
+    }
+
+    #[test]
+    fn absolute_max_always_enforced_even_non_canonical() {
+        let b = baseline_accepted();
+        let mut m = BTreeMap::new();
+        m.insert("warm_tab_switch".into(), measured(30.0, 350.0)); // max ceiling 100
+        let r = evaluate(&m, &b, false);
+        assert!(r.iter().any(|x| x.rule == "abs_max"));
+        assert!(!r.iter().any(|x| x.rule == "relative_p95"));
+    }
+
+    #[test]
+    fn relative_p95_only_enforced_when_canonical_and_accepted() {
+        let b = baseline_accepted();
+        let mut m = BTreeMap::new();
+        // p95 60 > 50*1.15=57.5 → relative regression on canonical.
+        m.insert("warm_tab_switch".into(), measured(60.0, 90.0));
+        let on_canonical = evaluate(&m, &b, true);
+        assert!(on_canonical.iter().any(|x| x.rule == "relative_p95"));
+        let off_canonical = evaluate(&m, &b, false);
+        assert!(!off_canonical.iter().any(|x| x.rule == "relative_p95"));
+    }
+
+    #[test]
+    fn seed_baseline_never_trips_relative_rule() {
+        let b = Baseline::seed(); // source == contract-budget everywhere
+        let mut m = BTreeMap::new();
+        m.insert("warm_tab_switch".into(), measured(2000.0, 2500.0));
+        // Absolute still fails, but no relative rule because source != accepted.
+        let r = evaluate(&m, &b, true);
+        assert!(r.iter().any(|x| x.rule == "abs_p95"));
+        assert!(!r.iter().any(|x| x.rule == "relative_p95"));
+    }
+
+    #[test]
+    fn within_budget_is_green() {
+        let b = baseline_accepted();
+        let mut m = BTreeMap::new();
+        m.insert("warm_tab_switch".into(), measured(45.0, 90.0));
+        m.insert("sidebar_toggle".into(), measured(40.0, 75.0));
+        assert!(evaluate(&m, &b, true).is_empty());
+    }
+}

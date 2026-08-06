@@ -4,6 +4,7 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 check_timeout := env_var_or_default("BBR_CHECK_TIMEOUT", "5m")
 test_timeout := env_var_or_default("BBR_TEST_TIMEOUT", "5m")
 e2e_timeout := env_var_or_default("BBR_E2E_TIMEOUT", "2m")
+e2e_full_timeout := env_var_or_default("BBR_E2E_FULL_TIMEOUT", "15m")
 run_timeout := env_var_or_default("BBR_RUN_TIMEOUT", "8h")
 xcode_developer_dir := env_var_or_default("BBR_XCODE_DEVELOPER_DIR", "/Applications/Xcode-16.4.0.app/Contents/Developer")
 
@@ -38,7 +39,16 @@ e2e-profiles:
 e2e-perf:
     DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance -- --ignored --nocapture
 
-e2e-perf-full: e2e-perf
+# Full repeated canonical benchmark: COLD_STARTUP_SAMPLES cold launches to
+# build the startup/page-ready distributions plus the 30-sample interaction
+# matrix. Materially longer than the short gate; bounded by BBR_E2E_FULL_TIMEOUT.
+e2e-perf-full:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_full_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance_full -- --ignored --nocapture
+
+# Injected-delay self-test: proves the budget gate fails under a deterministic
+# testkit-only delay and turns green again after removal without budget change.
+e2e-perf-inject:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_full_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance_inject -- --ignored --nocapture
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.

@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "canonical_host_model": "",
+  "generated_revision": "seed",
+  "relative_regression_pct": 15.0,
+  "entries": {
+    "startup": {
+      "samples": 0,
+      "p50_ms": 0.0,
+      "p95_ms": 500.0,
+      "max_ms": 750.0,
+      "budget_p95_ms": 500.0,
+      "budget_max_ms": 750.0,
+      "source": "contract-budget"
+    },
+    "page_ready": {
+      "samples": 0,
+      "p50_ms": 0.0,
+      "p95_ms": 1500.0,
+      "max_ms": 1500.0,
+      "budget_p95_ms": 1500.0,
+      "budget_max_ms": null,
+      "source": "contract-budget"
+    },
+    "warm_tab_switch": {
+      "samples": 0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "budget_max_ms": 100.0,
+      "source": "contract-budget"
+    },
+    "sidebar_toggle": {
+      "samples": 0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "budget_max_ms": 100.0,
+      "source": "contract-budget"
+    },
+    "new_tab_command_bar": {
+      "samples": 0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "budget_max_ms": 100.0,
+      "source": "contract-budget"
+    },
+    "new_tab_open": {
+      "samples": 0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "budget_max_ms": 100.0,
+      "source": "contract-budget"
+    },
+    "active_tab_close": {
+      "samples": 0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "budget_max_ms": 100.0,
+      "source": "contract-budget"
+    }
+  }
+}
