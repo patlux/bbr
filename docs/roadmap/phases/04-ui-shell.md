@@ -31,10 +31,17 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
       `↑`/`↓`, `⌫`, `Cmd-W`, `Cmd-Shift-T`. Focus domain preserved per the
       interaction contract.)*
 - [x] Make `Cmd-T` stage a new-tab destination until Enter and `Cmd-W` close the active tab with focus preservation. *(Visible tab controls remain open.)*
-- [ ] Render and switch spaces with unmistakable profile identity. *(Next shell
-      slice on the proven vertical-tab surface; `bbr-space-row`/profile-chip ids
-      are specified in DESIGN.md §11.3.)*
-- [ ] Preserve the active tab per space without recreating warm sessions.
+- [x] Render and switch spaces with unmistakable profile identity. *(Visible
+      space hierarchy on the proven shell: per-row §12 profile chips with
+      round-robin hues, hairlines between profile groups, active/selected
+      rails, pointer + `↑/↓`/Enter + `Cmd-Shift-N` activation through the
+      production paths, empty-space pane naming, and cross-profile view-only
+      switches that never recreate warm sessions. Proven by `just
+      e2e-shell-spaces` and the `space_switch` performance scenario.)*
+- [x] Preserve the active tab per space without recreating warm sessions.
+      *(Per-space active tab + live session are restored on activation; warm
+      switching only show/hides. Same-profile moves keep the WebViewId;
+      cross-profile moves follow the recreation policy.)*
 - [ ] Add adjustable, collapsible sidebar behavior with presentation-commit benchmarks for open, close/toggle, and resize. *(Cmd-B toggle exists; resize/drag and the remaining benchmarks land with the sidebar slice.)*
 - [ ] Add drag reorder and move between spaces after keyboard equivalents exist.
 - [ ] Handle empty space, first launch, many tabs, long titles, missing favicons, and crashed pages. *(Empty space, long titles, missing favicons, and crashed
@@ -45,8 +52,8 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 - [ ] Shell follows the [UI design-system track](../tracks/ui-design-system.md).
 - [ ] Keyboard and VoiceOver acceptance in [Accessibility track](../tracks/accessibility.md) is green.
 - [ ] Tab/space E2E covers open, switch, close, reopen, pin, reorder, and profile labels.
-- [ ] Performance E2E covers warm tab/space switching, active-tab close, and sidebar open/close/toggle through the production presentation path.
-- [ ] Warm tab/space switching and sidebar visibility changes meet the budgets in the [performance contract](../../product/performance-contract.md).
+- [ ] Performance E2E covers warm tab/space switching, active-tab close, and sidebar open/close/toggle through the production presentation path. *(Warm tab switching, warm space switching, active-tab close, sidebar toggle, pointer selection, reopen, and keyboard activation are all measured; sidebar resize and dense-list scenarios remain.)*
+- [ ] Warm tab/space switching and sidebar visibility changes meet the budgets in the [performance contract](../../product/performance-contract.md). *(Warm tab/space switching and sidebar toggle are proven against the 50/100 ms warm budgets; resize/restoration remain.)*
 - [ ] Sidebar remains responsive with 500 persisted tabs and 50 live/warm sessions, with measured frame-time evidence.
 
 ## When this UI pass happens

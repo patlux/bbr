@@ -133,13 +133,21 @@ Snapshot {
   url, title: Option<String>, loading: bool,
   can_go_back, can_go_forward: bool,
   web_view_hosted: bool,        // active tab has a live native session
-  active_profile: ProfileId, active_space: TestSpaceId,
+  active_profile: ProfileId, active_profile_title: Option<String>,
+  active_profile_hue: Option<String>,   // DESIGN §12 hue name
+  active_space: TestSpaceId,
+  profiles: Vec<ProfileSnapshot>,       // complete collection, creation order
+  spaces: Vec<SpaceSnapshot>,           // each with own active tab + live session
   tabs: Vec<TabSnapshot>,       // active-space index/url/title/active/current WebViewId
   active_tab_index: Option<usize>, active_web_view: Option<WebViewId>,
   engine_sessions: usize,       // native destruction / warm-session evidence
   engine_kind: String,          // "native-wkwebview" (macOS) | "fake" elsewhere
   chrome_focused: bool,
-  command_bar_mode: Inactive | Location | NewTab,
+  shell_modes: ShellModes,      // theme/contrast/density (§15)
+  tab_states: Vec<TabVisualState>, row_titles: Vec<String>,
+  space_states: Vec<SpaceVisualState>, space_titles: Vec<String>,
+  visible_ids: Vec<String>,     // rendered bbr-* ids (§15)
+  command_bar_mode: Inactive | Location | NewTab | NewSpace,
   command_bar_text: String,
   sidebar_visible: bool,
   window_size: [f32; 2],        // points
@@ -332,6 +340,35 @@ the >15% relative rule activates, and the `bbr-e2e` crate with `manifest.toml`
 per suite, `scripts/run_e2e.py` runner, `nextest.toml` `[profile.e2e]`, and
 `docs/e2e-protocol.md` remain planned.
 
+## 7d. The shell-spaces suites (`bbr-app/tests/e2e_shell_spaces{,_keyboard}.rs`)
+
+Two `#[ignore]`d macOS-only suites (the shared harness lives in
+`tests/e2e_common/`) prove the visible profile/space surface over real
+WKWebViews:
+
+1. **Pointer suite** (`just e2e-shell-spaces`): complete typed profile/space
+   collections with §12 round-robin hues and stable `bbr-space-row-<n>` /
+   `bbr-profile-chip-<n>` ids, active/selected `space_states`, pointer row
+   activation through the production listener (chrome focus domain preserved),
+   per-space active-tab restoration with the same WebViewId and **zero load
+   events in the replay window**, empty-space pane naming from
+   `active_profile_title`, cross-profile view-only switches that keep cookie
+   isolation (each store reads only its own cookie) without recreating warm
+   sessions, and a cross-profile tab move that destroys + recreates the
+   session in the destination store (`recreated: true`, fresh WebViewId
+   reading the destination store's cookie).
+2. **Keyboard suite** (`just e2e-shell-spaces` second binary): `Cmd-Shift-N`
+   staging (Escape cancels, Enter commits + activates, `SpaceCreated` is
+   broadcast), real `↑/↓` traversal of the focused space list, and same-
+   profile moves that keep the WebViewId (`recreated: false`) versus
+   cross-profile moves that recreate it.
+
+The `space_switch` interaction benchmark (in `tests/perf_common/benchmarks.rs`)
+measures alternating warm-space activation through `BenchmarkActivateSpace`,
+asserting the destination space, its own active view, the unchanged live-
+session count, chrome focus, and the rendered selected space row + chip ids;
+it is part of `just e2e-perf` and the full gate.
+
 ---
 
 ## 8. Security & release exclusion
@@ -353,10 +390,12 @@ per suite, `scripts/run_e2e.py` runner, `nextest.toml` `[profile.e2e]`, and
 ## 9. Commands (implemented)
 
 ```bash
-just e2e           # canonical sequential GUI gate: smoke, tabs, profiles, performance
+just e2e           # canonical sequential GUI gate: smoke, tabs, profiles, shell-tabs, shell-spaces, performance
 just e2e-smoke     # baseline navigation/focus/resize
 just e2e-tabs      # multi-tab/session behavior
 just e2e-profiles  # native profile isolation, moves, and suspension
+just e2e-shell-tabs    # visible vertical-tab surface (pointer/keyboard/empty)
+just e2e-shell-spaces  # visible profile/space surface (pointer + keyboard suites)
 just e2e-perf      # optimized startup and interaction latency budgets
 just e2e-perf-full # bounded repeated canonical gate (COLD_STARTUP_SAMPLES launches + 30-sample interactions)
 just e2e-perf-inject # deterministic injected-delay self-test (fails under injection, green after removal)
@@ -365,7 +404,7 @@ BBR_SKIP_GUI_TESTS=1 just e2e   # skip GUI suites on headless CI
 ```
 
 ```text
-just e2e-perf  → exit 0 — startup p50 452.8 ms (< 750 max ceiling); page-ready p50 572.2 ms; warm-tab p95 0.09 ms; sidebar p95 0.74 ms; Cmd-T p95 0.51 ms; new-tab open p95 22.94 ms; active-close p95 1.95 ms (2026-08-06, released-testkit build on this host)
+just e2e-perf  → exit 0 — startup p50 452.8 ms (< 750 max ceiling); page-ready p50 572.2 ms; warm-tab p95 0.09 ms; space-switch p95 ≈ 0.08 ms; sidebar p95 0.74 ms; Cmd-T p95 0.51 ms; new-tab open p95 22.94 ms; active-close p95 1.95 ms (2026-08-06, released-testkit build on this host)
 just verify    → exit 0 — fmt/check/test/clippy/roadmap all green, 2026-08-06
 ```
 
@@ -400,10 +439,11 @@ runner + suites.
 3. ✅ Portable domain (`bbr-domain`, 40 tests) and browser orchestration
    (`bbr-browser`, 47 tests), real-app controller composition, Protocol v5,
    multi-session tabs, and native profile-isolation/lifecycle E2E.
-4. ▶ Suite growth: visible spaces, splits, dialogs, routing, and complete
-   command-bar results land with their phases; remaining WebKit essentials,
-   persistence, accessibility, and broader performance scenarios follow Phases
-   8/7/9 on top of the implemented performance foundation.
+4. ▶ Suite growth: visible space switching landed with the shell-spaces
+   suites and the `space_switch` benchmark; splits, dialogs, routing, and
+   complete command-bar results land with their phases; remaining WebKit
+   essentials, persistence, accessibility, and broader performance scenarios
+   follow Phases 8/7/9 on top of the implemented performance foundation.
 5. ⏳ Release-exclusion gate in CI (exit 64 + symbol/socket checks).
 
 Principle: **BBR's first executable ships with testkit sockets, sequential

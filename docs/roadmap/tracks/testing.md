@@ -21,7 +21,7 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 
 - [x] `browser-controller`: framework-free orchestration contracts.
 - [ ] `tabs`: open/select/close and native session lifecycle are covered; reopen/pin/reorder/move remain with their visible UI slices.
-- [ ] `spaces`: profile identity, activation, and moves are covered; visible switching UI and last-active restoration remain with Phase 4.
+- [x] `spaces`: visible switching UI and last-active restoration are covered. *(The shell-spaces and shell-spaces-keyboard suites assert profile identity (hues/chips/ids), pointer + keyboard activation through the production paths, per-space active-tab restoration with warm WebViewIds and no reloads, empty-space pane naming, and the cross-profile recreation policy; the `space_switch` performance scenario measures warm switching.)*
 - [ ] `splits`: create/focus/resize/close/move teardown.
 - [ ] `commandbar`: staged New Tab mode, cancellation, and initial focus restore are covered; ranking, result navigation, and complete mode UX remain.
 - [ ] `webkit`: profile isolation is covered; popups, [Link Preview / Peek](../tasks/link-preview-peek.md), permissions, downloads, and process recovery remain with Phase 8.
@@ -34,7 +34,7 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 
 - [ ] Emit semantic window-resized events instead of snapshot polling.
 - [ ] Emit `Quitting` before graceful shutdown.
-- [ ] Add model snapshots for complete profile/space/split collections; active profile/space and tab/session snapshots exist.
+- [ ] Add model snapshots for complete profile/space/split collections; active profile/space and tab/session snapshots exist. *(Complete profile/space collections with per-space active tab, live session, and tab count are exposed; split collections remain.)*
 - [ ] Add protocol commands as product capabilities land; profile/space create/activate/move/suspend and open/select/close tabs exist.
 - [x] Add bounded individual `just e2e-smoke` / `just e2e-tabs` / `just e2e-profiles` recipes and a canonical sequential `just e2e` gate.
 - [ ] Add suite manifests and a generic `just e2e <suite>` runner when more suites justify it.

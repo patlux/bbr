@@ -333,6 +333,19 @@ traversal (`↑`/`↓`, `⌫`) lives on the focused tab list; `Cmd-T`/Enter open
 preserved). A crashed tab keeps its identity and its §10.7 error state until a
 fresh session loads; closing the final tab opens the empty New Tab surface.
 
+The space surface (DESIGN.md §11.3/§12) renders every space grouped under its
+profile with a per-row §12 chip (round-robin hue + monogram) and a hairline
+between profile groups, plus a New Space row at the foot. Pointer activation
+runs the production row listener (`select_space_via_pointer`), which keeps
+the chrome focus domain and routes through the controller's `activate_space`;
+the space list owns a GPUI focus handle with `↑`/`↓`/Enter traversal, and
+`Cmd-Shift-N` / the New Space row stage a name in the command bar (Escape
+cancels, Enter creates the space in the active profile and activates it).
+Activation restores each space's own active tab while warm sessions stay
+warm — including across profile boundaries, where a view-only switch never
+recreates a session (recreation stays reserved for tabs that actually move
+across profiles, per `ensure_session`'s profile check).
+
 `BrowserController` is the sole owner of product tab/navigation state. The
 GPUI root renders a controller snapshot; `shell.rs` contains only formatting
 and the app-local typed E2E snapshot adapter, so tab switching cannot leave a
@@ -388,8 +401,12 @@ The controller is composed into the real GPUI app and multi-session adapter.
 The first Phase-4 shell slice (visible vertical tabs, pinned/regular regions,
 states, empty space, crash recovery, pointer + keyboard interaction) is
 implemented with real-app E2E (`just e2e-shell-tabs`) and performance
-scenarios. Still missing: visible space hierarchy/switching, sidebar
-resize/drag, tab drag/reorder/pin commands, and 500-tab density.
+scenarios. The space slice adds visible profile/space navigation with
+round-robin identity hues, pointer + keyboard activation, per-space
+active-tab restoration without recreating warm sessions, and cross-profile
+view-only switches — proven by `just e2e-shell-spaces` and the
+`space_switch` performance scenario. Still missing: sidebar resize/drag, tab
+drag/reorder UI, and 500-tab density.
 
 ---
 
@@ -497,10 +514,11 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
    sessions; Cmd-T stages a tab destination and Cmd-W closes through the real
    product path. The vertical tab list and
    pointer selection arrive with the intentional Phase-4 shell.
-2. **Profile and space operations have no visible UI yet.** Protocol v4 and the
-   production controller path can create/activate profiles and spaces and move
-   tabs between them, but the intentional sidebar surfaces arrive in Phase 4.
-   The real profiles suite already proves isolated cookies and session policy.
+2. **Profile/space visibility is complete; cross-context polish remains.** The
+   sidebar renders every profile's spaces with chips, activation works through
+   pointer + keyboard, and empty spaces name their profile; the §11.3 command-
+   field destination hint during switching, sidebar resize, and tab drag/move
+   UI remain Phase-4 slices.
 3. **`--bbr-clock` is a no-op**; the `TimeSource` seam is intentionally not
    added until time-based logic exists (debounces in Phase 5/7).
 4. **Popups/new windows are suppressed** (`createWebViewWithConfiguration` →

@@ -22,7 +22,7 @@ Parent phases: [Phase 0](../phases/00-foundation.md), [Phase 4](../phases/04-ui-
 
 - [ ] Cold and warm startup to first usable sidebar + selected native content presentation. *(Fresh-profile cold startup implemented; persisted warm startup remains and depends on the absent persistence repository.)*
 - [x] Time to deterministic local fixture readiness, measured separately from shell presentation.
-- [ ] Tab/space switch latency for active, warm, suspended, and discarded states.
+- [ ] Tab/space switch latency for active, warm, suspended, and discarded states. *(Warm tab and warm space switching are measured through the production presentation path; active/suspended/discarded space states remain.)*
 - [x] Active-tab close to correct neighbor presentation.
 - [ ] Sidebar open, close/toggle, resize, and restoration latency. *(Toggle implemented; resize/restoration remain.)*
 - [ ] Command-bar first-result and full-search latency.

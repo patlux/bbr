@@ -24,7 +24,7 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 
 - [ ] Clear hierarchy between navigation controls, command surface, pinned tabs, regular tabs, and spaces.
 - [ ] Active tab and focused pane are unmistakable without visual noise.
-- [ ] Profile identity is clear whenever tabs/spaces cross contexts.
+- [ ] Profile identity is clear whenever tabs/spaces cross contexts. *(Every space row keeps its §12 chip with a round-robin hue and monogram, profile groups stack under hairlines, and the empty pane names the owning profile; the command-field destination hint during switching remains with the cross-context slice.)*
 - [ ] Hover, press, drag, selection, loading, attention, crash, and disabled states are coherent.
 - [ ] Long titles, missing favicons, narrow windows, empty spaces, and 500-tab density remain usable.
 - [ ] Sidebar collapse/resize feels stable and preserves native content geometry.

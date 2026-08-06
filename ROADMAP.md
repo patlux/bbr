@@ -8,10 +8,11 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 
 > **Phase 4 — establish BBR's interaction, performance, and visual foundation.** Native profile/session isolation is proven; the real-app startup/interaction benchmark foundation, the focus contract, the visual system, and the first controller-backed vertical-tab shell are in place. Next: visible space hierarchy/switching on the proven shell.
 
-- [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation. *(Benchmark path, budgets, and trend/artifact machinery shipped; persisted warm-startup samples await the persistence repository.)*
+- [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation. *(Benchmark path, budgets, trend/artifact machinery, and the warm space-switch scenario shipped; persisted warm-startup samples await the persistence repository.)*
 - [x] Resolve the tab-mutation focus matrix in the [browser interaction contract](docs/product/browser-interactions.md).
 - [x] [Create `DESIGN.md`](DESIGN.md) with a distinct native macOS visual direction and semantic tokens.
 - [x] [Implement the first controller-backed vertical-tab shell slice](docs/roadmap/phases/04-ui-shell.md) — visible tab rows (pointer + keyboard open/select/close/reopen), pinned/regular regions, states, empty space, crash recovery — with functional and performance E2E. *(Space switching is the next shell slice.)*
+- [x] [Render and switch spaces with unmistakable profile identity](docs/roadmap/phases/04-ui-shell.md) — visible profile/space navigation with round-robin identity hues, pointer + keyboard activation, per-space active-tab restoration without recreating warm sessions, and real-app E2E + warm-switch performance coverage. *(Sidebar resize and tab drag/move UI remain.)*
 
 ## Product phases
 
@@ -65,6 +66,12 @@ Completed today:
   keyboard open/select/close/reopen with the focus-domain contract, empty-space
   handling, and crash recovery — proven by `just e2e-shell-tabs` and real-app
   performance scenarios (`tab_select_pointer`, `tab_reopen`).
+- Visible profile/space navigation slice: complete profile/space collections with
+  round-robin identity hues and per-row chips, pointer + keyboard activation,
+  per-space active-tab restoration without recreating warm sessions, empty-space
+  pane naming, and cross-profile switches that preserve cookie isolation — proven
+  by `just e2e-shell-spaces` and the `space_switch` performance scenario
+  (p95 ≈ 0.1 ms against the 50 ms warm budget).
 
 Next release-shaped outcome:
 
