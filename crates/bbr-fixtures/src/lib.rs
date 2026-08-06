@@ -189,6 +189,21 @@ fn route(
                 headers: vec![("Content-Type".into(), "text/plain; charset=utf-8".into())],
             });
         }
+        "/__fx/slow" => {
+            // Deterministic slow page: the response is delayed server-side so
+            // the shell's `loading` row state is observable in E2E without
+            // test sleeps. The delay is fixed and bounded.
+            std::thread::sleep(std::time::Duration::from_millis(900));
+            return Ok(Route::Dynamic {
+                body: br#"<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8" /><title>BBR Slow Page</title></head>
+  <body><main><h1>Slow fixture</h1></main></body>
+</html>"#
+                    .to_vec(),
+                headers: vec![("Content-Type".into(), "text/html; charset=utf-8".into())],
+            });
+        }
         "/__fx/cookie/set-alpha" => {
             return Ok(cookie_set_route("alpha"));
         }

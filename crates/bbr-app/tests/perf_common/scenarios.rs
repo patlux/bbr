@@ -339,11 +339,68 @@ pub fn run_cold_trial_raw(
                 .push(closed.duration_ns);
         }
 
+        // The new-tab cycle always ends back on two tabs with the second
+        // (fixture two) tab active in web focus. Pointer selection measures
+        // the production row-listener path (chrome focus preserved), then a
+        // reopen cycle closes the active tab via real Cmd-W and measures the
+        // fresh-session presentation of the reopened tab.
+        let mut pointer_samples = Vec::with_capacity(config.interaction_samples);
+        for sample in 0..config.interaction_samples {
+            let (index, expected) = if sample % 2 == 0 {
+                (0, first_view)
+            } else {
+                (1, second_view)
+            };
+            let measured = benchmark_click(&mut client, &mut since, operation, index, expected);
+            pointer_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("tab_select_pointer".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+        }
+
+        let mut reopen_samples = Vec::with_capacity(config.new_tab_samples);
+        for _ in 0..config.new_tab_samples {
+            // Unmeasured setup: close the active tab through the production
+            // Cmd-W path (active-close has its own scenario above).
+            client
+                .send_ok(&Request::DispatchKeystroke {
+                    keystroke: "cmd-w".into(),
+                })
+                .expect("close active tab before reopen benchmark");
+            let closed = client.snapshot().expect("closed before reopen benchmark");
+            assert_eq!(closed.tabs.len(), 1);
+            assert_eq!(closed.engine_sessions, 1);
+            let neighbor = closed.active_web_view.expect("neighbor view");
+            let expected_domain = closed.chrome_focused;
+            let measured = benchmark_reopen(
+                &mut client,
+                &mut since,
+                operation,
+                neighbor,
+                expected_domain,
+            );
+            operation += 1;
+            reopen_samples.push(measured.0.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("tab_reopen".into())
+                .or_default()
+                .push(measured.0.duration_ns);
+            let _ = measured.1; // fresh view id retained for diagnostics
+        }
+
         client.quit().expect("quit");
         wait_for_exit(&mut harness.child, deadline());
 
         let mut raw = BTreeMap::new();
         raw.insert("warm_tab_switch".to_string(), tab_samples);
+        raw.insert("tab_select_pointer".to_string(), pointer_samples);
+        raw.insert("tab_reopen".to_string(), reopen_samples);
         raw.insert("sidebar_toggle".to_string(), sidebar_samples);
         raw.insert("new_tab_command_bar".to_string(), new_tab_command_samples);
         raw.insert("new_tab_open".to_string(), new_tab_open_samples);
@@ -603,6 +660,79 @@ fn benchmark_sidebar(
     let snapshot = client.snapshot().expect("sidebar snapshot");
     assert_eq!(snapshot.sidebar_visible, expected_visible);
     measured
+}
+
+/// Visual pointer selection of a visible tab row through the production
+/// listener path. Chrome focus must be preserved (the interaction contract's
+/// pointer-select domain) and the measured presentation must show the
+/// expected native view without recreating sessions.
+fn benchmark_click(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    index: usize,
+    expected_view: WebViewId,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkClickTab {
+            operation_id,
+            index,
+        })
+        .expect("benchmark pointer tab selection");
+    let (seq, measured) = wait_measurement(
+        client,
+        BenchmarkKind::TabSelectPointer,
+        operation_id,
+        *since,
+    );
+    *since = seq;
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(
+        measured.chrome_focused,
+        "pointer selection keeps the chrome focus domain"
+    );
+    let snapshot = client.snapshot().expect("pointer selection snapshot");
+    assert_eq!(snapshot.active_tab_index, Some(index));
+    assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert!(snapshot.chrome_focused);
+    assert_eq!(
+        snapshot.engine_sessions, 2,
+        "warm pointer select keeps sessions"
+    );
+    measured
+}
+
+/// Reopen of the most recently closed tab: fresh session presented with the
+/// preserved URL while the invoking focus domain is untouched (chrome stays
+/// chrome, web stays web — the interaction contract's reopen rule).
+fn benchmark_reopen(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    neighbor_view: WebViewId,
+    expected_chrome_focused: bool,
+) -> (PresentationMeasurement, WebViewId) {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkReopenTab { operation_id })
+        .expect("benchmark reopen");
+    let (seq, measured) = wait_measurement(client, BenchmarkKind::TabReopen, operation_id, *since);
+    *since = seq;
+    let fresh = measured
+        .active_web_view
+        .expect("reopen presents a fresh native session");
+    assert_ne!(fresh, neighbor_view, "reopen creates a fresh incarnation");
+    assert_eq!(
+        measured.chrome_focused, expected_chrome_focused,
+        "reopen preserves the invoking focus domain"
+    );
+    let snapshot = client.snapshot().expect("reopened snapshot");
+    assert_eq!(snapshot.tabs.len(), 2);
+    assert_eq!(snapshot.engine_sessions, 2);
+    assert_eq!(snapshot.active_web_view, Some(fresh));
+    assert_eq!(snapshot.chrome_focused, expected_chrome_focused);
+    (measured, fresh)
 }
 
 fn wait_title(client: &mut Client, view: WebViewId, title: &str, since: u64) -> u64 {

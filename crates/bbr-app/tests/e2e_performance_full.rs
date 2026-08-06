@@ -64,13 +64,23 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         );
         let warm = report.results["warm_tab_switch"].samples;
         let new_tab = report.results["new_tab_command_bar"].samples;
+        let pointer = report.results["tab_select_pointer"].samples;
+        let reopen = report.results["tab_reopen"].samples;
         assert!(
             warm >= INTERACTION_SAMPLES,
             "warm-tab samples {warm} < {INTERACTION_SAMPLES}"
         );
         assert!(
+            pointer >= INTERACTION_SAMPLES,
+            "pointer-select samples {pointer} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
             new_tab >= NEW_TAB_SAMPLES,
             "new-tab samples {new_tab} < {NEW_TAB_SAMPLES}"
+        );
+        assert!(
+            reopen >= NEW_TAB_SAMPLES,
+            "reopen samples {reopen} < {NEW_TAB_SAMPLES}"
         );
 
         let canonical_note = if report.machine.canonical {
