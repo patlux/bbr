@@ -28,12 +28,12 @@ use std::fmt;
 ///
 /// [`WKWebsiteDataStore`]: https://developer.apple.com/documentation/webkit/wkwebsitedatastore
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ProfileId(pub u64);
 
 /// Stable identifier of a live web view / tab content slot.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WebViewId(pub u64);
 
 /// A rectangle in **host layout coordinates**: top-left origin, points.
@@ -264,6 +264,28 @@ mod tests {
         let _ = ProfileId(1);
         let ev = WebEvent::UrlChanged(WebViewId(1), "https://x".into());
         assert_eq!(ev.clone(), ev);
+    }
+
+    /// The perf harness keys its page-ready state on `WebViewId` in a
+    /// `BTreeMap`/`BTreeSet`, so the identifiers must implement `Ord`. Guard
+    /// the derived ordering so a future removal of the derive dies in the
+    /// portable crate instead of as a late `testkit`-feature app compile error.
+    #[test]
+    fn identifiers_are_ordered_collection_keys() {
+        use std::collections::{BTreeMap, BTreeSet};
+        let mut seen = BTreeMap::new();
+        seen.insert(WebViewId(1), "one".to_string());
+        seen.insert(WebViewId(2), "two".to_string());
+        assert_eq!(seen.get(&WebViewId(2)).map(String::as_str), Some("two"));
+
+        let mut ready = BTreeSet::new();
+        ready.insert(WebViewId(1));
+        assert!(ready.contains(&WebViewId(1)));
+        assert!(!ready.contains(&WebViewId(2)));
+
+        let mut profiles = BTreeMap::new();
+        profiles.insert(ProfileId(9), 1_usize);
+        assert_eq!(profiles.get(&ProfileId(9)), Some(&1));
     }
 
     /// The contract must be object-safe so the app can hold
