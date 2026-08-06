@@ -32,7 +32,7 @@ root-roadmap contracts remain serial integration surfaces.
 | Parallel-delivery foundation | [task packet](docs/roadmap/tasks/parallel-delivery-foundation.md) | implemented and verified; anchor recorded in its ledger |
 | Command core | [Phase 5](docs/roadmap/phases/05-command-bar.md) · [task packet](docs/roadmap/tasks/command-core.md) | implemented, independently reviewed, remediated, and integrated at `b7c475a`; branch writer-free; serial app-composition contract next |
 | Persistence core | [Phase 7](docs/roadmap/phases/07-persistence.md) · [task packet](docs/roadmap/tasks/persistence-core.md) | implemented, independently reviewed, remediated, and integrated at `3a3c7f1`; branch writer-free; serial app composition next |
-| Split core | [Phase 6](docs/roadmap/phases/06-split-view.md) | serial per-view geometry/controller contract extraction in progress; sibling writer starts from that exact anchor |
+| Split core | [Phase 6](docs/roadmap/phases/06-split-view.md) · [shared-contract packet](docs/roadmap/tasks/split-shared-contract.md) | serial per-view geometry/controller contract extraction in progress; sibling writer starts from that exact anchor |
 | Performance runner | [performance track](docs/roadmap/tracks/performance-release.md) | external infrastructure lane |
 | WebKit capability lanes | [Phase 8](docs/roadmap/phases/08-daily-driver.md) | after serial `bbr-web` capability contracts |
 

@@ -8,11 +8,13 @@ Two existing tabs can be viewed and navigated side by side with clear focus and 
 
 ## Parallel lane
 
-Split work is not yet safe to fan out. First land a bounded serial packet that
-extracts the shared controller facade and per-`WebViewId` geometry contract.
-After that anchor, domain/controller implementation may own new split-focused
-modules in a sibling worktree; native geometry and GPUI composition integrate
-serially. See the [parallel-delivery contract](../../parallel-delivery.md).
+Split work is not yet safe to fan out. The bounded serial
+[split-view shared-contract packet](../tasks/split-shared-contract.md) extracts
+the authoritative controller pane facade, per-`WebViewId` native geometry, and
+typed testkit proof on `main`. After that exact anchor lands, split-core may own
+new split-focused modules in a sibling worktree; native geometry and GPUI
+composition remain serial integration surfaces. See the
+[parallel-delivery contract](../../parallel-delivery.md).
 
 ## Checklist
 
