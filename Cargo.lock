@@ -514,6 +514,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bbr-split"
+version = "0.1.0"
+dependencies = [
+ "bbr-web",
+]
+
+[[package]]
 name = "bbr-testkit"
 version = "0.1.0"
 dependencies = [
