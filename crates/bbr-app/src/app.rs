@@ -174,6 +174,7 @@ impl BbrApp {
         &mut self,
         operation_id: bbr_testkit::protocol::BenchmarkOperationId,
         index: usize,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
         if self
@@ -188,7 +189,21 @@ impl BbrApp {
         }
         let outcome = self.select_tab(index, cx);
         if outcome.is_some() {
+            // Mutations only schedule a render; the frame that runs
+            // `observe_render_state` with the new active view has not happened
+            // yet when this synchronous path commits. Refresh the probe with
+            // the authoritative post-mutation controller snapshot so the
+            // presentation commit sees the real state and cannot silently drop
+            // a sample when the selection changes views.
             let active_view = self.controller.snapshot().active_view;
+            let chrome_focused = self.chrome_handle.is_focused(window);
+            let mode = self.command_bar_mode.into();
+            self.performance.observe_render_state(
+                active_view,
+                self.sidebar_visible,
+                chrome_focused,
+                mode,
+            );
             self.performance
                 .expect_browser_state(active_view, self.sidebar_visible);
             self.performance.commit_current_presentation();
@@ -268,7 +283,7 @@ impl BbrApp {
                 self.chrome_handle.is_focused(window),
                 self.command_bar_mode.into(),
             );
-            self.commit_benchmark_after_frame(window, cx);
+            self.commit_benchmark_sync(window);
         }
         outcome
     }
@@ -332,12 +347,23 @@ impl BbrApp {
     }
 
     #[cfg(feature = "testkit")]
-    pub fn commit_benchmark_after_frame(&self, window: &mut Window, cx: &Context<Self>) {
-        let performance = self.performance.clone();
-        cx.on_next_frame(window, move |_view, _window, _cx| {
-            performance.commit_current_presentation();
-        });
-        window.refresh();
+    pub fn commit_benchmark_sync(&self, window: &Window) {
+        // Refresh the probe with the authoritative post-mutation controller
+        // state and commit synchronously. The `on_next_frame` path does not
+        // reliably fire in the offscreen benchmark harness (startup/page-ready
+        // only return through engine callbacks), so a frame-dependent commit
+        // silently dropped interaction samples. The semantic state check inside
+        // `commit_current_presentation` still rejects fast-but-wrong results.
+        let active_view = self.controller.snapshot().active_view;
+        let chrome_focused = self.chrome_handle.is_focused(window);
+        let mode = self.command_bar_mode.into();
+        self.performance.observe_render_state(
+            active_view,
+            self.sidebar_visible,
+            chrome_focused,
+            mode,
+        );
+        self.performance.commit_current_presentation();
     }
 
     #[cfg(feature = "testkit")]
@@ -365,13 +391,24 @@ impl BbrApp {
         }
     }
 
-    pub fn toggle_sidebar(&mut self, cx: &mut Context<Self>) {
+    /// `window` is used only by the testkit feature (synchronous benchmark
+    /// commit); it is otherwise just threaded through for caller symmetry.
+    #[cfg_attr(not(feature = "testkit"), allow(unused_variables))]
+    pub fn toggle_sidebar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.sidebar_visible = !self.sidebar_visible;
         #[cfg(feature = "testkit")]
-        self.performance.arm_browser_state_if_pending(
-            self.controller.snapshot().active_view,
-            self.sidebar_visible,
-        );
+        {
+            self.performance.arm_browser_state_if_pending(
+                self.controller.snapshot().active_view,
+                self.sidebar_visible,
+            );
+            // A benchmark keystroke path arms a pending here and relies on a
+            // later commit; commit synchronously from authoritative state so
+            // the sample is not dropped when no engine-slot callback fires.
+            if self.performance.presentation_pending()() {
+                self.commit_benchmark_sync(window);
+            }
+        }
         cx.notify();
     }
 
@@ -392,12 +429,8 @@ impl BbrApp {
         {
             return false;
         }
-        self.toggle_sidebar(cx);
-        window.refresh();
-        let active_view = self.controller.snapshot().active_view;
-        self.performance
-            .expect_browser_state(active_view, self.sidebar_visible);
-        self.commit_benchmark_after_frame(window, cx);
+        // `toggle_sidebar` arms the pending and commits synchronously.
+        self.toggle_sidebar(window, cx);
         true
     }
 

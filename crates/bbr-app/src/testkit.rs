@@ -213,8 +213,8 @@ fn dispatch(
         Request::BenchmarkSelectTab {
             operation_id,
             index,
-        } => browser_mutation(window.update(cx, |view, _window, cx| {
-            view.benchmark_select_tab(operation_id, index, cx)
+        } => browser_mutation(window.update(cx, |view, window, cx| {
+            view.benchmark_select_tab(operation_id, index, window, cx)
         })),
 
         Request::BenchmarkPageReady {

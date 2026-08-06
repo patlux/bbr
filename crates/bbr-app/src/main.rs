@@ -377,7 +377,7 @@ fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
     cx.on_action(move |_: &ToggleSidebar, cx| {
         let win = win;
         cx.defer(move |cx| {
-            let _ = win.update(cx, |view, _w, cx| view.toggle_sidebar(cx));
+            let _ = win.update(cx, |view, window, cx| view.toggle_sidebar(window, cx));
         });
     });
     let win = *window;

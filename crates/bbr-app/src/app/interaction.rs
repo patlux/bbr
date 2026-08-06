@@ -47,7 +47,7 @@ impl BbrApp {
                             false,
                             self.command_bar_mode.into(),
                         );
-                        self.commit_benchmark_after_frame(window, cx);
+                        self.commit_benchmark_sync(window);
                     }
                 }
             }
@@ -105,7 +105,7 @@ impl BbrApp {
                 true,
                 self.command_bar_mode.into(),
             );
-            self.commit_benchmark_after_frame(window, cx);
+            self.commit_benchmark_sync(window);
         }
     }
 

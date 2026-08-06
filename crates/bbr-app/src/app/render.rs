@@ -142,7 +142,9 @@ impl Render for BbrApp {
                     .text_color(rgb(0x9a9a9a))
                     .on_mouse_down(
                         MouseButton::Left,
-                        cx.listener(|this, _e: &MouseDownEvent, _w, cx| this.toggle_sidebar(cx)),
+                        cx.listener(|this, _e: &MouseDownEvent, window, cx| {
+                            this.toggle_sidebar(window, cx)
+                        }),
                     )
                     .child("Sidebar (Cmd-B)"),
             );
