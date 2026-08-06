@@ -214,11 +214,13 @@ impl BbrApp {
     /// True when any chrome control owns GPUI focus (command bar, sidebar, or
     /// the visible tab list). The interaction contract's "browser chrome"
     /// domain is the union: the tab list handle is a chrome control, so a
-    /// pointer-selected row keeps `chrome_focused` true.
+    /// pointer-selected row keeps `chrome_focused` true — and the resize
+    /// divider is chrome too, so its focused state reports the same domain.
     pub(super) fn chrome_focused(&self, window: &Window) -> bool {
         self.chrome_handle.is_focused(window)
             || self.space_list_handle.is_focused(window)
             || self.tab_list_handle.is_focused(window)
+            || self.divider_handle.is_focused(window)
     }
 
     fn emit_browser(&mut self, event: &ControllerEvent) {
