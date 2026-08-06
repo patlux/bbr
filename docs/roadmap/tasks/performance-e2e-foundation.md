@@ -34,10 +34,12 @@ completion.
       visible with a non-zero content rectangle at the end of GPUI paint.
 - [x] Emit deterministic-page-ready separately from shell/native-view readiness.
       *(Emitted as `BenchmarkKind::PageReady` with `page_title`, measured from
-      process spawn. Real-app E2E ran here only at the parse/unit level — the
-      host lacks the Metal toolchain to build GPUI, so the GUI gate is pending.)*
+      process spawn. The content guard commits only on an actually observed
+      fixture title (WebKit title KVO + load path), not on a loading-finished
+      fallback. Verified live via `just e2e-perf`/`-full`: `page_ready` p95
+      ≈ 0.43 s cold on this host.)*
 - [ ] Emit interaction presentation commits for tab/space selection, close,
-      sidebar visibility/resize, focus target, and later split mutations. *(Initial tab selection, active close, Cmd-T, and sidebar toggle are covered.)*
+      sidebar visibility/resize, focus target, and later split mutations. *(Initial tab selection, active close, Cmd-T, and sidebar toggle are covered; each commits synchronously against the authoritative post-mutation state because the offscreen harness never yields an `on_next_frame` frame callback.)*
 - [x] Ensure request/socket round-trip time is excluded from measured app work.
 - [x] Extend snapshots with the semantic state needed to reject fast-but-wrong
       samples for the implemented scenarios.
@@ -67,7 +69,10 @@ completion.
       artifacts on failure.
       *(`performance.json`, `raw_samples.csv`, `event-ring.txt`, `app-stderr.txt`
       under `target/bbr-perf-artifacts/<run>`; success appends a trend frame to
-      `target/bbr-perf-trend/latest.json` + `history.jsonl`.)*
+      `target/bbr-perf-trend/latest.json` + `history.jsonl`. A trial panic path
+      now also writes a partial JSON + CSV from the samples already collected,
+      so a slow-machine startup/page-ready ceiling trip keeps the raw data that
+      matters most rather than only the event ring + stderr.)*
 - [x] Document explicit report-only behavior for non-canonical machines without
       weakening functional E2E.
 
@@ -103,6 +108,10 @@ completion.
 - [x] Add `just e2e-perf-inject` — a deterministic injected-delay self-test that
       proves the budget gate fails under a testkit-only delay and returns green
       after removing the injection without changing the budget or baseline.
+      *(Injected self-test runs are excluded from the persistent trend and
+      artifact retention so the inflated distribution can never be mistaken for
+      a real regression; the injection targets interaction kinds only, never the
+      startup/page-ready clock.)*
 
 ## Acceptance
 
@@ -111,13 +120,20 @@ completion.
 - [x] Warm-tab selection and sidebar toggle meet their absolute p95/max budgets.
 - [x] A deliberately injected delay causes the relevant benchmark gate to fail.
 - [x] Removing the delay restores a green distribution without changing the
-      budget or baseline. *(Both proven by `just e2e-perf-inject` and the probe
-      unit tests; the real-app E2E self-test was not executable in this
-      environment for lack of the Metal toolchain.)*
-- [ ] Functional smoke/tabs/profile suites remain green.
-- [ ] `just verify`, affected individual E2E suites, and canonical sequential
-      `just e2e` pass.
-- [ ] `ARCHITECTURE.md`, `E2E_ARCHITECTURE.md`, and roadmap status describe only
+      budget or baseline. *(Both proven end-to-end on this host by
+      `just e2e-perf-inject`: injected warm-tab p95 ≈ 160 ms exceeds the 50 ms
+      budget (`abs_p95`), clean p95 ≈ 0.1 ms is green, no budget/baseline
+      change. The earlier review note that this host "lacks the macOS Metal
+      toolchain" was incorrect — Xcode 16.4.0 ships `metal` and a macOS 15.5
+      SDK, and every real-app gate builds and runs green here; the pessimistic
+      claim came from running only under the bare nix shell without the
+      `DEVELOPER_DIR`/`SDKROOT` the just recipes set.)
+- [x] Functional smoke/tabs/profile suites remain green. *(Verified on this
+      host: `just e2e-smoke`, `just e2e-tabs`, `just e2e-profiles` all pass.)*
+- [x] `just verify`, affected individual E2E suites, and canonical sequential
+      `just e2e` pass. *(`just verify` green plus all four sequential real-app
+      GUI suites — smoke, tabs, profiles, and the optimized performance gate.)*
+- [x] `ARCHITECTURE.md`, `E2E_ARCHITECTURE.md`, and roadmap status describe only
       the implemented, evidenced benchmark path.
 
 ## Iteration policy

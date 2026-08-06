@@ -316,12 +316,14 @@ release-without-testkit builds.
 GPUI 0.2.2 exposes no public platform-presentation completion callback. Startup
 and geometry-changing chrome operations therefore commit at the end of the
 `NativeWebViewSlot` paint path, after native WKWebView geometry attachment and
-immediately before GPUI presents the frame. Warm-tab switching commits after the
-synchronous native visibility mutation because it intentionally does not
-invalidate GPUI chrome. The suite does not claim post-scanout timing. The real
-GUI E2E gates require the macOS Metal toolchain (to build GPUI) plus a
-stable display-attached runner; in an environment without them the suites cannot
-run (see §10).
+immediately before GPUI presents the frame. Warm-tab switching and the other
+interaction benchmarks commit synchronously against the authoritative
+post-mutation controller snapshot (active view, sidebar, focus, command-bar
+mode): the harness window runs offscreen, where GPUI's frame/`on_next_frame`
+callback does not reliably fire, so a frame-dependent commit would silently drop
+interaction samples. The suite does not claim post-scanout timing. The real GUI
+gates build and run on this host via the Xcode 16.4.0 Metal toolchain
+(`DEVELOPER_DIR` set by the just recipes) in a display-attached session.
 
 FUTURE: visible spaces/splits/dialogs/routing/persistence scenarios,
 persisted-profile warm startup (depends on the absent persistence repository),
@@ -363,7 +365,7 @@ BBR_SKIP_GUI_TESTS=1 just e2e   # skip GUI suites on headless CI
 ```
 
 ```text
-just e2e-perf  → exit 0 — startup 562.70 ms; warm-tab p95 11.36 ms; sidebar p95 9.53 ms; Cmd-T p95 8.23 ms; new-tab p95 46.71 ms; active-close p95 8.21 ms (2026-08-06 sample)
+just e2e-perf  → exit 0 — startup p50 452.8 ms (< 750 max ceiling); page-ready p50 572.2 ms; warm-tab p95 0.09 ms; sidebar p95 0.74 ms; Cmd-T p95 0.51 ms; new-tab open p95 22.94 ms; active-close p95 1.95 ms (2026-08-06, released-testkit build on this host)
 just verify    → exit 0 — fmt/check/test/clippy/roadmap all green, 2026-08-06
 ```
 
@@ -381,7 +383,7 @@ runner + suites.
 | Events racing between requests and asserts | Seq cursor + `wait_for_event_since`; server ring for replay; events queued client-side during round trips |
 | Wedged app hangs the suite | 30 s main-thread reply timeout on the gateway; 60 s connect deadline; `SIGKILL` in harness Drop |
 | Synthetic keystroke fidelity drift | `DispatchKeystroke` goes through GPUI's real `dispatch_keystroke` path; FUTURE: tier-2 NSEvent posting in the webkit suite |
-| macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner |
+| macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner. Verified locally on the Xcode 16.4.0 Metal toolchain in a display-attached session |
 | Event-ring memory growth | Fixed cap (4096) + client cursors; snapshot on demand |
 | Protocol evolution | `PROTOCOL_VERSION = 5` adds command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types; future additive growth stays typed |
 | Dedicated-runner / external gaps | No dedicated stable macOS runner or public trend publication is provisioned yet. `canonical_host_model` is therefore empty, so the >15% relative baseline rule stays report-only until a runner is named; display refresh is recorded `null` with an explicit reason (window is offscreen and the OS refresh API is not linked). Absolute ceilings are enforced on every machine. Persisted warm startup stays open until the persistence repository lands — a test-only seed that bypasses the future persistence path is not acceptance evidence. |
