@@ -30,7 +30,8 @@ fn url_search_ambiguity_matrix() {
         ("", Kind::Empty, "empty string"),
         ("   ", Kind::Empty, "whitespace only"),
         ("\t\n", Kind::Empty, "control whitespace"),
-        // Scheme prefixes always navigate.
+        // Explicit and opaque scheme prefixes navigate. Dotted prefixes only
+        // win authority ambiguity when followed by `//`.
         ("https://example.com", Kind::Navigate, "https scheme"),
         ("http://example.com", Kind::Navigate, "http scheme"),
         ("HTTPS://EXAMPLE.COM", Kind::Navigate, "uppercase scheme"),
@@ -40,6 +41,11 @@ fn url_search_ambiguity_matrix() {
         ("bbr:settings", Kind::Navigate, "custom scheme"),
         ("custom+scheme:x", Kind::Navigate, "scheme with plus/dash"),
         ("https://", Kind::Navigate, "bare scheme still navigates"),
+        (
+            "com.example://settings",
+            Kind::Navigate,
+            "explicit dotted scheme",
+        ),
         // Local hosts.
         ("localhost", Kind::Navigate, "localhost"),
         ("localhost:8080", Kind::Navigate, "localhost with port"),
@@ -105,6 +111,26 @@ fn url_search_ambiguity_matrix() {
         ("localhost:abc", Kind::Search, "alphabetic localhost port"),
         ("-bad.com", Kind::Search, "leading label hyphen"),
         ("bad-.com", Kind::Search, "trailing label hyphen"),
+        (
+            "bad-.com:443",
+            Kind::Search,
+            "malformed dotted authority with numeric port",
+        ),
+        (
+            "foo..com:443",
+            Kind::Search,
+            "empty dotted authority label with numeric port",
+        ),
+        (
+            "bad-.com:abc",
+            Kind::Search,
+            "malformed dotted authority with alphabetic port",
+        ),
+        (
+            "com.example:settings",
+            Kind::Search,
+            "dotted bare-colon prefix is an authority candidate",
+        ),
         ("[::1", Kind::Search, "missing IPv6 closing bracket"),
         ("::1]", Kind::Search, "missing IPv6 opening bracket"),
         ("[not-ipv6]", Kind::Search, "invalid IPv6 literal"),

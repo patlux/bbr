@@ -110,12 +110,14 @@ impl QueryContext {
 
 /// Classifies raw text as a navigation destination or a search query.
 ///
-/// Scheme-prefixed input always navigates unchanged. Without a scheme, the
+/// Explicit `scheme://` and opaque undotted `scheme:value` input navigates
+/// unchanged. A dotted or `localhost` prefix before a bare colon is instead an
+/// authority candidate and must pass host and port validation. Otherwise, the
 /// parser validates only the authority before the first path, query, or
 /// fragment separator. Accepted authorities are `localhost`, an IPv4 literal,
 /// a bracketed IPv6 literal, or a strict ASCII domain, each with an optional
 /// numeric port in `1..=65535`. Unbracketed IPv6 and Unicode IDNs remain
-/// searches; callers may navigate them by supplying a scheme.
+/// searches; callers may navigate them by supplying an explicit scheme.
 ///
 /// No rule consults the network, DNS, or an external suffix table, so the
 /// outcome is identical on every platform.
@@ -146,8 +148,9 @@ fn is_url_candidate(text: &str) -> bool {
     is_bracketed_ipv6_authority(authority) || is_host_authority(authority)
 }
 
-/// True when the text starts with `scheme:` where the scheme is an ASCII
-/// letter followed by letters, digits, `+`, `.`, or `-`.
+/// True when the text has an explicit `scheme://` prefix or an opaque,
+/// undotted `scheme:value` prefix. Dotted and `localhost` bare-colon prefixes
+/// are authority candidates and must be validated as hosts with ports.
 fn has_scheme(text: &str) -> bool {
     let mut chars = text.char_indices();
     let Some((_, first)) = chars.next() else {
@@ -163,8 +166,7 @@ fn has_scheme(text: &str) -> bool {
             // A domain-like or localhost prefix followed by a bare colon is
             // an authority with a port, not an opaque custom scheme. `://`
             // remains an explicit scheme even when its name contains dots.
-            return suffix.starts_with("//")
-                || (!is_local_host(prefix) && !looks_like_domain(prefix));
+            return suffix.starts_with("//") || (!is_local_host(prefix) && !prefix.contains('.'));
         }
         if !(ch.is_ascii_alphanumeric() || ch == '+' || ch == '.' || ch == '-') {
             return false;
@@ -276,6 +278,22 @@ mod tests {
         ] {
             assert_eq!(parse_destination(text), nav(text), "{text:?}");
         }
+    }
+
+    #[test]
+    fn dotted_bare_colon_prefixes_require_valid_authorities() {
+        for text in [
+            "bad-.com:443",
+            "foo..com:443",
+            "bad-.com:abc",
+            "com.example:settings",
+        ] {
+            assert_eq!(parse_destination(text), search(text), "{text:?}");
+        }
+        assert_eq!(
+            parse_destination("com.example://settings"),
+            nav("com.example://settings")
+        );
     }
 
     #[test]
