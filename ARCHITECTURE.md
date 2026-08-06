@@ -454,7 +454,16 @@ WebViewId and warm session, cross-profile moves that recreate exactly once in
 the destination store with cookie isolation, and pin/reorder/move
 presentation benchmarks — proven by `just e2e-shell-organize` and the
 `tab_pin`/`tab_reorder`/`tab_move_same_profile`/`tab_move_cross_profile`
-performance scenarios. Still missing: the 500-tab dense list.
+performance scenarios. The dense-list slice adds the bounded lifecycle
+(500 identities, 50 live sessions, 450 suspended through the production
+controller paths with a bounded concurrent-session peak during preparation),
+windowed regular-region rendering that follows the production scroll offset
+(`crate::dense`, ≤ 64 rows + spacers, deterministic scroll anchor), the
+pinned + recently-used keep set with exactly-one-session suspended
+recreation, and the `dense_scroll`/`dense_select` scenarios wired into the
+gate-enforced perf matrix — proven by `just e2e-shell-dense` /
+`e2e_shell_dense_edge` and the dense unit/contract suites. Measured
+frame-time evidence on the canonical benchmark runner remains open.
 
 ---
 
@@ -562,19 +571,24 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 
 ## 11. Known limitations (current implementation)
 
-1. **The vertical tab shell is complete; the 500-tab dense list remains.**
+1. **The vertical tab shell and the dense-500 list are in; measured frame-time
+   evidence remains.**
    `BrowserController` and `WebEngineWk` open, switch, preserve, navigate,
    and close multiple real sessions; Cmd-T stages a tab destination and Cmd-W
    closes through the real product path. The visible vertical tab list with
    pinned/regular regions, pointer + keyboard interaction, drag reorder, and
-   move-between-spaces arrived with the Phase-4 shell slices; the dense-500
-   frame-time scenario and remaining density polish come with the dense-list
-   slice.
+   move-between-spaces arrived with the Phase-4 shell slices; the dense-list
+   slice added the bounded lifecycle, windowed rendering, recency keep set,
+   and the gate-wired `dense_scroll`/`dense_select` scenarios. The open
+   acceptances are the measured frame-time evidence for 500 tabs / 50 live
+   sessions on the canonical runner, persisted-restore acceptance, and drag
+   auto-scroll (an off-window drag target shows no tick today).
 2. **Profile/space visibility is complete; cross-context polish remains.** The
    sidebar renders every profile's spaces with chips, activation works through
    pointer + keyboard, empty spaces name their profile, and the command-field
    destination hint communicates cross-profile moves and space switching; the
-   remaining Phase-4 polish is the dense list under one profile.
+   remaining Phase-4 polish is shell craft (e.g., drag auto-scroll in dense
+   lists) and the canonical measured frame-time evidence.
 3. **`--bbr-clock` is a no-op**; the `TimeSource` seam is intentionally not
    added until time-based logic exists (debounces in Phase 5/7).
 4. **Popups/new windows are suppressed** (`createWebViewWithConfiguration` →

@@ -6,15 +6,16 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 
 ## Current focus
 
-> **Phase 4 — establish BBR's interaction, performance, and visual foundation.** Native profile/session isolation is proven; the real-app startup/interaction benchmark foundation, the focus contract, the visual system, the controller-backed vertical-tab shell, visible space switching, the adjustable, collapsible sidebar, and the tab-organization slice (pin/unpin, region-bounded reorder, and move-between-spaces — keyboard and pointer drag) are in place. Next: the dense-500 list and remaining shell polish before broad Phase-5 command-bar work.
+> **Phase 4 — establish BBR's interaction, performance, and visual foundation.** Native profile/session isolation is proven; the real-app startup/interaction benchmark foundation, the focus contract, the visual system, the controller-backed vertical-tab shell, visible space switching, the adjustable, collapsible sidebar, the tab-organization slice (pin/unpin, region-bounded reorder, and move-between-spaces — keyboard and pointer drag), and the dense-500 list slice (bounded lifecycle, windowed rendering, recency, and gate-wired scroll/select benchmarks) are in place. Next: remaining shell polish and the measured frame-time evidence for the dense acceptance before broad Phase-5 command-bar work.
 
-- [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation. *(Benchmark path, budgets, trend/artifact machinery, the warm space-switch scenario, and the tab pin/reorder/move scenarios shipped; persisted warm-startup samples await the persistence repository.)*
+- [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation. *(Benchmark path, budgets, trend/artifact machinery, the warm space-switch scenario, and the tab pin/reorder/move scenarios shipped; the dense scroll/select scenarios are wired into the interaction matrix with contract-budget seeds; persisted warm-startup samples await the persistence repository.)*
 - [x] Resolve the tab-mutation focus matrix in the [browser interaction contract](docs/product/browser-interactions.md).
 - [x] [Create `DESIGN.md`](DESIGN.md) with a distinct native macOS visual direction and semantic tokens.
 - [x] [Implement the first controller-backed vertical-tab shell slice](docs/roadmap/phases/04-ui-shell.md) — visible tab rows (pointer + keyboard open/select/close/reopen), pinned/regular regions, states, empty space, crash recovery — with functional and performance E2E. *(Space switching is the next shell slice.)*
 - [x] [Render and switch spaces with unmistakable profile identity](docs/roadmap/phases/04-ui-shell.md) — visible profile/space navigation with round-robin identity hues, pointer + keyboard activation, per-space active-tab restoration without recreating warm sessions, and real-app E2E + warm-switch performance coverage. *(`Cmd-Shift-M` staged moves and drag-into-space arrive with the tab-organization slice.)*
 - [x] [Add an adjustable, collapsible sidebar with stable native-content geometry](docs/roadmap/phases/04-ui-shell.md) — DESIGN §5/§11.4 widths (200–360 pt, default 260), a visible 4 pt drag hairline with pointer drag through the production GPUI listener path, keyboard equivalents on the focused divider (`←`/`→` step, `0` reset), Cmd-B collapse/expand that restores the last expanded width, narrow-window clamping that keeps the native content at its 64 pt floor (never zero/negative), typed snapshot state (visible, width, min/default/max, divider id/state, content rect), and real-app E2E + resize/restore performance coverage.
-- [x] [Tab organization: pin/unpin, region-bounded reorder, and move between spaces](docs/roadmap/phases/04-ui-shell.md) — complete keyboard commands (`Cmd-Shift-P`, `Cmd-Shift-↑/↓`, staged `Cmd-Shift-M` + Enter) and visible controls (row pin dot, §10.9 insertion tick with legality, drag-target space rows), real pointer drag through the production GPUI press/move/release listeners, illegal boundary drops rejected whole, same-profile moves that preserve the WebViewId and warm native session, cross-profile moves that recreate exactly once in the destination store with cookie isolation, and pin/reorder/move presentation benchmarks. Proven by `just e2e-shell-organize` and the `tab_pin`/`tab_reorder`/`tab_move_same_profile`/`tab_move_cross_profile` scenarios in the gate-enforced perf matrix. *(The dense-500 sidebar frame-time scenario remains with the dense-list slice.)*
+- [x] [Tab organization: pin/unpin, region-bounded reorder, and move between spaces](docs/roadmap/phases/04-ui-shell.md) — complete keyboard commands (`Cmd-Shift-P`, `Cmd-Shift-↑/↓`, staged `Cmd-Shift-M` + Enter) and visible controls (row pin dot, §10.9 insertion tick with legality, drag-target space rows), real pointer drag through the production GPUI press/move/release listeners, illegal boundary drops rejected whole, same-profile moves that preserve the WebViewId and warm native session, cross-profile moves that recreate exactly once in the destination store with cookie isolation, and pin/reorder/move presentation benchmarks. Proven by `just e2e-shell-organize` and the `tab_pin`/`tab_reorder`/`tab_move_same_profile`/`tab_move_cross_profile` scenarios in the gate-enforced perf matrix.
+- [x] [Dense-500 list slice: bounded lifecycle, windowed rendering, recency, and gate-wired scroll/select benchmarks](docs/roadmap/tasks/dense-list-slice.md) — 500 tab identities with exactly 50 live sessions and 450 suspended through the production controller paths (bounded concurrent-session peak while preparing the state), a bounded-window regular region that follows the production scroll offset and never lays out the collection, a pinned + recently-used keep set with exactly-one-session suspended recreation, and `dense_scroll`/`dense_select` scenarios wired into the perf matrix with contract budgets and full-gate sample-count asserts. Proven by `just verify`, `just e2e-shell-dense`/`e2e_shell_dense_edge`, and the canonical `just e2e`; the measured frame-time acceptance on the canonical runner remains open in the task packet.
 
 ## Product phases
 
@@ -94,13 +95,25 @@ Completed today:
   Escape cancellation — proven by `just e2e-shell-organize` and the
   `tab_pin`/`tab_reorder`/`tab_move_same_profile`/`tab_move_cross_profile`
   performance scenarios (session-recreation class for the cross-profile move).
+- Dense-500 list slice: 500 identities with exactly 50 live sessions and 450
+  suspended through the production lifecycle paths (bounded concurrent-session
+  peak during preparation), the bounded-window regular region with a
+  deterministic scroll anchor, the pinned + recent recency keep set with
+  warm-selection reuse and exactly-one-session suspended recreation, keyboard
+  traversal with instant scroll-into-view, edge states, and the dense drag
+  tick — proven by `just e2e-shell-dense` / `e2e_shell_dense_edge` plus the
+  dense unit/contract suites, with `dense_scroll`/`dense_select` scenarios
+  wired into the gate-enforced perf matrix (contract budgets seeded;
+  measured frame-time evidence on the canonical runner remains open).
 
 Next release-shaped outcome:
 
 - A benchmark-protected vertical-tab and space shell that opens with sidebar and
   selected web content presented together, keeps warm tab/space switching,
   sidebar interaction (toggle, drag resize, keyboard resize/reset, collapse /
-  restore), and tab organization (pin/unpin, reorder, move between spaces)
+  restore), tab organization (pin/unpin, reorder, move between spaces), and
+  dense-list interaction (scroll/select through the bounded-window render)
   within explicit latency budgets, and has defined visual, focus,
   profile-identity, pointer, and keyboard behavior proven through the real app.
-  Next shell slice: the dense-500 list and the remaining shell craft items.
+  Next shell slice: the remaining shell craft items and the measured
+  dense frame-time evidence on the canonical runner.

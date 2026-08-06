@@ -94,8 +94,16 @@ completion.
 - [x] Sidebar open/close toggle with resulting geometry and state assertions.
 - [x] Sidebar drag-resize commit and collapse/restore through the production path. *(The `sidebar_resize` scenario commits at the exact clamped geometry — typed min/default/max plus the content floor let the drivers compute the same expectation the render enforces, so a fast-but-wrong sample is rejected in the app; the `sidebar_restore` scenario measures expand restoring the last expanded width after an unmeasured production collapse. Both join the 30-sample matrix with the 50 ms p95 / 100 ms max next-frame budget; p95 ≈ 0.002 ms on this host.)*
 - [x] Space switching with already-warm selected sessions when Spaces land. *(The `space_switch` scenario alternates two warm spaces of one profile through the production activation path, asserting the destination space, its own WebViewId, the unchanged session count, chrome focus, and the rendered selected space row; p95 ≈ 0.1 ms on this host against the gate-enforced 50 ms p95 / 100 ms max warm budget.)*
-- [ ] Dense sidebar scroll/frame-time benchmark when the real Phase-4 list
-      lands.
+- [x] Dense sidebar scroll/frame-time benchmark when the real Phase-4 list
+      lands. *(The real Phase-4 list landed with the
+      [dense-list slice](dense-list-slice.md); the `dense_scroll`/`dense_select`
+      scenarios are wired into the interaction matrix, the baseline seed, and
+      the full-gate sample-count asserts with the 50/100 ms warm budgets.
+      Green here on the S-density 230-identity collection — `dense_scroll`
+      p95 ≈ 5.9 ms / max ≈ 6.1 ms, `dense_select` p95 ≈ 4.1 ms / max ≈ 4.2 ms,
+      30 samples each (`just e2e-perf`). The measured frame-time evidence for
+      the 500/50 acceptance on the canonical benchmark runner remains open in
+      the phase.)*
 
 ## Commands and continuous monitoring
 
