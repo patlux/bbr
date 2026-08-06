@@ -186,10 +186,7 @@ fn open_tab(client: &mut Client, since: &mut u64, url: &str, title: Option<&str>
 fn spawn_harness(root_tag: &str, page_one: &str) -> (Harness, PathBuf, String) {
     // Keep the root name short: the unix socket path must stay below macOS's
     // 104-byte `sun_path` limit (`TMPDIR` can be long).
-    let root = std::env::temp_dir().join(format!(
-        "bbr-st-{root_tag}-{}",
-        std::process::id()
-    ));
+    let root = std::env::temp_dir().join(format!("bbr-st-{root_tag}-{}", std::process::id()));
     let profile = root.join("profile");
     std::fs::create_dir_all(&profile).unwrap();
     let socket = profile.join("bbr-test.sock");
