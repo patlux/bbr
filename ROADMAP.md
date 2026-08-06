@@ -23,7 +23,7 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 - [ ] [5 — Unified command bar](docs/roadmap/phases/05-command-bar.md)
 - [ ] [6 — Two-pane split view](docs/roadmap/phases/06-split-view.md)
 - [ ] [7 — Persistence and crash recovery](docs/roadmap/phases/07-persistence.md)
-- [ ] [8 — Daily-driver browser essentials](docs/roadmap/phases/08-daily-driver.md)
+- [ ] [8 — Daily-driver browser essentials](docs/roadmap/phases/08-daily-driver.md) — includes [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md)
 - [ ] [9 — Accessibility, polish, performance, and release hardening](docs/roadmap/phases/09-quality-release.md)
 - [ ] [10 — Cross-platform adapters](docs/roadmap/phases/10-cross-platform.md)
 

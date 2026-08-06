@@ -28,7 +28,7 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 
 - [x] Multi-WebView session registry.
 - [x] Deterministic persistent ProfileId → WKWebsiteDataStore mapping.
-- [ ] Popup/new-window policy. *(Phase 8)*
+- [ ] Popup/new-window policy, including transient native sessions for [Link Preview / Peek](../tasks/link-preview-peek.md). *(Phase 8)*
 - [ ] Download, permission, authentication, and file-panel events. *(Phase 8)*
 - [ ] Web-process recovery. *(Phase 8)*
 - [ ] Per-view split geometry.

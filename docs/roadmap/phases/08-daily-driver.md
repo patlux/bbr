@@ -18,7 +18,7 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 - [ ] Default-browser registration and external URL opening.
 - [ ] Native menus, Services, window lifecycle, and app updates.
 - [ ] Zoom and per-site settings.
-- [ ] Popup/new-window policy and target-blank flows.
+- [ ] Implement popup/new-window policy and target-blank flows, including the dedicated [Link Preview / Peek](../tasks/link-preview-peek.md) lifecycle for eligible user-created links.
 - [ ] Manual representative-site matrix: login, media, editors, conferencing, upload/download, payments, passkeys.
 - [ ] Harden all empty, loading, error, cancellation, and destructive states.
 

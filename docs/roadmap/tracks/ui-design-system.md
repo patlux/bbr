@@ -30,6 +30,7 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 
 - [ ] Command bar feels fast, layered, and visually integrated rather than a generic modal.
 - [ ] Split divider and pane focus are clear but quiet.
+- [ ] [Link Preview / Peek](../tasks/link-preview-peek.md) communicates its temporary state, fully covers the current page without looking like a generic modal, and makes dismissal versus promotion unmistakable.
 - [ ] Persistence/recovery states communicate trust and reversibility.
 - [ ] Downloads, permissions, errors, history, settings, and onboarding use the same components and language.
 - [ ] Every new surface ships light/dark, empty/loading/error, keyboard-focus, and reduced-motion variants.

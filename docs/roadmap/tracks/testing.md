@@ -24,7 +24,8 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 - [ ] `spaces`: profile identity, activation, and moves are covered; visible switching UI and last-active restoration remain with Phase 4.
 - [ ] `splits`: create/focus/resize/close/move teardown.
 - [ ] `commandbar`: staged New Tab mode, cancellation, and initial focus restore are covered; ranking, result navigation, and complete mode UX remain.
-- [ ] `webkit`: profile isolation is covered; popups, permissions, downloads, and process recovery remain with Phase 8.
+- [ ] `webkit`: profile isolation is covered; popups, [Link Preview / Peek](../tasks/link-preview-peek.md), permissions, downloads, and process recovery remain with Phase 8.
+- [ ] `peek`: eligible new-window request, native overlay isolation, dismissal/focus restoration, no-reload promotion, exclusions, cleanup, and profile isolation.
 - [ ] `persistence`: restore, force quit, migrations, corrupt optional state.
 - [ ] `accessibility`: semantic ids, labels, order, real input.
 - [ ] `performance`: optimized real-app startup, first usable sidebar + selected native content presentation, tab/space switching, active-tab close, sidebar open/close/toggle/resize, command latency, and memory lifecycle; see the [foundation task](../tasks/performance-e2e-foundation.md).

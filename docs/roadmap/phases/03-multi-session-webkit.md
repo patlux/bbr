@@ -19,7 +19,7 @@ The macOS adapter hosts multiple profile-isolated WKWebViews and implements the 
 - [x] Destroy and recreate native sessions through the suspend/reactivate lifecycle.
 - [x] Keep portable crates free of macOS imports.
 - [ ] Add progress and favicon-candidate events. *(deferred to [Phase 4](04-ui-shell.md), where the shell consumes them)*
-- [ ] Model target-blank/new-window requests. *(deferred to [Phase 8](08-daily-driver.md))*
+- [ ] Model target-blank/new-window requests. *(deferred to [Phase 8](08-daily-driver.md), including [Link Preview / Peek](../tasks/link-preview-peek.md))*
 - [ ] Model downloads, permissions, authentication challenges, and file panels. *(deferred to [Phase 8](08-daily-driver.md))*
 - [ ] Recover a terminated WebKit process into the `Discarded`/reload flow. *(deferred to [Phase 8](08-daily-driver.md))*
 

@@ -1,6 +1,6 @@
 # Track — Accessibility and input
 
-Parent phases: [Phase 4](../phases/04-ui-shell.md), [Phase 5](../phases/05-command-bar.md), [Phase 6](../phases/06-split-view.md), [Phase 9](../phases/09-quality-release.md)
+Parent phases: [Phase 4](../phases/04-ui-shell.md), [Phase 5](../phases/05-command-bar.md), [Phase 6](../phases/06-split-view.md), [Phase 8](../phases/08-daily-driver.md), [Phase 9](../phases/09-quality-release.md)
 
 ## Implemented foundation
 
@@ -32,5 +32,6 @@ Parent phases: [Phase 4](../phases/04-ui-shell.md), [Phase 5](../phases/05-comma
 - [ ] Operate command-bar modes and understand result grouping.
 - [ ] Enter and leave WKWebView content predictably.
 - [ ] Operate split divider and focused-pane controls.
+- [ ] Understand, navigate, dismiss, and promote [Link Preview / Peek](../tasks/link-preview-peek.md), with focus returning to its exact origin.
 - [ ] Understand downloads, permissions, errors, and recovery actions.
 - [ ] Verify packaged `.app` with Appium Mac2 plus manual VoiceOver passes.
