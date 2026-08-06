@@ -213,6 +213,16 @@ fn profiles_isolate_cookies_recreate_cross_profile_and_destroy_suspended_views()
         let empty_private = client.snapshot().expect("empty private space");
         assert_eq!(empty_private.active_profile, private_profile);
         assert!(empty_private.tabs.is_empty());
+        // The §11.8 empty pane names the owning profile from the snapshot;
+        // it is never a hardcoded label.
+        assert_eq!(
+            empty_private.active_profile_title.as_deref(),
+            Some("Private")
+        );
+        assert!(empty_private
+            .visible_ids
+            .iter()
+            .any(|id| id == "bbr-empty-new-tab"));
 
         client
             .send_ok(&dsl::open_tab(&set_beta))

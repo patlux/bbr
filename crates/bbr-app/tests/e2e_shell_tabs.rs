@@ -29,6 +29,12 @@ const PAGE_ONE_TITLE: &str = "BBR Fixture One";
 const PAGE_TWO_TITLE: &str = "BBR Fixture Two";
 const SLOW_TITLE: &str = "BBR Slow Page";
 const LONG_TITLE: &str = "A title long enough that the vertical tab row must truncate it with an ellipsis — the shell's type:title rule keeps one line and the row never grows beyond its density height";
+/// Fixture title whose first separator is early, so §4 truncation cuts at
+/// the separator and the site name survives.
+const SEPARATOR_TITLE: &str =
+    "Site Name – A long descriptive suffix that surely pushes the row past its one-line budget";
+/// The §4 separator-aware cut for the fixture above.
+const SEPARATOR_ROW_TITLE: &str = "Site Name…";
 
 struct Harness {
     child: Child,
@@ -258,6 +264,33 @@ fn pointer_opens_selects_closes_reopens_visible_tabs() {
             since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
         }
 
+        // §15 semantic ids: the sidebar shell and the single visible row.
+        assert_ids(
+            &initial,
+            &[
+                "bbr-root",
+                "bbr-sidebar",
+                "bbr-brand",
+                "bbr-command-bar",
+                "bbr-command-text",
+                "bbr-status",
+                "bbr-sidebar-toggle",
+                "bbr-tab-list",
+                "bbr-tab-row-0",
+                "bbr-tab-title-0",
+                "bbr-tab-favicon-0",
+                "bbr-tab-state-0",
+                "bbr-tab-close-0",
+            ],
+        );
+        assert!(
+            !initial
+                .visible_ids
+                .iter()
+                .any(|id| id.starts_with("bbr-tab-row-1")),
+            "one tab renders exactly one row"
+        );
+
         // Pointer open: a second visible row.
         let second_view = open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
         let two = client.snapshot().expect("two-tab snapshot");
@@ -267,6 +300,16 @@ fn pointer_opens_selects_closes_reopens_visible_tabs() {
         assert_eq!(
             two.tab_states,
             vec![TabVisualState::Default, TabVisualState::Selected]
+        );
+        assert_ids(
+            &two,
+            &[
+                "bbr-tab-row-1",
+                "bbr-tab-title-1",
+                "bbr-tab-favicon-1",
+                "bbr-tab-state-1",
+                "bbr-tab-close-1",
+            ],
         );
 
         // Pointer select: activate row 0 through the production mouse-down
@@ -369,6 +412,15 @@ fn pointer_opens_selects_closes_reopens_visible_tabs() {
         assert_eq!(empty.active_web_view, None);
         assert_eq!(empty.command_bar_mode, CommandBarMode::NewTab);
         assert!(empty.chrome_focused);
+        // §11.8 pane + §15 ids: the empty New Tab surface replaces the rows.
+        assert_ids(&empty, &["bbr-empty-new-tab", "bbr-empty-new-tab-button"]);
+        assert!(
+            !empty
+                .visible_ids
+                .iter()
+                .any(|id| id.starts_with("bbr-tab-row")),
+            "empty space renders no tab rows"
+        );
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
@@ -614,6 +666,8 @@ fn keyboard_close_of_final_tab_opens_empty_new_tab_surface() {
         assert_eq!(empty.active_web_view, None);
         assert_eq!(empty.command_bar_mode, CommandBarMode::NewTab);
         assert!(empty.chrome_focused, "command surface owns chrome focus");
+        // §11.8 pane + §15 ids: the empty New Tab surface renders.
+        assert_ids(&empty, &["bbr-empty-new-tab", "bbr-empty-new-tab-button"]);
 
         // Enter on the empty command surface with no destination creates
         // nothing; the staged surface stays open for the next destination.
@@ -665,6 +719,7 @@ fn shell_renders_regions_fallbacks_and_crash_recovery() {
     let fixtures = FixtureServer::start(&fixtures_dir).expect("fixture server");
     let page_one = fixtures.url("/page1.html");
     let long_title = fixtures.url("/long-title.html");
+    let separator_title = fixtures.url("/separator-title.html");
     let slow = fixtures.url("/__fx/slow");
     let blank = "about:blank";
 
@@ -687,17 +742,33 @@ fn shell_renders_regions_fallbacks_and_crash_recovery() {
         // the missing-favicon tab renders like any other row.
         open_tab(&mut client, &mut since, blank, None);
         open_tab(&mut client, &mut since, &long_title, Some(LONG_TITLE));
+        open_tab(
+            &mut client,
+            &mut since,
+            &separator_title,
+            Some(SEPARATOR_TITLE),
+        );
         let slow_view = open_tab(&mut client, &mut since, &slow, Some(SLOW_TITLE));
 
-        let four = client.snapshot().expect("four-tab snapshot");
-        assert_eq!(four.tabs.len(), 4);
-        assert_eq!(four.engine_sessions, 4);
-        assert_eq!(four.tabs[0].url, page_one);
-        assert_eq!(four.tabs[1].url, blank);
-        assert_eq!(four.tabs[2].url, long_title, "long-title tab holds its URL");
-        assert_eq!(four.tabs[2].title, LONG_TITLE, "long title survives");
-        assert_eq!(four.active_tab_index, Some(3));
-        assert_eq!(four.active_web_view, Some(slow_view));
+        let five = client.snapshot().expect("five-tab snapshot");
+        assert_eq!(five.tabs.len(), 5);
+        assert_eq!(five.engine_sessions, 5);
+        assert_eq!(five.tabs[0].url, page_one);
+        assert_eq!(five.tabs[1].url, blank);
+        assert_eq!(five.tabs[2].url, long_title, "long-title tab holds its URL");
+        assert_eq!(five.tabs[2].title, LONG_TITLE, "long title survives");
+        assert_eq!(
+            five.tabs[3].title, SEPARATOR_TITLE,
+            "separator-title tab holds its URL title"
+        );
+        assert_eq!(five.active_tab_index, Some(4));
+        assert_eq!(five.active_web_view, Some(slow_view));
+        // §4 truncation is applied to the rendered row titles from the same
+        // row_visuals source the shell renders: the late separator falls back
+        // to the full title (GPUI text_ellipsis cuts visually), the early
+        // separator cuts so the site name survives.
+        assert_eq!(five.row_titles[2], LONG_TITLE);
+        assert_eq!(five.row_titles[3], SEPARATOR_ROW_TITLE);
 
         // Pinned region: pinning the second row moves it to the pinned head
         // without touching sessions (testkit seam; pin commands are a later
@@ -705,15 +776,15 @@ fn shell_renders_regions_fallbacks_and_crash_recovery() {
         client.send_ok(&dsl::pin_tab(1)).expect("pin second tab");
         let _ = wait_browser_change(&mut client, BrowserChange::TabPinned { index: 0 }, since);
         let pinned = client.snapshot().expect("pinned snapshot");
-        assert_eq!(pinned.tabs.len(), 4);
+        assert_eq!(pinned.tabs.len(), 5);
         assert!(pinned.tabs[0].pinned, "pinned region leads the space");
         assert!(
             pinned.tabs[1..].iter().all(|tab| !tab.pinned),
             "regular region follows the pinned head"
         );
         assert_eq!(pinned.tabs[0].url, blank, "pinned row is the blank tab");
-        assert_eq!(pinned.engine_sessions, 4, "pin never recreates sessions");
-        assert_eq!(pinned.active_tab_index, Some(3));
+        assert_eq!(pinned.engine_sessions, 5, "pin never recreates sessions");
+        assert_eq!(pinned.active_tab_index, Some(4));
         assert_eq!(
             pinned.tab_states[0],
             TabVisualState::Default,
@@ -731,9 +802,9 @@ fn shell_renders_regions_fallbacks_and_crash_recovery() {
             since,
         );
         let loading = client.snapshot().expect("loading snapshot");
-        assert_eq!(loading.active_tab_index, Some(3));
-        assert!(loading.tabs[3].loading, "session loading flag observable");
-        assert_eq!(loading.tab_states[3], TabVisualState::Loading);
+        assert_eq!(loading.active_tab_index, Some(4));
+        assert!(loading.tabs[4].loading, "session loading flag observable");
+        assert_eq!(loading.tab_states[4], TabVisualState::Loading);
         since = wait_title(&mut client, slow_view, SLOW_TITLE, since);
         since = wait_web_event(
             &mut client,
@@ -741,8 +812,8 @@ fn shell_renders_regions_fallbacks_and_crash_recovery() {
             since,
         );
         let loaded = client.snapshot().expect("loaded snapshot");
-        assert!(!loaded.tabs[3].loading);
-        assert_eq!(loaded.tab_states[3], TabVisualState::Selected);
+        assert!(!loaded.tabs[4].loading);
+        assert_eq!(loaded.tab_states[4], TabVisualState::Selected);
 
         // Crash state: the engine event rides the real event transport; the
         // shell must show the §10.7 error state for the row and the crash
@@ -757,28 +828,40 @@ fn shell_renders_regions_fallbacks_and_crash_recovery() {
         );
         let crashed = client.snapshot().expect("crashed snapshot");
         assert!(
-            crashed.tabs[3].crashed,
+            crashed.tabs[4].crashed,
             "crash flag survives session teardown"
         );
-        assert_eq!(crashed.tabs[3].web_view, None, "session destroyed");
+        assert_eq!(crashed.tabs[4].web_view, None, "session destroyed");
         assert_eq!(crashed.active_web_view, None, "no native surface presented");
-        assert_eq!(crashed.engine_sessions, 3);
-        assert_eq!(crashed.tab_states[3], TabVisualState::Error);
+        assert_eq!(crashed.engine_sessions, 4);
+        assert_eq!(crashed.tab_states[4], TabVisualState::Error);
+        // §11.8 crash panel + §15 ids: the crashed row stays listed with its
+        // error state while the panel replaces the glass area.
+        assert_ids(
+            &crashed,
+            &[
+                "bbr-crash-panel",
+                "bbr-crash-reload",
+                "bbr-crash-close",
+                "bbr-tab-row-4",
+                "bbr-tab-state-4",
+            ],
+        );
 
         // Recovery: reload reactivates the tab with a fresh session and the
         // preserved URL; the crash state clears. The mutation is synchronous,
         // so the immediate snapshot observes the fresh incarnation.
         client.send_ok(&dsl::reload()).expect("reload crashed tab");
         let recovered = client.snapshot().expect("recovered snapshot");
-        assert_eq!(recovered.tabs.len(), 4);
-        assert_eq!(recovered.engine_sessions, 4);
-        assert_eq!(recovered.active_tab_index, Some(3));
+        assert_eq!(recovered.tabs.len(), 5);
+        assert_eq!(recovered.engine_sessions, 5);
+        assert_eq!(recovered.active_tab_index, Some(4));
         assert!(
-            !recovered.tabs[3].crashed,
+            !recovered.tabs[4].crashed,
             "fresh session clears crash state"
         );
         assert_eq!(
-            recovered.tabs[3].url, slow,
+            recovered.tabs[4].url, slow,
             "preserved URL drives recreation"
         );
         let fresh_view = recovered.active_web_view.expect("fresh view");
@@ -793,7 +876,7 @@ fn shell_renders_regions_fallbacks_and_crash_recovery() {
         let back = client.snapshot().expect("back snapshot");
         assert_eq!(back.active_web_view, Some(first_view));
         assert_eq!(back.tabs[1].web_view, Some(first_view));
-        assert_eq!(back.engine_sessions, 4);
+        assert_eq!(back.engine_sessions, 5);
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
@@ -810,5 +893,18 @@ fn wait_for_exit(child: &mut Child, deadline: Instant) -> std::process::ExitStat
         }
         assert!(Instant::now() < deadline, "app did not exit");
         std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+/// Assert the §15 semantic `bbr-*` ids the current render exposes. This is
+/// the id-level evidence the design contract requires: every §11 assert id
+/// must be present for the state the shell actually renders.
+fn assert_ids(snapshot: &bbr_testkit::protocol::Snapshot, required: &[&str]) {
+    for id in required {
+        assert!(
+            snapshot.visible_ids.iter().any(|present| present == id),
+            "missing semantic id {id}; present: {:?}",
+            snapshot.visible_ids
+        );
     }
 }
