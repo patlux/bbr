@@ -48,6 +48,12 @@ impl BbrApp {
             .id("bbr-sidebar")
             .w(px(sidebar_width))
             .h_full()
+            // The rail is a physical fixed-width surface: GPUI's default
+            // flex_shrink is 1, so without this the rail would absorb part
+            // of the slot's relative(1.0) width and render narrower than its
+            // effective geometry — breaking the §13 content boundary and the
+            // §5 clamp (the content floor must stay exact).
+            .flex_shrink_0()
             .flex()
             .flex_row()
             .bg(p.surface_sidebar)
