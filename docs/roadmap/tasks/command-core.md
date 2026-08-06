@@ -174,10 +174,13 @@ Open blockers and non-goals: no GPUI/real-app surface, focus routing, keyboard
          fuzzy dependency, or product-budget change. No root manifest,
          Cargo.lock, justfile, testkit, shared crate, ROADMAP.md, performance
          baseline, or URL-input surface modified.
-Worktree state: parallel/command-core; 14 commits ahead of 9352ded after this
-         final documentation commit; no remote configured and nothing pushed;
-         sibling worktrees untouched. Final gate/status evidence is recorded in
-         the remediation handoff.
+Worktree state: settled `parallel/command-core` remains clean and writer-free;
+         its 14-commit ancestry was integrated on `main` by merge commit
+         `b7c475a029f166cd6a3842affe7454d79691cf7a`. No remote is configured and
+         nothing was pushed. The serial integration reran 50 tests, Clippy,
+         roadmap validation, and the 400-sample release benchmark (p50
+         0.117458 ms, p95 1.472250 ms, max 1.679958 ms), with no app-path or
+         real-app-E2E claim.
 
 Planning/read-only: original estimates retained as estimates; remediation
          runtime not reconstructed because exact workflow timing was not

@@ -1,10 +1,11 @@
 # BBR — Architecture (current implementation)
 
-Status: **describes the implemented workspace through the Phase-4 shell slices**: native GPUI +
+Status: **describes the implemented workspace through the Phase-4 shell slices and the integrated portable command core**: native GPUI +
 WKWebView embedding, portable browser orchestration, controller-backed real
 tabs, profile-isolated multi-session WebKit, the adjustable/collapsible
-sidebar, tab organization, the dense-500 list, and the pointer-state +
-internal-semantic-model slice. Verified against the actual
+sidebar, tab organization, the dense-500 list, the pointer-state +
+internal-semantic-model slice, and dependency-free command parsing/ranking.
+Verified against the actual
 GPUI crate (`gpui 0.2.2`), the `objc2-web-kit 0.3.2` bindings, the Swift
 reference at `PWBrowser`, and green `just verify` + sequential `just e2e` runs.
 
@@ -14,7 +15,7 @@ reference at `PWBrowser`, and green `just verify` + sequential `just e2e` runs.
 
 | Decision | Choice | Why |
 |---|---|---|
-| Workspace shape | Cargo workspace, nine crates: the seven implemented product/test crates plus dependency-free portable landing zones `bbr-command` and `bbr-persistence` | The implemented shell remains unchanged while Phase-5/7 portable cores can evolve in isolated worktrees behind explicit integration contracts |
+| Workspace shape | Cargo workspace, nine crates: seven shell/product/test crates, implemented portable `bbr-command`, and the `bbr-persistence` landing zone with its exact bundled-SQLite dependency contract | Phase-5 parsing/ranking is integrated without app coupling; the Phase-7 repository remains isolated until its review findings settle |
 | Chrome vs. pages | GPUI owns chrome; `WKWebView` is a native AppKit child view | Product principle; never texture-capture web content |
 | Embedding strategy | WKWebView is a **subview of GPUI's root `NSView`**, sized by a bounds-reporting GPUI element | Keeps the responder chain, key equivalents, accessibility, video/IME/process isolation intact |
 | Native-view slot | A custom public GPUI `Element` (`NativeWebViewSlot`) publishes its own window-relative bounds each frame | Uses only public GPUI APIs; no GPUI fork. **Fulfils the "no forking GPUI" stop-condition path** |
@@ -40,8 +41,8 @@ bbr/
     bbr-browser/        # lib: portable controller: tabs ↔ disposable web sessions
     bbr-testkit/        # lib: typed E2E protocol, gateway server + client (unix sockets)
     bbr-fixtures/       # lib+bin: deterministic loopback HTTP fixture server
-    bbr-command/        # portable Phase-5 landing zone; behavior not implemented yet
-    bbr-persistence/    # portable Phase-7 landing zone; behavior not implemented yet
+    bbr-command/        # portable Phase-5 parser, corpus, action registry, ranking + benchmarks
+    bbr-persistence/    # portable Phase-7 landing zone; bundled SQLite contract, repository pending integration
 ```
 
 ### Dependency direction (strict, acyclic)
@@ -54,6 +55,8 @@ bbr-testkit    ──uses──▶  bbr-web        (serde feature: WebEvent/WebA
 bbr-app        ──uses──▶  bbr-web, bbr-web-macos (macOS), bbr-testkit (testkit
                           feature), bbr-fixtures (dev-dep)
 bbr-fixtures   ──uses──▶  (std only)
+bbr-command    ──uses──▶  (std only; provider-neutral command data and ranking)
+bbr-persistence──uses──▶  rusqlite (exact 0.40.1, bundled; repository implementation not yet on main)
 ```
 
 - `bbr-web` **must not** depend on `gpui`, `objc2*`, `raw-window-handle`, or any
@@ -71,6 +74,13 @@ bbr-fixtures   ──uses──▶  (std only)
 - `bbr-domain` is fully portable: `#![forbid(unsafe_code)]`, no GPUI, no macOS
   frameworks, no SQLite, no display server. Runtime engine state (live
   WKWebViews) is deliberately kept outside it, keyed by `bbr_web::WebViewId`.
+- `bbr-command` is fully portable and dependency-free. It owns typed command
+  modes/identities/activations, strict deterministic URL-vs-search parsing, an
+  owned provider-neutral corpus, the 13-action catalog, standalone tab/space/
+  history/action/fallback ranking, deterministic score keys, and its 500-tab +
+  10,000-history distribution benchmark. It performs no GPUI composition,
+  filesystem/SQLite access, testkit transport, or synchronous I/O; those remain
+  serial integration surfaces.
 
 ### Version pins (workspace `[workspace.dependencies]`)
 
@@ -85,6 +95,7 @@ bbr-fixtures   ──uses──▶  (std only)
 | `raw-window-handle` | `0.6` | must match GPUI 0.2.2's `raw-window-handle 0.6` |
 | `serde` / `serde_json` | `1` | protocol framing (feature-gated in `bbr-web`) |
 | `smol` | `2` | channels for the main-loop event/command pump |
+| `rusqlite` | `=0.40.1` | `default-features = false`, bundled SQLite only; consumed solely by `bbr-persistence` |
 
 Toolchain: workspace MSRV `1.85`; the dev shell provides `rustc 1.97.1` via
 `rust-overlay`. `Xcode 16.4` is the host prerequisite (Metal + WebKit SDK) and
