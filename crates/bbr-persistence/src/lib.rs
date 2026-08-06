@@ -1,11 +1,21 @@
 #![forbid(unsafe_code)]
 
-//! Portable persistence repositories, schema contracts, and recovery policy.
+//! Portable, versioned SQLite persistence for BBR's structural browser state.
 //!
-//! Phase 7 owns the SQLite implementation in this crate. It deliberately has
-//! no GPUI, native-engine, or platform dependencies; app integration follows
-//! only after repository and migration contracts are independently proven.
-//!
-//! SQLite is supplied through the workspace-pinned `rusqlite` dependency with
-//! default features disabled and bundled SQLite enabled. The crate may use the
-//! safe wrapper but must not expose SQLite connection details as product state.
+//! The public API owns its DTOs and typed errors; it exposes no SQLite
+//! connection, row, value, or error type. URL validation is deliberately
+//! bounded rather than a full parser: required URLs must be non-empty and must
+//! contain no ASCII whitespace, control, or NUL bytes.
+
+mod error;
+mod model;
+mod repository;
+mod repository_load;
+mod schema;
+mod validation;
+
+pub use error::{CorruptionIssue, InvalidSnapshotIssue, PersistenceError, SchemaIssue};
+pub use model::{
+    Profile, ProfileHue, RecentlyClosedTab, RecoveryWarning, Repository, RestoreOutcome,
+    SidebarState, Snapshot, Space, Split, Tab, WindowGeometry, WindowState, WriteStats,
+};

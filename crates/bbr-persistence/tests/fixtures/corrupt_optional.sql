@@ -1,0 +1,15 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE profiles (id INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL, hue TEXT NOT NULL, position INTEGER NOT NULL);
+CREATE TABLE spaces (id INTEGER PRIMARY KEY NOT NULL, profile_id INTEGER NOT NULL REFERENCES profiles(id), title TEXT NOT NULL, position INTEGER NOT NULL, active_tab_id INTEGER);
+CREATE TABLE tabs (id INTEGER PRIMARY KEY NOT NULL, space_id INTEGER NOT NULL REFERENCES spaces(id), title TEXT NOT NULL, url TEXT NOT NULL, position INTEGER NOT NULL, pinned INTEGER NOT NULL);
+CREATE TABLE recently_closed (tab_id INTEGER PRIMARY KEY NOT NULL, space_id INTEGER NOT NULL REFERENCES spaces(id), title TEXT, url TEXT NOT NULL, pinned INTEGER NOT NULL, former_position INTEGER NOT NULL, position INTEGER NOT NULL);
+CREATE TABLE splits (space_id INTEGER PRIMARY KEY NOT NULL, primary_tab_id INTEGER NOT NULL, secondary_tab_id INTEGER NOT NULL);
+CREATE TABLE windows (id INTEGER PRIMARY KEY NOT NULL, position INTEGER NOT NULL, x REAL, y REAL, width REAL, height REAL, sidebar_width REAL NOT NULL, sidebar_collapsed INTEGER NOT NULL, last_expanded_width REAL NOT NULL);
+PRAGMA user_version = 1;
+INSERT INTO profiles VALUES (1, 'Personal', 'cobalt', 0);
+INSERT INTO spaces VALUES (10, 1, 'Main', 0, 999);
+INSERT INTO tabs VALUES (100, 10, 'Pinned', 'https://example.test/pinned', 0, 1);
+INSERT INTO tabs VALUES (101, 10, 'Regular', 'https://example.test/regular', 1, 0);
+INSERT INTO recently_closed VALUES (900, 10, NULL, 'https://closed.test/', 0, 2, 0);
+INSERT INTO splits VALUES (10, 100, 999);
+INSERT INTO windows VALUES (50, 0, -100.0, NULL, -1.0, 700.0, 199.0, 2, 400.0);
