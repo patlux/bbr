@@ -19,9 +19,8 @@ use crate::shell::TestSnapshot;
 mod interaction;
 mod render;
 
-/// Fixed sidebar width in points (Phase-4 will make this adjustable).
-pub const SIDEBAR_WIDTH_PX: f32 = 260.0;
-
+/// Sidebar width follows the §8 normal-density token (260 pt); Phase-4
+/// resize/drag will make it adjustable.
 /// Focus-change sink: invoked on the main thread after any focus mutation.
 pub type FocusSink = Box<dyn FnMut(bool)>;
 /// Semantic browser-mutation sink shared by shortcuts and testkit commands.

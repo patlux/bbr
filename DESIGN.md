@@ -131,9 +131,9 @@ an open decision for Phase 9 polish.
 | Token | Light | Dark | IC Light | IC Dark | Role |
 |---|---|---|---|---|---|
 | `color:ink` | `#1A1C1F` | `#ECEEF1` | `#000000` | `#FFFFFF` | primary text, titles |
-| `color:ink.secondary` | `#555B63` | `#A6ACB5` | `#3D434A` | `#D6DAE0` | meta, icons at rest, secondary tab text |
+| `color:ink.secondary` | `#555B63` | `#A6ACB5` | `#333A41` | `#D6DAE0` | meta, icons at rest, secondary tab text |
 | `color:ink.faint` | `#949AA2` | `#6E747D` | `#5C626A` | `#8A919B` | disabled, placeholders, purely decorative — never normal text |
-| `color:hairline` | `#E2E2DF` | `#2A2E34` | `#C9CBC8` | `#454C55` | structural rules |
+| `color:hairline` | `#E2E2DF` | `#2A2E34` | `#AFB2AC` | `#454C55` | structural rules |
 | `color:border.strong` | `#C7C9C5` | `#3B4149` | `#9FA29E` | `#525A63` | field borders, tile outlines |
 
 Contrast contract (recomputed by tests from tokens, not copied): `ink` ≥
@@ -141,12 +141,19 @@ Contrast contract (recomputed by tests from tokens, not copied): `ink` ≥
 on their surfaces; status inks ≥ 4.5:1; `accent` rails/rings ≥ 3:1;
 increased-contrast raises `ink.secondary` ≥ 9:1 and `hairline` ≥ 1.8:1.
 
+The light tokens above were verified against the §3.1 contract when the
+`crates/bbr-app/src/palette.rs` token gate shipped and corrected where the
+authored values fell short: light `accent.ink` `#0B6B5C → #0A5C4E`,
+light `attention` `#9C6500 → #8F5C00`, light-IC `ink.secondary`
+`#3D434A → #333A41`, light-IC `hairline` `#C9CBC8 → #AFB2AC`. The token
+gate recomputes every pair from the stored hex values.
+
 ### 3.2 Accent — Phosphor
 
 | Token | Light | Dark | IC Light | IC Dark | Use |
 |---|---|---|---|---|---|
 | `color:accent` | `#0E8F79` | `#2AD4B6` | `#0B6B5C` | `#3DF0CE` | selected rail, focus ring, drag tick, split preview frame (UI ≥ 3:1) |
-| `color:accent.ink` | `#0B6B5C` | `#3DF0CE` | `#0A5A4C` | `#3DF0CE` | accent-colored text (match highlight, mode chip, links) |
+| `color:accent.ink` | `#0A5C4E` | `#3DF0CE` | `#0A5A4C` | `#3DF0CE` | accent-colored text (match highlight, mode chip, links) |
 
 Usage rules: the accent marks **one thing at a time** — the selected tab rail,
 a focused control, the active command result, the split target. It never
@@ -160,7 +167,7 @@ companion** (glyph, text, or position); color never carries status alone.
 | Token | Light | Dark | Non-color companion |
 |---|---|---|---|
 | `color:status.error` | `#C22E24` | `#FF6A63` | ⚠/lifering glyph + error surface tint + (crash) panel copy |
-| `color:status.attention` | `#9C6500` | `#FFC63F` | pulsing dot (§6.3) + attention reason in status line |
+| `color:status.attention` | `#8F5C00` | `#FFC63F` | pulsing dot (§6.3) + attention reason in status line |
 | `color:status.ok` | `#177A55` | `#45C08A` | check glyph where used |
 | `color:status.info` | `#2C5CC5` | `#8AA6FF` | ℹ glyph |
 

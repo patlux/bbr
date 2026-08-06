@@ -25,6 +25,10 @@ mod shell;
 mod slot;
 #[cfg(feature = "testkit")]
 mod testkit;
+#[allow(dead_code)] // foundation tokens; consumed by the shell slices that follow this group
+mod palette;
+#[allow(dead_code)] // foundation tokens; consumed by the shell slices that follow this group
+mod theme;
 
 use actions::{Back, CloseTab, FocusCommandBar, FocusWeb, Forward, NewTab, Reload, ToggleSidebar};
 use app::BbrApp;
