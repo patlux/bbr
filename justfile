@@ -4,7 +4,12 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 check_timeout := env_var_or_default("BBR_CHECK_TIMEOUT", "5m")
 test_timeout := env_var_or_default("BBR_TEST_TIMEOUT", "5m")
 e2e_timeout := env_var_or_default("BBR_E2E_TIMEOUT", "2m")
+run_timeout := env_var_or_default("BBR_RUN_TIMEOUT", "8h")
 xcode_developer_dir := env_var_or_default("BBR_XCODE_DEVELOPER_DIR", "/Applications/Xcode-16.4.0.app/Contents/Developer")
+
+# Launch the development build. Override BBR_RUN_TIMEOUT for longer sessions.
+run:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{run_timeout}} cargo run -p bbr
 
 fmt:
     timeout --kill-after=10s {{check_timeout}} cargo fmt --all -- --check
