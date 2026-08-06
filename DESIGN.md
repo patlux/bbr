@@ -54,7 +54,7 @@ animated, colorful surface on screen.
 
 The Swift reference is our functional ancestor (spaces, profiles, pinned tabs)
 but intentionally has no visual identity; BBR replaces its placeholder lookup
-table (currently hardcoded `rgb(0x…)` values in `bbr-app/src/app/render.rs`)
+table (currently hardcoded `rgb(0x…)` values in `crates/bbr-app/src/app/render.rs`)
 with this token system in the same commit group that introduces the shell.
 
 ### Design principles
