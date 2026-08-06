@@ -641,3 +641,202 @@ fn snapshot_exposes_loading_and_crash_state_per_tab() {
         "fresh session clears the crash state"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Space hierarchy: complete collections, per-space active tabs, and warm
+// session preservation across view-only switches.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn snapshot_exposes_complete_profile_and_space_collections() {
+    let (mut c, h) = plain();
+    let default_space = c.snapshot().active_space;
+    let (private_profile, private_space) = match c.create_profile_space("Private", "Private") {
+        Ok(ControllerEvent::ProfileCreated { profile, space }) => (profile, space),
+        other => panic!("unexpected event: {other:?}"),
+    };
+    let reading_space = match c.create_space_event(ProfileId(1), "Reading") {
+        Ok(ControllerEvent::SpaceCreated { space, .. }) => space,
+        other => panic!("unexpected event: {other:?}"),
+    };
+    open(&mut c, "https://default");
+    c.activate_space(private_space).unwrap();
+    open(&mut c, "https://private");
+
+    let snap = c.snapshot();
+    // Complete collections in creation order, not just the active space.
+    assert_eq!(
+        snap.profiles
+            .iter()
+            .map(|p| (p.index, p.id, p.title.as_str()))
+            .collect::<Vec<_>>(),
+        vec![
+            (0, ProfileId(1), "Default"),
+            (1, private_profile, "Private"),
+        ]
+    );
+    assert_eq!(
+        snap.spaces
+            .iter()
+            .map(|s| (s.index, s.id, s.title.as_str()))
+            .collect::<Vec<_>>(),
+        vec![
+            (0, default_space, "Default"),
+            (1, private_space, "Private"),
+            (2, reading_space, "Reading"),
+        ]
+    );
+    // Per-space active tab + live session: the private space's own tab is
+    // active and hosted while the default space's tab stays warm.
+    let private = snap.spaces.iter().find(|s| s.id == private_space).unwrap();
+    assert!(private.active);
+    assert_eq!(private.active_tab, Some(0));
+    assert_eq!(private.active_view, snap.active_view);
+    let default = snap.spaces.iter().find(|s| s.id == default_space).unwrap();
+    assert!(!default.active);
+    assert_eq!(default.active_tab, Some(0));
+    assert_eq!(default.active_view, Some(WebViewId(1)));
+    assert_eq!(snap.engine_sessions, 2);
+    assert_eq!(h.engine.borrow().live_session_count(), 2);
+    // Profile identity hues flow through the snapshot (DESIGN.md §12).
+    assert_eq!(snap.profiles[0].hue.name(), "cobalt");
+    assert_eq!(snap.profiles[1].hue.name(), "violet");
+    assert_eq!(
+        snap.active_profile_hue,
+        Some(bbr_domain::ProfileHue::Violet),
+        "active profile hue follows the active space"
+    );
+}
+
+#[test]
+fn each_space_remembers_its_active_tab() {
+    let (mut c, h) = plain();
+    open(&mut c, "https://a");
+    open(&mut c, "https://b");
+    c.select_tab(0).unwrap();
+    let default_space = c.snapshot().active_space;
+    let second = match c.create_space_event(ProfileId(1), "Two") {
+        Ok(ControllerEvent::SpaceCreated { space, .. }) => space,
+        other => panic!("unexpected event: {other:?}"),
+    };
+    c.activate_space(second).unwrap();
+    open(&mut c, "https://c");
+
+    // Space 1's active tab is tab 0; space 2's is tab 0 of its own list.
+    let snap = c.snapshot();
+    let s1 = snap.spaces.iter().find(|s| s.id == default_space).unwrap();
+    let s2 = snap.spaces.iter().find(|s| s.id == second).unwrap();
+    assert_eq!(s1.active_tab, Some(0));
+    assert_eq!(s1.active_view, Some(WebViewId(1)));
+    assert_eq!(s2.active_tab, Some(0));
+    assert_eq!(s2.active_view, Some(WebViewId(3)));
+
+    // Switching back restores space 1's active tab without recreation.
+    h.reset_ops();
+    c.activate_space(default_space).unwrap();
+    let snap = c.snapshot();
+    assert_eq!(snap.active_index, Some(0));
+    assert_eq!(snap.active_view, Some(WebViewId(1)));
+    assert_eq!(snap.engine_sessions, 3, "all sessions stay warm");
+    assert!(
+        h.recorded(&[
+            EngineOp::Show {
+                view: WebViewId(1),
+                visible: true,
+            },
+            EngineOp::Show {
+                view: WebViewId(3),
+                visible: false,
+            },
+        ]),
+        "domain order: default-space tab first, then the now-hidden space"
+    );
+}
+
+#[test]
+fn cross_profile_switch_preserves_warm_sessions_without_recreation() {
+    let (mut c, h) = plain();
+    let default_space = c.snapshot().active_space;
+    open(&mut c, "https://default");
+    let default_view = c.snapshot().active_view.unwrap();
+    let (private_profile, private_space) = match c.create_profile_space("Private", "Private") {
+        Ok(ControllerEvent::ProfileCreated { profile, space }) => (profile, space),
+        other => panic!("unexpected event: {other:?}"),
+    };
+    c.activate_space(private_space).unwrap();
+    open(&mut c, "https://private");
+    let private_view = c.snapshot().active_view.unwrap();
+    assert_ne!(private_profile, ProfileId(1), "private profile differs");
+
+    // View-only switches across profile boundaries must not recreate either
+    // session: each tab keeps its own data-store-backed session, and no
+    // create/destroy op crosses the wire (the recreation policy fires only
+    // when a tab actually moves across profiles).
+    h.reset_ops();
+    c.activate_space(default_space).unwrap();
+    let snap = c.snapshot();
+    assert_eq!(snap.active_profile, ProfileId(1));
+    assert_eq!(snap.active_view, Some(default_view));
+    assert_eq!(snap.engine_sessions, 2);
+    assert!(
+        h.recorded(&[
+            EngineOp::Show {
+                view: default_view,
+                visible: true,
+            },
+            EngineOp::Show {
+                view: private_view,
+                visible: false,
+            },
+        ]),
+        "cross-profile view-only switch must only show/hide, never recreate"
+    );
+
+    h.reset_ops();
+    c.activate_space(private_space).unwrap();
+    let snap = c.snapshot();
+    assert_eq!(snap.active_profile, private_profile);
+    assert_eq!(snap.active_view, Some(private_view));
+    assert_eq!(snap.engine_sessions, 2);
+    assert!(
+        h.recorded(&[
+            EngineOp::Show {
+                view: default_view,
+                visible: false,
+            },
+            EngineOp::Show {
+                view: private_view,
+                visible: true,
+            },
+        ]),
+        "domain order: default-space tab first, then the now-visible private"
+    );
+}
+
+#[test]
+fn empty_space_activation_restores_no_active_tab_and_no_session_loss() {
+    let (mut c, h) = plain();
+    let default_space = c.snapshot().active_space;
+    open(&mut c, "https://a");
+    let a_view = c.snapshot().active_view.unwrap();
+    let second = match c.create_space_event(ProfileId(1), "Empty") {
+        Ok(ControllerEvent::SpaceCreated { space, .. }) => space,
+        other => panic!("unexpected event: {other:?}"),
+    };
+    c.activate_space(second).unwrap();
+    let snap = c.snapshot();
+    assert!(snap.tabs.is_empty());
+    assert_eq!(snap.active_index, None);
+    assert_eq!(snap.active_view, None);
+    assert!(!snap.web_view_hosted);
+    assert_eq!(snap.engine_sessions, 1, "the other space's tab stays warm");
+    // The empty pane names the owning profile from the snapshot.
+    assert_eq!(snap.active_profile_title.as_deref(), Some("Default"));
+
+    // Back to the populated space: warm tab restored, no recreation.
+    c.activate_space(default_space).unwrap();
+    let snap = c.snapshot();
+    assert_eq!(snap.active_view, Some(a_view));
+    assert_eq!(snap.engine_sessions, 1);
+    assert_eq!(h.engine.borrow().live_session_count(), 1);
+}

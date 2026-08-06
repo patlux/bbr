@@ -144,7 +144,10 @@ impl Browser {
 
     pub fn create_profile(&mut self, title: impl Into<String>) -> ProfileId {
         let id = ProfileId(self.alloc_id());
-        self.profiles.push(Profile::new(id, title));
+        // Round-robin hue assignment (DESIGN.md §12): deterministic per
+        // profile and stable for the profile's lifetime.
+        let hue = crate::ProfileHue::ALL[self.profiles.len() % crate::ProfileHue::ALL.len()];
+        self.profiles.push(Profile::new(id, hue, title));
         id
     }
 

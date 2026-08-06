@@ -3,6 +3,46 @@
 use crate::split::Split;
 use crate::{ProfileId, SpaceId, TabId, TabLifecycle};
 
+/// The six DESIGN.md §12 profile hues.
+///
+/// Assignment is round-robin and stable for the profile's lifetime: the hue
+/// is a portable identity fact, while the concrete tile/letter colors are a
+/// presentation concern resolved by the shell's palette from this name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ProfileHue {
+    Cobalt,
+    Violet,
+    Fuchsia,
+    Amber,
+    Terracotta,
+    Slate,
+}
+
+impl ProfileHue {
+    /// All hues in round-robin assignment order (DESIGN.md §12).
+    pub const ALL: [ProfileHue; 6] = [
+        ProfileHue::Cobalt,
+        ProfileHue::Violet,
+        ProfileHue::Fuchsia,
+        ProfileHue::Amber,
+        ProfileHue::Terracotta,
+        ProfileHue::Slate,
+    ];
+
+    /// The canonical machine-readable name used by snapshots and E2E
+    /// assertions (DESIGN.md §12 allowed values).
+    pub fn name(self) -> &'static str {
+        match self {
+            ProfileHue::Cobalt => "cobalt",
+            ProfileHue::Violet => "violet",
+            ProfileHue::Fuchsia => "fuchsia",
+            ProfileHue::Amber => "amber",
+            ProfileHue::Terracotta => "terracotta",
+            ProfileHue::Slate => "slate",
+        }
+    }
+}
+
 /// A browsing identity with an isolated website data store.
 ///
 /// Profile identity reuses [`ProfileId`] from `bbr-web`, the same type the
@@ -13,12 +53,15 @@ pub struct Profile {
     pub id: ProfileId,
     /// User-visible name (e.g. "Work", "Personal").
     pub title: String,
+    /// Stable round-robin identity hue (DESIGN.md §12).
+    pub hue: ProfileHue,
 }
 
 impl Profile {
-    pub fn new(id: ProfileId, title: impl Into<String>) -> Self {
+    pub fn new(id: ProfileId, hue: ProfileHue, title: impl Into<String>) -> Self {
         Self {
             id,
+            hue,
             title: title.into(),
         }
     }

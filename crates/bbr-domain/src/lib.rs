@@ -50,7 +50,7 @@ mod tests_layout;
 pub use browser::Browser;
 pub use error::{DomainError, InvariantViolation};
 pub use lifecycle::{LifecycleError, TabLifecycle};
-pub use model::{ClosedTab, Profile, Space, Tab};
+pub use model::{ClosedTab, Profile, ProfileHue, Space, Tab};
 pub use split::Split;
 
 pub use bbr_web::ProfileId;

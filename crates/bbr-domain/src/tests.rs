@@ -505,3 +505,53 @@ fn discarded_visible_tab_survives_other_mutations() {
     assert_eq!(b.tab(c).unwrap().lifecycle, TabLifecycle::Discarded);
     b.check_invariants().unwrap();
 }
+
+// ---- Profile identity hue (DESIGN.md §12) --------------------------------
+
+#[test]
+fn profiles_get_round_robin_hues_stable_for_lifetime() {
+    let mut b = Browser::new();
+    let hues = [
+        "cobalt",
+        "violet",
+        "fuchsia",
+        "amber",
+        "terracotta",
+        "slate",
+    ];
+    // Seven profiles wrap the six-hue ramp.
+    let mut created = Vec::new();
+    for i in 0..7 {
+        created.push(b.create_profile(format!("P{i}")));
+    }
+    for (i, profile) in created.iter().enumerate() {
+        let p = b.profile(*profile).expect("profile exists");
+        assert_eq!(
+            p.hue.name(),
+            hues[i % hues.len()],
+            "round-robin assignment for profile {i}"
+        );
+    }
+    // The hue is stable: recreating the browser with the same sequence yields
+    // the same assignment, and the stored value never changes on mutation.
+    let mut b2 = Browser::new();
+    let mut second = Vec::new();
+    for i in 0..7 {
+        second.push(b2.create_profile(format!("P{i}")));
+    }
+    for (a, id) in created.iter().zip(&second) {
+        assert_eq!(
+            b.profile(*a).unwrap().hue,
+            b2.profile(*id).unwrap().hue,
+            "hue assignment is deterministic across identical histories"
+        );
+    }
+    // A tab mutation never touches profile identity.
+    let space = b.create_space(created[0], "S").unwrap();
+    b.open_tab(space, "T", "https://t").unwrap();
+    assert_eq!(
+        b.profile(created[0]).unwrap().hue.name(),
+        "cobalt",
+        "profile identity survives unrelated mutations"
+    );
+}

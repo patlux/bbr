@@ -61,4 +61,4 @@ pub use error::ControllerError;
 pub use nav::NavState;
 pub use outcome::ControllerEvent;
 pub use session::{SessionError, SessionRegistry};
-pub use snapshot::{ControllerSnapshot, TabSnapshot};
+pub use snapshot::{ControllerSnapshot, ProfileSnapshot, SpaceSnapshot, TabSnapshot};

@@ -1,6 +1,6 @@
 //! Read-only snapshots of controller state for the UI and E2E harness.
 
-use bbr_domain::SpaceId;
+use bbr_domain::{ProfileHue, SpaceId};
 use bbr_web::{ProfileId, WebViewId};
 
 use crate::nav::NavState;
@@ -25,6 +25,36 @@ pub struct TabSnapshot {
     pub web_view: Option<WebViewId>,
 }
 
+/// One profile's identity as presented to the UI/E2E (DESIGN.md §12).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProfileSnapshot {
+    /// Position in creation order — the stable `bbr-profile-chip-<n>` identity.
+    pub index: usize,
+    pub id: ProfileId,
+    pub title: String,
+    /// Stable round-robin identity hue (DESIGN.md §12).
+    pub hue: ProfileHue,
+}
+
+/// One space as presented to the UI/E2E, including its own active tab and
+/// live session — the "each space remembers its active tab" contract.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SpaceSnapshot {
+    /// Position in creation order — the stable `bbr-space-row-<n>` identity.
+    pub index: usize,
+    pub id: SpaceId,
+    pub profile: ProfileId,
+    pub title: String,
+    /// The space's own selected tab (restored on activation), space-local.
+    pub active_tab: Option<usize>,
+    /// Live session of the space's active tab (`None` when empty/suspended).
+    pub active_view: Option<WebViewId>,
+    /// Whether this is the controller's active space.
+    pub active: bool,
+    /// Tab count for the §11.3 count column.
+    pub tab_count: usize,
+}
+
 /// A snapshot of the controller's observable state.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ControllerSnapshot {
@@ -32,9 +62,15 @@ pub struct ControllerSnapshot {
     pub active_profile: ProfileId,
     /// Display title of the active profile (DESIGN.md §11.8 pane naming).
     pub active_profile_title: Option<String>,
+    /// The active profile's identity hue (DESIGN.md §12).
+    pub active_profile_hue: Option<ProfileHue>,
     pub active_space: SpaceId,
     /// Tabs of the active space, in order.
     pub tabs: Vec<TabSnapshot>,
+    /// Complete profile collection in creation order.
+    pub profiles: Vec<ProfileSnapshot>,
+    /// Complete space collection in creation order.
+    pub spaces: Vec<SpaceSnapshot>,
     /// Index of the active tab, if any.
     pub active_index: Option<usize>,
     /// Navigation state of the active session (mirrors the active tab).
@@ -58,8 +94,11 @@ mod tests {
         let s = ControllerSnapshot {
             active_profile: ProfileId(1),
             active_profile_title: Some("Default".into()),
+            active_profile_hue: Some(ProfileHue::Cobalt),
             active_space: SpaceId(2),
             tabs: Vec::new(),
+            profiles: Vec::new(),
+            spaces: Vec::new(),
             active_index: None,
             nav: NavState::default(),
             web_view_hosted: false,

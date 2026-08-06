@@ -414,8 +414,11 @@ mod tests {
         let browser = ControllerSnapshot {
             active_profile: bbr_web::ProfileId(1),
             active_profile_title: Some("Default".into()),
+            active_profile_hue: Some(bbr_domain::ProfileHue::Cobalt),
             active_space: bbr_browser::SpaceId(1),
             tabs: tabs.clone(),
+            profiles: Vec::new(),
+            spaces: Vec::new(),
             active_index: Some(0),
             nav: Default::default(),
             web_view_hosted: false,
@@ -453,8 +456,11 @@ mod tests {
         let browser = ControllerSnapshot {
             active_profile: bbr_web::ProfileId(1),
             active_profile_title: Some("Default".into()),
+            active_profile_hue: Some(bbr_domain::ProfileHue::Cobalt),
             active_space: bbr_browser::SpaceId(1),
             tabs: crashed,
+            profiles: Vec::new(),
+            spaces: Vec::new(),
             active_index: Some(0),
             nav: Default::default(),
             web_view_hosted: false,

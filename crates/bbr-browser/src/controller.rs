@@ -374,14 +374,49 @@ impl BrowserController {
         let nav = active_view
             .and_then(|v| self.nav.get(&v).cloned())
             .unwrap_or_default();
+        let profiles = self
+            .browser
+            .profiles()
+            .enumerate()
+            .map(|(index, p)| crate::snapshot::ProfileSnapshot {
+                index,
+                id: p.id,
+                title: p.title.clone(),
+                hue: p.hue,
+            })
+            .collect();
+        let spaces = self
+            .browser
+            .spaces()
+            .enumerate()
+            .map(|(index, s)| {
+                let active_tab = s
+                    .active_tab
+                    .and_then(|t| s.tabs.iter().position(|x| *x == t));
+                crate::snapshot::SpaceSnapshot {
+                    index,
+                    id: s.id,
+                    profile: s.profile,
+                    title: s.title.clone(),
+                    active_tab,
+                    active_view: s.active_tab.and_then(|t| self.registry.view_for_tab(t)),
+                    active: s.id == self.active_space,
+                    tab_count: s.tabs.len(),
+                }
+            })
+            .collect();
+        let active_profile = self.active_profile();
         crate::snapshot::ControllerSnapshot {
-            active_profile: self.active_profile(),
+            active_profile,
             active_profile_title: self
                 .browser
-                .profile(self.active_profile())
+                .profile(active_profile)
                 .map(|p| p.title.clone()),
+            active_profile_hue: self.browser.profile(active_profile).map(|p| p.hue),
             active_space: self.active_space,
             tabs: tab_snapshots,
+            profiles,
+            spaces,
             active_index,
             nav,
             web_view_hosted: active_view.is_some(),
