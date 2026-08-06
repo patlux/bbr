@@ -16,9 +16,11 @@ implemented and verified (real-app split-geometry suite, single-pane sidebar
 regression, canonical sequential `just e2e`, and report-only optimized
 performance gate are green on this host); the phase's broader split interaction
 items remain open. After that exact
-anchor lands, split-core may own new split-focused modules in a sibling
-worktree; native geometry and GPUI composition remain serial integration
-surfaces. See the [parallel-delivery contract](../../parallel-delivery.md).
+anchor landed at `29c34e68f4fad5f5338f7b69e50c44dd84145e74`.
+The bounded [portable split-core packet](../tasks/split-core.md) may now own its
+new crate in a sibling worktree; native geometry and GPUI composition remain
+serial integration surfaces. See the
+[parallel-delivery contract](../../parallel-delivery.md).
 
 ## Checklist
 
