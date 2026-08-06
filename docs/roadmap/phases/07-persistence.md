@@ -13,6 +13,8 @@ lands, activate persistence core as a bounded lane rooted at that clean commit.
 `crates/bbr-persistence/**` plus checked-in migration fixtures are its exclusive
 surface; domain DTOs, app startup/shutdown composition, migration numbering,
 and command-history provider integration remain serial integration points.
+Active packet: [portable persistence core](../tasks/persistence-core.md), rooted
+at the exact foundation anchor and integrated before restore/hydration UI.
 
 ## Checklist
 
