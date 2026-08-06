@@ -123,9 +123,11 @@ bounded advisory-lock mechanism without weakening existing GUI gates.
 ```text
 Outcome: Worktree lanes, serial integration kernel, portable command/
          persistence landing zones, and one host-wide GUI gate.
-Commits: c7a9cd2 baseline-reproduced domain lint fix; foundation commit below.
+Commits: c7a9cd2 baseline-reproduced domain lint fix; 03b9e8b parallel-
+         delivery foundation; this ledger follow-up.
 Predecessor anchor: 20628ff on clean main after terminal remediation + recheck.
-Foundation anchor: recorded by the follow-up delivery-ledger commit.
+Foundation anchor: 03b9e8b (implementation); the ledger follow-up is the exact
+         branch point for newly activated lane worktrees.
 Functional evidence: just verify; testkit Clippy; GUI-lock unit contracts and
          py_compile; shared Git-common-dir lock key verified from main and the
          preserved URL-input worktree.
