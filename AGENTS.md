@@ -10,7 +10,8 @@ Before implementation work:
 2. Read [ROADMAP.md](ROADMAP.md) for current focus and phase status.
 3. Follow the current phase into its linked track and task packet under `docs/roadmap/`.
 4. Read [ARCHITECTURE.md](ARCHITECTURE.md) and [E2E_ARCHITECTURE.md](E2E_ARCHITECTURE.md) when changing architecture, native integration, or tests.
-5. Inspect `git status` and preserve unrelated work.
+5. Read [DESIGN.md](DESIGN.md) before UI work: it is the canonical visual contract (tokens, states, components, assertion ids).
+6. Inspect `git status` and preserve unrelated work.
 
 ## Roadmap handling
 

@@ -10,11 +10,11 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 
 - [ ] Complete the [real-app performance E2E foundation](../tasks/performance-e2e-foundation.md) before broad shell implementation.
 - [ ] Prove startup presents the complete sidebar and selected tab's visible native web view in the same first usable frame within the product budget.
-- [ ] Establish and document the visual direction in `DESIGN.md` before broad shell implementation.
-- [ ] Define semantic color, typography, spacing, radius, icon, and motion tokens.
-- [ ] Define light, dark, increased-contrast, and reduced-motion behavior.
-- [ ] Define density rules for small, normal, and very large tab collections.
-- [ ] Define reusable states: hover, active, selected, loading, attention, error, disabled, drag target, and keyboard focus.
+- [x] Establish and document the visual direction in [DESIGN.md](../../../DESIGN.md) before broad shell implementation.
+- [x] Define semantic color, typography, spacing, radius, icon, and motion tokens.
+- [x] Define light, dark, increased-contrast, and reduced-motion behavior.
+- [x] Define density rules for small, normal, and very large tab collections.
+- [x] Define reusable states: hover, active, selected, loading, attention, error, disabled, drag target, and keyboard focus.
 
 ## Shell and interaction
 

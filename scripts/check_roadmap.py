@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DOCUMENTS = [
     ROOT / "AGENTS.md",
     ROOT / "ROADMAP.md",
+    ROOT / "DESIGN.md",
     ROOT / "PLAN.md",
     ROOT / "ARCHITECTURE.md",
     ROOT / "E2E_ARCHITECTURE.md",

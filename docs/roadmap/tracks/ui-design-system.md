@@ -8,13 +8,13 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 
 ## Visual direction and tokens — Phase 4 start
 
-- [ ] Create `DESIGN.md` through an explicit visual-direction process.
-- [ ] Define what makes BBR visually distinct from Arc, Zen, Safari, and the Swift reference.
-- [ ] Define semantic surface, text, border, accent, status, and profile-identity colors.
-- [ ] Define typography roles and truncation behavior for dense browser data.
-- [ ] Define spacing, sizing, radius, separator, material, and elevation rules.
-- [ ] Define icon family, optical sizing, stroke/weight, and fallback rules.
-- [ ] Define motion principles, durations, easing, and Reduce Motion alternatives.
+- [x] Create [DESIGN.md](../../../DESIGN.md) through an explicit visual-direction process.
+- [x] Define what makes BBR visually distinct from Arc, Zen, Safari, and the Swift reference.
+- [x] Define semantic surface, text, border, accent, status, and profile-identity colors.
+- [x] Define typography roles and truncation behavior for dense browser data.
+- [x] Define spacing, sizing, radius, separator, material, and elevation rules.
+- [x] Define icon family, optical sizing, stroke/weight, and fallback rules.
+- [x] Define motion principles, durations, easing, and Reduce Motion alternatives.
 - [ ] Implement reusable GPUI tokens/components instead of local magic values.
 
 ## Shell craft — Phase 4
