@@ -12,6 +12,17 @@ Before implementation work:
 4. Read [ARCHITECTURE.md](ARCHITECTURE.md) and [E2E_ARCHITECTURE.md](E2E_ARCHITECTURE.md) when changing architecture, native integration, or tests.
 5. Read [DESIGN.md](DESIGN.md) before UI work: it is the canonical visual contract (tokens, states, components, assertion ids).
 6. Inspect `git status` and preserve unrelated work.
+7. Follow [docs/development-workflow.md](docs/development-workflow.md) for bounded slices, ownership, review, test cadence, recovery, and phase closeout.
+
+## Delivery workflow
+
+- Use a bounded vertical slice with explicit outcome, scope, non-goals, constraints, evidence, completion gates, iteration policy, and blocked stop condition. Start from [the task-packet template](docs/roadmap/templates/task-packet.md).
+- Default lifecycle: one exclusive writer, then one independent read-only reviewer. Run one remediation writer only for concrete findings, followed by a focused recheck.
+- Do not run a separate final-audit agent for every ordinary slice. Reserve full audit for phase closeout, high-risk architecture/security/isolation/native-boundary work, disputed evidence, or ambiguous recovery.
+- Exactly one writer may own a branch/worktree. Transfer ownership only after explicit settlement, stop, or user-authorized handoff naming the preserved state and new owner. Never inspect or mutate another writer's isolated worktree.
+- Use targeted tests while iterating. Run the affected real-app E2E and performance scenarios before an intermediate commit. Run the canonical sequential `just e2e` once after the complete slice is stable; run `just e2e-perf-full` at phase closeout or when canonical repeated evidence is required.
+- Never weaken tests, budgets, validators, architecture boundaries, or acceptance criteria to shorten the workflow. The optimization removes redundant orchestration and duplicate gates, not evidence.
+- Record a delivery ledger and measured timing where runtime evidence exists; label reconstructed timing as an estimate.
 
 ## Roadmap handling
 
@@ -62,17 +73,28 @@ Every new or changed browser feature must include automated real-app E2E coverag
 
 ### Required gates
 
-Before marking a roadmap item complete or committing an implementation group:
+Use targeted feedback during implementation. Before an intermediate commit inside one exclusively owned slice, run the affected unit/contract tests, Clippy targets, real-app E2E suites, and optimized performance scenarios needed to prove that commit. Intermediate commits must remain coherent and must not claim roadmap completion.
+
+Before marking a roadmap item complete or handing off a stable implementation slice, run:
 
 ```bash
 just verify
-just e2e              # canonical sequential real-app GUI gate
-just e2e-smoke        # baseline native integration when affected
-just e2e-tabs         # real multi-tab/session behavior when affected
-just e2e-perf         # real-app performance regression gate once implemented
+cargo clippy -p bbr --features testkit --all-targets -- -D warnings
+just e2e-<affected-suite>
+just e2e-perf          # when user-visible interaction or timing changed
+just e2e               # once after the complete slice is stable
 ```
 
-Run every affected individual suite as well as the canonical sequential gate. Until `just e2e-perf` exists, performance-sensitive roadmap items remain unproven. GUI suites must not run in parallel because AppKit window geometry can interfere through screen clamping. Add another bounded `just e2e-<suite>` recipe when a new browser feature introduces a suite; a generic selector can wait until suite count justifies it.
+At phase closeout, run one clean full sequence:
+
+```bash
+just verify
+just e2e
+just e2e-perf-full
+just roadmap
+```
+
+Run every affected individual suite as well as the stable-slice canonical sequential gate. Performance-sensitive roadmap items remain unproven without their required optimized scenario and, where specified, canonical-runner evidence. GUI suites must not run in parallel because AppKit window geometry can interfere through screen clamping. Add another bounded `just e2e-<suite>` recipe when a new browser feature introduces a suite; a generic selector can wait until suite count justifies it.
 
 All long-running commands must use the repository's bounded `just` recipes or an explicit hard timeout with process-tree cleanup.
 
@@ -175,4 +197,4 @@ For a small self-explanatory docs or formatting commit, a short body is acceptab
 
 ## Current next step
 
-Follow [docs/roadmap/tasks/performance-e2e-foundation.md](docs/roadmap/tasks/performance-e2e-foundation.md) before broad Phase-4 sidebar implementation. Preserve the proven controller and multi-session adapter while adding startup and interaction presentation benchmarks through the real optimized app.
+Use [ROADMAP.md](ROADMAP.md) as the sole current-focus pointer and follow its linked phase, track, and task packet. Do not duplicate a potentially stale next-step statement here.

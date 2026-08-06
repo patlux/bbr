@@ -16,6 +16,12 @@ ROADMAP.md
 - **Track:** one durable concern spanning one or more phases.
 - **Task packet:** bounded implementation work that should fit one or a few logical commits.
 
+Task packets follow [the reusable template](templates/task-packet.md) and the
+[development workflow](../development-workflow.md). Existing packets may retain
+their current shape, but every newly activated or substantially rewritten packet
+must state outcome, scope, non-goals, constraints, evidence, completion gates,
+iteration policy, and blocked stop condition.
+
 ## Canonical ownership
 
 A concrete checkbox must have exactly one canonical owner, normally a track or task file. Higher-level checkboxes are roll-ups and are checked only when every required linked acceptance item is complete.
@@ -44,20 +50,23 @@ Avoid volatile timings unless performance is the acceptance criterion. Implement
 ## Adding work
 
 1. Place the item under the nearest existing track.
-2. Create a task packet when implementation needs sequencing, explicit non-goals, or several commits.
-3. Add a new track only for a durable concern.
-4. Add a new phase only for a distinct user-visible or architectural milestone.
-5. Link upward so every task is discoverable from `ROADMAP.md`.
+2. Create a task packet from [the template](templates/task-packet.md) when implementation needs sequencing, explicit non-goals, or several commits.
+3. Bound the packet to one independently valuable vertical slice; split phase-wide work before implementation.
+4. Add a new track only for a durable concern.
+5. Add a new phase only for a distinct user-visible or architectural milestone.
+6. Link upward so every task is discoverable from `ROADMAP.md`.
 
 ## Regular review cadence
 
 At the start or end of a meaningful implementation group:
 
 1. Read `ROADMAP.md` and the current phase.
-2. Update completed canonical checkboxes.
-3. Promote the next task packet into **Current focus**.
-4. Confirm phase acceptance still matches the product.
-5. Run unit/contract tests plus automated real-app E2E for every affected browser feature before marking work complete.
+2. Confirm one writer exclusively owns the target branch/worktree.
+3. Update completed canonical checkboxes.
+4. Promote the next task packet into **Current focus**.
+5. Confirm phase acceptance still matches the product.
+6. Run unit/contract tests plus automated real-app E2E and required optimized performance evidence for every affected browser feature before marking work complete.
+7. Record the slice delivery ledger and any measured workflow timings.
 
 `just roadmap` validates the hierarchy's local Markdown links. It is also part
 of `just verify`, so moved or deleted roadmap detail files cannot silently leave
