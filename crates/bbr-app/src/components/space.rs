@@ -8,7 +8,7 @@ use gpui::{
 use crate::palette::ProfileHueRamp;
 use crate::theme::{Radius, Spacing, Theme};
 
-use super::{ProfileChipSpec, SpaceRowVisuals, SpaceVisualState};
+use super::{Icon, ProfileChipSpec, SpaceRowVisuals, SpaceVisualState};
 
 /// The §15 semantic id of a profile chip, keyed to the *profile* index
 /// (DESIGN.md §12) — never the space index. The sidebar renders one chip per
@@ -135,9 +135,7 @@ pub fn space_new_row(
                 .flex()
                 .items_center()
                 .justify_center()
-                .text_size(theme.type_.label.size)
-                .text_color(theme.palette.ink_secondary)
-                .child("+"),
+                .child(Icon::Plus.canvas(theme, px(16.0))),
         )
         .child(
             div()

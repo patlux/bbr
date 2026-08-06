@@ -22,6 +22,15 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 
 ## Shell craft — Phase 4
 
+- [ ] Replace placeholder chrome glyphs with the BBR-drawn §7 icon set. *(The
+      [icon-system slice](../tasks/icon-system.md) swaps the close `×`, pin
+      `●`/`○`, loading `●`, new-space `+`, crash `!`, empty-pane brand `B`,
+      and status-line `⚠` placeholders for drawn 1.5 pt glyphs from the
+      reusable `components::icons` catalog — ids, hit targets, semantics,
+      focus, and listeners unchanged. Unit/geometry evidence green on the
+      lane; the existing real-app shell suites re-run at integration under
+      the host-wide GUI gate. The command-field prefix and sidebar brand text
+      stay with command composition.)*
 - [ ] Clear hierarchy between navigation controls, command surface, pinned tabs, regular tabs, and spaces.
 - [ ] Active tab and focused pane are unmistakable without visual noise.
 - [x] Profile identity is clear whenever tabs/spaces cross contexts. *(Every space row keeps its §12 chip with a round-robin hue and monogram, profile groups stack under hairlines, the empty pane names the owning profile, and a cross-profile space activation renders the destination profile chip + a `type:label` "in Profile · <title>" hint at the top of the command field for one interaction (the [cross-context profile-hint slice](../tasks/cross-context-profile-hint.md)) — identity never relies on color alone.)*

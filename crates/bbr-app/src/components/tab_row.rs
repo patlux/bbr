@@ -10,10 +10,11 @@ use gpui::{
 use crate::palette::FaviconSlate;
 use crate::theme::{Radius, Spacing, Theme, ThemeMode};
 
-use super::{FaviconSpec, RowVisuals, TabVisualState};
+use super::{FaviconSpec, Icon, RowVisuals, TabVisualState};
 
 /// §7.2 favicon tile: 16 pt (S: 14) square, `radius:sm`, monogram letter on
-/// the FNV-slate ramp; loading swaps the letter for the accent spinner dot.
+/// the FNV-slate ramp; while loading the slot shows the §10.5 accent arc
+/// (drawn, static — rotation is a later polish pass).
 pub fn favicon_tile(
     theme: &Theme,
     index: usize,
@@ -43,10 +44,11 @@ pub fn favicon_tile(
         .text_size(theme.type_.badge.size)
         .font_weight(theme.type_.badge.weight)
         .text_color(fg)
-        .child(if state == TabVisualState::Loading {
-            SharedString::from("●")
-        } else {
-            SharedString::from(letter.to_string())
+        .when(state == TabVisualState::Loading, |el| {
+            el.child(Icon::LoadingArc.canvas(theme, size))
+        })
+        .when(state != TabVisualState::Loading, |el| {
+            el.child(SharedString::from(letter.to_string()))
         })
 }
 
@@ -84,9 +86,11 @@ pub fn row_state_slot(theme: &Theme, index: usize) -> Stateful<Div> {
         .text_color(theme.palette.ink_faint)
 }
 
-/// §11.1 close control: 16 pt glyph in a ≥ 24 pt hit square. Always
-/// interactive from the first slice so the semantic id and the keyboard
-/// equivalent exist; the hover-reveal polish lands with the hover slice.
+/// §11.1 close control: the §7 drawn close glyph (two 1.5 pt diagonal
+/// strokes) in the density icon square. Always interactive from the first
+/// slice so the semantic id and the keyboard equivalent exist; the
+/// hover-reveal polish landed with the hover slice. The hit square is
+/// preserved exactly (layout/focus changes ride a later polish pass).
 pub fn close_control(theme: &Theme, index: usize) -> Stateful<Div> {
     div()
         .id(("bbr-tab-close", index))
@@ -95,16 +99,22 @@ pub fn close_control(theme: &Theme, index: usize) -> Stateful<Div> {
         .flex()
         .items_center()
         .justify_center()
-        .text_size(theme.type_.meta.size)
-        .text_color(theme.palette.ink_secondary)
-        .child("×")
+        .child(Icon::Close.canvas(theme, theme.density.icon()))
 }
 
 /// §11.2 pin control: the pointer half of the pin/unpin command (`Cmd-Shift-P`).
-/// A pinned row renders the filled dot in `accent`; an unpinned row the
-/// hollow dot in `ink.faint`. `pinned` is the row's current region identity,
-/// `disabled` suppresses interaction (e.g. while the row is being dragged).
+/// A pinned row renders the §7 filled dot in `accent`; an unpinned row the
+/// hollow ring in `ink.secondary`; `disabled` drops the glyph to `ink.faint`
+/// (e.g. while the row is being dragged). `pinned` is the row's current
+/// region identity.
 pub fn pin_control(theme: &Theme, index: usize, pinned: bool, disabled: bool) -> Stateful<Div> {
+    let color = if disabled {
+        theme.palette.ink_faint
+    } else if pinned {
+        theme.palette.accent
+    } else {
+        theme.palette.ink_secondary
+    };
     div()
         .id(("bbr-tab-pin", index))
         .size(theme.density.icon())
@@ -112,20 +122,12 @@ pub fn pin_control(theme: &Theme, index: usize, pinned: bool, disabled: bool) ->
         .flex()
         .items_center()
         .justify_center()
-        .text_size(theme.type_.meta.size)
-        .text_color(if disabled {
-            theme.palette.ink_faint
-        } else if pinned {
-            theme.palette.accent
-        } else {
-            theme.palette.ink_secondary
-        })
         .cursor(if disabled {
             gpui::CursorStyle::Arrow
         } else {
             gpui::CursorStyle::PointingHand
         })
-        .child(if pinned { "●" } else { "○" })
+        .child(Icon::Pin { pinned }.canvas_with(theme, theme.density.icon(), color))
 }
 
 /// §10.9 drag insertion tick: a 2 pt vertical accent rule at the target slot
