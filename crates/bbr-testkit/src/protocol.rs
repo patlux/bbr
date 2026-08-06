@@ -17,6 +17,8 @@ pub enum CommandBarMode {
     Inactive,
     Location,
     NewTab,
+    /// `Cmd-Shift-N`: stage a new space name in the active profile.
+    NewSpace,
 }
 
 /// Visual state of one tab row, mirroring the DESIGN.md §10 vocabulary that
@@ -28,6 +30,16 @@ pub enum TabVisualState {
     Selected,
     Loading,
     Error,
+}
+
+/// Visual state of one space row (DESIGN.md §11.3): the active space uses
+/// the selected rail + tint exactly like a selected tab; every other space
+/// rests. Asserted by E2E via the snapshot's `space_states`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpaceVisualState {
+    Default,
+    Selected,
 }
 
 /// The shell's resolved §15 mode fields (theme/contrast/density).
@@ -63,6 +75,9 @@ pub enum BenchmarkKind {
     TabActivateKeyboard,
     /// Reopen of the most recently closed tab (fresh session presented).
     TabReopen,
+    /// Activation of a space with an already-warm selected tab (production
+    /// activation path, warm sessions preserved).
+    WarmSpaceSwitch,
     SidebarToggle,
     NewTabCommandBar,
     NewTabOpened,
@@ -82,6 +97,9 @@ pub struct PresentationMeasurement {
     /// reads the same clock immediately before spawn to include process launch.
     pub monotonic_commit_ns: u64,
     pub active_web_view: Option<WebViewId>,
+    /// The space presented after the mutation (semantic state check for
+    /// space-switch samples).
+    pub active_space: TestSpaceId,
     pub sidebar_visible: bool,
     pub chrome_focused: bool,
     pub command_bar_mode: CommandBarMode,
@@ -94,6 +112,36 @@ pub struct PresentationMeasurement {
 /// Stable space identity on the portable test wire.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TestSpaceId(pub u64);
+
+/// One profile's identity on the wire (DESIGN.md §12).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProfileSnapshot {
+    /// Creation-order index — the stable `bbr-profile-chip-<n>` identity.
+    pub index: usize,
+    pub id: TestProfileId,
+    pub title: String,
+    /// One of the six DESIGN.md §12 hue names (cobalt/violet/fuchsia/
+    /// amber/terracotta/slate).
+    pub hue: String,
+}
+
+/// One space on the wire, including its own active tab and live session.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SpaceSnapshot {
+    /// Creation-order index — the stable `bbr-space-row-<n>` identity.
+    pub index: usize,
+    pub space: TestSpaceId,
+    pub profile: TestProfileId,
+    pub title: String,
+    /// The space's own selected tab (restored on activation), space-local.
+    pub active_tab: Option<usize>,
+    /// Live session of the space's active tab (`None` when empty/suspended).
+    pub active_view: Option<TestWebViewId>,
+    /// Whether this is the app's active space.
+    pub active: bool,
+    /// Tab count for the §11.3 count column.
+    pub tab_count: usize,
+}
 
 /// One tab in the active space, including its disposable native session id.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -127,9 +175,17 @@ pub struct Snapshot {
     pub active_profile: ProfileId,
     /// Display title of the active profile (DESIGN.md §11.8 pane naming).
     pub active_profile_title: Option<String>,
+    /// The active profile's identity hue name (DESIGN.md §12).
+    pub active_profile_hue: Option<String>,
     pub active_space: TestSpaceId,
     /// Active-space tabs and their current disposable session ids.
     pub tabs: Vec<TabSnapshot>,
+    /// Complete profile collection in creation order (DESIGN.md §12).
+    pub profiles: Vec<ProfileSnapshot>,
+    /// Complete space collection in creation order, each with its own active
+    /// tab and live session (the "each space remembers its active tab"
+    /// contract).
+    pub spaces: Vec<SpaceSnapshot>,
     pub active_tab_index: Option<usize>,
     pub active_web_view: Option<WebViewId>,
     /// Number of native sessions currently owned by the engine.
@@ -145,6 +201,11 @@ pub struct Snapshot {
     /// Per-row rendered titles (after §4 separator-aware truncation) in tab
     /// order, from the same `row_visuals` source the shell renders.
     pub row_titles: Vec<String>,
+    /// §11.3 space states (selected/default) in render order, grouped by
+    /// profile.
+    pub space_states: Vec<SpaceVisualState>,
+    /// §11.3 space row titles in render order, after §4 truncation.
+    pub space_titles: Vec<String>,
     /// The stable `bbr-*` ids present in the current render (DESIGN.md §15).
     pub visible_ids: Vec<String>,
     pub command_bar_mode: CommandBarMode,
@@ -254,6 +315,12 @@ pub enum Request {
     /// E2E can exercise the production crash/error path without killing a
     /// real WKWebView process.
     InjectWebEvent { event: bbr_web::WebEvent },
+    /// Activate a visible space row through the production pointer path: the
+    /// same app method the row's mouse-down listener calls, with chrome focus.
+    ClickSpace { space: TestSpaceId },
+    /// Activate the New Space row through the production pointer path (stages
+    /// the NewSpace command-bar mode).
+    ClickSpaceNew,
     /// Move an active-space tab into another space.
     MoveTab { index: usize, to_space: TestSpaceId },
     /// Suspend a hidden tab and destroy its native session.
@@ -262,6 +329,11 @@ pub enum Request {
     BenchmarkSelectTab {
         operation_id: BenchmarkOperationId,
         index: usize,
+    },
+    /// Activate a space and measure until its warm selected tab is presented.
+    BenchmarkActivateSpace {
+        operation_id: BenchmarkOperationId,
+        space: TestSpaceId,
     },
     /// Activate a visible tab row through the pointer path and measure until
     /// the correct native view is presented with chrome focus preserved.
@@ -436,6 +508,24 @@ pub mod dsl {
 
     pub fn click_tab_close(index: usize) -> Request {
         Request::ClickTabClose { index }
+    }
+
+    pub fn click_space(space: TestSpaceId) -> Request {
+        Request::ClickSpace { space }
+    }
+
+    pub fn click_space_new() -> Request {
+        Request::ClickSpaceNew
+    }
+
+    pub fn benchmark_activate_space(
+        operation_id: BenchmarkOperationId,
+        space: TestSpaceId,
+    ) -> Request {
+        Request::BenchmarkActivateSpace {
+            operation_id,
+            space,
+        }
     }
 
     pub fn inject_web_event(event: bbr_web::WebEvent) -> Request {

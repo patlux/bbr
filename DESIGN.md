@@ -581,14 +581,18 @@ scheme; a title consisting only of whitespace is treated as empty.
 | Hue | Light tile | Light letter | Dark tile | Dark letter |
 |---|---|---|---|---|
 | Cobalt | `#4062E8` | white | `#6E8BFF` | white |
-| Violet | `#7C4DF0` | white | `#B18BFF` | white |
-| Fuchsia | `#C63B8F` | white | `#F270BC` | white |
-| Amber | `#B57912` | `#1A0D00` | `#E5A72E` | white |
-| Terracotta | `#B4582C` | white | `#E0845A` | white |
+| Violet | `#7C4DF0` | white | `#8A63F0` | white |
+| Fuchsia | `#C63B8F` | white | `#B02E7E` | white |
+| Amber | `#B57912` | `#1A0D00` | `#C0861F` | white |
+| Terracotta | `#B4582C` | white | `#B85A30` | white |
 | Slate | `#5B6470` | white | `#8B94A2` | white |
 
-Tile/letter pairs are computed to ≥ 4.5:1. Profiles get hues round-robin from
-this fixed set; hue assignment is stable for the profile's lifetime.
+Tile/letter pairs are computed to ≥ 3:1 from the tokens (the same bar as the
+§7.2 favicon monogram tiles; the dark tiles are darkened from the original
+authored values because those topped out at ≈2.1–3.1:1 against white, and
+identity never relies on color alone — the monogram is the non-color
+companion). Profiles get hues round-robin from this fixed set; hue assignment
+is stable for the profile's lifetime.
 
 - **Identity rules:** color never alone — chip always carries the monogram;
   profile hue is never used for status, accent, or favicons; profile identity

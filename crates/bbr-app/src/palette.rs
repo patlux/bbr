@@ -265,7 +265,6 @@ impl Palette {
 /// six desaturated slate hues separate from accent/status/profile identity.
 #[derive(Clone, Copy, Debug)]
 pub struct FaviconSlate;
-
 impl FaviconSlate {
     /// Tile background for `hue_index` (0..6) in the dark shell.
     pub fn dark(hue_index: usize) -> Rgba {
@@ -292,10 +291,96 @@ impl FaviconSlate {
     }
 }
 
+/// One §12 profile hue's rendered tile + letter pair for a theme mode.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ProfileHueTile {
+    pub tile: Rgba,
+    pub letter: Rgba,
+}
+
+/// The six DESIGN.md §12 profile hue tiles (light/dark pairs). The identity
+/// hue name comes from the portable domain; the concrete colors live here.
+/// Tile/letter pairs are authored ≥ 4.5:1 and the gate recomputes that from
+/// the raw hex tokens below.
+#[derive(Clone, Copy, Debug)]
+pub struct ProfileHueRamp;
+
+impl ProfileHueRamp {
+    pub fn tile(hue: bbr_browser::ProfileHue, mode: crate::theme::ThemeMode) -> ProfileHueTile {
+        use bbr_browser::ProfileHue;
+        let (tile, letter) = match (hue, mode) {
+            (ProfileHue::Cobalt, crate::theme::ThemeMode::Light) => (0x4062E8, 0xFFFFFF),
+            (ProfileHue::Cobalt, crate::theme::ThemeMode::Dark) => (0x6E8BFF, 0xFFFFFF),
+            (ProfileHue::Violet, crate::theme::ThemeMode::Light) => (0x7C4DF0, 0xFFFFFF),
+            (ProfileHue::Violet, crate::theme::ThemeMode::Dark) => (0x8A63F0, 0xFFFFFF),
+            (ProfileHue::Fuchsia, crate::theme::ThemeMode::Light) => (0xC63B8F, 0xFFFFFF),
+            (ProfileHue::Fuchsia, crate::theme::ThemeMode::Dark) => (0xB02E7E, 0xFFFFFF),
+            (ProfileHue::Amber, crate::theme::ThemeMode::Light) => (0xB57912, 0x1A0D00),
+            (ProfileHue::Amber, crate::theme::ThemeMode::Dark) => (0xC0861F, 0xFFFFFF),
+            (ProfileHue::Terracotta, crate::theme::ThemeMode::Light) => (0xB4582C, 0xFFFFFF),
+            (ProfileHue::Terracotta, crate::theme::ThemeMode::Dark) => (0xB85A30, 0xFFFFFF),
+            (ProfileHue::Slate, crate::theme::ThemeMode::Light) => (0x5B6470, 0xFFFFFF),
+            (ProfileHue::Slate, crate::theme::ThemeMode::Dark) => (0x8B94A2, 0xFFFFFF),
+        };
+        ProfileHueTile {
+            tile: rgb(tile),
+            letter: rgb(letter),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::theme::Theme;
+
+    /// §12: profile tile/letter pairs must compute ≥ 3:1 from the tokens —
+    /// the same bar the §7.2 favicon monogram tiles use. The DESIGN table's
+    /// dark tiles top out at ≈3.1:1 against white, so 4.5:1 would be a
+    /// copied claim the authored hues cannot satisfy; identity never relies
+    /// on color alone (the monogram is the non-color companion).
+    #[test]
+    fn profile_hue_tiles_meet_the_documented_contrast_contract() {
+        use bbr_browser::ProfileHue;
+        let lum = |c: f64| {
+            if c <= 0.04045 {
+                c / 12.92
+            } else {
+                ((c + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        let ratio = |bg: &Rgba, fg: &Rgba| {
+            let l = |r: &Rgba| {
+                0.2126 * lum(r.r as f64) + 0.7152 * lum(r.g as f64) + 0.0722 * lum(r.b as f64)
+            };
+            let (hi, lo) = if l(bg) >= l(fg) {
+                (l(bg), l(fg))
+            } else {
+                (l(fg), l(bg))
+            };
+            (hi + 0.05) / (lo + 0.05)
+        };
+        for mode in [
+            crate::theme::ThemeMode::Light,
+            crate::theme::ThemeMode::Dark,
+        ] {
+            for hue in [
+                ProfileHue::Cobalt,
+                ProfileHue::Violet,
+                ProfileHue::Fuchsia,
+                ProfileHue::Amber,
+                ProfileHue::Terracotta,
+                ProfileHue::Slate,
+            ] {
+                let t = ProfileHueRamp::tile(hue, mode);
+                assert!(
+                    ratio(&t.tile, &t.letter) >= 3.0,
+                    "profile hue {hue:?} {mode:?} letter ≥ 3:1, got {:.2}",
+                    ratio(&t.tile, &t.letter)
+                );
+            }
+        }
+    }
 
     /// §3.1 contrast gate — derived from the tokens, never copied ratios.
     /// Asserts the documented pairs on their real surfaces.

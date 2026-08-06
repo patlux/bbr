@@ -11,7 +11,7 @@ use gpui::{
     Stateful, Styled, Window,
 };
 
-use crate::palette::FaviconSlate;
+use crate::palette::{FaviconSlate, ProfileHueRamp};
 use crate::theme::{Radius, Spacing, Theme, ThemeMode};
 
 /// §10 row states the shell renders and E2E asserts.
@@ -51,6 +51,156 @@ pub fn section_label(theme: &Theme, text: &str) -> Div {
         .font_weight(theme.type_.badge.weight)
         .text_color(theme.palette.ink_faint)
         .child(text.to_uppercase())
+}
+
+/// The one space-row visual state the shell renders (DESIGN.md §10/§11.3):
+/// the active space is `selected` (accent rail + tint), every other space is
+/// `default`. The states vocabulary matches the tab rows so the rail is the
+/// primary selection cue in both surfaces.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpaceVisualState {
+    Default,
+    Selected,
+}
+
+/// §12 profile chip identity: the 1–2 character monogram plus the stable
+/// round-robin hue the domain assigned to the profile.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProfileChipSpec {
+    pub letter: String,
+    pub hue: bbr_browser::ProfileHue,
+}
+
+/// One rendered space row's identity, derived from the controller snapshot.
+#[derive(Debug, Clone)]
+pub struct SpaceRowVisuals {
+    /// The space's stable creation-order index (`bbr-space-row-<n>`).
+    pub index: usize,
+    pub title: SharedString,
+    /// The §11.3 count column (`type:meta` tabular figures).
+    pub count: usize,
+    pub state: SpaceVisualState,
+    pub chip: ProfileChipSpec,
+}
+
+/// §12 profile chip: 20 pt square (18 at S), `radius:sm`, filled with the
+/// profile's hue tile and a 1–2 character monogram. The letter derives from
+/// the profile title so identity is readable per row without a header.
+pub fn profile_chip(theme: &Theme, index: usize, spec: &ProfileChipSpec) -> Stateful<Div> {
+    let size = if theme.density == crate::theme::Density::Small {
+        px(18.0)
+    } else {
+        px(20.0)
+    };
+    let tile = ProfileHueRamp::tile(spec.hue, theme.mode);
+    div()
+        .id(("bbr-profile-chip", index))
+        .size(size)
+        .rounded(Radius.small())
+        .bg(tile.tile)
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_size(theme.type_.badge.size)
+        .font_weight(theme.type_.badge.weight)
+        .text_color(tile.letter)
+        .child(spec.letter.clone())
+}
+
+/// §11.3 space row anatomy:
+/// `[profile chip 20] · sp:2 · [name, trunc] · [count, type:meta tnum]`,
+/// `density:space-row` tall. The active space shows the accent rail exactly
+/// like a selected tab; `on_select` is the production view listener.
+pub fn space_row(
+    theme: &Theme,
+    visuals: &SpaceRowVisuals,
+    on_select: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let p = theme.palette;
+    let selected = visuals.state == SpaceVisualState::Selected;
+    div()
+        .id(("bbr-space-row", visuals.index))
+        .h(theme.density.space_row())
+        .px(Spacing::sp2())
+        .gap(Spacing::sp2())
+        .items_center()
+        .flex()
+        .flex_row()
+        .rounded(Radius.medium())
+        .bg(if selected {
+            p.tint_selected
+        } else {
+            p.surface_sidebar
+        })
+        .cursor_pointer()
+        .when(selected, |el| {
+            el.child(
+                div()
+                    .w(px(3.0))
+                    .h(theme.density.space_row() - px(6.0))
+                    .rounded(Radius.small())
+                    .bg(p.accent),
+            )
+        })
+        .child(profile_chip(theme, visuals.index, &visuals.chip))
+        .child(
+            div()
+                .id(("bbr-space-title", visuals.index))
+                .flex_1()
+                .overflow_hidden()
+                .text_ellipsis()
+                .text_size(theme.type_.title.size)
+                .font_weight(theme.type_.title.weight)
+                .text_color(if selected { p.ink } else { p.ink_secondary })
+                .child(visuals.title.clone()),
+        )
+        .child(
+            div()
+                .id(("bbr-space-count", visuals.index))
+                .text_size(theme.type_.meta.size)
+                .text_color(p.ink_faint)
+                .child(visuals.count.to_string()),
+        )
+        .on_mouse_down(MouseButton::Left, on_select)
+}
+
+/// §11.3/§11.5 New Space affordance at the foot of the space region: focuses
+/// the command bar in NewSpace mode (the pointer half of `Cmd-Shift-N`).
+pub fn space_new_row(
+    theme: &Theme,
+    on_select: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    div()
+        .id("bbr-space-new")
+        .h(theme.density.space_row())
+        .px(Spacing::sp2())
+        .gap(Spacing::sp2())
+        .items_center()
+        .flex()
+        .flex_row()
+        .rounded(Radius.medium())
+        .cursor_pointer()
+        .on_mouse_down(MouseButton::Left, on_select)
+        .child(
+            div()
+                .size(px(20.0))
+                .rounded(Radius.small())
+                .border_1()
+                .border_color(theme.palette.hairline)
+                .flex()
+                .items_center()
+                .justify_center()
+                .text_size(theme.type_.label.size)
+                .text_color(theme.palette.ink_secondary)
+                .child("+"),
+        )
+        .child(
+            div()
+                .text_size(theme.type_.label.size)
+                .font_weight(theme.type_.label.weight)
+                .text_color(theme.palette.ink_secondary)
+                .child("New Space"),
+        )
 }
 
 /// §7.2 favicon tile: 16 pt (S: 14) square, `radius:sm`, monogram letter on

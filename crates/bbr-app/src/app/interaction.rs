@@ -51,6 +51,29 @@ impl BbrApp {
                     }
                 }
             }
+            CommandBarMode::NewSpace => {
+                // Create the space in the active profile and activate it;
+                // chrome focus stays in the space list (a fresh space is
+                // empty, so there is no page to hand focus to).
+                let name = input.trim().to_string();
+                if name.is_empty() {
+                    return;
+                }
+                self.command_bar_text.clear();
+                self.command_bar_return = None;
+                if self.commit_new_space(&name, window, cx).is_some() {
+                    #[cfg(feature = "testkit")]
+                    {
+                        self.performance.expect_state(
+                            self.controller.snapshot().active_view,
+                            self.sidebar_visible,
+                            true,
+                            self.command_bar_mode.into(),
+                        );
+                        self.commit_benchmark_sync(window);
+                    }
+                }
+            }
         }
     }
 
@@ -123,9 +146,13 @@ impl BbrApp {
         self.emit_focus(window);
     }
 
-    /// Escape cancels a staged tab; location mode returns to web content.
+    /// Escape cancels a staged tab or space; location mode returns to web
+    /// content.
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if self.command_bar_mode != CommandBarMode::NewTab {
+        if !matches!(
+            self.command_bar_mode,
+            CommandBarMode::NewTab | CommandBarMode::NewSpace
+        ) {
             self.focus_web(window, cx);
             return;
         }

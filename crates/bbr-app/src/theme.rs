@@ -109,6 +109,15 @@ impl Density {
         })
     }
 
+    /// §8 space row height (`density:space-row`).
+    pub fn space_row(self) -> Pixels {
+        px(match self {
+            Density::Small => 30.0,
+            Density::Normal => 34.0,
+            Density::ExtraLarge => 44.0,
+        })
+    }
+
     pub fn sidebar_width(self) -> Pixels {
         px(match self {
             Density::Small => 216.0,

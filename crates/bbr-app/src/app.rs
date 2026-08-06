@@ -18,6 +18,7 @@ use crate::performance::PerformanceProbe;
 use crate::shell::TestSnapshot;
 mod interaction;
 mod render;
+mod spaces;
 
 /// Sidebar width follows the §8 normal-density token (260 pt); Phase-4
 /// resize/drag will make it adjustable.
@@ -37,6 +38,8 @@ pub struct BbrApp {
     engine_kind: &'static str,
     /// GPUI focus handle for the chrome (sidebar/command bar).
     chrome_handle: FocusHandle,
+    /// GPUI focus handle for the visible space list (arrow/enter keys).
+    space_list_handle: FocusHandle,
     /// GPUI focus handle for the visible tab list (arrow/backspace keys).
     tab_list_handle: FocusHandle,
     /// Current command-bar intent. `NewTab` stages navigation without creating
@@ -79,6 +82,7 @@ impl BbrApp {
             controller,
             engine_kind,
             chrome_handle: cx.focus_handle(),
+            space_list_handle: cx.focus_handle(),
             tab_list_handle: cx.focus_handle(),
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
@@ -120,20 +124,6 @@ impl BbrApp {
     ) -> Option<ControllerEvent> {
         let result = self.controller.create_space_event(profile, title);
         self.apply_mutation(result, cx)
-    }
-
-    #[cfg(feature = "testkit")]
-    pub fn activate_space(
-        &mut self,
-        space: bbr_browser::SpaceId,
-        cx: &mut Context<Self>,
-    ) -> Option<ControllerEvent> {
-        let result = self.controller.activate_space(space);
-        let outcome = self.apply_mutation(result, cx);
-        if outcome.is_some() {
-            self.sync_command_bar();
-        }
-        outcome
     }
 
     pub fn open_tab(&mut self, url: &str, cx: &mut Context<Self>) -> Option<ControllerEvent> {
@@ -394,7 +384,9 @@ impl BbrApp {
     /// domain is the union: the tab list handle is a chrome control, so a
     /// pointer-selected row keeps `chrome_focused` true.
     pub(super) fn chrome_focused(&self, window: &Window) -> bool {
-        self.chrome_handle.is_focused(window) || self.tab_list_handle.is_focused(window)
+        self.chrome_handle.is_focused(window)
+            || self.space_list_handle.is_focused(window)
+            || self.tab_list_handle.is_focused(window)
     }
 
     /// Install a focus-change sink (used by the E2E gateway).
@@ -528,6 +520,7 @@ impl BbrApp {
         let browser = self.controller.snapshot();
         let theme = self.theme();
         let rows = self.row_visuals(&browser.tabs);
+        let budget = crate::shell::space_title_budget_chars(&theme);
         TestSnapshot {
             url: browser.nav.url.clone(),
             title: browser.nav.title.clone(),
@@ -537,8 +530,11 @@ impl BbrApp {
             web_view_hosted: browser.web_view_hosted,
             active_profile: browser.active_profile,
             active_profile_title: browser.active_profile_title.clone(),
+            active_profile_hue: browser.active_profile_hue.map(|hue| hue.name().to_string()),
             active_space: bbr_testkit::protocol::TestSpaceId(browser.active_space.0),
             tabs: browser.tabs.clone(),
+            profiles: browser.profiles.clone(),
+            spaces: browser.spaces.clone(),
             active_tab_index: browser.active_index,
             active_web_view: browser.active_view,
             engine_sessions: browser.engine_sessions,
@@ -577,6 +573,18 @@ impl BbrApp {
                 })
                 .collect(),
             row_titles: rows.iter().map(|row| row.title.to_string()).collect(),
+            space_states: crate::shell::space_states(&browser)
+                .into_iter()
+                .map(|state| match state {
+                    crate::components::SpaceVisualState::Default => {
+                        bbr_testkit::protocol::SpaceVisualState::Default
+                    }
+                    crate::components::SpaceVisualState::Selected => {
+                        bbr_testkit::protocol::SpaceVisualState::Selected
+                    }
+                })
+                .collect(),
+            space_titles: crate::shell::space_titles(&browser, budget),
             visible_ids: crate::shell::visible_ids(
                 &browser,
                 self.chrome_focused(window),

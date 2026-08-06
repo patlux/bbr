@@ -17,13 +17,14 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bbr_browser::ControllerEvent;
-use bbr_testkit::protocol::{
-    BrowserChange, Error, Event, Request, Response, Snapshot, TabSnapshot,
-};
+use bbr_testkit::protocol::{Error, Event, Request, Response};
 use bbr_testkit::GatewayServer;
 use gpui::{px, size, App, Keystroke, WindowHandle};
 
 use crate::app::BbrApp;
+
+mod snapshot;
+pub(crate) use snapshot::{browser_change, SnapshotExt};
 
 /// A gateway command forwarded to the main-thread pump.
 pub struct GatewayCommand {
@@ -180,10 +181,28 @@ fn dispatch(
         }
 
         Request::ActivateSpace { space } => {
-            browser_mutation(window.update(cx, |view, _window, cx| {
-                view.activate_space(bbr_browser::SpaceId(space.0), cx)
+            browser_mutation(window.update(cx, |view, window, cx| {
+                view.activate_space(bbr_browser::SpaceId(space.0), window, cx)
             }))
         }
+
+        // Pointer-path activation of visible space rows: the same app method
+        // the row mouse-down listeners call, so the asserted scenario
+        // exercises the production listener path rather than a direct
+        // controller call.
+        Request::ClickSpace { space } => window
+            .update(cx, |view, window, cx| {
+                view.select_space_via_pointer(bbr_browser::SpaceId(space.0), window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+
+        Request::ClickSpaceNew => window
+            .update(cx, |view, window, cx| {
+                view.activate_new_space(window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
 
         Request::OpenTab { url } => {
             browser_mutation(window.update(cx, |view, _window, cx| view.open_tab(&url, cx)))
@@ -276,6 +295,30 @@ fn dispatch(
         Request::BenchmarkReopenTab { operation_id } => window
             .update(cx, |view, window, cx| {
                 view.benchmark_reopen_tab(operation_id, window, cx)
+            })
+            .map(|started| {
+                if started {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_busy",
+                        "another presentation measurement is pending",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response),
+
+        Request::BenchmarkActivateSpace {
+            operation_id,
+            space,
+        } => window
+            .update(cx, |view, window, cx| {
+                view.benchmark_activate_space(
+                    operation_id,
+                    bbr_browser::SpaceId(space.0),
+                    window,
+                    cx,
+                )
             })
             .map(|started| {
                 if started {
@@ -456,93 +499,6 @@ fn browser_mutation<E: std::fmt::Display>(update: Result<Option<ControllerEvent>
     }
 }
 
-pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange> {
-    match outcome {
-        ControllerEvent::ProfileCreated { profile, space } => Some(BrowserChange::ProfileCreated {
-            profile: *profile,
-            space: bbr_testkit::protocol::TestSpaceId(space.0),
-        }),
-        ControllerEvent::SpaceCreated { profile, space } => Some(BrowserChange::SpaceCreated {
-            profile: *profile,
-            space: bbr_testkit::protocol::TestSpaceId(space.0),
-        }),
-        ControllerEvent::SpaceActivated { space } => Some(BrowserChange::SpaceActivated {
-            space: bbr_testkit::protocol::TestSpaceId(space.0),
-        }),
-        ControllerEvent::TabOpened { index, .. } => {
-            Some(BrowserChange::TabOpened { index: *index })
-        }
-        ControllerEvent::TabSelected { index } => {
-            Some(BrowserChange::TabSelected { index: *index })
-        }
-        ControllerEvent::TabClosed { index } => Some(BrowserChange::TabClosed { index: *index }),
-        ControllerEvent::TabPinned { index } => Some(BrowserChange::TabPinned { index: *index }),
-        ControllerEvent::TabReopened { index, .. } => {
-            Some(BrowserChange::TabReopened { index: *index })
-        }
-        ControllerEvent::TabMoved {
-            to_space,
-            recreated,
-            ..
-        } => Some(BrowserChange::TabMoved {
-            to_space: bbr_testkit::protocol::TestSpaceId(to_space.0),
-            recreated: *recreated,
-        }),
-        ControllerEvent::TabSuspended { index } => {
-            Some(BrowserChange::TabSuspended { index: *index })
-        }
-        _ => None,
-    }
-}
-
 fn err_response<E: std::fmt::Display>(e: E) -> Response {
     Response::Error(Error::new("app_error", e.to_string()))
-}
-
-/// Conversion from the app's local snapshot type to the wire type.
-pub(crate) trait SnapshotExt {
-    fn to_protocol(&self) -> Snapshot;
-}
-
-impl SnapshotExt for crate::shell::TestSnapshot {
-    fn to_protocol(&self) -> Snapshot {
-        Snapshot {
-            url: self.url.clone(),
-            title: self.title.clone(),
-            loading: self.loading,
-            can_go_back: self.can_go_back,
-            can_go_forward: self.can_go_forward,
-            web_view_hosted: self.web_view_hosted,
-            active_profile: self.active_profile,
-            active_profile_title: self.active_profile_title.clone(),
-            active_space: self.active_space,
-            tabs: self
-                .tabs
-                .iter()
-                .map(|tab| TabSnapshot {
-                    index: tab.index,
-                    url: tab.url.clone(),
-                    title: tab.title.clone(),
-                    pinned: tab.pinned,
-                    loading: tab.loading,
-                    crashed: tab.crashed,
-                    active: tab.active,
-                    web_view: tab.web_view,
-                })
-                .collect(),
-            active_tab_index: self.active_tab_index,
-            active_web_view: self.active_web_view,
-            engine_sessions: self.engine_sessions,
-            engine_kind: self.engine_kind.to_string(),
-            chrome_focused: self.chrome_focused,
-            shell_modes: self.shell_modes.clone(),
-            tab_states: self.tab_states.clone(),
-            row_titles: self.row_titles.clone(),
-            visible_ids: self.visible_ids.clone(),
-            command_bar_mode: self.command_bar_mode,
-            command_bar_text: self.command_bar_text.clone(),
-            sidebar_visible: self.sidebar_visible,
-            window_size: self.window_size,
-        }
-    }
 }

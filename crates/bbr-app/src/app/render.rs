@@ -37,6 +37,7 @@ impl Render for BbrApp {
         let regular_rows = self.row_visuals(&browser.tabs[pinned_count..]);
 
         let tab_surface = self.tab_surface(&theme, pinned_rows, regular_rows, cx);
+        let space_surface = self.space_surface(&theme, &browser, cx);
         let command_bar = self.command_bar(&theme, chrome_focused);
 
         let sidebar = div()
@@ -63,6 +64,7 @@ impl Render for BbrApp {
                     .child("BBR"),
             )
             .child(command_bar)
+            .child(space_surface)
             .child(tab_surface)
             .child(
                 div()
@@ -251,6 +253,58 @@ impl BbrApp {
             let _ = e;
         });
         components::tab_row(theme, row, select, close)
+    }
+
+    /// The controller-backed space surface (DESIGN.md §11.3): every space
+    /// grouped under its profile with a per-row chip and a hairline between
+    /// profile groups, plus the New Space row at the foot. The active space
+    /// renders the selected rail; rows run the production pointer activation
+    /// path. The list owns its own GPUI focus handle so `↑/↓`/Enter traverse
+    /// the spaces region (DESIGN.md §9 order: command field → spaces → tabs).
+    fn space_surface(
+        &self,
+        theme: &Theme,
+        browser: &bbr_browser::ControllerSnapshot,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
+        let budget = crate::shell::space_title_budget_chars(theme);
+        let groups = crate::shell::space_groups(browser, budget);
+        let mut children: Vec<gpui::AnyElement> = Vec::new();
+        for group in &groups {
+            if group.hairline_before {
+                children.push(
+                    div()
+                        .h(px(1.0))
+                        .w_full()
+                        .bg(theme.palette.hairline)
+                        .into_any(),
+                );
+            }
+            for row in &group.rows {
+                let space = browser
+                    .spaces
+                    .iter()
+                    .find(|s| s.index == row.index)
+                    .expect("space row derives from the snapshot")
+                    .id;
+                let select = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
+                    this.select_space_via_pointer(space, window, cx)
+                });
+                children.push(components::space_row(theme, row, select).into_any());
+            }
+        }
+        let new_space = cx
+            .listener(|this, _e: &MouseDownEvent, window, cx| this.activate_new_space(window, cx));
+        children.push(components::space_new_row(theme, new_space).into_any());
+
+        div()
+            .id("bbr-space-list")
+            .track_focus(&self.space_list_handle)
+            .flex()
+            .flex_col()
+            .px(Spacing::sp1())
+            .on_key_down(cx.listener(Self::on_space_list_key_down))
+            .children(children)
     }
 
     /// Map a tab slice to per-row visuals for the current theme. The §4

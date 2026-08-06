@@ -13,6 +13,8 @@ gpui::actions!(
         FocusCommandBar,
         /// `Cmd-T`: open a new controller-backed tab.
         NewTab,
+        /// `Cmd-Shift-N`: stage a new space name in the active profile.
+        NewSpace,
         /// `Cmd-W`: close the active tab.
         CloseTab,
         /// `Cmd-Shift-T`: reopen the most recently closed tab.

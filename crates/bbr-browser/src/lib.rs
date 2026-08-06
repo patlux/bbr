@@ -55,7 +55,7 @@ mod controller_event_tests;
 #[cfg(test)]
 mod controller_tests;
 
-pub use bbr_domain::SpaceId;
+pub use bbr_domain::{ProfileHue, SpaceId};
 pub use controller::BrowserController;
 pub use error::ControllerError;
 pub use nav::NavState;

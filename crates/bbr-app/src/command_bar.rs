@@ -9,11 +9,14 @@ pub enum CommandBarMode {
     Location,
     /// `Cmd-T`: collect a destination without creating a tab or web session.
     NewTab,
+    /// `Cmd-Shift-N`: collect a new space name without creating anything
+    /// until Enter commits it (the pointer half is the New Space row).
+    NewSpace,
 }
 
 impl CommandBarMode {
     pub fn is_active(self) -> bool {
-        self != Self::Inactive
+        !matches!(self, Self::Inactive)
     }
 }
 
@@ -24,6 +27,7 @@ impl From<CommandBarMode> for bbr_testkit::protocol::CommandBarMode {
             CommandBarMode::Inactive => Self::Inactive,
             CommandBarMode::Location => Self::Location,
             CommandBarMode::NewTab => Self::NewTab,
+            CommandBarMode::NewSpace => Self::NewSpace,
         }
     }
 }

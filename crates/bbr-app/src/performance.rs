@@ -11,7 +11,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use bbr_testkit::protocol::{
-    BenchmarkKind, BenchmarkOperationId, CommandBarMode, PresentationMeasurement,
+    BenchmarkKind, BenchmarkOperationId, CommandBarMode, PresentationMeasurement, TestSpaceId,
 };
 use bbr_web::{WebEvent, WebRect, WebViewId};
 
@@ -29,6 +29,7 @@ struct State {
     /// a `testkit`-gated CLI flag and is impossible in release-without-testkit.
     inject_delay: Option<Duration>,
     latest_active_web_view: Option<WebViewId>,
+    latest_active_space: TestSpaceId,
     latest_sidebar_visible: bool,
     latest_chrome_focused: bool,
     latest_command_bar_mode: CommandBarMode,
@@ -57,6 +58,7 @@ struct Pending {
     started_at: Instant,
     armed: bool,
     expected_active_web_view: Option<Option<WebViewId>>,
+    expected_active_space: Option<TestSpaceId>,
     expected_sidebar_visible: Option<bool>,
     expected_chrome_focused: Option<bool>,
     expected_command_bar_mode: Option<CommandBarMode>,
@@ -69,6 +71,7 @@ impl PerformanceProbe {
                 process_started,
                 inject_delay,
                 latest_active_web_view: None,
+                latest_active_space: TestSpaceId(0),
                 latest_sidebar_visible: true,
                 latest_chrome_focused: false,
                 latest_command_bar_mode: CommandBarMode::Inactive,
@@ -79,6 +82,7 @@ impl PerformanceProbe {
                     started_at: process_started,
                     armed: true,
                     expected_active_web_view: None,
+                    expected_active_space: None,
                     expected_sidebar_visible: Some(true),
                     expected_chrome_focused: None,
                     expected_command_bar_mode: None,
@@ -114,6 +118,7 @@ impl PerformanceProbe {
             started_at: Instant::now(),
             armed: false,
             expected_active_web_view: None,
+            expected_active_space: None,
             expected_sidebar_visible: None,
             expected_chrome_focused: None,
             expected_command_bar_mode: None,
@@ -147,6 +152,20 @@ impl PerformanceProbe {
             pending.expected_sidebar_visible = Some(sidebar_visible);
             pending.expected_chrome_focused = Some(chrome_focused);
             pending.expected_command_bar_mode = Some(command_bar_mode);
+        }
+    }
+
+    /// Record the active space observed at the mutation site; space-switch
+    /// samples commit only when the destination space is actually presented.
+    pub fn observe_active_space(&self, space: TestSpaceId) {
+        self.inner.borrow_mut().latest_active_space = space;
+    }
+
+    /// Require the pending presentation to show `space` (semantic check for
+    /// [`BenchmarkKind::WarmSpaceSwitch`]).
+    pub fn expect_space(&self, space: TestSpaceId) {
+        if let Some(pending) = self.inner.borrow_mut().pending.as_mut() {
+            pending.expected_active_space = Some(space);
         }
     }
 
@@ -233,6 +252,7 @@ impl PerformanceProbe {
             since_process_start_ns,
             monotonic_commit_ns: monotonic_now_ns(),
             active_web_view: state.latest_active_web_view,
+            active_space: state.latest_active_space,
             sidebar_visible: state.latest_sidebar_visible,
             chrome_focused: state.latest_chrome_focused,
             command_bar_mode: state.latest_command_bar_mode,
@@ -280,6 +300,9 @@ impl PerformanceProbe {
                 .expected_active_web_view
                 .is_some_and(|expected| expected != state.latest_active_web_view)
             || pending
+                .expected_active_space
+                .is_some_and(|expected| expected != state.latest_active_space)
+            || pending
                 .expected_sidebar_visible
                 .is_some_and(|expected| expected != state.latest_sidebar_visible)
             || pending
@@ -321,6 +344,7 @@ impl PerformanceProbe {
             since_process_start_ns,
             monotonic_commit_ns: monotonic_now_ns(),
             active_web_view: state.latest_active_web_view,
+            active_space: state.latest_active_space,
             sidebar_visible: state.latest_sidebar_visible,
             chrome_focused: state.latest_chrome_focused,
             command_bar_mode: state.latest_command_bar_mode,
