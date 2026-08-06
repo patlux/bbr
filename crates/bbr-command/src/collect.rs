@@ -15,14 +15,15 @@ use crate::registry::{Action, CommandRegistry};
 
 /// The secondary key of a tab result: current space first, then corpus space
 /// order, then the tab's index inside its space. The index must stay below
-/// 2^20 and the space order below 2^36, which real corpora respect.
+/// 2^20 (mask `0x000F_FFFF`) and the space order below 2^36 so the three
+/// fields cannot overlap; real corpora respect both.
 fn tab_secondary(tab: &TabEntry, current_space: Option<SpaceId>, space_order: u64) -> u64 {
     let current_bias = if Some(tab.space) == current_space {
         0
     } else {
         1
     };
-    (current_bias << 56) | (space_order << 20) | (tab.index & 0x00FF_FFFF)
+    (current_bias << 56) | (space_order << 20) | (tab.index & 0x000F_FFFF)
 }
 
 pub(crate) fn collect_tab_matches(
@@ -53,7 +54,7 @@ pub(crate) fn collect_tab_matches(
             secondary: tab_secondary(tab, context.current_space, space_order),
             tie: tab.id.0,
         };
-        rows.push((key, tab_result(corpus, context, tab, group)));
+        rows.push((key, tab_result(corpus, context, tab, group, key)));
     }
 }
 
@@ -81,7 +82,7 @@ pub(crate) fn collect_empty_current_tabs(
             secondary: tab_secondary(tab, context.current_space, space_order),
             tie: tab.id.0,
         };
-        rows.push((key, tab_result(corpus, context, tab, group)));
+        rows.push((key, tab_result(corpus, context, tab, group, key)));
     }
 }
 
@@ -90,6 +91,7 @@ fn tab_result(
     context: &QueryContext,
     tab: &TabEntry,
     group: ResultGroup,
+    score: RankKey,
 ) -> CommandResult {
     // Any tab outside the current space is a cross-space result and must
     // carry profile/space identity, including exact matches (Phase 5:
@@ -114,12 +116,7 @@ fn tab_result(
         subtitle,
         profile: Some(tab.profile),
         key: format!("tab:{}", tab.id.0),
-        score: RankKey {
-            group: group.rank(),
-            quality: MatchQuality::Exact,
-            secondary: 0,
-            tie: 0,
-        },
+        score,
     }
 }
 
