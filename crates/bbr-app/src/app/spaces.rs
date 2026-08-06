@@ -186,6 +186,11 @@ impl BbrApp {
                 return None;
             }
         };
+        // The creation itself is a semantic browser mutation and must be
+        // observable like every other mutation path (the gateway's CreateSpace
+        // emits SpaceCreated; the keyboard path must emit the same event so
+        // E2E and future consumers can distinguish creation from activation).
+        self.emit_browser(&outcome);
         self.activate_space(space, window, cx);
         Some(outcome)
     }
