@@ -1,3 +1,5 @@
 /.direnv/
 /target/
+**/target/
+crates/bbr-app/target/
 .DS_Store
