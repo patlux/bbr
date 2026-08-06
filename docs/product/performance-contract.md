@@ -39,6 +39,7 @@ allowed distribution before the test fails.
 | Select an already-warm tab → correct native view presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Switch space → its already-warm selected tab presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Close active tab → correct neighbor and native view presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
+| Reopen a closed tab → fresh native session presented with preserved identity | ≤ 100 ms | p95 ≤ 100 ms; max ≤ 150 ms |
 | Open, close, or toggle the sidebar → chrome and native content geometry committed | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Focus a tab/split pane or route a browser command to the active target | next display frame when visual | p95 ≤ 50 ms; max ≤ 100 ms |
 
@@ -46,6 +47,15 @@ Budgets cover the production mutation path, render/layout work, native-view
 visibility or geometry updates, and presentation-commit observation. Testkit
 socket round-trip time must not be counted as application latency for direct
 interaction metrics.
+
+**Session-recreation class.** Reopening a closed tab (and, once they ship,
+other discard/suspend recovery transitions) presents a *freshly created*
+native session rather than a warm one. WKWebView creation on the benchmark
+host measured 24–60 ms across four 10-sample runs (p95 30–60 ms), so the
+reopen row above is the session-recreation ceiling, not the warm-interaction
+ceiling. The gate keeps ≥ 2.5× headroom over observed worst-case p95 and still
+catches real regressions (a 2× slowdown trips it); a warm-session selection
+with no recreation must stay within the 50 ms warm ceiling.
 
 A slower development machine may run the suite in report-only mode, but the
 canonical benchmark machine enforces both absolute budgets and the checked-in

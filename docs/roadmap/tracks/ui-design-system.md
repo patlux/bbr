@@ -15,7 +15,10 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 - [x] Define spacing, sizing, radius, separator, material, and elevation rules.
 - [x] Define icon family, optical sizing, stroke/weight, and fallback rules.
 - [x] Define motion principles, durations, easing, and Reduce Motion alternatives.
-- [ ] Implement reusable GPUI tokens/components instead of local magic values.
+- [x] Implement reusable GPUI tokens/components instead of local magic values. *(Tokens shipped with the shell rendering commit; the reusable component module
+      (tab rows, favicon tiles, section labels, close control, empty-space pane,
+      crash panel) landed with the visible-tab slice — evidence `just verify`, `just
+      e2e-shell-tabs`.)*
 
 ## Shell craft — Phase 4
 

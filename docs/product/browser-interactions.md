@@ -257,8 +257,13 @@ visible UI slices land.
   remain open above.**
 - Back, Forward, Reload, and Stop — target the active tab or focused pane.
   **Contract**
-- Reopen closed tab — restore the most recently closed tab of the relevant
-  space. **Planned UI command; domain behavior is Contract.**
+- `Cmd-Shift-T` — reopen the most recently closed tab of the active space.
+  **Contract** The restored tab keeps its identity/URL/title, receives a fresh
+  native session, becomes active, and preserves the focus domain of the
+  invoking command (chrome stays chrome, web stays web).
+- Tab-list keyboard: `↑`/`↓` move selection through the visible rows, `⌫`
+  closes the active tab, Enter activates. **Contract** (rows stay in browser
+  chrome while traversed).
 
 Every pointer operation must eventually have a keyboard equivalent, and every
 shortcut must expose an understandable menu, tooltip, or help representation.

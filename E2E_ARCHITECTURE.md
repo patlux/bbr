@@ -90,7 +90,7 @@ JSON; no macOS, no GPUI, no WebKit).
 
 ### Handshake & auth
 
-- Client → `Hello { protocol_version: 5, token, capabilities }`. Wrong version
+- Client → `Hello { protocol_version: 6, token, capabilities }`. Wrong version
   → `Error("protocol_mismatch")`; wrong token → connection dropped. Correct →
   `Welcome { app_version, pid, capabilities, next_seq }`.
 - Token comes from `--bbr-test-token` (random per spawn, in the harness).
@@ -385,7 +385,7 @@ runner + suites.
 | Synthetic keystroke fidelity drift | `DispatchKeystroke` goes through GPUI's real `dispatch_keystroke` path; FUTURE: tier-2 NSEvent posting in the webkit suite |
 | macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner. Verified locally on the Xcode 16.4.0 Metal toolchain in a display-attached session |
 | Event-ring memory growth | Fixed cap (4096) + client cursors; snapshot on demand |
-| Protocol evolution | `PROTOCOL_VERSION = 5` adds command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types; future additive growth stays typed |
+| Protocol evolution | `PROTOCOL_VERSION = 5` added command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types. `PROTOCOL_VERSION = 6` adds per-tab `pinned`/`loading`/`crashed` flags and per-row `tab_states` + resolved `shell_modes` to snapshots, the pointer-path `ClickTab`/`ClickTabClose` and `ReopenTab`/`PinTab` requests, deterministic `InjectWebEvent` (rides the real event transport), and the `TabSelectPointer`/`TabReopen` benchmark kinds; future additive growth stays typed |
 | Dedicated-runner / external gaps | No dedicated stable macOS runner or public trend publication is provisioned yet. `canonical_host_model` is therefore empty, so the >15% relative baseline rule stays report-only until a runner is named; display refresh is recorded `null` with an explicit reason (window is offscreen and the OS refresh API is not linked). Absolute ceilings are enforced on every machine. Persisted warm startup stays open until the persistence repository lands — a test-only seed that bypasses the future persistence path is not acceptance evidence. |
 
 ---

@@ -311,14 +311,27 @@ src/
    and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
 
-The chrome (`bbr-app/src/app.rs`) renders a fixed-width sidebar
-(`SIDEBAR_WIDTH_PX = 260`): brand, nav dots (◀ ▶ ⟳ with enabled-state
-styling), a command bar (mirrors the live URL; inline cursor; accepts typing,
-backspace, enter), a status line (`NavigationState.status_line()`, incl.
-"⚠ Web content process terminated"), and a sidebar toggle. `CommandBarMode`
-separates `Inactive`, current-tab `Location`, and staged `NewTab` intent. A
-`key_context` (`bbr_chrome`) routes printable input only while a command mode is
-active. The content area is entirely the `NativeWebViewSlot`.
+The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs`) renders the
+Chassis-tokenized sidebar (`crates/bbr-app/src/theme.rs` tokens, `palette.rs`
+ramps, `components.rs` reusable typed components — never local magic values):
+brand block, command bar (mirrors the live URL; inline cursor; accepts typing,
+backspace, enter), the controller-backed tab surface, a status line
+(`shell.rs::status_line`, incl. "⚠ Web content process terminated"), and the
+sidebar toggle. `CommandBarMode` separates `Inactive`, current-tab `Location`,
+and staged `NewTab` intent. The content area is the `NativeWebViewSlot`, the
+empty-space pane (§11.8), or the crash panel (§10.7).
+
+The tab surface (DESIGN.md §11.1/§11.2) renders the active space's pinned
+region above the regular region, both derived from the controller snapshot
+(`shell.rs` owns presentation-only derivation: title/URL fallbacks §11.9,
+deterministic monogram favicons §7.2, per-row visual states §10). Pointer
+selection/close run the production row listeners (`select_row_via_pointer` /
+`close_row_via_pointer`) which keep the chrome focus domain (the chrome domain
+is the union of the command-bar and tab-list GPUI handles). Keyboard
+traversal (`↑`/`↓`, `⌫`) lives on the focused tab list; `Cmd-T`/Enter opens,
+`Cmd-W` closes, and `Cmd-Shift-T` reopens (fresh session, focus domain
+preserved). A crashed tab keeps its identity and its §10.7 error state until a
+fresh session loads; closing the final tab opens the empty New Tab surface.
 
 `BrowserController` is the sole owner of product tab/navigation state. The
 GPUI root renders a controller snapshot; `shell.rs` contains only formatting
@@ -372,8 +385,11 @@ lifecycle transition/visibility policy, and tamper detection through
 or a display server.
 
 The controller is composed into the real GPUI app and multi-session adapter.
-Still missing is the intentional vertical-tab/space UI layer (Phase 4); the
-current shell exposes real tab shortcuts and testkit state before visual tabs.
+The first Phase-4 shell slice (visible vertical tabs, pinned/regular regions,
+states, empty space, crash recovery, pointer + keyboard interaction) is
+implemented with real-app E2E (`just e2e-shell-tabs`) and performance
+scenarios. Still missing: visible space hierarchy/switching, sidebar
+resize/drag, tab drag/reorder/pin commands, and 500-tab density.
 
 ---
 

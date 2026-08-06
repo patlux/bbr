@@ -39,7 +39,11 @@ completion.
       fallback. Verified live via `just e2e-perf`/`-full`: `page_ready` p95
       ≈ 0.43 s cold on this host.)*
 - [ ] Emit interaction presentation commits for tab/space selection, close,
-      sidebar visibility/resize, focus target, and later split mutations. *(Initial tab selection, active close, Cmd-T, and sidebar toggle are covered; each commits synchronously against the authoritative post-mutation state because the offscreen harness never yields an `on_next_frame` frame callback.)*
+      sidebar visibility/resize, focus target, and later split mutations. *(Initial tab selection, active close, Cmd-T, sidebar toggle, pointer tab
+      selection, and reopen are covered; each commits synchronously against the
+      authoritative post-mutation state because the offscreen harness never
+      yields an `on_next_frame` frame callback. Reopen is a session-recreation
+      class with its own documented budget — see the performance contract.)*
 - [x] Ensure request/socket round-trip time is excluded from measured app work.
 - [x] Extend snapshots with the semantic state needed to reject fast-but-wrong
       samples for the implemented scenarios.
