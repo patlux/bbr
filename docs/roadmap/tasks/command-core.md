@@ -73,22 +73,22 @@ Integration order: land portable command core before command app composition;
 
 ### Unit and contract
 
-- [ ] Table-driven parser and intent tests cover URL/search ambiguity and modes.
-- [ ] Ranking tests prove every priority group, cross-profile labels,
+- [x] Table-driven parser and intent tests cover URL/search ambiguity and modes.
+- [x] Ranking tests prove every priority group, cross-profile labels,
       deterministic ties, deduplication, and fallback behavior.
-- [ ] Public API remains portable and dependency direction is documented.
+- [x] Public API remains portable and dependency direction is documented.
 
 ### Real-app E2E
 
-- [ ] Not applicable to this pure-core packet: it creates no browser behavior.
+- [x] Not applicable to this pure-core packet: it creates no browser behavior.
       The Phase-5 app-composition packet owns production GPUI/WKWebView E2E,
       keyboard focus, semantic snapshots, and activation behavior.
 
 ### Performance
 
-- [ ] Optimized local benchmark uses 500 tabs + 10,000 history entries and
+- [x] Optimized local benchmark uses 500 tabs + 10,000 history entries and
       proves first correct result below 50 ms with raw repeated samples.
-- [ ] The packet explicitly preserves later in-process real-app presentation
+- [x] The packet explicitly preserves later in-process real-app presentation
       measurement; no product budget or baseline is changed here.
 
 ## Completion gates
@@ -134,12 +134,57 @@ or persistence contracts to unblock the pure core.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
+Outcome: Portable bbr-command core: typed modes/identities, strict deterministic
+         URL-vs-search authority parsing, provider-neutral owned corpus,
+         13-action registry, standalone tab/space/history/action/fallback
+         ranking with explicit profile identity, typed activations, and a
+         release-mode first-result benchmark (500 tabs + 10,000 history)
+         enforcing strict p95/max <50 ms with raw distribution output.
+Commits: 14 total branch commits from 9352ded through the settled parser
+         remediation ledger: 1 packet-definition commit plus 13 subsequent
+         product/test/refactor/documentation/remediation commits. Coherent
+         product/remediation work groups: parsing/identities; corpus/registry;
+         ranking; parser/ranking/benchmark evidence; collector split; score/key
+         correction; five-finding remediation; dotted bare-colon authority
+         remediation; documentation/ledger truth. Exact subjects remain
+         authoritative in `git log 9352ded..HEAD`.
+Functional evidence: cargo test -p bbr-command: 12 lib + 1 benchmark + 5 parse
+         + 24 rank + 7 standalone-space + 1 doc = 50 green tests. Public parser
+         regressions cover invalid IPv4, strict domain labels, ports, bracketed
+         IPv6, unbracketed IPv6, punycode, malformed dotted bare-colon
+         authorities, opaque undotted schemes, and explicit dotted schemes.
+         Ranking covers standalone empty
+         spaces, current-space exclusion, same/cross/unknown profile labels,
+         duplicate names, SelectSpace activation, explicit index/id ordering,
+         reversed provider vectors, all groups, dedup, fallback, Unicode, empty
+         input, and limits. The built-in registry is locked by an exact 13-row
+         id/title/category/shortcut table.
 Real-app E2E: not applicable; later app-composition packet owns it.
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Performance evidence: cargo test -p bbr-command --release --test
+         benchmark_50ms -- --nocapture: 400 raw samples; p50 0.117000 ms, p95
+         1.452917 ms, max 1.539583 ms, min 0.001500 ms. Both p95 and max remain
+         enforced below 50 ms; corpus remains 500 tabs + 10,000 history and
+         fixture setup remains outside timed samples.
+Roadmap/documentation updates: Phase-5 detail now states standalone-space
+         ranking/activation and exact remediation benchmark evidence; this
+         ledger distinguishes total branch commits from coherent work groups.
+         ARCHITECTURE.md remains owned by serial integration.
+Open blockers and non-goals: no GPUI/real-app surface, focus routing, keyboard
+         selection, E2E, SQLite/history provider, debounce/cancellation runtime,
+         fuzzy dependency, or product-budget change. No root manifest,
+         Cargo.lock, justfile, testkit, shared crate, ROADMAP.md, performance
+         baseline, or URL-input surface modified.
+Worktree state: parallel/command-core; 14 commits ahead of 9352ded after this
+         final documentation commit; no remote configured and nothing pushed;
+         sibling worktrees untouched. Final gate/status evidence is recorded in
+         the remediation handoff.
+
+Planning/read-only: original estimates retained as estimates; remediation
+         runtime not reconstructed because exact workflow timing was not
+         captured.
+Review: initial independent result was REMEDIATE with five findings; focused
+         recheck found one remaining major dotted bare-colon parser bypass.
+Remediation: all initial findings and the focused-recheck parser bypass are
+         addressed in the bounded owned paths.
+Human intervention: none.
 ```
