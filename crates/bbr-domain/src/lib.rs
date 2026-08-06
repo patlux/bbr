@@ -45,6 +45,8 @@ mod split;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod tests_dense;
+#[cfg(test)]
 mod tests_layout;
 
 pub use browser::Browser;

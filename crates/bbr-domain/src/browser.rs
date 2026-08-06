@@ -19,6 +19,9 @@ use crate::{DomainError, ProfileId, SpaceId, TabId, TabLifecycle};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Browser {
     next_id: u64,
+    /// Monotonic recency counter for [`Tab::last_used`] (the dense-list
+    /// session-budget policy's deterministic "recently used" order).
+    last_used_seq: u64,
     pub(crate) profiles: Vec<Profile>,
     pub(crate) spaces: Vec<Space>,
     pub(crate) tabs: Vec<Tab>,
@@ -34,6 +37,7 @@ impl Browser {
     pub fn new() -> Self {
         Self {
             next_id: 1,
+            last_used_seq: 0,
             profiles: Vec::new(),
             spaces: Vec::new(),
             tabs: Vec::new(),
@@ -44,6 +48,79 @@ impl Browser {
         let id = self.next_id;
         self.next_id += 1;
         id
+    }
+
+    /// Mark `tab` as the most recently used identity (monotonic, no wall
+    /// clock). Used by every mutation that makes a tab the user's current
+    /// focus: open, select, reopen, and destination activation of a move.
+    fn touch(&mut self, tab: TabId) {
+        self.last_used_seq += 1;
+        if let Some(state) = self.tabs.iter_mut().find(|state| state.id == tab) {
+            state.last_used = self.last_used_seq;
+        }
+    }
+
+    /// Deterministic resource-budget policy (the dense-list session cap).
+    ///
+    /// Keeps live the identities the product contract protects — visible
+    /// (active) tabs, every pinned tab, then the most recently used remaining
+    /// tabs up to `cap` live sessions — and suspends (Warm → Suspended) the
+    /// rest so the total Active + Warm count never exceeds `cap`. The policy
+    /// is fully deterministic: candidate ordering ties break on the stable
+    /// tab id, and the suspend list is emitted in id order so the
+    /// orchestration layer records a reproducible engine op log.
+    ///
+    /// Returns the suspended [`TabId`]s. Tabs already `Suspended`/`Discarded`
+    /// are untouched (they own no session); a non-visible `Active` tab is an
+    /// invariant violation and is skipped rather than force-suspended.
+    pub fn suspend_least_recently_used(&mut self, cap: usize) -> Vec<TabId> {
+        // Kept: visible tabs first, then pinned tabs (DESIGN.md "active,
+        // pinned, and recently used identities" preservation order).
+        let mut kept: Vec<TabId> = self
+            .tabs
+            .iter()
+            .filter(|state| self.is_visible(state.id))
+            .map(|state| state.id)
+            .collect();
+        for state in &self.tabs {
+            if !kept.contains(&state.id) && state.pinned {
+                kept.push(state.id);
+            }
+        }
+        // Fill the remaining budget with the most recently used tabs
+        // (last_used descending, stable id ascending as the tie-break).
+        let mut candidates: Vec<TabId> = self
+            .tabs
+            .iter()
+            .filter(|state| {
+                !kept.contains(&state.id)
+                    && matches!(state.lifecycle, TabLifecycle::Active | TabLifecycle::Warm)
+            })
+            .map(|state| state.id)
+            .collect();
+        candidates.sort_by(|a, b| {
+            let ta = self.tab(*a);
+            let tb = self.tab(*b);
+            match (ta, tb) {
+                (Some(ta), Some(tb)) => tb.last_used.cmp(&ta.last_used).then(ta.id.cmp(&tb.id)),
+                _ => std::cmp::Ordering::Equal,
+            }
+        });
+        let budget = cap.saturating_sub(kept.len());
+        kept.extend(candidates.into_iter().take(budget));
+
+        // Suspend every non-kept Warm tab (id order → deterministic op log).
+        let mut suspended = Vec::new();
+        for index in 0..self.tabs.len() {
+            let id = self.tabs[index].id;
+            let lifecycle = self.tabs[index].lifecycle;
+            if kept.contains(&id) || lifecycle != TabLifecycle::Warm {
+                continue;
+            }
+            self.tabs[index].lifecycle = TabLifecycle::Suspended;
+            suspended.push(id);
+        }
+        suspended
     }
 
     // ---- Lookups ---------------------------------------------------------
@@ -180,6 +257,7 @@ impl Browser {
         sp.tabs.push(id);
         sp.active_tab = Some(id);
         sp.split = None;
+        self.touch(id);
         self.sync_lifecycles(space);
         Ok(id)
     }
@@ -249,6 +327,7 @@ impl Browser {
         }
         sp.active_tab = Some(id);
         sp.split = None;
+        self.touch(id);
         self.sync_lifecycles(space);
         Ok(id)
     }
@@ -271,6 +350,7 @@ impl Browser {
                 state.lifecycle = TabLifecycle::Active;
             }
         }
+        self.touch(tab);
         self.sync_lifecycles(space);
         Ok(())
     }
@@ -535,6 +615,7 @@ impl Browser {
                 t.lifecycle = TabLifecycle::Active;
             }
         }
+        self.touch(tab);
         self.sync_lifecycles(from_space);
         self.sync_lifecycles(to_space);
         Ok(())

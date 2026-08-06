@@ -128,6 +128,12 @@ pub struct Tab {
     pub pinned: bool,
     /// Policy state for the disposable native web session.
     pub lifecycle: TabLifecycle,
+    /// Monotonic recency stamp (the dense-list resource policy's "recently
+    /// used" order): bumped by open/select/reopen/destination-activation, so
+    /// the session-budget policy keeps recently used identities live without
+    /// a wall clock. `0` for tabs built directly via [`Tab::new`] (the
+    /// [`Browser`](crate::Browser) container owns the counter).
+    pub last_used: u64,
 }
 
 impl Tab {
@@ -144,6 +150,7 @@ impl Tab {
             url: url.into(),
             pinned: false,
             lifecycle: TabLifecycle::Active,
+            last_used: 0,
         }
     }
 }
