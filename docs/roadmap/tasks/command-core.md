@@ -139,17 +139,20 @@ Outcome: Portable bbr-command core: typed modes/identities, strict deterministic
          ranking with explicit profile identity, typed activations, and a
          release-mode first-result benchmark (500 tabs + 10,000 history)
          enforcing strict p95/max <50 ms with raw distribution output.
-Commits: 12 total branch commits from 9352ded through the settled remediation:
-         1 packet-definition commit plus 11 subsequent product/test/refactor/
-         documentation/remediation commits. Coherent product/remediation work
-         groups: parsing/identities; corpus/registry; ranking; parser/ranking/
-         benchmark evidence; collector split; score/key correction; five-
-         finding remediation; documentation/ledger truth. Exact subjects remain
+Commits: 14 total branch commits from 9352ded through the settled parser
+         remediation ledger: 1 packet-definition commit plus 13 subsequent
+         product/test/refactor/documentation/remediation commits. Coherent
+         product/remediation work groups: parsing/identities; corpus/registry;
+         ranking; parser/ranking/benchmark evidence; collector split; score/key
+         correction; five-finding remediation; dotted bare-colon authority
+         remediation; documentation/ledger truth. Exact subjects remain
          authoritative in `git log 9352ded..HEAD`.
-Functional evidence: cargo test -p bbr-command: 11 lib + 1 benchmark + 5 parse
-         + 24 rank + 7 standalone-space + 1 doc = 49 green tests. Public parser
+Functional evidence: cargo test -p bbr-command: 12 lib + 1 benchmark + 5 parse
+         + 24 rank + 7 standalone-space + 1 doc = 50 green tests. Public parser
          regressions cover invalid IPv4, strict domain labels, ports, bracketed
-         IPv6, unbracketed IPv6, and punycode. Ranking covers standalone empty
+         IPv6, unbracketed IPv6, punycode, malformed dotted bare-colon
+         authorities, opaque undotted schemes, and explicit dotted schemes.
+         Ranking covers standalone empty
          spaces, current-space exclusion, same/cross/unknown profile labels,
          duplicate names, SelectSpace activation, explicit index/id ordering,
          reversed provider vectors, all groups, dedup, fallback, Unicode, empty
@@ -157,8 +160,8 @@ Functional evidence: cargo test -p bbr-command: 11 lib + 1 benchmark + 5 parse
          id/title/category/shortcut table.
 Real-app E2E: not applicable; later app-composition packet owns it.
 Performance evidence: cargo test -p bbr-command --release --test
-         benchmark_50ms -- --nocapture: 400 raw samples; p50 0.107792 ms, p95
-         1.455708 ms, max 1.678958 ms, min 0.001583 ms. Both p95 and max remain
+         benchmark_50ms -- --nocapture: 400 raw samples; p50 0.117000 ms, p95
+         1.452917 ms, max 1.539583 ms, min 0.001500 ms. Both p95 and max remain
          enforced below 50 ms; corpus remains 500 tabs + 10,000 history and
          fixture setup remains outside timed samples.
 Roadmap/documentation updates: Phase-5 detail now states standalone-space
@@ -170,7 +173,7 @@ Open blockers and non-goals: no GPUI/real-app surface, focus routing, keyboard
          fuzzy dependency, or product-budget change. No root manifest,
          Cargo.lock, justfile, testkit, shared crate, ROADMAP.md, performance
          baseline, or URL-input surface modified.
-Worktree state: parallel/command-core; 12 commits ahead of 9352ded after this
+Worktree state: parallel/command-core; 14 commits ahead of 9352ded after this
          final documentation commit; no remote configured and nothing pushed;
          sibling worktrees untouched. Final gate/status evidence is recorded in
          the remediation handoff.
@@ -178,7 +181,9 @@ Worktree state: parallel/command-core; 12 commits ahead of 9352ded after this
 Planning/read-only: original estimates retained as estimates; remediation
          runtime not reconstructed because exact workflow timing was not
          captured.
-Review: independent result was REMEDIATE with five findings.
-Remediation: all five findings addressed in the bounded owned paths.
+Review: initial independent result was REMEDIATE with five findings; focused
+         recheck found one remaining major dotted bare-colon parser bypass.
+Remediation: all initial findings and the focused-recheck parser bypass are
+         addressed in the bounded owned paths.
 Human intervention: none.
 ```
