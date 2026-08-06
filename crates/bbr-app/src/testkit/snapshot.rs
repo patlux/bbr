@@ -28,6 +28,13 @@ pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange>
         }
         ControllerEvent::TabClosed { index } => Some(BrowserChange::TabClosed { index: *index }),
         ControllerEvent::TabPinned { index } => Some(BrowserChange::TabPinned { index: *index }),
+        ControllerEvent::TabUnpinned { index } => {
+            Some(BrowserChange::TabUnpinned { index: *index })
+        }
+        ControllerEvent::TabReordered { from, to } => Some(BrowserChange::TabReordered {
+            from: *from,
+            to: *to,
+        }),
         ControllerEvent::TabReopened { index, .. } => {
             Some(BrowserChange::TabReopened { index: *index })
         }
@@ -110,6 +117,12 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             shell_modes: self.shell_modes.clone(),
             tab_states: self.tab_states.clone(),
             row_titles: self.row_titles.clone(),
+            pinned_count: self.pinned_count,
+            command_bar_hint: self.command_bar_hint.clone(),
+            drag_source: self.drag_source,
+            drag_slot: self.drag_slot,
+            drag_space: self.drag_space,
+            drag_valid: self.drag_valid,
             space_states: self.space_states.clone(),
             space_titles: self.space_titles.clone(),
             visible_ids: self.visible_ids.clone(),

@@ -12,6 +12,10 @@ use crate::command_bar::{CommandBarMode, CommandBarReturn};
 use crate::engine::EngineRef;
 #[cfg(feature = "testkit")]
 use crate::performance::PerformanceProbe;
+#[cfg(feature = "testkit")]
+mod benchmarks;
+mod drag;
+mod drag_target;
 mod interaction;
 mod render;
 mod sidebar;
@@ -48,6 +52,9 @@ pub struct BbrApp {
     /// Adjustable sidebar geometry (DESIGN.md §5/§11.4): min/default/max
     /// widths, narrow-window clamping, collapse memory, drag state.
     pub sidebar: crate::sidebar::SidebarGeometry,
+    /// In-flight tab drag state (DESIGN.md §10.9/§11.2): the pointer drag
+    /// for reorder and move-between-spaces. Idle when no drag is active.
+    tab_drag: drag::TabDrag,
     /// Current command-bar intent. `NewTab` stages navigation without creating
     /// a domain tab or native session until Enter commits it.
     pub command_bar_mode: CommandBarMode,
@@ -92,6 +99,7 @@ impl BbrApp {
             tab_list_handle: cx.focus_handle(),
             divider_handle: cx.focus_handle(),
             sidebar: crate::sidebar::SidebarGeometry::new(),
+            tab_drag: drag::TabDrag::default(),
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
             command_bar_text: String::new(),

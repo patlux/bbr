@@ -170,17 +170,28 @@ impl BbrApp {
     /// The controller-backed tab surface: the focused tab list with the
     /// pinned region fixed above the regular region (§11.2). Rows are wired
     /// to the production pointer path (`select_row_via_pointer` /
-    /// `close_row_via_pointer`).
+    /// `close_row_via_pointer` / `toggle_row_pin` / `begin_tab_drag`), and
+    /// an active drag renders the §10.9 insertion tick at its target slot
+    /// (muted when the drop would be illegal).
     fn tab_surface(&self, theme: &Theme, cx: &mut Context<Self>) -> Stateful<Div> {
         let browser = self.controller.snapshot();
         let pinned_count = crate::shell::pinned_count(&browser.tabs);
-        let pinned_rows = self.row_visuals(&browser.tabs[..pinned_count]);
-        let regular_rows = self.row_visuals(&browser.tabs[pinned_count..]);
+        let drag_source = self.tab_drag.source();
+        let pinned_rows = self.row_visuals(&browser.tabs[..pinned_count], drag_source);
+        let regular_rows = self.row_visuals(&browser.tabs[pinned_count..], drag_source);
+        let tick = self.tab_drag.tab_slot();
+        let tick_valid = self.tab_drag.valid();
         let mut children: Vec<gpui::AnyElement> = Vec::new();
         if !pinned_rows.is_empty() {
             children.push(components::section_label(theme, "Pinned").into_any());
             for row in &pinned_rows {
+                if tick == Some(row.index) {
+                    children.push(components::drag_tick(theme, row.index, !tick_valid).into_any());
+                }
                 children.push(self.render_row(theme, row, cx).into_any());
+            }
+            if tick == Some(pinned_count) {
+                children.push(components::drag_tick(theme, pinned_count, !tick_valid).into_any());
             }
             children.push(
                 div()
@@ -193,7 +204,14 @@ impl BbrApp {
         if !regular_rows.is_empty() {
             children.push(components::section_label(theme, "Tabs").into_any());
             for row in &regular_rows {
+                if tick == Some(row.index) {
+                    children.push(components::drag_tick(theme, row.index, !tick_valid).into_any());
+                }
                 children.push(self.render_row(theme, row, cx).into_any());
+            }
+            if tick == Some(browser.tabs.len()) {
+                children
+                    .push(components::drag_tick(theme, browser.tabs.len(), !tick_valid).into_any());
             }
         }
 
@@ -218,7 +236,19 @@ impl BbrApp {
             this.close_row_via_pointer(index, window, cx);
             let _ = e;
         });
-        components::tab_row(theme, row, select, close)
+        let pin = cx.listener(move |this, e: &MouseDownEvent, window, cx| {
+            cx.stop_propagation();
+            this.toggle_row_pin(index, window, cx);
+            let _ = e;
+        });
+        // Pointer drag entry: pressing the row starts a drag of that row.
+        // The row's own controls stop propagation before this listener runs
+        // (their handlers come first in the bubble phase), so a press on the
+        // pin or close control never starts a drag.
+        let begin_drag = cx.listener(move |this, e: &MouseDownEvent, window, cx| {
+            this.begin_tab_drag(e, index, window, cx);
+        });
+        components::tab_row(theme, row, select, close, pin, begin_drag)
     }
 
     /// The controller-backed space surface (DESIGN.md §11.3): every space
@@ -230,6 +260,7 @@ impl BbrApp {
     fn space_surface(&self, theme: &Theme, cx: &mut Context<Self>) -> Stateful<Div> {
         let browser = self.controller.snapshot();
         let budget = crate::shell::space_title_budget_chars(theme);
+        let drag_target_space = self.tab_drag.space_target();
         let groups = crate::shell::space_groups(&browser, budget);
         let mut children: Vec<gpui::AnyElement> = Vec::new();
         for group in &groups {
@@ -252,7 +283,11 @@ impl BbrApp {
                 let select = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
                     this.select_space_via_pointer(space, window, cx)
                 });
-                children.push(components::space_row(theme, row, select).into_any());
+                let mut row = row.clone();
+                if drag_target_space == Some(space) {
+                    row.state = crate::components::SpaceVisualState::DragTarget;
+                }
+                children.push(components::space_row(theme, &row, select).into_any());
             }
         }
         let new_space = cx
@@ -271,8 +306,14 @@ impl BbrApp {
 
     /// Map a tab slice to per-row visuals for the current theme. The §4
     /// one-line title truncation is applied here so the snapshot's row
-    /// titles and the rendered rows share one source.
-    pub fn row_visuals(&self, tabs: &[bbr_browser::TabSnapshot]) -> Vec<RowVisuals> {
+    /// titles and the rendered rows share one source. `drag_source` marks
+    /// the row currently being dragged (§10.9 `dragging` state); the row's
+    /// `pinned` region identity drives the pin control.
+    pub fn row_visuals(
+        &self,
+        tabs: &[bbr_browser::TabSnapshot],
+        drag_source: Option<usize>,
+    ) -> Vec<RowVisuals> {
         let budget = crate::shell::title_budget_chars(&self.theme());
         tabs.iter()
             .map(|tab| RowVisuals {
@@ -281,11 +322,16 @@ impl BbrApp {
                     &crate::shell::display_title(&tab.url, &tab.title),
                     budget,
                 )),
-                state: crate::shell::row_state(tab.active, tab.loading, tab.crashed),
+                state: if drag_source == Some(tab.index) {
+                    crate::components::TabVisualState::Dragging
+                } else {
+                    crate::shell::row_state(tab.active, tab.loading, tab.crashed)
+                },
                 favicon: Some(components::FaviconSpec {
                     letter: crate::shell::monogram_letter(&tab.url),
                     hue: crate::shell::monogram_hue(&tab.url),
                 }),
+                pinned: tab.pinned,
                 show_close: true,
             })
             .collect()

@@ -87,6 +87,12 @@ impl Render for BbrApp {
             .on_mouse_move(cx.listener(Self::on_sidebar_drag_move))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::on_sidebar_drag_end))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_sidebar_drag_end))
+            // The tab-drag listeners run alongside the sidebar-drag ones on
+            // the same root; each handler is a no-op unless its own drag is
+            // active, so the two drag surfaces never interfere.
+            .on_mouse_move(cx.listener(Self::on_tab_drag_move))
+            .on_mouse_up(MouseButton::Left, cx.listener(Self::end_tab_drag))
+            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::end_tab_drag))
             .when(self.sidebar_visible, |root| root.child(sidebar))
             .child(content)
     }

@@ -15,6 +15,7 @@ use bbr_testkit::GatewayServer;
 use gpui::{px, size, App, Keystroke, WindowHandle};
 
 use crate::app::BbrApp;
+use crate::testkit::dispatch_benchmark::dispatch_benchmark;
 use crate::testkit::snapshot::SnapshotExt;
 
 pub(crate) fn dispatch(
@@ -23,6 +24,11 @@ pub(crate) fn dispatch(
     server: Option<Arc<GatewayServer>>,
     cx: &mut App,
 ) -> Response {
+    // The performance arms live in `dispatch_benchmark` so this router stays
+    // under the ~500-line budget; every other request falls through here.
+    if let Some(response) = dispatch_benchmark(&req, window, cx) {
+        return response;
+    }
     let broadcast = |server: &Option<Arc<GatewayServer>>, ev: Event| {
         if let Some(s) = server {
             s.broadcast(ev);
@@ -86,6 +92,14 @@ pub(crate) fn dispatch(
             browser_mutation(window.update(cx, |view, _window, cx| view.pin_tab(index, cx)))
         }
 
+        Request::UnpinTab { index } => {
+            browser_mutation(window.update(cx, |view, _window, cx| view.unpin_tab(index, cx)))
+        }
+
+        Request::ReorderTab { from, to } => browser_mutation(
+            window.update(cx, |view, _window, cx| view.reorder_tab_seam(from, to, cx)),
+        ),
+
         // Pointer-path activation of visible rows: the same app methods the
         // row mouse-down listeners call, so the asserted scenario exercises
         // the production listener path rather than a direct controller call.
@@ -99,6 +113,90 @@ pub(crate) fn dispatch(
         Request::ClickTabClose { index } => window
             .update(cx, |view, window, cx| {
                 view.close_row_via_pointer(index, window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+
+        Request::ClickTabPin { index } => window
+            .update(cx, |view, window, cx| {
+                view.toggle_row_pin(index, window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+
+        // Pointer drag on a tab row through the production listener methods
+        // (the same begin/move/end handlers the element listeners drive),
+        // exactly like the `DragSidebarDivider` seam: never a direct
+        // controller mutation. The press is anchored at `y` with the press
+        // `press_in_row` within the source row; moves are displacements from
+        // it; the app resolves typed targets and legality.
+        Request::BeginTabDrag {
+            index,
+            y,
+            press_in_row,
+        } => window
+            .update(cx, |view, window, cx| {
+                use gpui::{point, px, Modifiers, MouseButton, MouseDownEvent};
+                view.begin_tab_drag(
+                    &MouseDownEvent {
+                        button: MouseButton::Left,
+                        position: point(px(130.0), px(y)),
+                        modifiers: Modifiers::default(),
+                        click_count: 1,
+                        first_mouse: true,
+                    },
+                    index,
+                    window,
+                    cx,
+                );
+                // The seam records the true press offset on the drag state so
+                // subsequent moves resolve targets from the same anchor the
+                // scenario simulated.
+                view.set_tab_drag_press_in_row(press_in_row);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+
+        Request::MoveTabDrag { dy } => window
+            .update(cx, |view, window, cx| {
+                use gpui::{point, px, Modifiers, MouseButton, MouseMoveEvent};
+                // The app only ever uses the displacement from the press y,
+                // so the seam's positions stay consistent by construction.
+                let y = view.tab_drag_start_y().unwrap_or(0.0) + dy;
+                view.on_tab_drag_move(
+                    &MouseMoveEvent {
+                        position: point(px(130.0), px(y)),
+                        pressed_button: Some(MouseButton::Left),
+                        modifiers: Modifiers::default(),
+                    },
+                    window,
+                    cx,
+                );
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+
+        Request::EndTabDrag => window
+            .update(cx, |view, window, cx| {
+                use gpui::{point, px, Modifiers, MouseButton, MouseUpEvent};
+                let y = view.tab_drag_start_y().unwrap_or(0.0);
+                view.end_tab_drag(
+                    &MouseUpEvent {
+                        button: MouseButton::Left,
+                        position: point(px(130.0), px(y)),
+                        modifiers: Modifiers::default(),
+                        click_count: 1,
+                    },
+                    window,
+                    cx,
+                );
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+
+        Request::CancelTabDrag => window
+            .update(cx, |view, window, cx| {
+                view.cancel_tab_drag(window, cx);
                 Response::Ok
             })
             .unwrap_or_else(err_response),
@@ -126,137 +224,6 @@ pub(crate) fn dispatch(
 
         Request::SuspendTab { index } => {
             browser_mutation(window.update(cx, |view, _window, cx| view.suspend_tab(index, cx)))
-        }
-
-        Request::BenchmarkSelectTab {
-            operation_id,
-            index,
-        } => browser_mutation(window.update(cx, |view, window, cx| {
-            view.benchmark_select_tab(operation_id, index, window, cx)
-        })),
-
-        Request::BenchmarkClickTab {
-            operation_id,
-            index,
-        } => window
-            .update(cx, |view, window, cx| {
-                view.benchmark_click_tab(operation_id, index, window, cx)
-            })
-            .map(|started| {
-                if started {
-                    Response::Ok
-                } else {
-                    Response::Error(Error::new(
-                        "benchmark_busy",
-                        "another presentation measurement is pending",
-                    ))
-                }
-            })
-            .unwrap_or_else(err_response),
-
-        Request::BenchmarkReopenTab { operation_id } => window
-            .update(cx, |view, window, cx| {
-                view.benchmark_reopen_tab(operation_id, window, cx)
-            })
-            .map(|started| {
-                if started {
-                    Response::Ok
-                } else {
-                    Response::Error(Error::new(
-                        "benchmark_busy",
-                        "another presentation measurement is pending",
-                    ))
-                }
-            })
-            .unwrap_or_else(err_response),
-
-        Request::BenchmarkActivateSpace {
-            operation_id,
-            space,
-        } => window
-            .update(cx, |view, window, cx| {
-                view.benchmark_activate_space(
-                    operation_id,
-                    bbr_browser::SpaceId(space.0),
-                    window,
-                    cx,
-                )
-            })
-            .map(|started| {
-                if started {
-                    Response::Ok
-                } else {
-                    Response::Error(Error::new(
-                        "benchmark_busy",
-                        "another presentation measurement is pending",
-                    ))
-                }
-            })
-            .unwrap_or_else(err_response),
-
-        Request::BenchmarkPageReady {
-            operation_id,
-            expected_view,
-            expected_title,
-        } => window
-            .update(cx, |view, _window, _cx| {
-                view.benchmark_page_ready(operation_id, expected_view, expected_title)
-            })
-            .map(|started| {
-                if started {
-                    Response::Ok
-                } else {
-                    Response::Error(Error::new("benchmark_busy", "page-ready already pending"))
-                }
-            })
-            .unwrap_or_else(err_response),
-
-        Request::BenchmarkToggleSidebar { operation_id } => window
-            .update(cx, |view, window, cx| {
-                view.benchmark_toggle_sidebar(operation_id, window, cx)
-            })
-            .map(|started| {
-                if started {
-                    Response::Ok
-                } else {
-                    Response::Error(Error::new(
-                        "benchmark_busy",
-                        "another presentation measurement is pending",
-                    ))
-                }
-            })
-            .unwrap_or_else(err_response),
-
-        Request::BenchmarkDispatchKeystroke {
-            operation_id,
-            kind,
-            keystroke,
-        } => {
-            let started = window
-                .update(cx, |view, _window, _cx| {
-                    view.begin_benchmark(operation_id, kind)
-                })
-                .unwrap_or(false);
-            if !started {
-                return Response::Error(Error::new(
-                    "benchmark_busy",
-                    "another presentation measurement is pending",
-                ));
-            }
-            let ks = match Keystroke::parse(&keystroke) {
-                Ok(ks) => ks,
-                Err(error) => {
-                    let _ = window.update(cx, |view, _window, _cx| view.cancel_benchmark());
-                    return Response::Error(Error::new("bad_keystroke", error.to_string()));
-                }
-            };
-            (**window)
-                .update(cx, |_root, window, cx| window.dispatch_keystroke(ks, cx))
-                .map(|_| Response::Ok)
-                .unwrap_or_else(|error| {
-                    let _ = window.update(cx, |view, _window, _cx| view.cancel_benchmark());
-                    Response::Error(Error::new("app_error", error.to_string()))
-                })
         }
 
         Request::WebAction(action) => window
@@ -362,41 +329,6 @@ pub(crate) fn dispatch(
             .map(|_| Response::Ok)
             .unwrap_or_else(err_response),
 
-        Request::BenchmarkResizeSidebar {
-            operation_id,
-            width,
-        } => window
-            .update(cx, |view, window, cx| {
-                view.benchmark_resize_sidebar(operation_id, width, window, cx)
-            })
-            .map(|started| {
-                if started {
-                    Response::Ok
-                } else {
-                    Response::Error(Error::new(
-                        "benchmark_busy",
-                        "another presentation measurement is pending",
-                    ))
-                }
-            })
-            .unwrap_or_else(err_response),
-
-        Request::BenchmarkRestoreSidebar { operation_id } => window
-            .update(cx, |view, window, cx| {
-                view.benchmark_restore_sidebar(operation_id, window, cx)
-            })
-            .map(|started| {
-                if started {
-                    Response::Ok
-                } else {
-                    Response::Error(Error::new(
-                        "benchmark_busy",
-                        "another presentation measurement is pending",
-                    ))
-                }
-            })
-            .unwrap_or_else(err_response),
-
         Request::Ping => Response::Ok,
 
         Request::Quit => {
@@ -413,10 +345,29 @@ pub(crate) fn dispatch(
         Request::InjectWebEvent { .. } => {
             Response::Error(Error::new("pump_only", "handled by the event pump"))
         }
+
+        // Routed by `dispatch_benchmark` before this match; reaching one here
+        // is a routing bug.
+        Request::BenchmarkSelectTab { .. }
+        | Request::BenchmarkClickTab { .. }
+        | Request::BenchmarkReopenTab { .. }
+        | Request::BenchmarkActivateSpace { .. }
+        | Request::BenchmarkPageReady { .. }
+        | Request::BenchmarkToggleSidebar { .. }
+        | Request::BenchmarkDispatchKeystroke { .. }
+        | Request::BenchmarkResizeSidebar { .. }
+        | Request::BenchmarkRestoreSidebar { .. }
+        | Request::BenchmarkPinTab { .. }
+        | Request::BenchmarkReorderTab { .. }
+        | Request::BenchmarkMoveTab { .. } => {
+            unreachable!("benchmark requests route through dispatch_benchmark")
+        }
     }
 }
 
-fn browser_mutation<E: std::fmt::Display>(update: Result<Option<ControllerEvent>, E>) -> Response {
+pub(crate) fn browser_mutation<E: std::fmt::Display>(
+    update: Result<Option<ControllerEvent>, E>,
+) -> Response {
     match update {
         Ok(Some(_)) => Response::Ok,
         Ok(None) => Response::Error(Error::new("browser_error", "browser mutation was rejected")),
@@ -424,6 +375,6 @@ fn browser_mutation<E: std::fmt::Display>(update: Result<Option<ControllerEvent>
     }
 }
 
-fn err_response<E: std::fmt::Display>(e: E) -> Response {
+pub(crate) fn err_response<E: std::fmt::Display>(e: E) -> Response {
     Response::Error(Error::new("app_error", e.to_string()))
 }

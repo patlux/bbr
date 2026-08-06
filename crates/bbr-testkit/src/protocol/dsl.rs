@@ -53,6 +53,38 @@ pub fn pin_tab(index: usize) -> Request {
     Request::PinTab { index }
 }
 
+pub fn unpin_tab(index: usize) -> Request {
+    Request::UnpinTab { index }
+}
+
+pub fn reorder_tab(from: usize, to: usize) -> Request {
+    Request::ReorderTab { from, to }
+}
+
+pub fn click_tab_pin(index: usize) -> Request {
+    Request::ClickTabPin { index }
+}
+
+pub fn begin_tab_drag(index: usize, y: f32, press_in_row: f32) -> Request {
+    Request::BeginTabDrag {
+        index,
+        y,
+        press_in_row,
+    }
+}
+
+pub fn move_tab_drag(dy: f32) -> Request {
+    Request::MoveTabDrag { dy }
+}
+
+pub fn end_tab_drag() -> Request {
+    Request::EndTabDrag
+}
+
+pub fn cancel_tab_drag() -> Request {
+    Request::CancelTabDrag
+}
+
 pub fn click_tab(index: usize) -> Request {
     Request::ClickTab { index }
 }

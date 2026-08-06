@@ -1,49 +1,131 @@
-//! Testkit-only surface of the root view: benchmark drivers, E2E mutation
-//! seams, and the semantic snapshot.
+//! Testkit-only benchmark drivers.
 //!
-//! Only compiled under the `testkit` cargo feature. Production behavior
-//! (open/select/close, focus, sidebar) stays in `app.rs`; this module holds
-//! the typed benchmark drivers the performance harness drives and the
-//! mutation seams the E2E gateway dispatches. The benchmark methods mirror
-//! the production paths (same controller mutations and focus domains) and
-//! commit synchronously from the authoritative post-mutation snapshot so a
-//! fast-but-wrong sample cannot be accepted.
+//! Tab-organization drivers (pin, reorder, same-profile move, cross-profile
+//! move) plus the interaction benchmarks the performance harness drives
+//! (selection, reopen, sidebar resize/restore, page-ready milestones).
+//!
+//! Each driver begins the in-process presentation probe, runs the production
+//! mutation path, and commits synchronously from the authoritative
+//! post-mutation snapshot — exactly like the other interaction benchmarks —
+//! so a fast-but-wrong sample (wrong view, wrong focus, wrong mode) is
+//! rejected in the app before it leaves.
 
-use bbr_browser::{ControllerError, ControllerEvent, SpaceId};
-use bbr_web::{ProfileId, WebAction, WebViewId};
+use bbr_browser::{ControllerEvent, SpaceId};
+use bbr_web::WebViewId;
 use gpui::{Context, Window};
 
-use crate::shell::TestSnapshot;
-
-use super::{BbrApp, BrowserSink, FocusSink};
+use super::BbrApp;
 
 impl BbrApp {
-    /// Create a profile with its first space (E2E seam; production uses the
-    /// startup profile).
-    pub fn create_profile_space(
+    /// Benchmark the production pin toggle of the active tab: the pinned
+    /// region boundary moves, the session and native view stay. Commits
+    /// synchronously from the authoritative post-mutation snapshot.
+    pub fn benchmark_pin_tab(
         &mut self,
-        profile_title: &str,
-        space_title: &str,
+        operation_id: bbr_testkit::protocol::BenchmarkOperationId,
+        window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> Option<ControllerEvent> {
-        let result = self
-            .controller
-            .create_profile_space(profile_title, space_title);
-        self.apply_mutation(result, cx)
+    ) -> bool {
+        if self
+            .performance
+            .begin(operation_id, bbr_testkit::protocol::BenchmarkKind::TabPin)
+            .is_err()
+        {
+            return false;
+        }
+        let outcome = self.pin_active_tab(cx);
+        if outcome.is_none() {
+            self.performance.cancel();
+            return false;
+        }
+        self.commit_organize_benchmark(window);
+        true
     }
 
-    /// Create a space in an existing profile (E2E seam).
-    pub fn create_space(
+    /// Benchmark the production reorder of the active tab by `delta` rows
+    /// within its region (the keyboard step the `Cmd-Shift-↑/↓` path drives).
+    pub fn benchmark_reorder_tab(
         &mut self,
-        profile: ProfileId,
-        title: &str,
+        operation_id: bbr_testkit::protocol::BenchmarkOperationId,
+        delta: isize,
+        window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> Option<ControllerEvent> {
-        let result = self.controller.create_space_event(profile, title);
-        self.apply_mutation(result, cx)
+    ) -> bool {
+        if self
+            .performance
+            .begin(
+                operation_id,
+                bbr_testkit::protocol::BenchmarkKind::TabReorder,
+            )
+            .is_err()
+        {
+            return false;
+        }
+        let outcome = self.reorder_active_tab(delta, cx);
+        if outcome.is_none() {
+            self.performance.cancel();
+            return false;
+        }
+        self.commit_organize_benchmark(window);
+        true
     }
 
-    /// Benchmark the warm tab-selection path (production `select_tab`).
+    /// Benchmark the production move of the active tab into `to_space`:
+    /// same-profile moves keep the live session (warm class), cross-profile
+    /// moves recreate it once in the destination store (session-recreation
+    /// class, its own budget). The sample commits with the source space's
+    /// repaired selection presented.
+    pub fn benchmark_move_tab(
+        &mut self,
+        operation_id: bbr_testkit::protocol::BenchmarkOperationId,
+        to_space: SpaceId,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let snapshot = self.controller.snapshot();
+        if snapshot.active_space == to_space {
+            return false;
+        }
+        let same_profile = snapshot
+            .spaces
+            .iter()
+            .find(|s| s.id == to_space)
+            .is_some_and(|s| s.profile == snapshot.active_profile);
+        let kind = if same_profile {
+            bbr_testkit::protocol::BenchmarkKind::TabMoveSameProfile
+        } else {
+            bbr_testkit::protocol::BenchmarkKind::TabMoveCrossProfile
+        };
+        if self.performance.begin(operation_id, kind).is_err() {
+            return false;
+        }
+        let outcome = self.move_active_tab_to_space(to_space, window, cx);
+        if outcome.is_none() {
+            self.performance.cancel();
+            return false;
+        }
+        self.commit_organize_benchmark(window);
+        true
+    }
+
+    /// Commit an organize benchmark synchronously from the authoritative
+    /// post-mutation snapshot (active view, focus, mode), like the other
+    /// interaction benchmarks.
+    fn commit_organize_benchmark(&self, window: &Window) {
+        let active_view = self.controller.snapshot().active_view;
+        let chrome_focused = self.chrome_focused(window);
+        let mode = self.command_bar_mode.into();
+        self.performance.observe_render_state(
+            active_view,
+            self.sidebar_visible,
+            chrome_focused,
+            mode,
+        );
+        self.performance
+            .expect_browser_state(active_view, self.sidebar_visible);
+        self.performance.commit_current_presentation();
+    }
+
     pub fn benchmark_select_tab(
         &mut self,
         operation_id: bbr_testkit::protocol::BenchmarkOperationId,
@@ -166,45 +248,6 @@ impl BbrApp {
         true
     }
 
-    /// Move a tab to another space (E2E seam; follows the profile-boundary
-    /// recreation policy inside the controller).
-    pub fn move_tab(
-        &mut self,
-        index: usize,
-        to_space: SpaceId,
-        cx: &mut Context<Self>,
-    ) -> Option<ControllerEvent> {
-        let result = self.controller.move_tab(index, to_space);
-        self.apply_mutation(result, cx)
-    }
-
-    /// Suspend a tab's native session (E2E seam).
-    pub fn suspend_tab(&mut self, index: usize, cx: &mut Context<Self>) -> Option<ControllerEvent> {
-        let result = self.controller.suspend_tab(index);
-        self.apply_mutation(result, cx)
-    }
-
-    /// Route a generic [`WebAction`] through the focused controller session.
-    pub fn web_action(&mut self, action: WebAction) -> Option<ControllerEvent> {
-        self.controller
-            .navigate(action)
-            .map_err(|error| {
-                log::error!("could not route web action: {error}");
-                error
-            })
-            .ok()
-    }
-
-    /// Install a focus-change sink (used by the E2E gateway).
-    pub fn set_focus_sink(&mut self, sink: FocusSink) {
-        *self.focus_sink.borrow_mut() = Some(sink);
-    }
-
-    /// Install a semantic browser-mutation sink (used by the E2E gateway).
-    pub fn set_browser_sink(&mut self, sink: BrowserSink) {
-        *self.browser_sink.borrow_mut() = Some(sink);
-    }
-
     /// Arm the deterministic page-ready milestone for a view/title pair.
     pub fn benchmark_page_ready(
         &self,
@@ -266,24 +309,6 @@ impl BbrApp {
 
     /// Apply a controller mutation result: log errors, broadcast the outcome,
     /// and notify the view. Returns the event when the mutation succeeded.
-    fn apply_mutation(
-        &mut self,
-        result: Result<ControllerEvent, ControllerError>,
-        cx: &mut Context<Self>,
-    ) -> Option<ControllerEvent> {
-        let outcome = result
-            .map_err(|error| {
-                log::error!("browser mutation failed: {error}");
-                error
-            })
-            .ok();
-        if let Some(event) = &outcome {
-            self.emit_browser(event);
-            cx.notify();
-        }
-        outcome
-    }
-
     /// Benchmark the sidebar toggle through the production path.
     pub fn benchmark_toggle_sidebar(
         &mut self,
@@ -375,103 +400,5 @@ impl BbrApp {
         // presentation synchronously.
         self.toggle_sidebar(window, cx);
         true
-    }
-
-    /// A snapshot for the E2E protocol (also used by unit tests).
-    pub fn snapshot(&self, window: &Window) -> TestSnapshot {
-        let browser = self.controller.snapshot();
-        let theme = self.theme();
-        let rows = self.row_visuals(&browser.tabs);
-        let budget = crate::shell::space_title_budget_chars(&theme);
-        let window_width = f32::from(window.bounds().size.width);
-        let window_height = f32::from(window.bounds().size.height);
-        let sidebar_width = if self.sidebar_visible {
-            self.sidebar.effective_width(window_width)
-        } else {
-            0.0
-        };
-        TestSnapshot {
-            url: browser.nav.url.clone(),
-            title: browser.nav.title.clone(),
-            loading: browser.nav.loading,
-            can_go_back: browser.nav.can_go_back,
-            can_go_forward: browser.nav.can_go_forward,
-            web_view_hosted: browser.web_view_hosted,
-            active_profile: browser.active_profile,
-            active_profile_title: browser.active_profile_title.clone(),
-            active_profile_hue: browser.active_profile_hue.map(|hue| hue.name().to_string()),
-            active_space: bbr_testkit::protocol::TestSpaceId(browser.active_space.0),
-            tabs: browser.tabs.clone(),
-            profiles: browser.profiles.clone(),
-            spaces: browser.spaces.clone(),
-            active_tab_index: browser.active_index,
-            active_web_view: browser.active_view,
-            engine_sessions: browser.engine_sessions,
-            engine_kind: self.engine_kind,
-            chrome_focused: self.chrome_focused(window),
-            shell_modes: bbr_testkit::protocol::ShellModes {
-                theme: match theme.mode {
-                    crate::theme::ThemeMode::Light => "light".into(),
-                    crate::theme::ThemeMode::Dark => "dark".into(),
-                },
-                contrast: match theme.contrast {
-                    crate::theme::ContrastMode::Standard => "standard".into(),
-                    crate::theme::ContrastMode::Increased => "increased".into(),
-                },
-                density: match theme.density {
-                    crate::theme::Density::Small => "small".into(),
-                    crate::theme::Density::Normal => "normal".into(),
-                    crate::theme::Density::ExtraLarge => "extralarge".into(),
-                },
-            },
-            tab_states: rows
-                .iter()
-                .map(|row| match row.state {
-                    crate::components::TabVisualState::Default => {
-                        bbr_testkit::protocol::TabVisualState::Default
-                    }
-                    crate::components::TabVisualState::Selected => {
-                        bbr_testkit::protocol::TabVisualState::Selected
-                    }
-                    crate::components::TabVisualState::Loading => {
-                        bbr_testkit::protocol::TabVisualState::Loading
-                    }
-                    crate::components::TabVisualState::Error => {
-                        bbr_testkit::protocol::TabVisualState::Error
-                    }
-                })
-                .collect(),
-            row_titles: rows.iter().map(|row| row.title.to_string()).collect(),
-            space_states: crate::shell::space_states(&browser)
-                .into_iter()
-                .map(|state| match state {
-                    crate::components::SpaceVisualState::Default => {
-                        bbr_testkit::protocol::SpaceVisualState::Default
-                    }
-                    crate::components::SpaceVisualState::Selected => {
-                        bbr_testkit::protocol::SpaceVisualState::Selected
-                    }
-                })
-                .collect(),
-            space_titles: crate::shell::space_titles(&browser, budget),
-            visible_ids: crate::shell::visible_ids(
-                &browser,
-                self.chrome_focused(window),
-                self.command_bar_mode,
-                self.sidebar_visible,
-            ),
-            command_bar_mode: self.command_bar_mode.into(),
-            command_bar_text: self.command_bar_text.clone(),
-            sidebar_visible: self.sidebar_visible,
-            sidebar_width,
-            sidebar_min: crate::sidebar::SIDEBAR_MIN,
-            sidebar_default: crate::sidebar::SIDEBAR_DEFAULT,
-            sidebar_max: crate::sidebar::SIDEBAR_MAX,
-            content_min: crate::sidebar::CONTENT_MIN,
-            divider_dragging: self.sidebar.is_dragging(),
-            divider_label: crate::sidebar::SIDEBAR_DIVIDER_LABEL.to_string(),
-            content_rect: self.performance.content_rect().unwrap_or([0.0; 4]),
-            window_size: [window_width, window_height],
-        }
     }
 }

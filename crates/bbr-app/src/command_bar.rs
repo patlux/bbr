@@ -12,6 +12,9 @@ pub enum CommandBarMode {
     /// `Cmd-Shift-N`: collect a new space name without creating anything
     /// until Enter commits it (the pointer half is the New Space row).
     NewSpace,
+    /// `Cmd-Shift-M`: collect a destination space name for moving the active
+    /// tab; Enter commits the move, Escape cancels it.
+    MoveTab,
 }
 
 impl CommandBarMode {
@@ -28,6 +31,7 @@ impl From<CommandBarMode> for bbr_testkit::protocol::CommandBarMode {
             CommandBarMode::Location => Self::Location,
             CommandBarMode::NewTab => Self::NewTab,
             CommandBarMode::NewSpace => Self::NewSpace,
+            CommandBarMode::MoveTab => Self::MoveTab,
         }
     }
 }

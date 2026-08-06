@@ -45,6 +45,9 @@ pub enum CommandBarMode {
     NewTab,
     /// `Cmd-Shift-N`: stage a new space name in the active profile.
     NewSpace,
+    /// `Cmd-Shift-M`: stage a move of the active tab into a destination
+    /// space (typed by name); Enter commits, Escape cancels.
+    MoveTab,
 }
 
 /// The shell's resolved §15 mode fields (theme/contrast/density).

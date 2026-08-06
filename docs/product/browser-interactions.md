@@ -156,6 +156,28 @@ Additional rules:
 - The domain does not automatically create an `about:blank` replacement tab.
 - The UI must provide an obvious way to open a new tab from the empty state.
 
+### Drag and drop — Contract
+
+- Pressing a tab row (not one of its controls) begins a drag of that row — the
+  dragged tab, which may be the active tab but is never mutated by the grab.
+  The drag is a chrome interaction: chrome focus stays in the tab list
+  throughout, and Escape cancels the drag without committing.
+- While the pointer stays over the tab list, the drag resolves to an insertion
+  slot inside the source tab's region and renders the §10.9 tick there. A slot
+  outside the region (the pinned/regular boundary crossing) is illegal: the
+  tick clamps to the region edge and renders the invalid variant, and the
+  release commits nothing (the drop is rejected whole). Dropping back on the
+  source slot is a no-op that never emits a reorder event.
+- Dragging above the tab list targets the visible space row the pointer
+  hovers; the row renders the §10.9 drag-target state with its destination
+  profile chip. Releasing there moves the dragged tab into that space through
+  the controller's move policy (same-profile keeps the live session;
+  cross-profile recreates it once in the destination store). Dropping on the
+  tab's own space is a no-op.
+- Every pointer operation above has a keyboard equivalent: the row pin control
+  ↔ `Cmd-Shift-P`, drag reorder ↔ `Cmd-Shift-↑/↓`, drag-into-space ↔ staged
+  `Cmd-Shift-M` + Enter.
+
 ## Spaces and profiles
 
 ### Active tab per space — Planned
@@ -255,6 +277,17 @@ visible UI slices land.
 - `Cmd-W` — close the active tab or focused split target. **Contract; the
   single-pane action exists, while split routing and exact focus aftermath
   remain open above.**
+- `Cmd-Shift-P` — pin or unpin the active tab (the pinned/regular boundary
+  toggle). The selected tab stays selected and its live session is preserved;
+  the invoking focus domain is untouched. **Contract** (the row pin control is
+  the pointer equivalent).
+- `Cmd-Shift-↑` / `Cmd-Shift-↓` — move the active tab one step within its
+  current pinned or regular region. A step that would cross the boundary is
+  rejected whole (no partial mutation); the session and selection stay
+  untouched. **Contract**
+- `Cmd-Shift-M` — stage a move of the active tab into a destination space
+  typed by name; nothing moves until Enter commits it, Escape cancels it and
+  restores the previous command-bar state and focus domain. **Contract**
 - Back, Forward, Reload, and Stop — target the active tab or focused pane.
   **Contract**
 - `Cmd-Shift-T` — reopen the most recently closed tab of the active space.

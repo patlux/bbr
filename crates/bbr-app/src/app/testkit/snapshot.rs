@@ -1,0 +1,150 @@
+//! The semantic E2E snapshot of the root view (testkit feature).
+//!
+//! Maps the controller snapshot, theme tokens, drag state, and shell
+//! presentation onto the typed protocol snapshot the E2E suites assert.
+
+use gpui::Window;
+
+use crate::shell::TestSnapshot;
+
+use super::BbrApp;
+
+/// A snapshot for the E2E protocol (also used by unit tests).
+impl BbrApp {
+    pub fn snapshot(&self, window: &Window) -> TestSnapshot {
+        let browser = self.controller.snapshot();
+        let theme = self.theme();
+        let drag_source = self.tab_drag.source();
+        let rows = self.row_visuals(&browser.tabs, drag_source);
+        let drag_slot = self.tab_drag.tab_slot();
+        let drag_space = self
+            .tab_drag
+            .space_target()
+            .map(|space| bbr_testkit::protocol::TestSpaceId(space.0));
+        let budget = crate::shell::space_title_budget_chars(&theme);
+        let window_width = f32::from(window.bounds().size.width);
+        let window_height = f32::from(window.bounds().size.height);
+        let sidebar_width = if self.sidebar_visible {
+            self.sidebar.effective_width(window_width)
+        } else {
+            0.0
+        };
+        TestSnapshot {
+            url: browser.nav.url.clone(),
+            title: browser.nav.title.clone(),
+            loading: browser.nav.loading,
+            can_go_back: browser.nav.can_go_back,
+            can_go_forward: browser.nav.can_go_forward,
+            web_view_hosted: browser.web_view_hosted,
+            active_profile: browser.active_profile,
+            active_profile_title: browser.active_profile_title.clone(),
+            active_profile_hue: browser.active_profile_hue.map(|hue| hue.name().to_string()),
+            active_space: bbr_testkit::protocol::TestSpaceId(browser.active_space.0),
+            tabs: browser.tabs.clone(),
+            profiles: browser.profiles.clone(),
+            spaces: browser.spaces.clone(),
+            active_tab_index: browser.active_index,
+            active_web_view: browser.active_view,
+            engine_sessions: browser.engine_sessions,
+            engine_kind: self.engine_kind,
+            chrome_focused: self.chrome_focused(window),
+            shell_modes: bbr_testkit::protocol::ShellModes {
+                theme: match theme.mode {
+                    crate::theme::ThemeMode::Light => "light".into(),
+                    crate::theme::ThemeMode::Dark => "dark".into(),
+                },
+                contrast: match theme.contrast {
+                    crate::theme::ContrastMode::Standard => "standard".into(),
+                    crate::theme::ContrastMode::Increased => "increased".into(),
+                },
+                density: match theme.density {
+                    crate::theme::Density::Small => "small".into(),
+                    crate::theme::Density::Normal => "normal".into(),
+                    crate::theme::Density::ExtraLarge => "extralarge".into(),
+                },
+            },
+            tab_states: rows
+                .iter()
+                .map(|row| match row.state {
+                    crate::components::TabVisualState::Default => {
+                        bbr_testkit::protocol::TabVisualState::Default
+                    }
+                    crate::components::TabVisualState::Hover => {
+                        bbr_testkit::protocol::TabVisualState::Hover
+                    }
+                    crate::components::TabVisualState::Active => {
+                        bbr_testkit::protocol::TabVisualState::Active
+                    }
+                    crate::components::TabVisualState::Selected => {
+                        bbr_testkit::protocol::TabVisualState::Selected
+                    }
+                    crate::components::TabVisualState::Loading => {
+                        bbr_testkit::protocol::TabVisualState::Loading
+                    }
+                    crate::components::TabVisualState::Attention => {
+                        bbr_testkit::protocol::TabVisualState::Attention
+                    }
+                    crate::components::TabVisualState::Error => {
+                        bbr_testkit::protocol::TabVisualState::Error
+                    }
+                    crate::components::TabVisualState::Disabled => {
+                        bbr_testkit::protocol::TabVisualState::Disabled
+                    }
+                    crate::components::TabVisualState::Dragging => {
+                        bbr_testkit::protocol::TabVisualState::Dragging
+                    }
+                    crate::components::TabVisualState::DragTarget => {
+                        bbr_testkit::protocol::TabVisualState::DragTarget
+                    }
+                    crate::components::TabVisualState::Focused => {
+                        bbr_testkit::protocol::TabVisualState::Focused
+                    }
+                })
+                .collect(),
+            row_titles: rows.iter().map(|row| row.title.to_string()).collect(),
+            pinned_count: crate::shell::pinned_count(&browser.tabs),
+            command_bar_hint: self.command_bar_hint(),
+            drag_source,
+            drag_slot,
+            drag_space,
+            drag_valid: self.tab_drag.valid(),
+            space_states: crate::shell::space_states(
+                &browser,
+                drag_space.map(|s| bbr_browser::SpaceId(s.0)),
+            )
+            .into_iter()
+            .map(|state| match state {
+                crate::components::SpaceVisualState::Default => {
+                    bbr_testkit::protocol::SpaceVisualState::Default
+                }
+                crate::components::SpaceVisualState::Selected => {
+                    bbr_testkit::protocol::SpaceVisualState::Selected
+                }
+                crate::components::SpaceVisualState::DragTarget => {
+                    bbr_testkit::protocol::SpaceVisualState::DragTarget
+                }
+            })
+            .collect(),
+            space_titles: crate::shell::space_titles(&browser, budget),
+            visible_ids: crate::shell::visible_ids(
+                &browser,
+                self.chrome_focused(window),
+                self.command_bar_mode,
+                self.sidebar_visible,
+                drag_slot,
+            ),
+            command_bar_mode: self.command_bar_mode.into(),
+            command_bar_text: self.command_bar_text.clone(),
+            sidebar_visible: self.sidebar_visible,
+            sidebar_width,
+            sidebar_min: crate::sidebar::SIDEBAR_MIN,
+            sidebar_default: crate::sidebar::SIDEBAR_DEFAULT,
+            sidebar_max: crate::sidebar::SIDEBAR_MAX,
+            content_min: crate::sidebar::CONTENT_MIN,
+            divider_dragging: self.sidebar.is_dragging(),
+            divider_label: crate::sidebar::SIDEBAR_DIVIDER_LABEL.to_string(),
+            content_rect: self.performance.content_rect().unwrap_or([0.0; 4]),
+            window_size: [window_width, window_height],
+        }
+    }
+}

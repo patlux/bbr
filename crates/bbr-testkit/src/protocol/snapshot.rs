@@ -9,13 +9,25 @@ use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewI
 
 /// Visual state of one tab row, mirroring the DESIGN.md §10 vocabulary that
 /// the shell renders. Asserted by E2E via the snapshot's `tab_states`.
+/// The slice renders the full §15 vocabulary; hover/active/focused ride the
+/// later polish passes but the names are already contract.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TabVisualState {
     Default,
+    Hover,
+    Active,
     Selected,
     Loading,
+    Attention,
     Error,
+    Disabled,
+    /// §10.9: the dragged row (92% opacity, elev:2 shadow, strong outline).
+    Dragging,
+    /// §10.9: the drop target (accent tick + target outline + tint; the
+    /// space target replaces the tick with the destination profile chip).
+    DragTarget,
+    Focused,
 }
 
 /// Visual state of one space row (DESIGN.md §11.3): the active space uses
@@ -26,6 +38,9 @@ pub enum TabVisualState {
 pub enum SpaceVisualState {
     Default,
     Selected,
+    /// §10.9: a tab drag currently targets this space row (the destination
+    /// profile chip replaces the insertion tick per §12.3).
+    DragTarget,
 }
 
 /// One profile's identity on the wire (DESIGN.md §12).
@@ -116,6 +131,24 @@ pub struct Snapshot {
     /// Per-row rendered titles (after §4 separator-aware truncation) in tab
     /// order, from the same `row_visuals` source the shell renders.
     pub row_titles: Vec<String>,
+    /// The pinned/regular boundary (DESIGN.md §11.2): leading `pinned_count`
+    /// tabs of the active space are pinned. Typed explicitly so E2E asserts
+    /// the boundary itself, never by re-deriving it from tab flags.
+    pub pinned_count: usize,
+    /// A command-bar destination hint (DESIGN.md §11.3): e.g. the destination
+    /// profile when a staged move matches a space. `None` when no hint is
+    /// shown.
+    pub command_bar_hint: Option<String>,
+    /// The dragged tab row's active-space index (§10.9). `None` when no drag
+    /// is in flight; the dragged row renders the `dragging` state.
+    pub drag_source: Option<usize>,
+    /// The current drag target: the tab insertion slot (within the source
+    /// region) or the targeted space's stable id.
+    pub drag_slot: Option<usize>,
+    pub drag_space: Option<TestSpaceId>,
+    /// Whether the current drag target is a legal drop (a boundary crossing
+    /// or a non-droppable zone reports `false` and renders the muted tick).
+    pub drag_valid: bool,
     /// §11.3 space states (selected/default) in render order, grouped by
     /// profile.
     pub space_states: Vec<SpaceVisualState>,

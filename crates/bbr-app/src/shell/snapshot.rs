@@ -33,6 +33,20 @@ pub struct TestSnapshot {
     pub shell_modes: bbr_testkit::protocol::ShellModes,
     pub tab_states: Vec<bbr_testkit::protocol::TabVisualState>,
     pub row_titles: Vec<String>,
+    /// The pinned/regular boundary (DESIGN.md §11.2): leading `pinned_count`
+    /// tabs of the active space are pinned.
+    pub pinned_count: usize,
+    /// A command-bar destination hint (DESIGN.md §11.3), e.g. the
+    /// destination profile of a staged move.
+    pub command_bar_hint: Option<String>,
+    /// The dragged tab row's active-space index (§10.9). `None` when no drag
+    /// is in flight; the dragged row renders `dragging`.
+    pub drag_source: Option<usize>,
+    /// The current drag target: the tab insertion slot or the targeted
+    /// space's stable id, plus the drop's legality.
+    pub drag_slot: Option<usize>,
+    pub drag_space: Option<bbr_testkit::protocol::TestSpaceId>,
+    pub drag_valid: bool,
     /// §11.3 space states in render order (selected for the active space).
     pub space_states: Vec<bbr_testkit::protocol::SpaceVisualState>,
     /// §11.3 space row titles in render order, after §4 truncation.
@@ -74,6 +88,7 @@ pub fn visible_ids(
     chrome_focused: bool,
     command_bar_mode: crate::command_bar::CommandBarMode,
     sidebar_visible: bool,
+    drag_slot: Option<usize>,
 ) -> Vec<String> {
     let mut ids: Vec<String> = vec!["bbr-root".into()];
     if sidebar_visible {
@@ -110,6 +125,10 @@ pub fn visible_ids(
         ids.push(format!("bbr-tab-favicon-{index}"));
         ids.push(format!("bbr-tab-state-{index}"));
         ids.push(format!("bbr-tab-close-{index}"));
+        ids.push(format!("bbr-tab-pin-{index}"));
+    }
+    if let Some(slot) = drag_slot {
+        ids.push(format!("bbr-drag-tick-{slot}"));
     }
     let active_tab = browser
         .active_index
@@ -211,6 +230,7 @@ mod tests {
             false,
             crate::command_bar::CommandBarMode::Inactive,
             true,
+            None,
         );
         for required in [
             "bbr-root",
@@ -222,6 +242,7 @@ mod tests {
             "bbr-tab-favicon-1",
             "bbr-tab-state-1",
             "bbr-tab-close-1",
+            "bbr-tab-pin-1",
             "bbr-empty-new-tab",
         ] {
             assert!(
@@ -251,6 +272,7 @@ mod tests {
             false,
             crate::command_bar::CommandBarMode::Inactive,
             true,
+            None,
         );
         for required in ["bbr-crash-panel", "bbr-crash-reload", "bbr-crash-close"] {
             assert!(
@@ -266,6 +288,7 @@ mod tests {
             true,
             crate::command_bar::CommandBarMode::NewTab,
             true,
+            None,
         );
         assert!(ids.contains(&"bbr-command-cursor".to_string()));
     }
@@ -284,6 +307,7 @@ mod tests {
             false,
             crate::command_bar::CommandBarMode::Inactive,
             true,
+            None,
         );
         let chips = crate::shell::space::space_groups(&browser, usize::MAX)
             .into_iter()
@@ -318,6 +342,7 @@ mod tests {
             false,
             crate::command_bar::CommandBarMode::Inactive,
             true,
+            None,
         );
         for required in [
             "bbr-space-list",
@@ -341,6 +366,7 @@ mod tests {
             false,
             crate::command_bar::CommandBarMode::Inactive,
             false,
+            None,
         );
         assert!(!hidden.iter().any(|id| id.starts_with("bbr-space")));
     }

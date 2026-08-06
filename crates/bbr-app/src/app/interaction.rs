@@ -74,6 +74,30 @@ impl BbrApp {
                     }
                 }
             }
+            CommandBarMode::MoveTab => {
+                // Move the active tab into the destination space named by the
+                // staged text (exact title match, else the first space whose
+                // title starts with it). Same-profile moves keep the session;
+                // cross-profile moves recreate it once in the destination
+                // store. Chrome focus stays in the tab list.
+                let Some((space, _, _)) = self.resolve_move_space(&input) else {
+                    return;
+                };
+                self.command_bar_text.clear();
+                self.command_bar_return = None;
+                if self.move_active_tab_to_space(space, window, cx).is_some() {
+                    #[cfg(feature = "testkit")]
+                    {
+                        self.performance.expect_state(
+                            self.controller.snapshot().active_view,
+                            self.sidebar_visible,
+                            self.chrome_focused(window),
+                            self.command_bar_mode.into(),
+                        );
+                        self.commit_benchmark_sync(window);
+                    }
+                }
+            }
         }
     }
 
@@ -132,6 +156,90 @@ impl BbrApp {
         }
     }
 
+    /// `Cmd-Shift-M`: stage a destination space for the active tab without
+    /// moving anything until Enter commits it. The staged text is matched
+    /// against space titles; Escape restores the previous command-bar state
+    /// and focus domain exactly like the other staged modes.
+    pub fn activate_move_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.controller.snapshot().active_index.is_none() {
+            return;
+        }
+        if self.command_bar_mode != CommandBarMode::MoveTab {
+            self.command_bar_return = Some(CommandBarReturn {
+                mode: self.command_bar_mode,
+                text: self.command_bar_text.clone(),
+                chrome_focused: self.chrome_focused(window),
+            });
+        }
+        self.command_bar_mode = CommandBarMode::MoveTab;
+        self.command_bar_text.clear();
+        self.focus_command_bar(window, cx);
+        #[cfg(feature = "testkit")]
+        {
+            self.performance.expect_state(
+                self.controller.snapshot().active_view,
+                self.sidebar_visible,
+                true,
+                self.command_bar_mode.into(),
+            );
+            self.commit_benchmark_sync(window);
+        }
+    }
+
+    /// Resolve a staged move destination: the space whose title matches the
+    /// text exactly (trimmed), else the first space whose title starts with
+    /// it. Returns the space id, its title, and its profile id.
+    pub(super) fn resolve_move_space(
+        &self,
+        text: &str,
+    ) -> Option<(bbr_browser::SpaceId, String, bbr_web::ProfileId)> {
+        let needle = text.trim();
+        if needle.is_empty() {
+            return None;
+        }
+        let snapshot = self.controller.snapshot();
+        let exact = snapshot
+            .spaces
+            .iter()
+            .find(|space| space.title.trim() == needle);
+        let matched = exact.or_else(|| {
+            snapshot
+                .spaces
+                .iter()
+                .find(|space| space.title.trim().starts_with(needle))
+        })?;
+        let profile = snapshot.profiles.iter().find(|p| p.id == matched.profile)?;
+        Some((
+            bbr_browser::SpaceId(matched.id.0),
+            matched.title.clone(),
+            profile.id,
+        ))
+    }
+
+    /// The §11.3 command-field destination hint for a staged move: "→ Space"
+    /// within the active profile, "in Profile · <profile> → Space" when the
+    /// destination crosses a profile boundary (the contract's cross-context
+    /// communication). `None` when no move is staged or nothing matches.
+    #[cfg(feature = "testkit")]
+    pub(super) fn command_bar_hint(&self) -> Option<String> {
+        if self.command_bar_mode != CommandBarMode::MoveTab {
+            return None;
+        }
+        let (_, title, profile) = self.resolve_move_space(&self.command_bar_text)?;
+        if profile == self.controller.active_profile() {
+            Some(format!("→ {title}"))
+        } else {
+            let snapshot = self.controller.snapshot();
+            let profile_title = snapshot
+                .profiles
+                .iter()
+                .find(|p| p.id == profile)
+                .map(|p| p.title.clone())
+                .unwrap_or_else(|| "other".to_string());
+            Some(format!("in Profile · {profile_title} → {title}"))
+        }
+    }
+
     pub(super) fn enter_empty_new_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_return = None;
         self.command_bar_mode = CommandBarMode::NewTab;
@@ -146,12 +254,17 @@ impl BbrApp {
         self.emit_focus(window);
     }
 
-    /// Escape cancels a staged tab or space; location mode returns to web
-    /// content.
+    /// Escape cancels a staged tab, space, or move; location mode returns to
+    /// web content. An active tab drag is cancelled first (chrome focus
+    /// stays in the tab list).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.tab_drag.is_active() {
+            self.cancel_tab_drag(window, cx);
+            return;
+        }
         if !matches!(
             self.command_bar_mode,
-            CommandBarMode::NewTab | CommandBarMode::NewSpace
+            CommandBarMode::NewTab | CommandBarMode::NewSpace | CommandBarMode::MoveTab
         ) {
             self.focus_web(window, cx);
             return;

@@ -2,7 +2,7 @@
 //! requests route through the same app methods the element listeners call so
 //! E2E exercises the production listener path.
 
-use bbr_web::{ProfileId, WebAction, WebEvent, WebViewId};
+use bbr_web::{ProfileId, WebAction, WebViewId};
 use serde::{Deserialize, Serialize};
 
 use super::{BenchmarkKind, BenchmarkOperationId, TestSpaceId};
@@ -39,12 +39,44 @@ pub enum Request {
     ReopenTab,
     /// Pin the tab at the active-space index (moves into the pinned region).
     PinTab { index: usize },
+    /// Unpin the tab at the active-space index (moves to the end of the
+    /// regular region).
+    UnpinTab { index: usize },
+    /// Reorder the tab at `from` to `to` within the active space (same
+    /// region only; the pinned-first invariant is domain-owned).
+    ReorderTab { from: usize, to: usize },
     /// Activate a visible tab row through the production pointer path: the
     /// same app method the row's mouse-down listener calls, with chrome focus.
     ClickTab { index: usize },
     /// Activate the visible tab row's close control through the production
     /// pointer path.
     ClickTabClose { index: usize },
+    /// Toggle the visible tab row's pin control through the production
+    /// pointer path (the pointer half of the pin/unpin command).
+    ClickTabPin { index: usize },
+    /// Pointer drag entry: press on a visible tab row through the production
+    /// mouse-down listener path (the same method the row's listener calls),
+    /// anchored at `y` so the subsequent moves are relative to the press.
+    /// Pointer press on a tab row, starting a drag at window y `y` with the
+    /// press `press_in_row` within the source row (0 at the top edge, the
+    /// row height at the bottom). The seam passes the row-center offset
+    /// unless a scenario anchors an off-center press.
+    BeginTabDrag {
+        index: usize,
+        y: f32,
+        press_in_row: f32,
+    },
+    /// Pointer drag move: a `dy` displacement from the press position, sent
+    /// through the production mouse-move listener path. The app resolves the
+    /// typed target (tab slot or space row) and its legality.
+    MoveTabDrag { dy: f32 },
+    /// Pointer drag release through the production mouse-up listener path:
+    /// commits a legal target (region-bounded reorder or move-between-spaces)
+    /// and clears the drag.
+    EndTabDrag,
+    /// Cancel an in-flight drag (the production Escape path): nothing is
+    /// committed, chrome focus stays in the tab list.
+    CancelTabDrag,
     /// Deterministic engine-event injection (testkit-only): pushes a native
     /// `WebEvent` through the exact event transport the real engine uses, so
     /// E2E can exercise the production crash/error path without killing a
@@ -136,6 +168,23 @@ pub enum Request {
     /// setup), then expand and commit when the last expanded width is
     /// restored.
     BenchmarkRestoreSidebar { operation_id: BenchmarkOperationId },
+    /// Measure the production pin toggle of the active tab until the new
+    /// region order is presented (same native view, boundary moved).
+    BenchmarkPinTab { operation_id: BenchmarkOperationId },
+    /// Measure the production reorder of the active tab by `delta` rows
+    /// within its region until the new row order is presented.
+    BenchmarkReorderTab {
+        operation_id: BenchmarkOperationId,
+        delta: isize,
+    },
+    /// Measure the production move of the active tab into `to_space` until
+    /// the source space's repaired selection is presented. Same-profile
+    /// moves keep the live session; cross-profile moves are the
+    /// session-recreation class (fresh view in the destination store).
+    BenchmarkMoveTab {
+        operation_id: BenchmarkOperationId,
+        to_space: TestSpaceId,
+    },
     /// Full app snapshot.
     GetSnapshot,
     /// Liveness probe.

@@ -25,7 +25,7 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 - [ ] Clear hierarchy between navigation controls, command surface, pinned tabs, regular tabs, and spaces.
 - [ ] Active tab and focused pane are unmistakable without visual noise.
 - [ ] Profile identity is clear whenever tabs/spaces cross contexts. *(Every space row keeps its §12 chip with a round-robin hue and monogram, profile groups stack under hairlines, and the empty pane names the owning profile; the command-field destination hint during switching remains with the cross-context slice.)*
-- [ ] Hover, press, drag, selection, loading, attention, crash, and disabled states are coherent.
+- [ ] Hover, press, drag, selection, loading, attention, crash, and disabled states are coherent. *(The drag surface renders the full §10.9 vocabulary — `dragging` (92% opacity, elev:2 shadow, strong outline), the accent insertion tick, the muted invalid tick at a clamped boundary, and `drag-target` space rows with the destination profile chip — through the production drag state machine; the remaining hover/press/attention polish rides the Phase-9 pass.)*
 - [ ] Long titles, missing favicons, narrow windows, empty spaces, and 500-tab density remain usable.
 - [x] Sidebar collapse/resize feels stable and preserves native content geometry. *(The DESIGN §5/§11.4 slice pins the rail at its exact effective width (the flex_shrink fix) and proves through the real app that the native WKWebView slot always keeps strictly positive geometry — exact rail/content boundary, 64 pt content floor in compact windows, no drift across drags/resizes — see `just e2e-shell-sidebar`.)*
 

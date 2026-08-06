@@ -15,6 +15,15 @@ gpui::actions!(
         NewTab,
         /// `Cmd-Shift-N`: stage a new space name in the active profile.
         NewSpace,
+        /// `Cmd-Shift-P`: pin or unpin the active tab (region toggle).
+        PinTab,
+        /// `Cmd-Shift-↑`: move the active tab one step up within its region.
+        ReorderTabUp,
+        /// `Cmd-Shift-↓`: move the active tab one step down within its region.
+        ReorderTabDown,
+        /// `Cmd-Shift-M`: stage a destination space for the active tab;
+        /// Enter commits the move, Escape cancels it.
+        MoveTab,
         /// `Cmd-W`: close the active tab.
         CloseTab,
         /// `Cmd-Shift-T`: reopen the most recently closed tab.

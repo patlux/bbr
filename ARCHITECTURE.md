@@ -306,7 +306,7 @@ src/
 4. In the open_window callback: capture the GPUI root NSView, build the engine,
    create `BrowserController(engine.clone(), allocator)`, then create BbrApp.
 5. Open the initial controller-backed tab after the window exists.
-6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B plus Cmd-T staging and focus-preserving Cmd-W.
+6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B, Cmd-T staging, the focus-preserving Cmd-W, and the tab-organization commands (Cmd-Shift-P pin toggle, Cmd-Shift-↑/↓ reorder, Cmd-Shift-M staged move).
 7. Under testkit: start the gateway, pump engine events into the controller,
    and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
@@ -343,6 +343,30 @@ traversal (`↑`/`↓`, `⌫`) lives on the focused tab list; `Cmd-T`/Enter open
 `Cmd-W` closes, and `Cmd-Shift-T` reopens (fresh session, focus domain
 preserved). A crashed tab keeps its identity and its §10.7 error state until a
 fresh session loads; closing the final tab opens the empty New Tab surface.
+
+Tab organization (the Phase-4 drag/reorder slice) is routed through the same
+controller mutations as every other input path. `Cmd-Shift-P` toggles the
+active tab's pin state (the row's `bbr-tab-pin-<n>` control is the pointer
+half), `Cmd-Shift-↑/↓` step the active tab within its region (a boundary
+crossing is refused before the controller rejects it — the pinned-first
+invariant stays domain-owned), and `Cmd-Shift-M` stages a destination space
+name in the command bar (`CommandBarMode::MoveTab`; exact-title match then
+prefix; Enter commits through `move_active_tab_to_space`, Escape cancels
+without moving). The pointer drag is a typed state machine
+(`app/drag.rs`, pure resolution in `app/drag_target.rs`): a row press begins
+the drag, mouse-move resolves an insertion slot inside the source region or a
+visible space row (space-surface offsets mirror `shell::space_groups`), and
+mouse-up commits region-bounded reorder or move-between-spaces through the
+controller. Resolution is anchored at the press: the recorded press offset
+within the source row makes the space-surface hit exact (`press_in_row`),
+and callers that cannot observe element geometry (GPUI 0.2.2 exposes none)
+anchor at the row center. Boundary crossings clamp the tick to the region
+edge and report invalid so the drop is rejected whole; the §10.9 tick
+(accent, muted when invalid) and `drag-target` space rows render from that
+state, and Escape cancels. Same-profile moves keep the WebViewId and warm
+session; cross-profile moves recreate exactly once in the destination
+profile's store (`recreated` reported on the wire). The pinned region
+boundary and drag state are part of the typed E2E snapshot.
 
 The space surface (DESIGN.md §11.3/§12) renders every space grouped under its
 profile with a per-row §12 chip (round-robin hue + monogram) and a hairline
@@ -421,8 +445,16 @@ adds the DESIGN §5/§11.4 width contract, pointer drag + keyboard resize/
 reset parity, Cmd-B collapse/expand with last-expanded-width restoration, and
 compact-window clamping that keeps the native WKWebView geometry strictly
 positive — proven by `just e2e-shell-sidebar` and the `sidebar_resize` /
-`sidebar_restore` performance scenarios. Still missing: tab drag/reorder UI
-and 500-tab density.
+`sidebar_restore` performance scenarios. The tab-organization slice adds the
+keyboard commands (`Cmd-Shift-P` pin toggle, `Cmd-Shift-↑/↓` region-bounded
+reorder, staged `Cmd-Shift-M` move), the visible pin control and §10.9 drag
+tick, real pointer drag through the production press/move/release listeners,
+illegal boundary drops rejected whole, same-profile moves that keep the
+WebViewId and warm session, cross-profile moves that recreate exactly once in
+the destination store with cookie isolation, and pin/reorder/move
+presentation benchmarks — proven by `just e2e-shell-organize` and the
+`tab_pin`/`tab_reorder`/`tab_move_same_profile`/`tab_move_cross_profile`
+performance scenarios. Still missing: the 500-tab dense list.
 
 ---
 
@@ -530,16 +562,19 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 
 ## 11. Known limitations (current implementation)
 
-1. **Real tabs exist without visible tab UI yet.** `BrowserController` and
-   `WebEngineWk` open, switch, preserve, navigate, and close multiple real
-   sessions; Cmd-T stages a tab destination and Cmd-W closes through the real
-   product path. The vertical tab list and
-   pointer selection arrive with the intentional Phase-4 shell.
+1. **The vertical tab shell is complete; the 500-tab dense list remains.**
+   `BrowserController` and `WebEngineWk` open, switch, preserve, navigate,
+   and close multiple real sessions; Cmd-T stages a tab destination and Cmd-W
+   closes through the real product path. The visible vertical tab list with
+   pinned/regular regions, pointer + keyboard interaction, drag reorder, and
+   move-between-spaces arrived with the Phase-4 shell slices; the dense-500
+   frame-time scenario and remaining density polish come with the dense-list
+   slice.
 2. **Profile/space visibility is complete; cross-context polish remains.** The
    sidebar renders every profile's spaces with chips, activation works through
-   pointer + keyboard, and empty spaces name their profile; the §11.3 command-
-   field destination hint during switching and tab drag/move UI remain
-   Phase-4 slices.
+   pointer + keyboard, empty spaces name their profile, and the command-field
+   destination hint communicates cross-profile moves and space switching; the
+   remaining Phase-4 polish is the dense list under one profile.
 3. **`--bbr-clock` is a no-op**; the `TimeSource` seam is intentionally not
    added until time-based logic exists (debounces in Phase 5/7).
 4. **Popups/new windows are suppressed** (`createWebViewWithConfiguration` →

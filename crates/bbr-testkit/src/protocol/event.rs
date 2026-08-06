@@ -1,6 +1,6 @@
 //! The semantic event stream the gateway broadcasts and replays.
 
-use bbr_web::{ProfileId, WebEvent};
+use bbr_web::ProfileId;
 use serde::{Deserialize, Serialize};
 
 use super::{CommandBarMode, PresentationMeasurement, TestSpaceId};
@@ -49,6 +49,13 @@ pub enum BrowserChange {
     },
     TabPinned {
         index: usize,
+    },
+    TabUnpinned {
+        index: usize,
+    },
+    TabReordered {
+        from: usize,
+        to: usize,
     },
     TabReopened {
         index: usize,

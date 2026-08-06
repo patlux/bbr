@@ -37,8 +37,8 @@ mod testkit;
 mod theme;
 
 use actions::{
-    Back, CloseTab, FocusCommandBar, FocusWeb, Forward, NewSpace, NewTab, Reload, ReopenTab,
-    ToggleSidebar,
+    Back, CloseTab, FocusCommandBar, FocusWeb, Forward, MoveTab, NewSpace, NewTab, PinTab, Reload,
+    ReopenTab, ReorderTabDown, ReorderTabUp, ToggleSidebar,
 };
 use app::BbrApp;
 use engine::{build_engine, EngineConfig};
@@ -412,6 +412,42 @@ fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
         });
     });
     let win = *window;
+    cx.on_action(move |_: &PinTab, cx| {
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, _w, cx| {
+                let _ = view.pin_active_tab(cx);
+            });
+        });
+    });
+    let win = *window;
+    cx.on_action(move |_: &ReorderTabUp, cx| {
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, _w, cx| {
+                let _ = view.reorder_active_tab(-1, cx);
+            });
+        });
+    });
+    let win = *window;
+    cx.on_action(move |_: &ReorderTabDown, cx| {
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, _w, cx| {
+                let _ = view.reorder_active_tab(1, cx);
+            });
+        });
+    });
+    let win = *window;
+    cx.on_action(move |_: &MoveTab, cx| {
+        let win = win;
+        cx.defer(move |cx| {
+            let _ = win.update(cx, |view, window, cx| {
+                view.activate_move_tab(window, cx);
+            });
+        });
+    });
+    let win = *window;
     cx.on_action(move |_: &CloseTab, cx| {
         let win = win;
         cx.defer(move |cx| {
@@ -440,6 +476,10 @@ fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
         KeyBinding::new("cmd-b", ToggleSidebar, None),
         KeyBinding::new("cmd-t", NewTab, None),
         KeyBinding::new("cmd-shift-n", NewSpace, None),
+        KeyBinding::new("cmd-shift-p", PinTab, None),
+        KeyBinding::new("cmd-shift-up", ReorderTabUp, None),
+        KeyBinding::new("cmd-shift-down", ReorderTabDown, None),
+        KeyBinding::new("cmd-shift-m", MoveTab, None),
         KeyBinding::new("cmd-w", CloseTab, None),
         KeyBinding::new("cmd-shift-t", ReopenTab, None),
     ]);

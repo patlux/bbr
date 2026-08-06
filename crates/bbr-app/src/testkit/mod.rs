@@ -23,6 +23,7 @@ use gpui::{App, WindowHandle};
 use crate::app::BbrApp;
 
 mod dispatch;
+mod dispatch_benchmark;
 mod snapshot;
 pub(crate) use snapshot::browser_change;
 

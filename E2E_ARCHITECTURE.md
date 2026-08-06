@@ -162,8 +162,8 @@ Snapshot {
 }
 ```
 
-FUTURE (planned protocol growth, not yet implemented): remaining tab/split manipulation
-(`PinTab/ReorderTab/ReopenTab/SplitTabs/CloseSplit`),
+FUTURE (planned protocol growth, not yet implemented): the split surface
+(`SplitTabs`/`CloseSplit`),
 `WebEvaluate` (whitelisted DOM helpers), `AdvanceClock`/
 `ResetIds`, `TerminateWebProcess`, `Screenshot`, and the richer event set
 (`TabAdded/TabClosed/…`, `PersistenceFlushed`, …). `--bbr-clock` is parsed but
@@ -412,6 +412,52 @@ compute the same expectation the render enforces, so a fast-but-wrong sample
 is rejected in the app before it leaves); the restore sample asserts the
 last-expanded width after an unmeasured production collapse. Both join the
 30-sample matrix with the 50 ms p95 / 100 ms max next-frame budget.
+
+---
+
+## 7f. The shell-organize suite (`bbr-app/tests/e2e_shell_organize.rs`)
+
+One `#[ignore]`d macOS-only suite (shared harness in `tests/e2e_common/`)
+proves the tab-organization slice over real WKWebViews. Keyboard scenarios
+dispatch **real shortcuts** through the GPUI keybinding path
+(`DispatchKeystroke` → `window.dispatch_keystroke`); pointer scenarios drive
+the production mouse-down/move/up listener methods with synthetic events
+(`BeginTabDrag`/`MoveTabDrag`/`EndTabDrag`/`CancelTabDrag` seams, exactly
+like the sidebar-divider drag seam) — never a direct reorder or move command:
+
+1. **Keyboard suite**: `Cmd-Shift-P` pins and unpins the active tab (region
+   boundary + selected row asserted via the typed `pinned_count` and row
+   order, live session preserved), `Cmd-Shift-↑/↓` reorder within the region
+   with boundary-crossing steps rejected whole (no `TabReordered` event, no
+   partial mutation), `Cmd-Shift-M` stages a destination space by name
+   (same-profile hint `→ Space`, cross-profile hint `in Profile · … → Space`),
+   Escape cancels and restores mode/focus, Enter commits a same-profile move
+   that keeps the WebViewId (source selection repaired to the deterministic
+   neighbor), and a cross-profile move destroys + recreates the session
+   exactly once in the destination store — proven by cookie isolation (the
+   recreated tab reads the destination store's cookie, never the source's).
+2. **Pointer suite**: the row pin control through the production listener,
+   drag reorder within the pinned and regular regions with the typed
+   `drag_source`/`drag_slot`/`drag_valid` snapshot fields and the §15
+   `bbr-drag-tick-<n>` id (accent when legal, muted at the clamped region
+   edge when illegal), an illegal boundary drop rejected whole, Escape
+   cancellation, and drag-into-space moves: hovering a visible space row
+   reports the space target and renders the row `drag-target` (no tab tick),
+   release commits a same-profile move with the same WebViewId or a
+   cross-profile move with a fresh view reading the destination store.
+
+The `tab_pin`, `tab_reorder`, `tab_move_same_profile`, and
+`tab_move_cross_profile` interaction benchmarks (in
+`tests/perf_common/benchmarks.rs`) drive the production `Cmd-Shift-P`
+toggle, `Cmd-Shift-↑/↓` step, and staged `Cmd-Shift-M` + Enter move through
+`BenchmarkPinTab` / `BenchmarkReorderTab` / `BenchmarkMoveTab`: each sample
+commits from the authoritative post-mutation snapshot (active view, focus,
+mode) and the drivers assert the region boundary, the source-space repair
+view, the wire `recreated` flag, and — via the destination activation after
+each measured move — the session identity (same WebViewId for same-profile,
+fresh incarnation for cross-profile) and an unchanged net session count. The
+cross-profile move is the session-recreation class with its own 100/150 ms
+budget; the other three share the 50/100 ms warm ceiling.
 
 ---
 

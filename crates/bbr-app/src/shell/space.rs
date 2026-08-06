@@ -88,12 +88,27 @@ pub fn space_title_budget_chars(theme: &Theme) -> usize {
 }
 
 /// §11.3 space visual states in render order (grouped), mirroring the rows
-/// the sidebar renders — `selected` for the active space, else `default`.
+/// the sidebar renders — `selected` for the active space, `drag-target` for
+/// the space a tab drag currently targets, else `default`.
 #[cfg(any(feature = "testkit", test))]
-pub fn space_states(browser: &ControllerSnapshot) -> Vec<SpaceVisualState> {
+pub fn space_states(
+    browser: &ControllerSnapshot,
+    drag_target: Option<bbr_browser::SpaceId>,
+) -> Vec<SpaceVisualState> {
     space_groups(browser, usize::MAX)
         .into_iter()
-        .flat_map(|group| group.rows.into_iter().map(|row| row.state))
+        .flat_map(|group| group.rows.into_iter())
+        .map(|mut row| {
+            let space = browser
+                .spaces
+                .iter()
+                .find(|s| s.index == row.index)
+                .map(|s| s.id);
+            if space.is_some() && space == drag_target {
+                row.state = SpaceVisualState::DragTarget;
+            }
+            row.state
+        })
         .collect()
 }
 
@@ -200,10 +215,21 @@ mod tests {
     fn space_states_mark_only_the_active_space() {
         let browser = space_snapshot();
         assert_eq!(
-            space_states(&browser),
+            space_states(&browser, None),
             vec![
                 SpaceVisualState::Selected,
                 SpaceVisualState::Default,
+                SpaceVisualState::Default,
+            ]
+        );
+        // A targeted space renders `drag-target` instead of its rest state.
+        // Render order is Default, Reading, Private — Reading (id 5) is the
+        // second rendered row.
+        assert_eq!(
+            space_states(&browser, Some(bbr_browser::SpaceId(5))),
+            vec![
+                SpaceVisualState::Selected,
+                SpaceVisualState::DragTarget,
                 SpaceVisualState::Default,
             ]
         );

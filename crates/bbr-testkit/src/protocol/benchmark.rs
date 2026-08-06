@@ -43,6 +43,19 @@ pub enum BenchmarkKind {
     NewTabCommandBar,
     NewTabOpened,
     ActiveTabClose,
+    /// The active tab's pin state toggled through the production path (the
+    /// pinned region boundary moved, the session untouched).
+    TabPin,
+    /// The active tab moved within its region through the production path
+    /// (row order changed, the session untouched).
+    TabReorder,
+    /// The active tab moved into another space of the same profile: the live
+    /// session follows the tab (same WebViewId, no recreation).
+    TabMoveSameProfile,
+    /// The active tab moved across a profile boundary: the old session is
+    /// destroyed and recreated exactly once in the destination profile's
+    /// store — the session-recreation class with its own budget.
+    TabMoveCrossProfile,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

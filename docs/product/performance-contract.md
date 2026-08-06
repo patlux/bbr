@@ -39,6 +39,9 @@ allowed distribution before the test fails.
 | Select an already-warm tab → correct native view presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Switch space → its already-warm selected tab presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Close active tab → correct neighbor and native view presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
+| Pin/unpin or reorder a tab → new row order presented (region boundary moved, session untouched) | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
+| Move a tab between spaces of the same profile → tab presented in the destination with its warm session | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
+| Move a tab across profiles → fresh native session presented in the destination profile's store | ≤ 100 ms | p95 ≤ 100 ms; max ≤ 150 ms |
 | Reopen a closed tab → fresh native session presented with preserved identity | ≤ 100 ms | p95 ≤ 100 ms; max ≤ 150 ms |
 | Open, close, or toggle the sidebar → chrome and native content geometry committed | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Focus a tab/split pane or route a browser command to the active target | next display frame when visual | p95 ≤ 50 ms; max ≤ 100 ms |
@@ -48,14 +51,15 @@ visibility or geometry updates, and presentation-commit observation. Testkit
 socket round-trip time must not be counted as application latency for direct
 interaction metrics.
 
-**Session-recreation class.** Reopening a closed tab (and, once they ship,
-other discard/suspend recovery transitions) presents a *freshly created*
-native session rather than a warm one. WKWebView creation on the benchmark
+**Session-recreation class.** Reopening a closed tab and moving a tab across a
+profile boundary present a *freshly created* native session rather than a warm
+one. WKWebView creation on the benchmark
 host measured 24–60 ms across four 10-sample runs (p95 30–60 ms), so the
-reopen row above is the session-recreation ceiling, not the warm-interaction
-ceiling. The gate keeps ≥ 2.5× headroom over observed worst-case p95 and still
-catches real regressions (a 2× slowdown trips it); a warm-session selection
-with no recreation must stay within the 50 ms warm ceiling.
+reopen/cross-profile-move rows above are the session-recreation ceiling, not
+the warm-interaction ceiling. The gate keeps ≥ 2.5× headroom over observed
+worst-case p95 and still catches real regressions (a 2× slowdown trips it); a
+warm-session selection, reorder, pin, or same-profile move with no recreation
+must stay within the 50 ms warm ceiling.
 
 A slower development machine may run the suite in report-only mode, but the
 canonical benchmark machine enforces both absolute budgets and the checked-in
@@ -91,8 +95,8 @@ Every user-visible state transition that can affect perceived responsiveness
 must add or extend a real-app performance scenario in the same implementation
 group. This includes, as capabilities land:
 
-- tab open, selection, close, reopen, reorder, pin, and move;
-- space switching and profile-boundary moves;
+- tab open, selection, close, reopen, reorder, pin, and move — all measured;
+- space switching and profile-boundary moves — both measured;
 - sidebar open, close, toggle, resize, and dense-list scrolling;
 - command-bar activation, first result, filtering, and activation;
 - split creation, pane focus, divider movement, and split close;
