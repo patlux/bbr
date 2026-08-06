@@ -25,6 +25,9 @@ mod palette;
 #[cfg(feature = "testkit")]
 mod performance;
 mod shell;
+#[allow(dead_code)]
+// foundation tokens; consumed by the sidebar interaction slice that follows this group
+mod sidebar;
 mod slot;
 #[cfg(feature = "testkit")]
 mod testkit;

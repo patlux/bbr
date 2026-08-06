@@ -40,6 +40,12 @@ pub struct BbrApp {
     space_list_handle: FocusHandle,
     /// GPUI focus handle for the visible tab list (arrow/backspace keys).
     tab_list_handle: FocusHandle,
+    /// GPUI focus handle for the sidebar resize divider (←/→ resize, 0 reset).
+    #[allow(dead_code)] // wired by the sidebar interaction slice that follows this group
+    divider_handle: FocusHandle,
+    /// Adjustable sidebar geometry (DESIGN.md §5/§11.4): min/default/max
+    /// widths, narrow-window clamping, collapse memory, drag state.
+    pub sidebar: crate::sidebar::SidebarGeometry,
     /// Current command-bar intent. `NewTab` stages navigation without creating
     /// a domain tab or native session until Enter commits it.
     pub command_bar_mode: CommandBarMode,
@@ -82,6 +88,8 @@ impl BbrApp {
             chrome_handle: cx.focus_handle(),
             space_list_handle: cx.focus_handle(),
             tab_list_handle: cx.focus_handle(),
+            divider_handle: cx.focus_handle(),
+            sidebar: crate::sidebar::SidebarGeometry::new(),
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
             command_bar_text: String::new(),
@@ -221,6 +229,11 @@ impl BbrApp {
     /// commit); it is otherwise just threaded through for caller symmetry.
     #[cfg_attr(not(feature = "testkit"), allow(unused_variables))]
     pub fn toggle_sidebar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.sidebar_visible {
+            self.sidebar.collapse();
+        } else {
+            self.sidebar.expand();
+        }
         self.sidebar_visible = !self.sidebar_visible;
         #[cfg(feature = "testkit")]
         {
