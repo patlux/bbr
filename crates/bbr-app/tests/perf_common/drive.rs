@@ -14,9 +14,9 @@ use bbr_testkit::protocol::{BenchmarkKind, BrowserChange, Request};
 use bbr_testkit::Client;
 
 use super::benchmarks::{
-    benchmark_click, benchmark_keystroke, benchmark_reopen, benchmark_resize_sidebar,
-    benchmark_restore_sidebar, benchmark_select, benchmark_sidebar, benchmark_space_switch,
-    wait_browser_change, wait_title,
+    benchmark_click, benchmark_keystroke, benchmark_move_tab, benchmark_pin_tab, benchmark_reopen,
+    benchmark_reorder_tab, benchmark_resize_sidebar, benchmark_restore_sidebar, benchmark_select,
+    benchmark_sidebar, benchmark_space_switch, wait_browser_change, wait_title,
 };
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
@@ -435,6 +435,320 @@ fn drive_matrix_inner(
             operation += 1;
         }
 
+        // Tab organization through the production command paths: the pin
+        // toggle (`Cmd-Shift-P`), region-bounded reorder (`Cmd-Shift-↑/↓`),
+        // and moves between spaces (staged `Cmd-Shift-M` + Enter). The active
+        // tab and its live session stay put through pin and reorder; a
+        // same-profile move carries the session to the destination space;
+        // a cross-profile move destroys and recreates it exactly once in the
+        // destination store (the session-recreation class). The source space
+        // stays active and its selection is repaired to the deterministic
+        // neighbor, which is the presentation every move sample commits
+        // against.
+        client
+            .send_ok(&Request::ActivateSpace {
+                space: default_space,
+            })
+            .expect("activate default before organize");
+        let (seq, _) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == default_space),
+            since,
+        );
+        since = seq;
+        // A third default tab gives the active row a same-region neighbor in
+        // both directions; the middle row is then selected through the
+        // production pointer path (which also re-focuses the chrome list).
+        client
+            .send_ok(&Request::OpenTab {
+                url: page_two.to_string(),
+            })
+            .expect("open third default tab");
+        let third = client.snapshot().expect("third tab snapshot");
+        let third_view = third.active_web_view.expect("third view");
+        if third.title.as_deref() != Some(PAGE_TWO_TITLE) {
+            since = wait_title(client, third_view, PAGE_TWO_TITLE, since);
+        }
+        client
+            .send_ok(&Request::ClickTab { index: 1 })
+            .expect("select the middle row");
+        let (seq, _) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::TabSelected { index } if *index == 1),
+            since,
+        );
+        since = seq;
+        let organize_view = client.snapshot().expect("organize state").tabs[1]
+            .web_view
+            .expect("middle view");
+
+        let mut pin_samples = Vec::with_capacity(config.interaction_samples);
+        for sample in 0..config.interaction_samples {
+            let expected_pinned = if sample % 2 == 0 { 1 } else { 0 };
+            let measured = benchmark_pin_tab(
+                client,
+                &mut since,
+                operation,
+                organize_view,
+                expected_pinned,
+            );
+            pin_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("tab_pin".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+        }
+
+        let mut reorder_samples = Vec::with_capacity(config.interaction_samples);
+        for sample in 0..config.interaction_samples {
+            let delta = if sample % 2 == 0 { -1 } else { 1 };
+            let measured =
+                benchmark_reorder_tab(client, &mut since, operation, delta, organize_view, 0);
+            reorder_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("tab_reorder".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+        }
+
+        // Same-profile move: a dedicated space with its own warm tab; the
+        // active tab moves into it and back, and the live WebViewId follows
+        // it across the boundary. The destination activation after each
+        // measured move asserts the session identity directly.
+        client
+            .send_ok(&Request::CreateSpace {
+                profile: default_profile,
+                title: "Organize A".into(),
+            })
+            .expect("create same-profile move space");
+        let (seq, created) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::SpaceCreated { .. }),
+            since,
+        );
+        since = seq;
+        let organize_space = match created {
+            BrowserChange::SpaceCreated { space, .. } => space,
+            other => panic!("unexpected change: {other:?}"),
+        };
+        client
+            .send_ok(&Request::ActivateSpace {
+                space: organize_space,
+            })
+            .expect("activate organize space");
+        let (seq, _) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == organize_space),
+            since,
+        );
+        since = seq;
+        client
+            .send_ok(&Request::OpenTab {
+                url: page_two.to_string(),
+            })
+            .expect("warm the organize space");
+        let organize_seeded = client.snapshot().expect("organize space seeded");
+        let organize_neighbor = organize_seeded
+            .active_web_view
+            .expect("organize neighbor view");
+        if organize_seeded.title.as_deref() != Some(PAGE_TWO_TITLE) {
+            since = wait_title(client, organize_neighbor, PAGE_TWO_TITLE, since);
+        }
+        client
+            .send_ok(&Request::ActivateSpace {
+                space: default_space,
+            })
+            .expect("back to default before same-profile moves");
+        let (seq, _) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == default_space),
+            since,
+        );
+        since = seq;
+
+        let mut same_move_samples = Vec::with_capacity(config.interaction_samples);
+        for sample in 0..config.interaction_samples {
+            let (source, dest) = if sample % 2 == 0 {
+                (default_space, organize_space)
+            } else {
+                (organize_space, default_space)
+            };
+            // Setup: the source space is active with the moved tab selected
+            // (the destination activation from the previous sample restored
+            // it there), so the repair view is the source's deterministic
+            // neighbor.
+            client
+                .send_ok(&Request::ActivateSpace { space: source })
+                .expect("activate move source");
+            let (seq, _) = wait_browser_change(
+                client,
+                |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == source),
+                since,
+            );
+            since = seq;
+            let before = client.snapshot().expect("pre move snapshot");
+            let active = before.active_tab_index.expect("active tab");
+            let moved_view = before.active_web_view.expect("moved tab view");
+            let repair = before
+                .tabs
+                .get(active + 1)
+                .or_else(|| before.tabs.get(active.wrapping_sub(1)))
+                .and_then(|t| t.web_view)
+                .expect("source keeps a neighbor view");
+            let measured = benchmark_move_tab(client, &mut since, operation, dest, repair, false);
+            same_move_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("tab_move_same_profile".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+            // Session identity: the moved tab is the destination's active tab
+            // with the same WebViewId (same-profile moves keep the session).
+            client
+                .send_ok(&Request::ActivateSpace { space: dest })
+                .expect("activate move destination");
+            let (seq, _) = wait_browser_change(
+                client,
+                |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == dest),
+                since,
+            );
+            since = seq;
+            let after = client.snapshot().expect("post move destination");
+            assert_eq!(
+                after.active_web_view,
+                Some(moved_view),
+                "same-profile move keeps the WebViewId"
+            );
+        }
+
+        // Cross-profile move: a private profile + space; each move destroys
+        // the old session and recreates it exactly once in the destination
+        // store (the wire event asserts `recreated: true`, the net session
+        // count stays, and the destination activation proves the fresh view).
+        client
+            .send_ok(&Request::CreateProfile {
+                profile_title: "Organize P".into(),
+                space_title: "Organize P".into(),
+            })
+            .expect("create private move profile");
+        let (seq, created) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::ProfileCreated { .. }),
+            since,
+        );
+        since = seq;
+        let private_space = match created {
+            BrowserChange::ProfileCreated { space, .. } => space,
+            other => panic!("unexpected change: {other:?}"),
+        };
+        client
+            .send_ok(&Request::ActivateSpace {
+                space: private_space,
+            })
+            .expect("activate private space");
+        let (seq, _) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == private_space),
+            since,
+        );
+        since = seq;
+        client
+            .send_ok(&Request::OpenTab {
+                url: page_two.to_string(),
+            })
+            .expect("warm the private space");
+        let private_seeded = client.snapshot().expect("private space seeded");
+        let private_neighbor = private_seeded
+            .active_web_view
+            .expect("private neighbor view");
+        if private_seeded.title.as_deref() != Some(PAGE_TWO_TITLE) {
+            since = wait_title(client, private_neighbor, PAGE_TWO_TITLE, since);
+        }
+        client
+            .send_ok(&Request::ActivateSpace {
+                space: default_space,
+            })
+            .expect("back to default before cross moves");
+        let (seq, _) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == default_space),
+            since,
+        );
+        since = seq;
+        let sessions_before_cross = client
+            .snapshot()
+            .expect("cross session count")
+            .engine_sessions;
+
+        let mut cross_move_samples = Vec::with_capacity(config.interaction_samples);
+        for sample in 0..config.interaction_samples {
+            let (source, dest) = if sample % 2 == 0 {
+                (default_space, private_space)
+            } else {
+                (private_space, default_space)
+            };
+            client
+                .send_ok(&Request::ActivateSpace { space: source })
+                .expect("activate cross source");
+            let (seq, _) = wait_browser_change(
+                client,
+                |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == source),
+                since,
+            );
+            since = seq;
+            let before = client.snapshot().expect("pre cross move snapshot");
+            let active = before.active_tab_index.expect("active tab");
+            let moved_view = before.active_web_view.expect("moved tab view");
+            let repair = before
+                .tabs
+                .get(active + 1)
+                .or_else(|| before.tabs.get(active.wrapping_sub(1)))
+                .and_then(|t| t.web_view)
+                .expect("source keeps a neighbor view");
+            let measured = benchmark_move_tab(client, &mut since, operation, dest, repair, true);
+            cross_move_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("tab_move_cross_profile".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+            assert_eq!(
+                client
+                    .snapshot()
+                    .expect("cross session count after")
+                    .engine_sessions,
+                sessions_before_cross,
+                "destroy + recreate exactly once keeps the session count"
+            );
+            // Session identity: the moved tab is the destination's active tab
+            // with a fresh incarnation (the cross-profile recreation policy).
+            client
+                .send_ok(&Request::ActivateSpace { space: dest })
+                .expect("activate cross destination");
+            let (seq, _) = wait_browser_change(
+                client,
+                |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == dest),
+                since,
+            );
+            since = seq;
+            let after = client.snapshot().expect("post cross destination");
+            assert_ne!(
+                after.active_web_view,
+                Some(moved_view),
+                "cross-profile move recreates the view"
+            );
+        }
+
         let mut raw = BTreeMap::new();
         raw.insert("warm_tab_switch".to_string(), tab_samples);
         raw.insert("tab_select_pointer".to_string(), pointer_samples);
@@ -447,6 +761,10 @@ fn drive_matrix_inner(
         raw.insert("new_tab_open".to_string(), new_tab_open_samples);
         raw.insert("active_tab_close".to_string(), active_close_samples);
         raw.insert("space_switch".to_string(), space_samples);
+        raw.insert("tab_pin".to_string(), pin_samples);
+        raw.insert("tab_reorder".to_string(), reorder_samples);
+        raw.insert("tab_move_same_profile".to_string(), same_move_samples);
+        raw.insert("tab_move_cross_profile".to_string(), cross_move_samples);
         raw
     };
     *cursor = since;

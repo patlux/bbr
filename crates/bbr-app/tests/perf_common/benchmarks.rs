@@ -395,3 +395,131 @@ pub(crate) fn benchmark_space_switch(
     );
     measured
 }
+
+/// The production pin toggle of the active tab (`Cmd-Shift-P` path): the
+/// pinned/regular boundary moves while the selected tab and its live session
+/// stay. The sample must show the same active native view and the expected
+/// pinned region boundary, with chrome focus preserved.
+pub(crate) fn benchmark_pin_tab(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    expected_view: WebViewId,
+    expected_pinned_after: usize,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    let before = client.snapshot().expect("pin before snapshot");
+    assert_eq!(
+        before.pinned_count,
+        1 - expected_pinned_after,
+        "toggle alternates"
+    );
+    client
+        .send_ok(&Request::BenchmarkPinTab { operation_id })
+        .expect("benchmark pin toggle");
+    let (seq, measured) = wait_measurement(client, BenchmarkKind::TabPin, operation_id, *since);
+    *since = seq;
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(
+        measured.chrome_focused,
+        "the pin command keeps the chrome focus domain"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::Inactive);
+    let snapshot = client.snapshot().expect("pin snapshot");
+    assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert_eq!(snapshot.pinned_count, expected_pinned_after);
+    assert!(snapshot.chrome_focused);
+    measured
+}
+
+/// The production region-bounded reorder of the active tab by `delta` rows
+/// (the `Cmd-Shift-↑/↓` path): the row order changes while the selected tab,
+/// its session, and the region boundary stay. The sample must show the same
+/// active native view and the boundary untouched.
+pub(crate) fn benchmark_reorder_tab(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    delta: isize,
+    expected_view: WebViewId,
+    expected_pinned: usize,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkReorderTab {
+            operation_id,
+            delta,
+        })
+        .expect("benchmark reorder");
+    let (seq, measured) = wait_measurement(client, BenchmarkKind::TabReorder, operation_id, *since);
+    *since = seq;
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(
+        measured.chrome_focused,
+        "the reorder command keeps the chrome focus domain"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::Inactive);
+    let snapshot = client.snapshot().expect("reorder snapshot");
+    assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert_eq!(
+        snapshot.pinned_count, expected_pinned,
+        "region boundary intact"
+    );
+    assert!(snapshot.chrome_focused);
+    measured
+}
+
+/// The production move of the active tab into `to_space` through the staged
+/// command path. The sample must present the source space's repaired
+/// selection (the active space stays the source) and keep the chrome focus
+/// domain. `expected_recreated` asserts the wire event's recreation flag:
+/// same-profile moves keep the live session, cross-profile moves destroy and
+/// recreate it once in the destination store.
+pub(crate) fn benchmark_move_tab(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    to_space: TestSpaceId,
+    source_repair_view: WebViewId,
+    expected_recreated: bool,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    let cursor = *since;
+    client
+        .send_ok(&Request::BenchmarkMoveTab {
+            operation_id,
+            to_space,
+        })
+        .expect("benchmark move");
+    let kind = if expected_recreated {
+        BenchmarkKind::TabMoveCrossProfile
+    } else {
+        BenchmarkKind::TabMoveSameProfile
+    };
+    // The `TabMoved` wire event is emitted synchronously with the commit, so
+    // both it and the presentation sample are awaited from the pre-request
+    // cursor; the recreation flag is part of the contract assertion.
+    let (seq_change, change) = wait_browser_change(
+        client,
+        |kind| matches!(kind, BrowserChange::TabMoved { to_space: space, .. } if *space == to_space),
+        cursor,
+    );
+    let (seq_meas, measured) = wait_measurement(client, kind, operation_id, cursor);
+    *since = seq_meas.max(seq_change);
+    assert_eq!(measured.active_web_view, Some(source_repair_view));
+    assert!(
+        measured.chrome_focused,
+        "the move command keeps the chrome focus domain"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::Inactive);
+    match change {
+        BrowserChange::TabMoved { recreated, .. } => {
+            assert_eq!(recreated, expected_recreated);
+        }
+        other => panic!("unexpected change: {other:?}"),
+    }
+    let snapshot = client.snapshot().expect("move snapshot");
+    assert_eq!(snapshot.active_web_view, Some(source_repair_view));
+    assert!(snapshot.chrome_focused);
+    measured
+}

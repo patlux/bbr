@@ -51,6 +51,28 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 100.0,
             max_ms: Some(150.0),
         },
+        // Warm tab organization: pin/unpin and region-bounded reorder commit
+        // the new row order on the next frame without touching the session
+        // (the warm-interaction class, same as tab selection).
+        "tab_pin" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "tab_reorder" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "tab_move_same_profile" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        // Cross-profile moves destroy the old session and create a fresh one
+        // in the destination profile's store — the session-recreation class
+        // with its own budget, like reopen.
+        "tab_move_cross_profile" => Budget {
+            p95_ms: 100.0,
+            max_ms: Some(150.0),
+        },
         "sidebar_toggle" => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -241,6 +263,10 @@ impl Baseline {
             "tab_select_pointer",
             "tab_activate_keyboard",
             "tab_reopen",
+            "tab_pin",
+            "tab_reorder",
+            "tab_move_same_profile",
+            "tab_move_cross_profile",
             "sidebar_toggle",
             "sidebar_resize",
             "sidebar_restore",
@@ -378,5 +404,32 @@ mod tests {
         doubled.insert("tab_reopen".into(), measured(120.0, 160.0));
         let r = evaluate(&doubled, &b, true);
         assert!(r.iter().any(|x| x.rule == "abs_p95"));
+    }
+
+    #[test]
+    fn organize_budgets_are_seeded_and_enforced() {
+        // Regression guard: the tab-organization scenarios must carry their
+        // contract budgets in the seed so a future regression trips the gate.
+        let b = Baseline::seed();
+        for (kind, p95, max) in [
+            ("tab_pin", 50.0, 100.0),
+            ("tab_reorder", 50.0, 100.0),
+            ("tab_move_same_profile", 50.0, 100.0),
+            ("tab_move_cross_profile", 100.0, 150.0),
+        ] {
+            let entry = b
+                .entries
+                .get(kind)
+                .unwrap_or_else(|| panic!("seed baseline must carry the {kind} contract budget"));
+            assert_eq!(entry.budget_p95_ms, p95);
+            assert_eq!(entry.budget_max_ms, Some(max));
+            let mut slow = BTreeMap::new();
+            slow.insert(kind.into(), measured(p95 + 20.0, max + 20.0));
+            let r = evaluate(&slow, &b, false);
+            assert!(
+                r.iter().any(|x| x.rule == "abs_p95"),
+                "{kind} absolute p95 ceiling enforced"
+            );
+        }
     }
 }
