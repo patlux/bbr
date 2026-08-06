@@ -33,6 +33,19 @@ pub struct SemanticFocus {
     pub divider: bool,
 }
 
+/// The §11.3 cross-context command-field hint: the destination profile of a
+/// cross-profile space activation, shown for one interaction as the §12 chip
+/// plus the "in Profile · <title>" label.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SemanticProfileHint {
+    /// The destination profile title (the label text after "in Profile · ").
+    pub title: String,
+    /// The §12 chip monogram (the non-color identity companion).
+    pub monogram: String,
+    /// The destination profile's creation-order index (the §15 chip id).
+    pub profile_index: usize,
+}
+
 /// The command-field semantic content (mode, text, and the §11.3 destination
 /// hint when a move is staged).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,6 +54,9 @@ pub struct SemanticCommand {
     pub text: String,
     /// The rendered destination hint ("→ Space" / "in Profile · P → Space").
     pub hint: Option<String>,
+    /// The §11.3 cross-context transient (chip + "in Profile · <title>")
+    /// shown for one interaction after a cross-profile space activation.
+    pub profile_hint: Option<SemanticProfileHint>,
 }
 
 /// The glass content area: the native slot, the empty pane, or the crash
@@ -170,6 +186,29 @@ fn command_field_node(input: &SemanticInput<'_>) -> SemanticNode {
             false,
             vec![],
         ));
+    }
+    // §11.3 cross-context transient: the destination profile chip + label
+    // shown for one interaction after a cross-profile space activation.
+    if let Some(hint) = &input.command.profile_hint {
+        children.push(SemanticNode {
+            id: "bbr-command-profile-hint".into(),
+            role: SemanticRole::Chip,
+            name: Some(format!("in Profile · {}", hint.title)),
+            value: None,
+            enabled: true,
+            selected: false,
+            focused: false,
+            children: vec![SemanticNode {
+                id: format!("bbr-profile-chip-{}", hint.profile_index),
+                role: SemanticRole::Chip,
+                name: Some(format!("Profile · {}", hint.monogram)),
+                value: None,
+                enabled: true,
+                selected: false,
+                focused: false,
+                children: vec![],
+            }],
+        });
     }
     let name = if input.command.text.is_empty() {
         "Type a URL…".to_string()

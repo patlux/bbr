@@ -25,6 +25,25 @@ pub fn profile_monogram(profile_title: &str) -> String {
     monogram
 }
 
+/// The active profile's §12 chip identity (creation-order index + hue +
+/// monogram), for surfaces that render the active profile's chip outside the
+/// space rows — e.g. the §11.3 command-field cross-context hint.
+pub fn active_profile_chip(browser: &ControllerSnapshot) -> Option<(usize, ProfileChipSpec)> {
+    browser
+        .profiles
+        .iter()
+        .find(|profile| profile.id == browser.active_profile)
+        .map(|profile| {
+            (
+                profile.index,
+                ProfileChipSpec {
+                    letter: profile_monogram(&profile.title),
+                    hue: profile.hue,
+                },
+            )
+        })
+}
+
 /// One sidebar space group: the spaces of one profile, in creation order,
 /// preceded by a hairline when it is not the first group (DESIGN.md §11.3:
 /// profile groups stack under a hairline, no repeated profile header in v1).
@@ -132,6 +151,23 @@ mod tests {
         assert_eq!(profile_monogram("Private"), "PR");
         assert_eq!(profile_monogram("w"), "W");
         assert_eq!(profile_monogram(""), "?");
+    }
+
+    #[test]
+    fn active_profile_chip_identifies_the_active_profile() {
+        let browser = space_snapshot();
+        // Active profile 1 (Default, index 0) carries the §12 chip identity
+        // (creation-order index, monogram, hue) for the §11.3 command-field
+        // hint; the chip is never keyed to the space index.
+        let chip = active_profile_chip(&browser).expect("active profile chip");
+        assert_eq!(chip.0, 0);
+        assert_eq!(chip.1.letter, "DE");
+        assert_eq!(chip.1.hue, bbr_browser::ProfileHue::Cobalt);
+        // A snapshot whose active profile is missing from the collection
+        // derives no chip (defensive; the controller invariants forbid it).
+        let mut missing = space_snapshot();
+        missing.active_profile = bbr_web::ProfileId(99);
+        assert_eq!(active_profile_chip(&missing), None);
     }
 
     /// Build a snapshot with two profiles and three spaces (two in the first

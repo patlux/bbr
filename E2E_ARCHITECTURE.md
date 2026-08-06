@@ -377,11 +377,25 @@ WKWebViews:
    profile moves that keep the WebViewId (`recreated: false`) versus
    cross-profile moves that recreate it.
 
+Both suites also cover the DESIGN §11.3 cross-context rule over real
+WKWebViews: a cross-profile space activation renders the destination profile
+chip + `"in Profile · <title>"` at the top of the command field for one
+interaction (pointer and keyboard paths), same-profile switching never
+announces a profile transition, the hint clears at a deterministic
+user-interaction boundary (a tab mutation or a command-bar mode entry),
+chrome focus and the warm session count/WebViewIds are untouched, and the
+staged-`MoveTab` `command_bar_hint` is a separate surface that never coexists
+with it.
+
 The `space_switch` interaction benchmark (in `tests/perf_common/benchmarks.rs`)
 measures alternating warm-space activation through `BenchmarkActivateSpace`,
 asserting the destination space, its own active view, the unchanged live-
 session count, chrome focus, and the rendered selected space row + chip ids;
-it is part of `just e2e-perf` and the full gate.
+the `space_switch_cross_profile` benchmark measures the same warm view-only
+class across profile boundaries and additionally asserts the hint copy in
+the accepted snapshot while the in-app presentation probe rejects any
+presentation that misses or invents it. Both are part of `just e2e-perf` and
+the full gate.
 
 ## 7e. The shell-sidebar suite (`bbr-app/tests/e2e_shell_sidebar.rs`)
 

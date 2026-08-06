@@ -112,6 +112,7 @@ impl BbrApp {
             row_titles: rows.iter().map(|row| row.title.to_string()).collect(),
             pinned_count: crate::shell::pinned_count(&browser.tabs),
             command_bar_hint: self.command_bar_hint(),
+            command_profile_hint: self.command_profile_hint.clone(),
             drag_source,
             drag_slot,
             drag_space,
@@ -140,6 +141,7 @@ impl BbrApp {
                 self.command_bar_mode,
                 self.sidebar_visible,
                 self.command_bar_hint().as_deref(),
+                self.command_profile_hint.as_deref(),
                 drag_slot,
                 self.dense_window.get(),
             ),
@@ -219,6 +221,19 @@ impl BbrApp {
                 mode: format!("{:?}", self.command_bar_mode).to_lowercase(),
                 text: self.command_bar_text.clone(),
                 hint: self.command_bar_hint(),
+                profile_hint: self.command_profile_hint.as_ref().and_then(|_| {
+                    // The hint is only ever set to the active profile (any
+                    // context mutation clears it), so the chip identity and
+                    // title derive from the controller snapshot.
+                    let title = browser.active_profile_title.clone().unwrap_or_default();
+                    crate::shell::space::active_profile_chip(browser).map(
+                        |(profile_index, spec)| crate::shell::semantics::SemanticProfileHint {
+                            title,
+                            monogram: spec.letter,
+                            profile_index,
+                        },
+                    )
+                }),
             },
             sidebar_visible: self.sidebar_visible,
             sidebar_width,

@@ -188,6 +188,23 @@ Additional rules:
 - The UI always communicates the destination profile when switching spaces or
   moving tabs across profile boundaries.
 
+### Switch a space — Contract
+
+- Switching to another space of the same profile never announces a profile
+  transition.
+- After a successful **cross-profile** space activation, the destination
+  profile appears at the top of the command field for **one interaction**:
+  the profile's §12 chip plus a `type:label` "in Profile · <title>" hint, so
+  the cross-profile destination is unmistakable without relying on color
+  (DESIGN §11.3).
+- The hint's lifetime is a deterministic user-interaction boundary, never a
+  timer: the next chrome context mutation — another space activation, a tab
+  mutation (open/select/close/reopen/move), or a command-bar mode entry
+  (`Cmd-L`/`Cmd-T`/`Cmd-Shift-M`/New-Space staging) — clears it. A
+  same-profile activation also clears any prior hint.
+- The hint is a distinct transient from the staged-move `command_bar_hint`;
+  the two never coexist.
+
 ### Profile isolation — Contract
 
 - Every space belongs to exactly one profile.

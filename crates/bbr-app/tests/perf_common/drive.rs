@@ -19,7 +19,8 @@ use super::benchmarks::{
     benchmark_click, benchmark_dense_scroll, benchmark_dense_select, benchmark_hover,
     benchmark_keystroke, benchmark_move_tab, benchmark_pin_tab, benchmark_press, benchmark_reopen,
     benchmark_reorder_tab, benchmark_resize_sidebar, benchmark_restore_sidebar, benchmark_select,
-    benchmark_sidebar, benchmark_space_switch, wait_browser_change, wait_title,
+    benchmark_sidebar, benchmark_space_switch, benchmark_space_switch_cross_profile,
+    wait_browser_change, wait_title,
 };
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
@@ -492,6 +493,104 @@ fn drive_matrix_inner(
             operation += 1;
         }
 
+        // Cross-profile view-only space switching through the production
+        // activation path (DESIGN.md §11.3 cross-context rule): the
+        // destination profile appears at the top of the command field for
+        // one interaction. The switch is still a warm view-only presentation
+        // — the live-session count never changes — so it stays in the
+        // 50/100 ms warm class; the in-app probe rejects any presentation
+        // that misses or invents the hint, and the driver asserts the hint
+        // copy in the accepted snapshot.
+        client
+            .send_ok(&Request::CreateProfile {
+                profile_title: "Benchmark P".into(),
+                space_title: "Benchmark P".into(),
+            })
+            .expect("create cross-profile benchmark space");
+        let (seq, created) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::ProfileCreated { .. }),
+            since,
+        );
+        since = seq;
+        let cross_space = match created {
+            BrowserChange::ProfileCreated { space, .. } => space,
+            other => panic!("unexpected change: {other:?}"),
+        };
+        client
+            .send_ok(&Request::ActivateSpace { space: cross_space })
+            .expect("activate cross space");
+        let (seq, _) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == cross_space),
+            since,
+        );
+        since = seq;
+        client
+            .send_ok(&Request::OpenTab {
+                url: page_two.to_string(),
+            })
+            .expect("warm the cross space");
+        let cross_seeded = client.snapshot().expect("cross space seeded");
+        let cross_space_view = cross_seeded.active_web_view.expect("cross space view");
+        if cross_seeded.title.as_deref() != Some(PAGE_TWO_TITLE) {
+            since = wait_title(client, cross_space_view, PAGE_TWO_TITLE, since);
+        }
+        let sessions_cross = cross_seeded.engine_sessions;
+        client
+            .send_ok(&Request::ActivateSpace {
+                space: default_space,
+            })
+            .expect("back to default before cross switches");
+        let (seq, _) = wait_browser_change(
+            client,
+            |kind| matches!(kind, BrowserChange::SpaceActivated { space } if *space == default_space),
+            since,
+        );
+        since = seq;
+
+        let mut cross_space_samples = Vec::with_capacity(config.interaction_samples);
+        // The loop leaves the app on `default_space` before the first sample,
+        // so the even samples start from it: sample 0 activates the cross
+        // profile (Default → Benchmark P) and every following activation
+        // alternates across the boundary, so each measured sample is a
+        // genuine cross-profile activation that must present the destination
+        // hint. (Starting on the same space would be a same-profile
+        // re-activation that clears the hint and gets rejected by the
+        // fast-but-wrong guard.)
+        for sample in 0..config.interaction_samples {
+            let (space, expected, hint) = if sample % 2 == 0 {
+                (
+                    cross_space,
+                    cross_space_view,
+                    Some("in Profile · Benchmark P"),
+                )
+            } else {
+                (
+                    default_space,
+                    default_space_view,
+                    Some("in Profile · Default"),
+                )
+            };
+            let measured = benchmark_space_switch_cross_profile(
+                client,
+                &mut since,
+                operation,
+                space,
+                expected,
+                sessions_cross,
+                hint,
+            );
+            cross_space_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("space_switch_cross_profile".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+        }
+
         // Tab organization through the production command paths: the pin
         // toggle (`Cmd-Shift-P`), region-bounded reorder (`Cmd-Shift-↑/↓`),
         // and moves between spaces (staged `Cmd-Shift-M` + Enter). The active
@@ -918,6 +1017,10 @@ fn drive_matrix_inner(
         raw.insert("new_tab_open".to_string(), new_tab_open_samples);
         raw.insert("active_tab_close".to_string(), active_close_samples);
         raw.insert("space_switch".to_string(), space_samples);
+        raw.insert(
+            "space_switch_cross_profile".to_string(),
+            cross_space_samples,
+        );
         raw.insert("tab_pin".to_string(), pin_samples);
         raw.insert("tab_reorder".to_string(), reorder_samples);
         raw.insert("tab_hover".to_string(), hover_samples);

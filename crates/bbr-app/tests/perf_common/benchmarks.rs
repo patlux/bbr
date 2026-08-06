@@ -363,6 +363,10 @@ pub(crate) fn benchmark_space_switch(
         "warm space switching never recreates sessions"
     );
     assert!(snapshot.chrome_focused);
+    assert_eq!(
+        snapshot.command_profile_hint, None,
+        "same-profile switching must not announce a profile transition"
+    );
     // Rendered space identity (DESIGN.md §11.3/§12/§15): the destination
     // space row renders `selected` and its row/chip ids are present. The
     // snapshot's space rows are grouped by profile in render order; with one
@@ -392,6 +396,87 @@ pub(crate) fn benchmark_space_switch(
             .iter()
             .any(|id| id == "bbr-profile-chip-0"),
         "profile chip id present"
+    );
+    measured
+}
+
+/// Cross-profile view-only space activation through the production activation
+/// path (DESIGN.md §11.3 cross-context rule): the destination profile appears
+/// at the top of the command field for one interaction. The switch stays a
+/// warm view-only presentation — the live-session count never changes — so
+/// the sample shares the 50/100 ms warm budget, and the driver asserts the
+/// hint copy in the accepted snapshot while the in-app probe rejects any
+/// presentation that misses or invents it.
+pub(crate) fn benchmark_space_switch_cross_profile(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    space: TestSpaceId,
+    expected_view: WebViewId,
+    expected_sessions: usize,
+    expected_hint: Option<&str>,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkActivateSpace {
+            operation_id,
+            space,
+        })
+        .expect("benchmark cross-profile space activation");
+    let (seq, measured) =
+        wait_measurement(client, BenchmarkKind::WarmSpaceSwitch, operation_id, *since);
+    *since = seq;
+    assert_eq!(
+        measured.active_space, space,
+        "measured presentation shows the destination space"
+    );
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(
+        measured.chrome_focused,
+        "space activation keeps the chrome focus domain"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::Inactive);
+    let snapshot = client.snapshot().expect("cross space switch snapshot");
+    assert_eq!(snapshot.active_space, space);
+    assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert_eq!(
+        snapshot.engine_sessions, expected_sessions,
+        "cross-profile view-only switching never recreates sessions"
+    );
+    assert!(snapshot.chrome_focused);
+    assert_eq!(
+        snapshot.command_profile_hint.as_deref(),
+        expected_hint,
+        "cross-profile activation shows the §11.3 destination hint"
+    );
+    if expected_hint.is_some() {
+        assert!(
+            snapshot
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-command-profile-hint"),
+            "the command-field hint id renders for the cross-profile switch"
+        );
+    }
+    // Rendered space identity (DESIGN.md §11.3/§12/§15): the destination
+    // space row renders `selected` with its stable row id.
+    let active_index = snapshot
+        .spaces
+        .iter()
+        .find(|s| s.space == space)
+        .map(|s| s.index)
+        .expect("destination space in collection");
+    assert_eq!(
+        snapshot.space_states[active_index],
+        SpaceVisualState::Selected,
+        "destination space row renders selected"
+    );
+    assert!(
+        snapshot
+            .visible_ids
+            .iter()
+            .any(|id| id == &format!("bbr-space-row-{active_index}")),
+        "destination space row id present"
     );
     measured
 }

@@ -33,6 +33,10 @@ struct State {
     latest_sidebar_visible: bool,
     latest_chrome_focused: bool,
     latest_command_bar_mode: CommandBarMode,
+    /// The §11.3 cross-context command-field hint of the latest observed
+    /// render (None when absent); the space-switch benchmark commits only
+    /// when the profile-hint state matches the activation.
+    latest_profile_hint: Option<String>,
     content_rect: Option<WebRect>,
     pending: Option<Pending>,
     page_ready: Option<PageReady>,
@@ -65,6 +69,11 @@ struct Pending {
     expected_sidebar_width: Option<f32>,
     expected_chrome_focused: Option<bool>,
     expected_command_bar_mode: Option<CommandBarMode>,
+    /// The §11.3 profile-hint state the presentation must show (None = no
+    /// hint; Some(title) = the hint with that copy). A cross-profile space
+    /// activation must present the hint and a same-profile one must not, or
+    /// the sample is rejected in the app.
+    expected_profile_hint: Option<Option<String>>,
 }
 
 impl PerformanceProbe {
@@ -78,6 +87,7 @@ impl PerformanceProbe {
                 latest_sidebar_visible: true,
                 latest_chrome_focused: false,
                 latest_command_bar_mode: CommandBarMode::Inactive,
+                latest_profile_hint: None,
                 content_rect: None,
                 pending: Some(Pending {
                     operation_id: BenchmarkOperationId(0),
@@ -90,6 +100,7 @@ impl PerformanceProbe {
                     expected_sidebar_width: None,
                     expected_chrome_focused: None,
                     expected_command_bar_mode: None,
+                    expected_profile_hint: None,
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
@@ -127,6 +138,7 @@ impl PerformanceProbe {
             expected_sidebar_width: None,
             expected_chrome_focused: None,
             expected_command_bar_mode: None,
+            expected_profile_hint: None,
         });
         Ok(())
     }
@@ -171,6 +183,21 @@ impl PerformanceProbe {
     pub fn expect_space(&self, space: TestSpaceId) {
         if let Some(pending) = self.inner.borrow_mut().pending.as_mut() {
             pending.expected_active_space = Some(space);
+        }
+    }
+
+    /// Record the §11.3 profile-hint state observed at the mutation site, so
+    /// the space-switch benchmark can commit only when the presented
+    /// command-field hint matches the activation (fast-but-wrong guard).
+    pub fn observe_profile_hint(&self, hint: Option<String>) {
+        self.inner.borrow_mut().latest_profile_hint = hint;
+    }
+
+    /// Require the pending presentation to show `hint` (or no hint when
+    /// `None`) as the §11.3 cross-context command-field transient.
+    pub fn expect_profile_hint(&self, hint: Option<String>) {
+        if let Some(pending) = self.inner.borrow_mut().pending.as_mut() {
+            pending.expected_profile_hint = Some(hint);
         }
     }
 
@@ -366,6 +393,10 @@ impl PerformanceProbe {
             || pending
                 .expected_command_bar_mode
                 .is_some_and(|expected| expected != state.latest_command_bar_mode)
+            || pending
+                .expected_profile_hint
+                .as_ref()
+                .is_some_and(|expected| expected != &state.latest_profile_hint)
         {
             return;
         }

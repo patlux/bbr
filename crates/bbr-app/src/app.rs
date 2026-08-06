@@ -78,6 +78,17 @@ pub struct BbrApp {
     /// Current command-bar intent. `NewTab` stages navigation without creating
     /// a domain tab or native session until Enter commits it.
     pub command_bar_mode: CommandBarMode,
+    /// DESIGN.md §11.3 cross-context transient: after a successful
+    /// cross-profile space activation the destination profile appears at the
+    /// top of the command field for one interaction as a §12 chip plus the
+    /// "in Profile · <title>" hint, so a cross-profile destination is
+    /// unmistakable without relying on color. `None` at rest. Same-profile
+    /// switching never sets it (and clears any prior hint); the next chrome
+    /// context mutation — another space activation, a tab mutation, or a
+    /// command-bar mode entry — clears it (a deterministic user-interaction
+    /// boundary, never a timer). Distinct from the staged-move
+    /// `command_bar_hint`; the two never coexist.
+    command_profile_hint: Option<String>,
     command_bar_return: Option<CommandBarReturn>,
     /// Current command-bar text (mirrors the live URL when not editing).
     pub command_bar_text: String,
@@ -127,6 +138,7 @@ impl BbrApp {
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
             command_bar_text: String::new(),
+            command_profile_hint: None,
             sidebar_visible: true,
             focus_sink: Rc::new(RefCell::new(None)),
             browser_sink: Rc::new(RefCell::new(None)),
@@ -142,6 +154,14 @@ impl BbrApp {
         }
     }
 
+    /// Clear the §11.3 cross-context command-field hint: the deterministic
+    /// lifetime boundary is the next chrome context mutation — a space
+    /// activation re-evaluates it, a tab mutation or command-bar entry ends
+    /// the one-interaction display.
+    pub(super) fn clear_command_profile_hint(&mut self) {
+        self.command_profile_hint = None;
+    }
+
     pub fn open_tab(&mut self, url: &str, cx: &mut Context<Self>) -> Option<ControllerEvent> {
         let result = self
             .controller
@@ -152,6 +172,7 @@ impl BbrApp {
             })
             .ok();
         if let Some(outcome) = &result {
+            self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
             self.ensure_active_visible();
@@ -170,6 +191,7 @@ impl BbrApp {
             })
             .ok();
         if let Some(outcome) = &result {
+            self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
             self.ensure_active_visible();
@@ -188,6 +210,7 @@ impl BbrApp {
             })
             .ok();
         if let Some(outcome) = &result {
+            self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
             self.ensure_active_visible();

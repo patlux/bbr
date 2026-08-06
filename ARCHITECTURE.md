@@ -399,6 +399,29 @@ warm — including across profile boundaries, where a view-only switch never
 recreates a session (recreation stays reserved for tabs that actually move
 across profiles, per `ensure_session`'s profile check).
 
+Cross-context identity (DESIGN.md §11.3) is a transient in `BbrApp`
+(`command_profile_hint: Option<String>`): `activate_space` compares the
+source and destination profile and, only on a cross-profile activation, sets
+the hint to `"in Profile · <title>"` (via `shell::profile_line`) with the
+destination profile's §12 chip identity derived from the controller snapshot
+(`shell::space::active_profile_chip`). Same-profile activation clears any
+prior hint. The hint renders at the leading edge of the production command
+field (`sidebar_view::command_bar`) under the stable
+`bbr-command-profile-hint` id and is exposed in the typed snapshot
+(`command_profile_hint`) and the §15 semantic tree as a `Chip` node whose
+child carries the `bbr-profile-chip-<n>` monogram. Its lifetime is a
+deterministic user-interaction boundary, never a timer: the next chrome
+context mutation — another space activation (which re-evaluates it), a tab
+mutation (`open`/`select`/`close`/`reopen`/`move` clear it), or a
+command-bar mode entry (`Cmd-L`/`Cmd-T`/`Cmd-Shift-M`/New-Space staging
+clear it) — ends the one-interaction display via the single
+`clear_command_profile_hint` seam. It is a distinct transient from the
+staged-`MoveTab` `command_bar_hint`; the two never coexist (staging a move
+clears the space-switch transient). The presentation probe records and
+asserts the hint state (`observe_profile_hint`/`expect_profile_hint`) so the
+gate-enforced `space_switch_cross_profile` benchmark rejects any
+presentation that misses or invents it (fast-but-wrong guard).
+
 `BrowserController` is the sole owner of product tab/navigation state. The
 GPUI root renders a controller snapshot; `shell.rs` contains only formatting
 and the app-local typed E2E snapshot adapter, so tab switching cannot leave a

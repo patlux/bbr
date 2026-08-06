@@ -285,3 +285,202 @@ fn keyboard_selects_and_creates_spaces_and_moves_tabs_between_spaces() {
 
     finish(result, &mut harness, &socket, &token);
 }
+
+/// The §11.3 cross-context rule through the keyboard traversal: real `↑`/`↓`
+/// on the focused space list set the command-field profile hint only when the
+/// destination crosses a profile boundary, and clear it when a same-profile
+/// activation follows — the deterministic interaction boundary on the
+/// keyboard path.
+#[test]
+#[ignore]
+fn keyboard_cross_profile_traversal_sets_and_clears_the_profile_hint() {
+    let _serial = serial_gui();
+    if std::env::var("BBR_SKIP_GUI_TESTS").is_ok_and(|value| value != "0" && value != "false") {
+        return;
+    }
+
+    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("bbr-fixtures")
+        .join("html");
+    let fixtures = FixtureServer::start(&fixtures_dir).expect("fixture server");
+    let page_one = fixtures.url("/page1.html");
+    let page_two = fixtures.url("/page2.html");
+
+    let (mut harness, socket, token) = spawn_harness("spaces-hint-kbd", &page_one);
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let replay = client.attach(None).expect("attach");
+        let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+
+        let initial = client.snapshot().expect("initial snapshot");
+        let first_view = initial.active_web_view.expect("first view");
+        if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {
+            since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
+        }
+        let default_space = initial.active_space;
+        let default_profile = initial.active_profile;
+
+        let keystroke = |client: &mut Client, key: &str| {
+            client
+                .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                    keystroke: key.into(),
+                })
+                .expect("keystroke")
+        };
+
+        // Same-profile space "Reading" and cross-profile space "Private",
+        // both with warm tabs so the traversed space presents a session.
+        client
+            .send_ok(&dsl::create_space(default_profile, "Reading"))
+            .expect("create reading space");
+        let (seq, created) = wait_browser_change_matching(
+            &mut client,
+            |kind| matches!(kind, BrowserChange::SpaceCreated { .. }),
+            since,
+        );
+        since = seq;
+        let reading = match created {
+            BrowserChange::SpaceCreated { space, .. } => space,
+            other => panic!("unexpected change: {other:?}"),
+        };
+        client
+            .send_ok(&dsl::create_profile("Private", "Private"))
+            .expect("create private profile");
+        let (seq, created) = wait_browser_change_matching(
+            &mut client,
+            |kind| matches!(kind, BrowserChange::ProfileCreated { .. }),
+            since,
+        );
+        since = seq;
+        let private_space = match created {
+            BrowserChange::ProfileCreated { space, .. } => space,
+            other => panic!("unexpected change: {other:?}"),
+        };
+        client
+            .send_ok(&dsl::click_space(reading))
+            .expect("activate reading");
+        since = wait_browser_change(
+            &mut client,
+            BrowserChange::SpaceActivated { space: reading },
+            since,
+        );
+        let reading_view = open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
+        client
+            .send_ok(&dsl::click_space(private_space))
+            .expect("activate private");
+        since = wait_browser_change(
+            &mut client,
+            BrowserChange::SpaceActivated {
+                space: private_space,
+            },
+            since,
+        );
+        let private_view = open_tab(&mut client, &mut since, &page_one, Some(PAGE_ONE_TITLE));
+        let sessions = client.snapshot().expect("sessions").engine_sessions;
+
+        // Focus the space list on the default space (render order: Default,
+        // Reading, Private), then traverse with real keys.
+        client
+            .send_ok(&dsl::click_space(default_space))
+            .expect("focus list on default");
+        since = wait_browser_change(
+            &mut client,
+            BrowserChange::SpaceActivated {
+                space: default_space,
+            },
+            since,
+        );
+        assert!(client.snapshot().expect("list focused").chrome_focused);
+
+        // down → Reading (same profile): no profile transition announced.
+        keystroke(&mut client, "down");
+        since = wait_browser_change(
+            &mut client,
+            BrowserChange::SpaceActivated { space: reading },
+            since,
+        );
+        let same = client.snapshot().expect("same-profile down snapshot");
+        assert_eq!(
+            same.command_profile_hint, None,
+            "same-profile keyboard activation never announces"
+        );
+        assert_eq!(same.active_web_view, Some(reading_view));
+
+        // down → Private (cross profile): the hint names the destination.
+        keystroke(&mut client, "down");
+        since = wait_browser_change(
+            &mut client,
+            BrowserChange::SpaceActivated {
+                space: private_space,
+            },
+            since,
+        );
+        let cross = client.snapshot().expect("cross-profile down snapshot");
+        assert_eq!(
+            cross.command_profile_hint.as_deref(),
+            Some("in Profile · Private")
+        );
+        assert_eq!(cross.active_web_view, Some(private_view));
+        assert_eq!(
+            cross.engine_sessions, sessions,
+            "keyboard cross-profile switch keeps sessions"
+        );
+        assert!(cross.chrome_focused);
+
+        // down wraps to Default — cross-profile in the reverse direction.
+        keystroke(&mut client, "down");
+        since = wait_browser_change(
+            &mut client,
+            BrowserChange::SpaceActivated {
+                space: default_space,
+            },
+            since,
+        );
+        let wrapped = client.snapshot().expect("wrapped snapshot");
+        assert_eq!(
+            wrapped.command_profile_hint.as_deref(),
+            Some("in Profile · Default")
+        );
+        assert_eq!(wrapped.active_web_view, Some(first_view));
+
+        // up → Private (cross), then up → Reading (same profile) clears.
+        keystroke(&mut client, "up");
+        since = wait_browser_change(
+            &mut client,
+            BrowserChange::SpaceActivated {
+                space: private_space,
+            },
+            since,
+        );
+        let up_cross = client.snapshot().expect("up cross snapshot");
+        assert_eq!(
+            up_cross.command_profile_hint.as_deref(),
+            Some("in Profile · Private")
+        );
+        keystroke(&mut client, "up");
+        let _ = wait_browser_change(
+            &mut client,
+            BrowserChange::SpaceActivated { space: reading },
+            since,
+        );
+        // Reading belongs to the default profile, so Private → Reading
+        // crosses the profile boundary again: the hint names the new
+        // destination ("in Profile · Default") instead of clearing.
+        let up_same = client.snapshot().expect("up cross snapshot");
+        assert_eq!(
+            up_same.command_profile_hint.as_deref(),
+            Some("in Profile · Default"),
+            "crossing back into the default profile re-announces it"
+        );
+        assert_eq!(up_same.active_web_view, Some(reading_view));
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+
+    finish(result, &mut harness, &socket, &token);
+}

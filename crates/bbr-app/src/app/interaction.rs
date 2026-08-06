@@ -126,6 +126,7 @@ impl BbrApp {
 
     /// `Cmd-L`: edit the active tab's location.
     pub fn activate_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.clear_command_profile_hint();
         self.command_bar_mode = CommandBarMode::Location;
         self.command_bar_return = None;
         self.sync_command_bar();
@@ -134,6 +135,7 @@ impl BbrApp {
 
     /// `Cmd-T`: stage a destination without creating a tab or WKWebView.
     pub fn activate_new_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.clear_command_profile_hint();
         if self.command_bar_mode != CommandBarMode::NewTab {
             self.command_bar_return = Some(CommandBarReturn {
                 mode: self.command_bar_mode,
@@ -164,6 +166,9 @@ impl BbrApp {
         if self.controller.snapshot().active_index.is_none() {
             return;
         }
+        // The staged move has its own hint (command_bar_hint); the §11.3
+        // space-switch transient must not coexist with it.
+        self.clear_command_profile_hint();
         if self.command_bar_mode != CommandBarMode::MoveTab {
             self.command_bar_return = Some(CommandBarReturn {
                 mode: self.command_bar_mode,

@@ -68,6 +68,7 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let activate = report.results["tab_activate_keyboard"].samples;
         let reopen = report.results["tab_reopen"].samples;
         let space = report.results["space_switch"].samples;
+        let cross_space = report.results["space_switch_cross_profile"].samples;
         let pin = report.results["tab_pin"].samples;
         let reorder = report.results["tab_reorder"].samples;
         let same_move = report.results["tab_move_same_profile"].samples;
@@ -87,6 +88,10 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             space >= INTERACTION_SAMPLES,
             "space-switch samples {space} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            cross_space >= INTERACTION_SAMPLES,
+            "cross-profile space-switch samples {cross_space} < {INTERACTION_SAMPLES}"
         );
         assert!(
             pin >= INTERACTION_SAMPLES,

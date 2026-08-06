@@ -22,13 +22,17 @@ impl BbrApp {
     /// The production space activation path: switch the controller's active
     /// space, keep chrome focus, and mirror the destination's tab into the
     /// command bar. Warm tabs and native sessions are preserved by the
-    /// controller's show/hide policy.
+    /// controller's show/hide policy. Cross-profile activations set the §11.3
+    /// cross-context command-field hint for one interaction; same-profile
+    /// switching never announces a profile transition (and clears any prior
+    /// hint).
     pub fn activate_space(
         &mut self,
         space: SpaceId,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
+        let source_profile = self.controller.active_profile();
         let result = self
             .controller
             .activate_space(space)
@@ -42,6 +46,21 @@ impl BbrApp {
             self.emit_browser(outcome);
             self.focus_space_list(window, cx);
             self.ensure_active_visible();
+            // DESIGN.md §11.3 cross-context rule: only a cross-profile
+            // activation announces the destination profile at the top of the
+            // command field for one interaction; same-profile switching must
+            // never misleadingly announce a profile transition.
+            if self.controller.active_profile() != source_profile {
+                let title = self
+                    .controller
+                    .snapshot()
+                    .active_profile_title
+                    .clone()
+                    .unwrap_or_else(|| "other".to_string());
+                self.command_profile_hint = Some(crate::shell::profile_line(&title));
+            } else {
+                self.command_profile_hint = None;
+            }
             #[cfg(feature = "testkit")]
             self.commit_benchmark_sync(window);
             cx.notify();
@@ -135,6 +154,7 @@ impl BbrApp {
     /// `Cmd-Shift-N` / New Space row: stage a space name without creating a
     /// profile or space until Enter commits it (the NewTab staging pattern).
     pub fn activate_new_space(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.clear_command_profile_hint();
         if self.command_bar_mode != CommandBarMode::NewSpace {
             self.command_bar_return = Some(crate::command_bar::CommandBarReturn {
                 mode: self.command_bar_mode,
@@ -233,6 +253,13 @@ impl BbrApp {
             self.chrome_focused(window),
             self.command_bar_mode.into(),
         );
+        // The §11.3 cross-context hint is part of the presented state: a
+        // cross-profile activation must show it and a same-profile activation
+        // must not, or the sample is rejected in the app (fast-but-wrong
+        // guard).
+        let hint = self.command_profile_hint.clone();
+        self.performance.observe_profile_hint(hint.clone());
+        self.performance.expect_profile_hint(hint);
         self.performance.commit_current_presentation();
         true
     }

@@ -39,6 +39,14 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Cross-profile view-only space activation with the §11.3 profile
+        // hint presented: still a warm view-only switch (sessions are never
+        // recreated), so it shares the 50/100 ms warm budget; the hint is
+        // part of the presentation the sample must show.
+        "space_switch_cross_profile" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         "tab_select_pointer" => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -285,6 +293,7 @@ impl Baseline {
             "page_ready",
             "warm_tab_switch",
             "space_switch",
+            "space_switch_cross_profile",
             "tab_select_pointer",
             "tab_activate_keyboard",
             "tab_reopen",
@@ -404,6 +413,29 @@ mod tests {
         assert!(r.iter().any(|x| x.rule == "abs_max"));
         let mut good = BTreeMap::new();
         good.insert("space_switch".into(), measured(45.0, 90.0));
+        assert!(evaluate(&good, &b, false).is_empty());
+    }
+
+    #[test]
+    fn cross_profile_space_switch_budget_is_seeded_and_enforced() {
+        // Regression guard: the cross-profile space-switch scenario (with the
+        // §11.3 profile hint presented) must carry its warm contract budget
+        // in the seed so a future hint-render regression trips the gate
+        // instead of being silently unreported.
+        let b = Baseline::seed();
+        let entry = b
+            .entries
+            .get("space_switch_cross_profile")
+            .expect("seed baseline must carry the space_switch_cross_profile budget");
+        assert_eq!(entry.budget_p95_ms, 50.0);
+        assert_eq!(entry.budget_max_ms, Some(100.0));
+        let mut bad = BTreeMap::new();
+        bad.insert("space_switch_cross_profile".into(), measured(120.0, 160.0));
+        let r = evaluate(&bad, &b, false);
+        assert!(r.iter().any(|x| x.rule == "abs_p95"));
+        assert!(r.iter().any(|x| x.rule == "abs_max"));
+        let mut good = BTreeMap::new();
+        good.insert("space_switch_cross_profile".into(), measured(45.0, 90.0));
         assert!(evaluate(&good, &b, false).is_empty());
     }
 

@@ -229,6 +229,7 @@ impl BbrApp {
             })
             .ok();
         if let Some(outcome) = &result {
+            self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
             if chrome_focused {
@@ -259,6 +260,7 @@ impl BbrApp {
             })
             .ok();
         if let Some(outcome) = &result {
+            self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
             cx.notify();
@@ -286,6 +288,7 @@ impl BbrApp {
         })
         .ok();
         if let Some(outcome) = &result {
+            self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
             cx.notify();
@@ -364,6 +367,7 @@ impl BbrApp {
             })
             .ok();
         if let Some(outcome) = &result {
+            self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
             cx.notify();
@@ -409,6 +413,7 @@ impl BbrApp {
             })
             .ok();
         if let Some(outcome) = &result {
+            self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
             self.focus_tab_list(window, cx);
@@ -437,6 +442,7 @@ impl BbrApp {
             })
             .ok();
         if let Some(outcome) = &result {
+            self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
             cx.notify();
@@ -463,6 +469,7 @@ impl BbrApp {
             })
             .ok();
         if let Some(outcome) = &result {
+            self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
             cx.notify();

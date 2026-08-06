@@ -22,7 +22,7 @@ pub use pane::{crash_panel, empty_space_pane};
 pub use section::section_label;
 #[cfg(feature = "testkit")]
 pub use space::profile_chip_id;
-pub use space::{space_new_row, space_row};
+pub use space::{profile_chip, space_new_row, space_row};
 pub use tab_row::{drag_tick, tab_row};
 
 /// §10 row states the shell renders and E2E asserts. The slice renders the

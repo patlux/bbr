@@ -258,6 +258,13 @@ pub struct Snapshot {
     /// profile when a staged move matches a space. `None` when no hint is
     /// shown.
     pub command_bar_hint: Option<String>,
+    /// The §11.3 cross-context transient: after a cross-profile space
+    /// activation the destination profile appears at the top of the command
+    /// field for one interaction ("in Profile · <title>"). `None` at rest;
+    /// same-profile switching never sets it; the next chrome context
+    /// mutation clears it. Distinct from `command_bar_hint` (the staged-move
+    /// hint); the two never coexist.
+    pub command_profile_hint: Option<String>,
     /// The dragged tab row's active-space index (§10.9). `None` when no drag
     /// is in flight; the dragged row renders the `dragging` state.
     pub drag_source: Option<usize>,

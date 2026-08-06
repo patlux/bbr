@@ -128,10 +128,25 @@ impl BbrApp {
     /// While a move is staged (`Cmd-Shift-M`), the §11.3 destination hint
     /// renders after the text so the destination profile/space is visible
     /// before Enter commits — the cross-context identity the interaction
-    /// contract requires.
+    /// contract requires. After a cross-profile space activation, the §11.3
+    /// cross-context transient renders the destination profile chip at the
+    /// top (leading edge) of the command field for one interaction: the §12
+    /// chip plus a `type:label` "in Profile · <title>" hint. The chip data
+    /// derives from the active profile — the hint is only ever set to the
+    /// active profile and any context mutation clears it, so the invariant
+    /// holds by construction.
     fn command_bar(&self, theme: &Theme, chrome_focused: bool) -> Stateful<Div> {
         let p = theme.palette;
         let hint = self.command_bar_hint();
+        let profile_hint = self.command_profile_hint.clone();
+        // The §12 chip data derives from the active profile: the hint is only
+        // ever set to the active profile and any context mutation clears it,
+        // so the invariant holds by construction.
+        let profile_chip = if profile_hint.is_some() {
+            crate::shell::space::active_profile_chip(&self.controller.snapshot())
+        } else {
+            None
+        };
         div()
             .id("bbr-command-bar")
             .mx(Spacing::sp3())
@@ -152,6 +167,26 @@ impl BbrApp {
             .flex()
             .flex_row()
             .gap(Spacing::sp2())
+            .when(profile_chip.is_some(), |el| {
+                let (index, spec) = profile_chip.as_ref().expect("checked above");
+                let label = profile_hint.clone().expect("profile hint set");
+                el.child(
+                    div()
+                        .id("bbr-command-profile-hint")
+                        .flex()
+                        .flex_row()
+                        .items_center()
+                        .gap(Spacing::sp2())
+                        .child(components::profile_chip(theme, *index, spec))
+                        .child(
+                            div()
+                                .text_size(theme.type_.label.size)
+                                .font_weight(theme.type_.label.weight)
+                                .text_color(p.ink_secondary)
+                                .child(label),
+                        ),
+                )
+            })
             .child(
                 div()
                     .text_size(theme.type_.meta.size)

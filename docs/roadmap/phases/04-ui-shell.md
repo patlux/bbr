@@ -36,9 +36,14 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
       round-robin hues, hairlines between profile groups, active/selected
       rails, pointer + `↑/↓`/Enter + `Cmd-Shift-N` activation through the
       production paths, empty-space pane naming, and cross-profile view-only
-      switches that never recreate warm sessions. Proven by `just
-      e2e-shell-spaces` and the gate-enforced `space_switch` performance
-      scenario.)*
+      switches that never recreate warm sessions. The [cross-context
+      profile-hint slice](../tasks/cross-context-profile-hint.md) completes
+      DESIGN §11.3: a cross-profile activation renders the destination
+      profile chip + "in Profile · <title>" at the top of the command field
+      for one interaction with a deterministic interaction-driven lifetime,
+      and same-profile switching never announces a transition. Proven by
+      `just e2e-shell-spaces` and the gate-enforced `space_switch` /
+      `space_switch_cross_profile` performance scenarios.)*
 - [x] Preserve the active tab per space without recreating warm sessions.
       *(Per-space active tab + live session are restored on activation; warm
       switching only show/hides. Same-profile moves keep the WebViewId;
@@ -59,8 +64,8 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 
 - [ ] Shell follows the [UI design-system track](../tracks/ui-design-system.md).
 - [ ] Keyboard and VoiceOver acceptance in [Accessibility track](../tracks/accessibility.md) is green.
-- [x] Tab/space E2E covers open, switch, close, reopen, pin, reorder, and profile labels. *(Open/select/close/reopen via `just e2e-shell-tabs`, switching + identity via `just e2e-shell-spaces{,_keyboard}`, and pin/unpin, legal/illegal reorder, same-profile/cross-profile moves, cancellation, focus, session identity, and isolation via `just e2e-shell-organize`.)*
-- [x] Performance E2E covers warm tab/space switching, active-tab close, and sidebar open/close/toggle through the production presentation path. *(Warm tab switching, warm space switching, active-tab close, sidebar toggle, pointer selection, reopen, keyboard activation, sidebar drag resize, collapse/restore, tab pin toggle, region-bounded reorder, same-profile/cross-profile moves, pointer hover/press state transitions, and dense-list scroll/select are all measured through the production presentation path.)*
+- [x] Tab/space E2E covers open, switch, close, reopen, pin, reorder, and profile labels. *(Open/select/close/reopen via `just e2e-shell-tabs`, switching + identity via `just e2e-shell-spaces{,_keyboard}` (including the §11.3 cross-context command-field hint: copy, chip/hint ids, typed semantic node, deterministic clear boundaries, same-profile absence, and the separate staged-move hint), and pin/unpin, legal/illegal reorder, same-profile/cross-profile moves, cancellation, focus, session identity, and isolation via `just e2e-shell-organize`.)*
+- [x] Performance E2E covers warm tab/space switching, active-tab close, and sidebar open/close/toggle through the production presentation path. *(Warm tab switching, warm space switching, cross-profile space switching with the §11.3 hint presented, active-tab close, sidebar toggle, pointer selection, reopen, keyboard activation, sidebar drag resize, collapse/restore, tab pin toggle, region-bounded reorder, same-profile/cross-profile moves, pointer hover/press state transitions, and dense-list scroll/select are all measured through the production presentation path.)*
 - [x] Warm tab/space switching and sidebar visibility changes meet the budgets in the [performance contract](../../product/performance-contract.md). *(Warm tab/space switching, sidebar toggle, sidebar drag resize, and collapse/restore are gate-enforced against the 50/100 ms warm budgets; the dense scroll/select scenarios are wired into the gate with contract-budget seeds — measured frame-time evidence on the canonical runner remains.)*
 - [ ] Sidebar remains responsive with 500 tab identities and 50 live/warm sessions (in-memory dense state; persisted restoration is Phase 7), with measured frame-time evidence. *(The dense lifecycle + bounded-window render are implemented and the `dense_scroll`/`dense_select` scenarios are wired into the perf gate; this acceptance requires the measured frame-time evidence from the canonical benchmark runner.)*
 

@@ -86,6 +86,7 @@ fn input<'a>(
             mode: "inactive".into(),
             text: "".into(),
             hint: None,
+            profile_hint: None,
         },
         sidebar_visible: true,
         sidebar_width: 260.0,
@@ -152,6 +153,52 @@ fn tree_exposes_roles_names_values_and_hierarchy() {
     let divider = find(&tree, "bbr-sidebar-divider").expect("divider");
     assert_eq!(divider.role, SemanticRole::Divider);
     assert_eq!(divider.value.as_deref(), Some("260 pt"));
+}
+
+#[test]
+fn cross_context_profile_hint_exposes_chip_and_label_under_the_field() {
+    // §11.3: the command field renders the destination profile chip + the
+    // "in Profile · <title>" label as a typed Chip node (with the §12 chip
+    // monogram child) for one interaction after a cross-profile switch.
+    let browser = browser();
+    let rows = [row(0, TabVisualState::Selected)];
+    let space_rows = [space_row()];
+    let mut input = input(
+        SemanticFocus {
+            command: false,
+            spaces: false,
+            tabs: false,
+            divider: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    );
+    input.command.profile_hint = Some(SemanticProfileHint {
+        title: "Private".into(),
+        monogram: "PR".into(),
+        profile_index: 1,
+    });
+    let tree = semantic_tree(&input);
+    let field = find(&tree, "bbr-command-bar").expect("command field");
+    let hint = field
+        .children
+        .iter()
+        .find(|node| node.id == "bbr-command-profile-hint")
+        .expect("profile hint node under the command field");
+    assert_eq!(hint.role, SemanticRole::Chip);
+    assert_eq!(hint.name.as_deref(), Some("in Profile · Private"));
+    let chip = hint
+        .children
+        .iter()
+        .find(|node| node.id == "bbr-profile-chip-1")
+        .expect("hint chip child");
+    assert_eq!(chip.role, SemanticRole::Chip);
+    assert_eq!(chip.name.as_deref(), Some("Profile · PR"));
+    // At rest (no hint) the node is absent.
+    input.command.profile_hint = None;
+    let tree = semantic_tree(&input);
+    assert!(find(&tree, "bbr-command-profile-hint").is_none());
 }
 
 #[test]

@@ -1,5 +1,8 @@
 use bbr_testkit::protocol::{SemanticNode, SemanticRole};
 
+// Shared helper module included by several E2E binaries; each binary uses a
+// subset of the helpers, so dead-code is expected for the unused rest.
+#[allow(dead_code)]
 pub const SIDEBAR_DEFAULT: f32 = 260.0;
 
 pub fn find<'a>(nodes: &'a [SemanticNode], id: &str) -> Option<&'a SemanticNode> {
@@ -15,6 +18,7 @@ pub fn find<'a>(nodes: &'a [SemanticNode], id: &str) -> Option<&'a SemanticNode>
 }
 
 #[allow(clippy::too_many_arguments)]
+#[allow(dead_code)]
 pub fn assert_node(
     tree: &[SemanticNode],
     id: &str,
@@ -36,6 +40,7 @@ pub fn assert_node(
     node.clone()
 }
 
+#[allow(dead_code)]
 fn node_ids(tree: &[SemanticNode]) -> Vec<String> {
     let mut out = Vec::new();
     for node in tree {

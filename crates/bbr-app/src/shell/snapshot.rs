@@ -39,6 +39,12 @@ pub struct TestSnapshot {
     /// A command-bar destination hint (DESIGN.md §11.3), e.g. the
     /// destination profile of a staged move.
     pub command_bar_hint: Option<String>,
+    /// The §11.3 cross-context transient: after a cross-profile space
+    /// activation the destination profile appears at the top of the command
+    /// field for one interaction ("in Profile · <title>"). `None` at rest;
+    /// same-profile switching never sets it; the next chrome context
+    /// mutation clears it.
+    pub command_profile_hint: Option<String>,
     /// The dragged tab row's active-space index (§10.9). `None` when no drag
     /// is in flight; the dragged row renders `dragging`.
     pub drag_source: Option<usize>,
@@ -94,12 +100,14 @@ pub struct TestSnapshot {
 /// command-bar component — so the E2E id assertion cannot drift from the
 /// shell: if a spec row's ids are not present here, the E2E fails.
 #[cfg(feature = "testkit")]
+#[allow(clippy::too_many_arguments)]
 pub fn visible_ids(
     browser: &ControllerSnapshot,
     chrome_focused: bool,
     command_bar_mode: crate::command_bar::CommandBarMode,
     sidebar_visible: bool,
     command_bar_hint: Option<&str>,
+    command_profile_hint: Option<&str>,
     drag_slot: Option<usize>,
     dense: crate::dense::DenseRenderState,
 ) -> Vec<String> {
@@ -122,6 +130,9 @@ pub fn visible_ids(
         }
         if command_bar_hint.is_some() {
             ids.push("bbr-command-hint".into());
+        }
+        if command_profile_hint.is_some() {
+            ids.push("bbr-command-profile-hint".into());
         }
         // The §11.2 section labels the render shows (hidden when empty).
         let total = browser.tabs.len();
@@ -291,6 +302,7 @@ mod tests {
             true,
             None,
             None,
+            None,
             dense_all(tabs.len()),
         );
         for required in [
@@ -337,6 +349,7 @@ mod tests {
             true,
             None,
             None,
+            None,
             dense_all(1),
         );
         for required in ["bbr-crash-panel", "bbr-crash-reload", "bbr-crash-close"] {
@@ -353,6 +366,7 @@ mod tests {
             true,
             crate::command_bar::CommandBarMode::NewTab,
             true,
+            None,
             None,
             None,
             dense_all(1),
@@ -374,6 +388,7 @@ mod tests {
             false,
             crate::command_bar::CommandBarMode::Inactive,
             true,
+            None,
             None,
             None,
             dense_all(0),
@@ -413,6 +428,7 @@ mod tests {
             true,
             None,
             None,
+            None,
             dense_all(0),
         );
         for required in [
@@ -439,9 +455,40 @@ mod tests {
             false,
             None,
             None,
+            None,
             dense_all(0),
         );
         assert!(!hidden.iter().any(|id| id.starts_with("bbr-space")));
+    }
+
+    #[test]
+    fn visible_ids_expose_the_cross_context_profile_hint_when_shown() {
+        // §11.3/§15: the command-field cross-context transient exposes its
+        // stable id only while the hint is shown (one interaction after a
+        // cross-profile switch); at rest it is absent.
+        let browser = space_snapshot();
+        let with_hint = visible_ids(
+            &browser,
+            false,
+            crate::command_bar::CommandBarMode::Inactive,
+            true,
+            None,
+            Some("in Profile · Private"),
+            None,
+            dense_all(0),
+        );
+        assert!(with_hint.contains(&"bbr-command-profile-hint".to_string()));
+        let without = visible_ids(
+            &browser,
+            false,
+            crate::command_bar::CommandBarMode::Inactive,
+            true,
+            None,
+            None,
+            None,
+            dense_all(0),
+        );
+        assert!(!without.contains(&"bbr-command-profile-hint".to_string()));
     }
 
     #[test]
@@ -467,6 +514,7 @@ mod tests {
             false,
             crate::command_bar::CommandBarMode::Inactive,
             true,
+            None,
             None,
             None,
             stale,
