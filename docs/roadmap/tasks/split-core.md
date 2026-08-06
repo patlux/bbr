@@ -155,17 +155,17 @@ Outcome:       Portable split-core landing zone remediated as a reviewable
                policy and the f64 Rect are removed; obsolete
                SplitState/Snapshot types were deleted, not wrapped.
                #![forbid(unsafe_code)]; no GPUI/AppKit/WebKit/testkit/
-               persistence/network/async dependency. No commit made by the
-               writer per lane constraints.
+               persistence/network/async dependency. The implementation was
+               committed in the lane and integrated serially after review.
 Anchor:        29c34e68f4fad5f5338f7b69e50c44dd84145e74 (serial split shared
                contract); lane branch parallel/split-core created at clean
                HEAD e95d69b15474648fa3a9c949609ebd6a510e6d9a
                (docs(split): define the portable core lane).
-Writer:        exclusive writer session completed; working tree left
-               uncommitted for the independent read-only review.
-Review:        independent reviewer completed; remediation findings are
-               listed in the task label and all were addressed by the
-               remediation pass below.
+Writer:        exclusive writer session completed; the owner committed the
+               settled lane at `2dfa08ce095e142a1071d4d8750177ffd4bb559e`.
+Review:        independent reviewer completed; findings were remediated in two
+               focused passes, and the final read-only recheck reported
+               `NO_FINDINGS`.
 Remediation:   stateless authority model (SplitState deleted; validate_open/
                evaluate_focus/close_outcome/evaluate_resize replace it),
                bbr_web::WebRect f32 instead of the f64 Rect
@@ -239,7 +239,9 @@ Functional evidence: 41 unit/contract tests + 1 lib doctest green
 Real-app E2E:  not applicable until app composition.
 Performance:   portable-only; no microcheck run; the production scenario
                stays with the follow-up composition packet.
-Commits:       none (writer leaves a reviewable working-tree diff; no
-               commit/push/reset/clean/stash/merge/rebase/amend performed).
-Open blockers: none at handoff.
+Commits:       `2dfa08ce095e142a1071d4d8750177ffd4bb559e`
+               feat(split): add portable interaction planning
+               `9eeb6b2f7abed2451a613e3ee4e8d4624db4cfc8`
+               feat(split): integrate portable interaction planning
+Open blockers: none; follow-up production app composition remains separate.
 ```
