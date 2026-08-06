@@ -12,7 +12,8 @@ After the [parallel-delivery foundation](../tasks/parallel-delivery-foundation.m
 lands, activate command core as a bounded lane rooted at that clean commit.
 `crates/bbr-command/**` is its exclusive portable surface; app composition,
 history-provider wiring, testkit snapshots, and command-bar GPUI remain serial
-integration points. The lane packet must state the exact base and merge order.
+integration points. Active packet: [portable command core](../tasks/command-core.md),
+rooted at the exact foundation anchor and integrated before command UI.
 
 ## Checklist
 

@@ -126,8 +126,8 @@ Outcome: Worktree lanes, serial integration kernel, portable command/
 Commits: c7a9cd2 baseline-reproduced domain lint fix; 03b9e8b parallel-
          delivery foundation; this ledger follow-up.
 Predecessor anchor: 20628ff on clean main after terminal remediation + recheck.
-Foundation anchor: 03b9e8b (implementation); the ledger follow-up is the exact
-         branch point for newly activated lane worktrees.
+Foundation anchor: 03b9e8b (implementation); 9352ded is the exact documented
+         branch point for the prepared command-core and persistence-core lanes.
 Functional evidence: just verify; testkit Clippy; GUI-lock unit contracts and
          py_compile; shared Git-common-dir lock key verified from main and the
          preserved URL-input worktree.

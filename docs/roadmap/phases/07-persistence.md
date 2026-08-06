@@ -11,10 +11,13 @@ Browser organization restores safely after normal quit, force quit, and schema u
 After the [parallel-delivery foundation](../tasks/parallel-delivery-foundation.md)
 lands, activate persistence core as a bounded lane rooted at that clean commit.
 `crates/bbr-persistence/**` plus checked-in migration fixtures are its exclusive
-surface; domain DTOs, app startup/shutdown composition, migration numbering,
-and command-history provider integration remain serial integration points.
-Active packet: [portable persistence core](../tasks/persistence-core.md), rooted
-at the exact foundation anchor and integrated before restore/hydration UI.
+surface; domain DTOs, app startup/shutdown composition, future migration
+numbering, and command-history provider integration remain serial integration
+points. The serial [SQLite dependency contract](../tasks/persistence-sqlite-contract.md)
+is complete. The reviewed [portable persistence-core packet](../tasks/persistence-core.md)
+records schema version 1 and the exact post-promotion implementation anchor
+`aed5bc77d416f69b913876e3977020d99abffe26`. It is ready for lane settlement
+and remains writer-free.
 
 ## Checklist
 
