@@ -6,7 +6,7 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 
 ## Current focus
 
-> **Promote and start bounded parallel lanes from anchor `9352ded`.** The [parallel-delivery foundation](docs/roadmap/tasks/parallel-delivery-foundation.md) now provides one-writer lanes, explicit serial contracts, portable `bbr-command`/`bbr-persistence` landing zones, and a host-wide GUI gate shared by sibling worktrees. Packet-only worktrees are prepared for command core (`parallel/command-core`, `7ccf7ff`) and persistence core (`parallel/persistence-core`, `9bb0a3b`), both rooted at `9352ded` and currently writer-free. Next: read-only review and serial promotion of those packets, then explicit product writers. Phase 4's canonical dense frame-time evidence remains an independent infrastructure acceptance.
+> **Deliver bounded portable command and persistence cores.** The [parallel-delivery foundation](docs/roadmap/tasks/parallel-delivery-foundation.md) provides one-writer lanes, explicit serial contracts, portable landing zones, and a host-wide GUI gate shared by sibling worktrees. The reviewed [command-core packet](docs/roadmap/tasks/command-core.md) is promoted and its exclusive writer is active on `parallel/command-core`; the [persistence-core packet](docs/roadmap/tasks/persistence-core.md) is being reconciled with the completed SQLite contract before its writer starts. Phase 4's canonical dense frame-time evidence remains an independent infrastructure acceptance.
 
 - [x] [Establish the parallel-delivery foundation](docs/roadmap/tasks/parallel-delivery-foundation.md), then activate bounded command-core and persistence-core task packets from its clean verified anchor. Preserve the pre-foundation `parallel/url-input` worktree until explicit settlement/handoff. *(Worktree contract, serial kernel, portable landing zones, host-wide GUI lock, unit contracts, `just verify`, testkit Clippy, smoke, performance, and canonical `just e2e` are green.)*
 - [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation. *(Benchmark path, budgets, trend/artifact machinery, the warm space-switch scenario, and the tab pin/reorder/move scenarios shipped; the dense scroll/select scenarios are wired into the interaction matrix with contract-budget seeds; persisted warm-startup samples await the persistence repository.)*
@@ -30,8 +30,8 @@ root-roadmap contracts remain serial integration surfaces.
 | Lane | Phase/track owner | Readiness |
 |---|---|---|
 | Parallel-delivery foundation | [task packet](docs/roadmap/tasks/parallel-delivery-foundation.md) | implemented and verified; anchor recorded in its ledger |
-| Command core | [Phase 5](docs/roadmap/phases/05-command-bar.md) | packet prepared at `parallel/command-core` (`7ccf7ff`); writer-free pending serial promotion |
-| Persistence core | [Phase 7](docs/roadmap/phases/07-persistence.md) | packet prepared at `parallel/persistence-core` (`9bb0a3b`); writer-free pending serial promotion |
+| Command core | [Phase 5](docs/roadmap/phases/05-command-bar.md) · [task packet](docs/roadmap/tasks/command-core.md) | packet promoted; one exclusive writer active at `parallel/command-core` |
+| Persistence core | [Phase 7](docs/roadmap/phases/07-persistence.md) · [task packet](docs/roadmap/tasks/persistence-core.md) | packet contract under serial remediation; writer-free until it incorporates the exact SQLite anchor |
 | Split core | [Phase 6](docs/roadmap/phases/06-split-view.md) | after serial controller/geometry contract extraction |
 | Performance runner | [performance track](docs/roadmap/tracks/performance-release.md) | external infrastructure lane |
 | WebKit capability lanes | [Phase 8](docs/roadmap/phases/08-daily-driver.md) | after serial `bbr-web` capability contracts |

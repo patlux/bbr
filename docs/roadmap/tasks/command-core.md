@@ -1,0 +1,145 @@
+# Task packet — portable command core
+
+Parents: [Phase 5](../phases/05-command-bar.md) · [Performance contract](../../product/performance-contract.md) · [Parallel-delivery contract](../../parallel-delivery.md).
+
+## Outcome
+
+A portable `bbr-command` core parses command-bar input into typed intents and
+ranks deterministic local results across open tabs, spaces, history records,
+actions, and navigate/search fallback. It returns the first correct local
+result below 50 ms for a corpus of 500 tabs and 10,000 history entries without
+GPUI, SQLite, macOS frameworks, testkit transport, or synchronous I/O.
+
+## Scope
+
+- Typed input/query, intent, result, group, identity, score, and activation
+  types in `crates/bbr-command/**`.
+- Table-driven URL/search parsing for location and staged new-tab semantics;
+  command/action prefixes only if the product contract defines them during the
+  slice.
+- Stable ranking groups: exact/open tabs, current-space and pinned tabs, other
+  spaces with profile identity, history, actions, navigate/search fallback.
+- Deterministic tie-breaking and result limits suitable for later cancellable
+  orchestration; no render-path blocking or global state.
+- A provider-neutral owned input corpus and pure ranking API. History storage
+  and cancellation/debounce orchestration integrate later through serial
+  contracts.
+- Unit/property-style cases for ambiguous URLs/searches, duplicate titles,
+  cross-profile identity, Unicode, empty input, and deterministic ordering.
+- An optimized portable benchmark test for 500 tabs + 10,000 history entries,
+  retaining raw distribution evidence and enforcing a 50 ms first-result
+  ceiling without weakening the real-app command-bar performance requirement.
+- Truthful Phase-5/roadmap and crate documentation updates.
+
+## Non-goals
+
+- No GPUI command-bar result surface, focus routing, keyboard selection, or
+  real-app E2E; those require the later serial app-composition slice.
+- No SQLite repository or direct dependency on `bbr-persistence`.
+- No changes to `bbr-app`, `bbr-browser`, `bbr-domain`, `bbr-web`, testkit
+  protocol, root workspace manifests, `Cargo.lock`, `justfile`, performance
+  baseline, or `ROADMAP.md` current-focus roll-up.
+- No network search suggestions, fuzzy-search dependency, debounce timer, or
+  cancellation runtime until profiling and the integration contract justify
+  them.
+
+## Parallel-lane contract
+
+```text
+Base commit: 9352ded94075d3c82f90c682fb7ff248d0ee2fe6
+Packet commit: 7ccf7ff8ac24c507e209839692902d72d0be9978
+Depends on: parallel-delivery foundation only
+Provides/API: portable parser, registry, ranking, result and corpus contracts
+Exclusive paths: crates/bbr-command/**; this task packet; Phase-5 detail only
+Shared integration points: app composition, command snapshot/testkit wire,
+  history repository/provider, root Cargo/Cargo.lock, global perf matrix
+Integration order: land portable command core before command app composition;
+  integrate shared surfaces serially from a fresh clean anchor
+```
+
+## Constraints
+
+- `#![forbid(unsafe_code)]`; no GPUI, AppKit/WebKit, filesystem, SQLite, socket,
+  or platform dependency.
+- Ranking is deterministic and does not hide profile/space identity in
+  cross-space results.
+- Exact/open/current/pinned priority follows Phase 5; ties must never depend on
+  hash-map iteration order.
+- The benchmark measures core parsing/ranking, not fixture setup or test
+  transport, and it cannot substitute for later optimized real-app evidence.
+- Do not modify or inspect sibling worktrees; one writer owns this branch.
+
+## Evidence
+
+### Unit and contract
+
+- [ ] Table-driven parser and intent tests cover URL/search ambiguity and modes.
+- [ ] Ranking tests prove every priority group, cross-profile labels,
+      deterministic ties, deduplication, and fallback behavior.
+- [ ] Public API remains portable and dependency direction is documented.
+
+### Real-app E2E
+
+- [ ] Not applicable to this pure-core packet: it creates no browser behavior.
+      The Phase-5 app-composition packet owns production GPUI/WKWebView E2E,
+      keyboard focus, semantic snapshots, and activation behavior.
+
+### Performance
+
+- [ ] Optimized local benchmark uses 500 tabs + 10,000 history entries and
+      proves first correct result below 50 ms with raw repeated samples.
+- [ ] The packet explicitly preserves later in-process real-app presentation
+      measurement; no product budget or baseline is changed here.
+
+## Completion gates
+
+```bash
+cargo fmt --all -- --check
+cargo test -p bbr-command
+cargo clippy -p bbr-command --all-targets -- -D warnings
+cargo test -p bbr-command --release
+just roadmap
+```
+
+No GUI gate is required because the lane is portable and changes no browser
+surface. The integration lane runs `just verify` after landing.
+
+## Delivery sequence
+
+1. One writer owns `/Users/patwoz/dev/Personal/macos/bbr-command-core` on
+   `parallel/command-core`.
+2. Implement and verify only the portable core.
+3. One independent read-only reviewer maps Phase-5 ranking/parser requirements
+   to tests and benchmark evidence.
+4. Remediate only concrete findings, then commit coherent verified work.
+5. Handoff the settled branch to the serial integration owner; do not mutate
+   shared app/testkit/root surfaces in this worktree.
+
+## Iteration policy
+
+Start with typed inputs/results and exact URL-vs-search parsing, then implement
+one ranking group at a time with table-driven tests. Add a dependency only if
+existing std/project facilities cannot meet a measured need. Benchmark after
+correctness is stable; optimize the identified mechanism rather than weakening
+coverage or limits.
+
+## Blocked stop condition
+
+Stop with the preserved branch/worktree, parser/ranking evidence, attempted
+approaches, and the smallest product decision needed if ranking precedence,
+URL/search ambiguity, command syntax, or cross-profile result identity cannot
+be resolved from Phase 5 and existing product contracts. Do not invent app UI
+or persistence contracts to unblock the pure core.
+
+## Delivery ledger
+
+```text
+Outcome:
+Commits:
+Functional evidence:
+Real-app E2E: not applicable; later app-composition packet owns it.
+Performance evidence:
+Roadmap/documentation updates:
+Open blockers and non-goals:
+Worktree state:
+```
