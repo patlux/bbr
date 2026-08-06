@@ -15,8 +15,9 @@ surface; domain DTOs, app startup/shutdown composition, future migration
 numbering, and command-history provider integration remain serial integration
 points. The serial [SQLite dependency contract](../tasks/persistence-sqlite-contract.md)
 is complete. The reviewed [portable persistence-core packet](../tasks/persistence-core.md)
-reserves schema version 1 and must record its exact post-promotion anchor before
-the prepared branch starts a product writer.
+records schema version 1 and the exact post-promotion implementation anchor
+`aed5bc77d416f69b913876e3977020d99abffe26`. It is ready for lane settlement
+and remains writer-free.
 
 ## Checklist
 
