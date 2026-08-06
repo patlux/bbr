@@ -1,9 +1,9 @@
 //! The warm interaction matrix of a cold benchmark trial.
 //!
 //! After the startup and page-ready milestones, a driving trial exercises the
-//! production interaction paths: warm tab selection, sidebar toggle, New-Tab
-//! command staging/open/close, pointer selection, reopen, keyboard
-//! activation, and warm space switching. Each measured mutation is driven
+//! production interaction paths: warm tab selection, sidebar
+//! toggle/resize/restoration, New-Tab command staging/open/close, pointer
+//! selection, reopen, keyboard activation, and warm space switching. Each measured mutation is driven
 //! through the typed benchmark drivers in [`super::benchmarks`], which assert
 //! the semantic state of every accepted sample; raw samples accumulate in the
 //! harness log and are returned for aggregation.
@@ -14,8 +14,9 @@ use bbr_testkit::protocol::{BenchmarkKind, BrowserChange, Request};
 use bbr_testkit::Client;
 
 use super::benchmarks::{
-    benchmark_click, benchmark_keystroke, benchmark_reopen, benchmark_select, benchmark_sidebar,
-    benchmark_space_switch, wait_browser_change, wait_title,
+    benchmark_click, benchmark_keystroke, benchmark_reopen, benchmark_resize_sidebar,
+    benchmark_restore_sidebar, benchmark_select, benchmark_sidebar, benchmark_space_switch,
+    wait_browser_change, wait_title,
 };
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
@@ -104,6 +105,42 @@ fn drive_matrix_inner(
                 .raw_log
                 .interactions
                 .entry("sidebar_toggle".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+        }
+
+        // Sidebar resize + restoration: the toggle loop above ends with the
+        // rail visible (30 flips return it to the opened state), so the
+        // resize path runs directly. Alternate widths across the adjustable
+        // range and measure each presentation commit at the exact clamped
+        // geometry. Every sample asserts the engine-received content rect
+        // against the typed min/default/max/content floor; socket time is
+        // excluded and a fast-but-wrong geometry is rejected in the app
+        // before the sample even leaves it.
+        let resize_widths = [260.0, 300.0, 340.0, 360.0];
+        let mut resize_samples = Vec::with_capacity(config.interaction_samples);
+        for sample in 0..config.interaction_samples {
+            let width = resize_widths[sample % resize_widths.len()];
+            let measured = benchmark_resize_sidebar(client, &mut since, operation, width);
+            resize_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("sidebar_resize".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+        }
+
+        let mut restore_samples = Vec::with_capacity(config.interaction_samples);
+        for _ in 0..config.interaction_samples {
+            let measured = benchmark_restore_sidebar(client, &mut since, operation);
+            restore_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("sidebar_restore".into())
                 .or_default()
                 .push(measured.duration_ns);
             operation += 1;
@@ -404,6 +441,8 @@ fn drive_matrix_inner(
         raw.insert("tab_activate_keyboard".to_string(), activate_samples);
         raw.insert("tab_reopen".to_string(), reopen_samples);
         raw.insert("sidebar_toggle".to_string(), sidebar_samples);
+        raw.insert("sidebar_resize".to_string(), resize_samples);
+        raw.insert("sidebar_restore".to_string(), restore_samples);
         raw.insert("new_tab_command_bar".to_string(), new_tab_command_samples);
         raw.insert("new_tab_open".to_string(), new_tab_open_samples);
         raw.insert("active_tab_close".to_string(), active_close_samples);

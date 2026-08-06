@@ -309,6 +309,10 @@ pub struct TestSnapshot {
     pub sidebar_min: f32,
     pub sidebar_default: f32,
     pub sidebar_max: f32,
+    /// The native-content floor (DESIGN §5/§13): the WKWebView slot is never
+    /// laid out narrower, so the rail yields below the requested width in
+    /// compact windows.
+    pub content_min: f32,
     /// The resize divider drag state (idle vs dragging).
     pub divider_dragging: bool,
     /// The stable divider label (future Accessibility; §15 shared identity).

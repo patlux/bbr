@@ -467,6 +467,7 @@ impl BbrApp {
             sidebar_min: crate::sidebar::SIDEBAR_MIN,
             sidebar_default: crate::sidebar::SIDEBAR_DEFAULT,
             sidebar_max: crate::sidebar::SIDEBAR_MAX,
+            content_min: crate::sidebar::CONTENT_MIN,
             divider_dragging: self.sidebar.is_dragging(),
             divider_label: crate::sidebar::SIDEBAR_DIVIDER_LABEL.to_string(),
             content_rect: self.performance.content_rect().unwrap_or([0.0; 4]),

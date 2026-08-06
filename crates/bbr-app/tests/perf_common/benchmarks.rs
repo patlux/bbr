@@ -160,6 +160,91 @@ pub(crate) fn benchmark_sidebar(
     measured
 }
 
+/// Resize the sidebar to an absolute width through the production resize
+/// path (the mutation the pointer and keyboard listeners share). The sample
+/// commits only at the exact clamped geometry the render enforces, so a
+/// fast-but-wrong sample (wrong width or visibility) is rejected both by the
+/// in-app pending check and by these assertions; socket transport is never
+/// part of the measured duration.
+pub(crate) fn benchmark_resize_sidebar(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    width: f32,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    let geometry = client.snapshot().expect("resize geometry snapshot");
+    let expected = width
+        .clamp(geometry.sidebar_min, geometry.sidebar_max)
+        .min((geometry.window_size[0] - geometry.content_min).max(0.0));
+    client
+        .send_ok(&Request::BenchmarkResizeSidebar {
+            operation_id,
+            width,
+        })
+        .expect("benchmark sidebar resize");
+    let (seq, measured) =
+        wait_measurement(client, BenchmarkKind::SidebarResize, operation_id, *since);
+    *since = seq;
+    assert!(measured.sidebar_visible, "resize keeps the sidebar visible");
+    assert!(
+        (measured.content_rect[0] - expected).abs() <= 0.5,
+        "resize sample committed at {:.1} pt, expected the {expected:.1} pt clamp",
+        measured.content_rect[0]
+    );
+    let snapshot = client.snapshot().expect("resize snapshot");
+    assert!(snapshot.sidebar_visible);
+    assert!(
+        (snapshot.sidebar_width - expected).abs() <= 0.5,
+        "snapshot shows {:.1} pt, expected the {expected:.1} pt clamp",
+        snapshot.sidebar_width
+    );
+    assert_eq!(
+        snapshot.active_web_view, measured.active_web_view,
+        "resize never changes the selected native view"
+    );
+    measured
+}
+
+/// Sidebar restoration: collapse through the production Cmd-B path
+/// (unmeasured setup inside the app), then measure the expand that restores
+/// the last expanded width. The restored width must equal the pre-collapse
+/// rail width (DESIGN §11.4), and the measured sample must show it.
+pub(crate) fn benchmark_restore_sidebar(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    let before = client.snapshot().expect("pre-collapse snapshot");
+    let collapsed_width = before.sidebar_width;
+    assert!(before.sidebar_visible, "restore needs a visible sidebar");
+    client
+        .send_ok(&Request::BenchmarkRestoreSidebar { operation_id })
+        .expect("benchmark sidebar restore");
+    let (seq, measured) =
+        wait_measurement(client, BenchmarkKind::SidebarRestore, operation_id, *since);
+    *since = seq;
+    assert!(measured.sidebar_visible, "restore ends expanded");
+    assert!(
+        (measured.content_rect[0] - collapsed_width).abs() <= 0.5,
+        "restored rail at {:.1} pt, expected the collapsed {collapsed_width:.1} pt",
+        measured.content_rect[0]
+    );
+    let snapshot = client.snapshot().expect("restore snapshot");
+    assert!(snapshot.sidebar_visible);
+    assert!(
+        (snapshot.sidebar_width - collapsed_width).abs() <= 0.5,
+        "restored width {:.1} pt != collapsed {collapsed_width:.1} pt",
+        snapshot.sidebar_width
+    );
+    assert_eq!(
+        snapshot.active_web_view, measured.active_web_view,
+        "restore never changes the selected native view"
+    );
+    measured
+}
+
 /// Visual pointer selection of a visible tab row through the production
 /// listener path. Chrome focus must be preserved (the interaction contract's
 /// pointer-select domain) and the measured presentation must show the

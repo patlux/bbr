@@ -55,6 +55,18 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Contract: "Open, close, or toggle the sidebar → chrome and native
+        // content geometry committed — p95 ≤ 50 ms, max ≤ 100 ms". Resize
+        // commits the same next-frame geometry class; restoration (expand to
+        // the last expanded width) is the same toggle class.
+        "sidebar_resize" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "sidebar_restore" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         "new_tab_command_bar" => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -230,6 +242,8 @@ impl Baseline {
             "tab_activate_keyboard",
             "tab_reopen",
             "sidebar_toggle",
+            "sidebar_resize",
+            "sidebar_restore",
             "new_tab_command_bar",
             "new_tab_open",
             "active_tab_close",

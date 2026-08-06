@@ -120,6 +120,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             sidebar_min: self.sidebar_min,
             sidebar_default: self.sidebar_default,
             sidebar_max: self.sidebar_max,
+            content_min: self.content_min,
             divider_dragging: self.divider_dragging,
             divider_label: self.divider_label.clone(),
             content_rect: self.content_rect,
