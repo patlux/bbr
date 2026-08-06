@@ -39,6 +39,10 @@ e2e-profiles:
 e2e-shell-tabs:
     DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_tabs -- --ignored --nocapture
 
+e2e-shell-spaces:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_spaces -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_spaces_keyboard -- --ignored --nocapture
+
 e2e-perf:
     DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance -- --ignored --nocapture
 
@@ -55,6 +59,6 @@ e2e-perf-inject:
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-perf
+e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-perf
 
 verify: fmt check test clippy roadmap

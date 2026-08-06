@@ -19,6 +19,7 @@ use std::sync::{Arc, Mutex};
 pub static SERIAL_GUI: Mutex<()> = Mutex::new(());
 
 pub use bbr_fixtures::FixtureServer;
+#[allow(unused_imports)] // shared helper module: each suite uses a subset
 pub use bbr_testkit::protocol::{dsl, BrowserChange, Event, TabVisualState};
 pub use bbr_testkit::Client;
 pub use bbr_web::{WebEvent, WebViewId};
@@ -151,6 +152,27 @@ pub fn wait_browser_change(client: &mut Client, expected: BrowserChange, since: 
         )
         .expect("browser change")
         .0
+}
+
+/// Wait for the next [`Event::BrowserChanged`] matching `matches` and return
+/// its sequence cursor plus the concrete [`BrowserChange`] (for changes whose
+/// payload, like the fresh space id, is only known after the event fires).
+pub fn wait_browser_change_matching(
+    client: &mut Client,
+    matches: impl Fn(&BrowserChange) -> bool,
+    since: u64,
+) -> (u64, BrowserChange) {
+    let (seq, event) = client
+        .wait_for_event_since(
+            |event| matches!(event, Event::BrowserChanged { kind } if matches(kind)),
+            since,
+            deadline(),
+        )
+        .expect("browser change");
+    let Event::BrowserChanged { kind } = event else {
+        unreachable!()
+    };
+    (seq, kind)
 }
 
 pub fn wait_chrome_focus(client: &mut Client, focused: bool, since: u64) -> u64 {
