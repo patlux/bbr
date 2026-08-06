@@ -94,7 +94,7 @@ repository implementation against an unresolved dependency contract.
 
 ```text
 Outcome: Reproducible workspace SQLite dependency for the persistence lane.
-Commit: recorded after this implementation commit.
+Commits: 5bf1fd9 initial dependency contract; exact-pin remediation follows.
 Dependency evidence: cargo metadata resolves rusqlite 0.40.1 with features
   bundled + modern_sqlite only; cargo tree confirms bundled libsqlite3-sys.
 Workspace evidence: just verify green (fmt/check/test/clippy/roadmap/scripts).
