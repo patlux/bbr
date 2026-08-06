@@ -29,6 +29,35 @@ impl BbrApp {
         } else {
             0.0
         };
+        // The authoritative pane layout and its keyed per-view geometry,
+        // ordered by pane layout (primary, then secondary) — never map
+        // iteration or creation order. The keyed observation is pruned to
+        // the current panes each render, so destroyed/hidden panes leave no
+        // orphan geometry evidence.
+        let pane_layout = self.controller.pane_layout();
+        let pane_rects = self.performance.pane_rects();
+        let pane_rect_snapshots = match pane_layout {
+            Some(layout) => {
+                let mut rects = Vec::with_capacity(2);
+                let rect_of = |view: bbr_web::WebViewId| {
+                    pane_rects
+                        .get(&view)
+                        .map_or([0.0; 4], |r| [r.x, r.y, r.width, r.height])
+                };
+                rects.push(bbr_testkit::protocol::PaneRectSnapshot {
+                    view: layout.primary,
+                    rect: rect_of(layout.primary),
+                });
+                if let Some(secondary) = layout.secondary {
+                    rects.push(bbr_testkit::protocol::PaneRectSnapshot {
+                        view: secondary,
+                        rect: rect_of(secondary),
+                    });
+                }
+                rects
+            }
+            None => Vec::new(),
+        };
         let semantics = self.semantic_snapshot(&browser, &rows, window, sidebar_width, &budget);
         TestSnapshot {
             url: browser.nav.url.clone(),
@@ -144,6 +173,7 @@ impl BbrApp {
                 self.command_profile_hint.as_deref(),
                 drag_slot,
                 self.dense_window.get(),
+                pane_layout,
             ),
             semantics,
             command_bar_mode: self.command_bar_mode.into(),
@@ -157,6 +187,8 @@ impl BbrApp {
             divider_dragging: self.sidebar.is_dragging(),
             divider_label: crate::sidebar::SIDEBAR_DIVIDER_LABEL.to_string(),
             content_rect: self.performance.content_rect().unwrap_or([0.0; 4]),
+            pane_layout,
+            pane_rects: pane_rect_snapshots,
             window_size: [window_width, window_height],
         }
     }

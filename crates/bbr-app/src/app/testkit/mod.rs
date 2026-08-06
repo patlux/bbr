@@ -57,6 +57,26 @@ impl BbrApp {
         self.apply_mutation(result, cx)
     }
 
+    /// Open the two-pane split over the two active-space tab indices (E2E
+    /// seam into the production controller split path; the split-core lane
+    /// owns the user-facing creation UI).
+    pub fn set_split(
+        &mut self,
+        primary: usize,
+        secondary: usize,
+        cx: &mut Context<Self>,
+    ) -> Option<ControllerEvent> {
+        let result = self.controller.open_split(primary, secondary);
+        self.apply_mutation(result, cx)
+    }
+
+    /// Close the active space's split layout; both tabs and their warm
+    /// sessions stay (E2E seam into the production controller path).
+    pub fn close_split(&mut self, cx: &mut Context<Self>) -> Option<ControllerEvent> {
+        let result = self.controller.close_split();
+        self.apply_mutation(result, cx)
+    }
+
     /// Deterministic dense-list seeding (testkit-only setup, DESIGN.md
     /// §11.6): open `tab_count` more tabs through the production controller
     /// open path, pin the first `pinned_count` identities, immediately

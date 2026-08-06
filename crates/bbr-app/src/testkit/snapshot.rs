@@ -49,6 +49,11 @@ pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange>
         ControllerEvent::TabSuspended { index } => {
             Some(BrowserChange::TabSuspended { index: *index })
         }
+        ControllerEvent::SplitOpened { primary, secondary } => Some(BrowserChange::SplitOpened {
+            primary: *primary,
+            secondary: *secondary,
+        }),
+        ControllerEvent::SplitClosed => Some(BrowserChange::SplitClosed),
         _ => None,
     }
 }
@@ -148,6 +153,14 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             divider_dragging: self.divider_dragging,
             divider_label: self.divider_label.clone(),
             content_rect: self.content_rect,
+            pane_layout: self
+                .pane_layout
+                .map(|layout| bbr_testkit::protocol::PaneLayoutSnapshot {
+                    primary: layout.primary,
+                    secondary: layout.secondary,
+                    focused: layout.focused,
+                }),
+            pane_rects: self.pane_rects.clone(),
             window_size: self.window_size,
         }
     }

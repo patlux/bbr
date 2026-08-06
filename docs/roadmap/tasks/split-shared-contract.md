@@ -58,7 +58,8 @@ Provides/API: WebEngine::set_web_view_rect(WebViewId, WebRect, content_height),
 Exclusive writer paths during this serial packet: bbr-web geometry trait,
   bbr-web-macos geometry adapter, bbr-browser pane facade/fake/tests,
   bbr-app slot/render/testkit/performance integration, bbr-testkit split wire,
-  split E2E, ARCHITECTURE.md, Phase-6/task docs, justfile
+  split E2E plus the existing semantic-id E2E assertion,
+  ARCHITECTURE.md, E2E_ARCHITECTURE.md, Phase-6/task docs, justfile
 Shared integration points: public WebEngine trait, controller facade,
   app composition root, testkit envelope, canonical E2E ordering
 Integration order: land and verify this serial anchor; record its exact main
@@ -82,34 +83,44 @@ Integration order: land and verify this serial anchor; record its exact main
 
 ### Unit and contract
 
-- [ ] `WebEngine` stays object-safe with the per-view geometry method.
-- [ ] Fake/null engines record geometry against the requested live id and
+- [x] `WebEngine` stays object-safe with the per-view geometry method.
+- [x] Fake/null engines record geometry against the requested live id and
       ignore unknown ids.
-- [ ] macOS geometry caching distinguishes views and suppresses unchanged
+- [x] macOS geometry caching distinguishes views and suppresses unchanged
       rect updates without changing flip math.
-- [ ] `pane_layout()` returns `None` for empty state, one view for single-pane,
+- [x] `pane_layout()` returns `None` for empty state, one view for single-pane,
       two ordered views for split state, and the domain-active member as focus.
-- [ ] Close/move/crash-adjacent controller tests leave registry, engine,
+- [x] Close/move/crash-adjacent controller tests leave registry, engine,
       visibility, and pane-layout evidence consistent.
-- [ ] Testkit split requests and snapshot values round-trip as typed data.
+- [x] Testkit split requests and snapshot values round-trip as typed data.
 
 ### Real-app E2E
 
-- [ ] `SetSplit` presents two simultaneous native child views with distinct,
+- [x] `SetSplit` presents two simultaneous native child views with distinct,
       adjacent, positive keyed rects and unchanged session identities.
-- [ ] Window resize independently reframes both pane ids; focus remains derived
+      *(Owner: `just e2e-shell-split-geometry` green; the suite also waits
+      for and asserts the typed `SplitOpened` event.)*
+- [x] Window resize independently reframes both pane ids; focus remains derived
       from the active domain tab.
-- [ ] `CloseSplit` returns to one full-width focused pane, keeps both tabs and
-      warm sessions, and leaves no orphan visible native view.
-- [ ] Existing single-pane sidebar geometry remains exact.
+- [x] `CloseSplit` returns to one full-width focused pane, keeps both tabs and
+      warm sessions, and leaves no orphan visible native view. *(The suite
+      also asserts the typed `SplitClosed` event.)*
+- [x] Existing single-pane sidebar geometry remains exact. *(Owner:
+      `just e2e-shell-sidebar` green.)*
+- [x] Canonical sequential `just e2e` gate is green after remediation; every
+      GUI suite, including split geometry and semantic-id coverage, ran
+      sequentially through the host-wide lock.
 
 ### Performance
 
-- [ ] Existing optimized interaction suites remain green. No new benchmark kind
+- [x] Existing optimized interaction suites remain green. No new benchmark kind
       is introduced because this packet adds no production user invocation;
       split creation/divider interactions belong to the later split-core slice.
-- [ ] Repeated idle frames do not change authoritative keyed geometry or issue
-      redundant macOS frame updates.
+      The report-only host run enforced all absolute ceilings with no
+      regressions.
+- [x] Repeated idle frames do not change authoritative keyed geometry or issue
+      redundant frame updates. Suppression is proven on null/fake/macOS engine
+      paths, and the canonical GUI/performance run stayed green.
 
 ## Completion gates
 
@@ -131,7 +142,8 @@ the `justfile`.
 1. One serial writer implements the smallest complete production seam on
    `main` and runs targeted portable checks while iterating.
 2. Run the affected real-app split/sidebar suites, then the canonical
-   sequential `just e2e` once the slice is stable.
+   sequential `just e2e` once the slice is stable. All are green after the
+   final remediation.
 3. One independent read-only reviewer maps every contract item to code and
    evidence; one focused remediation pass only for concrete findings.
 4. Commit the verified anchor and record its exact hash here and in Phase 6.
@@ -158,20 +170,76 @@ screenshots, textures, app-owned focus duplication, or a GPUI fork.
 
 ```text
 Outcome:
+    Serial shared-contract anchor implemented on main as a reviewable
+    working-tree diff: per-WebViewId geometry (WebEngine::set_web_view_rect),
+    BrowserController::pane_layout() -> Option<PaneLayout>, one slot per
+    visible pane (keyed bbr-native-web-slot-<n>), typed SetSplit/CloseSplit
+    testkit requests, keyed pane geometry evidence (pane_layout + pane_rects)
+    with content_rect preserved as the focused/active view, and the
+    real-app split-geometry E2E suite. No commits made by the writer.
 Commits:
+    None (writer leaves a reviewable working-tree diff; owner commits).
 Functional evidence:
+    just verify green (fmt/check/test/clippy/roadmap/script-tests, 2026-08-06
+    run by the writer) incl. bbr-web 10, bbr-browser 75 (11 new pane-layout /
+    keyed-geometry / missing-member regressions), bbr-testkit 18 (5 new
+    exact-wire-shape + envelope tests), bbr-app 64 unit tests (incl. the
+    NullEngine contract and the PaneGeometry module); cargo clippy -p bbr
+    --features testkit --all-targets -- -D warnings green.
 Real-app E2E:
+    Owner ran `just e2e-shell-split-geometry` and `just e2e-shell-sidebar`
+    green (post-review: split suite also waits for/asserts the typed
+    `SplitOpened`/`SplitClosed` events; the native content-height correction
+    after resize is preserved). Canonical sequential `just e2e` is green;
+    one stale unkeyed semantic-id assertion failed on the first canonical run,
+    was corrected to the rendered keyed id, and the full gate then passed.
 Performance evidence:
+    No production user invocation added → no new benchmark kind. Existing
+    focused-slot content_rect/presentation wiring is preserved; a secondary
+    pane cannot satisfy a pending benchmark. The optimized report-only host
+    run is green with no regressions; representative p95 values: startup
+    403.834 ms, warm tab switch 0.077 ms, sidebar toggle 0.930 ms,
+    sidebar resize 0.002 ms, dense scroll 3.464 ms. This host is explicitly
+    non-canonical, so no canonical-runner claim is made.
 Roadmap/documentation updates:
+    ARCHITECTURE.md keyed geometry + pane layout facts, justfile recipe
+    e2e-shell-split-geometry (+ canonical just e2e position), task packet
+    evidence/ledger. Phase-6 checklist: only the per-WebViewId geometry item
+    is marked complete (fully proven by the green split/sidebar suites); all
+    broader split-interaction items stay open. ROADMAP.md unchanged.
 Open blockers and non-goals:
+    Non-goals honored: no divider drag/keyboard resize/preview/focus-ring
+    polish, no app-owned focus state, no persistence/command-core changes,
+    no protocol version bump (additive wire growth on version 6).
 Worktree state:
+    bbr/main at ec52bf0 with an uncommitted working-tree diff; no sibling
+    worktrees touched.
 
 Planning/read-only:
+    ~1.1 h (estimate; includes doc and codebase survey)
 Implementation:
+    ~1.9 h (estimate)
 Test execution:
+    ~0.4 h (estimate)
 Review:
+    independent reviewer completed; findings remediated by a focused
+    remediation pass (see below)
 Remediation:
+    ~1 h (estimate): NullEngine live-id/keyed-geometry contract + tests;
+    pane_layout split-branch requires both sessions (no false single-pane
+    degradation) + missing-primary/secondary and genuine non-focused-crash
+    regressions; exact wire-shape JSON assertions (incl. fixed-literal
+    deserialization) for SetSplit/CloseSplit/SplitOpened/SplitClosed/
+    PaneLayoutSnapshot/PaneRectSnapshot; typed SplitOpened/SplitClosed event
+    waits in the real-app split E2E; pane-geometry state extracted into the
+    testkit-only performance::pane_geometry module; synthetic unkeyed
+    visible-id compatibility evidence removed and the existing semantic E2E
+    updated to the rendered keyed slot id; E2E_ARCHITECTURE.md and Phase-6/task
+    documentation updated truthfully
 Waiting/retries:
+    none
 Total elapsed:
+    ~4.4 h (estimate; no measured runtime timestamps available)
 Human intervention:
+    none
 ```

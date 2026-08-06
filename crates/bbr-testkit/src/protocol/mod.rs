@@ -31,8 +31,9 @@ pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
 pub use request::Request;
 pub use snapshot::{
-    DenseListSnapshot, LifecycleCounts, ProfileSnapshot, SemanticNode, SemanticRole, Snapshot,
-    SpaceSnapshot, SpaceVisualState, TabSnapshot, TabVisualState,
+    DenseListSnapshot, LifecycleCounts, PaneLayoutSnapshot, PaneRectSnapshot, ProfileSnapshot,
+    SemanticNode, SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, TabSnapshot,
+    TabVisualState,
 };
 
 /// Current protocol version understood by this crate.
@@ -126,4 +127,194 @@ pub enum Response {
     Snapshot(Snapshot),
     /// Failure carrying a human-readable reason.
     Error(Error),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bbr_web::WebViewId;
+    use serde_json::json;
+
+    /// The split requests keep their exact externally-tagged JSON shape on
+    /// the wire (no framework types, no renamed fields), and the fixed
+    /// literals deserialize back into the same typed values.
+    #[test]
+    fn split_requests_have_exact_wire_shape() {
+        let set = Request::SetSplit {
+            primary: 0,
+            secondary: 1,
+        };
+        assert_eq!(
+            serde_json::to_value(&set).unwrap(),
+            json!({ "SetSplit": { "primary": 0, "secondary": 1 } })
+        );
+        assert_eq!(
+            serde_json::from_str::<Request>(r#"{"SetSplit":{"primary":0,"secondary":1}}"#).unwrap(),
+            set
+        );
+        // A unit variant serializes as the bare variant name.
+        assert_eq!(
+            serde_json::to_value(Request::CloseSplit).unwrap(),
+            json!("CloseSplit")
+        );
+        assert_eq!(
+            serde_json::from_str::<Request>("\"CloseSplit\"").unwrap(),
+            Request::CloseSplit
+        );
+    }
+
+    /// The split outcomes keep their exact externally-tagged JSON shape on
+    /// the semantic event stream, and the fixed literals deserialize back
+    /// into the same typed values.
+    #[test]
+    fn split_events_have_exact_wire_shape() {
+        let opened = BrowserChange::SplitOpened {
+            primary: 0,
+            secondary: 1,
+        };
+        assert_eq!(
+            serde_json::to_value(&opened).unwrap(),
+            json!({ "SplitOpened": { "primary": 0, "secondary": 1 } })
+        );
+        assert_eq!(
+            serde_json::from_str::<BrowserChange>(r#"{"SplitOpened":{"primary":0,"secondary":1}}"#)
+                .unwrap(),
+            opened
+        );
+        assert_eq!(
+            serde_json::to_value(BrowserChange::SplitClosed).unwrap(),
+            json!("SplitClosed")
+        );
+        assert_eq!(
+            serde_json::from_str::<BrowserChange>("\"SplitClosed\"").unwrap(),
+            BrowserChange::SplitClosed
+        );
+    }
+
+    /// The keyed pane evidence types keep their exact plain-value JSON shape
+    /// (numeric `WebViewId`s, `null` secondary, plain rect arrays) and the
+    /// fixed literals deserialize back into the same typed values.
+    #[test]
+    fn pane_geometry_snapshots_have_exact_wire_shape() {
+        let split_layout = PaneLayoutSnapshot {
+            primary: WebViewId(1),
+            secondary: Some(WebViewId(2)),
+            focused: WebViewId(2),
+        };
+        assert_eq!(
+            serde_json::to_value(split_layout).unwrap(),
+            json!({ "primary": 1, "secondary": 2, "focused": 2 })
+        );
+        assert_eq!(
+            serde_json::from_str::<PaneLayoutSnapshot>(
+                r#"{"primary":1,"secondary":2,"focused":2}"#
+            )
+            .unwrap(),
+            split_layout
+        );
+        let single_layout = PaneLayoutSnapshot {
+            primary: WebViewId(7),
+            secondary: None,
+            focused: WebViewId(7),
+        };
+        assert_eq!(
+            serde_json::to_value(single_layout).unwrap(),
+            json!({ "primary": 7, "secondary": null, "focused": 7 })
+        );
+        assert_eq!(
+            serde_json::from_str::<PaneLayoutSnapshot>(
+                r#"{"primary":7,"secondary":null,"focused":7}"#
+            )
+            .unwrap(),
+            single_layout
+        );
+        let pane = PaneRectSnapshot {
+            view: WebViewId(1),
+            rect: [260.0, 0.0, 400.0, 700.0],
+        };
+        assert_eq!(
+            serde_json::to_value(pane).unwrap(),
+            json!({ "view": 1, "rect": [260.0, 0.0, 400.0, 700.0] })
+        );
+        assert_eq!(
+            serde_json::from_str::<PaneRectSnapshot>(
+                r#"{"view":1,"rect":[260.0,0.0,400.0,700.0]}"#
+            )
+            .unwrap(),
+            pane
+        );
+    }
+
+    /// The split shared contract rides the existing wire version (additive
+    /// growth): a full snapshot carrying keyed pane evidence still
+    /// round-trips through the real JSON framing. Exact per-type shapes are
+    /// asserted above; this is the whole-envelope evidence.
+    #[test]
+    fn split_snapshot_round_trips_with_keyed_pane_evidence() {
+        let rects = vec![
+            PaneRectSnapshot {
+                view: WebViewId(1),
+                rect: [260.0, 0.0, 400.0, 700.0],
+            },
+            PaneRectSnapshot {
+                view: WebViewId(2),
+                rect: [660.0, 0.0, 400.0, 700.0],
+            },
+        ];
+        let layout = PaneLayoutSnapshot {
+            primary: WebViewId(1),
+            secondary: Some(WebViewId(2)),
+            focused: WebViewId(2),
+        };
+        let snapshot = Snapshot {
+            pane_layout: Some(layout),
+            pane_rects: rects.clone(),
+            content_rect: [660.0, 0.0, 400.0, 700.0],
+            ..serde_json::from_str(
+                r#"{"url":null,"title":null,"loading":false,"can_go_back":false,
+                "can_go_forward":false,"web_view_hosted":true,"active_profile":1,
+                "active_profile_title":"Default","active_profile_hue":"cobalt",
+                "active_space":1,"tabs":[],"profiles":[],"spaces":[],
+                "active_tab_index":null,"active_web_view":1,"engine_sessions":2,
+                "lifecycle_counts":{"active":0,"warm":0,"suspended":0,"discarded":0},
+                "dense":{"item_count":0,"pinned_rows":0,"first_rendered":0,
+                "rendered_rows":0,"window_rows":0,"scroll_anchor":0,
+                "active_visible":false,"active_row":null},"engine_kind":"native-wkwebview",
+                "chrome_focused":false,"shell_modes":{"theme":"dark","contrast":"standard",
+                "density":"normal"},"tab_states":[],"row_titles":[],"pinned_count":0,
+                "command_bar_hint":null,"command_profile_hint":null,"drag_source":null,
+                "drag_slot":null,"drag_space":null,"drag_valid":false,"space_states":[],
+                "space_titles":[],"visible_ids":["bbr-root"],"semantics":[],
+                "command_bar_mode":"Inactive","command_bar_text":"",
+                "sidebar_visible":true,"sidebar_width":260.0,"sidebar_min":200.0,
+                "sidebar_default":260.0,"sidebar_max":360.0,"content_min":64.0,
+                "divider_dragging":false,"divider_label":"Sidebar divider",
+                "content_rect":[660.0,0.0,400.0,700.0],"pane_layout":null,
+                "pane_rects":[],"window_size":[1080.0,700.0]}"#,
+            )
+            .unwrap()
+        };
+        let decoded_snapshot: Snapshot =
+            serde_json::from_str(&serde_json::to_string(&snapshot).unwrap()).unwrap();
+        assert_eq!(decoded_snapshot, snapshot);
+        assert_eq!(decoded_snapshot.pane_layout.unwrap().focused, WebViewId(2));
+        assert_eq!(decoded_snapshot.pane_rects, rects);
+    }
+
+    /// The new pane geometry types keep their plain-value shape (no
+    /// framework types leak onto the wire).
+    #[test]
+    fn pane_geometry_is_a_plain_value() {
+        let layout = PaneLayoutSnapshot {
+            primary: WebViewId(7),
+            secondary: None,
+            focused: WebViewId(7),
+        };
+        assert_eq!(layout.clone(), layout);
+        let pane = PaneRectSnapshot {
+            view: WebViewId(7),
+            rect: [0.0, 0.0, 1.0, 1.0],
+        };
+        assert_eq!(pane.clone(), pane);
+    }
 }

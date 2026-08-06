@@ -124,12 +124,16 @@ pub enum WebEvent {
 /// adding `+ Send` would be a lie because the concrete engine and its
 /// delegate objects are `MainThreadOnly`.
 pub trait WebEngine {
-    /// Position the native web surface.
+    /// Position the native web surface of one live [`WebViewId`].
     ///
     /// `rect` is in host layout coordinates (top-left origin, points); the
     /// implementation flips it for AppKit using `content_height` (window
-    /// content height in points) via [`flip_rect`].
-    fn attach_slot(&mut self, rect: WebRect, content_height: f32);
+    /// content height in points) via [`flip_rect`]. Geometry is addressed
+    /// per view: an unknown id is a no-op, a destroyed id loses its cached
+    /// geometry, and an unchanged rect produces no repeated native frame
+    /// update. A newly created view keeps a zero/default frame until its
+    /// keyed slot publishes.
+    fn set_web_view_rect(&mut self, id: WebViewId, rect: WebRect, content_height: f32);
 
     /// Create a web view inside `profile` and kick off `initial_url`.
     fn create_web_view(&mut self, id: WebViewId, profile: ProfileId, initial_url: &str);
@@ -295,6 +299,7 @@ mod tests {
         let mut engine: Box<dyn WebEngine> = Box::new(MockEngine::default());
         let _sink: Box<dyn FnMut(WebEvent)> = Box::new(|_| {});
         engine.set_events(_sink);
+        engine.set_web_view_rect(WebViewId(7), WebRect::new(0.0, 0.0, 100.0, 80.0), 700.0);
         engine.focus_native_web(WebViewId(7));
         engine.focus_host_chrome();
         assert_eq!(engine.live_session_count(), 0);
@@ -307,8 +312,9 @@ mod tests {
     }
 
     impl WebEngine for MockEngine {
-        fn attach_slot(&mut self, rect: WebRect, content_height: f32) {
-            self.logs.push(format!("slot {rect} in {content_height}pt"));
+        fn set_web_view_rect(&mut self, id: WebViewId, rect: WebRect, content_height: f32) {
+            self.logs
+                .push(format!("rect {id:?} {rect} in {content_height}pt"));
         }
 
         fn create_web_view(&mut self, id: WebViewId, profile: ProfileId, initial_url: &str) {

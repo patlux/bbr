@@ -90,6 +90,12 @@ pub struct TestSnapshot {
     pub divider_label: String,
     /// The last native slot rect handed to the engine (WKWebView frame).
     pub content_rect: [f32; 4],
+    /// The authoritative pane layout (primary/secondary/focused ids), or
+    /// `None` when no live pane is rendered.
+    pub pane_layout: Option<bbr_browser::PaneLayout>,
+    /// Keyed per-pane native geometry in pane-layout order (the split shared
+    /// contract evidence: pane ids and their real WKWebView frames).
+    pub pane_rects: Vec<bbr_testkit::protocol::PaneRectSnapshot>,
     pub window_size: [f32; 2],
 }
 
@@ -110,6 +116,7 @@ pub fn visible_ids(
     command_profile_hint: Option<&str>,
     drag_slot: Option<usize>,
     dense: crate::dense::DenseRenderState,
+    pane_layout: Option<bbr_browser::PaneLayout>,
 ) -> Vec<String> {
     let mut ids: Vec<String> = vec!["bbr-root".into()];
     if sidebar_visible {
@@ -155,10 +162,15 @@ pub fn visible_ids(
     if chrome_focused && command_bar_mode.is_active() {
         ids.push("bbr-command-cursor".into());
     }
-    // The native content slot renders whenever the selected tab hosts a
-    // live native session (DESIGN.md §13: the glass).
-    if browser.active_view.is_some() {
-        ids.push("bbr-native-web-slot".into());
+    // The native content slots render whenever a pane layout exists (the
+    // focused/active view hosts a live native session). Every rendered slot
+    // id is keyed by its `WebViewId`; `visible_ids` must not advertise an
+    // unkeyed element that GPUI did not render.
+    if let Some(layout) = pane_layout {
+        ids.push(format!("bbr-native-web-slot-{}", layout.primary.0));
+        if let Some(secondary) = layout.secondary {
+            ids.push(format!("bbr-native-web-slot-{}", secondary.0));
+        }
     }
     // Rendered rows only: every pinned row (the fixed block) plus the
     // bounded regular window the shell actually built (§11.6) — a dense
@@ -304,6 +316,7 @@ mod tests {
             None,
             None,
             dense_all(tabs.len()),
+            None,
         );
         for required in [
             "bbr-root",
@@ -351,6 +364,7 @@ mod tests {
             None,
             None,
             dense_all(1),
+            None,
         );
         for required in ["bbr-crash-panel", "bbr-crash-reload", "bbr-crash-close"] {
             assert!(
@@ -370,6 +384,7 @@ mod tests {
             None,
             None,
             dense_all(1),
+            None,
         );
         assert!(ids.contains(&"bbr-command-cursor".to_string()));
     }
@@ -392,6 +407,7 @@ mod tests {
             None,
             None,
             dense_all(0),
+            None,
         );
         let chips = crate::shell::space::space_groups(&browser, usize::MAX)
             .into_iter()
@@ -430,6 +446,7 @@ mod tests {
             None,
             None,
             dense_all(0),
+            None,
         );
         for required in [
             "bbr-space-list",
@@ -457,6 +474,7 @@ mod tests {
             None,
             None,
             dense_all(0),
+            None,
         );
         assert!(!hidden.iter().any(|id| id.starts_with("bbr-space")));
     }
@@ -476,6 +494,7 @@ mod tests {
             Some("in Profile · Private"),
             None,
             dense_all(0),
+            None,
         );
         assert!(with_hint.contains(&"bbr-command-profile-hint".to_string()));
         let without = visible_ids(
@@ -487,6 +506,7 @@ mod tests {
             None,
             None,
             dense_all(0),
+            None,
         );
         assert!(!without.contains(&"bbr-command-profile-hint".to_string()));
     }
@@ -518,6 +538,7 @@ mod tests {
             None,
             None,
             stale,
+            None,
         );
         assert!(
             !ids.iter().any(|id| id.starts_with("bbr-tab-row")),

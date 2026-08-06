@@ -13,6 +13,7 @@ use gpui::{div, prelude::*, Context, MouseButton, Render, Window};
 use crate::components;
 use crate::slot::NativeWebViewSlot;
 use crate::theme::{ContrastMode, Theme, ThemeMode};
+use bbr_web::WebViewId;
 
 use super::BbrApp;
 
@@ -38,16 +39,59 @@ impl Render for BbrApp {
         };
         let sidebar = self.sidebar_surface(&theme, sidebar_width, chrome_focused, window, cx);
 
-        let content: gpui::AnyElement = if browser.active_view.is_some() {
-            let slot = NativeWebViewSlot::new(self.engine.clone());
+        let content: gpui::AnyElement = if let Some(layout) = self.controller.pane_layout() {
+            // The authoritative pane layout drives the native surface:
+            // one slot per visible pane, each addressing its own
+            // `WebViewId`. Single-pane geometry is exactly the previous
+            // sidebar/content contract; split renders two equal,
+            // adjacent, strictly positive horizontal panes with no
+            // divider or polish in this anchor.
             #[cfg(feature = "testkit")]
-            let slot = slot
-                .on_geometry(self.performance.slot_geometry_callback())
-                .on_presented(
-                    self.performance.presentation_pending(),
-                    self.performance.presentation_callback(),
-                );
-            slot.into_any()
+            {
+                let mut keep = vec![layout.primary];
+                if let Some(secondary) = layout.secondary {
+                    keep.push(secondary);
+                }
+                self.performance.prune_pane_rects(&keep);
+            }
+            let build_slot = |this: &BbrApp, id: WebViewId, _focused: bool| {
+                let slot = NativeWebViewSlot::new(this.engine.clone(), id);
+                #[cfg(feature = "testkit")]
+                let slot = slot.on_keyed_geometry(this.performance.keyed_geometry_callback());
+                #[cfg(feature = "testkit")]
+                let slot = if _focused {
+                    // The focused/active slot feeds the legacy
+                    // `content_rect` and the presentation-commit path; a
+                    // secondary pane must never satisfy either.
+                    slot.on_geometry(this.performance.slot_geometry_callback())
+                        .on_presented(
+                            this.performance.presentation_pending(),
+                            this.performance.presentation_callback(),
+                        )
+                } else {
+                    slot
+                };
+                slot.into_any()
+            };
+            match layout.secondary {
+                Some(_) => div()
+                    .flex()
+                    .flex_row()
+                    .flex_grow()
+                    .size_full()
+                    .child(build_slot(
+                        self,
+                        layout.primary,
+                        layout.focused == layout.primary,
+                    ))
+                    .child(build_slot(
+                        self,
+                        layout.secondary.expect("split has two panes"),
+                        layout.focused == layout.secondary.expect("split has two panes"),
+                    ))
+                    .into_any(),
+                None => build_slot(self, layout.primary, true),
+            }
         } else if browser
             .active_index
             .and_then(|index| browser.tabs.get(index))

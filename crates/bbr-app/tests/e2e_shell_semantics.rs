@@ -80,7 +80,7 @@ fn shell_semantic_tree_and_fallbacks() {
                 "bbr-status",
                 "bbr-sidebar-toggle",
                 "bbr-sidebar-divider",
-                "bbr-native-web-slot",
+                "bbr-native-web-slot-1",
             ],
         );
 

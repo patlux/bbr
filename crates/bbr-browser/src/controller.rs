@@ -23,6 +23,7 @@ use bbr_web::{ProfileId, WebAction, WebEvent, WebViewId};
 
 use crate::nav::NavState;
 use crate::outcome::ControllerEvent;
+use crate::pane::PaneLayout;
 use crate::session::SessionRegistry;
 use crate::{ControllerError, EngineRef, ViewIdAllocator};
 
@@ -379,6 +380,38 @@ impl BrowserController {
         self.nav.entry(view).or_default().apply(&event);
         self.check_invariants();
         ControllerEvent::WebEvent { event }
+    }
+
+    /// The authoritative pane layout of the active space: the native views
+    /// the shell must frame and the focused pane (the browser command
+    /// target). Derived only from the domain split, the active tab, and the
+    /// session registry — the app owns no independent focus value.
+    ///
+    /// - No active tab or no live session → `None`.
+    /// - Single pane → `primary` is the active tab's view, no `secondary`.
+    /// - Split → `primary`/`secondary` follow the domain split order and
+    ///   `focused` is the active tab's view (a split member by domain
+    ///   invariant).
+    pub fn pane_layout(&self) -> Option<PaneLayout> {
+        let space = self.browser.space(self.active_space)?;
+        let focused = space
+            .active_tab
+            .and_then(|tab| self.registry.view_for_tab(tab))?;
+        match space.split {
+            Some(split) => Some(PaneLayout {
+                primary: self.registry.view_for_tab(split.primary)?,
+                // A split must own **both** live sessions: a missing
+                // secondary never degrades the split into a false single
+                // pane — the honest answer is no pane layout at all.
+                secondary: Some(self.registry.view_for_tab(split.secondary)?),
+                focused,
+            }),
+            None => Some(PaneLayout {
+                primary: focused,
+                secondary: None,
+                focused,
+            }),
+        }
     }
 
     // ---- Snapshots --------------------------------------------------------

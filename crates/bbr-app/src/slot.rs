@@ -1,26 +1,37 @@
 //! The `NativeWebViewSlot` GPUI element.
 //!
 //! This is the load-bearing integration: a custom public GPUI [`Element`]
-//! placed in the chrome layout where the web page goes. On every frame GPUI
-//! hands it its window-relative `Bounds<Pixels>`; the element forwards that
-//! rect (as a [`bbr_web::WebRect`]) to the engine, which frames the native
-//! WKWebView. Painting a native surface means there is nothing for GPUI to
-//! draw — the WKWebView shows through the Metal layer.
+//! placed in the chrome layout where one web page pane goes. On every frame
+//! GPUI hands it its window-relative `Bounds<Pixels>`; the element forwards
+//! that rect (as a [`bbr_web::WebRect`]) to the engine, which frames the
+//! native WKWebView **for that view's id** — the split shell renders one
+//! slot per visible pane, so each pane is framed independently. Painting a
+//! native surface means there is nothing for GPUI to draw — the WKWebView
+//! shows through the Metal layer.
 //!
 //! No GPUI fork is required: this uses only public `Element`/`Window` APIs.
 
 use std::rc::Rc;
 
-use bbr_web::{WebEngine, WebRect};
+use bbr_web::{WebEngine, WebRect, WebViewId};
 use gpui::{
     App, Bounds, Element, ElementId, GlobalElementId, InspectorElementId, IntoElement, LayoutId,
     Pixels, Style, Window,
 };
 
-/// A layout node that occupies the web content area and reports its bounds
+/// The stable keyed slot id (DESIGN.md §15): `bbr-native-web-slot-<n>` where
+/// `<n>` is the numeric [`WebViewId`].
+pub fn native_slot_id(view: WebViewId) -> ElementId {
+    ElementId::Name(format!("bbr-native-web-slot-{}", view.0).into())
+}
+
+/// A layout node that occupies one web-content pane and reports its bounds
 /// to the engine each frame (only when they change, so an idle window makes
 /// no `setFrame:` traffic).
 pub struct NativeWebViewSlot {
+    /// The live web view this slot frames. Geometry is keyed by this id so
+    /// two split panes address their own WKWebView and never frame a sibling.
+    view_id: WebViewId,
     /// Receives `(rect, content_height)` on the main thread when the slot's
     /// bounds change. Kept as a closure so the element stays framework-free
     /// plumbing: `prepaint` runs on the main thread during GPUI's draw.
@@ -29,25 +40,41 @@ pub struct NativeWebViewSlot {
     presentation_pending: Option<Rc<dyn Fn() -> bool>>,
     #[cfg(feature = "testkit")]
     presented: Option<Rc<dyn Fn(WebRect)>>,
-    /// Testkit-only: observes every engine-received rect (not only during a
-    /// pending measurement) so the semantic snapshot can assert the actual
-    /// native content geometry after layout changes.
+    /// Testkit-only: observes every engine-received rect **keyed by this
+    /// slot's view id** (not only during a pending measurement) so the
+    /// semantic snapshot can assert the actual native pane geometry after
+    /// layout changes. Wired on every slot; the focused-slot `on_geometry`
+    /// observer additionally feeds the legacy `content_rect`.
+    #[cfg(feature = "testkit")]
+    keyed_geometry: Option<Rc<dyn Fn(WebViewId, WebRect)>>,
+    /// Testkit-only: observes the rect of this slot for the legacy
+    /// `content_rect` (focused/active pane). Wired only on the focused slot
+    /// so a secondary pane can never satisfy an existing benchmark.
     #[cfg(feature = "testkit")]
     geometry: Option<Rc<dyn Fn(WebRect)>>,
 }
 
 impl NativeWebViewSlot {
-    /// Create a slot that pushes `rect`/`content_height` into `engine`.
-    pub fn new<E: WebEngine + 'static + ?Sized>(engine: Rc<std::cell::RefCell<E>>) -> Self {
+    /// Create a slot that publishes `rect`/`content_height` for `view_id`
+    /// into `engine`.
+    pub fn new<E: WebEngine + 'static + ?Sized>(
+        engine: Rc<std::cell::RefCell<E>>,
+        view_id: WebViewId,
+    ) -> Self {
         let publish: Rc<dyn Fn(WebRect, f32)> = Rc::new(move |rect, content_height| {
-            engine.borrow_mut().attach_slot(rect, content_height);
+            engine
+                .borrow_mut()
+                .set_web_view_rect(view_id, rect, content_height);
         });
         Self {
+            view_id,
             publish,
             #[cfg(feature = "testkit")]
             presentation_pending: None,
             #[cfg(feature = "testkit")]
             presented: None,
+            #[cfg(feature = "testkit")]
+            keyed_geometry: None,
             #[cfg(feature = "testkit")]
             geometry: None,
         }
@@ -64,9 +91,20 @@ impl NativeWebViewSlot {
         self
     }
 
-    /// Testkit-only: observe every rect this slot hands to the engine (the
-    /// WKWebView frame), so the snapshot's `content_rect` is the real native
-    /// geometry, never a computed estimate.
+    /// Testkit-only: observe every rect this slot hands to the engine
+    /// (the WKWebView frame), keyed by the slot's view id, so the semantic
+    /// snapshot's `pane_rects` is the real native geometry per pane, never a
+    /// computed estimate.
+    #[cfg(feature = "testkit")]
+    pub fn on_keyed_geometry(mut self, callback: Rc<dyn Fn(WebViewId, WebRect)>) -> Self {
+        self.keyed_geometry = Some(callback);
+        self
+    }
+
+    /// Testkit-only: observe this slot's rect for the legacy focused/active
+    /// `content_rect` (the WKWebView frame of the focused pane). Wire this
+    /// only on the focused slot so a secondary pane never overwrites the
+    /// content contract.
     #[cfg(feature = "testkit")]
     pub fn on_geometry(mut self, callback: Rc<dyn Fn(WebRect)>) -> Self {
         self.geometry = Some(callback);
@@ -87,10 +125,11 @@ impl Element for NativeWebViewSlot {
     type PrepaintState = ();
 
     fn id(&self) -> Option<ElementId> {
-        // Publish a stable id so the inspector and tests can target the slot.
-        // The `bbr-` prefix follows DESIGN.md §15 (the semantic id shared by
-        // the testkit snapshot and the future platform Accessibility bridge).
-        Some(ElementId::Name("bbr-native-web-slot".into()))
+        // Publish a stable keyed id so the inspector and tests can target the
+        // slot and two split panes stay distinct elements. The `bbr-` prefix
+        // follows DESIGN.md §15 (the semantic id shared by the testkit
+        // snapshot and the future platform Accessibility bridge).
+        Some(native_slot_id(self.view_id))
     }
 
     fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
@@ -132,6 +171,10 @@ impl Element for NativeWebViewSlot {
         );
         let content_height = f32::from(window.bounds().size.height);
         (self.publish)(rect, content_height);
+        #[cfg(feature = "testkit")]
+        if let Some(keyed_geometry) = self.keyed_geometry.clone() {
+            keyed_geometry(self.view_id, rect);
+        }
         #[cfg(feature = "testkit")]
         if let Some(geometry) = self.geometry.clone() {
             geometry(rect);

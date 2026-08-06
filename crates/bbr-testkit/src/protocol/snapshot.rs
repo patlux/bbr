@@ -202,6 +202,25 @@ pub struct SemanticNode {
     pub children: Vec<SemanticNode>,
 }
 
+/// The authoritative pane layout on the wire (the split shared contract):
+/// primary/secondary/focused `WebViewId`s. `secondary` is `None` in
+/// single-pane mode; the focused pane is the domain active tab's view.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PaneLayoutSnapshot {
+    pub primary: WebViewId,
+    pub secondary: Option<WebViewId>,
+    pub focused: WebViewId,
+}
+
+/// Keyed per-pane native geometry: the last engine-received WKWebView frame
+/// of one pane, ordered by pane layout (primary, then secondary) in the
+/// snapshot's `pane_rects` — never map iteration or creation order.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct PaneRectSnapshot {
+    pub view: WebViewId,
+    pub rect: [f32; 4],
+}
+
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
 /// Deliberately typed (no free-form JSON) so the harness can assert on
@@ -310,6 +329,13 @@ pub struct Snapshot {
     pub divider_label: String,
     /// The last native slot rect handed to the engine (WKWebView frame).
     pub content_rect: [f32; 4],
+    /// The authoritative pane layout (primary/secondary/focused ids), or
+    /// `None` when no live pane is rendered (empty/crashed state).
+    pub pane_layout: Option<PaneLayoutSnapshot>,
+    /// Keyed per-pane native geometry in pane-layout order (primary, then
+    /// secondary). Empty in single-pane mode only when the pane has not yet
+    /// published a frame; the focused pane's entry equals `content_rect`.
+    pub pane_rects: Vec<PaneRectSnapshot>,
     /// Window content size in points (diagnostics only).
     pub window_size: [f32; 2],
 }

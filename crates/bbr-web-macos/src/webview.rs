@@ -56,9 +56,11 @@ pub struct WebEngineWk {
     sink: delegate::EventSink,
     /// Profile → website data store cache. Stores outlive individual views.
     stores: HashMap<ProfileId, Retained<WKWebsiteDataStore>>,
-    /// Last GPUI slot geometry, applied to every live session.
-    last_rect: WebRect,
-    rect_published: bool,
+    /// Per-view geometry cache: the last host-layout rect published for each
+    /// live view. An unchanged rect for a view produces no repeated
+    /// `setFrame:` call; destroying a view removes its cached rect; unknown
+    /// ids are no-ops.
+    geometry: HashMap<WebViewId, WebRect>,
 }
 
 impl WebEngineWk {
@@ -81,8 +83,7 @@ impl WebEngineWk {
             sessions: HashMap::new(),
             sink: Rc::new(RefCell::new(None)),
             stores: HashMap::new(),
-            last_rect: WebRect::default(),
-            rect_published: false,
+            geometry: HashMap::new(),
         }
     }
 
@@ -120,8 +121,11 @@ impl WebEngineWk {
         store
     }
 
-    fn current_frame(&self) -> objc2_foundation::NSRect {
-        self.host.frame_rect(self.last_rect)
+    /// A frame for a newly created view: zero until its keyed slot publishes
+    /// geometry (the view starts hidden, so the default frame is never
+    /// visible).
+    fn initial_frame(&self) -> objc2_foundation::NSRect {
+        self.host.frame_rect(WebRect::default())
     }
 
     fn session(&self, id: WebViewId) -> Option<&NativeWebSession> {
@@ -178,15 +182,21 @@ impl WebEngineWk {
 }
 
 impl WebEngine for WebEngineWk {
-    fn attach_slot(&mut self, rect: WebRect, _content_height: f32) {
+    fn set_web_view_rect(&mut self, id: WebViewId, rect: WebRect, _content_height: f32) {
         self.assert_main_thread();
-        if self.rect_published && self.last_rect == rect {
+        // Geometry is addressed per live view: unknown ids are no-ops, and
+        // only that view's frame changes (never a sibling pane). An unchanged
+        // rect is skipped, so an idle window makes no `setFrame:` traffic.
+        if !self.sessions.contains_key(&id) {
+            log::warn!("unknown web view {id:?}");
             return;
         }
-        self.rect_published = rect.width.max(rect.height) > 0.0;
-        self.last_rect = rect;
-        let frame = self.current_frame();
-        for session in self.sessions.values() {
+        if self.geometry.get(&id) == Some(&rect) {
+            return;
+        }
+        let frame = self.host.frame_rect(rect);
+        self.geometry.insert(id, rect);
+        if let Some(session) = self.sessions.get_mut(&id) {
             session.web_view.setFrame(frame);
         }
     }
@@ -206,7 +216,7 @@ impl WebEngine for WebEngineWk {
         let web_view = unsafe {
             WKWebView::initWithFrame_configuration(
                 WKWebView::alloc(mtm),
-                self.current_frame(),
+                self.initial_frame(),
                 &config,
             )
         };
@@ -236,6 +246,7 @@ impl WebEngine for WebEngineWk {
 
     fn destroy_web_view(&mut self, id: WebViewId) {
         self.assert_main_thread();
+        self.geometry.remove(&id);
         if let Some(session) = self.sessions.remove(&id) {
             session.teardown();
         } else {

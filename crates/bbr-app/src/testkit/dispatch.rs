@@ -88,6 +88,20 @@ pub(crate) fn dispatch(
             browser_mutation(window.update(cx, |view, window, cx| view.reopen_tab(window, cx)))
         }
 
+        // The split shared-contract seam: open/close the two-pane layout
+        // through the production controller split path (the split-core lane
+        // owns the user-facing creation UI). Both arms sync engine
+        // visibility, notify the view, and broadcast the typed outcome.
+        Request::SetSplit { primary, secondary } => {
+            browser_mutation(window.update(cx, |view, _window, cx| {
+                view.set_split(primary, secondary, cx)
+            }))
+        }
+
+        Request::CloseSplit => {
+            browser_mutation(window.update(cx, |view, _window, cx| view.close_split(cx)))
+        }
+
         Request::PinTab { index } => {
             browser_mutation(window.update(cx, |view, _window, cx| view.pin_tab(index, cx)))
         }

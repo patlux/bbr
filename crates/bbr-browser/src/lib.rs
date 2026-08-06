@@ -45,6 +45,7 @@ pub(crate) mod fake;
 pub(crate) mod harness;
 mod nav;
 mod outcome;
+mod pane;
 mod session;
 mod snapshot;
 #[cfg(test)]
@@ -55,6 +56,8 @@ mod controller_dense_tests;
 #[cfg(test)]
 mod controller_event_tests;
 #[cfg(test)]
+mod controller_pane_tests;
+#[cfg(test)]
 mod controller_tests;
 
 pub use bbr_domain::{ProfileHue, SpaceId, TabLifecycle};
@@ -62,6 +65,7 @@ pub use controller::BrowserController;
 pub use error::ControllerError;
 pub use nav::NavState;
 pub use outcome::ControllerEvent;
+pub use pane::PaneLayout;
 pub use session::{SessionError, SessionRegistry};
 pub use snapshot::{
     ControllerSnapshot, LifecycleCounts, ProfileSnapshot, SpaceSnapshot, TabSnapshot,

@@ -15,11 +15,17 @@ use bbr_testkit::protocol::{
 };
 use bbr_web::{WebEvent, WebRect, WebViewId};
 
+pub mod pane_geometry;
+use pane_geometry::PaneGeometry;
+
 pub type PresentationSink = Box<dyn FnMut(PresentationMeasurement)>;
 
 #[derive(Clone)]
 pub struct PerformanceProbe {
     inner: Rc<RefCell<State>>,
+    /// Keyed per-pane native geometry (testkit-only split seam); see
+    /// [`pane_geometry`].
+    pane_geometry: PaneGeometry,
 }
 
 struct State {
@@ -107,6 +113,7 @@ impl PerformanceProbe {
                 queued: VecDeque::new(),
                 sink: None,
             })),
+            pane_geometry: PaneGeometry::default(),
         }
     }
 
@@ -214,6 +221,23 @@ impl PerformanceProbe {
     /// last paint (the WKWebView frame), for the semantic snapshot.
     pub fn observe_slot_rect(&self, rect: WebRect) {
         self.inner.borrow_mut().content_rect = Some(rect);
+    }
+
+    /// The keyed per-pane geometry observed since the last prune.
+    pub fn pane_rects(&self) -> BTreeMap<WebViewId, WebRect> {
+        self.pane_geometry.snapshot()
+    }
+
+    /// Drop keyed geometry for every view outside the current pane layout,
+    /// so destroyed/hidden panes leave no orphan geometry evidence.
+    pub fn prune_pane_rects(&self, keep: &[WebViewId]) {
+        self.pane_geometry.prune(keep);
+    }
+
+    /// A callback that observes every pane slot rect keyed by view id
+    /// (testkit-only keyed geometry observation for the split seam).
+    pub fn keyed_geometry_callback(&self) -> Rc<dyn Fn(WebViewId, WebRect)> {
+        self.pane_geometry.callback()
     }
 
     /// The last engine-received native content rect, as `[x, y, w, h]`.

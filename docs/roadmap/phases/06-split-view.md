@@ -11,14 +11,18 @@ Two existing tabs can be viewed and navigated side by side with clear focus and 
 Split work is not yet safe to fan out. The bounded serial
 [split-view shared-contract packet](../tasks/split-shared-contract.md) extracts
 the authoritative controller pane facade, per-`WebViewId` native geometry, and
-typed testkit proof on `main`. After that exact anchor lands, split-core may own
-new split-focused modules in a sibling worktree; native geometry and GPUI
-composition remain serial integration surfaces. See the
-[parallel-delivery contract](../../parallel-delivery.md).
+typed testkit proof on `main`. The per-`WebViewId` geometry contract is
+implemented and verified (real-app split-geometry suite, single-pane sidebar
+regression, canonical sequential `just e2e`, and report-only optimized
+performance gate are green on this host); the phase's broader split interaction
+items remain open. After that exact
+anchor lands, split-core may own new split-focused modules in a sibling
+worktree; native geometry and GPUI composition remain serial integration
+surfaces. See the [parallel-delivery contract](../../parallel-delivery.md).
 
 ## Checklist
 
-- [ ] Extend the WebEngine geometry contract to address each WebViewId independently.
+- [x] Extend the WebEngine geometry contract to address each WebViewId independently. *(Proven by the keyed `set_web_view_rect` contract on null/fake/macOS engines, the controller pane-layout tests, and the real-app split-geometry suite.)*
 - [ ] Split the active tab left or right with an existing or new secondary tab.
 - [ ] Show and clip two native WKWebViews simultaneously.
 - [ ] Add a resizable divider without continuous idle invalidation.

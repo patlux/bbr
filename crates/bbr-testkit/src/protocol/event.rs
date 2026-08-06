@@ -60,6 +60,13 @@ pub enum BrowserChange {
     TabReopened {
         index: usize,
     },
+    /// A two-pane split was opened over the two active-space tab indices.
+    SplitOpened {
+        primary: usize,
+        secondary: usize,
+    },
+    /// The active space's split layout was closed (both tabs stay open).
+    SplitClosed,
     TabMoved {
         to_space: TestSpaceId,
         recreated: bool,

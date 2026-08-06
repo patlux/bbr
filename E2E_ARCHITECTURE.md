@@ -18,7 +18,7 @@ responder).
 
 | Fact | Evidence |
 |---|---|
-| Workspace compiles and all unit/contract tests pass | `just verify` green: bbr-app 2, **bbr-domain 40**, **bbr-browser 47**, bbr-fixtures 4, bbr-testkit 13, bbr-web 9, bbr-web-macos 1 passed |
+| Workspace compiles and all unit/contract tests pass | `just verify` green: bbr-app 64, **bbr-domain 40**, **bbr-browser 75**, bbr-fixtures 4, bbr-testkit 18, bbr-web 10, bbr-web-macos 1 passed |
 | Real-app GUI suites pass sequentially | `just e2e` → `SMOKE PASSED`, `TABS E2E PASSED`, `PROFILES E2E PASSED`: navigation/focus/resize, warm-session reuse and close destruction, cookie isolation, profile-boundary recreation, and suspend cleanup |
 | All previously-missing files exist | `crates/bbr-app/Cargo.toml`, `crates/bbr-app/src/webview|delegate…` under `bbr-web-macos` are present; the workspace memberships are complete |
 | `bbr-web` contract crate | `#![forbid(unsafe_code)]`, unit tests incl. `flip_rect`, `normalize_url`, object-safety proof |
@@ -107,6 +107,7 @@ JSON; no macOS, no GPUI, no WebKit).
 | `Navigate { url }` | Load the controller's active tab (same path as the command bar) + broadcasts `CommandBarChanged` |
 | `CreateProfile` / `CreateSpace` / `ActivateSpace` | Create isolated identities/workspaces and switch the controller's active space |
 | `OpenTab` / `SelectTab` / `CloseTab` / `MoveTab` / `SuspendTab` | Semantic controller mutations for setup and non-input scenarios |
+| `SetSplit { primary, secondary }` / `CloseSplit` | Test-only seam into the production controller split path: open/close the two-pane layout over the two active-space tab indices (both tabs keep live sessions; the domain active tab stays the focused pane). The user-facing split-creation UI belongs to the later split-core slice |
 | `WebAction(Back/Forward/Reload/Stop)` | Engine action on the active view |
 | `ActivateCommandBar` / `FocusWeb` | The E2E readers of Cmd-L / Escape |
 | `SetCommandBarText { text }` | Set command-bar text directly (avoids per-keystroke round trips) + broadcasts `CommandBarChanged` |
@@ -129,7 +130,9 @@ canGoForward/page-crash/navigation-failure) · `ChromeFocusChanged {
 chrome_focused }` (emitted by the app's focus sink after every focus mutation,
 so it always agrees with the snapshot) · `CommandBarChanged { mode, text }` ·
 `BrowserChanged` with typed profile/space creation and activation plus tab
-open/select/close/move/suspend outcomes from the shared app mutation path.
+open/select/close/move/suspend and split open/close outcomes
+(`SplitOpened { primary, secondary }` / `SplitClosed`) from the shared app
+mutation path.
 `Event::Quitting` is declared in the protocol but **not yet emitted** (the
 harness asserts clean exit by process status instead).
 
@@ -163,6 +166,12 @@ Snapshot {
   divider_dragging: bool,    // §15 divider drag state
   divider_label: String,     // stable label shared with future Accessibility
   content_rect: [f32; 4],    // last engine-received WKWebView frame (x,y,w,h)
+  pane_layout: Option<PaneLayoutSnapshot>, // authoritative pane layout
+                               // (primary/secondary/focused WebViewIds); None
+                               // when no live pane renders
+  pane_rects: Vec<PaneRectSnapshot>, // keyed per-pane native frames in pane
+                               // order (primary, then secondary); the focused
+                               // pane's entry equals content_rect
   window_size: [f32; 2],     // points
   semantics: Vec<SemanticNode>, // §15 internal semantic tree (roles/names/values/
                                // enabled/selected/focused + hierarchy); internal model
@@ -171,9 +180,15 @@ Snapshot {
 }
 ```
 
-FUTURE (planned protocol growth, not yet implemented): the split surface
-(`SplitTabs`/`CloseSplit`),
-`WebEvaluate` (whitelisted DOM helpers), `AdvanceClock`/
+The split surface is implemented as the **test seam** above (`SetSplit` /
+`CloseSplit` requests, `SplitOpened`/`SplitClosed` events, and the keyed
+`pane_layout` / `pane_rects` snapshot evidence), covered by the split-geometry
+suite (§7h). The **production** split-creation UI and its interaction /
+performance benchmark kinds belong to the later split-core slice and are not
+part of this anchor.
+
+FUTURE (planned protocol growth, not yet implemented): `WebEvaluate`
+(whitelisted DOM helpers), `AdvanceClock`/
 `ResetIds`, `TerminateWebProcess`, `Screenshot`, and the richer event set
 (`TabAdded/TabClosed/…`, `PersistenceFlushed`, …). `--bbr-clock` is parsed but
 a no-op until the `TimeSource` seam lands.
@@ -534,6 +549,39 @@ p95 / 100 ms max warm budget, and is asserted in the full-gate sample counts.
 
 ---
 
+## 7h. The shell-split-geometry suite (`bbr-app/tests/e2e_shell_split_geometry.rs`)
+
+One `#[ignore]`d macOS-only suite (shared harness in `tests/e2e_common/`;
+`just e2e-shell-split-geometry`) proves the Phase-6 serial anchor over real
+WKWebViews: the keyed per-`WebViewId` geometry contract and the authoritative
+controller `pane_layout()`. It synchronizes on typed events and paint-driven
+keyed snapshot rects under deadlines (no sleeps/pixels) and preserves the
+post-resize native content-height baseline (the pane itself, not the window
+bounds):
+
+1. **SetSplit**: the typed `SplitOpened { primary, secondary }` event is
+   awaited; two simultaneous native panes publish distinct, adjacent, strictly
+   positive keyed rects in pane-layout order with unchanged session
+   identities, the focused pane is the domain-active pre-split tab, its rect
+   is the legacy `content_rect`, and the keyed slot ids
+   (`bbr-native-web-slot-1/2`) replace the single unkeyed one.
+2. **Member selection**: selecting the other split member switches the
+   focused pane (and `content_rect`) without dissolving the split.
+3. **Resize**: `SetWindowSize` reframes both pane ids independently; both
+   panes share the post-resize native content height (the corrected
+   baseline).
+4. **CloseSplit**: the typed `SplitClosed` event is awaited; one full-width
+   focused rect returns (exact single-pane sidebar contract), both tabs stay
+   open and warm, no orphan keyed geometry or hidden slot id remains.
+
+The single-pane regression (exact sidebar/content contract before any split)
+rides the same suite and the independently green `just e2e-shell-sidebar` run.
+No new benchmark kind is introduced: this anchor adds no production user
+invocation; split-creation/divider interactions belong to the later
+split-core slice.
+
+---
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature
@@ -572,13 +620,14 @@ milestones, samples, budgets, testkit transport, or product assertions.
 ## 9. Commands (implemented)
 
 ```bash
-just e2e           # canonical sequential GUI gate: smoke, tabs, profiles, shell-tabs, shell-spaces, shell-sidebar, shell-organize, shell-hover, shell-dense, performance
+just e2e           # canonical sequential GUI gate: smoke, tabs, profiles, shell-tabs, shell-spaces, shell-sidebar, shell-split-geometry, shell-organize, shell-hover, shell-dense, performance
 just e2e-smoke     # baseline navigation/focus/resize
 just e2e-tabs      # multi-tab/session behavior
 just e2e-profiles  # native profile isolation, moves, and suspension
 just e2e-shell-tabs    # visible vertical-tab surface (pointer/keyboard/empty)
 just e2e-shell-spaces  # visible profile/space surface (pointer + keyboard suites)
 just e2e-shell-sidebar # adjustable/collapsible sidebar surface (drag, keys, collapse, clamp)
+just e2e-shell-split-geometry # keyed per-WebViewId split panes, focus, resize, close (split anchor)
 just e2e-shell-hover    # pointer hover/press states + the internal §15 semantic tree
 just e2e-perf      # optimized startup and interaction latency budgets
 just e2e-perf-full # bounded repeated canonical gate (COLD_STARTUP_SAMPLES launches + 30-sample interactions)
@@ -608,7 +657,7 @@ runner + suites.
 | Synthetic keystroke fidelity drift | `DispatchKeystroke` goes through GPUI's real `dispatch_keystroke` path; FUTURE: tier-2 NSEvent posting in the webkit suite |
 | macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner. Verified locally on the Xcode 16.4.0 Metal toolchain in a display-attached session |
 | Event-ring memory growth | Fixed cap (4096) + client cursors; snapshot on demand |
-| Protocol evolution | `PROTOCOL_VERSION = 5` added command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types. `PROTOCOL_VERSION = 6` adds per-tab `pinned`/`loading`/`crashed` flags and per-row `tab_states` + resolved `shell_modes` to snapshots, the pointer-path `ClickTab`/`ClickTabClose` and `ReopenTab`/`PinTab` requests, deterministic `InjectWebEvent` (rides the real event transport), and the `TabSelectPointer`/`TabReopen` benchmark kinds. Additive growth after v6 (still version 6): snapshots expose the rendered `bbr-*` `visible_ids`, per-row `row_titles` (after §4 truncation), `active_profile_title`, the typed sidebar geometry (`sidebar_width`/`sidebar_min`/`sidebar_default`/`sidebar_max`, `content_min`, `divider_dragging`, `divider_label`) and the last engine-received native `content_rect`; `TabActivateKeyboard`, `SidebarResize`, and `SidebarRestore` join the benchmark kinds; `DragSidebarDivider`/`FocusSidebarDivider` join the pointer seams and `FlushFrame` the paint drivers; the hover/press seams (`HoverTabRow`/`UnhoverTabRow`/`PressTabRow`/`ReleaseTabRow`) plus the `BenchmarkHoverTab`/`BenchmarkPressTab` kinds and the typed §15 `semantics` tree join the protocol; `ServerFrame::Response` is boxed internally (JSON wire shape unchanged); future additive growth stays typed |
+| Protocol evolution | `PROTOCOL_VERSION = 5` added command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types. `PROTOCOL_VERSION = 6` adds per-tab `pinned`/`loading`/`crashed` flags and per-row `tab_states` + resolved `shell_modes` to snapshots, the pointer-path `ClickTab`/`ClickTabClose` and `ReopenTab`/`PinTab` requests, deterministic `InjectWebEvent` (rides the real event transport), and the `TabSelectPointer`/`TabReopen` benchmark kinds. Additive growth after v6 (still version 6): snapshots expose the rendered `bbr-*` `visible_ids`, per-row `row_titles` (after §4 truncation), `active_profile_title`, the typed sidebar geometry (`sidebar_width`/`sidebar_min`/`sidebar_default`/`sidebar_max`, `content_min`, `divider_dragging`, `divider_label`) and the last engine-received native `content_rect`; `TabActivateKeyboard`, `SidebarResize`, and `SidebarRestore` join the benchmark kinds; `DragSidebarDivider`/`FocusSidebarDivider` join the pointer seams and `FlushFrame` the paint drivers; the hover/press seams (`HoverTabRow`/`UnhoverTabRow`/`PressTabRow`/`ReleaseTabRow`) plus the `BenchmarkHoverTab`/`BenchmarkPressTab` kinds and the typed §15 `semantics` tree join the protocol; the split shared contract adds the `SetSplit`/`CloseSplit` requests, `SplitOpened`/`SplitClosed` outcomes, and the keyed `pane_layout`/`pane_rects` snapshot fields (test seam only — production split UI/perf kinds stay future); `ServerFrame::Response` is boxed internally (JSON wire shape unchanged); future additive growth stays typed |
 | Dedicated-runner / external gaps | No dedicated stable macOS runner or public trend publication is provisioned yet. `canonical_host_model` is therefore empty, so the >15% relative baseline rule stays report-only until a runner is named; display refresh is recorded `null` with an explicit reason (window is offscreen and the OS refresh API is not linked). Absolute ceilings are enforced on every machine. Persisted warm startup stays open until the persistence repository lands — a test-only seed that bypasses the future persistence path is not acceptance evidence. |
 
 ---

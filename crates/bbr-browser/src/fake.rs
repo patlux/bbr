@@ -19,7 +19,8 @@ use crate::EngineRef;
 /// One recorded engine call, in order.
 #[derive(Debug, Clone, PartialEq)]
 pub enum EngineOp {
-    AttachSlot {
+    SetRect {
+        view: WebViewId,
         rect: WebRect,
     },
     Create {
@@ -78,6 +79,8 @@ type EventSink = Rc<RefCell<Option<Box<dyn FnMut(WebEvent)>>>>;
 pub struct FakeEngine {
     ops: Rc<RefCell<Vec<EngineOp>>>,
     sessions: HashMap<WebViewId, FakeSession>,
+    /// Per-view geometry cache: the last rect each live view received.
+    geometry: HashMap<WebViewId, WebRect>,
     sink: EventSink,
 }
 
@@ -93,6 +96,7 @@ impl FakeEngine {
         Self {
             ops: Rc::new(RefCell::new(Vec::new())),
             sessions: HashMap::new(),
+            geometry: HashMap::new(),
             sink: Rc::new(RefCell::new(None)),
         }
     }
@@ -185,8 +189,20 @@ impl FakeEngine {
 }
 
 impl WebEngine for FakeEngine {
-    fn attach_slot(&mut self, rect: WebRect, _content_height: f32) {
-        self.ops.borrow_mut().push(EngineOp::AttachSlot { rect });
+    fn set_web_view_rect(&mut self, id: WebViewId, rect: WebRect, _content_height: f32) {
+        // Geometry is addressed per live view: unknown ids are no-ops and an
+        // unchanged rect produces no repeated frame update (recorded as a
+        // duplicate op, exactly like the macOS engine skips `setFrame:`).
+        if !self.sessions.contains_key(&id) {
+            return;
+        }
+        if self.geometry.get(&id) == Some(&rect) {
+            return;
+        }
+        self.geometry.insert(id, rect);
+        self.ops
+            .borrow_mut()
+            .push(EngineOp::SetRect { view: id, rect });
     }
 
     fn create_web_view(&mut self, id: WebViewId, profile: ProfileId, initial_url: &str) {
@@ -206,6 +222,7 @@ impl WebEngine for FakeEngine {
         if self.sessions.remove(&id).is_none() {
             panic!("fake engine: destroy of unknown session {id:?}");
         }
+        self.geometry.remove(&id);
         self.ops.borrow_mut().push(EngineOp::Destroy { view: id });
     }
 

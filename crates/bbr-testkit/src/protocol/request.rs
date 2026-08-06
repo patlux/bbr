@@ -37,6 +37,16 @@ pub enum Request {
     CloseTab { index: usize },
     /// Reopen the most recently closed tab (fresh session, preserved identity).
     ReopenTab,
+    /// Open the two-pane split over the two active-space tab indices: both
+    /// panes become visible with live native sessions, the domain active
+    /// tab stays the focused pane. Test-only seam into the production
+    /// controller split path (the split-core lane owns the user-facing
+    /// creation UI); proves keyed per-`WebViewId` native geometry.
+    SetSplit { primary: usize, secondary: usize },
+    /// Close the active space's split layout: single-pane mode returns, both
+    /// tabs stay open, the non-focused pane becomes a warm session. The
+    /// focused pane (the domain active tab) keeps full-width geometry.
+    CloseSplit,
     /// Pin the tab at the active-space index (moves into the pinned region).
     PinTab { index: usize },
     /// Unpin the tab at the active-space index (moves to the end of the

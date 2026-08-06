@@ -1,13 +1,18 @@
 # BBR — Architecture (current implementation)
 
-Status: **describes the implemented workspace through the Phase-4 shell slices and the integrated portable command core**: native GPUI +
+Status: **describes the implemented workspace through the Phase-4 shell slices, the integrated portable command core, and the Phase-6 split-view shared contract**: native GPUI +
 WKWebView embedding, portable browser orchestration, controller-backed real
 tabs, profile-isolated multi-session WebKit, the adjustable/collapsible
 sidebar, tab organization, the dense-500 list, the pointer-state +
-internal-semantic-model slice, and dependency-free command parsing/ranking.
-Verified against the actual
+internal-semantic-model slice, dependency-free command parsing/ranking, and
+the per-`WebViewId` native geometry contract with the authoritative pane
+layout plus the typed `SetSplit`/`CloseSplit` testkit seam. Verified against the actual
 GPUI crate (`gpui 0.2.2`), the `objc2-web-kit 0.3.2` bindings, the Swift
-reference at `PWBrowser`, and green `just verify` + sequential `just e2e` runs.
+reference at `PWBrowser`, and green `just verify` runs. The real-app
+split-geometry suite, single-pane sidebar regression, canonical sequential
+`just e2e`, and optimized report-only performance gate are green on this host.
+The host is not a canonical performance runner, so no canonical benchmark
+baseline claim is made.
 
 ---
 
@@ -134,24 +139,38 @@ is encoded in the justfile as `BBR_XCODE_DEVELOPER_DIR`.
      `performKeyEquivalent:` while the web view has keyboard focus.
    - Accessibility, video, IME, selection, and process isolation are preserved
      because we never screenshot/composite.
-3. **Position & resize via a bounds-reporting element.** `NativeWebViewSlot`
-   (`bbr-app/src/slot.rs`), a custom public GPUI `Element`, fills the content
-   area right of the sidebar. In `prepaint` GPUI hands it `Bounds<Pixels>`
-   relative to the window; the element forwards the rect as a `bbr_web::WebRect`
-   to the engine's `attach_slot`. The bridge converts it to an AppKit frame via
-   the **y-flip** (`bbr_web::flip_rect`, unit-tested) using the root view's
-   actual height (AppKit origin bottom-left, GPUI origin top-left).
-   - The slot has a stable `ElementId` (`"native-web-slot"`).
-   - `attach_slot` writes the frame only when the rect changed, so an idle
-     window produces no `setFrame:` traffic (no polling loop).
+3. **Position & resize via bounds-reporting elements.** `NativeWebViewSlot`
+   (`bbr-app/src/slot.rs`), a custom public GPUI `Element`, fills one content
+   pane. Each slot is **keyed by its `WebViewId`** (stable element id
+   `bbr-native-web-slot-<n>`); in `prepaint` GPUI hands it
+   `Bounds<Pixels>` relative to the window and the element forwards the rect
+   as a `bbr_web::WebRect` to the engine's `set_web_view_rect(id, rect, …)`,
+   so each visible native session is framed independently. The bridge
+   converts the rect to an AppKit frame via the **y-flip**
+   (`bbr_web::flip_rect`, unit-tested) using the root view's actual height
+   (AppKit origin bottom-left, GPUI origin top-left).
+   - Every slot has a stable keyed `ElementId`
+     (`bbr-native-web-slot-<n>`), and the semantic snapshot's `visible_ids`
+     exposes exactly those rendered keyed ids.
+   - The shell renders one slot per visible pane from the controller's
+     authoritative [`PaneLayout`]: one full-width slot in single-pane mode
+     (geometry identical to the pre-split contract) and two equal, adjacent
+     horizontal slots in split mode. The focused/active slot additionally
+     feeds the legacy `content_rect` and the presentation-commit path; a
+     secondary pane never satisfies an existing benchmark.
+   - `set_web_view_rect` writes the frame only when that view's rect
+     changed, so an idle window produces no `setFrame:` traffic (no polling
+     loop) and a per-view rect update never re-frames a sibling pane.
 4. **No polling loop.** GPUI is display-link driven; the slot publishes bounds
    only on change.
 
 ### Fullscreen / scale / occlusion / resize
 
-- Window resize → GPUI layout re-runs → slot bounds change → bridge updates the
-  frame. Verified by the E2E smoke resize step (`SetWindowSize` → snapshot shows
-  new geometry; the native view re-frames next frame).
+- Window resize → GPUI layout re-runs → every visible slot's bounds change
+  → the bridge updates each pane's frame independently. Verified by the E2E
+  smoke resize step (`SetWindowSize` → snapshot shows new geometry; the
+  native view re-frames next frame) and the split-geometry suite (a resize
+  reframes both pane ids independently).
 - Scale-factor change / fullscreen / occlusion: WKWebView handles these
   natively; nothing extra beyond the frame update.
 
@@ -239,7 +258,7 @@ pub enum WebEvent {
 }
 
 pub trait WebEngine {            // object-safe; main-thread-only
-    fn attach_slot(&mut self, rect: WebRect, content_height: f32);
+    fn set_web_view_rect(&mut self, id: WebViewId, rect: WebRect, content_height: f32);
     fn create_web_view(&mut self, id: WebViewId, profile: ProfileId, initial_url: &str);
     fn destroy_web_view(&mut self, id: WebViewId);
     fn show(&mut self, id: WebViewId, visible: bool);
@@ -251,11 +270,15 @@ pub trait WebEngine {            // object-safe; main-thread-only
 }
 ```
 
-Note the trait shape differs from the early blueprint: `attach_slot` carries
-`content_height` (so the flip never drifts from the true container height and
-can be unit-tested without macOS), and zoom/warm/suspend/lifecycle methods are
-deferred to later phases — the trait remains deliberately narrow. The event
-sink is deliberately *not* `Send` (the concrete engine and its delegates are
+Note the trait shape: `set_web_view_rect` carries `content_height` (so the
+flip never drifts from the true container height and can be unit-tested
+without macOS) and addresses geometry **per live `WebViewId`** — the split
+shared contract. Unknown ids are no-ops, a destroyed id loses its cached
+geometry, an unchanged per-view rect produces no repeated native frame
+update, and a newly created view keeps a zero/default frame until its keyed
+slot publishes. Zoom/warm/suspend/lifecycle methods are deferred to later
+phases — the trait remains deliberately narrow. The event sink is
+ deliberately *not* `Send` (the concrete engine and its delegates are
 `MainThreadOnly`). An object-safety test proves the trait works behind
 `Box<dyn WebEngine>`.
 
@@ -280,6 +303,12 @@ src/
   the WKWebView, its retained delegate, profile identity, and visibility. Every
   create/show/action/focus/destroy operation resolves the requested id first;
   teardown removes KVO before detaching and releasing the view.
+- **Per-view geometry cache:** `HashMap<WebViewId, WebRect>` holds the last
+  host-layout rect published for each live view. `set_web_view_rect` frames
+  only the addressed view, skips unchanged rects (no repeated `setFrame:`),
+  removes the cached rect on destroy, and ignores unknown ids. A newly
+  created view starts with a zero/default frame until its keyed slot
+  publishes. Never frames a sibling view; the y-flip math is unchanged.
 - **Profile stores:** `dataStoreForIdentifier` uses a stable UUID derived from
   `ProfileId`, or `nonPersistentDataStore` when `EngineOptions.non_persistent`
   is set — the app enables non-persistent mode whenever a `--bbr-test-token`
@@ -334,8 +363,11 @@ brand block, command bar (mirrors the live URL; inline cursor; accepts typing,
 backspace, enter), the controller-backed tab surface, a status line
 (`shell::status_line`, incl. "⚠ Web content process terminated"), and the
 sidebar toggle. `CommandBarMode` separates `Inactive`, current-tab
-`Location`, and staged `NewTab` intent. The content area is the
-`NativeWebViewSlot`, the empty-space pane (§11.8), or the crash panel (§10.7).
+`Location`, and staged `NewTab` intent. The content area renders one
+`NativeWebViewSlot` per visible pane from the controller's authoritative
+`pane_layout()` (a single full-width slot, or two equal adjacent horizontal
+slots for a split — no divider/polish in this anchor), or the empty-space
+pane (§11.8) and crash panel (§10.7) when no live pane exists.
 The sidebar rail itself is the adjustable, collapsible `SidebarGeometry`
 (`crates/bbr-app/src/sidebar.rs`): DESIGN §5/§11.4 min/default/max widths
 (200/260/360 pt) with a 64 pt native-content floor, narrow-window clamping
@@ -559,12 +591,27 @@ returns exactly one typed `ControllerEvent`, and a read-only `snapshot()`
 publishes the tab list, active view, and live-session count for UI and E2E.
 
 Testability: the deterministic `FakeEngine` (in `crate::fake`,
-`#[cfg(test)]`-only) records every engine call into an op log, owns fake
-sessions, rejects duplicate creation and missing-session actions, and emits
-controlled `WebEvent`s through the registered sink. Because the controller
-drives the engine through the same `dyn` seam the app uses, 47 crate tests
-prove registry, controller, event-routing, active-space visibility, profile
-move, split, lifecycle, and snapshot policy without a display server.
+`#[cfg(test)]`-only) records every engine call into an op log — including
+keyed geometry ops (`SetRect { view, rect }`) — owns fake sessions, rejects
+duplicate creation and missing-session actions, and emits controlled
+`WebEvent`s through the registered sink. Because the controller drives the
+engine through the same `dyn` seam the app uses, 75 crate tests prove
+registry, controller, event-routing, active-space visibility, profile move,
+split, lifecycle, snapshot policy, and the authoritative `pane_layout()`
+query without a display server.
+
+The controller exposes a public plain-value [`PaneLayout`]
+(`primary`, `secondary: Option<WebViewId>`, `focused`) via
+`BrowserController::pane_layout() -> Option<PaneLayout>`, derived **only**
+from the active space's domain split, its active tab, and the session
+registry: no active tab/session → `None`; single pane → one view; split →
+two ordered views with the domain-active member as focus. A split layout
+**requires both live sessions**: a missing primary or secondary session
+never degrades an open split into a false single pane — it publishes no
+layout at all until the split dissolves or the session is recreated. The
+app owns no independent focused-pane state — the focused pane is the
+browser command target because it is the domain active tab's view. This is
+the serial composition surface the split-core lane consumes.
 
 ---
 
@@ -585,9 +632,11 @@ just e2e-profiles # real profile isolation, moves, and suspend lifecycle
 just e2e-shell-tabs    # real vertical-tab surface: open/select/close/reopen
 just e2e-shell-spaces  # real profile/space switching (pointer + keyboard)
 just e2e-shell-sidebar # real sidebar drag/keyboard/collapse/geometry clamp
+just e2e-shell-split-geometry # keyed per-WebViewId panes, focus, resize, close (split anchor)
 just e2e-perf   # optimized startup and production-path interaction budgets
 just e2e        # canonical sequential GUI gate (smoke, tabs, profiles,
-                 # shell-tabs, shell-spaces, shell-sidebar, performance)
+                 # shell-tabs, shell-spaces, shell-sidebar, shell-split-geometry,
+                 # performance)
 ```
 
 All recipes are wrapped in GNU `timeout --kill-after=10s` with

@@ -49,6 +49,14 @@ pub fn reopen_tab() -> Request {
     Request::ReopenTab
 }
 
+pub fn set_split(primary: usize, secondary: usize) -> Request {
+    Request::SetSplit { primary, secondary }
+}
+
+pub fn close_split() -> Request {
+    Request::CloseSplit
+}
+
 pub fn pin_tab(index: usize) -> Request {
     Request::PinTab { index }
 }
