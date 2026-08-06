@@ -18,6 +18,20 @@ architecture behavior.>
 - <Adjacent capability intentionally excluded.>
 - <Later-phase behavior and its canonical owner.>
 
+## Parallel-lane contract
+
+Complete this section when the packet may run in a sibling worktree; otherwise
+state `Not parallelized`.
+
+```text
+Base commit:
+Depends on:
+Provides/API:
+Exclusive paths:
+Shared integration points:
+Integration order:
+```
+
 ## Constraints
 
 - <Architecture and dependency boundaries.>

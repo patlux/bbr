@@ -13,6 +13,7 @@ Before implementation work:
 5. Read [DESIGN.md](DESIGN.md) before UI work: it is the canonical visual contract (tokens, states, components, assertion ids).
 6. Inspect `git status` and preserve unrelated work.
 7. Follow [docs/development-workflow.md](docs/development-workflow.md) for bounded slices, ownership, review, test cadence, recovery, and phase closeout.
+8. When more than one branch/worktree is active, follow [docs/parallel-delivery.md](docs/parallel-delivery.md) for lane ownership, the serial integration kernel, base commits, handoff, integration order, and the host-wide GUI gate.
 
 ## Delivery workflow
 
@@ -20,6 +21,7 @@ Before implementation work:
 - Default lifecycle: one exclusive writer, then one independent read-only reviewer. Run one remediation writer only for concrete findings, followed by a focused recheck.
 - Do not run a separate final-audit agent for every ordinary slice. Reserve full audit for phase closeout, high-risk architecture/security/isolation/native-boundary work, disputed evidence, or ambiguous recovery.
 - Exactly one writer may own a branch/worktree. Transfer ownership only after explicit settlement, stop, or user-authorized handoff naming the preserved state and new owner. Never inspect or mutate another writer's isolated worktree.
+- Roadmap phases are acceptance milestones, not a global serial lock. Independent bounded lanes may run in sibling worktrees only from a recorded clean base commit and only when their exclusive paths, shared integration points, and merge order are explicit. Shared contracts remain serial.
 - Use targeted tests while iterating. Run the affected real-app E2E and performance scenarios before an intermediate commit. Run the canonical sequential `just e2e` once after the complete slice is stable; run `just e2e-perf-full` at phase closeout or when canonical repeated evidence is required.
 - Never weaken tests, budgets, validators, architecture boundaries, or acceptance criteria to shorten the workflow. The optimization removes redundant orchestration and duplicate gates, not evidence.
 - Record a delivery ledger and measured timing where runtime evidence exists; label reconstructed timing as an estimate.

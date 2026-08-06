@@ -14,7 +14,7 @@ reference at `PWBrowser`, and green `just verify` + sequential `just e2e` runs.
 
 | Decision | Choice | Why |
 |---|---|---|
-| Workspace shape | Cargo workspace, seven crates: `bbr-web`, `bbr-web-macos`, `bbr-app`, `bbr-domain`, `bbr-browser`, `bbr-testkit`, `bbr-fixtures` | Minimal set that exercises the full integration (chrome, native engine, portable model, orchestration, E2E control) |
+| Workspace shape | Cargo workspace, nine crates: the seven implemented product/test crates plus dependency-free portable landing zones `bbr-command` and `bbr-persistence` | The implemented shell remains unchanged while Phase-5/7 portable cores can evolve in isolated worktrees behind explicit integration contracts |
 | Chrome vs. pages | GPUI owns chrome; `WKWebView` is a native AppKit child view | Product principle; never texture-capture web content |
 | Embedding strategy | WKWebView is a **subview of GPUI's root `NSView`**, sized by a bounds-reporting GPUI element | Keeps the responder chain, key equivalents, accessibility, video/IME/process isolation intact |
 | Native-view slot | A custom public GPUI `Element` (`NativeWebViewSlot`) publishes its own window-relative bounds each frame | Uses only public GPUI APIs; no GPUI fork. **Fulfils the "no forking GPUI" stop-condition path** |
@@ -40,6 +40,8 @@ bbr/
     bbr-browser/        # lib: portable controller: tabs ↔ disposable web sessions
     bbr-testkit/        # lib: typed E2E protocol, gateway server + client (unix sockets)
     bbr-fixtures/       # lib+bin: deterministic loopback HTTP fixture server
+    bbr-command/        # portable Phase-5 landing zone; behavior not implemented yet
+    bbr-persistence/    # portable Phase-7 landing zone; behavior not implemented yet
 ```
 
 ### Dependency direction (strict, acyclic)
@@ -601,6 +603,10 @@ just e2e     → exit 0 — smoke, tabs, profiles, shell-tabs, shell-spaces,
 The testkit-feature path also passes `cargo clippy -p bbr --features testkit
 --all-targets -- -D warnings`. GUI suites are deliberately sequential: two
 AppKit windows resizing concurrently can interfere through screen clamping.
+Every bounded GUI/performance recipe additionally uses
+`scripts/with_gui_lock.py`, whose advisory key derives from Git's common
+directory; sibling worktrees therefore serialize on the same host-wide gate
+while retaining each recipe's hard timeout and process-tree cleanup.
 
 ### Run the app
 

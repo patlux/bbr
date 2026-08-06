@@ -16,8 +16,9 @@ ROADMAP.md
 - **Track:** one durable concern spanning one or more phases.
 - **Task packet:** bounded implementation work that should fit one or a few logical commits.
 
-Task packets follow [the reusable template](templates/task-packet.md) and the
-[development workflow](../development-workflow.md). Existing packets may retain
+Task packets follow [the reusable template](templates/task-packet.md), the
+[development workflow](../development-workflow.md), and—when multiple worktrees
+are active—the [parallel-delivery contract](../parallel-delivery.md). Existing packets may retain
 their current shape, but every newly activated or substantially rewritten packet
 must state outcome, scope, non-goals, constraints, evidence, completion gates,
 iteration policy, and blocked stop condition.
@@ -52,9 +53,11 @@ Avoid volatile timings unless performance is the acceptance criterion. Implement
 1. Place the item under the nearest existing track.
 2. Create a task packet from [the template](templates/task-packet.md) when implementation needs sequencing, explicit non-goals, or several commits.
 3. Bound the packet to one independently valuable vertical slice; split phase-wide work before implementation.
-4. Add a new track only for a durable concern.
-5. Add a new phase only for a distinct user-visible or architectural milestone.
-6. Link upward so every task is discoverable from `ROADMAP.md`.
+4. For a parallel lane, record its exact base commit, dependencies, provided
+   API, exclusive paths, shared integration points, evidence, and merge order.
+5. Add a new track only for a durable concern.
+6. Add a new phase only for a distinct user-visible or architectural milestone.
+7. Link upward so every task is discoverable from `ROADMAP.md`.
 
 ## Regular review cadence
 

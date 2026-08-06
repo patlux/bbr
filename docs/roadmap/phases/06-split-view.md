@@ -6,6 +6,14 @@ Parent: [Roadmap](../../../ROADMAP.md) · Prerequisites: [Phase 2](02-browser-co
 
 Two existing tabs can be viewed and navigated side by side with clear focus and no orphan sessions.
 
+## Parallel lane
+
+Split work is not yet safe to fan out. First land a bounded serial packet that
+extracts the shared controller facade and per-`WebViewId` geometry contract.
+After that anchor, domain/controller implementation may own new split-focused
+modules in a sibling worktree; native geometry and GPUI composition integrate
+serially. See the [parallel-delivery contract](../../parallel-delivery.md).
+
 ## Checklist
 
 - [ ] Extend the WebEngine geometry contract to address each WebViewId independently.

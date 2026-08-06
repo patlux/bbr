@@ -12,6 +12,7 @@ e2e_full_timeout := env_var_or_default("BBR_E2E_FULL_TIMEOUT", "15m")
 e2e_dense_timeout := env_var_or_default("BBR_E2E_DENSE_TIMEOUT", "8m")
 run_timeout := env_var_or_default("BBR_RUN_TIMEOUT", "8h")
 xcode_developer_dir := env_var_or_default("BBR_XCODE_DEVELOPER_DIR", "/Applications/Xcode-16.4.0.app/Contents/Developer")
+gui_gate := "python3 scripts/with_gui_lock.py --"
 
 # Launch the development build. Override BBR_RUN_TIMEOUT for longer sessions.
 run:
@@ -32,54 +33,58 @@ clippy:
 roadmap:
     timeout --kill-after=10s {{check_timeout}} python3 scripts/check_roadmap.py
 
+script-tests:
+    timeout --kill-after=10s {{test_timeout}} python3 -m unittest scripts/test_with_gui_lock.py -v
+    timeout --kill-after=10s {{check_timeout}} python3 -m py_compile scripts/check_roadmap.py scripts/with_gui_lock.py scripts/test_with_gui_lock.py
+
 e2e-smoke:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_smoke -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_smoke -- --ignored --nocapture
 
 e2e-tabs:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_tabs -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_tabs -- --ignored --nocapture
 
 e2e-profiles:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_profiles -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_profiles -- --ignored --nocapture
 
 e2e-shell-tabs:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_tabs -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_tabs -- --ignored --nocapture
 
 e2e-shell-spaces:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_spaces -- --ignored --nocapture
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_spaces_keyboard -- --ignored --nocapture
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_spaces_hint -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_spaces -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_spaces_keyboard -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_spaces_hint -- --ignored --nocapture
 
 e2e-shell-sidebar:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_sidebar -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_sidebar -- --ignored --nocapture
 
 e2e-shell-organize:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_organize -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_organize -- --ignored --nocapture
 
 e2e-shell-hover:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_semantics -- --ignored --nocapture
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_hover -- --ignored --nocapture
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_semantic_branches -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_semantics -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_hover -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_semantic_branches -- --ignored --nocapture
 
 e2e-shell-dense:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_dense -- --ignored --nocapture
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_dense_edge -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_dense -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_dense_edge -- --ignored --nocapture
 
 e2e-perf:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance -- --ignored --nocapture
 
 # Full repeated canonical benchmark: COLD_STARTUP_SAMPLES cold launches to
 # build the startup/page-ready distributions plus the 30-sample interaction
 # matrix. Materially longer than the short gate; bounded by BBR_E2E_FULL_TIMEOUT.
 e2e-perf-full:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_full_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance_full -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_full_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance_full -- --ignored --nocapture
 
 # Injected-delay self-test: proves the budget gate fails under a deterministic
 # testkit-only delay and turns green again after removal without budget change.
 e2e-perf-inject:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{e2e_full_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance_inject -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_full_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance_inject -- --ignored --nocapture
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
 e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-organize e2e-shell-hover e2e-shell-dense e2e-perf
 
-verify: fmt check test clippy roadmap
+verify: fmt check test clippy roadmap script-tests

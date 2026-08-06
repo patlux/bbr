@@ -6,9 +6,17 @@ Parent: [Roadmap](../../../ROADMAP.md) · Quality: [Performance/release track](.
 
 Browser organization restores safely after normal quit, force quit, and schema upgrades without eagerly creating every web session.
 
+## Parallel lane
+
+After the [parallel-delivery foundation](../tasks/parallel-delivery-foundation.md)
+lands, activate persistence core as a bounded lane rooted at that clean commit.
+`crates/bbr-persistence/**` plus checked-in migration fixtures are its exclusive
+surface; domain DTOs, app startup/shutdown composition, migration numbering,
+and command-history provider integration remain serial integration points.
+
 ## Checklist
 
-- [ ] Add `bbr-persistence` with SQLite repository interfaces and versioned migrations.
+- [ ] Add `bbr-persistence` with SQLite repository interfaces and versioned migrations. *(The dependency-free crate landing zone exists with the parallel-delivery foundation; repository/schema behavior remains open.)*
 - [ ] Persist profiles, spaces, tabs, pin/order state, active tabs, and recently closed tabs.
 - [ ] Persist window geometry, sidebar state, and split layouts.
 - [ ] Persist history and per-site settings/zoom.

@@ -492,6 +492,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "bbr-command"
+version = "0.1.0"
+
+[[package]]
 name = "bbr-domain"
 version = "0.1.0"
 dependencies = [
@@ -500,6 +504,10 @@ dependencies = [
 
 [[package]]
 name = "bbr-fixtures"
+version = "0.1.0"
+
+[[package]]
+name = "bbr-persistence"
 version = "0.1.0"
 
 [[package]]

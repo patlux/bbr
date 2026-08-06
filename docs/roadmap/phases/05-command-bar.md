@@ -6,9 +6,17 @@ Parent: [Roadmap](../../../ROADMAP.md) · UI standards: [UI design-system track]
 
 One fast, keyboard-first surface handles navigation, search, tab switching, spaces, history, and browser commands.
 
+## Parallel lane
+
+After the [parallel-delivery foundation](../tasks/parallel-delivery-foundation.md)
+lands, activate command core as a bounded lane rooted at that clean commit.
+`crates/bbr-command/**` is its exclusive portable surface; app composition,
+history-provider wiring, testkit snapshots, and command-bar GPUI remain serial
+integration points. The lane packet must state the exact base and merge order.
+
 ## Checklist
 
-- [ ] Add portable `bbr-command` registry, parsing, ranking, and result types.
+- [ ] Add portable `bbr-command` registry, parsing, ranking, and result types. *(The dependency-free crate landing zone exists with the parallel-delivery foundation; behavior remains open.)*
 - [ ] Implement the full location, new-tab, switcher, and action result modes. *(Location editing and staged New Tab intent exist; ranking/results do not.)*
 - [ ] Select the current URL on `Cmd-L`.
 - [x] Make `Cmd-T` enter a distinct new-tab flow without creating a tab before Enter.

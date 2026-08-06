@@ -8,6 +8,8 @@ members = [
     "crates/bbr-app",
     "crates/bbr-domain",
     "crates/bbr-browser",
+    "crates/bbr-command",
+    "crates/bbr-persistence",
 ]
 
 [workspace.package]

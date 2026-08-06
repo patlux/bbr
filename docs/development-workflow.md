@@ -5,7 +5,9 @@ optimizes for short feedback loops without weakening real-app E2E, performance,
 architecture, or roadmap acceptance.
 
 Repository rules in [AGENTS.md](../AGENTS.md) remain authoritative. Roadmap
-ownership rules live in [docs/roadmap/README.md](roadmap/README.md).
+ownership rules live in [docs/roadmap/README.md](roadmap/README.md). Parallel
+worktree lanes, the serial integration kernel, and the host-wide GUI gate are
+defined in [parallel delivery](parallel-delivery.md).
 
 ## Default unit of delivery: a bounded vertical slice
 
@@ -76,7 +78,9 @@ independent audit for:
 ## Test cadence
 
 Quality requirements remain unchanged; cadence avoids redundant full gates.
-GUI suites always run sequentially.
+GUI suites always run sequentially. Every `just e2e-*` and performance recipe
+also acquires the repository's host-wide GUI lock, so sibling worktrees cannot
+run interfering AppKit windows concurrently.
 
 ### During implementation
 
@@ -133,6 +137,10 @@ contract.
 ## Ownership and recovery
 
 - One branch/worktree has at most one active writer.
+- Multiple roadmap phases may prepare bounded work in parallel only under the
+  [parallel-delivery contract](parallel-delivery.md): an exact clean base
+  commit, exclusive paths, declared shared integration points, and an explicit
+  integration order are mandatory.
 - A reviewer does not acquire write ownership.
 - Do not inspect or mutate another writer's isolated worktree.
 - Transfer ownership only after explicit settlement, stop, or user-authorized

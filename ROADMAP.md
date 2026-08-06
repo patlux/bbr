@@ -6,8 +6,9 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 
 ## Current focus
 
-> **Phase 4 — establish BBR's interaction, performance, and visual foundation.** Native profile/session isolation is proven; the real-app startup/interaction benchmark foundation, the focus contract, the visual system, the controller-backed vertical-tab shell, visible space switching, the adjustable, collapsible sidebar, the tab-organization slice (pin/unpin, region-bounded reorder, and move-between-spaces — keyboard and pointer drag), the dense-500 list slice (bounded lifecycle, windowed rendering, recency, and gate-wired scroll/select benchmarks), the pointer-state + typed semantic-tree slice (§10.2 hover / §10.3 press through the production listeners; the internal §15 semantic model), and the cross-context profile-hint slice (DESIGN §11.3: after a cross-profile space activation the destination profile chip + "in Profile · <title>" appears at the top of the command field for one interaction, with a deterministic interaction-driven lifetime, typed snapshot/semantic exposure, and a gate-enforced `space_switch_cross_profile` scenario) are in place. Next: the measured frame-time evidence for the dense acceptance on the canonical runner and the remaining cross-context polish before broad Phase-5 command-bar work.
+> **Parallel-delivery foundation after the Phase-4 shell anchor.** Native profile/session isolation and the cross-context shell contract are proven. Before broad browser growth, establish [conflict-safe worktree lanes](docs/roadmap/tasks/parallel-delivery-foundation.md): one writer per lane, explicit serial contracts, portable `bbr-command`/`bbr-persistence` landing zones, and a host-wide GUI gate shared by sibling worktrees. Phase 4's canonical dense frame-time evidence remains an independent infrastructure acceptance and does not force portable Phase-5/7 core work to remain serial.
 
+- [x] [Establish the parallel-delivery foundation](docs/roadmap/tasks/parallel-delivery-foundation.md), then activate bounded command-core and persistence-core task packets from its clean verified anchor. Preserve the pre-foundation `parallel/url-input` worktree until explicit settlement/handoff. *(Worktree contract, serial kernel, portable landing zones, host-wide GUI lock, unit contracts, `just verify`, testkit Clippy, smoke, performance, and canonical `just e2e` are green.)*
 - [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation. *(Benchmark path, budgets, trend/artifact machinery, the warm space-switch scenario, and the tab pin/reorder/move scenarios shipped; the dense scroll/select scenarios are wired into the interaction matrix with contract-budget seeds; persisted warm-startup samples await the persistence repository.)*
 - [x] Resolve the tab-mutation focus matrix in the [browser interaction contract](docs/product/browser-interactions.md).
 - [x] [Create `DESIGN.md`](DESIGN.md) with a distinct native macOS visual direction and semantic tokens.
@@ -17,6 +18,23 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 - [x] [Tab organization: pin/unpin, region-bounded reorder, and move between spaces](docs/roadmap/phases/04-ui-shell.md) — complete keyboard commands (`Cmd-Shift-P`, `Cmd-Shift-↑/↓`, staged `Cmd-Shift-M` + Enter) and visible controls (row pin dot, §10.9 insertion tick with legality, drag-target space rows), real pointer drag through the production GPUI press/move/release listeners, illegal boundary drops rejected whole, same-profile moves that preserve the WebViewId and warm native session, cross-profile moves that recreate exactly once in the destination store with cookie isolation, and pin/reorder/move presentation benchmarks. Proven by `just e2e-shell-organize` and the `tab_pin`/`tab_reorder`/`tab_move_same_profile`/`tab_move_cross_profile` scenarios in the gate-enforced perf matrix.
 - [x] [Dense-500 list slice: bounded lifecycle, windowed rendering, recency, and gate-wired scroll/select benchmarks](docs/roadmap/tasks/dense-list-slice.md) — 500 tab identities with exactly 50 live sessions and 450 suspended through the production controller paths (bounded concurrent-session peak while preparing the state), a bounded-window regular region that follows the production scroll offset and never lays out the collection, a pinned + recently-used keep set with exactly-one-session suspended recreation, and `dense_scroll`/`dense_select` scenarios wired into the perf matrix with contract budgets and full-gate sample-count asserts. Proven by `just verify`, `just e2e-shell-dense`/`e2e_shell_dense_edge`, and the canonical `just e2e`; the measured frame-time acceptance on the canonical runner remains open in the task packet. *(The dense state is in-memory — 500 identities / 50 live / 450 suspended — and never claims persisted restoration, which Phase 7 owns.)*
 - [x] [Pointer-state and typed semantic tree: §10.2 hover / §10.3 press through the production listeners and the internal §15 semantic model](docs/roadmap/tracks/accessibility.md) — hover wash + close reveal and the pressed wash derive from app state the real pointer paths drive; the typed tree (roles/names/values/enabled/selected/focused/hierarchy) mirrors the render from the same row/space visuals, with real-app E2E (`just e2e-shell-hover`) and `tab_hover`/`tab_press` scenarios in the gate-enforced perf matrix. *(Internal model only — GPUI 0.2.2 has no platform Accessibility layer; the macOS Accessibility/VoiceOver/Appium bridge and packaged-app acceptance are Phase 9.)*
+
+## Active execution lanes
+
+Roadmap phases remain product acceptance milestones; implementation lanes may
+prepare independent foundations in parallel under the
+[parallel-delivery contract](docs/parallel-delivery.md). Shared `bbr-web`,
+controller, app-composition, testkit-wire, performance-baseline, migration, and
+root-roadmap contracts remain serial integration surfaces.
+
+| Lane | Phase/track owner | Readiness |
+|---|---|---|
+| Parallel-delivery foundation | [task packet](docs/roadmap/tasks/parallel-delivery-foundation.md) | implemented and verified; anchor recorded in its ledger |
+| Command core | [Phase 5](docs/roadmap/phases/05-command-bar.md) | ready for a bounded packet from the foundation anchor |
+| Persistence core | [Phase 7](docs/roadmap/phases/07-persistence.md) | ready for a bounded packet from the foundation anchor |
+| Split core | [Phase 6](docs/roadmap/phases/06-split-view.md) | after serial controller/geometry contract extraction |
+| Performance runner | [performance track](docs/roadmap/tracks/performance-release.md) | external infrastructure lane |
+| WebKit capability lanes | [Phase 8](docs/roadmap/phases/08-daily-driver.md) | after serial `bbr-web` capability contracts |
 
 ## Product phases
 

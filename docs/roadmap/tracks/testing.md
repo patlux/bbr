@@ -10,6 +10,8 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 - [x] Fresh-event cursors prevent stale assertions.
 - [x] Deterministic local HTTP fixtures.
 - [x] Bounded command, event, process, and workflow deadlines.
+- [x] Serialize every AppKit/WKWebView GUI recipe across sibling worktrees with
+      the host-wide advisory gate from the [parallel-delivery foundation](../tasks/parallel-delivery-foundation.md).
 - [x] stderr drainage, panic-safe cleanup, and failure artifacts.
 - [x] Short Unix-socket test paths work under direnv and `nix develop`.
 - [x] Real WKWebView smoke test.
@@ -39,6 +41,9 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 - [ ] Add model snapshots for complete profile/space/split collections; active profile/space and tab/session snapshots exist. *(Complete profile/space collections with per-space active tab, live session, and tab count are exposed; split collections remain.)*
 - [ ] Add protocol commands as product capabilities land; profile/space create/activate/move/suspend and open/select/close tabs exist.
 - [x] Add bounded individual `just e2e-smoke` / `just e2e-tabs` / `just e2e-profiles` / `just e2e-shell-tabs` / `just e2e-shell-spaces` / `just e2e-shell-sidebar` / `just e2e-shell-organize` recipes and a canonical sequential `just e2e` gate. *(The sidebar and organize suites joined the canonical gate with the slices that proved them stable.)*
+- [x] Prove those recipes retain their functional/performance evidence while
+      acquiring one lock derived from Git's common directory, so different
+      worktrees cannot overlap GUI execution.
 - [ ] Add suite manifests and a generic `just e2e <suite>` runner when more suites justify it.
 - [ ] Add testkit release-exclusion gate.
 - [x] Add optimized benchmark mode, typed presentation milestones, raw-sample artifacts, and canonical-gated baseline comparison. *(Mode/milestones/raw samples and the >15% p95 relative policy are implemented; the relative rule activates once a canonical machine is named.)*
