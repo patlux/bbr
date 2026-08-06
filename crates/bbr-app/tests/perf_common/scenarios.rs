@@ -73,6 +73,18 @@ impl Aggregated {
     }
 }
 
+/// Aggregate the live sample log a harness keeps so a failure-path report can
+/// include everything a panicking trial had already collected.
+impl From<&super::harness::RawLog> for Aggregated {
+    fn from(log: &super::harness::RawLog) -> Self {
+        Self {
+            startup_ms: log.startup_ms.clone(),
+            page_ready_ms: log.page_ready_ms.clone(),
+            interactions: log.interactions.clone(),
+        }
+    }
+}
+
 /// Drive a cold fresh-profile trial and return its measurements.
 pub fn run_cold_trial(config: &TrialConfig, drive_interactions: bool, tag: &str) -> ColdSample {
     let (startup_ms, page_ready_ms, interactions) =
@@ -145,6 +157,7 @@ pub fn run_cold_trial_raw(
                 .1
             });
         let startup_ms = ns_to_ms(startup.monotonic_commit_ns.saturating_sub(spawned_at_ns));
+        harness.raw_log.startup_ms.push(startup_ms);
         assert_eq!(startup.active_web_view, Some(WebViewId(1)));
         assert!(startup.sidebar_visible);
         assert!(startup.content_rect[2] > 0.0 && startup.content_rect[3] > 0.0);
@@ -170,6 +183,7 @@ pub fn run_cold_trial_raw(
         );
         since = seq;
         let page_ready_ms = ns_to_ms(page_ready.monotonic_commit_ns.saturating_sub(spawned_at_ns));
+        harness.raw_log.page_ready_ms.push(page_ready_ms);
         assert_eq!(page_ready.page_title.as_deref(), Some(PAGE_ONE_TITLE));
         assert!(
             page_ready_ms <= 1500.0,
@@ -213,6 +227,12 @@ pub fn run_cold_trial_raw(
             };
             let measured = benchmark_select(&mut client, &mut since, operation, index, expected);
             tab_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("warm_tab_switch".into())
+                .or_default()
+                .push(measured.duration_ns);
             operation += 1;
         }
 
@@ -227,6 +247,12 @@ pub fn run_cold_trial_raw(
             expected_sidebar = !expected_sidebar;
             let measured = benchmark_sidebar(&mut client, &mut since, operation, expected_sidebar);
             sidebar_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("sidebar_toggle".into())
+                .or_default()
+                .push(measured.duration_ns);
             operation += 1;
         }
 
@@ -255,6 +281,12 @@ pub fn run_cold_trial_raw(
             assert_eq!(staged_snapshot.engine_sessions, before_sessions);
             assert_eq!(staged_snapshot.command_bar_mode, CommandBarMode::NewTab);
             new_tab_command_samples.push(staged.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("new_tab_command_bar".into())
+                .or_default()
+                .push(staged.duration_ns);
 
             client
                 .send_ok(&Request::SetCommandBarText {
@@ -276,6 +308,12 @@ pub fn run_cold_trial_raw(
             assert!(!opened_snapshot.chrome_focused);
             assert_ne!(opened.active_web_view, Some(previous_view));
             new_tab_open_samples.push(opened.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("new_tab_open".into())
+                .or_default()
+                .push(opened.duration_ns);
 
             let closed = benchmark_keystroke(
                 &mut client,
@@ -293,6 +331,12 @@ pub fn run_cold_trial_raw(
             assert!(!closed.chrome_focused);
             assert_eq!(closed.command_bar_mode, CommandBarMode::Inactive);
             active_close_samples.push(closed.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("active_tab_close".into())
+                .or_default()
+                .push(closed.duration_ns);
         }
 
         client.quit().expect("quit");
@@ -313,9 +357,37 @@ pub fn run_cold_trial_raw(
             value
         }
         Err(panic) => {
+            // Preserve the partial JSON + CSV summary and raw samples before
+            // dropping the app: a startup/page-ready ceiling or wrong-state
+            // assert trips inside the trial, before `evaluate_aggregate` would
+            // have written full artifacts. Event ring + app stderr follow.
+            let partial = Aggregated::from(&harness.raw_log);
+            let failure = panic_message(&panic);
+            let (report, _baseline) = report_from_agg(
+                &partial,
+                config,
+                &super::baseline_path(),
+                &root,
+                "cold-fresh",
+                Some(failure.clone()),
+            );
+            harness::write_artifacts(&root, &report);
+            eprintln!("FAILED-TRIAL ARTIFACTS at {}", root.display());
+            eprintln!("FAILURE: {failure}");
             harness.diagnostics(&socket, &token);
             std::panic::resume_unwind(panic);
         }
+    }
+}
+
+/// Best-effort human-readable message from a caught panic.
+fn panic_message(panic: &Box<dyn std::any::Any + Send>) -> String {
+    if let Some(s) = panic.downcast_ref::<&str>() {
+        (*s).to_string()
+    } else if let Some(s) = panic.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "non-string panic".to_string()
     }
 }
 
@@ -337,6 +409,34 @@ pub fn evaluate_aggregate(
     trend_dir: &Path,
     fixture_mode: &str,
 ) -> PerfReport {
+    let (report, _baseline) = report_from_agg(
+        agg,
+        config,
+        baseline_path,
+        artifacts_dir,
+        fixture_mode,
+        None,
+    );
+    harness::write_artifacts(artifacts_dir, &report);
+    // Inject self-test runs deliberately inflate latencies; they must never be
+    // indistinguishable from a real regression in the persistent trend.
+    if config.inject_delay_ms.is_none() {
+        harness::append_trend(&report, trend_dir);
+    }
+    report
+}
+
+/// Build a [`PerfReport`] from raw aggregate data, evaluating absolute and
+/// canonical-relative baselines. Shared by the success path and the failure
+/// path (which passes a partial log + a failure note).
+fn report_from_agg(
+    agg: &Aggregated,
+    config: &TrialConfig,
+    baseline_path: &Path,
+    artifacts_dir: &Path,
+    fixture_mode: &str,
+    failure: Option<String>,
+) -> (PerfReport, Baseline) {
     let baseline = Baseline::load_or_seed(baseline_path);
     let info = MachineInfo::collect(
         config.bin,
@@ -354,8 +454,6 @@ pub fn evaluate_aggregate(
         raw_ns.insert(kind.clone(), raw.clone());
     }
 
-    // Build measured map for baseline evaluation (skip the interaction-only max
-    // comparison duplication already covered by absolute rules below).
     let measured = aggregate_measured(&results);
     let regressions = baseline::evaluate(&measured, &baseline, info.canonical);
 
@@ -370,10 +468,9 @@ pub fn evaluate_aggregate(
         interaction_p95_ms: INTERACTION_P95_MS,
         interaction_max_ms: INTERACTION_MAX_MS,
         kept_at,
+        failure,
     };
-    harness::write_artifacts(artifacts_dir, &report);
-    harness::append_trend(&report, trend_dir);
-    report
+    (report, baseline)
 }
 
 fn aggregate_measured(

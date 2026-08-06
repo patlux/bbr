@@ -50,6 +50,21 @@ pub struct PerfReport {
     pub interaction_p95_ms: f64,
     pub interaction_max_ms: f64,
     pub kept_at: String,
+    /// Set only on a failure-path (partial) artifact, explaining why the full
+    /// post-trial evaluation never ran. Success runs omit the field.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub failure: Option<String>,
+}
+
+/// Raw samples accumulated live by a trial so a panic inside it (before
+/// [`write_artifacts`] over the aggregate ever runs) can still persist JSON +
+/// CSV. This is the data that matters most on a slow machine that trips the
+/// startup/page-ready ceilings.
+#[derive(Default, Clone)]
+pub struct RawLog {
+    pub startup_ms: Vec<f64>,
+    pub page_ready_ms: Vec<f64>,
+    pub interactions: BTreeMap<String, Vec<u64>>,
 }
 
 /// Spawns and supervises one `bbr` process for a benchmark run.
@@ -57,6 +72,9 @@ pub struct AppHarness {
     pub child: Child,
     pub root: PathBuf,
     stderr_buf: Arc<Mutex<String>>,
+    /// Live sample accumulation so failure-path artifacts retain raw data even
+    /// when a trial panics before [`write_artifacts`] over the aggregate runs.
+    pub raw_log: RawLog,
     pub success: bool,
 }
 
@@ -92,6 +110,7 @@ impl AppHarness {
             child,
             root: root.to_path_buf(),
             stderr_buf,
+            raw_log: RawLog::default(),
             success: false,
         }
     }
