@@ -56,6 +56,19 @@ pub enum BenchmarkKind {
     /// destroyed and recreated exactly once in the destination profile's
     /// store — the session-recreation class with its own budget.
     TabMoveCrossProfile,
+    /// A dense-list scroll through the production scroll state
+    /// (`ScrollDenseTabs`/`BenchmarkDenseScroll`): the tracked `ScrollHandle`
+    /// the native wheel listener, the keyboard traversal, and the render
+    /// share is moved by `delta_px`, and the sample commits after the frame
+    /// that renders the resulting bounded window (the strongest honest
+    /// semantic presentation metric GPUI 0.2.2 exposes — no public scanout
+    /// callback, no public synthetic wheel dispatch).
+    DenseScroll,
+    /// Selection of a tab inside the dense collection through the production
+    /// selection path (pointer or keyboard): the sample commits after the
+    /// frame that renders the selection with the active row inside the
+    /// bounded window (instant scroll-into-view, no animation).
+    DenseSelect,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

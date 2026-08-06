@@ -86,6 +86,50 @@ pub struct TabSnapshot {
     pub crashed: bool,
     pub active: bool,
     pub web_view: Option<WebViewId>,
+    /// Resource policy state of the tab's disposable session (the dense-list
+    /// lifecycle contract): "active" | "warm" | "suspended" | "discarded".
+    pub lifecycle: String,
+    /// Deterministic recency stamp (the session-budget policy's "recently
+    /// used" order).
+    pub last_used: u64,
+}
+
+/// Lifecycle population counts of the active space (the dense-list
+/// session-budget evidence): `active + warm` is the live-session population,
+/// `suspended + discarded` own no session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LifecycleCounts {
+    pub active: usize,
+    pub warm: usize,
+    pub suspended: usize,
+    pub discarded: usize,
+}
+
+/// The dense-list render contract (DESIGN.md §11.6): total row counts, the
+/// bounded rendered window, the deterministic scroll anchor, and active-row
+/// visibility. `item_count`/`pinned_rows` are the full collection; the shell
+/// renders only `[first_rendered, first_rendered + rendered_rows)` of the
+/// regular region (bounded by `window_rows`), so a 500-tab list never lays
+/// out 500 rows per frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DenseListSnapshot {
+    /// Regular-region tab count (the scrollable collection).
+    pub item_count: usize,
+    /// Pinned-region row count (fixed block above the scroll view).
+    pub pinned_rows: usize,
+    /// First regular row index of the rendered window.
+    pub first_rendered: usize,
+    /// How many regular rows the last render actually built.
+    pub rendered_rows: usize,
+    /// The bounded render window (visible range plus overscan).
+    pub window_rows: usize,
+    /// First regular row at the viewport top, derived from the production
+    /// scroll offset (deterministic scroll position).
+    pub scroll_anchor: usize,
+    /// Whether the active row lies inside the rendered window.
+    pub active_visible: bool,
+    /// The active tab's regular-region index, if any.
+    pub active_row: Option<usize>,
 }
 
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
@@ -118,8 +162,13 @@ pub struct Snapshot {
     pub spaces: Vec<SpaceSnapshot>,
     pub active_tab_index: Option<usize>,
     pub active_web_view: Option<WebViewId>,
-    /// Number of native sessions currently owned by the engine.
+    /// The engine's live-session count (native destruction evidence).
     pub engine_sessions: usize,
+    /// Lifecycle population counts of the active space (dense-list evidence).
+    pub lifecycle_counts: LifecycleCounts,
+    /// The dense-list render contract (§11.6): bounded rendered window,
+    /// deterministic scroll anchor, active-row visibility.
+    pub dense: DenseListSnapshot,
     /// Engine implementation tag, e.g. "native-wkwebview" or "fake".
     pub engine_kind: String,
     /// GPUI chrome focus (command bar focused\) and the shell's resolved

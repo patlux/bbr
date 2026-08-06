@@ -92,6 +92,41 @@ pub enum Request {
     MoveTab { index: usize, to_space: TestSpaceId },
     /// Suspend a hidden tab and destroy its native session.
     SuspendTab { index: usize },
+    /// Deterministic dense-list seeding (testkit-only setup): open
+    /// `tab_count` tabs through the production controller open path, pin the
+    /// first `pinned_count` identities, immediately suspend every tab outside
+    /// the keep set (first `pinned_count` + global index ≥ `recent_start`),
+    /// then activate the pinned tab 0. Each transient session is destroyed
+    /// before the next open, so the concurrent live-session population never
+    /// exceeds `pinned_count + recent + 1` — never `tab_count` WKWebViews at
+    /// once. Exercises the same domain/controller mutation and render paths
+    /// the product uses; the state is in-memory (persisted-restore
+    /// acceptance is deliberately open until the persistence repository).
+    /// The E2E harness may call it in batches (each bounded by the gateway
+    /// per-request deadline) and snapshot between batches to assert the
+    /// live-session bound at the observable points.
+    SeedDenseState {
+        tab_count: usize,
+        pinned_count: usize,
+        recent_start: usize,
+        url: String,
+    },
+    /// Deterministically converge the active space's live-session population
+    /// to `cap` through the controller's session-budget policy (keeps
+    /// visible, pinned, and most recently used identities live; suspends the
+    /// least recently used warm tabs). Testkit-only setup; the budget policy
+    /// itself is the production lifecycle path.
+    EnforceSessionBudget { cap: usize },
+    /// A dense-list scroll through the production scroll state: the tracked
+    /// `ScrollHandle` the native wheel listener, the keyboard traversal, and
+    /// the render share is moved by `delta_px` in the wheel listener's units
+    /// and sign (`delta_px < 0` scrolls down; the container offset goes
+    /// negative). GPUI 0.2.2 exposes no public synthetic wheel dispatch
+    /// (`Window::dispatch_event` returns a crate-private result type), so the
+    /// seam mutates the exact offset a wheel event would drive; the render
+    /// derives the bounded row window from it identically for a wheel, a
+    /// `PgDn`, or this entry. Never a direct snapshot mutation.
+    ScrollDenseTabs { delta_px: f32 },
     /// Select a tab and measure until the correct native view is presented.
     BenchmarkSelectTab {
         operation_id: BenchmarkOperationId,
@@ -184,6 +219,22 @@ pub enum Request {
     BenchmarkMoveTab {
         operation_id: BenchmarkOperationId,
         to_space: TestSpaceId,
+    },
+    /// Measure a dense-list scroll through the production scroll state: the
+    /// tracked `ScrollHandle` the native wheel listener, keyboard traversal,
+    /// and render share is moved by `delta_px` (no public synthetic wheel
+    /// dispatch in GPUI 0.2.2), and the sample commits after the frame that
+    /// renders the resulting bounded window.
+    BenchmarkDenseScroll {
+        operation_id: BenchmarkOperationId,
+        delta_px: f32,
+    },
+    /// Measure the production selection of a dense tab (pointer or keyboard
+    /// path): the sample commits after the frame that renders the selection
+    /// with the active row inside the bounded window.
+    BenchmarkDenseSelect {
+        operation_id: BenchmarkOperationId,
+        index: usize,
     },
     /// Full app snapshot.
     GetSnapshot,
