@@ -139,8 +139,8 @@ Outcome: Portable bbr-command core: typed modes/identities, strict deterministic
          ranking with explicit profile identity, typed activations, and a
          release-mode first-result benchmark (500 tabs + 10,000 history)
          enforcing strict p95/max <50 ms with raw distribution output.
-Commits: 11 total branch commits from 9352ded through the settled remediation:
-         1 packet-definition commit plus 10 subsequent product/test/refactor/
+Commits: 12 total branch commits from 9352ded through the settled remediation:
+         1 packet-definition commit plus 11 subsequent product/test/refactor/
          documentation/remediation commits. Coherent product/remediation work
          groups: parsing/identities; corpus/registry; ranking; parser/ranking/
          benchmark evidence; collector split; score/key correction; five-
@@ -157,8 +157,8 @@ Functional evidence: cargo test -p bbr-command: 11 lib + 1 benchmark + 5 parse
          id/title/category/shortcut table.
 Real-app E2E: not applicable; later app-composition packet owns it.
 Performance evidence: cargo test -p bbr-command --release --test
-         benchmark_50ms -- --nocapture: 400 raw samples; p50 0.113250 ms, p95
-         1.463667 ms, max 1.516334 ms, min 0.001375 ms. Both p95 and max remain
+         benchmark_50ms -- --nocapture: 400 raw samples; p50 0.107792 ms, p95
+         1.455708 ms, max 1.678958 ms, min 0.001583 ms. Both p95 and max remain
          enforced below 50 ms; corpus remains 500 tabs + 10,000 history and
          fixture setup remains outside timed samples.
 Roadmap/documentation updates: Phase-5 detail now states standalone-space
@@ -170,7 +170,7 @@ Open blockers and non-goals: no GPUI/real-app surface, focus routing, keyboard
          fuzzy dependency, or product-budget change. No root manifest,
          Cargo.lock, justfile, testkit, shared crate, ROADMAP.md, performance
          baseline, or URL-input surface modified.
-Worktree state: parallel/command-core; 11 commits ahead of 9352ded after this
+Worktree state: parallel/command-core; 12 commits ahead of 9352ded after this
          final documentation commit; no remote configured and nothing pushed;
          sibling worktrees untouched. Final gate/status evidence is recorded in
          the remediation handoff.
