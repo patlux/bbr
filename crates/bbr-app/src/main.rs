@@ -14,8 +14,11 @@ use gpui::{px, size, App, Bounds, KeyBinding, Window, WindowBounds, WindowOption
 
 mod actions;
 mod app;
+mod command_bar;
 mod engine;
 mod inject;
+#[cfg(feature = "testkit")]
+mod performance;
 mod shell;
 mod slot;
 #[cfg(feature = "testkit")]
@@ -119,6 +122,8 @@ impl Cli {
 }
 
 fn main() {
+    #[cfg(feature = "testkit")]
+    let process_started = std::time::Instant::now();
     let cli = Cli::parse();
     // `--bbr-clock` is parsed but intentionally a no-op in Phase 1: there is
     // no time-based logic yet (debounces land in Phase 5/7). Documented in
@@ -146,6 +151,10 @@ fn main() {
 
         let engine_kind = current_engine_kind();
         let (evt_tx, evt_rx) = smol::channel::unbounded::<bbr_web::WebEvent>();
+        #[cfg(feature = "testkit")]
+        let performance = performance::PerformanceProbe::new(process_started);
+        #[cfg(feature = "testkit")]
+        let view_performance = performance.clone();
 
         let window = cx
             .open_window(options, |window, cx| {
@@ -158,7 +167,17 @@ fn main() {
                 // SAFETY: `ns_view` is the live GPUI root view on the main thread.
                 let engine = unsafe { build_engine(ns_view, &config, engine_kind) };
                 let controller = BrowserController::new(engine.clone(), allocate_view);
-                cx.new(|cx| BbrApp::new(engine, controller, engine_kind, evt_tx.clone(), cx))
+                cx.new(|cx| {
+                    BbrApp::new(
+                        engine,
+                        controller,
+                        engine_kind,
+                        evt_tx.clone(),
+                        #[cfg(feature = "testkit")]
+                        view_performance,
+                        cx,
+                    )
+                })
             })
             .expect("open window");
 
@@ -191,6 +210,12 @@ fn main() {
                 };
             testkit::spawn_pump(cx, &window, evt_rx, cmd_rx, server.clone());
             if let Some(server) = &server {
+                let broadcaster = server.clone();
+                performance.set_sink(Box::new(move |measurement| {
+                    broadcaster.broadcast(bbr_testkit::protocol::Event::PresentationCommitted(
+                        measurement,
+                    ));
+                }));
                 server.broadcast(bbr_testkit::protocol::Event::AppReady {
                     pid: std::process::id(),
                     app_version: env!("CARGO_PKG_VERSION").to_string(),
@@ -307,7 +332,7 @@ fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
     cx.on_action(move |_: &FocusWeb, cx| {
         let win = win;
         cx.defer(move |cx| {
-            let _ = win.update(cx, |view, window, cx| view.focus_web(window, cx));
+            let _ = win.update(cx, |view, window, cx| view.cancel_command_bar(window, cx));
         });
     });
     let win = *window;
@@ -343,8 +368,7 @@ fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
         let win = win;
         cx.defer(move |cx| {
             let _ = win.update(cx, |view, window, cx| {
-                let _ = view.open_tab("about:blank", cx);
-                view.activate_command_bar(window, cx);
+                view.activate_new_tab(window, cx);
             });
         });
     });
@@ -352,8 +376,8 @@ fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
     cx.on_action(move |_: &CloseTab, cx| {
         let win = win;
         cx.defer(move |cx| {
-            let _ = win.update(cx, |view, _window, cx| {
-                let _ = view.close_active_tab(cx);
+            let _ = win.update(cx, |view, window, cx| {
+                let _ = view.close_active_tab(window, cx);
             });
         });
     });

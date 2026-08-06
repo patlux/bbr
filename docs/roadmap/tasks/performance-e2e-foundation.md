@@ -27,25 +27,25 @@ completion.
 
 ## Milestones and protocol
 
-- [ ] Define typed benchmark operation IDs and monotonic timestamp values.
-- [ ] Emit process-start/bootstrap timing early enough to measure launch.
-- [ ] Emit shell-layout-ready with sidebar state and window geometry.
-- [ ] Emit selected-native-view-presented only after the correct WKWebView is
-      visible with a non-zero committed content rectangle.
+- [x] Define typed benchmark operation IDs and monotonic timestamp values.
+- [x] Emit process-start/bootstrap timing early enough to measure launch.
+- [x] Emit the initial presentation-ready milestone with sidebar state and window geometry.
+- [x] Emit selected-native-view-presented only after the correct WKWebView is
+      visible with a non-zero content rectangle at the end of GPUI paint.
 - [ ] Emit deterministic-page-ready separately from shell/native-view readiness.
 - [ ] Emit interaction presentation commits for tab/space selection, close,
-      sidebar visibility/resize, focus target, and later split mutations.
-- [ ] Ensure request/socket round-trip time is excluded from measured app work.
-- [ ] Extend snapshots with the semantic state needed to reject fast-but-wrong
-      samples.
+      sidebar visibility/resize, focus target, and later split mutations. *(Initial tab selection, active close, Cmd-T, and sidebar toggle are covered.)*
+- [x] Ensure request/socket round-trip time is excluded from measured app work.
+- [x] Extend snapshots with the semantic state needed to reject fast-but-wrong
+      samples for the implemented scenarios.
 
 ## Harness and statistics
 
-- [ ] Spawn the optimized app with isolated fresh and persisted profiles.
-- [ ] Add warm-up and measured iteration control.
+- [ ] Spawn the optimized app with isolated fresh and persisted profiles. *(Fresh profile implemented; persisted mode remains.)*
+- [x] Add warm-up and measured iteration control.
 - [ ] Collect raw samples plus p50, p95, maximum, build revision, build profile,
-      OS/hardware identity, display refresh rate, and fixture mode.
-- [ ] Enforce absolute budgets from the product performance contract.
+      OS/hardware identity, display refresh rate, and fixture mode. *(Raw samples and p50/p95/max exist; machine/build metadata remains.)*
+- [x] Enforce absolute budgets from the product performance contract for the implemented scenarios.
 - [ ] Compare p95 with a checked-in accepted baseline on the canonical machine;
       fail regressions greater than 15%.
 - [ ] Preserve JSON/CSV summary, raw samples, event ring, and app stderr as
@@ -55,34 +55,33 @@ completion.
 
 ## Initial benchmark scenarios
 
-- [ ] Cold startup: fresh profile → first usable frame contains both the full
+- [x] Cold startup: fresh profile → first usable presentation contains both the full
       sidebar and selected tab's visible native web view.
 - [ ] Warm startup: persisted state → correct selected tab and sidebar presented
       without eagerly creating every stored tab session.
 - [ ] Deterministic fixture readiness measured separately from usable shell.
-- [ ] Warm tab switch in both directions with stable WebViewIds and no reload.
-- [ ] Active-tab close → correct neighbor visible and focused.
-- [ ] Sidebar open, close/toggle, and geometry restoration.
+- [x] Warm tab switch in both directions with stable WebViewIds and no reload.
+- [x] Active-tab close → correct neighbor visible and focused.
+- [x] Sidebar open/close toggle with resulting geometry and state assertions.
 - [ ] Space switching with already-warm selected sessions when Spaces land.
 - [ ] Dense sidebar scroll/frame-time benchmark when the real Phase-4 list
       lands.
 
 ## Commands and continuous monitoring
 
-- [ ] Add bounded `just e2e-perf` for the short local/PR regression gate.
+- [x] Add bounded `just e2e-perf` for the short local/PR regression gate.
 - [ ] Add bounded `just e2e-perf-full` for canonical repeated measurements and
-      trend artifacts.
-- [ ] Add the short performance gate to canonical sequential `just e2e` once
-      runtime and flake rate are acceptable.
+      trend artifacts. *(Currently aliases the short gate.)*
+- [x] Add the short performance gate to canonical sequential `just e2e`.
 - [ ] Run the full suite on a dedicated stable macOS runner from the first
       feature that exposes real tab/sidebar interaction.
 - [ ] Publish or retain trend artifacts so regressions are visible over time.
 
 ## Acceptance
 
-- [ ] Startup fails if sidebar and selected web content are not present in the
+- [x] Startup fails if sidebar and selected web content are not present in the
       same first usable presentation.
-- [ ] Warm-tab selection and sidebar toggle meet their absolute p95/max budgets.
+- [x] Warm-tab selection and sidebar toggle meet their absolute p95/max budgets.
 - [ ] A deliberately injected delay causes the relevant benchmark gate to fail.
 - [ ] Removing the delay restores a green distribution without changing the
       budget or baseline.

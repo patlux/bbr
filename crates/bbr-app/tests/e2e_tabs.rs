@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use bbr_fixtures::FixtureServer;
-use bbr_testkit::protocol::{dsl, BrowserChange, Event};
+use bbr_testkit::protocol::{dsl, BrowserChange, CommandBarMode, Event};
 use bbr_testkit::Client;
 use bbr_web::{WebEvent, WebViewId};
 
@@ -182,20 +182,85 @@ fn real_tabs_preserve_sessions_route_navigation_and_destroy_on_close() {
             since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
         }
 
+        // Cmd-T stages a destination in the command bar. It must not mutate
+        // the controller or allocate a second native session before Enter.
         client
             .send_ok(&bbr_testkit::Request::DispatchKeystroke {
                 keystroke: "cmd-t".into(),
             })
             .expect("Cmd-T");
-        since = wait_browser_change(&mut client, BrowserChange::TabOpened { index: 1 }, since);
-        let opened = client.snapshot().expect("opened blank tab");
-        assert_eq!(opened.tabs.len(), 2);
-        assert_eq!(opened.engine_sessions, 2);
-        assert_eq!(opened.active_tab_index, Some(1));
-        assert_eq!(opened.tabs[0].web_view, Some(first_view));
-        let second_view = opened.active_web_view.expect("second view");
-        assert_ne!(first_view, second_view);
+        since = client
+            .wait_for_event_since(
+                |event| {
+                    matches!(
+                        event,
+                        Event::ChromeFocusChanged {
+                            chrome_focused: true
+                        }
+                    )
+                },
+                since,
+                deadline(),
+            )
+            .expect("Cmd-T chrome focus")
+            .0;
+        let staged = client.snapshot().expect("staged new-tab command");
+        assert_eq!(staged.tabs.len(), 1);
+        assert_eq!(staged.engine_sessions, 1);
+        assert_eq!(staged.active_web_view, Some(first_view));
+        assert_eq!(staged.command_bar_mode, CommandBarMode::NewTab);
+        assert!(staged.chrome_focused);
+        assert!(staged.command_bar_text.is_empty());
 
+        // Escape cancels without creating a tab and restores web focus.
+        client
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "escape".into(),
+            })
+            .expect("cancel Cmd-T");
+        since = client
+            .wait_for_event_since(
+                |event| {
+                    matches!(
+                        event,
+                        Event::ChromeFocusChanged {
+                            chrome_focused: false
+                        }
+                    )
+                },
+                since,
+                deadline(),
+            )
+            .expect("cancel restores web focus")
+            .0;
+        let cancelled = client.snapshot().expect("cancelled new-tab command");
+        assert_eq!(cancelled.tabs.len(), 1);
+        assert_eq!(cancelled.engine_sessions, 1);
+        assert_eq!(cancelled.active_web_view, Some(first_view));
+        assert_eq!(cancelled.command_bar_mode, CommandBarMode::Inactive);
+        assert!(!cancelled.chrome_focused);
+
+        // Commit another staged command. Only Enter creates tab 2 + WKWebView.
+        client
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "cmd-t".into(),
+            })
+            .expect("Cmd-T again");
+        since = client
+            .wait_for_event_since(
+                |event| {
+                    matches!(
+                        event,
+                        Event::ChromeFocusChanged {
+                            chrome_focused: true
+                        }
+                    )
+                },
+                since,
+                deadline(),
+            )
+            .expect("second Cmd-T chrome focus")
+            .0;
         client
             .send_ok(&bbr_testkit::Request::SetCommandBarText {
                 text: page_two.clone(),
@@ -205,7 +270,17 @@ fn real_tabs_preserve_sessions_route_navigation_and_destroy_on_close() {
             .send_ok(&bbr_testkit::Request::DispatchKeystroke {
                 keystroke: "enter".into(),
             })
-            .expect("navigate new tab");
+            .expect("open new tab");
+        since = wait_browser_change(&mut client, BrowserChange::TabOpened { index: 1 }, since);
+        let opened = client.snapshot().expect("opened second tab");
+        assert_eq!(opened.tabs.len(), 2);
+        assert_eq!(opened.engine_sessions, 2);
+        assert_eq!(opened.active_tab_index, Some(1));
+        assert_eq!(opened.tabs[0].web_view, Some(first_view));
+        assert_eq!(opened.command_bar_mode, CommandBarMode::Inactive);
+        assert!(!opened.chrome_focused);
+        let second_view = opened.active_web_view.expect("second view");
+        assert_ne!(first_view, second_view);
         since = wait_title(&mut client, second_view, PAGE_TWO_TITLE, since);
         let two_tabs = client.snapshot().expect("two-tab snapshot");
         assert_eq!(two_tabs.tabs.len(), 2);
@@ -280,6 +355,95 @@ fn real_tabs_preserve_sessions_route_navigation_and_destroy_on_close() {
         assert_eq!(closed.engine_sessions, 1);
         assert_eq!(closed.active_web_view, Some(first_view));
         assert_eq!(closed.tabs[0].web_view, Some(first_view));
+        assert_eq!(closed.command_bar_mode, CommandBarMode::Inactive);
+        assert!(!closed.chrome_focused, "Cmd-W from web keeps web focus");
+
+        // Recreate a second tab, then close it from the location bar. Chrome
+        // focus and Location mode must survive while the neighbor becomes active.
+        client
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "cmd-t".into(),
+            })
+            .expect("stage another tab");
+        since = client
+            .wait_for_event_since(
+                |event| {
+                    matches!(
+                        event,
+                        Event::ChromeFocusChanged {
+                            chrome_focused: true
+                        }
+                    )
+                },
+                since,
+                deadline(),
+            )
+            .expect("new-tab chrome focus")
+            .0;
+        client
+            .send_ok(&bbr_testkit::Request::SetCommandBarText {
+                text: page_two.clone(),
+            })
+            .expect("set another destination");
+        client
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "enter".into(),
+            })
+            .expect("open another tab");
+        since = wait_browser_change(&mut client, BrowserChange::TabOpened { index: 1 }, since);
+        let another = client.snapshot().expect("another tab snapshot");
+        let another_view = another.active_web_view.expect("another native view");
+        since = wait_title(&mut client, another_view, PAGE_TWO_TITLE, since);
+
+        client
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "cmd-l".into(),
+            })
+            .expect("focus location bar");
+        since = client
+            .wait_for_event_since(
+                |event| {
+                    matches!(
+                        event,
+                        Event::ChromeFocusChanged {
+                            chrome_focused: true
+                        }
+                    )
+                },
+                since,
+                deadline(),
+            )
+            .expect("location focus")
+            .0;
+        client
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "cmd-w".into(),
+            })
+            .expect("close active tab from chrome");
+        since = wait_browser_change(&mut client, BrowserChange::TabClosed { index: 1 }, since);
+        let chrome_closed = client.snapshot().expect("chrome close snapshot");
+        assert_eq!(chrome_closed.tabs.len(), 1);
+        assert_eq!(chrome_closed.engine_sessions, 1);
+        assert_eq!(chrome_closed.active_web_view, Some(first_view));
+        assert_eq!(chrome_closed.command_bar_mode, CommandBarMode::Location);
+        assert!(chrome_closed.chrome_focused);
+        assert_eq!(chrome_closed.command_bar_text, page_one);
+
+        // Closing the final tab from the retained Location mode exposes an
+        // empty New Tab command surface without creating about:blank.
+        client
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "cmd-w".into(),
+            })
+            .expect("close last tab from chrome");
+        let _ = wait_browser_change(&mut client, BrowserChange::TabClosed { index: 0 }, since);
+        let empty = client.snapshot().expect("empty space snapshot");
+        assert!(empty.tabs.is_empty());
+        assert_eq!(empty.engine_sessions, 0);
+        assert_eq!(empty.active_web_view, None);
+        assert_eq!(empty.command_bar_mode, CommandBarMode::NewTab);
+        assert!(empty.chrome_focused);
+        assert!(empty.command_bar_text.is_empty());
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

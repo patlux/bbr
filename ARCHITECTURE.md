@@ -184,9 +184,12 @@ Focus movements (both AppKit **and** GPUI focus tree are kept in sync):
 | Action | Effect |
 |---|---|
 | Click into the WKWebView | AppKit auto-focuses the web view; GPUI blurs its chrome |
-| `Cmd-L` (FocusCommandBar) | `window.focus(chrome_handle)` **and** `engine.focus_host_chrome()` → `makeFirstResponder(ChromeResponder)`; `command_bar_active = true` |
-| `Escape` / Enter-after-navigate (FocusWeb) | `window.blur()` **and** `engine.focus_native_web()` → `makeFirstResponder(web_view)` |
-| Click in the sidebar | `focus_chrome`: `window.focus(chrome_handle)` + `focus_host_chrome()`, `command_bar_active = false` |
+| `Cmd-L` (FocusCommandBar) | Enter `Location` mode, focus `chrome_handle`, and call `engine.focus_host_chrome()` → `makeFirstResponder(ChromeResponder)` |
+| `Cmd-T` | Enter `NewTab` mode with empty text; no controller tab or WKWebView is created before Enter |
+| Escape from `NewTab` | Restore prior command-bar text/mode and chrome/web focus domain without creating a tab |
+| Enter from `NewTab` | Open and select the destination tab, create its WKWebView, then focus the page |
+| `Cmd-W` | Close the active tab; preserve chrome versus web focus, or expose empty `NewTab` mode after the final tab closes |
+| Click in the sidebar | Enter `Inactive` command-bar mode, focus `chrome_handle`, and call `focus_host_chrome()` |
 
 GPUI `Action`s are bound with `cx.bind_keys` (`cmd-l`, `escape`, `cmd-[`,
 `cmd-]`, `cmd-r`, `cmd-b`, `cmd-t`). They run in the bubble phase and are
@@ -303,7 +306,7 @@ src/
 4. In the open_window callback: capture the GPUI root NSView, build the engine,
    create `BrowserController(engine.clone(), allocator)`, then create BbrApp.
 5. Open the initial controller-backed tab after the window exists.
-6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B plus real Cmd-T/Cmd-W tab mutations.
+6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B plus Cmd-T staging and focus-preserving Cmd-W.
 7. Under testkit: start the gateway, pump engine events into the controller,
    and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
@@ -312,9 +315,10 @@ The chrome (`bbr-app/src/app.rs`) renders a fixed-width sidebar
 (`SIDEBAR_WIDTH_PX = 260`): brand, nav dots (◀ ▶ ⟳ with enabled-state
 styling), a command bar (mirrors the live URL; inline cursor; accepts typing,
 backspace, enter), a status line (`NavigationState.status_line()`, incl.
-"⚠ Web content process terminated"), and a sidebar toggle. A `key_context`
-("bbr_chrome") routes printable input to the command bar only while
-`command_bar_active`. The content area is entirely the `NativeWebViewSlot`.
+"⚠ Web content process terminated"), and a sidebar toggle. `CommandBarMode`
+separates `Inactive`, current-tab `Location`, and staged `NewTab` intent. A
+`key_context` (`bbr_chrome`) routes printable input only while a command mode is
+active. The content area is entirely the `NativeWebViewSlot`.
 
 `BrowserController` is the sole owner of product tab/navigation state. The
 GPUI root renders a controller snapshot; `shell.rs` contains only formatting
@@ -434,7 +438,8 @@ just verify     # fmt + check + test + clippy + roadmap
 just e2e-smoke  # baseline real-WKWebView navigation/focus/resize
 just e2e-tabs   # real multi-tab/session behavior
 just e2e-profiles # real profile isolation, moves, and suspend lifecycle
-just e2e        # canonical sequential GUI gate (smoke, tabs, then profiles)
+just e2e-perf   # optimized startup and production-path interaction budgets
+just e2e        # canonical sequential GUI gate (smoke, tabs, profiles, performance)
 ```
 
 All recipes are wrapped in GNU `timeout --kill-after=10s` with
@@ -442,19 +447,19 @@ All recipes are wrapped in GNU `timeout --kill-after=10s` with
 overrides, and pin `DEVELOPER_DIR` to Xcode 16.4. On headless CI,
 `BBR_SKIP_GUI_TESTS=1` skips the smoke.
 
-**Verified green on 2026-08-05** (evidence, not claims):
+**Verified green on 2026-08-06** (evidence, not claims):
 
 ```
 just fmt     → exit 0
 just check   → exit 0 (workspace, all targets)
 just test    → exit 0  — bbr-app 2 passed · bbr-domain 40 passed ·
                         bbr-browser 47 passed · bbr-fixtures 4 passed ·
-                        bbr-testkit 12 passed · bbr-web 9 passed ·
-                        bbr-web-macos 1 passed · 3 GUI E2E tests ignored
+                        bbr-testkit 13 passed · bbr-web 9 passed ·
+                        bbr-web-macos 1 passed · 4 GUI E2E tests ignored
 just clippy  → exit 0 (-D warnings)
 just roadmap → exit 0 (hierarchical roadmap links valid)
-just e2e     → exit 0 — "SMOKE PASSED" + "TABS E2E PASSED" +
-                        "PROFILES E2E PASSED" (sequential real WKWebViews)
+just e2e     → exit 0 — smoke + tabs + profiles + optimized performance
+                        (sequential real GPUI + WKWebViews)
 ```
 
 The testkit-feature path also passes `cargo clippy -p bbr --features testkit
@@ -473,9 +478,10 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 
 1. **Real tabs exist without visible tab UI yet.** `BrowserController` and
    `WebEngineWk` open, switch, preserve, navigate, and close multiple real
-   sessions; Cmd-T/Cmd-W and testkit expose them. The vertical tab list and
+   sessions; Cmd-T stages a tab destination and Cmd-W closes through the real
+   product path. The vertical tab list and
    pointer selection arrive with the intentional Phase-4 shell.
-2. **Profile and space operations have no visible UI yet.** Protocol v3 and the
+2. **Profile and space operations have no visible UI yet.** Protocol v4 and the
    production controller path can create/activate profiles and spaces and move
    tabs between them, but the intentional sidebar surfaces arrive in Phase 4.
    The real profiles suite already proves isolated cookies and session policy.

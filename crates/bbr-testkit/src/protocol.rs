@@ -9,7 +9,50 @@ use bbr_web::{ProfileId, WebAction, WebViewId};
 use serde::{Deserialize, Serialize};
 
 /// Current protocol version understood by this crate.
-pub const PROTOCOL_VERSION: u32 = 3;
+pub const PROTOCOL_VERSION: u32 = 4;
+
+/// Observable command-bar intent, independent from native focus ownership.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CommandBarMode {
+    Inactive,
+    Location,
+    NewTab,
+}
+
+/// Harness-assigned identity for one measured production-path mutation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BenchmarkOperationId(pub u64);
+
+/// Initial real-app performance scenarios. Extend this enum with each visible
+/// interaction rather than inventing string labels in individual harnesses.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BenchmarkKind {
+    Startup,
+    WarmTabSwitch,
+    SidebarToggle,
+    NewTabCommandBar,
+    NewTabOpened,
+    ActiveTabClose,
+}
+
+/// One app-internal latency sample completed at the end of GPUI paint after
+/// native content geometry is attached, immediately before frame presentation.
+/// Durations deliberately exclude testkit transport.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresentationMeasurement {
+    pub operation_id: BenchmarkOperationId,
+    pub kind: BenchmarkKind,
+    pub duration_ns: u64,
+    pub since_process_start_ns: u64,
+    /// macOS monotonic absolute clock converted to nanoseconds. The harness
+    /// reads the same clock immediately before spawn to include process launch.
+    pub monotonic_commit_ns: u64,
+    pub active_web_view: Option<WebViewId>,
+    pub sidebar_visible: bool,
+    pub chrome_focused: bool,
+    pub command_bar_mode: CommandBarMode,
+    pub content_rect: [f32; 4],
+}
 
 /// Stable space identity on the portable test wire.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -51,6 +94,7 @@ pub struct Snapshot {
     pub engine_kind: String,
     /// GPUI chrome focus (command bar focused\).
     pub chrome_focused: bool,
+    pub command_bar_mode: CommandBarMode,
     pub command_bar_text: String,
     pub sidebar_visible: bool,
     /// Window content size in points (diagnostics only).
@@ -66,10 +110,13 @@ pub enum Event {
     Web(bbr_web::WebEvent),
     /// The GPUI chrome gained/lost keyboard focus.
     ChromeFocusChanged { chrome_focused: bool },
-    /// The command bar's text changed.
-    CommandBarChanged { text: String },
+    /// The command bar's mode or text changed.
+    CommandBarChanged { mode: CommandBarMode, text: String },
     /// One semantic browser-controller mutation completed.
     BrowserChanged { kind: BrowserChange },
+    /// A startup or interaction mutation reached a semantically correct
+    /// presentation frame inside the app process.
+    PresentationCommitted(PresentationMeasurement),
     /// The app received a quit request (graceful shutdown started).
     Quitting,
 }
@@ -137,6 +184,20 @@ pub enum Request {
     MoveTab { index: usize, to_space: TestSpaceId },
     /// Suspend a hidden tab and destroy its native session.
     SuspendTab { index: usize },
+    /// Select a tab and measure until the correct native view is presented.
+    BenchmarkSelectTab {
+        operation_id: BenchmarkOperationId,
+        index: usize,
+    },
+    /// Toggle the sidebar and measure until chrome plus native content geometry
+    /// are presented in the resulting state.
+    BenchmarkToggleSidebar { operation_id: BenchmarkOperationId },
+    /// Dispatch a real GPUI keystroke while measuring its presentation commit.
+    BenchmarkDispatchKeystroke {
+        operation_id: BenchmarkOperationId,
+        kind: BenchmarkKind,
+        keystroke: String,
+    },
     /// Drive a [`WebAction`] on the active web view (Back/Forward/Reload/…).
     WebAction(WebAction),
     /// Focus the GPUI command bar (chrome) — the E2E reader of Cmd-L.

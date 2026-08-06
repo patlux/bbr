@@ -11,20 +11,20 @@ Parent phases: [Phase 0](../phases/00-foundation.md), [Phase 4](../phases/04-ui-
 
 ## Performance E2E foundation — Phase 4 start
 
-- [ ] Add an optimized real-app benchmark build with typed monotonic in-process milestones.
-- [ ] Require the first usable startup presentation to contain both the complete sidebar and the selected tab's visible native web view.
-- [ ] Add bounded `just e2e-perf` and `just e2e-perf-full` recipes.
+- [x] Add an optimized real-app benchmark build with typed monotonic in-process milestones.
+- [x] Require the first usable startup presentation to contain both the complete sidebar and the selected tab's visible native web view.
+- [x] Add bounded `just e2e-perf` and `just e2e-perf-full` recipes. *(`e2e-perf-full` currently aliases the short gate.)*
 - [ ] Enforce absolute budgets plus >15% p95 regression detection on a dedicated canonical macOS runner.
 - [ ] Store raw samples, p50/p95/max, machine/build metadata, and failure artifacts.
-- [ ] Make every new user-visible interaction add or extend its performance E2E scenario in the same implementation group.
+- [x] Make every new user-visible interaction add or extend its performance E2E scenario in the same implementation group.
 
 ## Performance measurements
 
-- [ ] Cold and warm startup to first usable sidebar + selected native content presentation.
+- [ ] Cold and warm startup to first usable sidebar + selected native content presentation. *(Fresh-profile startup implemented; persisted warm startup remains.)*
 - [ ] Time to deterministic local fixture readiness, measured separately from shell presentation.
 - [ ] Tab/space switch latency for active, warm, suspended, and discarded states.
-- [ ] Active-tab close to correct neighbor presentation.
-- [ ] Sidebar open, close/toggle, resize, and restoration latency.
+- [x] Active-tab close to correct neighbor presentation.
+- [ ] Sidebar open, close/toggle, resize, and restoration latency. *(Toggle implemented; resize/restoration remain.)*
 - [ ] Command-bar first-result and full-search latency.
 - [ ] Sidebar frame time with 500 tabs.
 - [ ] Idle CPU, wakeups, and energy impact.
@@ -35,7 +35,7 @@ Parent phases: [Phase 0](../phases/00-foundation.md), [Phase 4](../phases/04-ui-
 ## Policies and budgets
 
 - [x] Define initial product budgets before broad Phase-4 UI implementation.
-- [ ] Validate and enforce the initial budgets through the performance E2E foundation.
+- [ ] Validate and enforce the initial budgets through the performance E2E foundation. *(Absolute implemented-scenario gates are enforced; canonical baseline regression policy remains.)*
 - [ ] Revisit only with explicit product evidence; never raise a budget solely to make a regression pass.
 - [ ] Bound concurrent background loads.
 - [ ] Suspend least-recently-used tabs under memory pressure.

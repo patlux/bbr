@@ -9,9 +9,9 @@ One fast, keyboard-first surface handles navigation, search, tab switching, spac
 ## Checklist
 
 - [ ] Add portable `bbr-command` registry, parsing, ranking, and result types.
-- [ ] Implement location, new-tab, switcher, and action modes.
+- [ ] Implement the full location, new-tab, switcher, and action result modes. *(Location editing and staged New Tab intent exist; ranking/results do not.)*
 - [ ] Select the current URL on `Cmd-L`.
-- [ ] Make `Cmd-T` enter a distinct new-tab flow.
+- [x] Make `Cmd-T` enter a distinct new-tab flow without creating a tab before Enter.
 - [ ] Rank exact/open tabs, current-space/pinned tabs, other spaces, history, actions, and navigate/search fallback.
 - [ ] Label cross-space results with profile identity.
 - [ ] Support arrows, Enter, modified Enter, Escape, and origin-focus restoration.

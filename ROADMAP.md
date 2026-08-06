@@ -9,7 +9,7 @@ Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/READ
 > **Phase 4 — establish BBR's interaction, performance, and visual foundation.** Native profile/session isolation is proven; next establish real-app startup and interaction benchmarks, resolve tab-focus behavior, define the visual system, then expose real controller-backed tabs and spaces in the GPUI sidebar.
 
 - [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation.
-- [ ] Resolve the tab-mutation focus matrix in the [browser interaction contract](docs/product/browser-interactions.md).
+- [x] Resolve the tab-mutation focus matrix in the [browser interaction contract](docs/product/browser-interactions.md).
 - [ ] Create `DESIGN.md` with a distinct native macOS visual direction and semantic tokens.
 - [ ] Implement the first controller-backed vertical-tab and space-switching UI slice with functional and performance E2E.
 

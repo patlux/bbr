@@ -25,6 +25,10 @@ pub struct NativeWebViewSlot {
     /// bounds change. Kept as a closure so the element stays framework-free
     /// plumbing: `prepaint` runs on the main thread during GPUI's draw.
     publish: Rc<dyn Fn(WebRect, f32)>,
+    #[cfg(feature = "testkit")]
+    presentation_pending: Option<Rc<dyn Fn() -> bool>>,
+    #[cfg(feature = "testkit")]
+    presented: Option<Rc<dyn Fn(WebRect)>>,
 }
 
 impl NativeWebViewSlot {
@@ -33,7 +37,24 @@ impl NativeWebViewSlot {
         let publish: Rc<dyn Fn(WebRect, f32)> = Rc::new(move |rect, content_height| {
             engine.borrow_mut().attach_slot(rect, content_height);
         });
-        Self { publish }
+        Self {
+            publish,
+            #[cfg(feature = "testkit")]
+            presentation_pending: None,
+            #[cfg(feature = "testkit")]
+            presented: None,
+        }
+    }
+
+    #[cfg(feature = "testkit")]
+    pub fn on_presented(
+        mut self,
+        pending: Rc<dyn Fn() -> bool>,
+        callback: Rc<dyn Fn(WebRect)>,
+    ) -> Self {
+        self.presentation_pending = Some(pending);
+        self.presented = Some(callback);
+        self
     }
 }
 
@@ -99,7 +120,7 @@ impl Element for NativeWebViewSlot {
         &mut self,
         _id: Option<&GlobalElementId>,
         _inspector_id: Option<&InspectorElementId>,
-        _bounds: Bounds<Pixels>,
+        #[cfg_attr(not(feature = "testkit"), allow(unused_variables))] bounds: Bounds<Pixels>,
         _request_layout: &mut Self::RequestLayoutState,
         _prepaint: &mut Self::PrepaintState,
         _window: &mut Window,
@@ -107,5 +128,21 @@ impl Element for NativeWebViewSlot {
     ) {
         // The native WKWebView is composited above GPUI's Metal layer here;
         // nothing to paint.
+        #[cfg(feature = "testkit")]
+        if self
+            .presentation_pending
+            .as_ref()
+            .is_some_and(|pending| pending())
+        {
+            if let Some(presented) = self.presented.clone() {
+                let rect = WebRect::new(
+                    f32::from(bounds.origin.x),
+                    f32::from(bounds.origin.y),
+                    f32::from(bounds.size.width),
+                    f32::from(bounds.size.height),
+                );
+                presented(rect);
+            }
+        }
     }
 }

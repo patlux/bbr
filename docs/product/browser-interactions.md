@@ -220,33 +220,38 @@ Closing or moving a pane's underlying tab:
 - Pointer interaction with sidebar controls gives focus to browser chrome.
 - In split mode, returning focus to web content targets the focused pane.
 
-### Focus after tab mutations — Open decision
+### Focus after tab mutations — Contract
 
-The selected tab after open, close, reopen, or pointer selection is already
-specified above. The native keyboard-focus destination is not yet fully
-specified for every input method.
+Tab mutations preserve the focus domain that initiated them unless the command
+itself explicitly targets another surface:
 
-Before Phase 4 tab UI ships, decide separately for:
+- `Cmd-T` enters the command bar's **New Tab** mode. It creates neither a tab
+  nor a native web session until Enter commits a non-empty destination.
+- Escape from New Tab mode creates nothing and restores the previous command-
+  bar text, mode, and chrome/web focus domain.
+- Enter from New Tab mode appends and selects the new tab, creates its native
+  session, navigates it, and moves focus into the new page.
+- `Cmd-W` from web content closes the active tab and gives the deterministic
+  neighbor web focus. From browser chrome it keeps chrome focus while updating
+  the selected-tab context.
+- Closing the final tab leaves the space empty and opens an empty New Tab
+  command surface rather than creating `about:blank` automatically.
+- Pointer and keyboard tab selection preserve their originating focus domain:
+  web stays web; sidebar/command interactions stay in browser chrome.
+- Reopen selects the restored tab but preserves the focus domain of the command
+  that invoked it.
 
-- pointer close button;
-- `Cmd-W` while web content is focused;
-- `Cmd-W` while sidebar or command bar is focused;
-- pointer tab selection;
-- keyboard tab selection;
-- opening a tab with `Cmd-T` versus a background-open action; and
-- reopening a tab from a shortcut or menu.
-
-The decision must state whether focus enters the selected page, stays in the
-sidebar, or enters the command bar. Tests must assert both selected-tab state
-and actual chrome/web native focus.
+Split routing, pointer controls, keyboard tab traversal, and reopen commands
+must assert both selected-tab state and actual chrome/web native focus as their
+visible UI slices land.
 
 ## Commands
 
 ### Existing and planned shortcuts
 
 - `Cmd-L` — focus the command bar in location mode. **Contract**
-- `Cmd-T` — create a real new tab and enter the new-tab flow. **Contract;
-  currently implemented by opening `about:blank` and focusing the command bar.**
+- `Cmd-T` — enter New Tab command-bar mode without creating a tab or web
+  session. Enter commits the destination; Escape cancels it. **Contract**
 - `Cmd-W` — close the active tab or focused split target. **Contract; the
   single-pane action exists, while split routing and exact focus aftermath
   remain open above.**
@@ -304,8 +309,7 @@ These items require explicit product decisions before their affected UI ships:
    when closed.
 8. **Cross-space activation:** whether moving the active tab selects the source
    neighbor, follows the moved tab into the destination, or varies by command.
-9. **Focus aftermath:** complete the input-method matrix in the focus section.
-10. **Split close command:** distinguish “close pane layout” from “close the
+9. **Split close command:** distinguish “close pane layout” from “close the
     pane's underlying tab” in labels and shortcuts.
 
 When resolving an item, move its decision into the relevant Contract section,

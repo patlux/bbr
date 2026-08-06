@@ -190,7 +190,13 @@ fn dispatch(
                 .update(cx, |view, window, cx| view.navigate(&url, window, cx))
                 .map(|_| Response::Ok)
                 .unwrap_or_else(err_response);
-            broadcast(&server, Event::CommandBarChanged { text: url });
+            broadcast(
+                &server,
+                Event::CommandBarChanged {
+                    mode: bbr_testkit::protocol::CommandBarMode::Inactive,
+                    text: url,
+                },
+            );
             r
         }
 
@@ -202,6 +208,61 @@ fn dispatch(
 
         Request::SuspendTab { index } => {
             browser_mutation(window.update(cx, |view, _window, cx| view.suspend_tab(index, cx)))
+        }
+
+        Request::BenchmarkSelectTab {
+            operation_id,
+            index,
+        } => browser_mutation(window.update(cx, |view, _window, cx| {
+            view.benchmark_select_tab(operation_id, index, cx)
+        })),
+
+        Request::BenchmarkToggleSidebar { operation_id } => window
+            .update(cx, |view, window, cx| {
+                view.benchmark_toggle_sidebar(operation_id, window, cx)
+            })
+            .map(|started| {
+                if started {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_busy",
+                        "another presentation measurement is pending",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response),
+
+        Request::BenchmarkDispatchKeystroke {
+            operation_id,
+            kind,
+            keystroke,
+        } => {
+            let started = window
+                .update(cx, |view, _window, _cx| {
+                    view.begin_benchmark(operation_id, kind)
+                })
+                .unwrap_or(false);
+            if !started {
+                return Response::Error(Error::new(
+                    "benchmark_busy",
+                    "another presentation measurement is pending",
+                ));
+            }
+            let ks = match Keystroke::parse(&keystroke) {
+                Ok(ks) => ks,
+                Err(error) => {
+                    let _ = window.update(cx, |view, _window, _cx| view.cancel_benchmark());
+                    return Response::Error(Error::new("bad_keystroke", error.to_string()));
+                }
+            };
+            (**window)
+                .update(cx, |_root, window, cx| window.dispatch_keystroke(ks, cx))
+                .map(|_| Response::Ok)
+                .unwrap_or_else(|error| {
+                    let _ = window.update(cx, |view, _window, _cx| view.cancel_benchmark());
+                    Response::Error(Error::new("app_error", error.to_string()))
+                })
         }
 
         Request::WebAction(action) => window
@@ -226,15 +287,19 @@ fn dispatch(
             .unwrap_or_else(err_response),
 
         Request::SetCommandBarText { text } => {
-            let r = window
-                .update(cx, |view, _w, cx| {
-                    view.command_bar_text = text.clone();
-                    cx.notify();
-                })
-                .map(|_| Response::Ok)
-                .unwrap_or_else(err_response);
-            broadcast(&server, Event::CommandBarChanged { text });
-            r
+            let result = window.update(cx, |view, _w, cx| {
+                view.command_bar_text = text.clone();
+                let mode = view.command_bar_mode.into();
+                cx.notify();
+                mode
+            });
+            match result {
+                Ok(mode) => {
+                    broadcast(&server, Event::CommandBarChanged { mode, text });
+                    Response::Ok
+                }
+                Err(error) => err_response(error),
+            }
         }
 
         Request::DispatchKeystroke { keystroke } => {
@@ -368,6 +433,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             engine_sessions: self.engine_sessions,
             engine_kind: self.engine_kind.to_string(),
             chrome_focused: self.chrome_focused,
+            command_bar_mode: self.command_bar_mode,
             command_bar_text: self.command_bar_text.clone(),
             sidebar_visible: self.sidebar_visible,
             window_size: self.window_size,

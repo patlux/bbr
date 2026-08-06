@@ -146,6 +146,30 @@ mod tests {
     }
 
     #[test]
+    fn benchmark_request_and_new_tab_mode_round_trip() {
+        let request = Request::BenchmarkDispatchKeystroke {
+            operation_id: crate::protocol::BenchmarkOperationId(7),
+            kind: crate::protocol::BenchmarkKind::NewTabCommandBar,
+            keystroke: "cmd-t".into(),
+        };
+        let value = read_frame(&mut Cursor::new(encode_client_frame(&request))).unwrap();
+        assert_eq!(
+            serde_json::from_value::<ClientFrame>(value).unwrap(),
+            ClientFrame::Request(request)
+        );
+
+        let event = ServerFrame::Event {
+            seq: 10,
+            event: Event::CommandBarChanged {
+                mode: crate::protocol::CommandBarMode::NewTab,
+                text: String::new(),
+            },
+        };
+        let value = serde_json::to_value(&event).unwrap();
+        assert_eq!(serde_json::from_value::<ServerFrame>(value).unwrap(), event);
+    }
+
+    #[test]
     fn browser_change_event_round_trips_with_typed_payload() {
         let frame = ServerFrame::Event {
             seq: 9,

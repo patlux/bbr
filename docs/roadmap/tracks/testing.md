@@ -13,7 +13,7 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 - [x] stderr drainage, panic-safe cleanup, and failure artifacts.
 - [x] Short Unix-socket test paths work under direnv and `nix develop`.
 - [x] Real WKWebView smoke test.
-- [x] Protocol v3 semantic browser events and typed profile/space/tab/session snapshots.
+- [x] Protocol v4 semantic browser events, command-bar modes, benchmark operation IDs, and typed profile/space/tab/session snapshots.
 - [x] Sequential real-app tabs suite with stable native-session identity assertions.
 - [x] Sequential real-app profiles suite with cookie-isolation and native lifecycle assertions.
 
@@ -23,7 +23,7 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 - [ ] `tabs`: open/select/close and native session lifecycle are covered; reopen/pin/reorder/move remain with their visible UI slices.
 - [ ] `spaces`: profile identity, activation, and moves are covered; visible switching UI and last-active restoration remain with Phase 4.
 - [ ] `splits`: create/focus/resize/close/move teardown.
-- [ ] `commandbar`: mode, ranking, keyboard, cancellation, focus restore.
+- [ ] `commandbar`: staged New Tab mode, cancellation, and initial focus restore are covered; ranking, result navigation, and complete mode UX remain.
 - [ ] `webkit`: profile isolation is covered; popups, permissions, downloads, and process recovery remain with Phase 8.
 - [ ] `persistence`: restore, force quit, migrations, corrupt optional state.
 - [ ] `accessibility`: semantic ids, labels, order, real input.
@@ -38,8 +38,8 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 - [x] Add bounded individual `just e2e-smoke` / `just e2e-tabs` / `just e2e-profiles` recipes and a canonical sequential `just e2e` gate.
 - [ ] Add suite manifests and a generic `just e2e <suite>` runner when more suites justify it.
 - [ ] Add testkit release-exclusion gate.
-- [ ] Add optimized benchmark mode, typed presentation-commit milestones, raw-sample artifacts, and baseline comparison.
-- [ ] Add bounded `just e2e-perf` / `just e2e-perf-full`; include the short gate in canonical sequential `just e2e` once stable.
+- [ ] Add optimized benchmark mode, typed presentation milestones, raw-sample artifacts, and baseline comparison. *(Mode/milestones/raw samples implemented; checked-in baseline comparison remains.)*
+- [x] Add bounded `just e2e-perf` / `just e2e-perf-full` and include the short gate in canonical sequential `just e2e`. *(`e2e-perf-full` currently aliases the short gate.)*
 - [ ] Add a small Appium Mac2 packaged-app blackbox suite in Phase 9.
 
 ## Definition of done for feature work

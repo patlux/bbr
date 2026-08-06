@@ -21,7 +21,7 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 - [ ] Render pinned and regular tabs for the active space.
 - [ ] Show favicon/title/loading/crash state from the controller.
 - [ ] Open, select, close, and reopen tabs from pointer and keyboard.
-- [ ] Make `Cmd-T` create a real tab and `Cmd-W` close the focused tab.
+- [x] Make `Cmd-T` stage a new-tab destination until Enter and `Cmd-W` close the active tab with focus preservation. *(Visible tab controls remain open.)*
 - [ ] Render and switch spaces with unmistakable profile identity.
 - [ ] Preserve the active tab per space without recreating warm sessions.
 - [ ] Add adjustable, collapsible sidebar behavior with presentation-commit benchmarks for open, close/toggle, and resize.

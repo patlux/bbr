@@ -46,6 +46,7 @@ pub struct TestSnapshot {
     pub engine_sessions: usize,
     pub engine_kind: &'static str,
     pub chrome_focused: bool,
+    pub command_bar_mode: bbr_testkit::protocol::CommandBarMode,
     pub command_bar_text: String,
     pub sidebar_visible: bool,
     pub window_size: [f32; 2],
