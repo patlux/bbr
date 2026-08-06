@@ -210,6 +210,7 @@ pub fn space_groups(browser: &ControllerSnapshot, budget: usize) -> Vec<SpaceGro
             .iter()
             .map(|s| SpaceRowVisuals {
                 index: s.index,
+                profile_index: profile.index,
                 title: crate::shell::truncate_title(&s.title, budget).into(),
                 count: s.tab_count,
                 state: if s.active {
@@ -337,7 +338,7 @@ pub fn visible_ids(
             ids.push(format!("bbr-space-count-{}", space.index));
         }
         for profile in &browser.profiles {
-            ids.push(format!("bbr-profile-chip-{}", profile.index));
+            ids.push(crate::components::profile_chip_id(profile.index).to_string());
         }
     }
     if chrome_focused && command_bar_mode.is_active() {
@@ -726,6 +727,47 @@ mod tests {
             true,
         );
         assert!(ids.contains(&"bbr-command-cursor".to_string()));
+    }
+
+    #[cfg(feature = "testkit")]
+    #[test]
+    fn space_row_chips_key_to_the_owning_profile_index() {
+        // DESIGN.md §12/§15: the chip id follows the profile's creation-order
+        // index, never the space index. In `space_snapshot` profile 0 owns
+        // spaces 0 and 2 while profile 1 owns space 1, so space indices and
+        // chip ids diverge. Regression: the render previously keyed the chip
+        // to the space index, attaching `bbr-profile-chip-2` to a row the
+        // contract identifies as `bbr-profile-chip-0`.
+        let browser = space_snapshot();
+        let ids = visible_ids(
+            &browser,
+            false,
+            crate::command_bar::CommandBarMode::Inactive,
+            true,
+        );
+        let chips = space_groups(&browser, usize::MAX)
+            .into_iter()
+            .flat_map(|group| group.rows)
+            .map(|row| crate::components::profile_chip_id(row.profile_index).to_string())
+            .collect::<Vec<_>>();
+        // Render order: Default's spaces (indices 0, 2), then Private's space
+        // (index 1). Both Default rows attach the same profile-keyed chip.
+        assert_eq!(
+            chips,
+            vec![
+                "bbr-profile-chip-0".to_string(),
+                "bbr-profile-chip-0".to_string(),
+                "bbr-profile-chip-1".to_string(),
+            ]
+        );
+        for chip in &chips {
+            assert!(
+                ids.contains(chip),
+                "rendered chip {chip} missing from the semantic snapshot"
+            );
+        }
+        // The divergent space index 2 must never leak into a chip id.
+        assert!(!ids.iter().any(|id| id == "bbr-profile-chip-2"));
     }
 
     #[cfg(feature = "testkit")]

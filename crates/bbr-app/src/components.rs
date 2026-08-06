@@ -76,6 +76,11 @@ pub struct ProfileChipSpec {
 pub struct SpaceRowVisuals {
     /// The space's stable creation-order index (`bbr-space-row-<n>`).
     pub index: usize,
+    /// The owning profile's creation-order index — the stable
+    /// `bbr-profile-chip-<n>` identity (DESIGN.md §12), never the space
+    /// index, so the rendered chip matches the E2E contract even when space
+    /// and profile indices diverge.
+    pub profile_index: usize,
     pub title: SharedString,
     /// The §11.3 count column (`type:meta` tabular figures).
     pub count: usize,
@@ -83,10 +88,20 @@ pub struct SpaceRowVisuals {
     pub chip: ProfileChipSpec,
 }
 
+/// The §15 semantic id of a profile chip, keyed to the *profile* index
+/// (DESIGN.md §12) — never the space index. The sidebar renders one chip per
+/// space row, so a profile's spaces repeat this id; the testkit snapshot
+/// exposes each chip id once per profile. This function is the single keying
+/// both the render and the snapshot share, so the chip a row renders can
+/// never drift from the E2E contract when space and profile indices diverge.
+pub fn profile_chip_id(profile_index: usize) -> SharedString {
+    SharedString::from(format!("bbr-profile-chip-{profile_index}"))
+}
+
 /// §12 profile chip: 20 pt square (18 at S), `radius:sm`, filled with the
 /// profile's hue tile and a 1–2 character monogram. The letter derives from
 /// the profile title so identity is readable per row without a header.
-pub fn profile_chip(theme: &Theme, index: usize, spec: &ProfileChipSpec) -> Stateful<Div> {
+pub fn profile_chip(theme: &Theme, profile_index: usize, spec: &ProfileChipSpec) -> Stateful<Div> {
     let size = if theme.density == crate::theme::Density::Small {
         px(18.0)
     } else {
@@ -94,7 +109,7 @@ pub fn profile_chip(theme: &Theme, index: usize, spec: &ProfileChipSpec) -> Stat
     };
     let tile = ProfileHueRamp::tile(spec.hue, theme.mode);
     div()
-        .id(("bbr-profile-chip", index))
+        .id(profile_chip_id(profile_index))
         .size(size)
         .rounded(Radius.small())
         .bg(tile.tile)
@@ -142,7 +157,7 @@ pub fn space_row(
                     .bg(p.accent),
             )
         })
-        .child(profile_chip(theme, visuals.index, &visuals.chip))
+        .child(profile_chip(theme, visuals.profile_index, &visuals.chip))
         .child(
             div()
                 .id(("bbr-space-title", visuals.index))
