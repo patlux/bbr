@@ -277,6 +277,84 @@ pub fn wait_for_exit(child: &mut Child, deadline: Instant) -> std::process::Exit
     }
 }
 
+/// Poll the semantic snapshot until the engine-received native content rect
+/// reaches `expected` (tolerance 0.5 pt). The rect is paint-driven — the
+/// native slot reports the WKWebView frame on the next frame after a layout
+/// mutation — so state fields assert immediately and geometry waits for the
+/// paint under an explicit deadline. No sleeps: deadline-bounded snapshot
+/// polling.
+pub fn wait_for_content_rect(
+    client: &mut Client,
+    expected: [f32; 4],
+    deadline: Instant,
+) -> bbr_testkit::protocol::Snapshot {
+    let close = |a: [f32; 4], b: [f32; 4]| {
+        (a[0] - b[0]).abs() <= 0.5
+            && (a[1] - b[1]).abs() <= 0.5
+            && (a[2] - b[2]).abs() <= 0.5
+            && (a[3] - b[3]).abs() <= 0.5
+    };
+    loop {
+        let snapshot = client.snapshot().expect("content-rect snapshot");
+        if close(snapshot.content_rect, expected) {
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "content rect did not reach {expected:?}; last {:?}",
+            snapshot.content_rect
+        );
+        std::thread::yield_now();
+    }
+}
+
+/// Poll until the slot's native content rect reaches the expected x/width
+/// (height is not asserted here — the window bounds include the macOS
+/// titlebar, so the slot's own height is the stable baseline captured once
+/// and asserted for drift). Returns the snapshot with the reached rect.
+pub fn wait_for_content_rect_x(
+    client: &mut Client,
+    expected_x: f32,
+    expected_width: f32,
+    deadline: Instant,
+) -> bbr_testkit::protocol::Snapshot {
+    loop {
+        let snapshot = client.snapshot().expect("content-rect snapshot");
+        let rect = snapshot.content_rect;
+        if (rect[0] - expected_x).abs() <= 0.5 && (rect[2] - expected_width).abs() <= 0.5 {
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "content rect x/width did not reach [{expected_x}, .., {expected_width}, ..]; last {rect:?}"
+        );
+        std::thread::yield_now();
+    }
+}
+
+/// Poll until the snapshot's window width reaches `expected` (macOS screen
+/// clamping and the titlebar make the height vary per resize, so only the
+/// width is asserted; the slot height for expectations derives from the
+/// observed window size minus the measured titlebar).
+pub fn wait_for_window_size(
+    client: &mut Client,
+    expected_width: f32,
+    deadline: Instant,
+) -> bbr_testkit::protocol::Snapshot {
+    loop {
+        let snapshot = client.snapshot().expect("window-size snapshot");
+        if (snapshot.window_size[0] - expected_width).abs() <= 0.5 {
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "window width did not reach {expected_width}; last {:?}",
+            snapshot.window_size
+        );
+        std::thread::yield_now();
+    }
+}
+
 /// Assert the §15 semantic `bbr-*` ids the current render exposes. This is
 /// the id-level evidence the design contract requires: every §11 assert id
 /// must be present for the state the shell actually renders.

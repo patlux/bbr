@@ -408,6 +408,12 @@ pub enum Request {
     /// Focus the resize divider through the production focus path (the same
     /// entry a pointer click uses), the anchor for the keyboard resize keys.
     FocusSidebarDivider,
+    /// Draw a real GPUI frame synchronously (testkit-only frame flush). The
+    /// hidden E2E harness has no display link, so paint-driven native
+    /// geometry callbacks would never fire after a mutation; this forces the
+    /// exact production draw path (`Window::draw`) so the snapshot observes
+    /// the WKWebView frame the next layout hands the slot.
+    FlushFrame,
     /// Measure the production sidebar resize mutation until the resulting
     /// native geometry commits at the expected clamped width.
     BenchmarkResizeSidebar {

@@ -350,6 +350,18 @@ pub(crate) fn dispatch(
             })
             .unwrap_or_else(err_response),
 
+        // Draw one real GPUI frame synchronously so the paint-driven native
+        // geometry callbacks fire in the hidden harness (no display link).
+        // `AnyWindowHandle::update` borrows only the window, leaving the root
+        // entity free for the draw's render, exactly like the keystroke arm.
+        Request::FlushFrame => (**window)
+            .update(cx, |_root, window, cx| {
+                let app: &mut App = cx;
+                let _clear = window.draw(app);
+            })
+            .map(|_| Response::Ok)
+            .unwrap_or_else(err_response),
+
         Request::BenchmarkResizeSidebar {
             operation_id,
             width,
