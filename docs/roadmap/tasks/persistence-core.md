@@ -50,7 +50,8 @@ session hydration to the later serial startup integration.
 ## Parallel-lane contract
 
 ```text
-Base commit: aed5bc77d416f69b913876e3977020d99abffe26
+Canonical contract base: aed5bc77d416f69b913876e3977020d99abffe26
+Settled lane foundation: b83bd3acf3aeccd235ea21a0a24c18b1b1924147
 Historical prepared packet: 9bb0a3b7ca6b66999d7d453a9ab141317def078f
   (created from 9352ded; superseded by the canonical promoted contract)
 Depends on: parallel-delivery foundation and completed SQLite contract
