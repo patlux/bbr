@@ -146,6 +146,8 @@ Nach letzter Integration: einmal `just e2e`, frische `.app` + manueller Smoke.
 | 14:5x | ✅ D0: `DELIVERY_OK` automatisch zugestellt (1.7 s, $0.002) — Event-Kette verifiziert |
 | 15:1x | ✅ H0: main cold-grün (verify + testkit-Clippy), 4 Commits, Lane-Base `574750b` |
 | 15:1x | Entscheidung: Orchestrierung wechselt in dedizierte gpt-5.6-sol-Session (Option B); diese Datei = Handoff-Vertrag |
+| 15:09 | Alter Writer-Wächter (Session `019fdb6b`, Pane bbr:1.0) gestoppt — kein Doppel-Writer-Risiko |
+| 15:09 | ✅ Handoff: sol-Orchestrator gestartet — tmux `tws_personal_macos_bbr-orchestrator`, Pi-Session `019fdc57-7afb-7f81`, gpt-5.6-sol:high. Ab jetzt einziger Orchestrator und Ledger-Owner; die fable-Session (`019fdba4`) zieht sich zurück |
 
 ## Kickoff-Anweisung für die sol-Orchestrator-Session
 
