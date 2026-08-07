@@ -10,7 +10,7 @@ use gpui::{AnyWindowHandle, App, Entity, WindowHandle};
 use crate::app::BbrApp;
 use crate::window_seam::with_app;
 
-use super::dispatch::err_response;
+use super::dispatch_util::err_response;
 
 pub(super) fn dispatch_portal(
     req: &Request,

@@ -22,6 +22,9 @@ use super::benchmarks::{
     benchmark_sidebar, benchmark_space_switch, benchmark_space_switch_cross_profile,
     wait_browser_change, wait_title,
 };
+use super::drive::u2::{drive_u2_sidebar, reveal_spaces_region};
+mod u2;
+
 use super::command_drive::drive_command_scenarios;
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
@@ -430,6 +433,10 @@ fn drive_matrix_inner(
                 .push(measured.duration_ns);
             operation += 1;
         }
+
+        // §11.4 compact rail: reveal the spaces region before the
+        // space-switch samples (see `drive::u2`).
+        reveal_spaces_region(client);
 
         // Warm space switching: create a second space in the default profile
         // with its own warm tab, then measure alternating activation between
@@ -932,6 +939,17 @@ fn drive_matrix_inner(
             );
         }
 
+        // U2 sidebar surfaces: plus menu, favorites, folder disclosure
+        // (see `drive::u2`) — each a warm next-frame presentation commit
+        // through the production paths, asserted by the in-app probe guard.
+        let (plus_menu_samples, favorites_samples, folder_toggle_samples) = drive_u2_sidebar(
+            client,
+            harness,
+            &mut since,
+            &mut operation,
+            config.interaction_samples,
+        );
+
         // Dense-list scroll + selection through the bounded-window render
         // (Phase-4 dense slice, performance contract "dense-list scrolling"):
         // seed an S-density collection (230 identities, 10 pinned, 20 live)
@@ -1055,6 +1073,9 @@ fn drive_matrix_inner(
         raw.extend(command_samples);
         raw.insert("tab_move_same_profile".to_string(), same_move_samples);
         raw.insert("tab_move_cross_profile".to_string(), cross_move_samples);
+        raw.insert("sidebar_plus_menu".to_string(), plus_menu_samples);
+        raw.insert("sidebar_favorites".to_string(), favorites_samples);
+        raw.insert("sidebar_folder_toggle".to_string(), folder_toggle_samples);
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);
         raw.insert("dense_select".to_string(), dense_select_samples);
         raw

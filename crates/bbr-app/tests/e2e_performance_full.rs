@@ -81,6 +81,9 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let command_activate = report.results["command_activate"].samples;
         let command_new_tab = report.results["command_activate_new_tab"].samples;
         let palette_open = report.results["palette_open"].samples;
+        let plus_menu = report.results["sidebar_plus_menu"].samples;
+        let favorites = report.results["sidebar_favorites"].samples;
+        let folder_toggle = report.results["sidebar_folder_toggle"].samples;
         assert!(
             warm >= INTERACTION_SAMPLES,
             "warm-tab samples {warm} < {INTERACTION_SAMPLES}"
@@ -144,6 +147,18 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             palette_open >= INTERACTION_SAMPLES,
             "palette-open samples {palette_open} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            plus_menu >= INTERACTION_SAMPLES,
+            "sidebar plus-menu samples {plus_menu} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            favorites >= INTERACTION_SAMPLES,
+            "sidebar favorites samples {favorites} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            folder_toggle >= INTERACTION_SAMPLES,
+            "sidebar folder-toggle samples {folder_toggle} < {INTERACTION_SAMPLES}"
         );
         assert!(
             activate >= NEW_TAB_SAMPLES,

@@ -29,7 +29,7 @@ pub fn command_result_protocol(
 
 /// A snapshot for the E2E protocol (also used by unit tests).
 impl BbrApp {
-    pub fn snapshot(&self, window: &Window) -> TestSnapshot {
+    pub fn snapshot(&mut self, window: &Window) -> TestSnapshot {
         let browser = self.controller.snapshot();
         let theme = self.theme();
         let drag_source = self.tab_drag.source();
@@ -76,7 +76,31 @@ impl BbrApp {
             }
             None => Vec::new(),
         };
-        let semantics = self.semantic_snapshot(&browser, &rows, window, sidebar_width, &budget);
+        // The L5 organization read model (reconciled on read) plus the
+        // app-local presentation state: the typed U2 snapshot fields. The
+        // folder member rows resolve through the controller's global read
+        // model (deterministic nested positions within expanded folders).
+        let organization = self.organization.organization_snapshot(&self.controller);
+        let favorite_tiles = crate::components::favorite_tiles(&organization.favorites);
+        let folder_rows = crate::components::folder_row_specs(
+            &organization.folders,
+            &self.u2.folder_presentation,
+        );
+        let folder_members = crate::components::folder_member_visuals(
+            &folder_rows,
+            &organization.folders,
+            &browser.all_tabs,
+        );
+        let semantics = self.semantic_snapshot(
+            &browser,
+            &rows,
+            window,
+            sidebar_width,
+            &budget,
+            &favorite_tiles,
+            &folder_rows,
+            &folder_members,
+        );
         let command_result_state = self.command_ranking.state;
         let command_results = self
             .command_ranking
@@ -205,7 +229,7 @@ impl BbrApp {
             })
             .collect(),
             space_titles: crate::shell::space_titles(&browser, budget),
-            visible_ids: crate::shell::visible_ids(
+            visible_ids: crate::shell::snapshot::visible_ids_u2(
                 &browser,
                 self.chrome_focused(window),
                 self.command_bar_mode,
@@ -219,6 +243,13 @@ impl BbrApp {
                 drag_slot,
                 self.dense_window.get(),
                 pane_layout,
+                &crate::shell::snapshot::U2IdsInput {
+                    spaces_visible: self.u2.spaces_visible,
+                    favorites: &organization.favorites,
+                    folders: &organization.folders,
+                    expanded: self.u2.folder_presentation.clone(),
+                    plus_menu: self.u2.plus_menu,
+                },
             ),
             semantics,
             command_bar_mode: self.command_bar_mode.into(),
@@ -241,6 +272,32 @@ impl BbrApp {
             pane_rects: pane_rect_snapshots,
             window_size: [window_width, window_height],
             portal: self.portal_snapshot(),
+            spaces_visible: self.u2.spaces_visible,
+            plus_menu_open: self.u2.plus_menu.open,
+            plus_menu_selection: self.u2.plus_menu.selection,
+            favorites: favorite_tiles
+                .iter()
+                .map(|tile| bbr_testkit::protocol::FavoriteTileSnapshot {
+                    index: tile.index,
+                    tab: tile.tab,
+                    space: tile.space,
+                    profile: tile.profile,
+                    title: tile.title.clone(),
+                    url: tile.url.clone(),
+                    letter: tile.letter.to_string(),
+                    hue: tile.hue,
+                })
+                .collect(),
+            folders: folder_rows
+                .iter()
+                .map(|row| bbr_testkit::protocol::FolderRowSnapshot {
+                    index: row.index,
+                    id: row.id,
+                    title: row.title.clone(),
+                    tab_count: row.count,
+                    expanded: row.expanded,
+                })
+                .collect(),
         }
     }
 
@@ -279,8 +336,11 @@ impl BbrApp {
     /// The typed semantic tree of the current render (DESIGN.md §15 /
     /// accessibility track). Mirrors the shell: only rows the render
     /// actually built (the pinned block + the bounded regular window), the
-    /// space rows grouped as rendered, and the content-pane branch. The
-    /// focus state comes from GPUI's real focus tree.
+    /// space rows grouped as rendered (gated by the §11.4 spaces toggle),
+    /// the U2 surfaces (footer, favorites grid, folders, plus menu), and
+    /// the content-pane branch. The focus state comes from GPUI's real
+    /// focus tree.
+    #[allow(clippy::too_many_arguments)]
     fn semantic_snapshot(
         &self,
         browser: &bbr_browser::ControllerSnapshot,
@@ -288,6 +348,9 @@ impl BbrApp {
         window: &Window,
         sidebar_width: f32,
         budget: &usize,
+        favorite_tiles: &[crate::components::FavoriteTileSpec],
+        folder_rows: &[crate::components::FolderRowSpec],
+        folder_members: &[crate::components::FolderMemberVisual],
     ) -> Vec<bbr_testkit::protocol::SemanticNode> {
         // Intersect the row visuals with the render's bounded window, like
         // `visible_ids`: a dense collection never exposes rows it did not
@@ -331,6 +394,8 @@ impl BbrApp {
                 spaces: self.space_list_handle.is_focused(window),
                 tabs: self.tab_list_handle.is_focused(window),
                 divider: self.divider_handle.is_focused(window),
+                folders: self.u2.folders_handle.is_focused(window),
+                plus_menu: self.u2.plus_menu_handle.is_focused(window),
             },
             command: crate::shell::semantics::SemanticCommand {
                 mode: format!("{:?}", self.command_bar_mode).to_lowercase(),
@@ -369,6 +434,11 @@ impl BbrApp {
             command_surface: self.command_surface,
             rows: &rendered_rows,
             space_rows: &space_rows,
+            spaces_visible: self.u2.spaces_visible,
+            favorites: favorite_tiles,
+            folder_rows,
+            folder_members,
+            plus_menu: self.u2.plus_menu,
             content,
         };
         crate::shell::semantics::semantic_tree(&input)

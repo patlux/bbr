@@ -156,7 +156,12 @@ impl WebEngine for NullEngine {
     }
 
     fn live_session_count(&self) -> usize {
-        0
+        // A view is live from `create_web_view` until `destroy_web_view`;
+        // `geometry` is keyed exactly by those views (rect updates are
+        // unknown-id no-ops, destruction removes the entry), so the map
+        // length is the live-session count the controller's registry
+        // invariant asserts against.
+        self.geometry.len()
     }
 }
 

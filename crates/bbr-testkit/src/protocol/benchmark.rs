@@ -100,6 +100,12 @@ pub enum BenchmarkKind {
     /// or invented surface). Warm-interaction class — no tab or session is
     /// created before Enter.
     PaletteOpen,
+    /// The §11.4 footer plus menu presented through the production path.
+    SidebarPlusMenu,
+    /// The §11.10 favorites grid committed the expected tile count.
+    SidebarFavorites,
+    /// The §11.11 folder disclosure committed the expected state.
+    SidebarFolderToggle,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after
@@ -122,6 +128,13 @@ pub struct PresentationMeasurement {
     pub chrome_focused: bool,
     pub command_bar_mode: CommandBarMode,
     pub content_rect: [f32; 4],
+    /// U2 presentation guards; ignored by unrelated benchmark kinds.
+    #[serde(default)]
+    pub plus_menu_open: bool,
+    #[serde(default)]
+    pub favorites_len: usize,
+    #[serde(default)]
+    pub folder_expanded: bool,
     /// Deterministic fixture title observed for [`BenchmarkKind::PageReady`]
     /// samples; `None` for shell presentation samples.
     pub page_title: Option<String>,

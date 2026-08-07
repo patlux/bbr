@@ -221,10 +221,16 @@ fn main() {
                 // SAFETY: `ns_view` is the live GPUI root view on the main thread.
                 let engine = unsafe { build_engine(ns_view, &config, engine_kind) };
                 let controller = BrowserController::new(engine.clone(), allocate_view);
+                // The L5 companion service: one session-local organization
+                // controller per browser controller (NewFolder/NewSpace/
+                // FavoriteToggle/MoveIntoFolder commands + the favorites/
+                // folders read model the U2 regions consume).
+                let organization = bbr_browser::OrganizationController::new();
                 let app = cx.new(|cx| {
                     BbrApp::new(
                         engine,
                         controller,
+                        organization,
                         engine_kind,
                         evt_tx.clone(),
                         #[cfg(feature = "testkit")]

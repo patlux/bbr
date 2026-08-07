@@ -33,15 +33,19 @@ pub fn space_row_h(theme: &crate::theme::Theme) -> f32 {
 }
 
 /// A drag's current typed target (DESIGN.md §10.9): either an insertion
-/// slot in the tab list or a visible space row. `Tab { slot }` means "insert
-/// before the row at `slot`"; `slot` equal to the source region's end
-/// renders at the end of that region. Space targets move the tab.
+/// slot in the tab list, a visible space row, or the §11.10 favorites grid.
+/// `Tab { slot }` means "insert before the row at `slot`"; `slot` equal to
+/// the source region's end renders at the end of that region. Space targets
+/// move the tab; the favorites target toggles the dragged tab in/out of the
+/// window-global favorites grid (add/remove — never a copy or a move).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DragTarget {
     /// Insertion slot in the tab list, within the source tab's region.
     Tab { slot: usize },
     /// A visible space row: move the dragged tab into that space.
     Space { space: SpaceId },
+    /// The §11.10 favorites grid: toggle the dragged tab as a favorite.
+    Favorites,
 }
 
 /// One rendered space row's position inside the space surface, top-down.
@@ -57,15 +61,20 @@ pub struct SpaceRowSpan {
 }
 
 /// The tab-list geometry a drag resolves against: the pinned/regular
-/// boundary (§11.2), the tab count, the §8 row height, and the space surface
-/// above the list (its top-down rows plus total height). Grouped so the pure
-/// resolver stays readable; the drag state machine builds it per move from
-/// the same theme tokens and `shell::space_groups` the render uses.
+/// boundary (§11.2), the tab count, the §8 row height, the favorites region
+/// above the list (its deterministic height; 0 when the grid is empty), and
+/// the space surface above that (its top-down rows plus total height).
+/// Grouped so the pure resolver stays readable; the drag state machine
+/// builds it per move from the same theme tokens, the organization read
+/// model, and `shell::space_groups` the render uses.
 #[derive(Debug, Clone, Copy)]
 pub struct DragGeometry<'a> {
     pub pinned: usize,
     pub len: usize,
     pub row_h: f32,
+    /// The §11.10 favorites region's deterministic height above the tab
+    /// list (0 when the grid is empty/hidden — no droppable band).
+    pub favorites_h: f32,
     pub space_h: f32,
     pub spaces: &'a [SpaceRowSpan],
 }
@@ -83,9 +92,11 @@ pub struct DragGeometry<'a> {
 ///   source region. A slot outside the region (the pinned/regular boundary
 ///   crossing) is illegal: the target clamps to the region edge so the tick
 ///   renders there, but `valid` is false.
-/// - The pointer above the tab list resolves to the visible space row it
-///   hovers (move). The New Space row and the fixed chrome above the space
-///   surface are not droppable.
+/// - The pointer above the tab list resolves to the §11.10 favorites grid
+///   band first (when the region is rendered — a drop toggles the dragged
+///   tab in/out of the window-global favorites), then to the visible space
+///   row it hovers (move). The New Space row and the fixed chrome above the
+///   space surface are not droppable.
 pub fn resolve_target(
     source: usize,
     dy: f32,
@@ -99,6 +110,7 @@ pub fn resolve_target(
         pinned,
         len,
         row_h,
+        favorites_h,
         space_h,
         spaces,
     } = *geometry;
@@ -124,10 +136,16 @@ pub fn resolve_target(
             || (hi == len && raw > len as isize);
         (DragTarget::Tab { slot }, valid)
     } else {
-        // Pointer above the tab list: the space surface occupies the
-        // `space_h` immediately above it (rows top-down, then the New Space
-        // row at the bottom). `from_bottom` inverts the pointer distance.
-        let from_bottom = space_h - above_list;
+        // Pointer above the tab list: the favorites region occupies the
+        // `favorites_h` immediately above it (when rendered), then the
+        // space surface above that (rows top-down, then the New Space row
+        // at the bottom). A drop on the favorites band toggles the dragged
+        // tab in the window-global grid; `from_bottom` inverts the pointer
+        // distance inside the space surface.
+        if favorites_h > 0.0 && above_list <= favorites_h {
+            return (DragTarget::Favorites, true);
+        }
+        let from_bottom = space_h - (above_list - favorites_h);
         for span in spaces {
             if span.y_top <= from_bottom && from_bottom < span.y_top + span.height {
                 return (DragTarget::Space { space: span.space }, true);
@@ -201,6 +219,25 @@ mod tests {
             pinned,
             len,
             row_h: 32.0,
+            favorites_h: 0.0,
+            space_h,
+            spaces,
+        }
+    }
+
+    /// The same geometry with a rendered favorites band above the list.
+    fn geometry_with_favorites<'a>(
+        pinned: usize,
+        len: usize,
+        favorites_h: f32,
+        space_h: f32,
+        spaces: &'a [SpaceRowSpan],
+    ) -> DragGeometry<'a> {
+        DragGeometry {
+            pinned,
+            len,
+            row_h: 32.0,
+            favorites_h,
             space_h,
             spaces,
         }
@@ -324,6 +361,33 @@ mod tests {
         let (target, valid) = resolve_target(1, -33.0, 0.0, &g);
         assert_eq!(target, DragTarget::Tab { slot: 1 });
         assert!(!valid, "New Space foot is not a drop target");
+    }
+
+    #[test]
+    fn pointer_over_the_favorites_band_targets_the_grid() {
+        // The favorites band occupies the region directly above the tab
+        // list; a drop there toggles the dragged tab in/out of the grid.
+        // Source row 1's center is 48 pt below the list top; the band is
+        // 60 pt tall (a wrapped two-row grid at N density).
+        let (spaces, space_h) = spans_for(&[(1, 0), (2, 0)]);
+        let g = geometry_with_favorites(0, 3, 60.0, space_h, &spaces);
+        // 30 pt above the list top → inside the favorites band.
+        let (target, valid) = resolve_target(1, -(48.0 + 30.0), center_press(), &g);
+        assert_eq!(target, DragTarget::Favorites);
+        assert!(valid);
+        // The band's top edge boundary still targets favorites.
+        let (target, _valid) = resolve_target(1, -(48.0 + 60.0), center_press(), &g);
+        assert_eq!(target, DragTarget::Favorites);
+        // One point above the band enters the space surface: the second
+        // space row (s=1) sits `space_h - (1*34 + 17)` = 102 - 51 = 51 pt
+        // above the band top → dy = -(48 + 60 + 51) = -159.
+        let (target, valid) = resolve_target(1, -159.0, center_press(), &g);
+        assert_eq!(target, DragTarget::Space { space: SpaceId(2) });
+        assert!(valid);
+        // Without a rendered favorites region there is no favorites target.
+        let g = geometry(0, 3, space_h, &spaces);
+        let (target, _valid) = resolve_target(1, -99.0, center_press(), &g);
+        assert_ne!(target, DragTarget::Favorites);
     }
 
     #[test]

@@ -327,10 +327,16 @@ impl BbrApp {
     /// origin text and the originating focus domain (web or chrome, as
     /// captured at Cmd-L); staged tab/space/move modes restore their captured
     /// prior state. An active tab drag is cancelled first (chrome focus stays
-    /// in the tab list).
+    /// in the tab list), and an open plus menu is dismissed without action
+    /// (§11.4 — the menu's own focused handler stops propagation, this is the
+    /// fallback for any Escape that reaches the app while the menu is open).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.tab_drag.is_active() {
             self.cancel_tab_drag(window, cx);
+            return;
+        }
+        if self.u2.plus_menu.open {
+            self.close_plus_menu(window, cx);
             return;
         }
         // Escaping a palette/overlay presentation closes it (DESIGN.md

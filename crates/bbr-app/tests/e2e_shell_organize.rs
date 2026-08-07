@@ -93,6 +93,11 @@ fn keyboard_pins_unpins_reorders_and_moves_tabs() {
             since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
         }
 
+        // §11.4 compact rail: the footer `[Spaces]` control reveals the
+        // §11.3 space rows; drive it before any space-row click or drag-to-
+        // space target (the rows hide by default).
+        reveal_spaces_region(&mut client);
+
         let keystroke = |client: &mut Client, key: &str| {
             client
                 .send_ok(&bbr_testkit::Request::DispatchKeystroke {
@@ -450,6 +455,11 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
             since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
         }
 
+        // §11.4 compact rail: reveal the §11.3 space rows through the footer
+        // `[Spaces]` control (the rows hide by default; the pin/reorder
+        // pointers and the drag-to-space geometry need the revealed region).
+        reveal_spaces_region(&mut client);
+
         // Seed the pinned region through the visible pin controls: two tabs,
         // both pinned via `bbr-tab-pin-<n>` on the production listener path.
         open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
@@ -649,6 +659,11 @@ fn pointer_drag_moves_tab_between_spaces() {
         }
         let default_space = initial.active_space;
         let default_profile = initial.active_profile;
+
+        // §11.4 compact rail: reveal the §11.3 space rows through the footer
+        // `[Spaces]` control before dragging onto them (the rows hide by
+        // default; the drag resolver exposes no space targets while hidden).
+        reveal_spaces_region(&mut client);
 
         // Second tab plus a second same-profile space: the space surface has
         // two rows (Default, Reading) + the New Space foot.

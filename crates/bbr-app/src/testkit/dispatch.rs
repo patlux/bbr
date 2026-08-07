@@ -9,7 +9,6 @@
 
 use std::sync::Arc;
 
-use bbr_browser::ControllerEvent;
 use bbr_testkit::protocol::{Error, Event, Request, Response};
 use bbr_testkit::GatewayServer;
 use gpui::{px, size, App, Entity, Keystroke, WindowHandle};
@@ -18,8 +17,11 @@ use crate::window_seam::with_app;
 
 use crate::app::BbrApp;
 use crate::testkit::dispatch_benchmark::dispatch_benchmark;
+use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
 use crate::testkit::dispatch_drag::dispatch_drag;
 use crate::testkit::dispatch_portal::dispatch_portal;
+use crate::testkit::dispatch_u2::dispatch_u2;
+use crate::testkit::dispatch_util::{browser_mutation, err_response};
 use crate::testkit::snapshot::SnapshotExt;
 
 pub(crate) fn dispatch(
@@ -34,6 +36,9 @@ pub(crate) fn dispatch(
     if let Some(response) = dispatch_benchmark(&req, window, app, cx) {
         return response;
     }
+    if let Some(response) = dispatch_benchmark_u2(&req, window, app, cx) {
+        return response;
+    }
     // The tab-drag pointer arms live in `dispatch_drag` (same split reason).
     if let Some(response) = dispatch_drag(&req, window, app, cx) {
         return response;
@@ -41,6 +46,10 @@ pub(crate) fn dispatch(
     // Portal probe/teardown/flush routing lives separately because the
     // portal-window draw must happen outside the mutable app lease.
     if let Some(response) = dispatch_portal(&req, window, app, cx) {
+        return response;
+    }
+    // U2 footer/favorites/folders route separately to keep this router bounded.
+    if let Some(response) = dispatch_u2(&req, window, app, cx) {
         return response;
     }
     let broadcast = |server: &Option<Arc<GatewayServer>>, ev: Event| {
@@ -422,6 +431,21 @@ pub(crate) fn dispatch(
         | Request::PortalTeardown
         | Request::FlushFrame => unreachable!("portal requests route through dispatch_portal"),
 
+        // Routed by `dispatch_u2` before this match.
+        Request::ClickFooterDownloads
+        | Request::ClickFooterSpaces
+        | Request::ClickFooterPlus
+        | Request::ClickPlusMenuItem { .. }
+        | Request::ToggleFavoriteTab { .. }
+        | Request::ClickFavoriteTile { .. }
+        | Request::ClickFolderRow { .. }
+        | Request::ClickFolderToggle { .. }
+        | Request::ClickFolderMember { .. }
+        | Request::ClickFolderMemberClose { .. }
+        | Request::MoveTabIntoFolder { .. } => {
+            unreachable!("U2 sidebar requests route through dispatch_u2")
+        }
+
         // Routed by `dispatch_drag` before this match; reaching one here is
         // a routing bug.
         Request::BeginTabDrag { .. }
@@ -432,6 +456,9 @@ pub(crate) fn dispatch(
         // Routed by `dispatch_benchmark` before this match; reaching one here
         // is a routing bug.
         Request::BenchmarkSelectTab { .. }
+        | Request::BenchmarkPlusMenu { .. }
+        | Request::BenchmarkFavoriteToggle { .. }
+        | Request::BenchmarkFolderToggle { .. }
         | Request::BenchmarkClickTab { .. }
         | Request::BenchmarkReopenTab { .. }
         | Request::BenchmarkActivateSpace { .. }
@@ -454,29 +481,4 @@ pub(crate) fn dispatch(
             unreachable!("benchmark requests route through dispatch_benchmark")
         }
     }
-}
-
-/// Draw one real GPUI frame synchronously through the untyped window path
-/// (the draw re-borrows the root entity, so the typed `WindowHandle::update`
-/// path would double-lease). Used by the dense scroll/select arms so the
-/// snapshot's dense window state reflects the post-mutation render.
-pub(crate) fn flush_dense_frame(window: &WindowHandle<gpui_component::Root>, cx: &mut App) {
-    let _ = (**window).update(cx, |_root, window, cx| {
-        let app: &mut App = cx;
-        let _ = window.draw(app);
-    });
-}
-
-pub(crate) fn browser_mutation<E: std::fmt::Display>(
-    update: Result<Option<ControllerEvent>, E>,
-) -> Response {
-    match update {
-        Ok(Some(_)) => Response::Ok,
-        Ok(None) => Response::Error(Error::new("browser_error", "browser mutation was rejected")),
-        Err(error) => err_response(error),
-    }
-}
-
-pub(crate) fn err_response<E: std::fmt::Display>(e: E) -> Response {
-    Response::Error(Error::new("app_error", e.to_string()))
 }

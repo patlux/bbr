@@ -38,6 +38,11 @@ fn shell_profile_crash_empty_and_collapsed_semantics() {
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
             .expect("flush first frame");
+        // §11.4 compact rail: the profile-identity assertions below expect
+        // the second space's `bbr-space-row-1`/`bbr-profile-chip-1` ids;
+        // reveal the §11.3 region through the footer `[Spaces]` production
+        // pointer path first (the space rows render only while revealed).
+        reveal_spaces_region(&mut client);
         // 6. Profile identity in the tree: every space row keeps its §12 chip
         // with the profile monogram; a second profile adds its own row and
         // chip even before activation.

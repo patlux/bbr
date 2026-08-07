@@ -58,6 +58,11 @@ fn cross_profile_switch_shows_and_clears_the_command_field_profile_hint() {
         let default_space = initial.active_space;
         let default_profile = initial.active_profile;
 
+        // §11.4 compact rail: reveal the §11.3 space rows (and their §12
+        // chips) through the footer `[Spaces]` control before asserting the
+        // cross-context chip evidence.
+        reveal_spaces_region(&mut client);
+
         // A same-profile space and a cross-profile profile+space, both warm.
         client
             .send_ok(&dsl::create_space(default_profile, "Work"))
@@ -331,6 +336,11 @@ fn cross_profile_activation_of_an_empty_space_announces_the_destination_profile(
         let default_space = initial.active_space;
         let default_profile = initial.active_profile;
         let sessions_at_launch = initial.engine_sessions;
+
+        // §11.4 compact rail: reveal the §11.3 space rows (and their §12
+        // chips) through the footer `[Spaces]` control before asserting the
+        // cross-context chip evidence.
+        reveal_spaces_region(&mut client);
 
         // A second profile whose single space starts empty; creation must
         // not activate it.

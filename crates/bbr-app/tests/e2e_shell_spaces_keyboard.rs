@@ -60,6 +60,11 @@ fn keyboard_selects_and_creates_spaces_and_moves_tabs_between_spaces() {
                 .expect("keystroke")
         };
 
+        // §11.4 compact rail: reveal the §11.3 space rows through the footer
+        // `[Spaces]` control first (the rows hide by default; the keyboard
+        // traversal and the row ids require the revealed region).
+        reveal_spaces_region(&mut client);
+
         // Keyboard create: Cmd-Shift-N stages a space name in the command
         // bar without creating anything; a typed name commits on Enter and
         // the fresh space is activated (chrome focus stays in the space
@@ -322,6 +327,11 @@ fn keyboard_cross_profile_traversal_sets_and_clears_the_profile_hint() {
         }
         let default_space = initial.active_space;
         let default_profile = initial.active_profile;
+
+        // §11.4 compact rail: reveal the §11.3 space rows through the footer
+        // `[Spaces]` control before the pointer-focus and `↑`/`↓` traversal
+        // (the rows hide by default).
+        reveal_spaces_region(&mut client);
 
         let keystroke = |client: &mut Client, key: &str| {
             client

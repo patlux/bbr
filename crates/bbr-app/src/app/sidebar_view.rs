@@ -22,11 +22,14 @@ mod command_bar;
 
 impl BbrApp {
     /// The sidebar rail at the given effective width: the §11 column (brand,
-    /// command field, spaces, tabs, status, toggle) plus the §5 4 pt resize
-    /// divider on the right edge. The divider is focusable and carries the
-    /// stable §15 id; the collapse control keeps the `Cmd-B` pointer entry.
+    /// command field, spaces region, favorites grid, pinned rows, folders,
+    /// regular tabs, status, toggle, plus menu, footer row) plus the §5 4 pt
+    /// resize divider on the right edge. The divider is focusable and
+    /// carries the stable §15 id; the collapse control keeps the `Cmd-B`
+    /// pointer entry. The U2 surfaces (spaces region, favorites, folders,
+    /// plus menu, footer) are composed by `u2_surface` helpers.
     pub(crate) fn sidebar_surface(
-        &self,
+        &mut self,
         theme: &Theme,
         sidebar_width: f32,
         chrome_focused: bool,
@@ -34,12 +37,17 @@ impl BbrApp {
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let p = theme.palette;
-        let tab_surface = self.tab_surface(theme, window, cx);
+        // The U2 rail inputs (favorites tiles, folder rows/members) derived
+        // once per frame and shared by the tab/favorites/folders surfaces.
+        let u2 = self.u2_rail_data();
+        let tab_surface = self.tab_surface(theme, window, cx, &u2.folder_rows, &u2.folder_members);
         let space_surface = self.space_surface(theme, window, cx);
         let command_bar = self.command_bar(theme, chrome_focused, cx);
         // §11.5 result palette: the only chrome surface opening over the
         // rail's own content (native web views are real child views).
         let command_results = self.command_result_surface(theme);
+        let favorites = self.favorites_surface(theme, &u2.favorite_tiles, cx);
+        let plus_menu = self.plus_menu_surface(theme, cx);
         let status_text: SharedString =
             crate::shell::status_line(&self.controller.snapshot()).into();
         let divider_focused = self.divider_handle.is_focused(window);
@@ -95,7 +103,9 @@ impl BbrApp {
                     .when(command_results.is_some(), |column| {
                         column.child(command_results.expect("checked above"))
                     })
-                    .child(space_surface)
+                    // §11.4 region order: spaces (while revealed) → favorites →
+                    // tabs → status → toggle → plus menu → footer.
+                    .map(|column| self.u2_pre_tab_children(column, space_surface, favorites))
                     .child(tab_surface)
                     .child(
                         div()
@@ -121,7 +131,8 @@ impl BbrApp {
                                 }),
                             )
                             .child("Sidebar (Cmd-B)"),
-                    ),
+                    )
+                    .map(|column| self.u2_post_tab_children(column, plus_menu, theme, cx)),
             )
             .child(sidebar_divider(
                 theme,
@@ -133,11 +144,13 @@ impl BbrApp {
     }
 
     /// The controller-backed tab surface: the pinned region as a fixed block
-    /// above the regular region's scroll view (DESIGN.md §11.2/§11.6). Rows
-    /// are wired to the production pointer path (`select_row_via_pointer` /
-    /// `close_row_via_pointer` / `toggle_row_pin` / `begin_tab_drag`), and an
-    /// active drag renders the §10.9 insertion tick at its target slot
-    /// (muted when the drop would be illegal).
+    /// above the regular region's scroll view (DESIGN.md §11.2/§11.6), with
+    /// the §11.11 folders list between the pinned block and the Tabs
+    /// section. Rows are wired to the production
+    /// pointer path (`select_row_via_pointer` / `close_row_via_pointer` /
+    /// `toggle_row_pin` / `begin_tab_drag`), and an active drag renders the
+    /// §10.9 insertion tick at its target slot (muted when the drop would be
+    /// illegal).
     ///
     /// The regular region renders only the bounded window around the
     /// production scroll anchor (`dense::window_for`, ≤ `DENSE_WINDOW_ROWS`
@@ -146,7 +159,14 @@ impl BbrApp {
     /// as if every row were laid out, while a 500-tab list never lays out
     /// 500 rows per frame. The pinned region renders all of its rows: it is
     /// a small, stable block and must never shift on selection (§11.2).
-    fn tab_surface(&self, theme: &Theme, window: &Window, cx: &mut Context<Self>) -> Stateful<Div> {
+    fn tab_surface(
+        &self,
+        theme: &Theme,
+        window: &Window,
+        cx: &mut Context<Self>,
+        folder_rows: &[crate::components::FolderRowSpec],
+        folder_members: &[crate::components::FolderMemberVisual],
+    ) -> Stateful<Div> {
         let browser = self.controller.snapshot();
         let pinned = crate::shell::pinned_count(&browser.tabs);
         let regular = &browser.tabs[pinned..];
@@ -191,6 +211,12 @@ impl BbrApp {
                     .bg(theme.palette.hairline)
                     .into_any(),
             );
+        }
+        // The §11.11 folders list sits between the pinned block and the Tabs
+        // section (hidden entirely while no folder exists).
+        let folders = self.folders_surface(theme, folder_rows, folder_members, window, cx);
+        if let Some(folders) = folders {
+            children.push(folders.into_any());
         }
         if !regular.is_empty() {
             children.push(components::section_label(theme, "Tabs", list_focused).into_any());

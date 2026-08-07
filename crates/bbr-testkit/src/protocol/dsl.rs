@@ -73,6 +73,50 @@ pub fn click_tab_pin(index: usize) -> Request {
     Request::ClickTabPin { index }
 }
 
+pub fn click_footer_downloads() -> Request {
+    Request::ClickFooterDownloads
+}
+
+pub fn click_footer_spaces() -> Request {
+    Request::ClickFooterSpaces
+}
+
+pub fn click_footer_plus() -> Request {
+    Request::ClickFooterPlus
+}
+
+pub fn click_plus_menu_item(index: usize) -> Request {
+    Request::ClickPlusMenuItem { index }
+}
+
+pub fn toggle_favorite_tab(index: usize) -> Request {
+    Request::ToggleFavoriteTab { index }
+}
+
+pub fn click_favorite_tile(index: usize) -> Request {
+    Request::ClickFavoriteTile { index }
+}
+
+pub fn click_folder_row(index: usize) -> Request {
+    Request::ClickFolderRow { index }
+}
+
+pub fn click_folder_toggle(index: usize) -> Request {
+    Request::ClickFolderToggle { index }
+}
+
+pub fn click_folder_member(folder: usize, member: usize) -> Request {
+    Request::ClickFolderMember { folder, member }
+}
+
+pub fn click_folder_member_close(folder: usize, member: usize) -> Request {
+    Request::ClickFolderMemberClose { folder, member }
+}
+
+pub fn move_tab_into_folder(index: usize, folder: usize) -> Request {
+    Request::MoveTabIntoFolder { index, folder }
+}
+
 pub fn begin_tab_drag(index: usize, y: f32, press_in_row: f32) -> Request {
     Request::BeginTabDrag {
         index,

@@ -26,6 +26,9 @@ use crate::app::palette::CommandSurface;
 mod command;
 use crate::components::{RowVisuals, SpaceRowVisuals, SpaceVisualState, TabVisualState};
 use command::{command_field_node, command_surface_node};
+mod content;
+use content::content_node;
+pub use content::SemanticContent;
 
 /// Which GPUI chrome surface owns keyboard focus (§9: the focused control
 /// renders the ring; the model exposes the same fact typed).
@@ -35,6 +38,10 @@ pub struct SemanticFocus {
     pub spaces: bool,
     pub tabs: bool,
     pub divider: bool,
+    /// The §11.11 folders region (Enter/Space toggles the focused row).
+    pub folders: bool,
+    /// The §11.4 plus menu surface (keyboard selection while open).
+    pub plus_menu: bool,
 }
 
 /// The §11.3 cross-context command-field hint: the destination profile of a
@@ -78,15 +85,6 @@ pub struct SemanticCommand {
     pub results: Vec<SemanticResultRow>,
 }
 
-/// The glass content area: the native slot, the empty pane, or the crash
-/// panel — mirroring the branch `Render::render` builds.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SemanticContent {
-    Native,
-    Empty { profile_line: String },
-    Crash,
-}
-
 /// All inputs the semantic tree needs, derived by the app snapshot from the
 /// same sources the render uses.
 #[derive(Debug, Clone)]
@@ -107,6 +105,18 @@ pub struct SemanticInput<'a> {
     pub rows: &'a [RowVisuals],
     /// The rendered space rows in render order (grouped by profile).
     pub space_rows: &'a [SpaceRowVisuals],
+    /// Whether the §11.3 spaces region is revealed under the command field
+    /// (hidden space rows are not part of the §9 traversal order).
+    pub spaces_visible: bool,
+    /// The rendered §11.10 favorite destination tiles (empty → region
+    /// hidden with its label).
+    pub favorites: &'a [crate::components::FavoriteTileSpec],
+    /// The rendered §11.11 folder rows (empty → region hidden).
+    pub folder_rows: &'a [crate::components::FolderRowSpec],
+    /// The expanded folders' nested member rows (title/letter per position).
+    pub folder_members: &'a [crate::components::FolderMemberVisual],
+    /// The §11.4 plus-menu state (the menu node renders only while open).
+    pub plus_menu: crate::components::menu::PlusMenuState,
     /// The content-pane branch.
     pub content: SemanticContent,
 }
@@ -133,7 +143,9 @@ pub fn semantic_tree(input: &SemanticInput<'_>) -> Vec<SemanticNode> {
         focused: input.focus.command
             || input.focus.spaces
             || input.focus.tabs
-            || input.focus.divider,
+            || input.focus.divider
+            || input.focus.folders
+            || input.focus.plus_menu,
         children: root_children,
     };
     vec![root]
@@ -151,34 +163,47 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
             vec![],
         ),
         command_field_node(input),
-        spaces_list_node(input),
-        tabs_list_node(input),
-        node(
-            "bbr-status",
-            SemanticRole::Status,
-            Some(crate::shell::status_line(input.browser)),
-            None,
-            false,
-            false,
-            vec![],
-        ),
-        node(
-            "bbr-sidebar-toggle",
-            SemanticRole::Button,
-            Some("Sidebar (Cmd-B)".into()),
-            Some(
-                if input.sidebar_visible {
-                    "visible"
-                } else {
-                    "collapsed"
-                }
-                .into(),
-            ),
-            false,
-            false,
-            vec![],
-        ),
     ];
+    // §11.4 region order: command field → spaces region (only while
+    // revealed) → favorites grid → pinned → folders → regular tabs → status
+    // row → footer row. Hidden regions render no nodes (§15 mirrors the
+    // render; hidden space rows are not part of the §9 traversal order).
+    if input.spaces_visible {
+        children.push(spaces_list_node(input));
+    }
+    if let Some(favorites) = u2::favorites_node(input.favorites, input.browser) {
+        children.push(favorites);
+    }
+    children.push(tabs_list_node(input));
+    children.push(node(
+        "bbr-status",
+        SemanticRole::Status,
+        Some(crate::shell::status_line(input.browser)),
+        None,
+        false,
+        false,
+        vec![],
+    ));
+    children.push(node(
+        "bbr-sidebar-toggle",
+        SemanticRole::Button,
+        Some("Sidebar (Cmd-B)".into()),
+        Some(
+            if input.sidebar_visible {
+                "visible"
+            } else {
+                "collapsed"
+            }
+            .into(),
+        ),
+        false,
+        false,
+        vec![],
+    ));
+    if let Some(menu) = u2::plus_menu_node(&input.plus_menu) {
+        children.push(menu);
+    }
+    children.push(u2::footer_node());
     children.push(SemanticNode {
         id: crate::sidebar::SIDEBAR_DIVIDER_ID.into(),
         role: SemanticRole::Divider,
@@ -272,8 +297,10 @@ fn space_row_node(row: &SpaceRowVisuals, list_focused: bool) -> SemanticNode {
 
 fn tabs_list_node(input: &SemanticInput<'_>) -> SemanticNode {
     // Mirror the render's order: the Pinned section label + pinned rows,
-    // then the Tabs section label + the bounded regular window rows (the
-    // hairline between them is presence, not content — §2, skipped here).
+    // then the Folders section (when folders exist), then the Tabs section
+    // label + the bounded regular window rows (the hairline between them is
+    // presence, not content — §2, skipped here). The folders section carries
+    // the nested member rows of expanded folders.
     let pinned = crate::shell::pinned_count(&input.browser.tabs);
     let regular_count = input.browser.tabs.len().saturating_sub(pinned);
     let mut children: Vec<SemanticNode> = Vec::new();
@@ -284,6 +311,9 @@ fn tabs_list_node(input: &SemanticInput<'_>) -> SemanticNode {
         if row.index < pinned {
             children.push(tab_row_node(row, input.focus.tabs));
         }
+    }
+    if let Some(folders) = u2::folders_node(input.folder_rows, input.folder_members) {
+        children.push(folders);
     }
     if regular_count > 0 {
         children.push(section_node("Tabs", input.focus.tabs));
@@ -387,69 +417,12 @@ fn section_node(text: &str, _list_focused: bool) -> SemanticNode {
     )
 }
 
-fn content_node(content: &SemanticContent) -> SemanticNode {
-    match content {
-        SemanticContent::Native => node(
-            "bbr-native-web-slot",
-            SemanticRole::Content,
-            Some("Web content".into()),
-            None,
-            false,
-            false,
-            vec![],
-        ),
-        SemanticContent::Empty { profile_line } => {
-            let mut children = vec![node(
-                "bbr-empty-new-tab-button",
-                SemanticRole::Button,
-                Some("New Tab  ⌘T".into()),
-                None,
-                false,
-                false,
-                vec![],
-            )];
-            let mut pane = node(
-                "bbr-empty-new-tab",
-                SemanticRole::Content,
-                Some("No tabs in this space".into()),
-                Some(profile_line.clone()),
-                false,
-                false,
-                vec![],
-            );
-            pane.children.append(&mut children);
-            pane
-        }
-        SemanticContent::Crash => node(
-            "bbr-crash-panel",
-            SemanticRole::Content,
-            Some("This page crashed".into()),
-            None,
-            false,
-            false,
-            vec![
-                node(
-                    "bbr-crash-reload",
-                    SemanticRole::Button,
-                    Some("Reload".into()),
-                    None,
-                    false,
-                    false,
-                    vec![],
-                ),
-                node(
-                    "bbr-crash-close",
-                    SemanticRole::Button,
-                    Some("Close tab".into()),
-                    None,
-                    false,
-                    false,
-                    vec![],
-                ),
-            ],
-        ),
-    }
-}
+// U2 §15 node builders live in [`u2`] (footer row, plus menu, favorites
+// grid, folders list) so no module outgrows the size budget.
+pub mod u2;
+
+// The content-pane branch lives in [`content`] (native slot / empty
+// new-tab / crash panel), mirroring `Render::render`'s content selection.
 
 fn node(
     id: impl Into<String>,

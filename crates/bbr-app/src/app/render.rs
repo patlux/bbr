@@ -8,7 +8,7 @@
 //! mouse-move follows an active drag anywhere over the window and mouse-up
 //! commits it, so the 4 pt divider keeps working when the cursor leaves it.
 
-use gpui::{div, prelude::*, Context, MouseButton, Render, Window};
+use gpui::{div, prelude::*, Context, MouseButton, MouseDownEvent, Render, Window};
 
 use crate::components;
 use crate::slot::NativeWebViewSlot;
@@ -156,6 +156,20 @@ impl Render for BbrApp {
             .size_full()
             .bg(p.surface_canvas)
             .on_key_down(cx.listener(Self::on_chrome_key_down))
+            // §11.4 plus-menu outside-press dismissal: any GPUI pointer press
+            // outside the open menu surface closes it (one pointer action, §13).
+            // The menu surface and the `[+]` control stop propagation for
+            // their own presses, so a press inside the menu never reaches
+            // this root handler; a press anywhere else (a tab row, a space
+            // row, a footer control, the divider) both performs its normal
+            // action and dismisses the menu. Clicks on the native web view
+            // are platform child-view events and never reach GPUI's tree.
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, _e: &MouseDownEvent, window, cx| {
+                    this.dismiss_plus_menu_on_outside_press(window, cx);
+                }),
+            )
             .on_mouse_move(cx.listener(Self::on_sidebar_drag_move))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::on_sidebar_drag_end))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_sidebar_drag_end))
