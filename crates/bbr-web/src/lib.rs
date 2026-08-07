@@ -23,6 +23,8 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
+pub mod find_in_page;
+
 /// Stable identifier of a browsing profile. Maps 1:1 to a persistent
 /// [`WKWebsiteDataStore`] on macOS.
 ///
