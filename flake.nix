@@ -58,10 +58,18 @@
                 libiconv
               ];
 
-            env = {
-              LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-              RUST_BACKTRACE = "1";
-            };
+            env =
+              {
+                LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+                RUST_BACKTRACE = "1";
+              }
+              // pkgs.lib.optionalAttrs pkgs.stdenv.isDarwin {
+                # The real Apple cc is required for GPUI/Xcode integration but
+                # does not interpret Nix's NIX_LDFLAGS. Expose libiconv through
+                # the standard linker search variable so cold build scripts
+                # can resolve -liconv without replacing Apple's toolchain.
+                LIBRARY_PATH = "${pkgs.libiconv}/lib";
+              };
 
             shellHook = ''
               # Real Apple xcrun must win over the closure's xcbuild fake xcrun:
