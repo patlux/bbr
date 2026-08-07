@@ -17,7 +17,10 @@ rooted at the exact foundation anchor and integrated before command UI. The
 portable core is implemented and verified. The bounded
 [command app-composition packet](../tasks/command-composition.md) is integrated
 at `872d222ca91395fc6e7e60c98ff942630b74cf6d` after independent review and
-remediation; later history-provider composition remains Phase 7 work.
+remediation. The active presentation slice is the
+[browser-MVP palette UI packet](../tasks/browser-mvp-palette-ui.md), rooted at
+the reviewed post-anchor base `f89a479`; later history-provider composition
+remains Phase 7 work.
 
 ## Checklist
 
