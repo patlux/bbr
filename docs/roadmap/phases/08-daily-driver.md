@@ -10,10 +10,10 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 
 - [ ] Deliver downloads destination, progress, history, reveal, retry, and failure UI through the bounded [downloads sidebar panel](../tasks/downloads-sidebar-panel.md).
 - [ ] Deliver find in page with keyboard navigation and result count through the bounded [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md).
-- [ ] Camera, microphone, location, notification, and clipboard permission surfaces where supported.
+- [ ] Define the portable request/decision authority through the bounded [permissions contract](../tasks/permissions-contract.md), then deliver camera, microphone, location, notification, and clipboard surfaces where supported.
 - [ ] Authentication challenges and supported client-certificate flows.
 - [ ] File upload and save panels.
-- [ ] TLS, navigation, offline, and process-crash error surfaces with recovery actions.
+- [ ] Define the typed taxonomy and legal recovery actions through the bounded [web error and recovery contract](../tasks/error-surface-contract.md), then deliver TLS, navigation, offline, and process-crash surfaces.
 - [ ] History UI and clear-data controls per profile.
 - [ ] Default-browser registration and external URL opening.
 - [ ] Native menus, Services, window lifecycle, and app updates, including [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md).
