@@ -257,7 +257,7 @@ impl BbrApp {
     }
 
     pub(super) fn focus_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        window.focus(&self.chrome_handle);
+        window.focus(&self.chrome_handle, cx);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
         self.emit_focus(window);
@@ -371,7 +371,7 @@ impl BbrApp {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
         self.command_ranking.close();
-        window.focus(&self.chrome_handle);
+        window.focus(&self.chrome_handle, cx);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
         self.emit_focus(window);

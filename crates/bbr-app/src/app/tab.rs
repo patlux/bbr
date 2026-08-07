@@ -50,7 +50,7 @@ impl BbrApp {
         self.command_bar_mode = crate::command_bar::CommandBarMode::Inactive;
         self.command_bar_return = None;
         self.command_ranking.close();
-        window.focus(&self.tab_list_handle);
+        window.focus(&self.tab_list_handle, cx);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
         self.emit_focus(window);

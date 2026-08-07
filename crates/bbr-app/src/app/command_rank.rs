@@ -188,12 +188,10 @@ impl CommandRanking {
                 .background_executor()
                 .timer(Duration::from_millis(DEBOUNCE_MS))
                 .await;
-            async_cx
-                .update(|cx| {
-                    let _ =
-                        weak.update(cx, |view, cx| view.publish_command_ranking(generation, cx));
-                })
-                .ok();
+            // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).
+            async_cx.update(|cx| {
+                let _ = weak.update(cx, |view, cx| view.publish_command_ranking(generation, cx));
+            });
         }));
     }
 

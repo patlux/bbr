@@ -18,12 +18,14 @@ use std::time::Duration;
 
 use bbr_testkit::protocol::{Error, Event, Request, Response};
 use bbr_testkit::GatewayServer;
-use gpui::{App, WindowHandle};
+use gpui::{App, Entity, WindowHandle};
 
 use crate::app::BbrApp;
+use crate::window_seam::with_app;
 
 mod dispatch;
 mod dispatch_benchmark;
+mod dispatch_drag;
 mod snapshot;
 pub(crate) use snapshot::browser_change;
 
@@ -92,13 +94,15 @@ fn dispatch_from_worker(req: Request, cmd_tx: &smol::channel::Sender<GatewayComm
 /// stays live even without the testkit feature.
 pub fn spawn_pump(
     cx: &App,
-    window: &WindowHandle<BbrApp>,
+    window: &WindowHandle<gpui_component::Root>,
+    app: &Entity<BbrApp>,
     evt_rx: smol::channel::Receiver<bbr_web::WebEvent>,
     inject_tx: smol::channel::Sender<bbr_web::WebEvent>,
     cmd_rx: smol::channel::Receiver<GatewayCommand>,
     server: Option<Arc<GatewayServer>>,
 ) {
     let window = *window;
+    let app = app.clone();
     let server = server.clone();
     cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
         enum Incoming {
@@ -123,19 +127,18 @@ pub fn spawn_pump(
                         let _ = inject_tx.try_send(event.clone());
                         Response::Ok
                     }
-                    _ => handle_command(msg.req, &window, &server, async_cx).await,
+                    _ => handle_command(msg.req, &window, &app, &server, async_cx).await,
                 };
                 let _ = msg.reply_tx.send(resp).await;
             }
             Incoming::Event(Ok(ev)) => {
-                async_cx
-                    .update(|cx| {
-                        if let Some(server) = &server {
-                            server.broadcast(Event::Web(ev.clone()));
-                        }
-                        let _ = window.update(cx, |view, _w, cx| view.on_web_event(ev, cx));
-                    })
-                    .ok();
+                // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).
+                async_cx.update(|cx| {
+                    if let Some(server) = &server {
+                        server.broadcast(Event::Web(ev.clone()));
+                    }
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| view.on_web_event(ev, cx));
+                });
             }
             Incoming::Command(Err(_)) | Incoming::Event(Err(_)) => break,
         }
@@ -146,12 +149,13 @@ pub fn spawn_pump(
 /// Handle one gateway command on the main thread and return its response.
 async fn handle_command(
     req: Request,
-    window: &WindowHandle<BbrApp>,
+    window: &WindowHandle<gpui_component::Root>,
+    app: &Entity<BbrApp>,
     server: &Option<Arc<GatewayServer>>,
     async_cx: &mut gpui::AsyncApp,
 ) -> Response {
     let server = server.clone();
-    async_cx
-        .update(|cx| dispatch::dispatch(req, window, server, cx))
-        .unwrap_or_else(|_| Response::Error(Error::new("app_closed", "app is shutting down")))
+    // GPUI-CE `AsyncApp::update` is infallible (no `.unwrap_or_else`); the
+    // dispatch itself returns the `Response` for every request.
+    async_cx.update(|cx| dispatch::dispatch(req, window, app, server, cx))
 }

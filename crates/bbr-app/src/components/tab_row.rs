@@ -266,5 +266,7 @@ fn elev2_shadow(theme: &Theme) -> Vec<gpui::BoxShadow> {
         offset: gpui::point(px(0.0), px(12.0)),
         blur_radius: px(24.0),
         spread_radius: px(0.0),
+        // GPUI-CE added the `inset` field to `BoxShadow`.
+        inset: false,
     }]
 }

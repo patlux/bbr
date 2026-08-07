@@ -12,21 +12,29 @@ use std::sync::Arc;
 use bbr_browser::ControllerEvent;
 use bbr_testkit::protocol::{Error, Event, Request, Response};
 use bbr_testkit::GatewayServer;
-use gpui::{px, size, App, Keystroke, WindowHandle};
+use gpui::{px, size, App, Entity, Keystroke, WindowHandle};
+
+use crate::window_seam::with_app;
 
 use crate::app::BbrApp;
 use crate::testkit::dispatch_benchmark::dispatch_benchmark;
+use crate::testkit::dispatch_drag::dispatch_drag;
 use crate::testkit::snapshot::SnapshotExt;
 
 pub(crate) fn dispatch(
     req: Request,
-    window: &WindowHandle<BbrApp>,
+    window: &WindowHandle<gpui_component::Root>,
+    app: &Entity<BbrApp>,
     server: Option<Arc<GatewayServer>>,
     cx: &mut App,
 ) -> Response {
     // The performance arms live in `dispatch_benchmark` so this router stays
     // under the ~500-line budget; every other request falls through here.
-    if let Some(response) = dispatch_benchmark(&req, window, cx) {
+    if let Some(response) = dispatch_benchmark(&req, window, app, cx) {
+        return response;
+    }
+    // The tab-drag pointer arms live in `dispatch_drag` (same split reason).
+    if let Some(response) = dispatch_drag(&req, window, app, cx) {
         return response;
     }
     let broadcast = |server: &Option<Arc<GatewayServer>>, ev: Event| {
@@ -38,18 +46,18 @@ pub(crate) fn dispatch(
         Request::CreateProfile {
             profile_title,
             space_title,
-        } => browser_mutation(window.update(cx, |view, _window, cx| {
+        } => browser_mutation(with_app(window, app, cx, |view, _window, cx| {
             view.create_profile_space(&profile_title, &space_title, cx)
         })),
 
         Request::CreateSpace { profile, title } => {
-            browser_mutation(window.update(cx, |view, _window, cx| {
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
                 view.create_space(profile, &title, cx)
             }))
         }
 
         Request::ActivateSpace { space } => {
-            browser_mutation(window.update(cx, |view, window, cx| {
+            browser_mutation(with_app(window, app, cx, |view, window, cx| {
                 view.activate_space(bbr_browser::SpaceId(space.0), window, cx)
             }))
         }
@@ -58,85 +66,92 @@ pub(crate) fn dispatch(
         // the row mouse-down listeners call, so the asserted scenario
         // exercises the production listener path rather than a direct
         // controller call.
-        Request::ClickSpace { space } => window
-            .update(cx, |view, window, cx| {
-                view.select_space_via_pointer(bbr_browser::SpaceId(space.0), window, cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
+        Request::ClickSpace { space } => with_app(window, app, cx, |view, window, cx| {
+            view.select_space_via_pointer(bbr_browser::SpaceId(space.0), window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
-        Request::ClickSpaceNew => window
-            .update(cx, |view, window, cx| {
-                view.activate_new_space(window, cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
+        Request::ClickSpaceNew => with_app(window, app, cx, |view, window, cx| {
+            view.activate_new_space(window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
         Request::OpenTab { url } => {
-            browser_mutation(window.update(cx, |view, _window, cx| view.open_tab(&url, cx)))
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
+                view.open_tab(&url, cx)
+            }))
         }
 
         Request::SelectTab { index } => {
-            browser_mutation(window.update(cx, |view, _window, cx| view.select_tab(index, cx)))
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
+                view.select_tab(index, cx)
+            }))
         }
 
         Request::CloseTab { index } => {
-            browser_mutation(window.update(cx, |view, _window, cx| view.close_tab(index, cx)))
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
+                view.close_tab(index, cx)
+            }))
         }
 
-        Request::ReopenTab => {
-            browser_mutation(window.update(cx, |view, window, cx| view.reopen_tab(window, cx)))
-        }
+        Request::ReopenTab => browser_mutation(with_app(window, app, cx, |view, window, cx| {
+            view.reopen_tab(window, cx)
+        })),
 
         // The split shared-contract seam: open/close the two-pane layout
         // through the production controller split path (the split-core lane
         // owns the user-facing creation UI). Both arms sync engine
         // visibility, notify the view, and broadcast the typed outcome.
         Request::SetSplit { primary, secondary } => {
-            browser_mutation(window.update(cx, |view, _window, cx| {
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
                 view.set_split(primary, secondary, cx)
             }))
         }
 
-        Request::CloseSplit => {
-            browser_mutation(window.update(cx, |view, _window, cx| view.close_split(cx)))
-        }
+        Request::CloseSplit => browser_mutation(with_app(window, app, cx, |view, _window, cx| {
+            view.close_split(cx)
+        })),
 
         Request::PinTab { index } => {
-            browser_mutation(window.update(cx, |view, _window, cx| view.pin_tab(index, cx)))
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
+                view.pin_tab(index, cx)
+            }))
         }
 
         Request::UnpinTab { index } => {
-            browser_mutation(window.update(cx, |view, _window, cx| view.unpin_tab(index, cx)))
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
+                view.unpin_tab(index, cx)
+            }))
         }
 
-        Request::ReorderTab { from, to } => browser_mutation(
-            window.update(cx, |view, _window, cx| view.reorder_tab_seam(from, to, cx)),
-        ),
+        Request::ReorderTab { from, to } => {
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
+                view.reorder_tab_seam(from, to, cx)
+            }))
+        }
 
         // Pointer-path activation of visible rows: the same app methods the
         // row mouse-down listeners call, so the asserted scenario exercises
         // the production listener path rather than a direct controller call.
-        Request::ClickTab { index } => window
-            .update(cx, |view, window, cx| {
-                view.select_row_via_pointer(index, window, cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
+        Request::ClickTab { index } => with_app(window, app, cx, |view, window, cx| {
+            view.select_row_via_pointer(index, window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
-        Request::ClickTabClose { index } => window
-            .update(cx, |view, window, cx| {
-                view.close_row_via_pointer(index, window, cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
+        Request::ClickTabClose { index } => with_app(window, app, cx, |view, window, cx| {
+            view.close_row_via_pointer(index, window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
-        Request::ClickTabPin { index } => window
-            .update(cx, |view, window, cx| {
-                view.toggle_row_pin(index, window, cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
+        Request::ClickTabPin { index } => with_app(window, app, cx, |view, window, cx| {
+            view.toggle_row_pin(index, window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
         // Pointer hover/press state through the production listener methods
         // (the exact app handlers the row's `on_hover` and mouse-down/up
@@ -144,113 +159,33 @@ pub(crate) fn dispatch(
         // close reveal and the §10.3 pressed wash. Never a direct snapshot
         // mutation — the states mutate the same app fields the real pointer
         // paths drive, and the render derives the visual from them.
-        Request::HoverTabRow { index } => window
-            .update(cx, |view, _window, cx| {
-                view.set_row_hover(index, true, cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
-        Request::UnhoverTabRow => window
-            .update(cx, |view, _window, cx| {
-                view.clear_row_hover(cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
-        Request::PressTabRow { index } => window
-            .update(cx, |view, _window, cx| {
-                view.set_row_pressed(index, cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
-        Request::ReleaseTabRow => window
-            .update(cx, |view, _window, cx| {
-                view.clear_row_pressed(cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
-
-        // Pointer drag on a tab row through the production listener methods
-        // (the same begin/move/end handlers the element listeners drive),
-        // exactly like the `DragSidebarDivider` seam: never a direct
-        // controller mutation. The press is anchored at `y` with the press
-        // `press_in_row` within the source row; moves are displacements from
-        // it; the app resolves typed targets and legality.
-        Request::BeginTabDrag {
-            index,
-            y,
-            press_in_row,
-        } => window
-            .update(cx, |view, window, cx| {
-                use gpui::{point, px, Modifiers, MouseButton, MouseDownEvent};
-                view.begin_tab_drag(
-                    &MouseDownEvent {
-                        button: MouseButton::Left,
-                        position: point(px(130.0), px(y)),
-                        modifiers: Modifiers::default(),
-                        click_count: 1,
-                        first_mouse: true,
-                    },
-                    index,
-                    window,
-                    cx,
-                );
-                // The seam records the true press offset on the drag state so
-                // subsequent moves resolve targets from the same anchor the
-                // scenario simulated.
-                view.set_tab_drag_press_in_row(press_in_row);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
-
-        Request::MoveTabDrag { dy } => window
-            .update(cx, |view, window, cx| {
-                use gpui::{point, px, Modifiers, MouseButton, MouseMoveEvent};
-                // The app only ever uses the displacement from the press y,
-                // so the seam's positions stay consistent by construction.
-                let y = view.tab_drag_start_y().unwrap_or(0.0) + dy;
-                view.on_tab_drag_move(
-                    &MouseMoveEvent {
-                        position: point(px(130.0), px(y)),
-                        pressed_button: Some(MouseButton::Left),
-                        modifiers: Modifiers::default(),
-                    },
-                    window,
-                    cx,
-                );
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
-
-        Request::EndTabDrag => window
-            .update(cx, |view, window, cx| {
-                use gpui::{point, px, Modifiers, MouseButton, MouseUpEvent};
-                let y = view.tab_drag_start_y().unwrap_or(0.0);
-                view.end_tab_drag(
-                    &MouseUpEvent {
-                        button: MouseButton::Left,
-                        position: point(px(130.0), px(y)),
-                        modifiers: Modifiers::default(),
-                        click_count: 1,
-                    },
-                    window,
-                    cx,
-                );
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
-
-        Request::CancelTabDrag => window
-            .update(cx, |view, window, cx| {
-                view.cancel_tab_drag(window, cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
+        Request::HoverTabRow { index } => with_app(window, app, cx, |view, _window, cx| {
+            view.set_row_hover(index, true, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::UnhoverTabRow => with_app(window, app, cx, |view, _window, cx| {
+            view.clear_row_hover(cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::PressTabRow { index } => with_app(window, app, cx, |view, _window, cx| {
+            view.set_row_pressed(index, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::ReleaseTabRow => with_app(window, app, cx, |view, _window, cx| {
+            view.clear_row_pressed(cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
         Request::Navigate { url } => {
-            let r = window
-                .update(cx, |view, window, cx| view.navigate(&url, window, cx))
-                .map(|_| Response::Ok)
-                .unwrap_or_else(err_response);
+            let r = with_app(window, app, cx, |view, window, cx| {
+                view.navigate(&url, window, cx)
+            })
+            .map(|_| Response::Ok)
+            .unwrap_or_else(err_response);
             broadcast(
                 &server,
                 Event::CommandBarChanged {
@@ -262,13 +197,15 @@ pub(crate) fn dispatch(
         }
 
         Request::MoveTab { index, to_space } => {
-            browser_mutation(window.update(cx, |view, _window, cx| {
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
                 view.move_tab(index, bbr_browser::SpaceId(to_space.0), cx)
             }))
         }
 
         Request::SuspendTab { index } => {
-            browser_mutation(window.update(cx, |view, _window, cx| view.suspend_tab(index, cx)))
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
+                view.suspend_tab(index, cx)
+            }))
         }
 
         // Deterministic dense-list seeding (DESIGN.md §11.6): open
@@ -284,15 +221,17 @@ pub(crate) fn dispatch(
             pinned_count,
             recent_start,
             url,
-        } => browser_mutation(window.update(cx, |view, _window, cx| {
+        } => browser_mutation(with_app(window, app, cx, |view, _window, cx| {
             view.seed_dense_state(tab_count, pinned_count, recent_start, &url, cx)
         })),
 
         // Deterministic session-budget convergence (testkit-only setup; the
         // policy is the production lifecycle path).
-        Request::EnforceSessionBudget { cap } => browser_mutation(
-            window.update(cx, |view, _window, cx| view.enforce_session_budget(cap, cx)),
-        ),
+        Request::EnforceSessionBudget { cap } => {
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
+                view.enforce_session_budget(cap, cx)
+            }))
+        }
 
         // A real scroll of the dense regular tab region through the
         // production scroll state: the tracked `ScrollHandle` the native
@@ -304,10 +243,11 @@ pub(crate) fn dispatch(
         // bounded window the scroll produced. Never a direct snapshot
         // mutation.
         Request::ScrollDenseTabs { delta_px } => {
-            let scrolled = window
-                .update(cx, |view, _window, _cx| view.scroll_dense_list(delta_px))
-                .map(|_| Response::Ok)
-                .unwrap_or_else(err_response);
+            let scrolled = with_app(window, app, cx, |view, _window, _cx| {
+                view.scroll_dense_list(delta_px)
+            })
+            .map(|_| Response::Ok)
+            .unwrap_or_else(err_response);
             let _ = (**window).update(cx, |_root, window, cx| {
                 let app: &mut App = cx;
                 let _ = window.draw(app);
@@ -315,29 +255,32 @@ pub(crate) fn dispatch(
             scrolled
         }
 
-        Request::WebAction(action) => window
-            .update(cx, |view, _w, _cx| view.web_action(action))
-            .map(|outcome| {
-                if outcome.is_some() {
-                    Response::Ok
-                } else {
-                    Response::Error(Error::new("browser_error", "web action was rejected"))
-                }
-            })
-            .unwrap_or_else(err_response),
+        Request::WebAction(action) => {
+            with_app(window, app, cx, |view, _w, _cx| view.web_action(action))
+                .map(|outcome| {
+                    if outcome.is_some() {
+                        Response::Ok
+                    } else {
+                        Response::Error(Error::new("browser_error", "web action was rejected"))
+                    }
+                })
+                .unwrap_or_else(err_response)
+        }
 
-        Request::ActivateCommandBar => window
-            .update(cx, |view, window, cx| view.activate_command_bar(window, cx))
-            .map(|_| Response::Ok)
-            .unwrap_or_else(err_response),
+        Request::ActivateCommandBar => with_app(window, app, cx, |view, window, cx| {
+            view.activate_command_bar(window, cx)
+        })
+        .map(|_| Response::Ok)
+        .unwrap_or_else(err_response),
 
-        Request::FocusWeb => window
-            .update(cx, |view, window, cx| view.focus_web(window, cx))
-            .map(|_| Response::Ok)
-            .unwrap_or_else(err_response),
+        Request::FocusWeb => with_app(window, app, cx, |view, window, cx| {
+            view.focus_web(window, cx)
+        })
+        .map(|_| Response::Ok)
+        .unwrap_or_else(err_response),
 
         Request::SetCommandBarText { text } => {
-            let result = window.update(cx, |view, _w, cx| {
+            let result = with_app(window, app, cx, |view, _w, cx| {
                 view.command_text.set_text(text.clone());
                 // The seam types like the user: every text mutation restarts
                 // the ranking debounce (the deterministic flush then cancels
@@ -358,12 +301,11 @@ pub(crate) fn dispatch(
         // pending debounce timer and publishes the current generation's
         // ranked results synchronously, so E2E asserts burst typing (only the
         // final generation ever publishes) without waiting on real time.
-        Request::FlushCommandRanking => window
-            .update(cx, |view, _w, cx| {
-                view.flush_command_ranking(cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
+        Request::FlushCommandRanking => with_app(window, app, cx, |view, _w, cx| {
+            view.flush_command_ranking(cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
         Request::DispatchKeystroke { keystroke } => {
             let ks = match Keystroke::parse(&keystroke) {
@@ -380,9 +322,9 @@ pub(crate) fn dispatch(
             // nested render would double-lease and panic ("cannot update BbrApp
             // while it is already being updated"). `AnyWindowHandle::update`
             // borrows only the window, leaving the entity free for the render.
-            // Note the double deref: `window` is `&WindowHandle<BbrApp>` (Copy),
-            // so `*window` is the typed handle again; `**window` reaches the
-            // deref target `AnyWindowHandle`.
+            // Note the double deref: `window` is `&WindowHandle<gpui_component::Root>`
+            // (Copy), so `*window` is the typed handle again; `**window` reaches
+            // the deref target `AnyWindowHandle`.
             (**window)
                 .update(cx, |_root, window, cx| {
                     window.dispatch_keystroke(ks, cx);
@@ -391,33 +333,33 @@ pub(crate) fn dispatch(
                 .unwrap_or_else(|e| Response::Error(Error::new("app_error", e.to_string())))
         }
 
-        Request::GetSnapshot => window
-            .update(cx, |view, window, _cx| view.snapshot(window).to_protocol())
-            .map(Response::Snapshot)
-            .unwrap_or_else(err_response),
+        Request::GetSnapshot => with_app(window, app, cx, |view, window, _cx| {
+            view.snapshot(window).to_protocol()
+        })
+        .map(Response::Snapshot)
+        .unwrap_or_else(err_response),
 
-        Request::SetWindowSize { width, height } => window
-            .update(cx, |_view, window, _cx| {
+        Request::SetWindowSize { width, height } => {
+            with_app(window, app, cx, |_view, window, _cx| {
                 window.resize(size(px(width), px(height)));
             })
             .map(|_| Response::Ok)
-            .unwrap_or_else(err_response),
+            .unwrap_or_else(err_response)
+        }
 
         // Real pointer drag on the resize divider through the production
         // listener methods (see `BbrApp::drag_sidebar_divider`).
-        Request::DragSidebarDivider { dx } => window
-            .update(cx, |view, window, cx| {
-                view.drag_sidebar_divider(dx, window, cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
+        Request::DragSidebarDivider { dx } => with_app(window, app, cx, |view, window, cx| {
+            view.drag_sidebar_divider(dx, window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
-        Request::FocusSidebarDivider => window
-            .update(cx, |view, window, cx| {
-                view.focus_sidebar_divider(window, cx);
-                Response::Ok
-            })
-            .unwrap_or_else(err_response),
+        Request::FocusSidebarDivider => with_app(window, app, cx, |view, window, cx| {
+            view.focus_sidebar_divider(window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
         // Draw one real GPUI frame synchronously so the paint-driven native
         // geometry callbacks fire in the hidden harness (no display link).
@@ -447,6 +389,13 @@ pub(crate) fn dispatch(
         Request::InjectWebEvent { .. } => {
             Response::Error(Error::new("pump_only", "handled by the event pump"))
         }
+
+        // Routed by `dispatch_drag` before this match; reaching one here is
+        // a routing bug.
+        Request::BeginTabDrag { .. }
+        | Request::MoveTabDrag { .. }
+        | Request::EndTabDrag
+        | Request::CancelTabDrag => unreachable!("tab-drag requests route through dispatch_drag"),
 
         // Routed by `dispatch_benchmark` before this match; reaching one here
         // is a routing bug.
@@ -478,7 +427,7 @@ pub(crate) fn dispatch(
 /// (the draw re-borrows the root entity, so the typed `WindowHandle::update`
 /// path would double-lease). Used by the dense scroll/select arms so the
 /// snapshot's dense window state reflects the post-mutation render.
-pub(crate) fn flush_dense_frame(window: &WindowHandle<BbrApp>, cx: &mut App) {
+pub(crate) fn flush_dense_frame(window: &WindowHandle<gpui_component::Root>, cx: &mut App) {
     let _ = (**window).update(cx, |_root, window, cx| {
         let app: &mut App = cx;
         let _ = window.draw(app);

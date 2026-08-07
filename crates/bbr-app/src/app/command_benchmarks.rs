@@ -93,34 +93,30 @@ impl BbrApp {
         let Some(window) = cx.windows().into_iter().next() else {
             return;
         };
+        let weak = cx.weak_entity();
         cx.spawn(async move |_, async_cx: &mut AsyncApp| {
-            async_cx
-                .update(|cx| {
-                    // Render the published result surface: the render
-                    // observes the command identity after constructing the
-                    // palette and refreshes the browser-state observation;
-                    // the slot paint then commits the sample when the armed
-                    // identity and state match (fast-but-wrong guard).
-                    let _ = window.update(cx, |_root, window, cx| {
-                        let app: &mut App = cx;
-                        let _ = window.draw(app);
-                    });
-                    // Post-render commit: the explicit path validates the
-                    // same identity + state and cancels truthfully when the
-                    // render omitted the palette (no observation → no
-                    // commit), so a broken palette render fails the sample
-                    // instead of silently passing.
-                    let _ = window.update(cx, |root, _window, cx| {
-                        let _: bool = root
-                            .downcast::<BbrApp>()
-                            .ok()
-                            .map(|view| {
-                                view.update(cx, |this, _cx| this.commit_command_type_benchmark())
-                            })
-                            .unwrap_or(false);
-                    });
-                })
-                .ok();
+            // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).
+            async_cx.update(|cx| {
+                // Render the published result surface: the render
+                // observes the command identity after constructing the
+                // palette and refreshes the browser-state observation;
+                // the slot paint then commits the sample when the armed
+                // identity and state match (fast-but-wrong guard).
+                let _ = window.update(cx, |_root, window, cx| {
+                    let app: &mut App = cx;
+                    let _ = window.draw(app);
+                });
+                // Post-render commit through the app-entity contract (the
+                // window root is now `gpui_component::Root`, so the commit
+                // no longer downcasts the root): the explicit path
+                // validates the same identity + state and cancels
+                // truthfully when the render omitted the palette (no
+                // observation → no commit), so a broken palette render
+                // fails the sample instead of silently passing.
+                let _: bool = weak
+                    .update(cx, |this, _cx| this.commit_command_type_benchmark())
+                    .unwrap_or(false);
+            });
         })
         .detach();
     }
