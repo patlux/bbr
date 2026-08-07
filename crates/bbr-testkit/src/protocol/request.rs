@@ -197,6 +197,11 @@ pub enum Request {
     FocusWeb,
     /// Set the command bar text directly (avoids per-keystroke round trips).
     SetCommandBarText { text: String },
+    /// Deterministic command-ranking flush (testkit-only): cancels the
+    /// pending debounce timer and publishes the current generation's ranked
+    /// results synchronously, so E2E asserts burst typing (only the final
+    /// generation ever publishes) without waiting on real time.
+    FlushCommandRanking,
     /// Dispatch a synthetic keystroke through GPUI's real input path
     /// (e.g. "cmd-l", "escape"). Zero permissions, zero OS event posting.
     DispatchKeystroke { keystroke: String },
@@ -275,6 +280,31 @@ pub enum Request {
         operation_id: BenchmarkOperationId,
         index: usize,
     },
+    /// Measure the production command-text path (Cmd-L selects the active
+    /// URL, replace-selection typing enters `text`, and the real ranking
+    /// debounce publishes the ranked results): the sample commits only from
+    /// the published semantic presentation — the exact generation, first/
+    /// selected result key, state, mode, and focus are enforced in the app
+    /// (fast-but-wrong guard). The deterministic flush is never used inside
+    /// this measured scenario.
+    BenchmarkCommandType {
+        operation_id: BenchmarkOperationId,
+        text: String,
+        expected_first_key: String,
+    },
+    /// Measure the production Enter activation of the command bar (the
+    /// selected/typed destination routed through the app/controller seams):
+    /// the sample commits only when the expected destination view is
+    /// presented in web focus with the surface closed.
+    BenchmarkCommandActivate {
+        operation_id: BenchmarkOperationId,
+        expected_view: Option<WebViewId>,
+    },
+    /// Measure the production Cmd-Enter activation (the destination opens in
+    /// exactly one new tab/session and the fresh page is focused): the
+    /// session-recreation class with its own budget. The sample commits only
+    /// when a genuinely new tab/session is presented and focused.
+    BenchmarkCommandActivateNewTab { operation_id: BenchmarkOperationId },
     /// Full app snapshot.
     GetSnapshot,
     /// Liveness probe.

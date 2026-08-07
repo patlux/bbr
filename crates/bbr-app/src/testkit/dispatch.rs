@@ -338,10 +338,12 @@ pub(crate) fn dispatch(
 
         Request::SetCommandBarText { text } => {
             let result = window.update(cx, |view, _w, cx| {
-                view.command_bar_text = text.clone();
-                let mode = view.command_bar_mode.into();
-                cx.notify();
-                mode
+                view.command_text.set_text(text.clone());
+                // The seam types like the user: every text mutation restarts
+                // the ranking debounce (the deterministic flush then cancels
+                // it synchronously).
+                view.on_command_text_changed(cx);
+                view.command_bar_mode.into()
             });
             match result {
                 Ok(mode) => {
@@ -351,6 +353,17 @@ pub(crate) fn dispatch(
                 Err(error) => err_response(error),
             }
         }
+
+        // Deterministic command-ranking flush (testkit-only): cancels the
+        // pending debounce timer and publishes the current generation's
+        // ranked results synchronously, so E2E asserts burst typing (only the
+        // final generation ever publishes) without waiting on real time.
+        Request::FlushCommandRanking => window
+            .update(cx, |view, _w, cx| {
+                view.flush_command_ranking(cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
 
         Request::DispatchKeystroke { keystroke } => {
             let ks = match Keystroke::parse(&keystroke) {
@@ -452,7 +465,10 @@ pub(crate) fn dispatch(
         | Request::BenchmarkDenseScroll { .. }
         | Request::BenchmarkDenseSelect { .. }
         | Request::BenchmarkHoverTab { .. }
-        | Request::BenchmarkPressTab { .. } => {
+        | Request::BenchmarkPressTab { .. }
+        | Request::BenchmarkCommandType { .. }
+        | Request::BenchmarkCommandActivate { .. }
+        | Request::BenchmarkCommandActivateNewTab { .. } => {
             unreachable!("benchmark requests route through dispatch_benchmark")
         }
     }

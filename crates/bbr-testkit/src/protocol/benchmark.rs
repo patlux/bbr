@@ -78,6 +78,21 @@ pub enum BenchmarkKind {
     /// mouse-down listener path (`set_row_pressed`): the §10.3 active wash
     /// commits on the next frame, warm-interaction class.
     TabPress,
+    /// A keystroke through the production command-text path (Cmd-L selects
+    /// the URL, typing replaces the selection): the debounce published the
+    /// ranked results for the typed text — the correct first result is
+    /// presented. The sample commits only when the first result key matches
+    /// the expectation (fast-but-wrong guard).
+    CommandType,
+    /// Enter activated the selected/typed command-bar destination through
+    /// the production activation path: the correct destination, focus
+    /// domain, and mode are presented (warm class — no session
+    /// recreation).
+    CommandActivate,
+    /// Cmd-Enter opened the destination in a new tab: a fresh native
+    /// session is presented and focused — the session-recreation class
+    /// with its own budget.
+    CommandActivateNewTab,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

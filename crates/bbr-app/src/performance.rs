@@ -15,7 +15,10 @@ use bbr_testkit::protocol::{
 };
 use bbr_web::{WebEvent, WebRect, WebViewId};
 
+pub mod command;
 pub mod pane_geometry;
+pub mod slot;
+use command::{CommandExpectation, CommandObservation};
 use pane_geometry::PaneGeometry;
 
 pub type PresentationSink = Box<dyn FnMut(PresentationMeasurement)>;
@@ -34,6 +37,10 @@ struct State {
     /// must prove that budget gates catch real latency; it is armed only from
     /// a `testkit`-gated CLI flag and is impossible in release-without-testkit.
     inject_delay: Option<Duration>,
+    /// The latest published command-result presentation (generation, first/
+    /// selected result keys, typed state) observed at the ranking publish;
+    /// the command benchmarks commit only against it.
+    latest_command: Option<CommandObservation>,
     latest_active_web_view: Option<WebViewId>,
     latest_active_space: TestSpaceId,
     latest_sidebar_visible: bool,
@@ -80,6 +87,10 @@ struct Pending {
     /// activation must present the hint and a same-profile one must not, or
     /// the sample is rejected in the app.
     expected_profile_hint: Option<Option<String>>,
+    /// The exact command-result presentation identity the pending sample must
+    /// commit from: generation, first/selected result key, typed state. Only
+    /// the publish that carries this identity can satisfy the commit.
+    command: Option<CommandExpectation>,
 }
 
 impl PerformanceProbe {
@@ -88,6 +99,7 @@ impl PerformanceProbe {
             inner: Rc::new(RefCell::new(State {
                 process_started,
                 inject_delay,
+                latest_command: None,
                 latest_active_web_view: None,
                 latest_active_space: TestSpaceId(0),
                 latest_sidebar_visible: true,
@@ -107,6 +119,7 @@ impl PerformanceProbe {
                     expected_chrome_focused: None,
                     expected_command_bar_mode: None,
                     expected_profile_hint: None,
+                    command: None,
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
@@ -146,6 +159,7 @@ impl PerformanceProbe {
             expected_chrome_focused: None,
             expected_command_bar_mode: None,
             expected_profile_hint: None,
+            command: None,
         });
         Ok(())
     }
@@ -217,12 +231,6 @@ impl PerformanceProbe {
         }
     }
 
-    /// Observe the rect the native slot actually handed to the engine on the
-    /// last paint (the WKWebView frame), for the semantic snapshot.
-    pub fn observe_slot_rect(&self, rect: WebRect) {
-        self.inner.borrow_mut().content_rect = Some(rect);
-    }
-
     /// The keyed per-pane geometry observed since the last prune.
     pub fn pane_rects(&self) -> BTreeMap<WebViewId, WebRect> {
         self.pane_geometry.snapshot()
@@ -238,21 +246,6 @@ impl PerformanceProbe {
     /// (testkit-only keyed geometry observation for the split seam).
     pub fn keyed_geometry_callback(&self) -> Rc<dyn Fn(WebViewId, WebRect)> {
         self.pane_geometry.callback()
-    }
-
-    /// The last engine-received native content rect, as `[x, y, w, h]`.
-    pub fn content_rect(&self) -> Option<[f32; 4]> {
-        self.inner
-            .borrow()
-            .content_rect
-            .map(|r| [r.x, r.y, r.width, r.height])
-    }
-
-    /// A callback that observes every slot rect (testkit-only geometry
-    /// observation, independent of any pending measurement).
-    pub fn slot_geometry_callback(&self) -> Rc<dyn Fn(WebRect)> {
-        let probe = self.clone();
-        Rc::new(move |rect| probe.observe_slot_rect(rect))
     }
 
     pub fn arm_browser_state_if_pending(
@@ -421,6 +414,7 @@ impl PerformanceProbe {
                 .expected_profile_hint
                 .as_ref()
                 .is_some_and(|expected| expected != &state.latest_profile_hint)
+            || !command::command_matches(pending, &state)
         {
             return;
         }

@@ -88,6 +88,7 @@ impl BbrApp {
     pub(super) fn focus_space_list(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
+        self.command_ranking.close();
         window.focus(&self.space_list_handle);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
@@ -158,12 +159,13 @@ impl BbrApp {
         if self.command_bar_mode != CommandBarMode::NewSpace {
             self.command_bar_return = Some(crate::command_bar::CommandBarReturn {
                 mode: self.command_bar_mode,
-                text: self.command_bar_text.clone(),
+                text: self.command_text.text.clone(),
                 chrome_focused: self.chrome_focused(window),
             });
         }
         self.command_bar_mode = CommandBarMode::NewSpace;
-        self.command_bar_text.clear();
+        self.command_text.set_text("");
+        self.command_ranking.close();
         self.focus_command_bar(window, cx);
         #[cfg(feature = "testkit")]
         {

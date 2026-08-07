@@ -288,6 +288,68 @@ pub(crate) fn dispatch_benchmark(
             })
             .unwrap_or_else(err_response),
 
+        // Command-surface benchmarks: the production command-text path
+        // (Cmd-L + typing; the real ranking debounce publishes the correct
+        // first result) and the Enter / Cmd-Enter activations routed through
+        // the same app/controller seams the key handlers drive. Each sample
+        // commits only when the expected destination/first-key/focus/mode/
+        // generation is presented; a fast-but-wrong result cancels with a
+        // no-op error.
+        Request::BenchmarkCommandType {
+            operation_id,
+            text,
+            expected_first_key,
+        } => window
+            .update(cx, |view, window, cx| {
+                view.benchmark_command_type(*operation_id, text, expected_first_key, window, cx)
+            })
+            .map(|committed| {
+                if committed {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "command typing did not present the expected first result",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response),
+
+        Request::BenchmarkCommandActivate {
+            operation_id,
+            expected_view,
+        } => window
+            .update(cx, |view, window, cx| {
+                view.benchmark_command_activate(*operation_id, *expected_view, window, cx)
+            })
+            .map(|committed| {
+                if committed {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "command activation did not present the expected destination",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response),
+
+        Request::BenchmarkCommandActivateNewTab { operation_id } => window
+            .update(cx, |view, window, cx| {
+                view.benchmark_command_activate_new_tab(*operation_id, window, cx)
+            })
+            .map(|committed| {
+                if committed {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "command new-tab activation did not open a fresh session",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response),
+
         // Dense scroll: begin the measurement on the entity, drive the
         // production dense scroll state through the app's tracked handle,
         // draw the resulting frame through the untyped path, then commit

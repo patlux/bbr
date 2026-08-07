@@ -46,6 +46,7 @@ raw-window-handle.workspace = true
 gpui = { workspace = true, features = ["wayland"] }
 
 [dev-dependencies]
+bbr-domain.workspace = true
 bbr-fixtures.workspace = true
 bbr-testkit.workspace = true
 mach2 = "0.4"

@@ -49,6 +49,7 @@ impl BbrApp {
     pub(super) fn focus_tab_list(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = crate::command_bar::CommandBarMode::Inactive;
         self.command_bar_return = None;
+        self.command_ranking.close();
         window.focus(&self.tab_list_handle);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();

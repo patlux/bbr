@@ -77,6 +77,9 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let dense_select = report.results["dense_select"].samples;
         let hover = report.results["tab_hover"].samples;
         let press = report.results["tab_press"].samples;
+        let command_type = report.results["command_type"].samples;
+        let command_activate = report.results["command_activate"].samples;
+        let command_new_tab = report.results["command_activate_new_tab"].samples;
         assert!(
             warm >= INTERACTION_SAMPLES,
             "warm-tab samples {warm} < {INTERACTION_SAMPLES}"
@@ -124,6 +127,18 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             press >= INTERACTION_SAMPLES,
             "press samples {press} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            command_type >= INTERACTION_SAMPLES,
+            "command-type samples {command_type} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            command_activate >= INTERACTION_SAMPLES,
+            "command-activate samples {command_activate} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            command_new_tab >= NEW_TAB_SAMPLES,
+            "command new-tab samples {command_new_tab} < {NEW_TAB_SAMPLES}"
         );
         assert!(
             activate >= NEW_TAB_SAMPLES,

@@ -470,6 +470,7 @@ dependencies = [
  "anyhow",
  "bbr-browser",
  "bbr-command",
+ "bbr-domain",
  "bbr-fixtures",
  "bbr-testkit",
  "bbr-web",

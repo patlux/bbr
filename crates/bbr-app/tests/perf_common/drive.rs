@@ -22,6 +22,7 @@ use super::benchmarks::{
     benchmark_sidebar, benchmark_space_switch, benchmark_space_switch_cross_profile,
     wait_browser_change, wait_title,
 };
+use super::command_drive::drive_command_scenarios;
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
 
@@ -349,6 +350,32 @@ fn drive_matrix_inner(
                 .or_default()
                 .push(measured.duration_ns);
         }
+
+        // Command-surface scenarios (DESIGN.md §11.5): the production
+        // command-text path (Cmd-L selects the active URL, typing replaces
+        // the selection, the real ranking debounce publishes the current
+        // generation), the Enter activation of the selected exact-tab
+        // row, and the Cmd-Enter new-tab activation (session-recreation
+        // class). The corpus is the authoritative controller snapshot built
+        // on demand, so the exact-URL match always ranks `tab:<id>` first;
+        // the in-app guards reject a wrong first key/generation/mode/focus/
+        // destination and the drivers assert the measured state. The block
+        // lives in the focused `super::command_drive` module (command
+        // additions stay under the ~500-line budget); it runs between the
+        // keyboard-activation and pointer-state blocks and ends restored to
+        // the two original warm tabs (2 sessions, web focus) the
+        // pointer-state block requires.
+        let command_samples = drive_command_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            page_one,
+            page_two,
+            tab0_view,
+            tab1_view,
+            &mut operation,
+        );
 
         // Pointer-state transitions through the production hover/press
         // listener methods (§10.2 hover wash + close reveal, §10.3 active
@@ -1025,6 +1052,7 @@ fn drive_matrix_inner(
         raw.insert("tab_reorder".to_string(), reorder_samples);
         raw.insert("tab_hover".to_string(), hover_samples);
         raw.insert("tab_press".to_string(), press_samples);
+        raw.extend(command_samples);
         raw.insert("tab_move_same_profile".to_string(), same_move_samples);
         raw.insert("tab_move_cross_profile".to_string(), cross_move_samples);
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);

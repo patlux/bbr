@@ -21,36 +21,21 @@ impl BbrApp {
         {
             return;
         }
-        self.command_bar_text = url;
+        self.command_text.set_text(url);
         self.focus_web(window, cx);
     }
 
-    fn submit_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let input = self.command_bar_text.clone();
+    /// Staged-mode submit (NewSpace / MoveTab): the unchanged staged behavior
+    /// — Enter commits the staged name/move, Escape cancels. Location/NewTab
+    /// route through the ranked result activation instead (`submit_command`).
+    pub(super) fn submit_staged_command_bar(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let input = self.command_text.text.clone();
         match self.command_bar_mode {
-            CommandBarMode::Inactive => {}
-            CommandBarMode::Location => self.navigate(&input, window, cx),
-            CommandBarMode::NewTab => {
-                let url = bbr_web::normalize_url(&input);
-                if url.is_empty() {
-                    return;
-                }
-                if self.open_tab(&url, cx).is_some() {
-                    self.command_bar_text = url;
-                    self.command_bar_return = None;
-                    self.focus_web(window, cx);
-                    #[cfg(feature = "testkit")]
-                    {
-                        self.performance.expect_state(
-                            self.controller.snapshot().active_view,
-                            self.sidebar_visible,
-                            false,
-                            self.command_bar_mode.into(),
-                        );
-                        self.commit_benchmark_sync(window);
-                    }
-                }
-            }
+            CommandBarMode::Inactive | CommandBarMode::Location | CommandBarMode::NewTab => {}
             CommandBarMode::NewSpace => {
                 // Create the space in the active profile and activate it;
                 // chrome focus stays in the space list (a fresh space is
@@ -59,7 +44,7 @@ impl BbrApp {
                 if name.is_empty() {
                     return;
                 }
-                self.command_bar_text.clear();
+                self.command_text.set_text("");
                 self.command_bar_return = None;
                 if self.commit_new_space(&name, window, cx).is_some() {
                     #[cfg(feature = "testkit")]
@@ -83,7 +68,7 @@ impl BbrApp {
                 let Some((space, _, _)) = self.resolve_move_space(&input) else {
                     return;
                 };
-                self.command_bar_text.clear();
+                self.command_text.set_text("");
                 self.command_bar_return = None;
                 if self.move_active_tab_to_space(space, window, cx).is_some() {
                     #[cfg(feature = "testkit")]
@@ -124,12 +109,27 @@ impl BbrApp {
         cx.notify();
     }
 
-    /// `Cmd-L`: edit the active tab's location.
+    /// `Cmd-L`: edit the active tab's location. The exact origin is captured
+    /// before the URL is selected so Escape restores the pre-edit text and
+    /// the originating focus domain (DESIGN §11.5 / interaction contract).
+    /// The origin transient is captured once: a repeated `Cmd-L` while
+    /// Location mode is already active re-selects the live URL without
+    /// overwriting the original return point, so Escape still restores the
+    /// original web/chrome origin (not an intermediate edit state).
     pub fn activate_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.clear_command_profile_hint();
+        if self.command_bar_mode != CommandBarMode::Location {
+            self.command_bar_return = Some(CommandBarReturn {
+                mode: self.command_bar_mode,
+                text: self.command_text.text.clone(),
+                chrome_focused: self.chrome_focused(window),
+            });
+        }
         self.command_bar_mode = CommandBarMode::Location;
-        self.command_bar_return = None;
         self.sync_command_bar();
+        // Cmd-L selects the whole active URL; typing replaces the selection.
+        self.command_text.select_all();
+        self.open_command_ranking(cx);
         self.focus_command_bar(window, cx);
     }
 
@@ -139,12 +139,13 @@ impl BbrApp {
         if self.command_bar_mode != CommandBarMode::NewTab {
             self.command_bar_return = Some(CommandBarReturn {
                 mode: self.command_bar_mode,
-                text: self.command_bar_text.clone(),
+                text: self.command_text.text.clone(),
                 chrome_focused: self.chrome_focused(window),
             });
         }
         self.command_bar_mode = CommandBarMode::NewTab;
-        self.command_bar_text.clear();
+        self.command_text.set_text("");
+        self.open_command_ranking(cx);
         self.focus_command_bar(window, cx);
         #[cfg(feature = "testkit")]
         {
@@ -172,12 +173,13 @@ impl BbrApp {
         if self.command_bar_mode != CommandBarMode::MoveTab {
             self.command_bar_return = Some(CommandBarReturn {
                 mode: self.command_bar_mode,
-                text: self.command_bar_text.clone(),
+                text: self.command_text.text.clone(),
                 chrome_focused: self.chrome_focused(window),
             });
         }
         self.command_bar_mode = CommandBarMode::MoveTab;
-        self.command_bar_text.clear();
+        self.command_text.set_text("");
+        self.command_ranking.close();
         self.focus_command_bar(window, cx);
         #[cfg(feature = "testkit")]
         {
@@ -231,7 +233,7 @@ impl BbrApp {
         if self.command_bar_mode != CommandBarMode::MoveTab {
             return None;
         }
-        let (_, title, profile) = self.resolve_move_space(&self.command_bar_text)?;
+        let (_, title, profile) = self.resolve_move_space(&self.command_text.text)?;
         if profile == self.controller.active_profile() {
             Some(format!("→ {title}"))
         } else {
@@ -249,7 +251,8 @@ impl BbrApp {
     pub(super) fn enter_empty_new_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_return = None;
         self.command_bar_mode = CommandBarMode::NewTab;
-        self.command_bar_text.clear();
+        self.command_text.set_text("");
+        self.open_command_ranking(cx);
         self.focus_command_bar(window, cx);
     }
 
@@ -302,9 +305,11 @@ impl BbrApp {
         }
     }
 
-    /// Escape cancels a staged tab, space, or move; location mode returns to
-    /// web content. An active tab drag is cancelled first (chrome focus
-    /// stays in the tab list).
+    /// Escape cancels the command surface: location mode restores the exact
+    /// origin text and the originating focus domain (web or chrome, as
+    /// captured at Cmd-L); staged tab/space/move modes restore their captured
+    /// prior state. An active tab drag is cancelled first (chrome focus stays
+    /// in the tab list).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.tab_drag.is_active() {
             self.cancel_tab_drag(window, cx);
@@ -312,14 +317,30 @@ impl BbrApp {
         }
         if !matches!(
             self.command_bar_mode,
-            CommandBarMode::NewTab | CommandBarMode::NewSpace | CommandBarMode::MoveTab
+            CommandBarMode::Location
+                | CommandBarMode::NewTab
+                | CommandBarMode::NewSpace
+                | CommandBarMode::MoveTab
         ) {
+            // No open command surface: the Escape binding still hands focus
+            // to the page (the pre-composition behavior).
             self.focus_web(window, cx);
             return;
         }
         if let Some(restore) = self.command_bar_return.take() {
+            // Restore the exact origin mode and text, re-open the ranking
+            // surface only when the restored mode is a ranking mode, then
+            // hand focus back to the captured origin domain.
             self.command_bar_mode = restore.mode;
-            self.command_bar_text = restore.text;
+            self.command_text.set_text(restore.text);
+            if matches!(
+                self.command_bar_mode,
+                CommandBarMode::Location | CommandBarMode::NewTab
+            ) {
+                self.open_command_ranking(cx);
+            } else {
+                self.command_ranking.close();
+            }
             if restore.chrome_focused {
                 self.focus_command_bar(window, cx);
             } else {
@@ -331,10 +352,12 @@ impl BbrApp {
         }
     }
 
-    /// Move GPUI focus + AppKit first responder back to the web view.
+    /// Move GPUI focus + AppKit first responder back to the web view and
+    /// close the ranking surface (a command-surface exit path).
     pub fn focus_web(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
+        self.command_ranking.close();
         window.blur();
         if let Some(view) = self.controller.snapshot().active_view {
             self.engine.borrow_mut().focus_native_web(view);
@@ -347,6 +370,7 @@ impl BbrApp {
     pub(super) fn focus_chrome(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
+        self.command_ranking.close();
         window.focus(&self.chrome_handle);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
@@ -355,7 +379,7 @@ impl BbrApp {
 
     pub(super) fn sync_command_bar(&mut self) {
         let snapshot = self.controller.snapshot();
-        self.command_bar_text = snapshot
+        let url = snapshot
             .nav
             .url
             .or_else(|| {
@@ -364,9 +388,13 @@ impl BbrApp {
                     .and_then(|index| snapshot.tabs.get(index).map(|tab| tab.url.clone()))
             })
             .unwrap_or_default();
+        self.command_text.set_text(url);
     }
 
-    /// Handle printable typing + backspace/enter while the command bar is active.
+    /// Handle printable typing + editing/selection keys while the command bar
+    /// is active. Every mutation routes through the UTF-8-safe text model
+    /// (replace-selection typing, selection-first backspace, horizontal
+    /// cursor movement) and restarts the cancellable ranking debounce.
     pub(super) fn on_chrome_key_down(
         &mut self,
         event: &KeyDownEvent,
@@ -379,17 +407,39 @@ impl BbrApp {
         let ks = &event.keystroke;
         match ks.key.as_str() {
             "backspace" => {
-                self.command_bar_text.pop();
+                self.command_text.backspace();
+                self.on_command_text_changed(cx);
                 cx.stop_propagation();
             }
             "enter" => {
                 cx.stop_propagation();
-                self.submit_command_bar(window, cx);
+                if ks.modifiers.platform {
+                    self.submit_command_new_tab(window, cx);
+                } else {
+                    self.submit_command(window, cx);
+                }
+            }
+            // Up/Down select results without moving focus out of the field.
+            "up" | "down" => {
+                let delta = if ks.key == "up" { -1 } else { 1 };
+                self.command_move_selection(delta);
+                cx.stop_propagation();
+            }
+            // Horizontal cursor movement (UTF-8-safe; collapses any
+            // selection in the direction of movement).
+            "left" | "right" => {
+                if ks.key == "left" {
+                    self.command_text.move_left();
+                } else {
+                    self.command_text.move_right();
+                }
+                cx.stop_propagation();
             }
             _ => {
                 if let Some(ch) = ks.key_char.as_deref() {
                     if !ch.is_empty() {
-                        self.command_bar_text.push_str(ch);
+                        self.command_text.replace_selection(ch);
+                        self.on_command_text_changed(cx);
                         cx.stop_propagation();
                     }
                 }

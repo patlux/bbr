@@ -5,7 +5,7 @@
 //! under their size budgets and the wire mapping is testable in one place.
 
 use bbr_browser::ControllerEvent;
-use bbr_testkit::protocol::{BrowserChange, Snapshot, TabSnapshot};
+use bbr_testkit::protocol::{BrowserChange, GlobalTabSnapshot, Snapshot, TabSnapshot, TestSpaceId};
 
 pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange> {
     match outcome {
@@ -144,6 +144,31 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             semantics: self.semantics.clone(),
             command_bar_mode: self.command_bar_mode,
             command_bar_text: self.command_bar_text.clone(),
+            command_result_state: self.command_result_state,
+            command_results: self.command_results.clone(),
+            command_cursor: self.command_cursor,
+            command_selection: self.command_selection,
+            all_tabs: self
+                .all_tabs
+                .iter()
+                .map(|tab| GlobalTabSnapshot {
+                    id: tab.id.0,
+                    space: TestSpaceId(tab.space.0),
+                    profile: tab.profile.0,
+                    index: tab.index,
+                    url: tab.url.clone(),
+                    title: tab.title.clone(),
+                    pinned: tab.pinned,
+                    web_view: tab.web_view,
+                    lifecycle: match tab.lifecycle {
+                        bbr_browser::TabLifecycle::Active => "active".into(),
+                        bbr_browser::TabLifecycle::Warm => "warm".into(),
+                        bbr_browser::TabLifecycle::Suspended => "suspended".into(),
+                        bbr_browser::TabLifecycle::Discarded => "discarded".into(),
+                    },
+                    last_used: tab.last_used,
+                })
+                .collect(),
             sidebar_visible: self.sidebar_visible,
             sidebar_width: self.sidebar_width,
             sidebar_min: self.sidebar_min,

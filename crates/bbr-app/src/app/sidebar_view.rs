@@ -35,6 +35,9 @@ impl BbrApp {
         let tab_surface = self.tab_surface(theme, window, cx);
         let space_surface = self.space_surface(theme, window, cx);
         let command_bar = self.command_bar(theme, chrome_focused);
+        // §11.5 result palette: the only chrome surface opening over the
+        // rail's own content (native web views are real child views).
+        let command_results = self.command_result_surface(theme);
         let status_text: SharedString =
             crate::shell::status_line(&self.controller.snapshot()).into();
         let divider_focused = self.divider_handle.is_focused(window);
@@ -87,6 +90,9 @@ impl BbrApp {
                             .child("BBR"),
                     )
                     .child(command_bar)
+                    .when(command_results.is_some(), |column| {
+                        column.child(command_results.expect("checked above"))
+                    })
                     .child(space_surface)
                     .child(tab_surface)
                     .child(
@@ -199,10 +205,10 @@ impl BbrApp {
                     .flex_1()
                     .text_size(theme.type_.mono.size)
                     .text_color(p.ink)
-                    .child(if self.command_bar_text.is_empty() {
+                    .child(if self.command_text.is_empty() {
                         SharedString::from("Type a URL…")
                     } else {
-                        SharedString::from(self.command_bar_text.clone())
+                        SharedString::from(self.command_text.text.clone())
                     }),
             )
             .when(chrome_focused && self.command_bar_mode.is_active(), |el| {

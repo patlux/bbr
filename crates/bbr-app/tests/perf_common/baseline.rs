@@ -136,6 +136,27 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Command-surface scenarios (DESIGN.md §11.5): `command_type` spans
+        // Cmd-L + replace-selection typing + the real ranking debounce
+        // publishing the correct first result — the warm interaction class.
+        // `command_activate` spans Enter routing the selected/typed
+        // destination through the app/controller seams to the presented web
+        // focus — the warm activation class (50/100 from the packet).
+        "command_type" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "command_activate" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        // Cmd-Enter opens the destination in exactly one fresh tab/session
+        // and focuses it — the session-recreation class with its own budget,
+        // like reopen and cross-profile moves.
+        "command_activate_new_tab" => Budget {
+            p95_ms: 100.0,
+            max_ms: Some(150.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -311,6 +332,9 @@ impl Baseline {
             "dense_select",
             "tab_hover",
             "tab_press",
+            "command_type",
+            "command_activate",
+            "command_activate_new_tab",
         ] {
             let b = contract_budget(kind).expect("known kind");
             entries.insert(
@@ -492,6 +516,35 @@ mod tests {
             assert!(
                 r.iter().any(|x| x.rule == "abs_max"),
                 "{kind} absolute max ceiling enforced"
+            );
+        }
+    }
+
+    #[test]
+    fn command_budgets_are_seeded_and_enforced() {
+        // Regression guard: the command-surface scenarios must carry their
+        // contract budgets in the seed so a future command-surface regression
+        // trips the gate instead of being silently unreported. `command_type`
+        // and `command_activate` are warm (50/100); `command_activate_new_tab`
+        // opens a fresh tab/session — the session-recreation class (100/150).
+        let b = Baseline::seed();
+        for (kind, p95, max) in [
+            ("command_type", 50.0, 100.0),
+            ("command_activate", 50.0, 100.0),
+            ("command_activate_new_tab", 100.0, 150.0),
+        ] {
+            let entry = b
+                .entries
+                .get(kind)
+                .unwrap_or_else(|| panic!("seed baseline must carry the {kind} contract budget"));
+            assert_eq!(entry.budget_p95_ms, p95);
+            assert_eq!(entry.budget_max_ms, Some(max));
+            let mut slow = BTreeMap::new();
+            slow.insert(kind.into(), measured(p95 + 20.0, max + 20.0));
+            let r = evaluate(&slow, &b, false);
+            assert!(
+                r.iter().any(|x| x.rule == "abs_p95"),
+                "{kind} absolute p95 ceiling enforced"
             );
         }
     }

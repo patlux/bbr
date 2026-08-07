@@ -5,6 +5,8 @@
 
 pub mod baseline;
 mod benchmarks;
+mod command;
+mod command_drive;
 mod drive;
 pub mod harness;
 pub mod machine;

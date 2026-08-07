@@ -8,6 +8,24 @@ use gpui::Window;
 use crate::shell::TestSnapshot;
 
 use super::BbrApp;
+use crate::app::command_rank::CommandResultRow;
+
+/// Map one app-local ranked row onto the typed wire snapshot (the typed
+/// activation stays app-local; the wire exposes the stable key/group/title,
+/// the selection state the palette renders, and the destructive flag).
+pub fn command_result_protocol(
+    row: &CommandResultRow,
+    selected: bool,
+) -> bbr_testkit::protocol::CommandResultSnapshot {
+    bbr_testkit::protocol::CommandResultSnapshot {
+        key: row.key.clone(),
+        group: row.group.clone(),
+        title: row.title.clone(),
+        subtitle: row.subtitle.clone(),
+        selected,
+        destructive: row.destructive,
+    }
+}
 
 /// A snapshot for the E2E protocol (also used by unit tests).
 impl BbrApp {
@@ -71,6 +89,7 @@ impl BbrApp {
             active_profile_hue: browser.active_profile_hue.map(|hue| hue.name().to_string()),
             active_space: bbr_testkit::protocol::TestSpaceId(browser.active_space.0),
             tabs: browser.tabs.clone(),
+            all_tabs: browser.all_tabs.clone(),
             profiles: browser.profiles.clone(),
             spaces: browser.spaces.clone(),
             active_tab_index: browser.active_index,
@@ -171,13 +190,29 @@ impl BbrApp {
                 self.sidebar_visible,
                 self.command_bar_hint().as_deref(),
                 self.command_profile_hint.as_deref(),
+                &crate::app::command_surface::surface_ids(
+                    self.command_ranking.state,
+                    &self.command_ranking.results,
+                ),
                 drag_slot,
                 self.dense_window.get(),
                 pane_layout,
             ),
             semantics,
             command_bar_mode: self.command_bar_mode.into(),
-            command_bar_text: self.command_bar_text.clone(),
+            command_bar_text: self.command_text.text.clone(),
+            command_result_state: self.command_ranking.state.into(),
+            command_results: self
+                .command_ranking
+                .results
+                .iter()
+                .enumerate()
+                .map(|(index, row)| {
+                    command_result_protocol(row, index == self.command_ranking.selected)
+                })
+                .collect(),
+            command_cursor: self.command_text.cursor,
+            command_selection: self.command_text.selection.map(|(start, end)| [start, end]),
             sidebar_visible: self.sidebar_visible,
             sidebar_width,
             sidebar_min: crate::sidebar::SIDEBAR_MIN,
@@ -251,8 +286,21 @@ impl BbrApp {
             },
             command: crate::shell::semantics::SemanticCommand {
                 mode: format!("{:?}", self.command_bar_mode).to_lowercase(),
-                text: self.command_bar_text.clone(),
+                text: self.command_text.text.clone(),
                 hint: self.command_bar_hint(),
+                results: self
+                    .command_ranking
+                    .results
+                    .iter()
+                    .enumerate()
+                    .map(|(index, row)| crate::shell::semantics::SemanticResultRow {
+                        key: row.key.clone(),
+                        title: row.title.clone(),
+                        subtitle: row.subtitle.clone(),
+                        selected: index == self.command_ranking.selected,
+                        destructive: row.destructive,
+                    })
+                    .collect(),
                 profile_hint: self.command_profile_hint.as_ref().and_then(|_| {
                     // The hint is only ever set to the active profile (any
                     // context mutation clears it), so the chip identity and

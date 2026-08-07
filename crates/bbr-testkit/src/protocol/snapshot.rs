@@ -176,6 +176,9 @@ pub enum SemanticRole {
     State,
     /// The command-bar cursor (`bbr-command-cursor`).
     Cursor,
+    /// A §11.5 command result row (`bbr-command-result-*`) inside the result
+    /// list.
+    Result,
 }
 
 /// One typed semantic node of the chrome (DESIGN.md §15 / accessibility
@@ -219,6 +222,75 @@ pub struct PaneLayoutSnapshot {
 pub struct PaneRectSnapshot {
     pub view: WebViewId,
     pub rect: [f32; 4],
+}
+
+/// The typed state of the command result surface (DESIGN.md §11.5):
+/// `Inactive` when no ranking surface is open, `Empty`/`Loading`/
+/// `Results`/`ActivationError` while the location/new-tab command bar
+/// is editing. There is no production no-match state: every non-empty
+/// Location/NewTab query carries the navigate/search fallback row, so
+/// the unreachable `NoMatch` variant was removed from the wire. Exposed
+/// so E2E asserts the result state machine without stringly-typed
+/// labels.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CommandResultState {
+    /// The command bar is not ranking (no location/new-tab surface).
+    #[default]
+    Inactive,
+    /// The ranking surface is open with no results (empty text).
+    Empty,
+    /// A debounce generation is pending; ranking has not published yet.
+    Loading,
+    /// The latest published generation produced ranked results.
+    Results,
+    /// The last activation was rejected (unavailable destination).
+    ActivationError,
+}
+
+/// One persistent tab identity across spaces (DESIGN.md §11.5 cross-space
+/// command composition): the wire mirror of the controller's global tab
+/// snapshot. E2E asserts exact tab/space/profile identity, warm-view reuse,
+/// and profile-store isolation of other-space command results through it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GlobalTabSnapshot {
+    /// The persistent domain tab id (the `tab:<id>` command-result key).
+    pub id: u64,
+    /// The owning space id.
+    pub space: TestSpaceId,
+    /// The owning profile id (the profile-store isolation evidence).
+    pub profile: u64,
+    /// Position in the owning space's tab list.
+    pub index: usize,
+    pub url: String,
+    pub title: String,
+    pub pinned: bool,
+    pub web_view: Option<WebViewId>,
+    /// "active" | "warm" | "suspended" | "discarded".
+    pub lifecycle: String,
+    pub last_used: u64,
+}
+
+/// One ranked command-bar result on the wire (DESIGN.md §11.5): stable
+/// key, priority group, display title/subtitle, selection state, and the
+/// destructive flag that drives the error/destructive tint. `selected`
+/// mirrors the palette's selection exactly (Up/Down move it without
+/// leaving the field).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CommandResultSnapshot {
+    /// The stable result key (`tab:<n>` / `space:<n>` / `action:<n>` /
+    /// `history:<n>` / `navigate:<url>` / `search:<terms>`).
+    pub key: String,
+    /// The Phase-5 priority group name (exact_tab / current_pinned /
+    /// current_tab / other_space / space / history / action / fallback).
+    pub group: String,
+    pub title: String,
+    pub subtitle: Option<String>,
+    pub selected: bool,
+    /// True for destructive actions; the row renders the error/destructive
+    /// visual language (DESIGN.md §11.5 settled value: tint only, no
+    /// confirmation dialog).
+    pub destructive: bool,
 }
 
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
@@ -309,6 +381,24 @@ pub struct Snapshot {
     pub semantics: Vec<SemanticNode>,
     pub command_bar_mode: CommandBarMode,
     pub command_bar_text: String,
+    /// The typed state of the command result surface (DESIGN.md §11.5).
+    #[serde(default)]
+    pub command_result_state: CommandResultState,
+    /// The ranked results of the latest published generation (limit 16).
+    #[serde(default)]
+    pub command_results: Vec<CommandResultSnapshot>,
+    /// Byte offset of the command-text cursor (UTF-8 safe; the text model
+    /// never splits a character).
+    #[serde(default)]
+    pub command_cursor: usize,
+    /// Selected byte range `[start, end)` of the command text when
+    /// non-empty (`None` = no selection; Cmd-L selects the whole URL).
+    #[serde(default)]
+    pub command_selection: Option<[usize; 2]>,
+    /// Complete persistent tab identity across spaces (the command corpus
+    /// source): space order, then tab order.
+    #[serde(default)]
+    pub all_tabs: Vec<GlobalTabSnapshot>,
     pub sidebar_visible: bool,
     /// The effective sidebar rail width (DESIGN §5 range, window-clamped;
     /// 0 when collapsed).

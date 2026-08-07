@@ -22,6 +22,9 @@ pub struct TestSnapshot {
     pub active_profile_hue: Option<String>,
     pub active_space: bbr_testkit::protocol::TestSpaceId,
     pub tabs: Vec<bbr_browser::TabSnapshot>,
+    /// Complete persistent tab identity across spaces (the command corpus
+    /// source): space order, then tab order.
+    pub all_tabs: Vec<bbr_browser::GlobalTabSnapshot>,
     /// Complete profile/space collections in creation order.
     pub profiles: Vec<bbr_browser::ProfileSnapshot>,
     pub spaces: Vec<bbr_browser::SpaceSnapshot>,
@@ -66,6 +69,14 @@ pub struct TestSnapshot {
     pub semantics: Vec<bbr_testkit::protocol::SemanticNode>,
     pub command_bar_mode: bbr_testkit::protocol::CommandBarMode,
     pub command_bar_text: String,
+    /// The typed state of the command result surface (DESIGN.md §11.5).
+    pub command_result_state: bbr_testkit::protocol::CommandResultState,
+    /// The ranked results of the latest published generation (limit 16).
+    pub command_results: Vec<bbr_testkit::protocol::CommandResultSnapshot>,
+    /// Byte offset of the command-text cursor (UTF-8 safe).
+    pub command_cursor: usize,
+    /// Selected byte range `[start, end)` when non-empty.
+    pub command_selection: Option<[usize; 2]>,
     /// Lifecycle population counts of the active space (dense-list evidence).
     pub lifecycle_counts: bbr_testkit::protocol::LifecycleCounts,
     /// The dense-list render contract (§11.6): bounded rendered window,
@@ -114,6 +125,7 @@ pub fn visible_ids(
     sidebar_visible: bool,
     command_bar_hint: Option<&str>,
     command_profile_hint: Option<&str>,
+    command_surface: &[String],
     drag_slot: Option<usize>,
     dense: crate::dense::DenseRenderState,
     pane_layout: Option<bbr_browser::PaneLayout>,
@@ -135,6 +147,9 @@ pub fn visible_ids(
         ] {
             ids.push(id.into());
         }
+        // The §11.5 result palette ids (rows or typed state rows) mirror the
+        // render exactly (shared derivation in `command_surface`).
+        ids.extend(command_surface.iter().cloned());
         if command_bar_hint.is_some() {
             ids.push("bbr-command-hint".into());
         }
@@ -239,6 +254,7 @@ mod tests {
             active_profile_hue: Some(bbr_browser::ProfileHue::Cobalt),
             active_space: bbr_browser::SpaceId(2),
             tabs: Vec::new(),
+            all_tabs: Vec::new(),
             profiles: vec![
                 bbr_browser::ProfileSnapshot {
                     index: 0,
@@ -298,6 +314,7 @@ mod tests {
             active_profile_hue: Some(bbr_browser::ProfileHue::Cobalt),
             active_space: bbr_browser::SpaceId(1),
             tabs: tabs.clone(),
+            all_tabs: Vec::new(),
             profiles: Vec::new(),
             spaces: Vec::new(),
             active_index: Some(0),
@@ -314,6 +331,7 @@ mod tests {
             true,
             None,
             None,
+            &[],
             None,
             dense_all(tabs.len()),
             None,
@@ -346,6 +364,7 @@ mod tests {
             active_profile_hue: Some(bbr_browser::ProfileHue::Cobalt),
             active_space: bbr_browser::SpaceId(1),
             tabs: crashed,
+            all_tabs: Vec::new(),
             profiles: Vec::new(),
             spaces: Vec::new(),
             active_index: Some(0),
@@ -362,6 +381,7 @@ mod tests {
             true,
             None,
             None,
+            &[],
             None,
             dense_all(1),
             None,
@@ -382,6 +402,7 @@ mod tests {
             true,
             None,
             None,
+            &[],
             None,
             dense_all(1),
             None,
@@ -405,6 +426,7 @@ mod tests {
             true,
             None,
             None,
+            &[],
             None,
             dense_all(0),
             None,
@@ -444,6 +466,7 @@ mod tests {
             true,
             None,
             None,
+            &[],
             None,
             dense_all(0),
             None,
@@ -472,6 +495,7 @@ mod tests {
             false,
             None,
             None,
+            &[],
             None,
             dense_all(0),
             None,
@@ -492,6 +516,7 @@ mod tests {
             true,
             None,
             Some("in Profile · Private"),
+            &[],
             None,
             dense_all(0),
             None,
@@ -504,6 +529,7 @@ mod tests {
             true,
             None,
             None,
+            &[],
             None,
             dense_all(0),
             None,
@@ -536,6 +562,7 @@ mod tests {
             true,
             None,
             None,
+            &[],
             None,
             stale,
             None,

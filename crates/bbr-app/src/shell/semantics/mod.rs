@@ -46,8 +46,20 @@ pub struct SemanticProfileHint {
     pub profile_index: usize,
 }
 
-/// The command-field semantic content (mode, text, and the §11.3 destination
-/// hint when a move is staged).
+/// One §11.5 command result row on the semantic tree: the stable key, the
+/// display title/subtitle, and the selection/destructive state the palette
+/// renders.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SemanticResultRow {
+    pub key: String,
+    pub title: String,
+    pub subtitle: Option<String>,
+    pub selected: bool,
+    pub destructive: bool,
+}
+
+/// The command-field semantic content (mode, text, the §11.3 destination
+/// hint when a move is staged, and the §11.5 ranked result surface).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SemanticCommand {
     pub mode: String,
@@ -57,6 +69,9 @@ pub struct SemanticCommand {
     /// The §11.3 cross-context transient (chip + "in Profile · <title>")
     /// shown for one interaction after a cross-profile space activation.
     pub profile_hint: Option<SemanticProfileHint>,
+    /// The published §11.5 result rows in display order (empty when the
+    /// surface shows no results).
+    pub results: Vec<SemanticResultRow>,
 }
 
 /// The glass content area: the native slot, the empty pane, or the crash
@@ -220,6 +235,35 @@ fn command_field_node(input: &SemanticInput<'_>) -> SemanticNode {
     } else {
         input.command.mode.clone()
     };
+    // §11.5 result surface: the palette renders beneath the field while the
+    // location/new-tab surface is open; the typed state rows expose their
+    // stable ids too.
+    if !input.command.results.is_empty() {
+        children.push(SemanticNode {
+            id: "bbr-command-results".into(),
+            role: SemanticRole::List,
+            name: Some("Command results".into()),
+            value: None,
+            enabled: true,
+            selected: false,
+            focused: false,
+            children: input
+                .command
+                .results
+                .iter()
+                .map(|row| SemanticNode {
+                    id: format!("bbr-command-result-{}", row.key),
+                    role: SemanticRole::Result,
+                    name: Some(row.title.clone()),
+                    value: row.subtitle.clone(),
+                    enabled: true,
+                    selected: row.selected,
+                    focused: false,
+                    children: vec![],
+                })
+                .collect(),
+        });
+    }
     node(
         "bbr-command-bar",
         SemanticRole::Field,

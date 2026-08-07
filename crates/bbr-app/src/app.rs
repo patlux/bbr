@@ -12,12 +12,22 @@ use crate::command_bar::{CommandBarMode, CommandBarReturn};
 use crate::engine::EngineRef;
 #[cfg(feature = "testkit")]
 use crate::performance::PerformanceProbe;
+
+use command_rank::CommandRanking;
+use command_text::CommandText;
 #[cfg(feature = "testkit")]
 mod benchmarks;
 #[cfg(feature = "testkit")]
 mod benchmarks_dense;
 #[cfg(feature = "testkit")]
 mod benchmarks_pointer;
+mod command_activate;
+#[cfg(feature = "testkit")]
+mod command_benchmarks;
+mod command_corpus;
+mod command_rank;
+mod command_surface;
+mod command_text;
 mod drag;
 mod drag_target;
 mod interaction;
@@ -90,8 +100,15 @@ pub struct BbrApp {
     /// `command_bar_hint`; the two never coexist.
     command_profile_hint: Option<String>,
     command_bar_return: Option<CommandBarReturn>,
-    /// Current command-bar text (mirrors the live URL when not editing).
-    pub command_bar_text: String,
+    /// The command-field text-edit model (DESIGN.md §11.5): UTF-8-safe
+    /// cursor/selection, full selection on `Cmd-L`, replace-selection
+    /// typing, backspace, and horizontal cursor movement. The text mirrors
+    /// the live URL when not editing.
+    pub command_text: CommandText,
+    /// The cancellable, nonblocking ranking orchestration of the §11.5
+    /// result surface (state machine + debounce handle). Inactive unless a
+    /// location/new-tab mode is open.
+    command_ranking: CommandRanking,
     pub sidebar_visible: bool,
     /// Focus-change sink (main thread): called after any focus mutation with
     /// the actual chrome-focus state. Wired by the testkit glue to broadcast
@@ -137,7 +154,8 @@ impl BbrApp {
             pressed_row: None,
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
-            command_bar_text: String::new(),
+            command_text: CommandText::new(),
+            command_ranking: CommandRanking::default(),
             command_profile_hint: None,
             sidebar_visible: true,
             focus_sink: Rc::new(RefCell::new(None)),

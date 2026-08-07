@@ -15,6 +15,8 @@ use crate::slot::NativeWebViewSlot;
 use crate::theme::{ContrastMode, Theme, ThemeMode};
 use bbr_web::WebViewId;
 
+#[cfg(feature = "testkit")]
+use super::command_rank::CommandResultState;
 use super::BbrApp;
 
 impl Render for BbrApp {
@@ -38,6 +40,31 @@ impl Render for BbrApp {
             0.0
         };
         let sidebar = self.sidebar_surface(&theme, sidebar_width, chrome_focused, window, cx);
+
+        // §11.5 presentation milestone: the result palette was constructed
+        // into the sidebar above. When a `CommandType` benchmark is pending,
+        // the probe records the command identity this render actually drew —
+        // generation, first/selected result keys, typed state — so the
+        // sample can commit only from a frame that genuinely presented the
+        // ranked rows. A frame that omits the palette (surface inactive, a
+        // non-Results typed state, or the rail hidden) records no
+        // observation and can never satisfy the armed expectation.
+        #[cfg(feature = "testkit")]
+        self.performance.observe_rendered_command(
+            self.command_ranking.generation,
+            self.sidebar_visible
+                && self.command_ranking.state == CommandResultState::Results
+                && !self.command_ranking.results.is_empty(),
+            self.command_ranking
+                .results
+                .first()
+                .map(|row| row.key.as_str()),
+            self.command_ranking
+                .results
+                .get(self.command_ranking.selected)
+                .map(|row| row.key.as_str()),
+            self.command_ranking.state.into(),
+        );
 
         let content: gpui::AnyElement = if let Some(layout) = self.controller.pane_layout() {
             // The authoritative pane layout drives the native surface:

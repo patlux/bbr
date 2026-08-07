@@ -193,6 +193,33 @@
       "budget_max_ms": 100.0,
       "source": "contract-budget"
     },
+    "command_type": {
+      "samples": 0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "budget_max_ms": 100.0,
+      "source": "contract-budget"
+    },
+    "command_activate": {
+      "samples": 0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "budget_max_ms": 100.0,
+      "source": "contract-budget"
+    },
+    "command_activate_new_tab": {
+      "samples": 0,
+      "p50_ms": 0.0,
+      "p95_ms": 100.0,
+      "max_ms": 150.0,
+      "budget_p95_ms": 100.0,
+      "budget_max_ms": 150.0,
+      "source": "contract-budget"
+    },
     "space_switch_cross_profile": {
       "samples": 0,
       "p50_ms": 0.0,

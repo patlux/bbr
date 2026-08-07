@@ -19,6 +19,7 @@ fn browser() -> ControllerSnapshot {
         active_profile_hue: Some(bbr_browser::ProfileHue::Cobalt),
         active_space: bbr_browser::SpaceId(1),
         tabs: vec![tab(0, true, "https://example.com", "Example")],
+        all_tabs: vec![],
         profiles: vec![bbr_browser::ProfileSnapshot {
             index: 0,
             id: bbr_web::ProfileId(1),
@@ -87,6 +88,7 @@ fn input<'a>(
             text: "".into(),
             hint: None,
             profile_hint: None,
+            results: vec![],
         },
         sidebar_visible: true,
         sidebar_width: 260.0,
@@ -303,4 +305,76 @@ fn collapsed_sidebar_leaves_only_root_and_content() {
     let sidebar = find(&tree, "bbr-sidebar");
     assert!(sidebar.is_none(), "a collapsed sidebar renders no nodes");
     assert!(find(&tree, "bbr-native-web-slot").is_some());
+}
+
+#[test]
+fn command_result_surface_exposes_typed_result_rows_under_the_field() {
+    // §11.5/§15: while the location/new-tab surface shows ranked results,
+    // the command field exposes a typed result list with one Result node per
+    // row carrying the selection state; with no results the list is absent.
+    let browser = browser();
+    let rows = [row(0, TabVisualState::Selected)];
+    let space_rows = [space_row()];
+    let mut input = input(
+        SemanticFocus {
+            command: true,
+            spaces: false,
+            tabs: false,
+            divider: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    );
+    input.command.results = vec![
+        SemanticResultRow {
+            key: "tab:0".into(),
+            title: "Example".into(),
+            subtitle: Some("https://example.com".into()),
+            selected: true,
+            destructive: false,
+        },
+        SemanticResultRow {
+            key: "action:2".into(),
+            title: "Close Tab".into(),
+            subtitle: None,
+            selected: false,
+            destructive: true,
+        },
+    ];
+    let tree = semantic_tree(&input);
+    let field = find(&tree, "bbr-command-bar").expect("command field");
+    let list = field
+        .children
+        .iter()
+        .find(|node| node.id == "bbr-command-results")
+        .expect("result list under the command field");
+    assert_eq!(list.role, SemanticRole::List);
+    assert_eq!(list.children.len(), 2);
+    let first = list
+        .children
+        .iter()
+        .find(|node| node.id == "bbr-command-result-tab:0")
+        .expect("first result row");
+    assert_eq!(first.role, SemanticRole::Result);
+    assert_eq!(first.name.as_deref(), Some("Example"));
+    assert!(first.selected, "the selected row is marked selected");
+    let close = list
+        .children
+        .iter()
+        .find(|node| node.id == "bbr-command-result-action:2")
+        .expect("destructive result row");
+    assert!(close.value.is_none() || close.name.is_some());
+    assert!(!close.selected);
+    // No results: the list node is absent.
+    input.command.results.clear();
+    let tree = semantic_tree(&input);
+    let field = find(&tree, "bbr-command-bar").expect("command field");
+    assert!(
+        field
+            .children
+            .iter()
+            .all(|node| node.id != "bbr-command-results"),
+        "no result list without results"
+    );
 }
