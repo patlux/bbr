@@ -79,14 +79,22 @@ Integration order: portable contract may land after the serial bbr-web kernel
 
 ### Unit and contract
 
-- [ ] Request tests cover upload/save metadata, invalid accept filters,
-      single/multiple cardinality, directory legality, and suggested-name rules.
-- [ ] Lifecycle matrix covers request, selected, cancelled, failed, superseded,
+- [x] Request tests cover upload/save metadata, invalid accept filters,
+      single/multiple cardinality, directory legality, and suggested-name
+      rules. *(STEP 1 of the delivery sequence: requests, metadata, opaque
+      tokens, and pure validation; verified this slice.)*
+- [x] Lifecycle matrix covers request, selected, cancelled, failed, superseded,
       duplicate/stale/mismatched completions, and cross-kind token rejection.
-- [ ] Port tests prove object safety, exact request delivery, and completion
-      identity without filesystem or native types.
-- [ ] Serde tests prove stable opaque-token shapes without path/native payload.
-- [ ] Default and serde-enabled crate suites plus Clippy `-D warnings` pass.
+      *(STEP 2 of the delivery sequence: deterministic lifecycle machine +
+      module-local object-safe port; implemented in
+      `crates/bbr-web/src/file_panels/lifecycle.rs` with matrix/port tests;
+      verified this slice.)*
+- [x] Port tests prove object safety, exact request delivery, and completion
+      identity without filesystem or native types. *(Verified this slice via
+      `crates/bbr-web/src/file_panels/tests_lifecycle.rs` and
+      `tests_port.rs`.)*
+- [x] Serde tests prove stable opaque-token shapes without path/native payload.
+- [x] Default and serde-enabled crate suites plus Clippy `-D warnings` pass.
 
 ### Real-app E2E
 
@@ -137,11 +145,12 @@ or smuggle platform data through an opaque catch-all.
 ## Delivery ledger
 
 ```text
-Outcome: portable boundary accepted; packet and exclusive module anchor prepared; implementation pending
-Commits: pending
-Functional evidence: pending
+Outcome: STEP 2 (deterministic completion lifecycle + module-local object-safe FilePanelPort) implemented in crates/bbr-web/src/file_panels/lifecycle.rs with exhaustive matrix/port tests; STEP 1 (requests, metadata, opaque tokens, pure validation, default/serde no-path tests) delivered earlier in this worktree
+Commits: none — changes left uncommitted in the parallel worktree per lane rule
+Functional evidence: cargo fmt --all -- --check; cargo test -p bbr-web (109 lib + 11 doc-adjacent + 1 doctest); cargo test -p bbr-web --features serde (115 lib + 11 + 1); cargo clippy -p bbr-web --all-targets -- -D warnings (default and serde); just roadmap — all green
 Real-app E2E: not applicable to contract-only lane
 Performance evidence: not applicable to contract-only lane
-Open blockers and non-goals: native panel orchestration, filesystem/sandbox access, and WebKit/AppKit composition explicitly deferred
-Worktree state: launch pending
+Open blockers and non-goals: native panel orchestration, filesystem/sandbox access, WebKit/AppKit composition, and central WebEngine edits explicitly deferred to the serial adapter packet
+Worktree state: STEP 2 complete and uncommitted; independent read-only review is the next delivery-sequence step
+Evidence pass (STEP 3): re-ran all completion gates on the full STEP 1+2 tree — fmt check, git diff --check, just roadmap, cargo test -p bbr-web (109 lib + 11 + 1), cargo test -p bbr-web --features serde (115 lib + 11 + 1), both clippies -D warnings — all green; 61 test fns (24 contract, 22 lifecycle, 10 port, 5 serde); no path/bookmark/descriptor/native-payload code in file_panels (doc-comment negatives only); all six files < 500 lines; no lib.rs/WebEngine/manifest changes
 ```
