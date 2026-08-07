@@ -45,7 +45,7 @@ impl BbrApp {
     pub fn focus_sidebar_divider(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
-        window.focus(&self.divider_handle);
+        window.focus(&self.divider_handle, cx);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
         self.emit_focus(window);

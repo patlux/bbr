@@ -16,7 +16,12 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.85"
+# GPUI-CE pin: the pinned gpui-ce dependency tree's highest *declared*
+# rust-version on macOS is 1.89 (`smol_str 0.3.6`); the Linux-target stack
+# (oo7 via ashpd/zbus) declares 1.92. The previous 1.85 claim would be false
+# under this pin. The dev shell provides 1.97.1, so the floor is a contract,
+# not the tested toolchain. See docs/roadmap/tasks/gpui-ce-components-anchor.md.
+rust-version = "1.89"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
@@ -40,14 +45,27 @@ rusqlite = { version = "=0.38.0", default-features = false, features = ["bundled
 # foreground executor; the socket server thread blocks on per-request replies).
 smol = "2"
 
-# GPUI 0.2.2. `default-features = false` drops the Linux/Windows compositor
-# features; `font-kit` is required for text rendering on every platform.
-# On Linux/FreeBSD we additionally enable `wayland` so the workspace still
-# evaluates (see crates/bbr-app/Cargo.toml for the target-specific dep).
-gpui = { version = "0.2.2", default-features = false, features = ["font-kit"] }
+# GPUI-CE at the exact upstream commit 568271c01c5a9d640d7b091e5bfd136b04035f28
+# (haptic feedback, 2026-08-04). `default-features = false` drops the
+# Linux/Windows compositor features; `font-kit` stays required for real text
+# rendering on macOS (gpui_macos text system). `gpui_platform` provides the
+# per-OS platform constructor that crates.io gpui 0.2.2 used to embed in
+# `Application::new()`. `[patch.crates-io]` below redirects every crates.io
+# `gpui` consumer (including `gpui-component`'s `gpui = "0.2.2"`) to this
+# same Git source, so cargo resolves exactly one gpui type world.
+gpui = { git = "https://github.com/gpui-ce/gpui-ce", rev = "568271c01c5a9d640d7b091e5bfd136b04035f28", default-features = false, features = ["font-kit"] }
+gpui_platform = { git = "https://github.com/gpui-ce/gpui-ce", rev = "568271c01c5a9d640d7b091e5bfd136b04035f28", default-features = false, features = ["font-kit"] }
+# gpui-component 0.5.1, pinned exactly. Its optional `webview` feature (Wry)
+# stays disabled: BBR keeps its native WKWebViews and never replaces them.
+# The source is vendored under vendor/gpui-component (see its BBR_PATCHES.md)
+# because upstream 0.5.1 does not compile against the GPUI-CE pin; the vendored
+# copy applies only mechanical API-compatibility deltas, no redesign.
+gpui-component = { version = "=0.5.1", default-features = false }
 
 # Native bridge crates (macOS only). Pinned to the versions verified against
-# gpui 0.2.2's `raw-window-handle 0.6` / `objc2 0.6` in ARCHITECTURE.md.
+# GPUI 0.2.2 / GPUI-CE's `raw-window-handle 0.6` / `objc2 0.6` stack in
+# ARCHITECTURE.md. GPUI-CE itself uses the same objc2 0.6 / objc2-app-kit 0.3
+# family, so the native bridge and the GPUI mac platform unify on one set.
 objc2 = { version = "0.6.4", default-features = false, features = ["std"] }
 block2 = { version = "0.6.2", default-features = false, features = ["alloc", "std"] } # reserved for a later phase (decision handlers)
 raw-window-handle = "0.6"
@@ -55,3 +73,10 @@ raw-window-handle = "0.6"
 objc2-foundation = { version = "0.3.2", default-features = false }
 objc2-app-kit = { version = "0.3.2", default-features = false }
 objc2-web-kit = { version = "0.3.2", default-features = false }
+
+# One gpui source/type world: crates.io `gpui` requirements (gpui-component
+# and gpui-component-macros declare `gpui = "0.2.2"`) are patched to the
+# exact GPUI-CE revision above, identical to the direct `gpui` dependency.
+[patch.crates-io]
+gpui = { git = "https://github.com/gpui-ce/gpui-ce", rev = "568271c01c5a9d640d7b091e5bfd136b04035f28" }
+gpui-component = { path = "vendor/gpui-component" }

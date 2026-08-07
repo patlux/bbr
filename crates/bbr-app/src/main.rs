@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use bbr_browser::BrowserController;
 use gpui::prelude::*;
-use gpui::{px, size, App, Bounds, KeyBinding, Window, WindowBounds, WindowOptions};
+use gpui::{px, size, App, Bounds, Entity, Window, WindowBounds, WindowOptions};
 
 mod actions;
 mod app;
@@ -36,14 +36,14 @@ mod slot;
 mod testkit;
 #[allow(dead_code)] // foundation tokens; consumed by the shell slices that follow this group
 mod theme;
+mod window_seam;
 
-use actions::{
-    Back, CloseTab, FocusCommandBar, FocusWeb, Forward, MoveTab, NewSpace, NewTab, PinTab, Reload,
-    ReopenTab, ReorderTabDown, ReorderTabUp, ToggleSidebar,
-};
 use app::BbrApp;
 use engine::{build_engine, EngineConfig};
 use inject::{IdGen, RandomIdGen, SequentialIdGen};
+#[cfg(not(feature = "testkit"))]
+use window_seam::spawn_event_pump;
+use window_seam::{install_actions, with_app};
 
 /// Parsed command-line flags (all `--bbr-*` are test/injection knobs).
 struct Cli {
@@ -168,12 +168,25 @@ fn main() {
     // can assert stable native-session identity across tab switches.
     let allocate_view: bbr_browser::ViewIdAllocator = Box::new(move || idgen.next_u64());
 
-    gpui::Application::new().run(move |cx: &mut App| {
+    // GPUI-CE application start; gpui-component must be initialized before any
+    // component (including `Root`) is used.
+    gpui_platform::application().run(move |cx: &mut App| {
+        gpui_component::init(cx);
+
         let bounds = Bounds::centered(None, size(px(cli.window_size.0), px(cli.window_size.1)), cx);
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             focus: !cli.hidden,
-            show: true,
+            // `--bbr-hidden` (every E2E harness) must never order the window
+            // front: a shown window is visible to the host's window manager
+            // (yabai BSP on this host tiles it to the current space's tile
+            // frame — 1213x1063 here — so the frame is no longer the
+            // requested 1080x700 and geometry suites flake depending on the
+            // manager's state). A never-shown window keeps the requested
+            // bounds deterministically; WebKit and GPUI rendering work
+            // without display (frames are driven by the testkit FlushFrame
+            // path).
+            show: !cli.hidden,
             ..Default::default()
         };
 
@@ -187,6 +200,11 @@ fn main() {
         #[cfg(feature = "testkit")]
         let view_performance = performance.clone();
 
+        // Root-window + app-entity seam: the browser window's root view is
+        // `gpui_component::Root`; the `BbrApp` entity is built first and
+        // retained separately so actions, pumps, dispatch, and presentation
+        // hooks address the app directly (see `with_app`).
+        let mut app_entity: Option<Entity<BbrApp>> = None;
         let window = cx
             .open_window(options, |window, cx| {
                 // Capture the GPUI root NSView pointer BEFORE building the
@@ -198,7 +216,7 @@ fn main() {
                 // SAFETY: `ns_view` is the live GPUI root view on the main thread.
                 let engine = unsafe { build_engine(ns_view, &config, engine_kind) };
                 let controller = BrowserController::new(engine.clone(), allocate_view);
-                cx.new(|cx| {
+                let app = cx.new(|cx| {
                     BbrApp::new(
                         engine,
                         controller,
@@ -208,18 +226,21 @@ fn main() {
                         view_performance,
                         cx,
                     )
-                })
+                });
+                app_entity = Some(app.clone());
+                cx.new(|cx| gpui_component::Root::new(app, window, cx))
             })
             .expect("open window");
+        let app = app_entity.expect("app entity built with the window root");
 
         // Create the web view with the initial URL (first prepaint will frame it).
-        window
-            .update(cx, |view, _w, _cx| view.open_initial_tab(&cli.initial_url))
-            .ok();
+        let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+            view.open_initial_tab(&cli.initial_url)
+        });
 
         // Keyboard actions (fire even while the WKWebView is first responder,
         // via the macOS performKeyEquivalent path).
-        install_actions(cx, &window);
+        install_actions(cx, window, app.clone());
 
         // Test gateway (only under the `testkit` feature).
         #[cfg(feature = "testkit")]
@@ -239,7 +260,15 @@ fn main() {
                 } else {
                     None
                 };
-            testkit::spawn_pump(cx, &window, evt_rx, evt_tx.clone(), cmd_rx, server.clone());
+            testkit::spawn_pump(
+                cx,
+                &window,
+                &app,
+                evt_rx,
+                evt_tx.clone(),
+                cmd_rx,
+                server.clone(),
+            );
             if let Some(server) = &server {
                 let broadcaster = server.clone();
                 performance.set_sink(Box::new(move |measurement| {
@@ -256,29 +285,26 @@ fn main() {
                 // after each mutation, so the emitted event always matches the
                 // snapshot's `chrome_focused`.
                 let broadcaster = server.clone();
-                window
-                    .update(cx, |view, _w, _cx| {
-                        view.set_focus_sink(Box::new(move |chrome_focused| {
-                            broadcaster.broadcast(
-                                bbr_testkit::protocol::Event::ChromeFocusChanged { chrome_focused },
-                            );
-                        }));
-                        let broadcaster = server.clone();
-                        view.set_browser_sink(Box::new(move |outcome| {
-                            if let Some(kind) = testkit::browser_change(outcome) {
-                                broadcaster.broadcast(
-                                    bbr_testkit::protocol::Event::BrowserChanged { kind },
-                                );
-                            }
-                        }));
-                    })
-                    .ok();
+                let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+                    view.set_focus_sink(Box::new(move |chrome_focused| {
+                        broadcaster.broadcast(bbr_testkit::protocol::Event::ChromeFocusChanged {
+                            chrome_focused,
+                        });
+                    }));
+                    let broadcaster = server.clone();
+                    view.set_browser_sink(Box::new(move |outcome| {
+                        if let Some(kind) = testkit::browser_change(outcome) {
+                            broadcaster
+                                .broadcast(bbr_testkit::protocol::Event::BrowserChanged { kind });
+                        }
+                    }));
+                });
             }
         }
         #[cfg(not(feature = "testkit"))]
         {
             // Event pump so the shell stays live even without the gateway.
-            spawn_event_pump(cx, &window, evt_rx);
+            spawn_event_pump(cx, &window, &app, evt_rx);
         }
 
         if !cli.hidden {
@@ -341,169 +367,4 @@ fn current_engine_kind() -> &'static str {
 #[cfg(not(target_os = "macos"))]
 fn current_engine_kind() -> &'static str {
     "null"
-}
-
-/// Register global action handlers (bubble phase) that reach the app view.
-///
-/// These run while the keystroke dispatch already holds the window borrowed
-/// (see [`gpui::Window::dispatch_keystroke`]), so a direct `win.update` would
-/// re-enter the window update and fail with "window not found". The update is
-/// therefore deferred to the effect flush — the same pattern GPUI's own
-/// [`gpui::Window::dispatch_action`] uses — so the view is updated once the
-/// keystroke dispatch has released the window.
-fn install_actions(cx: &mut App, window: &gpui::WindowHandle<BbrApp>) {
-    let win = *window;
-    cx.on_action(move |_: &FocusCommandBar, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, window, cx| view.activate_command_bar(window, cx));
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &FocusWeb, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, window, cx| view.cancel_command_bar(window, cx));
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &Back, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, _w, _cx| view.go_back());
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &Forward, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, _w, _cx| view.go_forward());
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &Reload, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, _w, _cx| view.reload());
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &ToggleSidebar, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, window, cx| view.toggle_sidebar(window, cx));
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &NewTab, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, window, cx| {
-                view.activate_new_tab(window, cx);
-            });
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &NewSpace, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, window, cx| {
-                view.activate_new_space(window, cx);
-            });
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &PinTab, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, _w, cx| {
-                let _ = view.pin_active_tab(cx);
-            });
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &ReorderTabUp, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, _w, cx| {
-                let _ = view.reorder_active_tab(-1, cx);
-            });
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &ReorderTabDown, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, _w, cx| {
-                let _ = view.reorder_active_tab(1, cx);
-            });
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &MoveTab, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, window, cx| {
-                view.activate_move_tab(window, cx);
-            });
-        });
-    });
-    let win = *window;
-    cx.on_action(move |_: &CloseTab, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, window, cx| {
-                let _ = view.close_active_tab(window, cx);
-            });
-        });
-    });
-
-    let win = *window;
-    cx.on_action(move |_: &ReopenTab, cx| {
-        let win = win;
-        cx.defer(move |cx| {
-            let _ = win.update(cx, |view, window, cx| {
-                let _ = view.reopen_tab(window, cx);
-            });
-        });
-    });
-
-    cx.bind_keys([
-        KeyBinding::new("cmd-l", FocusCommandBar, None),
-        KeyBinding::new("escape", FocusWeb, None),
-        KeyBinding::new("cmd-[", Back, None),
-        KeyBinding::new("cmd-]", Forward, None),
-        KeyBinding::new("cmd-r", Reload, None),
-        KeyBinding::new("cmd-b", ToggleSidebar, None),
-        KeyBinding::new("cmd-t", NewTab, None),
-        KeyBinding::new("cmd-shift-n", NewSpace, None),
-        KeyBinding::new("cmd-shift-p", PinTab, None),
-        KeyBinding::new("cmd-shift-up", ReorderTabUp, None),
-        KeyBinding::new("cmd-shift-down", ReorderTabDown, None),
-        KeyBinding::new("cmd-shift-m", MoveTab, None),
-        KeyBinding::new("cmd-w", CloseTab, None),
-        KeyBinding::new("cmd-shift-t", ReopenTab, None),
-    ]);
-}
-
-/// Non-testkit builds still need the event pump to keep the shell live.
-#[cfg(not(feature = "testkit"))]
-fn spawn_event_pump(
-    cx: &App,
-    window: &gpui::WindowHandle<BbrApp>,
-    evt_rx: smol::channel::Receiver<bbr_web::WebEvent>,
-) {
-    let win = *window;
-    cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
-        let ev = match evt_rx.recv().await {
-            Ok(ev) => ev,
-            Err(_) => break,
-        };
-        async_cx
-            .update(|cx| {
-                let _ = win.update(cx, |view, _w, cx| view.on_web_event(ev, cx));
-            })
-            .ok();
-    })
-    .detach();
 }

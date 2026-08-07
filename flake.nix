@@ -65,8 +65,8 @@
 
             shellHook = ''
               # Real Apple xcrun must win over the closure's xcbuild fake xcrun:
-              # Metal shader compilation (gpui build scripts) needs the system
-              # toolchain stub that honors DEVELOPER_DIR.
+              # Metal shader compilation (gpui_macos build script) needs the
+              # system toolchain stub that honors DEVELOPER_DIR.
               export PATH="$PWD/scripts/xcode-shims:$PWD/target/debug:$PWD/target/release:$PATH"
 
               if [ "$(uname -s)" = "Darwin" ] && [ -d /Applications/Xcode.app/Contents/Developer ]; then

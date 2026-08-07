@@ -164,7 +164,7 @@ fn benchmark_corpus() -> Corpus {
                     (
                         format!("{topic} {tab_id}"),
                         format!("https://site-{tab_id}.example.com/{topic}"),
-                        tab_id % 5 == 0,
+                        tab_id.is_multiple_of(5),
                     )
                 };
                 corpus

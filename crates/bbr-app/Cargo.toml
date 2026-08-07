@@ -25,6 +25,8 @@ bbr-command.workspace = true
 bbr-split.workspace = true
 bbr-web.workspace = true
 gpui.workspace = true
+gpui-component.workspace = true
+gpui_platform.workspace = true
 log = "0.4"
 smol.workspace = true
 
@@ -41,10 +43,10 @@ mach2 = { version = "0.4", optional = true }
 objc2.workspace = true
 raw-window-handle.workspace = true
 
-# Linux/FreeBSD: keep the workspace evaluating (GPUI needs a backend to
-# compile its platform layer).
+# Linux/FreeBSD: keep the workspace evaluating (GPUI-CE needs a platform
+# backend to compile its platform layer; gpui_platform pulls gpui_linux).
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
-gpui = { workspace = true, features = ["wayland"] }
+gpui_platform = { workspace = true, features = ["wayland"] }
 
 [dev-dependencies]
 bbr-domain.workspace = true

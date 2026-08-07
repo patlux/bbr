@@ -62,7 +62,7 @@ bbr-app        ──uses──▶  bbr-web, bbr-web-macos (macOS), bbr-testkit 
                           feature), bbr-fixtures (dev-dep)
 bbr-fixtures   ──uses──▶  (std only)
 bbr-command    ──uses──▶  (std only; provider-neutral command data and ranking)
-bbr-persistence──uses──▶  rusqlite (exact 0.40.1, bundled; repository implementation not yet on main)
+bbr-persistence──uses──▶  rusqlite (exact 0.38.0, bundled; repository implementation not yet on main)
 ```
 
 - `bbr-web` **must not** depend on `gpui`, `objc2*`, `raw-window-handle`, or any
@@ -92,7 +92,9 @@ bbr-persistence──uses──▶  rusqlite (exact 0.40.1, bundled; repository 
 
 | Crate | Version | Notes |
 |---|---|---|
-| `gpui` | `0.2.2` | `default-features = false`, `features = ["font-kit"]` |
+| `gpui` | `0.2.2` | GPUI-CE git `568271c01c5a9d640d7b091e5bfd136b04035f28`; `default-features = false`, `features = ["font-kit"]`; crates.io `gpui` consumers patched to the same source (one type world) |
+| `gpui_platform` | `0.1.0` | same GPUI-CE rev; provides `gpui_platform::application()` (crates.io's `Application::new` is gone) |
+| `gpui-component` | `=0.5.1` | `default-features = false` (webview/Wry disabled); source vendored under `vendor/gpui-component` with mechanical GPUI-CE API-compatibility deltas only (see `vendor/gpui-component/BBR_PATCHES.md`) |
 | `objc2` | `0.6.4` | satisfies `objc2-web-kit`'s `>=0.6.2,<0.8.0` |
 | `objc2-web-kit` | `0.3.2` | `WKWebView`, `WKWebsiteDataStore`, `WKNavigationDelegate`, `WKUIDelegate`, … |
 | `objc2-app-kit` | `0.3.2` | `NSView`, `NSWindow`, `NSResponder`, `NSEvent` |
@@ -101,11 +103,22 @@ bbr-persistence──uses──▶  rusqlite (exact 0.40.1, bundled; repository 
 | `raw-window-handle` | `0.6` | must match GPUI 0.2.2's `raw-window-handle 0.6` |
 | `serde` / `serde_json` | `1` | protocol framing (feature-gated in `bbr-web`) |
 | `smol` | `2` | channels for the main-loop event/command pump |
-| `rusqlite` | `=0.40.1` | `default-features = false`, bundled SQLite only; consumed solely by `bbr-persistence` |
+| `rusqlite` | `=0.38.0` | `default-features = false`, bundled SQLite only; consumed solely by `bbr-persistence`. Pinned to the newest release whose `libsqlite3-sys` (0.36) still compiles on the devshell stable toolchain: 0.40.1 pulls `libsqlite3-sys` 0.38.1 whose build script requires the unstable `cfg_select!` (E0658 on rustc 1.97.1) |
 
-Toolchain: workspace MSRV `1.85`; the dev shell provides `rustc 1.97.1` via
-`rust-overlay`. `Xcode 16.4` is the host prerequisite (Metal + WebKit SDK) and
-is encoded in the justfile as `BBR_XCODE_DEVELOPER_DIR`.
+Toolchain: workspace `rust-version` is `1.89` on macOS and `1.92` for the
+Linux-target stack (the pinned dependency manifests' highest declared
+floors: `smol_str 0.3.6` on macOS, `oo7` via ashpd/zbus on Linux); the
+dev shell provides `rustc 1.97.1` via `rust-overlay`. `Xcode 26.2.0` is
+the installed host prerequisite (WebKit SDK, plus the Xcode "Metal
+Toolchain" component for shader compilation); the repository default is
+`DEVELOPER_DIR=/Applications/Xcode-26.2.0.app/Contents/Developer` (see
+the `justfile` `xcode_developer_dir` variable). With that developer dir
+set, the system `/usr/bin/xcrun` resolves `metal` and `metallib` through
+the Metal Toolchain component (`com.apple.MobileAsset.MetalToolchain`,
+mounted by cryptexd) rather than from files inside the Xcode developer
+dir. The flake devshell prepends `scripts/xcode-shims` (a forwarder to
+`/usr/bin/xcrun`) so the real Apple `xcrun` wins over the xcbuild fake
+`xcrun` in the nix closure; no session-local shim is required.
 
 ---
 
@@ -341,21 +354,36 @@ src/
      --bbr-profile-dir    per-test profile dir (default temp/pid)
      --bbr-test-token     secret; presence ALSO enables non-persistent stores
                           and (with the testkit feature) starts the gateway
-     --bbr-hidden         do not focus/activate the window (E2E)
+     --bbr-hidden         E2E: never show, focus, or activate the window
+                          (the harness window is invisible to the host's
+                          window manager; see E2E_ARCHITECTURE.md)
      --bbr-ids=sequential|random   IdGen mode (SequentialIdGen/RandomIdGen)
      --bbr-clock=system|fake       parsed; still a no-op (the command debounce
                                    uses GPUI's platform timer and a testkit flush
                                    seam, not a product-wide TimeSource)
      --bbr-window-size=WxH         initial window size (default 1080x700)
 2. Build the id generator and inject it as the controller's WebViewId allocator.
-3. gpui::Application::new().run: open one window (centered, options from flags).
+3. `gpui_platform::application().run`: call `gpui_component::init(cx)` first, then
+   open one window (centered, options from flags). The window root is
+   `gpui_component::Root`; the `BbrApp` entity is built first in the
+   `open_window` callback and retained separately
+   (`Entity<BbrApp>` + `WindowHandle<Root>` seam, see `crate::with_app`).
 4. In the open_window callback: capture the GPUI root NSView, build the engine,
-   create `BrowserController(engine.clone(), allocator)`, then create BbrApp.
-5. Open the initial controller-backed tab after the window exists.
-6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B, Cmd-T staging, the focus-preserving Cmd-W, command-result arrows/Enter/Cmd-Enter, and the tab-organization commands (Cmd-Shift-P pin toggle, Cmd-Shift-↑/↓ reorder, Cmd-Shift-M staged move).
+   create `BrowserController(engine.clone(), allocator)`, create `BbrApp`,
+   retain its entity, and wrap it in `Root::new`.
+5. Open the initial controller-backed tab after the window exists (via the seam).
+6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B, Cmd-T staging, the focus-preserving Cmd-W, command-result arrows/Enter/Cmd-Enter, and the tab-organization commands (Cmd-Shift-P pin toggle, Cmd-Shift-↑/↓ reorder, Cmd-Shift-M staged move) — every handler routes through `with_app` so actions address the app entity with `&mut Window` access from the Root window.
 7. Under testkit: start the gateway, pump engine events into the controller,
    and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
+
+All global actions, the event/ranking pumps, testkit dispatch, snapshots,
+focus sinks, and presentation hooks address the app through the Root-window
+plus app-entity contract (`crate::with_app`): the root type is
+`WindowHandle<gpui_component::Root>` everywhere; the separately retained
+`Entity<BbrApp>` is updated inside the Root window's update closure. The
+testkit keystroke/draw arms still use the untyped `(**window).update` path
+because a forced draw re-borrows the Root entity during the render.
 
 The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs` + the split
 `app/sidebar.rs`/`app/sidebar_view.rs`/`app/spaces.rs`/`app/tab.rs`/
@@ -654,8 +682,9 @@ just e2e        # canonical sequential GUI gate (smoke, tabs, profiles,
 
 All recipes are wrapped in GNU `timeout --kill-after=10s` with
 `BBR_CHECK_TIMEOUT`/`BBR_TEST_TIMEOUT` (5m) and `BBR_E2E_TIMEOUT` (2m)
-overrides, and pin `DEVELOPER_DIR` to Xcode 16.4. On headless CI,
-`BBR_SKIP_GUI_TESTS=1` skips the smoke.
+overrides, and pin `DEVELOPER_DIR` to the installed Xcode 26.2.0
+(`BBR_XCODE_DEVELOPER_DIR`). On headless CI, `BBR_SKIP_GUI_TESTS=1`
+skips the smoke.
 
 **Verified green on 2026-08-06** (evidence, not claims):
 

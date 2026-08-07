@@ -13,7 +13,7 @@ Every contributor and automation run gets the same bounded Rust development envi
 - [x] `.envrc` loads the flake through direnv.
 - [x] `.gitignore` excludes Cargo, Nix, direnv, and local artifacts.
 - [x] Bounded `just fmt`, `check`, `test`, `clippy`, `verify`, and `e2e-smoke` recipes exist.
-- [x] Xcode 16.4 workaround is encoded through `BBR_XCODE_DEVELOPER_DIR`.
+- [x] Xcode developer-dir default is encoded through `BBR_XCODE_DEVELOPER_DIR` (repository default: `/Applications/Xcode-26.2.0.app/Contents/Developer`).
 - [x] Test Unix-socket paths remain below macOS `SUN_LEN` under both direnv and `nix develop`.
 
 ## Exit evidence

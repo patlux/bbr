@@ -89,7 +89,7 @@ impl BbrApp {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
         self.command_ranking.close();
-        window.focus(&self.space_list_handle);
+        window.focus(&self.space_list_handle, cx);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
         self.emit_focus(window);
