@@ -24,6 +24,11 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 pub mod find_in_page;
+pub mod new_window;
+pub use new_window::{
+    decide, NewWindowDecision, NewWindowDisposition, NewWindowFeatures, NewWindowOutcome,
+    NewWindowRequest, NewWindowSession, NewWindowTarget,
+};
 
 /// Stable identifier of a browsing profile. Maps 1:1 to a persistent
 /// [`WKWebsiteDataStore`] on macOS.
