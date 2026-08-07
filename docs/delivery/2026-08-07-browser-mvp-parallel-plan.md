@@ -40,6 +40,16 @@ MVP laut Goal 2026-08-07 10:45 CEST:
 - Portable Lanes: **keine neuen Dependencies** (Cargo.lock-Merges trivial)
 - GUI-E2E über Host-Lock (`with_gui_lock`) automatisch serialisiert
 - U-Lanes branchen zwingend vom Post-Anchor-Integrations-SHA (arg)
+- **UI-Recovery-Policy ab User-Steering:** Wenn der laufende U1-Writer abbricht
+  oder U2-Remediation leer/rot endet, die Lane nicht erneut als monolithischen
+  Writer starten. Stattdessen denselben erhaltenen Worktree mit 2–4
+  sequenziellen, eng begrenzten DeepSeek-Writer-Steps fortsetzen, typischerweise
+  Struktur → Verhalten → Tests → Gates. Jeder Step ist ein eigener `agent()`-Call
+  mit kurzem Abschluss-/Handoff-Bericht als Input des nächsten Steps; jeder
+  Writer-Prompt fordert explizit einen Abschlussbericht an. Alle Suchen bleiben
+  repo-lokal per `rg` im Lane-Worktree; GPUI-Quellen höchstens unter
+  `~/.cargo/git/checkouts`. Niemals `find /`, `find /nix` oder andere
+  ungebundene Dateisystem-Suchen. Run-IDs und Step-Übergänge im Ledger erfassen.
 
 ## Lane-Status
 
@@ -199,6 +209,7 @@ Nach letzter Integration: einmal `just e2e`, frische `.app` + manueller Smoke.
 | UI-Recovery | U2 zweiter Writer ebenfalls `AGENT_EMPTY_OUTPUT` nach einem am Output-Limit abgeschnittenen Tool-Call; keine Änderungen, Stashes oder fremden Commits. Read-only Review und Gate: `BLOCKED — no implementation delivered`. Workflow ist vertragsgemäß in Remediation fortgeschritten; diese läuft aktiv als letzter lokaler Implementierungsweg vor Recheck |
 | UI-Progress | U1 zweiter Writer aktiv; Worktree HEAD unverändert auf Foundation `7a98762`, aktuell vier erlaubte uncommitted Protokolländerungen (`benchmark.rs`, `mod.rs`, `request.rs`, `snapshot.rs`, +38/−1). Noch keine Produktions-/E2E-Implementierung; deshalb keine Lieferprognose als erreicht behandelt |
 | UI-Recovery | U1 Idle-Warnung nach 360 s untersucht: kein bounded Gate, sondern ungebundene Quellensuche `find / -name styled.rs -path '*gpui*'`, >6 min aktiv. Ausschließlich verifizierten Such-Prozessbaum beendet, damit der Writer einen Fehler erhält und fortsetzen kann; Workflow nicht gestoppt, U1-Diff unverändert. Gleichartige bereits verschwundene U2-Suche nicht angefasst; fremder Xcode-Prozess ausdrücklich unberührt |
+| UI-Steering | User-approved Analyse aus Session `019fdcb7`: DeepSeek-Monolith-Writer verlieren nach langen Toolketten häufig den Abschlussreport (`AGENT_EMPTY_OUTPUT`). Bedingter Recovery-Vertrag festgelegt: bei U1-Abbruch bzw. leerer/roter U2-Remediation neuer sequenzieller 2–4-Step-Workflow statt Monolith-Retry; jeder Step DeepSeek-only, eng begrenzt, mit explizitem Abschlussbericht und Handoff; Suchen ausschließlich repo-lokal per `rg` bzw. GPUI unter `~/.cargo/git/checkouts`, niemals ungebunden |
 | 15:09 | Alter Writer-Wächter (Session `019fdb6b`, Pane bbr:1.0) gestoppt — kein Doppel-Writer-Risiko |
 | 15:09 | ✅ Handoff: sol-Orchestrator gestartet — tmux `tws_personal_macos_bbr-orchestrator`, Pi-Session `019fdc57-7afb-7f81`, gpt-5.6-sol:high. Ab jetzt einziger Orchestrator und Ledger-Owner; die fable-Session (`019fdba4`) zieht sich zurück |
 
