@@ -11,7 +11,7 @@ e2e_full_timeout := env_var_or_default("BBR_E2E_FULL_TIMEOUT", "15m")
 # budget; the per-wait deadlines inside the suite stay bounded.
 e2e_dense_timeout := env_var_or_default("BBR_E2E_DENSE_TIMEOUT", "8m")
 run_timeout := env_var_or_default("BBR_RUN_TIMEOUT", "8h")
-xcode_developer_dir := env_var_or_default("BBR_XCODE_DEVELOPER_DIR", "/Applications/Xcode-16.4.0.app/Contents/Developer")
+xcode_developer_dir := env_var_or_default("BBR_XCODE_DEVELOPER_DIR", "/Applications/Xcode-26.2.0.app/Contents/Developer")
 gui_gate := "python3 scripts/with_gui_lock.py --"
 
 # Launch the development build. Override BBR_RUN_TIMEOUT for longer sessions.
