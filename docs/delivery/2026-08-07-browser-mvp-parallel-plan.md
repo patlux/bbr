@@ -27,7 +27,14 @@ MVP laut Goal 2026-08-07 10:45 CEST:
 ## Regeln
 
 - Jede Lane = 1 Background-Workflow, interne Phasen
-  Writer→Review→gate→Remediation→Recheck; deepseek-Writer, luna-Reviewer
+  Writer→Review→gate→Remediation→Recheck
+- **Modell-Policy ab Steering:** alle Subagents in allen Rollen (Writer,
+  Reviewer, Gate-Validatoren, Judges, Remediation, Recheck) ausschließlich
+  explizit `model: "homelab-llm/deepseek-v4-flash:high"`; niemals `tier`
+  oder Session-Default erben. `gpt-5.6-sol` bleibt exklusiv dem Orchestrator
+  vorbehalten; Luna wird nicht verwendet. Bereits in-flight gestartete Calls
+  dürfen mit ihrer bisherigen Route zu Ende laufen; jeder danach neu gestartete
+  `agent()`-Call, jedes `resumeFromRunId` und U1/U2 folgt dieser Policy.
 - Event-getrieben (followUp-Delivery), **kein** sleep/status-Polling
 - Commits/Merges nur durch Orchestrator (serielles Kernel)
 - Portable Lanes: **keine neuen Dependencies** (Cargo.lock-Merges trivial)
@@ -40,16 +47,16 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 geliefert/wartet auf Integration · �
 
 | # | Lane | Status | Run-ID | Branch/Worktree | Notiz |
 |---|---|---|---|---|---|
-| D0 | Delivery-Smoke (Dummy-Run beweist followUp) | ✅ | `d0-delivery-smoke-msixi7dy-urgp2y` | — | `DELIVERY_OK` automatisch zugestellt, 1.7 s |
+| D0 | Delivery-Smoke (Dummy-Run beweist followUp) | ✅ | `bbr-d0-session-delivery-smoke-msiyp4bv-axc79v` | — | `DELIVERY_OK` automatisch zugestellt, 1.6 s |
 | H0 | Tooling-Hotfix auf `main` (xcrun-Shim, flake-Hook, justfile Xcode 26.2, rusqlite `=0.38.0`, Lint-Fixes) | ✅ | — | main | Commits `b9bad16`+`c4ce31b`+`a50bb92`+`574750b`; **Lane-Base = `574750b`** |
-| L0 | Anchor-Finish (kritischer Pfad) | ⬜ | — | `bbr-gpui-ce-components-anchor` | verify ✅, testkit-Clippy ✅; offen: E2E-Suiten, `just e2e`, Split-Geometry-Flake, Docs-Fakten |
-| L1 | Packaging `.app` (Bundle, Plist, ad-hoc-Sign, Launch-Smoke) | ⬜ | — | — | MVP-Pflicht |
-| L2 | `bbr-web` new-window-Contract (`target=_blank`/`window.open`) | ⬜ | — | — | Stretch; Fundament Link-Preview/Peek |
-| L3 | Persistence-Hydration portable (chrome-first, sichtbare Sessions) | ⬜ | — | — | Stretch; 2 Phase-7-Items + Warm-Startup-Perf |
-| L4 | Prep: DESIGN §11.4-Revision + Task-Packets U1/U2 (Assertion-IDs, exklusive Pfade) | ⬜ | — | — | nur Docs |
-| L5 | Favorites+Folders Domain/Controller (`bbr-domain`/`bbr-browser`, inkl. New-Folder/New-Space-Kommandos) | ⬜ | — | — | gpui-frei; Fundament U2b/U2c/U2d |
-| L6 | Downloads-Capability-Contract (`bbr-web` portabel) | ⬜ | — | — | füttert Footer-`[Downloads]` |
-| L7 | Find-in-page-Contract (`bbr-web` portabel) | ⬜ | — | — | optional |
+| L0 | Anchor-Finish (kritischer Pfad) | 🟦 | `bbr-mvp-l0-anchor-finish-msiyvhmf-fb9qjp` | `/Users/patwoz/dev/Personal/macos/bbr-gpui-ce-components-anchor` · `parallel/gpui-ce-components-anchor` | nach Policy-Pause-Abort resumed; Review→Gate→ggf. Remediation→Recheck explizit DeepSeek-only |
+| L1 | Packaging `.app` (Bundle, Plist, ad-hoc-Sign, Launch-Smoke) | 🟨 | `bbr-mvp-l1-packaging-msiyvhmh-43x8cf` | `/Users/patwoz/dev/Personal/macos/bbr-mvp-l1-packaging` · `parallel/mvp-l1-packaging` | `READY_FOR_ORCHESTRATOR`; `just package-verify` grün, 12 Tests, deterministisches ad-hoc-signiertes Bundle + 5.1-s Launch-Smoke; Integration zuletzt |
+| L2 | `bbr-web` new-window-Contract (`target=_blank`/`window.open`) | 🟨 | `bbr-mvp-l2-new-window-contract-msiyvhmj-uqwhk5` | `/Users/patwoz/dev/Personal/macos/bbr-mvp-l2-new-window` · `parallel/mvp-l2-new-window` | `READY_FOR_ORCHESTRATOR`; 19 neue Contract-Tests + serde/all-crate/clippy/fmt grün; 6 erlaubte Pfade, keine Dependency-Änderung; Integration nach U2 |
+| L3 | Persistence-Hydration portable (chrome-first, sichtbare Sessions) | 🟨 | `bbr-mvp-l3-persistence-hydration-msiyvhmk-7oogla` + `bbr-mvp-l3-structure-remediation-msj0gjba-0m06xf` | `/Users/patwoz/dev/Personal/macos/bbr-mvp-l3-hydration` · `parallel/mvp-l3-hydration` | `READY_FOR_ORCHESTRATOR`; 22 Hydration-Tests, Workspace/Fmt/Clippy/Roadmap grün; Struktur-Split max. 372 L; Integration nach L7 |
+| L4 | Prep: DESIGN §11.4-Revision + Task-Packets U1/U2 (Assertion-IDs, exklusive Pfade) | 🟨 | `bbr-mvp-l4-ui-prep-docs-msiyvhml-qf9avh` | `/Users/patwoz/dev/Personal/macos/bbr-mvp-l4-prep-docs` · `parallel/mvp-l4-prep-docs` | `READY_FOR_ORCHESTRATOR` nach fokussierter Docs-Remediation; 3 Allowlist-Dateien, Roadmap-Validator 43 Dateien grün; bei L0-Landung promoten + Integrations-SHA eintragen |
+| L5 | Favorites+Folders Domain/Controller (`bbr-domain`/`bbr-browser`, inkl. New-Folder/New-Space-Kommandos) | 🟨 | `bbr-mvp-l5-favorites-folders-msiyvhmm-7j1qvw` | `/Users/patwoz/dev/Personal/macos/bbr-mvp-l5-favorites-folders` · `parallel/mvp-l5-favorites-folders` | `READY_FOR_ORCHESTRATOR` nach Recovery-Remediation; 21 Domain + 20 Controller-Tests, Crate-Clippy/Fmt/Workspace-Check grün; U2-API vollständig; Integration direkt nach L0 |
+| L6 | Downloads-Capability-Contract (`bbr-web` portabel) | 🟨 | `bbr-mvp-l6-downloads-contract-msiyvhmn-4s2ypx` | `/Users/patwoz/dev/Personal/macos/bbr-mvp-l6-downloads` · `parallel/mvp-l6-downloads` | `READY_FOR_ORCHESTRATOR` nach Remediation; 37 lib + 1 doc / 38 serde Tests, Clippy/Fmt/`just verify` grün; 4 erlaubte Pfade, keine Dependencies |
+| L7 | Find-in-page-Contract (`bbr-web` portabel) | 🟨 | `bbr-mvp-l7-find-in-page-contract-msiyvhmo-wt6te6` | `/Users/patwoz/dev/Personal/macos/bbr-mvp-l7-find` · `parallel/mvp-l7-find` | `READY_FOR_ORCHESTRATOR`; 16 Find-Tests + Default/Serde Check/Test/Clippy/Fmt grün; 3 erlaubte Pfade, keine Dependency-Änderung; Integration nach L6 |
 | U1 | Palette-UI: a) Cmd-T zentriert · b) Overlay am URL-Feld | ⬜ | — | — | **erst nach L0-Integration** (SHA-arg) |
 | U2 | Sidebar-UI: a) Struktur+Footer · d) [+]-Menü · b) Fav-Grid · c) Folders-UI · Icon-Glyphs | ⬜ | — | — | **erst nach L0-Integration**; braucht L5 integriert |
 | U3 | Startup-First-Frame-Perf-Beweis | ⬜ | — | — | optional, nur bei Kapazität |
@@ -65,8 +72,10 @@ Nach letzter Integration: einmal `just e2e`, frische `.app` + manueller Smoke.
 ## Checklisten
 
 ### D0 — Delivery-Smoke
-- [x] Dummy-Background-Run gestartet (`d0-delivery-smoke-msixi7dy-urgp2y`)
-- [x] followUp-Ergebnis automatisch in Session angekommen (kein Polling)
+- [x] Frühere Session: Dummy-Background-Run gestartet (`d0-delivery-smoke-msixi7dy-urgp2y`)
+- [x] Frühere Session: followUp-Ergebnis automatisch angekommen (kein Polling)
+- [x] Dedizierte sol-Orchestrator-Session: Dummy-Background-Run gestartet (`bbr-d0-session-delivery-smoke-msiyp4bv-axc79v`)
+- [x] Dedizierte sol-Orchestrator-Session: followUp-Ergebnis automatisch angekommen (kein Polling)
 
 ### H0 — Tooling-Hotfix `main`
 - [x] `scripts/xcode-shims/xcrun` + flake.nix-Hook übernommen
@@ -86,35 +95,35 @@ Nach letzter Integration: einmal `just e2e`, frische `.app` + manueller Smoke.
 - [ ] Housekeeping: alter `pi-tmux-resume`-Wächter (Writer `019fdb6b`) gestoppt
 
 ### L1 — Packaging
-- [ ] `just`-Recipe: Bundle-Struktur + Info.plist + Icon-Platzhalter
-- [ ] ad-hoc-Codesign; App startet per Doppelklick
-- [ ] Launch-Smoke dokumentiert
+- [x] `just`-Recipe: Bundle-Struktur + Info.plist + Icon-Platzhalter
+- [x] ad-hoc-Codesign; App startet per Doppelklick
+- [x] Launch-Smoke dokumentiert
 
 ### L2 — new-window-Contract
-- [ ] portabler Contract in `bbr-web` (exklusives neues Modul)
-- [ ] macOS-Adapter-Implementierung
-- [ ] Fake-Engine + Contract-Tests; keine neuen Dependencies
+- [x] portabler Contract in `bbr-web` (exklusives neues Modul)
+- [x] macOS-Adapter-Implementierung
+- [x] Fake-Engine + Contract-Tests; keine neuen Dependencies
 
 ### L3 — Hydration portable
-- [ ] chrome-first Restore-Policy im Controller
-- [ ] nur sichtbare/aktive Sessions hydratisieren (kein WKWebView-Massenstart)
-- [ ] Contract-Tests; Warm-Startup-Perf-Szenario vorbereitet
+- [x] chrome-first Restore-Policy im Controller
+- [x] nur sichtbare/aktive Sessions hydratisieren (kein WKWebView-Massenstart)
+- [x] Contract-Tests; Warm-Startup-Perf-Szenario vorbereitet
 
 ### L4 — Prep-Docs
-- [ ] DESIGN §11.4-Revision: Fav-Grid, Folders, Footer `[Downloads] [Spaces] [+]`, Palette-Platzierungen
-- [ ] Task-Packet U1 (Scope, Nicht-Ziele, Assertion-IDs, exklusive Pfade)
-- [ ] Task-Packet U2 (dito)
+- [x] DESIGN §11.4-Revision: Fav-Grid, Folders, Footer `[Downloads] [Spaces] [+]`, Palette-Platzierungen
+- [x] Task-Packet U1 (Scope, Nicht-Ziele, Assertion-IDs, exklusive Pfade)
+- [x] Task-Packet U2 (dito)
 
 ### L5 — Favs+Folders Domain
-- [ ] `bbr-domain`: Folder-Entity (session-lokal), Favorites-Ordnung, Invarianten
-- [ ] `bbr-browser`: Kommandos NewFolder/NewSpace/Fav-Toggle/Move-in-Folder
-- [ ] Fake-Engine/Contract-Tests grün; keine neuen Dependencies
+- [x] `bbr-domain`: Folder-Entity (session-lokal), Favorites-Ordnung, Invarianten
+- [x] `bbr-browser`: Kommandos NewFolder/NewSpace/Fav-Toggle/Move-in-Folder
+- [x] Fake-Engine/Contract-Tests grün; keine neuen Dependencies
 
 ### L6 — Downloads-Contract
-- [ ] portabler Contract (destination, progress, retry, failure) + Tests
+- [x] portabler Contract (destination, progress, retry, failure) + Tests
 
 ### L7 — Find-in-page-Contract
-- [ ] portabler Contract (query, next/prev, count) + Tests
+- [x] portabler Contract (query, next/prev, count) + Tests
 
 ### U1 — Palette-UI
 - [ ] a) Cmd-T → zentrierte Palette (elev:2, Opacity `dur:fine`, Results `[icon][title][url][hint]`)
@@ -146,6 +155,36 @@ Nach letzter Integration: einmal `just e2e`, frische `.app` + manueller Smoke.
 | 14:5x | ✅ D0: `DELIVERY_OK` automatisch zugestellt (1.7 s, $0.002) — Event-Kette verifiziert |
 | 15:1x | ✅ H0: main cold-grün (verify + testkit-Clippy), 4 Commits, Lane-Base `574750b` |
 | 15:1x | Entscheidung: Orchestrierung wechselt in dedizierte gpt-5.6-sol-Session (Option B); diese Datei = Handoff-Vertrag |
+| sol-Kickoff | 🟦 D0 dieser Session gestartet (`bbr-d0-session-delivery-smoke-msiyp4bv-axc79v`); Turn endet ohne Polling, automatische Zustellung ausstehend |
+| sol-Kickoff +1.6 s | ✅ D0: `DELIVERY_OK` automatisch zugestellt — Delivery-Kette dieser Session verifiziert |
+| sol-Kickoff | Worktrees L1–L7 exakt von Lane-Base `574750b` erstellt; L0 bestehender dokumentierter Dirty-Worktree bestätigt |
+| sol-Kickoff | 🟦 L0–L7 als acht Background-Workflows gestartet; je intern Writer→Review→Gate→ggf. Remediation→Recheck; keine Commits durch Subagents |
+| User-Steering | Modell-Policy umgestellt: ab sofort jeder neue Subagent-Call explizit `homelab-llm/deepseek-v4-flash:high`; kein `tier`/Default, kein Luna, Sol nur Orchestrator; bereits in-flight Calls dürfen enden |
+| User-Steering | L0–L7 an der jeweils aktuellen in-flight Phase pausiert, damit die alten Scripts keinen weiteren Call mit früherer Route starten; laufende Calls dürfen enden, Fortsetzungen werden mit expliziter neuer Modellroute resumed |
+| User-Steering-Recovery | ❌ L3: in-flight Reviewer durch Pause abgebrochen (`Subagent was aborted`); kein Implementierungsurteil, Worktree erhalten |
+| User-Steering-Recovery | 🟦 L3 unter gleicher Run-ID resumed; alle neuen Calls explizit `homelab-llm/deepseek-v4-flash:high`, kein `tier`/Default |
+| User-Steering-Recovery | ❌ L2: in-flight Gate durch Pause abgebrochen (`Subagent was aborted`); kein Implementierungsurteil, Writer/Review/Worktree erhalten |
+| User-Steering-Recovery | 🟦 L2 unter gleicher Run-ID ab Gate resumed; alle neuen Calls explizit `homelab-llm/deepseek-v4-flash:high`, kein `tier`/Default |
+| User-Steering-Recovery | ❌ L6: in-flight Gate durch Pause abgebrochen (`Subagent was aborted`); kein Implementierungsurteil, Writer/Review/Worktree erhalten |
+| User-Steering-Recovery | 🟦 L6 unter gleicher Run-ID ab Gate resumed; alle neuen Calls explizit `homelab-llm/deepseek-v4-flash:high`, kein `tier`/Default |
+| User-Steering-Recovery | ❌ L5: in-flight Remediation durch Pause abgebrochen (`Subagent was aborted`); kein Implementierungsurteil, vorheriger und partieller Remediation-Stand im Worktree erhalten |
+| User-Steering-Recovery | 🟦 L5 unter gleicher Run-ID mit frischer worktree-basierter Remediation resumed; alle neuen Calls explizit `homelab-llm/deepseek-v4-flash:high`, kein `tier`/Default |
+| User-Steering-Recovery | ❌ L7: finaler in-flight Recheck durch Pause abgebrochen (`Subagent was aborted`); kein Implementierungsurteil, Writer/Review/Gate/Worktree erhalten |
+| User-Steering-Recovery | 🟦 L7 unter gleicher Run-ID mit frischem finalen Recheck resumed; Call explizit `homelab-llm/deepseek-v4-flash:high`, kein `tier`/Default |
+| User-Steering-Recovery | ❌ L1: finaler in-flight Recheck durch Pause abgebrochen (`Subagent was aborted`); kein Implementierungsurteil, Implementierung/Review/Gate/Remediation/Worktree erhalten |
+| User-Steering-Recovery | 🟦 L1 unter gleicher Run-ID mit frischem finalen Packaging-Recheck resumed; Call explizit `homelab-llm/deepseek-v4-flash:high`, kein `tier`/Default |
+| User-Steering-Recovery | ❌ L4: in-flight Gate durch Pause abgebrochen (`Subagent was aborted`); kein Implementierungsurteil, Writer/Review/Docs-Worktree erhalten |
+| User-Steering-Recovery | 🟦 L4 unter gleicher Run-ID ab frischem Docs-Gate resumed; alle neuen Calls explizit `homelab-llm/deepseek-v4-flash:high`, kein `tier`/Default |
+| User-Steering-Recovery | ❌ L0: in-flight Review durch Pause abgebrochen (`Subagent was aborted`); kein Implementierungsurteil, kritischer Writer-/Anchor-Worktree-Stand erhalten |
+| User-Steering-Recovery | 🟦 L0 unter gleicher Run-ID ab frischer unabhängiger Review resumed; alle neuen Calls explizit `homelab-llm/deepseek-v4-flash:high`, kein `tier`/Default |
+| Lane-Delivery | 🟨 L2 geliefert (`READY_FOR_ORCHESTRATOR`): portable + macOS new-window-Contracts, 19 neue Tests; fmt, serde, beide Crate-Suiten und Clippy `-D warnings` grün; Allowlist/Diff geprüft, keine neuen Dependencies; wartet gemäß Reihenfolge bis nach U2 |
+| Lane-Delivery | 🟨 L7 geliefert (`READY_FOR_ORCHESTRATOR`): portabler Find-State-Contract mit 16 deterministischen Tests; Default+Serde Check/Test/Clippy `-D warnings` und Fmt grün; 3 Allowlist-Pfade, keine Dependencies; wartet gemäß Reihenfolge hinter L6 |
+| Lane-Delivery | 🟨 L1 geliefert (`READY_FOR_ORCHESTRATOR`): `just package-verify` grün, 12 Packaging-Tests, byte-identische Wiederholungs-Bundles, gültiges ad-hoc Codesign und echter 5.1-s Launch-Smoke ohne Restprozess; Low-Risk Fixture-Abhängigkeit von PATH/Nix dokumentiert; Integration planmäßig zuletzt |
+| Lane-Delivery | 🟨 L6 geliefert (`READY_FOR_ORCHESTRATOR`) nach konkreter Remediation: 6 veraltete `apply_event`-Aufrufe, Cancel-Erwartung, Retry-ID-Pfade, Doctest und fehlende MismatchedId/EmptyDestination-Coverage korrigiert; 37 lib + 1 doc / 38 serde Tests, Clippy `-D warnings`, Fmt und vollständiges `just verify` grün; keine Dependencies; Integration vor L7 |
+| Lane-Delivery | 🟨 L5 geliefert (`READY_FOR_ORCHESTRATOR`) nach Recovery-Remediation: session-lokale Folder/Favorites-Invarianten und U2-fähige NewFolder/NewSpace/FavoriteToggle/MoveTabIntoFolder-API vollständig; 21 Domain + 20 Controller-Tests, 67/95 Crate-Gesamttests, Clippy `-D warnings`, Fmt und Workspace-Checks grün; 6 Allowlist-Pfade, keine Dependencies; wartet direkt hinter L0 |
+| Lane-Delivery | 🟨 L4 geliefert (`READY_FOR_ORCHESTRATOR`) nach fokussierter Docs-Remediation: DESIGN §11.4 und vollständige U1/U2-Pakete mit disjunkten Pfaden, deterministischen Assertion-IDs, E2E/Perf-Gates und `<post-anchor integration SHA>`-Arg; exakt 3 Docs-Pfade, `check_roadmap.py` für 43 Dateien grün; bei L0-Landung in Roadmap/Phase/Track promoten und SHA einsetzen |
+| Orchestrator-Gate | L3 funktional grün, aber noch nicht geliefert: `hydration_tests.rs` 1117 L und `hydration.rs` 589 L verletzen Repo-Regel „Dateien unter ~500 Zeilen“; enger behavior-preserving Split + unabhängiger Recheck gestartet (`bbr-mvp-l3-structure-remediation-msj0gjba-0m06xf`, DeepSeek-only) |
+| Lane-Delivery | 🟨 L3 nach Orchestrator-Strukturgate geliefert (`READY_FOR_ORCHESTRATOR`): Implementation in 264/136/236-L-Module, Tests in 23/290/372/185/293-L-Module gesplittet; öffentliche API und exakt 22 Tests erhalten; 97 `bbr-browser`-Tests, Workspace-Test/Check, Clippy `-D warnings`, Fmt und Roadmap-Validator grün; keine Dependencies; Integration hinter L7 |
 | 15:09 | Alter Writer-Wächter (Session `019fdb6b`, Pane bbr:1.0) gestoppt — kein Doppel-Writer-Risiko |
 | 15:09 | ✅ Handoff: sol-Orchestrator gestartet — tmux `tws_personal_macos_bbr-orchestrator`, Pi-Session `019fdc57-7afb-7f81`, gpt-5.6-sol:high. Ab jetzt einziger Orchestrator und Ledger-Owner; die fable-Session (`019fdba4`) zieht sich zurück |
 
@@ -159,8 +198,13 @@ Du bist der einzige Orchestrator für diesen Plan. Arbeitsvertrag:
    beenden, auf automatische Zustellung warten. Ergebnis hier eintragen.
 3. Starte danach die Lanes L0–L7 als je EINEN Background-Workflow mit
    internen Phasen Writer→Review→gate→Remediation→Recheck
-   (siehe workflow-authoring-Skill). Writer tier small (deepseek), Reviewer
-   tier medium/big (luna). Sol niemals für Subagents.
+   (siehe workflow-authoring-Skill). Für **jede** Rolle und **jeden** neuen
+   `agent()`-Call explizit
+   `model: "homelab-llm/deepseek-v4-flash:high"` setzen; niemals `tier`
+   oder den Session-Default erben. Das gilt auch für Validatoren/Judges,
+   Remediation, Recheck, `resumeFromRunId` sowie U1/U2. `gpt-5.6-sol` ist
+   ausschließlich der Orchestrator; Luna nicht verwenden. Bereits vor dem
+   Steering in-flight gestartete Calls dürfen mit ihrer alten Route enden.
 4. Jede Lane: eigener Worktree ab Base `574750b`, exklusive Pfad-Allowlist
    im Prompt, keine neuen Dependencies in portablen Lanes, keine Commits
    durch Subagents. L0 arbeitet im existierenden Worktree
