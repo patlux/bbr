@@ -44,6 +44,7 @@ pub(crate) mod fake;
 #[cfg(test)]
 pub(crate) mod harness;
 mod nav;
+mod organization;
 mod outcome;
 mod pane;
 mod session;
@@ -59,11 +60,17 @@ mod controller_event_tests;
 mod controller_pane_tests;
 #[cfg(test)]
 mod controller_tests;
+#[cfg(test)]
+mod organization_tests;
 
 pub use bbr_domain::{ProfileHue, SpaceId, TabLifecycle};
 pub use controller::BrowserController;
 pub use error::ControllerError;
 pub use nav::NavState;
+pub use organization::{
+    FavoriteSnapshot, FolderSnapshot, OrganizationController, OrganizationError, OrganizationEvent,
+    OrganizationSnapshot,
+};
 pub use outcome::ControllerEvent;
 pub use pane::PaneLayout;
 pub use session::{SessionError, SessionRegistry};
