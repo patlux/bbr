@@ -197,6 +197,8 @@ pub fn normalize_url(input: &str) -> String {
     }
 }
 
+pub mod downloads;
+
 #[cfg(test)]
 mod tests {
     use super::*;
