@@ -158,7 +158,7 @@ fn moved_tab_activates_through_its_current_space_not_the_stale_rank() {
         // stale rank's default space must never select numeric index 1 in
         // the default space (that is T1 — an unrelated tab).
         key(&mut client, "enter");
-        since = wait_browser_change(
+        let _ = wait_browser_change(
             &mut client,
             BrowserChange::SpaceActivated { space: reading },
             since,

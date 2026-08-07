@@ -150,7 +150,7 @@ fn cross_space_selection_preserves_warm_sessions_and_profile_isolation() {
             "cross-profile identity is never hidden"
         );
         key(&mut client, "enter");
-        since = wait_browser_change(
+        let _ = wait_browser_change(
             &mut client,
             BrowserChange::SpaceActivated {
                 space: private_space,
@@ -371,7 +371,7 @@ fn other_space_warm_tabs_activate_with_exact_identity() {
             key(&mut client, "down");
         }
         key(&mut client, "enter");
-        since = wait_browser_change(
+        let _ = wait_browser_change(
             &mut client,
             BrowserChange::SpaceActivated {
                 space: private_space,

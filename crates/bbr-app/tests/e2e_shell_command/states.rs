@@ -67,7 +67,7 @@ fn empty_and_loading_states_expose_stable_ids_and_typed_snapshots() {
 
         // The mode-independent surface dismisses with Escape back to web.
         key(&mut client, "escape");
-        since = wait_chrome_focus(&mut client, false, since);
+        let _ = wait_chrome_focus(&mut client, false, since);
         let dismissed = client.snapshot().expect("dismissed snapshot");
         assert_eq!(dismissed.command_bar_mode, CommandBarMode::Inactive);
         assert_eq!(dismissed.command_result_state, CommandResultState::Inactive);

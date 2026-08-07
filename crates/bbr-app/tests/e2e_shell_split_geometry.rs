@@ -285,7 +285,7 @@ fn split_geometry_keyed_panes_focus_resize_and_close() {
         // CloseSplit returns to one full-width focused rect while both tabs
         // and warm sessions remain; no orphan geometry stays behind.
         client.send_ok(&dsl::close_split()).expect("close split");
-        since = wait_browser_change(&mut client, BrowserChange::SplitClosed, since);
+        let _ = wait_browser_change(&mut client, BrowserChange::SplitClosed, since);
         flush_frame(&mut client);
         let closed_w = resized.window_size[0];
         let closed = wait_for_content_rect(
