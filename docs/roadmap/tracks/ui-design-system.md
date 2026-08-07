@@ -22,6 +22,8 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 
 ## Shell craft — Phase 4
 
+- [ ] Establish the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), then compose standard input/menu/button behavior through gpui-component while retaining BBR tokens, geometric icons, native WKWebViews, and browser-specific orchestration.
+- [ ] Refine the sidebar into the compact Zed-inspired BBR hierarchy, including the exact `[Downloads icon] [Spaces] [Plus icon]` footer and a real plus-menu for New Space/New Folder, with its own bounded task packet after the Root anchor.
 - [ ] Replace placeholder chrome glyphs with the BBR-drawn §7 icon set. *(The
       [icon-system slice](../tasks/icon-system.md) swaps the close `×`, pin
       `●`/`○`, loading `●`, new-space `+`, crash `!`, empty-pane brand `B`,

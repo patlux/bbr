@@ -4,6 +4,7 @@ Parent phases: [Phase 4](../phases/04-ui-shell.md), [Phase 5](../phases/05-comma
 
 ## Implemented foundation
 
+- [ ] Migrate the window root and browser entity to the reviewed [GPUI-CE + gpui-component anchor](../tasks/gpui-ce-components-anchor.md) without regressing AppKit/GPUI focus or native WKWebView accessibility.
 - [x] Native WKWebView remains available to platform Accessibility APIs.
 - [x] GPUI and AppKit focus can move explicitly between browser controls and page content.
 - [x] Core navigation shortcuts work while WKWebView owns native focus.

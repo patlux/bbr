@@ -8,6 +8,7 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 
 ## Performance and design foundation first
 
+- [ ] Integrate the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), preserving native WKWebViews and every existing real-app gate before palette/sidebar/package lanes branch.
 - [ ] Complete the [real-app performance E2E foundation](../tasks/performance-e2e-foundation.md) before broad shell implementation.
 - [ ] Prove startup presents the complete sidebar and selected tab's visible native web view in the same first usable frame within the product budget.
 - [x] Establish and document the visual direction in [DESIGN.md](../../../DESIGN.md) before broad shell implementation.
