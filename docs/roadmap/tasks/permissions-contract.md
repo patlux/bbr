@@ -63,12 +63,12 @@ Integration order: portable contract may land whenever the serial bbr-web
 
 ### Unit and contract
 
-- [ ] Every capability and decision has stable Debug/Eq/serde shape.
-- [ ] Lifecycle matrix covers request, durable-policy hit, resolve, cancel,
+- [x] Every capability and decision has stable Debug/Eq/serde shape.
+- [x] Lifecycle matrix covers request, durable-policy hit, resolve, cancel,
       supersede, duplicate completion, stale id, and invalid origin.
-- [ ] Persistence-hook tests prove profile/origin isolation and that only
+- [x] Persistence-hook tests prove profile/origin isolation and that only
       durable decisions are stored/removed.
-- [ ] Default and serde-enabled crate suites plus Clippy `-D warnings` pass.
+- [x] Default and serde-enabled crate suites plus Clippy `-D warnings` pass.
 
 ### Real-app E2E
 
@@ -117,11 +117,34 @@ or app-level fallback to make the lane compile.
 ## Delivery ledger
 
 ```text
-Outcome: packet and exclusive module anchor prepared; implementation pending
-Commits: pending
-Functional evidence: pending
+Outcome: Contract closeout — Step 1 (identities/taxonomy/validation),
+         Step 2 (typed lifecycle + caller-owned persistence boundary), and
+         the independent review/closeout (Step 3) are complete and verified;
+         later adapter/UI/decide surfaces remain
+Commits: none — workflow contract leaves all changes uncommitted on
+         parallel/p8a-permissions-contract (base 43ab542)
+Functional evidence: cargo fmt --check; cargo test -p bbr-web (79 lib
+         tests, incl. 16 new lifecycle/persistence tests);
+         cargo test -p bbr-web --features serde (82 lib tests, incl. 6 new
+         wire-bound assertions); cargo clippy -p bbr-web --all-targets
+         -- -D warnings (default and serde configs) — all green
+Step-2 scope delivered: PermissionLifecycle (pending tracking by stable id,
+         durable-policy-hit resolution, explicit resolve/cancel/supersede,
+         same-scope auto-supersession, stale/duplicate/mismatched completion
+         rejection, caller-prunable terminal history, policy view
+         hydration/removal); PermissionCompletion, PermissionRequestOutcome,
+         PermissionTransition/Resolution/Rejection; PermissionPersistenceCommand
+         (Store/Remove) with one-time-refusing constructor;
+         PermissionPolicyHook trait (store/remove/apply); tests prove
+         profile+origin isolation and that cancellation/supersession can
+         never become an allow
+Step-3 closeout: independent review of mod.rs, origin.rs, lifecycle.rs and
+         the four test modules found no contract gaps vs. the packet
+         evidence matrix and no remediation findings; all four unit/contract
+         evidence checkboxes marked complete here
 Real-app E2E: not applicable to contract-only lane
 Performance evidence: not applicable to contract-only lane
-Open blockers and non-goals: adapters/UI/persistence implementation deferred
-Worktree state: launch pending
+Open blockers and non-goals: WebKit adapter, persistence implementation,
+         UI/testkit surfaces remain later Phase-8 work
+Worktree state: uncommitted changes in crates/bbr-web/src/permissions/**
 ```
