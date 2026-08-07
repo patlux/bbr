@@ -20,8 +20,11 @@
 //!   to that same space. Moving a tab into a folder never changes the tab's
 //!   space membership or ordering — the folder is a grouping layer, not a
 //!   replacement for space ownership.
-//! - Favorites are **page identities** (a title + url snapshot), not tab
-//!   references, so closing a tab never invalidates a favorite tile.
+//! - Favorites are global secondary presentations of concrete [`TabId`]s.
+//!   They remain visible in every space of the browser window while the tab
+//!   itself keeps exactly one owning space and derives its profile from it.
+//!   Closing the tab removes the favorite; moving the tab updates the
+//!   favorite's effective space/profile without creating another owner.
 //!
 //! # Invariants enforced by [`FolderStore`]
 //!
@@ -30,8 +33,8 @@
 //! 3. Every folder member tab exists and belongs to the folder's space.
 //! 4. A tab belongs to at most one folder.
 //! 5. A folder lists a tab at most once.
-//! 6. Favorites carry a non-empty url and urls are unique (a page is present
-//!    at most once in the grid).
+//! 6. Every favorite references an existing tab and each tab appears at most
+//!    once in the global favorites grid.
 //!
 //! Mutations reject invalid input **whole** (before any mutation); the
 //! invariant checker is public and unit-tested so tampering is detectable.
@@ -42,11 +45,11 @@
 //!
 //! # Deterministic favorites ordering
 //!
-//! Favorites keep **insertion order**: the grid renders in the order pages
-//! were added. Re-adding a page after removal appends it at the end, and
-//! toggling a page that is already present removes it (its identity is the
-//! url). Identical operation sequences therefore always produce identical
-//! orderings.
+//! Favorites keep **insertion order**: the grid renders in the order tabs
+//! were added. Re-adding a tab after removal appends it at the end, and
+//! toggling a tab that is already present removes it (its identity is the
+//! stable [`TabId`]). Identical operation sequences therefore always produce
+//! identical orderings.
 
 use std::collections::HashSet;
 
@@ -73,23 +76,22 @@ pub struct Folder {
     pub tabs: Vec<TabId>,
 }
 
-/// A favorite page identity in the session-local favorites grid.
+/// A favorite tab in the window-global, session-local favorites grid.
 ///
-/// Favorites are page shortcuts, not tab references: the grid keeps its
-/// tiles even after the tab that was favorited is closed.
+/// The favorite is another presentation of this exact tab. Space and profile
+/// remain owned by the tab/browser model and are derived when building the UI
+/// snapshot, avoiding a second source of ownership truth.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Favorite {
-    pub title: String,
-    pub url: String,
+    pub tab: TabId,
 }
 
 /// Outcome of one favorites toggle.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FavoriteToggle {
-    /// `true` when the page was added to the grid, `false` when removed.
+    /// `true` when the tab was added to the grid, `false` when removed.
     pub added: bool,
-    pub title: String,
-    pub url: String,
+    pub tab: TabId,
 }
 
 /// Errors returned by folder/favorites operations.
@@ -106,9 +108,6 @@ pub enum FolderError {
         tab: TabId,
         folder: FolderId,
     },
-    /// Favorites need a non-empty url identity (a tab with no url cannot be
-    /// pinned into the grid).
-    InvalidFavoriteUrl,
 }
 
 impl std::fmt::Display for FolderError {
@@ -121,7 +120,6 @@ impl std::fmt::Display for FolderError {
                 f,
                 "tab {tab:?} does not belong to the space of folder {folder:?}"
             ),
-            Self::InvalidFavoriteUrl => write!(f, "a favorite needs a non-empty url"),
         }
     }
 }
@@ -152,7 +150,7 @@ pub struct FolderStore {
     /// the invariant checker's tamper-detection tests can forge violations
     /// (mutations themselves forbid them).
     pub(crate) folders: Vec<Folder>,
-    /// Favorite pages in deterministic insertion order. `pub(crate)` for the
+    /// Favorite tabs in deterministic insertion order. `pub(crate)` for the
     /// same tamper-detection reason.
     pub(crate) favorites: Vec<Favorite>,
 }
@@ -279,57 +277,37 @@ impl FolderStore {
 
     // ---- Favorites --------------------------------------------------------
 
-    /// Toggle `tab`'s page identity in the favorites grid, reading the
-    /// current title/url from the live browser. Adding a page that is already
-    /// present removes it; removal of a page re-added later appends it at the
-    /// end of the grid.
+    /// Toggle a concrete tab in the global favorites grid. The browser is
+    /// consulted only to reject unknown tabs; the favorite stores the stable
+    /// tab identity and never copies space/profile ownership.
     pub fn favorite_toggle(
         &mut self,
         browser: &Browser,
         tab: TabId,
     ) -> Result<FavoriteToggle, FolderError> {
-        let state = browser.tab(tab).ok_or(FolderError::UnknownTab(tab))?;
-        self.favorite_toggle_page(state.title.clone(), state.url.clone())
+        if browser.tab(tab).is_none() {
+            return Err(FolderError::UnknownTab(tab));
+        }
+        Ok(self.favorite_toggle_tab(tab))
     }
 
-    /// Validated-facts primitive: toggle a page identity (title + url) in
-    /// the grid. Prefer [`FolderStore::favorite_toggle`] where the browser
-    /// is available.
-    pub fn favorite_toggle_page(
-        &mut self,
-        title: impl Into<String>,
-        url: impl Into<String>,
-    ) -> Result<FavoriteToggle, FolderError> {
-        let title = title.into();
-        let url = url.into();
-        if url.is_empty() {
-            return Err(FolderError::InvalidFavoriteUrl);
-        }
-        if let Some(pos) = self.favorites.iter().position(|f| f.url == url) {
+    /// Validated-facts primitive for orchestration layers that already proved
+    /// the tab exists through a public read model.
+    pub fn favorite_toggle_tab(&mut self, tab: TabId) -> FavoriteToggle {
+        if let Some(pos) = self.favorites.iter().position(|f| f.tab == tab) {
             self.favorites.remove(pos);
-            return Ok(FavoriteToggle {
-                added: false,
-                title,
-                url,
-            });
+            return FavoriteToggle { added: false, tab };
         }
-        self.favorites.push(Favorite {
-            title: title.clone(),
-            url: url.clone(),
-        });
-        Ok(FavoriteToggle {
-            added: true,
-            title,
-            url,
-        })
+        self.favorites.push(Favorite { tab });
+        FavoriteToggle { added: true, tab }
     }
 
     // ---- Reconciliation ---------------------------------------------------
 
-    /// Deterministically drop memberships for tabs that no longer exist in
-    /// the browser or no longer belong to their folder's space (the browser
-    /// owns close/move and cannot notify this store). Returns the number of
-    /// memberships removed.
+    /// Deterministically drop folder memberships for tabs that no longer
+    /// exist or changed space, and favorites whose concrete tab was closed.
+    /// The browser owns these mutations and cannot notify this store. Returns
+    /// the total number of stale memberships/favorites removed.
     pub fn reconcile(&mut self, browser: &Browser) -> usize {
         self.reconcile_with(|tab| browser.tab(tab).map(|state| state.space))
     }
@@ -348,7 +326,10 @@ impl FolderStore {
                 .retain(|tab| tab_space(*tab) == Some(folder.space));
             removed += before - folder.tabs.len();
         }
-        removed
+        let before = self.favorites.len();
+        self.favorites
+            .retain(|favorite| tab_space(favorite.tab).is_some());
+        removed + before - self.favorites.len()
     }
 
     // ---- Lookups ----------------------------------------------------------
@@ -432,13 +413,16 @@ impl FolderStore {
             }
         }
 
-        let mut urls: HashSet<&str> = HashSet::new();
+        let mut favorite_tabs: HashSet<TabId> = HashSet::new();
         for favorite in &self.favorites {
-            if favorite.url.is_empty() {
-                return Err(fail("a favorite needs a non-empty url identity".into()));
+            if tab_space(favorite.tab).is_none() {
+                return Err(fail(format!(
+                    "favorite references missing tab {:?}",
+                    favorite.tab
+                )));
             }
-            if !urls.insert(favorite.url.as_str()) {
-                return Err(fail(format!("duplicate favorite url {:?}", favorite.url)));
+            if !favorite_tabs.insert(favorite.tab) {
+                return Err(fail(format!("duplicate favorite tab {:?}", favorite.tab)));
             }
         }
         Ok(())

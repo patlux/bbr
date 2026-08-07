@@ -147,55 +147,55 @@ fn new_folder_uses_the_active_space_across_switches() {
 // ---- FavoriteToggle -------------------------------------------------------
 
 #[test]
-fn favorite_toggle_adds_then_removes_the_page_identity() {
-    let (c, _space, _) = populated();
+fn favorite_toggle_adds_then_removes_the_concrete_tab() {
+    let (c, space, tabs) = populated();
     let mut org = OrganizationController::new();
     let on = org.favorite_toggle(&c, 0).unwrap();
     assert_eq!(
         on,
         OrganizationEvent::FavoriteToggled {
             added: true,
-            title: String::new(),
-            url: "https://a.example".into()
+            tab: tabs[0],
+            space,
+            profile: ProfileId(1),
         }
     );
     let snap = org.organization_snapshot(&c);
+    assert_eq!(snap.favorites[0].tab, tabs[0]);
+    assert_eq!(snap.favorites[0].space, space);
+    assert_eq!(snap.favorites[0].profile, ProfileId(1));
     assert_eq!(snap.favorites[0].url, "https://a.example");
     let off = org.favorite_toggle(&c, 0).unwrap();
     assert_eq!(
         off,
         OrganizationEvent::FavoriteToggled {
             added: false,
-            title: String::new(),
-            url: "https://a.example".into()
+            tab: tabs[0],
+            space,
+            profile: ProfileId(1),
         }
     );
     assert!(org.organization_snapshot(&c).favorites.is_empty());
 }
 
 #[test]
-fn favorite_toggle_dedups_by_url_and_keeps_insertion_order() {
-    let (c, _space, _) = populated();
+fn favorite_toggle_dedups_by_tab_and_keeps_insertion_order() {
+    let (c, _space, tabs) = populated();
     let mut org = OrganizationController::new();
     org.favorite_toggle(&c, 0).unwrap();
     org.favorite_toggle(&c, 1).unwrap();
     org.favorite_toggle(&c, 2).unwrap();
-    // Toggling index 0 again removes it; the remaining order is unchanged.
     org.favorite_toggle(&c, 0).unwrap();
     let snap = org.organization_snapshot(&c);
-    let urls: Vec<&str> = snap.favorites.iter().map(|f| f.url.as_str()).collect();
-    assert_eq!(urls, vec!["https://b.example", "https://c.example"]);
-    // Re-adding appends at the end.
-    org.favorite_toggle(&c, 0).unwrap();
-    let snap = org.organization_snapshot(&c);
-    let urls: Vec<&str> = snap.favorites.iter().map(|f| f.url.as_str()).collect();
     assert_eq!(
-        urls,
-        vec![
-            "https://b.example",
-            "https://c.example",
-            "https://a.example"
-        ]
+        snap.favorites.iter().map(|f| f.tab).collect::<Vec<_>>(),
+        vec![tabs[1], tabs[2]]
+    );
+    org.favorite_toggle(&c, 0).unwrap();
+    let snap = org.organization_snapshot(&c);
+    assert_eq!(
+        snap.favorites.iter().map(|f| f.tab).collect::<Vec<_>>(),
+        vec![tabs[1], tabs[2], tabs[0]]
     );
 }
 
@@ -211,32 +211,69 @@ fn favorite_toggle_rejects_out_of_bounds_indices() {
 }
 
 #[test]
-fn favorite_tiles_survive_closing_the_favorited_tab() {
-    let (mut c, _space, _) = populated();
+fn closing_the_favorited_tab_removes_its_tile() {
+    let (mut c, _space, tabs) = populated();
     let mut org = OrganizationController::new();
     org.favorite_toggle(&c, 0).unwrap();
-    assert_eq!(org.organization_snapshot(&c).favorites.len(), 1);
-    // Favorites are page identities, not tab references: closing the
-    // favorited tab must not drop its tile from the grid.
+    assert_eq!(org.organization_snapshot(&c).favorites[0].tab, tabs[0]);
     c.close_tab(0).unwrap();
-    let snap = org.organization_snapshot(&c);
-    assert_eq!(snap.favorites.len(), 1);
-    assert_eq!(snap.favorites[0].url, "https://a.example");
-    assert_eq!(snap.favorites[0].title, String::new());
+    assert!(org.organization_snapshot(&c).favorites.is_empty());
     org.check_invariants(&c).unwrap();
 }
 
 #[test]
-fn favorite_toggle_never_touches_tabs_or_sessions() {
+fn favorite_follows_the_same_tab_when_it_moves_across_profiles() {
+    let (mut c, original_space, tabs) = populated();
+    let mut org = OrganizationController::new();
+    org.favorite_toggle(&c, 0).unwrap();
+    let profile = c.create_profile("Personal");
+    let destination = c.create_space(profile, "Personal").unwrap();
+    c.move_tab(0, destination).unwrap();
+    let snap = org.organization_snapshot(&c);
+    assert_eq!(snap.favorites.len(), 1);
+    assert_eq!(snap.favorites[0].tab, tabs[0]);
+    assert_eq!(snap.favorites[0].space, destination);
+    assert_eq!(snap.favorites[0].profile, profile);
+    assert_ne!(snap.favorites[0].space, original_space);
+}
+
+#[test]
+fn activating_a_cross_profile_favorite_switches_inside_the_same_window() {
+    let (mut c, work_space, tabs) = populated();
+    let work_view = c.snapshot().tabs[0].web_view.expect("favorite has session");
+    let mut org = OrganizationController::new();
+    org.favorite_toggle(&c, 0).unwrap();
+
+    let personal = c.create_profile("Personal");
+    let personal_space = c.create_space(personal, "Private").unwrap();
+    c.activate_space(personal_space).unwrap();
+    c.open_tab("https://private.example").unwrap();
+    assert_eq!(c.snapshot().active_profile, personal);
+
+    assert_eq!(
+        org.activate_favorite(&mut c, 0).unwrap(),
+        OrganizationEvent::FavoriteActivated {
+            tab: tabs[0],
+            space: work_space,
+            profile: ProfileId(1),
+            index: 0,
+        }
+    );
+    let snap = c.snapshot();
+    assert_eq!(snap.active_space, work_space);
+    assert_eq!(snap.active_profile, ProfileId(1));
+    assert_eq!(snap.tabs[0].web_view, Some(work_view));
+    assert_eq!(snap.all_tabs.iter().filter(|t| t.id == tabs[0]).count(), 1);
+}
+
+#[test]
+fn favorite_toggle_never_moves_or_copies_the_tab() {
     let (c, _space, _) = populated();
     let mut org = OrganizationController::new();
     let before = c.snapshot();
     org.favorite_toggle(&c, 0).unwrap();
     let after = c.snapshot();
-    assert_eq!(
-        before, after,
-        "favorites are page identities, not tab state"
-    );
+    assert_eq!(before, after, "favorite toggle only changes presentation");
 }
 
 // ---- MoveTabIntoFolder ----------------------------------------------------

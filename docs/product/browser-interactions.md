@@ -207,12 +207,34 @@ Additional rules:
 
 ### Profile isolation — Contract
 
+- Multiple profiles and their spaces coexist inside one browser window. A
+  profile is an isolated website-data/container identity, never an implicit
+  separate-window boundary.
 - Every space belongs to exactly one profile.
 - Tabs derive their profile from their owning space.
 - Cookies, cache, credentials, and other website data must not leak between
   profiles.
+- Activating a space of another profile switches the active container inside
+  the same window and presents that space's retained tab/session.
 - A tab crossing a profile boundary is loaded in a newly created web session
   backed by the destination profile's data store.
+
+### Favorites — Contract
+
+- The favorites grid is global across every space and profile represented in
+  the browser window; changing spaces never filters or replaces its tiles.
+- A favorite is an additional presentation of one concrete persistent
+  `TabId`, not a URL shortcut, copied tab, or independent web session.
+- Its owning `SpaceId` and `ProfileId` are recorded/exposed with the favorite
+  and remain consistent with the tab's canonical owner. If the tab moves, the
+  favorite follows the same `TabId` and resolves the new space/profile.
+- Activating a favorite switches to its owning space in the same window (and
+  therefore to that space's profile/container), then selects that exact tab.
+  It does not open, copy, or move a tab and never reuses the tab's session in a
+  different profile.
+- Closing the concrete tab removes its favorite tile. Toggling the tab into or
+  out of Favorites never changes its space membership, order, selection, or
+  live session.
 
 ## Split view
 
