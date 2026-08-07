@@ -47,11 +47,24 @@ MVP laut Goal 2026-08-07 10:45 CEST:
   Queue vollständig abgearbeitet oder alle Restpunkte mit Evidenz blockiert;
   dann Pflicht-Morgenreport im Ledger (gemerged, provisional, blockiert,
   Patrick-Entscheidungen) und explizit dokumentiertes Ende.
+- **Standing Non-Blocking Protocol:** Ein einzelner blockierter oder
+  entscheidungsabhängiger Punkt pausiert niemals die Nacht. Braucht er Patrick-
+  Input zu Produkt, Design oder Freigabe, wird er geparkt und mit präziser
+  Frage, Optionen, Empfehlung und Auswirkung in der Morgen-Entscheidungsliste
+  erfasst; danach startet sofort der nächste unabhängige Queue-Punkt. Bei einem
+  echten Fehler/Blocker werden Evidenz, Versuche, erhaltener Worktree und
+  kleinster Entblocker dokumentiert; kein stundenlanges Festbeißen, sondern
+  Zurückstellen und Weiterfanout.
+- Dieses Non-Blocking-Prinzip gilt ausdrücklich auch für den MVP-Closeout:
+  hängt kanonisches E2E oder Packaging und ist der Mechanismus nicht in einem
+  bounded Fix klärbar, bleibt `.app` für den Morgen offen, während alle davon
+  unabhängigen Lanes vom letzten verifizierten `main`-SHA weiterlaufen. Einziges
+  Anhaltekriterium: Queue leer oder **alle** Restpunkte evidenziert blockiert;
+  dann Morgen-Report plus dokumentiertes Ende.
 - Nach jedem Slice-Abschluss den kanonischen Queue-/Lane-Eintrag sofort mit
   Status, Merge-SHA und exakter Evidenz aktualisieren, bevor der nächste Punkt
-  startet. Nach einem echten Post-MVP-Blocker: Blocker eintragen und sofort
-  den nächsten offenen Queue-Punkt als Workflow starten; Kern-Closeout-
-  Blocker vor `.app` bleiben seriell zu lösen.
+  startet. Nach jedem Blocker sofort den nächsten offenen, nicht abhängigen
+  Queue-Punkt als Background-Workflow starten.
 - Commits/Merges nur durch Orchestrator (serielles Kernel)
 - Portable Lanes: **keine neuen Dependencies** (Cargo.lock-Merges trivial)
 - **Night-Queue-Fanout ab User-Steering:** Der MVP-Closeout bleibt der serielle
@@ -75,6 +88,15 @@ MVP laut Goal 2026-08-07 10:45 CEST:
   repo-lokal per `rg` im Lane-Worktree; GPUI-Quellen höchstens unter
   `~/.cargo/git/checkouts`. Niemals `find /`, `find /nix` oder andere
   ungebundene Dateisystem-Suchen. Run-IDs und Step-Übergänge im Ledger erfassen.
+
+## Morgen-Entscheidungsliste
+
+Jeder geparkte Patrick-/Freigabepunkt erhält Optionen, Empfehlung und Auswirkung;
+diese Liste blockiert niemals unabhängige Nacht-Arbeit.
+
+| Punkt | Präzise Entscheidung | Optionen | Empfehlung | Auswirkung bis zur Antwort |
+|---|---|---|---|---|
+| Schema v2 / Space-Appearance + Search | Welcher v2-Scope und Contract-Host wird seriell freigegeben? | A: v2 nur Space-Appearance + globale Search-Settings; Host `bbr-web`. B: gleicher Scope; Host `bbr-command`. C: Migration/Host vertagen. | A: kleinster persistenznaher, P8-kompatibler Schnitt; History und P8e-Storage weiter deferred. Palette/Emoji/Template-Regeln morgen separat kalibrieren. | C-Dokument und ggf. B-Contract parken; U2, `.app`, P8a–P8e und alle unabhängigen Queue-Lanes laufen weiter. |
 
 ## Lane-Status
 
@@ -294,6 +316,7 @@ seine betroffenen E2E-Suiten bilden eine eigene Gate-Welle.
 | Closeout Bug Verification | ✅ Patricks intermittierender Content-/Web-Anzeige-Fund wurde vor Packaging gegen integriertes U1 `main` geprüft. Bestehende Tests hatten eine reale Lücke: closed logical/native snapshot, aber keine wiederholte shown Window-Server-Evidenz während Web-Präsentationen. Neue deterministische Portal-E2E-Regression: 3 unabhängige Kaltstarts, je 2 echte WKWebViews, Navigation des zweiten Views und 4 Hin-/Her-Zyklen (8 Präsentationen); nach jedem Schritt `native_visible=false`, `portal_owns_probe_point=false`, Window Server nennt am Content-Zentrum den Browser-Parent und nie das Portal, WebKit-Titel und WebView-/Sessionidentitäten stabil. Portal-Suite 4/4 grün; kein integrierter Idle-Occlusion-/Event-Abfang-Fund. Gemeldeter U1-Worktree-Zwischenstand bleibt plausible Erklärung |
 | U2 Integration Launch | 🟦 U2-Diff sicher auf finalen U1-Kernel gehoben: Ausgangs-HEAD `7ce24492`, binärer Patch/Dateiliste unter `/tmp/bbr-u2-pre-u1-7ce24492ef32.*`, Recovery-Stash `72204aea67c7712ec5e7f957fa0dc39ddf2011f8` bleibt unangetastet. Additive U1/U2-Konflikte kompiliert; vor Struktur-Handoff 169 App-Tests, 23 Testkit-Tests, beide Clippies und Sidebar 7/7 grün. Workflow `bbr-u2-integration-closeout-msjj8kks-8ioq7d`: Structure → unabhängiger Review → Verify/Sidebar/ein Perf-Lauf → höchstens eine konkrete Remediation → Recheck; alle Calls explizit DeepSeek, `agentRetries: 1`, keine Agent-Commits. Orchestrator wartet event-getrieben |
 | Fanout-Steering | User überschreibt die frühere strikt serielle Night-Queue-Ausführung: maximale sichere Parallelisierung in disjunkten Worktrees/Wellen; serieller, evidenzgeprüfter Orchestrator-Merge-Kernel bleibt. GUI/E2E/Perf-Gates host-exklusiv; Shared Surfaces explizit geschnitten; Downloads/Icon erst nach U2; S1-Geometrie trennt gleichartige E2E-Suiten in spätere Wellen; bounded Recovery statt Monolith-Retry |
+| Non-Blocking Steering | Standing Rule: kein einzelner Patrick-Entscheidungs-, Fehler-, E2E- oder Packaging-Blocker stoppt die Nacht. Entscheidung mit Optionen+Empfehlung in die Morgenliste bzw. technische Evidenz ins Ledger, Punkt parken, sofort unabhängigen Fanout fortsetzen. `.app` darf bei nicht bounded lösbarem Closeout-Blocker bis morgens offen bleiben. Stop nur bei leerer Queue oder evidenziert vollständig blockiertem Rest |
 | Fanout-Welle C1 Launch | 🟦 Parallel zu U2 vom verifizierten `main` `3139939`: A `bbr-space-appearance-contract-msjjloaj-r8jv1v`, B `bbr-settings-search-contract-msjjloal-01oc5o`, C `bbr-schema-v2-decision-msjjloam-bisswa`. Je eigener sauberer Worktree/Branch, bounded Writer/Analyse→Review→Gate→max. eine Remediation→Recheck, alle `agent()`-Calls explizit `homelab-llm/deepseek-v4-flash:high`, `agentRetries: 1`, keine Agent-Commits, Dependencies oder GUI-Gates. A/B teilen nur dokumentierte additive, unterschiedliche Crate-`lib.rs`-Hunks; C exakt ein neuer Dokumentpfad. Alle Integrationen warten hinter MVP-Closeout |
 | Fanout-Welle C1 Delivery | 🟨 C `READY_FOR_ORCHESTRATOR`: ein 418-L-Entscheidungsdokument auf unverändertem Base `3139939`, kein Lane-Commit. Independent Review fand eine D8-Präzisionskante (`0→1 unchanged` trotz bewegtem `SCHEMA_VERSION`); fokussiert korrigiert und final reverifiziert. Frisch orchestrator-geprüft: exakte Ein-Datei-Allowlist, `nix develop -c just roadmap` 58/58, Whitespace/Diff sauber, alleiniger globaler Stash bleibt der unangetastete U2-Recovery-Stash `72204ae`. Inhalt bleibt DRAFT: v2-Scope/Palette/Emoji/Template/Restore/Host/Storage/Bench/Sequenz brauchen serielle Freigabe; insbesondere B-Host (`bbr-command`) gegen C-Empfehlung (`bbr-web`) vor Merge entscheiden. A/B und U2 laufen weiter |
 | P7 Status | ❌ Nicht gestartet und bewusst abgelehnt: Persistence-Schema v1 besitzt keine History-Tabelle/API; `bbr-command` bleibt provider-neutral. Reaktivierung erst nach serieller Persistence-Migration, DTO/API und Bridge-/Manifest-Entscheidung |
