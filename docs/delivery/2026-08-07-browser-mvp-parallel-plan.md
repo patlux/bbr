@@ -36,6 +36,22 @@ MVP laut Goal 2026-08-07 10:45 CEST:
   dürfen mit ihrer bisherigen Route zu Ende laufen; jeder danach neu gestartete
   `agent()`-Call, jedes `resumeFromRunId` und U1/U2 folgt dieser Policy.
 - Event-getrieben (followUp-Delivery), **kein** sleep/status-Polling
+- **Standing Continuation Protocol:** Nach jedem abgeschlossenen Schritt
+  (Workflow-Ende, Gate, Slice, Commit/Merge) und nach jeder Kompaktierung
+  zuerst diese Datei vollständig lesen — mindestens Lane-Status, Merge-
+  Reihenfolge, Regeln und `Night-Queue Steering`. Den nächsten offenen Punkt
+  ausschließlich daraus bestimmen und sofort starten; Gedächtnis oder ein
+  kompaktierter Gesprächsstand sind niemals der Fortsetzungszeiger.
+- Solange die Queue offene, nicht sämtlich blockierte Punkte enthält, endet
+  kein Turn ohne mindestens einen laufenden Background-Workflow. Ausnahmen:
+  Queue vollständig abgearbeitet oder alle Restpunkte mit Evidenz blockiert;
+  dann Pflicht-Morgenreport im Ledger (gemerged, provisional, blockiert,
+  Patrick-Entscheidungen) und explizit dokumentiertes Ende.
+- Nach jedem Slice-Abschluss den kanonischen Queue-/Lane-Eintrag sofort mit
+  Status, Merge-SHA und exakter Evidenz aktualisieren, bevor der nächste Punkt
+  startet. Nach einem echten Post-MVP-Blocker: Blocker eintragen und sofort
+  den nächsten offenen Queue-Punkt als Workflow starten; Kern-Closeout-
+  Blocker vor `.app` bleiben seriell zu lösen.
 - Commits/Merges nur durch Orchestrator (serielles Kernel)
 - Portable Lanes: **keine neuen Dependencies** (Cargo.lock-Merges trivial)
 - GUI-E2E über Host-Lock (`with_gui_lock`) automatisch serialisiert
