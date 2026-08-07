@@ -1,6 +1,6 @@
 //! Read-only snapshots of controller state for the UI and E2E harness.
 
-use bbr_domain::{ProfileHue, SpaceId, TabLifecycle};
+use bbr_domain::{ProfileHue, SpaceId, TabId, TabLifecycle};
 use bbr_web::{ProfileId, WebViewId};
 
 use crate::nav::NavState;
@@ -63,6 +63,25 @@ pub struct TabSnapshot {
     pub last_used: u64,
 }
 
+/// One persistent tab identity across the complete space collection.
+///
+/// This compact read model supports command/search composition without
+/// exposing the mutable domain model or duplicating session ownership.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GlobalTabSnapshot {
+    pub id: TabId,
+    pub space: SpaceId,
+    pub profile: ProfileId,
+    /// Position in the owning space's tab list.
+    pub index: usize,
+    pub url: String,
+    pub title: String,
+    pub pinned: bool,
+    pub web_view: Option<WebViewId>,
+    pub lifecycle: TabLifecycle,
+    pub last_used: u64,
+}
+
 /// One profile's identity as presented to the UI/E2E (DESIGN.md §12).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProfileSnapshot {
@@ -105,6 +124,10 @@ pub struct ControllerSnapshot {
     pub active_space: SpaceId,
     /// Tabs of the active space, in order.
     pub tabs: Vec<TabSnapshot>,
+    /// Complete tab collection in space order, then tab order. This preserves
+    /// persistent identity for cross-space command/search composition without
+    /// exposing the mutable domain model.
+    pub all_tabs: Vec<GlobalTabSnapshot>,
     /// Complete profile collection in creation order.
     pub profiles: Vec<ProfileSnapshot>,
     /// Complete space collection in creation order.
@@ -138,6 +161,7 @@ mod tests {
             active_profile_hue: Some(ProfileHue::Cobalt),
             active_space: SpaceId(2),
             tabs: Vec::new(),
+            all_tabs: Vec::new(),
             profiles: Vec::new(),
             spaces: Vec::new(),
             active_index: None,

@@ -774,6 +774,37 @@ fn snapshot_exposes_complete_profile_and_space_collections() {
     assert_eq!(default.active_view, Some(WebViewId(1)));
     assert_eq!(snap.engine_sessions, 2);
     assert_eq!(h.engine.borrow().live_session_count(), 2);
+    assert_eq!(snap.all_tabs.len(), 2);
+    assert_ne!(snap.all_tabs[0].id, snap.all_tabs[1].id);
+    assert_eq!(
+        snap.all_tabs
+            .iter()
+            .map(|tab| (
+                tab.space,
+                tab.profile,
+                tab.index,
+                tab.url.as_str(),
+                tab.web_view
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (
+                default_space,
+                ProfileId(1),
+                0,
+                "https://default",
+                Some(WebViewId(1)),
+            ),
+            (
+                private_space,
+                private_profile,
+                0,
+                "https://private",
+                Some(WebViewId(2)),
+            ),
+        ],
+        "complete tab read model preserves owning identities, order, and warm sessions"
+    );
     // Profile identity hues flow through the snapshot (DESIGN.md §12).
     assert_eq!(snap.profiles[0].hue.name(), "cobalt");
     assert_eq!(snap.profiles[1].hue.name(), "violet");

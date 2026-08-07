@@ -448,6 +448,32 @@ impl BrowserController {
                 })
             })
             .collect();
+        let all_tab_snapshots: Vec<crate::snapshot::GlobalTabSnapshot> = self
+            .browser
+            .spaces()
+            .flat_map(|space| {
+                space
+                    .tabs
+                    .iter()
+                    .copied()
+                    .enumerate()
+                    .filter_map(|(index, tab)| {
+                        let state = self.browser.tab(tab)?;
+                        Some(crate::snapshot::GlobalTabSnapshot {
+                            id: tab,
+                            space: space.id,
+                            profile: space.profile,
+                            index,
+                            url: state.url.clone(),
+                            title: state.title.clone(),
+                            pinned: state.pinned,
+                            web_view: self.registry.view_for_tab(tab),
+                            lifecycle: state.lifecycle,
+                            last_used: state.last_used,
+                        })
+                    })
+            })
+            .collect();
         let active_index = active_tab.and_then(|t| tabs.iter().position(|x| *x == t));
         let active_view = active_tab.and_then(|t| self.registry.view_for_tab(t));
         let nav = active_view
@@ -495,6 +521,7 @@ impl BrowserController {
             active_profile_hue: self.browser.profile(active_profile).map(|p| p.hue),
             active_space: self.active_space,
             tabs: tab_snapshots,
+            all_tabs: all_tab_snapshots,
             profiles,
             spaces,
             active_index,

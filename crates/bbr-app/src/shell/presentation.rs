@@ -233,6 +233,7 @@ mod tests {
                 lifecycle: bbr_browser::TabLifecycle::Warm,
                 last_used: 0,
             }],
+            all_tabs: vec![],
             profiles: vec![],
             spaces: vec![],
             active_index: Some(0),

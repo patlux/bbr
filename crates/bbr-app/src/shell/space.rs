@@ -192,6 +192,7 @@ mod tests {
             active_profile_hue: Some(bbr_browser::ProfileHue::Cobalt),
             active_space: bbr_browser::SpaceId(2),
             tabs: Vec::new(),
+            all_tabs: Vec::new(),
             profiles: vec![
                 bbr_browser::ProfileSnapshot {
                     index: 0,

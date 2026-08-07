@@ -68,5 +68,6 @@ pub use outcome::ControllerEvent;
 pub use pane::PaneLayout;
 pub use session::{SessionError, SessionRegistry};
 pub use snapshot::{
-    ControllerSnapshot, LifecycleCounts, ProfileSnapshot, SpaceSnapshot, TabSnapshot,
+    ControllerSnapshot, GlobalTabSnapshot, LifecycleCounts, ProfileSnapshot, SpaceSnapshot,
+    TabSnapshot,
 };
