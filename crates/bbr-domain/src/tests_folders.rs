@@ -175,106 +175,96 @@ fn remove_tab_from_folder_is_idempotent() {
 // ---- Favorites ------------------------------------------------------------
 
 #[test]
-fn favorites_keep_deterministic_insertion_order() {
+fn favorites_keep_deterministic_tab_insertion_order() {
     let (b, _s, tabs) = populated();
     let mut store = FolderStore::new();
     for tab in &tabs {
         store.favorite_toggle(&b, *tab).unwrap();
     }
-    let urls: Vec<&str> = store.favorites().map(|f| f.url.as_str()).collect();
-    assert_eq!(
-        urls,
-        vec![
-            "https://a.example",
-            "https://b.example",
-            "https://c.example"
-        ],
-        "fav grid renders in insertion order"
-    );
+    let actual: Vec<TabId> = store.favorites().map(|f| f.tab).collect();
+    assert_eq!(actual, tabs, "fav grid renders tab ids in insertion order");
     store.check_invariants(&b).unwrap();
 }
 
 #[test]
-fn toggling_removes_and_readd_appends_at_the_end() {
+fn toggling_removes_and_readd_appends_the_same_tab() {
     let (b, _s, tabs) = populated();
     let mut store = FolderStore::new();
     for tab in &tabs {
         store.favorite_toggle(&b, *tab).unwrap();
     }
-    // Toggle the first page off: the remaining order is unchanged.
     let outcome = store.favorite_toggle(&b, tabs[0]).unwrap();
-    assert!(!outcome.added);
-    let urls: Vec<&str> = store.favorites().map(|f| f.url.as_str()).collect();
-    assert_eq!(urls, vec!["https://b.example", "https://c.example"]);
-    // Re-adding appends at the end (most recently added last).
-    let outcome = store.favorite_toggle(&b, tabs[0]).unwrap();
-    assert!(outcome.added);
-    let urls: Vec<&str> = store.favorites().map(|f| f.url.as_str()).collect();
     assert_eq!(
-        urls,
-        vec![
-            "https://b.example",
-            "https://c.example",
-            "https://a.example"
-        ]
+        outcome,
+        crate::FavoriteToggle {
+            added: false,
+            tab: tabs[0]
+        }
+    );
+    assert_eq!(
+        store.favorites().map(|f| f.tab).collect::<Vec<_>>(),
+        vec![tabs[1], tabs[2]]
+    );
+    let outcome = store.favorite_toggle(&b, tabs[0]).unwrap();
+    assert_eq!(
+        outcome,
+        crate::FavoriteToggle {
+            added: true,
+            tab: tabs[0]
+        }
+    );
+    assert_eq!(
+        store.favorites().map(|f| f.tab).collect::<Vec<_>>(),
+        vec![tabs[1], tabs[2], tabs[0]]
     );
     store.check_invariants(&b).unwrap();
 }
 
 #[test]
-fn favorite_identity_is_the_url_and_survives_title_changes() {
+fn favorite_identity_is_the_tab_not_its_url() {
     let (mut b, s, _) = populated();
     let mut store = FolderStore::new();
-    let t = b.open_tab(s, "A", "https://a.example").unwrap();
-    store.favorite_toggle(&b, t).unwrap();
-    // The page navigates; its title/url identity updates in the grid only
-    // when toggled again — closing the tab never removes the tile.
-    b.apply_navigation(t, "https://a.example", "Renamed")
+    let first = b.open_tab(s, "A", "https://same.example").unwrap();
+    let second = b.open_tab(s, "A copy", "https://same.example").unwrap();
+    store.favorite_toggle(&b, first).unwrap();
+    store.favorite_toggle(&b, second).unwrap();
+    assert_eq!(
+        store.favorites().map(|f| f.tab).collect::<Vec<_>>(),
+        vec![first, second],
+        "two concrete tabs with the same URL are distinct favorites"
+    );
+    b.apply_navigation(first, "https://elsewhere.example", "Moved on")
         .unwrap();
-    assert_eq!(store.favorites().next().unwrap().title, "A");
-    // Toggling the same url removes it regardless of the current title.
-    let outcome = store.favorite_toggle(&b, t).unwrap();
-    assert!(!outcome.added);
-    assert_eq!(outcome.title, "Renamed");
-    assert!(store.favorites().next().is_none());
+    assert_eq!(store.favorites().next().unwrap().tab, first);
     store.check_invariants(&b).unwrap();
 }
 
 #[test]
-fn favorite_toggle_rejects_empty_urls() {
-    let (mut b, s, _) = populated();
+fn favorite_follows_its_tab_across_spaces_and_profiles() {
+    let (mut b, _s, tabs) = populated();
     let mut store = FolderStore::new();
-    let t = b.open_tab(s, "Blank", "").unwrap();
-    assert!(matches!(
-        store.favorite_toggle(&b, t),
-        Err(FolderError::InvalidFavoriteUrl)
-    ));
-    assert!(store.favorites().next().is_none());
-    assert!(matches!(
-        store.favorite_toggle_page("Blank", ""),
-        Err(FolderError::InvalidFavoriteUrl)
-    ));
+    store.favorite_toggle(&b, tabs[0]).unwrap();
+    let destination = other_space(&mut b);
+    b.move_tab(tabs[0], destination).unwrap();
+    assert_eq!(store.reconcile(&b), 0, "moving a tab keeps its favorite");
+    assert_eq!(store.favorites().next().unwrap().tab, tabs[0]);
     store.check_invariants(&b).unwrap();
 }
 
 #[test]
-fn favorites_ignore_unrelated_browser_mutations() {
+fn closing_the_concrete_tab_removes_its_favorite() {
     let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     for tab in &tabs {
         store.favorite_toggle(&b, *tab).unwrap();
     }
-    let before: Vec<String> = store.favorites().map(|f| f.url.clone()).collect();
-    // Closing and moving tabs must not reorder or drop favorite tiles.
     b.close_tab(s, tabs[1]).unwrap();
-    let s2 = other_space(&mut b);
-    b.move_tab(tabs[2], s2).unwrap();
-    store.create_folder(&b, s, "Work").unwrap();
-    let after: Vec<String> = store.favorites().map(|f| f.url.clone()).collect();
+    assert_eq!(store.reconcile(&b), 1);
     assert_eq!(
-        before, after,
-        "fav grid order is untouched by tab mutations"
+        store.favorites().map(|f| f.tab).collect::<Vec<_>>(),
+        vec![tabs[0], tabs[2]]
     );
+    store.check_invariants(&b).unwrap();
 }
 
 // ---- Reconciliation -------------------------------------------------------
@@ -345,19 +335,16 @@ fn invariants_reject_duplicate_membership_across_folders() {
 }
 
 #[test]
-fn invariants_detect_unknown_space_and_duplicate_favorites() {
-    let (b, s, _tabs) = populated();
+fn invariants_detect_unknown_space_and_duplicate_favorite_tabs() {
+    let (b, s, tabs) = populated();
     let mut store = FolderStore::new();
     store.create_folder(&b, s, "Work").unwrap();
-    store
-        .favorite_toggle_page("A", "https://a.example")
-        .unwrap();
-    // Forge an unknown-space folder and a duplicate favorite url.
+    store.favorite_toggle(&b, tabs[0]).unwrap();
+    // Forge an unknown-space folder and a duplicate favorite tab.
     store.folders[0].space = SpaceId(999);
-    store.favorites.push(crate::folders::Favorite {
-        title: "A again".into(),
-        url: "https://a.example".into(),
-    });
+    store
+        .favorites
+        .push(crate::folders::Favorite { tab: tabs[0] });
     assert!(store.check_invariants(&b).is_err());
 }
 

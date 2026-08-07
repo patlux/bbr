@@ -21,9 +21,13 @@
 //!   membership, ordering, selection, and live session. A tab of another
 //!   space or an unknown folder is rejected **whole** (no partial mutation).
 //! - [`OrganizationController::favorite_toggle`] toggles the active space's
-//!   tab at `index` as a page identity (title + url) in the session-local
-//!   favorites grid. Favorites are page shortcuts, not tab references, so
-//!   closing the tab never drops the tile.
+//!   concrete tab at `index` in the window-global favorites grid. A favorite
+//!   is another presentation of the same `TabId`; its owning space/profile
+//!   are derived from the controller read model. Closing the tab drops the
+//!   tile, while moving it keeps the favorite attached to the moved tab.
+//! - [`OrganizationController::activate_favorite`] activates the favorite's
+//!   owning space (and therefore its profile/container) in the same browser
+//!   window, then selects that exact tab without copying or moving it.
 //!
 //! Because the store cannot intercept `BrowserController` close/move
 //! mutations, every command and every read reconciles stale folder
@@ -63,12 +67,20 @@ pub enum OrganizationEvent {
         tab: TabId,
         folder: bbr_domain::FolderId,
     },
-    /// The favorites grid changed: `added` tells whether the page was
+    /// The favorites grid changed: `added` tells whether the concrete tab was
     /// inserted or removed.
     FavoriteToggled {
         added: bool,
-        title: String,
-        url: String,
+        tab: TabId,
+        space: SpaceId,
+        profile: ProfileId,
+    },
+    /// A global favorite activated its owning space/profile and exact tab.
+    FavoriteActivated {
+        tab: TabId,
+        space: SpaceId,
+        profile: ProfileId,
+        index: usize,
     },
 }
 
@@ -84,6 +96,8 @@ pub enum OrganizationError {
     UnknownSpace(SpaceId),
     /// The index does not name a tab of the active space.
     IndexOutOfBounds { index: usize, len: usize },
+    /// The index does not name a favorite in the global grid.
+    FavoriteIndexOutOfBounds { index: usize, len: usize },
 }
 
 impl std::fmt::Display for OrganizationError {
@@ -94,6 +108,9 @@ impl std::fmt::Display for OrganizationError {
             Self::UnknownSpace(space) => write!(f, "unknown space {space:?}"),
             Self::IndexOutOfBounds { index, len } => {
                 write!(f, "index {index} out of bounds for {len} tabs")
+            }
+            Self::FavoriteIndexOutOfBounds { index, len } => {
+                write!(f, "index {index} out of bounds for {len} favorites")
             }
         }
     }
@@ -120,11 +137,18 @@ pub struct FolderSnapshot {
     pub members: Vec<TabId>,
 }
 
-/// One favorite tile as presented to the UI/E2E.
+/// One global favorite tile as presented to the UI/E2E.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FavoriteSnapshot {
     /// Position in deterministic insertion order — the fav-grid tile order.
     pub index: usize,
+    /// The exact tab this tile additionally presents.
+    pub tab: TabId,
+    /// Current owner of `tab`; changes if that same tab is moved.
+    pub space: SpaceId,
+    /// Derived from `space`; identifies the isolated container to activate.
+    pub profile: ProfileId,
+    /// Current live tab metadata, never a copied destination identity.
     pub title: String,
     pub url: String,
 }
@@ -234,11 +258,9 @@ impl OrganizationController {
         Ok(OrganizationEvent::TabMovedIntoFolder { tab, folder })
     }
 
-    /// `FavoriteToggle` command: toggle the active space's tab at `index` in
-    /// the session-local favorites grid. The grid stores the page identity
-    /// (title + url snapshot), so closing the tab never removes the tile.
-    /// Toggling a page already in the grid removes it; re-adding appends it
-    /// at the end (deterministic insertion order).
+    /// `FavoriteToggle` command: toggle the active space's concrete tab at
+    /// `index` in the window-global favorites grid. Toggling the same `TabId`
+    /// removes it; re-adding appends it at the end.
     pub fn favorite_toggle(
         &mut self,
         controller: &BrowserController,
@@ -246,22 +268,66 @@ impl OrganizationController {
     ) -> Result<OrganizationEvent, OrganizationError> {
         self.reconcile(controller);
         let snapshot = controller.snapshot();
-        let tab = snapshot
-            .tabs
-            .get(index)
-            .ok_or(OrganizationError::IndexOutOfBounds {
-                index,
-                len: snapshot.tabs.len(),
-            })?;
-        let outcome = self
-            .store
-            .favorite_toggle_page(tab.title.clone(), tab.url.clone())?;
+        let tabs = active_space_tabs(&snapshot);
+        let tab = *tabs.get(index).ok_or(OrganizationError::IndexOutOfBounds {
+            index,
+            len: tabs.len(),
+        })?;
+        let global = snapshot
+            .all_tabs
+            .iter()
+            .find(|candidate| candidate.id == tab)
+            .expect("active-space tab exists in global snapshot");
+        let outcome = self.store.favorite_toggle_tab(tab);
         self.check_invariants(controller)
             .expect("organization invariants hold after reconcile");
         Ok(OrganizationEvent::FavoriteToggled {
             added: outcome.added,
-            title: outcome.title,
-            url: outcome.url,
+            tab,
+            space: global.space,
+            profile: global.profile,
+        })
+    }
+
+    /// Activate a favorite from any current space in the same browser window.
+    /// The destination space switch implicitly selects its profile/container;
+    /// then the exact favorited tab is selected by its current space-local
+    /// index. The tab is neither copied nor moved.
+    pub fn activate_favorite(
+        &mut self,
+        controller: &mut BrowserController,
+        favorite_index: usize,
+    ) -> Result<OrganizationEvent, OrganizationError> {
+        self.reconcile(controller);
+        let favorite = self
+            .store
+            .favorites()
+            .nth(favorite_index)
+            .cloned()
+            .ok_or_else(|| OrganizationError::FavoriteIndexOutOfBounds {
+                index: favorite_index,
+                len: self.store.favorites().count(),
+            })?;
+        let snapshot = controller.snapshot();
+        let global = snapshot
+            .all_tabs
+            .iter()
+            .find(|candidate| candidate.id == favorite.tab)
+            .ok_or(OrganizationError::Folder(FolderError::UnknownTab(
+                favorite.tab,
+            )))?;
+        let (tab, space, profile, index) = (global.id, global.space, global.profile, global.index);
+        controller
+            .activate_space(space)
+            .map_err(OrganizationError::Controller)?;
+        controller
+            .select_tab(index)
+            .map_err(OrganizationError::Controller)?;
+        Ok(OrganizationEvent::FavoriteActivated {
+            tab,
+            space,
+            profile,
+            index,
         })
     }
 
@@ -296,6 +362,7 @@ impl OrganizationController {
         controller: &BrowserController,
     ) -> OrganizationSnapshot {
         self.reconcile(controller);
+        let snapshot = controller.snapshot();
         let folders = self
             .store
             .folders()
@@ -312,10 +379,20 @@ impl OrganizationController {
             .store
             .favorites()
             .enumerate()
-            .map(|(index, favorite)| FavoriteSnapshot {
-                index,
-                title: favorite.title.clone(),
-                url: favorite.url.clone(),
+            .map(|(index, favorite)| {
+                let tab = snapshot
+                    .all_tabs
+                    .iter()
+                    .find(|candidate| candidate.id == favorite.tab)
+                    .expect("reconcile removed missing favorite tabs");
+                FavoriteSnapshot {
+                    index,
+                    tab: tab.id,
+                    space: tab.space,
+                    profile: tab.profile,
+                    title: tab.title.clone(),
+                    url: tab.url.clone(),
+                }
             })
             .collect();
         OrganizationSnapshot { folders, favorites }

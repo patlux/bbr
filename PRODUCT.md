@@ -36,7 +36,7 @@ The existing Swift reference implementation is at `/Users/patwoz/dev/Personal/ma
 - Platform web views remain native child views; GPUI must not re-render web content into textures or screenshots.
 - Native engine APIs are hidden behind a narrow `WebEngine` adapter so Windows and Linux implementations can differ without leaking into product logic.
 - Required product primitives: spaces, profiles, pinned tabs, vertical tabs/sidebar, command bar, and split view.
-- A profile owns an isolated cookie/cache/credential website data store. A space belongs to one profile. Tabs belong to one space.
+- A profile owns an isolated cookie/cache/credential website data store. Multiple profiles and their spaces coexist inside one browser window; a profile is a data/container boundary, not a window boundary. A space belongs to one profile. Tabs belong to one space.
 - The product may reference Arc and Zen behaviors, but must use its own name, assets, copy, and visual identity.
 - Exact Windows and Linux engine choices remain open until those platform phases begin.
 
