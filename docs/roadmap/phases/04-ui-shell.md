@@ -9,6 +9,7 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 ## Performance and design foundation first
 
 - [x] Integrate the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), preserving native WKWebViews and every existing real-app gate before palette/sidebar/package lanes branch. *(Integrated at post-anchor SHA `f89a479`; `just verify`, testkit Clippy, vendored component tests, affected E2E, and canonical `just e2e` are green.)*
+- [ ] Integrate the [native Portal host above WebKit](../tasks/native-portal-host.md): a reusable one-per-window portal contract with a deferred-GPUI host for chrome-local surfaces and a transparent AppKit child host for surfaces that must cross the native WKWebView boundary. Real-app E2E must prove child attachment, frame following, native hit-test precedence, dismissal, and unchanged browser session identity before U1 is accepted.
 - [ ] Implement the bounded [browser-MVP sidebar UI packet](../tasks/browser-mvp-sidebar-ui.md): Favorites → Pinned → Folders → Tabs, exact `[Downloads] [Spaces] [+]` footer, and real New Space/New Folder menu actions.
 - [ ] Complete the [real-app performance E2E foundation](../tasks/performance-e2e-foundation.md) before broad shell implementation.
 - [ ] Prove startup presents the complete sidebar and selected tab's visible native web view in the same first usable frame within the product budget.

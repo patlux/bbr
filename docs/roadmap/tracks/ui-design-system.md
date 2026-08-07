@@ -46,7 +46,7 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 - [ ] Split divider and pane focus are clear but quiet.
 - [ ] [Link Preview / Peek](../tasks/link-preview-peek.md) communicates its temporary state, fully covers the current page without looking like a generic modal, and makes dismissal versus promotion unmistakable.
 - [ ] Persistence/recovery states communicate trust and reversibility.
-- [ ] Downloads, permissions, errors, history, settings, and onboarding use the same components and language.
+- [ ] Downloads, permissions, errors, history, settings, and onboarding use the same components and language. Bounded follow-ups: [downloads sidebar panel](../tasks/downloads-sidebar-panel.md), [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), and [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md).
 - [ ] Every new surface ships light/dark, empty/loading/error, keyboard-focus, and reduced-motion variants.
 
 ## Product-wide polish — Phase 9

@@ -1,6 +1,6 @@
 # Track — Browser orchestration
 
-Parent phases: [Phase 2](../phases/02-browser-core.md), [Phase 3](../phases/03-multi-session-webkit.md), [Phase 6](../phases/06-split-view.md)
+Parent phases: [Phase 2](../phases/02-browser-core.md), [Phase 3](../phases/03-multi-session-webkit.md), [Phase 6](../phases/06-split-view.md), [Phase 8](../phases/08-daily-driver.md)
 
 ## Purpose
 
@@ -25,6 +25,10 @@ Own the portable boundary between persistent browser objects (`bbr-domain`) and 
 - [x] Unknown/stale WebEvents are reported without corrupting state.
 - [x] Controller operations expose typed outcomes suitable for UI and E2E events.
 - [x] Controller invariants run after every mutation in tests.
+
+## Deferred architecture options
+
+- [Profile-scoped singleton favorite runtime](../tasks/profile-scoped-favorite-runtime.md) — optional post-MVP model for one profile-bound live session presented across same-profile spaces. It does not change the current window-global concrete-`TabId`, owning-space contract until an explicit product/migration decision.
 
 ## Verification
 

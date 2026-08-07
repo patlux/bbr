@@ -30,6 +30,7 @@ The complete alpha feature set receives a deliberate product-wide quality pass a
 
 ## Release safety
 
+- [ ] Complete the deferred [native Portal host hardening](../tasks/native-portal-hardening.md) for focus/key routing, multi-window ownership, display lifecycle, teardown, and packaged-app behavior.
 - [ ] Reject test-only flags in non-testkit builds.
 - [ ] Verify release binaries contain no test socket startup path.
 - [ ] Build signed/notarized `.app` artifacts and test clean-machine startup.

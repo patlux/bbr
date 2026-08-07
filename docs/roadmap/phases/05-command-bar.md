@@ -18,7 +18,7 @@ portable core is implemented and verified. The bounded
 [command app-composition packet](../tasks/command-composition.md) is integrated
 at `872d222ca91395fc6e7e60c98ff942630b74cf6d` after independent review and
 remediation. The active presentation slice is the
-[browser-MVP palette UI packet](../tasks/browser-mvp-palette-ui.md), rooted at
+The preserved palette implementation is blocked at the native WebKit z-order boundary. The serial [native Portal host packet](../tasks/native-portal-host.md) owns the reusable composition layer that must integrate before the [browser-MVP palette UI packet](../tasks/browser-mvp-palette-ui.md), rooted at
 the reviewed post-anchor base `f89a479`; later history-provider composition
 remains Phase 7 work.
 

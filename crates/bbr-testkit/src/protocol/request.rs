@@ -215,6 +215,38 @@ pub enum Request {
     /// Dispatch a synthetic keystroke through GPUI's real input path
     /// (e.g. "cmd-l", "escape"). Zero permissions, zero OS event posting.
     DispatchKeystroke { keystroke: String },
+    /// Open the native portal probe through the general Portal API (task
+    /// packet `native-portal-host`): presents a centered `NativeAboveWeb`
+    /// probe card with the stable `bbr-portal-probe`/`-card`/`-backdrop`
+    /// ids through the same `portal_present` production seam a real chrome
+    /// surface uses. The probe content is deliberately not U1 palette
+    /// content; it exists only to prove the native host infrastructure.
+    PortalOpenProbe,
+    /// Close the portal probe through the production dismissal method
+    /// (`BbrApp::portal_dismiss`): the active presentation is dismissed, the
+    /// native portal window is ordered out, and the probe surface clears.
+    PortalCloseProbe,
+    /// Drive the exact production outside-dismiss method the portal
+    /// backdrop's pointer-press listener calls (DESIGN.md §13 one-outside-
+    /// pointer-action rule): the same `BbrApp::portal_outside_dismiss` path
+    /// a real outside click on the backdrop takes. Only dismisses when the
+    /// active presentation's `DismissalPolicy` allows outside-pointer
+    /// dismissal.
+    PortalOutsideDismiss,
+    /// Deterministically tear down the one native portal host (task packet
+    /// teardown evidence): `BbrApp::portal_teardown` removes the child
+    /// relation, orders the portal window out, closes it, and drops the
+    /// bridge — the app owns no portal afterwards. Terminal; the snapshot
+    /// afterwards reports the empty/closed host.
+    PortalTeardown,
+    /// Bring the app to the foreground (testkit-only): the shown-harness
+    /// portal frontmost test needs the BBR window to be the active app's
+    /// front window so the real `windowNumberAtPoint` evidence at the probe
+    /// point resolves to the browser window (portal or parent), never a
+    /// background app's window. Uses the same `App::activate(true)` the app
+    /// calls at startup; it activates the browser window — never the
+    /// non-activating portal.
+    ActivateApp,
     /// Resize the window content area (points). Used to observe layout
     /// re-flow via the snapshot; the native view is re-framed on the next
     /// frame.

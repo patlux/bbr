@@ -188,6 +188,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
                 }),
             pane_rects: self.pane_rects.clone(),
             window_size: self.window_size,
+            portal: self.portal.clone(),
         }
     }
 }

@@ -133,6 +133,9 @@ JSON; no macOS, no GPUI, no WebKit).
 | `DragSidebarDivider { dx }` / `FocusSidebarDivider` | Drive the exact production pointer/focus listener methods the divider element handlers call (never a controller mutation) |
 | `FlushFrame` | Force one synchronous real GPUI draw (`Window::draw`) so paint-driven native geometry callbacks fire under the hidden harness (no display link) |
 | `SetWindowSize { width, height }` | `window.resize`; native view re-framed next frame |
+| `PortalOpenProbe` / `PortalCloseProbe` / `PortalOutsideDismiss` | Drive the general production portal API and its dismissal policy over the one `NativeAboveWeb` host |
+| `PortalTeardown` | Exercise deterministic observer removal, child-window detachment, order-out, and close while preserving the browser session |
+| `ActivateApp` | Re-activate the shown browser window for native Window Server diagnostics; the portal remains non-activating |
 | `GetSnapshot` | Full typed `Snapshot` |
 | `Ping` | Liveness |
 | `Quit` | Gateway flushes `Response::Ok`, then emits `Quitting` and calls `cx.quit()` (graceful shutdown, clean exit without a response/EOF race) |
@@ -192,6 +195,13 @@ Snapshot {
                                // order (primary, then secondary); the focused
                                // pane's entry equals content_rect
   window_size: [f32; 2],     // points
+  portal: PortalSnapshot {   // one per browser window; closed/open/teardown evidence
+    presentation, host, visible, rect, ids,
+    child_attached, native_visible, frame_synced, nonactivating_panel,
+    parent_window_number, portal_window_number,
+    frontmost_at_probe_point, below_portal_at_probe_point,
+    portal_owns_probe_point, portal_is_key, portal_is_main,
+  },
   semantics: Vec<SemanticNode>, // §15 internal semantic tree (roles/names/values/
                                // enabled/selected/focused + hierarchy); internal model
                                // only — GPUI 0.2.2 has no platform Accessibility layer,
@@ -610,6 +620,35 @@ invocation; split-creation/divider interactions belong to the later
 split-core slice.
 
 ---
+
+## 7i. The native portal suite (`bbr-app/tests/e2e_shell_portal.rs`)
+
+`just e2e-shell-portal` launches the real app with a real WKWebView and proves
+the one-host `NativeAboveWeb` boundary through typed production seams:
+
+1. **Initially hidden:** the child panel already exists and is attached/frame-
+   synchronized, but remains ordered out, non-key, non-main, and non-activating;
+   no portal presentation or `bbr-portal-*` ids are exposed.
+2. **Open over WebKit:** the production probe resolves through the general
+   portal state, renders stable ids, orders the child host in, and preserves the
+   exact active `WebViewId`, session count, profile, space, and chrome focus.
+3. **Native z-order/hit testing:** `portal_owns_probe_point` proves the attached,
+   visible, frame-matched child mechanism. At least one real AppKit Window
+   Server query corroborates it: the absolute query reports the BBR portal/
+   parent, or the portal-relative query reports the BBR parent immediately
+   below. Requiring both would incorrectly assert global desktop state because
+   foreign always-on-top windows and all-spaces/system overlays can appear in
+   the other raw query.
+4. **Resize without recreation:** parent resize re-pins the same portal window
+   and keeps the same web session. This also regresses the former observer
+   use-after-move crash.
+5. **Dismiss and teardown:** outside-dismiss and explicit close order the host
+   out without browser mutation; `PortalTeardown` removes observation and the
+   child relation and closes the host deterministically.
+
+The suite uses typed snapshots/deadlines, no pixel assertions or product sleeps.
+After remediation it passed three focused 3/3 runs, the command and sidebar
+regressions, and two complete sequential `just e2e` runs.
 
 ## 8. Security & release exclusion
 

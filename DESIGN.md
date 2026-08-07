@@ -656,18 +656,22 @@ scheme; a title consisting only of whitespace is treated as empty.
   `radius:sm` tile at `density:row-tile` size (S 26 / N 28 / XL 36), `sp:1`
   gap, fixed per-density column count (S 5 / N 4 / XL 3) so the tile →
   index mapping is deterministic at every sidebar width.
-- **Behavior:** clicking a tile activates that destination (open-vs-focus
-  semantics is an open decision); hover/active washes follow §10.2/§10.3;
-  keyboard traversal follows the §9 order row-major; tiles never reorder
-  during selection.
-- **States:** `default`, `hover`, `active`, `focused` (§10). Favorites are
-  destinations, not tabs, so tab lifecycle states (§10.5–§10.7) do not
-  apply; the destination name is the tile's semantic name (tooltip is
-  Planned per §17.2).
-- **Data source:** how favorites are added/removed (tab context menu, drag
-  into the grid) is an open decision; the grid contract covers rendering
-  and activation only. Data ownership (global vs per-profile vs per-space)
-  is resolved by the favorites domain slice, not by this visual contract.
+- **Behavior:** clicking a tile activates that exact favorited tab: switch
+  to its owning space in the same browser window (thereby selecting the
+  space's profile/container), then focus its stable `TabId`. Never open a
+  copy, navigate a different tab, or move the tab. Hover/active washes
+  follow §10.2/§10.3; keyboard traversal follows the §9 order row-major;
+  tiles never reorder during selection.
+- **States:** `default`, `hover`, `active`, `focused` (§10). A favorite is an
+  additional global presentation of a concrete tab, so its title/favicon and
+  lifecycle availability mirror that tab; the tile's semantic name includes
+  the owning space/profile when they differ from the current context.
+- **Data source:** favorites are global across all spaces and profiles in the
+  browser window. Each tile resolves `TabId + SpaceId + ProfileId`; the tab
+  remains canonically owned by one space and derives its profile from that
+  space. Dragging a tab into the grid toggles that same tab as a favorite;
+  closing it removes the tile, and moving it makes the favorite follow its
+  stable `TabId` to the new space/profile. No second web session is created.
 - **Assert ids:** `bbr-section-favorites`, `bbr-favorites`,
   `bbr-fav-<n>`, `bbr-fav-icon-<n>`.
 

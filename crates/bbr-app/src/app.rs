@@ -12,6 +12,9 @@ use crate::command_bar::{CommandBarMode, CommandBarReturn};
 use crate::engine::EngineRef;
 #[cfg(feature = "testkit")]
 use crate::performance::PerformanceProbe;
+use crate::portal::geometry::Sz;
+use crate::portal::probe::PortalProbeState;
+use crate::portal::state::{PortalHost, PortalRequest, PortalState, PortalTransition};
 
 use command_rank::CommandRanking;
 use command_text::CommandText;
@@ -81,6 +84,20 @@ pub struct BbrApp {
     /// In-flight tab drag state (DESIGN.md §10.9/§11.2): the pointer drag
     /// for reorder and move-between-spaces. Idle when no drag is active.
     tab_drag: drag::TabDrag,
+    /// The one native portal host for this browser window (task packet
+    /// `native-portal-host`): created hidden and non-activating at window
+    /// construction, retained here for app lifecycle. `None` until the
+    /// composition root attaches it (macOS only; portable no-op elsewhere).
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    native_portal: Option<crate::portal::native::NativePortalBridge>,
+    /// The one-active portal state for this browser window (task packet
+    /// `native-portal-host`): exactly one presentation, deterministic
+    /// dismissal, stable ids.
+    portal: PortalState,
+    /// The portal window's render state, shared with the portal window root
+    /// (the probe surface): what the portal window renders is exactly what
+    /// the app commanded.
+    portal_probe: Rc<RefCell<PortalProbeState>>,
     /// DESIGN.md §10.2 hover state: the row the pointer currently hovers
     /// (driven by the production `on_hover` listeners). `None` at rest.
     hovered_row: Option<usize>,
@@ -167,6 +184,9 @@ impl BbrApp {
             dense_window: std::cell::Cell::new(crate::dense::DenseRenderState::default()),
             sidebar: crate::sidebar::SidebarGeometry::new(),
             tab_drag: drag::TabDrag::default(),
+            native_portal: None,
+            portal: PortalState::new(crate::portal::probe::PORTAL_ID),
+            portal_probe: Rc::new(RefCell::new(PortalProbeState::new())),
             hovered_row: None,
             pressed_row: None,
             command_bar_mode: CommandBarMode::Inactive,
@@ -189,6 +209,152 @@ impl BbrApp {
         if let Err(error) = self.controller.open_tab(initial_url) {
             log::error!("could not open initial tab: {error}");
         }
+    }
+
+    /// Attach the one native portal window (macOS construction seam).
+    /// Exactly one per browser window; hidden and non-activating until a
+    /// native presentation drives it (task packet `native-portal-host`).
+    #[cfg(target_os = "macos")]
+    pub fn set_native_portal(&mut self, bridge: crate::portal::native::NativePortalBridge) {
+        self.native_portal = Some(bridge);
+    }
+
+    /// Narrow main-thread diagnostics of the native portal host, when
+    /// attached (DESIGN §15 snapshot semantics; the testkit snapshot
+    /// mirrors these fields). `None` when no portal is attached.
+    #[cfg(target_os = "macos")]
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit snapshot only; production consumers arrive with U1
+    pub fn native_portal_diagnostics(
+        &self,
+    ) -> Option<bbr_web_macos::portal::PortalNativeDiagnostics> {
+        self.native_portal
+            .as_ref()
+            .and_then(crate::portal::native::NativePortalBridge::diagnostics)
+    }
+
+    /// The shared probe render state (the composition root passes a clone
+    /// into the native portal bridge so the portal window renders exactly
+    /// what the app commands).
+    pub fn portal_probe_handle(&self) -> Rc<RefCell<PortalProbeState>> {
+        self.portal_probe.clone()
+    }
+
+    /// Present (or refresh) a portal request through the general Portal API
+    /// (task packet `native-portal-host`): updates the one-active portal
+    /// state and, for a [`PortalHost::NativeAboveWeb`] presentation,
+    /// resolves the placement against the window, commands the probe
+    /// surface, and orders the native portal window front (a non-activating
+    /// panel never becomes key or main). Exactly one presentation stays
+    /// active; re-presenting the same id refreshes it in place. A
+    /// [`PortalHost::GpuiDeferred`] request is state-only until a production
+    /// deferred caller exists.
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // driven by the testkit probe seam; production callers arrive with U1
+    pub fn portal_present(
+        &mut self,
+        request: PortalRequest,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> PortalTransition {
+        let transition = self.portal.present(request);
+        if request.host == PortalHost::NativeAboveWeb {
+            let viewport = Sz::new(
+                f32::from(window.bounds().size.width),
+                f32::from(window.bounds().size.height),
+            );
+            self.portal_probe.borrow_mut().present(request, viewport);
+            #[cfg(target_os = "macos")]
+            self.drive_native_present(cx);
+        }
+        transition
+    }
+
+    /// Deterministically dismiss the active presentation (the production
+    /// dismissal method): the probe surface clears and the native portal
+    /// window orders out. Returns whether a presentation was actually
+    /// active.
+    pub fn portal_dismiss(&mut self, cx: &mut Context<Self>) -> bool {
+        if !self.portal.dismiss() {
+            return false;
+        }
+        self.portal_probe.borrow_mut().clear();
+        #[cfg(target_os = "macos")]
+        {
+            if let Some(bridge) = self.native_portal.as_mut() {
+                bridge.set_visible(false);
+            }
+            // Re-render the portal root so the dismissed surface is cleared.
+            // Deferred: dismissal can run inside the portal window's own
+            // event dispatch (real backdrop press), where updating it again
+            // would double-lease the root entity.
+            if let Some(handle) = self
+                .native_portal
+                .as_ref()
+                .map(|bridge| bridge.portal_handle())
+            {
+                cx.defer(move |cx| {
+                    let _ = handle.update(cx, |_root, _window, cx| cx.notify());
+                });
+            }
+        }
+        true
+    }
+
+    /// The exact production outside-dismiss method (DESIGN §13 one-outside-
+    /// pointer-action): the portal backdrop's pointer-press listener and the
+    /// testkit `PortalOutsideDismiss` request both call this. Only dismisses
+    /// when the active presentation's [`DismissalPolicy`] allows
+    /// outside-pointer dismissal.
+    pub fn portal_outside_dismiss(&mut self, cx: &mut Context<Self>) -> bool {
+        if !self.portal.dismisses_on_outside_press() {
+            return false;
+        }
+        self.portal_dismiss(cx)
+    }
+
+    /// Draw one real portal-window frame (testkit harness support — the
+    /// hidden E2E harness has no display link, so the probe surface is
+    /// otherwise never composited). No-op when no portal is attached.
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit flush seam only
+    pub fn portal_flush_frame(&mut self, cx: &mut Context<Self>) {
+        #[cfg(target_os = "macos")]
+        if let Some(bridge) = self.native_portal.as_mut() {
+            bridge.flush_frame(cx);
+        }
+    }
+
+    /// Order the native portal window front and re-render its probe
+    /// surface. The re-render is deferred: `portal_present` can run inside a
+    /// window update (testkit seam, pointer path), where updating another
+    /// window's root directly would re-enter the app mid-update.
+    #[cfg(target_os = "macos")]
+    fn drive_native_present(&mut self, cx: &mut Context<Self>) {
+        if let Some(bridge) = self.native_portal.as_mut() {
+            bridge.set_visible(true);
+        }
+        if let Some(handle) = self
+            .native_portal
+            .as_ref()
+            .map(|bridge| bridge.portal_handle())
+        {
+            cx.defer(move |cx| {
+                let _ = handle.update(cx, |_root, _window, cx| cx.notify());
+            });
+        }
+    }
+
+    /// Deterministically tear down the one native portal host (task packet
+    /// teardown evidence): removes the child relation, orders the portal
+    /// window out, closes it, and drops the bridge — the app owns no portal
+    /// afterwards. Idempotent and safe when no host was ever attached; the
+    /// probe surface and the one-active presentation state clear with it.
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit teardown seam; production callers arrive with U1
+    pub fn portal_teardown(&mut self) {
+        #[cfg(target_os = "macos")]
+        if let Some(mut bridge) = self.native_portal.take() {
+            bridge.teardown();
+        }
+        self.portal_probe.borrow_mut().clear();
+        self.portal.dismiss();
     }
 
     /// Clear the §11.3 cross-context command-field hint: the deterministic

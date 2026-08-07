@@ -44,8 +44,11 @@ sidebar presentation budgets hold for the new surfaces.
   (`dur:instant`); row ids, §12 chips, and activation behavior unchanged.
   Migrate the existing spaces suites to reveal the region first.
 - **Favorites grid UI** (§11.10) and **Folders UI** (§11.11) consuming the
-  L5 API: grid tiles with §7.2 favicon/monogram fallback, fixed
-  per-density column counts, folder rows with disclosure/count and nested
+  L5 API: window-global favorite tiles resolving concrete
+  `TabId + SpaceId + ProfileId`, visible unchanged across every space/profile
+  in the window and activating the exact owning tab via its space/container;
+  grid tiles with §7.2 favicon/monogram fallback and fixed per-density column
+  counts; folder rows remain space-local with disclosure/count and nested
   §11.1 rows, expand/collapse snaps, `drag-target` on folder rows.
 - **Icon glyphs:** extend the §7 `components::icons` catalog with the
   `Downloads`, `Spaces`, `Folder`, and `Disclosure` glyphs (icon-system
@@ -65,9 +68,11 @@ sidebar presentation budgets hold for the new surfaces.
 
 - No downloads content surface (L6 contract feeds the `[Downloads]`
   control only; the surface is Phase 8).
-- No favorites add/remove UX (open decision) and no favorites/folder
-  domain model — L5 owns `bbr-domain`/`bbr-browser` commands
-  (NewFolder/NewSpace/Fav-Toggle/Move-in-Folder) and their invariants.
+- Dragging into Favorites is the required add/remove path; no additional tab
+  context-menu management UI in this slice. L5 owns the corrected
+  `bbr-domain`/`bbr-browser` concrete-tab favorite commands
+  (NewFolder/NewSpace/Fav-Toggle/FavoriteActivate/Move-in-Folder) and their
+  invariants.
 - No persisted folders/favorites: session-local in v1; persistence and
   restoration are Phase 7.
 - No dense-list virtualization changes, no split work, no palette surfaces
@@ -151,6 +156,12 @@ Integration base arg: f89a4799999d1d43f785da7c767a1df68759ee0b, recorded after L
 - [ ] Plus-menu state tests: open/close, keyboard selection, Escape
       dismiss without action, outside-press dismiss, action dispatch to
       the L5 commands, focus-domain preservation.
+- [ ] Favorites ownership/activation tests: identical global tile order across
+      same-profile and cross-profile space switches; each tile carries the
+      exact `TabId + SpaceId + ProfileId`; activation switches inside the same
+      window to the owning space/container and selects that exact tab without
+      copying/moving it or recreating its existing session; closing removes the
+      tile; moving the tab makes the favorite follow the stable `TabId`.
 - [ ] Folder expand/collapse and spaces-region toggle state tests (snap
       semantics, id stability across toggles).
 
