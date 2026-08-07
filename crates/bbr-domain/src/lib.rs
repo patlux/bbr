@@ -37,6 +37,7 @@
 
 mod browser;
 mod error;
+mod folders;
 mod invariants;
 mod lifecycle;
 mod model;
@@ -47,10 +48,15 @@ mod tests;
 #[cfg(test)]
 mod tests_dense;
 #[cfg(test)]
+mod tests_folders;
+#[cfg(test)]
 mod tests_layout;
 
 pub use browser::Browser;
 pub use error::{DomainError, InvariantViolation};
+pub use folders::{
+    Favorite, FavoriteToggle, Folder, FolderError, FolderId, FolderInvariantViolation, FolderStore,
+};
 pub use lifecycle::{LifecycleError, TabLifecycle};
 pub use model::{ClosedTab, Profile, ProfileHue, Space, Tab};
 pub use split::Split;
