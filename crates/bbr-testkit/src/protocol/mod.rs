@@ -32,8 +32,9 @@ pub use event::{BrowserChange, Event};
 pub use request::Request;
 pub use snapshot::{
     CommandResultSnapshot, CommandResultState, DenseListSnapshot, GlobalTabSnapshot,
-    LifecycleCounts, PaneLayoutSnapshot, PaneRectSnapshot, ProfileSnapshot, SemanticNode,
-    SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, TabSnapshot, TabVisualState,
+    LifecycleCounts, PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, ProfileSnapshot,
+    SemanticNode, SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, TabSnapshot,
+    TabVisualState,
 };
 
 /// Current protocol version understood by this crate.
@@ -316,5 +317,123 @@ mod tests {
             rect: [0.0, 0.0, 1.0, 1.0],
         };
         assert_eq!(pane.clone(), pane);
+    }
+
+    /// The portal probe requests keep their exact externally-tagged JSON
+    /// shape on the wire (unit variants serialize as the bare name) and the
+    /// fixed literals deserialize back into the same typed values.
+    #[test]
+    fn portal_requests_have_exact_wire_shape() {
+        for (request, literal) in [
+            (Request::PortalOpenProbe, "PortalOpenProbe"),
+            (Request::PortalCloseProbe, "PortalCloseProbe"),
+            (Request::PortalOutsideDismiss, "PortalOutsideDismiss"),
+            (Request::PortalTeardown, "PortalTeardown"),
+            (Request::ActivateApp, "ActivateApp"),
+        ] {
+            assert_eq!(serde_json::to_value(&request).unwrap(), json!(literal));
+            assert_eq!(
+                serde_json::from_str::<Request>(&format!("\"{literal}\"")).unwrap(),
+                request
+            );
+        }
+    }
+
+    /// The portal snapshot keeps its exact plain-value JSON shape (numeric
+    /// ids and window numbers, plain rect array, optional frontmost window)
+    /// and round-trips through the real framing. The default state is the
+    /// closed host (logical visibility false, no presentation, no rect).
+    #[test]
+    fn portal_snapshot_round_trips_with_exact_wire_shape() {
+        let active = PortalSnapshot {
+            presentation: Some(7),
+            host: Some("native-above-web".into()),
+            visible: true,
+            rect: Some([300.0, 170.0, 480.0, 360.0]),
+            ids: vec![
+                "bbr-portal-probe".into(),
+                "bbr-portal-backdrop".into(),
+                "bbr-portal-card".into(),
+            ],
+            child_attached: true,
+            native_visible: true,
+            frame_synced: true,
+            nonactivating_panel: true,
+            parent_window_number: 11,
+            portal_window_number: 12,
+            frontmost_at_probe_point: Some(12),
+            below_portal_at_probe_point: Some(11),
+            portal_owns_probe_point: true,
+            portal_is_key: false,
+            portal_is_main: false,
+        };
+        assert_eq!(
+            serde_json::to_value(&active).unwrap(),
+            json!({
+                "presentation": 7,
+                "host": "native-above-web",
+                "visible": true,
+                "rect": [300.0, 170.0, 480.0, 360.0],
+                "ids": ["bbr-portal-probe", "bbr-portal-backdrop", "bbr-portal-card"],
+                "child_attached": true,
+                "native_visible": true,
+                "frame_synced": true,
+                "nonactivating_panel": true,
+                "parent_window_number": 11,
+                "portal_window_number": 12,
+                "frontmost_at_probe_point": 12,
+                "below_portal_at_probe_point": 11,
+                "portal_owns_probe_point": true,
+                "portal_is_key": false,
+                "portal_is_main": false
+            })
+        );
+        let decoded: PortalSnapshot =
+            serde_json::from_str(&serde_json::to_string(&active).unwrap()).unwrap();
+        assert_eq!(decoded, active);
+
+        let closed = PortalSnapshot::default();
+        assert!(!closed.visible);
+        assert_eq!(closed.presentation, None);
+        assert_eq!(closed.rect, None);
+        assert!(closed.ids.is_empty());
+        assert!(!closed.child_attached);
+        assert!(!closed.native_visible);
+        assert!(!closed.frame_synced);
+        assert!(!closed.nonactivating_panel);
+        assert_eq!(closed.parent_window_number, 0);
+        assert_eq!(closed.portal_window_number, 0);
+        assert_eq!(closed.frontmost_at_probe_point, None);
+    }
+
+    /// A snapshot that omits the portal field (an older harness client)
+    /// still deserializes: the portal diagnostics default to the closed
+    /// host.
+    #[test]
+    fn snapshot_without_portal_field_defaults_to_closed_host() {
+        let snapshot: Snapshot = serde_json::from_str(
+            r#"{"url":null,"title":null,"loading":false,"can_go_back":false,
+            "can_go_forward":false,"web_view_hosted":false,"active_profile":1,
+            "active_profile_title":null,"active_profile_hue":null,
+            "active_space":1,"tabs":[],"profiles":[],"spaces":[],
+            "active_tab_index":null,"active_web_view":null,"engine_sessions":0,
+            "lifecycle_counts":{"active":0,"warm":0,"suspended":0,"discarded":0},
+            "dense":{"item_count":0,"pinned_rows":0,"first_rendered":0,
+            "rendered_rows":0,"window_rows":0,"scroll_anchor":0,
+            "active_visible":false,"active_row":null},"engine_kind":"native-wkwebview",
+            "chrome_focused":false,"shell_modes":{"theme":"dark","contrast":"standard",
+            "density":"normal"},"tab_states":[],"row_titles":[],"pinned_count":0,
+            "command_bar_hint":null,"command_profile_hint":null,"drag_source":null,
+            "drag_slot":null,"drag_space":null,"drag_valid":false,"space_states":[],
+            "space_titles":[],"visible_ids":["bbr-root"],"semantics":[],
+            "command_bar_mode":"Inactive","command_bar_text":"",
+            "sidebar_visible":true,"sidebar_width":260.0,"sidebar_min":200.0,
+            "sidebar_default":260.0,"sidebar_max":360.0,"content_min":64.0,
+            "divider_dragging":false,"divider_label":"Sidebar divider",
+            "content_rect":[260.0,0.0,400.0,700.0],"pane_layout":null,
+            "pane_rects":[],"window_size":[1080.0,700.0]}"#,
+        )
+        .unwrap();
+        assert_eq!(snapshot.portal, PortalSnapshot::default());
     }
 }

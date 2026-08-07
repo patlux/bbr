@@ -26,10 +26,22 @@ pub mod host;
 pub mod new_window;
 
 #[cfg(target_os = "macos")]
+pub mod portal;
+
+#[cfg(target_os = "macos")]
+mod portal_deferred;
+
+#[cfg(target_os = "macos")]
+pub mod portal_frame;
+
+#[cfg(target_os = "macos")]
 pub mod webview;
 
 #[cfg(target_os = "macos")]
 pub use new_window::{NewWindowContext, NewWindowCoordinator};
+
+#[cfg(target_os = "macos")]
+pub use portal::NativePortal;
 
 #[cfg(target_os = "macos")]
 pub use webview::{EngineOptions, WebEngineWk};

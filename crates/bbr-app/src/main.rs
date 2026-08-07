@@ -25,6 +25,11 @@ mod inject;
 mod palette;
 #[cfg(feature = "testkit")]
 mod performance;
+// The general Portal API (deferred host, anchored placement, escape
+// dismissal) awaits the U1 palette migration; the production probe consumes
+// the native-host path, so the remaining surface is allowed until U1 lands.
+#[allow(dead_code)]
+mod portal;
 mod shell;
 // `SidebarGeometry::{decrease,increase,reset,last_expanded}` and the divider
 // label are consumed by the unit tests and the testkit-only snapshot/keyboard
@@ -238,6 +243,39 @@ fn main() {
             view.open_initial_tab(&cli.initial_url)
         });
 
+        // Native portal host (task packet native-portal-host): exactly one
+        // transparent, non-activating portal window per browser window,
+        // created hidden at window construction and attached above the
+        // parent NSWindow by the bridge in `bbr-web-macos`. Retained by the
+        // app entity; AppKit owns z-order/attachment/frame/visibility. The
+        // app entity and the shared probe render state are handed to the
+        // portal window's root so the probe surface renders exactly what the
+        // app commands and routes outside presses through the production
+        // outside-dismiss method.
+        #[cfg(target_os = "macos")]
+        {
+            let parent_ns_view = window
+                .update(cx, |_root, window, _cx| extract_ns_view(window))
+                .expect("capture browser root view");
+            let probe = with_app(&window, &app, cx, |view, _w, _cx| {
+                view.portal_probe_handle()
+            })
+            .expect("capture portal probe handle");
+            // SAFETY: `parent_ns_view` is the live GPUI root view of the
+            // browser window on the main thread; the bridge retains it.
+            let bridge = unsafe {
+                crate::portal::native::NativePortalBridge::open(
+                    cx,
+                    parent_ns_view,
+                    app.clone(),
+                    probe,
+                )
+            }
+            .expect("open native portal host");
+            let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+                view.set_native_portal(bridge);
+            });
+        }
         // Keyboard actions (fire even while the WKWebView is first responder,
         // via the macOS performKeyEquivalent path).
         install_actions(cx, window, app.clone());

@@ -91,38 +91,42 @@ foundation only after integration.
 
 ### Unit and contract
 
-- [ ] Portal placement/clamping tests cover centered and anchored geometry,
+- [x] Portal placement/clamping tests cover centered and anchored geometry,
       including compact windows and off-edge anchors.
-- [ ] Portal state tests prove one active presentation, host selection,
+- [x] Portal state tests prove one active presentation, host selection,
       priority ordering, id stability, and deterministic dismissal.
-- [ ] Native bridge diagnostics prove child attachment, frame synchronization,
+- [x] Native bridge diagnostics prove child attachment, frame synchronization,
       visibility transitions, non-activating window policy, and teardown.
-- [ ] No dependency/lock drift; portable crates remain AppKit-free.
+- [x] No dependency/lock drift; portable crates remain AppKit-free.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-portal` launches the real app with a real WKWebView,
+- [x] `just e2e-shell-portal` launches the real app with a real WKWebView,
       opens the native portal through the production portal seam, and asserts:
       same browser process/window ownership; active WebViewId and session count
       unchanged; `NativeAboveWeb` snapshot state; child-window attachment;
-      exact parent-content frame synchronization; and AppKit frontmost hit-test
-      ownership at a point covered by the portal.
-- [ ] Resize the parent while the portal is open and prove the native portal
+      exact parent-content frame synchronization; and AppKit hit-test/z-order
+      ownership at a point covered by the portal. The deterministic attached-
+      child/frame invariant is corroborated by at least one real Window Server
+      query: absolute BBR ownership or parent directly below the portal. macOS
+      may report a foreign always-on-top/system overlay through the other raw
+      query, so requiring both would assert global desktop state rather than
+      portal-over-WKWebView ownership.
+- [x] Resize the parent while the portal is open and prove the native portal
       follows without recreating the web session; dismiss by the production
       outside-action seam and prove the native window is ordered out and the
       original focus/session state remains valid.
-- [ ] Stable `bbr-portal-*` ids and typed semantic/snapshot fields expose only
+- [x] Stable `bbr-portal-*` ids and typed semantic/snapshot fields expose only
       the active presentation. No sleeps or pixel comparisons; typed requests,
       snapshots, events, and deadlines only.
 
 ### Performance
 
-- [ ] Add a `portal_open` optimized production-path scenario only if the host
-      open/attach path remains in the interaction hot path after the one-host-
-      per-window design. Preferred design constructs and attaches the host once
-      at window creation, so opening is only state update + order/front + GPUI
-      presentation; if user-visible timing changes, measure it with ≥30 samples,
-      semantic/native presentation commit, and the command-surface warm budget.
+- [x] `portal_open` does not join the measured matrix: the implemented design
+      constructs and attaches one host at browser-window creation, outside the
+      open interaction. Opening is a state update + `orderFront` + GPUI
+      presentation; two complete canonical `just e2e` runs kept the existing
+      optimized startup and interaction budgets green.
 
 ## Completion gates
 
@@ -180,21 +184,21 @@ semantic-only portal that remains behind WebKit.
 ## Delivery ledger
 
 ```text
-Outcome:       packet active; implementation pending
-Commits:       parent-owned planning commit pending
-Functional evidence: pending
-Real-app E2E:  pending
-Performance evidence: pending; one-host creation is expected outside open hot path
-Roadmap/documentation updates: packet + Phase 4/5/current-focus links pending
-Open blockers and non-goals: U1 remains preserved and blocked until this slice integrates
-Worktree state: main, exclusive orchestrator writer
+Outcome:       complete; one reusable NativeAboveWeb/GpuiDeferred portal contract and one pinned native child host per browser window
+Commits:       planning 292a0b8; implementation commit/merge recorded by orchestrator after this lane handoff
+Functional evidence: 23 app portal tests + 9 bbr-web-macos tests; Box-pinned observer target; typed non-key/non-main/attachment/frame/teardown diagnostics
+Real-app E2E:  portal 3/3 green in three focused runs; command 11/11; sidebar 3/3; two complete canonical just e2e sequences green
+Performance evidence: both canonical short optimized gates green; no portal_open scenario because host creation/attachment is outside the open interaction
+Roadmap/documentation updates: packet evidence and implemented architecture/E2E facts updated in lane
+Open blockers and non-goals: none for infrastructure; U1 migration remains the next separate packet
+Worktree state: parallel/native-portal-host; implementation uncommitted until orchestrator integration
 
-Planning/read-only: measured in session history; exact roll-up at delivery
-Implementation: pending
-Test execution: pending
-Review: pending
-Remediation: pending
-Waiting/retries: pending
-Total elapsed: pending
+Planning/read-only: recorded in workflow run bbr-native-portal-host-msj9f75q-1k0tf0
+Implementation: contract, native host, production probe, testkit diagnostics and E2E complete
+Test execution: just verify; both packet clippies; portal ×3; command; sidebar; canonical just e2e ×2
+Review: found deterministic observer use-after-move and evidence/structure gaps
+Remediation: heap-pin before observer installation; teardown/hit-test diagnostics; module/E2E splits; all findings closed
+Waiting/retries: GUI gate serialized; no sleep-based product assertions
+Total elapsed: workflow 8,621 s plus focused orchestrator remediation/reverification
 Human intervention: user approved the general Portal direction
 ```
