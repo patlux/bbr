@@ -472,6 +472,7 @@ dependencies = [
  "bbr-command",
  "bbr-domain",
  "bbr-fixtures",
+ "bbr-split",
  "bbr-testkit",
  "bbr-web",
  "bbr-web-macos",

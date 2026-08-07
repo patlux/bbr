@@ -18,8 +18,11 @@ performance gate are green on this host); the phase's broader split interaction
 items remain open. After that exact
 anchor landed at `29c34e68f4fad5f5338f7b69e50c44dd84145e74`.
 The bounded [portable split-core packet](../tasks/split-core.md) is reviewed and
-integrated at `9eeb6b2f7abed2451a613e3ee4e8d4624db4cfc8`; native geometry and GPUI
-composition remain serial integration surfaces. See the
+integrated at `9eeb6b2f7abed2451a613e3ee4e8d4624db4cfc8`; the bounded
+[split app-composition packet](../tasks/split-app-composition.md) now owns the
+serial production divider, projected layout, focused-pane presentation,
+testkit, E2E, and performance slice. Production split creation over native
+WebKit glass remains a later contract decision. See the
 [parallel-delivery contract](../../parallel-delivery.md).
 
 ## Checklist
