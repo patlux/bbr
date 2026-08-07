@@ -63,7 +63,7 @@ fn back_forward_reload_stop_report_truthful_outcomes() {
             CommandResultState::ActivationError,
             "back without history is rejected, never a silent success"
         );
-        assert_ids(&back_error, &["bbr-command-results", "bbr-command-error"]);
+        assert_ids(&back_error, &["bbr-command-overlay", "bbr-command-error"]);
         assert_eq!(back_error.command_bar_mode, CommandBarMode::Location);
         assert!(
             back_error.chrome_focused,

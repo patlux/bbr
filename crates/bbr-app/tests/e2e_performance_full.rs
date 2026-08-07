@@ -80,6 +80,7 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let command_type = report.results["command_type"].samples;
         let command_activate = report.results["command_activate"].samples;
         let command_new_tab = report.results["command_activate_new_tab"].samples;
+        let palette_open = report.results["palette_open"].samples;
         assert!(
             warm >= INTERACTION_SAMPLES,
             "warm-tab samples {warm} < {INTERACTION_SAMPLES}"
@@ -139,6 +140,10 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             command_new_tab >= NEW_TAB_SAMPLES,
             "command new-tab samples {command_new_tab} < {NEW_TAB_SAMPLES}"
+        );
+        assert!(
+            palette_open >= INTERACTION_SAMPLES,
+            "palette-open samples {palette_open} < {INTERACTION_SAMPLES}"
         );
         assert!(
             activate >= NEW_TAB_SAMPLES,

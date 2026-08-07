@@ -148,6 +148,7 @@ impl Render for BbrApp {
 
         div()
             .id("bbr-root")
+            .relative()
             .track_focus(&self.chrome_handle)
             .key_context("bbr_chrome")
             .flex()

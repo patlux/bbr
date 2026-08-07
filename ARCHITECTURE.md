@@ -29,6 +29,7 @@ baseline claim is made.
 | Profile isolation | `nonPersistentDataStore` per profile in test mode; identifier-backed persistent store in production | E2E hermeticity; no WebKit container leakage between tests |
 | Main thread | All `bbr-web-macos` calls on the main thread (enforced + debug-asserted) | `WKWebView` and the GPUI mac platform are main-thread-only |
 | Engine adapter | `bbr-web` defines the platform-neutral `WebEngine` contract; `bbr-web-macos` implements it; a `NullEngine` covers non-macOS targets | Cross-platform requirement; portable crates never import macOS frameworks |
+| Chrome above native pages | App-local `PortalHost::{GpuiDeferred, NativeAboveWeb}` with exactly one transparent, non-activating native child portal per browser window | GPUI deferred painting cannot cross the AppKit `WKWebView` subview boundary; the child host preserves native WebKit while GPUI owns portal content/state |
 
 ---
 
@@ -188,6 +189,47 @@ dir. The flake devshell prepends `scripts/xcode-shims` (a forwarder to
 - Scale-factor change / fullscreen / occlusion: WKWebView handles these
   natively; nothing extra beyond the frame update.
 
+### Native portal above WebKit
+
+`bbr-app::portal` owns portable portal identity, placement, priority,
+dismissal, and the active GPUI presentation. `GpuiDeferred` is for chrome that
+only needs to escape GPUI layout; `NativeAboveWeb` drives one implementation-
+owned child `NSWindow` attached above the browser window's native views.
+
+`bbr-web-macos::portal` owns only AppKit attachment, z-order, frame sync,
+visibility, diagnostics, and teardown. The borderless non-activating panel is
+created once per browser window, starts ordered out, remains non-key/non-main,
+and is pinned to the parent content rect. It has no tab, profile, space,
+session, history, or independent product lifetime. GPUI renders the portal
+content; WebKit remains a real native `WKWebView` with no screenshot, texture,
+reparenting, or replacement path.
+
+The resize/move observer stores a raw pointer to a `NativePortal` that is
+heap-pinned in a `Box` **before** observer installation. Moving the bridge moves
+only the box pointer, never the observer target. Teardown removes the observer
+and child relation, orders out the panel, and closes it on a bare run-loop turn.
+Typed diagnostics expose attachment, native visibility, frame equality,
+non-activating/key/main policy, and real Window Server hit-test queries. The
+real-app portal suite proves the child host stays above the parent's WKWebViews
+without changing `WebViewId`, session count, profile, space, or focus.
+
+U1's centered palette and field-anchored command overlay are the first product
+consumers of this host. `BbrApp` remains the sole authority for command text,
+mode, ranking, selection, focus origin, and browser mutations. The one
+`PortalRoot` observes the same `Entity<BbrApp>`, clones a momentary
+`CommandPortalModel` during render, and paints only GPUI chrome inside the child
+window; it owns no tab/profile/space/session lifetime. Opening U1 presents a
+stable `NativeAboveWeb` request (`PresentationId(0xC1)` palette or `0xC2`
+overlay), and every close/commit/cancel/navigation context path dismisses the
+same host. The browser root no longer paints a duplicate floating command
+surface underneath WebKit.
+
+A portal-window testkit draw must happen after the mutable `BbrApp` lease is
+released: the portal render reads that same entity. The gateway therefore
+copies the portal `AnyWindowHandle` during `with_app`, then calls
+`Window::draw` outside that lease. This prevents GPUI entity-map reentrancy
+while preserving a single state authority.
+
 ---
 
 ## 4. Unsafe-code boundaries
@@ -203,6 +245,7 @@ Every `objc2`/WebKit call is `unsafe`. It is concentrated **inside
 | `WKWebView` object graph | `bbr-web-macos::webview` | `Retained<WKWebView>`; created/destroyed on main thread only |
 | Delegate protocol objects | `bbr-web-macos::delegate` | `define_class!` implementing `WKNavigationDelegate` + `WKUIDelegate`; kept alive for the view's lifetime (WebKit does not retain delegates). KVO `title` observation is paired `observe_title`/`unobserve_title` before view dealloc (avoids `NSKVODeallocateException`) |
 | `raw-window-handle` | `bbr-app::main` | `ns_view` → `objc2` `id` cast is sound only because the caller controls lifecycle and thread; gated `#[cfg(target_os = "macos")]` |
+| Native portal observer | `bbr-web-macos::portal` | `NativePortal` is boxed before observer installation; the observer raw pointer targets the stable heap allocation. Install/remove and every AppKit mutation are main-thread-only; teardown removes observation before close |
 
 **Safety invariant:** `bbr-web` and `bbr-domain` are `#![forbid(unsafe_code)]`.
 `bbr-app`'s only unsafe is the engine build on macOS; `bbr-testkit` and

@@ -179,6 +179,27 @@ pub enum SemanticRole {
     /// A §11.5 command result row (`bbr-command-result-*`) inside the result
     /// list.
     Result,
+    /// A §11.4 command-surface presentation — the centered Cmd-T palette
+    /// (`bbr-palette`) or the field-anchored Cmd-L/click overlay
+    /// (`bbr-command-overlay`) — both surfaces of the same §11.5 engine.
+    Palette,
+}
+
+/// The open command-surface presentation (DESIGN.md §11.4): at most one
+/// command surface is open at a time — the centered Cmd-T palette or the
+/// field-anchored Cmd-L / field-click overlay. `None` when no command
+/// surface is open. Opening either clears the §11.3 profile hint.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CommandSurface {
+    /// No command surface is open.
+    #[default]
+    None,
+    /// The centered Cmd-T palette (`bbr-palette`) in New Tab staging mode.
+    Palette,
+    /// The field-anchored Cmd-L / field-click overlay (`bbr-command-overlay`)
+    /// in Location mode.
+    Overlay,
 }
 
 /// One typed semantic node of the chrome (DESIGN.md §15 / accessibility
@@ -293,6 +314,71 @@ pub struct CommandResultSnapshot {
     pub destructive: bool,
 }
 
+/// Typed diagnostics of the one native portal host (task packet
+/// `native-portal-host`, DESIGN.md §13/§15). Exposes only the active
+/// presentation: when no presentation is active every state field reports
+/// the empty/closed host (logical visibility false, no rect, portal ordered
+/// out). On non-macOS hosts the native fields stay in their default state;
+/// the portable logical fields (presentation/host/visible/rect/ids) still
+/// report the active request.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct PortalSnapshot {
+    /// The active presentation's stable id (`None` when none is active).
+    pub presentation: Option<u64>,
+    /// The active presentation's host label (`gpui-deferred` /
+    /// `native-above-web`), or `None`.
+    pub host: Option<String>,
+    /// Logical visibility commanded by the app (the probe surface state).
+    pub visible: bool,
+    /// The resolved portal rect in window coordinates `[x, y, w, h]`
+    /// (points, top-left origin). `None` when no presentation is active.
+    pub rect: Option<[f32; 4]>,
+    /// The stable `bbr-portal-*` ids the portal surface renders while
+    /// visible (DESIGN.md §15); empty while hidden.
+    pub ids: Vec<String>,
+    /// The native portal window is attached as a child of the browser
+    /// window (macOS host evidence).
+    pub child_attached: bool,
+    /// The AppKit window's actual `isVisible` state.
+    pub native_visible: bool,
+    /// The portal frame is pinned to the parent content rect (parent-
+    /// content/portal frame synchronization evidence).
+    pub frame_synced: bool,
+    /// The borderless non-activating-panel window policy is applied to the
+    /// portal window (it can never become key/main merely by showing).
+    pub nonactivating_panel: bool,
+    /// The browser window's AppKit window number (0 when no host is
+    /// attached).
+    pub parent_window_number: i64,
+    /// The portal window's AppKit window number (0 when no host is
+    /// attached).
+    pub portal_window_number: i64,
+    /// The AppKit window number frontmost at the probe point (the centered
+    /// probe card's point). Absolute cross-application query — on a locked
+    /// desktop or with another app covering the point it reports that
+    /// window. The deterministic z-order evidence is
+    /// [`PortalSnapshot::below_portal_at_probe_point`].
+    pub frontmost_at_probe_point: Option<i64>,
+    /// The AppKit window number frontmost at the probe point strictly BELOW
+    /// the portal window. Raw diagnostic only (all-spaces/PopUp windows can
+    /// answer with an unrelated overlay); the deterministic hit-test
+    /// evidence is [`PortalSnapshot::portal_owns_probe_point`].
+    pub below_portal_at_probe_point: Option<i64>,
+    /// Deterministic AppKit hit-test evidence at the probe point: the portal
+    /// is an attached child window ordered above its parent, visible, pinned
+    /// to the parent content rect (covering the point), and never key/main.
+    /// AppKit hit-tests child windows above their parent's views, so when
+    /// true a click at the probe point is routed to the portal window —
+    /// never to the WKWebView underneath. Environment-independent.
+    pub portal_owns_probe_point: bool,
+    /// The non-key policy holds: the portal window is never key merely by
+    /// showing.
+    pub portal_is_key: bool,
+    /// The non-main policy holds: the portal window is never main merely by
+    /// showing.
+    pub portal_is_main: bool,
+}
+
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
 /// Deliberately typed (no free-form JSON) so the harness can assert on
@@ -381,6 +467,11 @@ pub struct Snapshot {
     pub semantics: Vec<SemanticNode>,
     pub command_bar_mode: CommandBarMode,
     pub command_bar_text: String,
+    /// The open command-surface presentation (DESIGN.md §11.4): the centered
+    /// Cmd-T palette, the field-anchored Cmd-L/click overlay, or none. At
+    /// most one is open at a time (mutual exclusion by construction).
+    #[serde(default)]
+    pub command_surface: CommandSurface,
     /// The typed state of the command result surface (DESIGN.md §11.5).
     #[serde(default)]
     pub command_result_state: CommandResultState,
@@ -428,4 +519,9 @@ pub struct Snapshot {
     pub pane_rects: Vec<PaneRectSnapshot>,
     /// Window content size in points (diagnostics only).
     pub window_size: [f32; 2],
+    /// Typed diagnostics of the one native portal host (task packet
+    /// `native-portal-host`; DESIGN.md §15). Exposes only the active
+    /// presentation and its native attachment/frame/visibility evidence.
+    #[serde(default)]
+    pub portal: PortalSnapshot,
 }

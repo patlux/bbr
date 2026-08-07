@@ -18,6 +18,7 @@ use gpui::{App, AsyncApp, Context, Window};
 
 use crate::command_bar::CommandBarMode;
 
+use super::palette::CommandSurface;
 use super::BbrApp;
 
 impl BbrApp {
@@ -220,6 +221,119 @@ impl BbrApp {
             CommandBarMode::Inactive.into(),
         );
         self.commit_benchmark_sync(window);
+        true
+    }
+
+    /// Benchmark the production Cmd-T open of the centered command palette
+    /// (DESIGN.md §11.4 `bbr-palette`): the sample starts at the production
+    /// entry seam (`open_palette`, the exact method the `OpenPalette`
+    /// action routes to) and commits only from a render that actually
+    /// constructed the palette with the staged New Tab mode and chrome
+    /// focus — the fast-but-wrong guard rejects a render that omitted the
+    /// surface or drew the wrong presentation/mode/focus. Staged semantics:
+    /// no tab or session is created before Enter, so the sample is the
+    /// warm-presentation class (like the other command scenarios).
+    pub fn benchmark_palette_open(
+        &mut self,
+        operation_id: BenchmarkOperationId,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if self
+            .performance
+            .begin(operation_id, BenchmarkKind::PaletteOpen)
+            .is_err()
+        {
+            return false;
+        }
+        // Production Cmd-T entry: the exact seam the `OpenPalette` action
+        // routes to (window_seam → `open_palette`), same engine as the
+        // in-rail command bar.
+        let before = self.controller.snapshot();
+        self.open_palette(window, cx);
+        // Fast-but-wrong guard: the centered palette is actually open in New
+        // Tab staging with chrome focus, and the staged semantics hold — the
+        // active view is unchanged and no tab/session was created before
+        // Enter.
+        let after = self.controller.snapshot();
+        if self.command_surface != CommandSurface::Palette
+            || self.command_bar_mode != CommandBarMode::NewTab
+            || !self.chrome_focused(window)
+            || after.active_view != before.active_view
+            || after.tabs.len() != before.tabs.len()
+            || after.engine_sessions != before.engine_sessions
+        {
+            self.performance.cancel();
+            return false;
+        }
+        // Arm the exact presentation the palette render must show: the
+        // unchanged active view, the visible rail, chrome focus, the staged
+        // New Tab mode, and the centered palette surface itself. The commit
+        // predicate only accepts a render that drew the palette (render
+        // observation below) with this exact state.
+        self.performance.expect_state(
+            after.active_view,
+            self.sidebar_visible,
+            true,
+            CommandBarMode::NewTab.into(),
+        );
+        self.performance.expect_surface(CommandSurface::Palette);
+        // Render-dependent commit (the `command_type` pattern): a bounded
+        // forced draw on the main thread after this update completes, so the
+        // palette is actually rendered in the hidden harness; the render
+        // observes the surface it constructed and the probe commits at the
+        // presentation milestone.
+        self.schedule_palette_render_commit(cx);
+        true
+    }
+
+    /// Schedule the render-inclusive commit for the pending palette-open
+    /// sample: a bounded forced draw (the same testkit pattern the
+    /// render-dependent command/dense scenarios use) so the centered palette
+    /// is actually rendered in the hidden harness and the probe commits at
+    /// the presentation milestone.
+    pub(crate) fn schedule_palette_render_commit(&self, cx: &mut Context<Self>) {
+        if self.performance.pending_kind() != Some(BenchmarkKind::PaletteOpen) {
+            return;
+        }
+        let Some(window) = cx.windows().into_iter().next() else {
+            return;
+        };
+        let weak = cx.weak_entity();
+        cx.spawn(async move |_, async_cx: &mut AsyncApp| {
+            // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).
+            async_cx.update(|cx| {
+                // Render the open palette: the render observes the surface
+                // after constructing the presentation and refreshes the
+                // browser-state observation; the slot paint then commits the
+                // sample when the armed surface and state match.
+                let _ = window.update(cx, |_root, window, cx| {
+                    let app: &mut App = cx;
+                    let _ = window.draw(app);
+                });
+                // Post-render commit through the app-entity contract: the
+                // explicit path validates the same surface + state and
+                // cancels truthfully when the render omitted the palette (no
+                // observation → no commit).
+                let _: bool = weak
+                    .update(cx, |this, _cx| this.commit_palette_open_benchmark())
+                    .unwrap_or(false);
+            });
+        })
+        .detach();
+    }
+
+    /// Commit the `palette_open` sample from the render milestone: the probe
+    /// compares the armed surface/state against the observations the render
+    /// recorded after constructing the palette. Returns false and cancels
+    /// when the render omitted the palette or the state was wrong — a
+    /// truthful rejection, never a fast-but-wrong pass.
+    fn commit_palette_open_benchmark(&self) -> bool {
+        self.performance.commit_current_presentation();
+        if self.performance.pending_kind() == Some(BenchmarkKind::PaletteOpen) {
+            self.performance.cancel();
+            return false;
+        }
         true
     }
 }

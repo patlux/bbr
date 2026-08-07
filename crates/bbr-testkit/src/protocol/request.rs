@@ -193,6 +193,16 @@ pub enum Request {
     WebAction(WebAction),
     /// Focus the GPUI command bar (chrome) — the E2E reader of Cmd-L.
     ActivateCommandBar,
+    /// Pointer press on the sidebar command field through the production
+    /// pointer-entry path: the same app method the field's mouse-down
+    /// listener calls (DESIGN.md §11.4 field-click entry into the
+    /// field-anchored overlay, same engine as Cmd-L).
+    ClickCommandField,
+    /// Pointer press on the window content right of the rail while a §11.4
+    /// palette/overlay presentation is open: the same app method the §13
+    /// dismissal layer's mouse-down listener calls (one pointer action
+    /// closes the surface and restores the origin focus domain).
+    ClickContentOutside,
     /// Return keyboard focus to the web view — the E2E reader of Escape.
     FocusWeb,
     /// Set the command bar text directly (avoids per-keystroke round trips).
@@ -205,6 +215,38 @@ pub enum Request {
     /// Dispatch a synthetic keystroke through GPUI's real input path
     /// (e.g. "cmd-l", "escape"). Zero permissions, zero OS event posting.
     DispatchKeystroke { keystroke: String },
+    /// Open the native portal probe through the general Portal API (task
+    /// packet `native-portal-host`): presents a centered `NativeAboveWeb`
+    /// probe card with the stable `bbr-portal-probe`/`-card`/`-backdrop`
+    /// ids through the same `portal_present` production seam a real chrome
+    /// surface uses. The probe content is deliberately not U1 palette
+    /// content; it exists only to prove the native host infrastructure.
+    PortalOpenProbe,
+    /// Close the portal probe through the production dismissal method
+    /// (`BbrApp::portal_dismiss`): the active presentation is dismissed, the
+    /// native portal window is ordered out, and the probe surface clears.
+    PortalCloseProbe,
+    /// Drive the exact production outside-dismiss method the portal
+    /// backdrop's pointer-press listener calls (DESIGN.md §13 one-outside-
+    /// pointer-action rule): the same `BbrApp::portal_outside_dismiss` path
+    /// a real outside click on the backdrop takes. Only dismisses when the
+    /// active presentation's `DismissalPolicy` allows outside-pointer
+    /// dismissal.
+    PortalOutsideDismiss,
+    /// Deterministically tear down the one native portal host (task packet
+    /// teardown evidence): `BbrApp::portal_teardown` removes the child
+    /// relation, orders the portal window out, closes it, and drops the
+    /// bridge — the app owns no portal afterwards. Terminal; the snapshot
+    /// afterwards reports the empty/closed host.
+    PortalTeardown,
+    /// Bring the app to the foreground (testkit-only): the shown-harness
+    /// portal frontmost test needs the BBR window to be the active app's
+    /// front window so the real `windowNumberAtPoint` evidence at the probe
+    /// point resolves to the browser window (portal or parent), never a
+    /// background app's window. Uses the same `App::activate(true)` the app
+    /// calls at startup; it activates the browser window — never the
+    /// non-activating portal.
+    ActivateApp,
     /// Resize the window content area (points). Used to observe layout
     /// re-flow via the snapshot; the native view is re-framed on the next
     /// frame.
@@ -305,6 +347,12 @@ pub enum Request {
     /// session-recreation class with its own budget. The sample commits only
     /// when a genuinely new tab/session is presented and focused.
     BenchmarkCommandActivateNewTab { operation_id: BenchmarkOperationId },
+    /// Measure the production Cmd-T open of the centered command palette
+    /// (DESIGN.md §11.4 `bbr-palette`) in New Tab staging mode: the sample
+    /// commits only from a render that actually constructed the palette with
+    /// the staged mode and chrome focus (fast-but-wrong guard). No tab or
+    /// session is created before Enter.
+    BenchmarkPaletteOpen { operation_id: BenchmarkOperationId },
     /// Full app snapshot.
     GetSnapshot,
     /// Liveness probe.

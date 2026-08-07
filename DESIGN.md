@@ -319,6 +319,14 @@ Three fixed densities, chosen by the shell from tab-collection size (and
 user override later; open decision). Geometry is per-density; **states and
 semantics are identical across densities.**
 
+**Queued post-MVP token revision:** Patrick's live U1 review found the complete
+chrome scale clearly too small. The first bounded slice after browser-MVP
+closeout is the [global UI scale and density pass](docs/roadmap/tasks/global-ui-scale-density.md):
+it revises typography, leading, spacing, rows, controls/hit targets, sidebar,
+and palette/overlay geometry as one coherent S/N/XL token decision. The values
+below remain authoritative until that slice settles its replacement table;
+semantic ids, interaction behavior, and performance budgets do not change.
+
 | Token | S (small) | N (normal) | X (very large) |
 |---|---|---|---|
 | `density:row` | 28 | 32 | 40 |

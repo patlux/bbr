@@ -117,6 +117,33 @@ pub fn release_tab_row() -> Request {
     Request::ReleaseTabRow
 }
 
+/// Open the native portal probe through the general Portal API.
+pub fn portal_open_probe() -> Request {
+    Request::PortalOpenProbe
+}
+
+/// Close the portal probe through the production dismissal method.
+pub fn portal_close_probe() -> Request {
+    Request::PortalCloseProbe
+}
+
+/// Drive the production outside-dismiss method (the backdrop press path).
+pub fn portal_outside_dismiss() -> Request {
+    Request::PortalOutsideDismiss
+}
+
+/// Deterministically tear down the one native portal host (terminal; the
+/// snapshot afterwards reports the empty/closed host).
+pub fn portal_teardown() -> Request {
+    Request::PortalTeardown
+}
+
+/// Bring the app to the foreground (testkit-only; the shown-harness
+/// frontmost-evidence premise).
+pub fn activate_app() -> Request {
+    Request::ActivateApp
+}
+
 pub fn click_space(space: TestSpaceId) -> Request {
     Request::ClickSpace { space }
 }

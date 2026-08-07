@@ -8,6 +8,7 @@ The complete alpha feature set receives a deliberate product-wide quality pass a
 
 ## Dedicated visual polish pass
 
+- [ ] Complete the first post-MVP [global UI scale and density pass](../tasks/global-ui-scale-density.md): one coherent DESIGN-token revision for typography, leading, spacing, rows, controls/hit targets, sidebar, and palette/overlay geometry; preserve semantics and existing performance budgets.
 - [ ] Audit every surface against `DESIGN.md` and eliminate visual drift.
 - [ ] Refine typography, spacing rhythm, alignment, icon optical balance, materials, and hierarchy.
 - [ ] Refine purposeful transitions and micro-interactions; honor Reduce Motion.
@@ -30,6 +31,7 @@ The complete alpha feature set receives a deliberate product-wide quality pass a
 
 ## Release safety
 
+- [ ] Complete the deferred [native Portal host hardening](../tasks/native-portal-hardening.md) for focus/key routing, multi-window ownership, display lifecycle, teardown, and packaged-app behavior.
 - [ ] Reject test-only flags in non-testkit builds.
 - [ ] Verify release binaries contain no test socket startup path.
 - [ ] Build signed/notarized `.app` artifacts and test clean-machine startup.

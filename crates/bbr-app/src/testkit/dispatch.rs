@@ -19,6 +19,7 @@ use crate::window_seam::with_app;
 use crate::app::BbrApp;
 use crate::testkit::dispatch_benchmark::dispatch_benchmark;
 use crate::testkit::dispatch_drag::dispatch_drag;
+use crate::testkit::dispatch_portal::dispatch_portal;
 use crate::testkit::snapshot::SnapshotExt;
 
 pub(crate) fn dispatch(
@@ -35,6 +36,11 @@ pub(crate) fn dispatch(
     }
     // The tab-drag pointer arms live in `dispatch_drag` (same split reason).
     if let Some(response) = dispatch_drag(&req, window, app, cx) {
+        return response;
+    }
+    // Portal probe/teardown/flush routing lives separately because the
+    // portal-window draw must happen outside the mutable app lease.
+    if let Some(response) = dispatch_portal(&req, window, app, cx) {
         return response;
     }
     let broadcast = |server: &Option<Arc<GatewayServer>>, ev: Event| {
@@ -273,6 +279,24 @@ pub(crate) fn dispatch(
         .map(|_| Response::Ok)
         .unwrap_or_else(err_response),
 
+        // §11.4 field-click pointer entry: the same app method the command
+        // field's mouse-down listener calls (opens the field-anchored
+        // overlay in Location mode with the full URL selected).
+        Request::ClickCommandField => with_app(window, app, cx, |view, window, cx| {
+            view.open_overlay(window, cx)
+        })
+        .map(|_| Response::Ok)
+        .unwrap_or_else(err_response),
+
+        // §13 one-pointer-action dismissal: the same app method the
+        // palette/overlay dismissal layer's mouse-down listener calls
+        // (closes the open surface and restores the origin focus domain).
+        Request::ClickContentOutside => with_app(window, app, cx, |view, window, cx| {
+            view.close_command_surface(window, cx)
+        })
+        .map(|_| Response::Ok)
+        .unwrap_or_else(err_response),
+
         Request::FocusWeb => with_app(window, app, cx, |view, window, cx| {
             view.focus_web(window, cx)
         })
@@ -339,6 +363,15 @@ pub(crate) fn dispatch(
         .map(Response::Snapshot)
         .unwrap_or_else(err_response),
 
+        // Bring the app to the foreground (testkit-only; the shown-harness
+        // portal frontmost test). Activates the browser window, never the
+        // non-activating portal.
+        Request::ActivateApp => with_app(window, app, cx, |_view, _window, cx| {
+            cx.activate(true);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
         Request::SetWindowSize { width, height } => {
             with_app(window, app, cx, |_view, window, _cx| {
                 window.resize(size(px(width), px(height)));
@@ -361,18 +394,6 @@ pub(crate) fn dispatch(
         })
         .unwrap_or_else(err_response),
 
-        // Draw one real GPUI frame synchronously so the paint-driven native
-        // geometry callbacks fire in the hidden harness (no display link).
-        // `AnyWindowHandle::update` borrows only the window, leaving the root
-        // entity free for the draw's render, exactly like the keystroke arm.
-        Request::FlushFrame => (**window)
-            .update(cx, |_root, window, cx| {
-                let app: &mut App = cx;
-                let _clear = window.draw(app);
-            })
-            .map(|_| Response::Ok)
-            .unwrap_or_else(err_response),
-
         Request::Ping => Response::Ok,
 
         Request::Quit => {
@@ -392,6 +413,14 @@ pub(crate) fn dispatch(
         Request::InjectWebEvent { .. } => {
             Response::Error(Error::new("pump_only", "handled by the event pump"))
         }
+
+        // Routed by `dispatch_portal` before this match; reaching one here
+        // is a routing bug.
+        Request::PortalOpenProbe
+        | Request::PortalCloseProbe
+        | Request::PortalOutsideDismiss
+        | Request::PortalTeardown
+        | Request::FlushFrame => unreachable!("portal requests route through dispatch_portal"),
 
         // Routed by `dispatch_drag` before this match; reaching one here is
         // a routing bug.
@@ -420,7 +449,8 @@ pub(crate) fn dispatch(
         | Request::BenchmarkPressTab { .. }
         | Request::BenchmarkCommandType { .. }
         | Request::BenchmarkCommandActivate { .. }
-        | Request::BenchmarkCommandActivateNewTab { .. } => {
+        | Request::BenchmarkCommandActivateNewTab { .. }
+        | Request::BenchmarkPaletteOpen { .. } => {
             unreachable!("benchmark requests route through dispatch_benchmark")
         }
     }

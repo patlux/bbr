@@ -26,19 +26,22 @@ fn empty_and_loading_states_expose_stable_ids_and_typed_snapshots() {
             since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
         }
 
-        // Empty: the New-Tab staging surface starts with no text.
+        // Empty: the New-Tab staging surface starts with no text. Cmd-T
+        // opens the §11.4 centered palette, so the typed state rows carry the
+        // palette's id family (`bbr-palette-empty`) — the in-rail list is
+        // hidden while a surface is open.
         key(&mut client, "cmd-t");
         since = wait_chrome_focus(&mut client, true, since);
         let empty = client.snapshot().expect("empty state snapshot");
         assert_eq!(empty.command_bar_mode, CommandBarMode::NewTab);
         assert_eq!(empty.command_result_state, CommandResultState::Empty);
         assert_eq!(empty.command_bar_text, "");
-        assert_ids(&empty, &["bbr-command-results", "bbr-command-empty"]);
+        assert_ids(&empty, &["bbr-palette", "bbr-palette-empty"]);
         assert!(
             !empty
                 .visible_ids
                 .iter()
-                .any(|id| id.starts_with("bbr-command-result-")),
+                .any(|id| id.starts_with("bbr-palette-result-")),
             "no result rows while empty"
         );
 
@@ -49,7 +52,7 @@ fn empty_and_loading_states_expose_stable_ids_and_typed_snapshots() {
             .expect("set loading text");
         let loading = client.snapshot().expect("loading state snapshot");
         assert_eq!(loading.command_result_state, CommandResultState::Loading);
-        assert_ids(&loading, &["bbr-command-results", "bbr-command-loading"]);
+        assert_ids(&loading, &["bbr-palette-loading"]);
 
         // The deterministic flush publishes the current generation.
         client
@@ -61,8 +64,8 @@ fn empty_and_loading_states_expose_stable_ids_and_typed_snapshots() {
             results
                 .visible_ids
                 .iter()
-                .any(|id| id.starts_with("bbr-command-result-")),
-            "result rows render after the flush"
+                .any(|id| id.starts_with("bbr-palette-result-")),
+            "palette result rows render after the flush"
         );
 
         // The mode-independent surface dismisses with Escape back to web.

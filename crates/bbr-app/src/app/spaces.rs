@@ -155,6 +155,9 @@ impl BbrApp {
     /// `Cmd-Shift-N` / New Space row: stage a space name without creating a
     /// profile or space until Enter commits it (the NewTab staging pattern).
     pub fn activate_new_space(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // A rail mode entry replaces any open palette/overlay presentation
+        // (the surface state couples to Location/NewTab only).
+        self.dismiss_command_portal(cx);
         self.clear_command_profile_hint();
         if self.command_bar_mode != CommandBarMode::NewSpace {
             self.command_bar_return = Some(crate::command_bar::CommandBarReturn {

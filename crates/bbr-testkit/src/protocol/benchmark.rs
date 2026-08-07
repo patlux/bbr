@@ -93,6 +93,13 @@ pub enum BenchmarkKind {
     /// session is presented and focused — the session-recreation class
     /// with its own budget.
     CommandActivateNewTab,
+    /// Cmd-T opened the centered command palette (DESIGN.md §11.4
+    /// `bbr-palette`) in New Tab staging mode: the sample commits only
+    /// from a render that actually constructed the palette with the staged
+    /// mode and chrome focus (the fast-but-wrong guard rejects a missing
+    /// or invented surface). Warm-interaction class — no tab or session is
+    /// created before Enter.
+    PaletteOpen,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

@@ -23,7 +23,7 @@ remain serial integration points.
 - [x] Add `bbr-persistence` with SQLite repository interfaces and versioned migrations. *(Schema v1, strict validation, typed errors, and fixture-backed `0 -> 1` migration are integrated.)*
 - [x] Persist profiles, spaces, tabs, pin/order state, active tabs, and recently closed tabs.
 - [x] Persist window geometry, sidebar state, and split layouts.
-- [ ] Persist history and per-site settings/zoom.
+- [ ] Persist history and per-site settings/zoom. *(A standalone command-history provider lane was evaluated and rejected: schema v1 exposes no history table/API, while `bbr-command` is intentionally provider-neutral. The next bounded slice must first own a serial schema migration and persistence DTO/API before a provider bridge can have an exclusive allowlist.)*
 - [x] Write structural changes transactionally.
 - [ ] Debounce transient title/favicon/history metadata writes.
 - [ ] Restore browser chrome first and hydrate only visible sessions.

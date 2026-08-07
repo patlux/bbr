@@ -16,6 +16,23 @@ mod snapshot;
 /// Create a profile with its first space (E2E seam; production uses the
 /// startup profile).
 impl BbrApp {
+    /// Copy the one portal-window handle for the testkit frame seam.
+    ///
+    /// The router draws only after releasing the mutable `BbrApp` lease:
+    /// U1's portal root reads this same entity during render.
+    pub fn portal_frame_handle(&self) -> Option<gpui::AnyWindowHandle> {
+        #[cfg(target_os = "macos")]
+        {
+            self.native_portal
+                .as_ref()
+                .map(|bridge| bridge.portal_handle().into())
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            None
+        }
+    }
+
     pub fn create_profile_space(
         &mut self,
         profile_title: &str,

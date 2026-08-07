@@ -46,11 +46,12 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 - [ ] Split divider and pane focus are clear but quiet.
 - [ ] [Link Preview / Peek](../tasks/link-preview-peek.md) communicates its temporary state, fully covers the current page without looking like a generic modal, and makes dismissal versus promotion unmistakable.
 - [ ] Persistence/recovery states communicate trust and reversibility.
-- [ ] Downloads, permissions, errors, history, settings, and onboarding use the same components and language.
+- [ ] Downloads, permissions, errors, history, settings, and onboarding use the same components and language. Bounded follow-ups: [downloads sidebar panel](../tasks/downloads-sidebar-panel.md), [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), and [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md).
 - [ ] Every new surface ships light/dark, empty/loading/error, keyboard-focus, and reduced-motion variants.
 
 ## Product-wide polish — Phase 9
 
+- [ ] Complete the bounded [global UI scale and density pass](../tasks/global-ui-scale-density.md) as the first slice after browser-MVP closeout. Patrick's live U1 review found the whole chrome clearly too small; revise typography, leading, spacing, row/control/hit-target, sidebar, and palette geometry through one canonical DESIGN/Theme token decision, preserving semantic IDs and performance budgets.
 - [ ] Run a bounded visual critique of all major workflows.
 - [ ] Correct typography rhythm, alignment, optical icon balance, density, and inconsistent materials.
 - [ ] Remove placeholder glyphs/copy and accidental one-off styling.

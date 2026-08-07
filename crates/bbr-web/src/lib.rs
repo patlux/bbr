@@ -23,6 +23,18 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
+pub mod auth_challenges;
+pub mod file_panels;
+pub mod find_in_page;
+pub mod new_window;
+pub mod permissions;
+pub mod site_settings;
+pub mod web_errors;
+pub use new_window::{
+    decide, NewWindowDecision, NewWindowDisposition, NewWindowFeatures, NewWindowOutcome,
+    NewWindowRequest, NewWindowSession, NewWindowTarget,
+};
+
 /// Stable identifier of a browsing profile. Maps 1:1 to a persistent
 /// [`WKWebsiteDataStore`] on macOS.
 ///
@@ -196,6 +208,8 @@ pub fn normalize_url(input: &str) -> String {
         format!("https://{trimmed}")
     }
 }
+
+pub mod downloads;
 
 #[cfg(test)]
 mod tests {

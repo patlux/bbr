@@ -345,6 +345,27 @@ pub(crate) fn dispatch_benchmark(
             .unwrap_or_else(err_response)
         }
 
+        Request::BenchmarkPaletteOpen { operation_id } => {
+            // Routes through the production `open_palette` seam; the sample
+            // commits only from a render that constructed the centered
+            // palette with the staged New Tab mode and chrome focus
+            // (fast-but-wrong guard rejects a missing or invented surface).
+            with_app(window, app, cx, |view, window, cx| {
+                view.benchmark_palette_open(*operation_id, window, cx)
+            })
+            .map(|committed| {
+                if committed {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "palette open did not present the centered palette",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response)
+        }
+
         // Dense scroll: begin the measurement on the entity, drive the
         // production dense scroll state through the app's tracked handle,
         // draw the resulting frame through the untyped path, then commit
