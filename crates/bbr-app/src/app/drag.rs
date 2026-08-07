@@ -124,16 +124,19 @@ impl TabDrag {
     /// Resolve the drag target for a new pointer y and update the state.
     ///
     /// `pinned` is the pinned/regular boundary (§11.2), `len` the tab count,
-    /// `row_h` the §8 row height, and `spaces` the rendered space rows
-    /// (top-down, with their surface-relative y offsets) plus the space
-    /// surface's total height. Pure geometry: the pointer position itself is
-    /// never stored.
+    /// `row_h` the §8 row height, `favorites_h` the rendered §11.10
+    /// favorites region's height (0 when the grid is empty), and `spaces`
+    /// the rendered space rows (top-down, with their surface-relative y
+    /// offsets) plus the space surface's total height. Pure geometry: the
+    /// pointer position itself is never stored.
+    #[allow(clippy::too_many_arguments)] // mirrors `DragGeometry` field-for-field
     pub fn move_to(
         &mut self,
         position_y: f32,
         pinned: usize,
         len: usize,
         row_h: f32,
+        favorites_h: f32,
         space_h: f32,
         spaces: &[SpaceRowSpan],
     ) {
@@ -142,6 +145,7 @@ impl TabDrag {
             pinned,
             len,
             row_h,
+            favorites_h,
             space_h,
             spaces,
         };
@@ -222,7 +226,10 @@ impl BbrApp {
 
     /// Recompute the drag target for a pointer y. Shared by the production
     /// mouse-move listener and the E2E seam, so both paths resolve targets
-    /// through the exact same geometry.
+    /// through the exact same geometry. The favorites band (when the grid is
+    /// rendered) and the space surface (only while the §11.4 spaces region
+    /// is revealed) sit above the tab list; a hidden region contributes no
+    /// droppable band.
     pub(crate) fn resolve_tab_drag(&mut self, position_y: f32) {
         let browser = self.controller.snapshot();
         let theme = self.theme();
@@ -230,12 +237,24 @@ impl BbrApp {
             return;
         }
         let pinned = crate::shell::pinned_count(&browser.tabs);
-        let (spaces, space_h) = self.space_row_spans();
+        let organization = self.organization.organization_snapshot(&self.controller);
+        // The favorites band is rendered whenever tiles exist, in the same
+        // column position the render uses (above the tab list).
+        let favorites_h = crate::components::favorites::favorites_region_height(
+            &theme,
+            organization.favorites.len(),
+        );
+        let (spaces, space_h) = if self.u2.spaces_visible {
+            self.space_row_spans()
+        } else {
+            (Vec::new(), 0.0)
+        };
         self.tab_drag.move_to(
             position_y,
             pinned,
             browser.tabs.len(),
             tab_row_h(&theme),
+            favorites_h,
             space_h,
             &spaces,
         );
@@ -279,9 +298,12 @@ impl BbrApp {
 
     /// Commit a legal drop: a tab slot reorders within the source region
     /// (splice semantics), a space row moves the tab between spaces through
-    /// the controller's profile-boundary recreation policy. A drop back on
-    /// the source slot (or into the tab's own space) is a no-op: the drag
-    /// never emits a spurious reorder/move event.
+    /// the controller's profile-boundary recreation policy, and the
+    /// favorites grid toggles the dragged tab in/out of the window-global
+    /// favorites (add/remove — the tab keeps its space, order, selection,
+    /// and live session). A drop back on the source slot (or into the tab's
+    /// own space) is a no-op: the drag never emits a spurious reorder/move
+    /// event.
     fn commit_tab_drop(
         &mut self,
         source: usize,
@@ -309,6 +331,9 @@ impl BbrApp {
                 {
                     self.focus_tab_list(window, cx);
                 }
+            }
+            DragTarget::Favorites => {
+                self.favorite_toggle_tab(source, window, cx);
             }
         }
     }
@@ -340,7 +365,7 @@ impl BbrApp {
 #[cfg(test)]
 mod tests {
     use super::TabDrag;
-    use crate::app::drag_target::space_row_spans;
+    use crate::app::drag_target::{space_row_spans, DragTarget};
     use bbr_browser::SpaceId;
 
     #[test]
@@ -351,12 +376,16 @@ mod tests {
         // Row-center press anchor (offset 16 in a 32 pt row).
         drag.begin(1, 200.0, 16.0);
         // 32 pt down from the press → slot 2 (valid regular slot).
-        drag.move_to(232.0, 0, 3, 32.0, space_h, &spaces);
+        drag.move_to(232.0, 0, 3, 32.0, 0.0, space_h, &spaces);
         assert_eq!(drag.tab_slot(), Some(2));
         assert!(drag.valid());
         // Back to the press position → the source slot.
-        drag.move_to(200.0, 0, 3, 32.0, space_h, &spaces);
+        drag.move_to(200.0, 0, 3, 32.0, 0.0, space_h, &spaces);
         assert_eq!(drag.tab_slot(), Some(1));
+        assert!(drag.valid());
+        // A pointer over the rendered favorites band targets the grid.
+        drag.move_to(200.0 - 48.0 - 30.0, 0, 3, 32.0, 60.0, space_h, &spaces);
+        assert_eq!(drag.target(), Some(DragTarget::Favorites));
         assert!(drag.valid());
     }
 }

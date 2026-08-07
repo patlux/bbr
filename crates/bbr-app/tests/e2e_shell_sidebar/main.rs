@@ -14,61 +14,12 @@
 
 #![cfg(target_os = "macos")]
 
+#[path = "../e2e_common/mod.rs"]
 mod e2e_common;
 
-use bbr_testkit::protocol::{dsl, Snapshot};
+use bbr_testkit::protocol::dsl;
 use e2e_common::*;
-
-/// DESIGN §5 adjustable-range contract (mirrors `crate::sidebar` constants
-/// the snapshot exposes; the E2E asserts the same numbers the render enforces).
-const SIDEBAR_MIN: f32 = 200.0;
-const SIDEBAR_DEFAULT: f32 = 260.0;
-const SIDEBAR_MAX: f32 = 360.0;
-/// The native-content floor: the WKWebView slot is never laid out narrower.
-const CONTENT_MIN: f32 = 64.0;
-/// Keyboard resize step for the focused divider (DESIGN §9).
-const RESIZE_STEP: f32 = 16.0;
-
-fn keystroke(client: &mut Client, key: &str) {
-    client
-        .send_ok(&bbr_testkit::Request::DispatchKeystroke {
-            keystroke: key.into(),
-        })
-        .expect("keystroke");
-}
-
-/// Draw one real GPUI frame synchronously so the paint-driven native
-/// geometry callbacks fire (the hidden harness has no display link).
-fn flush_frame(client: &mut Client) {
-    client
-        .send_ok(&bbr_testkit::Request::FlushFrame)
-        .expect("flush frame");
-}
-
-/// The expected native content rect for a visible sidebar of `width` in a
-/// window of `window_width`: the rail on the left, the WKWebView slot filling
-/// the remainder at the slot's own stable height (the macOS titlebar makes
-/// the window-bounds height larger than the content NSView, so the slot
-/// height is captured once and asserted for drift, never against bounds).
-fn content_rect_for(width: f32, window_width: f32, height: f32) -> [f32; 4] {
-    [width, 0.0, window_width - width, height]
-}
-
-fn assert_view_and_sessions_preserved(
-    snapshot: &Snapshot,
-    view: bbr_web::WebViewId,
-    sessions: usize,
-) {
-    assert_eq!(
-        snapshot.active_web_view,
-        Some(view),
-        "sidebar mutations must never change the selected WebViewId"
-    );
-    assert_eq!(
-        snapshot.engine_sessions, sessions,
-        "sidebar mutations must never recreate or destroy sessions"
-    );
-}
+use support::*;
 
 /// Pointer drag on the visible divider through the production listener path:
 /// relative deltas resize within the DESIGN §5 range, the native slot keeps
@@ -509,3 +460,11 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
 
     finish(result, &mut harness, &socket, &token);
 }
+
+// U2 §11.4/§11.10/§11.11 scenarios (footer/spaces toggle, plus menu,
+// favorites grid, folders region) live in focused child modules so this
+// suite file stays under the ~500-line budget.
+mod support;
+mod u2_favorites;
+mod u2_folders;
+mod u2_footer;

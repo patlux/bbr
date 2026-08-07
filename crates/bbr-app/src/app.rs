@@ -12,9 +12,8 @@ use crate::command_bar::{CommandBarMode, CommandBarReturn};
 use crate::engine::EngineRef;
 #[cfg(feature = "testkit")]
 use crate::performance::PerformanceProbe;
-use crate::portal::geometry::Sz;
 use crate::portal::probe::PortalProbeState;
-use crate::portal::state::{PortalHost, PortalRequest, PortalState, PortalTransition};
+use crate::portal::state::PortalState;
 
 use command_rank::CommandRanking;
 use command_text::CommandText;
@@ -25,6 +24,8 @@ mod benchmarks;
 mod benchmarks_dense;
 #[cfg(feature = "testkit")]
 mod benchmarks_pointer;
+#[cfg(feature = "testkit")]
+mod benchmarks_u2;
 mod command_activate;
 #[cfg(feature = "testkit")]
 mod command_benchmarks;
@@ -36,6 +37,7 @@ mod drag;
 mod drag_target;
 mod interaction;
 pub(crate) mod palette;
+mod portal_host;
 mod render;
 mod sidebar;
 mod sidebar_view;
@@ -43,6 +45,10 @@ mod spaces;
 mod tab;
 #[cfg(feature = "testkit")]
 mod testkit;
+mod u2;
+mod u2_surface;
+#[cfg(test)]
+mod u2_tests;
 
 /// Sidebar width follows the §8 normal-density token (260 pt); Phase-4
 /// resize/drag will make it adjustable.
@@ -144,6 +150,15 @@ pub struct BbrApp {
     /// location/new-tab mode is open.
     command_ranking: CommandRanking,
     pub sidebar_visible: bool,
+    /// The L5 session-local favorites/folders organization read model
+    /// (DESIGN.md §11.10/§11.11): the source the U2 regions render and the
+    /// snapshot report. Commands (NewFolder/NewSpace/FavoriteToggle/
+    /// MoveIntoFolder) wire into the plus menu / command bar in
+    /// `app::u2`; the read model is consumed as-is.
+    organization: bbr_browser::OrganizationController,
+    /// U2 sidebar presentation/focus state; organization authority stays in
+    /// the controller above, while this group owns only local UI state.
+    u2: u2::U2State,
     /// Focus-change sink (main thread): called after any focus mutation with
     /// the actual chrome-focus state. Wired by the testkit glue to broadcast
     /// `ChromeFocusChanged`; unused in production builds.
@@ -157,6 +172,7 @@ impl BbrApp {
     pub fn new(
         engine: EngineRef,
         controller: BrowserController,
+        organization: bbr_browser::OrganizationController,
         engine_kind: &'static str,
         evt_tx: smol::channel::Sender<WebEvent>,
         #[cfg(feature = "testkit")] performance: PerformanceProbe,
@@ -197,6 +213,8 @@ impl BbrApp {
             command_ranking: CommandRanking::default(),
             command_profile_hint: None,
             sidebar_visible: true,
+            organization,
+            u2: u2::U2State::new(cx),
             focus_sink: Rc::new(RefCell::new(None)),
             browser_sink: Rc::new(RefCell::new(None)),
             #[cfg(feature = "testkit")]
@@ -209,151 +227,6 @@ impl BbrApp {
         if let Err(error) = self.controller.open_tab(initial_url) {
             log::error!("could not open initial tab: {error}");
         }
-    }
-
-    /// Attach the one native portal window (macOS construction seam).
-    /// Exactly one per browser window; hidden and non-activating until a
-    /// native presentation drives it (task packet `native-portal-host`).
-    #[cfg(target_os = "macos")]
-    pub fn set_native_portal(&mut self, bridge: crate::portal::native::NativePortalBridge) {
-        self.native_portal = Some(bridge);
-    }
-
-    /// Narrow main-thread diagnostics of the native portal host, when
-    /// attached (DESIGN §15 snapshot semantics; the testkit snapshot
-    /// mirrors these fields). `None` when no portal is attached.
-    #[cfg(target_os = "macos")]
-    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit snapshot only; production consumers arrive with U1
-    pub fn native_portal_diagnostics(
-        &self,
-    ) -> Option<bbr_web_macos::portal::PortalNativeDiagnostics> {
-        self.native_portal
-            .as_ref()
-            .and_then(crate::portal::native::NativePortalBridge::diagnostics)
-    }
-
-    /// The shared portal render state (the composition root passes a clone
-    /// into the native bridge so the portal window renders exactly the
-    /// active probe or product presentation commanded by the app).
-    pub fn portal_probe_handle(&self) -> Rc<RefCell<PortalProbeState>> {
-        self.portal_probe.clone()
-    }
-
-    /// Present (or refresh) a portal request through the general Portal API
-    /// (task packet `native-portal-host`): updates the one-active portal
-    /// state and, for a [`PortalHost::NativeAboveWeb`] presentation,
-    /// resolves the placement against the window, records the active
-    /// presentation, and orders the native portal window front (a non-activating
-    /// panel never becomes key or main). Exactly one presentation stays
-    /// active; re-presenting the same id refreshes it in place. A
-    /// [`PortalHost::GpuiDeferred`] request is state-only until a production
-    /// deferred caller exists.
-    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // probe + U1 production presentation seam
-    pub fn portal_present(
-        &mut self,
-        request: PortalRequest,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> PortalTransition {
-        if request.host == PortalHost::NativeAboveWeb {
-            let viewport = Sz::new(
-                f32::from(window.bounds().size.width),
-                f32::from(window.bounds().size.height),
-            );
-            self.portal_probe.borrow_mut().present(request, viewport);
-        }
-        self.activate_portal_request(request, cx)
-    }
-
-    /// Activate an already-prepared presentation; render state is populated
-    /// first so ordering the child in cannot expose stale content.
-    pub(crate) fn activate_portal_request(
-        &mut self,
-        request: PortalRequest,
-        cx: &mut Context<Self>,
-    ) -> PortalTransition {
-        let transition = self.portal.present(request);
-        #[cfg(target_os = "macos")]
-        if request.host == PortalHost::NativeAboveWeb {
-            self.drive_native_present(cx);
-        }
-        transition
-    }
-
-    /// Deterministically dismiss the active presentation (the production
-    /// dismissal method): the active portal content clears and the native portal
-    /// window orders out. Returns whether a presentation was actually
-    /// active.
-    pub fn portal_dismiss(&mut self, cx: &mut Context<Self>) -> bool {
-        if !self.portal.dismiss() {
-            return false;
-        }
-        self.portal_probe.borrow_mut().clear();
-        #[cfg(target_os = "macos")]
-        {
-            if let Some(bridge) = self.native_portal.as_mut() {
-                bridge.set_visible(false);
-            }
-            // Re-render the portal root so the dismissed surface is cleared.
-            // Deferred: dismissal can run inside the portal window's own
-            // event dispatch (real backdrop press), where updating it again
-            // would double-lease the root entity.
-            if let Some(handle) = self
-                .native_portal
-                .as_ref()
-                .map(|bridge| bridge.portal_handle())
-            {
-                cx.defer(move |cx| {
-                    let _ = handle.update(cx, |_root, _window, cx| cx.notify());
-                });
-            }
-        }
-        true
-    }
-
-    /// The exact production outside-dismiss method (DESIGN §13 one-outside-
-    /// pointer-action): the portal backdrop's pointer-press listener and the
-    /// testkit `PortalOutsideDismiss` request both call this. Only dismisses
-    /// when the active presentation's [`DismissalPolicy`] allows
-    /// outside-pointer dismissal.
-    pub fn portal_outside_dismiss(&mut self, cx: &mut Context<Self>) -> bool {
-        if !self.portal.dismisses_on_outside_press() {
-            return false;
-        }
-        self.portal_dismiss(cx)
-    }
-
-    /// Order the native portal window front and re-render its active content.
-    /// Deferred to avoid re-entering another window during an app update.
-    #[cfg(target_os = "macos")]
-    fn drive_native_present(&mut self, cx: &mut Context<Self>) {
-        if let Some(bridge) = self.native_portal.as_mut() {
-            bridge.set_visible(true);
-        }
-        if let Some(handle) = self
-            .native_portal
-            .as_ref()
-            .map(|bridge| bridge.portal_handle())
-        {
-            cx.defer(move |cx| {
-                let _ = handle.update(cx, |_root, _window, cx| cx.notify());
-            });
-        }
-    }
-
-    /// Deterministically tear down the one native portal host (task packet
-    /// teardown evidence): removes the child relation, orders the portal
-    /// window out, closes it, and drops the bridge — the app owns no portal
-    /// afterwards. Idempotent and safe when no host was ever attached; the
-    /// probe surface and the one-active presentation state clear with it.
-    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit teardown seam; production callers arrive with U1
-    pub fn portal_teardown(&mut self) {
-        #[cfg(target_os = "macos")]
-        if let Some(mut bridge) = self.native_portal.take() {
-            bridge.teardown();
-        }
-        self.portal_probe.borrow_mut().clear();
-        self.portal.dismiss();
     }
 
     /// Clear the §11.3 cross-context command-field hint: the deterministic
@@ -475,12 +348,15 @@ impl BbrApp {
     /// the visible tab list). The interaction contract's "browser chrome"
     /// domain is the union: the tab list handle is a chrome control, so a
     /// pointer-selected row keeps `chrome_focused` true — and the resize
-    /// divider is chrome too, so its focused state reports the same domain.
+    /// divider, the plus menu, and the folders region are chrome too, so
+    /// their focused states report the same domain.
     pub(super) fn chrome_focused(&self, window: &Window) -> bool {
         self.chrome_handle.is_focused(window)
             || self.space_list_handle.is_focused(window)
             || self.tab_list_handle.is_focused(window)
             || self.divider_handle.is_focused(window)
+            || self.u2.plus_menu_handle.is_focused(window)
+            || self.u2.folders_handle.is_focused(window)
     }
 
     fn emit_browser(&mut self, event: &ControllerEvent) {

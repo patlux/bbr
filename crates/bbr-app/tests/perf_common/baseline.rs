@@ -19,6 +19,9 @@ pub const DEFAULT_RELATIVE_REGRESSION_PCT: f64 = 15.0;
 /// Absolute ceilings from the product performance contract, used to seed the
 /// checked-in baseline and as the always-enforced safety floor.
 pub fn contract_budget(kind: &str) -> Option<Budget> {
+    if let Some(budget) = u2::contract_budget(kind) {
+        return Some(budget);
+    }
     let b = match kind {
         "startup" => Budget {
             p95_ms: 500.0,
@@ -345,7 +348,10 @@ impl Baseline {
             "command_activate",
             "command_activate_new_tab",
             "palette_open",
-        ] {
+        ]
+        .into_iter()
+        .chain(u2::seed_kinds())
+        {
             let b = contract_budget(kind).expect("known kind");
             entries.insert(
                 kind.to_string(),
@@ -371,8 +377,13 @@ impl Baseline {
 }
 
 #[cfg(test)]
+mod u2;
+
+#[cfg(test)]
 mod tests {
     use super::*;
+
+    mod u2;
 
     fn measured(p95: f64, max: f64) -> Measured {
         Measured {

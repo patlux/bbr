@@ -83,7 +83,11 @@ pub fn run_cold_trial_raw(
     let page_one = fixtures.url("/page1.html");
     let page_two = fixtures.url("/page2.html");
 
-    let root = std::env::temp_dir().join(format!("bbr-e2e-perf-{tag}-{}", std::process::id()));
+    // Keep the root under the fixed short `/tmp` prefix (macOS-only module):
+    // the gateway socket must stay strictly below macOS's 104-byte `sun_path`
+    // even when `$TMPDIR` is long (the default `/var/folders/…/T/` is 49
+    // bytes, longer under direnv).
+    let root = PathBuf::from(format!("/tmp/bbr-e2e-perf-{tag}-{}", std::process::id()));
     let profile = root.join("profile");
     std::fs::create_dir_all(&profile).unwrap();
     let socket = profile.join("bbr-test.sock");

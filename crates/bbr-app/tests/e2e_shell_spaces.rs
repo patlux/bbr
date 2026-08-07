@@ -59,30 +59,39 @@ fn pointer_switches_spaces_with_identity_and_warm_sessions() {
         let default_space = initial.active_space;
         let default_profile = initial.active_profile;
 
+        // §11.4 compact rail: the footer `[Spaces]` control reveals the
+        // §11.3 space rows; drive it before asserting any space-row id or
+        // clicking a row. The region hides its rows by default.
+        assert!(
+            !initial.spaces_visible,
+            "compact rail starts with the spaces region hidden"
+        );
+        let revealed = reveal_spaces_region(&mut client);
+
         // Complete collections at launch: one profile (Default, cobalt — the
         // first §12 hue) owning one space with its tab. Identity is stable
         // and typed, never a hardcoded label.
-        assert_eq!(initial.profiles.len(), 1);
-        assert_eq!(initial.profiles[0].index, 0);
-        assert_eq!(initial.profiles[0].id, TestProfileId(1));
-        assert_eq!(initial.profiles[0].title, "Default");
-        assert_eq!(initial.profiles[0].hue, "cobalt");
-        assert_eq!(initial.spaces.len(), 1);
-        assert_eq!(initial.spaces[0].index, 0);
-        assert_eq!(initial.spaces[0].space, default_space);
-        assert_eq!(initial.spaces[0].profile, TestProfileId(1));
-        assert_eq!(initial.spaces[0].title, "Default");
-        assert!(initial.spaces[0].active);
-        assert_eq!(initial.spaces[0].tab_count, 1);
-        assert_eq!(initial.spaces[0].active_tab, Some(0));
-        assert_eq!(initial.spaces[0].active_view, Some(first_view));
-        assert_eq!(initial.active_profile_title.as_deref(), Some("Default"));
-        assert_eq!(initial.active_profile_hue.as_deref(), Some("cobalt"));
-        assert_eq!(initial.space_states, vec![SpaceVisualState::Selected]);
-        assert_eq!(initial.space_titles, vec!["Default"]);
+        assert_eq!(revealed.profiles.len(), 1);
+        assert_eq!(revealed.profiles[0].index, 0);
+        assert_eq!(revealed.profiles[0].id, TestProfileId(1));
+        assert_eq!(revealed.profiles[0].title, "Default");
+        assert_eq!(revealed.profiles[0].hue, "cobalt");
+        assert_eq!(revealed.spaces.len(), 1);
+        assert_eq!(revealed.spaces[0].index, 0);
+        assert_eq!(revealed.spaces[0].space, default_space);
+        assert_eq!(revealed.spaces[0].profile, TestProfileId(1));
+        assert_eq!(revealed.spaces[0].title, "Default");
+        assert!(revealed.spaces[0].active);
+        assert_eq!(revealed.spaces[0].tab_count, 1);
+        assert_eq!(revealed.spaces[0].active_tab, Some(0));
+        assert_eq!(revealed.spaces[0].active_view, Some(first_view));
+        assert_eq!(revealed.active_profile_title.as_deref(), Some("Default"));
+        assert_eq!(revealed.active_profile_hue.as_deref(), Some("cobalt"));
+        assert_eq!(revealed.space_states, vec![SpaceVisualState::Selected]);
+        assert_eq!(revealed.space_titles, vec!["Default"]);
         // §11.3/§12/§15 ids for the space surface.
         assert_ids(
-            &initial,
+            &revealed,
             &[
                 "bbr-space-list",
                 "bbr-space-new",
@@ -91,6 +100,13 @@ fn pointer_switches_spaces_with_identity_and_warm_sessions() {
                 "bbr-space-count-0",
                 "bbr-profile-chip-0",
             ],
+        );
+        assert!(
+            !initial
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-space-list" || id.starts_with("bbr-space-row")),
+            "hidden region renders no space rows before the reveal"
         );
 
         // A second space in the same profile: grouped under Default's group

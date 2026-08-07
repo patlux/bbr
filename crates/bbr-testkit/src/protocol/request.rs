@@ -17,24 +17,39 @@ pub enum Request {
     },
     /// Subscribe to the event stream; `since` replays all events with
     /// seq > `since` from the server ring (live delivery continues after).
-    Attach { since: Option<u64> },
+    Attach {
+        since: Option<u64>,
+    },
     /// Navigate the active web view to a URL.
-    Navigate { url: String },
+    Navigate {
+        url: String,
+    },
     /// Create an isolated profile with one initial space.
     CreateProfile {
         profile_title: String,
         space_title: String,
     },
     /// Create another workspace in an existing profile.
-    CreateSpace { profile: ProfileId, title: String },
+    CreateSpace {
+        profile: ProfileId,
+        title: String,
+    },
     /// Activate a workspace by stable id.
-    ActivateSpace { space: TestSpaceId },
+    ActivateSpace {
+        space: TestSpaceId,
+    },
     /// Open a new tab and make it active.
-    OpenTab { url: String },
+    OpenTab {
+        url: String,
+    },
     /// Select an existing tab by active-space index (semantic setups).
-    SelectTab { index: usize },
+    SelectTab {
+        index: usize,
+    },
     /// Close a tab by active-space index.
-    CloseTab { index: usize },
+    CloseTab {
+        index: usize,
+    },
     /// Reopen the most recently closed tab (fresh session, preserved identity).
     ReopenTab,
     /// Open the two-pane split over the two active-space tab indices: both
@@ -42,32 +57,50 @@ pub enum Request {
     /// tab stays the focused pane. Test-only seam into the production
     /// controller split path (the split-core lane owns the user-facing
     /// creation UI); proves keyed per-`WebViewId` native geometry.
-    SetSplit { primary: usize, secondary: usize },
+    SetSplit {
+        primary: usize,
+        secondary: usize,
+    },
     /// Close the active space's split layout: single-pane mode returns, both
     /// tabs stay open, the non-focused pane becomes a warm session. The
     /// focused pane (the domain active tab) keeps full-width geometry.
     CloseSplit,
     /// Pin the tab at the active-space index (moves into the pinned region).
-    PinTab { index: usize },
+    PinTab {
+        index: usize,
+    },
     /// Unpin the tab at the active-space index (moves to the end of the
     /// regular region).
-    UnpinTab { index: usize },
+    UnpinTab {
+        index: usize,
+    },
     /// Reorder the tab at `from` to `to` within the active space (same
     /// region only; the pinned-first invariant is domain-owned).
-    ReorderTab { from: usize, to: usize },
+    ReorderTab {
+        from: usize,
+        to: usize,
+    },
     /// Activate a visible tab row through the production pointer path: the
     /// same app method the row's mouse-down listener calls, with chrome focus.
-    ClickTab { index: usize },
+    ClickTab {
+        index: usize,
+    },
     /// Activate the visible tab row's close control through the production
     /// pointer path.
-    ClickTabClose { index: usize },
+    ClickTabClose {
+        index: usize,
+    },
     /// Toggle the visible tab row's pin control through the production
     /// pointer path (the pointer half of the pin/unpin command).
-    ClickTabPin { index: usize },
+    ClickTabPin {
+        index: usize,
+    },
     /// Pointer hover over a visible tab row through the production `on_hover`
     /// listener path (the exact app method the element handler calls): the
     /// row renders the DESIGN §10.2 hover wash and reveals its close control.
-    HoverTabRow { index: usize },
+    HoverTabRow {
+        index: usize,
+    },
     /// Pointer leave through the same production hover listener path: clears
     /// the row's hover state.
     UnhoverTabRow,
@@ -75,7 +108,9 @@ pub enum Request {
     /// listener path: the row renders the DESIGN §10.3 active (pressed) wash
     /// while the button is down. Selection is not implied — the press
     /// listener is a separate production handler from the select listener.
-    PressTabRow { index: usize },
+    PressTabRow {
+        index: usize,
+    },
     /// Pointer release through the production mouse-up listener path: clears
     /// the pressed row state.
     ReleaseTabRow,
@@ -94,7 +129,9 @@ pub enum Request {
     /// Pointer drag move: a `dy` displacement from the press position, sent
     /// through the production mouse-move listener path. The app resolves the
     /// typed target (tab slot or space row) and its legality.
-    MoveTabDrag { dy: f32 },
+    MoveTabDrag {
+        dy: f32,
+    },
     /// Pointer drag release through the production mouse-up listener path:
     /// commits a legal target (region-bounded reorder or move-between-spaces)
     /// and clears the drag.
@@ -106,17 +143,26 @@ pub enum Request {
     /// `WebEvent` through the exact event transport the real engine uses, so
     /// E2E can exercise the production crash/error path without killing a
     /// real WKWebView process.
-    InjectWebEvent { event: bbr_web::WebEvent },
+    InjectWebEvent {
+        event: bbr_web::WebEvent,
+    },
     /// Activate a visible space row through the production pointer path: the
     /// same app method the row's mouse-down listener calls, with chrome focus.
-    ClickSpace { space: TestSpaceId },
+    ClickSpace {
+        space: TestSpaceId,
+    },
     /// Activate the New Space row through the production pointer path (stages
     /// the NewSpace command-bar mode).
     ClickSpaceNew,
     /// Move an active-space tab into another space.
-    MoveTab { index: usize, to_space: TestSpaceId },
+    MoveTab {
+        index: usize,
+        to_space: TestSpaceId,
+    },
     /// Suspend a hidden tab and destroy its native session.
-    SuspendTab { index: usize },
+    SuspendTab {
+        index: usize,
+    },
     /// Deterministic dense-list seeding (testkit-only setup): open
     /// `tab_count` tabs through the production controller open path, pin the
     /// first `pinned_count` identities, immediately suspend every tab outside
@@ -141,7 +187,9 @@ pub enum Request {
     /// visible, pinned, and most recently used identities live; suspends the
     /// least recently used warm tabs). Testkit-only setup; the budget policy
     /// itself is the production lifecycle path.
-    EnforceSessionBudget { cap: usize },
+    EnforceSessionBudget {
+        cap: usize,
+    },
     /// A dense-list scroll through the production scroll state: the tracked
     /// `ScrollHandle` the native wheel listener, the keyboard traversal, and
     /// the render share is moved by `delta_px` in the wheel listener's units
@@ -151,9 +199,23 @@ pub enum Request {
     /// seam mutates the exact offset a wheel event would drive; the render
     /// derives the bounded row window from it identically for a wheel, a
     /// `PgDn`, or this entry. Never a direct snapshot mutation.
-    ScrollDenseTabs { delta_px: f32 },
+    ScrollDenseTabs {
+        delta_px: f32,
+    },
     /// Select a tab and measure until the correct native view is presented.
     BenchmarkSelectTab {
+        operation_id: BenchmarkOperationId,
+        index: usize,
+    },
+    /// U2 warm presentation benchmarks through production sidebar paths.
+    BenchmarkPlusMenu {
+        operation_id: BenchmarkOperationId,
+    },
+    BenchmarkFavoriteToggle {
+        operation_id: BenchmarkOperationId,
+        index: usize,
+    },
+    BenchmarkFolderToggle {
         operation_id: BenchmarkOperationId,
         index: usize,
     },
@@ -170,7 +232,9 @@ pub enum Request {
     },
     /// Reopen the most recently closed tab and measure until its fresh native
     /// session is presented.
-    BenchmarkReopenTab { operation_id: BenchmarkOperationId },
+    BenchmarkReopenTab {
+        operation_id: BenchmarkOperationId,
+    },
     /// Arm a deterministic-page-ready measurement for `expected_view`; it
     /// commits once the fixture navigation finishes with `expected_title`.
     /// The start reference is process spawn, so latency is comparable to
@@ -182,7 +246,9 @@ pub enum Request {
     },
     /// Toggle the sidebar and measure until chrome plus native content geometry
     /// are presented in the resulting state.
-    BenchmarkToggleSidebar { operation_id: BenchmarkOperationId },
+    BenchmarkToggleSidebar {
+        operation_id: BenchmarkOperationId,
+    },
     /// Dispatch a real GPUI keystroke while measuring its presentation commit.
     BenchmarkDispatchKeystroke {
         operation_id: BenchmarkOperationId,
@@ -206,7 +272,9 @@ pub enum Request {
     /// Return keyboard focus to the web view — the E2E reader of Escape.
     FocusWeb,
     /// Set the command bar text directly (avoids per-keystroke round trips).
-    SetCommandBarText { text: String },
+    SetCommandBarText {
+        text: String,
+    },
     /// Deterministic command-ranking flush (testkit-only): cancels the
     /// pending debounce timer and publishes the current generation's ranked
     /// results synchronously, so E2E asserts burst typing (only the final
@@ -214,7 +282,9 @@ pub enum Request {
     FlushCommandRanking,
     /// Dispatch a synthetic keystroke through GPUI's real input path
     /// (e.g. "cmd-l", "escape"). Zero permissions, zero OS event posting.
-    DispatchKeystroke { keystroke: String },
+    DispatchKeystroke {
+        keystroke: String,
+    },
     /// Open the native portal probe through the general Portal API (task
     /// packet `native-portal-host`): presents a centered `NativeAboveWeb`
     /// probe card with the stable `bbr-portal-probe`/`-card`/`-backdrop`
@@ -250,12 +320,17 @@ pub enum Request {
     /// Resize the window content area (points). Used to observe layout
     /// re-flow via the snapshot; the native view is re-framed on the next
     /// frame.
-    SetWindowSize { width: f32, height: f32 },
+    SetWindowSize {
+        width: f32,
+        height: f32,
+    },
     /// Real pointer drag on the sidebar resize divider through GPUI's
     /// production mouse-event pipeline: mouse-down at the divider center,
     /// mouse-move by `dx` with the left button held, mouse-up. The same
     /// element listeners a physical drag drives.
-    DragSidebarDivider { dx: f32 },
+    DragSidebarDivider {
+        dx: f32,
+    },
     /// Focus the resize divider through the production focus path (the same
     /// entry a pointer click uses), the anchor for the keyboard resize keys.
     FocusSidebarDivider,
@@ -274,10 +349,14 @@ pub enum Request {
     /// Measure the production sidebar restoration: collapse (unmeasured
     /// setup), then expand and commit when the last expanded width is
     /// restored.
-    BenchmarkRestoreSidebar { operation_id: BenchmarkOperationId },
+    BenchmarkRestoreSidebar {
+        operation_id: BenchmarkOperationId,
+    },
     /// Measure the production pin toggle of the active tab until the new
     /// region order is presented (same native view, boundary moved).
-    BenchmarkPinTab { operation_id: BenchmarkOperationId },
+    BenchmarkPinTab {
+        operation_id: BenchmarkOperationId,
+    },
     /// Measure the production reorder of the active tab by `delta` rows
     /// within its region until the new row order is presented.
     BenchmarkReorderTab {
@@ -346,13 +425,48 @@ pub enum Request {
     /// exactly one new tab/session and the fresh page is focused): the
     /// session-recreation class with its own budget. The sample commits only
     /// when a genuinely new tab/session is presented and focused.
-    BenchmarkCommandActivateNewTab { operation_id: BenchmarkOperationId },
+    BenchmarkCommandActivateNewTab {
+        operation_id: BenchmarkOperationId,
+    },
     /// Measure the production Cmd-T open of the centered command palette
     /// (DESIGN.md §11.4 `bbr-palette`) in New Tab staging mode: the sample
     /// commits only from a render that actually constructed the palette with
     /// the staged mode and chrome focus (fast-but-wrong guard). No tab or
     /// session is created before Enter.
-    BenchmarkPaletteOpen { operation_id: BenchmarkOperationId },
+    BenchmarkPaletteOpen {
+        operation_id: BenchmarkOperationId,
+    },
+    /// U2 footer, favorites, and folders production pointer seams.
+    ClickFooterDownloads,
+    ClickFooterSpaces,
+    ClickFooterPlus,
+    ClickPlusMenuItem {
+        index: usize,
+    },
+    ToggleFavoriteTab {
+        index: usize,
+    },
+    ClickFavoriteTile {
+        index: usize,
+    },
+    ClickFolderRow {
+        index: usize,
+    },
+    ClickFolderToggle {
+        index: usize,
+    },
+    ClickFolderMember {
+        folder: usize,
+        member: usize,
+    },
+    ClickFolderMemberClose {
+        folder: usize,
+        member: usize,
+    },
+    MoveTabIntoFolder {
+        index: usize,
+        folder: usize,
+    },
     /// Full app snapshot.
     GetSnapshot,
     /// Liveness probe.

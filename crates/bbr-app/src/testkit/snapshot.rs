@@ -189,6 +189,11 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             pane_rects: self.pane_rects.clone(),
             window_size: self.window_size,
             portal: self.portal.clone(),
+            spaces_visible: self.spaces_visible,
+            plus_menu_open: self.plus_menu_open,
+            plus_menu_selection: self.plus_menu_selection,
+            favorites: self.favorites.clone(),
+            folders: self.folders.clone(),
         }
     }
 }

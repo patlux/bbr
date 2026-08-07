@@ -12,7 +12,7 @@ use gpui::{App, Entity, Keystroke, WindowHandle};
 use crate::app::BbrApp;
 use crate::window_seam::with_app;
 
-use super::dispatch::{browser_mutation, err_response, flush_dense_frame};
+use super::dispatch_util::{browser_mutation, err_response, flush_dense_frame};
 
 /// Handle `Request::Benchmark*` arms; `None` for every other request so
 /// `super::dispatch` falls through to its own routing.

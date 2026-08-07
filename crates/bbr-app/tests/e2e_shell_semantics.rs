@@ -63,10 +63,14 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
             false,
         );
+        // §11.4 compact rail: the sidebar keeps its 7 regions (brand,
+        // command field, tabs, status, toggle, footer, divider) while the
+        // spaces region stays hidden — its rows are not part of the §9
+        // traversal order until the footer `[Spaces]` control reveals them.
         assert_eq!(
             sidebar.children.len(),
             7,
-            "brand, command field, spaces, tabs, status, toggle, divider"
+            "brand, command field, tabs, status, toggle, footer, divider"
         );
         assert_ids(
             &initial,
@@ -75,13 +79,19 @@ fn shell_semantic_tree_and_fallbacks() {
                 "bbr-sidebar",
                 "bbr-brand",
                 "bbr-command-bar",
-                "bbr-space-list",
                 "bbr-tab-list",
                 "bbr-status",
                 "bbr-sidebar-toggle",
                 "bbr-sidebar-divider",
                 "bbr-native-web-slot-1",
             ],
+        );
+        assert!(
+            !initial
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-space-list" || id.starts_with("bbr-space-row")),
+            "hidden region renders no space rows before the reveal"
         );
 
         // Hierarchy and typed values: tab list → row → controls.
@@ -171,10 +181,12 @@ fn shell_semantic_tree_and_fallbacks() {
             "the row is a child of the tab list"
         );
 
-        // Space surface: selected space row, profile chip, count, and the
-        // §11.3 rows live under the space list.
+        // Space surface: reveal the §11.3 region through the footer
+        // `[Spaces]` production pointer path, then assert the selected space
+        // row, profile chip, count, and the rows live under the space list.
+        let revealed = reveal_spaces_region(&mut client);
         assert_node(
-            &initial.semantics,
+            &revealed.semantics,
             "bbr-space-list",
             SemanticRole::List,
             Some("Spaces"),
@@ -184,7 +196,7 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
         );
         let space = assert_node(
-            &initial.semantics,
+            &revealed.semantics,
             "bbr-space-row-0",
             SemanticRole::Row,
             Some("Default"),
@@ -194,7 +206,7 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
         );
         assert_node(
-            &initial.semantics,
+            &revealed.semantics,
             "bbr-profile-chip-0",
             SemanticRole::Chip,
             Some("Profile · DE"),
@@ -204,7 +216,7 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
         );
         assert_node(
-            &initial.semantics,
+            &revealed.semantics,
             "bbr-space-count-0",
             SemanticRole::Count,
             None,
@@ -215,7 +227,7 @@ fn shell_semantic_tree_and_fallbacks() {
         );
         assert!(space.selected, "the active space renders selected");
         assert_node(
-            &initial.semantics,
+            &revealed.semantics,
             "bbr-space-new",
             SemanticRole::Button,
             Some("New Space"),

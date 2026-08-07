@@ -31,7 +31,7 @@ pub use presentation::{
     display_title, monogram_hue, monogram_letter, profile_line, status_line, truncate_title,
 };
 #[cfg(feature = "testkit")]
-pub use snapshot::{visible_ids, TestSnapshot};
+pub use snapshot::TestSnapshot;
 pub use space::space_groups;
 pub use space::space_title_budget_chars;
 #[cfg(feature = "testkit")]

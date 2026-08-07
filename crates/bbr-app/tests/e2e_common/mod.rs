@@ -15,6 +15,11 @@ use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 
+mod u2;
+
+#[allow(unused_imports)] // each suite uses a subset of the shared helpers
+pub use u2::{harness_root, harness_socket_path, reveal_spaces_region};
+
 /// GUI suites must not run in parallel: AppKit window geometry interferes
 /// through screen clamping, so every test in this binary takes the lock.
 pub static SERIAL_GUI: Mutex<()> = Mutex::new(());
@@ -246,13 +251,15 @@ pub fn fixtures() -> (FixtureServer, String, String) {
 }
 
 pub fn spawn_harness(root_tag: &str, page_one: &str) -> (Harness, PathBuf, String) {
-    // Keep the root name short: the unix socket path must stay below macOS's
-    // 104-byte `sun_path` limit (`TMPDIR` can be long).
-    let root = std::env::temp_dir().join(format!("bbr-st-{root_tag}-{}", std::process::id()));
+    // Keep the root under the fixed short `/tmp` prefix: the gateway socket
+    // must stay strictly below macOS's 104-byte `sun_path` limit, and
+    // `$TMPDIR` alone is 49+ bytes on standard macOS (longer under direnv).
+    let pid = std::process::id();
+    let root = harness_root(root_tag, pid);
     let profile = root.join("profile");
     std::fs::create_dir_all(&profile).unwrap();
-    let socket = profile.join("bbr-test.sock");
-    let token = format!("shell-{root_tag}-{}", std::process::id());
+    let socket = harness_socket_path(root_tag, pid);
+    let token = format!("shell-{root_tag}-{pid}");
     let bin = env!("CARGO_BIN_EXE_bbr");
     let harness = Harness::spawn(
         bin,

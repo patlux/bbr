@@ -20,6 +20,7 @@ use crate::app::palette::CommandSurface;
 pub mod command;
 pub mod pane_geometry;
 pub mod slot;
+mod u2;
 use command::{CommandExpectation, CommandObservation};
 use pane_geometry::PaneGeometry;
 
@@ -53,6 +54,8 @@ struct State {
     /// render (None when absent); the space-switch benchmark commits only
     /// when the profile-hint state matches the activation.
     latest_profile_hint: Option<String>,
+    /// U2 rail state observed by the plus-menu/favorites/folder benchmarks.
+    u2: u2::U2Observed,
     content_rect: Option<WebRect>,
     pending: Option<Pending>,
     page_ready: Option<PageReady>,
@@ -91,6 +94,8 @@ struct Pending {
     /// activation must present the hint and a same-profile one must not, or
     /// the sample is rejected in the app.
     expected_profile_hint: Option<Option<String>>,
+    /// U2 rail state the pending sample must present.
+    u2: u2::U2Expected,
     /// The exact command-result presentation identity the pending sample must
     /// commit from: generation, first/selected result key, typed state. Only
     /// the publish that carries this identity can satisfy the commit.
@@ -111,6 +116,7 @@ impl PerformanceProbe {
                 latest_command_bar_mode: CommandBarMode::Inactive,
                 latest_surface: CommandSurface::None,
                 latest_profile_hint: None,
+                u2: u2::U2Observed::default(),
                 content_rect: None,
                 pending: Some(Pending {
                     operation_id: BenchmarkOperationId(0),
@@ -125,6 +131,7 @@ impl PerformanceProbe {
                     expected_command_bar_mode: None,
                     expected_surface: None,
                     expected_profile_hint: None,
+                    u2: u2::U2Expected::default(),
                     command: None,
                 }),
                 page_ready: None,
@@ -166,6 +173,7 @@ impl PerformanceProbe {
             expected_command_bar_mode: None,
             expected_surface: None,
             expected_profile_hint: None,
+            u2: u2::U2Expected::default(),
             command: None,
         });
         Ok(())
@@ -345,6 +353,9 @@ impl PerformanceProbe {
             content_rect: state
                 .content_rect
                 .map_or([0.0; 4], |r| [r.x, r.y, r.width, r.height]),
+            plus_menu_open: state.u2.plus_menu_open,
+            favorites_len: state.u2.favorites_len,
+            folder_expanded: state.u2.folder_expanded,
             page_title: Some(ready.expected_title),
         };
         if let Some(sink) = state.sink.as_mut() {
@@ -424,6 +435,7 @@ impl PerformanceProbe {
                 .expected_profile_hint
                 .as_ref()
                 .is_some_and(|expected| expected != &state.latest_profile_hint)
+            || pending.u2.mismatches(&state.u2)
             || !command::command_matches(pending, &state)
         {
             return;
@@ -463,6 +475,9 @@ impl PerformanceProbe {
             chrome_focused: state.latest_chrome_focused,
             command_bar_mode: state.latest_command_bar_mode,
             content_rect: [rect.x, rect.y, rect.width, rect.height],
+            plus_menu_open: state.u2.plus_menu_open,
+            favorites_len: state.u2.favorites_len,
+            folder_expanded: state.u2.folder_expanded,
             page_title: None,
         };
         if let Some(sink) = state.sink.as_mut() {

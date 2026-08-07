@@ -379,3 +379,4 @@ fn stale_dense_window_never_exposes_rows_the_model_removed() {
 }
 
 mod u1;
+mod u2;

@@ -5,6 +5,7 @@
 
 pub mod baseline;
 mod benchmarks;
+mod benchmarks_u2;
 mod command;
 mod command_drive;
 mod drive;

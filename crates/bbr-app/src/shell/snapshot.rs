@@ -116,7 +116,20 @@ pub struct TestSnapshot {
     /// `native-portal-host`; DESIGN.md §15): the active presentation and its
     /// native attachment/frame/visibility evidence.
     pub portal: bbr_testkit::protocol::PortalSnapshot,
+    /// Whether the §11.3 spaces region is revealed under the command field.
+    pub spaces_visible: bool,
+    /// Whether the §11.4 plus menu is open and its selected item.
+    pub plus_menu_open: bool,
+    pub plus_menu_selection: usize,
+    /// §11.10 favorite tiles and §11.11 folder rows.
+    pub favorites: Vec<bbr_testkit::protocol::FavoriteTileSnapshot>,
+    pub folders: Vec<bbr_testkit::protocol::FolderRowSnapshot>,
 }
+
+#[cfg(feature = "testkit")]
+mod u2;
+#[cfg(feature = "testkit")]
+pub use u2::U2IdsInput;
 
 /// The stable `bbr-*` ids present in the current shell render (DESIGN.md
 /// §15). Derived from the same structures the renderer consumes — rows via
@@ -124,7 +137,7 @@ pub struct TestSnapshot {
 /// (native slot / crash panel / empty pane), the command cursor mirroring the
 /// command-bar component — so the E2E id assertion cannot drift from the
 /// shell: if a spec row's ids are not present here, the E2E fails.
-#[cfg(feature = "testkit")]
+#[cfg(all(test, feature = "testkit"))]
 #[allow(clippy::too_many_arguments)]
 pub fn visible_ids(
     browser: &ControllerSnapshot,
@@ -141,6 +154,42 @@ pub fn visible_ids(
     dense: crate::dense::DenseRenderState,
     pane_layout: Option<bbr_browser::PaneLayout>,
 ) -> Vec<String> {
+    visible_ids_u2(
+        browser,
+        chrome_focused,
+        command_bar_mode,
+        sidebar_visible,
+        command_bar_hint,
+        command_profile_hint,
+        open_surface,
+        command_state,
+        command_results,
+        command_surface,
+        drag_slot,
+        dense,
+        pane_layout,
+        &U2IdsInput::default(),
+    )
+}
+
+#[cfg(feature = "testkit")]
+#[allow(clippy::too_many_arguments)]
+pub fn visible_ids_u2(
+    browser: &ControllerSnapshot,
+    chrome_focused: bool,
+    command_bar_mode: crate::command_bar::CommandBarMode,
+    sidebar_visible: bool,
+    command_bar_hint: Option<&str>,
+    command_profile_hint: Option<&str>,
+    open_surface: crate::app::palette::CommandSurface,
+    command_state: crate::app::command_rank::CommandResultState,
+    command_results: &[crate::app::command_rank::CommandResultRow],
+    command_surface: &[String],
+    drag_slot: Option<usize>,
+    dense: crate::dense::DenseRenderState,
+    pane_layout: Option<bbr_browser::PaneLayout>,
+    u2: &u2::U2IdsInput<'_>,
+) -> Vec<String> {
     let mut ids: Vec<String> = vec!["bbr-root".into()];
     if sidebar_visible {
         for id in [
@@ -150,8 +199,6 @@ pub fn visible_ids(
             "bbr-command-text",
             "bbr-status",
             "bbr-sidebar-toggle",
-            "bbr-space-list",
-            "bbr-space-new",
             "bbr-tab-list",
             "bbr-tab-scroll",
             "bbr-sidebar-divider",
@@ -176,14 +223,9 @@ pub fn visible_ids(
         if total > pinned {
             ids.push("bbr-section-tabs".into());
         }
-        for space in &browser.spaces {
-            ids.push(format!("bbr-space-row-{}", space.index));
-            ids.push(format!("bbr-space-title-{}", space.index));
-            ids.push(format!("bbr-space-count-{}", space.index));
-        }
-        for profile in &browser.profiles {
-            ids.push(crate::components::profile_chip_id(profile.index).to_string());
-        }
+        // §11.4 spaces region plus U2 footer/favorites/folders/menu use the
+        // exact same gating and identities as the render.
+        u2::extend_visible_ids(&mut ids, browser, u2);
     }
     // The §11.4 palette/overlay presentation ids mirror the open surface
     // (shared derivation in `app::palette`): the container/field ids plus

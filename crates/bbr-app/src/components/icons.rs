@@ -23,6 +23,8 @@ use gpui::{
 use crate::palette::Palette;
 use crate::theme::{Density, Theme};
 
+use super::u2_glyphs::{disclosure_arm, downloads_geometry, folder_geometry, spaces_geometry};
+
 /// §7 icon catalog: the bounded set of BBR-drawn chrome glyphs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Icon {
@@ -36,6 +38,16 @@ pub enum Icon {
     ChassisMark,
     /// §11.3 New Space affordance: two crossing strokes.
     Plus,
+    /// §11.4 footer `[Downloads]` control: an arrow dropping into an
+    /// open-top tray.
+    Downloads,
+    /// §11.4 footer `[Spaces]` control: two offset stacked squares.
+    Spaces,
+    /// §11.11 folder identity: a folder silhouette with a top-left tab.
+    Folder,
+    /// §11.11 folder-row disclosure: a chevron that points right when
+    /// collapsed and down when expanded.
+    Disclosure { expanded: bool },
     /// §10.5 loading arc (static; rotation is a later polish pass).
     LoadingArc,
 }
@@ -58,6 +70,16 @@ impl Icon {
             Icon::Lifering => "lifering",
             Icon::ChassisMark => "chassis-mark",
             Icon::Plus => "plus",
+            Icon::Downloads => "downloads",
+            Icon::Spaces => "spaces",
+            Icon::Folder => "folder",
+            Icon::Disclosure { expanded } => {
+                if expanded {
+                    "disclosure-expanded"
+                } else {
+                    "disclosure"
+                }
+            }
             Icon::LoadingArc => "loading-arc",
         }
     }
@@ -67,9 +89,14 @@ impl Icon {
     /// lifering).
     fn rest_color(self, palette: Palette) -> Rgba {
         match self {
-            Icon::Close | Icon::Plus | Icon::ChassisMark | Icon::Pin { pinned: false } => {
-                palette.ink_secondary
-            }
+            Icon::Close
+            | Icon::Plus
+            | Icon::Downloads
+            | Icon::Spaces
+            | Icon::Folder
+            | Icon::Disclosure { .. }
+            | Icon::ChassisMark
+            | Icon::Pin { pinned: false } => palette.ink_secondary,
             Icon::Pin { pinned: true } | Icon::LoadingArc => palette.accent,
             Icon::Lifering => palette.status_error,
         }
@@ -137,6 +164,68 @@ impl Icon {
                 path.line_to(point(px(cx + arm), px(cy)));
                 path.move_to(point(px(cx), px(cy - arm)));
                 path.line_to(point(px(cx), px(cy + arm)));
+                paint_path(window, path, color);
+            }
+            Icon::Downloads => {
+                let (arm, arrow, tray_half, tray_depth, tray_side) = downloads_geometry(size);
+                let apex_y = cy + arrow;
+                let mut path = PathBuilder::stroke(stroke);
+                // The vertical stem down to the arrowhead apex.
+                path.move_to(point(px(cx), px(cy - arm)));
+                path.line_to(point(px(cx), px(apex_y)));
+                // The arrowhead, then the open-top tray below it.
+                path.move_to(point(px(cx), px(apex_y)));
+                path.line_to(point(px(cx - arrow), px(apex_y + arrow)));
+                path.move_to(point(px(cx), px(apex_y)));
+                path.line_to(point(px(cx + arrow), px(apex_y + arrow)));
+                let base_y = cy + tray_depth;
+                path.move_to(point(px(cx - tray_half), px(base_y - tray_side)));
+                path.line_to(point(px(cx - tray_half), px(base_y)));
+                path.line_to(point(px(cx + tray_half), px(base_y)));
+                path.line_to(point(px(cx + tray_half), px(base_y - tray_side)));
+                paint_path(window, path, color);
+            }
+            Icon::Spaces => {
+                let (half, offset, corner) = spaces_geometry(size);
+                // Back square up-left, front square down-right: the §11.3
+                // stacked-surfaces identity.
+                paint_rounded_square_ring(
+                    window,
+                    cx - offset,
+                    cy - offset,
+                    half,
+                    corner,
+                    stroke,
+                    color,
+                );
+                paint_rounded_square_ring(window, cx, cy, half, corner, stroke, color);
+            }
+            Icon::Folder => {
+                let (half, tab_depth, tab_width) = folder_geometry(size);
+                let mut path = PathBuilder::stroke(stroke);
+                // Left edge up to the tab, the tab diagonal, then the body.
+                path.move_to(point(px(cx - half), px(cy + half)));
+                path.line_to(point(px(cx - half), px(cy - half + tab_depth)));
+                path.line_to(point(px(cx - half + tab_width), px(cy - half)));
+                path.line_to(point(px(cx + half), px(cy - half)));
+                path.line_to(point(px(cx + half), px(cy + half)));
+                path.line_to(point(px(cx - half), px(cy + half)));
+                paint_path(window, path, color);
+            }
+            Icon::Disclosure { expanded } => {
+                let arm = disclosure_arm(size);
+                let mut path = PathBuilder::stroke(stroke);
+                if expanded {
+                    // Down chevron: apex at the bottom, arms to the sides.
+                    path.move_to(point(px(cx - arm), px(cy)));
+                    path.line_to(point(px(cx), px(cy + arm)));
+                    path.line_to(point(px(cx + arm), px(cy)));
+                } else {
+                    // Right chevron: apex at the right, arms to the corners.
+                    path.move_to(point(px(cx), px(cy - arm)));
+                    path.line_to(point(px(cx + arm), px(cy)));
+                    path.line_to(point(px(cx), px(cy + arm)));
+                }
                 paint_path(window, path, color);
             }
             Icon::LoadingArc => {
@@ -293,6 +382,14 @@ mod tests {
         assert_eq!(Icon::Lifering.name(), "lifering");
         assert_eq!(Icon::ChassisMark.name(), "chassis-mark");
         assert_eq!(Icon::Plus.name(), "plus");
+        assert_eq!(Icon::Downloads.name(), "downloads");
+        assert_eq!(Icon::Spaces.name(), "spaces");
+        assert_eq!(Icon::Folder.name(), "folder");
+        assert_eq!(Icon::Disclosure { expanded: false }.name(), "disclosure");
+        assert_eq!(
+            Icon::Disclosure { expanded: true }.name(),
+            "disclosure-expanded"
+        );
         assert_eq!(Icon::LoadingArc.name(), "loading-arc");
     }
 
@@ -356,6 +453,17 @@ mod tests {
         let p = theme.palette;
         assert_eq!(Icon::Close.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Plus.rest_color(p), p.ink_secondary);
+        assert_eq!(Icon::Downloads.rest_color(p), p.ink_secondary);
+        assert_eq!(Icon::Spaces.rest_color(p), p.ink_secondary);
+        assert_eq!(Icon::Folder.rest_color(p), p.ink_secondary);
+        assert_eq!(
+            Icon::Disclosure { expanded: false }.rest_color(p),
+            p.ink_secondary
+        );
+        assert_eq!(
+            Icon::Disclosure { expanded: true }.rest_color(p),
+            p.ink_secondary
+        );
         assert_eq!(Icon::ChassisMark.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Pin { pinned: false }.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Pin { pinned: true }.rest_color(p), p.accent);

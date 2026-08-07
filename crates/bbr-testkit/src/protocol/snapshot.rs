@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 
 use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewId};
 
+mod u2;
+pub use u2::{FavoriteTileSnapshot, FolderRowSnapshot};
+
 /// Visual state of one tab row, mirroring the DESIGN.md §10 vocabulary that
 /// the shell renders. Asserted by E2E via the snapshot's `tab_states`.
 /// The slice renders the full §15 vocabulary; hover/active/focused ride the
@@ -183,6 +186,13 @@ pub enum SemanticRole {
     /// (`bbr-palette`) or the field-anchored Cmd-L/click overlay
     /// (`bbr-command-overlay`) — both surfaces of the same §11.5 engine.
     Palette,
+    Grid,
+    Tile,
+    Menu,
+    MenuItem,
+    Folder,
+    Disclosure,
+    Footer,
 }
 
 /// The open command-surface presentation (DESIGN.md §11.4): at most one
@@ -524,4 +534,15 @@ pub struct Snapshot {
     /// presentation and its native attachment/frame/visibility evidence.
     #[serde(default)]
     pub portal: PortalSnapshot,
+    /// U2 compact-sidebar presentation state.
+    #[serde(default = "u2::default_true")]
+    pub spaces_visible: bool,
+    #[serde(default)]
+    pub plus_menu_open: bool,
+    #[serde(default)]
+    pub plus_menu_selection: usize,
+    #[serde(default)]
+    pub favorites: Vec<FavoriteTileSnapshot>,
+    #[serde(default)]
+    pub folders: Vec<FolderRowSnapshot>,
 }

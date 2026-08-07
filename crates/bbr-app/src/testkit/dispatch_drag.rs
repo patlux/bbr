@@ -14,7 +14,7 @@ use gpui::{App, Entity, WindowHandle};
 use crate::app::BbrApp;
 use crate::window_seam::with_app;
 
-use super::dispatch::err_response;
+use super::dispatch_util::err_response;
 
 /// Handle the `Request::*TabDrag` arms; `None` for every other request so
 /// `super::dispatch` falls through to its own routing.

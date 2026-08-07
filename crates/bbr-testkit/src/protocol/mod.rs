@@ -32,9 +32,9 @@ pub use event::{BrowserChange, Event};
 pub use request::Request;
 pub use snapshot::{
     CommandResultSnapshot, CommandResultState, CommandSurface, DenseListSnapshot,
-    GlobalTabSnapshot, LifecycleCounts, PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot,
-    ProfileSnapshot, SemanticNode, SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState,
-    TabSnapshot, TabVisualState,
+    FavoriteTileSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts,
+    PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, SemanticNode,
+    SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, TabSnapshot, TabVisualState,
 };
 
 /// Current protocol version understood by this crate.

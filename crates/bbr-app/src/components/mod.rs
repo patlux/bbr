@@ -3,24 +3,49 @@
 //! Every shell surface composes these instead of inventing local layout:
 //! tab rows (pinned/regular anatomy), favicon tiles (monogram fallback),
 //! section labels, the close control, pin control, the drag insertion tick,
-//! the empty-space pane, and the crash panel. Visual state comes from the
-//! §10 vocabulary; listeners are passed in so any view can wire these
-//! without reimplementing the anatomy.
+//! the empty-space pane, the crash panel, and — for the U2 sidebar — the
+//! §11.10 favorites grid, the §11.11 folder rows, the §11.4 footer row, and
+//! the plus-menu item contract. Visual state comes from the §10
+//! vocabulary; listeners are passed in so any view can wire these without
+//! reimplementing the anatomy.
 //!
 //! The components are split by concern so no module outgrows the ~500-line
 //! budget: [`tab_row`] owns the row anatomy and its controls, [`space`] the
 //! profile chips and space rows, [`pane`] the empty/crash panes, [`section`]
-//! the section labels, and [`icons`] the §7 drawn glyph catalog. Everything
-//! callers reference keeps the single `crate::components::*` path through the
-//! re-exports below.
+//! the section labels, [`icons`] the §7 drawn glyph catalog, [`favorites`]
+//! the §11.10 grid, [`folders`] the §11.11 rows and presentation state,
+//! [`footer`] the §11.4 footer row, and [`menu`] the plus-menu item
+//! contract and state. Everything callers reference keeps the single
+//! `crate::components::*` path through the re-exports below.
 
+pub mod favorites;
+pub mod folders;
+pub mod footer;
 pub mod icons;
+pub mod menu;
 pub mod pane;
 pub mod section;
 pub mod space;
 pub mod tab_row;
+mod u2_glyphs;
 
+pub use favorites::{favorite_tile, favorite_tiles, favorites_grid, FavoriteTileSpec};
+#[cfg(feature = "testkit")]
+pub use favorites::{favorite_tile_icon_id, favorite_tile_id};
+#[cfg(feature = "testkit")]
+pub use folders::{
+    folder_count_id, folder_item_close_id, folder_item_favicon_id, folder_item_id,
+    folder_item_title_id, folder_name_id, folder_row_id, folder_toggle_id,
+};
+pub use folders::{
+    folder_item_row, folder_member_visuals, folder_row, folder_row_specs, FolderMemberVisual,
+    FolderRowSpec,
+};
+pub use footer::footer_surface;
+#[cfg(feature = "testkit")]
+pub use footer::FooterControl;
 pub use icons::Icon;
+pub use menu::plus_menu_items;
 pub use pane::{crash_panel, empty_space_pane};
 pub use section::section_label;
 #[cfg(feature = "testkit")]
