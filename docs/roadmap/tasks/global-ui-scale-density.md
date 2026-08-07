@@ -18,17 +18,44 @@ target sizes, sidebar geometry, and palette/overlay geometry increase together
 without changing product behavior. The typed `Theme`/`Density` system remains
 the single sizing authority; no surface receives an isolated local enlargement.
 
-## User evidence
+## User evidence — calibrated reference, not provisional guess
 
 Patrick's live U1 palette test: the presentation already looks good, but the
 entire UI is clearly too small. This is a global shell-scale finding, not a
 palette-only defect. Preserve the visual direction and interaction model while
 raising the complete chrome scale as one system.
 
+Patrick then supplied reference screenshots, preserved at
+`/Users/patwoz/dev/Personal/macos/bbr-design-references/`:
+
+- `arc-sidebar-full.png` — whole-sidebar target proportion (2× capture);
+- `arc-tab-row-hover.png` — row hover/active detail with the inset rounded row
+  surface and trailing close control (2× capture).
+
+His instruction: the rest of the sidebar should feel approximately like this —
+noticeably more room, larger text, less compact than today. The resulting
+target values for the revised table are therefore **calibrated against a user
+reference** and are no longer a provisional percentage:
+
+- normal row height approximately 36–40 pt;
+- effective title text approximately 14–15 pt;
+- favicon/glyph approximately 18–20 pt;
+- hover/active as an inset rounded row surface with the close control inside it;
+- generous section spacing between regions;
+- Favorites as large rounded icon tiles.
+
+These are the calibration target, not literal token values: the slice still
+authors one internally consistent S/N/XL table that satisfies them at normal
+density. BBR keeps its own materials, color discipline, iconography, semantics,
+and native-web boundary — the reference calibrates scale, rhythm, and row
+affordance only, never branding or behavior. Dense-500 windowing, scroll math,
+and every performance budget remain unchanged and gate this slice.
+
 ## Scope
 
 - Decide and record one revised, internally consistent scale in `DESIGN.md`
-  before production code changes:
+  before production code changes, calibrated against the preserved reference
+  screenshots above rather than a blanket multiplier:
   - typography sizes and line-height/leading;
   - base spacing rhythm where chrome readability depends on it;
   - tab, space, favorite, folder, footer, menu, field, result, and button rows;
@@ -128,7 +155,9 @@ Integration order:    MVP closeout → this slice → deferred P8 integrations a
       typed snapshots remain byte-for-byte compatible except documented numeric
       geometry values.
 - [ ] Manual packaged-app smoke confirms the normal-density palette and sidebar
-      are comfortably readable while the website remains unscaled.
+      are comfortably readable while the website remains unscaled, and that the
+      sidebar proportion, row generosity, and row hover affordance match the
+      calibrated reference intent.
 
 ### Performance
 
