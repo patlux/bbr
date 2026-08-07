@@ -79,15 +79,21 @@ Integration order: portable contract may land after the serial bbr-web kernel
 
 ### Unit and contract
 
-- [ ] Taxonomy tests cover origin/proxy HTTP and client-certificate challenges,
+- [x] Taxonomy tests cover origin/proxy HTTP and client-certificate challenges,
       every supported scheme, invalid protection spaces, and stable identity.
-- [ ] Legal-response matrix rejects cross-kind credentials, illegal default/
+      *(this slice: ids, protection space, taxonomy, opaque handles — proven)*
+- [x] Legal-response matrix rejects cross-kind credentials, illegal default/
       continue choices, stale ids, duplicate callbacks, and superseded requests.
-- [ ] Lifecycle tests cover request, response, native success/failure, cancel,
-      supersede, and late callback rejection.
-- [ ] Serde and Debug tests prove stable wire shapes and absence of secret/
-      certificate/private-key material.
-- [ ] Default and serde-enabled crate suites plus Clippy `-D warnings` pass.
+      *(this slice: `AuthResponse` + `validate_response`, exhaustive kind ×
+      response matrix, reject-only server trust)*
+- [x] Lifecycle tests cover request, response, native success/failure, cancel,
+      supersede, and late callback rejection. *(this slice: `AuthState`/
+      `AuthEvent`/`apply_event`, exhaustive state × event matrix, cancel/
+      supersede never become credential use)*
+- [x] Serde and Debug tests prove stable wire shapes and absence of secret/
+      certificate/private-key material. *(this slice: lifecycle wire shapes,
+      round trips, no-secret Debug and wire assertions)*
+- [x] Default and serde-enabled crate suites plus Clippy `-D warnings` pass.
 
 ### Real-app E2E
 
@@ -138,11 +144,65 @@ payload escape hatch.
 ## Delivery ledger
 
 ```text
-Outcome: packet and exclusive module anchor prepared; implementation pending
-Commits: pending
-Functional evidence: pending
+Outcome (slice 2): challenge-derived legal responses and the deterministic
+        lifecycle landed — closed AuthResponse set (credential/identity
+        handles, continue, engine default, cancel) validated per challenge
+        kind; server trust is reject-only; AuthState/AuthEvent/AuthFailure
+        with apply_event enforcing one decision cycle per id, challenge-kind
+        response re-validation, mismatched-id/early/duplicate/stale-callback
+        rejection, and terminal cancellation/supersession that can never
+        become credential use. Exhaustive kind×response and state×event
+        matrices; serde wire shapes + round trips; redacted Debug.
+Commits: none (lane rule: changes stay uncommitted in this worktree)
+Functional evidence: cargo fmt --all -- --check; cargo test -p bbr-web
+        (83+11+1); cargo test -p bbr-web --features serde (98+11+1);
+        clippy -D warnings for both feature sets; roadmap links check
+        (check_roadmap.py, `just` unavailable on this host). All green on
+        base 92a0bfb.
 Real-app E2E: not applicable to contract-only lane
 Performance evidence: not applicable to contract-only lane
-Open blockers and non-goals: native delegates, credential authority/UI, client-cert enumeration, and persistence deferred
-Worktree state: launch pending
+Open blockers and non-goals: native delegates, credential UI/storage,
+        client-cert enumeration, trust evaluation, persistence, and E2E
+        remain later adapter work.
+Worktree state: uncommitted changes confined to crates/bbr-web/src/auth_challenges/**
+
+Evidence/closeout pass (independent): re-exported MAX_HOST_LEN and
+        MAX_REALM_LEN in mod.rs (rustdoc private-intra-doc-link errors in
+        protection_space.rs fixed; constants are public contract bounds).
+        Full gate set re-run green: fmt --check, git diff --check, tests
+        83+11+1 / 98+11+1, clippy -D warnings both feature sets, `just
+        roadmap` (links valid, 56 files). Pre-existing rustdoc error outside
+        lane scope: downloads/machine.rs broken intra-doc links
+        (DownloadAction::Cancel, DownloadFailure::Network) at base; not
+        touched. `just` is available inside the nix develop shell (earlier
+        ledger note about missing binary applies only to the bare host).
+
+Remediation pass (review findings): manual `Deserialize` for
+        `ProtectionSpace` now routes through `ProtectionSpace::new`, so the
+        constructor's validation *and* normalization (default-port
+        canonicalization, host case folding, realm trimming) are re-applied
+        on the wire — an https space spelled with `port: 443` deserializes
+        equal to the canonical `port: 0` space for the same authority, so
+        wire and constructor keys can never diverge (regression
+        `deserialize_canonicalizes_default_port_and_host` in tests_serde).
+        Self-supersession is rejected: `Supersede { by: <own id> }` returns
+        `EventRejection::SelfSupersede` from `Pending` and
+        `ResponseRequested` instead of reaching the terminal state
+        (regression `self_supersede_is_rejected`; classify arm added to the
+        transition-matrix support). Findings 2 and 3 assessed as deliberate
+        non-fixes: the unbounded `UnsupportedChallenge::Other { mechanism }`
+        string is diagnostic-only on an internal seam (not an untrusted
+        boundary) — bounding it would require a public rejection variant and
+        would create a wire/constructor asymmetry; IPv6 zone-id lowercasing
+        is documented normalization with negligible real-world exposure
+        (Darwin interface names are lowercase in practice), and changing it
+        would alter the documented wire normalization. Full gate set re-run
+        green in the nix develop shell (rustc 1.97.1): cargo fmt --check,
+        git diff --check, cargo test -p bbr-web (84+11+1), cargo test -p
+        bbr-web --features serde (100+11+1), clippy -D warnings for both
+        feature sets, `just roadmap` (links valid, 56 files). Ledger note:
+        the review's serde baseline of 98 undercounted by one pre-existing
+        serde-gated downloads test (downloads/tests_contract.rs:236); the
+        true baseline is 99 and this pass added exactly one serde-gated
+        test (99→100) and one default-suite test (83→84).
 ```
