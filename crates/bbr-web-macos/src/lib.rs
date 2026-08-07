@@ -23,7 +23,13 @@ pub mod delegate;
 pub mod host;
 
 #[cfg(target_os = "macos")]
+pub mod new_window;
+
+#[cfg(target_os = "macos")]
 pub mod webview;
+
+#[cfg(target_os = "macos")]
+pub use new_window::{NewWindowContext, NewWindowCoordinator};
 
 #[cfg(target_os = "macos")]
 pub use webview::{EngineOptions, WebEngineWk};
