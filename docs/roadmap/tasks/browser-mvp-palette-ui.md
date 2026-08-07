@@ -220,7 +220,7 @@ the smallest environment, contract decision, or user input required next
 Outcome:       NativeAboveWeb migration implemented and all lane closeout
                gates green; ready for the orchestrator-owned commit/merge.
 Commits:       U1 implementation base `8054efe`; portal-kernel merge
-               `f08ca2c`; final migration commit is parent-owned.
+               `f08ca2c`; migration lane `86c0799`; main merge `a11c30a`.
 Functional evidence: green: isolated bbr-command benchmark p50 4.35 ms,
                p95 17.90 ms, max 18.40 ms; full `just verify`; both relevant
                Clippies; portal unit/contract 24/24; palette unit/contract
@@ -248,10 +248,9 @@ Roadmap/documentation updates: task packet, ARCHITECTURE, E2E_ARCHITECTURE,
 Open blockers and non-goals: none for U1; global scale feedback is a separate
                post-MVP slice. History provider (Phase 7), result grouping,
                and sidebar rail (U2) remain excluded.
-Worktree state: ready for commit in bbr-mvp-u1-palette on
-               parallel/mvp-u1-palette; structure bounded (`dispatch.rs` 482
-               + `dispatch_portal.rs` 99; app.rs 523, below its 524-line
-               kernel head), no dependency drift.
+Worktree state: integrated on main at `a11c30a`; structure bounded
+               (`dispatch.rs` 482 + `dispatch_portal.rs` 99; app.rs 523,
+               below its 524-line kernel head), no dependency drift.
 ```
 
 Planning/read-only, implementation, test execution, review, remediation,
