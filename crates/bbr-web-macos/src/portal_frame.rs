@@ -136,6 +136,16 @@ pub struct PortalNativeDiagnostics {
     /// not the portal. The deterministic hit-test evidence is
     /// [`PortalNativeDiagnostics::portal_owns_probe_point`].
     pub frontmost_at_probe_point: Option<i64>,
+    /// Measured owner classification of
+    /// [`PortalNativeDiagnostics::frontmost_at_probe_point`]: whether that
+    /// window number belongs to this process (one of this app's own
+    /// `NSWindow` numbers, membership-tested against `NSApplication.windows`
+    /// on the macOS host). `false` when no window is frontmost or when the
+    /// frontmost window belongs to another application (a foreign
+    /// always-on-top window or a system overlay covering the probe point).
+    /// Lets the testkit distinguish a provably foreign overlay from a
+    /// BBR-owned window without dropping the raw absolute query.
+    pub frontmost_at_probe_point_is_this_app: bool,
     /// The AppKit window number frontmost at the probe point strictly BELOW
     /// the portal window (`windowNumberAtPoint:belowWindowWithWindowNumber:`
     /// with the portal as the reference). Raw diagnostic only: with
@@ -272,6 +282,7 @@ mod tests {
             parent_window_number: 11,
             portal_window_number: 12,
             frontmost_at_probe_point: Some(12),
+            frontmost_at_probe_point_is_this_app: true,
             below_portal_at_probe_point: Some(11),
             portal_owns_probe_point: true,
             portal_is_key: false,
@@ -283,6 +294,7 @@ mod tests {
         assert!(diagnostics.nonactivating_panel);
         assert_eq!(diagnostics.frame, diagnostics.parent_content_rect);
         assert_eq!(diagnostics.frontmost_at_probe_point, Some(12));
+        assert!(diagnostics.frontmost_at_probe_point_is_this_app);
         assert!(diagnostics.portal_owns_probe_point);
         assert!(!diagnostics.portal_is_key);
         assert!(!diagnostics.portal_is_main);

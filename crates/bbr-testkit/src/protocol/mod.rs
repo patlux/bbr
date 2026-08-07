@@ -415,6 +415,7 @@ mod tests {
             parent_window_number: 11,
             portal_window_number: 12,
             frontmost_at_probe_point: Some(12),
+            frontmost_at_probe_point_is_this_app: true,
             below_portal_at_probe_point: Some(11),
             portal_owns_probe_point: true,
             portal_is_key: false,
@@ -435,6 +436,7 @@ mod tests {
                 "parent_window_number": 11,
                 "portal_window_number": 12,
                 "frontmost_at_probe_point": 12,
+                "frontmost_at_probe_point_is_this_app": true,
                 "below_portal_at_probe_point": 11,
                 "portal_owns_probe_point": true,
                 "portal_is_key": false,
@@ -457,6 +459,10 @@ mod tests {
         assert_eq!(closed.parent_window_number, 0);
         assert_eq!(closed.portal_window_number, 0);
         assert_eq!(closed.frontmost_at_probe_point, None);
+        assert!(
+            !closed.frontmost_at_probe_point_is_this_app,
+            "no frontmost window means nothing is this app's"
+        );
     }
 
     /// A snapshot that omits the portal field (an older harness client)

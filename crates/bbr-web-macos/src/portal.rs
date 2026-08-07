@@ -36,7 +36,7 @@
 use objc2::rc::Retained;
 use objc2::{class, define_class, msg_send, sel, DefinedClass, MainThreadMarker, MainThreadOnly};
 use objc2_app_kit::{
-    NSView, NSWindow, NSWindowAnimationBehavior, NSWindowDidMoveNotification,
+    NSApplication, NSView, NSWindow, NSWindowAnimationBehavior, NSWindowDidMoveNotification,
     NSWindowDidResizeNotification, NSWindowStyleMask,
 };
 use objc2_foundation::{NSNotification, NSNotificationCenter, NSObject, NSPoint};
@@ -306,7 +306,7 @@ impl NativePortal {
     }
 
     /// Narrow main-thread diagnostics (DESIGN §15 snapshot semantics).
-    pub fn diagnostics(&self, _mtm: MainThreadMarker) -> PortalNativeDiagnostics {
+    pub fn diagnostics(&self, mtm: MainThreadMarker) -> PortalNativeDiagnostics {
         let portal = self.portal_window.as_deref();
         let parent = self.parent_window.as_deref();
         let native_visible = portal.is_some_and(|window| window.isVisible());
@@ -329,7 +329,7 @@ impl NativePortal {
                 // `windowNumberAtPoint:belowWindowWithWindowNumber:` returns
                 // the frontmost window that would be hit by a mouseDown at
                 // the screen location (any application; 0 when no window).
-                NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(point, 0, _mtm)
+                NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(point, 0, mtm)
             })
             .map(|number| number as i64)
             .filter(|&number| number != 0);
@@ -342,7 +342,7 @@ impl NativePortal {
                 let below = NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(
                     point,
                     portal_number,
-                    _mtm,
+                    mtm,
                 );
                 (below != 0).then_some(below as i64)
             }
@@ -354,6 +354,20 @@ impl NativePortal {
         let portal_owns_probe_point = self.attached
             && native_visible
             && frame_matches_content(self.frame, self.parent_content_rect);
+        // Measured owner classification of the absolute frontmost answer:
+        // `NSApplication.windows` enumerates every window of this app
+        // (child windows and ordered-out windows included), so membership
+        // proves the number is BBR-owned. A foreign always-on-top window or
+        // a system overlay covering the probe point reports `false`. This
+        // makes the idle-portal test acceptance precise: a BBR-owned window
+        // other than the parent at the probe point is a regression, a
+        // foreign window is environment.
+        let frontmost_at_probe_point_is_this_app = frontmost_at_probe_point
+            .is_some_and(|number| {
+                let windows = NSApplication::sharedApplication(mtm).windows();
+                (0..windows.count())
+                    .any(|index| windows.objectAtIndex(index).windowNumber() as i64 == number)
+            });
         PortalNativeDiagnostics {
             child_attached: self.attached,
             visible: self.visible,
@@ -369,6 +383,7 @@ impl NativePortal {
                 .map(|window| window.windowNumber() as i64)
                 .unwrap_or(0),
             frontmost_at_probe_point,
+            frontmost_at_probe_point_is_this_app,
             below_portal_at_probe_point,
             portal_owns_probe_point,
             portal_is_key,

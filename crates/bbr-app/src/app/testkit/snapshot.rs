@@ -325,6 +325,8 @@ impl BbrApp {
             portal.parent_window_number = native.parent_window_number;
             portal.portal_window_number = native.portal_window_number;
             portal.frontmost_at_probe_point = native.frontmost_at_probe_point;
+            portal.frontmost_at_probe_point_is_this_app =
+                native.frontmost_at_probe_point_is_this_app;
             portal.below_portal_at_probe_point = native.below_portal_at_probe_point;
             portal.portal_owns_probe_point = native.portal_owns_probe_point;
             portal.portal_is_key = native.portal_is_key;
