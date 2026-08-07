@@ -94,3 +94,35 @@ e2e-perf-inject:
 e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-dense e2e-perf
 
 verify: fmt check test clippy roadmap script-tests
+
+# --- Packaging lane (L1): deterministic .app bundle (additive lane recipes) ---
+package_timeout := env_var_or_default("BBR_PACKAGE_TIMEOUT", "12m")
+package_smoke_timeout := env_var_or_default("BBR_PACKAGE_SMOKE_TIMEOUT", "90s")
+
+# Non-GUI contract tests for the packaging scripts (icon, bundle, smoke probe).
+package-test:
+    timeout --kill-after=10s {{test_timeout}} python3 -m unittest scripts/tests/test_packaging.py -v
+
+# Build the release binary once, then assemble + ad-hoc sign the .app bundle.
+package:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{package_timeout}} cargo build --release -p bbr
+    timeout --kill-after=10s {{package_timeout}} python3 scripts/package/build_app.py \
+        --binary target/release/bbr --output target/bbr-app/BBR.app
+
+# Repackage the same binary into a second tree and diff: byte-identical output
+# proves deterministic packaging.
+package-determinism:
+    timeout --kill-after=10s {{package_timeout}} python3 scripts/package/build_app.py \
+        --binary target/release/bbr --output target/bbr-app-verify/BBR.app
+    diff -r target/bbr-app/BBR.app target/bbr-app-verify/BBR.app
+    rm -rf target/bbr-app-verify
+
+# Bounded launch smoke: the packaged app must stay alive, then be terminated.
+# GUI-gated: it briefly opens a (non-focused, --bbr-hidden) GPUI window.
+package-smoke:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{package_smoke_timeout}} \
+        python3 scripts/package/smoke_launch.py --app target/bbr-app/BBR.app \
+        --observe 5 --stderr target/bbr-smoke/app-stderr.txt
+
+# Full packaging lane gate: unit contracts + bundle + determinism + real smoke.
+package-verify: package package-test package-determinism package-smoke
