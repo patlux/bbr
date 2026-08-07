@@ -29,6 +29,9 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 - [x] Multi-WebView session registry.
 - [x] Deterministic persistent ProfileId → WKWebsiteDataStore mapping.
 - [ ] Popup/new-window policy, including transient native sessions for [Link Preview / Peek](../tasks/link-preview-peek.md). *(Phase 8)*
-- [ ] Download, permission, authentication, and file-panel events. *(Phase 8)*
+- [ ] Complete the [find-in-page WebKit adapter and Portal bar](../tasks/find-in-page-portal-bar.md). *(Phase 8)*
+- [ ] Route [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md) without replacing WebKit-owned page menus. *(Phase 8)*
+- [ ] Complete the [downloads adapter and sidebar panel](../tasks/downloads-sidebar-panel.md), plus permission, authentication, and file-panel events. *(Phase 8)*
+- [ ] Complete [native Portal host hardening](../tasks/native-portal-hardening.md) for focus, multi-window/display lifecycle, and teardown. *(Phase 8/9)*
 - [ ] Web-process recovery. *(Phase 8)*
 - [ ] Per-view split geometry.
