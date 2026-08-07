@@ -114,8 +114,9 @@ fn split_geometry_keyed_panes_focus_resize_and_close() {
         let first_view = initial.active_web_view.expect("first native view");
         assert_eq!(first_view, WebViewId(1), "sequential ids: first view is 1");
 
-        // Geometry captured only after the AppKit frame clamp settles (see
-        // the sidebar suite for the same host quirk).
+        // Geometry captured only after the window frame settles (the
+        // harness window is never shown, but the settle contract outlives any
+        // late AppKit adjustment; see e2e_common).
         let settled = wait_for_window_settled(&mut client, deadline());
         let window_w = settled.window_size[0];
         assert!(window_w > 400.0, "spawned window is comfortably wide");
@@ -250,9 +251,19 @@ fn split_geometry_keyed_panes_focus_resize_and_close() {
             })
             .expect("resize window");
         flush_frame(&mut client);
-        let at_width = wait_for_window_size(&mut client, resized_w, deadline());
+        // The resize lands through the same late frame adjustment path as the
+        // spawned window (an AppKit frame change can land several frames
+        // after the resize request), so every expectation below derives from
+        // the fully settled window — never from a mid-adjustment snapshot.
+        // The settle contract requires consecutive unchanged window bounds
+        // AND native content geometry, which outlives any late change.
+        let settled_resized = wait_for_window_settled(&mut client, deadline());
+        let actual_w = settled_resized.window_size[0];
+        // The settled focused-pane rect is the authoritative post-resize
+        // content-height baseline (window bounds include the titlebar).
+        let resized_content_height = settled_resized.content_rect[3];
         let (primary_after, secondary_after) =
-            split_rects(sidebar, at_width.window_size[0], height);
+            split_rects(sidebar, actual_w, resized_content_height);
         let resized = wait_for_pane_rects(
             &mut client,
             &[
@@ -270,12 +281,6 @@ fn split_geometry_keyed_panes_focus_resize_and_close() {
             "the secondary pane was reframed independently"
         );
         assert_eq!(resized.engine_sessions, 2);
-        // `window_size` is the GPUI/AppKit window bounds while pane rects are
-        // native content-view geometry. A requested resize can change their
-        // one-point titlebar delta, so the post-resize pane itself is the
-        // authoritative content-height baseline (the sidebar suite follows
-        // the same native-slot rule rather than equating it with bounds).
-        let resized_content_height = resized.pane_rects[0].rect[3];
         assert!(resized_content_height > 0.0);
         assert_eq!(
             resized.pane_rects[1].rect[3], resized_content_height,
@@ -285,7 +290,7 @@ fn split_geometry_keyed_panes_focus_resize_and_close() {
         // CloseSplit returns to one full-width focused rect while both tabs
         // and warm sessions remain; no orphan geometry stays behind.
         client.send_ok(&dsl::close_split()).expect("close split");
-        since = wait_browser_change(&mut client, BrowserChange::SplitClosed, since);
+        let _ = wait_browser_change(&mut client, BrowserChange::SplitClosed, since);
         flush_frame(&mut client);
         let closed_w = resized.window_size[0];
         let closed = wait_for_content_rect(

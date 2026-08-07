@@ -349,61 +349,73 @@ pub fn wait_for_content_rect_x(
     }
 }
 
-/// Poll until the snapshot's window width reaches `expected` (macOS screen
-/// clamping and the titlebar make the height vary per resize, so only the
-/// width is asserted; the slot height for expectations derives from the
-/// observed window size minus the measured titlebar).
-pub fn wait_for_window_size(
-    client: &mut Client,
-    expected_width: f32,
-    deadline: Instant,
-) -> bbr_testkit::protocol::Snapshot {
-    loop {
-        let snapshot = client.snapshot().expect("window-size snapshot");
-        if (snapshot.window_size[0] - expected_width).abs() <= 0.5 {
-            return snapshot;
-        }
-        assert!(
-            Instant::now() < deadline,
-            "window width did not reach {expected_width}; last {:?}",
-            snapshot.window_size
-        );
-        std::thread::yield_now();
-    }
-}
+/// Consecutive frame-driven snapshots that must all show the same window
+/// bounds and native content geometry before [`wait_for_window_settled`]
+/// reports the window as settled. The harness window is never shown
+/// (`--bbr-hidden` → `show: false`), but AppKit can still adjust a spawned
+/// window frame shortly after creation (the adjustment lands via
+/// `windowDidResize`), so a single — or even two consecutive — matching
+/// observations can still precede a late geometry change. Requiring a few
+/// fully-unchanged width + height + content observations outlives any late
+/// adjustment while staying frame-driven, deadline-bounded, and sleep-free.
+const WINDOW_SETTLE_FRAMES: usize = 4;
 
-/// Poll until the window width stops changing (macOS clamps the spawned
-/// window frame shortly after `orderFront` — GPUI reports the requested
-/// bounds first, then the clamped frame lands via `windowDidResize`).
-/// Suites that assert absolute geometry (default sidebar width, native
-/// content rect) must wait for this settle first; snapshots taken mid-
-/// clamp observe transient widths and flake. Returns the settled snapshot.
+/// Poll until the window stops changing (the harness window is created with
+/// `show: false`, and any late AppKit frame adjustment lands via
+/// `windowDidResize`; GPUI reports the requested bounds first, then the
+/// adjusted frame). Suites that assert absolute geometry (default sidebar
+/// width, native content rect) must wait for this settle first; snapshots
+/// taken mid-adjustment observe transient widths and flake. Returns the
+/// settled snapshot.
 pub fn wait_for_window_settled(
     client: &mut Client,
     deadline: Instant,
 ) -> bbr_testkit::protocol::Snapshot {
-    let mut previous: Option<f32> = None;
+    let mut previous: Option<bbr_testkit::protocol::Snapshot> = None;
+    let mut stable = 0usize;
     loop {
         let snapshot = client.snapshot().expect("window-settle snapshot");
-        let width = snapshot.window_size[0];
-        if let Some(prev) = previous {
-            if (width - prev).abs() <= 0.5 {
-                return snapshot;
-            }
-        }
-        previous = Some(width);
         assert!(
             Instant::now() < deadline,
-            "window width did not settle; last {:?}",
+            "window did not settle after {WINDOW_SETTLE_FRAMES} unchanged frames; last {:?}",
             snapshot.window_size
         );
+        match &previous {
+            Some(prev) if window_geometry_close(prev, &snapshot) => {
+                stable += 1;
+                if stable >= WINDOW_SETTLE_FRAMES {
+                    return snapshot;
+                }
+            }
+            Some(_) => stable = 0,
+            None => {}
+        }
+        previous = Some(snapshot);
         // Ask GPUI to complete another production draw instead of sleeping:
-        // two consecutive frame-derived snapshots with the same width are
-        // the settle condition, while a later AppKit clamp remains observable.
+        // each frame-derived snapshot advances the settle contract, while a
+        // later AppKit frame adjustment stays observable and resets the count.
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
             .expect("flush while waiting for window settle");
     }
+}
+
+/// Two snapshots count as the same window geometry only when the window
+/// bounds (width AND height) and the native content rect are all unchanged
+/// within the half-point tolerance. A late AppKit frame adjustment changes
+/// both the bounds and the content rect, so an adjustment between frames is
+/// never mistaken for a settled window.
+fn window_geometry_close(
+    a: &bbr_testkit::protocol::Snapshot,
+    b: &bbr_testkit::protocol::Snapshot,
+) -> bool {
+    let close = |x: f32, y: f32| (x - y).abs() <= 0.5;
+    close(a.window_size[0], b.window_size[0])
+        && close(a.window_size[1], b.window_size[1])
+        && close(a.content_rect[0], b.content_rect[0])
+        && close(a.content_rect[1], b.content_rect[1])
+        && close(a.content_rect[2], b.content_rect[2])
+        && close(a.content_rect[3], b.content_rect[3])
 }
 
 /// Poll until a SINGLE snapshot shows the window at `target_width` with the

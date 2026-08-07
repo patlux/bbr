@@ -229,7 +229,7 @@ fn cmd_enter_opens_exactly_one_new_tab_and_focuses_it() {
         assert_eq!(after.active_tab_index, Some(before_tabs));
         assert_eq!(after.command_bar_text, page_one);
         if after.title.as_deref() != Some(PAGE_ONE_TITLE) {
-            since = wait_title(&mut client, new_view, PAGE_ONE_TITLE, since);
+            let _ = wait_title(&mut client, new_view, PAGE_ONE_TITLE, since);
         }
         // The opened tab is a real page: its deterministic fixture title
         // presents on the fresh session.
