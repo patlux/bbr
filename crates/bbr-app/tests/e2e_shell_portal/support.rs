@@ -213,6 +213,50 @@ pub(super) fn wait_for_frontmost_evidence(client: &mut Client, deadline: Instant
     }
 }
 
+/// Poll the real AppKit Window Server until the shown browser parent owns the
+/// center of its web-content area while the portal is idle. This is the
+/// native-boundary complement to [`assert_host_closed`]: a logically closed
+/// snapshot alone could miss a stale on-screen child window, whereas the raw
+/// window-number query proves the hidden portal neither occludes nor receives
+/// pointer events at the probe point.
+pub(super) fn wait_for_idle_parent_ownership(client: &mut Client, deadline: Instant) -> Snapshot {
+    loop {
+        if let Err(error) = client.send_ok(&dsl::activate_app()) {
+            assert!(
+                Instant::now() < deadline,
+                "activate app did not recover while checking idle portal: {error}"
+            );
+            std::thread::yield_now();
+            continue;
+        }
+        let snapshot = client.snapshot().expect("idle portal ownership snapshot");
+        assert_host_closed(&snapshot);
+        let p = &snapshot.portal;
+        assert!(
+            !p.portal_owns_probe_point,
+            "a closed portal must never own hit testing over web content"
+        );
+        assert_ne!(
+            p.frontmost_at_probe_point,
+            Some(p.portal_window_number),
+            "the hidden portal window must never be frontmost at the content probe"
+        );
+        if p.frontmost_at_probe_point == Some(p.parent_window_number) {
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "shown browser parent did not regain Window Server ownership while portal was idle: \
+             frontmost {:?}, parent {}, portal {}, native_visible {}",
+            p.frontmost_at_probe_point,
+            p.parent_window_number,
+            p.portal_window_number,
+            p.native_visible
+        );
+        std::thread::yield_now();
+    }
+}
+
 /// Assert that browser ownership and the active session identity are
 /// structurally untouched by a portal mutation.
 pub(super) fn assert_ownership_preserved(snapshot: &Snapshot, baseline: &Snapshot) {

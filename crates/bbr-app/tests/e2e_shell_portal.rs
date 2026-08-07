@@ -30,6 +30,96 @@ mod support;
 use bbr_testkit::protocol::dsl;
 use e2e_common::*;
 use support::*;
+
+/// Regression for Patrick's intermittent manual report: while the portal is
+/// idle, its retained native child window must remain ordered out and must not
+/// intercept the content point. Three independent cold app runs open a second
+/// real WKWebView, navigate it, and repeatedly switch between both sessions;
+/// every presentation is corroborated by WebKit title events plus an AppKit
+/// Window Server hit-test that names the browser parent, never the portal.
+#[test]
+#[ignore]
+fn idle_portal_never_occludes_or_intercepts_repeated_web_presentations() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+
+    let (_fixtures, page_one, page_two) = fixtures();
+    for cold_run in 0..3 {
+        let tag = format!("portal-idle-{cold_run}");
+        let (mut harness, socket, token) = spawn_harness_shown(&tag, &page_one);
+
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let mut client = connect(&socket);
+            client.hello(&token).expect("hello");
+            let replay = client.attach(None).expect("attach");
+            let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+
+            let initial = wait_for_window_settled(&mut client, deadline());
+            let first_view = initial.active_web_view.expect("first native view");
+            if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {
+                since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
+            }
+            let idle = wait_for_idle_parent_ownership(&mut client, deadline());
+            assert_eq!(idle.active_web_view, Some(first_view));
+            assert_eq!(idle.engine_sessions, 1);
+            assert!(idle.web_view_hosted);
+
+            let second_view = open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
+            assert_ne!(second_view, first_view);
+            let opened = wait_for_idle_parent_ownership(&mut client, deadline());
+            assert_eq!(opened.active_web_view, Some(second_view));
+            assert_eq!(opened.engine_sessions, 2);
+            assert_eq!(opened.title.as_deref(), Some(PAGE_TWO_TITLE));
+
+            // Navigate the active second view through the production engine
+            // path; the title event proves WebKit received and presented it
+            // while the idle portal stayed out of the event path.
+            client
+                .send_ok(&dsl::navigate(&page_one))
+                .expect("navigate second view");
+            since = wait_title(&mut client, second_view, PAGE_ONE_TITLE, since);
+            let navigated = wait_for_idle_parent_ownership(&mut client, deadline());
+            assert_eq!(navigated.active_web_view, Some(second_view));
+            assert_eq!(navigated.title.as_deref(), Some(PAGE_ONE_TITLE));
+
+            for cycle in 0..4 {
+                client
+                    .send_ok(&dsl::select_tab(0))
+                    .expect("select first tab");
+                since = wait_browser_change(
+                    &mut client,
+                    BrowserChange::TabSelected { index: 0 },
+                    since,
+                );
+                let first = wait_for_idle_parent_ownership(&mut client, deadline());
+                assert_eq!(first.active_web_view, Some(first_view), "cycle {cycle}");
+                assert_eq!(first.engine_sessions, 2);
+
+                client
+                    .send_ok(&dsl::select_tab(1))
+                    .expect("select second tab");
+                since = wait_browser_change(
+                    &mut client,
+                    BrowserChange::TabSelected { index: 1 },
+                    since,
+                );
+                let second = wait_for_idle_parent_ownership(&mut client, deadline());
+                assert_eq!(second.active_web_view, Some(second_view), "cycle {cycle}");
+                assert_eq!(second.engine_sessions, 2);
+            }
+
+            client.quit().expect("quit");
+            let status =
+                wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+            assert!(status.success(), "app exit: {status}");
+        }));
+
+        finish(result, &mut harness, &socket, &token);
+    }
+}
+
 /// The host is created hidden at window construction and the production
 /// probe opens above a real WKWebView: `NativeAboveWeb` state, child
 /// attachment, exact frame sync, AppKit frontmost ownership at the probe

@@ -669,6 +669,18 @@ session. This scenario also regresses the GPUI double-lease failure that would
 occur if a portal draw tried to read `BbrApp` while the gateway still held its
 mutable update lease.
 
+Patrick's intermittent manual report from the U1 adaptation worktree added a
+separate idle-host regression before packaging. The shown real-app scenario
+`idle_portal_never_occludes_or_intercepts_repeated_web_presentations` performs
+three independent cold launches. Each launch opens a second real WKWebView,
+navigates it, and switches between both live sessions four times. Every step
+requires the portal's real AppKit window to remain ordered out, the deterministic
+portal hit-test ownership flag to remain false, and a raw Window Server query at
+the content probe to name the browser parent rather than the portal. WebKit
+title events and stable WebView/session identities corroborate content
+presentation. This closes the gap where typed logical visibility alone could
+miss a stale native child window that still occluded or intercepted content.
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature
