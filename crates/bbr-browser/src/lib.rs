@@ -61,6 +61,7 @@ mod controller_event_tests;
 mod controller_pane_tests;
 #[cfg(test)]
 mod controller_tests;
+#[cfg(test)]
 mod hydration_tests;
 #[cfg(test)]
 mod organization_tests;
