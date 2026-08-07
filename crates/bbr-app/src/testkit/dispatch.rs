@@ -339,6 +339,70 @@ pub(crate) fn dispatch(
         .map(Response::Snapshot)
         .unwrap_or_else(err_response),
 
+        // Portal probe (task packet `native-portal-host`): typed requests
+        // through the general Portal API production seam — the same
+        // `portal_present` / `portal_dismiss` / `portal_outside_dismiss`
+        // methods a real chrome surface (or the portal backdrop's pointer
+        // press) drives. The probe content is deliberately not U1 palette
+        // content; it only proves the native host infrastructure. Each arm
+        // flushes the portal window frame afterwards so the hidden harness
+        // (no display link) actually composes the probe surface.
+        Request::PortalOpenProbe => with_app(window, app, cx, |view, window, cx| {
+            view.portal_present(crate::portal::probe::probe_request(), window, cx);
+            view.portal_flush_frame(cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
+        Request::PortalCloseProbe => with_app(window, app, cx, |view, _window, cx| {
+            let dismissed = view.portal_dismiss(cx);
+            view.portal_flush_frame(cx);
+            if dismissed {
+                Response::Ok
+            } else {
+                Response::Error(Error::new(
+                    "portal_inactive",
+                    "no active portal presentation",
+                ))
+            }
+        })
+        .unwrap_or_else(err_response),
+
+        // Drives the exact outside-dismiss production method the backdrop
+        // pointer-press listener calls (DESIGN §13 one-outside-pointer-
+        // action).
+        Request::PortalOutsideDismiss => with_app(window, app, cx, |view, _window, cx| {
+            let dismissed = view.portal_outside_dismiss(cx);
+            view.portal_flush_frame(cx);
+            if dismissed {
+                Response::Ok
+            } else {
+                Response::Error(Error::new(
+                    "portal_inactive",
+                    "outside press dismissed nothing",
+                ))
+            }
+        })
+        .unwrap_or_else(err_response),
+
+        // Deterministic teardown of the one native portal host (task packet
+        // teardown evidence): the bridge is dropped and the portal window
+        // closed; the snapshot afterwards reports the empty/closed host.
+        Request::PortalTeardown => with_app(window, app, cx, |view, _window, _cx| {
+            view.portal_teardown();
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
+        // Bring the app to the foreground (testkit-only; the shown-harness
+        // portal frontmost test). Activates the browser window, never the
+        // non-activating portal.
+        Request::ActivateApp => with_app(window, app, cx, |_view, _window, cx| {
+            cx.activate(true);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
         Request::SetWindowSize { width, height } => {
             with_app(window, app, cx, |_view, window, _cx| {
                 window.resize(size(px(width), px(height)));
@@ -365,13 +429,22 @@ pub(crate) fn dispatch(
         // geometry callbacks fire in the hidden harness (no display link).
         // `AnyWindowHandle::update` borrows only the window, leaving the root
         // entity free for the draw's render, exactly like the keystroke arm.
-        Request::FlushFrame => (**window)
-            .update(cx, |_root, window, cx| {
-                let app: &mut App = cx;
-                let _clear = window.draw(app);
-            })
-            .map(|_| Response::Ok)
-            .unwrap_or_else(err_response),
+        Request::FlushFrame => {
+            let main = (**window)
+                .update(cx, |_root, window, cx| {
+                    let app: &mut App = cx;
+                    let _clear = window.draw(app);
+                })
+                .map(|_| Response::Ok)
+                .unwrap_or_else(err_response);
+            // The native portal window is a separate GPUI window; the hidden
+            // harness has no display link, so its probe surface needs the
+            // same explicit draw to stay composited.
+            let _ = with_app(window, app, cx, |view, _w, cx| {
+                view.portal_flush_frame(cx);
+            });
+            main
+        }
 
         Request::Ping => Response::Ok,
 

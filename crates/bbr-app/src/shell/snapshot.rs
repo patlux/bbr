@@ -108,6 +108,10 @@ pub struct TestSnapshot {
     /// contract evidence: pane ids and their real WKWebView frames).
     pub pane_rects: Vec<bbr_testkit::protocol::PaneRectSnapshot>,
     pub window_size: [f32; 2],
+    /// Typed diagnostics of the one native portal host (task packet
+    /// `native-portal-host`; DESIGN.md §15): the active presentation and its
+    /// native attachment/frame/visibility evidence.
+    pub portal: bbr_testkit::protocol::PortalSnapshot,
 }
 
 /// The stable `bbr-*` ids present in the current shell render (DESIGN.md

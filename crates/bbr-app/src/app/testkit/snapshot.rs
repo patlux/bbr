@@ -225,7 +225,40 @@ impl BbrApp {
             pane_layout,
             pane_rects: pane_rect_snapshots,
             window_size: [window_width, window_height],
+            portal: self.portal_snapshot(),
         }
+    }
+
+    /// Typed diagnostics of the one native portal host (task packet
+    /// `native-portal-host`, DESIGN.md §15): the active presentation's
+    /// logical state from the portal state + probe surface, and the native
+    /// attachment/frame/visibility evidence from the bridge. Exposes only
+    /// the active presentation; the closed host reports the empty default.
+    fn portal_snapshot(&self) -> bbr_testkit::protocol::PortalSnapshot {
+        let probe = self.portal_probe.borrow();
+        let mut portal = bbr_testkit::protocol::PortalSnapshot {
+            presentation: probe.presentation().map(|id| id.0),
+            host: probe.host().map(|host| host.label().to_string()),
+            visible: probe.is_visible(),
+            rect: probe.resolved_rect().map(|r| [r.x, r.y, r.width, r.height]),
+            ids: probe.ids(),
+            ..Default::default()
+        };
+        #[cfg(target_os = "macos")]
+        if let Some(native) = self.native_portal_diagnostics() {
+            portal.child_attached = native.child_attached;
+            portal.native_visible = native.native_visible;
+            portal.frame_synced = native.synchronized;
+            portal.nonactivating_panel = native.nonactivating_panel;
+            portal.parent_window_number = native.parent_window_number;
+            portal.portal_window_number = native.portal_window_number;
+            portal.frontmost_at_probe_point = native.frontmost_at_probe_point;
+            portal.below_portal_at_probe_point = native.below_portal_at_probe_point;
+            portal.portal_owns_probe_point = native.portal_owns_probe_point;
+            portal.portal_is_key = native.portal_is_key;
+            portal.portal_is_main = native.portal_is_main;
+        }
+        portal
     }
 
     /// The typed semantic tree of the current render (DESIGN.md §15 /
