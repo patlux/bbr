@@ -43,6 +43,7 @@ mod error;
 pub(crate) mod fake;
 #[cfg(test)]
 pub(crate) mod harness;
+mod hydration;
 mod nav;
 mod outcome;
 mod pane;
@@ -59,10 +60,17 @@ mod controller_event_tests;
 mod controller_pane_tests;
 #[cfg(test)]
 mod controller_tests;
+#[cfg(test)]
+mod hydration_tests;
 
 pub use bbr_domain::{ProfileHue, SpaceId, TabLifecycle};
 pub use controller::BrowserController;
 pub use error::ControllerError;
+pub use hydration::{
+    HydrationError, HydrationPolicy, IntentClosedTab, IntentProfile, IntentSpace, IntentSplit,
+    IntentTab, RestoreIntent, RestorePlan, RestoreTarget, RestoredClosedTab, RestoredProfile,
+    RestoredSpace, RestoredSplit, RestoredTab, SessionRequest,
+};
 pub use nav::NavState;
 pub use outcome::ControllerEvent;
 pub use pane::PaneLayout;
