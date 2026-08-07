@@ -1,0 +1,6 @@
+#!/bin/sh
+# Route xcrun to the real Apple binary. The nix devshell closure carries
+# xcbuild's fake xcrun, which cannot execute the Xcode 26 Metal toolchain
+# stub; gpui_macos' build script compiles .metal shaders through xcrun and
+# must reach the system toolchain selected via DEVELOPER_DIR.
+exec /usr/bin/xcrun "$@"
