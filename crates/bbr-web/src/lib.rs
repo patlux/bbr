@@ -23,9 +23,12 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
+pub mod auth_challenges;
+pub mod file_panels;
 pub mod find_in_page;
 pub mod new_window;
 pub mod permissions;
+pub mod site_settings;
 pub mod web_errors;
 pub use new_window::{
     decide, NewWindowDecision, NewWindowDisposition, NewWindowFeatures, NewWindowOutcome,
