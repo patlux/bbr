@@ -49,7 +49,7 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 geliefert/wartet auf Integration · �
 |---|---|---|---|---|---|
 | D0 | Delivery-Smoke (Dummy-Run beweist followUp) | ✅ | `bbr-d0-session-delivery-smoke-msiyp4bv-axc79v` | — | `DELIVERY_OK` automatisch zugestellt, 1.6 s |
 | H0 | Tooling-Hotfix auf `main` (xcrun-Shim, flake-Hook, justfile Xcode 26.2, rusqlite `=0.38.0`, Lint-Fixes) | ✅ | — | main | Commits `b9bad16`+`c4ce31b`+`a50bb92`+`574750b`; **Lane-Base = `574750b`** |
-| L0 | Anchor-Finish (kritischer Pfad) | 🟦 | `bbr-mvp-l0-anchor-finish-msiyvhmf-fb9qjp` | `main` · Anchor-Merge `45107a3497bc12603f497ed964d39c37c083a940` | integriert; Quit-Response/Shutdown-Race aus post-merge Dense-Gate behoben, targeted + Dense grün; finaler kanonischer E2E-Recheck ausstehend |
+| L0 | Anchor-Finish (kritischer Pfad) | ✅ | `bbr-mvp-l0-anchor-finish-msiyvhmf-fb9qjp` | `main` · Post-Anchor-SHA `f89a4799999d1d43f785da7c767a1df68759ee0b` | Anchor-Merge `45107a3` + Quit-Race-Remediation `f89a479`; verify/Clippy/vendor/Dense/kanonisches E2E grün |
 | L1 | Packaging `.app` (Bundle, Plist, ad-hoc-Sign, Launch-Smoke) | 🟨 | `bbr-mvp-l1-packaging-msiyvhmh-43x8cf` | `/Users/patwoz/dev/Personal/macos/bbr-mvp-l1-packaging` · `parallel/mvp-l1-packaging` | `READY_FOR_ORCHESTRATOR`; `just package-verify` grün, 12 Tests, deterministisches ad-hoc-signiertes Bundle + 5.1-s Launch-Smoke; Integration zuletzt |
 | L2 | `bbr-web` new-window-Contract (`target=_blank`/`window.open`) | 🟨 | `bbr-mvp-l2-new-window-contract-msiyvhmj-uqwhk5` | `/Users/patwoz/dev/Personal/macos/bbr-mvp-l2-new-window` · `parallel/mvp-l2-new-window` | `READY_FOR_ORCHESTRATOR`; 19 neue Contract-Tests + serde/all-crate/clippy/fmt grün; 6 erlaubte Pfade, keine Dependency-Änderung; Integration nach U2 |
 | L3 | Persistence-Hydration portable (chrome-first, sichtbare Sessions) | 🟨 | `bbr-mvp-l3-persistence-hydration-msiyvhmk-7oogla` + `bbr-mvp-l3-structure-remediation-msj0gjba-0m06xf` | `/Users/patwoz/dev/Personal/macos/bbr-mvp-l3-hydration` · `parallel/mvp-l3-hydration` | `READY_FOR_ORCHESTRATOR`; 22 Hydration-Tests, Workspace/Fmt/Clippy/Roadmap grün; Struktur-Split max. 372 L; Integration nach L7 |
@@ -91,8 +91,8 @@ Nach letzter Integration: einmal `just e2e`, frische `.app` + manueller Smoke.
 - [ ] Docs-Fakten korrigiert (Xcode 26.2-Pfad, MSRV-Claim, Task-Packet-Basis)
 - [ ] einmal `just e2e` komplett grün
 - [ ] Task-Packet-Checkboxen aktualisiert
-- [ ] Commit-Gruppen (Orchestrator) + Merge in main; Integrations-SHA: `________`
-- [ ] Housekeeping: alter `pi-tmux-resume`-Wächter (Writer `019fdb6b`) gestoppt
+- [x] Commit-Gruppen (Orchestrator) + Merge in main; Post-Anchor-Integrations-SHA: `f89a4799999d1d43f785da7c767a1df68759ee0b` *(Anchor-Merge `45107a3497bc12603f497ed964d39c37c083a940`, Integrationsremediation `f89a479`)*
+- [x] Housekeeping: alter `pi-tmux-resume`-Wächter (Writer `019fdb6b`) gestoppt / nicht mehr vorhanden (Prozess- und tmux-Prüfung)
 
 ### L1 — Packaging
 - [x] `just`-Recipe: Bundle-Struktur + Info.plist + Icon-Platzhalter
@@ -187,7 +187,9 @@ Nach letzter Integration: einmal `just e2e`, frische `.app` + manueller Smoke.
 | Lane-Delivery | 🟨 L3 nach Orchestrator-Strukturgate geliefert (`READY_FOR_ORCHESTRATOR`): Implementation in 264/136/236-L-Module, Tests in 23/290/372/185/293-L-Module gesplittet; öffentliche API und exakt 22 Tests erhalten; 97 `bbr-browser`-Tests, Workspace-Test/Check, Clippy `-D warnings`, Fmt und Roadmap-Validator grün; keine Dependencies; Integration hinter L7 |
 | Integration | L0 in vier logischen Gruppen committed und seriell nach `main` gemergt: `45107a3497bc12603f497ed964d39c37c083a940`; erwartete H0-Konflikte in `Cargo.lock`/`flake.nix` aus gemergtem Manifest bzw. xcrun-Invariante gelöst |
 | Integration-Gate | L0 post-merge: `just verify` ✅, testkit-Clippy ✅, vendored gpui-component 110/110 ✅; kanonisches `just e2e` bis Dense grün, dann Dense-Keyboard `Quit` mit `failed to fill whole buffer`/EOF ❌; kein Blind-Retry, Artefakt-/Prozessdiagnose gestartet |
-| Integration-Remediation | Root Cause: `Request::Quit` rief `cx.quit()` vor dem Gateway-Writer-Flush von `Response::Ok` auf; unter Load ~52 schloss der Prozess den Socket zuerst. Zweiphasen-Shutdown implementiert: Ok-Frame flush+Ack → `Quitting` → `cx.quit()`; Regression beweist Client-Antwort während blockiertem Shutdown-Handler. 19 Testkit-Tests, Clippy, `just verify`, testkit-Clippy und beide Dense-Suiten grün; finaler kanonischer E2E folgt |
+| Integration-Remediation | Root Cause: `Request::Quit` rief `cx.quit()` vor dem Gateway-Writer-Flush von `Response::Ok` auf; unter Load ~52 schloss der Prozess den Socket zuerst. Zweiphasen-Shutdown implementiert: Ok-Frame flush+Ack → `Quitting` → `cx.quit()`; Regression beweist Client-Antwort während blockiertem Shutdown-Handler. 19 Testkit-Tests, Clippy, `just verify`, testkit-Clippy und beide Dense-Suiten grün |
+| Integration-Gate | ✅ L0 final: kanonisches `just e2e` auf sauberem SHA `f89a4799999d1d43f785da7c767a1df68759ee0b` vollständig grün; Post-Anchor-SHA für U1/U2 festgeschrieben |
+| Housekeeping | ✅ Alter `pi-tmux-resume`-Wächter für Writer `019fdb6b` nicht mehr vorhanden; Prozess- und BBR-tmux-Pane-Prüfung ohne Treffer |
 | 15:09 | Alter Writer-Wächter (Session `019fdb6b`, Pane bbr:1.0) gestoppt — kein Doppel-Writer-Risiko |
 | 15:09 | ✅ Handoff: sol-Orchestrator gestartet — tmux `tws_personal_macos_bbr-orchestrator`, Pi-Session `019fdc57-7afb-7f81`, gpt-5.6-sol:high. Ab jetzt einziger Orchestrator und Ledger-Owner; die fable-Session (`019fdba4`) zieht sich zurück |
 
