@@ -48,7 +48,7 @@ animated, colorful surface on screen.
 | Shell | floating pills, candy gradients, auto-hidden toolbar | adaptive per-site tint, glass blur, playful radius | uniform translucent toolbar, ambient page color | ad-hoc dark placeholder chrome | flat machined chassis, hairline rules, constant luminance across sites |
 | Color | saturated gradient accents | site-adaptive pastels | ambient translucency | single hardcoded grays | monochrome + one Phosphor accent + semantic indicator hues |
 | Tabs | large rounded chips | large rounded cards | compact tabs with favicon | none (text placeholder) | compact rule-based rows, accent rail for selection |
-| Geometry | organic, large radii | organic | respectable | none | 4 pt grid, radii 4–8 px, square chips, 3 px rails |
+| Geometry | organic, large radii | organic | respectable | none | 4 pt grid, radii 6–10 px, square chips, 3 px rails |
 | Motion | playful spring choreography | animated everywhere | subtle | none | commit-first snaps; animation only on transient indication |
 | Content relation | sidebar overlays page | sidebar overlays page | toolbar merges | separate | sidebar is a physical rail; content is never overlapped or sampled |
 
@@ -196,17 +196,19 @@ tint, is the primary selection cue; the tint is confirmation.
   `SF Mono` for URLs, ids, and keystrokes. No custom fonts in v1.
 - **Numerals:** tabular figures (`tnum`) for counts, timestamps, and any
   right-aligned tabular data.
-- **Size steps:** 10, 11, 12, 13, 15, 22 pt. Bold steps: 400/500/600/700.
+- **Size steps:** 11, 12, 13, 14, 16, 24 pt. Bold steps: 400/500/600/700.
+  Calibrated from the preserved S1 reference (§8): normal-density title lands
+  at 14 pt so the effective tab/space text reads 14–15 pt.
 
 | Role | Size | Weight | Density S | N | XL | Notes |
 |---|---|---|---|---|---|---|
-| `type:display` | 22 | 600 | − | 22 | 24 | empty-state headline only, leading 1.2 |
-| `type:title` | 13 | 500 | 11 | 13 | 15 | tab title, space name; leading 1.2 |
-| `type:label` | 12 | 500 | 11 | 12 | 13 | buttons, nav labels, badges' base |
-| `type:meta` | 11 | 400 | 10 | 11 | 12 | status, counts, timestamps, `tnum` |
-| `type:mono` | 12 | 400 | 11 | 12 | 13 | URL in location mode and results |
-| `type:key` | 11 | 500 | 10 | 11 | 12 | shortcut hints, `SF Mono` |
-| `type:badge` | 10 | 600 | 10 | 10 | 11 | section labels "Pinned"/"Tabs", uppercase, tracking +0.06em |
+| `type:display` | 24 | 600 | − | 24 | 26 | empty-state headline only, leading 1.2 |
+| `type:title` | 14 | 500 | 12 | 14 | 16 | tab title, space name; leading 1.2 |
+| `type:label` | 13 | 500 | 12 | 13 | 14 | buttons, nav labels, badges' base |
+| `type:meta` | 12 | 400 | 11 | 12 | 13 | status, counts, timestamps, `tnum` |
+| `type:mono` | 13 | 400 | 12 | 13 | 14 | URL in location mode and results |
+| `type:key` | 12 | 500 | 11 | 12 | 13 | shortcut hints, `SF Mono` |
+| `type:badge` | 11 | 600 | 11 | 11 | 12 | section labels "Pinned"/"Tabs", uppercase, tracking +0.06em |
 
 ### Truncation contract
 
@@ -217,7 +219,7 @@ tint, is the primary selection cue; the tint is confirmation.
 - **URLs (location mode, command results):** *mid-ellipsis* — always keep
   `scheme://host` and the final path segment; ellipsize the middle:
   `https://github.com/…/pull/1234`. Host is never truncated.
-- **Favicon tile:** never truncates (fixed 16 px, §7.2).
+- **Favicon tile:** never truncates (fixed 18 pt; S 16 / XL 20, §7.2).
 - **Dense mode:** identical truncation; nothing wraps to a second line, ever.
   Row heights stay uniform so scroll math and accessibility sizing stay
   deterministic (§11.6).
@@ -233,24 +235,29 @@ tint, is the primary selection cue; the tint is confirmation.
 
 | Token | Value | Used for |
 |---|---|---|
-| `radius:sm` | 4 | small tile, profile chip, S-density rows |
-| `radius:md` | 6 | N/XL row tiles, buttons |
-| `radius:lg` | 8 | command field, N palette, crash panel |
-| `radius:xl` | 12 | XL palette |
+| `radius:sm` | 6 | small tile, profile chip, S-density rows, S favorites tiles |
+| `radius:md` | 8 | N/XL row tiles, buttons |
+| `radius:lg` | 10 | command field, N palette, crash panel |
+| `radius:xl` | 14 | XL palette |
 | `radius:full` | 50% | dots, avatars |
 
-Rule: chrome radii stay in 4–8 px; no giant rounded sheets over content and no
-`radius` on scrollable list backgrounds. Inset row surfaces (§10.2/§10.3) and
-footer identity chips (§11.3) are bounded rounded rectangles from this scale —
-never fully circular pills around text. The S1 pass may raise these values with
-the rest of the scale, but not the language.
+Rule: chrome radii stay in 6–10 px; `radius:xl` (14) is reserved for the XL
+palette sheet. No giant rounded sheets over content and no `radius` on
+scrollable list backgrounds. Inset row surfaces (§10.2–§10.4) and footer
+identity chips (§11.3) are bounded rounded rectangles from this scale —
+never fully circular pills around text. The S1 calibration raised these values
+with the rest of the scale but keeps the language.
 
-- **Sidebar widths:** `win:sidebar.S` 216, `.N` 260, `.XL` 320 pt; adjustable
-  between 200 and 360 pt via a 4 px drag hairline (cursor `ew-resize`),
+- **Sidebar widths:** `win:sidebar.S` 232, `.N` 280, `.XL` 340 pt; adjustable
+  between 200 and 400 pt via a 4 px drag hairline (cursor `ew-resize`),
   minimum width enforced; collapse (Cmd-B) yields 0 with the glass full-bleed
-  (§11.4). In windows too narrow to host the requested width plus the §13
-  content floor, the rail yields below the minimum so the native slot never
-  goes zero or negative.
+  (§11.4). **Native-content floor stays strictly positive:** the native slot
+  keeps ≥ 64 pt (`CONTENT_MIN`, 2 × `sp:7`) for every window that can host
+  the floor — the effective rail width is `min(requested, window_width − 64)`.
+  At the shipped 1080 pt window the 280 pt normal rail leaves 800 pt of
+  glass; in windows too narrow to host the requested width plus the §13
+  content floor, the rail yields below the minimum so the native slot stays
+  strictly positive (never zero or negative).
 
 ## 6. Motion
 
@@ -295,8 +302,10 @@ not listed there is `dur:instant`.
   stroke joins rounded, glyph corners squared; no filled-duotone blocks, no
   gradients. Originals drawn for BBR; luminance-contrast matched to
   `ink.secondary`.
-- **Sizes:** `icon:s` 14, `icon:m` 16, `icon:l` 20. Hover affordances and
-  close buttons: hit area ≥ 24 pt at N/XL, ≥ 20 pt at S, glyph optically
+- **Sizes:** `icon:s` 16, `icon:m` 18, `icon:l` 20 — row glyphs pick the
+  owning density's size (§8: S 16 / N 18 / XL 20). Hover affordances and
+  close buttons: hit area ≥ `density:hit-min` (S 28 / N 32 / XL 40), close
+  controls ≥ `density:hit-min.close` (S 24 / N 28 / XL 32), glyph optically
   centered in the hit square.
 - **Fallback:** every icon context has a text alternative (label, tooltip, or
   aria-label). A missing functional glyph falls back to a 2-character
@@ -310,7 +319,7 @@ not listed there is `dur:instant`.
 When a tab has no favicon yet, render a deterministic monogram tile instead of
 an empty box:
 
-- 16 pt (S: 14) square, `radius:sm`, letter = first character of the
+- 18 pt (S: 16, XL: 20) square, `radius:sm`, letter = first character of the
   registrable hostname (uppercase, `type:badge` size), on a desaturated
   slate-hue ramp derived from FNV-1a(hostname) mod 6.
 - The slate ramp is separate from accent/status/profile hues so favicon tiles
@@ -325,34 +334,38 @@ Three fixed densities, chosen by the shell from tab-collection size (and
 user override later; open decision). Geometry is per-density; **states and
 semantics are identical across densities.**
 
-**Queued post-MVP token revision — calibrated user reference:** Patrick's live
-U1 review found the complete chrome scale clearly too small. The first bounded
-slice after browser-MVP closeout is the
-[global UI scale and density pass](docs/roadmap/tasks/global-ui-scale-density.md).
-Its target feel is calibrated from the preserved 2× references
-`/Users/patwoz/dev/Personal/macos/bbr-design-references/arc-sidebar-full.png`
-and `arc-tab-row-hover.png`, not from a blanket percentage multiplier: normal
-rows approximately 36–40 pt, effective text approximately 14–15 pt,
+**S1 scale pass — settled from the preserved user reference (2026-08-08).**
+Patrick's live U1 review found the complete chrome scale clearly too small,
+and the supplied 2× references
+(`/Users/patwoz/dev/Personal/macos/bbr-design-references/arc-sidebar-full.png`
+and `arc-tab-row-hover.png`) calibrated the target feel: normal rows
+approximately 36–40 pt, effective text approximately 14–15 pt,
 favicons/glyphs approximately 18–20 pt, generous section spacing, large rounded
 Favorite tiles, and inset rounded hover/active row surfaces with a trailing
-close control. BBR keeps its own Chassis & Glass materials, color discipline,
-semantics, and native-web boundary; the references calibrate scale, rhythm, and
-row affordance rather than branding. The values below remain authoritative
-until that slice settles the complete S/N/XL replacement table. Dense-500
-windowing, semantic ids, interaction behavior, and performance budgets do not
-change.
+close control. The table below is the **authoritative scale**, decided from
+that reference — not a provisional percentage and not a candidate. The
+[global UI scale and density pass](docs/roadmap/tasks/global-ui-scale-density.md)
+applies it verbatim through the central `Theme`/`TypeScale`/`Spacing`/`Density`
+seams. BBR keeps its own Chassis & Glass materials, color discipline,
+semantics, and native-web boundary; the references calibrated scale, rhythm,
+and row affordance only. Dense-500 bounded-window rendering, scroll math,
+semantic ids, interaction behavior, and every performance budget/sample count
+are unchanged by this table (§15); the geometry below only raises token values.
 
 | Token | S (small) | N (normal) | X (very large) |
 |---|---|---|---|
-| `density:row` | 28 | 32 | 40 |
-| `density:row-tile` | 26 (gutter 1) | 28 (gutter 2) | 36 (gutter 2) |
-| `density:radius` | `radius:sm` | `radius:md` | `radius:md` |
-| `type:title` | 11 | 13 | 15 |
-| `icon:` | 14 | 16 | 18 |
-| `density:space-chip` | 30 | 34 | 44 |
-| `density:sidebar` | 216 | 260 | 320 |
-| `density:hit-min` | 28 (close 20) | 32 | 40 |
-| pinned rows | icon-only 28×28, gap 2 | icon + title | icon + title |
+| `density:row` | 32 | 36 | 44 |
+| `density:row-tile` | 28 | 36 | 44 |
+| `density:radius` | `radius:sm` (6) | `radius:md` (8) | `radius:lg` (10) |
+| `type:title` | 12 | 14 | 16 |
+| `icon:` | 16 | 18 | 20 |
+| `density:space-chip` | 32 | 36 | 44 |
+| `density:sidebar` | 232 | 280 | 340 |
+| `density:hit-min` | 28 (close 24) | 32 (close 28) | 40 (close 32) |
+| `density:row-inset` | `sp:1` (4) | `sp:2` (8) | `sp:3` (12) |
+| `density:section-gap` | `sp:3` (12) | `sp:4` (16) | `sp:5` (20) |
+| favorites grid gap | `sp:1` (4) | `sp:2` (8) | `sp:2` (8) |
+| pinned rows | icon-only 32×32, gap 4 | icon + title | icon + title |
 
 Transition rule: density changes when the collection crosses 200 regular tabs
 (S) or 600 (X) only after user confirm at first occurrence or a follow-up
@@ -397,31 +410,36 @@ Row wash transparent; text per role. **Assert:** `visual_state == default`.
 
 ### 10.2 `hover` (pointer over control)
 Wash: light `rgba(0,0,0,0.045)` (`#E4E4E1`), dark `rgba(255,255,255,0.05)`
-(`#25282C`); IC 7%. The wash paints an inset rounded row surface (`density:radius`,
-inset from the rail edges) rather than a full-bleed band, so the trailing close
+(`#25282C`); IC 7%. The wash paints an inset rounded row surface — inset
+`density:row-inset` from the rail edges (S `sp:1` 4 / N `sp:2` 8 / XL `sp:3`
+12), radius `density:radius` (S `radius:sm` / N `radius:md` / XL
+`radius:lg`) — rather than a full-bleed band, so the trailing close
 control sits inside that surface. Close button reveals on tab rows (fade-in
 opacity `dur:micro`, allowed). Tint animates `dur:micro`. **Assert:** `hover`.
 
 ### 10.3 `active` (pointer down / pressed)
 Wash deepens (light 8%, dark 8%) plus 1 px inner `hairline` on the same inset
-rounded surface as §10.2; `dur:micro` tint. No translation or "press down"
-motion. **Assert:** `active`.
+rounded surface as §10.2 (`density:row-inset`, `density:radius`); `dur:micro`
+tint. No translation or "press down" motion. **Assert:** `active`.
 
 ### 10.4 `selected`
-Accent rail 3 pt at the row's leading edge (4 pt IC) + `tint.selected`;
-title `ink`, meta `ink.secondary`. Snap (`dur:instant`). In web-focus
-domain the rail remains the sole accent (see §9). **Assert:** `selected`
+`tint.selected` paints the inset rounded row surface of §10.2
+(`density:row-inset`, `density:radius`) plus the accent rail 3 pt at the row's
+leading edge (4 pt IC); title `ink`, meta `ink.secondary`. Snap
+(`dur:instant`). In web-focus domain the rail remains the sole accent (see
+§9). **Assert:** `selected`
 (plus the domain via `chrome_focused`).
 
 ### 10.5 `loading`
-Favicon slot swaps to a 14 pt circular arc spinner (accent, rotating,
+Favicon slot swaps to an 18 pt circular arc spinner (S 16 / XL 20, accent,
+rotating,
 `dur` 640 ms linear — allowed, it is transient indication); tab title drops
 to `ink.secondary`; a 2 pt indeterminate progress bar sweeps the top edge of
 the content pane (`load:indeterminate`, opacity 1→0.6 loop). Selection/
 hover visuals unchanged. **Assert:** `loading`.
 
 ### 10.6 `attention`
-Amber dot (6 pt at the row's trailing state slot) + one two-beat opacity
+Amber dot (8 pt at the row's trailing state slot) + one two-beat opacity
 pulse (`dur:emphasis`, 1→0.45→1) + a one-frame amber surface flash
 (`status.attention.surface`, `dur:fine`). Non-color companions: the badge
 only appears with a reason line in the status area, and the row keeps its
@@ -462,8 +480,9 @@ using the IDs of §15. All rows use `density` geometry from §8.
 
 ### 11.1 Vertical tab row
 
-- **Anatomy:** `[favicon 16] · [title flex, trunc] · [state slot 8] ·
-  [close 16, hover-reveal]`, padding-x `sp:2` (S) / `sp:2` (N) / `sp:3` (XL),
+- **Anatomy:** `[favicon 18] · [title flex, trunc] · [state slot 10] ·
+  [close 18, hover-reveal]` (S density: favicon/close 16, state slot 8;
+  XL: favicon/close 20), padding-x `sp:2` (S) / `sp:3` (N) / `sp:4` (XL),
   tile per §8.
 - **Behavior:** click selects (pointer keeps the focus domain per contract);
   middle-click closes (Planned affordance until wired, open decision on
@@ -481,7 +500,7 @@ using the IDs of §15. All rows use `density` geometry from §8.
 
 - **Anatomy:** pinned region renders above the regular region, separated by a
   `hairline` + `type:badge` "Pinned" label (label hidden when region empty).
-  S density: icon-only 28×28 rows with 2 pt gap. N/XL: same row anatomy as
+  S density: icon-only 32×32 rows with 4 pt gap. N/XL: same row anatomy as
   regular rows.
 - **Behavior:** pinned rows never shift order on selection; close is
   hover-reveal only; drag within the pinned region reorders; dragging to the
@@ -546,7 +565,8 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Regions:** section labels use `type:badge` and are hidden when their
   region is empty (`bbr-section-favorites` / `bbr-section-pinned` /
   `bbr-section-folders` / `bbr-section-tabs`); profile groups and regions
-  stack under hairlines with no repeated headers. The Favorites grid and
+  stack under hairlines separated by `density:section-gap` breathing (S
+  `sp:3` / N `sp:4` / XL `sp:5`), with no repeated headers. The Favorites grid and
   the Pinned region are fixed-height blocks above the scroll view; Folders
   and Tabs scroll together in `bbr-scroll` (label behavior per §11.6).
 - **Spaces strip:** `bbr-space-strip` is the permanent space navigation
@@ -579,7 +599,7 @@ using the IDs of §15. All rows use `density` geometry from §8.
   the same §11.5 engine:
   - **Cmd-T → centered palette** (Planned, `bbr-palette`): `elev:2`
     overlay centered over the window content, `material:overlay`, width
-    `win:palette` (S 400 / N 480 / XL 560 pt), `radius:lg` at S/N /
+    `win:palette` (S 440 / N 520 / XL 620 pt), `radius:lg` at S/N /
     `radius:xl` at XL per §5. Field row on top (`bbr-palette-field`):
     prefix glyph, `type:mono` text (`bbr-palette-text`), mode chip
     (`bbr-palette-mode` — New Tab staged per the interaction contract),
@@ -591,7 +611,7 @@ using the IDs of §15. All rows use `density` geometry from §8.
     (Planned, `bbr-command-overlay`): `elev:2` overlay anchored to the
     field — top edge flush with the field's bottom edge, leading edge
     flush with the field's leading edge, width = field width clamped to
-    320–`win:palette`, `material:overlay`, `radius:lg`. Same result
+    360–`win:palette`, `material:overlay`, `radius:lg`. Same result
     engine and row anatomy; results keep the §11.5 ids
     (`bbr-command-result-<k>`). Location mode shows the full URL selected
     in the field (`bbr-command-text`).
@@ -619,7 +639,8 @@ using the IDs of §15. All rows use `density` geometry from §8.
 
 ### 11.5 Command bar
 
-- **Anatomy:** `material:field`, `radius:lg`, `elev:1`; prefix glyph (mode:
+- **Anatomy:** `material:field`, `radius:lg`, `elev:1`, field height
+  `density:row` (S 32 / N 36 / XL 44); prefix glyph (mode:
   `►` location / `+` new tab / `⌘` commands — Planned), mono text
   (`type:mono`, mid-ellipsis), mode chip (`type:badge`, accent.ink) when in
   a transient mode, block cursor 2 pt accent when chrome-focused.
@@ -702,8 +723,9 @@ scheme; a title consisting only of whitespace is treated as empty.
 - **Anatomy:** a `type:badge` "Favorites" label (`bbr-section-favorites`,
   hidden when empty) over a grid of square destination tiles
   (`bbr-favorites`): the §7.2 favicon/monogram tile centered in a
-  `radius:sm` tile at `density:row-tile` size (S 26 / N 28 / XL 36), `sp:1`
-  gap, fixed per-density column count (S 5 / N 4 / XL 3) so the tile →
+  `radius:sm` tile at `density:row-tile` size (S 28 / N 36 / XL 44), gap
+  `sp:1` (S) / `sp:2` (N/XL), fixed per-density column count (S 5 / N 4 /
+  XL 3) so the tile →
   index mapping is deterministic at every sidebar width.
 - **Behavior:** clicking a tile activates that exact favorited tab: switch
   to its owning space in the same browser window (thereby selecting the
@@ -728,8 +750,9 @@ scheme; a title consisting only of whitespace is treated as empty.
 
 - **Anatomy:** a `type:badge` "Folders" label (`bbr-section-folders`,
   hidden when empty) over folder rows (`bbr-folders`): `[disclosure glyph
-  14 §7] [name, trunc] [count, `type:meta` `tnum`]` at `density:row` tall,
-  hairlines between folder groups; nested rows indent one `sp:2` step.
+  `icon:m` (18; S `icon:s` 16) §7] [name, trunc] [count, `type:meta`
+  `tnum`]` at `density:row` tall,
+  hairlines between folder groups; nested rows indent one `sp:3` step.
 - **Behavior:** a folder is a session-local container of tab identities
   (in-memory in v1, never persisted; Phase 7 owns restoration). Toggling
   (`bbr-folder-toggle-<n>`, pointer or keyboard Enter/Space)
@@ -752,7 +775,7 @@ scheme; a title consisting only of whitespace is treated as empty.
 
 ## 12. Profile identity
 
-- **Chip:** 20 pt square (18 at S), `radius:sm`, filled with the profile's
+- **Chip:** 24 pt square (20 at S, 28 at XL), `radius:sm`, filled with the profile's
   hue tile, containing a 1–2 character monogram (`type:badge`, white or
   near-black letter per tile). Static — no glow, no animation, no gradient.
 
@@ -816,7 +839,10 @@ semantically — never by pixel comparison.
 
 - **Stable ids:** the `bbr-*` ids enumerated in §11 (plus `bbr-root`,
   `bbr-sidebar`, `bbr-command-bar`, already present in the placeholder
-  shell). Every interactive control carries one.
+  shell). Every interactive control carries one. The S1 scale table (§8)
+  changes geometry tokens only — it does not change ids, the §10 state
+  vocabulary, interaction behavior, dense-500 bounded-window rendering,
+  scroll math, or any performance budget/sample count.
 - **State vocabulary:** snapshot field `tab_states: Vec<VisualState>` with
   `VisualState ∈ {default, hover, active, selected, loading, attention,
   error, disabled, dragging, drag-target, focused}` — exactly the §10 names.

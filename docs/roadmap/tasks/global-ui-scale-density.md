@@ -4,11 +4,18 @@ Parents: [Phase 9](../phases/09-quality-release.md) ·
 [UI design-system track](../tracks/ui-design-system.md) ·
 [Testing track](../tracks/testing.md) ·
 [Performance track](../tracks/performance-release.md) ·
-[DESIGN.md](../../../DESIGN.md) §4/§5/§8/§11/§15.
+[DESIGN.md](../../../DESIGN.md) §4/§5/§7/§8/§10/§11/§12/§15.
 
 Status: **queued as the first bounded slice after browser-MVP closeout.** It
 must not delay U1 integration, U2 performance/integration, canonical `just e2e`,
 or final `just package-verify` and delivery of the first clickable `.app`.
+
+**Design decision settled (2026-08-08):** the complete S/N/XL scale is now
+recorded as contract in DESIGN.md §4/§5/§7/§8 (with matching §10/§11/§12
+values), calibrated from the preserved reference captures. The remaining slice
+work is mechanical: apply the settled tokens through the existing
+`Theme`/`TypeScale`/`Spacing`/`Density` seams and prove them with the
+unchanged gates below.
 
 ## Outcome
 
@@ -44,18 +51,21 @@ reference** and are no longer a provisional percentage:
 - generous section spacing between regions;
 - Favorites as large rounded icon tiles.
 
-These are the calibration target, not literal token values: the slice still
-authors one internally consistent S/N/XL table that satisfies them at normal
-density. BBR keeps its own materials, color discipline, iconography, semantics,
-and native-web boundary — the reference calibrates scale, rhythm, and row
-affordance only, never branding or behavior. Dense-500 windowing, scroll math,
-and every performance budget remain unchanged and gate this slice.
+These are the calibration target, not literal token values: the S/N/XL table
+that satisfies them at normal density is now settled in DESIGN.md §8
+(2026-08-08, with the matching §4/§5/§7/§10/§11/§12 values); the
+implementation step applies it verbatim. BBR keeps its own materials, color
+discipline, iconography, semantics, and native-web boundary — the reference
+calibrates scale, rhythm, and row affordance only, never branding or behavior.
+Dense-500 windowing, scroll math, and every performance budget remain
+unchanged and gate this slice.
 
 ## Scope
 
-- Decide and record one revised, internally consistent scale in `DESIGN.md`
-  before production code changes, calibrated against the preserved reference
-  screenshots above rather than a blanket multiplier:
+- Apply the settled scale recorded in `DESIGN.md` §4/§5/§7/§8 — one
+  internally consistent S/N/XL system calibrated against the preserved
+  reference screenshots above (no blanket multiplier, no further design
+  decision):
   - typography sizes and line-height/leading;
   - base spacing rhythm where chrome readability depends on it;
   - tab, space, favorite, folder, footer, menu, field, result, and button rows;
@@ -110,8 +120,10 @@ Integration order:    MVP closeout → this slice → deferred P8 integrations a
 
 ## Constraints
 
-- `DESIGN.md` is changed first and remains canonical. Production constants and
-  tests must name or derive from its tokens; no unexplained magic sizes.
+- `DESIGN.md` is changed first and remains canonical (scale settled
+  2026-08-08; the implementation applies the recorded table verbatim).
+  Production constants and tests must name or derive from its tokens; no
+  unexplained magic sizes.
 - One scale decision: preserve relative hierarchy and the 4 pt chassis rhythm
   while raising the system as a whole. Do not enlarge only the U1 palette or
   only selected sidebar controls.
@@ -195,7 +207,9 @@ All GUI recipes run sequentially under the host-wide lock.
 
 1. Preserve the shipped MVP `.app` as the before-baseline and inventory every
    chrome size from `DESIGN.md`, central tokens, and direct geometry consumers.
-2. Propose one revised S/N/XL table; settle it in `DESIGN.md` before code.
+2. Apply the settled S/N/XL table from `DESIGN.md` (§4/§5/§7/§8, authored
+   2026-08-08 from the preserved reference) through the central token seams;
+   the proposal/settlement step is closed.
 3. Change central tokens and only the direct consumers that cannot already derive
    from them; update token and geometry tests in the same group.
 4. Run targeted real-app suites, then unchanged optimized performance evidence,
@@ -226,15 +240,22 @@ local scales, overlap web content, or weaken assertions/budgets.
 ## Delivery ledger
 
 ```text
-Outcome: queued from Patrick's live U1 feedback; implementation intentionally
-        deferred until the browser-MVP .app is closed out
-Commits: planning/roadmap commit only; implementation none
+Outcome: queued from Patrick's live U1 feedback; scale decision authored and
+        settled in DESIGN.md from the preserved reference (2026-08-08);
+        implementation intentionally deferred until the browser-MVP .app is
+        closed out
+Commits: docs-only authoring slice (DESIGN.md + this packet), uncommitted per
+        parallel-lane discipline; implementation none
 Functional evidence: pending post-MVP slice
 Real-app E2E: pending post-MVP slice
 Performance evidence: pending post-MVP slice; budgets remain unchanged
-Roadmap/documentation updates: task packet, Phase 9, UI track, root roadmap,
-        browser-MVP delivery ledger
-Open blockers and non-goals: exact revised token values are deliberately decided
-        inside the slice; no MVP blocker and no page zoom/runtime preference
-Worktree state: not created; first serial branch from final MVP closeout
+Roadmap/documentation updates: DESIGN.md §4/§5/§7/§8 settled table with
+        matching §10/§11/§12 values; this packet re-pointed at the settled
+        table; Phase 9, UI track, root roadmap, browser-MVP delivery ledger
+        unchanged
+Open blockers and non-goals: no open scale decision remains; no MVP blocker
+        and no page zoom/runtime preference
+Worktree state: `bbr-s1-token-table` on `parallel/s1-token-table` (base
+        7a7c1cb); DESIGN.md and this packet edited, left uncommitted for the
+        lane owner commit and independent review
 ```
