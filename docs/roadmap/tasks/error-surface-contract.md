@@ -67,12 +67,12 @@ Integration order: portable contract may land whenever the serial bbr-web
 
 ### Unit and contract
 
-- [ ] Taxonomy tests cover every category/subreason and stable serde shape.
-- [ ] Legal-action matrix proves TLS/navigation/offline/process-crash recovery
+- [x] Taxonomy tests cover every category/subreason and stable serde shape.
+- [x] Legal-action matrix proves TLS/navigation/offline/process-crash recovery
       options and rejects illegal combinations, especially TLS bypass.
-- [ ] Lifecycle tests cover supersession, stale completion, retry/reload,
+- [x] Lifecycle tests cover supersession, stale completion, retry/reload,
       successful recovery, failed recovery, and dismissal legality.
-- [ ] Default and serde-enabled crate suites plus Clippy `-D warnings` pass.
+- [x] Default and serde-enabled crate suites plus Clippy `-D warnings` pass.
 
 ### Real-app E2E
 
@@ -120,11 +120,46 @@ Do not add an opaque catch-all payload or generic TLS bypass.
 ## Delivery ledger
 
 ```text
-Outcome: packet and exclusive module anchor prepared; implementation pending
-Commits: pending
-Functional evidence: pending
+Outcome: packet complete and proven — taxonomy/legal actions and lifecycle
+        implemented; step-3 evidence closeout verified all gates on a fresh
+        rebuild and found no contract gaps; ready for handoff to the
+        independent read-only review
+Step 1: incident identity, closed categories/subreasons, severity/retryability,
+        privacy-safe context, definition validation, recovery-action matrix
+Step 2: pure lifecycle (reported/superseded/recovery requested/recovered/
+        recovery failed/dismissed), requestable-action validation (category
+        legal set minus Dismiss; crash accepts only Restore, TLS never a
+        bypass), duplicate/stale/mismatched report and callback rejection
+Step 3 (evidence closeout): re-ran every gate on a fresh rebuild after
+        `cargo clean -p bbr-web`; re-checked matrix/serde/doc coverage and
+        the crate-level missing-debug deny; fixed one doc-hygiene wart
+        (stray empty first doc line on `IncidentContext`); all unit/contract
+        checkboxes marked only on passing evidence; no remediation needed
+Commits: none (all changes left uncommitted)
+Functional evidence: cargo test -p bbr-web (94 lib + 11 + 1 doc)
+                     cargo test -p bbr-web --features serde (99 lib + 11 + 1 doc)
+                     cargo clippy -p bbr-web --all-targets -- -D warnings
+                     cargo clippy -p bbr-web --all-targets --features serde -- -D warnings
+                     cargo fmt --all -- --check; just roadmap (53 files valid); git diff --check
 Real-app E2E: not applicable to contract-only lane
 Performance evidence: not applicable to contract-only lane
-Open blockers and non-goals: native mapping and visible surfaces deferred
-Worktree state: launch pending
+Open blockers and non-goals: native adapter mapping and visible error/recovery
+        surfaces deferred to a later Phase-8 slice; packet complete and proven,
+        ready for the independent read-only review
+Worktree state: all steps (1+2+evidence) uncommitted in parallel/p8b-error-surface-contract
+
+Step 4 (remediation, review finding): fixed the privacy edge in
+        `origin_of` — authority-less scheme URLs (`javascript:…`, `mailto:…`,
+        `data:…`) previously kept their whole lowercased payload as "origin"
+        when it contained no `/ ? #` delimiter (probe: `javascript:alert('secret')`
+        -> `Some("javascript:alert('secret')")`); now reduced to the lower-cased
+        scheme only, `about:blank` (any case) whitelisted verbatim, scheme-less
+        typed hosts (`example.com/path`) unchanged. Added `javascript:`/`mailto:`/
+        `data:`/`tel:`/`about:config`/`ABOUT:BLANK` regression cases to
+        `context_from_url_is_privacy_safe` (fail against the pre-fix behavior).
+        Re-ran all invalidated gates fresh: fmt, diff-check, both crate suites
+        (94/99 lib + 11 + 1 doc), Clippy `-D warnings` both feature sets,
+        check_roadmap.py (53 files); all green. No scope change, no new deps,
+        no manifest/lock/lib.rs edits. Blockers: none; handoff to reviewer recheck
+        complete. Native adapter/UI mapping remains a later Phase-8 slice.
 ```
