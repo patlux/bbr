@@ -273,6 +273,24 @@ pub(crate) fn dispatch(
         .map(|_| Response::Ok)
         .unwrap_or_else(err_response),
 
+        // §11.4 field-click pointer entry: the same app method the command
+        // field's mouse-down listener calls (opens the field-anchored
+        // overlay in Location mode with the full URL selected).
+        Request::ClickCommandField => with_app(window, app, cx, |view, window, cx| {
+            view.open_overlay(window, cx)
+        })
+        .map(|_| Response::Ok)
+        .unwrap_or_else(err_response),
+
+        // §13 one-pointer-action dismissal: the same app method the
+        // palette/overlay dismissal layer's mouse-down listener calls
+        // (closes the open surface and restores the origin focus domain).
+        Request::ClickContentOutside => with_app(window, app, cx, |view, window, cx| {
+            view.close_command_surface(window, cx)
+        })
+        .map(|_| Response::Ok)
+        .unwrap_or_else(err_response),
+
         Request::FocusWeb => with_app(window, app, cx, |view, window, cx| {
             view.focus_web(window, cx)
         })
@@ -420,7 +438,8 @@ pub(crate) fn dispatch(
         | Request::BenchmarkPressTab { .. }
         | Request::BenchmarkCommandType { .. }
         | Request::BenchmarkCommandActivate { .. }
-        | Request::BenchmarkCommandActivateNewTab { .. } => {
+        | Request::BenchmarkCommandActivateNewTab { .. }
+        | Request::BenchmarkPaletteOpen { .. } => {
             unreachable!("benchmark requests route through dispatch_benchmark")
         }
     }

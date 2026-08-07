@@ -123,18 +123,18 @@ Integration base arg: f89a4799999d1d43f785da7c767a1df68759ee0b, recorded after L
 
 ### Unit and contract
 
-- [ ] §15 semantic-tree tests: `bbr-palette` and `bbr-command-overlay`
+- [x] §15 semantic-tree tests: `bbr-palette` and `bbr-command-overlay`
       nodes render with the expected roles/names and mirror the visible
       surface; absent when closed.
-- [ ] `visible_ids` derivation tests: palette/overlay ids exposed only
+- [x] `visible_ids` derivation tests: palette/overlay ids exposed only
       while the respective surface is open.
-- [ ] Command-surface state tests: mutual exclusion (opening one closes the
+- [x] Command-surface state tests: mutual exclusion (opening one closes the
       other), profile-hint clearing, Escape restoration of field text and
       mode, New Tab staging (no tab/session before Enter).
 
 ### Real-app E2E
 
-- [ ] Extended `just e2e-shell-command`: Cmd-T opens the centered palette
+- [x] Extended `just e2e-shell-command`: Cmd-T opens the centered palette
       in New Tab staging; typing filters results; Enter creates exactly one
       tab/session and moves focus into the page; Escape cancels and
       restores field text, mode, and chrome/web focus domain; Cmd-L and
@@ -144,13 +144,17 @@ Integration base arg: f89a4799999d1d43f785da7c767a1df68759ee0b, recorded after L
 
 ### Performance
 
-- [ ] `palette_open` scenario in the gate-enforced matrix: 30 samples of
+- [x] `palette_open` scenario in the gate-enforced matrix: 30 samples of
       Cmd-T open measured through semantic presentation commit; warm
       50/100 ms budget class; driver asserts the palette ids and staged
       mode; guard rejects fast-but-wrong (missing/invented surface).
-- [ ] `palette_filter`/`palette_activate` added only if their latency path
+- [x] `palette_filter`/`palette_activate` added only if their latency path
       differs from the already-measured command-bar filter/activate path;
-      otherwise covered by the existing matrix rows.
+      otherwise covered by the existing matrix rows. *(The palette runs the
+      identical §11.5 engine — the same text/ranking/activation code and
+      the same debounce — so filter/activate latency is already covered by
+      `command_type`/`command_activate`; only the open presentation is new
+      and measured as `palette_open`.)*
 
 ## Completion gates
 
@@ -198,15 +202,26 @@ the smallest environment, contract decision, or user input required next
 Outcome:       reviewed prep complete; implementation remains pending in U1
 Commits:       parent-owned docs integration pending from the reviewed L4 lane;
                implementation commits remain none
-Functional evidence: pending
-Real-app E2E:  pending
-Performance evidence: pending
+Functional evidence: green (Step 3): 107 bbr unit/contract tests (incl. the
+               palette surface, visible_ids, and §15 semantics tests) plus 20
+               bbr-testkit protocol tests; testkit Clippy clean.
+Real-app E2E:  green: `just e2e-shell-command` 16/16 (5 new §11.4
+               palette/overlay scenarios: Cmd-T staging + typing filter +
+               Escape restore; Enter commits exactly one tab/session;
+               Cmd-L full-URL overlay; field click + one-pointer outside
+               press, web/chrome origins; mutual exclusion + profile-hint
+               clearing).
+Performance evidence: green: `palette_open` scenario in the gate-enforced
+               matrix (30 samples, warm 50/100 ms budget, semantic
+               presentation commit + fast-but-wrong guard); p95 ≈ 30 µs /
+               max 38 µs on the short-gate run; `just e2e-perf` passed.
 Roadmap/documentation updates: DESIGN §11.4/§11.5/§17.6 revised by L4;
                ROADMAP/phase/track linking is parent-owned at promotion
 Open blockers and non-goals: L0 base is recorded; history provider (Phase 7),
                result grouping, and sidebar rail (U2) remain excluded
-Worktree state: reviewed L4 docs diff at base 574750b; parent promotion records
-               U1 base f89a4799999d1d43f785da7c767a1df68759ee0b
+Worktree state: implementation diff (Steps 1–3) uncommitted in
+               bbr-mvp-u1-palette on parallel/mvp-u1-palette at foundation
+               7a98762; protocol seed preserved untouched
 ```
 
 Planning/read-only, implementation, test execution, review, remediation,

@@ -126,6 +126,17 @@ impl Density {
         })
     }
 
+    /// `win:palette` (DESIGN.md §11.4): the centered Cmd-T palette width
+    /// (S 400 / N 480 / XL 560 pt) and the field-anchored overlay's upper
+    /// clamp.
+    pub fn palette_width(self) -> Pixels {
+        px(match self {
+            Density::Small => 400.0,
+            Density::Normal => 480.0,
+            Density::ExtraLarge => 560.0,
+        })
+    }
+
     pub fn icon(self) -> Pixels {
         px(match self {
             Density::Small => 14.0,
@@ -344,6 +355,10 @@ mod tests {
         assert_eq!(Density::Normal.sidebar_width(), px(260.0));
         assert_eq!(Density::Small.sidebar_width(), px(216.0));
         assert_eq!(Density::ExtraLarge.sidebar_width(), px(320.0));
+        // §11.4 `win:palette`: S 400 / N 480 / XL 560 pt.
+        assert_eq!(Density::Small.palette_width(), px(400.0));
+        assert_eq!(Density::Normal.palette_width(), px(480.0));
+        assert_eq!(Density::ExtraLarge.palette_width(), px(560.0));
         assert_eq!(type_scale(Density::Small).title.size, px(11.0));
         assert_eq!(type_scale(Density::Normal).title.size, px(13.0));
         assert_eq!(type_scale(Density::ExtraLarge).title.size, px(15.0));

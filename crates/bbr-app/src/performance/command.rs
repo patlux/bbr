@@ -17,6 +17,8 @@
 
 use bbr_testkit::protocol::{BenchmarkKind, CommandResultState};
 
+use crate::app::palette::CommandSurface;
+
 use super::{Pending, PerformanceProbe, State};
 
 /// The exact command-result identity a pending sample must commit from.
@@ -109,6 +111,26 @@ impl PerformanceProbe {
             .map(|pending| pending.kind)
     }
 
+    /// Require the pending presentation to show `surface` as the §11.4
+    /// command-surface presentation (None = closed). The palette-open
+    /// benchmark arms the centered palette; the commit predicate then
+    /// rejects any render whose observed surface differs (a render that
+    /// omitted the palette or drew the wrong presentation).
+    pub fn expect_surface(&self, surface: CommandSurface) {
+        if let Some(pending) = self.inner.borrow_mut().pending.as_mut() {
+            pending.expected_surface = Some(surface);
+        }
+    }
+
+    /// Record the §11.4 command-surface presentation the render actually
+    /// constructed into the frame (the render milestone). `None` when the
+    /// frame contained no palette/overlay presentation, so a pending
+    /// palette-open sample can never commit from a render that omitted the
+    /// surface.
+    pub fn observe_rendered_surface(&self, surface: CommandSurface) {
+        self.inner.borrow_mut().latest_surface = surface;
+    }
+
     /// True while a command benchmark is pending. The production activation
     /// path suppresses its generic synchronous commit for these kinds: the
     /// benchmark driver must validate caller-specific destination/session
@@ -120,6 +142,7 @@ impl PerformanceProbe {
                 BenchmarkKind::CommandType
                     | BenchmarkKind::CommandActivate
                     | BenchmarkKind::CommandActivateNewTab
+                    | BenchmarkKind::PaletteOpen
             )
         )
     }

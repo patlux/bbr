@@ -3,7 +3,7 @@
 //! command routing.
 
 use bbr_browser::{BrowserController, ControllerEvent};
-use bbr_web::WebEvent;
+use bbr_web::{WebEvent, WebRect};
 use gpui::{App, Context, FocusHandle, Focusable, ScrollHandle, Window};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -15,6 +15,7 @@ use crate::performance::PerformanceProbe;
 
 use command_rank::CommandRanking;
 use command_text::CommandText;
+use palette::CommandSurface;
 #[cfg(feature = "testkit")]
 mod benchmarks;
 #[cfg(feature = "testkit")]
@@ -25,12 +26,13 @@ mod command_activate;
 #[cfg(feature = "testkit")]
 mod command_benchmarks;
 mod command_corpus;
-mod command_rank;
+pub(crate) mod command_rank;
 mod command_surface;
 mod command_text;
 mod drag;
 mod drag_target;
 mod interaction;
+pub(crate) mod palette;
 mod render;
 mod sidebar;
 mod sidebar_view;
@@ -100,6 +102,21 @@ pub struct BbrApp {
     /// `command_bar_hint`; the two never coexist.
     command_profile_hint: Option<String>,
     command_bar_return: Option<CommandBarReturn>,
+    /// The open command-surface presentation (DESIGN.md §11.4): the centered
+    /// Cmd-T palette, the field-anchored Cmd-L/click overlay, or none. At
+    /// most one is open at a time (mutual exclusion by construction — a
+    /// single enum field); opening either clears the §11.3
+    /// `command_profile_hint`. The in-rail command bar is the baseline
+    /// surface — this state only tracks the two overlay presentations of
+    /// the same §11.5 engine.
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
+    command_surface: CommandSurface,
+    /// The last frame's command-field rect in window coordinates, recorded
+    /// by the field anchor element (DESIGN.md §11.4): the exact anchor for
+    /// the field-anchored overlay (top/leading edge flush, width from the
+    /// field) without duplicating the chrome layout math. `None` until the
+    /// field has rendered at least once.
+    command_field_rect: std::rc::Rc<std::cell::RefCell<Option<WebRect>>>,
     /// The command-field text-edit model (DESIGN.md §11.5): UTF-8-safe
     /// cursor/selection, full selection on `Cmd-L`, replace-selection
     /// typing, backspace, and horizontal cursor movement. The text mirrors
@@ -154,6 +171,8 @@ impl BbrApp {
             pressed_row: None,
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
+            command_surface: CommandSurface::None,
+            command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
             command_profile_hint: None,

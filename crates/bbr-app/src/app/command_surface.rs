@@ -56,10 +56,14 @@ pub fn surface_ids(state: CommandResultState, results: &[CommandResultRow]) -> V
 impl BbrApp {
     /// The §11.5 result palette, rendered directly beneath the command field
     /// in the rail while the location/new-tab surface is open. `None` when
-    /// the surface is inactive.
+    /// the surface is inactive — or when a §11.4 palette/overlay
+    /// presentation is open, because the floating surface renders the same
+    /// engine's results itself (the in-rail list would duplicate them).
     pub fn command_result_surface(&self, theme: &Theme) -> Option<Stateful<Div>> {
         let ranking = &self.command_ranking;
-        if ranking.state == CommandResultState::Inactive {
+        if ranking.state == CommandResultState::Inactive
+            || self.command_surface != super::palette::CommandSurface::None
+        {
             return None;
         }
         let p = theme.palette;
@@ -68,17 +72,32 @@ impl BbrApp {
                 .results
                 .iter()
                 .enumerate()
-                .map(|(index, row)| self.command_result_row(theme, row, index == ranking.selected))
+                .map(|(index, row)| {
+                    self.command_result_row(
+                        theme,
+                        row,
+                        index == ranking.selected,
+                        "bbr-command-result",
+                    )
+                })
                 .collect(),
             CommandResultState::Loading => {
-                vec![state_row(theme, STATE_ID_LOADING, "Ranking…")]
+                vec![state_row(
+                    theme,
+                    SharedString::from(STATE_ID_LOADING),
+                    "Ranking…",
+                )]
             }
             CommandResultState::Empty => {
-                vec![state_row(theme, STATE_ID_EMPTY, "Type a destination")]
+                vec![state_row(
+                    theme,
+                    SharedString::from(STATE_ID_EMPTY),
+                    "Type a destination",
+                )]
             }
             CommandResultState::ActivationError => vec![state_row(
                 theme,
-                STATE_ID_ERROR,
+                SharedString::from(STATE_ID_ERROR),
                 ranking
                     .activation_error
                     .as_deref()
@@ -104,11 +123,15 @@ impl BbrApp {
     /// hint]`. The selected row renders the accent rail inside the list with
     /// the selection tint; destructive rows render the error/destructive
     /// text language (tint only — no confirmation dialog is invented).
-    fn command_result_row(
+    /// `id_prefix` selects the surface's stable §15 id family
+    /// (`bbr-command-result-<k>` for the in-rail bar and the field-anchored
+    /// overlay, `bbr-palette-result-<k>` for the centered palette).
+    pub(super) fn command_result_row(
         &self,
         theme: &Theme,
         row: &CommandResultRow,
         selected: bool,
+        id_prefix: &str,
     ) -> Stateful<Div> {
         let p = theme.palette;
         let title_color = if row.destructive {
@@ -117,10 +140,7 @@ impl BbrApp {
             p.ink
         };
         div()
-            .id(SharedString::from(format!(
-                "bbr-command-result-{}",
-                row.key
-            )))
+            .id(SharedString::from(format!("{id_prefix}-{}", row.key)))
             .flex()
             .flex_row()
             .items_center()
@@ -154,10 +174,7 @@ impl BbrApp {
             )
             .child(
                 div()
-                    .id(SharedString::from(format!(
-                        "bbr-command-result-title-{}",
-                        row.key
-                    )))
+                    .id(SharedString::from(format!("{id_prefix}-title-{}", row.key)))
                     .max_w(px(140.0))
                     .overflow_hidden()
                     .text_ellipsis()
@@ -170,10 +187,7 @@ impl BbrApp {
                 let subtitle = row.subtitle.clone().expect("checked above");
                 el.child(
                     div()
-                        .id(SharedString::from(format!(
-                            "bbr-command-result-url-{}",
-                            row.key
-                        )))
+                        .id(SharedString::from(format!("{id_prefix}-url-{}", row.key)))
                         .flex_1()
                         .overflow_hidden()
                         .text_ellipsis()
@@ -199,6 +213,51 @@ impl BbrApp {
                 )
             })
     }
+
+    /// The ranked result rows (or the truthful typed state row) of the open
+    /// §11.4 surface, with the surface-specific §15 id families:
+    /// `result_prefix` for rows (`bbr-palette-result` / `bbr-command-result`),
+    /// `state_prefix` for the loading/empty/error rows (`bbr-palette` /
+    /// `bbr-command`). Shared by the centered palette and the field-anchored
+    /// overlay presentations.
+    pub(super) fn surface_results(
+        &self,
+        theme: &Theme,
+        result_prefix: &str,
+        state_prefix: &str,
+    ) -> Vec<Stateful<Div>> {
+        let ranking = &self.command_ranking;
+        match ranking.state {
+            CommandResultState::Results => ranking
+                .results
+                .iter()
+                .enumerate()
+                .map(|(index, row)| {
+                    self.command_result_row(theme, row, index == ranking.selected, result_prefix)
+                })
+                .collect(),
+            CommandResultState::Loading => {
+                let id = format!("{state_prefix}-loading");
+                vec![state_row(theme, id.clone().into(), "Ranking…")]
+            }
+            CommandResultState::Empty => {
+                let id = format!("{state_prefix}-empty");
+                vec![state_row(theme, id.clone().into(), "Type a destination")]
+            }
+            CommandResultState::ActivationError => {
+                let id = format!("{state_prefix}-error");
+                vec![state_row(
+                    theme,
+                    id.into(),
+                    ranking
+                        .activation_error
+                        .as_deref()
+                        .unwrap_or("Activation failed"),
+                )]
+            }
+            CommandResultState::Inactive => Vec::new(),
+        }
+    }
 }
 
 /// The stable leading glyph of a result row: the group's one-letter mark
@@ -214,9 +273,11 @@ fn group_glyph(row: &CommandResultRow) -> String {
 }
 
 /// One typed state row (loading/empty/activation-error) with its
-/// stable §15 id; error rows render the destructive tint.
-fn state_row(theme: &Theme, id: &'static str, text: &str) -> Stateful<Div> {
-    let error = id == STATE_ID_ERROR;
+/// stable §15 id; error rows render the destructive tint. Shared by the
+/// in-rail result surface and the §11.4 palette/overlay presentations
+/// (each passes its own surface-specific id family).
+pub(super) fn state_row(theme: &Theme, id: SharedString, text: &str) -> Stateful<Div> {
+    let error = id.ends_with("-error");
     div()
         .id(id)
         .px(Spacing::sp3())

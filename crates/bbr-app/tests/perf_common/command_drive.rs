@@ -21,7 +21,7 @@ use bbr_web::WebViewId;
 use super::benchmarks::wait_browser_change;
 use super::command::{
     benchmark_command_activate, benchmark_command_activate_new_tab, benchmark_command_type,
-    command_setup,
+    benchmark_palette_open, command_setup,
 };
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE};
@@ -109,6 +109,55 @@ pub(super) fn drive_command_scenarios(
     assert_eq!(escaped.command_bar_mode, CommandBarMode::Inactive);
     assert!(!escaped.chrome_focused);
 
+    // The §11.4 palette-open scenario: Cmd-T opens the centered command
+    // palette in New Tab staging through the production seam; the sample
+    // commits only from a render that actually constructed the palette
+    // (the in-app fast-but-wrong guard rejects a missing or invented
+    // surface). Staged semantics: no tab or session is created before
+    // Enter, so the loop needs no tab restoration — only the unmeasured
+    // Escape back to web focus between samples, so every sample starts
+    // from the uniform web origin the command block requires.
+    let palette_state = client.snapshot().expect("palette state");
+    let palette_view = palette_state
+        .active_web_view
+        .expect("palette open active view");
+    let palette_tabs = palette_state.tabs.len();
+    let palette_sessions = palette_state.engine_sessions;
+    let mut palette_open_samples = Vec::with_capacity(config.interaction_samples);
+    for _ in 0..config.interaction_samples {
+        let measured = benchmark_palette_open(
+            client,
+            since,
+            *operation,
+            palette_view,
+            palette_tabs,
+            palette_sessions,
+        );
+        palette_open_samples.push(measured.duration_ns);
+        harness
+            .raw_log
+            .interactions
+            .entry("palette_open".into())
+            .or_default()
+            .push(measured.duration_ns);
+        *operation += 1;
+        // Unmeasured setup: Escape after every sample restores the web
+        // origin (each sample then starts from web focus, and the next
+        // Cmd-T captures that uniform origin).
+        client
+            .send_ok(&Request::DispatchKeystroke {
+                keystroke: "escape".into(),
+            })
+            .expect("escape after palette open sample");
+    }
+    let palette_escaped = client.snapshot().expect("palette escaped snapshot");
+    assert_eq!(
+        palette_escaped.command_surface,
+        bbr_testkit::protocol::CommandSurface::None
+    );
+    assert_eq!(palette_escaped.command_bar_mode, CommandBarMode::Inactive);
+    assert!(!palette_escaped.chrome_focused);
+
     let mut command_activate_samples = Vec::with_capacity(config.interaction_samples);
     for sample in 0..config.interaction_samples {
         let (text, expected_key, expected_view) = if sample % 2 == 0 {
@@ -181,5 +230,6 @@ pub(super) fn drive_command_scenarios(
         "command_activate_new_tab".to_string(),
         command_new_tab_samples,
     );
+    raw.insert("palette_open".to_string(), palette_open_samples);
     raw
 }

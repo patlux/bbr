@@ -77,6 +77,28 @@ impl BbrApp {
             None => Vec::new(),
         };
         let semantics = self.semantic_snapshot(&browser, &rows, window, sidebar_width, &budget);
+        let command_result_state = self.command_ranking.state;
+        let command_results = self
+            .command_ranking
+            .results
+            .iter()
+            .enumerate()
+            .map(|(index, row)| {
+                command_result_protocol(row, index == self.command_ranking.selected)
+            })
+            .collect::<Vec<_>>();
+        // The §11.5 in-rail result ids mirror the rail render; while a §11.4
+        // palette/overlay presentation is open the floating surface renders
+        // the same engine's results itself, so the in-rail list (and its
+        // ids) is hidden — never duplicated.
+        let in_rail_surface_ids = if self.command_surface.is_open() {
+            Vec::new()
+        } else {
+            crate::app::command_surface::surface_ids(
+                self.command_ranking.state,
+                &self.command_ranking.results,
+            )
+        };
         TestSnapshot {
             url: browser.nav.url.clone(),
             title: browser.nav.title.clone(),
@@ -190,10 +212,10 @@ impl BbrApp {
                 self.sidebar_visible,
                 self.command_bar_hint().as_deref(),
                 self.command_profile_hint.as_deref(),
-                &crate::app::command_surface::surface_ids(
-                    self.command_ranking.state,
-                    &self.command_ranking.results,
-                ),
+                self.command_surface,
+                command_result_state,
+                &self.command_ranking.results,
+                &in_rail_surface_ids,
                 drag_slot,
                 self.dense_window.get(),
                 pane_layout,
@@ -201,16 +223,9 @@ impl BbrApp {
             semantics,
             command_bar_mode: self.command_bar_mode.into(),
             command_bar_text: self.command_text.text.clone(),
-            command_result_state: self.command_ranking.state.into(),
-            command_results: self
-                .command_ranking
-                .results
-                .iter()
-                .enumerate()
-                .map(|(index, row)| {
-                    command_result_protocol(row, index == self.command_ranking.selected)
-                })
-                .collect(),
+            command_surface: self.command_surface.into(),
+            command_result_state: command_result_state.into(),
+            command_results,
             command_cursor: self.command_text.cursor,
             command_selection: self.command_text.selection.map(|(start, end)| [start, end]),
             sidebar_visible: self.sidebar_visible,
@@ -318,6 +333,7 @@ impl BbrApp {
             sidebar_visible: self.sidebar_visible,
             sidebar_width,
             divider_label: crate::sidebar::SIDEBAR_DIVIDER_LABEL.to_string(),
+            command_surface: self.command_surface,
             rows: &rendered_rows,
             space_rows: &space_rows,
             content,

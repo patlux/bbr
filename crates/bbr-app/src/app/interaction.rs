@@ -5,6 +5,7 @@ use gpui::{Context, KeyDownEvent, Window};
 
 use crate::command_bar::{CommandBarMode, CommandBarReturn};
 
+use super::palette::CommandSurface;
 use super::BbrApp;
 
 impl BbrApp {
@@ -118,6 +119,13 @@ impl BbrApp {
     /// original web/chrome origin (not an intermediate edit state).
     pub fn activate_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.clear_command_profile_hint();
+        // A mode entry preserves the surface presentation only when its
+        // coupled mode is re-entered (the overlay in Location); any other
+        // presentation closes back to the in-rail command bar (DESIGN.md
+        // §11.4 mutual exclusion).
+        self.command_surface = self
+            .command_surface
+            .coupled_surface(CommandBarMode::Location);
         if self.command_bar_mode != CommandBarMode::Location {
             self.command_bar_return = Some(CommandBarReturn {
                 mode: self.command_bar_mode,
@@ -136,6 +144,11 @@ impl BbrApp {
     /// `Cmd-T`: stage a destination without creating a tab or WKWebView.
     pub fn activate_new_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.clear_command_profile_hint();
+        // A mode entry preserves the surface presentation only when its
+        // coupled mode is re-entered (the centered palette in New Tab
+        // staging); any other presentation closes back to the in-rail
+        // command bar (DESIGN.md §11.4 mutual exclusion).
+        self.command_surface = self.command_surface.coupled_surface(CommandBarMode::NewTab);
         if self.command_bar_mode != CommandBarMode::NewTab {
             self.command_bar_return = Some(CommandBarReturn {
                 mode: self.command_bar_mode,
@@ -167,6 +180,9 @@ impl BbrApp {
         if self.controller.snapshot().active_index.is_none() {
             return;
         }
+        // A rail mode entry replaces any open palette/overlay presentation
+        // (the surface state couples to Location/NewTab only).
+        self.command_surface = CommandSurface::None;
         // The staged move has its own hint (command_bar_hint); the §11.3
         // space-switch transient must not coexist with it.
         self.clear_command_profile_hint();
@@ -251,6 +267,9 @@ impl BbrApp {
     pub(super) fn enter_empty_new_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_return = None;
         self.command_bar_mode = CommandBarMode::NewTab;
+        // The empty-pane surface is the in-rail command bar (§11.8), not a
+        // palette/overlay presentation.
+        self.command_surface = CommandSurface::None;
         self.command_text.set_text("");
         self.open_command_ranking(cx);
         self.focus_command_bar(window, cx);
@@ -315,6 +334,10 @@ impl BbrApp {
             self.cancel_tab_drag(window, cx);
             return;
         }
+        // Escaping a palette/overlay presentation closes it (DESIGN.md
+        // §11.4); the restoration below returns to the captured origin
+        // surface state, which never includes an open presentation.
+        self.command_surface = CommandSurface::None;
         if !matches!(
             self.command_bar_mode,
             CommandBarMode::Location
@@ -357,6 +380,7 @@ impl BbrApp {
     pub fn focus_web(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
+        self.command_surface = CommandSurface::None;
         self.command_ranking.close();
         window.blur();
         if let Some(view) = self.controller.snapshot().active_view {
@@ -366,10 +390,14 @@ impl BbrApp {
         self.emit_focus(window);
     }
 
-    /// GPUI chrome gained focus without activating the command bar (click).
+    /// GPUI chrome gained focus without activating the command bar (click):
+    /// a pointer action outside the open palette/overlay dismisses it
+    /// (DESIGN.md §13 — one pointer action), and the in-rail command surface
+    /// closes like the pre-composition click path.
     pub(super) fn focus_chrome(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
+        self.command_surface = CommandSurface::None;
         self.command_ranking.close();
         window.focus(&self.chrome_handle, cx);
         self.engine.borrow_mut().focus_host_chrome();

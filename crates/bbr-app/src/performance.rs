@@ -15,6 +15,8 @@ use bbr_testkit::protocol::{
 };
 use bbr_web::{WebEvent, WebRect, WebViewId};
 
+use crate::app::palette::CommandSurface;
+
 pub mod command;
 pub mod pane_geometry;
 pub mod slot;
@@ -46,6 +48,7 @@ struct State {
     latest_sidebar_visible: bool,
     latest_chrome_focused: bool,
     latest_command_bar_mode: CommandBarMode,
+    latest_surface: CommandSurface,
     /// The §11.3 cross-context command-field hint of the latest observed
     /// render (None when absent); the space-switch benchmark commits only
     /// when the profile-hint state matches the activation.
@@ -82,6 +85,7 @@ struct Pending {
     expected_sidebar_width: Option<f32>,
     expected_chrome_focused: Option<bool>,
     expected_command_bar_mode: Option<CommandBarMode>,
+    expected_surface: Option<CommandSurface>,
     /// The §11.3 profile-hint state the presentation must show (None = no
     /// hint; Some(title) = the hint with that copy). A cross-profile space
     /// activation must present the hint and a same-profile one must not, or
@@ -105,6 +109,7 @@ impl PerformanceProbe {
                 latest_sidebar_visible: true,
                 latest_chrome_focused: false,
                 latest_command_bar_mode: CommandBarMode::Inactive,
+                latest_surface: CommandSurface::None,
                 latest_profile_hint: None,
                 content_rect: None,
                 pending: Some(Pending {
@@ -118,6 +123,7 @@ impl PerformanceProbe {
                     expected_sidebar_width: None,
                     expected_chrome_focused: None,
                     expected_command_bar_mode: None,
+                    expected_surface: None,
                     expected_profile_hint: None,
                     command: None,
                 }),
@@ -158,6 +164,7 @@ impl PerformanceProbe {
             expected_sidebar_width: None,
             expected_chrome_focused: None,
             expected_command_bar_mode: None,
+            expected_surface: None,
             expected_profile_hint: None,
             command: None,
         });
@@ -410,6 +417,9 @@ impl PerformanceProbe {
             || pending
                 .expected_command_bar_mode
                 .is_some_and(|expected| expected != state.latest_command_bar_mode)
+            || pending
+                .expected_surface
+                .is_some_and(|expected| expected != state.latest_surface)
             || pending
                 .expected_profile_hint
                 .as_ref()

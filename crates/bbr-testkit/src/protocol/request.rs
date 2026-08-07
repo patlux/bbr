@@ -193,6 +193,16 @@ pub enum Request {
     WebAction(WebAction),
     /// Focus the GPUI command bar (chrome) — the E2E reader of Cmd-L.
     ActivateCommandBar,
+    /// Pointer press on the sidebar command field through the production
+    /// pointer-entry path: the same app method the field's mouse-down
+    /// listener calls (DESIGN.md §11.4 field-click entry into the
+    /// field-anchored overlay, same engine as Cmd-L).
+    ClickCommandField,
+    /// Pointer press on the window content right of the rail while a §11.4
+    /// palette/overlay presentation is open: the same app method the §13
+    /// dismissal layer's mouse-down listener calls (one pointer action
+    /// closes the surface and restores the origin focus domain).
+    ClickContentOutside,
     /// Return keyboard focus to the web view — the E2E reader of Escape.
     FocusWeb,
     /// Set the command bar text directly (avoids per-keystroke round trips).
@@ -305,6 +315,12 @@ pub enum Request {
     /// session-recreation class with its own budget. The sample commits only
     /// when a genuinely new tab/session is presented and focused.
     BenchmarkCommandActivateNewTab { operation_id: BenchmarkOperationId },
+    /// Measure the production Cmd-T open of the centered command palette
+    /// (DESIGN.md §11.4 `bbr-palette`) in New Tab staging mode: the sample
+    /// commits only from a render that actually constructed the palette with
+    /// the staged mode and chrome focus (fast-but-wrong guard). No tab or
+    /// session is created before Enter.
+    BenchmarkPaletteOpen { operation_id: BenchmarkOperationId },
     /// Full app snapshot.
     GetSnapshot,
     /// Liveness probe.

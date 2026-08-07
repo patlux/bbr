@@ -31,9 +31,10 @@ pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
 pub use request::Request;
 pub use snapshot::{
-    CommandResultSnapshot, CommandResultState, DenseListSnapshot, GlobalTabSnapshot,
-    LifecycleCounts, PaneLayoutSnapshot, PaneRectSnapshot, ProfileSnapshot, SemanticNode,
-    SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, TabSnapshot, TabVisualState,
+    CommandResultSnapshot, CommandResultState, CommandSurface, DenseListSnapshot,
+    GlobalTabSnapshot, LifecycleCounts, PaneLayoutSnapshot, PaneRectSnapshot, ProfileSnapshot,
+    SemanticNode, SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, TabSnapshot,
+    TabVisualState,
 };
 
 /// Current protocol version understood by this crate.
@@ -316,5 +317,58 @@ mod tests {
             rect: [0.0, 0.0, 1.0, 1.0],
         };
         assert_eq!(pane.clone(), pane);
+    }
+
+    /// The §11.4 command-surface wire enum keeps the snake_case shape, and
+    /// a snapshot carrying the new field round-trips through the full wire
+    /// shape. Legacy omission (a snapshot without the field deserializes to
+    /// the closed state) is proven by the pane-geometry test above, whose
+    /// literal predates the field and relies on `#[serde(default)]`.
+    #[test]
+    fn command_surface_wire_shape_and_snapshot_round_trip() {
+        assert_eq!(
+            serde_json::to_value(CommandSurface::None).unwrap(),
+            json!("none")
+        );
+        assert_eq!(
+            serde_json::to_value(CommandSurface::Palette).unwrap(),
+            json!("palette")
+        );
+        assert_eq!(
+            serde_json::to_value(CommandSurface::Overlay).unwrap(),
+            json!("overlay")
+        );
+        assert_eq!(
+            serde_json::from_str::<CommandSurface>("\"palette\"").unwrap(),
+            CommandSurface::Palette
+        );
+        // A snapshot carrying the new field round-trips through the full
+        // wire shape (the pane-geometry literal above predates the field;
+        // its omission relies on `#[serde(default)]`).
+        let with_surface: Snapshot = serde_json::from_str(
+            r#"{"url":null,"title":null,"loading":false,"can_go_back":false,
+                "can_go_forward":false,"web_view_hosted":true,"active_profile":1,
+                "active_profile_title":"Default","active_profile_hue":"cobalt",
+                "active_space":1,"tabs":[],"profiles":[],"spaces":[],
+                "active_tab_index":null,"active_web_view":1,"engine_sessions":2,
+                "lifecycle_counts":{"active":0,"warm":0,"suspended":0,"discarded":0},
+                "dense":{"item_count":0,"pinned_rows":0,"first_rendered":0,
+                "rendered_rows":0,"window_rows":0,"scroll_anchor":0,
+                "active_visible":false,"active_row":null},"engine_kind":"native-wkwebview",
+                "chrome_focused":false,"shell_modes":{"theme":"dark","contrast":"standard",
+                "density":"normal"},"tab_states":[],"row_titles":[],"pinned_count":0,
+                "command_bar_hint":null,"command_profile_hint":null,"drag_source":null,
+                "drag_slot":null,"drag_space":null,"drag_valid":false,"space_states":[],
+                "space_titles":[],"visible_ids":["bbr-root"],"semantics":[],
+                "command_bar_mode":"Inactive","command_bar_text":"",
+                "command_surface":"overlay",
+                "sidebar_visible":true,"sidebar_width":260.0,"sidebar_min":200.0,
+                "sidebar_default":260.0,"sidebar_max":360.0,"content_min":64.0,
+                "divider_dragging":false,"divider_label":"Sidebar divider",
+                "content_rect":[660.0,0.0,400.0,700.0],"pane_layout":null,
+                "pane_rects":[],"window_size":[1080.0,700.0]}"#,
+        )
+        .unwrap();
+        assert_eq!(with_surface.command_surface, CommandSurface::Overlay);
     }
 }

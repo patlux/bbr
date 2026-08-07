@@ -157,6 +157,15 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 100.0,
             max_ms: Some(150.0),
         },
+        // §11.4 palette-open: Cmd-T presents the centered command palette
+        // (`bbr-palette`, elev:2) on the next frame — the warm-interaction
+        // class with the same 50/100 ms budget as the other command-surface
+        // scenarios. Staged semantics: no tab or session is created before
+        // Enter.
+        "palette_open" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -335,6 +344,7 @@ impl Baseline {
             "command_type",
             "command_activate",
             "command_activate_new_tab",
+            "palette_open",
         ] {
             let b = contract_budget(kind).expect("known kind");
             entries.insert(

@@ -1,4 +1,5 @@
-//! Real-app command-bar composition E2E (Phase 5, command-composition slice).
+//! Real-app command-bar composition E2E (Phase 5, command-composition slice;
+//! plus the §11.4 palette/overlay presentations of packet U1).
 //!
 //! Covers DESIGN.md §11.5 over real WKWebViews: Cmd-L selects the active URL
 //! and typing replaces the selection; the deterministic debounce flush
@@ -30,6 +31,8 @@ mod actions;
 mod activation;
 mod cross_space;
 mod moved;
+mod palette;
+mod palette_surfaces;
 mod states;
 mod text;
 

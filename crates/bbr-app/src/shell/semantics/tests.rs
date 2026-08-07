@@ -93,6 +93,7 @@ fn input<'a>(
         sidebar_visible: true,
         sidebar_width: 260.0,
         divider_label: "bbr-sidebar-divider".into(),
+        command_surface: CommandSurface::None,
         rows,
         space_rows,
         content: SemanticContent::Native,
@@ -377,4 +378,103 @@ fn command_result_surface_exposes_typed_result_rows_under_the_field() {
             .all(|node| node.id != "bbr-command-results"),
         "no result list without results"
     );
+}
+
+#[test]
+fn palette_and_overlay_surfaces_mirror_on_the_tree_only_while_open() {
+    let browser = browser();
+    let rows = [row(0, TabVisualState::Selected)];
+    let space_rows = [space_row()];
+
+    // Closed: neither surface node exists anywhere on the tree.
+    let tree = semantic_tree(&input(
+        SemanticFocus {
+            command: false,
+            spaces: false,
+            tabs: false,
+            divider: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    ));
+    assert!(find(&tree, "bbr-palette").is_none());
+    assert!(find(&tree, "bbr-command-overlay").is_none());
+
+    // The centered palette mirrors with its field row, mode chip, and the
+    // structural cursor while chrome focus is in the palette field.
+    let mut palette_input = input(
+        SemanticFocus {
+            command: true,
+            spaces: false,
+            tabs: false,
+            divider: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    );
+    palette_input.command.mode = "newtab".into();
+    palette_input.command.text = "https://example.com".into();
+    palette_input.command_surface = CommandSurface::Palette;
+    palette_input.command.results = vec![SemanticResultRow {
+        key: "tab:0".into(),
+        title: "Example".into(),
+        subtitle: Some("https://example.com".into()),
+        selected: true,
+        destructive: false,
+    }];
+    let tree = semantic_tree(&palette_input);
+    let palette = find(&tree, "bbr-palette").expect("palette node while open");
+    assert_eq!(palette.role, SemanticRole::Palette);
+    assert!(palette.focused);
+    let field = find(&tree, "bbr-palette-field").expect("palette field row");
+    assert_eq!(field.role, SemanticRole::Field);
+    assert_eq!(field.name.as_deref(), Some("https://example.com"));
+    assert!(field.focused);
+    let mode = find(&tree, "bbr-palette-mode").expect("palette mode chip");
+    assert_eq!(mode.role, SemanticRole::Chip);
+    assert_eq!(mode.name.as_deref(), Some("newtab"));
+    assert!(find(&tree, "bbr-palette-cursor").is_some());
+    assert!(find(&tree, "bbr-command-overlay").is_none());
+    // The published result rows mirror under the palette field with the
+    // surface's own id family; the in-rail list is hidden while a surface
+    // presentation is open (the same engine renders its results once).
+    let result = find(&tree, "bbr-palette-result-tab:0").expect("palette result row");
+    assert_eq!(result.role, SemanticRole::Result);
+    assert_eq!(result.name.as_deref(), Some("Example"));
+    assert!(result.selected);
+    assert!(find(&tree, "bbr-command-results").is_none());
+
+    // The field-anchored overlay mirrors with the field text as its value.
+    let mut overlay_input = input(
+        SemanticFocus {
+            command: true,
+            spaces: false,
+            tabs: false,
+            divider: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    );
+    overlay_input.command.mode = "location".into();
+    overlay_input.command.text = "https://example.com".into();
+    overlay_input.command_surface = CommandSurface::Overlay;
+    overlay_input.command.results = vec![SemanticResultRow {
+        key: "tab:0".into(),
+        title: "Example".into(),
+        subtitle: Some("https://example.com".into()),
+        selected: true,
+        destructive: false,
+    }];
+    let tree = semantic_tree(&overlay_input);
+    let overlay = find(&tree, "bbr-command-overlay").expect("overlay node while open");
+    assert_eq!(overlay.role, SemanticRole::Palette);
+    assert_eq!(overlay.value.as_deref(), Some("https://example.com"));
+    // The overlay keeps the §11.5 result ids of the in-rail surface.
+    let result = find(&tree, "bbr-command-result-tab:0").expect("overlay result row");
+    assert_eq!(result.role, SemanticRole::Result);
+    assert!(result.selected);
+    assert!(find(&tree, "bbr-palette").is_none());
 }
