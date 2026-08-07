@@ -3,7 +3,7 @@
 //! command routing.
 
 use bbr_browser::{BrowserController, ControllerEvent};
-use bbr_web::WebEvent;
+use bbr_web::{WebEvent, WebRect};
 use gpui::{App, Context, FocusHandle, Focusable, ScrollHandle, Window};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -18,6 +18,7 @@ use crate::portal::state::{PortalHost, PortalRequest, PortalState, PortalTransit
 
 use command_rank::CommandRanking;
 use command_text::CommandText;
+use palette::CommandSurface;
 #[cfg(feature = "testkit")]
 mod benchmarks;
 #[cfg(feature = "testkit")]
@@ -28,12 +29,13 @@ mod command_activate;
 #[cfg(feature = "testkit")]
 mod command_benchmarks;
 mod command_corpus;
-mod command_rank;
+pub(crate) mod command_rank;
 mod command_surface;
 mod command_text;
 mod drag;
 mod drag_target;
 mod interaction;
+pub(crate) mod palette;
 mod render;
 mod sidebar;
 mod sidebar_view;
@@ -117,6 +119,21 @@ pub struct BbrApp {
     /// `command_bar_hint`; the two never coexist.
     command_profile_hint: Option<String>,
     command_bar_return: Option<CommandBarReturn>,
+    /// The open command-surface presentation (DESIGN.md §11.4): the centered
+    /// Cmd-T palette, the field-anchored Cmd-L/click overlay, or none. At
+    /// most one is open at a time (mutual exclusion by construction — a
+    /// single enum field); opening either clears the §11.3
+    /// `command_profile_hint`. The in-rail command bar is the baseline
+    /// surface — this state only tracks the two overlay presentations of
+    /// the same §11.5 engine.
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
+    command_surface: CommandSurface,
+    /// The last frame's command-field rect in window coordinates, recorded
+    /// by the field anchor element (DESIGN.md §11.4): the exact anchor for
+    /// the field-anchored overlay (top/leading edge flush, width from the
+    /// field) without duplicating the chrome layout math. `None` until the
+    /// field has rendered at least once.
+    command_field_rect: std::rc::Rc<std::cell::RefCell<Option<WebRect>>>,
     /// The command-field text-edit model (DESIGN.md §11.5): UTF-8-safe
     /// cursor/selection, full selection on `Cmd-L`, replace-selection
     /// typing, backspace, and horizontal cursor movement. The text mirrors
@@ -174,6 +191,8 @@ impl BbrApp {
             pressed_row: None,
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
+            command_surface: CommandSurface::None,
+            command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
             command_profile_hint: None,
@@ -213,9 +232,9 @@ impl BbrApp {
             .and_then(crate::portal::native::NativePortalBridge::diagnostics)
     }
 
-    /// The shared probe render state (the composition root passes a clone
-    /// into the native portal bridge so the portal window renders exactly
-    /// what the app commands).
+    /// The shared portal render state (the composition root passes a clone
+    /// into the native bridge so the portal window renders exactly the
+    /// active probe or product presentation commanded by the app).
     pub fn portal_probe_handle(&self) -> Rc<RefCell<PortalProbeState>> {
         self.portal_probe.clone()
     }
@@ -223,34 +242,46 @@ impl BbrApp {
     /// Present (or refresh) a portal request through the general Portal API
     /// (task packet `native-portal-host`): updates the one-active portal
     /// state and, for a [`PortalHost::NativeAboveWeb`] presentation,
-    /// resolves the placement against the window, commands the probe
-    /// surface, and orders the native portal window front (a non-activating
+    /// resolves the placement against the window, records the active
+    /// presentation, and orders the native portal window front (a non-activating
     /// panel never becomes key or main). Exactly one presentation stays
     /// active; re-presenting the same id refreshes it in place. A
     /// [`PortalHost::GpuiDeferred`] request is state-only until a production
     /// deferred caller exists.
-    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // driven by the testkit probe seam; production callers arrive with U1
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // probe + U1 production presentation seam
     pub fn portal_present(
         &mut self,
         request: PortalRequest,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> PortalTransition {
-        let transition = self.portal.present(request);
         if request.host == PortalHost::NativeAboveWeb {
             let viewport = Sz::new(
                 f32::from(window.bounds().size.width),
                 f32::from(window.bounds().size.height),
             );
             self.portal_probe.borrow_mut().present(request, viewport);
-            #[cfg(target_os = "macos")]
+        }
+        self.activate_portal_request(request, cx)
+    }
+
+    /// Activate an already-prepared presentation; render state is populated
+    /// first so ordering the child in cannot expose stale content.
+    pub(crate) fn activate_portal_request(
+        &mut self,
+        request: PortalRequest,
+        cx: &mut Context<Self>,
+    ) -> PortalTransition {
+        let transition = self.portal.present(request);
+        #[cfg(target_os = "macos")]
+        if request.host == PortalHost::NativeAboveWeb {
             self.drive_native_present(cx);
         }
         transition
     }
 
     /// Deterministically dismiss the active presentation (the production
-    /// dismissal method): the probe surface clears and the native portal
+    /// dismissal method): the active portal content clears and the native portal
     /// window orders out. Returns whether a presentation was actually
     /// active.
     pub fn portal_dismiss(&mut self, cx: &mut Context<Self>) -> bool {
@@ -292,21 +323,8 @@ impl BbrApp {
         self.portal_dismiss(cx)
     }
 
-    /// Draw one real portal-window frame (testkit harness support — the
-    /// hidden E2E harness has no display link, so the probe surface is
-    /// otherwise never composited). No-op when no portal is attached.
-    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit flush seam only
-    pub fn portal_flush_frame(&mut self, cx: &mut Context<Self>) {
-        #[cfg(target_os = "macos")]
-        if let Some(bridge) = self.native_portal.as_mut() {
-            bridge.flush_frame(cx);
-        }
-    }
-
-    /// Order the native portal window front and re-render its probe
-    /// surface. The re-render is deferred: `portal_present` can run inside a
-    /// window update (testkit seam, pointer path), where updating another
-    /// window's root directly would re-enter the app mid-update.
+    /// Order the native portal window front and re-render its active content.
+    /// Deferred to avoid re-entering another window during an app update.
     #[cfg(target_os = "macos")]
     fn drive_native_present(&mut self, cx: &mut Context<Self>) {
         if let Some(bridge) = self.native_portal.as_mut() {

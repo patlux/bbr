@@ -88,19 +88,30 @@ fn cmd_l_selects_url_typing_replaces_and_escape_restores_origin() {
         );
         // The settled DuckDuckGo endpoint (`?q=<percent-encoded terms>`) is
         // asserted by the encoded intent and unit-tested in
-        // `command_activate`; the E2E never hits the live provider.
+        // `command_activate`; the E2E never hits the live provider. Cmd-L
+        // opens the §11.4 field-anchored overlay, so the published rows keep
+        // the §11.5 `bbr-command-result-<k>` ids under the overlay
+        // container — the in-rail list is hidden while a surface is open
+        // (the same engine renders its results once).
         assert_ids(
             &published,
-            &["bbr-command-results", "bbr-command-result-search:q"],
+            &["bbr-command-overlay", "bbr-command-result-search:q"],
+        );
+        assert!(
+            !published
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-command-results"),
+            "the in-rail result list is hidden while the overlay is open"
         );
 
-        // The §15 semantic tree mirrors the rendered result surface: a List
-        // under the command field with one selected Result row.
-        let field = find(&published.semantics, "bbr-command-bar").expect("command field");
-        let list = field
+        // The §15 semantic tree mirrors the rendered result surface: the
+        // overlay node carries a List with one selected Result row.
+        let overlay = find(&published.semantics, "bbr-command-overlay").expect("command overlay");
+        let list = overlay
             .children
             .iter()
-            .find(|node| node.id == "bbr-command-results")
+            .find(|node| node.id == "bbr-command-result-list")
             .expect("semantic result list");
         assert_eq!(list.role, SemanticRole::List);
         assert_eq!(list.children.len(), 1);

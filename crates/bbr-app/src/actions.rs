@@ -13,6 +13,10 @@ gpui::actions!(
         FocusCommandBar,
         /// `Cmd-T`: open a new controller-backed tab.
         NewTab,
+        /// `Cmd-L`: open the field-anchored command overlay (location mode).
+        OpenOverlay,
+        /// `Cmd-T`: open the centered command palette in New Tab staging mode.
+        OpenPalette,
         /// `Cmd-Shift-N`: stage a new space name in the active profile.
         NewSpace,
         /// `Cmd-Shift-P`: pin or unpin the active tab (region toggle).

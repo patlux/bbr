@@ -267,6 +267,7 @@ fn main() {
                 crate::portal::native::NativePortalBridge::open(
                     cx,
                     parent_ns_view,
+                    window,
                     app.clone(),
                     probe,
                 )

@@ -13,8 +13,8 @@ use gpui::{App, Entity, KeyBinding, Window};
 use smol::channel::Receiver;
 
 use crate::actions::{
-    Back, CloseTab, FocusCommandBar, FocusWeb, Forward, MoveTab, NewSpace, NewTab, PinTab, Reload,
-    ReopenTab, ReorderTabDown, ReorderTabUp, ToggleSidebar,
+    Back, CloseTab, FocusCommandBar, FocusWeb, Forward, MoveTab, NewSpace, NewTab, OpenOverlay,
+    OpenPalette, PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp, ToggleSidebar,
 };
 use crate::app::BbrApp;
 
@@ -110,6 +110,28 @@ pub(crate) fn install_actions(
     });
     cx.on_action({
         let app = app.clone();
+        move |_: &OpenPalette, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.open_palette(window, cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
+        move |_: &OpenOverlay, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.open_overlay(window, cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
         move |_: &NewTab, cx| {
             let app = app.clone();
             cx.defer(move |cx| {
@@ -198,13 +220,13 @@ pub(crate) fn install_actions(
     });
 
     cx.bind_keys([
-        KeyBinding::new("cmd-l", FocusCommandBar, None),
+        KeyBinding::new("cmd-l", OpenOverlay, None),
         KeyBinding::new("escape", FocusWeb, None),
         KeyBinding::new("cmd-[", Back, None),
         KeyBinding::new("cmd-]", Forward, None),
         KeyBinding::new("cmd-r", Reload, None),
         KeyBinding::new("cmd-b", ToggleSidebar, None),
-        KeyBinding::new("cmd-t", NewTab, None),
+        KeyBinding::new("cmd-t", OpenPalette, None),
         KeyBinding::new("cmd-shift-n", NewSpace, None),
         KeyBinding::new("cmd-shift-p", PinTab, None),
         KeyBinding::new("cmd-shift-up", ReorderTabUp, None),

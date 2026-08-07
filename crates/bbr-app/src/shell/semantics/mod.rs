@@ -21,7 +21,11 @@
 use bbr_browser::ControllerSnapshot;
 use bbr_testkit::protocol::{SemanticNode, SemanticRole};
 
+use crate::app::palette::CommandSurface;
+
+mod command;
 use crate::components::{RowVisuals, SpaceRowVisuals, SpaceVisualState, TabVisualState};
+use command::{command_field_node, command_surface_node};
 
 /// Which GPUI chrome surface owns keyboard focus (§9: the focused control
 /// renders the ring; the model exposes the same fact typed).
@@ -94,6 +98,10 @@ pub struct SemanticInput<'a> {
     /// The effective rail width (0 when collapsed).
     pub sidebar_width: f32,
     pub divider_label: String,
+    /// The open §11.4 command-surface presentation (centered palette or
+    /// field-anchored overlay); `None` when the in-rail command bar is the
+    /// active surface.
+    pub command_surface: CommandSurface,
     /// The rendered tab rows (pinned block + bounded regular window), with
     /// their composed visual states.
     pub rows: &'a [RowVisuals],
@@ -110,6 +118,11 @@ pub fn semantic_tree(input: &SemanticInput<'_>) -> Vec<SemanticNode> {
         root_children.push(sidebar_node(input));
     }
     root_children.push(content_node(&input.content));
+    // The open palette/overlay presentation mirrors on the tree as the
+    // topmost node (elev:2, §13) while it is open.
+    if let Some(surface) = command_surface_node(input) {
+        root_children.push(surface);
+    }
     let root = SemanticNode {
         id: "bbr-root".into(),
         role: SemanticRole::Root,
@@ -186,93 +199,6 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
         focused: false,
         children,
     }
-}
-
-fn command_field_node(input: &SemanticInput<'_>) -> SemanticNode {
-    let mut children = vec![];
-    if input.focus.command {
-        // The §9 cursor: a structural, non-color-only focus cue.
-        children.push(node(
-            "bbr-command-cursor",
-            SemanticRole::Cursor,
-            None,
-            None,
-            false,
-            false,
-            vec![],
-        ));
-    }
-    // §11.3 cross-context transient: the destination profile chip + label
-    // shown for one interaction after a cross-profile space activation.
-    if let Some(hint) = &input.command.profile_hint {
-        children.push(SemanticNode {
-            id: "bbr-command-profile-hint".into(),
-            role: SemanticRole::Chip,
-            name: Some(format!("in Profile · {}", hint.title)),
-            value: None,
-            enabled: true,
-            selected: false,
-            focused: false,
-            children: vec![SemanticNode {
-                id: format!("bbr-profile-chip-{}", hint.profile_index),
-                role: SemanticRole::Chip,
-                name: Some(format!("Profile · {}", hint.monogram)),
-                value: None,
-                enabled: true,
-                selected: false,
-                focused: false,
-                children: vec![],
-            }],
-        });
-    }
-    let name = if input.command.text.is_empty() {
-        "Type a URL…".to_string()
-    } else {
-        input.command.text.clone()
-    };
-    let value = if let Some(hint) = &input.command.hint {
-        format!("{} · {}", input.command.mode, hint)
-    } else {
-        input.command.mode.clone()
-    };
-    // §11.5 result surface: the palette renders beneath the field while the
-    // location/new-tab surface is open; the typed state rows expose their
-    // stable ids too.
-    if !input.command.results.is_empty() {
-        children.push(SemanticNode {
-            id: "bbr-command-results".into(),
-            role: SemanticRole::List,
-            name: Some("Command results".into()),
-            value: None,
-            enabled: true,
-            selected: false,
-            focused: false,
-            children: input
-                .command
-                .results
-                .iter()
-                .map(|row| SemanticNode {
-                    id: format!("bbr-command-result-{}", row.key),
-                    role: SemanticRole::Result,
-                    name: Some(row.title.clone()),
-                    value: row.subtitle.clone(),
-                    enabled: true,
-                    selected: row.selected,
-                    focused: false,
-                    children: vec![],
-                })
-                .collect(),
-        });
-    }
-    node(
-        "bbr-command-bar",
-        SemanticRole::Field,
-        Some(name),
-        Some(value),
-        false,
-        input.focus.command,
-        children,
-    )
 }
 
 fn spaces_list_node(input: &SemanticInput<'_>) -> SemanticNode {

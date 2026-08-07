@@ -29,8 +29,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use gpui::{
-    div, prelude::*, px, transparent_black, Context, Entity, MouseButton, MouseDownEvent, Render,
-    Window,
+    div, prelude::*, px, transparent_black, Context, Div, Entity, MouseButton, MouseDownEvent,
+    Render, Window,
 };
 
 use super::geometry::{Edges, Rect, Sz};
@@ -79,14 +79,21 @@ pub fn probe_request() -> PortalRequest {
     )
 }
 
+/// Which GPUI content the one native portal window renders.
+#[derive(Debug, Clone)]
+pub enum PortalContent {
+    Probe,
+    Command(crate::app::palette::CommandSurface),
+}
+
 /// The portal window's render state, shared between the app (present/dismiss)
 /// and the portal window root (render). Plain data; the portal window renders
 /// from exactly what the app commanded.
 #[derive(Debug, Clone)]
 pub struct PortalProbeState {
-    /// The presentation the portal window should render; `None` when the
-    /// probe is hidden/never shown.
+    /// The presentation the portal window should render; `None` when hidden.
     request: Option<PortalRequest>,
+    content: Option<PortalContent>,
     /// The viewport (points) the request was resolved against at present
     /// time — the main window's content size, which equals the portal
     /// window's content size. Both the render and the testkit snapshot
@@ -98,6 +105,7 @@ impl PortalProbeState {
     pub fn new() -> Self {
         Self {
             request: None,
+            content: None,
             viewport: Sz::new(0.0, 0.0),
         }
     }
@@ -111,6 +119,10 @@ impl PortalProbeState {
     /// The presented request, if any.
     pub fn request(&self) -> Option<PortalRequest> {
         self.request
+    }
+
+    pub fn content(&self) -> Option<&PortalContent> {
+        self.content.as_ref()
     }
 
     /// The active presentation's stable id, if any.
@@ -133,26 +145,48 @@ impl PortalProbeState {
     /// The stable `bbr-portal-*` ids the portal window renders while the
     /// probe is visible (DESIGN §15); empty while hidden.
     pub fn ids(&self) -> Vec<String> {
-        if self.request.is_none() {
-            return Vec::new();
+        match self.content.as_ref() {
+            None => Vec::new(),
+            Some(PortalContent::Probe) => vec![
+                PROBE_SURFACE_ID.into(),
+                PROBE_BACKDROP_ID.into(),
+                PROBE_CARD_ID.into(),
+            ],
+            Some(PortalContent::Command(surface)) => vec![match surface {
+                crate::app::palette::CommandSurface::Palette => {
+                    crate::app::palette::PALETTE_ID.into()
+                }
+                crate::app::palette::CommandSurface::Overlay => {
+                    crate::app::palette::OVERLAY_ID.into()
+                }
+                crate::app::palette::CommandSurface::None => return Vec::new(),
+            }],
         }
-        vec![
-            PROBE_SURFACE_ID.into(),
-            PROBE_BACKDROP_ID.into(),
-            PROBE_CARD_ID.into(),
-        ]
     }
 
     /// Present (or refresh) the probe for `viewport`.
     pub fn present(&mut self, request: PortalRequest, viewport: Sz) {
         self.request = Some(request);
+        self.content = Some(PortalContent::Probe);
         self.viewport = viewport;
     }
 
-    /// Dismiss the probe: the portal window renders nothing until the next
-    /// presentation.
+    pub fn present_command(
+        &mut self,
+        request: PortalRequest,
+        viewport: Sz,
+        surface: crate::app::palette::CommandSurface,
+    ) {
+        self.request = Some(request);
+        self.content = Some(PortalContent::Command(surface));
+        self.viewport = viewport;
+    }
+
+    /// Dismiss the active surface: the portal window renders nothing until
+    /// the next presentation.
     pub fn clear(&mut self) {
         self.request = None;
+        self.content = None;
     }
 }
 
@@ -162,120 +196,161 @@ impl Default for PortalProbeState {
     }
 }
 
-/// The portal window's GPUI root: the probe surface.
-///
-/// Renders the transparent full-window backdrop with the centered card when
-/// the probe is visible, and an empty transparent root otherwise. The
-/// backdrop's pointer press drives the exact production outside-dismiss
-/// method on the app entity; the card stops propagation so a press on the
-/// card is never treated as an outside press.
+/// The portal window's GPUI root. It observes the one browser-app entity and
+/// re-renders U1 chrome from that authoritative state; the portal owns no
+/// browser/session/profile/space lifetime.
 pub struct PortalRoot {
-    /// The probe surface state shared with the app entity.
     probe: Rc<RefCell<PortalProbeState>>,
-    /// The app entity the backdrop routes its outside press through. `None`
-    /// before the app seam attaches the bridge (or after teardown).
+    browser_window: gpui::WindowHandle<gpui_component::Root>,
     app: Option<Entity<crate::app::BbrApp>>,
+    _app_subscription: gpui::Subscription,
 }
 
 impl PortalRoot {
-    /// Build the portal root for the probe. `app` is the retained browser
-    /// app entity; `probe` is the shared surface state.
-    pub fn new(app: Entity<crate::app::BbrApp>, probe: Rc<RefCell<PortalProbeState>>) -> Self {
+    pub fn new(
+        browser_window: gpui::WindowHandle<gpui_component::Root>,
+        app: Entity<crate::app::BbrApp>,
+        probe: Rc<RefCell<PortalProbeState>>,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let subscription = cx.observe(&app, |_root, _app, cx| cx.notify());
         Self {
             probe,
+            browser_window,
             app: Some(app),
+            _app_subscription: subscription,
         }
+    }
+
+    fn dismiss_command_surface(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.close_command_surface(window, cx)
+            });
+        });
     }
 }
 
 impl Render for PortalRoot {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let probe = self.probe.borrow();
-        let Some(request) = probe.request() else {
-            // Hidden: an empty transparent root. No ids and no hitboxes —
-            // a dismissed portal must not capture pointer events.
+        let Some(content) = probe.content().cloned() else {
             return div().size_full().bg(transparent_black()).into_any();
         };
-        let theme = Theme::dark();
-        let p = theme.palette;
-        // The card is resolved from the viewport captured at present time so
-        // the render and the testkit snapshot always agree (see module docs
-        // for the bounded resize behavior).
         let Some(rect) = probe.resolved_rect() else {
             return div().size_full().bg(transparent_black()).into_any();
         };
-        drop(probe);
 
-        let surface: gpui::AnyElement = div()
-            .id(PROBE_SURFACE_ID)
-            .size_full()
-            .bg(transparent_black())
-            .child(
+        match content {
+            PortalContent::Probe => {
+                let request = probe.request().expect("visible probe request");
+                drop(probe);
+                probe_surface(self, request, rect, cx).into_any()
+            }
+            PortalContent::Command(surface) => {
+                drop(probe);
+                let Some(app) = self.app.as_ref() else {
+                    return div().size_full().bg(transparent_black()).into_any();
+                };
+                let model = app.read(cx).command_portal_model(surface);
+                #[cfg(feature = "testkit")]
+                app.read(cx).observe_portal_command_render(surface);
+                let card = crate::portal::command::command_card(&model, rect).on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
+                        cx.stop_propagation();
+                    }),
+                );
                 div()
-                    .id(PROBE_BACKDROP_ID)
+                    .id("bbr-command-portal-surface")
                     .size_full()
                     .bg(transparent_black())
-                    // DESIGN §13 one-outside-pointer-action: an outside press
-                    // on the backdrop runs the exact production outside-
-                    // dismiss method — the same method the testkit
-                    // `PortalOutsideDismiss` request drives.
                     .on_mouse_down(
                         MouseButton::Left,
                         cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
-                            if let Some(app) = &this.app {
-                                cx.update_entity(app, |view, cx| {
-                                    view.portal_outside_dismiss(cx);
-                                });
-                            }
+                            this.dismiss_command_surface(cx);
                         }),
                     )
-                    .child(
-                        div()
-                            .id(PROBE_CARD_ID)
-                            .absolute()
-                            .left(px(rect.x))
-                            .top(px(rect.y))
-                            .w(px(rect.width))
-                            .h(px(rect.height))
-                            .rounded(theme.radius.large())
-                            .bg(p.surface_overlay)
-                            .border_1()
-                            .border_color(p.hairline)
-                            .flex()
-                            .flex_col()
-                            .items_center()
-                            .justify_center()
-                            .gap(Spacing::sp2())
-                            // The card stops propagation: a press on the card
-                            // is never an outside press, so the backdrop's
-                            // dismiss handler must not run.
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
-                                    cx.stop_propagation();
-                                }),
-                            )
-                            .child(
-                                div()
-                                    .text_size(theme.type_.title.size)
-                                    .text_color(p.ink)
-                                    .child("Portal probe"),
-                            )
-                            .child(
-                                div()
-                                    .text_size(theme.type_.meta.size)
-                                    .text_color(p.ink_faint)
-                                    .child(format!(
-                                        "{} · {}",
-                                        request.presentation.0,
-                                        request.host.label()
-                                    )),
-                            ),
-                    ),
-            )
-            .into_any();
-        surface
+                    .child(card)
+                    .into_any()
+            }
+        }
     }
+}
+
+fn probe_surface(
+    root: &PortalRoot,
+    request: PortalRequest,
+    rect: Rect,
+    cx: &mut Context<PortalRoot>,
+) -> gpui::Stateful<Div> {
+    let theme = Theme::dark();
+    let p = theme.palette;
+    let app = root.app.clone();
+    div()
+        .id(PROBE_SURFACE_ID)
+        .size_full()
+        .bg(transparent_black())
+        .child(
+            div()
+                .id(PROBE_BACKDROP_ID)
+                .size_full()
+                .bg(transparent_black())
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(move |_this, _e: &MouseDownEvent, _window, cx| {
+                        if let Some(app) = &app {
+                            cx.update_entity(app, |view, cx| {
+                                view.portal_outside_dismiss(cx);
+                            });
+                        }
+                    }),
+                )
+                .child(
+                    div()
+                        .id(PROBE_CARD_ID)
+                        .absolute()
+                        .left(px(rect.x))
+                        .top(px(rect.y))
+                        .w(px(rect.width))
+                        .h(px(rect.height))
+                        .rounded(theme.radius.large())
+                        .bg(p.surface_overlay)
+                        .border_1()
+                        .border_color(p.hairline)
+                        .flex()
+                        .flex_col()
+                        .items_center()
+                        .justify_center()
+                        .gap(Spacing::sp2())
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
+                                cx.stop_propagation();
+                            }),
+                        )
+                        .child(
+                            div()
+                                .text_size(theme.type_.title.size)
+                                .text_color(p.ink)
+                                .child("Portal probe"),
+                        )
+                        .child(
+                            div()
+                                .text_size(theme.type_.meta.size)
+                                .text_color(p.ink_faint)
+                                .child(format!(
+                                    "{} · {}",
+                                    request.presentation.0,
+                                    request.host.label()
+                                )),
+                        ),
+                ),
+        )
 }
 
 #[cfg(test)]
@@ -305,6 +380,41 @@ mod tests {
         state.clear();
         assert!(!state.is_visible());
         assert_eq!(state.resolved_rect(), None);
+        assert!(state.ids().is_empty());
+    }
+
+    #[test]
+    fn command_state_tracks_the_u1_presentation_and_clears() {
+        let mut state = PortalProbeState::new();
+        let request = PortalRequest::native(
+            crate::app::palette::PALETTE_PRESENTATION_ID,
+            PortalPlacement::Centered {
+                size: Sz::new(480.0, 420.0),
+                margin: Edges::all(8.0),
+            },
+            crate::app::palette::COMMAND_PORTAL_PRIORITY,
+            DismissalPolicy::any(),
+        );
+        state.present_command(
+            request,
+            Sz::new(1080.0, 700.0),
+            crate::app::palette::CommandSurface::Palette,
+        );
+        assert!(state.is_visible());
+        assert_eq!(
+            state.presentation(),
+            Some(crate::app::palette::PALETTE_PRESENTATION_ID)
+        );
+        assert_eq!(state.host(), Some(PortalHost::NativeAboveWeb));
+        assert_eq!(state.ids(), vec![crate::app::palette::PALETTE_ID]);
+        assert_eq!(
+            state.resolved_rect(),
+            Some(Rect::new(Pt::new(300.0, 140.0), Sz::new(480.0, 420.0)))
+        );
+
+        state.clear();
+        assert!(!state.is_visible());
+        assert!(state.content().is_none());
         assert!(state.ids().is_empty());
     }
 

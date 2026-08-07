@@ -153,7 +153,7 @@ fn arrows_move_selection_and_enter_activates_tabs_spaces_and_actions() {
         assert!(close_row.destructive, "close tab is the destructive action");
         assert_ids(
             &close_rows,
-            &["bbr-command-results", "bbr-command-result-action:2"],
+            &["bbr-command-overlay", "bbr-command-result-action:2"],
         );
         key(&mut client, "enter");
         let error = client.snapshot().expect("activation error snapshot");
@@ -162,7 +162,7 @@ fn arrows_move_selection_and_enter_activates_tabs_spaces_and_actions() {
             CommandResultState::ActivationError,
             "closing a tab in an empty space is rejected truthfully"
         );
-        assert_ids(&error, &["bbr-command-results", "bbr-command-error"]);
+        assert_ids(&error, &["bbr-command-overlay", "bbr-command-error"]);
         assert_eq!(error.command_bar_mode, CommandBarMode::Location);
         assert!(error.chrome_focused, "the surface stays open for editing");
         assert_eq!(error.engine_sessions, 2, "nothing was destroyed");

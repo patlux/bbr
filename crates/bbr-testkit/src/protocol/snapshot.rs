@@ -179,6 +179,27 @@ pub enum SemanticRole {
     /// A §11.5 command result row (`bbr-command-result-*`) inside the result
     /// list.
     Result,
+    /// A §11.4 command-surface presentation — the centered Cmd-T palette
+    /// (`bbr-palette`) or the field-anchored Cmd-L/click overlay
+    /// (`bbr-command-overlay`) — both surfaces of the same §11.5 engine.
+    Palette,
+}
+
+/// The open command-surface presentation (DESIGN.md §11.4): at most one
+/// command surface is open at a time — the centered Cmd-T palette or the
+/// field-anchored Cmd-L / field-click overlay. `None` when no command
+/// surface is open. Opening either clears the §11.3 profile hint.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CommandSurface {
+    /// No command surface is open.
+    #[default]
+    None,
+    /// The centered Cmd-T palette (`bbr-palette`) in New Tab staging mode.
+    Palette,
+    /// The field-anchored Cmd-L / field-click overlay (`bbr-command-overlay`)
+    /// in Location mode.
+    Overlay,
 }
 
 /// One typed semantic node of the chrome (DESIGN.md §15 / accessibility
@@ -446,6 +467,11 @@ pub struct Snapshot {
     pub semantics: Vec<SemanticNode>,
     pub command_bar_mode: CommandBarMode,
     pub command_bar_text: String,
+    /// The open command-surface presentation (DESIGN.md §11.4): the centered
+    /// Cmd-T palette, the field-anchored Cmd-L/click overlay, or none. At
+    /// most one is open at a time (mutual exclusion by construction).
+    #[serde(default)]
+    pub command_surface: CommandSurface,
     /// The typed state of the command result surface (DESIGN.md §11.5).
     #[serde(default)]
     pub command_result_state: CommandResultState,

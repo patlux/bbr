@@ -22,7 +22,8 @@
 use std::time::{Duration, Instant};
 
 use bbr_testkit::protocol::{
-    BenchmarkKind, BenchmarkOperationId, CommandBarMode, PresentationMeasurement, Request,
+    BenchmarkKind, BenchmarkOperationId, CommandBarMode, CommandSurface, PresentationMeasurement,
+    Request,
 };
 use bbr_testkit::Client;
 use bbr_web::WebViewId;
@@ -226,5 +227,65 @@ pub(crate) fn benchmark_command_activate_new_tab(
     if after.title.as_deref() != Some(destination_title) {
         *since = wait_title(client, new_view, destination_title, *since);
     }
+    measured
+}
+
+/// The production Cmd-T open of the centered command palette (DESIGN.md
+/// §11.4 `bbr-palette`): the request routes through the production
+/// `open_palette` seam in the app, and the sample commits only from a render
+/// that actually constructed the palette with the staged New Tab mode and
+/// chrome focus (the in-app fast-but-wrong guard rejects a missing or
+/// invented surface). The driver asserts the measured surface state and the
+/// typed snapshot: the palette surface open, the staged mode, chrome focus,
+/// the stable `bbr-palette*` ids exposed, and the staged semantics (no tab
+/// or session before Enter).
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn benchmark_palette_open(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    expected_view: WebViewId,
+    expected_tabs: usize,
+    expected_sessions: usize,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkPaletteOpen { operation_id })
+        .expect("benchmark palette open");
+    let (seq, measured) =
+        wait_measurement(client, BenchmarkKind::PaletteOpen, operation_id, *since);
+    *since = seq;
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(
+        measured.chrome_focused,
+        "the palette keeps the chrome focus domain"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::NewTab);
+    let snapshot = client.snapshot().expect("palette open snapshot");
+    assert_eq!(snapshot.command_surface, CommandSurface::Palette);
+    assert_eq!(snapshot.command_bar_mode, CommandBarMode::NewTab);
+    assert!(snapshot.chrome_focused, "Cmd-T focuses the palette field");
+    assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert_eq!(
+        snapshot.tabs.len(),
+        expected_tabs,
+        "staged semantics: no tab before Enter"
+    );
+    assert_eq!(
+        snapshot.engine_sessions, expected_sessions,
+        "staged semantics: no session before Enter"
+    );
+    assert!(
+        snapshot.visible_ids.iter().any(|id| id == "bbr-palette"),
+        "the centered palette ids are exposed: {:?}",
+        snapshot.visible_ids
+    );
+    assert!(
+        !snapshot
+            .visible_ids
+            .iter()
+            .any(|id| id == "bbr-command-overlay"),
+        "the field-anchored overlay never coexists with the palette"
+    );
     measured
 }
