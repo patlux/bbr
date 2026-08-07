@@ -5,7 +5,6 @@ use gpui::{Context, KeyDownEvent, Window};
 
 use crate::command_bar::{CommandBarMode, CommandBarReturn};
 
-use super::palette::CommandSurface;
 use super::BbrApp;
 
 impl BbrApp {
@@ -182,7 +181,7 @@ impl BbrApp {
         }
         // A rail mode entry replaces any open palette/overlay presentation
         // (the surface state couples to Location/NewTab only).
-        self.command_surface = CommandSurface::None;
+        self.dismiss_command_portal(cx);
         // The staged move has its own hint (command_bar_hint); the §11.3
         // space-switch transient must not coexist with it.
         self.clear_command_profile_hint();
@@ -269,7 +268,7 @@ impl BbrApp {
         self.command_bar_mode = CommandBarMode::NewTab;
         // The empty-pane surface is the in-rail command bar (§11.8), not a
         // palette/overlay presentation.
-        self.command_surface = CommandSurface::None;
+        self.dismiss_command_portal(cx);
         self.command_text.set_text("");
         self.open_command_ranking(cx);
         self.focus_command_bar(window, cx);
@@ -337,7 +336,7 @@ impl BbrApp {
         // Escaping a palette/overlay presentation closes it (DESIGN.md
         // §11.4); the restoration below returns to the captured origin
         // surface state, which never includes an open presentation.
-        self.command_surface = CommandSurface::None;
+        self.dismiss_command_portal(cx);
         if !matches!(
             self.command_bar_mode,
             CommandBarMode::Location
@@ -380,7 +379,7 @@ impl BbrApp {
     pub fn focus_web(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
-        self.command_surface = CommandSurface::None;
+        self.dismiss_command_portal(cx);
         self.command_ranking.close();
         window.blur();
         if let Some(view) = self.controller.snapshot().active_view {
@@ -397,7 +396,7 @@ impl BbrApp {
     pub(super) fn focus_chrome(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
-        self.command_surface = CommandSurface::None;
+        self.dismiss_command_portal(cx);
         self.command_ranking.close();
         window.focus(&self.chrome_handle, cx);
         self.engine.borrow_mut().focus_host_chrome();

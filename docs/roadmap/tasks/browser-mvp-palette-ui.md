@@ -17,40 +17,48 @@ creates neither a tab nor a native session until Enter commits a non-empty
 destination; Escape cancels and restores the prior field text and focus
 domain). Both surfaces expose deterministic `bbr-*` ids, typed snapshot
 state, and §15 semantic nodes; at most one command surface is open at a time;
-opening one clears the §11.3 cross-context profile hint; and
+opening one clears the §11.3 cross-context profile hint. Both surfaces render
+through the one per-browser-window `PortalHost::NativeAboveWeb` child host, so
+they are visible and pointer-reachable above native `WKWebView` subviews;
 `palette_open`/filter/activate presentation samples are measured through
 semantic presentation commit.
 
 ## Scope
 
-- **Centered palette** (`bbr-palette`): `elev:2` overlay centered over the
-  window content per DESIGN §11.4 — `material:overlay`, `win:palette`
+- **Centered palette** (`bbr-palette`): `elev:2` overlay centered by a
+  `PortalPlacement::Centered` request in the one `NativeAboveWeb` host per
+  DESIGN §11.4 — `material:overlay`, `win:palette`
   width (S 400 / N 480 / XL 560), `radius:lg` at S/N, `radius:xl` at XL,
   field row (`bbr-palette-field`/`-text`/`-mode`/`-cursor`), results
   (`bbr-palette-result-<k>`) using the §11.5 row anatomy, `selected`
   visuals, `accent.ink` match highlighting. Opacity fade `dur:fine` on open;
   never translate or scale.
 - **Field-anchored overlay** (`bbr-command-overlay`): `elev:2` overlay
-  anchored to the sidebar command field (top/leading edges flush, width =
+  anchored through `PortalPlacement::Anchored` to the measured sidebar command
+  field (top/leading edges flush, width =
   field width clamped to 320–`win:palette`), same result engine; results
   keep the existing §11.5 ids (`bbr-command-result-<k>`); Location mode
   shows the full URL selected in the field.
 - **Entry routing** on the Root contract (`WindowHandle<Root>` +
   `Entity<BbrApp>`): `Cmd-T` → centered palette in New Tab staging mode;
   `Cmd-L` → field focus with full-URL selection + anchored overlay;
-  pointer click on the field → same field-focused overlay. Overlay-window
-  policy (in-window layer vs child window) follows the Root-anchor
-  composition seam and stays a composition detail, not a visual change.
+  pointer click on the field → same field-focused overlay. The composition
+  policy is settled: both surfaces use the implementation-owned, transparent,
+  non-activating `NativeAboveWeb` child window; the browser root no longer
+  paints a duplicate palette/overlay below native WebKit.
 - **Command-surface state:** exactly one open surface at a time;
   open/close transitions clear the §11.3 `command_profile_hint` per the
   interaction contract; Escape/commit/outside press (one pointer action)
   close and restore the origin focus domain.
 - **Snapshot and semantic exposure:** `bbr-palette*` and
   `bbr-command-overlay` in `visible_ids`, mode/result state on the typed
-  snapshot, §15 semantic nodes mirroring both surfaces, and
-  mutual-exclusion assertions.
+  snapshot, §15 semantic nodes mirroring both surfaces, mutual-exclusion
+  assertions, plus the typed native portal presentation/host/attachment/
+  visibility/frame-sync/window-number/non-key/non-main diagnostics.
 - **Real-app E2E:** extend the production command-bar suites
-  (`just e2e-shell-command`) with palette/overlay scenarios.
+  (`just e2e-shell-command`) with palette/overlay scenarios and one shown
+  real-app boundary scenario that requires AppKit Window Server corroboration
+  of the centered palette above the real WKWebView.
 - **Performance:** `palette_open` (plus `palette_filter`/`palette_activate`
   when the filter/activation paths differ from the existing measured
   command-bar path) in the gate-enforced perf matrix with semantic
@@ -100,9 +108,11 @@ Integration base arg: f89a4799999d1d43f785da7c767a1df68759ee0b, recorded after L
 - Runs on the one pinned GPUI-CE type world and the Root window contract;
   no crates.io fallback, no dual paths, no `gpui-component::webview`.
 - Only chrome allowed to overlap the glass (§13): `elev:2`,
-  `material:overlay`; open/close is an opacity fade `dur:fine` only —
-  never translate, scale, or spring; Escape and one pointer action always
-  dismiss (§13).
+  `material:overlay`; both command surfaces use the one `NativeAboveWeb` host,
+  while `BbrApp` remains the sole text/ranking/selection/focus/browser-state
+  authority and `PortalRoot` reads only a cloned momentary view model. Open/
+  close is an opacity fade `dur:fine` only — never translate, scale, or spring;
+  Escape and one pointer action always dismiss (§13).
 - Deterministic ids per DESIGN §11.4 (`bbr-palette*`,
   `bbr-palette-result-<k>`, `bbr-command-overlay`,
   `bbr-command-result-<k>`), §15 semantic mirror, typed snapshots; no pixel
@@ -141,6 +151,14 @@ Integration base arg: f89a4799999d1d43f785da7c767a1df68759ee0b, recorded after L
       field click open the field-anchored overlay with the full URL
       selected; commit/outside press close; web and chrome origins covered;
       mutual exclusion and profile-hint clearing asserted.
+- [x] Every central palette/overlay snapshot simultaneously asserts the
+      `native-above-web` presentation, child attachment, native visibility,
+      parent-frame synchronization, non-activating/non-key/non-main policy,
+      stable portal-window reuse, and unchanged WebView/session ownership.
+- [x] One shown real-app scenario requires `portal_owns_probe_point` plus at
+      least one real AppKit Window Server corroboration (absolute BBR window
+      or relative parent-below-portal query) at the centered palette point
+      over a real native WKWebView.
 
 ### Performance
 
@@ -199,29 +217,41 @@ the smallest environment, contract decision, or user input required next
 ## Delivery ledger
 
 ```text
-Outcome:       reviewed prep complete; implementation remains pending in U1
-Commits:       parent-owned docs integration pending from the reviewed L4 lane;
-               implementation commits remain none
-Functional evidence: green (Step 3): 107 bbr unit/contract tests (incl. the
-               palette surface, visible_ids, and §15 semantics tests) plus 20
-               bbr-testkit protocol tests; testkit Clippy clean.
-Real-app E2E:  green: `just e2e-shell-command` 16/16 (5 new §11.4
-               palette/overlay scenarios: Cmd-T staging + typing filter +
-               Escape restore; Enter commits exactly one tab/session;
-               Cmd-L full-URL overlay; field click + one-pointer outside
-               press, web/chrome origins; mutual exclusion + profile-hint
-               clearing).
-Performance evidence: green: `palette_open` scenario in the gate-enforced
-               matrix (30 samples, warm 50/100 ms budget, semantic
-               presentation commit + fast-but-wrong guard); p95 ≈ 30 µs /
-               max 38 µs on the short-gate run; `just e2e-perf` passed.
-Roadmap/documentation updates: DESIGN §11.4/§11.5/§17.6 revised by L4;
-               ROADMAP/phase/track linking is parent-owned at promotion
-Open blockers and non-goals: L0 base is recorded; history provider (Phase 7),
-               result grouping, and sidebar rail (U2) remain excluded
-Worktree state: implementation diff (Steps 1–3) uncommitted in
-               bbr-mvp-u1-palette on parallel/mvp-u1-palette at foundation
-               7a98762; protocol seed preserved untouched
+Outcome:       NativeAboveWeb migration implemented and all lane closeout
+               gates green; ready for the orchestrator-owned commit/merge.
+Commits:       U1 implementation base `8054efe`; portal-kernel merge
+               `f08ca2c`; final migration commit is parent-owned.
+Functional evidence: green: isolated bbr-command benchmark p50 4.35 ms,
+               p95 17.90 ms, max 18.40 ms; full `just verify`; both relevant
+               Clippies; portal unit/contract 24/24; palette unit/contract
+               7/7; bbr-testkit 23/23; roadmap, fmt, diff-check, and no
+               manifest/lock drift.
+Real-app E2E:  green: command 17/17, portal 3/3, sidebar 3/3, then full
+               canonical `just e2e`. The shown command scenario uses a real
+               native WKWebView and requires deterministic portal ownership
+               plus real AppKit Window Server corroboration; WebViewId and
+               session count stay unchanged. Existing palette/overlay
+               scenarios assert NativeAboveWeb attachment/visibility/frame
+               sync/non-key/non-main state and stable host reuse. Product
+               render state is prepared before `orderFront`, preventing a
+               stale probe-content frame during command-surface open.
+Performance evidence: optimized gate green inside canonical `just e2e`:
+               startup 445.82 ms against 500 ms; `palette_open` 30 samples,
+               p95 0.021 ms, max 0.026 ms; every interaction budget green.
+               An earlier attempt under load 16.90 with dasd >100% and
+               Spotlight ≈94% saw only startup 506.45 ms; the succeeding
+               unchanged gate establishes that as transient host load. No
+               budget, sample, timeout, or acceptance weakening.
+Roadmap/documentation updates: task packet, ARCHITECTURE, E2E_ARCHITECTURE,
+               and delivery ledger record the implemented composition and
+               evidence boundary.
+Open blockers and non-goals: none for U1; global scale feedback is a separate
+               post-MVP slice. History provider (Phase 7), result grouping,
+               and sidebar rail (U2) remain excluded.
+Worktree state: ready for commit in bbr-mvp-u1-palette on
+               parallel/mvp-u1-palette; structure bounded (`dispatch.rs` 482
+               + `dispatch_portal.rs` 99; app.rs 523, below its 524-line
+               kernel head), no dependency drift.
 ```
 
 Planning/read-only, implementation, test execution, review, remediation,

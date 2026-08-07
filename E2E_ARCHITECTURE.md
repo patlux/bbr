@@ -650,6 +650,25 @@ The suite uses typed snapshots/deadlines, no pixel assertions or product sleeps.
 After remediation it passed three focused 3/3 runs, the command and sidebar
 regressions, and two complete sequential `just e2e` runs.
 
+## 7j. U1 command surfaces over native WebKit
+
+`just e2e-shell-command` contains 17 real-app scenarios after U1 portal
+migration. The existing palette/overlay behavior tests now assert from the
+same snapshots that the active command surface is hosted by
+`native-above-web`: logical/native visibility, child attachment, parent-frame
+synchronization, non-activating/non-key/non-main policy, stable portal-window
+reuse after dismissal, and unchanged `WebViewId`/session ownership.
+
+One focused shown-window scenario adds the required native-boundary evidence.
+It opens Cmd-T over a real `native-wkwebview`, flushes the separate portal
+window only after releasing the mutable `BbrApp` lease, and requires
+`portal_owns_probe_point` plus at least one real AppKit Window Server
+corroboration (absolute BBR portal/parent, or the BBR parent immediately below
+the portal). Escape then orders the same host out without recreating the web
+session. This scenario also regresses the GPUI double-lease failure that would
+occur if a portal draw tried to read `BbrApp` while the gateway still held its
+mutable update lease.
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature
@@ -696,7 +715,7 @@ just e2e-shell-tabs    # visible vertical-tab surface (pointer/keyboard/empty)
 just e2e-shell-spaces  # visible profile/space surface (pointer + keyboard suites)
 just e2e-shell-sidebar # adjustable/collapsible sidebar surface (drag, keys, collapse, clamp)
 just e2e-shell-split-geometry # keyed per-WebViewId split panes, focus, resize, close (split anchor)
-just e2e-shell-command  # Cmd-L/text/debounce/results/actions/cross-space identity/focus
+just e2e-shell-command  # command engine + U1 NativeAboveWeb palette/overlay + AppKit boundary evidence
 just e2e-shell-hover    # pointer hover/press states + the internal §15 semantic tree
 just e2e-perf      # optimized startup and interaction latency budgets
 just e2e-perf-full # bounded repeated canonical gate (COLD_STARTUP_SAMPLES launches + 30-sample interactions)

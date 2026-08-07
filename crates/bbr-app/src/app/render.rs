@@ -146,23 +146,6 @@ impl Render for BbrApp {
             .into_any()
         };
 
-        // §11.4/§13 presentation: the open palette/overlay floats above the
-        // window content as the root's topmost child (elev:2). The native
-        // content slot keeps its exact geometry — the surface only paints
-        // over it, it never re-flows it.
-        let command_surface =
-            self.command_surface_presentation(&theme, chrome_focused, sidebar_width, cx);
-
-        // §11.4 presentation milestone: when a `PaletteOpen` benchmark is
-        // pending, the probe records the command-surface presentation this
-        // render actually constructed — so the sample can commit only from a
-        // frame that genuinely drew the centered palette (a frame that
-        // omitted the surface, or drew the wrong one, records a different
-        // observation and can never satisfy the armed expectation).
-        #[cfg(feature = "testkit")]
-        self.performance
-            .observe_rendered_surface(self.command_surface);
-
         div()
             .id("bbr-root")
             .relative()
@@ -206,9 +189,6 @@ impl Render for BbrApp {
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::end_tab_drag))
             .when(self.sidebar_visible, |root| root.child(sidebar))
             .child(content)
-            .when(command_surface.is_some(), |root| {
-                root.child(command_surface.expect("checked above"))
-            })
     }
 }
 

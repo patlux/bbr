@@ -14,7 +14,6 @@ use gpui::{Context, Window};
 use crate::command_bar::CommandBarMode;
 
 use super::command_rank::CommandResultState;
-use super::palette::CommandSurface;
 use super::BbrApp;
 
 /// The settled search fallback (packet settled value): the terms are
@@ -254,7 +253,7 @@ impl BbrApp {
                     // domain keeps focus in the tab list (the initiating
                     // focus domain was chrome/command).
                     self.command_bar_mode = CommandBarMode::Inactive;
-                    self.command_surface = CommandSurface::None;
+                    self.dismiss_command_portal(cx);
                     self.command_ranking.close();
                     self.focus_tab_list(window, cx);
                 }
@@ -392,7 +391,7 @@ impl BbrApp {
         }
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
-        self.command_surface = CommandSurface::None;
+        self.dismiss_command_portal(cx);
         self.command_ranking.close();
         cx.notify();
     }

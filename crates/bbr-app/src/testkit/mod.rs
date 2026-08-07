@@ -26,6 +26,7 @@ use crate::window_seam::with_app;
 mod dispatch;
 mod dispatch_benchmark;
 mod dispatch_drag;
+mod dispatch_portal;
 mod snapshot;
 pub(crate) use snapshot::browser_change;
 

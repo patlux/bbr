@@ -142,22 +142,18 @@ fn protocol_conversion_maps_the_wire_enum_one_to_one() {
 }
 
 #[test]
-fn overlay_left_inset_keeps_the_card_flush_with_the_field() {
-    // The §11.4 overlay card is positioned inside the §13 surface layer,
-    // whose containing block starts at `x = sidebar_width`. The measured
-    // field rect is window-absolute, so the inset must subtract the rail
-    // width: `sidebar_width + inset` must land exactly on the field's
-    // leading edge (DESIGN.md §11.4). A bug that used `rect.x` directly
-    // placed the card a full rail width right of the field.
-    let sidebar_width = 260.0;
-    for field_x in [0.0, 12.0, 260.0, 320.0, 500.0] {
-        let inset = overlay_left_inset(field_x, sidebar_width);
-        assert_eq!(
-            sidebar_width + inset,
-            field_x,
-            "flush for field x={field_x}"
-        );
-    }
-    // Rail collapsed: the inset is the window-absolute x itself.
-    assert_eq!(overlay_left_inset(12.0, 0.0), 12.0);
+fn overlay_portal_placement_anchors_to_the_measured_field_bottom_left() {
+    let field = WebRect::new(12.0, 48.0, 280.0, 34.0);
+    let placement = overlay_placement(field, 320.0);
+    let PortalPlacement::Anchored(placement) = placement else {
+        panic!("overlay must use anchored portal placement");
+    };
+    assert_eq!(placement.anchor_point, Pt::new(12.0, 82.0));
+    assert_eq!(placement.anchor, PortalAnchor::TopLeft);
+    assert_eq!(placement.size, Sz::new(320.0, 320.0));
+    assert_eq!(placement.offset, Pt::new(0.0, 0.0));
+    assert_eq!(
+        placement.fit,
+        FitMode::SnapToWindowWithMargin(Edges::all(8.0))
+    );
 }

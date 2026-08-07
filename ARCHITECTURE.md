@@ -213,6 +213,23 @@ non-activating/key/main policy, and real Window Server hit-test queries. The
 real-app portal suite proves the child host stays above the parent's WKWebViews
 without changing `WebViewId`, session count, profile, space, or focus.
 
+U1's centered palette and field-anchored command overlay are the first product
+consumers of this host. `BbrApp` remains the sole authority for command text,
+mode, ranking, selection, focus origin, and browser mutations. The one
+`PortalRoot` observes the same `Entity<BbrApp>`, clones a momentary
+`CommandPortalModel` during render, and paints only GPUI chrome inside the child
+window; it owns no tab/profile/space/session lifetime. Opening U1 presents a
+stable `NativeAboveWeb` request (`PresentationId(0xC1)` palette or `0xC2`
+overlay), and every close/commit/cancel/navigation context path dismisses the
+same host. The browser root no longer paints a duplicate floating command
+surface underneath WebKit.
+
+A portal-window testkit draw must happen after the mutable `BbrApp` lease is
+released: the portal render reads that same entity. The gateway therefore
+copies the portal `AnyWindowHandle` during `with_app`, then calls
+`Window::draw` outside that lease. This prevents GPUI entity-map reentrancy
+while preserving a single state authority.
+
 ---
 
 ## 4. Unsafe-code boundaries

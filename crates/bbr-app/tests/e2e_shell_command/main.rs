@@ -29,6 +29,7 @@ mod e2e_semantics_common;
 
 mod actions;
 mod activation;
+mod command_portal;
 mod cross_space;
 mod moved;
 mod palette;

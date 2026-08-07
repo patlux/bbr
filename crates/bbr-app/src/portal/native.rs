@@ -7,9 +7,9 @@
 //! native bridge in `bbr-web-macos`, and retained here for app lifecycle.
 //! GPUI owns portal content and state; AppKit owns only native z-order,
 //! parent attachment, frame synchronization, visibility, and hit-test
-//! routing. The portal window's GPUI root is the probe surface
-//! ([`super::probe::PortalRoot`]); the app drives it through the shared
-//! probe state.
+//! routing. The portal window's GPUI root renders probe and product chrome
+//! ([`super::probe::PortalRoot`]); the app drives it through shared portal
+//! presentation state.
 //!
 //! On non-macOS targets the seam is an empty placeholder so the workspace
 //! still evaluates; the cross-platform host is deferred to the adapter phase.
@@ -29,8 +29,8 @@ mod macos {
     use std::rc::Rc;
 
     use gpui::{
-        prelude::*, px, size, AnyWindowHandle, App, Bounds, Entity, Point,
-        WindowBackgroundAppearance, WindowBounds, WindowHandle, WindowKind, WindowOptions,
+        prelude::*, px, size, App, Bounds, Entity, Point, WindowBackgroundAppearance, WindowBounds,
+        WindowHandle, WindowKind, WindowOptions,
     };
     use objc2::MainThreadMarker;
 
@@ -53,8 +53,8 @@ mod macos {
         /// above the parent. The window starts hidden, non-focusing, and
         /// non-activating; it is created once at window construction so the
         /// later open path is only state update + order-front. `app` is the
-        /// browser app entity the probe surface routes its outside press
-        /// through; `probe` is the shared probe render state.
+        /// browser app entity product chrome observes and routes actions
+        /// through; `probe` is the shared portal render state.
         ///
         /// # Safety
         ///
@@ -64,6 +64,7 @@ mod macos {
         pub unsafe fn open(
             cx: &mut App,
             parent_ns_view: *mut std::ffi::c_void,
+            browser_window: WindowHandle<gpui_component::Root>,
             app: Entity<BbrApp>,
             probe: Rc<RefCell<PortalProbeState>>,
         ) -> anyhow::Result<Self> {
@@ -88,7 +89,7 @@ mod macos {
             };
             let portal_window = cx
                 .open_window(options, |_window, cx| {
-                    cx.new(|_| PortalRoot::new(app.clone(), probe.clone()))
+                    cx.new(|cx| PortalRoot::new(browser_window, app.clone(), probe.clone(), cx))
                 })
                 .map_err(|error| anyhow::anyhow!("open portal window: {error}"))?;
             let portal_ns_view = portal_window
@@ -132,20 +133,6 @@ mod macos {
             if let Some(mtm) = MainThreadMarker::new() {
                 self.native.set_visible(mtm, visible);
             }
-        }
-
-        /// Draw one real portal-window frame through the untyped window path
-        /// (the draw re-borrows the portal root entity, so the typed handle
-        /// path would double-lease; the same pattern as the testkit
-        /// `FlushFrame` arm). The hidden E2E harness has no display link, so
-        /// the probe surface is otherwise never composited; harmless in
-        /// production (same production draw path).
-        pub fn flush_frame(&self, cx: &mut App) {
-            let handle: AnyWindowHandle = self.portal_window.into();
-            let _ = handle.update(cx, |_root, window, cx| {
-                let app: &mut App = cx;
-                let _ = window.draw(app);
-            });
         }
 
         /// Narrow main-thread diagnostics snapshot (DESIGN §15 semantics;

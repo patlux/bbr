@@ -213,51 +213,6 @@ impl BbrApp {
                 )
             })
     }
-
-    /// The ranked result rows (or the truthful typed state row) of the open
-    /// §11.4 surface, with the surface-specific §15 id families:
-    /// `result_prefix` for rows (`bbr-palette-result` / `bbr-command-result`),
-    /// `state_prefix` for the loading/empty/error rows (`bbr-palette` /
-    /// `bbr-command`). Shared by the centered palette and the field-anchored
-    /// overlay presentations.
-    pub(super) fn surface_results(
-        &self,
-        theme: &Theme,
-        result_prefix: &str,
-        state_prefix: &str,
-    ) -> Vec<Stateful<Div>> {
-        let ranking = &self.command_ranking;
-        match ranking.state {
-            CommandResultState::Results => ranking
-                .results
-                .iter()
-                .enumerate()
-                .map(|(index, row)| {
-                    self.command_result_row(theme, row, index == ranking.selected, result_prefix)
-                })
-                .collect(),
-            CommandResultState::Loading => {
-                let id = format!("{state_prefix}-loading");
-                vec![state_row(theme, id.clone().into(), "Ranking…")]
-            }
-            CommandResultState::Empty => {
-                let id = format!("{state_prefix}-empty");
-                vec![state_row(theme, id.clone().into(), "Type a destination")]
-            }
-            CommandResultState::ActivationError => {
-                let id = format!("{state_prefix}-error");
-                vec![state_row(
-                    theme,
-                    id.into(),
-                    ranking
-                        .activation_error
-                        .as_deref()
-                        .unwrap_or("Activation failed"),
-                )]
-            }
-            CommandResultState::Inactive => Vec::new(),
-        }
-    }
 }
 
 /// The stable leading glyph of a result row: the group's one-letter mark
