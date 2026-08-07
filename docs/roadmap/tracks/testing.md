@@ -37,7 +37,7 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 ## Harness improvements
 
 - [ ] Emit semantic window-resized events instead of snapshot polling.
-- [ ] Emit `Quitting` before graceful shutdown.
+- [x] Emit `Quitting` before graceful shutdown, after the gateway writer has flushed the successful Quit response so process exit cannot race the client response.
 - [ ] Add model snapshots for complete profile/space/split collections; active profile/space and tab/session snapshots exist. *(Complete profile/space collections with per-space active tab, live session, and tab count are exposed; split collections remain.)*
 - [ ] Add protocol commands as product capabilities land; profile/space create/activate/move/suspend and open/select/close tabs exist.
 - [x] Add bounded individual `just e2e-smoke` / `just e2e-tabs` / `just e2e-profiles` / `just e2e-shell-tabs` / `just e2e-shell-spaces` / `just e2e-shell-sidebar` / `just e2e-shell-organize` recipes and a canonical sequential `just e2e` gate. *(The sidebar and organize suites joined the canonical gate with the slices that proved them stable.)*

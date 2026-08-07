@@ -20,6 +20,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
+use std::time::Duration;
 
 use super::framing::{encode_server_frame, ClientFrame, ServerFrame};
 use super::protocol::{Error, Event, Request, Response, PROTOCOL_VERSION};
@@ -29,8 +30,14 @@ const RING_CAPACITY: usize = 4096;
 
 /// One output message queued for a connection's writer thread.
 enum OutMsg {
-    Response(Vec<u8>),
-    Event { json: Vec<u8>, _seq: u64 },
+    Response {
+        bytes: Vec<u8>,
+        flushed: Option<Sender<()>>,
+    },
+    Event {
+        json: Vec<u8>,
+        _seq: u64,
+    },
 }
 
 /// cap-first insertion ring (VecDeque with a max length).
@@ -220,12 +227,15 @@ fn connection_loop(
         .spawn(move || {
             let mut writer = BufWriter::new(write_half);
             while let Ok(msg) = out_rx.recv() {
-                let bytes = match msg {
-                    OutMsg::Response(bytes) => bytes,
-                    OutMsg::Event { json, .. } => json,
+                let (bytes, flushed) = match msg {
+                    OutMsg::Response { bytes, flushed } => (bytes, flushed),
+                    OutMsg::Event { json, .. } => (json, None),
                 };
                 if writer.write_all(&bytes).is_err() || writer.flush().is_err() {
                     return;
+                }
+                if let Some(flushed) = flushed {
+                    let _ = flushed.send(());
                 }
             }
         })
@@ -302,11 +312,41 @@ fn _connection_requests(
                 }
             }
             _other if !authenticated => return,
+            Request::Quit => {
+                // A Quit response must reach the client before the app exits.
+                // Dispatching Quit first lets `cx.quit()` tear down the
+                // process and socket while the response is still queued,
+                // producing an EOF race under host contention. Flush the Ok
+                // frame through the connection's sole writer, then ask the
+                // app handler to perform graceful shutdown.
+                let json = encode_server_frame(&super::framing::ServerFrame::Response(Box::new(
+                    Response::Ok,
+                )));
+                let (flushed_tx, flushed_rx) = mpsc::channel();
+                if out_tx
+                    .send(OutMsg::Response {
+                        bytes: json,
+                        flushed: Some(flushed_tx),
+                    })
+                    .is_err()
+                {
+                    return;
+                }
+                let _ = flushed_rx.recv_timeout(Duration::from_secs(5));
+                let _ = handler(Request::Quit);
+                return;
+            }
             other => handler(other),
         };
 
         let json = encode_server_frame(&super::framing::ServerFrame::Response(Box::new(response)));
-        if out_tx.send(OutMsg::Response(json)).is_err() {
+        if out_tx
+            .send(OutMsg::Response {
+                bytes: json,
+                flushed: None,
+            })
+            .is_err()
+        {
             return;
         }
     }
@@ -341,6 +381,51 @@ mod tests {
         assert_eq!(meta.permissions().mode() & 0o777, 0o700);
         let dir_meta = std::fs::metadata(&dir).unwrap();
         assert_eq!(dir_meta.permissions().mode() & 0o777, 0o700);
+        server.stop();
+        drop(server);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn quit_response_is_flushed_before_shutdown_handler_runs() {
+        let dir = tmp_profile();
+        let (handler_started_tx, handler_started_rx) = mpsc::channel();
+        let (allow_shutdown_tx, allow_shutdown_rx) = mpsc::channel();
+        let allow_shutdown_rx = Mutex::new(allow_shutdown_rx);
+        let server = GatewayServer::start(&dir, "tok-1", "0.1.0", move |req| match req {
+            Request::Quit => {
+                handler_started_tx.send(()).expect("report handler start");
+                allow_shutdown_rx
+                    .lock()
+                    .unwrap()
+                    .recv_timeout(Duration::from_secs(5))
+                    .expect("test releases shutdown handler");
+                Response::Ok
+            }
+            _ => Response::Error(Error::new("unexpected", "only Quit expected")),
+        })
+        .expect("start server");
+        let path = server.socket_path().to_path_buf();
+        let (client_done_tx, client_done_rx) = mpsc::channel();
+        let client = std::thread::spawn(move || {
+            let mut client = crate::client::Client::connect(&path).expect("connect");
+            client.hello("tok-1").expect("hello");
+            client
+                .quit()
+                .expect("Quit response must arrive before shutdown");
+            client_done_tx.send(()).expect("report client response");
+        });
+
+        handler_started_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("shutdown handler started");
+        client_done_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("client received the flushed response while handler waited");
+        allow_shutdown_tx
+            .send(())
+            .expect("release shutdown handler");
+        client.join().unwrap();
         server.stop();
         drop(server);
         std::fs::remove_dir_all(dir).unwrap();

@@ -376,6 +376,9 @@ pub(crate) fn dispatch(
         Request::Ping => Response::Ok,
 
         Request::Quit => {
+            if let Some(server) = &server {
+                server.broadcast(Event::Quitting);
+            }
             cx.quit();
             Response::Ok
         }

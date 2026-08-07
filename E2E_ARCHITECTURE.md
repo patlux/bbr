@@ -135,7 +135,7 @@ JSON; no macOS, no GPUI, no WebKit).
 | `SetWindowSize { width, height }` | `window.resize`; native view re-framed next frame |
 | `GetSnapshot` | Full typed `Snapshot` |
 | `Ping` | Liveness |
-| `Quit` | `cx.quit()` (graceful shutdown, clean exit) |
+| `Quit` | Gateway flushes `Response::Ok`, then emits `Quitting` and calls `cx.quit()` (graceful shutdown, clean exit without a response/EOF race) |
 
 ### Events (implemented)
 
@@ -147,9 +147,9 @@ so it always agrees with the snapshot) · `CommandBarChanged { mode, text }` ·
 `BrowserChanged` with typed profile/space creation and activation plus tab
 open/select/close/move/suspend and split open/close outcomes
 (`SplitOpened { primary, secondary }` / `SplitClosed`) from the shared app
-mutation path.
-`Event::Quitting` is declared in the protocol but **not yet emitted** (the
-harness asserts clean exit by process status instead).
+mutation path · `Quitting` immediately before `cx.quit()` after the gateway
+writer has flushed the successful Quit response. Harnesses still assert the
+process exit status as the final shutdown evidence.
 
 ### Snapshot (implemented)
 
