@@ -213,12 +213,31 @@ pub(super) fn wait_for_frontmost_evidence(client: &mut Client, deadline: Instant
     }
 }
 
-/// Poll the real AppKit Window Server until the shown browser parent owns the
-/// center of its web-content area while the portal is idle. This is the
+/// Poll the real AppKit Window Server until the probe point is owned either
+/// by the shown browser parent or by a window that is provably NOT this
+/// app's (a foreign overlay), while the portal is idle. This is the
 /// native-boundary complement to [`assert_host_closed`]: a logically closed
-/// snapshot alone could miss a stale on-screen child window, whereas the raw
-/// window-number query proves the hidden portal neither occludes nor receives
-/// pointer events at the probe point.
+/// snapshot alone could miss a stale on-screen child window, whereas the
+/// raw window-number query proves the hidden portal neither occludes nor
+/// receives pointer events at the probe point.
+///
+/// The acceptance does NOT assume that no foreign window covers the probe
+/// point: `windowNumberAtPoint:belowWindowWithWindowNumber:` answers across
+/// ALL applications, so another app's always-on-top window or a system
+/// overlay can legitimately be frontmost there while the BBR parent is
+/// perfectly ordinary underneath. The measured
+/// `frontmost_at_probe_point_is_this_app` fact (an `NSApplication.windows`
+/// membership test on the macOS host) classifies the raw answer:
+///
+/// - BBR-owned frontmost at the point ⇒ it MUST be the parent window; a
+///   stale portal or any other BBR window there is the regression this test
+///   exists for (the portal is additionally excluded by a dedicated hard
+///   assertion on every poll);
+/// - foreign frontmost at the point ⇒ accepted as environmental, but only
+///   after every hard invariant (host closed, not natively visible, not
+///   owning hit testing, never the portal window) held on the same snapshot;
+/// - no window at the point ⇒ hard fail (consistent with the open-state
+///   helper): an on-screen shown parent must resolve some window.
 pub(super) fn wait_for_idle_parent_ownership(client: &mut Client, deadline: Instant) -> Snapshot {
     loop {
         if let Err(error) = client.send_ok(&dsl::activate_app()) {
@@ -241,17 +260,23 @@ pub(super) fn wait_for_idle_parent_ownership(client: &mut Client, deadline: Inst
             Some(p.portal_window_number),
             "the hidden portal window must never be frontmost at the content probe"
         );
-        if p.frontmost_at_probe_point == Some(p.parent_window_number) {
+        let parent_owns = p.frontmost_at_probe_point == Some(p.parent_window_number);
+        let foreign_overlay =
+            p.frontmost_at_probe_point.is_some() && !p.frontmost_at_probe_point_is_this_app;
+        if parent_owns || foreign_overlay {
             return snapshot;
         }
         assert!(
             Instant::now() < deadline,
             "shown browser parent did not regain Window Server ownership while portal was idle: \
-             frontmost {:?}, parent {}, portal {}, native_visible {}",
+             frontmost {:?} (own-process {}, parent {}, portal {}), native_visible {}, \
+             owns_probe {}",
             p.frontmost_at_probe_point,
+            p.frontmost_at_probe_point_is_this_app,
             p.parent_window_number,
             p.portal_window_number,
-            p.native_visible
+            p.native_visible,
+            p.portal_owns_probe_point
         );
         std::thread::yield_now();
     }

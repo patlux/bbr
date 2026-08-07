@@ -369,6 +369,16 @@ pub struct PortalSnapshot {
     /// window. The deterministic z-order evidence is
     /// [`PortalSnapshot::below_portal_at_probe_point`].
     pub frontmost_at_probe_point: Option<i64>,
+    /// Measured owner classification of
+    /// [`PortalSnapshot::frontmost_at_probe_point`]: whether that window
+    /// number belongs to this process (membership-tested against
+    /// `NSApplication.windows` on the macOS host). `false` when no window is
+    /// frontmost or when the frontmost window belongs to another
+    /// application (a foreign overlay covering the probe point). Lets the
+    /// harness distinguish a provably foreign overlay from a BBR-owned
+    /// window without dropping the raw absolute query.
+    #[serde(default)]
+    pub frontmost_at_probe_point_is_this_app: bool,
     /// The AppKit window number frontmost at the probe point strictly BELOW
     /// the portal window. Raw diagnostic only (all-spaces/PopUp windows can
     /// answer with an unrelated overlay); the deterministic hit-test

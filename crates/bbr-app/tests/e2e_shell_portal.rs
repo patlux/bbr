@@ -36,7 +36,12 @@ use support::*;
 /// intercept the content point. Three independent cold app runs open a second
 /// real WKWebView, navigate it, and repeatedly switch between both sessions;
 /// every presentation is corroborated by WebKit title events plus an AppKit
-/// Window Server hit-test that names the browser parent, never the portal.
+/// Window Server hit-test that either names the browser parent or provably
+/// belongs to another process (an environmental overlay), never the portal.
+/// The idle acceptance classifies the raw absolute frontmost answer with the
+/// measured `frontmost_at_probe_point_is_this_app` fact, so a foreign
+/// always-on-top window over the probe point is proven foreign instead of
+/// failing the run (see [`wait_for_idle_parent_ownership`]).
 #[test]
 #[ignore]
 fn idle_portal_never_occludes_or_intercepts_repeated_web_presentations() {
