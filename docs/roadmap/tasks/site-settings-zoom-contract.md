@@ -75,15 +75,26 @@ Integration order: portable contract may land after the serial bbr-web kernel
 
 ### Unit and contract
 
-- [ ] Site-key tests cover normalization/validation, profile isolation, port
-      distinctions, and stable equality/order/serde shape.
-- [ ] Zoom tests cover default, bounds, step sequence, set, reset, no floating-
-      point drift, and invalid inputs.
-- [ ] Store/effective-value tests prove default versus override behavior,
+- [x] Site-key tests cover normalization/validation, profile isolation, port
+      distinctions, and stable equality/order/serde shape. *(STEP 1: `SiteKey`
+      origin key, `ProfileSiteKey` profile ownership, scheme/host/port
+      semantics with no PSL; default + serde suites pass.)*
+- [x] Zoom tests cover default, bounds, step sequence, set, reset, no floating-
+      point drift, and invalid inputs. *(STEP 1: integer-percent `ZoomPercent`,
+      default/min/max/step documented, in/out/reset with exact ladder and
+      drift tests; serde revalidates bounds on the wire.)*
+- [x] Store/effective-value tests prove default versus override behavior,
       profile/site isolation, put/remove commands, supersession, and stale ack.
-- [ ] Additional settings, if any, have complete default/override/serde tests;
-      ambiguous fields are omitted rather than guessed.
-- [ ] Default and serde-enabled crate suites plus Clippy `-D warnings` pass.
+      *(STEP 2: sparse `SiteSettingsOverrides`/`EffectiveSiteSettings`
+      resolution, versioned `SiteZoomLifecycle` with persist/ack/clear, and an
+      object-safe `SiteSettingsStore` port; deterministic fake-store tests
+      cover every lifecycle rule.)*
+- [x] Additional settings, if any, have complete default/override/serde tests;
+      ambiguous fields are omitted rather than guessed. *(None added: zoom-only
+      per packet allowance; Phase-8 policy values stay with their owning
+      contracts, notably the permissions contract.)*
+- [x] Default and serde-enabled crate suites plus Clippy `-D warnings` pass.
+      *(STEP 1 + STEP 2 evidence below.)*
 
 ### Real-app E2E
 
@@ -134,11 +145,28 @@ shortcut.
 ## Delivery ledger
 
 ```text
-Outcome: packet and exclusive module anchor prepared; implementation pending
-Commits: pending
-Functional evidence: pending
+Outcome: STEP 1 + STEP 2 (site identity, zoom value, sparse overrides,
+         effective resolution, zoom lifecycle, store port) implemented,
+         tested, and gated. STEP 3 independently re-verified the diff and
+         gates; no defects found. Persistence schema/repository, WebKit
+         mapping, and UI remain later slices.
+Commits: none; working tree left uncommitted by lane contract
+Functional evidence (STEP 3 re-run, independent of writer):
+  cargo test -p bbr-web                                     pass (120)
+  cargo test -p bbr-web --features serde                    pass (133)
+  cargo clippy -p bbr-web --all-targets -- -D warnings      pass
+  cargo clippy -p bbr-web --all-targets --features serde -- -D warnings  pass
+  cargo fmt --all -- --check                                pass
+  roadmap check (scripts/check_roadmap.py; just not installed on host)  pass
+  git diff --check                                          pass
+Review scope: exclusive paths only (site_settings/**, task-packet
+  ledger/evidence); no lib.rs/manifest/lock/dependency/unsafe changes; all
+  files <= 500 lines; no URL/PSL dependency; no raw f32 zoom state; no
+  persistence/native/UI/testkit/E2E scope.
 Real-app E2E: not applicable to contract-only lane
 Performance evidence: not applicable to contract-only lane
-Open blockers and non-goals: persistence schema/repository, WebKit mapping, and UI deferred
-Worktree state: launch pending
+Open blockers and non-goals: persistence schema/repository, WebKit zoom
+  mapping, and settings UI deferred; store port is implementable by the later
+  repository slice (get/put/remove keyed by profile+site, object-safe)
+Worktree state: uncommitted implementation on parallel/p8e-site-settings-zoom-contract
 ```
