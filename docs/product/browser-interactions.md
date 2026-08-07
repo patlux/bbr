@@ -168,12 +168,13 @@ Additional rules:
   tick clamps to the region edge and renders the invalid variant, and the
   release commits nothing (the drop is rejected whole). Dropping back on the
   source slot is a no-op that never emits a reorder event.
-- Dragging above the tab list targets the visible space row the pointer
-  hovers; the row renders the §10.9 drag-target state with its destination
-  profile chip. Releasing there moves the dragged tab into that space through
-  the controller's move policy (same-profile keeps the live session;
-  cross-profile recreates it once in the destination store). Dropping on the
-  tab's own space is a no-op.
+- Dragging onto a space presentation targets the space identity chip in the
+  footer strip (DESIGN §11.3/§11.4) that the pointer hovers; the chip renders
+  the §10.9 drag-target state with its destination profile companion.
+  Releasing there moves the dragged tab into that space through the
+  controller's move policy (same-profile keeps the live session; cross-profile
+  recreates it once in the destination store). Dropping on the tab's own space
+  is a no-op.
 - Every pointer operation above has a keyboard equivalent: the row pin control
   ↔ `Cmd-Shift-P`, drag reorder ↔ `Cmd-Shift-↑/↓`, drag-into-space ↔ staged
   `Cmd-Shift-M` + Enter.
@@ -190,6 +191,17 @@ Additional rules:
 
 ### Switch a space — Contract
 
+- Spaces are permanently presented as identity chips in the sidebar footer
+  strip; there is no reveal toggle and no separate space-row region. Pointer
+  activation, keyboard activation, and a committed horizontal trackpad swipe
+  over the sidebar are three routes into the identical space-switch authority
+  and produce identical state, events, and session lifecycle.
+- A horizontal swipe moves to the previous/next space in canonical list order.
+  It is a direct-manipulation gesture: while the gesture is in progress nothing
+  is committed, releasing below the commit threshold restores the source space
+  with no switch event, and releasing beyond it commits exactly one switch.
+  Chrome tint may follow gesture progress; the native web view is never
+  animated, sampled, or interpolated.
 - Switching to another space of the same profile never announces a profile
   transition.
 - After a successful **cross-profile** space activation, the destination

@@ -7,10 +7,23 @@ Parents: [Phase 4](../phases/04-ui-shell.md) · [Phase 5](../phases/05-command-b
 [Interaction contract](../../product/browser-interactions.md) ·
 [DESIGN.md](../../../DESIGN.md) §5/§7/§9/§11.2–§11.4/§11.10/§11.11/§12/§15.
 
+## Superseded footer scope (product revision, not a defect)
+
+This packet shipped correctly against the specification in force at the time.
+After reviewing the delivered sidebar, Patrick revised the product target: the
+footer `[Spaces]` toggle and its revealable space-row region are removed in
+favor of a permanent, horizontally scrollable space-identity strip that takes
+all remaining footer width
+(`[Downloads icon] [Spaces strip] [Plus icon]`, DESIGN §11.3/§11.4). That
+revision, including migration of the toggle-era assertions, is owned by the
+[footer space strip, appearance, and swipe packet](space-footer-strip-appearance-ui.md).
+Everything else in this packet remains current.
+
 ## Outcome
 
 The sidebar renders the compact MVP hierarchy — brand block, command field,
-toggleable spaces region, **Favorites grid → Pinned → Folders → Tabs**,
+toggleable spaces region *(superseded, see above)*,
+**Favorites grid → Pinned → Folders → Tabs**,
 status row, and the exact footer `[Downloads] [Spaces] [+]` — with a real
 plus context menu (`New Space` / `New Folder`) that drives controller
 actions. Every region exposes deterministic `bbr-*` ids and §15 semantic

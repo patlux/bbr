@@ -239,8 +239,11 @@ tint, is the primary selection cue; the tint is confirmation.
 | `radius:xl` | 12 | XL palette |
 | `radius:full` | 50% | dots, avatars |
 
-Rule: chrome radii stay in 4–8 px; no pill-shaped cards, no giant rounded
-sheets over content, no `radius` on scrollable list backgrounds.
+Rule: chrome radii stay in 4–8 px; no giant rounded sheets over content and no
+`radius` on scrollable list backgrounds. Inset row surfaces (§10.2/§10.3) and
+footer identity chips (§11.3) are bounded rounded rectangles from this scale —
+never fully circular pills around text. The S1 pass may raise these values with
+the rest of the scale, but not the language.
 
 - **Sidebar widths:** `win:sidebar.S` 216, `.N` 260, `.XL` 320 pt; adjustable
   between 200 and 360 pt via a 4 px drag hairline (cursor `ew-resize`),
@@ -296,8 +299,11 @@ not listed there is `dur:instant`.
   close buttons: hit area ≥ 24 pt at N/XL, ≥ 20 pt at S, glyph optically
   centered in the hit square.
 - **Fallback:** every icon context has a text alternative (label, tooltip, or
-  aria-label). A glyph missing from the set falls back to a 2-character
-  `type:badge` chip, never to a Unicode emoji.
+  aria-label). A missing functional glyph falls back to a 2-character
+  `type:badge` chip, never to an arbitrary Unicode emoji. The deliberate
+  exception is a space's user-selected identity in §11.3: that value is a
+  validated member of the curated `SpaceIdentity` emoji/glyph catalog, not a
+  fallback or substitute for a missing chrome icon.
 
 ### Favicon tiles (missing favicon rule)
 
@@ -319,13 +325,22 @@ Three fixed densities, chosen by the shell from tab-collection size (and
 user override later; open decision). Geometry is per-density; **states and
 semantics are identical across densities.**
 
-**Queued post-MVP token revision:** Patrick's live U1 review found the complete
-chrome scale clearly too small. The first bounded slice after browser-MVP
-closeout is the [global UI scale and density pass](docs/roadmap/tasks/global-ui-scale-density.md):
-it revises typography, leading, spacing, rows, controls/hit targets, sidebar,
-and palette/overlay geometry as one coherent S/N/XL token decision. The values
-below remain authoritative until that slice settles its replacement table;
-semantic ids, interaction behavior, and performance budgets do not change.
+**Queued post-MVP token revision — calibrated user reference:** Patrick's live
+U1 review found the complete chrome scale clearly too small. The first bounded
+slice after browser-MVP closeout is the
+[global UI scale and density pass](docs/roadmap/tasks/global-ui-scale-density.md).
+Its target feel is calibrated from the preserved 2× references
+`/Users/patwoz/dev/Personal/macos/bbr-design-references/arc-sidebar-full.png`
+and `arc-tab-row-hover.png`, not from a blanket percentage multiplier: normal
+rows approximately 36–40 pt, effective text approximately 14–15 pt,
+favicons/glyphs approximately 18–20 pt, generous section spacing, large rounded
+Favorite tiles, and inset rounded hover/active row surfaces with a trailing
+close control. BBR keeps its own Chassis & Glass materials, color discipline,
+semantics, and native-web boundary; the references calibrate scale, rhythm, and
+row affordance rather than branding. The values below remain authoritative
+until that slice settles the complete S/N/XL replacement table. Dense-500
+windowing, semantic ids, interaction behavior, and performance budgets do not
+change.
 
 | Token | S (small) | N (normal) | X (very large) |
 |---|---|---|---|
@@ -334,7 +349,7 @@ semantic ids, interaction behavior, and performance budgets do not change.
 | `density:radius` | `radius:sm` | `radius:md` | `radius:md` |
 | `type:title` | 11 | 13 | 15 |
 | `icon:` | 14 | 16 | 18 |
-| `density:space-row` | 30 | 34 | 44 |
+| `density:space-chip` | 30 | 34 | 44 |
 | `density:sidebar` | 216 | 260 | 320 |
 | `density:hit-min` | 28 (close 20) | 32 | 40 |
 | pinned rows | icon-only 28×28, gap 2 | icon + title | icon + title |
@@ -360,13 +375,13 @@ that changes row height — row heights are stable for the whole session view.
 | Chrome focus | ring on the focused control; command field shows cursor; hover washes active |
 | Web-content focus | chrome renders "at ease": no ring anywhere, command cursor hidden, row hover washes active but no accent tint on the field; the selected-tab rail stays as the only accent |
 
-- **Order:** command field → spaces (only while the §11.4 spaces region
-  is revealed) → favorites grid (row-major) → pinned → folders (expanded
-  rows, then their nested rows) → regular tabs → footer row → (after the
-  last chrome control) focus moves into the native web view; Shift-Tab from
-  web content returns to the first sidebar control. Section labels and the
-  brand are skipped. Both directions verified by real-app focus E2E (a11y
-  track).
+- **Order:** command field → favorites grid (row-major) → pinned → folders
+  (expanded rows, then their nested rows) → regular tabs → collapse control →
+  Downloads → space identity chips in footer order → Plus → (after the last
+  chrome control) focus moves into the native web view; Shift-Tab from web
+  content returns to the first sidebar control. Section labels, brand, and the
+  non-interactive space-strip viewport are skipped. Both directions are
+  verified by real-app focus E2E (a11y track).
 - **Focus after tab mutation:** governed by the browser interaction contract;
   the visual system only guarantees the ring lands on the correct control in
   the same presentation frame as the selection change.
@@ -382,12 +397,15 @@ Row wash transparent; text per role. **Assert:** `visual_state == default`.
 
 ### 10.2 `hover` (pointer over control)
 Wash: light `rgba(0,0,0,0.045)` (`#E4E4E1`), dark `rgba(255,255,255,0.05)`
-(`#25282C`); IC 7%. Close button reveals on tab rows (fade-in opacity
-`dur:micro`, allowed). Tint animates `dur:micro`. **Assert:** `hover`.
+(`#25282C`); IC 7%. The wash paints an inset rounded row surface (`density:radius`,
+inset from the rail edges) rather than a full-bleed band, so the trailing close
+control sits inside that surface. Close button reveals on tab rows (fade-in
+opacity `dur:micro`, allowed). Tint animates `dur:micro`. **Assert:** `hover`.
 
 ### 10.3 `active` (pointer down / pressed)
-Wash deepens (light 8%, dark 8%) plus 1 px inner `hairline`;
-`dur:micro` tint. No translation or "press down" motion. **Assert:** `active`.
+Wash deepens (light 8%, dark 8%) plus 1 px inner `hairline` on the same inset
+rounded surface as §10.2; `dur:micro` tint. No translation or "press down"
+motion. **Assert:** `active`.
 
 ### 10.4 `selected`
 Accent rail 3 pt at the row's leading edge (4 pt IC) + `tint.selected`;
@@ -476,48 +494,70 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Assert ids:** `bbr-tab-pinned-<n>` (shared sub-ids `-title/-favicon/
   -close`).
 
-### 11.3 Space and profile rows
+### 11.3 Space identity chips and profile context
 
-- **Anatomy:** `[profile chip 20 §12] · sp:2 · [name, trunc] · [count,
-  `type:meta` `tnum`]`, `density:space-row` tall.
-- **Behavior:** click activates the space (contract: preserves warm selected
-  tab); the active space shows the accent rail like `selected` tabs; profile
-  groups stack under a `hairline` with no repeated profile header in v1 (the
-  chip is always present on each row — identity must be readable per row).
-- **Cross-context rule:** when the shell presents tabs/spaces of more than
-  one profile in the same sidebar, each row keeps its chip and groups are
-  separated by hairlines; switching spaces renders the destination profile
-  chip at the top of the command field for one interaction (a `type:label`
-  "in Profile · Work" hint) — the interaction contract requires communicating
-  the destination profile.
-- **Assert ids:** `bbr-space-row-<n>`, `bbr-profile-chip-<n>`.
+- **Placement:** spaces are always available in the §11.4 footer strip. There
+  is no revealable space-row region above Favorites and no `[Spaces]` toggle.
+- **Anatomy:** each space is one keyboard-focusable identity chip containing
+  exactly one validated `SpaceIdentity` value from the curated appearance
+  contract: either a selected emoji or a BBR icon glyph. The chip has a stable
+  accessible name containing the space and profile names; color or emoji alone
+  never carries that meaning. Normal S1 geometry is calibrated with the same
+  generous hit-target family as the rest of the footer.
+- **Behavior:** pointer click or keyboard activation performs the existing warm
+  space switch. The active space is unmistakable through a persistent selected
+  surface plus focus-independent outline/rail; inactive chips remain quiet.
+  Activation keeps the selected tab/session warm and preserves every existing
+  50/100 ms budget and fast-but-wrong guard.
+- **Appearance:** each space owns one curated theme-color token and one identity.
+  The active token tints the BBR-owned sidebar material through a contrast-safe,
+  desaturated chrome variant. Web content is never sampled or tinted. During a
+  direct horizontal swipe over the sidebar/space strip, the sidebar tint may
+  interpolate between source and candidate target tokens in direct proportion
+  to gesture progress; cancellation returns to the source token and commit
+  selects the target. The native web view itself never cross-fades or
+  interpolates.
+- **Overflow and ordering:** chips follow the canonical space-list order in one
+  single-line horizontal scroll viewport. The viewport consumes all footer
+  width left after Downloads and before Plus; it scrolls without wrapping or
+  shrinking the fixed controls. The selected chip is brought fully into view
+  without changing order.
+- **Cross-context rule:** a cross-profile activation still renders the
+  destination profile chip at the top of the command field for one interaction
+  (`type:label` "in Profile · Work"). During drag-to-space, the targeted identity
+  chip gains the existing drag-target treatment plus a visible destination
+  profile companion so isolation is never communicated by color alone.
+- **Assert ids:** `bbr-space-strip`, `bbr-space-chip-<n>`,
+  `bbr-space-identity-<n>`, and the existing transient
+  `bbr-command-profile-hint` / `bbr-profile-chip-<n>` where profile context is
+  presented.
 
 ### 11.4 Sidebar
 
 - **Anatomy (top → bottom):** brand block (app mark + name) `sp:4`
-  padding (`bbr-brand`); command field (§11.5) directly under; spaces
-  region (§11.3) — hidden by default in the compact rail, revealed by the
-  footer `[Spaces]` control; Favorites grid (Planned, §11.10); Pinned
-  region (§11.2); Folders (Planned, §11.11); Tabs region (§11.1); status
-  line (`bbr-status`, copy unchanged) carrying the collapse control at its
-  trailing edge (`bbr-sidebar-toggle`); footer row at the very bottom —
-  exactly `[Downloads] [Spaces] [+]` (`bbr-downloads`, `bbr-spaces`,
-  `bbr-plus`), separated from the list above by a `hairline`.
+  padding (`bbr-brand`); command field (§11.5) directly under; Favorites grid
+  (§11.10); Pinned region (§11.2); Folders (§11.11); Tabs region (§11.1);
+  status line (`bbr-status`, copy unchanged) carrying the collapse control at
+  its trailing edge (`bbr-sidebar-toggle`); footer row at the very bottom —
+  exactly `[Downloads icon] [horizontally scrollable Spaces strip, flex:1]
+  [Plus icon]` (`bbr-downloads`, `bbr-space-strip`, `bbr-plus`), separated
+  from the list above by a `hairline`. The former `[Spaces]` reveal-toggle and
+  its upper space-row region do not exist in the target composition.
 - **Regions:** section labels use `type:badge` and are hidden when their
   region is empty (`bbr-section-favorites` / `bbr-section-pinned` /
   `bbr-section-folders` / `bbr-section-tabs`); profile groups and regions
   stack under hairlines with no repeated headers. The Favorites grid and
   the Pinned region are fixed-height blocks above the scroll view; Folders
   and Tabs scroll together in `bbr-scroll` (label behavior per §11.6).
-- **Spaces region:** the footer `[Spaces]` control toggles the §11.3 space
-  rows between hidden (compact default) and revealed (rendered directly
-  under the command field, above Favorites). Toggling snaps
-  (`dur:instant`); row ids, §12 profile chips, and activation behavior are
-  unchanged. Escape or a second activation hides it; while hidden, space
-  rows are not part of the §9 traversal order.
-- **Footer:** `[Downloads]` opens the downloads surface (Phase 8; the
-  control shows a §7 glyph + label and a `type:meta` `tnum` count when the
-  surface has content). `[Spaces]` toggles the spaces region (above).
+- **Spaces strip:** `bbr-space-strip` is the permanent space navigation
+  surface defined by §11.3. It takes all remaining footer width, clips to one
+  line, scrolls horizontally, and exposes one `bbr-space-chip-<n>` per space.
+  It is not a disclosure control and never changes the vertical region stack.
+  Pointer click, keyboard activation, and horizontal trackpad swipe route
+  through the same space-switch authority and preserve warm-session budgets.
+- **Footer:** `[Downloads]` opens the downloads surface (Phase 8; the fixed
+  icon control exposes a text alternative and a `type:meta` `tnum` count when
+  content exists). The middle flex region is the permanent Spaces strip.
   `[+]` opens the **plus menu** (Planned) — a real context menu
   (`bbr-plus-menu`, `elev:2`, `material:overlay`, `radius:md`) with exactly
   two items in v1: **New Space** (`bbr-plus-new-space`) and **New Folder**
@@ -562,19 +602,20 @@ using the IDs of §15. All rows use `density` geometry from §8.
     §11.3 profile hint (interaction contract). Result selection snaps
     (`dur:instant`).
 - **500-tab rule:** the sidebar remains responsive with 500 persisted tabs
-  (§11.6); sidebar open/close/toggle and the palette surfaces submit to
-  the same latency budgets.
+  (§11.6); sidebar open/close, space-strip scrolling/switching, direct swipe,
+  and palette surfaces submit to their existing latency budgets. Larger S1
+  geometry never changes bounded-window rendering or dense scroll math.
 - **Assert ids:** `bbr-sidebar`, `bbr-sidebar-column`, `bbr-brand`,
   `bbr-scroll`, `bbr-status`, `bbr-sidebar-toggle`, `bbr-sidebar-divider`,
   `bbr-section-favorites` / `bbr-section-pinned` / `bbr-section-folders` /
   `bbr-section-tabs`, `bbr-favorites`, `bbr-fav-<n>` (+ `-icon`),
   `bbr-folders`, `bbr-folder-row-<n>` (+ `-name`/`-count`/`-toggle`),
   `bbr-folder-item-<n>-<m>` (+ `-title`/`-favicon`/`-close`),
-  `bbr-downloads`, `bbr-spaces`, `bbr-plus`, `bbr-plus-menu`,
+  `bbr-downloads`, `bbr-space-strip`, `bbr-space-chip-<n>`,
+  `bbr-space-identity-<n>`, `bbr-plus`, `bbr-plus-menu`,
   `bbr-plus-new-space`, `bbr-plus-new-folder`, `bbr-palette`
   (+ `-field`/`-text`/`-mode`/`-cursor`), `bbr-palette-result-<k>`,
-  `bbr-command-overlay`; space rows keep `bbr-space-list`,
-  `bbr-space-row-<n>`, `bbr-space-new`.
+  `bbr-command-overlay`.
 
 ### 11.5 Command bar
 
@@ -760,11 +801,13 @@ is stable for the profile's lifetime.
 
 The system must never drift toward these (each is a review gate):
 no purple-blue gradient heroes; no glass-blur cards; no oversized rounded
-sheets; no emoji in chrome; no glow shadows; no cover-flow/thumbnail tabs;
-no site-adaptive chrome tinting; no animated content behind chrome; no
-emoji/filled-duotone icon substitutes; no micro-interaction choreography at
-60 fps. Where a generic pattern is tempting, the machine answer is always a
-hairline, a numeral, or silence.
+sheets; no arbitrary emoji as functional chrome; no glow shadows; no
+cover-flow/thumbnail tabs; no site-adaptive chrome tinting; no animated content
+behind chrome; no emoji/filled-duotone substitutes for missing functional
+icons; no micro-interaction choreography at 60 fps. A curated user-selected
+SpaceIdentity emoji in §11.3 is identity data, not a fallback icon. Where a
+generic pattern is tempting, the machine answer remains a hairline, a numeral,
+a bounded row surface, or silence.
 
 ## 15. Automated semantic assertions
 
@@ -800,9 +843,10 @@ semantically — never by pixel comparison.
 ## 16. Non-goals and deferred (v1)
 
 Vibrancy/NSVisualEffect materials; site-adaptive or theme-marketable color;
-custom fonts; emoji iconography; page thumbnails/previews; spring physics;
-auto-reload of crashed tabs; sidebar auto-collapse; density auto-switch;
-palette result grouping polish; peek choreography (its own task).
+custom fonts; arbitrary emoji iconography outside the curated SpaceIdentity
+catalog; page thumbnails/previews; spring physics unrelated to direct gesture
+cancellation; auto-reload of crashed tabs; sidebar auto-collapse; density
+auto-switch; palette result grouping polish; peek choreography (its own task).
 
 ## 17. Open decisions
 
