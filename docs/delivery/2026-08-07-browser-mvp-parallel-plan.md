@@ -194,6 +194,7 @@ Nach letzter Integration: einmal `just e2e`, frische `.app` + manueller Smoke.
 | Integration | ✅ L5 seriell integriert (`e923716042f207ef94c4aa6a871e0c797a777e6e`); 67 Domain + 95 Browser-Tests, Clippy `-D warnings` und Workspace-Check post-merge grün; U2-Fundament bereit |
 | UI-Kickoff | Impeccable-Kontextskript blockiert (`node` im BBR-Shell nicht verfügbar); kein Blind-Retry/imperative Installation. PRODUCT/DESIGN/U-Pakete sowie Operate/New-Work/Craft-Floor direkt geladen; etablierte BBR-Designwelt bleibt autoritativ |
 | UI-Kickoff | 🟦 U1/U2 exakt von Post-Anchor-SHA `f89a4799999d1d43f785da7c767a1df68759ee0b` gebrancht, danach je orchestrator-eigener Foundation-Merge mit L4/L5; Workflows `bbr-mvp-u1-palette-ui-msj221m6-mo85dt` und `bbr-mvp-u2-sidebar-ui-msj221m7-fd4vuf` gestartet; alle Calls explizit DeepSeek-only |
+| UI-Recovery | 🟦 U2-Writer lieferte beim ersten Transportversuch `AGENT_EMPTY_OUTPUT`; Workflow-Runtime startete den erlaubten zweiten/letzten Versuch automatisch. Statusprüfung: Writer aktiv, laufende Thinking-Aktivität, `error=0`; noch kein Lane-Blocker |
 | 15:09 | Alter Writer-Wächter (Session `019fdb6b`, Pane bbr:1.0) gestoppt — kein Doppel-Writer-Risiko |
 | 15:09 | ✅ Handoff: sol-Orchestrator gestartet — tmux `tws_personal_macos_bbr-orchestrator`, Pi-Session `019fdc57-7afb-7f81`, gpt-5.6-sol:high. Ab jetzt einziger Orchestrator und Ledger-Owner; die fable-Session (`019fdba4`) zieht sich zurück |
 
