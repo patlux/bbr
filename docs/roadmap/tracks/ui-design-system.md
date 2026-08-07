@@ -22,8 +22,8 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 
 ## Shell craft — Phase 4
 
-- [ ] Establish the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), then compose standard input/menu/button behavior through gpui-component while retaining BBR tokens, geometric icons, native WKWebViews, and browser-specific orchestration.
-- [ ] Refine the sidebar into the compact Zed-inspired BBR hierarchy, including the exact `[Downloads icon] [Spaces] [Plus icon]` footer and a real plus-menu for New Space/New Folder, with its own bounded task packet after the Root anchor.
+- [x] Establish the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), then compose standard input/menu/button behavior through gpui-component while retaining BBR tokens, geometric icons, native WKWebViews, and browser-specific orchestration. *(Integrated and canonical-E2E green at `f89a479`.)*
+- [ ] Refine the sidebar through the bounded [browser-MVP sidebar UI packet](../tasks/browser-mvp-sidebar-ui.md) into the compact Zed-inspired BBR hierarchy, including the exact `[Downloads icon] [Spaces] [Plus icon]` footer and a real plus-menu for New Space/New Folder.
 - [ ] Replace placeholder chrome glyphs with the BBR-drawn §7 icon set. *(The
       [icon-system slice](../tasks/icon-system.md) swaps the close `×`, pin
       `●`/`○`, loading `●`, new-space `+`, crash `!`, empty-pane brand `B`,
@@ -42,7 +42,7 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 
 ## Feature-level polish — Phases 5–8
 
-- [ ] Command bar feels fast, layered, and visually integrated rather than a generic modal.
+- [ ] Command bar feels fast, layered, and visually integrated rather than a generic modal through the bounded [browser-MVP palette UI packet](../tasks/browser-mvp-palette-ui.md).
 - [ ] Split divider and pane focus are clear but quiet.
 - [ ] [Link Preview / Peek](../tasks/link-preview-peek.md) communicates its temporary state, fully covers the current page without looking like a generic modal, and makes dismissal versus promotion unmistakable.
 - [ ] Persistence/recovery states communicate trust and reversibility.

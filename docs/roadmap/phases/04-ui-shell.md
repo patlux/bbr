@@ -8,7 +8,8 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 
 ## Performance and design foundation first
 
-- [ ] Integrate the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), preserving native WKWebViews and every existing real-app gate before palette/sidebar/package lanes branch.
+- [x] Integrate the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), preserving native WKWebViews and every existing real-app gate before palette/sidebar/package lanes branch. *(Integrated at post-anchor SHA `f89a479`; `just verify`, testkit Clippy, vendored component tests, affected E2E, and canonical `just e2e` are green.)*
+- [ ] Implement the bounded [browser-MVP sidebar UI packet](../tasks/browser-mvp-sidebar-ui.md): Favorites → Pinned → Folders → Tabs, exact `[Downloads] [Spaces] [+]` footer, and real New Space/New Folder menu actions.
 - [ ] Complete the [real-app performance E2E foundation](../tasks/performance-e2e-foundation.md) before broad shell implementation.
 - [ ] Prove startup presents the complete sidebar and selected tab's visible native web view in the same first usable frame within the product budget.
 - [x] Establish and document the visual direction in [DESIGN.md](../../../DESIGN.md) before broad shell implementation.

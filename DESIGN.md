@@ -352,10 +352,13 @@ that changes row height — row heights are stable for the whole session view.
 | Chrome focus | ring on the focused control; command field shows cursor; hover washes active |
 | Web-content focus | chrome renders "at ease": no ring anywhere, command cursor hidden, row hover washes active but no accent tint on the field; the selected-tab rail stays as the only accent |
 
-- **Order:** command field → spaces → pinned → regular tabs → (after last
-  chrome control) focus moves into the native web view; Shift-Tab from web
-  content returns to the first sidebar control. Section labels and the brand
-  are skipped. Both directions verified by real-app focus E2E (a11y track).
+- **Order:** command field → spaces (only while the §11.4 spaces region
+  is revealed) → favorites grid (row-major) → pinned → folders (expanded
+  rows, then their nested rows) → regular tabs → footer row → (after the
+  last chrome control) focus moves into the native web view; Shift-Tab from
+  web content returns to the first sidebar control. Section labels and the
+  brand are skipped. Both directions verified by real-app focus E2E (a11y
+  track).
 - **Focus after tab mutation:** governed by the browser interaction contract;
   the visual system only guarantees the ring lands on the correct control in
   the same presentation frame as the selection change.
@@ -483,23 +486,87 @@ using the IDs of §15. All rows use `density` geometry from §8.
 
 ### 11.4 Sidebar
 
-- **Anatomy:** brand block (app mark + name) `sp:4` padding; command field
-  (§11.5) directly under; then spaces, pinned, regular tab regions; status
-  line pinned to the bottom; collapse control at the very bottom
-  (`bbr-sidebar-toggle`).
-- **Behavior:** width per §5 (`win:sidebar.*`), draggable 4 pt hairline,
-  collapse Cmd-B to 0 **instantly** (performance contract next-frame; the
-  opening glass gets no animation), expand restores the previous width.
-  Collapse memory is **global in v1** — one last-expanded width per window,
-  restored on expand; per-space memory is an open decision (§17). The
-  divider carries the stable `bbr-sidebar-divider` id and a label shared
-  with the future Accessibility slice, and keyboard focus on it provides
-  `←`/`→` resize and `0` reset (DESIGN §9 pointer/keyboard parity).
-  Resize commits geometry on the next frame; drag previews no intermediate
-  chrome states.
+- **Anatomy (top → bottom):** brand block (app mark + name) `sp:4`
+  padding (`bbr-brand`); command field (§11.5) directly under; spaces
+  region (§11.3) — hidden by default in the compact rail, revealed by the
+  footer `[Spaces]` control; Favorites grid (Planned, §11.10); Pinned
+  region (§11.2); Folders (Planned, §11.11); Tabs region (§11.1); status
+  line (`bbr-status`, copy unchanged) carrying the collapse control at its
+  trailing edge (`bbr-sidebar-toggle`); footer row at the very bottom —
+  exactly `[Downloads] [Spaces] [+]` (`bbr-downloads`, `bbr-spaces`,
+  `bbr-plus`), separated from the list above by a `hairline`.
+- **Regions:** section labels use `type:badge` and are hidden when their
+  region is empty (`bbr-section-favorites` / `bbr-section-pinned` /
+  `bbr-section-folders` / `bbr-section-tabs`); profile groups and regions
+  stack under hairlines with no repeated headers. The Favorites grid and
+  the Pinned region are fixed-height blocks above the scroll view; Folders
+  and Tabs scroll together in `bbr-scroll` (label behavior per §11.6).
+- **Spaces region:** the footer `[Spaces]` control toggles the §11.3 space
+  rows between hidden (compact default) and revealed (rendered directly
+  under the command field, above Favorites). Toggling snaps
+  (`dur:instant`); row ids, §12 profile chips, and activation behavior are
+  unchanged. Escape or a second activation hides it; while hidden, space
+  rows are not part of the §9 traversal order.
+- **Footer:** `[Downloads]` opens the downloads surface (Phase 8; the
+  control shows a §7 glyph + label and a `type:meta` `tnum` count when the
+  surface has content). `[Spaces]` toggles the spaces region (above).
+  `[+]` opens the **plus menu** (Planned) — a real context menu
+  (`bbr-plus-menu`, `elev:2`, `material:overlay`, `radius:md`) with exactly
+  two items in v1: **New Space** (`bbr-plus-new-space`) and **New Folder**
+  (`bbr-plus-new-folder`). New Space creates a real space through the
+  controller; New Folder creates a session-local folder (§11.11). The menu
+  is keyboard-operable (`↑`/`↓`, Enter commits, Escape dismisses without
+  action), closes on outside pointer press (one pointer action, §13), and
+  the chosen action preserves the invoking focus domain per the
+  interaction contract.
+- **Behavior:** width per §5 (`win:sidebar.*`), draggable 4 pt hairline
+  (`bbr-sidebar-divider`), collapse Cmd-B to 0 **instantly** (performance
+  contract next-frame; the opening glass gets no animation), expand
+  restores the previous width. Collapse memory is **global in v1** — one
+  last-expanded width per window, restored on expand; per-space memory is
+  an open decision (§17). Divider keyboard focus provides `←`/`→` resize
+  and `0` reset (DESIGN §9 pointer/keyboard parity). Resize commits
+  geometry on the next frame; drag previews no intermediate chrome states.
+- **Command surface launch:** the command field owns two presentations of
+  the same §11.5 engine:
+  - **Cmd-T → centered palette** (Planned, `bbr-palette`): `elev:2`
+    overlay centered over the window content, `material:overlay`, width
+    `win:palette` (S 400 / N 480 / XL 560 pt), `radius:lg` at S/N /
+    `radius:xl` at XL per §5. Field row on top (`bbr-palette-field`):
+    prefix glyph, `type:mono` text (`bbr-palette-text`), mode chip
+    (`bbr-palette-mode` — New Tab staged per the interaction contract),
+    block cursor (`bbr-palette-cursor`). Results below
+    (`bbr-palette-result-<k>`) use the §11.5 row anatomy `[icon] [title]
+    [url mono trunc] [key hint]`, `selected` visuals (accent rail inside
+    the result list), and `accent.ink` match highlighting.
+  - **Cmd-L / pointer click on the field → field-anchored overlay**
+    (Planned, `bbr-command-overlay`): `elev:2` overlay anchored to the
+    field — top edge flush with the field's bottom edge, leading edge
+    flush with the field's leading edge, width = field width clamped to
+    320–`win:palette`, `material:overlay`, `radius:lg`. Same result
+    engine and row anatomy; results keep the §11.5 ids
+    (`bbr-command-result-<k>`). Location mode shows the full URL selected
+    in the field (`bbr-command-text`).
+  - Both open with an opacity fade `dur:fine` only — never translate or
+    scale — close on Escape/commit/outside press (one pointer action,
+    §13), and are the only chrome allowed to overlap the glass (§13). At
+    most one command surface is open at a time; opening either clears the
+    §11.3 profile hint (interaction contract). Result selection snaps
+    (`dur:instant`).
 - **500-tab rule:** the sidebar remains responsive with 500 persisted tabs
-  (§11.6); sidebar open/close/toggle submit to the same latency budgets.
-- **Assert ids:** `bbr-sidebar`, `bbr-brand`, `bbr-status`, `bbr-scroll`.
+  (§11.6); sidebar open/close/toggle and the palette surfaces submit to
+  the same latency budgets.
+- **Assert ids:** `bbr-sidebar`, `bbr-sidebar-column`, `bbr-brand`,
+  `bbr-scroll`, `bbr-status`, `bbr-sidebar-toggle`, `bbr-sidebar-divider`,
+  `bbr-section-favorites` / `bbr-section-pinned` / `bbr-section-folders` /
+  `bbr-section-tabs`, `bbr-favorites`, `bbr-fav-<n>` (+ `-icon`),
+  `bbr-folders`, `bbr-folder-row-<n>` (+ `-name`/`-count`/`-toggle`),
+  `bbr-folder-item-<n>-<m>` (+ `-title`/`-favicon`/`-close`),
+  `bbr-downloads`, `bbr-spaces`, `bbr-plus`, `bbr-plus-menu`,
+  `bbr-plus-new-space`, `bbr-plus-new-folder`, `bbr-palette`
+  (+ `-field`/`-text`/`-mode`/`-cursor`), `bbr-palette-result-<k>`,
+  `bbr-command-overlay`; space rows keep `bbr-space-list`,
+  `bbr-space-row-<n>`, `bbr-space-new`.
 
 ### 11.5 Command bar
 
@@ -512,10 +579,12 @@ using the IDs of §15. All rows use `density` geometry from §8.
   Escape restores (§contract). Results (Planned surface): rows `[icon] [title]
   [url mono trunc] [key hint]`; matched substring in `accent.ink`; selected
   result row uses `selected` visuals (accent rail inside the result list).
-- **Focus in/out:** `Cmd-L`/`Cmd-T` focus command field with ring; focus out
-  returns to web content or sidebar per contract; the palette (Planned)
-  opens as `elev:2` overlay with opacity fade `dur:fine` — never translate or
-  scale, and it is the only chrome that may overlap the glass.
+- **Focus in/out:** `Cmd-L`/`Cmd-T` focus the command field with ring; focus
+  out returns to web content or sidebar per contract. The two palette
+  presentations — the centered Cmd-T palette and the Cmd-L/click
+  field-anchored overlay — are specified in §11.4: both open as `elev:2`
+  overlays with an opacity fade `dur:fine` — never translate or scale — and
+  they are the only chrome allowed to overlap the glass (§13).
 - **Assert ids:** `bbr-command-bar`, `bbr-command-text`, `bbr-command-mode`,
   `bbr-command-cursor`, `bbr-command-result-<k>`.
 
@@ -578,6 +647,55 @@ using the IDs of §15. All rows use `density` geometry from §8.
 Covered by §7.2 (monogram tile) and §4 (truncation). Additional edge rules:
 empty title falls back to the hostname; empty host falls back to the URL
 scheme; a title consisting only of whitespace is treated as empty.
+
+### 11.10 Favorites grid (Planned)
+
+- **Anatomy:** a `type:badge` "Favorites" label (`bbr-section-favorites`,
+  hidden when empty) over a grid of square destination tiles
+  (`bbr-favorites`): the §7.2 favicon/monogram tile centered in a
+  `radius:sm` tile at `density:row-tile` size (S 26 / N 28 / XL 36), `sp:1`
+  gap, fixed per-density column count (S 5 / N 4 / XL 3) so the tile →
+  index mapping is deterministic at every sidebar width.
+- **Behavior:** clicking a tile activates that destination (open-vs-focus
+  semantics is an open decision); hover/active washes follow §10.2/§10.3;
+  keyboard traversal follows the §9 order row-major; tiles never reorder
+  during selection.
+- **States:** `default`, `hover`, `active`, `focused` (§10). Favorites are
+  destinations, not tabs, so tab lifecycle states (§10.5–§10.7) do not
+  apply; the destination name is the tile's semantic name (tooltip is
+  Planned per §17.2).
+- **Data source:** how favorites are added/removed (tab context menu, drag
+  into the grid) is an open decision; the grid contract covers rendering
+  and activation only. Data ownership (global vs per-profile vs per-space)
+  is resolved by the favorites domain slice, not by this visual contract.
+- **Assert ids:** `bbr-section-favorites`, `bbr-favorites`,
+  `bbr-fav-<n>`, `bbr-fav-icon-<n>`.
+
+### 11.11 Folders (Planned)
+
+- **Anatomy:** a `type:badge` "Folders" label (`bbr-section-folders`,
+  hidden when empty) over folder rows (`bbr-folders`): `[disclosure glyph
+  14 §7] [name, trunc] [count, `type:meta` `tnum`]` at `density:row` tall,
+  hairlines between folder groups; nested rows indent one `sp:2` step.
+- **Behavior:** a folder is a session-local container of tab identities
+  (in-memory in v1, never persisted; Phase 7 owns restoration). Toggling
+  (`bbr-folder-toggle-<n>`, pointer or keyboard Enter/Space)
+  expands/collapses the nested row list and snaps (`dur:instant`). Nested
+  rows reuse the §11.1 row anatomy and the full §10 vocabulary; index
+  `<m>` is the nested position within folder `<n>` (0-based,
+  deterministic). A folder whose tabs were all closed remains as an empty
+  collapsible row.
+- **Drag:** dragging a tab over a folder row renders the folder as a
+  `drag-target` (§10.9); a drop routes through the move-into-folder
+  command of the favorites/folders domain slice, and keyboard staging
+  (`Cmd-Shift-M`) covers folders per the interaction contract.
+- **States:** folder rows take `default`/`hover`/`active`/`focused` plus an
+  expanded/collapsed value in the semantic tree; nested rows take the full
+  §10 vocabulary.
+- **Assert ids:** `bbr-section-folders`, `bbr-folders`,
+  `bbr-folder-row-<n>`, `bbr-folder-name-<n>`, `bbr-folder-count-<n>`,
+  `bbr-folder-toggle-<n>`, `bbr-folder-item-<n>-<m>` (+ `-title`/
+  `-favicon`/`-close`).
 
 ## 12. Profile identity
 
@@ -688,8 +806,10 @@ palette result grouping polish; peek choreography (its own task).
    require a space-scoped geometry map and is explicitly out of scope for
    the Phase-4 sidebar slice.
 5. **Crash auto-reload policy** (currently none).
-6. **Command palette opening surface** (footer hints, result grouping) rides
-   the Phase-5 command-bar work.
+6. ~~**Command palette opening surface**~~ **Resolved (2026-08-07):** Cmd-T
+   opens the centered palette, Cmd-L and pointer focus on the field open the
+   field-anchored overlay (§11.4); both run the §11.5 engine. Result
+   grouping polish stays deferred (§16).
 
 Resolving an item means moving its decision into the relevant section above
 and updating the affected roadmap track in the same group.
