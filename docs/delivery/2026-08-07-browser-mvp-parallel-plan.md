@@ -41,7 +41,7 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 geliefert/wartet auf Integration · �
 | # | Lane | Status | Run-ID | Branch/Worktree | Notiz |
 |---|---|---|---|---|---|
 | D0 | Delivery-Smoke (Dummy-Run beweist followUp) | ✅ | `d0-delivery-smoke-msixi7dy-urgp2y` | — | `DELIVERY_OK` automatisch zugestellt, 1.7 s |
-| H0 | Tooling-Hotfix auf `main` (xcrun-Shim, flake-Hook, rusqlite `=0.38.0`, Lint-Fixes) | ⬜ | — | main | Orchestrator direkt, ~15 min; **alle Lanes branchen danach** |
+| H0 | Tooling-Hotfix auf `main` (xcrun-Shim, flake-Hook, justfile Xcode 26.2, rusqlite `=0.38.0`, Lint-Fixes) | ✅ | — | main | Commits `b9bad16`+`c4ce31b`+`a50bb92`+`574750b`; **Lane-Base = `574750b`** |
 | L0 | Anchor-Finish (kritischer Pfad) | ⬜ | — | `bbr-gpui-ce-components-anchor` | verify ✅, testkit-Clippy ✅; offen: E2E-Suiten, `just e2e`, Split-Geometry-Flake, Docs-Fakten |
 | L1 | Packaging `.app` (Bundle, Plist, ad-hoc-Sign, Launch-Smoke) | ⬜ | — | — | MVP-Pflicht |
 | L2 | `bbr-web` new-window-Contract (`target=_blank`/`window.open`) | ⬜ | — | — | Stretch; Fundament Link-Preview/Peek |
@@ -69,11 +69,12 @@ Nach letzter Integration: einmal `just e2e`, frische `.app` + manueller Smoke.
 - [x] followUp-Ergebnis automatisch in Session angekommen (kein Polling)
 
 ### H0 — Tooling-Hotfix `main`
-- [ ] `scripts/xcode-shims/xcrun` + flake.nix-Hook übernommen
-- [ ] `rusqlite =0.38.0` + `cargo update -p rusqlite --precise 0.38.0`
-- [ ] `unused_assignments`-Lint-Fixes falls auf main rot
-- [ ] `just verify` cold grün auf main
-- [ ] Commit(s) auf main, SHA hier notiert: `________`
+- [x] `scripts/xcode-shims/xcrun` + flake.nix-Hook übernommen
+- [x] justfile-Default auf Xcode 26.2 (16.4 existiert nicht → `-lSystem`-Linkerfehler)
+- [x] `rusqlite =0.38.0` + `cargo update -p rusqlite --precise 0.38.0`
+- [x] `unused_assignments`-Lint-Fixes (6 Stellen, auch auf main rot)
+- [x] `just verify` cold grün + testkit-Clippy grün auf main
+- [x] Commits: `b9bad16` tooling · `c4ce31b` rusqlite · `a50bb92` lints · `574750b` ledger — **Lane-Base: `574750b`**
 
 ### L0 — Anchor-Finish
 - [ ] E2E-Suiten: smoke, shell-split-geometry, shell-command grün
@@ -143,6 +144,39 @@ Nach letzter Integration: einmal `just e2e`, frische `.app` + manueller Smoke.
 | 14:4x | Plan erstellt, diese Datei angelegt; warte auf Go für D0→H0→Lane-Start |
 | 14:5x | D0 Delivery-Smoke gestartet (`d0-delivery-smoke-msixi7dy-urgp2y`); Turn beendet, kein Polling |
 | 14:5x | ✅ D0: `DELIVERY_OK` automatisch zugestellt (1.7 s, $0.002) — Event-Kette verifiziert |
+| 15:1x | ✅ H0: main cold-grün (verify + testkit-Clippy), 4 Commits, Lane-Base `574750b` |
+| 15:1x | Entscheidung: Orchestrierung wechselt in dedizierte gpt-5.6-sol-Session (Option B); diese Datei = Handoff-Vertrag |
+
+## Kickoff-Anweisung für die sol-Orchestrator-Session
+
+Du bist der einzige Orchestrator für diesen Plan. Arbeitsvertrag:
+
+1. Lies diese Datei komplett; sie ist die einzige Wahrheit über den Stand.
+2. Beweise zuerst die Delivery-Kette in DEINER Session: 1-Agent-Dummy-Run
+   (Background, tier small, Antwort `DELIVERY_OK`). Kein Polling — Turn
+   beenden, auf automatische Zustellung warten. Ergebnis hier eintragen.
+3. Starte danach die Lanes L0–L7 als je EINEN Background-Workflow mit
+   internen Phasen Writer→Review→gate→Remediation→Recheck
+   (siehe workflow-authoring-Skill). Writer tier small (deepseek), Reviewer
+   tier medium/big (luna). Sol niemals für Subagents.
+4. Jede Lane: eigener Worktree ab Base `574750b`, exklusive Pfad-Allowlist
+   im Prompt, keine neuen Dependencies in portablen Lanes, keine Commits
+   durch Subagents. L0 arbeitet im existierenden Worktree
+   `/Users/patwoz/dev/Personal/macos/bbr-gpui-ce-components-anchor`
+   (Uncommitted-Stand ist dokumentierter Ausgangszustand; die H0-Deltas
+   liegen dort bereits identisch vor und dedupen beim Merge).
+5. Bei jedem Statuswechsel: Lane-Tabelle + Status-Log hier aktualisieren
+   (Run-ID beim Launch, 🟨 bei Delivery, ✅ mit SHA bei Integration).
+6. Integration ausschließlich durch dich, seriell in der Merge-Reihenfolge
+   oben; vor jedem Merge Evidenz prüfen (Gates der Lane), Commits in
+   logischen Gruppen nach Repo-Commit-Disziplin (AGENTS.md).
+7. Nach L0-Integration: U1+U2 launchen mit dem Integrations-SHA als arg.
+8. E2E läuft nur über die `just`-Recipes (Host-GUI-Lock serialisiert).
+9. Wenn ein Run hängt/failt: Ergebnis-Delivery abwarten bzw. Watchdog
+   wirken lassen, dann `resumeFromRunId` mit korrigiertem Script; nie
+   denselben Fehler blind wiederholen.
+10. Blocker, die du nicht lösen kannst: in dieser Datei dokumentieren und
+    den User fragen — nicht raten.
 
 ## Offene Punkte außerhalb BBR
 
