@@ -110,9 +110,12 @@ JSON; no macOS, no GPUI, no WebKit).
 | `SetSplit { primary, secondary }` / `CloseSplit` | Test-only seam into the production controller split path: open/close the two-pane layout over the two active-space tab indices (both tabs keep live sessions; the domain active tab stays the focused pane). The user-facing split-creation UI belongs to the later split-core slice |
 | `WebAction(Back/Forward/Reload/Stop)` | Engine action on the active view |
 | `ActivateCommandBar` / `FocusWeb` | The E2E readers of Cmd-L / Escape |
-| `SetCommandBarText { text }` | Set command-bar text directly (avoids per-keystroke round trips) + broadcasts `CommandBarChanged` |
+| `SetCommandBarText { text }` | Mutate the production UTF-8 command text and restart ranking; broadcasts `CommandBarChanged` |
+| `FlushCommandRanking` | Functional-E2E-only deterministic seam: cancel the pending command debounce and publish the current generation synchronously; optimized command timing never uses it |
 | `DispatchKeystroke { keystroke }` | GPUI `Keystroke::parse` + `Window::dispatch_keystroke` (real input path) |
 | `BenchmarkSelectTab` / `BenchmarkToggleSidebar` / `BenchmarkDispatchKeystroke` / `BenchmarkResizeSidebar` / `BenchmarkRestoreSidebar` | Start typed in-process production-path measurements and finish only after the scenario's semantic presentation milestone |
+| `BenchmarkCommandType { operation_id, text, expected_first_key }` | Measure production text entry through the real cancellable debounce/rank path; commit only after a render constructs the exact expected result palette (generation, first/selected key, state, mode, focus) |
+| `BenchmarkCommandActivate { operation_id, expected_view }` / `BenchmarkCommandActivateNewTab { operation_id }` | Measure Enter/Cmd-Enter activation with exact destination, focus, mode, tab/session-count, and presentation guards armed before dispatch |
 | `HoverTabRow { index }` / `UnhoverTabRow` / `PressTabRow { index }` / `ReleaseTabRow` | Drive the exact production hover/press app methods the row `on_hover` and mouse-down/up element handlers call — the §10.2 hover wash + close reveal and the §10.3 pressed wash (never a snapshot mutation) |
 | `BenchmarkHoverTab { index }` / `BenchmarkPressTab { index }` | Measure the production pointer hover/press entry transitions; the sample commits only when the derived row state actually shows the §10.2 `hover` / §10.3 `active` wash |
 | `DragSidebarDivider { dx }` / `FocusSidebarDivider` | Drive the exact production pointer/focus listener methods the divider element handlers call (never a controller mutation) |
@@ -149,6 +152,7 @@ Snapshot {
   profiles: Vec<ProfileSnapshot>,       // complete collection, creation order
   spaces: Vec<SpaceSnapshot>,           // each with own active tab + live session
   tabs: Vec<TabSnapshot>,       // active-space index/url/title/active/current WebViewId
+  all_tabs: Vec<GlobalTabSnapshot>, // complete persistent tab/space/profile identity
   active_tab_index: Option<usize>, active_web_view: Option<WebViewId>,
   engine_sessions: usize,       // native destruction / warm-session evidence
   engine_kind: String,          // "native-wkwebview" (macOS) | "fake" elsewhere
@@ -157,8 +161,11 @@ Snapshot {
   tab_states: Vec<TabVisualState>, row_titles: Vec<String>,
   space_states: Vec<SpaceVisualState>, space_titles: Vec<String>,
   visible_ids: Vec<String>,     // rendered bbr-* ids (§15)
-  command_bar_mode: Inactive | Location | NewTab | NewSpace,
+  command_bar_mode: Inactive | Location | NewTab | NewSpace | MoveTab,
   command_bar_text: String,
+  command_result_state: Inactive | Empty | Loading | Results | ActivationError,
+  command_results: Vec<CommandResultSnapshot>, // stable key/group/title/selection/destructive
+  command_cursor: usize, command_selection: Option<[usize; 2]>,
   sidebar_visible: bool,
   sidebar_width: f32,        // effective rail width (0 when collapsed)
   sidebar_min / sidebar_default / sidebar_max: f32,  // DESIGN §5 adjustable range
@@ -628,6 +635,7 @@ just e2e-shell-tabs    # visible vertical-tab surface (pointer/keyboard/empty)
 just e2e-shell-spaces  # visible profile/space surface (pointer + keyboard suites)
 just e2e-shell-sidebar # adjustable/collapsible sidebar surface (drag, keys, collapse, clamp)
 just e2e-shell-split-geometry # keyed per-WebViewId split panes, focus, resize, close (split anchor)
+just e2e-shell-command  # Cmd-L/text/debounce/results/actions/cross-space identity/focus
 just e2e-shell-hover    # pointer hover/press states + the internal §15 semantic tree
 just e2e-perf      # optimized startup and interaction latency budgets
 just e2e-perf-full # bounded repeated canonical gate (COLD_STARTUP_SAMPLES launches + 30-sample interactions)
@@ -657,7 +665,7 @@ runner + suites.
 | Synthetic keystroke fidelity drift | `DispatchKeystroke` goes through GPUI's real `dispatch_keystroke` path; FUTURE: tier-2 NSEvent posting in the webkit suite |
 | macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner. Verified locally on the Xcode 16.4.0 Metal toolchain in a display-attached session |
 | Event-ring memory growth | Fixed cap (4096) + client cursors; snapshot on demand |
-| Protocol evolution | `PROTOCOL_VERSION = 5` added command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types. `PROTOCOL_VERSION = 6` adds per-tab `pinned`/`loading`/`crashed` flags and per-row `tab_states` + resolved `shell_modes` to snapshots, the pointer-path `ClickTab`/`ClickTabClose` and `ReopenTab`/`PinTab` requests, deterministic `InjectWebEvent` (rides the real event transport), and the `TabSelectPointer`/`TabReopen` benchmark kinds. Additive growth after v6 (still version 6): snapshots expose the rendered `bbr-*` `visible_ids`, per-row `row_titles` (after §4 truncation), `active_profile_title`, the typed sidebar geometry (`sidebar_width`/`sidebar_min`/`sidebar_default`/`sidebar_max`, `content_min`, `divider_dragging`, `divider_label`) and the last engine-received native `content_rect`; `TabActivateKeyboard`, `SidebarResize`, and `SidebarRestore` join the benchmark kinds; `DragSidebarDivider`/`FocusSidebarDivider` join the pointer seams and `FlushFrame` the paint drivers; the hover/press seams (`HoverTabRow`/`UnhoverTabRow`/`PressTabRow`/`ReleaseTabRow`) plus the `BenchmarkHoverTab`/`BenchmarkPressTab` kinds and the typed §15 `semantics` tree join the protocol; the split shared contract adds the `SetSplit`/`CloseSplit` requests, `SplitOpened`/`SplitClosed` outcomes, and the keyed `pane_layout`/`pane_rects` snapshot fields (test seam only — production split UI/perf kinds stay future); `ServerFrame::Response` is boxed internally (JSON wire shape unchanged); future additive growth stays typed |
+| Protocol evolution | `PROTOCOL_VERSION = 5` added command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types. `PROTOCOL_VERSION = 6` adds per-tab `pinned`/`loading`/`crashed` flags and per-row `tab_states` + resolved `shell_modes` to snapshots, the pointer-path `ClickTab`/`ClickTabClose` and `ReopenTab`/`PinTab` requests, deterministic `InjectWebEvent` (rides the real event transport), and the `TabSelectPointer`/`TabReopen` benchmark kinds. Additive growth after v6 (still version 6): snapshots expose the rendered `bbr-*` `visible_ids`, per-row `row_titles` (after §4 truncation), `active_profile_title`, the typed sidebar geometry (`sidebar_width`/`sidebar_min`/`sidebar_default`/`sidebar_max`, `content_min`, `divider_dragging`, `divider_label`) and the last engine-received native `content_rect`; `TabActivateKeyboard`, `SidebarResize`, and `SidebarRestore` join the benchmark kinds; `DragSidebarDivider`/`FocusSidebarDivider` join the pointer seams and `FlushFrame` the paint drivers; the hover/press seams (`HoverTabRow`/`UnhoverTabRow`/`PressTabRow`/`ReleaseTabRow`) plus the `BenchmarkHoverTab`/`BenchmarkPressTab` kinds and the typed §15 `semantics` tree join the protocol; the split shared contract adds the `SetSplit`/`CloseSplit` requests, `SplitOpened`/`SplitClosed` outcomes, and the keyed `pane_layout`/`pane_rects` snapshot fields (test seam only — production split UI/perf kinds stay future); command composition adds `FlushCommandRanking`, typed command result/cursor/selection plus complete `all_tabs` snapshot evidence, and the `CommandType`/`CommandActivate`/`CommandActivateNewTab` benchmark kinds while retaining protocol v6; `ServerFrame::Response` is boxed internally (JSON wire shape unchanged); future additive growth stays typed |
 | Dedicated-runner / external gaps | No dedicated stable macOS runner or public trend publication is provisioned yet. `canonical_host_model` is therefore empty, so the >15% relative baseline rule stays report-only until a runner is named; display refresh is recorded `null` with an explicit reason (window is offscreen and the OS refresh API is not linked). Absolute ceilings are enforced on every machine. Persisted warm startup stays open until the persistence repository lands — a test-only seed that bypasses the future persistence path is not acceptance evidence. |
 
 ---
@@ -675,10 +683,11 @@ runner + suites.
 4. ▶ Suite growth: visible space switching landed with the shell-spaces
    suites and the `space_switch` benchmark; the adjustable/collapsible
    sidebar landed with the shell-sidebar suite and the
-   `sidebar_resize`/`sidebar_restore` benchmarks; splits, dialogs, routing,
-   and complete command-bar results land with their phases; remaining WebKit
-   essentials, persistence, accessibility, and broader performance scenarios
-   follow Phases 8/7/9 on top of the implemented performance foundation.
+   `sidebar_resize`/`sidebar_restore` benchmarks; the real-app command surface
+   landed with `just e2e-shell-command` plus render-inclusive `command_type` /
+   `command_activate` scenarios; production split UI, dialogs, routing,
+   remaining WebKit essentials, persistence, accessibility, and broader
+   performance scenarios follow Phases 6/8/7/9 on the implemented foundation.
 5. ⏳ Release-exclusion gate in CI (exit 64 + symbol/socket checks).
 
 Principle: **BBR's first executable ships with testkit sockets, sequential

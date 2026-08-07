@@ -1,12 +1,13 @@
 # BBR — Architecture (current implementation)
 
-Status: **describes the implemented workspace through the Phase-4 shell slices, the integrated portable command core, and the Phase-6 split-view shared contract**: native GPUI +
+Status: **describes the implemented workspace through the Phase-4 shell slices, the integrated Phase-5 command core/app composition, and the Phase-6 split-view shared contract/core**: native GPUI +
 WKWebView embedding, portable browser orchestration, controller-backed real
 tabs, profile-isolated multi-session WebKit, the adjustable/collapsible
 sidebar, tab organization, the dense-500 list, the pointer-state +
-internal-semantic-model slice, dependency-free command parsing/ranking, and
-the per-`WebViewId` native geometry contract with the authoritative pane
-layout plus the typed `SetSplit`/`CloseSplit` testkit seam. Verified against the actual
+internal-semantic-model slice, dependency-free command parsing/ranking, the
+keyboard-complete real-app command result surface, and the per-`WebViewId`
+native geometry contract with the authoritative pane layout plus the typed
+`SetSplit`/`CloseSplit` testkit seam. Verified against the actual
 GPUI crate (`gpui 0.2.2`), the `objc2-web-kit 0.3.2` bindings, the Swift
 reference at `PWBrowser`, and green `just verify` runs. The real-app
 split-geometry suite, single-pane sidebar regression, canonical sequential
@@ -342,14 +343,16 @@ src/
                           and (with the testkit feature) starts the gateway
      --bbr-hidden         do not focus/activate the window (E2E)
      --bbr-ids=sequential|random   IdGen mode (SequentialIdGen/RandomIdGen)
-     --bbr-clock=system|fake       parsed; NO-OP in Phase 1 (no time-based logic)
+     --bbr-clock=system|fake       parsed; still a no-op (the command debounce
+                                   uses GPUI's platform timer and a testkit flush
+                                   seam, not a product-wide TimeSource)
      --bbr-window-size=WxH         initial window size (default 1080x700)
 2. Build the id generator and inject it as the controller's WebViewId allocator.
 3. gpui::Application::new().run: open one window (centered, options from flags).
 4. In the open_window callback: capture the GPUI root NSView, build the engine,
    create `BrowserController(engine.clone(), allocator)`, then create BbrApp.
 5. Open the initial controller-backed tab after the window exists.
-6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B, Cmd-T staging, the focus-preserving Cmd-W, and the tab-organization commands (Cmd-Shift-P pin toggle, Cmd-Shift-↑/↓ reorder, Cmd-Shift-M staged move).
+6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B, Cmd-T staging, the focus-preserving Cmd-W, command-result arrows/Enter/Cmd-Enter, and the tab-organization commands (Cmd-Shift-P pin toggle, Cmd-Shift-↑/↓ reorder, Cmd-Shift-M staged move).
 7. Under testkit: start the gateway, pump engine events into the controller,
    and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
@@ -359,11 +362,21 @@ The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs` + the split
 `app/interaction.rs` + the `shell/` presentation modules) renders the
 Chassis-tokenized sidebar (`crates/bbr-app/src/theme.rs` tokens, `palette.rs`
 ramps, `components.rs` reusable typed components — never local magic values):
-brand block, command bar (mirrors the live URL; inline cursor; accepts typing,
-backspace, enter), the controller-backed tab surface, a status line
-(`shell::status_line`, incl. "⚠ Web content process terminated"), and the
-sidebar toggle. `CommandBarMode` separates `Inactive`, current-tab
-`Location`, and staged `NewTab` intent. The content area renders one
+brand block, command bar (mirrors/selects the live URL; owns a UTF-8-safe
+cursor/selection model; accepts typing/backspace/arrows/Enter/Cmd-Enter), the
+Design §11.5 local result surface, the controller-backed tab surface, a status
+line (`shell::status_line`, incl. "⚠ Web content process terminated"), and the
+sidebar toggle. `CommandBarMode` separates `Inactive`, current-tab `Location`,
+and staged `NewTab` intent; `NewSpace`/`MoveTab` keep their existing staged
+paths. Location/NewTab ranking rebuilds a provider-neutral corpus from the
+controller's complete persistent tab/space/profile read model, waits on a
+cancellable 30 ms GPUI platform timer, and publishes only the latest generation.
+History is intentionally an empty real collection until Phase-7 composition;
+plain text receives the settled encoded DuckDuckGo fallback. Activations route
+through app/controller seams, including current-space re-resolution by
+persistent tab identity, so warm sessions and profile isolation remain
+controller-owned. Escape restores the explicitly captured origin text/mode and
+chrome/web focus domain. The content area renders one
 `NativeWebViewSlot` per visible pane from the controller's authoritative
 `pane_layout()` (a single full-width slot, or two equal adjacent horizontal
 slots for a split — no divider/polish in this anchor), or the empty-space
@@ -701,8 +714,13 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
    destination hint communicates cross-profile moves and space switching; the
    remaining Phase-4 polish is shell craft (e.g., drag auto-scroll in dense
    lists) and the canonical measured frame-time evidence.
-3. **`--bbr-clock` is a no-op**; the `TimeSource` seam is intentionally not
-   added until time-based logic exists (debounces in Phase 5/7).
+3. **`--bbr-clock` is a no-op**; the app now has one bounded time-based path:
+   the cancellable 30 ms command-ranking debounce uses GPUI's platform-driven
+   background-executor timer. Functional E2E can cancel and publish the current
+   generation through the typed `FlushCommandRanking` seam; optimized command
+   evidence measures the real timer and commits only after the result palette is
+   rendered. A product-wide `TimeSource` remains deferred until persistence and
+   broader scheduling need one.
 4. **Popups/new windows are suppressed** (`createWebViewWithConfiguration` →
    `None`); wired popups land in a later phase.
 5. **No find-in-page, zoom, downloads, permission prompts, WebAuthn, or

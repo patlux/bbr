@@ -257,8 +257,10 @@ Performance:   just e2e-perf report-only, 0 regressions, measured on this
                seeds updated in performance-baseline.json + baseline.rs;
                canonical baseline still requires the qualified runner
                (report-only host)
-Commits:       none — per instructions the lane leaves the slice uncommitted
-Open blockers: canonical `just e2e-perf-full` and shared-doc updates
-               (ARCHITECTURE.md/E2E_ARCHITECTURE.md/ROADMAP.md/Phase-5) are
-               integration-owner work after lane review
+Commits:       `872d222ca91395fc6e7e60c98ff942630b74cf6d`
+               (`feat(command): compose the real app command surface`),
+               fast-forward integrated on `main`; additive complete-tab read
+               anchor `74dac78ac6922de33d42431b59179dbbde1bf63f`
+Open blockers: canonical `just e2e-perf-full` remains reserved for a qualified
+               display-attached runner; no functional integration blocker
 ```
