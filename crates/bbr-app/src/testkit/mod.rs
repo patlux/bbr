@@ -32,6 +32,7 @@ mod dispatch_downloads;
 mod dispatch_drag;
 mod dispatch_find;
 mod dispatch_portal;
+mod dispatch_probe;
 mod dispatch_u2;
 mod dispatch_util;
 mod snapshot;

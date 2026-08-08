@@ -17,6 +17,9 @@
 //! workspace still resolves and evaluates.
 
 #[cfg(target_os = "macos")]
+pub mod content_probe;
+
+#[cfg(target_os = "macos")]
 pub mod delegate;
 
 #[cfg(target_os = "macos")]

@@ -197,6 +197,10 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             folders: self.folders.clone(),
             download_rows: self.download_rows.clone(),
             downloads: self.downloads,
+            #[cfg(all(target_os = "macos", feature = "testkit"))]
+            web_content_probe: self.web_content_probe.clone(),
+            #[cfg(not(all(target_os = "macos", feature = "testkit")))]
+            web_content_probe: None,
         }
     }
 }

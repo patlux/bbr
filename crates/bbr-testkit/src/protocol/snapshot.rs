@@ -572,6 +572,37 @@ pub struct FindSnapshot {
     pub stale: bool,
 }
 
+/// Real WebKit content evidence (testkit-only gateway): the committed
+/// document read in BBR's own client content world — `readyState`, `URL`,
+/// `title`, body presence — plus the native `WKWebView` `url`/`title`
+/// properties sampled at the same point in time. The shell's visibility
+/// flags, geometry, and session bookkeeping can be perfectly green while
+/// the user sees a blank content area (the schemeless Cmd-T destination
+/// bug); this probe reports what WebKit actually committed, never our own
+/// accounting. The native `url` reflects a provisional navigation
+/// immediately, so "a navigation was accepted" is observable even before a
+/// document commits.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WebContentProbe {
+    /// The view the probe was issued against (stale-guard: the snapshot
+    /// holds the last completed probe, so E2E asserts the probed view).
+    pub view: WebViewId,
+    /// `document.readyState` ("loading" | "interactive" | "complete").
+    pub ready_state: String,
+    /// `document.URL` — the committed document's URL; "about:blank" for a
+    /// fresh/blank view.
+    pub dom_url: String,
+    /// `document.title`.
+    pub dom_title: String,
+    /// A document body exists in the DOM.
+    pub has_body: bool,
+    /// The native `WKWebView.url` (provisional or committed; `None` when no
+    /// navigation has been accepted at all).
+    pub native_url: Option<String>,
+    /// The native `WKWebView.title`.
+    pub native_title: Option<String>,
+}
+
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
 /// Deliberately typed (no free-form JSON) so the harness can assert on
@@ -741,4 +772,9 @@ pub struct Snapshot {
     /// §11.12 downloads panel render contract (open, focus, bounded window).
     #[serde(default)]
     pub downloads: DownloadsPanelSnapshot,
+    /// The last completed real WebKit content probe (testkit-only; `None`
+    /// until a [`crate::protocol::Request::ProbeWebContent`] completion
+    /// landed). Real committed-document evidence, never our own bookkeeping.
+    #[serde(default)]
+    pub web_content_probe: Option<WebContentProbe>,
 }

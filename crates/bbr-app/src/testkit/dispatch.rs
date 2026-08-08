@@ -23,6 +23,7 @@ use crate::testkit::dispatch_downloads::dispatch_downloads;
 use crate::testkit::dispatch_drag::dispatch_drag;
 use crate::testkit::dispatch_find::dispatch_find;
 use crate::testkit::dispatch_portal::dispatch_portal;
+use crate::testkit::dispatch_probe::dispatch_probe;
 use crate::testkit::dispatch_u2::dispatch_u2;
 use crate::testkit::dispatch_util::{browser_mutation, err_response};
 use crate::testkit::snapshot::SnapshotExt;
@@ -68,6 +69,11 @@ pub(crate) fn dispatch(
     // Downloads start/cancel/retry/row-action/outside-dismiss route
     // separately (same bounded-router reason).
     if let Some(response) = dispatch_downloads(&req, window, app, cx) {
+        return response;
+    }
+    // The real WebKit content probe routes separately (same bounded-router
+    // reason); non-probe requests fall through.
+    if let Some(response) = dispatch_probe(&req, window, app, cx) {
         return response;
     }
     let broadcast = |server: &Option<Arc<GatewayServer>>, ev: Event| {
@@ -481,6 +487,12 @@ pub(crate) fn dispatch(
         | Request::ClickDownloadsOutside
         | Request::ScrollDownloads { .. } => {
             unreachable!("downloads requests route through dispatch_downloads")
+        }
+
+        // Routed by `dispatch_probe` before this match; reaching one here
+        // is a routing bug.
+        Request::ProbeWebContent { .. } => {
+            unreachable!("probe requests route through dispatch_probe")
         }
 
         // Routed by `dispatch_drag` before this match; reaching one here is

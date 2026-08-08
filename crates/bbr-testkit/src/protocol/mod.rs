@@ -36,6 +36,7 @@ pub use snapshot::{
     FavoriteTileSnapshot, FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts,
     PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, SemanticNode,
     SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, TabSnapshot, TabVisualState,
+    WebContentProbe,
 };
 
 /// Current protocol version understood by this crate.

@@ -280,6 +280,16 @@ pub enum Request {
     /// results synchronously, so E2E asserts burst typing (only the final
     /// generation ever publishes) without waiting on real time.
     FlushCommandRanking,
+    /// Issue a real WebKit content probe for `view` (testkit-only): reads
+    /// the committed document in BBR's own client content world
+    /// (`readyState`/`URL`/`title`/body) plus the native `WKWebView`
+    /// `url`/`title`, and publishes the observation on the next snapshot's
+    /// `web_content_probe`. Never mutates the page. Real content evidence
+    /// for the schemeless-navigation regression: the visibility/geometry
+    /// bookkeeping can be green while the user sees a blank page.
+    ProbeWebContent {
+        view: WebViewId,
+    },
     /// Dispatch a synthetic keystroke through GPUI's real input path
     /// (e.g. "cmd-l", "escape"). Zero permissions, zero OS event posting.
     DispatchKeystroke {
