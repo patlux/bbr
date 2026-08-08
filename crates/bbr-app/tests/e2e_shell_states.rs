@@ -47,7 +47,31 @@ fn shell_renders_regions_fallbacks_and_crash_recovery() {
         // about:blank has no hostname — the §7.2 monogram falls back to the
         // scheme and the title fallback chain still yields a row label, so
         // the missing-favicon tab renders like any other row.
-        open_tab(&mut client, &mut since, blank, None);
+        let blank_view = open_tab(&mut client, &mut since, blank, None);
+        let blank_deadline = deadline();
+        loop {
+            client
+                .send_ok(&bbr_testkit::Request::ProbeWebContent { view: blank_view })
+                .expect("probe dark blank page");
+            let snapshot = client.snapshot().expect("blank content snapshot");
+            if let Some(probe) = snapshot.web_content_probe.as_ref() {
+                if probe.view == blank_view
+                    && probe.ready_state == "complete"
+                    && probe.dom_url == blank
+                    && probe.has_body
+                    && probe.root_background_color == "rgb(21, 23, 25)"
+                    && probe.body_background_color == "rgb(21, 23, 25)"
+                {
+                    break;
+                }
+            }
+            assert!(
+                Instant::now() < blank_deadline,
+                "about:blank never committed the dark document background; last probe: {:?}",
+                snapshot.web_content_probe
+            );
+            std::thread::yield_now();
+        }
         open_tab(&mut client, &mut since, &long_title, Some(LONG_TITLE));
         open_tab(
             &mut client,

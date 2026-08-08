@@ -22,6 +22,12 @@ use crate::delegate::{self, WebViewDelegate};
 use crate::error_mapping::ClassifiedIncident;
 use crate::host::HostBridge;
 
+const DARK_BLANK_PAGE: &str = r#"<!doctype html>
+<html style="color-scheme: dark; background: #151719">
+<head><meta charset="utf-8"></head>
+<body style="margin: 0; background: #151719; color: #eceef1"></body>
+</html>"#;
+
 /// Options that change engine behaviour; populated by the composition root.
 #[derive(Debug, Clone, Default)]
 pub struct EngineOptions {
@@ -225,6 +231,13 @@ impl WebEngineWk {
     }
 
     fn load_url(web_view: &WKWebView, url: &str) {
+        if url == "about:blank" {
+            let html = NSString::from_str(DARK_BLANK_PAGE);
+            unsafe {
+                web_view.loadHTMLString_baseURL(&html, None);
+            }
+            return;
+        }
         let ns_url = NSString::from_str(url);
         let Some(url_obj) = NSURL::URLWithString(&ns_url) else {
             log::warn!("cannot parse URL: {url}");
