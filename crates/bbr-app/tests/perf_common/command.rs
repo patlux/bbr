@@ -103,6 +103,25 @@ fn wait_command_results_published(
     }
 }
 
+/// Settle the active WebKit navigation before the history-rich command
+/// warm-up. Corpus seeding may leave the active native view finishing a
+/// provisional load; that unmeasured cover/finish work must not spill past
+/// the discarded warm-up into the first accepted command sample.
+pub(crate) fn wait_active_navigation_idle(client: &mut Client) {
+    let until = Instant::now() + Duration::from_secs(30);
+    loop {
+        let snapshot = client.snapshot().expect("navigation settle snapshot");
+        if !snapshot.loading && !snapshot.navigation_cover_visible {
+            return;
+        }
+        assert!(
+            Instant::now() < until,
+            "active navigation did not settle within the deadline"
+        );
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+
 /// The production command-text path (Cmd-L selects the URL, typing replaces
 /// the selection, the real ranking debounce publishes, and a render of the
 /// result surface commits the sample in the app): the sample arrives only

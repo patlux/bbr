@@ -27,7 +27,7 @@ use super::find_drive::drive_find_scenarios;
 mod u2;
 
 use super::auth_drive::drive_auth_scenarios;
-use super::command::benchmark_command_bar_first_result;
+use super::command::{benchmark_command_bar_first_result, wait_active_navigation_idle};
 use super::command_drive::drive_command_scenarios;
 use super::command_full_search::benchmark_command_bar_full_search;
 use super::context_menu_drive::drive_context_menu_scenarios;
@@ -1332,6 +1332,7 @@ fn drive_matrix_inner(
         client
             .send_ok(&Request::EnforceSessionBudget { cap: 20 })
             .expect("enforce history corpus budget");
+        wait_active_navigation_idle(client);
         client
             .send_ok(&Request::FlushFrame)
             .expect("flush history corpus frame");
