@@ -146,9 +146,11 @@ completion.
       `just e2e-perf-inject`: injected warm-tab p95 ≈ 160 ms exceeds the 50 ms
       budget (`abs_p95`), clean p95 ≈ 0.1 ms is green, no budget/baseline
       change. The earlier review note that this host "lacks the macOS Metal
-      toolchain" was incorrect — Xcode 16.4.0 ships `metal` and a macOS 15.5
-      SDK, and every real-app gate builds and runs green here; the pessimistic
-      claim came from running only under the bare nix shell without the
+      toolchain" was incorrect — every real-app gate builds and runs green
+      here through the installed Xcode developer dir (`metal`/`metallib`
+      resolve via `BBR_XCODE_DEVELOPER_DIR` and the Xcode "Metal Toolchain"
+      component, see ARCHITECTURE.md §toolchain); the pessimistic claim came
+      from running only under the bare nix shell without the
       `DEVELOPER_DIR`/`SDKROOT` the just recipes set.)
 - [x] Functional smoke/tabs/profile suites remain green. *(Verified on this
       host: `just e2e-smoke`, `just e2e-tabs`, `just e2e-profiles` all pass.)*
