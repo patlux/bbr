@@ -79,7 +79,32 @@ fn shell_renders_regions_fallbacks_and_crash_recovery() {
             &separator_title,
             Some(SEPARATOR_TITLE),
         );
-        let slow_view = open_tab(&mut client, &mut since, &slow, Some(SLOW_TITLE));
+        client
+            .send_ok(&bbr_testkit::Request::OpenTab { url: slow.clone() })
+            .expect("open slow tab");
+        let opened_slow = client.snapshot().expect("slow tab opened");
+        let slow_view = opened_slow.active_web_view.expect("slow native view");
+        since = wait_web_event(
+            &mut client,
+            |event| matches!(event, WebEvent::LoadingChanged(view, true) if view == &slow_view),
+            since,
+        );
+        let slow_started = client.snapshot().expect("slow navigation started");
+        assert!(slow_started.loading, "slow fixture is still navigating");
+        assert!(
+            slow_started.navigation_cover_visible,
+            "dark native cover masks WebKit's provisional-navigation plane"
+        );
+        since = wait_title(&mut client, slow_view, SLOW_TITLE, since);
+        let slow_finished = client.snapshot().expect("slow navigation finished");
+        assert!(!slow_finished.loading);
+        assert!(
+            !slow_finished.navigation_cover_visible,
+            "cover clears after the destination finishes"
+        );
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush slow frame");
 
         let five = client.snapshot().expect("five-tab snapshot");
         assert_eq!(five.tabs.len(), 5);

@@ -840,6 +840,9 @@ pub struct Snapshot {
     pub can_go_forward: bool,
     /// A live native web view backs the active tab.
     pub web_view_hosted: bool,
+    /// The native dark cover is masking WebKit's provisional-navigation plane.
+    #[serde(default)]
+    pub navigation_cover_visible: bool,
     pub active_profile: ProfileId,
     /// Display title of the active profile (DESIGN.md §11.8 pane naming).
     pub active_profile_title: Option<String>,

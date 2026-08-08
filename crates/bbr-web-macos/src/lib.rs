@@ -74,6 +74,9 @@ mod menu_classify;
 pub mod menu_adapter;
 
 #[cfg(target_os = "macos")]
+mod navigation_cover;
+
+#[cfg(target_os = "macos")]
 pub mod new_window;
 
 #[cfg(target_os = "macos")]
