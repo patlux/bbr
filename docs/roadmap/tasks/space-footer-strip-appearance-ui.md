@@ -110,6 +110,27 @@ Integration order:    MVP closeout → global UI scale → space-appearance
                       contract → this slice
 ```
 
+### F2a completion lanes after the verified Tint checkpoint
+
+The remaining product layers start from the same reviewed and frozen checkpoint
+`e08cc6f9455b95b03e25ade86aa7b5d518554f40`. They are separate isolated
+writer lanes because their product authorities are independent; shared wire,
+snapshot, semantics, and E2E registries are planned serial-integration costs.
+
+| Lane | Exclusive authority and primary territory | Performance authority | Integration |
+|---|---|---|---|
+| Drag-to-chip | `DragTarget::Chip { space: SpaceId }`, production chip-entry/hit path, target visuals and destination-profile companion, dragged-tab identity, and commit through the existing tab-move policy; focused Drag/Organize/Spaces/Sidebar testkit and E2E seams | Extend the existing `tab_move_same_profile` and `tab_move_cross_profile` performance scenarios so their measured production entry is drag-to-chip rather than the direct benchmark command. Keep the existing typed kinds, report keys, fast-but-wrong session/recreation guards, sample counts, and budgets unchanged. This lane does not edit `performance-baseline.json` or invent a second move budget | Review/freeze first; integrate first |
+| Swipe Commit/Cancel + `swipe_commit` | Focused swipe state machine, production sidebar wheel/gesture wiring, bounded chrome-only interpolation, commit/cancel snapshot and semantics, Spaces E2E | Sole owner of new typed `SwipeCommit` benchmark kind/request/driver/report key and `performance-baseline.json` seed. At least 30 render-inclusive samples against the unchanged warm 50/100-ms class with an exact destination/selected-chip/session guard | Review/freeze independently; integrate second |
+
+Shared kernel expected in both lanes: focused `bbr-app` sidebar/space composition,
+`bbr-testkit` request/snapshot registries, shell snapshot/semantics, and Spaces
+E2E registration. The orchestrator merges these as a semantic union in the
+fixed order **Drag-to-chip → Swipe+Perf**. Implementations and non-GUI checks
+may run concurrently; every GUI, real-app E2E, and performance recipe remains
+host-exclusive through the repository GUI lock. No third performance writer is
+allowed: `swipe_commit` depends on the real swipe implementation, while drag
+reuses and strengthens the settled tab-move performance authority.
+
 ## Constraints
 
 - One space-switch authority. The strip, keyboard, and swipe must not fork
