@@ -22,11 +22,25 @@ Find-in-page, Downloads-Panel).
 - Implementierung läuft in Background-Workflows in isolierten Worktrees vom
   letzten verifizierten `main`-SHA, mit disjunkten Pfad-Territorien.
   Subagenten immer explizit mit `homelab-llm/deepseek-v4-flash:high`.
-- GUI-/E2E-/Perf-Gates sind hostexklusiv: immer nur eine Lane in ihrer
-  Gate-Phase.
+- Jede Lane besitzt genau einen Writer, danach einen unabhängigen Read-only-
+  Reviewer; nur konkrete Findings erlauben eine bounded Remediation mit
+  fokussiertem Recheck. Erwartete Registry-, Manifest-, Lockfile- und
+  Composition-Root-Konflikte sind vorregistrierte Integrationskosten, kein
+  pauschaler Grund gegen parallelen Start.
+- Implementierung und Non-GUI-Gates dürfen parallel laufen. Sämtliche GUI-,
+  Real-App-E2E- und Perf-Gates sind strikt hostexklusiv und laufen nur über
+  den bestehenden Repository-GUI-Lock.
 - Jede Gate-Liste enthält `cargo fmt --all -- --check`.
 - **Testfehler werden durch schärfere Messung gelöst, nie durch Lockern.**
   Budgets, Sample Counts, Deadlines und Validatoren bleiben unangetastet.
+  Keine Completion-, Gate- oder Integrationsbehauptung ohne direkt geprüfte
+  Evidenz; keine Migration oder Abwärtskompatibilität.
+- Die fremde uncommittete Phase-09-/Research-/Shutdown-Planungsarbeit auf
+  `main` bleibt außerhalb aller anderen Commits und wird gegen den zuletzt
+  dokumentierten Fingerprint
+  `c6ca52b8102929d325143a4db4f1b4c825108475ca415d3fd704db3a80652c9d`
+  erhalten. Sie darf nur übernommen werden, wenn sie ausdrücklich Teil des
+  späteren seriell geprüften Queue-20-Dokument-/Implementierungsslices ist.
 - Blocker parken statt festhängen: Entscheidungsfragen mit Optionen,
   Empfehlung und Auswirkung hierher; technische Blocker mit Evidenz, Versuchen
   und kleinstem Entblocker. Danach sofort unabhängige Arbeit.
@@ -43,6 +57,8 @@ Find-in-page, Downloads-Panel).
 | Downloads §17.8 Cancelled-Zeile | Bietet **Neustart** und **Löschen** | Abgebrochenes ist kein Sackgassen-Eintrag mehr |
 | Downloads §17.7 Clear-History | Folgt aus der Persistenz-Entscheidung: Clear leert die **Controller-History**, nicht nur die sichtbare Liste | Sonst wäre gelöschter Verlauf nach Neustart zurück |
 | Saved Pages Produktgrenze | **Pin = konkreter Space-Tab; Favorite = globale Präsentation eines lebenden `TabId`, stirbt mit Tab; Saved Page = globaler dauerhafter URL-Datensatz ohne Tab/Session, überlebt Close/Restart.** Öffnen erzeugt genau einen frischen regulären Tab im aktuell aktiven Space/Profile; canonical URL idempotent; keine Session/Cookies/Snapshots/Sync | Drei kanonische Pakete B1 → B2 → B3; standing schema rule bleibt Bump+Discard ohne Migration/Backcompat |
+| Post-F2a-Delivery-Welle | **Erst F2a vollständig mit Tint, Swipe, Drag-to-chip, `swipe_commit`, Reviews, Orchestrator-Gates und serieller Integration abschließen. Danach das komplette Ledger erneut lesen, alle offenen Queue-Punkte per Parallelism-/Ownership-Audit klassifizieren und Queue 20, B1 und G1 maximal sicher aus demselben verifizierten post-F2a-`main` starten.** Shutdown besitzt Lifecycle/Testkit/E2E; B1 nur portable Domain/Persistence/Schema; G1 extrahiert ausschließlich die integrierte Produktionsautorität ohne Kopien. Implementierung/Non-GUI parallel, GUI/E2E/Perf hostexklusiv. | Shutdown wird zuerst integriert, danach kanonischer F2-Closeout. B1/G1 dürfen währenddessen weiterlaufen oder `REVIEW_PASS`/frozen erreichen; anschließend serielle Integration, standardmäßig B1 vor dem breiteren G1-Kernel, sofern Evidenz oder Abhängigkeiten nichts anderes verlangen |
+| Folgeabhängigkeiten nach A/B/C | **Die parallele post-F2a-Welle entblockt keine nachgelagerten Produktpakete vorzeitig.** | G2/G3, B2/B3 und Z1/Z2/Z4/Z5 starten nicht vor ihren bestehenden Produktabhängigkeiten. Z3 startet erst nach erfolgreichem F2-Closeout und bei erneut freiem Portal-/Context-Menu-Territorium |
 
 ## Offene Entscheidungen mit Empfehlung
 
@@ -96,8 +112,8 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 wartet auf Integration · ✅ erledigt
 | 17 | Icon-System-Reste | 🟨 geprüft und eingefroren | Branch `parallel/icon-system-completion`, Commits `bf42a8a` + `9ec3e22`, unabhängiger `REVIEW_PASS`; wartet auf serielle semantische Integration, ohne F2a vorwegzunehmen |
 | 18 | **L0-Reste** | ✅ integriert | Evidenz-/Docs-Slice unabhängig mit finalem `REVIEW_PASS` geprüft und seriell integriert. Der Erstreview meldete `REVIEW_FINDINGS` zu zwei Doc-Präzisionen bei voll verifizierter Substanz; Remediation und fokussierter Recheck schlossen beide Befunde. Split-Geometry-Flake determinisiert (Root-Cause yabai-BSP-Tiling gezeigter, unfokussierter Harness-Fenster; Fix `show: false` + 4-Frame-Settle in `ac5223d`/`main.rs:240-249` im Quellbestand verifiziert): `just e2e-shell-split-geometry` 9/9 grün (5× standalone als Writer-Aggregat, 4× in kanonischer Ordnung nach Sidebar; Reviewer reproduzierte persönlich 5/5), Sidebar-Regression 7/7. `just verify` 57 Test-Binaries / 1158 Tests / 0 Fehler; Perf-Review: erster Versuch Cold-Startup-p95 526,14 ms gegen unveränderte 500-ms-Decke, Retry-Startup 408,64 ms, `command_bar_first_result` p95 40,70 / max 41,45 ms über 30 Samples, null Regressions. **Kein kanonisches `just e2e` lief grün**: die Rezeptliste enthält 21 Recipes und stoppt an Position 2, weil `e2e-shutdown` kein Target hat (`crates/bbr-app/tests/e2e_shutdown.rs` existiert in keinem Worktree; historisch als ungetrackter Prototyp beobachtet, später entfernt; der separat geplante Prozess-Shutdown-Slice implementiert ihn später von frischem Post-F2a-`main`). Die Lane fuhr die übrigen Recipes einzeln bzw. in kanonischer Reihenfolge: 19 Suiten vollständig grün, Portal 5/7, Shutdown nicht verfügbar; Perf lief separat und war im unveränderten Retry grün. Portal-Klassifikation korrigiert: `host_hides_on_minimize_and_restores` = Bildschirm-Sperre-/Fremd-Frontmost-Window-Server-Blocker; `host_tears_down_when_parent_closes_with_open_presentation` = separate vorbestehende Base-Regression (quit-on-owning-browser-window beendet den Prozess und bricht die Zero-Window-/Gateway-Alive-Erwartung des Tests), nicht loginwindow. Xcode-/MSRV-Checkboxen aus Quelle und Git-Historie geprüft: die kanonischen Wahrheitsflächen (ROADMAP.md, docs/roadmap, ARCHITECTURE.md, E2E_ARCHITECTURE.md) enthalten keine verbleibende ungeprüfte passende Checkbox; der supersedierte Aug-7-Plan ist historisch und wird bewusst nicht umgeschrieben (dort stehen weiterhin ungeprüfte L0-Boxen). Phase-0-`BBR_XCODE_DEVELOPER_DIR` (26.2.0), gpui-ce-Anker-Evidenz „Minimum-Rust-Claim aus Manifesten“ (smol_str 0.3.6→1.89 macOS, oo7 0.6.0→1.92 Linux, Dev-Shell 1.97.1; Installationspfad Xcode 26.2.0 + Metal-Toolchain-Component) — der einzige veraltete Xcode-16.4-Claim in `performance-e2e-foundation.md` wurde auf den Installationspfad korrigiert; Xcode 26.2.0 bleibt der Repository-Recipe-Default, keine Umstellung auf eine andere Version. Keine Test-/Budget-/Deadline-Lockerung; Phase-6-Breitband-, F2a-, Persistenz-, Gallery- und Shutdown-Scope bleiben offen und unangetastet. Detail-Ledger: `docs/delivery/2026-08-08-l0-rest-closeout-evidence.md` |
 | 19 | Persistence-App-Composition / Warm-Restore | ✅ Merge `72b85bd` | Beide Findings geschlossen und seriell auf den integrierten F2b-AppStore gebracht: genau eine Repository-Autorität, capacity-1/`try_send`-Browserwriter, vollständige erfolgreiche Mutations-Pokes, rejected operations ohne Poke, Chrome-first ID-Restore, 1/2 sichtbare Sessions und deferred Rest. Lane `9ea0589`; Integration `72b85bd`. Einzige semantische F2b-Anpassung: neue Browser-Repository-Testfixture erhielt die bereits integrierten DownloadRecord-Felder; Browser-State-Write lässt Downloads/Settings/Command-History unverändert. Persistence 5/5, Dense 3/3, Downloads 10/11 plus unveränderter fokussierter Retry 1/1, Full Perf im unveränderten Retry grün |
-| 20 | **Deterministischer Prozess-Shutdown** | ⏭ seriell nach F2a, vor F2-Closeout | Patrick-Anforderung: terminales Ctrl-C/SIGINT und Schließen des owning Browserfensters beenden jeweils den vollständigen Prozess. Eigener bounded [Task-Paket-Slice](../roadmap/tasks/process-lifecycle-shutdown.md): Regressionen zuerst, gemeinsamer graceful GPUI-Shutdown auf Main Thread, Portal-Child-Isolation, Response-Flush-Sicherheit, `e2e-shutdown`; keine Inline-Änderung im laufenden Integrations-Worktree |
-| B1 | **Portable Saved Pages + Persistence** | ⏸ nach aktuellem F2-Integrationskernel und freiem Repository-/Schema-Territorium | Kanonischer [B1-Slice](../roadmap/tasks/saved-pages-portable-persistence.md): globaler `BookmarkId`/URL-Datensatz, canonical-URL-idempotent, optionale flache Collection, Repository CRUD/search/list, nächster Development-Schema-Bump mit Discard+Rewrite; kein TabId/WebView/Session/Profile, keine Migration/Backcompat, keine UI. Start erst nach Settlement des laufenden F2-Kernels und aller Repository-/Schema-Owner |
+| 20 | **Deterministischer Prozess-Shutdown** | ⏸ Lane A: post-F2a parallel starten, zuerst integrieren | Start vom exakt gleichen verifizierten post-F2a-`main` wie B1/G1. Exklusives Territorium: App-Lifecycle, echtes SIGINT/owning-window-close, Portal-Child-Isolation, Testkit-Response-Flush, frisches `e2e_shutdown` und nötige E2E-Registry. Eigener bounded [Task-Paket-Slice](../roadmap/tasks/process-lifecycle-shutdown.md); keine B1-/Gallery-Autorität. Nach direktem `REVIEW_PASS` zuerst seriell integrieren, dann F2-Closeout |
+| B1 | **Portable Saved Pages + Persistence** | ⏸ Lane B: post-F2a parallel, nur nach Territory-Audit | Start vom exakt gleichen verifizierten post-F2a-`main` wie Shutdown/G1, aber nur wenn Schema-/Repository-Territorium nach Audit wirklich writer-frei ist. Kanonischer [B1-Slice](../roadmap/tasks/saved-pages-portable-persistence.md): ausschließlich fokussierte `bbr-domain`-/`bbr-persistence`-Module, canonical URL equality, Repository CRUD/search/list, Schema v3 Bump+Discard sowie Fixtures/Benchmarks. Keine App-/UI-/Command-Arbeit, Migration oder Backcompat. Darf während Shutdown/F2-Closeout weiterlaufen oder `REVIEW_PASS`/frozen erreichen; serielle Integration danach standardmäßig vor G1 |
 | B2 | **Cmd-D + Save/Remove/Open + Palette Provider + gemeinsame Menüaktion** | ⏸ nach B1; Command-/Z1-/Z3-Koordination | Kanonischer [B2-Slice](../roadmap/tasks/saved-pages-actions-command.md): eine AppStore-/Command-Autorität, globaler In-Memory-Provider, distinct Saved-Page-Result, Cmd-D, genau ein frischer regulärer Tab im aktiven Space/Profile. Z1/Z3 besitzen nur Menüplatzierung/Source/Fokus/Portal und konsumieren dieselbe B2-Aktion; kein zweiter Menücommand |
 | B3 | **Saved Pages Library** | ⏸ nach B1+B2+G1 | Kanonischer [B3-Slice](../roadmap/tasks/saved-pages-library.md): dedizierte ordinary-GPUI Library statt permanenter Sidebar-Region, search/sort/rename/remove/multi-select/flache Collections, 1k bounded rendering. Gallery G2/G3 Stories append-only erst nach B2/B3-Produktionsintegration; Import/Export eigener späterer Follow-up |
 | Z1 | **Tab- und Favorite-Kontextmenüs** | ⏸ nach fresh F2a + G1; Bookmark-Zeile zusätzlich nach B2 | Gemeinsamer produktiver [Tab/Favorite-Menu-Slice](../roadmap/tasks/tab-favorite-context-menus.md), gebunden an den aufrufenden persistenten TabId. Capability-gatete Aktionen/Submenus; Bookmark/Remove Bookmark konsumiert nach B2 dessen eine Shared Command-Autorität. Keine Firefox-Container-, Extension-, Route-, QR- oder Send-Mobile-Erfindungen. Gallery G2/G3 registriert danach nur dieselben Produktionskomponenten |
@@ -106,7 +122,7 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 wartet auf Integration · ✅ erledigt
 | Z4 | **Titlebar-Navigation** | ⏸ nach fresh F2a + G1 | Traffic-light-sicherer [Titlebar-Slice](../roadmap/tasks/titlebar-navigation-controls.md): ein Collapse/Expand-Owner plus Back/Forward/Reload für selected Tab/focused Pane, native Safe Area statt harter Koordinaten; späterer atomarer Ersatz des Status-Row-Toggles, keine Doppelautorität |
 | Z5 | **Media Capability + Sidebar Control** | ⏸ nach fresh F2a + G1 | Zuerst öffentlicher capability-first [Media-Session-Contract](../roadmap/tasks/media-session-capability-contract.md), dann [Sidebar-Media-UI](../roadmap/tasks/sidebar-media-control.md). Public API oder isolierte Content World, keine SPI/HTML-Heuristik-Autorität; Prev/Next/Seek/Mute/Dauer nur wenn bewiesen. Eine bedingte Produktionskarte, Gallery-Story ersetzt kein WKWebView-E2E |
 | G0 | **BBR Gallery Contract + Extraction-Seams** | ✅ Merge `edf83ee` | Vier kanonische Task Packets plus serieller Roll-up im UI-Track integriert. Vollständiger finaler `REVIEW_PASS`: F1–F4, Favicon-Single-Owner, Packet-1-Sequenz und `CommandPortalModel` als alleinige Packet-4-Composition geschlossen. `just roadmap` prüft 67 Markdown-Dateien; `just verify` vollständig grün. Kein Produktionscode, Manifest oder Gallery-Runtime implementiert; G1 bleibt bis F2a und UI-Ownership-Präflight gesperrt |
-| G1 | **`bbr-ui`-Anchor + BBR Gallery MVP** | ⏸ wartet auf F2a-Integration | Start ausschließlich vom danach verifizierten `main`, und nur wenn keine andere aktive Writer-Lane `theme`/`components`/Footer/Sidebar-/Portal-Render besitzt. Primär neue `crates/bbr-ui/**` + `crates/bbr-gallery/**`; serielle Kerneländerungen durch Orchestrator |
+| G1 | **`bbr-ui`-Anchor + BBR Gallery MVP** | ⏸ Lane C: post-F2a parallel nach Ownership-Präflight | Start vom exakt gleichen verifizierten post-F2a-`main` wie Shutdown/B1, nach Audit aller aktiven `theme`-/`components`-/Footer-/Sidebar-/Portal-Render-Owner. Ausschließlich Extraktion aus der nun integrierten F2a-Produktionsautorität, niemals Kopien oder eine zweite Footer-/Sidebar-/Theme-Autorität. Eigene Verantwortungen primär `crates/bbr-ui/**` + `crates/bbr-gallery/**`; vorregistrierte serielle Kernelpunkte: Workspace, `Cargo.lock`, `justfile`, `bbr-app`-Composition und E2E-Registry. Erwartete Registry-/Manifest-Konflikte sind Integrationskosten. Darf während Shutdown/F2-Closeout weiterlaufen oder `REVIEW_PASS`/frozen erreichen; Integration nach Closeout und standardmäßig nach B1 |
 | G2 | **Gallery Browser Components** | ⏭ nach G1 | Echte Produktionskomponenten/Modelle, keine Kopien: bisherige Matrix plus append-only Stories für Tab/Favorite-/Folder-/Page-Menüs, Titlebar-Navigation, Media Card und Saved-Page-Result/Menu/Library-Zeilen erst nach deren Produktionsintegration. WebKit-Elementmenüs und echte Media-Steuerung werden nie in der Gallery nachgebaut |
 | G3 | **Gallery Compositions** | ⏭ nach G2 | Komplexe Zustands-/Varianten-Kompositionen auf denselben `bbr-ui`-Komponenten; neue Menus/Submenus, Safe-Titlebar, Sidebar+Media und Saved Pages Library nur als echte Produktionscomposition nach B2/B3. Kein BrowserController/WebKit/macOS-Framework und kein Ersatz für Browser-/Native-E2E |
 
@@ -143,41 +159,86 @@ Die bereits vor dem Fanout festgelegte Reihenfolge bleibt verbindlich:
    Delete müssen nach echtem Neustart dauerhaft bleiben; Cancelled-Restart
    muss eine frische, `retry_of`-verknüpfte Attempt erzeugen. Kein zweiter
    Store- oder Lifecycle-Owner.
-4. **F2a zuletzt integrieren.** Nach Anpassung an den dann aktuellen `main`
-   laufen fmt, betroffene Unit-/Contracttests, Clippy, `just verify`, alle
-   betroffenen Sidebar-/Space-/Swipe-Real-App-Suiten und Perf. Der
-   Tint-Kontrastbefund wird empirisch aufgelöst, nicht per umgedeutetem
-   Kommentar oder gelockerter Assertion. Footer-/Sidebar- und Theme-Pfade
-   bleiben bis zum Abschluss exklusiv F2a.
-5. **Prozess-Shutdown-Slice integrieren.** Erst vom verifizierten post-F2a
-   `main`, mit exklusivem Besitz von App-Lifecycle, Testkit-Wire/Server und
-   E2E-Registry: fehlschlagende Real-App-Regressionen für echtes SIGINT und
-   owning Browserfenster-Schließen, dann kleinster gemeinsamer graceful
-   GPUI-Shutdown. Portal-/Hilfsfenster-Schließen darf nicht terminieren;
-   Gateway-Antworten müssen vor Socket-/Prozess-Teardown geflusht sein. Paket:
+4. **F2a vollständig liefern und seriell integrieren.** Der laufende
+   Remediation-/Review-Pfad wird nicht unterbrochen. Nach dem permanent-strip-
+   E2E-Layer folgen die noch offenen, jeweils evidenzgeprüften F2a-Schichten:
+   Appearance/Tint mit empirischem `d_ic > d_std`, Swipe Commit/Cancel,
+   Drag-to-chip sowie `swipe_commit` mit mindestens 30 render-inklusiven
+   Samples gegen unveränderte Budgets. Jede Schicht durchläuft Writer →
+   unabhängigen Read-only-Review → nur konkrete Remediation → fokussierten
+   Recheck. Erst danach prüft der Orchestrator den vollständigen Baum, führt
+   fmt, betroffene Unit-/Contracttests, Clippy, `just verify`, alle betroffenen
+   Sidebar-/Space-/Swipe-/Drag-Real-App-Suiten und Perf aus und integriert F2a
+   seriell auf `main`. Tint wird empirisch aufgelöst, nie per umgedeutetem
+   Kommentar oder gelockerter Assertion. Footer-/Sidebar-/Theme-Pfade bleiben
+   bis zur Integration exklusiv F2a; vorher existiert kein post-F2a-Base.
+5. **Ledger vollständig neu lesen, Parallelism-/Ownership-Audit protokollieren
+   und gemeinsamen post-F2a-Base verifizieren.** Unmittelbar nach der
+   vollständigen F2a-Integration wird dieses komplette Ledger erneut gelesen.
+   Vor jedem Lane-Start werden alle offenen Queue-Punkte auditiert: runnable
+   Kandidaten, echte Produkt-/Autoritäts-/Ownership-/Schema-/Portal-
+   Abhängigkeiten, Worktree/Base/Territorium, erwartete Shared-Kernel-Konflikte
+   und serielle Merge-Reihenfolge werden im Ledger festgehalten. Erst danach
+   wird genau ein verifizierter `main`-SHA als gemeinsamer Base protokolliert.
+   Davon
+   starten maximal sicher in isolierten Worktrees: **A Shutdown**, **B B1**
+   und **C G1**. Jede Lane: genau ein Writer → unabhängiger Read-only-Reviewer
+   → nur konkrete bounded Remediation → fokussierter Recheck; alle Agenten
+   explizit `homelab-llm/deepseek-v4-flash:high`. A besitzt App-Lifecycle,
+   SIGINT/owning-window-close, Portal-Child-Isolation, Testkit-Response-Flush,
+   `e2e_shutdown` und nötige Registry. B besitzt ausschließlich fokussierte
+   portable Domain-/Persistence-/Schema-v3-/Fixture-/Benchmark-Pfade und
+   startet nur nach writer-freiem Schema-/Repository-Audit. C startet nur
+   nach UI-Ownership-Präflight und extrahiert aus der integrierten F2a-
+   Produktionsautorität in `bbr-ui`/`bbr-gallery`, ohne Kopien oder zweite
+   Footer-/Sidebar-/Theme-Autorität.
+6. **Parallelität und Kernelpunkte vorregistrieren.** Implementierung und
+   Non-GUI-Gates der drei Lanes dürfen gleichzeitig laufen. Sämtliche GUI-,
+   Real-App-E2E- und Perf-Gates laufen strikt einzeln über den Repository-
+   GUI-Lock. Erwartete gemeinsame Kernelpunkte werden nicht als Startblocker
+   missbraucht: A/C teilen voraussichtlich `justfile` und E2E-Registry; C
+   besitzt zusätzlich Workspace, `Cargo.lock` und `bbr-app`-Composition; B
+   besitzt Schema-/Repository-/Fixture-/Benchmark-Registries. Der Orchestrator
+   löst diese Konflikte später semantisch und integriert ausschließlich
+   seriell.
+7. **Shutdown zuerst integrieren.** Nach direktem `REVIEW_PASS` wird Lane A
+   zuerst auf den post-F2a-`main` integriert. Fehlende Real-App-Regressionen
+   für echtes SIGINT und owning Browserfenster-Schließen müssen vor dem Fix
+   rot und danach grün sein; Portal-/Hilfsfenster-Schließen darf nicht
+   terminieren; Gateway-Antworten müssen vor Socket-/Prozess-Teardown
+   geflusht sein. B1 und G1 dürfen während Review, Integration und Gates von A
+   weiterarbeiten oder bereits `REVIEW_PASS`/frozen erreichen. Paket:
    [`process-lifecycle-shutdown.md`](../roadmap/tasks/process-lifecycle-shutdown.md).
-6. **F2-Wellen-Closeout.** Erst wenn alle vier Merges stabil sind: ein
-   hostexklusiver kanonischer Lauf `just verify` → `just e2e` →
-   `just e2e-perf` sowie `package-verify`; anschließend Bundle-SHA und
-   Prozess-/GUI-Lock-Cleanup im Ledger dokumentieren. Der frühere ungetrackte
-   Shutdown-Prototyp wurde aus dem Haupt-Worktree entfernt; aktuell enthält
-   `just e2e` an Position 2 noch das Rezept `e2e-shutdown`, dessen Test-Target
-   `crates/bbr-app/tests/e2e_shutdown.rs` in keinem Worktree existiert. Kein
-   Orchestrator-Restore und kein aktueller SHA-Vermerk; der vorangehende
-   Prozess-Shutdown-Slice implementiert das Target frisch vom verifizierten
-   post-F2a-`main`, bevor dieser Closeout läuft.
-7. **G1-Präflight unmittelbar danach.** Alle aktiven Lanes erneut auf Besitz
-   von `theme`, `components`, Footer-/Sidebar-Rendering und Portal-Rendering
-   prüfen. Nur ohne Überschneidung startet G1 vom verifizierten F2a-`main`,
-   vor der nächsten breiten UI-Feature-Welle. F3 Warm-Restore und andere
-   disjunkte Nicht-UI-Arbeit dürfen parallel laufen; GUI-Gates bleiben
-   hostexklusiv. G0-Dokumente können nach eigenem `REVIEW_PASS` seriell
-   verlinkt werden, verändern aber diese F2-Merge-Reihenfolge nicht.
+8. **Kanonischer F2-Wellen-Closeout.** Unmittelbar nach stabiler Shutdown-
+   Integration läuft hostexklusiv `just verify` → `just e2e` →
+   `just e2e-perf` → `package-verify`; anschließend Bundle-SHA sowie Prozess-
+   und GUI-Lock-Cleanup im Ledger dokumentieren. B1/G1 bleiben parallel aktiv
+   oder eingefroren, werden aber noch nicht integriert. Der frühere
+   ungetrackte Shutdown-Prototyp wird niemals restauriert; Lane A implementiert
+   das aktuell fehlende Target frisch vom gemeinsamen post-F2a-Base.
+9. **B1 und G1 danach seriell integrieren.** Beide Review-Pass-Bäume werden
+   gegen den durch Shutdown und F2-Closeout verifizierten `main` geprüft und
+   entlang der vorregistrierten Shared-Kernel-Konflikte semantisch integriert.
+   Default-Reihenfolge: **B1 vor dem breiteren G1-Kernel**, weil B1 nur
+   portable Domain/Persistence/Schema besitzt und G1 anschließend Workspace,
+   Lockfile, Justfile, App-Composition und E2E-Registry vereinigt. Eine andere
+   Reihenfolge ist nur mit konkreter Evidenz oder echter Abhängigkeit zulässig;
+   Fertigstellungszeit allein ändert sie nicht. Nach jedem Merge folgen die
+   lane-spezifischen Integrationsgates; GUI-Gates bleiben hostexklusiv.
+10. **Folgepakete bleiben dependency-gated.** Die A/B/C-Parallelwelle ist kein
+   pauschales Startsignal für die nächste Produktwelle. G2/G3 warten weiterhin
+   auf integriertes G1 und ihre jeweiligen Produktionskomponenten; B2 wartet
+   auf integriertes B1, B3 auf B1+B2+G1; Z1/Z2/Z4/Z5 warten auf ihre bereits
+   dokumentierten F2a-/G1-/B2-/Capability-Abhängigkeiten. Z3 startet erst nach
+   dem erfolgreichen kanonischen F2-Closeout und nur bei erneut freiem Portal-
+   und Context-Menu-Territorium.
 
 ## Status-Log
 
 | Zeit | Eintrag |
 |---|---|
+| 20:02 | 📋 **Vollständiger Patrick-Auftrag präzisiert: laufendes F2a nicht unterbrechen; A/B/C erst nach Full-F2a und Queue-weitem Audit.** Der aktive Real-App-E2E-Remediation-/Review-Pfad läuft unverändert weiter. Danach werden Tint, Swipe Commit/Cancel, Drag-to-chip und `swipe_commit` mit Reviews, mindestens 30 render-inklusiven Samples, unveränderten Gates und Orchestrator-Evidenz geliefert; erst die serielle F2a-Integration erzeugt einen post-F2a-`main`. Direkt danach wird das komplette Ledger erneut gelesen und ein vollständiger Parallelism-/Ownership-Audit aller offenen Queue-Punkte protokolliert. Vorher werden weder Base-SHA noch A/B/C-Run-IDs oder Worktrees erfunden. Fremde uncommittete Phase-09-/Research-/Shutdown-Planungsarbeit bleibt gegen Fingerprint `c6ca52b8102929d325143a4db4f1b4c825108475ca415d3fd704db3a80652c9d` außerhalb anderer Commits und darf nur als ausdrücklich geprüfter Bestandteil von Queue 20 übernommen werden. Keine falschen Completion-Claims, Budget-/Sample-/Validator-Lockerung, Migration oder Backcompat |
+| 19:58 | 📋 **Patrick-Steering: post-F2a-Welle A/B/C parallel, Integration weiterhin seriell.** Nach vollständiger F2a-Integration wird ein einziger verifizierter post-F2a-`main`-SHA gemeinsamer Base für drei isolierte Lanes mit jeweils Writer → unabhängigem Read-only-Reviewer → nur konkreter Remediation → fokussiertem Recheck; alle Subagenten DeepSeek high. A Queue 20 besitzt ausschließlich App-Lifecycle, echtes SIGINT/owning-window-close, Portal-Child-Isolation, Testkit-Response-Flush, frisches `e2e_shutdown` und E2E-Registry; keine B1-/Gallery-Autorität. B B1 besitzt ausschließlich fokussierte portable `bbr-domain`-/`bbr-persistence`-Module, canonical URL equality, Repository CRUD/search/list, Schema v3 Bump+Discard, Fixtures/Benchmarks; kein App/UI/Command, Migration oder Backcompat; Start nur nach writer-freiem Schema-/Repository-Audit. C G1 extrahiert ausschließlich aus der integrierten F2a-Produktionsautorität in echte gemeinsame `bbr-ui`-/`bbr-gallery`-Verantwortungen; keine Kopien oder zweite Footer-/Sidebar-/Theme-Autorität; Start nur nach UI-Ownership-Präflight. Workspace/`Cargo.lock`/`justfile`/`bbr-app`-Composition/E2E-Registry sind deklarierte serielle Kernelpunkte; erwartete Konflikte blockieren den parallelen Start nicht. Implementierung und Non-GUI-Gates parallel, alle GUI/E2E/Perf-Gates strikt hostexklusiv über den Repository-Lock. Integration: Shutdown zuerst, dann `just verify` → `just e2e` → `just e2e-perf` → `package-verify`, Bundle-SHA und Prozess-/Lock-Cleanup. B1/G1 dürfen währenddessen weiterlaufen oder `REVIEW_PASS`/frozen erreichen; danach serielle Integration, standardmäßig B1 vor G1, sofern konkrete Evidenz oder Abhängigkeit keine andere Reihenfolge verlangt. G2/G3, B2/B3 und Z1/Z2/Z4/Z5 bleiben an ihre bestehenden Produktabhängigkeiten gebunden; Z3 bleibt bis nach dem F2-Closeout und freiem Portal-Territorium gesperrt |
 | 19:49 | 🚫 **F2a Real-App-E2E direkter Reviewer `REVIEW_FINDINGS`; erhaltener Baum gesichert, bounded Remediation folgt.** Der Writer meldete ehrlich einen unvollständigen Slice, nachdem der große Tool-Write für `crates/bbr-app/tests/e2e_shell_spaces/strip.rs` am Output-Limit nicht ausgeführt wurde. Der unabhängige Reviewer prüfte den Baum selbst: 20 modifizierte Dateien, +191/−59, kein Commit; `strip.rs` und `mod strip;` fehlen; fmt ist rot; Testkit/App/Clippy/GUI kompilieren wegen fehlendem `SpaceStripScrollSnapshot`-Root-Reexport und privaten `Pixels.0`-Zugriffen nicht. Zusätzlich fehlen die verpflichtenden Real-App-Beweise für gruppierte Order-vs-persistente-ID, compact-window selected-chip containment über den einen Production-`ScrollHandle`, selected-Chip/Enter im Keyboard-Pfad und `[Downloads][Space Strip][+]` in Downloads; `E2E_ARCHITECTURE.md` behauptet noch entfernte `space_states`/`bbr-space-row-*`-/drag-into-space-Flächen. Positiv belegt: Legacy-Requests/-Autorität kehrten nicht zurück; die neue Scroll-Wire-Idee ist read-only und aus dem bestehenden Handle abgeleitet; Scope blieb frei von Tint/Swipe/Drag/Perf/Gallery/Shutdown/Portal/Icon/Media/Titlebar sowie Budget-/Dependency-/Schemaänderungen. Zwischenstand: `/tmp/f2a-strip-real-app-e2e-before-remediation.patch`, SHA-256 `9e75f0d59400bfa2eb473d15d79486e1885f9b3ffc4af82367e0785e41fbdb82`. Keine Gates grün behauptet, kein Commit/Merge. Workflow `f2a-strip-e2e-remediation-msko7alv-cr7gj7` führt jetzt exakt diese kleinere Remediation mit anschließendem unabhängigen fokussierten Recheck im selben exklusiven Worktree aus |
 | 19:28 | 🚀 **F2a Real-App-Strip-E2E-Slice `f2a-strip-real-app-e2e-mskngq1w-pjecgu` auf `731885e` gestartet.** Zuvor erhielt die 41-Dateien-Wire-/Semantik-Migration einen direkten unabhängigen `REVIEW_PASS` und wurde nach Orchestrator-Gates als Lane-Zwischencommit `731885e` eingefroren. Review-Pass-Baum: `/tmp/f2a-strip-wire-semantics-after-review-pass.patch`, SHA-256 `d1ee5561d7b0beaf4d28dcfd4a552d57b46fd9ecab4c82e35efe4171097b9fe3`. Legacy-Wire vollständig entfernt: `spaces_visible` nur noch als unzusammenhängender Hydration-Testname; `ClickFooterSpaces`, `click_footer_spaces`, `toggle_spaces_region` null; `bbr-spaces` nur Produktdateiname-Prosa und Negativassertion. Typed Strip-/Chip-Wire und Semantik stammen aus `space_chip_visuals`; IDs aus `SpaceId`; altes revealed-list Dragband entfernt, kein Drag-to-chip erfunden. Orchestrator-Gates: fmt, Testkit 24, App 255, drei Clippy-Gates, vollständiges `just verify`, Roadmap und Diff-Check grün. Nächster bounded Slice besitzt nur Real-App-E2E: permanente Footer-/Chip-Komposition, Pointer/Keyboard über die eine Aktivierungsautorität, ID-/Order-/Selected-Evidenz, echter Overflow/scroll-into-view-Beweis und Sidebar/Spaces/Organize/Downloads-Regressionen. Tint, Swipe, Drag-to-chip und Perf bleiben offen |
 | 19:24 | ✅ **Queue 16 Full-Search-Evidenz seriell integriert: Produktcommit `6f91b32`, Lane `c715fee`.** Der fokussierte unabhängige Recheck endete ausdrücklich mit `REVIEW_PASS`: `perf_common/command.rs` 425 Zeilen, extrahiertes `command_full_search.rs` 119; Funktionskörper gegenüber dem vorregistrierten Baum bytegleich, nur minimale Modulverdrahtung. Die exakte Checkbox „Sidebar frame time with 500 tabs“ ist wieder offen und trennt funktionales 500/50/450-E2E, report-only 230/20-Frame-Samples, den 3/3 `PageCrashed`-Re-Seed und die noch fehlende Canonical-500/50-Messung. Review-Pass-Baum gesichert als `/tmp/perf-gaps-closeout-after-truth-review-pass.patch`, SHA-256 `14607a8aa24a748074bdbc4289726aeca04e882041a88692bed3243f8509122b`. Orchestrator-Gates im Lane- und integrierten F3-/Saved-Pages-Baum: fmt, App 253, Baseline 16, App-Clippy, vollständiges `just verify`, Roadmap und Diff-Check grün; Command-E2E 25/25. Der integrierte hostexklusive `just e2e-perf` war vollständig grün: Cold Startup 499,75 ms, Warm Startup 188,71 ms im Short-Sample, Full Search 30 Samples p50 40,73 / p95 41,40 / max 41,44 ms, First Result p95 40,36 / max 42,24 ms, Dense 230/20 p95 3,25/3,59 ms, `regressions: []`; Budgets/Samples unverändert. Semantische Altbasis-Korrektur: Queue-16-Dokumente behaupten nicht länger, F3-Warm-Startup warte auf ein Repository, und der inzwischen am fehlenden `e2e_shutdown` blockierte kanonische `just e2e` wird nicht grün behauptet. Canonical Runner, Ressourcenmetriken und echte 500/50-Frame-Time bleiben ausdrücklich offen. Fremde uncommittete Phase-9-/Research-/Shutdown-Arbeit im Haupt-Worktree blieb mit Fingerprint `c6ca52b8102929d325143a4db4f1b4c825108475ca415d3fd704db3a80652c9d` unverändert |
