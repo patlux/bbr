@@ -23,6 +23,7 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 ## Shell craft — Phase 4
 
 - [x] Establish the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), then compose standard input/menu/button behavior through gpui-component while retaining BBR tokens, geometric icons, native WKWebViews, and browser-specific orchestration. *(Integrated and canonical-E2E green at `f89a479`.)*
+- [ ] Collapse address entry into one surface through the [address control and palette packet](../tasks/url-address-control-palette.md). The sidebar address becomes a borderless translucent domain pill with button semantics and no focus ring; the palette opens over it with the full URL preselected. Two editing surfaces produced two focus appearances and two answers to "what is the current address" - this removes the second one rather than restyling it.
 - [ ] Refine the sidebar through the bounded [browser-MVP sidebar UI packet](../tasks/browser-mvp-sidebar-ui.md) into the compact Zed-inspired BBR hierarchy, including the footer row and a real plus-menu for New Space/New Folder. *(Patrick's post-delivery product revision replaces the footer `[Spaces]` toggle with the permanent scrollable space-identity strip owned by the [footer space strip, appearance, and swipe packet](../tasks/space-footer-strip-appearance-ui.md).)*
 - [ ] Replace placeholder chrome glyphs with the BBR-drawn §7 icon set. *(The
       [icon-system slice](../tasks/icon-system.md) swaps the close `×`, pin

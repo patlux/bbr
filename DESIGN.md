@@ -607,14 +607,18 @@ using the IDs of §15. All rows use `density` geometry from §8.
     (`bbr-palette-result-<k>`) use the §11.5 row anatomy `[icon] [title]
     [url mono trunc] [key hint]`, `selected` visuals (accent rail inside
     the result list), and `accent.ink` match highlighting.
-  - **Cmd-L / pointer click on the field → field-anchored overlay**
-    (Planned, `bbr-command-overlay`): `elev:2` overlay anchored to the
-    field — top edge flush with the field's bottom edge, leading edge
-    flush with the field's leading edge, width = field width clamped to
-    360–`win:palette`, `material:overlay`, `radius:lg`. Same result
-    engine and row anatomy; results keep the §11.5 ids
-    (`bbr-command-result-<k>`). Location mode shows the full URL selected
-    in the field (`bbr-command-text`).
+  - **Cmd-L / pointer click on the address control → palette over the
+    address** (Planned, `bbr-command-overlay`): `elev:2` overlay that
+    **covers** the §11.5 address control rather than dropping below it —
+    top edge flush with the control's top edge, leading edge flush with
+    the control's leading edge, width = control width clamped to
+    360–`win:palette`, `material:overlay`, `radius:lg`. The address
+    control is not visible while the overlay is open: the overlay takes
+    its place, so the address never appears twice and the eye stays where
+    the pointer clicked. Same result engine and row anatomy; results keep
+    the §11.5 ids (`bbr-command-result-<k>`). The overlay's own field
+    (`bbr-command-overlay-field` / `-text` / `-cursor`) opens with the
+    **full current URL selected**, so one keystroke replaces it.
   - Both open with an opacity fade `dur:fine` only — never translate or
     scale — close on Escape/commit/outside press (one pointer action,
     §13), and are the only chrome allowed to overlap the glass (§13). At
@@ -635,28 +639,46 @@ using the IDs of §15. All rows use `density` geometry from §8.
   `bbr-space-identity-<n>`, `bbr-plus`, `bbr-plus-menu`,
   `bbr-plus-new-space`, `bbr-plus-new-folder`, `bbr-palette`
   (+ `-field`/`-text`/`-mode`/`-cursor`), `bbr-palette-result-<k>`,
-  `bbr-command-overlay`.
+  `bbr-command-overlay` (+ `-field`/`-text`/`-cursor`), `bbr-address`
+  (+ `-domain`/`-accessory`).
 
-### 11.5 Command bar
+### 11.5 Address control
 
-- **Anatomy:** `material:field`, `radius:lg`, `elev:1`, field height
-  `density:row` (S 32 / N 36 / XL 44); prefix glyph (mode:
-  `►` location / `+` new tab / `⌘` commands — Planned), mono text
-  (`type:mono`, mid-ellipsis), mode chip (`type:badge`, accent.ink) when in
-  a transient mode, block cursor 2 pt accent when chrome-focused.
-- **Behavior:** modes per the interaction contract (`Inactive`, `Location`,
-  `NewTab` staged); typing never scrolls or shifts the field; Enter commits,
-  Escape restores (§contract). Results (Planned surface): rows `[icon] [title]
-  [url mono trunc] [key hint]`; matched substring in `accent.ink`; selected
-  result row uses `selected` visuals (accent rail inside the result list).
-- **Focus in/out:** `Cmd-L`/`Cmd-T` focus the command field with ring; focus
-  out returns to web content or sidebar per contract. The two palette
-  presentations — the centered Cmd-T palette and the Cmd-L/click
-  field-anchored overlay — are specified in §11.4: both open as `elev:2`
-  overlays with an opacity fade `dur:fine` — never translate or scale — and
-  they are the only chrome allowed to overlap the glass (§13).
-- **Assert ids:** `bbr-command-bar`, `bbr-command-text`, `bbr-command-mode`,
-  `bbr-command-cursor`, `bbr-command-result-<k>`.
+The sidebar address is a **display control, not a text field**. BBR has
+exactly one real URL input — the one inside the palette (§11.4). Editing an
+address in two places invites two editing states, two focus rings and two
+definitions of what the current address is; this section removes that class
+of problem instead of styling it.
+
+- **Content:** the **domain only** — host without scheme, path or query, a
+  leading `www.` elided, IDN shown human-readable. The full address exists
+  in the palette, never here. Internal pages show their short name (the
+  exact naming is open, §17.13).
+- **Anatomy:** a borderless pill, height `density:row` (S 32 / N 36 /
+  XL 44), `radius:lg`, `type:title` domain text (`bbr-address-domain`,
+  mid-ellipsis), and a **trailing accessory slot** (`bbr-address-accessory`)
+  inset at the pill's trailing edge. The slot reserves space for one to
+  three §14 glyphs at `density:hit-min`; when a glyph appears, the domain
+  text yields width by ellipsis — the address never pushes an accessory out
+  of the pill. v1 ships the slot empty or with Copy Link only (§17.14).
+- **Fill:** translucent, not a bordered field — **white-translucent on dark
+  chrome, black-translucent on light chrome**, following the theme and the
+  space tint through the token pair, never a hardcoded color. **No border
+  and no focus ring**, at any time.
+- **Hover:** the fill moves one step brighter on dark chrome and one step
+  darker on light chrome, using the §10.2 wash mechanics at `dur:fine`.
+- **Activation:** pointer press or `Cmd-L` opens the §11.4 palette over the
+  control. The control **never accepts keyboard text**; its semantic role is
+  a button that opens address entry, and it holds no editing state, no
+  cursor and no selection.
+- **Focus:** the control participates in the chrome focus domain as a
+  button. There is no field-focus appearance, because there is no field.
+  After the palette closes, focus returns where it was before opening — web
+  content or the sidebar — per the interaction contract.
+- **Assert ids:** `bbr-address`, `bbr-address-domain`,
+  `bbr-address-accessory`; the palette's own input carries
+  `bbr-command-overlay-field` / `-text` / `-cursor`, and results keep
+  `bbr-command-result-<k>`.
 
 ### 11.6 Dense list (500 tabs)
 
@@ -1013,6 +1035,15 @@ auto-switch; palette result grouping polish; peek choreography (its own task).
     explicit Open action on succeeded rows, open-on-double-click, and/or
     auto-open on completion, and which matches conventional macOS download
     behavior.
+
+13. **Internal page naming in the address control:** §11.5 shows a domain,
+    but `about:blank` and future internal pages have no domain. Decide the
+    short name they present (product name, a neutral label, or an empty
+    pill) so the control never shows a raw scheme.
+14. **Address accessory slot contents:** §11.5 defines the trailing slot and
+    its geometry. Decide what v1 actually shows — nothing, Copy Link only,
+    or Copy Link plus a permissions indicator once the §P8a contract has a
+    surface.
 
 Resolving an item means moving its decision into the relevant section above
 and updating the affected roadmap track in the same group.
