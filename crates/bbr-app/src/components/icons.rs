@@ -24,8 +24,7 @@ use crate::palette::Palette;
 use crate::theme::{Density, Theme};
 
 use super::u2_glyphs::{
-    check_geometry, disclosure_arm, downloads_geometry, folder_geometry, spaces_geometry,
-    stopped_half,
+    check_geometry, disclosure_arm, downloads_geometry, folder_geometry, stopped_half,
 };
 
 /// §7 icon catalog: the bounded set of BBR-drawn chrome glyphs.
@@ -49,8 +48,6 @@ pub enum Icon {
     /// §11.12 downloads status: the neutral cancelled marker (a short
     /// horizontal bar at `ink.secondary`) on cancelled rows.
     Stopped,
-    /// §11.4 footer `[Spaces]` control: two offset stacked squares.
-    Spaces,
     /// §11.11 folder identity: a folder silhouette with a top-left tab.
     Folder,
     /// §11.11 folder-row disclosure: a chevron that points right when
@@ -81,7 +78,6 @@ impl Icon {
             Icon::Downloads => "downloads",
             Icon::Check => "check",
             Icon::Stopped => "stopped",
-            Icon::Spaces => "spaces",
             Icon::Folder => "folder",
             Icon::Disclosure { expanded } => {
                 if expanded {
@@ -104,7 +100,6 @@ impl Icon {
             | Icon::Downloads
             | Icon::Check
             | Icon::Stopped
-            | Icon::Spaces
             | Icon::Folder
             | Icon::Disclosure { .. }
             | Icon::ChassisMark
@@ -215,21 +210,6 @@ impl Icon {
                 path.move_to(point(px(cx - half), px(cy)));
                 path.line_to(point(px(cx + half), px(cy)));
                 paint_path(window, path, color);
-            }
-            Icon::Spaces => {
-                let (half, offset, corner) = spaces_geometry(size);
-                // Back square up-left, front square down-right: the §11.3
-                // stacked-surfaces identity.
-                paint_rounded_square_ring(
-                    window,
-                    cx - offset,
-                    cy - offset,
-                    half,
-                    corner,
-                    stroke,
-                    color,
-                );
-                paint_rounded_square_ring(window, cx, cy, half, corner, stroke, color);
             }
             Icon::Folder => {
                 let (half, tab_depth, tab_width) = folder_geometry(size);
@@ -416,7 +396,6 @@ mod tests {
         assert_eq!(Icon::Downloads.name(), "downloads");
         assert_eq!(Icon::Check.name(), "check");
         assert_eq!(Icon::Stopped.name(), "stopped");
-        assert_eq!(Icon::Spaces.name(), "spaces");
         assert_eq!(Icon::Folder.name(), "folder");
         assert_eq!(Icon::Disclosure { expanded: false }.name(), "disclosure");
         assert_eq!(
@@ -489,7 +468,6 @@ mod tests {
         assert_eq!(Icon::Downloads.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Check.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Stopped.rest_color(p), p.ink_secondary);
-        assert_eq!(Icon::Spaces.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Folder.rest_color(p), p.ink_secondary);
         assert_eq!(
             Icon::Disclosure { expanded: false }.rest_color(p),

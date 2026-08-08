@@ -47,8 +47,12 @@ impl BbrApp {
             // presentation bound to the previous space's view ends.
             self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
-            self.focus_space_list(window, cx);
+            self.focus_space_strip(window, cx);
             self.ensure_active_visible();
+            // DESIGN.md §11.3: the selected chip is scrolled fully into view
+            // deterministically (no reordering, no wrapping) whenever the
+            // strip overflows.
+            self.scroll_selected_chip_into_view();
             // DESIGN.md §11.3 cross-context rule: only a cross-profile
             // activation announces the destination profile at the top of the
             // command field for one interaction; same-profile switching must
@@ -71,7 +75,7 @@ impl BbrApp {
         result
     }
 
-    /// Pointer activation of a visible space row: chrome focus domain
+    /// Pointer activation of a visible space chip: chrome focus domain
     /// preserved, activation routed through the same controller mutation the
     /// keyboard path uses (DESIGN.md §11.3 / interaction contract).
     pub fn select_space_via_pointer(
@@ -80,31 +84,85 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.focus_space_list(window, cx);
+        self.focus_space_strip(window, cx);
         if self.activate_space(space, window, cx).is_some() {
             cx.notify();
         }
     }
 
-    /// Focus the space list (chrome domain) without activating the command
-    /// bar — the pointer path into the spaces region.
-    pub(super) fn focus_space_list(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    /// Focus the space strip (chrome domain) without activating the command
+    /// bar — the pointer path into the §11.3 chips.
+    pub(super) fn focus_space_strip(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
         self.command_ranking.close();
-        window.focus(&self.space_list_handle, cx);
+        window.focus(&self.space_strip_handle, cx);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
         self.emit_focus(window);
     }
 
-    /// Keyboard navigation of the visible space list (DESIGN.md §9 order:
-    /// command field → spaces → pinned → regular tabs): `↑/↓` activate the
-    /// previous/next space in render order, Enter re-activates the focused
-    /// space. Runs only while the space list owns chrome focus and no command
-    /// mode is active. Activation keeps the chrome domain — the keyboard
-    /// equivalent of clicking a space row.
-    pub(super) fn on_space_list_key_down(
+    /// DESIGN.md §11.3 overflow contract: after any space activation the
+    /// selected chip is brought fully into view through the strip's tracked
+    /// scroll handle (minimal scroll, no reordering). The selected chip's
+    /// canonical rendered position is its index in the same
+    /// [`Self::space_chip_visuals`] vector the footer render consumes, so the
+    /// tracked handle scrolls exactly the chip that is visible on screen —
+    /// no separate shell authority derives the position. GPUI applies the
+    /// pending item during the next layout of the scroll container, so the
+    /// next frame presents the selected chip fully visible.
+    fn scroll_selected_chip_into_view(&self) {
+        let position = self
+            .space_chip_visuals()
+            .iter()
+            .position(|visual| visual.selected);
+        if let Some(position) = position {
+            self.space_strip_scroll.scroll_to_item(position);
+        }
+    }
+
+    /// The §11.3 chip visuals for the current render, snapshot, and semantic
+    /// tree: one chip per space in canonical grouped order (profile groups,
+    /// creation order within each profile), each consuming the effective
+    /// space appearance from the one controller authority. The render, the
+    /// snapshot, and the semantic tree all call this same method so the
+    /// chip ids and states can never drift.
+    pub(crate) fn space_chip_visuals(&self) -> Vec<crate::components::SpaceChipVisuals> {
+        let browser = self.controller.snapshot();
+        let budget = crate::shell::space_title_budget_chars(&self.theme());
+        crate::shell::space_groups(&browser, budget)
+            .into_iter()
+            .flat_map(|group| group.rows.into_iter())
+            .map(|row| {
+                let space = browser
+                    .spaces
+                    .iter()
+                    .find(|s| s.index == row.index)
+                    .expect("space row derives from the snapshot");
+                let identity = self
+                    .controller
+                    .space_appearance(space.id)
+                    .expect("space exists")
+                    .identity
+                    .name();
+                crate::components::SpaceChipVisuals {
+                    // The persistent id is the chip identity; the vector
+                    // position is display order only.
+                    space: space.id,
+                    title: row.title.to_string(),
+                    identity,
+                    selected: space.active,
+                }
+            })
+            .collect()
+    }
+
+    /// Keyboard navigation of the space strip (DESIGN.md §9 order):
+    /// `↑/↓` activate the previous/next space in canonical render order,
+    /// Enter re-activates the focused chip. Runs only while the strip owns
+    /// chrome focus and no command mode is active. Activation keeps the
+    /// chrome domain — the keyboard equivalent of clicking a chip.
+    pub(super) fn on_space_strip_key_down(
         &mut self,
         event: &KeyDownEvent,
         window: &mut Window,
@@ -117,7 +175,7 @@ impl BbrApp {
         if snapshot.spaces.is_empty() {
             return;
         }
-        // Render order is the grouped sidebar order (DESIGN.md §11.3).
+        // Canonical order is the grouped sidebar order (DESIGN.md §11.3).
         let order: Vec<SpaceId> = crate::shell::space_groups(&snapshot, usize::MAX)
             .into_iter()
             .flat_map(|group| group.rows.into_iter())

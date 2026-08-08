@@ -123,8 +123,8 @@ pub struct BbrApp {
     engine_kind: &'static str,
     /// GPUI focus handle for the chrome (sidebar/command bar).
     chrome_handle: FocusHandle,
-    /// GPUI focus handle for the visible space list (arrow/enter keys).
-    space_list_handle: FocusHandle,
+    /// GPUI focus handle for the permanent space strip (arrow/enter keys).
+    space_strip_handle: FocusHandle,
     /// GPUI focus handle for the visible tab list (arrow/backspace keys).
     tab_list_handle: FocusHandle,
     /// GPUI focus handle for the sidebar resize divider (←/→ resize, 0 reset).
@@ -133,6 +133,10 @@ pub struct BbrApp {
     /// the native wheel listener and the keyboard traversal mutate the same
     /// tracked offset, and the render derives its bounded row window from it.
     dense_scroll: ScrollHandle,
+    /// Production scroll state of the §11.3 space strip: chip activation
+    /// scrolls the selected chip fully into view through this tracked
+    /// handle (no reordering, no wrapping).
+    space_strip_scroll: ScrollHandle,
     /// The last render's dense window, recorded during `Render::render` so
     /// the testkit snapshot reports exactly what the shell built (bounded
     /// rendered rows, active-row visibility). `pub(crate)` because the
@@ -412,10 +416,11 @@ impl BbrApp {
             controller,
             engine_kind,
             chrome_handle: cx.focus_handle(),
-            space_list_handle: cx.focus_handle(),
+            space_strip_handle: cx.focus_handle(),
             tab_list_handle: cx.focus_handle(),
             divider_handle: cx.focus_handle(),
             dense_scroll: ScrollHandle::new(),
+            space_strip_scroll: ScrollHandle::new(),
             dense_window: std::cell::Cell::new(crate::dense::DenseRenderState::default()),
             sidebar: crate::sidebar::SidebarGeometry::new(),
             tab_drag: drag::TabDrag::default(),
@@ -840,7 +845,7 @@ impl BbrApp {
     /// their focused states report the same domain.
     pub(super) fn chrome_focused(&self, window: &Window) -> bool {
         self.chrome_handle.is_focused(window)
-            || self.space_list_handle.is_focused(window)
+            || self.space_strip_handle.is_focused(window)
             || self.tab_list_handle.is_focused(window)
             || self.divider_handle.is_focused(window)
             || self.u2.plus_menu_handle.is_focused(window)

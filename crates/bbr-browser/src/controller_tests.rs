@@ -14,6 +14,7 @@
 //! - Registry invariants after every mutation (asserted inside each op).
 //! - Split and event-application coverage live in `controller_event_tests`.
 
+use bbr_domain::{AppearanceError, BbrGlyph, SpaceEmoji, SpaceIdentity, SpaceTheme};
 use bbr_web::{ProfileId, WebAction, WebEvent, WebViewId};
 
 use crate::fake::EngineOp;
@@ -946,4 +947,91 @@ fn empty_space_activation_restores_no_active_tab_and_no_session_loss() {
     assert_eq!(snap.active_view, Some(a_view));
     assert_eq!(snap.engine_sessions, 1);
     assert_eq!(h.engine.borrow().live_session_count(), 1);
+}
+
+// ---------------------------------------------------------------------------
+// Space appearance (portable appearance contract)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn space_appearance_derives_defaults_from_the_profile_hue() {
+    let (c, _h) = plain();
+    let snap = c.snapshot();
+    let default_space = snap.active_space;
+    // The default profile is Cobalt (first §12 hue): the derived appearance
+    // maps the theme 1:1 from the hue and uses the default curated glyph.
+    let appearance = c.space_appearance(default_space).expect("space exists");
+    assert_eq!(
+        appearance.theme,
+        SpaceTheme::from_profile_hue(crate::ProfileHue::Cobalt)
+    );
+    assert_eq!(appearance.identity, SpaceIdentity::default());
+    assert_eq!(appearance.theme.name(), "cobalt");
+    assert_eq!(appearance.identity.name(), "code");
+    // Unknown spaces derive no appearance (defensive; invariants forbid).
+    assert_eq!(c.space_appearance(crate::SpaceId(999)), None);
+}
+
+#[test]
+fn explicit_appearance_overrides_the_derived_default() {
+    let (mut c, _h) = plain();
+    let space = c.snapshot().active_space;
+    // A validated curated emoji + the Pine space-only token.
+    let emoji = SpaceEmoji::new("🔥").expect("curated emoji");
+    c.set_space_appearance(space, SpaceTheme::Pine, SpaceIdentity::Emoji(emoji))
+        .expect("set appearance");
+    let appearance = c.space_appearance(space).expect("space exists");
+    assert_eq!(appearance.theme, SpaceTheme::Pine);
+    assert_eq!(
+        appearance.identity,
+        SpaceIdentity::Emoji(SpaceEmoji::new("🔥").expect("curated"))
+    );
+    // The explicit record is atomic: identity-only and theme-only setters
+    // preserve the other half.
+    c.set_space_identity(space, SpaceIdentity::Glyph(BbrGlyph::Terminal))
+        .expect("set identity");
+    let appearance = c.space_appearance(space).expect("space exists");
+    assert_eq!(
+        appearance.identity,
+        SpaceIdentity::Glyph(BbrGlyph::Terminal)
+    );
+    assert_eq!(
+        appearance.theme,
+        SpaceTheme::Pine,
+        "theme survives an identity-only update"
+    );
+    c.set_space_theme(space, SpaceTheme::Plum)
+        .expect("set theme");
+    let appearance = c.space_appearance(space).expect("space exists");
+    assert_eq!(
+        appearance.theme,
+        SpaceTheme::Plum,
+        "theme update preserves the explicit identity"
+    );
+    assert_eq!(
+        appearance.identity,
+        SpaceIdentity::Glyph(BbrGlyph::Terminal),
+        "identity survives a theme-only update"
+    );
+}
+
+#[test]
+fn unknown_space_appearance_mutation_rejects_whole() {
+    let (mut c, _h) = plain();
+    let unknown = crate::SpaceId(4242);
+    let err = c
+        .set_space_appearance(unknown, SpaceTheme::Pine, SpaceIdentity::default())
+        .expect_err("unknown space rejects whole");
+    assert_eq!(err, AppearanceError::UnknownSpace(unknown));
+    // None of the setters partially mutates: the store stays empty and the
+    // controller invariants (including the appearance store's) hold.
+    assert_eq!(
+        c.set_space_theme(unknown, SpaceTheme::Plum),
+        Err(err.clone())
+    );
+    assert_eq!(
+        c.set_space_identity(unknown, SpaceIdentity::default()),
+        Err(err)
+    );
+    assert_eq!(c.space_appearance(unknown), None);
 }

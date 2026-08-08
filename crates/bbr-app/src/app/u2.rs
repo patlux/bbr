@@ -54,6 +54,11 @@ impl BbrApp {
     /// under the command field. Toggling snaps (`dur:instant`); a second
     /// activation hides it (§11.4). The compact default (hidden) and the
     /// §11.4 Escape-hide land together with the migrated spaces suites.
+    ///
+    /// The permanent strip replaces the footer toggle in the rendered
+    /// composition; this legacy wire method is kept only for the testkit
+    /// dispatch seam until the revealed-list migration removes it.
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
     pub fn toggle_spaces_region(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let _ = window;
         self.u2.spaces_visible = !self.u2.spaces_visible;

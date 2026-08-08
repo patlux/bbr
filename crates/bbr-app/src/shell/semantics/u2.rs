@@ -4,12 +4,16 @@
 //! surfaces render. The render currently ships none of these surfaces, so
 //! the builders stay un-wired (and dead-code-allowed) until then; the node
 //! shapes below are the typed §15 contract the §15 tests lock.
+//!
+//! The footer row node carries the two fixed controls (`bbr-downloads` /
+//! `bbr-plus`); the §11.3 space strip sits between them as a flex region
+//! whose chip nodes are a following F2a slice.
 
 use bbr_testkit::protocol::{SemanticNode, SemanticRole};
 
-/// The §11.4 footer row node: the container plus exactly the three controls
-/// (`bbr-downloads` / `bbr-spaces` / `bbr-plus`) with their §7 text
-/// alternatives.
+/// The §11.4 footer row node: the container plus the two fixed controls
+/// (`bbr-downloads` / `bbr-plus`) with their §7 text alternatives (the
+/// strip chips follow in a later slice).
 pub fn footer_node() -> SemanticNode {
     let mut footer = node(
         crate::components::footer::FOOTER_ID,

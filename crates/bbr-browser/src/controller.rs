@@ -18,7 +18,10 @@
 
 use std::collections::HashMap;
 
-use bbr_domain::{Browser, TabId, TabLifecycle};
+use bbr_domain::{
+    AppearanceError, Browser, SpaceAppearance, SpaceAppearanceStore, SpaceIdentity, SpaceTheme,
+    TabId, TabLifecycle,
+};
 use bbr_web::{ProfileId, WebAction, WebEvent, WebViewId};
 
 use crate::nav::NavState;
@@ -47,6 +50,11 @@ pub struct BrowserController {
     /// (the crash destroys the session but the tab identity stays); cleared
     /// when a fresh session is created or loads.
     pub(crate) crashed_tabs: std::collections::HashSet<TabId>,
+    /// Per-space appearance records beside the browser (the orchestration
+    /// layer owns both, per the space-appearance store contract). Effective
+    /// appearance derives deterministic defaults from the owning profile's
+    /// identity hue when no explicit record exists.
+    pub(crate) appearances: SpaceAppearanceStore,
 }
 
 impl std::fmt::Debug for BrowserController {
@@ -77,7 +85,58 @@ impl BrowserController {
             visibility: HashMap::new(),
             nav: HashMap::new(),
             crashed_tabs: std::collections::HashSet::new(),
+            appearances: SpaceAppearanceStore::new(),
         }
+    }
+
+    // ---- Space appearance (portable appearance contract) ------------------
+
+    /// The effective appearance of `space`: the explicit record when one was
+    /// set, otherwise the deterministic default derived from the owning
+    /// profile's identity hue (theme = the profile's hue family, identity =
+    /// the default curated glyph). `None` when the space does not exist.
+    pub fn space_appearance(&self, space: bbr_domain::SpaceId) -> Option<SpaceAppearance> {
+        self.appearances.effective(&self.browser, space)
+    }
+
+    /// Set the curated theme token and validated identity of `space`
+    /// atomically (both validated against the same space; unknown spaces
+    /// reject whole before any mutation).
+    pub fn set_space_appearance(
+        &mut self,
+        space: bbr_domain::SpaceId,
+        theme: SpaceTheme,
+        identity: SpaceIdentity,
+    ) -> Result<(), AppearanceError> {
+        self.appearances
+            .set_appearance(&self.browser, space, theme, identity)?;
+        self.check_invariants();
+        Ok(())
+    }
+
+    /// Set only the curated theme token of `space` (the identity stays the
+    /// derived default or the existing explicit record's).
+    pub fn set_space_theme(
+        &mut self,
+        space: bbr_domain::SpaceId,
+        theme: SpaceTheme,
+    ) -> Result<(), AppearanceError> {
+        self.appearances.set_theme(&self.browser, space, theme)?;
+        self.check_invariants();
+        Ok(())
+    }
+
+    /// Set only the validated identity of `space` (the theme stays the
+    /// derived default or the existing explicit record's).
+    pub fn set_space_identity(
+        &mut self,
+        space: bbr_domain::SpaceId,
+        identity: SpaceIdentity,
+    ) -> Result<(), AppearanceError> {
+        self.appearances
+            .set_identity(&self.browser, space, identity)?;
+        self.check_invariants();
+        Ok(())
     }
 
     // ---- Setup helpers (profile/space creation for multi-profile tests) ----
@@ -670,6 +729,12 @@ impl BrowserController {
             self.engine.borrow().live_session_count(),
             "registry and engine must agree on live sessions"
         );
+        // The companion appearance store stays structurally consistent with
+        // the live browser: every record references an existing space and
+        // each space has at most one record (tampering is detectable).
+        self.appearances
+            .check_invariants(&self.browser)
+            .expect("space-appearance invariants");
     }
 }
 

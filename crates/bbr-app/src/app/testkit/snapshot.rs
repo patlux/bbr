@@ -716,7 +716,7 @@ impl BbrApp {
             browser,
             focus: crate::shell::semantics::SemanticFocus {
                 command: self.chrome_handle.is_focused(window),
-                spaces: self.space_list_handle.is_focused(window),
+                spaces: self.space_strip_handle.is_focused(window),
                 tabs: self.tab_list_handle.is_focused(window),
                 divider: self.divider_handle.is_focused(window),
                 folders: self.u2.folders_handle.is_focused(window),

@@ -11,16 +11,16 @@ use super::*;
 // -------------------------------------------------------------------------
 
 #[test]
-fn footer_node_exposes_the_three_controls_with_text_alternatives() {
+fn footer_node_exposes_the_two_fixed_controls_with_text_alternatives() {
     let footer = super::super::u2::footer_node();
     assert_eq!(footer.id, "bbr-footer");
     assert_eq!(footer.role, SemanticRole::Footer);
-    assert_eq!(footer.children.len(), 3, "exactly three footer controls");
-    for (id, name) in [
-        ("bbr-downloads", "Downloads"),
-        ("bbr-spaces", "Spaces"),
-        ("bbr-plus", "More actions"),
-    ] {
+    assert_eq!(
+        footer.children.len(),
+        2,
+        "exactly two fixed footer controls"
+    );
+    for (id, name) in [("bbr-downloads", "Downloads"), ("bbr-plus", "More actions")] {
         let control = footer
             .children
             .iter()
@@ -309,7 +309,8 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         selection: 0,
     };
     let tree = semantic_tree(&input);
-    // The footer row with exactly the three controls sits under the sidebar.
+    // The footer row with exactly the two fixed controls (the strip is a
+    // following slice's semantic node) sits under the sidebar.
     let sidebar = find(&tree, "bbr-sidebar").expect("sidebar");
     let footer = sidebar
         .children
@@ -317,7 +318,7 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         .find(|node| node.id == "bbr-footer")
         .expect("footer under the sidebar");
     assert_eq!(footer.role, SemanticRole::Footer);
-    assert_eq!(footer.children.len(), 3);
+    assert_eq!(footer.children.len(), 2);
     // The favorites section sits above the tab list.
     let favorites = sidebar
         .children

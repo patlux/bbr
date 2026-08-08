@@ -19,12 +19,6 @@ pub fn downloads_geometry(size: f32) -> (f32, f32, f32, f32, f32) {
     )
 }
 
-/// Spaces stacked-squares geometry: (half side, diagonal offset, corner
-/// radius of each square ring).
-pub fn spaces_geometry(size: f32) -> (f32, f32, f32) {
-    (size * 0.26, size * 0.13, size * 0.06)
-}
-
 /// Folder silhouette geometry: (body half-width/height, tab height above
 /// the body, tab width).
 pub fn folder_geometry(size: f32) -> (f32, f32, f32) {
@@ -67,12 +61,6 @@ mod tests {
                 "downloads tray fits at {size}pt"
             );
             assert!(tray_side < tray_depth, "tray side shorter than depth");
-            // Spaces: the front square plus the stroke fits, the back square
-            // stays offset inside, and the corner radius stays within it.
-            let (half, offset, corner) = spaces_geometry(size);
-            assert!(half + stroke <= size / 2.0, "spaces square fits");
-            assert!(offset > 0.0 && offset < half, "spaces offset ordered");
-            assert!(corner < half, "spaces corner inside the square");
             // Folder: the body plus the stroke fits, the tab stays inside.
             let (fhalf, tab_depth, tab_width) = folder_geometry(size);
             assert!(fhalf + stroke <= size / 2.0, "folder body fits");

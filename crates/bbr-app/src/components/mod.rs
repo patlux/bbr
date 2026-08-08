@@ -26,6 +26,7 @@ pub mod menu;
 pub mod pane;
 pub mod section;
 pub mod space;
+pub mod space_strip;
 pub mod tab_row;
 mod u2_glyphs;
 
@@ -51,6 +52,7 @@ pub use section::section_label;
 #[cfg(feature = "testkit")]
 pub use space::profile_chip_id;
 pub use space::{profile_chip, space_new_row, space_row};
+pub use space_strip::{space_chip, space_strip, SpaceChipVisuals};
 pub use tab_row::{drag_tick, tab_row};
 
 /// §10 row states the shell renders and E2E asserts. The slice renders the

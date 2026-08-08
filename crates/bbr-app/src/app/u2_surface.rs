@@ -254,14 +254,18 @@ impl BbrApp {
     }
 
     /// §11.4 footer row with its production listeners wired: `[Downloads]`
-    /// toggles the §11.12 downloads panel, `[Spaces]` toggles the §11.3
-    /// space region, and `[+]` opens the plus menu. The downloads and plus
-    /// presses mark themselves as inside presses and stop propagation so
-    /// the sidebar's own chrome-focus handler and the root outside-press
-    /// dismissal never fight the freshly opened surface (focus stays on the
-    /// panel/menu surface). The downloads control carries the §11.4
-    /// `type:meta` `tnum` count while any attempt exists (§17.11 open: v1
-    /// reports in-flight attempts).
+    /// toggles the §11.12 downloads panel, the permanent §11.3 space strip
+    /// sits between the fixed controls (one chip per space in canonical
+    /// grouped order, pointer activation routed through the production
+    /// [`Self::select_space_via_pointer`] path), and `[+]` opens the plus
+    /// menu. There is no `[Spaces]` toggle control in the rendered
+    /// composition — the strip is always part of the rail. The downloads
+    /// and plus presses mark themselves as inside presses and stop
+    /// propagation so the sidebar's own chrome-focus handler and the root
+    /// outside-press dismissal never fight the freshly opened surface
+    /// (focus stays on the panel/menu surface). The downloads control
+    /// carries the §11.4 `type:meta` `tnum` count while any active attempt
+    /// exists.
     pub(crate) fn u2_footer_surface(
         &mut self,
         theme: &Theme,
@@ -273,21 +277,38 @@ impl BbrApp {
             cx.stop_propagation();
             crate::app::downloads_behavior::toggle_downloads(this, window, cx);
         });
-        let on_spaces = cx.listener(|this, _e: &MouseDownEvent, window, cx| {
-            this.toggle_spaces_region(window, cx);
-        });
         let on_plus = cx.listener(|this, _e: &MouseDownEvent, window, cx| {
             this.u2.plus_menu_press_inside = true;
             cx.stop_propagation();
             this.toggle_plus_menu(window, cx);
         });
+        // §11.3/§11.4 permanent strip: one chip per space from the same
+        // `space_chip_visuals` vector the render, the snapshot, and the
+        // scroll seam consume. Each chip's pointer listener routes through
+        // `select_space_via_pointer` → `activate_space` (chrome focus stays
+        // in the strip); the strip carries the §9 keyboard traversal and the
+        // tracked scroll handle that brings the selected chip into view.
+        let chips = self
+            .space_chip_visuals()
+            .iter()
+            .map(|visual| {
+                let space = visual.space;
+                let select = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
+                    this.select_space_via_pointer(space, window, cx)
+                });
+                components::space_chip(theme, visual, select)
+            })
+            .collect::<Vec<Stateful<Div>>>();
+        let strip = components::space_strip(theme, self.space_strip_scroll.clone(), chips)
+            .track_focus(&self.space_strip_handle)
+            .on_key_down(cx.listener(Self::on_space_strip_key_down));
         components::footer_surface(
             theme,
             self.downloads_control_handle.clone(),
             self.downloads_control_handle.is_focused(window),
             self.downloads_controller_active_count(),
+            strip,
             on_downloads,
-            on_spaces,
             on_plus,
         )
     }

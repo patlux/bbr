@@ -369,18 +369,18 @@ impl BbrApp {
 
         div()
             .id("bbr-space-list")
-            .track_focus(&self.space_list_handle)
+            .track_focus(&self.space_strip_handle)
             .flex()
             .flex_col()
             .px(Spacing::sp1())
             // §9 keyboard-focus ring on the focused space list (the same
             // structural cue the tab list uses).
-            .when(self.space_list_handle.is_focused(window), |el| {
+            .when(self.space_strip_handle.is_focused(window), |el| {
                 el.border_2()
                     .border_color(theme.palette.accent)
                     .rounded(theme.radius.medium())
             })
-            .on_key_down(cx.listener(Self::on_space_list_key_down))
+            .on_key_down(cx.listener(Self::on_space_strip_key_down))
             .children(children)
     }
 

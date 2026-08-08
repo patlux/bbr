@@ -41,7 +41,7 @@ fn compact_spaces_region_hides_space_rows_until_revealed() {
         !ids.iter().any(|id| id.starts_with("bbr-profile-chip")),
         "hidden region exposes no chips: {ids:?}"
     );
-    for required in ["bbr-footer", "bbr-downloads", "bbr-spaces", "bbr-plus"] {
+    for required in ["bbr-footer", "bbr-downloads", "bbr-space-strip", "bbr-plus"] {
         assert!(ids.contains(&required.to_string()), "missing {required}");
     }
     assert!(ids.contains(&"bbr-tab-list".to_string()));
@@ -90,7 +90,7 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
         vec![
             "bbr-footer".to_string(),
             "bbr-downloads".to_string(),
-            "bbr-spaces".to_string(),
+            "bbr-space-strip".to_string(),
             "bbr-plus".to_string(),
         ]
     );
@@ -121,7 +121,7 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
     for required in [
         "bbr-footer",
         "bbr-downloads",
-        "bbr-spaces",
+        "bbr-space-strip",
         "bbr-plus",
         "bbr-section-favorites",
         "bbr-favorites",

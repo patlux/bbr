@@ -1,14 +1,15 @@
-//! DESIGN.md §11.4 footer row — exactly `[Downloads] [Spaces] [+]`.
+//! DESIGN.md §11.4 footer row — exactly `[Downloads] [Space Strip] [+]`.
 //!
 //! The footer is the rail's bottom row, separated from the list above by a
-//! hairline. The three controls keep stable §15 ids; `[Downloads]` is a
-//! placeholder control in the U2 slice (the downloads *surface* is Phase 8,
-//! the portable capability contract the L6 lane), `[Spaces]` toggles the
-//! §11.3 spaces region, and `[+]` opens the plus menu (see `menu`).
+//! hairline. The fixed controls keep stable §15 ids; `[Downloads]` opens the
+//! downloads surface, the middle flex region is the permanent §11.3 space
+//! strip (rendered by [`super::space_strip`]), and `[+]` opens the plus menu
+//! (see `menu`). There is no `[Spaces]` toggle and no revealable space-row
+//! region — the strip is always part of the rail.
 //!
 //! This module owns the control identity contract (ids, labels, glyphs) and
 //! the row anatomy. The rail composition step wires the production
-//! listeners; the toggle/menu behavior lives in the app layer.
+//! listeners; the strip/chip behavior lives in the app layer.
 
 use gpui::{div, prelude::*, App, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window};
 
@@ -20,8 +21,8 @@ use super::Icon;
 pub const FOOTER_ID: &str = "bbr-footer";
 /// The §15 id of the `[Downloads]` control.
 pub const FOOTER_DOWNLOADS_ID: &str = "bbr-downloads";
-/// The §15 id of the `[Spaces]` control.
-pub const FOOTER_SPACES_ID: &str = "bbr-spaces";
+/// The §15 id of the permanent space strip (DESIGN.md §11.3/§11.4).
+pub const FOOTER_STRIP_ID: &str = "bbr-space-strip";
 /// The §15 id of the `[+]` control.
 pub const FOOTER_PLUS_ID: &str = "bbr-plus";
 /// The §7 text alternative of the glyph-only `[+]` control (the label is
@@ -29,40 +30,35 @@ pub const FOOTER_PLUS_ID: &str = "bbr-plus";
 #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // §15 semantic seam
 pub const FOOTER_PLUS_NAME: &str = "More actions";
 
-/// One footer control (§11.4: exactly three).
+/// One fixed footer control (§11.4: exactly two, the strip is the middle
+/// flex region).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FooterControl {
     Downloads,
-    Spaces,
     Plus,
 }
 
 impl FooterControl {
-    /// The three §11.4 footer controls in fixed order.
+    /// The two §11.4 fixed footer controls in order (the strip sits between
+    /// them as the flex region).
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // semantic footer node
-    pub fn all() -> [FooterControl; 3] {
-        [
-            FooterControl::Downloads,
-            FooterControl::Spaces,
-            FooterControl::Plus,
-        ]
+    pub fn all() -> [FooterControl; 2] {
+        [FooterControl::Downloads, FooterControl::Plus]
     }
 
     /// The stable §15 id.
     pub fn id(self) -> &'static str {
         match self {
             FooterControl::Downloads => FOOTER_DOWNLOADS_ID,
-            FooterControl::Spaces => FOOTER_SPACES_ID,
             FooterControl::Plus => FOOTER_PLUS_ID,
         }
     }
 
-    /// The visual label: `[Downloads]`/`[Spaces]` show the label next to
-    /// the §7 glyph; `[+]` is glyph-only (its label is the glyph).
+    /// The visual label: `[Downloads]` shows the label next to the §7 glyph;
+    /// `[+]` is glyph-only (its label is the glyph).
     pub fn label(self) -> &'static str {
         match self {
             FooterControl::Downloads => "Downloads",
-            FooterControl::Spaces => "Spaces",
             FooterControl::Plus => "+",
         }
     }
@@ -71,7 +67,6 @@ impl FooterControl {
     pub fn glyph(self) -> Icon {
         match self {
             FooterControl::Downloads => Icon::Downloads,
-            FooterControl::Spaces => Icon::Spaces,
             FooterControl::Plus => Icon::Plus,
         }
     }
@@ -82,18 +77,17 @@ impl FooterControl {
     pub fn semantic_name(self) -> &'static str {
         match self {
             FooterControl::Downloads => "Downloads",
-            FooterControl::Spaces => "Spaces",
             FooterControl::Plus => FOOTER_PLUS_NAME,
         }
     }
 }
 
-/// The footer row anatomy: a hairline above a `type:meta` row of the three
-/// §11.4 controls, each with its §7 glyph (plus a label for Downloads and
-/// Spaces). `on_downloads`/`on_spaces`/`on_plus` are the production view
-/// listeners; the rail composition wires them. The plus control is
-/// glyph-only per §11.4's `[+]` — its text alternative rides the semantic
-/// tree.
+/// The footer row anatomy: a hairline above a `type:meta` row of the two
+/// fixed §11.4 controls with the permanent §11.3 space strip between them.
+/// `on_downloads`/`on_plus` are the production view listeners; `strip` is
+/// the caller-built space strip element (chips + scroll container). The
+/// plus control is glyph-only per §11.4's `[+]` — its text alternative
+/// rides the semantic tree.
 ///
 /// `downloads_count` renders the §11.4 `type:meta` `tnum` count on the
 /// `[Downloads]` control when content exists (which attempts feed the count
@@ -106,8 +100,8 @@ pub fn footer_surface(
     downloads_focus: gpui::FocusHandle,
     downloads_focused: bool,
     downloads_count: Option<usize>,
+    strip: Stateful<Div>,
     on_downloads: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
-    on_spaces: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
     on_plus: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
@@ -160,11 +154,14 @@ pub fn footer_surface(
                 })
                 .on_key_down(downloads_keyboard),
         )
-        .child(footer_control(theme, FooterControl::Spaces, on_spaces))
+        // §11.3/§11.4: the permanent space strip consumes all remaining
+        // footer width, clips to one line, and scrolls horizontally — it is
+        // never a disclosure control.
+        .child(strip)
         .child(footer_control(theme, FooterControl::Plus, on_plus))
 }
 
-/// One footer control: the §7 glyph at the density icon size plus the
+/// One fixed footer control: the §7 glyph at the density icon size plus the
 /// `type:meta` label (glyph-only for `[+]`, whose label is the glyph). The
 /// id sits on the control div; `on_select` is the caller's production
 /// pointer path.
@@ -198,13 +195,13 @@ pub fn footer_control(
 }
 
 /// The complete footer id set for the §15 `visible_ids` derivation (the
-/// container plus exactly the three §11.4 controls).
+/// container, the two fixed controls, and the permanent strip).
 #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // §15 visible-ids seam
 pub fn footer_ids() -> Vec<String> {
     [
         FOOTER_ID,
         FOOTER_DOWNLOADS_ID,
-        FOOTER_SPACES_ID,
+        FOOTER_STRIP_ID,
         FOOTER_PLUS_ID,
     ]
     .map(String::from)
@@ -216,16 +213,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn footer_controls_are_exactly_the_three_contract_controls() {
+    fn footer_controls_are_exactly_the_two_fixed_contract_controls() {
         assert_eq!(FooterControl::Downloads.id(), FOOTER_DOWNLOADS_ID);
-        assert_eq!(FooterControl::Spaces.id(), FOOTER_SPACES_ID);
         assert_eq!(FooterControl::Plus.id(), FOOTER_PLUS_ID);
         assert_eq!(FooterControl::Downloads.label(), "Downloads");
-        assert_eq!(FooterControl::Spaces.label(), "Spaces");
         assert_eq!(FooterControl::Plus.label(), "+");
         assert_eq!(FooterControl::Plus.glyph(), Icon::Plus);
         assert_eq!(FooterControl::Downloads.glyph(), Icon::Downloads);
-        assert_eq!(FooterControl::Spaces.glyph(), Icon::Spaces);
         // The glyph-only plus control keeps a non-empty text alternative.
         assert!(!FooterControl::Plus.semantic_name().is_empty());
     }
@@ -237,11 +231,13 @@ mod tests {
             vec![
                 "bbr-footer".to_string(),
                 "bbr-downloads".to_string(),
-                "bbr-spaces".to_string(),
+                "bbr-space-strip".to_string(),
                 "bbr-plus".to_string(),
             ]
         );
-        // No fourth control: the §11.4 footer is exactly three controls.
+        // No toggle control: the §11.4 footer is the two fixed controls
+        // plus the permanent strip (the legacy `bbr-spaces` id is gone).
         assert_eq!(footer_ids().len(), 4);
+        assert!(!footer_ids().contains(&"bbr-spaces".to_string()));
     }
 }
