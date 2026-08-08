@@ -78,12 +78,12 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 wartet auf Integration · ✅ erledigt
 | 1 | Manuelle Smoke-Prüfung des `.app` | ⬜ Patrick | `/Users/patwoz/dev/Personal/macos/bbr-mvp-smoke-checklist.md`. Sinnvoll erst nach P0 |
 | 2 | **URL-Leiste wird Domain-Control, Palette legt sich darüber** | ✅ Merge `963e94f` | Patricks erste konkrete Stelle zu „die UI passt nicht". Die Sidebar-Adresse ist kein Eingabefeld mehr, sondern ein Button, der nur die Domain zeigt — randlose transluzente Pill, kein Border, **kein Fokusring**, Trailing-Slot für spätere Action-Icons. Texteingabe nur noch in der Palette, die sich **über** die Leiste legt statt darunter aufzuklappen, mit voller URL vorselektiert. Der alte Feld-Fokus mit Teal-Ring entfällt ersatzlos; betroffene `e2e-shell-command`-Fälle werden umgeschrieben. DESIGN §11.4/§11.5 revidiert, Paket [`url-address-control-palette.md`](../roadmap/tasks/url-address-control-palette.md), offene Details §17.13/§17.14 |
 | 2b | Restliche UI-Anmutung nach S1 | ⬜ | Patrick-Befund „die UI passt nicht", noch ohne Detail. Braucht Screenshot oder konkrete Stelle, sonst raten wir |
-| 3 | Downloads-Nachzug aus den Entscheidungen | 🟦 `f2b-downloads-remediation-msk8y1b7-is4npr` | History-Persistenz, Clear-History, Cancelled-Zeile mit Neustart und Löschen. Architektur/Produktentscheidungen im Review bestanden, aber noch nicht integrationsfähig: `bbr-browser`-Tests kompilieren nicht, fmt/Testkit-Clippy rot und Downloads-Repository-Contracts müssen aus der 987-Zeilen-Sammeldatei gesplittet werden. Gemeinsamer App-Persistenz-Bootstrap bleibt exklusiv F2c |
+| 3 | Downloads-Nachzug aus den Entscheidungen | 🟦 `f2b-downloads-remediation-msk8y1b7-is4npr`; danach 🟨 hinter F2c | History-Persistenz, Clear-History, Cancelled-Zeile mit Neustart und Löschen. Architektur/Produktentscheidungen im Review bestanden, aber noch nicht integrationsfähig: `bbr-browser`-Tests kompilieren nicht, fmt/Testkit-Clippy rot und Downloads-Repository-Contracts müssen aus der 987-Zeilen-Sammeldatei gesplittet werden. Ein `REVIEW_PASS` beendet nur die Lane und friert den Baum ein; Merge bleibt bis zur verifizierten F2c-Integration gesperrt, weil F2c den gemeinsamen App-Persistenz-Bootstrap besitzt |
 | 4 | Schema v2 ohne Migration | ✅ Merge `bb54841` (App-Verdrahtung in P7) | Versionskennung, bei Abweichung Store verwerfen. Trägt Space-Appearance, Settings, Downloads-History und P7 |
 | 5 | Settings-/Search-Contract integrieren | ✅ Merge `ddd09cd` | Fertig im Worktree `bbr-settings-search-contract`, wartet nur auf die Host-Empfehlung oben |
 | 6 | Space-Appearance-Contract integrieren | ✅ Merge `9f53f44` | Fertig im Worktree `bbr-space-appearance-contract`, wartet auf Palette/Emoji-Kalibrierung |
-| 7 | R1 Footer-Space-Strip + Appearance-UI + Swipe | 🟦 F2a | Der größte sichtbare Slice. Paket: `docs/roadmap/tasks/space-footer-strip-appearance-ui.md`. Nimmt nur die Icon-Reste mit, die dieselben Footer-/Sidebar-Renderdateien berühren; kein allgemeiner Icon-Cleanup |
-| 8 | P7 Command-History-Provider | 🟦 F2c | Das Veto beruhte allein auf dem fehlenden History-Schema. F2c besitzt exklusiv `bbr-command`↔`bbr-persistence`-Provider-Komposition **und** den bisher fehlenden `bbr-persistence`-App-Bootstrap |
+| 7 | R1 Footer-Space-Strip + Appearance-UI + Swipe | 🟦 F2a; Integration als F2-Schritt 3 | Der größte sichtbare Slice. Paket: `docs/roadmap/tasks/space-footer-strip-appearance-ui.md`. Nimmt nur die Icon-Reste mit, die dieselben Footer-/Sidebar-Renderdateien berühren; kein allgemeiner Icon-Cleanup. Wird nach F2c und F2b seriell auf deren verifizierte Form integriert; sein Merge entblockt anschließend den G1-UI-Präflight |
+| 8 | P7 Command-History-Provider | 🟦 F2c; Integration als F2-Schritt 1 | Das Veto beruhte allein auf dem fehlenden History-Schema. F2c besitzt exklusiv `bbr-command`↔`bbr-persistence`-Provider-Komposition **und** den bisher fehlenden `bbr-persistence`-App-Bootstrap. Kein F2b-Merge vor verifiziertem F2c-Merge |
 | 9 | P8b Error-Surfaces | ✅ Merge `a70e9a3` | TLS, Navigationsfehler, Offline, Renderer-Crash. Contract gemergt, Flächen fehlen |
 | 10 | P8c Auth-Adapter | ✅ Merge `53a9590` | Credential-Sheet im einen NativeAboveWeb-Portal, per-View Challenge-Identität, redigierte Handles/Wire-Form, Submit/Cancel/Rechallenge und belegtes Tab-Fall-through |
 | 11 | P8e Zoom-Wiring | ✅ Merge `1d35693` | Cmd-Plus/Minus/0 auf die aktive WebView |
@@ -100,6 +100,60 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 wartet auf Integration · ✅ erledigt
 | G2 | **Gallery Browser Components** | ⏭ nach G1 | Echte Produktionskomponenten/Modelle, keine Kopien: Tab Row, Sidebar via `SidebarModel + Callbacks`, Command Palette via `CommandPortalModel`, Downloads, Find, Error/Crash/Auth/Context Menu/Split Preview |
 | G3 | **Gallery Compositions** | ⏭ nach G2 | Komplexe Storybook-artige Zustands-/Varianten-Kompositionen auf denselben `bbr-ui`-Komponenten; kein BrowserController/WebKit/macOS-Framework |
 
+## Kanonischer Integrationskernel: F2 → Gallery G1
+
+Die bereits vor dem Fanout festgelegte Reihenfolge bleibt verbindlich:
+**F2c → F2b → F2a**. Fertigstellungszeit oder ein früherer `REVIEW_PASS`
+ändert diese Reihenfolge nicht.
+
+1. **Laufende Lanes abschließen, nichts vorziehen.** F2c beendet Writer,
+   unabhängigen Review und bei Bedarf genau eine bounded Remediation mit
+   fokussiertem Recheck. F2b schließt die laufende Remediation samt Read-only-
+   Recheck. F2a beendet seinen unabhängigen Review und bei Findings dieselbe
+   Writer/Recheck-Schleife. Alte Runs müssen endgültig beendet sein, bevor ein
+   weiterer Writer denselben Worktree besitzt.
+2. **F2c seriell integrieren.** Der Orchestrator prüft den Baum selbst,
+   committet erst nach `REVIEW_PASS`, integriert auf den dann aktuellen
+   `main`, löst Registry-/Persistenzkonflikte semantisch und führt mit
+   `CARGO_BUILD_JOBS=4` mindestens `cargo fmt --all -- --check`, die
+   betroffenen Unit-/Contracttests, beide vorgeschriebenen Clippy-Gates,
+   `just verify`, Command-E2E und relevante Perf-Gates aus. Kein erfundener
+   History-Retention-Wert, kein unbounded Writer und kein fallengelassener
+   Background-Task darf den Merge erreichen.
+3. **F2b an die gemergte F2c-AppStore-Form anschließen.** Ein grüner F2b-Baum
+   bleibt bis dahin unverändert eingefroren. Der Orchestrator vergleicht die
+   gemeinsamen `bbr-persistence`-Nahtdateien gegen den neuen `main`; rein
+   additive Konflikte werden seriell integriert. Falls mehr als chirurgische
+   Konfliktauflösung oder der download-spezifische AppStore-Adapter fehlt,
+   startet genau eine bounded Integrations-Writer-Lane von diesem neuen
+   verifizierten `main` mit exklusiv benannten Persistenz-/Downloads-Pfaden,
+   danach Read-only-Recheck. Gates: `cargo fmt --all -- --check`,
+   `bbr-web`/`bbr-browser`/`bbr-persistence` Tests, beide Clippy-Gates,
+   `just verify`, `just e2e-shell-downloads` und `just e2e-perf`. Clear und
+   Delete müssen nach echtem Neustart dauerhaft bleiben; Cancelled-Restart
+   muss eine frische, `retry_of`-verknüpfte Attempt erzeugen. Kein zweiter
+   Store- oder Lifecycle-Owner.
+4. **F2a zuletzt integrieren.** Nach Anpassung an den dann aktuellen `main`
+   laufen fmt, betroffene Unit-/Contracttests, Clippy, `just verify`, alle
+   betroffenen Sidebar-/Space-/Swipe-Real-App-Suiten und Perf. Der
+   Tint-Kontrastbefund wird empirisch aufgelöst, nicht per umgedeutetem
+   Kommentar oder gelockerter Assertion. Footer-/Sidebar- und Theme-Pfade
+   bleiben bis zum Abschluss exklusiv F2a.
+5. **F2-Wellen-Closeout.** Erst wenn alle drei Merges stabil sind: ein
+   hostexklusiver kanonischer Lauf `just verify` → `just e2e` →
+   `just e2e-perf` sowie `package-verify`; anschließend Bundle-SHA und
+   Prozess-/GUI-Lock-Cleanup im Ledger dokumentieren. Das fremde ungetrackte
+   `crates/bbr-app/tests/e2e_shutdown.rs` wird bei breiten Cargo-Gates
+   bytegetreu außerhalb des auto-discoverten `tests/`-Baums gesichert und
+   danach wiederhergestellt; es wird weder committed noch verändert.
+6. **G1-Präflight unmittelbar danach.** Alle aktiven Lanes erneut auf Besitz
+   von `theme`, `components`, Footer-/Sidebar-Rendering und Portal-Rendering
+   prüfen. Nur ohne Überschneidung startet G1 vom verifizierten F2a-`main`,
+   vor der nächsten breiten UI-Feature-Welle. F3 Warm-Restore und andere
+   disjunkte Nicht-UI-Arbeit dürfen parallel laufen; GUI-Gates bleiben
+   hostexklusiv. G0-Dokumente können nach eigenem `REVIEW_PASS` seriell
+   verlinkt werden, verändern aber diese F2-Merge-Reihenfolge nicht.
+
 ## Status-Log
 
 | Zeit | Eintrag |
@@ -107,6 +161,7 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 wartet auf Integration · ✅ erledigt
 | 08:03 | ✅ Downloads-Panel integriert (Merge `7cfdbd2`), kanonisches `just e2e` über 20 Suiten grün, `package-verify` grün, neues Bundle `b428910…` |
 | 08:50 | ⚠️ Patrick meldet am gepackten `.app`: Web-Fläche bleibt weiß. Orchestrator-Messung: WebKit lädt und malt (`DidFirstMeaningfulPaint`, `window occluded 0`), also kein WebKit-Problem. Patrick grenzt selbst präzise ein: mit Schema lädt es, ohne Schema nicht |
 | 08:55 | 🟦 Lane `schemeless-navigation-bug-msk0mwh9-7rnn94` gestartet (Worktree `bbr-schemeless-nav`, Base `78f3782`): erst fehlschlagender Regressionstest entlang des Produktionspfads, dann Fix, plus dauerhafte Evidenz, dass Seiteninhalt wirklich ankommt |
+| 16:49 | 📋 **F2-Integrationskernel kanonisch präzisiert.** Die vor Fanout festgelegte Reihenfolge bleibt trotz unterschiedlicher Laufzeiten **F2c → F2b → F2a**. F2b-`REVIEW_PASS` bedeutet „Baum einfrieren“, nicht „vorziehen“: Erst F2c liefert und beweist die gemeinsame AppStore-/StoreLoad-Form; dann wird F2b an diese gemergte Naht angeschlossen und mit Downloads-Neustart-Evidenz integriert; F2a folgt zuletzt und entblockt erst nach seinem verifizierten Merge den G1-Präflight. Für jede Stufe gelten Writer → unabhängiger Read-only-Review → höchstens eine konkrete Remediation → fokussierter Recheck; nur der Orchestrator committet und merged. Nach allen drei Merges folgt hostexklusiv `just verify` → `just e2e` → `just e2e-perf` → `package-verify`, Bundle-SHA und Prozess-Cleanup. G1 startet anschließend nur nach erneuter aktiver UI-Pfad-Besitzprüfung; F3/Nicht-UI darf parallel laufen. Laufende Lanes werden nicht unterbrochen |
 | 16:44 | ⚠️ **F2b Review = `REVIEW_FINDINGS`, kein Merge.** Der unabhängige Reviewer hat zuerst Existenz und Kompilierbarkeit geprüft und damit die Writer-Erzählung korrekt relativiert: `cargo test -p bbr-browser --lib` kompiliert wegen sechs fehlender Helper-/Typ-Imports in den neu gesplitteten `downloads/tests/{lifecycle,ordering,history}.rs` nicht; `cargo fmt --all -- --check` meldet sechs Diffs; `cargo clippy -p bbr --features testkit --all-targets -- -D warnings` scheitert am verwaisten Clear-History-Docblock in `downloads/mod.rs` und am 9-Argument-Helper `restored_terminal`. Außerdem doppelte `#[cfg(test)]`-Zeile und doppelte L6-Dokumentationszeile. `repository_contract.rs` ist durch +282 neue Downloads-Tests auf 987 Zeilen angewachsen; die neuen Contracts müssen in eine fokussierte Integrations-Testdatei statt die bereits zu große Sammeldatei weiter zu belasten.
 
 Die **Substanz besteht**: `bbr-web` 319+11+1 grün; `bbr-persistence` 17/17 grün; E2E Downloads 7/7 grün; Perf im Wiederholungslauf grün. Architekturchecks bestanden: kein gemeinsamer App-Bootstrap/`StoreLoad`-Besitz, Cancelled-Restart zentral in der L6-Maschine mit frischer ID+`retry_of`, Controller-/Repository-Seams für Clear/Delete, Badge nur `active_ids`, keine native/path authority in portablen Crates, keine Migration/Backcompat, Sechs-Zeilen-Grenze unverändert. Die drei vorregistrierten Risiken sind sachlich adressiert: Controller/Tests wurden nach Verantwortungen geteilt, eigener `valid_filename` lehnt `/` ab, und `schema_v2_legacy_downloads.sql` beweist Same-v2-Shape-Discard plus unmittelbare Wiederbeschreibbarkeit. Remediation läuft als `f2b-downloads-remediation-msk8y1b7-is4npr` im erhaltenen Worktree mit genau einem Writer und anschließendem unabhängigen Read-only-Recheck. Auftrag umfasst Compiler/fmt/Clippy-Befunde, typed Restore-Input statt 9 Argumenten und Split aller neuen Downloads-Repository-Contracts in fokussierte ≤~500-Zeilen-Testmodule. Danach vollständiger Gate-Satz, kein Merge vor `REVIEW_PASS` |
