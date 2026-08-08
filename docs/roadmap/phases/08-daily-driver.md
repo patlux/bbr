@@ -15,7 +15,7 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 - [ ] Define portable upload/save request-completion semantics through the bounded [file upload/save-panel contract](../tasks/file-panels-contract.md), then implement native panel orchestration as a separate adapter slice.
 - [ ] Define the typed taxonomy and legal recovery actions through the bounded [web error and recovery contract](../tasks/error-surface-contract.md), then deliver TLS, navigation, offline, and process-crash surfaces.
 - [ ] History UI and clear-data controls per profile.
-- [ ] Default-browser registration and external URL opening.
+- [ ] Default-browser registration and external URL opening, starting with the portable [external-URL open contract](../tasks/external-url-open-contract.md).
 - [ ] Native menus, Services, window lifecycle, and app updates, including [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md).
 - [ ] Define profile-isolated site keys, settings overrides, and zoom lifecycle through the bounded [per-site settings and zoom contract](../tasks/site-settings-zoom-contract.md), then integrate persistence, native zoom, and UI.
 - [ ] Implement popup/new-window policy and target-blank flows, including the dedicated [Link Preview / Peek](../tasks/link-preview-peek.md) lifecycle for eligible user-created links.
