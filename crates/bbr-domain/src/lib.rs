@@ -41,6 +41,7 @@ mod folders;
 mod invariants;
 mod lifecycle;
 mod model;
+mod space_appearance;
 mod split;
 
 #[cfg(test)]
@@ -59,6 +60,10 @@ pub use folders::{
 };
 pub use lifecycle::{LifecycleError, TabLifecycle};
 pub use model::{ClosedTab, Profile, ProfileHue, Space, Tab};
+pub use space_appearance::{
+    AppearanceError, AppearanceInvariantViolation, BbrGlyph, IdentityKind, SpaceAppearance,
+    SpaceAppearanceStore, SpaceEmoji, SpaceIdentity, SpaceTheme, ALLOWED_EMOJI,
+};
 pub use split::Split;
 
 pub use bbr_web::ProfileId;
