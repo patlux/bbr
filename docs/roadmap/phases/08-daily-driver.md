@@ -8,7 +8,7 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 
 ## Checklist
 
-- [ ] Deliver downloads destination, progress, history, reveal, retry, and failure UI through the bounded [downloads sidebar panel](../tasks/downloads-sidebar-panel.md).
+- [x] Deliver downloads destination, progress, history, reveal, retry, and failure UI through the bounded [downloads sidebar panel](../tasks/downloads-sidebar-panel.md) — including the settled post-MVP follow-up (terminal-history persistence, durable Clear/Delete, cancelled Restart, active-only badge).
 - [ ] Deliver find in page with keyboard navigation and result count through the bounded [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md).
 - [ ] Define the portable request/decision authority through the bounded [permissions contract](../tasks/permissions-contract.md), then deliver camera, microphone, location, notification, and clipboard surfaces where supported.
 - [ ] Define HTTP authentication and supported client-certificate request/response authority through the bounded [authentication challenges contract](../tasks/auth-challenges-contract.md), then implement native delegates and credential surfaces.

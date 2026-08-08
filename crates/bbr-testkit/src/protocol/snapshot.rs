@@ -22,11 +22,11 @@ pub enum DownloadMachineState {
     Running,
     /// The transfer finished successfully (terminal).
     Succeeded,
-    /// The transfer ended in a closed `DownloadFailure` (terminal; the only
+    /// The transfer ended in a closed `DownloadFailure` (terminal; the
     /// retryable state).
     Failed,
-    /// The attempt was cancelled on request (terminal; never retried by the
-    /// UI).
+    /// The attempt was cancelled on request (terminal; restartable per the
+    /// settled §17.8 decision).
     Cancelled,
 }
 
@@ -41,17 +41,21 @@ pub enum DownloadGroup {
 
 /// The exactly-one contextual primary action of a download row (DESIGN.md
 /// §11.12): active → Cancel, failed → Retry, succeeded → Reveal-in-Finder,
-/// cancelled → none in v1.
+/// cancelled → Restart (the settled §17.8 decision).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DownloadRowAction {
     Cancel,
     Retry,
+    /// The settled cancelled-row action (DESIGN.md §17.8): a fresh attempt
+    /// linked via `retry_of` — the same machine path as a failed retry,
+    /// with the panel label "Restart".
+    Restart,
     /// Conventional macOS "Show in Finder"; enabled only when the terminal
     /// record's resolved path exists (§10.8 `disabled` with a reason
     /// otherwise).
     Reveal,
-    /// No primary action (cancelled rows in v1, §17.8 open).
+    /// No primary action.
     None,
 }
 
@@ -98,6 +102,10 @@ pub struct DownloadRowSnapshot {
     pub retry_of: Option<u64>,
     /// 1-based attempt count (increments per retry).
     pub attempt: u32,
+    /// The row offers the Delete control (DESIGN.md §17.8 settled: a
+    /// cancelled row offers Restart **and** Delete — the one-row durable
+    /// removal). False for every other state.
+    pub delete_available: bool,
 }
 
 impl Default for DownloadRowSnapshot {
@@ -117,6 +125,7 @@ impl Default for DownloadRowSnapshot {
             resolved_path: None,
             retry_of: None,
             attempt: 1,
+            delete_available: false,
         }
     }
 }
@@ -143,6 +152,11 @@ pub struct DownloadsPanelSnapshot {
     pub viewport_rows: usize,
     /// The §11.12 bound: at most this many rows are visible at once.
     pub max_visible: usize,
+    /// The §11.4 footer `[Downloads]` `tnum` badge count (DESIGN.md §17.11
+    /// settled): **active (in-flight) attempts only** — terminal history
+    /// never inflates the badge and the count returns to zero when nothing
+    /// transfers.
+    pub footer_count: usize,
 }
 
 impl Default for DownloadsPanelSnapshot {
@@ -155,6 +169,7 @@ impl Default for DownloadsPanelSnapshot {
             total_rows: 0,
             viewport_rows: 0,
             max_visible: 6,
+            footer_count: 0,
         }
     }
 }

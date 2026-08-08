@@ -35,20 +35,36 @@ fn cancelled_confirmation_lands_terminal() {
     );
 }
 
-/// Retry is legal exactly for `Failed`; every other state — live or terminal
-/// — is rejected with the offending state reported.
+/// Retry is legal exactly for `Failed` (the Retry action); Restart is legal
+/// exactly for `Cancelled` (the settled post-MVP decision that a cancelled
+/// history row may be restarted as a fresh linked attempt). Every other
+/// state — live or terminal — is rejected with the offending state
+/// reported.
 #[test]
-fn retry_is_legal_only_for_failed() {
+fn retry_is_legal_only_for_failed_and_restart_only_for_cancelled() {
     for (name, state) in states() {
         let result = evaluate_retry(id(1), &state, &retry_request());
         match name {
-            "Failed" => assert_eq!(result, Ok(())),
+            "Failed" | "Cancelled" => assert_eq!(result, Ok(())),
             other => assert!(
                 matches!(result, Err(RetryRejection::NotRetryable { .. })),
                 "{other} must reject retry"
             ),
         }
     }
+}
+
+/// A cancelled attempt is restartable through the same machine path as a
+/// failed retry: a fresh id, the cancelled attempt linked via `retry_of`,
+/// and the caller sends the request verbatim.
+#[test]
+fn restart_accepts_fresh_linked_attempt_from_cancelled() {
+    let cancelled = DownloadState::Cancelled;
+    let request = retry_request();
+    evaluate_retry(id(1), &cancelled, &request).expect("cancelled attempts are restartable");
+    assert_eq!(request.id, id(2));
+    assert_eq!(request.retry_of, Some(id(1)));
+    assert_ne!(request.id, request.retry_of.unwrap());
 }
 
 /// Retry rejection variants: a missing link, a reused attempt id, and
@@ -134,11 +150,20 @@ fn accessor_truth_table() {
                 assert_eq!(state.resolved_destination(), Some(DEST));
                 assert_eq!(state.progress(), Some(&full_progress()));
             }
-            "Succeeded" | "Cancelled" => {
+            "Succeeded" => {
                 assert_eq!(state.resolved_destination(), None);
                 assert_eq!(state.progress(), None);
                 assert!(state.is_terminal());
                 assert!(!state.is_retryable());
+            }
+            "Cancelled" => {
+                assert_eq!(state.resolved_destination(), None);
+                assert_eq!(state.progress(), None);
+                assert!(state.is_terminal());
+                assert!(
+                    state.is_retryable(),
+                    "cancelled attempts are restartable (settled decision)"
+                );
             }
             "Failed" => {
                 assert_eq!(state.resolved_destination(), None);

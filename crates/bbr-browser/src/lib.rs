@@ -71,7 +71,7 @@ pub use bbr_domain::{ProfileHue, SpaceId, TabLifecycle};
 pub use controller::BrowserController;
 pub use downloads::{
     display_filename, url_filename, ApplyOutcome, DownloadActionSink, DownloadController,
-    DownloadError, DownloadRecord,
+    DownloadError, DownloadRecord, RestoredTerminal,
 };
 pub use error::ControllerError;
 pub use hydration::{

@@ -188,6 +188,56 @@ pub fn row_by_id(snapshot: &Snapshot, id: u64) -> DownloadRowSnapshot {
         .clone()
 }
 
+/// Spawn the real app with an explicit profile directory (the restart
+/// persistence scenarios reuse the same directory across process launches;
+/// `root_tag` differs per launch so the gateway sockets never collide while
+/// the profile dir is shared). Mirrors `spawn_seeded` from the command-
+/// history suite: the same `--bbr-profile-dir` the production store opens.
+pub fn spawn_with_profile(
+    root_tag: &str,
+    page_one: &str,
+    profile: &std::path::Path,
+) -> (crate::e2e_common::Harness, std::path::PathBuf, String) {
+    std::fs::create_dir_all(profile).unwrap();
+    let pid = std::process::id();
+    let root = crate::e2e_common::harness_root(root_tag, pid);
+    let socket = crate::e2e_common::harness_socket_path(root_tag, pid);
+    let token = format!("shell-{root_tag}-{pid}");
+    let bin = env!("CARGO_BIN_EXE_bbr");
+    let harness = crate::e2e_common::Harness::spawn(
+        bin,
+        &[
+            "--bbr-initial-url",
+            page_one,
+            "--bbr-profile-dir",
+            profile.to_str().unwrap(),
+            "--bbr-test-token",
+            &token,
+            "--bbr-ids=sequential",
+            "--bbr-hidden",
+        ],
+        &root,
+    );
+    (harness, socket, token)
+}
+
+/// The `bbr-downloads-clear` control is rendered while any history exists
+/// (the settled §17.7 explicit panel action); the empty hint replaces it
+/// once history is cleared.
+pub fn assert_clear_control(snapshot: &Snapshot, present: bool) {
+    let has_clear = snapshot
+        .visible_ids
+        .iter()
+        .any(|id| id == "bbr-downloads-clear");
+    assert_eq!(
+        has_clear,
+        present,
+        "the Clear control must {} with history: {:#?}",
+        if present { "render" } else { "not render" },
+        snapshot.visible_ids
+    );
+}
+
 /// The §11.12 invariant that downloads chrome never changes tab, session,
 /// WebView, profile, or space identity.
 pub fn assert_panel_identity(

@@ -37,7 +37,7 @@
       "samples": 0,
       "source": "contract-budget"
     },
-    "command_type": {
+    "command_bar_first_result": {
       "budget_max_ms": 100.0,
       "budget_p95_ms": 50.0,
       "max_ms": 100.0,
@@ -46,7 +46,7 @@
       "samples": 0,
       "source": "contract-budget"
     },
-    "command_bar_first_result": {
+    "command_type": {
       "budget_max_ms": 100.0,
       "budget_p95_ms": 50.0,
       "max_ms": 100.0,
@@ -74,6 +74,60 @@
       "source": "contract-budget"
     },
     "dense_select": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "download_progress_commit": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "download_row_delete": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "download_row_restart": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "download_row_retry": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "downloads_clear": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "downloads_panel_open": {
       "budget_max_ms": 100.0,
       "budget_p95_ms": 50.0,
       "max_ms": 100.0,

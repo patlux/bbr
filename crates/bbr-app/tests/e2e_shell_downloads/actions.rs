@@ -12,8 +12,8 @@ use crate::support::*;
 /// Cancel a running `slow.bin` transfer through the production
 /// request/confirmation path: the row stays active right after the request,
 /// the engine's terminal event lands as `Cancelled` (the first terminal
-/// event wins), and the cancelled row renders quiet in History — no primary
-/// action in v1 (DESIGN.md §17.8 open).
+/// event wins), and the cancelled row renders in History offering Restart
+/// and Delete (the settled DESIGN.md §17.8 decision).
 #[test]
 #[ignore]
 fn cancel_is_request_confirmation_and_the_terminal_event_wins() {
@@ -82,10 +82,14 @@ fn cancel_is_request_confirmation_and_the_terminal_event_wins() {
         assert_eq!(cancelled.group, DownloadGroup::History);
         assert_eq!(
             cancelled.action,
-            DownloadRowAction::None,
-            "cancelled rows render no primary action in v1 (§17.8)"
+            DownloadRowAction::Restart,
+            "a cancelled row offers Restart (the settled §17.8 decision)"
         );
-        assert!(!cancelled.action_enabled);
+        assert!(cancelled.action_enabled);
+        assert!(
+            cancelled.delete_available,
+            "a cancelled row also offers the §17.8 Delete control"
+        );
         let after_terminal = client.snapshot().expect("after terminal snapshot");
         assert_eq!(
             row_by_id(&after_terminal, id).machine_state,
@@ -171,10 +175,138 @@ fn retry_starts_a_fresh_linked_attempt_from_failed_only() {
         assert_eq!(fresh_failed.attempt, 2);
         assert_eq!(fresh_failed.group, DownloadGroup::History);
 
-        // Cancelled rows are never retried by the UI: the controller rejects
-        // a retry of a `Cancelled` attempt (proven by the controller unit
-        // tests deterministically; here the seam rejects non-Failed targets).
+        // A cancelled row is restartable (the settled §17.8 decision) — the
+        // same machine path as a failed retry: a fresh attempt linked via
+        // `retry_of`, never a resumed id. The controller accepts `Cancelled`
+        // in `evaluate_retry` (proven deterministically by the controller
+        // unit tests; here the production Restart row action is proven by
+        // the restart E2E scenario).
         let closed = client.snapshot().expect("retry identity snapshot");
+        assert_panel_identity(&closed, view, sessions, tabs, spaces, profile, space);
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+
+    finish(result, &mut harness, &socket, &token);
+}
+
+/// Restart a cancelled attempt through the production pointer path (the
+/// settled §17.8 decision): the cancelled row's Restart action runs the
+/// same machine path as a failed retry — a fresh attempt id in the Active
+/// group, `Waiting`/`Running`, linked via `retry_of` with the attempt count
+/// incremented and the Cancel action. The footer badge (§17.11 settled)
+/// counts only in-flight attempts: it returns to zero while the fresh
+/// attempt transfers and stays zero once it reaches its terminal state.
+#[test]
+#[ignore]
+fn restart_offers_a_fresh_linked_attempt_from_cancelled() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+
+    let (fixtures, page_one, _page_two) = fixtures();
+    let (mut harness, socket, token) = spawn_harness("downloads-restart", &page_one);
+    let slow_url = fixtures.url("/__fx/dl/slow.bin");
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let replay = client.attach(None).expect("attach");
+        let _since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+
+        let initial = client.snapshot().expect("initial snapshot");
+        let view = initial.active_web_view.expect("active view");
+        let sessions = initial.engine_sessions;
+        let tabs = initial.tabs.len();
+        let spaces = initial.spaces.len();
+        let profile = initial.active_profile;
+        let space = initial.active_space;
+
+        // Cancel a running transfer to a terminal Cancelled row (the §17.8
+        // restartable state). The footer badge contract (§17.11) is
+        // observed through the open panel: the in-flight transfer owns the
+        // badge, terminal attempts never do.
+        let cancelled_id = start_download(&mut client, &slow_url, "slow.bin");
+        let _ = wait_running_progress(&mut client, cancelled_id);
+        let running_open = open_downloads(&mut client);
+        assert_eq!(
+            running_open.downloads.footer_count, 1,
+            "the in-flight transfer owns the badge"
+        );
+        client
+            .send_ok(&Request::DownloadCancel { id: cancelled_id })
+            .expect("cancel request");
+        let cancelled =
+            wait_row_terminal(&mut client, cancelled_id, DownloadMachineState::Cancelled);
+        assert_eq!(
+            cancelled.action,
+            DownloadRowAction::Restart,
+            "a cancelled row offers Restart (the settled §17.8 decision)"
+        );
+        assert!(cancelled.action_enabled);
+        assert!(
+            cancelled.delete_available,
+            "a cancelled row also offers the §17.8 Delete control"
+        );
+        let terminal_badge = client.snapshot().expect("terminal badge snapshot");
+        assert_eq!(
+            terminal_badge.downloads.footer_count, 0,
+            "terminal attempts never inflate the badge"
+        );
+
+        // Restart through the production pointer path (`ClickDownloadRowAction`
+        // on the cancelled row → the exact seam the row's action mouse-down
+        // listener calls → `download_retry` → `controller.retry`). The
+        // panel is already open; the fresh attempt joins the Active group.
+        let opened = terminal_badge;
+        let row = row_by_id(&opened, cancelled_id);
+        client
+            .send_ok(&Request::ClickDownloadRowAction { row: row.row })
+            .expect("restart row action");
+        let after = client.snapshot().expect("after restart snapshot");
+        let fresh = after
+            .download_rows
+            .iter()
+            .find(|candidate| candidate.retry_of == Some(cancelled_id))
+            .unwrap_or_else(|| panic!("no fresh linked attempt: {:#?}", after.download_rows));
+        assert!(
+            matches!(
+                fresh.machine_state,
+                DownloadMachineState::Waiting | DownloadMachineState::Running
+            ),
+            "the fresh attempt is active (never resumed under the old id)"
+        );
+        assert_eq!(fresh.group, DownloadGroup::Active);
+        assert_eq!(fresh.action, DownloadRowAction::Cancel);
+        assert!(fresh.action_enabled);
+        assert_eq!(fresh.attempt, 2, "the attempt count increments per restart");
+        assert_eq!(fresh.filename, "slow.bin");
+        assert_ne!(fresh.id, cancelled_id, "a fresh attempt id, never reused");
+        assert_eq!(
+            after.downloads.footer_count, 1,
+            "the fresh in-flight attempt owns the badge"
+        );
+
+        // The fresh attempt runs its own lifecycle to a terminal Succeeded
+        // (the deterministic slow fixture completes), linked to the source
+        // attempt; the badge returns to zero.
+        let fresh_done = wait_row_terminal(&mut client, fresh.id, DownloadMachineState::Succeeded);
+        assert_eq!(fresh_done.retry_of, Some(cancelled_id));
+        assert_eq!(fresh_done.attempt, 2);
+        assert_eq!(fresh_done.group, DownloadGroup::History);
+        let closed = client.snapshot().expect("restart identity snapshot");
+        assert_eq!(
+            closed.downloads.footer_count, 0,
+            "the badge returns to zero when nothing transfers"
+        );
+        assert_eq!(
+            closed.download_rows.len(),
+            2,
+            "the cancelled source row and its fresh attempt both remain"
+        );
         assert_panel_identity(&closed, view, sessions, tabs, spaces, profile, space);
 
         client.quit().expect("quit");

@@ -189,7 +189,19 @@ fn row_model_maps_the_l6_machine_states_exactly() {
     assert_eq!(by_id(failed.0).action, DownloadActionKind::Retry);
     assert_eq!(by_id(cancelled.0).machine, DownloadMachine::Cancelled);
     assert_eq!(by_id(cancelled.0).group, DownloadGroupKind::History);
-    assert_eq!(by_id(cancelled.0).action, DownloadActionKind::None);
+    assert_eq!(
+        by_id(cancelled.0).action,
+        DownloadActionKind::Restart,
+        "a cancelled row offers Restart (the settled §17.8 decision)"
+    );
+    assert!(
+        by_id(cancelled.0).delete_available,
+        "a cancelled row offers the §17.8 Delete control"
+    );
+    assert!(
+        !by_id(failed.0).delete_available,
+        "Delete is cancelled-only"
+    );
 }
 
 /// Reveal-in-Finder eligibility comes from the app's reveal cache (the

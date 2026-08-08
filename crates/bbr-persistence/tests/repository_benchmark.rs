@@ -414,6 +414,10 @@ fn dense_snapshot() -> Snapshot {
             size: 1024,
             destination: Some("/tmp/dense.bin".into()),
             terminal_at: 900,
+            url: "https://dense.test/dense.bin".into(),
+            filename: "dense.bin".into(),
+            retry_of: None,
+            attempt: 1,
         }],
         command_history: vec![CommandHistoryEntry {
             id: 800,

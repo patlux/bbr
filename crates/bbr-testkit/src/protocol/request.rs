@@ -682,6 +682,31 @@ pub enum Request {
         operation_id: BenchmarkOperationId,
         row: usize,
     },
+    /// Measure the production **restart** row action on a cancelled row
+    /// (the settled §17.8 decision): `controller.retry` on a `Cancelled`
+    /// attempt mints a fresh attempt linked via `retry_of`, presented in
+    /// the Active group — the same warm-presentation class as the failed
+    /// retry.
+    BenchmarkDownloadsRowRestart {
+        operation_id: BenchmarkOperationId,
+        row: usize,
+    },
+    /// Measure the production row Delete action (the settled §17.8
+    /// decision): the cancelled row's `download_delete_row` seam removes
+    /// exactly that one terminal record and persists the remaining history
+    /// durably; the sample commits when the panel render no longer draws
+    /// the deleted row — warm-presentation class.
+    BenchmarkDownloadsRowDelete {
+        operation_id: BenchmarkOperationId,
+        row: usize,
+    },
+    /// Measure the production Clear panel action (the settled §17.7
+    /// decision): `downloads_clear` empties the controller history and
+    /// persists the empty slice durably; the sample commits when the panel
+    /// render draws the empty state (no rows) — warm-presentation class.
+    BenchmarkDownloadsClear {
+        operation_id: BenchmarkOperationId,
+    },
     /// Measure the production error-surface presentation (task packet
     /// `error-surface-contract`): a classified incident enters through the
     /// exact seam the native incident sink drives (`on_incident` → the
@@ -703,6 +728,16 @@ pub enum Request {
     /// pattern as `SeedDenseState`); the real transfer lifecycle is proven
     /// by the functional E2E.
     SeedDownloadsAttempt {
+        url: String,
+        destination: String,
+        total: u64,
+    },
+    /// Seed a deterministic non-transferring **cancelled** terminal attempt
+    /// for the restart/delete performance scenarios: the same in-process
+    /// seeding as [`Self::SeedDownloadsAttempt`], then the engine's terminal
+    /// `Cancelled` event through the production event path (no network
+    /// transfer runs). The driver reads the minted id from the snapshot.
+    SeedDownloadsCancelled {
         url: String,
         destination: String,
         total: u64,
@@ -753,16 +788,32 @@ pub enum Request {
         id: u64,
     },
     /// Retry the failed attempt (production `controller.retry` path): a
-    /// fresh attempt id linked via `retry_of`.
+    /// fresh attempt id linked via `retry_of`. The same seam restarts a
+    /// cancelled attempt (the settled §17.8 decision); the panel labels the
+    /// machine path differently by state.
     DownloadRetry {
         id: u64,
     },
     /// Activate a visible download row's contextual action through the
     /// production pointer path (the exact app method the row's action
-    /// mouse-down listener calls): Cancel / Retry / Reveal-in-Finder.
+    /// mouse-down listener calls): Cancel / Retry / Restart /
+    /// Reveal-in-Finder.
     ClickDownloadRowAction {
         row: usize,
     },
+    /// The settled row Delete action (DESIGN.md §17.8): remove exactly one
+    /// terminal record through the production `download_delete_row` seam
+    /// (the exact app method the row's Delete control mouse-down listener
+    /// calls) — durable, so the deleted row can never return from the
+    /// store.
+    ClickDownloadRowDelete {
+        row: usize,
+    },
+    /// The settled Clear panel action (DESIGN.md §17.7): clear the
+    /// controller history and the repository durably through the production
+    /// `downloads_clear` seam (the exact app method the panel's Clear
+    /// control mouse-down listener calls).
+    ClickDownloadsClear,
     /// Drive the exact production outside-dismiss method the panel's
     /// outside-press handler calls (DESIGN.md §13 one pointer action): a
     /// pointer press outside the open panel dismisses it and returns focus

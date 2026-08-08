@@ -220,6 +220,25 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // The settled post-MVP downloads actions (DESIGN.md §17.7/§17.8):
+        // the cancelled-row Restart (the same machine path as the failed
+        // retry), the cancelled-row Delete (one terminal record removed and
+        // persisted durably), and the panel Clear (history emptied and the
+        // empty slice persisted durably) are the same warm next-frame
+        // presentation class as the other downloads scenarios — the
+        // standard 50/100 ms warm budget.
+        "download_row_restart" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "download_row_delete" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "downloads_clear" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         // Web-error surface (task packet `error-surface-contract`): the
         // production incident-presentation (`on_incident` → the contract
         // `present` lifecycle, surface drawn over the unchanged active
@@ -451,6 +470,9 @@ impl Baseline {
             "downloads_panel_open",
             "download_progress_commit",
             "download_row_retry",
+            "download_row_restart",
+            "download_row_delete",
+            "downloads_clear",
             "error_surface_present",
             "zoom_step",
             "context_menu_open",
@@ -695,15 +717,19 @@ mod tests {
     fn downloads_budgets_are_seeded_and_enforced() {
         // Regression guard: the downloads-panel scenarios must carry their
         // contract budgets in the seed so a future panel-open, progress
-        // commit, or retry-row render regression trips the gate instead of
-        // being silently unreported. All three are the warm presentation
-        // class (50/100): the footer `[Downloads]` open, the L6 progress
-        // commit, and the retry row action.
+        // commit, retry/restart row action, row Delete, or Clear render
+        // regression trips the gate instead of being silently unreported.
+        // All are the warm presentation class (50/100): the footer
+        // `[Downloads]` open, the L6 progress commit, the retry/restart row
+        // actions, the row Delete, and the panel Clear.
         let b = Baseline::seed();
         for (kind, p95, max) in [
             ("downloads_panel_open", 50.0, 100.0),
             ("download_progress_commit", 50.0, 100.0),
             ("download_row_retry", 50.0, 100.0),
+            ("download_row_restart", 50.0, 100.0),
+            ("download_row_delete", 50.0, 100.0),
+            ("downloads_clear", 50.0, 100.0),
         ] {
             let entry = b
                 .entries

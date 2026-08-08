@@ -1,5 +1,7 @@
-//! Downloads row detail (DESIGN.md §11.12): the secondary line and the
-//! single contextual row action.
+//! Downloads row/panel detail controls (DESIGN.md §11.12): the secondary
+//! line, the single contextual primary row action, and the settled
+//! post-MVP controls — the §17.8 row Delete control and the §17.7 Clear
+//! panel control.
 //!
 //! Split out of `downloads_render` to keep both files within the ~500-line
 //! structure gate. These are presentation only — the machine state and the
@@ -93,8 +95,9 @@ impl BbrApp {
     /// active → **Cancel**, failed → **Retry**, succeeded →
     /// **Reveal-in-Finder** (the conventional macOS "Show in Finder" copy;
     /// §10.8 `disabled` with a reason when the resolved path does not
-    /// exist), cancelled → none in v1 (§17.8 open). The hit area is at
-    /// least `density:hit-min`.
+    /// exist), cancelled → **Restart** (the settled §17.8 decision — a
+    /// fresh attempt linked via `retry_of`). The hit area is at least
+    /// `density:hit-min`.
     pub(super) fn downloads_action(
         &self,
         theme: &Theme,
@@ -106,8 +109,8 @@ impl BbrApp {
         let density = theme.density;
         let label = action_label(visual.action);
         if label.is_empty() {
-            // Cancelled rows render no primary action in v1 (§17.8 open) —
-            // the trailing slot stays quiet.
+            // No primary action (an unreachable state after §17.8 — every
+            // L6 state offers one) — the trailing slot stays quiet.
             return div()
                 .id(download_slot_id("action", index))
                 .w(density.hit_min());
@@ -134,5 +137,82 @@ impl BbrApp {
             // presentation is deferred with §17.2).
             .when(enabled, |el| el.on_mouse_down(MouseButton::Left, activate))
             .child(label)
+    }
+
+    /// The §17.8 settled row Delete control: a cancelled row offers
+    /// **Restart** (the primary action above) **and** Delete — this
+    /// `bbr-download-delete-<n>` control removes exactly that one terminal
+    /// record durably (`download_delete_row`, the exact seam the testkit
+    /// `ClickDownloadRowDelete` request drives). Rendered only when
+    /// `visual.delete_available` (cancelled rows); every other row renders
+    /// an inert slot so the trailing layout stays stable.
+    pub(super) fn downloads_delete_control(
+        &self,
+        theme: &Theme,
+        visual: &super::super::downloads::DownloadRowVisual,
+        index: usize,
+        cx: &mut gpui::Context<super::super::BbrApp>,
+    ) -> Stateful<Div> {
+        let p = theme.palette;
+        let density = theme.density;
+        if !visual.delete_available {
+            return div()
+                .id(download_slot_id("delete", index))
+                .w(density.hit_min());
+        }
+        let id = bbr_web::downloads::DownloadId(visual.id);
+        let delete = cx.listener(move |this, _e: &MouseDownEvent, _window, cx| {
+            let _ = crate::app::downloads_history::download_delete_row(this, id, cx);
+            cx.stop_propagation();
+        });
+        div()
+            .id(download_slot_id("delete", index))
+            .h(density.hit_min())
+            .min_w(density.hit_min())
+            .px(Spacing::sp2())
+            .rounded(density.density_radius())
+            .flex()
+            .items_center()
+            .justify_center()
+            .cursor_pointer()
+            .text_size(theme.type_.meta.size)
+            .font_weight(theme.type_.meta.weight)
+            .text_color(p.ink_secondary)
+            .hover(|el| el.bg(p.wash_hover))
+            .on_mouse_down(MouseButton::Left, delete)
+            .child("Delete")
+    }
+
+    /// The §11.12 Clear control (DESIGN.md §17.7 settled): a full-width
+    /// `type:meta` row below the scroll area, visible while any history
+    /// exists. Pointer press clears the controller history and the
+    /// repository durably (`downloads_clear` — the exact seam the testkit
+    /// `ClickDownloadsClear` request drives) and stops propagation so the
+    /// root outside-press handler never dismisses the panel mid-action.
+    pub(super) fn downloads_clear_control(
+        &self,
+        theme: &Theme,
+        cx: &mut gpui::Context<super::super::BbrApp>,
+    ) -> Stateful<Div> {
+        let p = theme.palette;
+        let density = theme.density;
+        let clear = cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+            crate::app::downloads_history::downloads_clear(this, cx);
+            cx.stop_propagation();
+        });
+        div()
+            .id(super::DOWNLOADS_CLEAR_ID)
+            .h(density.hit_min())
+            .w_full()
+            .flex()
+            .items_center()
+            .justify_center()
+            .cursor_pointer()
+            .text_size(theme.type_.meta.size)
+            .font_weight(theme.type_.meta.weight)
+            .text_color(p.ink_secondary)
+            .hover(|el| el.bg(p.wash_hover))
+            .on_mouse_down(MouseButton::Left, clear)
+            .child("Clear")
     }
 }

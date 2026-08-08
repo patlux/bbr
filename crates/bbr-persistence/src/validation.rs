@@ -166,7 +166,7 @@ pub(crate) fn validate_settings(settings: &SearchSettings) -> Result<(), Invalid
     }
 }
 
-fn validate_downloads(downloads: &[DownloadRecord]) -> Result<(), InvalidSnapshotIssue> {
+pub(crate) fn validate_downloads(downloads: &[DownloadRecord]) -> Result<(), InvalidSnapshotIssue> {
     let mut ids = HashSet::new();
     for record in downloads {
         validate_id("download", record.id)?;
@@ -192,6 +192,33 @@ fn validate_downloads(downloads: &[DownloadRecord]) -> Result<(), InvalidSnapsho
                     detail: "invalid destination path".into(),
                 });
             }
+        }
+        if !valid_url(&record.url) {
+            return Err(InvalidSnapshotIssue::InvalidDownload {
+                id: record.id,
+                detail: "invalid source URL".into(),
+            });
+        }
+        if !valid_filename(&record.filename) {
+            return Err(InvalidSnapshotIssue::InvalidDownload {
+                id: record.id,
+                detail: "invalid display filename".into(),
+            });
+        }
+        if record.attempt < 1 {
+            return Err(InvalidSnapshotIssue::InvalidDownload {
+                id: record.id,
+                detail: "non-positive attempt count".into(),
+            });
+        }
+        if record
+            .retry_of
+            .is_some_and(|retry_of| retry_of == 0 || retry_of > MAX_SQLITE_ID)
+        {
+            return Err(InvalidSnapshotIssue::InvalidDownload {
+                id: record.id,
+                detail: "invalid retry_of link".into(),
+            });
         }
     }
     Ok(())
@@ -265,6 +292,22 @@ pub(crate) fn valid_path(path: &str) -> bool {
         && !path
             .bytes()
             .any(|byte| byte == 0 || byte.is_ascii_control())
+}
+
+/// Bounded display-filename validation for a persisted download record.
+///
+/// The `filename` column is the panel's name line — display data derived
+/// from the source URL or the destination decision, never a filesystem
+/// path. A bare filename must therefore be non-empty, contain no path
+/// separator, no NUL/control bytes, and never be `.` or `..` (a display
+/// name must never be mistaken for a path).
+pub(crate) fn valid_filename(name: &str) -> bool {
+    !name.is_empty()
+        && name != "."
+        && name != ".."
+        && !name
+            .bytes()
+            .any(|byte| byte == 0 || byte == b'/' || byte.is_ascii_control())
 }
 
 /// Mirrors the delivered search-settings contract's custom template rules:

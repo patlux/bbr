@@ -72,7 +72,11 @@ CREATE TABLE downloads (
     size INTEGER NOT NULL,
     destination TEXT,
     terminal_at INTEGER NOT NULL,
-    position INTEGER NOT NULL
+    position INTEGER NOT NULL,
+    url TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    retry_of INTEGER,
+    attempt INTEGER NOT NULL
 );
 CREATE TABLE command_history (
     id INTEGER PRIMARY KEY NOT NULL,

@@ -89,6 +89,12 @@ pub struct AppStore {
     /// The next monotonic recency marker (above the persisted maximum, so
     /// new visits always rank as more recent than restored ones).
     next_recency: u64,
+    /// The restored terminal download history (DESIGN.md §17.10 settled):
+    /// the terminal records loaded from the startup snapshot, in persisted
+    /// order. The app composition restores them into the downloads
+    /// controller before the first frame; live attempts are never
+    /// persisted, so this collection holds terminal records only.
+    downloads: Vec<bbr_persistence::DownloadRecord>,
     /// Bounded nonblocking persist: one poke per accepted activation; the
     /// background writer coalesces and writes the latest provider state.
     write_tx: smol::channel::Sender<()>,
@@ -145,6 +151,7 @@ impl AppStore {
             history: Arc::new(Mutex::new(loaded)),
             next_id,
             next_recency,
+            downloads: outcome.snapshot.downloads,
             write_tx,
             write_rx: Some(write_rx),
         })
@@ -164,6 +171,7 @@ impl AppStore {
             history: Arc::new(Mutex::new(Vec::new())),
             next_id: 1,
             next_recency: 1,
+            downloads: Vec::new(),
             write_tx,
             write_rx: Some(write_rx),
         }
@@ -205,11 +213,37 @@ impl AppStore {
     /// The path-based repository, exposed for modular composition: later
     /// lanes (F2b's downloads adapter) attach their own repository methods
     /// to the same shared bootstrap instead of hard-coding global state.
-    /// `None` only on the ephemeral fallback. Consumed by the unit tests
-    /// today; the F2b adapter is the next consumer.
+    /// `None` only on the ephemeral fallback.
     #[cfg_attr(not(test), allow(dead_code))]
     pub fn repository(&self) -> Option<&Repository> {
         self.repository.as_ref()
+    }
+
+    /// The restored terminal download history (the persisted records the
+    /// startup snapshot loaded; empty on the ephemeral fallback and on a
+    /// fresh store). The app composition maps these onto the downloads
+    /// controller before the first frame (DESIGN.md §17.10 settled: terminal
+    /// history persists through restarts).
+    pub fn restored_downloads(&self) -> &[bbr_persistence::DownloadRecord] {
+        &self.downloads
+    }
+
+    /// Durably replaces the persisted terminal download history with
+    /// `records` in one transaction — the download-specific write path the
+    /// app calls outside render/ranking (on an accepted terminal transition,
+    /// on Clear, and on a row Delete), so a cleared or deleted row can never
+    /// return from the store (DESIGN.md §17.7/§17.8/§17.10 settled). The
+    /// records arrive in persisted history order (ascending terminal order;
+    /// `position` = index). The ephemeral fallback refuses the write with a
+    /// logged warning — never a silent fabricated disposition.
+    pub fn replace_downloads(&self, records: &[bbr_persistence::DownloadRecord]) {
+        let Some(repository) = self.repository.as_ref() else {
+            log::warn!("ephemeral store: downloads persist refused");
+            return;
+        };
+        if let Err(error) = repository.replace_downloads(records) {
+            log::warn!("downloads persist failed: {error:?}");
+        }
     }
 
     /// The effective global search settings (defaults on a fresh store or
@@ -440,6 +474,11 @@ impl SettingsStore for AppStore {
         }
     }
 }
+
+/// The persistence DTO ↔ downloads-controller mapping (DESIGN.md §17.10
+/// settled): the app-owned composition between the restored/persisted
+/// terminal records and the portable `bbr-browser` controller records.
+pub(crate) mod downloads;
 
 #[cfg(test)]
 mod tests;

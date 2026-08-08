@@ -293,10 +293,10 @@ impl BbrApp {
     }
 
     /// The §11.4 footer `[Downloads]` `tnum` count: present while any
-    /// attempt exists. Which attempts feed the count is DESIGN §17.11 —
-    /// open; v1 reports the in-flight (active) attempts, non-destructive
-    /// and reversible when the decision lands.
-    fn downloads_controller_active_count(&self) -> Option<usize> {
+    /// attempt exists. Per the settled §17.11 decision the count feeds
+    /// **only in-flight (active) attempts** — it returns to zero when
+    /// nothing is transferring, terminal history never inflates the badge.
+    pub(crate) fn downloads_controller_active_count(&self) -> Option<usize> {
         let count = self.downloads.controller.active_ids().len();
         (count > 0).then_some(count)
     }

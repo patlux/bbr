@@ -6,8 +6,9 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 
 Status: **post-MVP; consumes the integrated L6 portable downloads contract
 (`crates/bbr-web/src/downloads`); surface design settled in
-[DESIGN §11.12](../../../DESIGN.md#1112-downloads-panel-planned) with open
-decisions registered in [DESIGN §17.7–17.12](../../../DESIGN.md#17-open-decisions).**
+[DESIGN §11.12](../../../DESIGN.md#1112-downloads-panel-planned); the open
+downloads decisions §17.7–§17.12 were resolved 2026-08-08 and are now
+implementation facts (DESIGN §11.12 + §17).**
 
 ## Outcome
 
@@ -52,13 +53,15 @@ native-above-web Portal host.
   column and stays `GpuiDeferred`/ordinary GPUI; the Portal host remains
   reserved for chrome that renders above web content.
 - No cloud download manager, background daemon, sync, or cross-window history.
-- No auto-open of completed files and no open-on-double-click until the open
-  decision in DESIGN §17.12 lands.
+- No auto-open of completed files and no open-on-double-click: completed
+  files open only through the per-row Reveal-in-Finder action (settled
+  §17.12).
 - No multi-select or batch actions in v1.
-- No persistence of history across restarts until DESIGN §17.10 is resolved;
-  in-memory session history in v1.
-- No clear-history control until DESIGN §17.7 is resolved; the footer control
-  stays non-destructive.
+- No save panel / explicit destination picker: the silent suggested-
+  destination policy is settled (§17.9); an explicit destination stays a
+  later non-breaking option.
+- No migration or backward compatibility: a legacy same-v2 downloads shape
+  is discarded and immediately rewritable (settled 2026-08-08).
 - No weakening of L6 identity, monotonic progress, terminal, cancellation, or
   retry invariants; no production network fixture dependency.
 
@@ -72,9 +75,9 @@ integration surfaces.
 
 - L6 remains the portable lifecycle authority; the UI renders exactly
   `Waiting`, `Running`, `Succeeded`, `Failed { failure }`, `Cancelled` and
-  never invents transitions. `Failed` is the only retryable state; retry is a
-  fresh attempt id linked via `retry_of`; `Cancelled` is never retried by the
-  UI.
+  never invents transitions. Retry exists on `Failed` and restart on
+  `Cancelled` (settled §17.8) — both link a fresh attempt via `retry_of`;
+  the panel labels the same machine path differently by state.
 - Cancellation is request/confirmation based; the row stays active until the
   engine's terminal event lands, and the first terminal event wins — no
   optimistic state change.
@@ -86,9 +89,13 @@ integration surfaces.
 - Ids follow the `bbr-download-*` convention (§11.12/§15).
 - No sleeps or pixel assertions in E2E; typed events, stable ids,
   deterministic fixtures, explicit deadlines.
-- Destination/save-panel policy, cancelled-row action, clear-history,
-  history persistence, and badge-count semantics are open decisions
-  (DESIGN §17.7–§17.12); the slice ships without them until resolved.
+- Settled post-MVP decisions (DESIGN §17.7–§17.12, 2026-08-08): an explicit
+  Clear panel action empties the controller history and the repository
+  durably (§17.7); a cancelled row offers Restart **and** Delete (§17.8);
+  silent suggested destination (§17.9); terminal history persists through
+  restarts with no migration (§17.10); the footer badge counts only
+  in-flight attempts (§17.11); completed files open only via
+  Reveal-in-Finder (§17.12).
 - Keep files below roughly 500 lines; no new dependency unless existing
   persistence/native APIs are proven insufficient.
 
@@ -96,31 +103,36 @@ integration surfaces.
 
 ### Unit and contract
 
-- [ ] Adapter/controller tests cover every L6 event/rejection, history
+- [x] Adapter/controller tests cover every L6 event/rejection, history
       ordering, destination decisions, cancel races, retry linkage, reveal
       eligibility, and zero-byte success.
-- [ ] Component/semantic tests cover empty, active (known and unknown
+- [x] Component/semantic tests cover empty, active (known and unknown
       length), complete, failed, and cancelled rows, group transitions,
       bounded-window scroll, and footer/panel focus and dismissal.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-downloads` (new bounded suite added to the justfile and
-      the canonical `just e2e` sequence) downloads deterministic fixture
-      content in the real app and proves progress (known and unknown length),
-      success/path, failure, cancel, retry, zero bytes, bounded 6-row scroll,
-      dismissal (Escape / outside press / re-activation), and Reveal-in-Finder
-      request semantics.
-- [ ] Opening/operating the panel preserves active tab/WebView/session/
+- [x] `just e2e-shell-downloads` (a bounded suite in the canonical `just e2e`
+      sequence) downloads deterministic fixture content in the real app and
+      proves progress (known and unknown length), success/path, failure,
+      cancel, retry, zero bytes, bounded 6-row scroll, dismissal (Escape /
+      outside press / re-activation), and Reveal-in-Finder request
+      semantics — plus the settled post-MVP decisions: cancelled Restart
+      with a fresh `retry_of` attempt, the active-only footer badge, and
+      terminal-history restore, durable Clear, and durable row Delete
+      across real process restarts on the same profile directory.
+- [x] Opening/operating the panel preserves active tab/WebView/session/
       profile/space identity, asserts the `bbr-download-*` ids and
       `download_rows` snapshot fields, and uses typed events without sleeps.
 
 ### Performance
 
-- [ ] Add `downloads_panel_open`, `download_progress_commit`, and required row
+- [x] Add `downloads_panel_open`, `download_progress_commit`, and required row
       action scenarios with at least 30 accepted samples where the action is
-      user-visible, asserting the DESIGN §15 presentation-commit gate.
-- [ ] Exclude fixture/network latency from application presentation timings.
+      user-visible, asserting the DESIGN §15 presentation-commit gate:
+      `download_row_retry`, `download_row_restart`, `download_row_delete`,
+      and `downloads_clear` (30 samples each).
+- [x] Exclude fixture/network latency from application presentation timings.
 
 ## Completion gates
 
@@ -163,15 +175,31 @@ invariants or fabricate progress.
 ## Delivery ledger
 
 ```text
-Outcome: design settled (DESIGN §11.12 + §17.7–§17.12) and packet rewritten
-Commits: planning only
-Functional evidence: pending
-Real-app E2E: pending
-Performance evidence: pending
-Roadmap/documentation updates: DESIGN downloads surface + open decisions;
-  packet updated to the settled design; Phase 8/UI-track links unchanged
-  (packet title and roll-up wording still accurate; nothing ticked)
-Open blockers and non-goals: anchored popover confined to the sidebar column;
-  no Portal requirement; open decisions listed in DESIGN §17.7–§17.12
-Worktree state: no implementation lane active
+Outcome: post-MVP downloads follow-up integrated as one real vertical slice
+  on the post-F2c AppStore form (persistence restore at startup, durable
+  Clear/Delete, cancelled Restart, active-only badge, Reveal-only).
+Commits: portable/persistence seams originated in frozen lane commit 731f668;
+  the complete F2b integration commit and serial main integration are recorded
+  in the post-MVP delivery ledger
+Functional evidence: bbr-web 331, bbr-browser 144, bbr-persistence 22,
+  bbr-app unit 256 — all green; fmt/clippy -D warnings green; just verify
+  green; independent final verdict REVIEW_PASS
+Real-app E2E: e2e-shell-downloads 11/11 green (incl. restart persistence,
+  durable Clear/Delete after restart, cancelled Restart with fresh retry_of,
+  active-only badge, identity)
+Performance evidence: downloads_panel_open / download_progress_commit /
+  download_row_retry / download_row_restart / download_row_delete /
+  downloads_clear each 30 accepted samples, p95 ≈ 0.5–1.4 ms against the
+  unchanged 50/100 ms warm budgets. Full-gate attempts also observed
+  unrelated single-sample startup/command-max host-load overshoots; the
+  unchanged repeat passed with zero regressions. Budgets and samples stayed
+  unchanged
+Roadmap/documentation updates: DESIGN §11.12 + §17.7–§17.12 resolved;
+  packet rewritten to the settled decisions; evidence checkboxes ticked
+Open blockers and non-goals: no F2b-specific blocker. The canonical `just
+  e2e` aggregate remains globally unavailable at the missing shutdown target,
+  and the two separately tracked Portal base failures remain outside this
+  slice; see the post-MVP delivery ledger. Product non-goals remain above
+Worktree state: independently reviewed implementation group; serial commit and
+  integration status is owned by the post-MVP delivery ledger
 ```

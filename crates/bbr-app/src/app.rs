@@ -52,6 +52,7 @@ pub(crate) mod downloads;
 pub(crate) mod downloads_behavior;
 #[cfg(feature = "testkit")]
 mod downloads_benchmarks;
+pub(crate) mod downloads_history;
 pub(crate) mod downloads_render;
 mod drag;
 mod drag_target;
@@ -347,6 +348,27 @@ impl BbrApp {
                 let _ = sink_tx.try_send(ev);
             }));
 
+        // Startup restore of the terminal download history (DESIGN.md §17.10
+        // settled: terminal history persists through restarts): the persisted
+        // terminal records are mapped onto the controller **before the first
+        // frame**, so the panel and the footer badge render the restored rows
+        // from the first user-observable paint. Live attempts are never
+        // persisted and never resurrected; the repository validates outcomes
+        // on load, so a non-terminal record cannot reach the restore seam.
+        let mut downloads_state = downloads::DownloadsState::new();
+        match crate::store::downloads::from_persisted(store.restored_downloads())
+            .into_iter()
+            .map(bbr_browser::DownloadRecord::restored_terminal)
+            .collect::<Result<Vec<_>, _>>()
+        {
+            Ok(records) => {
+                if let Err(error) = downloads_state.controller.restore_terminal_history(records) {
+                    log::warn!("downloads history restore failed: {error:?}");
+                }
+            }
+            Err(error) => log::warn!("downloads history restore failed: {error:?}"),
+        }
+
         BbrApp {
             engine: engine.clone(),
             controller,
@@ -376,7 +398,7 @@ impl BbrApp {
             find_handle: cx.focus_handle(),
             auth: crate::app::auth::AuthCoordinator::new(),
             auth_handle: cx.focus_handle(),
-            downloads: downloads::DownloadsState::new(),
+            downloads: downloads_state,
             downloads_panel_handle: cx.focus_handle(),
             downloads_control_handle: cx.focus_handle(),
             downloads_press_inside: std::cell::Cell::new(false),

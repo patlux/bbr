@@ -230,6 +230,152 @@ impl BbrApp {
         true
     }
 
+    /// Benchmark the production restart row action on a cancelled row (the
+    /// settled §17.8 decision): the same machine path as the failed retry
+    /// (`controller.retry` accepts `Cancelled`; the panel labels it
+    /// "Restart"). The sample commits only when the panel render drew the
+    /// fresh attempt in the Active group — `Waiting`, linked via `retry_of`
+    /// to the cancelled source row, with the Cancel action. The web-view
+    /// slot is cleared so the action sink's `Start` dispatch fails as a
+    /// typed `NoWebView` and no real `WKDownload` starts.
+    pub fn benchmark_downloads_row_restart(
+        &mut self,
+        operation_id: BenchmarkOperationId,
+        row: usize,
+        window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) -> bool {
+        let visuals = row_visuals(&self.downloads, Some(self.downloads.focus));
+        let Some(target) = visuals.get(row) else {
+            return false;
+        };
+        if target.action != DownloadActionKind::Restart
+            || !matches!(target.machine, DownloadMachine::Cancelled)
+        {
+            return false;
+        }
+        if self
+            .performance
+            .begin(operation_id, BenchmarkKind::DownloadsRowRestart)
+            .is_err()
+        {
+            return false;
+        }
+        let old_id = DownloadId(target.id);
+        #[cfg(target_os = "macos")]
+        self.download_web_view.set(None);
+        let Ok(fresh) = self.downloads.controller.retry(old_id) else {
+            self.performance.cancel();
+            return false;
+        };
+        let fresh_id = fresh.0;
+        let visuals = row_visuals(&self.downloads, Some(self.downloads.focus));
+        if let Some(fresh_index) = visuals.iter().position(|row| row.id == fresh_id) {
+            let total = visuals.len();
+            let anchor = total
+                .saturating_sub(crate::app::downloads::DOWNLOADS_WINDOW_ROWS)
+                .min(fresh_index);
+            let row_h = f32::from(self.theme().density.row());
+            self.downloads.scroll.set_offset(gpui::point(
+                gpui::px(0.0),
+                gpui::px(-(anchor as f32 * row_h)),
+            ));
+        }
+        let active_view = self.controller.snapshot().active_view;
+        let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
+        let chrome_focused = self.chrome_focused(window);
+        self.performance.observe_render_state(
+            active_view,
+            self.sidebar_visible,
+            chrome_focused,
+            mode,
+        );
+        self.performance
+            .expect_state(active_view, self.sidebar_visible, chrome_focused, mode);
+        self.performance
+            .expect_downloads_restart(target.id, fresh_id);
+        true
+    }
+
+    /// Benchmark the production row Delete action on a cancelled row (the
+    /// settled §17.8 decision): `download_delete_row` removes exactly that
+    /// one terminal record and persists the remaining history durably. The
+    /// sample commits only when the panel render no longer draws the
+    /// deleted row (open, focused).
+    pub fn benchmark_downloads_row_delete(
+        &mut self,
+        operation_id: BenchmarkOperationId,
+        row: usize,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let visuals = row_visuals(&self.downloads, Some(self.downloads.focus));
+        let Some(target) = visuals.get(row) else {
+            return false;
+        };
+        if !target.delete_available {
+            return false;
+        }
+        if self
+            .performance
+            .begin(operation_id, BenchmarkKind::DownloadsRowDelete)
+            .is_err()
+        {
+            return false;
+        }
+        let id = DownloadId(target.id);
+        if super::downloads_history::download_delete_row(self, id, cx).is_err() {
+            self.performance.cancel();
+            return false;
+        }
+        let active_view = self.controller.snapshot().active_view;
+        let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
+        let chrome_focused = self.chrome_focused(window);
+        self.performance.observe_render_state(
+            active_view,
+            self.sidebar_visible,
+            chrome_focused,
+            mode,
+        );
+        self.performance
+            .expect_state(active_view, self.sidebar_visible, chrome_focused, mode);
+        self.performance.expect_downloads_deleted(target.id);
+        true
+    }
+
+    /// Benchmark the production Clear panel action (the settled §17.7
+    /// decision): `downloads_clear` empties the controller history and
+    /// persists the empty slice durably. The sample commits only when the
+    /// panel render draws the empty state (open, focused, zero rows).
+    pub fn benchmark_downloads_clear(
+        &mut self,
+        operation_id: BenchmarkOperationId,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if self
+            .performance
+            .begin(operation_id, BenchmarkKind::DownloadsClear)
+            .is_err()
+        {
+            return false;
+        }
+        super::downloads_history::downloads_clear(self, cx);
+        let active_view = self.controller.snapshot().active_view;
+        let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
+        let chrome_focused = self.chrome_focused(window);
+        self.performance.observe_render_state(
+            active_view,
+            self.sidebar_visible,
+            chrome_focused,
+            mode,
+        );
+        self.performance
+            .expect_state(active_view, self.sidebar_visible, chrome_focused, mode);
+        self.performance.expect_downloads_clear();
+        true
+    }
+
     /// Seed a deterministic non-transferring download attempt for the
     /// performance scenarios: mint the attempt through the portable
     /// controller (the action sink's `Start` dispatch fails as a typed
@@ -261,6 +407,24 @@ impl BbrApp {
         );
         let progress = DownloadProgress::new(0, Some(total)).expect("valid zero-byte progress");
         on_download_event(self, DownloadEvent::Progress { id, progress }, cx);
+        cx.notify();
+        Some(id)
+    }
+
+    /// Seed a deterministic non-transferring **cancelled** terminal attempt
+    /// for the restart/delete performance scenarios: [`Self::seed_downloads_attempt`]
+    /// leaves the attempt `Running`, then the engine's terminal `Cancelled`
+    /// event lands through the production event path (the first terminal
+    /// event wins; no network transfer runs). Returns the cancelled id.
+    pub fn seed_downloads_cancelled(
+        &mut self,
+        url: &str,
+        destination: &str,
+        total: u64,
+        cx: &mut Context<Self>,
+    ) -> Option<DownloadId> {
+        let id = self.seed_downloads_attempt(url, destination, total, cx)?;
+        on_download_event(self, DownloadEvent::Cancelled { id }, cx);
         cx.notify();
         Some(id)
     }

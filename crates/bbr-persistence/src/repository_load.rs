@@ -310,13 +310,16 @@ pub(crate) fn load_settings(
     Ok(settings)
 }
 
-/// Loads terminal download history in persisted order.
+/// Loads terminal download history in persisted order (ascending position =
+/// ascending terminal order). Restored rows carry the settled persistence
+/// facts (url/filename/retry_of/attempt) so a restored row can Restart/
+/// Retry as a fresh linked attempt and render its original name line.
 pub(crate) fn load_downloads(
     connection: &Connection,
     identities: &mut HashSet<u64>,
 ) -> Result<Vec<DownloadRecord>, PersistenceError> {
     let mut statement = connection.prepare(
-        "SELECT id, outcome, size, destination, terminal_at, position FROM downloads ORDER BY position",
+        "SELECT id, outcome, size, destination, terminal_at, position, url, filename, retry_of, attempt FROM downloads ORDER BY position",
     ).map_err(schema::storage)?;
     let rows = statement
         .query_map([], |row| {
@@ -327,13 +330,27 @@ pub(crate) fn load_downloads(
                 row.get::<_, Option<String>>(3)?,
                 row.get::<_, i64>(4)?,
                 row.get::<_, i64>(5)?,
+                row.get::<_, String>(6)?,
+                row.get::<_, String>(7)?,
+                row.get::<_, Option<i64>>(8)?,
+                row.get::<_, i64>(9)?,
             ))
         })
         .map_err(schema::storage)?;
     let mut result = Vec::new();
     for (expected, row) in rows.enumerate() {
-        let (id, outcome, size, destination, terminal_at, position) =
-            row.map_err(schema::storage)?;
+        let (
+            id,
+            outcome,
+            size,
+            destination,
+            terminal_at,
+            position,
+            url,
+            filename,
+            retry_of,
+            attempt,
+        ) = row.map_err(schema::storage)?;
         require_order("downloads", expected, position)?;
         let id = require_id("downloads", id, identities)?;
         let outcome = DownloadOutcome::parse(&outcome).ok_or_else(|| {
@@ -362,12 +379,48 @@ pub(crate) fn load_downloads(
                 ));
             }
         }
+        if !validation::valid_url(&url) {
+            return Err(invalid_value(
+                "downloads",
+                format!("attempt {id} has an invalid source URL"),
+            ));
+        }
+        if !validation::valid_filename(&filename) {
+            return Err(invalid_value(
+                "downloads",
+                format!("attempt {id} has an invalid display filename"),
+            ));
+        }
+        if attempt < 1 {
+            return Err(invalid_value(
+                "downloads",
+                format!("attempt {id} has a non-positive attempt count"),
+            ));
+        }
+        let retry_of = match retry_of {
+            None => None,
+            Some(retry_of) => {
+                if !validation::valid_persisted_id(retry_of)
+                    || retry_of > validation::MAX_SQLITE_ID as i64
+                {
+                    return Err(invalid_value(
+                        "downloads",
+                        format!("attempt {id} has an invalid retry_of link"),
+                    ));
+                }
+                Some(retry_of as u64)
+            }
+        };
         result.push(DownloadRecord {
             id,
             outcome,
             size: size as u64,
             destination,
             terminal_at: terminal_at as u64,
+            url,
+            filename,
+            retry_of,
+            attempt: attempt as u32,
         });
     }
     Ok(result)

@@ -24,9 +24,12 @@ pub struct U2IdsInput<'a> {
     /// window and group layout the render built (the visible ids mirror the
     /// panel's own gating — labels hidden with empty groups, rows only
     /// inside the rendered window, the empty hint when nothing exists).
+    /// `downloads_delete_rows` are the window row indices that render the
+    /// §17.8 Delete control (cancelled rows).
     pub downloads_open: bool,
     pub downloads_window: std::ops::Range<usize>,
     pub downloads_layout: crate::app::downloads::PanelLayout,
+    pub downloads_delete_rows: Vec<usize>,
     /// §11.8-style error-surface gating (task packet
     /// `error-surface-contract`): the classified incident surface is
     /// rendered in the content area, so it replaces the active view's
@@ -55,6 +58,7 @@ impl<'a> Default for U2IdsInput<'a> {
                 history_count: 0,
                 hairline: 1.0,
             },
+            downloads_delete_rows: Vec::new(),
             error_surface_visible: false,
             error_surface_origin: false,
         }
@@ -96,12 +100,59 @@ pub(crate) fn extend_visible_ids(
         &u2.plus_menu,
     ));
     if u2.downloads_open {
-        ids.extend(crate::app::downloads_render::downloads_visible_ids(
+        ids.extend(downloads_visible_ids(
             u2.downloads_layout.active_count + u2.downloads_layout.history_count,
             &u2.downloads_window,
             &u2.downloads_layout,
+            &u2.downloads_delete_rows,
         ));
     }
+}
+
+/// The §11.12/§15 download id set for the visible-ids derivation: the panel
+/// surface plus the group labels, the bounded rendered rows (never the full
+/// history), the empty hint, and — while any history exists — the Clear
+/// control. Mirrors the render's gating exactly.
+#[cfg(feature = "testkit")]
+fn downloads_visible_ids(
+    total: usize,
+    window: &std::ops::Range<usize>,
+    layout: &crate::app::downloads::PanelLayout,
+    delete_rows: &[usize],
+) -> Vec<String> {
+    use crate::app::downloads_render::{
+        download_row_id, download_slot_id, DOWNLOADS_ACTIVE_ID, DOWNLOADS_CLEAR_ID,
+        DOWNLOADS_EMPTY_ID, DOWNLOADS_HISTORY_ID, DOWNLOADS_PANEL_ID,
+    };
+    let mut ids = vec![DOWNLOADS_PANEL_ID.to_string()];
+    if layout.has_active() {
+        ids.push(DOWNLOADS_ACTIVE_ID.to_string());
+    }
+    if layout.has_history() {
+        ids.push(DOWNLOADS_HISTORY_ID.to_string());
+    }
+    if total == 0 {
+        ids.push(DOWNLOADS_EMPTY_ID.to_string());
+    } else {
+        for index in window.clone() {
+            if index >= total {
+                break;
+            }
+            ids.push(download_row_id(index));
+            ids.push(download_slot_id("status", index));
+            ids.push(download_slot_id("name", index));
+            ids.push(download_slot_id("meta", index));
+            ids.push(download_slot_id("progress", index));
+            ids.push(download_slot_id("action", index));
+            if delete_rows.contains(&index) {
+                ids.push(download_slot_id("delete", index));
+            }
+        }
+    }
+    if layout.has_history() {
+        ids.push(DOWNLOADS_CLEAR_ID.to_string());
+    }
+    ids
 }
 
 /// The U2 §15 id additions once the U2 surfaces render: the §11.4 footer row

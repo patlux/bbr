@@ -162,3 +162,128 @@ pub(crate) fn benchmark_downloads_row_retry(
     assert_eq!(fresh.action, DownloadRowAction::Cancel);
     measured
 }
+
+/// The production restart row action on a cancelled row
+/// (`BenchmarkDownloadsRowRestart`, the settled §17.8 decision): the sample
+/// commits only when the panel render drew the fresh attempt in the Active
+/// group — `Waiting`, linked via `retry_of` to the cancelled source row,
+/// with the Cancel action (the same machine path as a failed retry). The
+/// driver asserts the measured state and that the snapshot gained exactly
+/// one fresh linked attempt.
+pub(crate) fn benchmark_downloads_row_restart(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    row: usize,
+    retry_of: u64,
+    expected_view: WebViewId,
+) -> PresentationMeasurement {
+    let before = client.snapshot().expect("pre restart snapshot");
+    let linked_before = before
+        .download_rows
+        .iter()
+        .filter(|row| row.retry_of == Some(retry_of))
+        .count();
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkDownloadsRowRestart { operation_id, row })
+        .expect("benchmark downloads row restart");
+    let (seq, measured) = wait_measurement(
+        client,
+        BenchmarkKind::DownloadsRowRestart,
+        operation_id,
+        *since,
+    );
+    *since = seq;
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(measured.chrome_focused, "the panel owns chrome focus");
+    let snapshot = client.snapshot().expect("downloads restart snapshot");
+    assert!(snapshot.downloads.open);
+    let linked = snapshot
+        .download_rows
+        .iter()
+        .filter(|row| row.retry_of == Some(retry_of))
+        .count();
+    assert_eq!(
+        linked,
+        linked_before + 1,
+        "the restart presents exactly one fresh linked attempt"
+    );
+    let fresh = snapshot
+        .download_rows
+        .iter()
+        .find(|row| {
+            row.retry_of == Some(retry_of) && row.machine_state == DownloadMachineState::Waiting
+        })
+        .expect("fresh waiting restart row");
+    assert_eq!(fresh.group, DownloadGroup::Active);
+    assert_eq!(fresh.action, DownloadRowAction::Cancel);
+    measured
+}
+
+/// The production row Delete action on a cancelled row
+/// (`BenchmarkDownloadsRowDelete`, the settled §17.8 decision): the sample
+/// commits only when the panel render no longer draws the deleted row — the
+/// durable one-row removal. The driver asserts the measured state and that
+/// the snapshot lost exactly that one row.
+pub(crate) fn benchmark_downloads_row_delete(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    row: usize,
+    deleted_id: u64,
+    expected_view: WebViewId,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkDownloadsRowDelete { operation_id, row })
+        .expect("benchmark downloads row delete");
+    let (seq, measured) = wait_measurement(
+        client,
+        BenchmarkKind::DownloadsRowDelete,
+        operation_id,
+        *since,
+    );
+    *since = seq;
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(measured.chrome_focused, "the panel owns chrome focus");
+    let snapshot = client.snapshot().expect("downloads delete snapshot");
+    assert!(snapshot.downloads.open);
+    assert!(
+        snapshot
+            .download_rows
+            .iter()
+            .all(|row| row.id != deleted_id),
+        "the deleted row is gone from the rendered panel"
+    );
+    measured
+}
+
+/// The production Clear panel action (`BenchmarkDownloadsClear`, the settled
+/// §17.7 decision): the sample commits only when the panel render draws the
+/// empty state — open, focused, zero rows. The driver asserts the measured
+/// state and that the snapshot reports an empty panel.
+pub(crate) fn benchmark_downloads_clear(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    expected_view: WebViewId,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkDownloadsClear { operation_id })
+        .expect("benchmark downloads clear");
+    let (seq, measured) =
+        wait_measurement(client, BenchmarkKind::DownloadsClear, operation_id, *since);
+    *since = seq;
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(measured.chrome_focused, "the panel owns chrome focus");
+    let snapshot = client.snapshot().expect("downloads clear snapshot");
+    assert!(snapshot.downloads.open);
+    assert_eq!(
+        snapshot.downloads.total_rows, 0,
+        "the panel is empty after Clear"
+    );
+    assert!(snapshot.download_rows.is_empty(), "no rows after Clear");
+    measured
+}

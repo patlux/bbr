@@ -156,6 +156,21 @@ pub enum BenchmarkKind {
     /// the fresh attempt (linked via `retry_of`) is presented in the Active
     /// group — the user-visible row action, warm-presentation class.
     DownloadsRowRetry,
+    /// Restart on a cancelled row through the production `controller.retry`
+    /// path (the settled DESIGN.md §17.8 decision): the fresh attempt
+    /// (linked via `retry_of`) is presented in the Active group — the same
+    /// warm-presentation class as the failed retry.
+    DownloadsRowRestart,
+    /// The §17.8 row Delete action on a cancelled row through the production
+    /// `download_delete_row` path: exactly that one terminal record is
+    /// removed and persisted durably; the sample commits when the panel
+    /// render no longer draws it — warm-presentation class.
+    DownloadsRowDelete,
+    /// The §17.7 Clear panel action through the production `downloads_clear`
+    /// path: the controller history is emptied and the empty slice persisted
+    /// durably; the sample commits when the panel render draws the empty
+    /// state — warm-presentation class.
+    DownloadsClear,
     /// A classified web-error incident surfaced through the production
     /// `on_incident` path: the error surface rendered the contract-derived
     /// title/copy/action for the armed category over the unchanged active

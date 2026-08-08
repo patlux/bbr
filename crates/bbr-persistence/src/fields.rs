@@ -259,10 +259,21 @@ impl SearchEngineId {
 ///
 /// Only terminal attempts are persisted: the downloads contract's
 /// `Succeeded`/`Failed`/`Cancelled` states are immutable end states, so the
-/// history record captures the attempt identity, its outcome, the received
-/// size at the terminal event, the resolved destination (absent when the
-/// attempt ended before a destination was decided), and the deterministic
-/// monotonic terminal timestamp from the controller clock.
+/// history record captures the attempt identity, its terminal outcome, the
+/// received size at the terminal event, the resolved destination (absent
+/// when the attempt ended before a destination was decided), and the
+/// deterministic monotonic terminal timestamp from the controller clock.
+///
+/// The settled post-MVP persistence decisions (DESIGN.md §17.10, §17.7,
+/// §17.8) extend the terminal record with the facts a restored row needs:
+/// the source `url` and display `filename` (so a restored Cancelled/Failed
+/// row can Restart/Retry as a fresh attempt linked via `retry_of`), the
+/// previous-attempt soft reference, and the 1-based `attempt` count. The
+/// destination decision itself is not persisted: v1 uses the settled silent
+/// suggested-destination policy, so a restored row re-runs the standard
+/// suggested folder. `retry_of` is a soft reference (no foreign key):
+/// deleting one terminal row leaves a child's link dangling rather than
+/// cascading.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DownloadRecord {
     /// The attempt identity (`DownloadId`).
@@ -276,6 +287,15 @@ pub struct DownloadRecord {
     pub destination: Option<String>,
     /// Deterministic monotonic terminal timestamp (controller clock).
     pub terminal_at: u64,
+    /// The source URL — required to Restart/Retry a restored row.
+    pub url: String,
+    /// The display filename (the panel's name line).
+    pub filename: String,
+    /// The previous attempt this row retries/restarts, when applicable
+    /// (soft reference; may dangle after that row is deleted).
+    pub retry_of: Option<u64>,
+    /// 1-based attempt count (increments per retry/restart).
+    pub attempt: u32,
 }
 
 /// The terminal outcome of a download attempt (schema v2).

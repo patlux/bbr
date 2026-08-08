@@ -5,7 +5,7 @@ CREATE TABLE recently_closed (tab_id INTEGER PRIMARY KEY NOT NULL, space_id INTE
 CREATE TABLE splits (space_id INTEGER PRIMARY KEY NOT NULL, primary_tab_id INTEGER NOT NULL, secondary_tab_id INTEGER NOT NULL);
 CREATE TABLE windows (id INTEGER PRIMARY KEY NOT NULL, position INTEGER NOT NULL, x REAL, y REAL, width REAL, height REAL, sidebar_width REAL NOT NULL, sidebar_collapsed INTEGER NOT NULL, last_expanded_width REAL NOT NULL);
 CREATE TABLE settings (id INTEGER PRIMARY KEY NOT NULL, search_engine TEXT NOT NULL, custom_search_template TEXT);
-CREATE TABLE downloads (id INTEGER PRIMARY KEY NOT NULL, outcome TEXT NOT NULL, size INTEGER NOT NULL, destination TEXT, terminal_at INTEGER NOT NULL, position INTEGER NOT NULL);
+CREATE TABLE downloads (id INTEGER PRIMARY KEY NOT NULL, outcome TEXT NOT NULL, size INTEGER NOT NULL, destination TEXT, terminal_at INTEGER NOT NULL, position INTEGER NOT NULL, url TEXT NOT NULL, filename TEXT NOT NULL, retry_of INTEGER, attempt INTEGER NOT NULL);
 CREATE TABLE command_history (id INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL, url TEXT NOT NULL, visit_count INTEGER NOT NULL, last_visited INTEGER NOT NULL, position INTEGER NOT NULL);
 PRAGMA user_version = 2;
 INSERT INTO profiles VALUES (1, 'Personal', 'cobalt', 0);
@@ -16,5 +16,6 @@ INSERT INTO recently_closed VALUES (900, 10, NULL, 'https://closed.test/', 0, 2,
 INSERT INTO splits VALUES (10, 100, 101);
 INSERT INTO windows VALUES (50, 0, -100.0, 20.0, 1080.0, 700.0, 260.0, 0, 260.0);
 INSERT INTO settings VALUES (1, 'custom', 'https://search.example.test/?q=%s');
-INSERT INTO downloads VALUES (700, 'succeeded', 4096, '/tmp/report.pdf', 1000, 0);
+INSERT INTO downloads VALUES (700, 'succeeded', 4096, '/tmp/report.pdf', 1000, 0, 'https://example.test/report.pdf', 'report.pdf', NULL, 1);
+INSERT INTO downloads VALUES (701, 'cancelled', 12, NULL, 2000, 1, 'https://example.test/archive.zip', 'archive.zip', NULL, 2);
 INSERT INTO command_history VALUES (800, 'Example', 'https://example.test/', 3, 2000, 0);

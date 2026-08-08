@@ -1,16 +1,20 @@
 //! Downloads panel behavior (DESIGN.md §11.12): the footer-control
 //! activation, the anchored-popover open/close/dismissal, the contextual row
-//! actions (Cancel / Retry / Reveal-in-Finder), the L6 event application,
-//! and the keyboard traversal. The render surfaces live in
-//! `app::downloads_render`; the pure state/row model in `app::downloads`.
+//! actions (Cancel / Retry / Restart / Reveal-in-Finder), and the L6 event
+//! application. The render surfaces live in `app::downloads_render`; the
+//! pure state/row model in `app::downloads`; the durable history mutations
+//! (Clear / row Delete / persist) in `app::downloads_history`.
 //!
 //! Machine fidelity: every mutation goes through the portable
 //! [`DownloadController`]; the panel never invents a transition. Cancel is a
 //! request that stays active until the engine's terminal event lands (the
-//! adapter confirms with an L6 event); retry exists only on `Failed` and
-//! starts a fresh attempt linked via `retry_of`; Reveal-in-Finder runs only
-//! for an existing resolved terminal path through the native adapter (a
-//! vanished file marks the action §10.8 `disabled` with a reason).
+//! adapter confirms with an L6 event); retry exists on `Failed` and restart
+//! on `Cancelled` (the settled §17.8 decision) — both start a fresh attempt
+//! linked via `retry_of`; Reveal-in-Finder runs only for an existing
+//! resolved terminal path through the native adapter (a vanished file marks
+//! the action §10.8 `disabled` with a reason). Every accepted terminal
+//! transition persists the terminal history durably
+//! (`app::downloads_history::persist_downloads`).
 
 use bbr_browser::DownloadError;
 #[cfg(feature = "testkit")]
@@ -100,7 +104,7 @@ pub fn downloads_close(app: &mut BbrApp, window: &mut Window, cx: &mut Context<B
 /// emits [`DownloadAction::Start`] into the installed adapter sink) and keep
 /// the fresh active attempt visible by resetting the panel scroll to the
 /// top. The destination policy is L6 [`DestinationDecision::Suggested`]
-/// (the save-panel policy stays open, DESIGN.md §17.9).
+/// (the settled silent suggested-destination policy, DESIGN.md §17.9).
 #[cfg(feature = "testkit")]
 pub fn download_start(
     app: &mut BbrApp,
@@ -131,8 +135,10 @@ pub fn download_cancel(
     Ok(())
 }
 
-/// Retry the failed attempt: a fresh attempt id linked via `retry_of`
-/// (L6 [`evaluate_retry`]); `Cancelled` is never retried by the UI.
+/// Retry the failed attempt (or restart the cancelled attempt — the settled
+/// §17.8 decision): a fresh attempt id linked via `retry_of` (L6
+/// [`evaluate_retry`] accepts `Failed` and `Cancelled`; the panel labels the
+/// same machine path differently by state).
 pub fn download_retry(
     app: &mut BbrApp,
     id: DownloadId,
@@ -150,8 +156,8 @@ pub fn download_retry(
 
 /// Activate the visible row's contextual action through the production
 /// pointer path (the exact app method the action's mouse-down listener
-/// calls): Cancel / Retry / Reveal-in-Finder. A disabled action (a vanished
-/// reveal target) is a no-op.
+/// calls): Cancel / Retry / Restart / Reveal-in-Finder. A disabled action
+/// (a vanished reveal target) is a no-op.
 pub fn download_click_row_action(
     app: &mut BbrApp,
     row: usize,
@@ -168,6 +174,9 @@ pub fn download_click_row_action(
             let _ = download_cancel(app, id, cx);
         }
         DownloadActionKind::Retry => {
+            let _ = download_retry(app, id, cx);
+        }
+        DownloadActionKind::Restart => {
             let _ = download_retry(app, id, cx);
         }
         DownloadActionKind::Reveal => {
@@ -194,20 +203,30 @@ pub fn download_click_row_action(
             }
             let _ = window;
         }
-        DownloadActionKind::None => {}
     }
     cx.notify();
 }
 
 /// Apply one L6 engine event through the controller (the adapter's event
 /// sink routes into the main-thread pump). The first terminal event wins;
-/// rejected events leave the record unchanged. A row that reached
-/// `Succeeded` re-checks its Reveal-in-Finder eligibility natively.
+/// rejected events leave the record unchanged. An accepted **terminal**
+/// transition persists the terminal history durably (the repository write
+/// runs here on the main-thread pump — outside render and ranking; the
+/// identical whole-replace write the Clear/Delete actions use). A row that
+/// reached `Succeeded` re-checks its Reveal-in-Finder eligibility natively.
 pub fn on_download_event(app: &mut BbrApp, event: DownloadEvent, cx: &mut Context<BbrApp>) {
     let id = event_id(&event);
     let outcome = app.downloads.controller.apply(event);
     if matches!(outcome, bbr_browser::ApplyOutcome::Applied) {
+        let terminal = app
+            .downloads
+            .controller
+            .record(id)
+            .is_some_and(|record| record.state.is_terminal());
         app.refresh_reveal_eligibility(id);
+        if terminal {
+            app.persist_downloads();
+        }
     }
     cx.notify();
 }

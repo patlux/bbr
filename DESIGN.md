@@ -822,7 +822,9 @@ draft and is **not** provisional; only the open questions named in §17 remain.
   (§6). Dismiss: Escape, outside pointer press (one pointer action, §13), or
   re-activating the footer control. The panel never auto-opens; the footer
   control keeps its §11.4 text alternative and `type:meta` `tnum` count at
-  rest (which attempts feed the count is open, §17.11).
+  rest. **The badge counts only in-flight (active) attempts** (settled
+  §17.11): it returns to zero when nothing transfers and terminal history
+  never inflates it.
 - **Anatomy (top → bottom):** two groups separated by a `hairline` —
   **Active** (`bbr-downloads-active`, non-terminal attempts) above, **History**
   (`bbr-downloads-history`, terminal attempts) below; `type:badge` labels
@@ -849,21 +851,30 @@ draft and is **not** provisional; only the open questions named in §17 remain.
   - **Action:** exactly one contextual primary per row — active → **Cancel**,
     failed → **Retry**, succeeded → **Reveal-in-Finder** (conventional macOS
     "Show in Finder" copy; enabled only when the terminal record's resolved
-    path exists, otherwise §10.8 `disabled` with a reason tooltip). Cancelled
-    rows render no primary action in v1 (provisional, §17.8).
+    path exists, otherwise §10.8 `disabled` with a reason tooltip),
+    cancelled → **Restart** (settled §17.8: a fresh attempt linked via
+    `retry_of` — the same machine path as a failed retry, labelled
+    "Restart"). A cancelled row additionally offers the **Delete** control
+    (`bbr-download-delete-<n>`), which removes exactly that one terminal
+    record durably (settled §17.8).
+  - **Clear:** an explicit **Clear** control (`bbr-downloads-clear`) renders
+    below the scroll area while any history exists; it empties the
+    controller history and the persisted terminal history durably (settled
+    §17.7) and keeps live attempts.
 - **Machine fidelity (L6 contract):** the panel never invents transitions.
   Active = `Waiting { destination: None }`, `Waiting { destination: Some(..) }`,
   `Running { .. }`; History = `Succeeded`, `Failed { failure }`, `Cancelled` —
   terminal and immutable. Cancel is request/confirmation based: the row stays
   active until the engine's terminal event lands and the first terminal event
-  wins (no optimistic state change). Retry is offered only on `Failed` (the
-  only retryable state) and starts a fresh attempt id linked via `retry_of`;
-  `Cancelled` is never retried by the UI. Progress is monotonic; a known total
-  is stable and never reverts to unknown; an unknown total may become known
-  (determinate replaces indeterminate); a zero-byte download succeeds with a
-  full bar (`fraction()` is never `NaN`). History records (final paths,
-  timestamps, attempt counts) live in the controller; persistence across
-  restarts is open (§17.10).
+  wins (no optimistic state change). Retry is offered on `Failed` and restart
+  on `Cancelled` (settled §17.8) — both start a fresh attempt id linked via
+  `retry_of`; the panel labels the same machine path differently by state.
+  Progress is monotonic; a known total is stable and never reverts to unknown;
+  an unknown total may become known (determinate replaces indeterminate); a
+  zero-byte download succeeds with a full bar (`fraction()` is never `NaN`).
+  History records (final paths, timestamps, attempt counts, retry linkage)
+  live in the controller; **terminal history persists through restarts**
+  (settled §17.10) — live attempts are never persisted and never resurrected.
 - **Group transitions:** a running attempt moves to History on its terminal
   event within the same frame (snap, `dur:instant`, §6). Ordering: Active in
   attempt order (ascending `DownloadId`), History most-recent-terminal first —
@@ -888,8 +899,9 @@ draft and is **not** provisional; only the open questions named in §17 remain.
   (§3.4); reduced motion removes everything except `dur:fine` opacity (§6).
 - **Assert ids:** `bbr-downloads-panel`, `bbr-downloads-active`,
   `bbr-downloads-history`, `bbr-download-row-<n>` (+ `-status`/`-name`/
-  `-meta`/`-progress`/`-action`), `bbr-downloads-empty`; the footer control
-  keeps `bbr-downloads` (§11.4).
+  `-meta`/`-progress`/`-action`/`-delete` on cancelled rows),
+  `bbr-downloads-clear`, `bbr-downloads-empty`; the footer control keeps
+  `bbr-downloads` (§11.4).
 
 ### 11.13 Shared context-menu language and owned families (Planned)
 
@@ -1128,27 +1140,29 @@ auto-switch; palette result grouping polish; peek choreography (its own task).
    opens the centered palette, Cmd-L and pointer focus on the field open the
    field-anchored overlay (§11.4); both run the §11.5 engine. Result
    grouping polish stays deferred (§16).
-7. **Downloads clear-history control:** the approved panel form has no Clear
-   control, though clearing download history is conventional macOS behavior.
-   Decide whether v1 exposes a Clear action and whether it clears the
-   controller history or only the visible list.
-8. **Downloads cancelled-row action:** cancelled attempts are terminal and
-   not retryable; the approved form renders them quiet. Decide whether a
-   cancelled row offers Reveal of a partial file or a fresh redownload.
-9. **Downloads destination policy:** the L6 contract supports `Suggested`
-   (engine default folder) and `Explicit` (caller-chosen) destinations;
-   decide the v1 default — silent suggested-destination downloads or a
-   per-download save panel.
-10. **Downloads history persistence:** in-memory session history vs
-    persisted history across restarts.
-11. **Downloads badge count:** which attempts feed the §11.4 footer `tnum`
-    count — in-flight only, or in-flight plus recent terminal attempts.
-12. **Downloads open-file action:** the approved form opens completed files
-    only through the per-row Reveal-in-Finder action (§11.12) — no auto-open
-    and no open-on-double-click in v1. Decide whether a later phase adds an
-    explicit Open action on succeeded rows, open-on-double-click, and/or
-    auto-open on completion, and which matches conventional macOS download
-    behavior.
+7. ~~**Downloads clear-history control**~~ **Resolved (2026-08-08):** an
+   explicit **Clear** control in the panel (`bbr-downloads-clear`, below the
+   scroll area while any history exists) empties the **controller history**
+   and the persisted terminal history durably — cleared history can never
+   return from the store. Live attempts are kept.
+8. ~~**Downloads cancelled-row action**~~ **Resolved (2026-08-08):** a
+   cancelled row offers **Restart** (a fresh attempt linked via `retry_of`,
+   the same machine path as a failed retry) **and Delete** (removes exactly
+   that one terminal record durably).
+9. ~~**Downloads destination policy**~~ **Resolved (2026-08-08):** silent
+   **suggested-destination** downloads (the engine's standard folder); no
+   save panel. An explicit per-download destination stays a later,
+   non-breaking option.
+10. ~~**Downloads history persistence**~~ **Resolved (2026-08-08):** terminal
+    history **persists through restarts** (schema field; no migration — a
+    legacy v2 shape is discarded and immediately rewritable). Live attempts
+    are never persisted and never resurrected.
+11. ~~**Downloads badge count**~~ **Resolved (2026-08-08):** the §11.4 footer
+    `tnum` count feeds **in-flight (active) attempts only** — it returns to
+    zero when nothing transfers.
+12. ~~**Downloads open-file action**~~ **Resolved (2026-08-08):** completed
+    files open **only** through the per-row Reveal-in-Finder action
+    (§11.12) — no auto-open, no open-on-double-click, no save panel.
 
 13. **Internal page naming in the address control:** §11.5 shows a domain,
     but `about:blank` and future internal pages have no domain. Decide the

@@ -990,16 +990,19 @@ fn drive_matrix_inner(
         );
 
         // Downloads sidebar panel (task packet `downloads-sidebar-panel`):
-        // the production footer `[Downloads]` open, the L6 progress commit,
-        // and the retry row action — each measured at the render of the
-        // anchored panel that carried the armed identity (the in-app probe
-        // owns the fast-but-wrong guard). Fixture/network time is excluded:
-        // the history is seeded with real deterministic fixture downloads
-        // before any sample, and the progress/retry samples apply
-        // deterministic L6 events in-process (never through a network
-        // transfer). The block never touches tabs/sessions/views and
-        // restores the matrix state (panel closed) before the dense
-        // seeding below.
+        // the production footer `[Downloads]` open, the settled §17.7 panel
+        // Clear, the L6 progress commit, the retry row action, and the
+        // settled §17.8 cancelled-row Restart and Delete — each measured at
+        // the render of the anchored panel that carried the armed identity
+        // (the in-app probe owns the fast-but-wrong guard). Fixture/network
+        // time is excluded: the history is seeded with real deterministic
+        // fixture downloads before any sample, and the clear/progress/retry/
+        // restart/delete samples apply deterministic L6 events in-process
+        // (never through a network transfer). Clear runs first among the
+        // samples (production Clear keeps live attempts, so its canonical
+        // empty-presentation commitment needs a terminal-only panel). The
+        // block never touches tabs/sessions/views and restores the matrix
+        // state (panel closed) before the dense seeding below.
         let downloads_samples = drive_downloads_scenarios(
             client,
             harness,

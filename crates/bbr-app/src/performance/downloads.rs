@@ -45,6 +45,16 @@ pub(super) enum DownloadsExpectation {
     /// attempt) was drawn in the Active group as `Waiting` with the Cancel
     /// action — the user-visible retry row action.
     Retry { retry_of: u64, fresh_id: u64 },
+    /// The fresh restart attempt `fresh_id` (linked to the cancelled
+    /// `retry_of` attempt — the settled §17.8 row action) was drawn in the
+    /// Active group as `Waiting` with the Cancel action.
+    Restart { retry_of: u64, fresh_id: u64 },
+    /// The cancelled row `id` was no longer drawn after the §17.8 row
+    /// Delete action (the panel render presents the remaining rows).
+    Deleted { id: u64 },
+    /// The §17.7 Clear action emptied the history: the panel render draws
+    /// the empty state (open, focused, zero rows).
+    Clear,
 }
 
 /// The downloads-panel presentation the sidebar render actually drew for
@@ -116,6 +126,39 @@ impl PerformanceProbe {
         }
     }
 
+    /// Arm the exact restart presentation (the settled §17.8 cancelled-row
+    /// action): the fresh attempt `fresh_id` drawn in the Active group as
+    /// `Waiting`, linked to the cancelled `retry_of` attempt, with the
+    /// Cancel action — the same machine path as a failed retry.
+    pub fn expect_downloads_restart(&self, retry_of: u64, fresh_id: u64) {
+        let mut state = self.inner.borrow_mut();
+        if let Some(pending) = state.pending.as_mut() {
+            pending.downloads = Some(DownloadsExpectation::Restart { retry_of, fresh_id });
+            state.latest_downloads = None;
+        }
+    }
+
+    /// Arm the exact row-Delete presentation (the settled §17.8 cancelled-
+    /// row action): the row `id` is gone from the rendered panel — the
+    /// durable one-row removal must present immediately.
+    pub fn expect_downloads_deleted(&self, id: u64) {
+        let mut state = self.inner.borrow_mut();
+        if let Some(pending) = state.pending.as_mut() {
+            pending.downloads = Some(DownloadsExpectation::Deleted { id });
+            state.latest_downloads = None;
+        }
+    }
+
+    /// Arm the exact Clear presentation (the settled §17.7 panel action):
+    /// the panel render draws the empty state — open, focused, zero rows.
+    pub fn expect_downloads_clear(&self) {
+        let mut state = self.inner.borrow_mut();
+        if let Some(pending) = state.pending.as_mut() {
+            pending.downloads = Some(DownloadsExpectation::Clear);
+            state.latest_downloads = None;
+        }
+    }
+
     /// Record the panel presentation the sidebar render actually drew
     /// (`open`/`focused` plus the bounded row window). Called by the panel
     /// surface after building its rows; a frame that omitted the panel
@@ -155,8 +198,8 @@ pub(crate) fn observe_row(visual: &crate::app::downloads::DownloadRowVisual) -> 
         action: match visual.action {
             crate::app::downloads::DownloadActionKind::Cancel => DownloadRowAction::Cancel,
             crate::app::downloads::DownloadActionKind::Retry => DownloadRowAction::Retry,
+            crate::app::downloads::DownloadActionKind::Restart => DownloadRowAction::Restart,
             crate::app::downloads::DownloadActionKind::Reveal => DownloadRowAction::Reveal,
-            crate::app::downloads::DownloadActionKind::None => DownloadRowAction::None,
         },
         retry_of: visual.retry_of,
     }
@@ -206,5 +249,27 @@ pub(super) fn downloads_matches(pending: &Pending, state: &State) -> bool {
                         && row.action == DownloadRowAction::Cancel
                 })
         }
+        DownloadsExpectation::Restart { retry_of, fresh_id } => {
+            let Some(observed) = observed else {
+                return false;
+            };
+            observed.open
+                && observed.focused
+                && observed.rows.iter().any(|row| {
+                    row.id == *fresh_id
+                        && row.machine == DownloadMachineState::Waiting
+                        && row.group == DownloadGroup::Active
+                        && row.retry_of == Some(*retry_of)
+                        && row.action == DownloadRowAction::Cancel
+                })
+        }
+        DownloadsExpectation::Deleted { id } => {
+            let Some(observed) = observed else {
+                return false;
+            };
+            observed.open && observed.focused && !observed.rows.iter().any(|row| row.id == *id)
+        }
+        DownloadsExpectation::Clear => observed
+            .is_some_and(|observed| observed.open && observed.focused && observed.rows.is_empty()),
     }
 }

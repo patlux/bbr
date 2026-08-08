@@ -36,6 +36,11 @@ pub const DOWNLOADS_PANEL_ID: &str = "bbr-downloads-panel";
 pub const DOWNLOADS_ACTIVE_ID: &str = "bbr-downloads-active";
 pub const DOWNLOADS_HISTORY_ID: &str = "bbr-downloads-history";
 pub const DOWNLOADS_EMPTY_ID: &str = "bbr-downloads-empty";
+/// The settled Clear panel action (DESIGN.md §17.7): the explicit
+/// `bbr-downloads-clear` control rendered below the scroll area while any
+/// history exists. It empties the controller history and the repository
+/// durably.
+pub const DOWNLOADS_CLEAR_ID: &str = "bbr-downloads-clear";
 
 /// The `bbr-download-row-<n>` id of row `index` (deterministic panel index).
 pub fn download_row_id(index: usize) -> String {
@@ -254,6 +259,16 @@ impl BbrApp {
                     .children(scroll_children),
             )
         };
+        // The settled Clear panel action (§17.7): while any history exists,
+        // the explicit `bbr-downloads-clear` control renders below the
+        // scroll area and empties the controller history + repository
+        // durably. It is the same production pointer path the testkit
+        // `ClickDownloadsClear` request drives.
+        let panel = if layout.has_history() {
+            panel.child(self.downloads_clear_control(theme, cx))
+        } else {
+            panel
+        };
         Some(panel)
     }
 
@@ -401,6 +416,7 @@ impl BbrApp {
                     .child(secondary),
             )
             .child(self.downloads_action(theme, visual, index, activate))
+            .child(self.downloads_delete_control(theme, visual, index, cx))
             .on_mouse_down(MouseButton::Left, press)
             .on_mouse_up(MouseButton::Left, release)
             .on_hover(hover)
@@ -446,38 +462,4 @@ fn elev2_shadow(theme: &Theme) -> Vec<gpui::BoxShadow> {
             },
         ],
     }
-}
-
-/// The §11.12/§15 download id set for the visible-ids derivation: the panel
-/// surface plus the group labels, the bounded rendered rows (never the full
-/// history), and the empty hint. Mirrors the render's gating exactly.
-#[cfg(feature = "testkit")]
-pub fn downloads_visible_ids(
-    total: usize,
-    window: &std::ops::Range<usize>,
-    layout: &PanelLayout,
-) -> Vec<String> {
-    let mut ids = vec![DOWNLOADS_PANEL_ID.to_string()];
-    if layout.has_active() {
-        ids.push(DOWNLOADS_ACTIVE_ID.to_string());
-    }
-    if layout.has_history() {
-        ids.push(DOWNLOADS_HISTORY_ID.to_string());
-    }
-    if total == 0 {
-        ids.push(DOWNLOADS_EMPTY_ID.to_string());
-    } else {
-        for index in window.clone() {
-            if index >= total {
-                break;
-            }
-            ids.push(download_row_id(index));
-            ids.push(download_slot_id("status", index));
-            ids.push(download_slot_id("name", index));
-            ids.push(download_slot_id("meta", index));
-            ids.push(download_slot_id("progress", index));
-            ids.push(download_slot_id("action", index));
-        }
-    }
-    ids
 }

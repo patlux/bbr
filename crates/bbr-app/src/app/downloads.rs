@@ -12,9 +12,10 @@
 //! Machine fidelity (L6): the panel renders exactly the L6 states and never
 //! invents a transition; the first terminal event wins; cancel is a request
 //! that stays active until the engine's terminal event lands; retry exists
-//! only on `Failed` and links a fresh attempt via `retry_of`; progress is
-//! monotonic and a zero-byte download succeeds with a full bar. All of that
-//! is the controller's contract — this module only maps records to rows.
+//! on `Failed` and restart on `Cancelled` (the settled §17.8 decision) —
+//! both link a fresh attempt via `retry_of`; progress is monotonic and a
+//! zero-byte download succeeds with a full bar. All of that is the
+//! controller's contract — this module only maps records to rows.
 //!
 //! Deterministic ordering: Active by ascending `DownloadId`, History
 //! most-recent-terminal first, so the panel row index `<n>` is stable for
@@ -82,13 +83,18 @@ pub enum DownloadGroupKind {
     History,
 }
 
-/// The exactly-one contextual primary action of a row (DESIGN.md §11.12).
+/// The exactly-one contextual primary action of a row (DESIGN.md §11.12):
+/// active → Cancel, failed → Retry, succeeded → Reveal-in-Finder, cancelled
+/// → Restart (a fresh linked attempt; DESIGN.md §17.8 settled).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DownloadActionKind {
     Cancel,
     Retry,
+    /// The settled cancelled-row action (DESIGN.md §17.8): a fresh attempt
+    /// linked via `retry_of` — the same machine path as a failed retry,
+    /// with the panel label "Restart".
+    Restart,
     Reveal,
-    None,
 }
 
 /// The §10 visual state of a download row (the applicable names for the
@@ -128,6 +134,11 @@ pub struct DownloadRowVisual {
     pub resolved_path: Option<String>,
     pub retry_of: Option<u64>,
     pub attempt: u32,
+    /// The row offers the Delete control (DESIGN.md §17.8 settled: a
+    /// cancelled row offers Restart **and** Delete — the one-row durable
+    /// removal). False for every other state; the panel renders the
+    /// `bbr-download-delete-<n>` control only when this is true.
+    pub delete_available: bool,
 }
 
 /// App-side downloads composition state. The controller is the portable
@@ -284,6 +295,7 @@ pub fn row_visuals(state: &DownloadsState, focus: Option<usize>) -> Vec<Download
                 resolved_path: record.resolved_path.clone(),
                 retry_of: record.retry_of.map(|retry| retry.0),
                 attempt: record.attempt,
+                delete_available: matches!(record.state, DownloadState::Cancelled),
             }
         })
         .collect()
@@ -292,7 +304,8 @@ pub fn row_visuals(state: &DownloadsState, focus: Option<usize>) -> Vec<Download
 /// The exactly-one contextual primary action of a row (DESIGN.md §11.12):
 /// active → Cancel, failed → Retry, succeeded → Reveal-in-Finder (enabled
 /// only when the resolved path exists, §10.8 `disabled` with a reason
-/// otherwise), cancelled → none in v1 (§17.8 open).
+/// otherwise), cancelled → Restart (the settled §17.8 decision: a fresh
+/// attempt linked via `retry_of`, the same machine path as a failed retry).
 fn row_action(
     state: &DownloadsState,
     machine: &DownloadState,
@@ -303,6 +316,7 @@ fn row_action(
             (DownloadActionKind::Cancel, true, None)
         }
         DownloadState::Failed { .. } => (DownloadActionKind::Retry, true, None),
+        DownloadState::Cancelled => (DownloadActionKind::Restart, true, None),
         DownloadState::Succeeded => match state.reveal.get(&id) {
             Some(eligibility) => (
                 DownloadActionKind::Reveal,
@@ -318,7 +332,6 @@ fn row_action(
                 Some("not checked".into()),
             ),
         },
-        DownloadState::Cancelled => (DownloadActionKind::None, false, None),
     }
 }
 
@@ -378,13 +391,14 @@ pub fn failure_copy(failure: DownloadFailure) -> String {
 }
 
 /// The contextual action label (DESIGN.md §11.12: succeeded rows carry the
-/// conventional macOS "Show in Finder" copy).
+/// conventional macOS "Show in Finder" copy; cancelled rows carry the
+/// settled "Restart" label, DESIGN.md §17.8).
 pub fn action_label(action: DownloadActionKind) -> &'static str {
     match action {
         DownloadActionKind::Cancel => "Cancel",
         DownloadActionKind::Retry => "Retry",
+        DownloadActionKind::Restart => "Restart",
         DownloadActionKind::Reveal => "Show in Finder",
-        DownloadActionKind::None => "",
     }
 }
 

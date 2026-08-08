@@ -280,6 +280,26 @@ const TABLES: &[(&str, &[ExpectedColumn])] = &[
                 not_null: true,
                 primary_key: false,
             },
+            ExpectedColumn {
+                name: "url",
+                not_null: true,
+                primary_key: false,
+            },
+            ExpectedColumn {
+                name: "filename",
+                not_null: true,
+                primary_key: false,
+            },
+            ExpectedColumn {
+                name: "retry_of",
+                not_null: false,
+                primary_key: false,
+            },
+            ExpectedColumn {
+                name: "attempt",
+                not_null: true,
+                primary_key: false,
+            },
         ],
     ),
     (

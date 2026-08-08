@@ -228,24 +228,24 @@ pub fn evaluate_cancel(state: &DownloadState) -> Result<(), CancelRejection> {
     Ok(())
 }
 
-/// Why [`evaluate_retry`] rejected the retry request.
+/// Why [`evaluate_retry`] rejected the retry/restart request.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RetryRejection {
-    /// The current attempt is not in [`DownloadState::Failed`] — the only
-    /// retryable state. Success needs no retry, cancellation is a deliberate
-    /// user decision, and a live attempt must not be retried.
+    /// The current attempt is not in a retryable/restartable terminal state
+    /// ([`DownloadState::Failed`] or [`DownloadState::Cancelled`]). Success
+    /// needs no retry, and a live attempt must not be retried.
     NotRetryable { state: DownloadState },
-    /// The request has no `retry_of` link; a retry must name its previous
-    /// attempt.
+    /// The request has no `retry_of` link; a retry/restart must name its
+    /// previous attempt.
     MissingRetryLink,
-    /// The retry link names an attempt other than the failed attempt being
-    /// retried.
+    /// The retry link names an attempt other than the failed/cancelled
+    /// attempt being retried.
     MismatchedRetryLink {
         failed_attempt: DownloadId,
         request_retry_of: DownloadId,
     },
-    /// The retry reuses the failed attempt's id; a retry is a fresh attempt
-    /// with a distinct id.
+    /// The retry reuses the previous attempt's id; a retry is a fresh
+    /// attempt with a distinct id.
     SameAttempt {
         previous_attempt: DownloadId,
         new_id: DownloadId,
@@ -260,17 +260,25 @@ pub enum RetryRejection {
 /// `request` (a [`StartRequest`] whose `retry_of` names the previous attempt
 /// and whose `id` is a new id).
 ///
-/// Legal only when `state` is [`DownloadState::Failed`]; the request must
-/// link the previous attempt with a distinct new id and pass
-/// [`validate_start`]'s well-formedness checks. On success the caller sends
+/// Legal when `state` is [`DownloadState::Failed`] (the **Retry** action) or
+/// [`DownloadState::Cancelled`] (the **Restart** action — the settled
+/// post-MVP decision that a cancelled history row may be restarted as a
+/// fresh attempt, DESIGN.md §17.8). Both are terminal and both produce a
+/// fresh attempt linked via `retry_of`; the panel labels the same machine
+/// path differently by state. The request must link the previous attempt
+/// with a distinct new id and pass [`validate_start`]'s well-formedness
+/// checks. On success the caller sends
 /// `DownloadAction::Start(request.clone())` and records the new attempt's
 /// optimistic initial state.
 pub fn evaluate_retry(
-    failed_attempt_id: DownloadId,
+    previous_attempt_id: DownloadId,
     state: &DownloadState,
     request: &StartRequest,
 ) -> Result<(), RetryRejection> {
-    if !matches!(state, DownloadState::Failed { .. }) {
+    if !matches!(
+        state,
+        DownloadState::Failed { .. } | DownloadState::Cancelled
+    ) {
         return Err(RetryRejection::NotRetryable {
             state: state.clone(),
         });
@@ -278,15 +286,15 @@ pub fn evaluate_retry(
     let Some(previous_attempt) = request.retry_of else {
         return Err(RetryRejection::MissingRetryLink);
     };
-    if previous_attempt != failed_attempt_id {
+    if previous_attempt != previous_attempt_id {
         return Err(RetryRejection::MismatchedRetryLink {
-            failed_attempt: failed_attempt_id,
+            failed_attempt: previous_attempt_id,
             request_retry_of: previous_attempt,
         });
     }
-    if failed_attempt_id == request.id {
+    if previous_attempt_id == request.id {
         return Err(RetryRejection::SameAttempt {
-            previous_attempt: failed_attempt_id,
+            previous_attempt: previous_attempt_id,
             new_id: request.id,
         });
     }

@@ -90,6 +90,57 @@ pub(crate) fn dispatch_benchmark_downloads(
             .unwrap_or_else(err_response)
         }
 
+        Request::BenchmarkDownloadsRowRestart { operation_id, row } => {
+            with_app(window, app, cx, |view, window, cx| {
+                view.benchmark_downloads_row_restart(*operation_id, *row, window, cx)
+            })
+            .map(|started| {
+                if started {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "download row restart did not present the fresh active attempt",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response)
+        }
+
+        Request::BenchmarkDownloadsRowDelete { operation_id, row } => {
+            with_app(window, app, cx, |view, window, cx| {
+                view.benchmark_downloads_row_delete(*operation_id, *row, window, cx)
+            })
+            .map(|started| {
+                if started {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "download row delete did not remove exactly one terminal row",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response)
+        }
+
+        Request::BenchmarkDownloadsClear { operation_id } => {
+            with_app(window, app, cx, |view, window, cx| {
+                view.benchmark_downloads_clear(*operation_id, window, cx)
+            })
+            .map(|started| {
+                if started {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "downloads clear did not present the empty panel",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response)
+        }
+
         Request::SeedDownloadsAttempt {
             url,
             destination,
@@ -101,6 +152,27 @@ pub(crate) fn dispatch_benchmark_downloads(
                     Response::Error(Error::new(
                         "seed_failed",
                         "could not seed the deterministic download attempt",
+                    ))
+                })
+        })
+        .unwrap_or_else(err_response),
+
+        // Seed a deterministic non-transferring **cancelled** terminal
+        // attempt for the restart/delete scenarios (the same in-process
+        // seeding as `SeedDownloadsAttempt`, then the engine's terminal
+        // `Cancelled` event through the production event path — no network
+        // transfer runs). The driver reads the minted id from the snapshot.
+        Request::SeedDownloadsCancelled {
+            url,
+            destination,
+            total,
+        } => with_app(window, app, cx, |view, _window, cx| {
+            view.seed_downloads_cancelled(url, destination, *total, cx)
+                .map(|_| Response::Ok)
+                .unwrap_or_else(|| {
+                    Response::Error(Error::new(
+                        "seed_failed",
+                        "could not seed the deterministic cancelled attempt",
                     ))
                 })
         })
@@ -119,6 +191,9 @@ pub(crate) fn dispatch_benchmark_downloads(
         Request::BenchmarkDownloadsPanelOpen { .. }
             | Request::BenchmarkDownloadsProgress { .. }
             | Request::BenchmarkDownloadsRowRetry { .. }
+            | Request::BenchmarkDownloadsRowRestart { .. }
+            | Request::BenchmarkDownloadsRowDelete { .. }
+            | Request::BenchmarkDownloadsClear { .. }
     ) {
         let _ = (**window).update(cx, |_root, window, cx| {
             let app: &mut App = cx;

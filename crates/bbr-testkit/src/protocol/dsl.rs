@@ -136,6 +136,14 @@ pub fn click_download_row_action(row: usize) -> Request {
     Request::ClickDownloadRowAction { row }
 }
 
+pub fn click_download_row_delete(row: usize) -> Request {
+    Request::ClickDownloadRowDelete { row }
+}
+
+pub fn click_downloads_clear() -> Request {
+    Request::ClickDownloadsClear
+}
+
 pub fn click_downloads_outside() -> Request {
     Request::ClickDownloadsOutside
 }
@@ -166,12 +174,36 @@ pub fn benchmark_downloads_row_retry(operation_id: BenchmarkOperationId, row: us
     Request::BenchmarkDownloadsRowRetry { operation_id, row }
 }
 
+pub fn benchmark_downloads_row_restart(operation_id: BenchmarkOperationId, row: usize) -> Request {
+    Request::BenchmarkDownloadsRowRestart { operation_id, row }
+}
+
+pub fn benchmark_downloads_row_delete(operation_id: BenchmarkOperationId, row: usize) -> Request {
+    Request::BenchmarkDownloadsRowDelete { operation_id, row }
+}
+
+pub fn benchmark_downloads_clear(operation_id: BenchmarkOperationId) -> Request {
+    Request::BenchmarkDownloadsClear { operation_id }
+}
+
 pub fn seed_downloads_attempt(
     url: impl Into<String>,
     destination: impl Into<String>,
     total: u64,
 ) -> Request {
     Request::SeedDownloadsAttempt {
+        url: url.into(),
+        destination: destination.into(),
+        total,
+    }
+}
+
+pub fn seed_downloads_cancelled(
+    url: impl Into<String>,
+    destination: impl Into<String>,
+    total: u64,
+) -> Request {
+    Request::SeedDownloadsCancelled {
         url: url.into(),
         destination: destination.into(),
         total,

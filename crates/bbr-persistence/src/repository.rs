@@ -11,9 +11,9 @@ use crate::repository_load::{
     project_soft_references, validate_nested_orders, validate_tab_orders_and_pins,
 };
 use crate::{
-    schema, setup, validation, CorruptionIssue, PersistenceError, Profile, ProfileHue,
-    RecoveryWarning, Repository, RestoreOutcome, Snapshot, Space, SpaceGlyph, StoreDiscardReason,
-    StoreLoad, Tab, WriteStats,
+    schema, setup, validation, CorruptionIssue, DownloadRecord, PersistenceError, Profile,
+    ProfileHue, RecoveryWarning, Repository, RestoreOutcome, Snapshot, Space, SpaceGlyph,
+    StoreDiscardReason, StoreLoad, Tab, WriteStats,
 };
 
 impl Repository {
@@ -166,8 +166,8 @@ impl Repository {
         inserted_rows += 1;
         for (position, record) in snapshot.downloads.iter().enumerate() {
             transaction.execute(
-                "INSERT INTO downloads(id, outcome, size, destination, terminal_at, position) VALUES (?, ?, ?, ?, ?, ?)",
-                params![to_i64(record.id), record.outcome.as_str(), to_i64(record.size), record.destination, to_i64(record.terminal_at), position as i64],
+                "INSERT INTO downloads(id, outcome, size, destination, terminal_at, position, url, filename, retry_of, attempt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                params![to_i64(record.id), record.outcome.as_str(), to_i64(record.size), record.destination, to_i64(record.terminal_at), position as i64, record.url, record.filename, record.retry_of.map(to_i64), to_i64(record.attempt.into())],
             ).map_err(schema::storage)?;
             inserted_rows += 1;
         }
@@ -182,6 +182,52 @@ impl Repository {
         Ok(WriteStats {
             committed_transactions: 1,
             sql_statements: 9 + inserted_rows,
+            deleted_rows,
+            inserted_rows,
+        })
+    }
+
+    /// Validates and atomically replaces **only** the persisted terminal
+    /// download history, leaving every other table untouched.
+    ///
+    /// This is the download-specific write path the app composition attaches
+    /// to the downloads lifecycle (the settled post-MVP decisions, DESIGN.md
+    /// §17.7/§17.8/§17.10): the controller emits a persistence delta (a
+    /// Clear = the empty slice, a row Delete = the remaining records) and
+    /// this method makes it durable in one transaction, so a cleared or
+    /// deleted row can never return from the store. Runs the same store
+    /// disposition as [`Self::initialize_and_restore`] — a drifted or
+    /// legacy store is discarded and recreated first, never partially
+    /// written. The records arrive in persisted history order (ascending
+    /// terminal order; `position` = index).
+    pub fn replace_downloads(
+        &self,
+        records: &[DownloadRecord],
+    ) -> Result<WriteStats, PersistenceError> {
+        validation::validate_downloads(records).map_err(PersistenceError::InvalidSnapshot)?;
+        let mut connection = Connection::open(self.path()).map_err(schema::storage)?;
+        setup::prepare_store(&mut connection)?;
+        connection
+            .pragma_update(None, "foreign_keys", true)
+            .map_err(schema::storage)?;
+        let transaction = connection.transaction().map_err(schema::storage)?;
+        let deleted_rows = transaction
+            .execute("DELETE FROM downloads", [])
+            .map_err(schema::storage)? as u64;
+        let mut inserted_rows = 0_u64;
+        for (position, record) in records.iter().enumerate() {
+            transaction
+                .execute(
+                    "INSERT INTO downloads(id, outcome, size, destination, terminal_at, position, url, filename, retry_of, attempt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    params![to_i64(record.id), record.outcome.as_str(), to_i64(record.size), record.destination, to_i64(record.terminal_at), position as i64, record.url, record.filename, record.retry_of.map(to_i64), to_i64(record.attempt.into())],
+                )
+                .map_err(schema::storage)?;
+            inserted_rows += 1;
+        }
+        transaction.commit().map_err(schema::storage)?;
+        Ok(WriteStats {
+            committed_transactions: 1,
+            sql_statements: 1 + inserted_rows,
             deleted_rows,
             inserted_rows,
         })

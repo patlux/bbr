@@ -263,6 +263,7 @@ impl BbrApp {
                         .downloads
                         .window_for(self.downloads.render_state.scroll_anchor),
                     downloads_layout: self.downloads_layout(),
+                    downloads_delete_rows: self.downloads_delete_rows_in_window(),
                     error_surface_visible,
                     error_surface_origin,
                 },
@@ -491,11 +492,11 @@ impl BbrApp {
                     crate::app::downloads::DownloadActionKind::Retry => {
                         bbr_testkit::protocol::DownloadRowAction::Retry
                     }
+                    crate::app::downloads::DownloadActionKind::Restart => {
+                        bbr_testkit::protocol::DownloadRowAction::Restart
+                    }
                     crate::app::downloads::DownloadActionKind::Reveal => {
                         bbr_testkit::protocol::DownloadRowAction::Reveal
-                    }
-                    crate::app::downloads::DownloadActionKind::None => {
-                        bbr_testkit::protocol::DownloadRowAction::None
                     }
                 },
                 action_enabled: row.action_enabled,
@@ -507,7 +508,23 @@ impl BbrApp {
                 resolved_path: row.resolved_path.clone(),
                 retry_of: row.retry_of,
                 attempt: row.attempt,
+                delete_available: row.delete_available,
             })
+            .collect()
+    }
+
+    /// The window row indices that render the §17.8 Delete control
+    /// (cancelled rows inside the bounded render window) — the same row
+    /// model the render and the visible-ids derivation consume, so the ids
+    /// mirror the shell's gating exactly.
+    fn downloads_delete_rows_in_window(&self) -> Vec<usize> {
+        let window = self
+            .downloads
+            .window_for(self.downloads.render_state.scroll_anchor);
+        crate::app::downloads::row_visuals(&self.downloads, Some(self.downloads.focus))
+            .into_iter()
+            .filter(|row| row.delete_available && window.contains(&row.index))
+            .map(|row| row.index)
             .collect()
     }
 
@@ -528,6 +545,7 @@ impl BbrApp {
             total_rows: state.render_state.item_count,
             viewport_rows: state.render_state.viewport_rows,
             max_visible: crate::app::downloads::DOWNLOADS_MAX_VISIBLE,
+            footer_count: self.downloads_controller_active_count().unwrap_or(0),
         }
     }
 

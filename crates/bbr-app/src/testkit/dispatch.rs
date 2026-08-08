@@ -574,6 +574,8 @@ pub(crate) fn dispatch(
         | Request::DownloadCancel { .. }
         | Request::DownloadRetry { .. }
         | Request::ClickDownloadRowAction { .. }
+        | Request::ClickDownloadRowDelete { .. }
+        | Request::ClickDownloadsClear
         | Request::ClickDownloadsOutside
         | Request::ScrollDownloads { .. } => {
             unreachable!("downloads requests route through dispatch_downloads")
@@ -634,7 +636,11 @@ pub(crate) fn dispatch(
         | Request::BenchmarkDownloadsPanelOpen { .. }
         | Request::BenchmarkDownloadsProgress { .. }
         | Request::BenchmarkDownloadsRowRetry { .. }
-        | Request::SeedDownloadsAttempt { .. } => {
+        | Request::BenchmarkDownloadsRowRestart { .. }
+        | Request::BenchmarkDownloadsRowDelete { .. }
+        | Request::BenchmarkDownloadsClear { .. }
+        | Request::SeedDownloadsAttempt { .. }
+        | Request::SeedDownloadsCancelled { .. } => {
             unreachable!("benchmark requests route through dispatch_benchmark")
         }
         // External-URL delivery is macOS-only; the pump intercepts

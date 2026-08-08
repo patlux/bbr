@@ -50,9 +50,10 @@
 //!
 //! `Succeeded`, `Failed`, and `Cancelled` are **terminal**: no further event
 //! may be applied to the same attempt ([`EventRejection::AlreadyTerminal`]).
-//! A failed attempt is the only retryable state; a retry is a fresh attempt
-//! ([`StartRequest`] with `retry_of` set) produced through [`evaluate_retry`].
-//! Cancellation ([`evaluate_cancel`]) is approved only before a terminal
+//! A failed attempt is retryable and a cancelled attempt is restartable;
+//! both start a fresh attempt ([`StartRequest`] with `retry_of` set)
+//! produced through [`evaluate_retry`]. Cancellation
+//! ([`evaluate_cancel`]) is approved only before a terminal
 //! state; it does not optimistically change state. The first terminal engine
 //! event wins, so a cancellation race with success/failure is deterministic.
 //! The caller keeps history (final paths, timestamps, attempt counts) in its
@@ -84,10 +85,12 @@
 //!    `Cancelled` is rejected ([`EventRejection::AlreadyTerminal`]), and
 //!    cancellation is rejected once terminal
 //!    ([`CancelRejection::AlreadyTerminal`]).
-//! 7. **Only failed attempts are retryable**: [`evaluate_retry`] accepts a
-//!    fresh attempt linked via `retry_of` only when the current state is
-//!    [`DownloadState::Failed`] for the supplied failed-attempt id, and the
-//!    new id must differ from that id ([`RetryRejection::SameAttempt`]).
+//! 7. **Only terminal failures/cancellations are retryable/restartable**:
+//!    [`evaluate_retry`] accepts a fresh attempt linked via `retry_of` only
+//!    when the current state is [`DownloadState::Failed`] (Retry) or
+//!    [`DownloadState::Cancelled`] (Restart, the settled post-MVP decision)
+//!    for the supplied previous-attempt id, and the new id must differ from
+//!    that id ([`RetryRejection::SameAttempt`]).
 //! 8. **Event identity is checked**: the event id must equal the id of the
 //!    state being updated ([`EventRejection::MismatchedId`]).
 //! 9. **Resolved destinations are usable**: an engine cannot resolve an empty
@@ -151,8 +154,10 @@
 //! )
 //! .expect("engine confirms cancellation");
 //!
-//! // A cancelled attempt is terminal and NOT retryable; only Failed is.
-//! assert!(evaluate_retry(id, &state, &start).is_err());
+//! // A cancelled attempt is terminal and — per the settled post-MVP
+//! // decision — restartable (a fresh attempt linked via `retry_of`, exactly
+//! // like a failed retry).
+//! assert!(evaluate_retry(id, &state, &start).is_err()); // not linked yet
 //! let state = DownloadState::Failed {
 //!     failure: DownloadFailure::Network,
 //! };
@@ -324,8 +329,10 @@ pub enum DownloadState {
     /// The transfer ended in [`DownloadFailure`]. The only retryable state.
     Failed { failure: DownloadFailure },
     /// The attempt was cancelled on request ([`DownloadAction::Cancel`]);
-    /// explicitly not retryable — a fresh user-initiated start is the path
-    /// to re-download after a cancel.
+    /// terminal and immutable once reached. A cancelled row may be
+    /// **restarted** as a fresh attempt linked via `retry_of` (the settled
+    /// post-MVP decision, DESIGN.md §17.8) — the same machine path as a
+    /// failed retry, with a different panel label.
     Cancelled,
 }
 
@@ -339,10 +346,15 @@ impl DownloadState {
         )
     }
 
-    /// True only for `Failed`. Cancellation is a deliberate user decision and
-    /// never auto-retries; success needs no retry.
+    /// True for `Failed` (Retry) and `Cancelled` (Restart): both are
+    /// deliberate terminal outcomes the user may re-run as a fresh linked
+    /// attempt. Success needs no retry and a live attempt must not be
+    /// retried.
     pub fn is_retryable(&self) -> bool {
-        matches!(self, DownloadState::Failed { .. })
+        matches!(
+            self,
+            DownloadState::Failed { .. } | DownloadState::Cancelled
+        )
     }
 
     /// The resolved destination while one is observable: after

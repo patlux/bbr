@@ -322,6 +322,7 @@ fn observe_row_maps_the_l6_machine_states() {
             resolved_path: None,
             retry_of: None,
             attempt: 1,
+            delete_available: false,
         }
     }
     assert_eq!(

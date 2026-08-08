@@ -22,8 +22,10 @@
 //!   terminal state ([`EventRejection::AlreadyTerminal`]); `apply` leaves the
 //!   record unchanged and reports [`ApplyOutcome::Rejected`]. A cancel is a
 //!   request — the row stays active until the engine's terminal event lands.
-//! - **Retry** exists only on `Failed`; it is a fresh attempt id linked via
-//!   `retry_of`, with the failed record's `retries` list extended.
+//! - **Retry/Restart** exist on the terminal outcomes the settled post-MVP
+//!   decision offers: `Failed` rows offer **Retry**, `Cancelled` rows offer
+//!   **Restart** (DESIGN.md §17.8). Both are a fresh attempt id linked via
+//!   `retry_of`, with the previous record's `retries` list extended.
 //! - Progress is monotonic and a known total is stable — enforced by the L6
 //!   machine; this controller only records what the machine accepted.
 //!
@@ -34,7 +36,18 @@
 //!   `terminal_seq`, incremented on each accepted terminal transition — no
 //!   clock ties).
 //!
-//! History is in-memory only (DESIGN §17.10 open; no persistence in v1).
+//! ## History persistence (DESIGN.md §17.10 settled)
+//!
+//! Terminal history persists through restarts. This controller owns the
+//! portable seams: [`DownloadController::terminal_history`] exports the
+//! terminal records in ascending terminal order (the persisted order) and
+//! [`DownloadController::restore_terminal_history`] restores them at
+//! startup, reassigning deterministic `terminal_seq` values so the panel
+//! ordering survives restarts. Live attempts are never exported and never
+//! resurrected — an in-flight transfer dies with the process. The
+//! controller itself performs no I/O; the app composition (F2c) attaches
+//! the bbr-persistence-backed store to the app-owned persistence seam
+//! during serial integration.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -61,8 +74,14 @@ pub enum DownloadError {
     /// A cancel was not legal for the attempt's state (L6
     /// [`CancelRejection`]).
     Cancel(CancelRejection),
-    /// A retry was not legal (L6 [`RetryRejection`]).
+    /// A retry/restart was not legal (L6 [`RetryRejection`]).
     Retry(RetryRejection),
+    /// The row Delete action named a live (non-terminal) attempt; only
+    /// terminal records can be deleted.
+    DeleteNonTerminal { id: DownloadId },
+    /// A restore received a non-terminal record; active attempts are never
+    /// resurrected (settled persistence contract).
+    RestoreNonTerminal { id: DownloadId },
 }
 
 /// The outcome of applying one engine event.
@@ -112,20 +131,14 @@ pub struct DownloadRecord {
     pub retries: Vec<DownloadId>,
 }
 
-impl DownloadRecord {
-    /// The resolved destination while observable (L6
-    /// [`DownloadState::resolved_destination`]).
-    pub fn resolved_destination(&self) -> Option<&str> {
-        self.state.resolved_destination()
-    }
-}
-
 /// The controller-owned download/history store around the L6 machine.
 ///
 /// Ownership shape: the controller owns the authoritative
 /// `DownloadId → DownloadRecord` map, mints ids sequentially, emits
 /// [`DownloadAction`]s into an installable sink, and applies engine
-/// [`DownloadEvent`]s through the L6 contract.
+/// [`DownloadEvent`]s through the L6 contract. The persistence-focused
+/// seams live in [`super::history`]: terminal-history export/restore and
+/// the Clear/Delete mutations.
 pub struct DownloadController {
     attempts: HashMap<DownloadId, DownloadRecord>,
     /// Fresh id source (ascending; drives the Active ordering).
@@ -231,9 +244,12 @@ impl DownloadController {
         Ok(())
     }
 
-    /// Retry the failed attempt `id`: mint a fresh attempt linked via
-    /// `retry_of`, record it, and emit [`DownloadAction::Start`]. Returns the
-    /// new attempt id.
+    /// Retry the failed attempt `id` (or restart the cancelled attempt
+    /// `id` — the settled post-MVP decision, DESIGN.md §17.8): mint a fresh
+    /// attempt linked via `retry_of`, record it, and emit
+    /// [`DownloadAction::Start`]. Returns the new attempt id. Both terminal
+    /// outcomes are deliberate user decisions the panel offers as **Retry**
+    /// (Failed) / **Restart** (Cancelled); the machine path is identical.
     pub fn retry(&mut self, id: DownloadId) -> Result<DownloadId, DownloadError> {
         let (url, destination, filename, attempt, state) = {
             let previous = self
@@ -359,8 +375,6 @@ impl DownloadController {
         rows
     }
 
-    /// The resolved path of a succeeded record, when it has one — the
-    /// Reveal-in-Finder eligibility source (existence is verified natively).
     pub fn reveal_candidate(&self, id: DownloadId) -> Option<&str> {
         let record = self.attempts.get(&id)?;
         match record.state {
@@ -454,3 +468,7 @@ pub fn url_filename(url: &str) -> String {
 
 #[cfg(test)]
 mod tests;
+
+mod history;
+
+pub use history::RestoredTerminal;

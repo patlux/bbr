@@ -2,18 +2,23 @@
 //! for the warm interaction matrix.
 //!
 //! Owns the downloads matrix block: the production footer `[Downloads]` open
-//! (`downloads_panel_open`), the production L6 progress commit
-//! (`download_progress_commit`), and the production retry row action
-//! (`download_row_retry`) — each with 30 accepted samples through the typed
+//! (`downloads_panel_open`), the settled §17.7 panel Clear
+//! (`downloads_clear`), the production L6 progress commit
+//! (`download_progress_commit`), the retry row action (`download_row_retry`),
+//! and the settled §17.8 cancelled-row actions (`download_row_restart`,
+//! `download_row_delete`) — each with 30 accepted samples through the typed
 //! benchmark requests, committing only from a render of the anchored panel
 //! that carried the armed identity (fast-but-wrong guard). Fixture/network
 //! time is excluded by construction: the panel history is seeded with real
 //! deterministic fixture downloads before any sample (known.bin succeeds,
-//! fail.bin fails), and the progress/retry samples apply deterministic L6
-//! events in-process (never through a network transfer). The block restores
-//! the matrix state — panel closed, tabs/sessions untouched (the panel never
-//! changes tab, session, WebView, profile, or space identity) — before the
-//! dense seeding that follows.
+//! fail.bin fails), and the progress/retry/restart/delete/clear samples
+//! apply deterministic L6 events in-process (never through a network
+//! transfer). Clear runs first among the samples: production Clear keeps
+//! live (non-terminal) attempts, so its canonical empty-presentation
+//! commitment needs a panel that still holds only terminal rows. The block
+//! restores the matrix state — panel closed, tabs/sessions untouched (the
+//! panel never changes tab, session, WebView, profile, or space identity) —
+//! before the dense seeding that follows.
 //!
 //! Split from `drive.rs` so the downloads additions live in a focused module
 //! under the ~500-line budget (same pattern as `command_drive.rs` /
@@ -27,7 +32,8 @@ use bbr_testkit::Client;
 use bbr_web::WebViewId;
 
 use super::downloads::{
-    benchmark_downloads_panel_open, benchmark_downloads_progress, benchmark_downloads_row_retry,
+    benchmark_downloads_clear, benchmark_downloads_panel_open, benchmark_downloads_progress,
+    benchmark_downloads_row_delete, benchmark_downloads_row_restart, benchmark_downloads_row_retry,
 };
 use super::harness::AppHarness;
 use super::scenarios::TrialConfig;
@@ -45,7 +51,7 @@ const PROGRESS_STEP: u64 = 2048;
 /// Drive the downloads matrix block and return the raw samples per
 /// scenario. Runs after the find block and before the dense seeding; state
 /// before it: the default space's two warm fixture tabs, no downloads
-/// surface. The block seeds a small real history, measures the three warm
+/// surface. The block seeds a small real history, measures the six warm
 /// scenarios, then restores the matrix state (panel closed, the same tabs
 /// and sessions).
 #[allow(clippy::too_many_arguments)]
@@ -112,16 +118,47 @@ pub(super) fn drive_downloads_scenarios(
         wait_downloads_closed(client);
     }
 
-    // download_progress_commit × N: open the panel (unmeasured), seed a
-    // deterministic non-transferring running attempt at the known total,
-    // then apply 30 monotonic progress events through the production event
-    // path. Each sample commits only when the panel render drew the running
-    // row at the armed fraction; no network transfer runs, so fixture time
-    // is excluded by construction.
+    // downloads_clear × N: the settled §17.7 Clear panel action — the
+    // controller history is emptied and the empty slice persisted durably.
+    // Clear must run first in the downloads block, in its canonical state:
+    // the panel currently holds only terminal rows (the two real seeded
+    // records; later samples re-seed one deterministic terminal row
+    // in-process, unmeasured). Production Clear keeps live (non-terminal)
+    // attempts, so measuring it later — with the in-process progress/retry/
+    // restart rows still alive — could never present the empty panel; the
+    // canonical empty-presentation commitment stays here.
     client
         .send_ok(&Request::ClickFooterDownloads)
-        .expect("open panel for progress benchmarks");
+        .expect("open panel for clear benchmarks");
     wait_downloads_open(client, view);
+    let mut clear_samples = Vec::with_capacity(config.interaction_samples);
+    for sample in 0..config.interaction_samples {
+        if sample > 0 {
+            client
+                .send_ok(&Request::SeedDownloadsCancelled {
+                    url: known_url.clone(),
+                    destination: "clear.bin".into(),
+                    total: BENCH_TOTAL,
+                })
+                .expect("seed clear attempt");
+        }
+        let measured = benchmark_downloads_clear(client, since, *operation, view);
+        clear_samples.push(measured.duration_ns);
+        harness
+            .raw_log
+            .interactions
+            .entry("downloads_clear".into())
+            .or_default()
+            .push(measured.duration_ns);
+        *operation += 1;
+    }
+
+    // download_progress_commit × N: the panel is already open (from the
+    // clear block), so seed a deterministic non-transferring running
+    // attempt at the known total directly, then apply 30 monotonic progress
+    // events through the production event path. Each sample commits only
+    // when the panel render drew the running row at the armed fraction; no
+    // network transfer runs, so fixture time is excluded by construction.
     client
         .send_ok(&Request::SeedDownloadsAttempt {
             url: known_url.clone(),
@@ -162,12 +199,22 @@ pub(super) fn drive_downloads_scenarios(
         *operation += 1;
     }
 
-    // download_row_retry × N: retry the deterministic failed row through
-    // the production retry seam; each sample commits only when the panel
-    // render drew the fresh Waiting attempt in the Active group linked via
-    // `retry_of`. The failed row is re-looked-up before every sample (its
-    // index grows by one per retry as fresh attempts join the Active
-    // group), so the target is always the canonical Failed row.
+    // download_row_retry × N: retry a deterministic failed row through the
+    // production retry seam; each sample commits only when the panel render
+    // drew the fresh Waiting attempt in the Active group linked via
+    // `retry_of`. The earlier Clear removed the original failed row, so one
+    // deterministic failed row is re-seeded through the real fail.bin
+    // download (unmeasured) before the samples; the failed row is
+    // re-looked-up before every sample (its index grows by one per retry as
+    // fresh attempts join the Active group), so the target is always the
+    // canonical Failed row.
+    client
+        .send_ok(&Request::DownloadStart {
+            url: fail_url.clone(),
+            destination: "fail.bin".into(),
+        })
+        .expect("re-seed fail download");
+    let _re_failed = wait_download_row(client, DownloadMachineState::Failed, None);
     let mut retry_samples = Vec::with_capacity(config.interaction_samples);
     for _ in 0..config.interaction_samples {
         let before = client.snapshot().expect("pre retry lookup snapshot");
@@ -187,6 +234,99 @@ pub(super) fn drive_downloads_scenarios(
             .push(measured.duration_ns);
         *operation += 1;
     }
+
+    // download_row_restart × N: the settled §17.8 cancelled-row action —
+    // the same machine path as a failed retry, labelled "Restart" by the
+    // panel. A deterministic cancelled attempt is seeded in-process
+    // (unmeasured; no network transfer runs) and each sample restarts it
+    // through the production seam, committing only when the panel render
+    // drew the fresh Waiting attempt linked via `retry_of`. The cancelled
+    // source row is re-looked-up before every sample (its index grows as
+    // fresh attempts join the Active group).
+    let mut restart_samples = Vec::with_capacity(config.interaction_samples);
+    for _ in 0..config.interaction_samples {
+        let cancelled = client
+            .snapshot()
+            .expect("pre restart lookup snapshot")
+            .download_rows
+            .iter()
+            .find(|row| row.machine_state == DownloadMachineState::Cancelled)
+            .cloned()
+            .unwrap_or_else(|| {
+                client
+                    .send_ok(&Request::SeedDownloadsCancelled {
+                        url: known_url.clone(),
+                        destination: "restart.bin".into(),
+                        total: BENCH_TOTAL,
+                    })
+                    .expect("seed cancelled attempt");
+                let snapshot = client.snapshot().expect("seeded cancelled snapshot");
+                snapshot
+                    .download_rows
+                    .iter()
+                    .find(|row| row.machine_state == DownloadMachineState::Cancelled)
+                    .cloned()
+                    .expect("cancelled row after seed")
+            });
+        let measured = benchmark_downloads_row_restart(
+            client,
+            since,
+            *operation,
+            cancelled.row,
+            cancelled.id,
+            view,
+        );
+        restart_samples.push(measured.duration_ns);
+        harness
+            .raw_log
+            .interactions
+            .entry("download_row_restart".into())
+            .or_default()
+            .push(measured.duration_ns);
+        *operation += 1;
+    }
+
+    // download_row_delete × N: the settled §17.8 cancelled-row Delete —
+    // exactly that one terminal record is removed and persisted durably.
+    // A deterministic cancelled attempt is seeded in-process before each
+    // sample (unmeasured), and the sample commits only when the panel
+    // render no longer draws the deleted row.
+    let mut delete_samples = Vec::with_capacity(config.interaction_samples);
+    for _ in 0..config.interaction_samples {
+        client
+            .send_ok(&Request::SeedDownloadsCancelled {
+                url: known_url.clone(),
+                destination: "delete.bin".into(),
+                total: BENCH_TOTAL,
+            })
+            .expect("seed delete attempt");
+        let snapshot = client.snapshot().expect("delete lookup snapshot");
+        let cancelled = snapshot
+            .download_rows
+            .iter()
+            .find(|row| row.machine_state == DownloadMachineState::Cancelled)
+            .unwrap_or_else(|| panic!("no cancelled row: {:#?}", snapshot.download_rows));
+        let measured = benchmark_downloads_row_delete(
+            client,
+            since,
+            *operation,
+            cancelled.row,
+            cancelled.id,
+            view,
+        );
+        delete_samples.push(measured.duration_ns);
+        harness
+            .raw_log
+            .interactions
+            .entry("download_row_delete".into())
+            .or_default()
+            .push(measured.duration_ns);
+        *operation += 1;
+    }
+
+    // downloads_clear ran first above (its canonical empty presentation
+    // needs a terminal-only panel); the later blocks keep the panel open
+    // through progress/retry/restart/delete.
 
     // Restoration: Escape closes the panel (focus returns to the footer
     // control); the downloads surface never touched tabs, sessions, the
@@ -214,6 +354,9 @@ pub(super) fn drive_downloads_scenarios(
     raw.insert("downloads_panel_open".to_string(), open_samples);
     raw.insert("download_progress_commit".to_string(), progress_samples);
     raw.insert("download_row_retry".to_string(), retry_samples);
+    raw.insert("download_row_restart".to_string(), restart_samples);
+    raw.insert("download_row_delete".to_string(), delete_samples);
+    raw.insert("downloads_clear".to_string(), clear_samples);
     raw
 }
 

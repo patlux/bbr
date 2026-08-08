@@ -67,7 +67,8 @@ pub(crate) fn dispatch_downloads(
         })
         .unwrap_or_else(err_response),
         // Retry the failed attempt (production `controller.retry` path): a
-        // fresh attempt id linked via `retry_of`.
+        // fresh attempt id linked via `retry_of`. The same seam restarts a
+        // cancelled attempt (§17.8 settled).
         Request::DownloadRetry { id } => with_app(window, app, cx, |view, _window, cx| {
             match crate::app::downloads_behavior::download_retry(
                 view,
@@ -80,6 +81,43 @@ pub(crate) fn dispatch_downloads(
                     format!("download retry failed: {error:?}"),
                 )),
             }
+        })
+        .unwrap_or_else(err_response),
+        // The settled row Delete action (production `download_delete_row`
+        // path — the exact seam the row's Delete control mouse-down
+        // listener calls): remove exactly that one terminal record durably.
+        Request::ClickDownloadRowDelete { row } => {
+            with_app(window, app, cx, |view, _window, cx| {
+                let visuals =
+                    crate::app::downloads::row_visuals(&view.downloads, Some(view.downloads.focus));
+                match visuals.get(*row) {
+                    Some(visual) if visual.delete_available => {
+                        match crate::app::downloads_history::download_delete_row(
+                            view,
+                            bbr_web::downloads::DownloadId(visual.id),
+                            cx,
+                        ) {
+                            Ok(()) => Response::Ok,
+                            Err(error) => Response::Error(bbr_testkit::protocol::Error::new(
+                                "download_delete_failed",
+                                format!("download delete failed: {error:?}"),
+                            )),
+                        }
+                    }
+                    _ => Response::Error(bbr_testkit::protocol::Error::new(
+                        "download_delete_unavailable",
+                        format!("row {row} offers no Delete control"),
+                    )),
+                }
+            })
+            .unwrap_or_else(err_response)
+        }
+        // The settled Clear panel action (production `downloads_clear` path
+        // — the exact seam the panel's Clear control mouse-down listener
+        // calls): empty the controller history and the repository durably.
+        Request::ClickDownloadsClear => with_app(window, app, cx, |view, _window, cx| {
+            crate::app::downloads_history::downloads_clear(view, cx);
+            Response::Ok
         })
         .unwrap_or_else(err_response),
         // Activate a visible row's contextual action through the production
