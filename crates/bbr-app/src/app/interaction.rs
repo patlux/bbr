@@ -99,7 +99,7 @@ impl BbrApp {
     }
 
     /// Apply an engine event to the owning controller tab and refresh chrome.
-    pub fn on_web_event(&mut self, event: WebEvent, cx: &mut Context<Self>) {
+    pub fn on_web_event(&mut self, event: WebEvent, window: &mut Window, cx: &mut Context<Self>) {
         // A new navigation started on the bound find view: the current
         // results are stale (the adapter drops the old document's in-flight
         // completions by correlation; the portable session rejects further
@@ -109,6 +109,19 @@ impl BbrApp {
             if self.find.state.open && self.find.bound_view == Some(*view) {
                 self.find_navigation_invalidated(cx);
             }
+        }
+        // A navigation landed on a view: the per-site zoom level follows the
+        // destination origin (same site keeps its level; a different site
+        // switches to its own; a fresh view restores the stored level).
+        if let WebEvent::UrlChanged(view, url) = &event {
+            self.zoom_navigation(*view, url);
+        }
+        // A right-click over the active view was classified BBR-owned (page
+        // background, not a WebKit interactive element): present the BBR
+        // context menu through the one native portal host, anchored at the
+        // pointer (queue item 12, part B).
+        if let WebEvent::ContextMenuRequested(view, point) = &event {
+            self.menu_open_from_event(*view, *point, window, cx);
         }
         let _ = self.controller.apply_event(event.clone());
         if !self.command_bar_mode.is_active() {
@@ -352,6 +365,13 @@ impl BbrApp {
     /// actions first and actions stop propagation, so this route is the
     /// panel's primary Escape dismissal).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Escape while a context menu is open closes it and restores the
+        // origin focus domain (queue item 12, part B; the global
+        // `escape → FocusWeb` binding routes here).
+        if self.context_menu.state.open {
+            self.menu_close(window, cx);
+            return;
+        }
         // Escape while a find presentation is open closes it and restores
         // the origin focus domain (the global `escape → FocusWeb` binding
         // routes here).
@@ -469,6 +489,13 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // A context-menu presentation owns the keyboard while it is open:
+        // Up/Down move the cursor (skipping disabled rows), Enter activates,
+        // Escape dismisses (queue item 12, part B).
+        if self.context_menu.state.open {
+            self.on_menu_key_down(event, window, cx);
+            return;
+        }
         // A find presentation owns the keyboard while it is open: printable
         // chars edit the query, Enter/Shift-Enter step, Escape closes.
         if self.find.state.open {

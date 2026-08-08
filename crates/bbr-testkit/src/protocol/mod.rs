@@ -31,11 +31,13 @@ pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
 pub use request::Request;
 pub use snapshot::{
-    CommandResultSnapshot, CommandResultState, CommandSurface, DenseListSnapshot, DownloadGroup,
+    CommandResultSnapshot, CommandResultState, CommandSurface, ContextMenuItemSnapshot,
+    ContextMenuNativeSnapshot, ContextMenuSnapshot, DenseListSnapshot, DownloadGroup,
     DownloadMachineState, DownloadRowAction, DownloadRowSnapshot, DownloadsPanelSnapshot,
     FavoriteTileSnapshot, FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts,
     PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, SemanticNode,
     SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, TabSnapshot, TabVisualState,
+    ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.

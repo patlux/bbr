@@ -118,6 +118,9 @@ pub enum WebAction {
     Forward,
     Reload,
     Stop,
+    /// Copy the view's current URL to the system clipboard (the BBR context
+    /// menu's Copy Link entry; the engine owns the platform pasteboard).
+    CopyLink,
 }
 
 /// Events emitted by the native engine, keyed by [`WebViewId`].
@@ -131,6 +134,13 @@ pub enum WebEvent {
     CanGoForwardChanged(WebViewId, bool),
     PageCrashed(WebViewId),
     NavigationFailed(WebViewId, String),
+    /// A right-click over a web view was classified BBR-owned (page
+    /// background, not a WebKit interactive element): the context menu
+    /// bridge requests the BBR menu at `point` (window content
+    /// coordinates, top-left origin, points — the same space the portal
+    /// placement math uses). The app presents the menu through the one
+    /// `NativeAboveWeb` portal host.
+    ContextMenuRequested(WebViewId, WebRect),
 }
 
 /// The seam between chrome and engine.

@@ -120,6 +120,15 @@ pub struct TestSnapshot {
     /// `find-in-page-portal-bar`): open presentation, field focus, query,
     /// WebKit-reported count/ordinal, pending request, and staleness.
     pub find: bbr_testkit::protocol::FindSnapshot,
+    /// Typed per-site zoom state (queue item 11, part A; task packet
+    /// `site-settings-zoom-contract`): effective level of the active view's
+    /// site, the normalized origin, the applied level, and pending write.
+    pub zoom: bbr_testkit::protocol::ZoomSnapshot,
+    /// Typed BBR context-menu presentation state (queue item 12, part B;
+    /// task packet `bbr-context-menus-over-web`): open presentation, focus,
+    /// selection, the deterministic row model with genuine enablement, the
+    /// pointer anchor, and the native bridge's ownership diagnostics.
+    pub context_menu: bbr_testkit::protocol::ContextMenuSnapshot,
     /// Whether the §11.3 spaces region is revealed under the command field.
     pub spaces_visible: bool,
     /// Whether the §11.4 plus menu is open and its selected item.

@@ -273,6 +273,24 @@ pub fn find_previous() -> Request {
     Request::FindPrevious
 }
 
+/// Zoom the active view's site one contract step up (queue item 11, part A;
+/// the production `Cmd-Plus` seam).
+pub fn zoom_in() -> Request {
+    Request::ZoomIn
+}
+
+/// Zoom the active view's site one contract step down (the `Cmd-Minus`
+/// seam).
+pub fn zoom_out() -> Request {
+    Request::ZoomOut
+}
+
+/// Reset the active view's site to the default zoom level (the `Cmd-0`
+/// seam).
+pub fn zoom_reset() -> Request {
+    Request::ZoomReset
+}
+
 /// Bring the app to the foreground (testkit-only; the shown-harness
 /// frontmost-evidence premise).
 pub fn activate_app() -> Request {

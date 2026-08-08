@@ -17,14 +17,17 @@ use crate::window_seam::with_app;
 
 use crate::app::BbrApp;
 use crate::testkit::dispatch_benchmark::dispatch_benchmark;
+use crate::testkit::dispatch_benchmark_context_menu::dispatch_benchmark_context_menu;
 use crate::testkit::dispatch_benchmark_downloads::dispatch_benchmark_downloads;
 use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
+use crate::testkit::dispatch_context_menu::dispatch_context_menu;
 use crate::testkit::dispatch_downloads::dispatch_downloads;
 use crate::testkit::dispatch_drag::dispatch_drag;
 use crate::testkit::dispatch_find::dispatch_find;
 use crate::testkit::dispatch_portal::dispatch_portal;
 use crate::testkit::dispatch_u2::dispatch_u2;
 use crate::testkit::dispatch_util::{browser_mutation, err_response};
+use crate::testkit::dispatch_zoom::dispatch_zoom;
 use crate::testkit::snapshot::SnapshotExt;
 
 pub(crate) fn dispatch(
@@ -59,6 +62,22 @@ pub(crate) fn dispatch(
     }
     // Find-in-page routing shares the same portal-frame flush rule.
     if let Some(response) = dispatch_find(&req, window, app, cx) {
+        return response;
+    }
+    // Zoom routing (queue item 11, part A): the production `Cmd-Plus`/
+    // `Cmd-Minus`/`Cmd-0` seams (the benchmark arm routes through
+    // `dispatch_benchmark_zoom`).
+    if let Some(response) = dispatch_zoom(&req, window, app, cx) {
+        return response;
+    }
+    // Context-menu routing (queue item 12, part B): the production pointer/
+    // close seams (the benchmark arm routes through
+    // `dispatch_benchmark_context_menu`).
+    if let Some(response) = dispatch_context_menu(&req, window, app, cx) {
+        return response;
+    }
+    // The context-menu benchmark arm (render-gated, like the find arms).
+    if let Some(response) = dispatch_benchmark_context_menu(&req, window, app, cx) {
         return response;
     }
     // U2 footer/favorites/folders route separately to keep this router bounded.
@@ -457,6 +476,20 @@ pub(crate) fn dispatch(
         | Request::FindNext
         | Request::FindPrevious => unreachable!("find requests route through dispatch_find"),
 
+        // Routed by `dispatch_zoom` before this match; reaching one here is
+        // a routing bug.
+        Request::ZoomIn | Request::ZoomOut | Request::ZoomReset => {
+            unreachable!("zoom requests route through dispatch_zoom")
+        }
+
+        // Routed by `dispatch_context_menu` before this match; reaching one
+        // here is a routing bug.
+        Request::ContextMenuSelect { .. }
+        | Request::ContextMenuActivate { .. }
+        | Request::ContextMenuClose => {
+            unreachable!("context-menu requests route through dispatch_context_menu")
+        }
+
         // Routed by `dispatch_u2` before this match.
         Request::ClickFooterDownloads
         | Request::ClickFooterSpaces
@@ -518,6 +551,8 @@ pub(crate) fn dispatch(
         | Request::BenchmarkFindOpen { .. }
         | Request::BenchmarkFindQueryResult { .. }
         | Request::BenchmarkFindStep { .. }
+        | Request::BenchmarkZoomStep { .. }
+        | Request::BenchmarkContextMenuOpen { .. }
         | Request::BenchmarkDownloadsPanelOpen { .. }
         | Request::BenchmarkDownloadsProgress { .. }
         | Request::BenchmarkDownloadsRowRetry { .. }

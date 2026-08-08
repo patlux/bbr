@@ -25,15 +25,19 @@ use crate::window_seam::with_app;
 
 mod dispatch;
 mod dispatch_benchmark;
+mod dispatch_benchmark_context_menu;
 mod dispatch_benchmark_downloads;
 mod dispatch_benchmark_find;
 mod dispatch_benchmark_u2;
+mod dispatch_benchmark_zoom;
+mod dispatch_context_menu;
 mod dispatch_downloads;
 mod dispatch_drag;
 mod dispatch_find;
 mod dispatch_portal;
 mod dispatch_u2;
 mod dispatch_util;
+mod dispatch_zoom;
 mod snapshot;
 pub(crate) use snapshot::browser_change;
 
@@ -168,7 +172,9 @@ pub fn spawn_pump(
                     if let Some(server) = &server {
                         server.broadcast(Event::Web(ev.clone()));
                     }
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| view.on_web_event(ev, cx));
+                    let _ = with_app(&window, &app, cx, |view, window, cx| {
+                        view.on_web_event(ev, window, cx)
+                    });
                 });
             }
             #[cfg(target_os = "macos")]

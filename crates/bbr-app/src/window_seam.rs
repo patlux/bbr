@@ -15,7 +15,7 @@ use smol::channel::Receiver;
 use crate::actions::{
     Back, CloseTab, FindInPage, FocusCommandBar, FocusWeb, Forward, MoveTab, NewSpace, NewTab,
     OpenOverlay, OpenPalette, PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp,
-    ToggleSidebar,
+    ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
 };
 use crate::app::BbrApp;
 
@@ -95,6 +95,33 @@ pub(crate) fn install_actions(
             let app = app.clone();
             cx.defer(move |cx| {
                 let _ = with_app(&window, &app, cx, |view, _w, _cx| view.reload());
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
+        move |_: &ZoomIn, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, _w, cx| view.zoom_in(cx));
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
+        move |_: &ZoomOut, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, _w, cx| view.zoom_out(cx));
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
+        move |_: &ZoomReset, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, _w, cx| view.zoom_reset(cx));
             });
         }
     });
@@ -247,6 +274,14 @@ pub(crate) fn install_actions(
         KeyBinding::new("cmd-shift-m", MoveTab, None),
         KeyBinding::new("cmd-w", CloseTab, None),
         KeyBinding::new("cmd-shift-t", ReopenTab, None),
+        // Zoom (queue item 11, part A): `cmd-+` is the literal Cmd-Plus on
+        // the US layout (and the shifted-plus layouts GPUI resolves to the
+        // `+` key); `cmd-=` is the equals-key alias browsers ship; `cmd--`
+        // is Cmd-Minus; `cmd-0` resets.
+        KeyBinding::new("cmd-+", ZoomIn, None),
+        KeyBinding::new("cmd-=", ZoomIn, None),
+        KeyBinding::new("cmd--", ZoomOut, None),
+        KeyBinding::new("cmd-0", ZoomReset, None),
     ]);
 }
 
@@ -287,7 +322,9 @@ pub(crate) fn spawn_event_pump(
         match incoming {
             Incoming::Event(Ok(ev)) => {
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| view.on_web_event(ev, cx));
+                    let _ = with_app(&window, &app, cx, |view, window, cx| {
+                        view.on_web_event(ev, window, cx)
+                    });
                 });
             }
             #[cfg(target_os = "macos")]

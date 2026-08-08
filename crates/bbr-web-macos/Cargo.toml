@@ -60,6 +60,15 @@ objc2-app-kit = { workspace = true, features = [
     # Downloads: NSWorkspace for Reveal-in-Finder
     # (activateFileViewerSelectingURLs:).
     "NSWorkspace",
+    # Context menu: NSPasteboard for the Copy Link entry (the BBR-owned
+    # context menu's copy writes the page URL to the general pasteboard),
+    # NSMenu/NSMenuItem for the WebKit page-menu classification (the
+    # `NSMenuWillOpenNotification` observer inspects the item titles), and
+    # block2 for the local right-click event monitor handler.
+    "NSPasteboard",
+    "NSMenu",
+    "NSMenuItem",
+    "block2",
 ] }
 
 # objc2-web-kit: WKWebView + configuration + delegates + data store.

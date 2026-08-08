@@ -38,6 +38,10 @@ impl NavState {
             bbr_web::WebEvent::NavigationFailed(_, _) => {
                 self.loading = false;
             }
+            // A context-menu request carries no navigation state (the menu
+            // is BBR chrome over the page; opening/closing it never changes
+            // url/title/loading/history).
+            bbr_web::WebEvent::ContextMenuRequested(_, _) => {}
         }
     }
 }

@@ -210,6 +210,29 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Per-site zoom (queue item 11, part A; task packet
+        // `site-settings-zoom-contract`): `zoom_step` spans the production
+        // `Cmd-Plus` path — the lifecycle change, the persistence write, and
+        // the native `pageZoom` application on the active view — a warm
+        // main-thread interaction in the same class as the other
+        // command-surface scenarios, so it reuses the existing 50/100 ms
+        // warm interaction budget (no new class invented).
+        "zoom_step" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        // BBR context menu over web content (task packet
+        // `bbr-context-menus-over-web`): `context_menu_open` spans the
+        // production event-driven open path — the row-model build, the
+        // anchored placement, the portal presentation, and the focus
+        // handoff — and commits only from a render of the one
+        // `NativeAboveWeb` portal window that drew the menu over the active
+        // view. The same warm-presentation class as the find bar open
+        // (50/100 ms), no new budget class invented.
+        "context_menu_open" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -395,6 +418,8 @@ impl Baseline {
             "downloads_panel_open",
             "download_progress_commit",
             "download_row_retry",
+            "zoom_step",
+            "context_menu_open",
         ]
         .into_iter()
         .chain(u2::seed_kinds())
@@ -703,6 +728,60 @@ mod tests {
                 "{kind} warm samples within budget stay green"
             );
         }
+    }
+
+    #[test]
+    fn zoom_budgets_are_seeded_and_enforced() {
+        // Regression guard (queue item 11, part A): the zoom-step scenario
+        // must carry its contract budget in the seed so a future zoom
+        // regression trips the gate instead of being silently unreported.
+        // `zoom_step` reuses the existing warm command-surface class
+        // (50/100 ms) — the lifecycle change, persistence write, and native
+        // `pageZoom` application are a warm main-thread interaction, no new
+        // budget class.
+        let b = Baseline::seed();
+        let entry = b
+            .entries
+            .get("zoom_step")
+            .expect("seed baseline must carry the zoom_step contract budget");
+        assert_eq!(entry.budget_p95_ms, 50.0);
+        assert_eq!(entry.budget_max_ms, Some(100.0));
+        let mut slow = BTreeMap::new();
+        slow.insert("zoom_step".into(), measured(120.0, 160.0));
+        let r = evaluate(&slow, &b, false);
+        assert!(r.iter().any(|x| x.rule == "abs_p95"));
+        assert!(r.iter().any(|x| x.rule == "abs_max"));
+        let mut good = BTreeMap::new();
+        good.insert("zoom_step".into(), measured(45.0, 90.0));
+        assert!(evaluate(&good, &b, false).is_empty());
+    }
+
+    #[test]
+    fn context_menu_budgets_are_seeded_and_enforced() {
+        // Regression guard (task packet `bbr-context-menus-over-web`): the
+        // context-menu open scenario must carry its contract budget in the
+        // seed so a future menu-presentation regression trips the gate
+        // instead of being silently skipped (an unseeded kind is skipped by
+        // `evaluate` with no signal). `context_menu_open` reuses the warm
+        // portal-presentation class (50/100 ms) of the find bar open — the
+        // row-model build, anchored placement, portal presentation, and
+        // focus handoff, committed from the portal render — no new budget
+        // class.
+        let b = Baseline::seed();
+        let entry = b
+            .entries
+            .get("context_menu_open")
+            .expect("seed baseline must carry the context_menu_open contract budget");
+        assert_eq!(entry.budget_p95_ms, 50.0);
+        assert_eq!(entry.budget_max_ms, Some(100.0));
+        let mut slow = BTreeMap::new();
+        slow.insert("context_menu_open".into(), measured(120.0, 160.0));
+        let r = evaluate(&slow, &b, false);
+        assert!(r.iter().any(|x| x.rule == "abs_p95"));
+        assert!(r.iter().any(|x| x.rule == "abs_max"));
+        let mut good = BTreeMap::new();
+        good.insert("context_menu_open".into(), measured(45.0, 90.0));
+        assert!(evaluate(&good, &b, false).is_empty());
     }
 
     #[test]

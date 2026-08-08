@@ -138,6 +138,19 @@ pub enum BenchmarkKind {
     /// the fresh attempt (linked via `retry_of`) is presented in the Active
     /// group — the user-visible row action, warm-presentation class.
     DownloadsRowRetry,
+    /// `Cmd-Plus` applied one contract zoom step on the active view's site
+    /// through the production path (queue item 11, part A): the lifecycle
+    /// change, the persistence write, and the native `pageZoom` application
+    /// committed — the warm-interaction class (no tab or session is
+    /// created or touched).
+    ZoomStep,
+    /// The production BBR context-menu open over the active web view (task
+    /// packet `bbr-context-menus-over-web`): the sample starts at the exact
+    /// event-driven open path the native bridge's `ContextMenuRequested`
+    /// routes to and commits only from a render of the one `NativeAboveWeb`
+    /// portal window that drew the menu over the same active view — the
+    /// warm-presentation class, no tab or session touched.
+    ContextMenuOpen,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

@@ -678,5 +678,9 @@ fn event_view(event: &WebEvent) -> WebViewId {
         WebEvent::CanGoForwardChanged(v, _) => *v,
         WebEvent::PageCrashed(v) => *v,
         WebEvent::NavigationFailed(v, _) => *v,
+        // A context-menu request names the view it was requested on (the
+        // menu is BBR chrome over that view; the request carries no
+        // navigation state).
+        WebEvent::ContextMenuRequested(v, _) => *v,
     }
 }

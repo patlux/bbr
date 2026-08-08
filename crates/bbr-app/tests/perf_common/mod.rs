@@ -8,6 +8,8 @@ mod benchmarks;
 mod benchmarks_u2;
 mod command;
 mod command_drive;
+mod context_menu;
+mod context_menu_drive;
 mod downloads;
 mod downloads_drive;
 mod drive;
@@ -18,6 +20,8 @@ pub mod machine;
 mod report;
 pub mod scenarios;
 pub mod stats;
+mod zoom;
+mod zoom_drive;
 
 use scenarios::TrialConfig;
 use std::path::PathBuf;

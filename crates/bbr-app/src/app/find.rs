@@ -196,9 +196,11 @@ impl BbrApp {
             }));
             self.find.adapter = Some(adapter);
         }
-        // A find presentation replaces any open command surface (the portal
-        // state keeps exactly one active presentation).
+        // A find presentation replaces any open command surface and any open
+        // context menu (the portal state keeps exactly one active
+        // presentation).
         self.dismiss_command_portal(cx);
+        self.menu_discard(cx);
         self.find.state.open = true;
         self.find.bound_view = Some(view);
         self.find.origin_chrome_focused = self.chrome_focused(window);

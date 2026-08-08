@@ -257,6 +257,37 @@ pub enum Request {
     },
     /// Drive a [`WebAction`] on the active web view (Back/Forward/Reload/…).
     WebAction(WebAction),
+    /// Zoom the active view's site one contract step up (queue item 11,
+    /// part A; the exact seam the `Cmd-Plus` key binding routes to). Never
+    /// creates, moves, or reselects a web session.
+    ZoomIn,
+    /// Zoom the active view's site one contract step down (the `Cmd-Minus`
+    /// seam).
+    ZoomOut,
+    /// Reset the active view's site to the default zoom level (the `Cmd-0`
+    /// seam); removes the override record.
+    ZoomReset,
+    /// Pointer-hover/select path into the open BBR context menu (task
+    /// packet `bbr-context-menus-over-web`): the exact app method the row's
+    /// `on_hover` element listener calls (the keyboard cursor and the
+    /// pointer hover share one selection). Disabled entries are skipped by
+    /// the keyboard traversal; this seam selects whatever row the pointer
+    /// is over.
+    ContextMenuSelect {
+        index: usize,
+    },
+    /// Pointer-press path into the open BBR context menu: the exact app
+    /// method the row's mouse-down listener calls — selects the row and
+    /// activates it (Back/Forward/Reload/Copy Link/Open in New Tab), then
+    /// dismisses the menu and restores the origin focus domain.
+    ContextMenuActivate {
+        index: usize,
+    },
+    /// Dismiss the open BBR context menu through the production close path
+    /// (the portal backdrop's pointer press, the Escape key, and this seam
+    /// all call the same app method): the menu closes and focus returns to
+    /// the domain captured at open. No-op when no menu is open.
+    ContextMenuClose,
     /// Focus the GPUI command bar (chrome) — the E2E reader of Cmd-L.
     ActivateCommandBar,
     /// Pointer press on the sidebar command field through the production
@@ -482,6 +513,29 @@ pub enum Request {
         next: bool,
         expected_count: usize,
         expected_ordinal: Option<usize>,
+    },
+    /// Measure the production `Cmd-Plus` zoom step (queue item 11, part A):
+    /// the exact seam the key binding routes to — the lifecycle change, the
+    /// persistence write, and the native `pageZoom` application on the
+    /// active view. The sample commits only from the app's observed zoom
+    /// state at the armed level — the warm-interaction class, no tab or
+    /// session is touched.
+    BenchmarkZoomStep {
+        operation_id: BenchmarkOperationId,
+        level: u16,
+    },
+    /// Measure the production BBR context-menu open over the active web
+    /// view (task packet `bbr-context-menus-over-web`): the exact
+    /// event-driven open path the native bridge's `ContextMenuRequested`
+    /// routes to (`menu_open_from_event`, anchored at `point` in window
+    /// content coordinates). The sample commits only from a render of the
+    /// one `NativeAboveWeb` portal window that drew the menu over the same
+    /// active view with the armed pointer anchor — the warm-presentation
+    /// class, no tab or session is touched.
+    BenchmarkContextMenuOpen {
+        operation_id: BenchmarkOperationId,
+        view: WebViewId,
+        point: [f32; 2],
     },
     /// Measure the production footer `[Downloads]` open through
     /// [`Self::ClickFooterDownloads`]'s exact seam (`toggle_downloads` →

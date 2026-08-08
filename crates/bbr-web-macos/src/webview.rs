@@ -61,6 +61,11 @@ pub struct WebEngineWk {
     /// `setFrame:` call; destroying a view removes its cached rect; unknown
     /// ids are no-ops.
     geometry: HashMap<WebViewId, WebRect>,
+    /// The one native context-menu bridge (task packet
+    /// `bbr-context-menus-over-web`): observes right-clicks over the live
+    /// web views, classifies WebKit's own menu (page vs element), and
+    /// requests the BBR menu through the portal for page-owned clicks.
+    menu_bridge: Option<Box<crate::menu_adapter::NativeContextMenuBridge>>,
 }
 
 impl WebEngineWk {
@@ -77,13 +82,18 @@ impl WebEngineWk {
     ) -> Self {
         let mut host = HostBridge::new();
         unsafe { host.attach_root_view(mtm, ns_view) };
+        let sink = Rc::new(RefCell::new(None));
+        let menu_bridge = unsafe {
+            crate::menu_adapter::NativeContextMenuBridge::attach(mtm, ns_view, sink.clone())
+        };
         Self {
             host,
             options,
             sessions: HashMap::new(),
-            sink: Rc::new(RefCell::new(None)),
+            sink,
             stores: HashMap::new(),
             geometry: HashMap::new(),
+            menu_bridge,
         }
     }
 
@@ -106,6 +116,20 @@ impl WebEngineWk {
         self.sessions
             .get(&id)
             .map(|session| session.web_view.clone())
+    }
+
+    /// Narrow diagnostics of the one native context-menu bridge (task
+    /// packet `bbr-context-menus-over-web`): right-clicks observed over
+    /// web views and the page-vs-element ownership classification counters.
+    /// `None` when no bridge is attached (non-macOS or attach failure).
+    pub fn context_menu_diagnostics(
+        &self,
+    ) -> Option<crate::menu_adapter::ContextMenuNativeDiagnostics> {
+        self.assert_main_thread();
+        let mtm = MainThreadMarker::new()?;
+        self.menu_bridge
+            .as_ref()
+            .map(|bridge| bridge.diagnostics(mtm))
     }
 
     fn assert_main_thread(&self) {
@@ -248,11 +272,14 @@ impl WebEngine for WebEngineWk {
             id,
             NativeWebSession {
                 profile,
-                web_view,
+                web_view: web_view.clone(),
                 delegate,
                 visible: false,
             },
         );
+        if let Some(bridge) = self.menu_bridge.as_ref() {
+            bridge.register_web_view(mtm, id, &web_view);
+        }
     }
 
     fn destroy_web_view(&mut self, id: WebViewId) {
@@ -262,6 +289,11 @@ impl WebEngine for WebEngineWk {
             session.teardown();
         } else {
             log::warn!("destroy requested for unknown web view {id:?}");
+        }
+        if let Some(mtm) = MainThreadMarker::new() {
+            if let Some(bridge) = self.menu_bridge.as_ref() {
+                bridge.unregister_web_view(mtm, id);
+            }
         }
     }
 
@@ -303,6 +335,15 @@ impl WebEngine for WebEngineWk {
                 web_view.stopLoading();
                 self.emit_state(id);
             },
+            // The BBR context menu's Copy Link entry: the engine owns the
+            // platform pasteboard, so the portable action is implemented
+            // natively here (the view's current URL, never a caller-passed
+            // string).
+            WebAction::CopyLink => {
+                if let Some(url) = unsafe { web_view.URL() }.and_then(|u| u.absoluteString()) {
+                    crate::menu_adapter::copy_to_pasteboard(&url.to_string());
+                }
+            }
         }
     }
 

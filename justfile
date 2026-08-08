@@ -77,6 +77,20 @@ e2e-shell-portal:
 e2e-shell-find:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_find -- --ignored --nocapture
 
+# Per-site zoom wiring (queue item 11, part A): the Cmd-Plus/Cmd-Minus/
+# Cmd-0 ladder, clamps, reset, same-site/cross-site persistence, and
+# tab-switch re-activation over real WKWebViews.
+e2e-shell-zoom:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_zoom -- --ignored --nocapture
+
+# BBR context menus over web content (task packet
+# `bbr-context-menus-over-web`): pointer + keyboard navigation, genuine
+# Back/Forward enablement from real canGoBack()/canGoForward() events,
+# dismissal without session mutation, the native bridge diagnostics, and
+# resize re-pinning with no orphan, over real WKWebViews.
+e2e-shell-context-menu:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_context_menu -- --ignored --nocapture
+
 e2e-shell-dense:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_dense -- --ignored --nocapture
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_dense_edge -- --ignored --nocapture
@@ -105,7 +119,7 @@ e2e-perf-inject:
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-perf
+e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-portal e2e-shell-find e2e-shell-zoom e2e-shell-context-menu e2e-shell-dense e2e-shell-downloads e2e-perf
 
 verify: fmt check test clippy roadmap script-tests
 
