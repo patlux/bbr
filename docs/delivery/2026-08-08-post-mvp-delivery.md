@@ -78,17 +78,17 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 wartet auf Integration · ✅ erledigt
 | 1 | Manuelle Smoke-Prüfung des `.app` | ⬜ Patrick | `/Users/patwoz/dev/Personal/macos/bbr-mvp-smoke-checklist.md`. Sinnvoll erst nach P0 |
 | 2 | UI-Anmutung nach S1 stimmt nicht | ⬜ | Patrick-Befund „die UI passt nicht", noch ohne Detail. Braucht Screenshot oder konkrete Stelle, sonst raten wir |
 | 3 | Downloads-Nachzug aus den Entscheidungen | ⬜ | History-Persistenz, Clear-History, Cancelled-Zeile mit Neustart und Löschen |
-| 4 | Schema v2 ohne Migration | ⬜ entblockt | Versionskennung, bei Abweichung Store verwerfen. Trägt Space-Appearance, Settings, Downloads-History und P7 |
+| 4 | Schema v2 ohne Migration | 🟦 F1a | Versionskennung, bei Abweichung Store verwerfen. Trägt Space-Appearance, Settings, Downloads-History und P7 |
 | 5 | Settings-/Search-Contract integrieren | ⬜ | Fertig im Worktree `bbr-settings-search-contract`, wartet nur auf die Host-Empfehlung oben |
 | 6 | Space-Appearance-Contract integrieren | ⬜ | Fertig im Worktree `bbr-space-appearance-contract`, wartet auf Palette/Emoji-Kalibrierung |
 | 7 | R1 Footer-Space-Strip + Appearance-UI + Swipe | ⬜ | Der größte sichtbare Slice. Paket: `docs/roadmap/tasks/space-footer-strip-appearance-ui.md` |
 | 8 | P7 Command-History-Provider | ⬜ **entblockt** | Das Veto beruhte allein auf dem fehlenden History-Schema. Mit „keine Migrationen" entfällt der Grund |
-| 9 | P8b Error-Surfaces | ⬜ | TLS, Navigationsfehler, Offline, Renderer-Crash. Contract gemergt, Flächen fehlen |
-| 10 | P8c Auth-Adapter | ⬜ | Contract gemergt, natives Sheet fehlt |
-| 11 | P8e Zoom-Wiring | ⬜ | Cmd-Plus/Minus/0 auf die aktive WebView |
-| 12 | Kontextmenüs über Web | ⬜ | Zweiter echter Nutzer des Portal-Hosts |
-| 13 | External-URL nativ | ⬜ | `Info.plist`-Registrierung, Delegate, Adapter. Portable Hälfte gemergt (`14f1093`) |
-| 14 | Portal-Hardening | ⬜ | Vollbild, Space-Wechsel, Monitorwechsel, Minimierung |
+| 9 | P8b Error-Surfaces | 🟦 F1b | TLS, Navigationsfehler, Offline, Renderer-Crash. Contract gemergt, Flächen fehlen |
+| 10 | P8c Auth-Adapter | 🟦 F1e | Contract gemergt, natives Sheet fehlt |
+| 11 | P8e Zoom-Wiring | 🟦 F1d | Cmd-Plus/Minus/0 auf die aktive WebView |
+| 12 | Kontextmenüs über Web | 🟦 F1d | Zweiter echter Nutzer des Portal-Hosts |
+| 13 | External-URL nativ | 🟦 F1c | `Info.plist`-Registrierung, Delegate, Adapter. Portable Hälfte gemergt (`14f1093`) |
+| 14 | Portal-Hardening | 🟦 F1e | Vollbild, Space-Wechsel, Monitorwechsel, Minimierung |
 | 15 | U3 Startup-Evidenz | ⬜ | Persistierte Warm-Startup-Reihe; aktuell 389 ms bei 500 ms Decke |
 | 16 | Perf-Lücken | ⬜ | Ohne Canonical-Runner-Evidenz, namentlich `command_bar_first_result` |
 | 17 | Icon-System-Reste | ⬜ | Nach U2 offen geblieben |
@@ -102,4 +102,5 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 wartet auf Integration · ✅ erledigt
 | 08:03 | ✅ Downloads-Panel integriert (Merge `7cfdbd2`), kanonisches `just e2e` über 20 Suiten grün, `package-verify` grün, neues Bundle `b428910…` |
 | 08:50 | ⚠️ Patrick meldet am gepackten `.app`: Web-Fläche bleibt weiß. Orchestrator-Messung: WebKit lädt und malt (`DidFirstMeaningfulPaint`, `window occluded 0`), also kein WebKit-Problem. Patrick grenzt selbst präzise ein: mit Schema lädt es, ohne Schema nicht |
 | 08:55 | 🟦 Lane `schemeless-navigation-bug-msk0mwh9-7rnn94` gestartet (Worktree `bbr-schemeless-nav`, Base `78f3782`): erst fehlschlagender Regressionstest entlang des Produktionspfads, dann Fix, plus dauerhafte Evidenz, dass Seiteninhalt wirklich ankommt |
+| 09:05 | 🟦 **Fanout-Welle F1 gestartet** — fünf Lanes parallel in isolierten Worktrees von `a24321d`, disjunkte Territorien, Gate-Phasen serialisieren über den hostweiten GUI-Lock des `justfile`: (P0) `schemeless-navigation-bug-msk0mwh9-7rnn94`; (F1a) `schema-v2-no-migration-msk0xahq-nw0hzi` — Persistenz/Domain; (F1b) `p8b-error-surfaces-ui-msk0xwvl-getw0m` — Fehlerflächen; (F1c) `external-url-native-msk0yi9s-lex0ro` — native Registrierung + Info.plist; (F1d) `p8e-zoom-and-context-menus-msk0z7o3-m1hhs3` — Zoom-Wiring plus Kontextmenüs über den **bestehenden** Portal-Host; (F1e) `p8c-auth-and-portal-hardening-msk0zz5r-ysqu6s` — Auth-Sheet plus Portal-Härtung gegen Vollbild/Space/Display/Minimieren/Schließen |
 | 08:55 | ✅ Neue Delivery-Datei eröffnet; offene Punkte aus dem MVP-Plan übernommen, Patricks Entscheidungen eingetragen |
