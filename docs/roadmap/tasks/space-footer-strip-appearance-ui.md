@@ -131,6 +131,20 @@ host-exclusive through the repository GUI lock. No third performance writer is
 allowed: `swipe_commit` depends on the real swipe implementation, while drag
 reuses and strengthens the settled tab-move performance authority.
 
+The first combined Swipe writer ended after source exploration with a clean,
+byte-identical base and no implementation. Recovery therefore follows the
+existing vertical-slice policy instead of repeating the same oversized prompt:
+
+1. **Swipe product kernel:** pure state machine, real sidebar horizontal-wheel
+   wiring, central chrome-only interpolation, typed snapshot/semantics, and
+   focused real-app commit/cancel evidence. No performance registry or baseline.
+2. **`swipe_commit` evidence:** only after the reviewed kernel is frozen, add
+   the typed benchmark kind/request/driver/report key and the ≥30-sample
+   render-inclusive baseline enforcement against the unchanged warm budget.
+
+This is one product lane with a real internal dependency, not a third parallel
+writer. Drag remains independently runnable from the common Tint base.
+
 ## Constraints
 
 - One space-switch authority. The strip, keyboard, and swipe must not fork
