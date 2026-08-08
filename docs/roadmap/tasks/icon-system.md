@@ -206,9 +206,9 @@ Outcome:       The merged icon catalog covers every component-owned chrome
                by `Icon::ChevronLeft`/`ChevronRight`/`Close` at the
                `icon:<density>` size; ids/hit squares/listeners/semantics
                unchanged; chevron geometry/name/color contract tests added.
-Commits:       none — coherent uncommitted tree left on
-               parallel/icon-system-completion (no commit/push by lane
-               policy in this run).
+Commits:       `bf42a8a feat(ui): draw find bar control icons` — committed
+               by the orchestrator after REVIEW_PASS and final gates; not
+               merged into `main`.
 Functional evidence: cargo test -p bbr --features testkit --bin bbr
                252/252 (5 icon-catalog tests incl. the new chevron
                arm/name/rest-color assertions); `cargo fmt --all --
@@ -238,8 +238,8 @@ Open blockers and non-goals: command-composition surface (`▶` prefix, `↵`/
                `→` result marks), sidebar brand text, and the `⌘T` key cue
                stay with their owning surfaces; loading arc static; §7
                hit-target minimums already settled via density tokens.
-Worktree state: coherent uncommitted tree (4 modified files); frozen
-               pending orchestrator integration.
+Worktree state: clean at `bf42a8a`; frozen pending serial orchestrator
+               integration.
 File sizes:    icons.rs 544 now vs 508 at base — bounded +36 catalog
                extension (chevron variants + contract tests); planned
                single-authority enum-union merge with F2a catalog variants.
