@@ -7,8 +7,9 @@ use std::{
 };
 
 use bbr_persistence::{
-    Profile, ProfileHue, RecentlyClosedTab, Repository, SidebarState, Snapshot, Space, Split, Tab,
-    WindowGeometry, WindowState, WriteStats,
+    CommandHistoryEntry, DownloadOutcome, DownloadRecord, GlyphName, Profile, ProfileHue,
+    RecentlyClosedTab, Repository, SearchEngineId, SearchSettings, SidebarState, Snapshot, Space,
+    SpaceGlyph, SpaceTint, Split, Tab, WindowGeometry, WindowState, WriteStats,
 };
 
 const WARMUPS: usize = 10;
@@ -28,7 +29,7 @@ impl TempDb {
         Self(path)
     }
 
-    fn schema_v0(label: &str) -> Self {
+    fn first_run(label: &str) -> Self {
         let db = Self::new(label);
         rusqlite::Connection::open(&db.0)
             .unwrap()
@@ -124,8 +125,8 @@ fn repository_benchmark() {
         std::process::id()
     );
 
-    let migration_databases = (0..WARMUPS + SAMPLES)
-        .map(|index| TempDb::schema_v0(&format!("migration-{index}")))
+    let first_run_databases = (0..WARMUPS + SAMPLES)
+        .map(|index| TempDb::first_run(&format!("first-run-{index}")))
         .collect::<Vec<_>>();
     let current = TempDb::current("current");
     let current_repository = Repository::new(&current.0);
@@ -134,14 +135,14 @@ fn repository_benchmark() {
         .collect::<Vec<_>>();
     let dense = dense_snapshot();
 
-    let migration = measure("schema_v0_migration_load", |index| {
-        let outcome = Repository::new(&migration_databases[index].0)
+    let first_run = measure("schema_v2_first_run_load", |index| {
+        let outcome = Repository::new(&first_run_databases[index].0)
             .initialize_and_restore()
             .unwrap();
         assert_eq!(outcome.snapshot, Snapshot::default());
         None
     });
-    let current_load = measure("schema_v1_current_load", |_| {
+    let current_load = measure("schema_v2_current_load", |_| {
         let outcome = current_repository.restore_read_only().unwrap();
         assert_eq!(outcome.snapshot, Snapshot::default());
         None
@@ -150,12 +151,12 @@ fn repository_benchmark() {
         let repository = Repository::new(&write_databases[index].0);
         let stats = repository.replace_snapshot(&dense).unwrap();
         assert_eq!(stats.committed_transactions, 1);
-        assert_eq!(stats.sql_statements, 511);
-        assert_eq!(stats.inserted_rows, 505);
+        assert_eq!(stats.sql_statements, 517);
+        assert_eq!(stats.inserted_rows, 508);
         assert_eq!(repository.restore_read_only().unwrap().snapshot, dense);
         Some(stats)
     });
-    let operations = [migration, current_load, dense_write];
+    let operations = [first_run, current_load, dense_write];
     let contents = render_artifact(&artifact, &run_id, &operations);
     let temporary = root.join(format!(".repository-benchmark-{}.tmp", std::process::id()));
     fs::write(&temporary, &contents).unwrap();
@@ -303,8 +304,8 @@ fn parse_artifact(contents: &str, expected_run_id: &str) -> Result<ParsedArtifac
         return Err("wrong operation count".into());
     }
     for required in [
-        "schema_v0_migration_load",
-        "schema_v1_current_load",
+        "schema_v2_first_run_load",
+        "schema_v2_current_load",
         "dense_structural_write",
     ] {
         if !operations.contains_key(required) {
@@ -376,6 +377,8 @@ fn dense_snapshot() -> Snapshot {
             spaces: vec![Space {
                 id: 10,
                 title: "500 tabs".into(),
+                tint: SpaceTint::Slate,
+                glyph: SpaceGlyph::Glyph(GlyphName::Star),
                 active_tab: Some(100),
                 split: Some(Split {
                     primary_tab: 100,
@@ -400,6 +403,24 @@ fn dense_snapshot() -> Snapshot {
                 height: 700.0,
             }),
             sidebar: SidebarState::default(),
+        }],
+        settings: SearchSettings {
+            engine: SearchEngineId::DuckDuckGo,
+            custom_template: None,
+        },
+        downloads: vec![DownloadRecord {
+            id: 700,
+            outcome: DownloadOutcome::Succeeded,
+            size: 1024,
+            destination: Some("/tmp/dense.bin".into()),
+            terminal_at: 900,
+        }],
+        command_history: vec![CommandHistoryEntry {
+            id: 800,
+            title: "Dense".into(),
+            url: "https://dense.test/".into(),
+            visit_count: 1,
+            last_visited: 800,
         }],
     }
 }

@@ -3,9 +3,14 @@ use std::fmt;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PersistenceError {
     Io(String),
-    IncompatibleSchema { found: u32, supported: u32 },
+    /// The read-only restore path refuses a store whose version stamp does
+    /// not match the current schema. The write path never produces this
+    /// error: it discards the store instead (see [`crate::StoreLoad`]).
+    SchemaMismatch {
+        found: u32,
+        supported: u32,
+    },
     Schema(SchemaIssue),
-    Migration(String),
     Corruption(CorruptionIssue),
     InvalidSnapshot(InvalidSnapshotIssue),
     Storage(String),
@@ -15,12 +20,12 @@ impl fmt::Display for PersistenceError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(message) => write!(formatter, "repository I/O error: {message}"),
-            Self::IncompatibleSchema { found, supported } => write!(
+            Self::SchemaMismatch { found, supported } => write!(
                 formatter,
-                "database schema version {found} is newer than supported version {supported}"
+                "persistence schema version {found} does not match supported version {supported}; \
+                 the store must be discarded and recreated"
             ),
             Self::Schema(issue) => write!(formatter, "invalid persistence schema: {issue}"),
-            Self::Migration(message) => write!(formatter, "schema migration failed: {message}"),
             Self::Corruption(issue) => write!(formatter, "persisted state is corrupt: {issue}"),
             Self::InvalidSnapshot(issue) => write!(formatter, "snapshot is invalid: {issue}"),
             Self::Storage(message) => write!(formatter, "SQLite operation failed: {message}"),
@@ -90,16 +95,56 @@ impl fmt::Display for CorruptionIssue {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum InvalidSnapshotIssue {
-    InvalidId { kind: &'static str, id: u64 },
-    DuplicateIdentity { id: u64 },
-    InvalidUrl { tab_id: u64 },
-    InvalidPinnedRegion { space_id: u64 },
-    InvalidActiveTab { space_id: u64, tab_id: u64 },
-    InvalidSplit { space_id: u64 },
-    RecentlyClosedIdentityCollision { tab_id: u64 },
-    InvalidFormerPosition { tab_id: u64 },
-    InvalidGeometry { window_id: u64 },
-    InvalidSidebar { window_id: u64 },
+    InvalidId {
+        kind: &'static str,
+        id: u64,
+    },
+    DuplicateIdentity {
+        id: u64,
+    },
+    InvalidUrl {
+        tab_id: u64,
+    },
+    InvalidPinnedRegion {
+        space_id: u64,
+    },
+    InvalidActiveTab {
+        space_id: u64,
+        tab_id: u64,
+    },
+    InvalidSplit {
+        space_id: u64,
+    },
+    RecentlyClosedIdentityCollision {
+        tab_id: u64,
+    },
+    InvalidFormerPosition {
+        tab_id: u64,
+    },
+    InvalidGeometry {
+        window_id: u64,
+    },
+    InvalidSidebar {
+        window_id: u64,
+    },
+    /// The space's glyph emoji is not a member of the curated allowlist.
+    InvalidEmoji {
+        space_id: u64,
+    },
+    /// The global settings record violates an engine/template rule.
+    InvalidSettings {
+        detail: String,
+    },
+    /// A download history record violates a persisted-shape rule.
+    InvalidDownload {
+        id: u64,
+        detail: String,
+    },
+    /// A command-history record violates a persisted-shape rule.
+    InvalidHistory {
+        id: u64,
+        detail: String,
+    },
 }
 
 impl fmt::Display for InvalidSnapshotIssue {
@@ -131,6 +176,19 @@ impl fmt::Display for InvalidSnapshotIssue {
             }
             Self::InvalidSidebar { window_id } => {
                 write!(formatter, "invalid sidebar for window {window_id}")
+            }
+            Self::InvalidEmoji { space_id } => write!(
+                formatter,
+                "space {space_id} has a glyph emoji outside the curated allowlist"
+            ),
+            Self::InvalidSettings { detail } => {
+                write!(formatter, "invalid settings record: {detail}")
+            }
+            Self::InvalidDownload { id, detail } => {
+                write!(formatter, "invalid download history record {id}: {detail}")
+            }
+            Self::InvalidHistory { id, detail } => {
+                write!(formatter, "invalid command-history record {id}: {detail}")
             }
         }
     }

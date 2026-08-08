@@ -5,9 +5,10 @@ use std::{
 };
 
 use bbr_persistence::{
-    InvalidSnapshotIssue, PersistenceError, Profile, ProfileHue, RecentlyClosedTab,
-    RecoveryWarning, Repository, SidebarState, Snapshot, Space, Split, Tab, WindowGeometry,
-    WindowState,
+    CommandHistoryEntry, DownloadOutcome, DownloadRecord, GlyphName, InvalidSnapshotIssue,
+    PersistenceError, Profile, ProfileHue, RecentlyClosedTab, RecoveryWarning, Repository,
+    SearchEngineId, SearchSettings, SidebarState, Snapshot, Space, SpaceGlyph, SpaceTint, Split,
+    StoreDiscardReason, StoreLoad, Tab, WindowGeometry, WindowState,
 };
 
 static NEXT_TEMP: AtomicU64 = AtomicU64::new(1);
@@ -158,6 +159,8 @@ fn sample_snapshot(tab_count: usize) -> Snapshot {
             spaces: vec![Space {
                 id: 10,
                 title: "Main".into(),
+                tint: SpaceTint::Pine,
+                glyph: SpaceGlyph::Glyph(GlyphName::Code),
                 active_tab: tabs.first().map(|tab| tab.id),
                 split: (tabs.len() > 1).then(|| Split {
                     primary_tab: tabs[0].id,
@@ -187,20 +190,39 @@ fn sample_snapshot(tab_count: usize) -> Snapshot {
                 last_expanded_width: 300.0,
             },
         }],
+        settings: SearchSettings::default(),
+        downloads: vec![DownloadRecord {
+            id: 700,
+            outcome: DownloadOutcome::Succeeded,
+            size: 4096,
+            destination: Some("/tmp/report.pdf".into()),
+            terminal_at: 1000,
+        }],
+        command_history: vec![CommandHistoryEntry {
+            id: 800,
+            title: "Example".into(),
+            url: "https://example.test/".into(),
+            visit_count: 3,
+            last_visited: 2000,
+        }],
     }
 }
 
 #[test]
-fn first_run_and_schema_v0_migrate_then_round_trip() {
+fn first_run_creates_v2_store_then_round_trips() {
+    // A fresh file and an empty stamp-0 database are indistinguishable
+    // first runs: both create the v2 schema, load as `Loaded`, and are
+    // immediately writable.
     for db in [TempDb::new("first-run"), TempDb::from_fixture("schema_v0")] {
         let initial = db.repository().initialize_and_restore().unwrap();
         assert_eq!(initial.snapshot, Snapshot::default());
         assert!(initial.warnings.is_empty());
+        assert_eq!(initial.store, StoreLoad::Loaded);
         let snapshot = sample_snapshot(3);
         let stats = db.repository().replace_snapshot(&snapshot).unwrap();
         assert_eq!(stats.committed_transactions, 1);
-        assert_eq!(stats.sql_statements, 14);
-        assert_eq!(stats.inserted_rows, 8);
+        assert_eq!(stats.sql_statements, 20);
+        assert_eq!(stats.inserted_rows, 11);
         assert_eq!(
             db.repository().restore_read_only().unwrap().snapshot,
             snapshot
@@ -209,17 +231,147 @@ fn first_run_and_schema_v0_migrate_then_round_trip() {
 }
 
 #[test]
-fn schema_v1_fixture_restores_without_writes() {
-    let db = TempDb::from_fixture("schema_v1");
+fn schema_v2_fixture_restores_without_writes() {
+    let db = TempDb::from_fixture("schema_v2");
     let before = inventory(&db.0);
     let outcome = db.repository().restore_read_only().unwrap();
-    assert_eq!(outcome.snapshot.profiles.len(), 1);
-    assert_eq!(outcome.snapshot.profiles[0].spaces[0].tabs.len(), 2);
+    assert_eq!(outcome.store, StoreLoad::Loaded);
+    assert!(outcome.warnings.is_empty());
+    let snapshot = outcome.snapshot;
+    assert_eq!(snapshot.profiles.len(), 1);
+    let space = &snapshot.profiles[0].spaces[0];
+    assert_eq!(space.tabs.len(), 2);
+    assert_eq!(space.tint, SpaceTint::Pine);
+    assert_eq!(space.glyph, SpaceGlyph::Emoji("🚀".into()));
+    assert_eq!(
+        snapshot.settings,
+        SearchSettings {
+            engine: SearchEngineId::Custom,
+            custom_template: Some("https://search.example.test/?q=%s".into()),
+        }
+    );
+    assert_eq!(
+        snapshot.downloads,
+        vec![DownloadRecord {
+            id: 700,
+            outcome: DownloadOutcome::Succeeded,
+            size: 4096,
+            destination: Some("/tmp/report.pdf".into()),
+            terminal_at: 1000,
+        }]
+    );
+    assert_eq!(
+        snapshot.command_history,
+        vec![CommandHistoryEntry {
+            id: 800,
+            title: "Example".into(),
+            url: "https://example.test/".into(),
+            visit_count: 3,
+            last_visited: 2000,
+        }]
+    );
     assert_eq!(inventory(&db.0), before);
 }
 
 #[test]
-fn optional_corruption_projects_all_warnings_in_required_order_without_writes() {
+fn mismatched_stamp_discards_and_is_immediately_rewritable() {
+    // A legacy v1 store: the read-only path refuses it untouched; the write
+    // path discards it and yields an empty v2 store.
+    let db = TempDb::from_fixture("schema_v1");
+    let before = inventory(&db.0);
+    assert_eq!(
+        db.repository().restore_read_only().unwrap_err(),
+        PersistenceError::SchemaMismatch {
+            found: 1,
+            supported: 2
+        }
+    );
+    assert_eq!(inventory(&db.0), before);
+    let outcome = db.repository().initialize_and_restore().unwrap();
+    assert_eq!(outcome.snapshot, Snapshot::default());
+    assert!(outcome.warnings.is_empty());
+    assert_eq!(
+        outcome.store,
+        StoreLoad::Discarded {
+            reason: StoreDiscardReason::VersionMismatch { found: 1 }
+        }
+    );
+    // The discarded store is immediately rewritable and round-trips.
+    let snapshot = sample_snapshot(3);
+    db.repository().replace_snapshot(&snapshot).unwrap();
+    assert_eq!(
+        db.repository().restore_read_only().unwrap().snapshot,
+        snapshot
+    );
+
+    // The write path discards a legacy store on its own: replacing the
+    // snapshot of a v1 store first discards it, then writes the v2 shape.
+    let db = TempDb::from_fixture("schema_v1");
+    db.repository().replace_snapshot(&snapshot).unwrap();
+    assert_eq!(
+        db.repository().restore_read_only().unwrap().snapshot,
+        snapshot
+    );
+}
+
+#[test]
+fn newer_stamp_is_refused_read_only_and_discarded_on_write() {
+    let db = TempDb::from_fixture("newer_schema");
+    let before = inventory(&db.0);
+    assert_eq!(
+        db.repository().restore_read_only().unwrap_err(),
+        PersistenceError::SchemaMismatch {
+            found: 3,
+            supported: 2
+        }
+    );
+    assert_eq!(inventory(&db.0), before);
+    let outcome = db.repository().initialize_and_restore().unwrap();
+    assert_eq!(outcome.snapshot, Snapshot::default());
+    assert_eq!(
+        outcome.store,
+        StoreLoad::Discarded {
+            reason: StoreDiscardReason::VersionMismatch { found: 3 }
+        }
+    );
+}
+
+#[test]
+fn unstamped_legacy_store_is_discarded() {
+    // user_version 0 with existing data: a legacy pre-v2 store with no
+    // stamp. The write path discards it (no partial load, no migration).
+    let db = TempDb::from_fixture("discard_unstamped");
+    let outcome = db.repository().initialize_and_restore().unwrap();
+    assert_eq!(outcome.snapshot, Snapshot::default());
+    assert_eq!(
+        outcome.store,
+        StoreLoad::Discarded {
+            reason: StoreDiscardReason::Unstamped
+        }
+    );
+}
+
+#[test]
+fn structural_corruption_is_fatal_read_only_and_discarded_on_write() {
+    let db = TempDb::from_fixture("invalid_structural");
+    let before = inventory(&db.0);
+    assert!(matches!(
+        db.repository().restore_read_only(),
+        Err(PersistenceError::Corruption(_))
+    ));
+    assert_eq!(inventory(&db.0), before);
+    let outcome = db.repository().initialize_and_restore().unwrap();
+    assert_eq!(outcome.snapshot, Snapshot::default());
+    assert!(matches!(
+        outcome.store,
+        StoreLoad::Discarded {
+            reason: StoreDiscardReason::Corrupt { .. }
+        }
+    ));
+}
+
+#[test]
+fn optional_corruption_projects_all_warnings_without_writes() {
     let db = TempDb::from_fixture("corrupt_optional");
     let before = inventory(&db.0);
     let outcome = db.repository().restore_read_only().unwrap();
@@ -231,6 +383,11 @@ fn optional_corruption_projects_all_warnings_in_required_order_without_writes() 
     );
     assert_eq!(outcome.snapshot.windows[0].geometry, None);
     assert_eq!(outcome.snapshot.windows[0].sidebar, SidebarState::default());
+    // The incoherent settings record falls back to defaults; the valid
+    // download and history rows survive the soft recovery.
+    assert_eq!(outcome.snapshot.settings, SearchSettings::default());
+    assert_eq!(outcome.snapshot.downloads.len(), 1);
+    assert_eq!(outcome.snapshot.command_history.len(), 1);
     assert_eq!(
         outcome.warnings,
         vec![
@@ -245,45 +402,97 @@ fn optional_corruption_projects_all_warnings_in_required_order_without_writes() 
             },
             RecoveryWarning::WindowGeometry { window_id: 50 },
             RecoveryWarning::Sidebar { window_id: 50 },
+            RecoveryWarning::Settings {
+                detail: "invalid custom search template".into()
+            },
         ]
     );
     assert_eq!(inventory(&db.0), before);
 }
 
 #[test]
-fn structural_corruption_is_fatal_and_unchanged() {
-    let db = TempDb::from_fixture("invalid_structural");
-    let before = inventory(&db.0);
-    assert!(matches!(
-        db.repository().restore_read_only(),
-        Err(PersistenceError::Corruption(_))
-    ));
-    assert_eq!(inventory(&db.0), before);
-}
-
-#[test]
-fn newer_schema_is_rejected_unchanged() {
-    let db = TempDb::from_fixture("newer_schema");
-    let before = inventory(&db.0);
-    assert_eq!(
-        db.repository().restore_read_only().unwrap_err(),
-        PersistenceError::IncompatibleSchema {
-            found: 2,
-            supported: 1
-        }
-    );
-    assert_eq!(inventory(&db.0), before);
-}
-
-#[test]
-fn failed_migration_rolls_back_schema_data_and_version() {
-    let db = TempDb::from_fixture("failed_migration");
-    let before = inventory(&db.0);
-    assert!(matches!(
-        db.repository().initialize_and_restore(),
-        Err(PersistenceError::Migration(_))
-    ));
-    assert_eq!(inventory(&db.0), before);
+fn v2_round_trip_preserves_every_new_field() {
+    let db = TempDb::new("v2-round-trip");
+    let repository = db.repository();
+    let snapshot = Snapshot {
+        profiles: vec![
+            Profile {
+                id: 1,
+                title: "Work".into(),
+                hue: ProfileHue::Violet,
+                spaces: vec![Space {
+                    id: 10,
+                    title: "Emoji space".into(),
+                    tint: SpaceTint::Plum,
+                    glyph: SpaceGlyph::Emoji("🌊".into()),
+                    tabs: Vec::new(),
+                    active_tab: None,
+                    recently_closed: Vec::new(),
+                    split: None,
+                }],
+            },
+            Profile {
+                id: 2,
+                title: "Personal".into(),
+                hue: ProfileHue::Amber,
+                spaces: vec![Space {
+                    id: 20,
+                    title: "Glyph space".into(),
+                    tint: SpaceTint::Ink,
+                    glyph: SpaceGlyph::Glyph(GlyphName::Globe),
+                    tabs: Vec::new(),
+                    active_tab: None,
+                    recently_closed: Vec::new(),
+                    split: None,
+                }],
+            },
+        ],
+        windows: Vec::new(),
+        settings: SearchSettings {
+            engine: SearchEngineId::Custom,
+            custom_template: Some("https://search.example.test/q=%s&x=1".into()),
+        },
+        downloads: vec![
+            DownloadRecord {
+                id: 700,
+                outcome: DownloadOutcome::Succeeded,
+                size: 4096,
+                destination: Some("/tmp/a.pdf".into()),
+                terminal_at: 1000,
+            },
+            DownloadRecord {
+                id: 701,
+                outcome: DownloadOutcome::Cancelled,
+                size: 12,
+                destination: None,
+                terminal_at: 2000,
+            },
+        ],
+        command_history: vec![
+            CommandHistoryEntry {
+                id: 800,
+                title: "Alpha".into(),
+                url: "https://alpha.test/".into(),
+                visit_count: 2,
+                last_visited: 500,
+            },
+            CommandHistoryEntry {
+                id: 801,
+                title: String::new(),
+                url: "https://beta.test/path".into(),
+                visit_count: 1,
+                last_visited: 1500,
+            },
+        ],
+    };
+    repository.replace_snapshot(&snapshot).unwrap();
+    assert_eq!(repository.restore_read_only().unwrap().snapshot, snapshot);
+    // And again after a discard: a store that was discarded and recreated
+    // empty is immediately writable with the full v2 shape.
+    let outcome = repository.initialize_and_restore().unwrap();
+    assert_eq!(outcome.store, StoreLoad::Loaded);
+    repository.replace_snapshot(&snapshot).unwrap();
+    assert_eq!(repository.restore_read_only().unwrap().snapshot, snapshot);
 }
 
 #[test]
@@ -294,11 +503,55 @@ fn invalid_write_rejects_whole_snapshot() {
     let valid = sample_snapshot(3);
     repository.replace_snapshot(&valid).unwrap();
     let before = inventory(&db.0);
-    let mut invalid = valid;
+
+    let mut invalid = valid.clone();
     invalid.profiles[0].spaces[0].tabs[0].url = "bad url".into();
     assert_eq!(
         repository.replace_snapshot(&invalid).unwrap_err(),
         PersistenceError::InvalidSnapshot(InvalidSnapshotIssue::InvalidUrl { tab_id: 100 })
+    );
+    assert_eq!(inventory(&db.0), before);
+
+    let mut invalid = valid.clone();
+    invalid.profiles[0].spaces[0].glyph = SpaceGlyph::Emoji("🙈".into());
+    assert_eq!(
+        repository.replace_snapshot(&invalid).unwrap_err(),
+        PersistenceError::InvalidSnapshot(InvalidSnapshotIssue::InvalidEmoji { space_id: 10 })
+    );
+    assert_eq!(inventory(&db.0), before);
+
+    let mut invalid = valid.clone();
+    invalid.settings = SearchSettings {
+        engine: SearchEngineId::Custom,
+        custom_template: None,
+    };
+    assert_eq!(
+        repository.replace_snapshot(&invalid).unwrap_err(),
+        PersistenceError::InvalidSnapshot(InvalidSnapshotIssue::InvalidSettings {
+            detail: "custom engine requires a search template".into()
+        })
+    );
+    assert_eq!(inventory(&db.0), before);
+
+    let mut invalid = valid.clone();
+    invalid.downloads[0].size = i64::MAX as u64 + 1;
+    assert_eq!(
+        repository.replace_snapshot(&invalid).unwrap_err(),
+        PersistenceError::InvalidSnapshot(InvalidSnapshotIssue::InvalidDownload {
+            id: 700,
+            detail: "size exceeds the SQLite integer range".into()
+        })
+    );
+    assert_eq!(inventory(&db.0), before);
+
+    let mut invalid = valid.clone();
+    invalid.command_history[0].url = "bad url".into();
+    assert_eq!(
+        repository.replace_snapshot(&invalid).unwrap_err(),
+        PersistenceError::InvalidSnapshot(InvalidSnapshotIssue::InvalidHistory {
+            id: 800,
+            detail: "invalid URL".into()
+        })
     );
     assert_eq!(inventory(&db.0), before);
 }
@@ -378,6 +631,9 @@ fn all_six_profile_hues_round_trip_without_domain_dependency() {
                 spaces: Vec::new(),
             }],
             windows: Vec::new(),
+            settings: SearchSettings::default(),
+            downloads: Vec::new(),
+            command_history: Vec::new(),
         };
         repository.replace_snapshot(&snapshot).unwrap();
         let connection = rusqlite::Connection::open(&db.0).unwrap();
@@ -421,7 +677,9 @@ fn deterministic_write_counts_include_deletes_and_inserts() {
             first.deleted_rows,
             first.inserted_rows
         ),
-        (1, 14, 0, 8)
+        // The first write also deletes the settings row that schema
+        // creation seeds (id 1, DuckDuckGo defaults).
+        (1, 20, 1, 11)
     );
     let second = repository.replace_snapshot(&snapshot).unwrap();
     assert_eq!(
@@ -431,7 +689,7 @@ fn deterministic_write_counts_include_deletes_and_inserts() {
             second.deleted_rows,
             second.inserted_rows
         ),
-        (1, 14, 8, 8)
+        (1, 20, 11, 11)
     );
 }
 

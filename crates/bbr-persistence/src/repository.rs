@@ -2,25 +2,61 @@ use std::collections::{HashMap, HashSet};
 
 use rusqlite::{params, Connection, OpenFlags};
 
+use crate::load_helpers::{
+    invalid_value, parse_appearance, persisted_id, require_bool, require_id, require_order,
+    require_owner_order,
+};
 use crate::repository_load::{
-    invalid_value, load_recently_closed, load_windows, persisted_id, project_soft_references,
-    require_bool, require_id, require_order, require_owner_order, validate_nested_orders,
-    validate_tab_orders_and_pins,
+    load_command_history, load_downloads, load_recently_closed, load_settings, load_windows,
+    project_soft_references, validate_nested_orders, validate_tab_orders_and_pins,
 };
 use crate::{
-    schema, validation, CorruptionIssue, PersistenceError, Profile, ProfileHue, RecoveryWarning,
-    Repository, RestoreOutcome, Snapshot, Space, Tab, WriteStats,
+    schema, setup, validation, CorruptionIssue, PersistenceError, Profile, ProfileHue,
+    RecoveryWarning, Repository, RestoreOutcome, Snapshot, Space, SpaceGlyph, StoreDiscardReason,
+    StoreLoad, Tab, WriteStats,
 };
 
 impl Repository {
-    /// Opens or creates the database, applies the sole 0 -> 1 migration, then restores it.
+    /// Opens or creates the store at the current schema and restores it.
+    ///
+    /// Schema v2 has no migrations: a store whose version stamp does not
+    /// match the current schema — or whose structure fails validation — is
+    /// discarded and recreated empty. That is a normal, logged, non-fatal
+    /// startup path; [`RestoreOutcome::store`] records the disposition and
+    /// the returned snapshot is always complete (never a partial load).
     pub fn initialize_and_restore(&self) -> Result<RestoreOutcome, PersistenceError> {
         let mut connection = Connection::open(self.path()).map_err(schema::storage)?;
-        schema::initialize_or_migrate(&mut connection)?;
-        restore_from_connection(&connection)
+        let store = setup::prepare_store(&mut connection)?;
+        match restore_from_connection(&connection) {
+            Ok(mut outcome) => {
+                outcome.store = store;
+                Ok(outcome)
+            }
+            // Data-level corruption (invalid order keys, duplicate
+            // identities, …) is only detectable while restoring; the write
+            // path discards the store and returns a complete empty snapshot
+            // instead of a partial load or a fatal error.
+            Err(error @ PersistenceError::Corruption(_)) => {
+                setup::discard_and_recreate(&mut connection)?;
+                let mut outcome = restore_from_connection(&connection)?;
+                outcome.store = StoreLoad::Discarded {
+                    reason: StoreDiscardReason::Corrupt {
+                        detail: error.to_string(),
+                    },
+                };
+                Ok(outcome)
+            }
+            Err(error) => Err(error),
+        }
     }
 
-    /// Restores an existing current-schema database without migrating or writing it.
+    /// Restores an existing current-schema store without migrating, writing,
+    /// or discarding it.
+    ///
+    /// A store whose stamp does not match the current schema is refused with
+    /// a typed [`PersistenceError::SchemaMismatch`] and left untouched; the
+    /// write path ([`Self::initialize_and_restore`]) discards such a store
+    /// instead.
     pub fn restore_read_only(&self) -> Result<RestoreOutcome, PersistenceError> {
         let connection = Connection::open_with_flags(
             self.path(),
@@ -30,15 +66,29 @@ impl Repository {
         connection
             .pragma_update(None, "query_only", true)
             .map_err(schema::storage)?;
-        schema::validate_current(&connection)?;
-        restore_from_connection(&connection)
+        let version = schema::user_version(&connection)?;
+        if version != schema::SCHEMA_VERSION {
+            return Err(PersistenceError::SchemaMismatch {
+                found: version,
+                supported: schema::SCHEMA_VERSION,
+            });
+        }
+        schema::validate_schema(&connection)?;
+        schema::check_foreign_keys(&connection)?;
+        restore_from_connection(&connection).map(|outcome| RestoreOutcome {
+            store: StoreLoad::Loaded,
+            ..outcome
+        })
     }
 
-    /// Validates and atomically replaces the complete structural snapshot.
+    /// Validates and atomically replaces the complete snapshot.
+    ///
+    /// Runs the same store disposition as [`Self::initialize_and_restore`],
+    /// so writing to a discarded or legacy store is always safe.
     pub fn replace_snapshot(&self, snapshot: &Snapshot) -> Result<WriteStats, PersistenceError> {
         validation::validate_snapshot(snapshot).map_err(PersistenceError::InvalidSnapshot)?;
         let mut connection = Connection::open(self.path()).map_err(schema::storage)?;
-        schema::initialize_or_migrate(&mut connection)?;
+        setup::prepare_store(&mut connection)?;
         connection
             .pragma_update(None, "foreign_keys", true)
             .map_err(schema::storage)?;
@@ -61,8 +111,8 @@ impl Repository {
             inserted_rows += 1;
             for (space_position, space) in profile.spaces.iter().enumerate() {
                 transaction.execute(
-                    "INSERT INTO spaces(id, profile_id, title, position, active_tab_id) VALUES (?, ?, ?, ?, ?)",
-                    params![to_i64(space.id), to_i64(profile.id), space.title, space_position as i64, space.active_tab.map(to_i64)],
+                    "INSERT INTO spaces(id, profile_id, title, tint, glyph_kind, glyph, position, active_tab_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    params![to_i64(space.id), to_i64(profile.id), space.title, space.tint.as_str(), glyph_kind(&space.glyph), glyph_value(&space.glyph), space_position as i64, space.active_tab.map(to_i64)],
                 ).map_err(schema::storage)?;
                 inserted_rows += 1;
                 for (tab_position, tab) in space.tabs.iter().enumerate() {
@@ -104,10 +154,34 @@ impl Repository {
             ).map_err(schema::storage)?;
             inserted_rows += 1;
         }
+        transaction
+            .execute(
+                "INSERT INTO settings(id, search_engine, custom_search_template) VALUES (1, ?, ?)",
+                params![
+                    snapshot.settings.engine.as_str(),
+                    snapshot.settings.custom_template
+                ],
+            )
+            .map_err(schema::storage)?;
+        inserted_rows += 1;
+        for (position, record) in snapshot.downloads.iter().enumerate() {
+            transaction.execute(
+                "INSERT INTO downloads(id, outcome, size, destination, terminal_at, position) VALUES (?, ?, ?, ?, ?, ?)",
+                params![to_i64(record.id), record.outcome.as_str(), to_i64(record.size), record.destination, to_i64(record.terminal_at), position as i64],
+            ).map_err(schema::storage)?;
+            inserted_rows += 1;
+        }
+        for (position, entry) in snapshot.command_history.iter().enumerate() {
+            transaction.execute(
+                "INSERT INTO command_history(id, title, url, visit_count, last_visited, position) VALUES (?, ?, ?, ?, ?, ?)",
+                params![to_i64(entry.id), entry.title, entry.url, to_i64(entry.visit_count), to_i64(entry.last_visited), position as i64],
+            ).map_err(schema::storage)?;
+            inserted_rows += 1;
+        }
         transaction.commit().map_err(schema::storage)?;
         Ok(WriteStats {
             committed_transactions: 1,
-            sql_statements: 6 + inserted_rows,
+            sql_statements: 9 + inserted_rows,
             deleted_rows,
             inserted_rows,
         })
@@ -118,9 +192,21 @@ const fn to_i64(value: u64) -> i64 {
     value as i64
 }
 
+fn glyph_kind(glyph: &SpaceGlyph) -> &'static str {
+    match glyph {
+        crate::SpaceGlyph::Emoji(_) => "emoji",
+        crate::SpaceGlyph::Glyph(_) => "glyph",
+    }
+}
+
+fn glyph_value(glyph: &SpaceGlyph) -> &str {
+    match glyph {
+        crate::SpaceGlyph::Emoji(value) => value,
+        crate::SpaceGlyph::Glyph(name) => name.as_str(),
+    }
+}
+
 fn restore_from_connection(connection: &Connection) -> Result<RestoreOutcome, PersistenceError> {
-    schema::validate_schema(connection)?;
-    schema::check_foreign_keys(connection)?;
     let mut warnings = Vec::new();
     let mut identities = HashSet::new();
     let mut profiles = load_profiles(connection, &mut identities)?;
@@ -166,10 +252,20 @@ fn restore_from_connection(connection: &Connection) -> Result<RestoreOutcome, Pe
     )?;
     project_soft_references(connection, &space_locations, &mut profiles, &mut warnings)?;
     let windows = load_windows(connection, &mut identities, &mut warnings)?;
+    let settings = load_settings(connection, &mut warnings)?;
+    let downloads = load_downloads(connection, &mut HashSet::new())?;
+    let command_history = load_command_history(connection, &mut HashSet::new())?;
     warnings.sort_by_key(RecoveryWarning::sort_key);
     Ok(RestoreOutcome {
-        snapshot: Snapshot { profiles, windows },
+        snapshot: Snapshot {
+            profiles,
+            windows,
+            settings,
+            downloads,
+            command_history,
+        },
         warnings,
+        store: StoreLoad::Loaded,
     })
 }
 
@@ -212,7 +308,7 @@ fn load_spaces(
     identities: &mut HashSet<u64>,
 ) -> Result<Vec<(Space, u64)>, PersistenceError> {
     let mut statement = connection.prepare(
-        "SELECT id, profile_id, title, position, active_tab_id FROM spaces ORDER BY profile_id, position",
+        "SELECT id, profile_id, title, tint, glyph_kind, glyph, position, active_tab_id FROM spaces ORDER BY profile_id, position",
     ).map_err(schema::storage)?;
     let rows = statement
         .query_map([], |row| {
@@ -220,18 +316,23 @@ fn load_spaces(
                 row.get::<_, i64>(0)?,
                 row.get::<_, i64>(1)?,
                 row.get::<_, String>(2)?,
-                row.get::<_, i64>(3)?,
-                row.get::<_, Option<i64>>(4)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+                row.get::<_, String>(5)?,
+                row.get::<_, i64>(6)?,
+                row.get::<_, Option<i64>>(7)?,
             ))
         })
         .map_err(schema::storage)?;
     let mut result = Vec::new();
     let mut owner_positions = HashMap::new();
     for row in rows {
-        let (id, profile_id, title, position, active_tab) = row.map_err(schema::storage)?;
+        let (id, profile_id, title, tint, glyph_kind, glyph, position, active_tab) =
+            row.map_err(schema::storage)?;
         let profile_id = persisted_id("spaces", profile_id)?;
         require_owner_order("spaces", profile_id, position, &mut owner_positions)?;
         let id = require_id("spaces", id, identities)?;
+        let (tint, glyph) = parse_appearance(&tint, &glyph_kind, &glyph, id)?;
         let active_tab = active_tab
             .map(|value| persisted_id("spaces", value))
             .transpose()?;
@@ -239,6 +340,8 @@ fn load_spaces(
             Space {
                 id,
                 title,
+                tint,
+                glyph,
                 tabs: Vec::new(),
                 active_tab,
                 recently_closed: Vec::new(),

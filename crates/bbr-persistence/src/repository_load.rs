@@ -2,9 +2,14 @@ use std::collections::{HashMap, HashSet};
 
 use rusqlite::{Connection, OptionalExtension};
 
+use crate::load_helpers::{
+    invalid_closed, invalid_value, persisted_id, require_bool, require_id, require_order,
+    require_owner_order,
+};
 use crate::{
-    schema, validation, CorruptionIssue, PersistenceError, Profile, RecentlyClosedTab,
-    RecoveryWarning, SidebarState, Split, WindowGeometry, WindowState,
+    schema, validation, CommandHistoryEntry, CorruptionIssue, DownloadOutcome, DownloadRecord,
+    PersistenceError, Profile, RecentlyClosedTab, RecoveryWarning, SearchEngineId, SearchSettings,
+    SidebarState, Split, WindowGeometry, WindowState,
 };
 
 pub(crate) fn validate_nested_orders(_profiles: &[Profile]) -> Result<(), PersistenceError> {
@@ -232,75 +237,192 @@ pub(crate) fn load_windows(
     Ok(result)
 }
 
-pub(crate) fn require_order(
-    owner: &str,
-    expected: usize,
-    actual: i64,
-) -> Result<(), PersistenceError> {
-    if actual == expected as i64 {
-        Ok(())
-    } else {
-        Err(PersistenceError::Corruption(
-            CorruptionIssue::InvalidOrder {
-                owner: owner.to_owned(),
+/// Loads the single global settings row, or falls back to defaults with a
+/// typed warning when the persisted record is incoherent.
+///
+/// The row itself is required structural data (exactly one row with id 1);
+/// an unknown engine id is fatal. The custom search template is optional
+/// user text: an invalid template under the custom engine, or a template
+/// without the custom engine, recovers to defaults rather than corrupting
+/// the load.
+pub(crate) fn load_settings(
+    connection: &Connection,
+    warnings: &mut Vec<RecoveryWarning>,
+) -> Result<SearchSettings, PersistenceError> {
+    let count: i64 = connection
+        .query_row("SELECT COUNT(*) FROM settings", [], |row| row.get(0))
+        .map_err(schema::storage)?;
+    if count != 1 {
+        return Err(invalid_value(
+            "settings",
+            format!("expected exactly one settings row, found {count}"),
+        ));
+    }
+    let row = connection
+        .query_row(
+            "SELECT id, search_engine, custom_search_template FROM settings ORDER BY id",
+            [],
+            |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, Option<String>>(2)?,
+                ))
             },
-        ))
+        )
+        .map_err(schema::storage)?;
+    let (id, engine, template) = row;
+    if id != 1 {
+        return Err(invalid_value(
+            "settings",
+            format!("settings row id must be 1, found {id}"),
+        ));
     }
+    let engine = SearchEngineId::parse(&engine)
+        .ok_or_else(|| invalid_value("settings", format!("unknown search engine `{engine}`")))?;
+    let mut settings = SearchSettings {
+        engine,
+        custom_template: template,
+    };
+    match (settings.engine, settings.custom_template.as_deref()) {
+        (SearchEngineId::Custom, None) => {
+            warnings.push(RecoveryWarning::Settings {
+                detail: "custom engine without a search template".into(),
+            });
+            settings = SearchSettings::default();
+        }
+        (SearchEngineId::Custom, Some(template))
+            if !validation::valid_custom_template(template) =>
+        {
+            warnings.push(RecoveryWarning::Settings {
+                detail: "invalid custom search template".into(),
+            });
+            settings = SearchSettings::default();
+        }
+        (engine, Some(_template)) if engine != SearchEngineId::Custom => {
+            warnings.push(RecoveryWarning::Settings {
+                detail: "search template without the custom engine".into(),
+            });
+            settings.custom_template = None;
+        }
+        _ => {}
+    }
+    Ok(settings)
 }
 
-pub(crate) fn require_owner_order(
-    table: &str,
-    owner: u64,
-    actual: i64,
-    positions: &mut HashMap<u64, usize>,
-) -> Result<(), PersistenceError> {
-    let expected = positions.entry(owner).or_default();
-    require_order(&format!("{table} owner {owner}"), *expected, actual)?;
-    *expected += 1;
-    Ok(())
-}
-
-pub(crate) fn require_id(
-    table: &str,
-    value: i64,
+/// Loads terminal download history in persisted order.
+pub(crate) fn load_downloads(
+    connection: &Connection,
     identities: &mut HashSet<u64>,
-) -> Result<u64, PersistenceError> {
-    let id = persisted_id(table, value)?;
-    if identities.insert(id) {
-        Ok(id)
-    } else {
-        Err(PersistenceError::Corruption(
-            CorruptionIssue::DuplicateIdentity { id },
-        ))
+) -> Result<Vec<DownloadRecord>, PersistenceError> {
+    let mut statement = connection.prepare(
+        "SELECT id, outcome, size, destination, terminal_at, position FROM downloads ORDER BY position",
+    ).map_err(schema::storage)?;
+    let rows = statement
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, i64>(2)?,
+                row.get::<_, Option<String>>(3)?,
+                row.get::<_, i64>(4)?,
+                row.get::<_, i64>(5)?,
+            ))
+        })
+        .map_err(schema::storage)?;
+    let mut result = Vec::new();
+    for (expected, row) in rows.enumerate() {
+        let (id, outcome, size, destination, terminal_at, position) =
+            row.map_err(schema::storage)?;
+        require_order("downloads", expected, position)?;
+        let id = require_id("downloads", id, identities)?;
+        let outcome = DownloadOutcome::parse(&outcome).ok_or_else(|| {
+            invalid_value(
+                "downloads",
+                format!("attempt {id} has unknown outcome `{outcome}`"),
+            )
+        })?;
+        if size < 0 {
+            return Err(invalid_value(
+                "downloads",
+                format!("attempt {id} has negative size"),
+            ));
+        }
+        if terminal_at < 0 {
+            return Err(invalid_value(
+                "downloads",
+                format!("attempt {id} has negative terminal timestamp"),
+            ));
+        }
+        if let Some(destination) = &destination {
+            if !validation::valid_path(destination) {
+                return Err(invalid_value(
+                    "downloads",
+                    format!("attempt {id} has an invalid destination path"),
+                ));
+            }
+        }
+        result.push(DownloadRecord {
+            id,
+            outcome,
+            size: size as u64,
+            destination,
+            terminal_at: terminal_at as u64,
+        });
     }
+    Ok(result)
 }
 
-pub(crate) fn persisted_id(table: &str, value: i64) -> Result<u64, PersistenceError> {
-    if validation::valid_persisted_id(value) {
-        Ok(value as u64)
-    } else {
-        Err(invalid_value(table, format!("invalid identity {value}")))
+/// Loads visited command-history entries in persisted corpus order.
+pub(crate) fn load_command_history(
+    connection: &Connection,
+    identities: &mut HashSet<u64>,
+) -> Result<Vec<CommandHistoryEntry>, PersistenceError> {
+    let mut statement = connection.prepare(
+        "SELECT id, title, url, visit_count, last_visited, position FROM command_history ORDER BY position",
+    ).map_err(schema::storage)?;
+    let rows = statement
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, i64>(3)?,
+                row.get::<_, i64>(4)?,
+                row.get::<_, i64>(5)?,
+            ))
+        })
+        .map_err(schema::storage)?;
+    let mut result = Vec::new();
+    for (expected, row) in rows.enumerate() {
+        let (id, title, url, visit_count, last_visited, position) = row.map_err(schema::storage)?;
+        require_order("command_history", expected, position)?;
+        let id = require_id("command_history", id, identities)?;
+        if !validation::valid_url(&url) {
+            return Err(invalid_value(
+                "command_history",
+                format!("entry {id} has an invalid URL"),
+            ));
+        }
+        if visit_count < 0 {
+            return Err(invalid_value(
+                "command_history",
+                format!("entry {id} has a negative visit count"),
+            ));
+        }
+        if last_visited < 0 {
+            return Err(invalid_value(
+                "command_history",
+                format!("entry {id} has a negative recency marker"),
+            ));
+        }
+        result.push(CommandHistoryEntry {
+            id,
+            title,
+            url,
+            visit_count: visit_count as u64,
+            last_visited: last_visited as u64,
+        });
     }
-}
-
-pub(crate) fn require_bool(table: &str, value: i64) -> Result<bool, PersistenceError> {
-    match value {
-        0 => Ok(false),
-        1 => Ok(true),
-        _ => Err(invalid_value(table, format!("invalid boolean {value}"))),
-    }
-}
-
-pub(crate) fn invalid_value(table: &str, detail: String) -> PersistenceError {
-    PersistenceError::Corruption(CorruptionIssue::InvalidRequiredValue {
-        table: table.to_owned(),
-        detail,
-    })
-}
-
-fn invalid_closed(tab_id: u64, detail: &str) -> PersistenceError {
-    PersistenceError::Corruption(CorruptionIssue::InvalidRecentlyClosed {
-        tab_id,
-        detail: detail.to_owned(),
-    })
+    Ok(result)
 }
