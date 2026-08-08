@@ -34,6 +34,8 @@
 //! domain/persistence layers construct [`TabEntry`]/[`SpaceEntry`]/
 //! [`ProfileEntry`]/[`HistoryEntry`] values; identity newtypes mirror the
 //! domain/engine shapes and are mapped at the app-composition boundary.
+//! Global search-engine settings, a validated custom `%s` template, and
+//! deterministic search-URL rendering live in [`search_settings`].
 //!
 //! Real-app presentation E2E, keyboard focus, and command-bar GPUI are owned
 //! by the later serial app-composition packet, not by this crate.
@@ -72,6 +74,7 @@ pub mod id;
 pub mod parse;
 pub mod rank;
 pub mod registry;
+pub mod search_settings;
 
 mod collect;
 
@@ -82,3 +85,9 @@ pub use rank::{
     rank, Activation, CommandResult, MatchQuality, RankKey, RankedResults, ResultGroup,
 };
 pub use registry::{Action, ActionCategory, CommandRegistry};
+pub use search_settings::{
+    engine::{CustomUrlTemplate, SearchEngine, TemplateError, CURATED},
+    render::{percent_encode, render_search_url},
+    settings::{SearchSettingsV1, SettingsScope, SettingsVersion},
+    store::{LoadOutcome, ResetOutcome, SettingsStore, StoreOutcome},
+};
