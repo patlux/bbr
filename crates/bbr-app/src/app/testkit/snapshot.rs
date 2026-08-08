@@ -356,6 +356,8 @@ impl BbrApp {
                     dom_url: probe.dom_url.clone(),
                     dom_title: probe.dom_title.clone(),
                     has_body: probe.has_body,
+                    root_background_color: probe.root_background_color.clone(),
+                    body_background_color: probe.body_background_color.clone(),
                     native_url: probe.native_url.clone(),
                     native_title: probe.native_title.clone(),
                 }),

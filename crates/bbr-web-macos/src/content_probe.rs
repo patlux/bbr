@@ -9,7 +9,8 @@
 //! - the committed document, read in BBR's own client content world
 //!   ([`WKContentWorld::defaultClientWorld`], the same isolation the find
 //!   strategy uses — never the page's main content world): `readyState`,
-//!   `document.URL`, `document.title`, and body presence;
+//!   `document.URL`, `document.title`, body presence, and the computed root/body
+//!   background colors;
 //! - the native `WKWebView` `url`/`title` properties (the URL reflects a
 //!   provisional navigation immediately, so "a navigation was accepted" is
 //!   observable even before the document commits — the key asymmetry that
@@ -49,6 +50,10 @@ pub struct ContentProbe {
     pub dom_title: String,
     /// A document body exists in the DOM.
     pub has_body: bool,
+    /// Computed `background-color` of the document root.
+    pub root_background_color: String,
+    /// Computed `background-color` of the body, or empty when no body exists.
+    pub body_background_color: String,
     /// The native `WKWebView.url` (provisional or committed; `None` when no
     /// navigation has been accepted at all).
     pub native_url: Option<String>,
@@ -56,7 +61,7 @@ pub struct ContentProbe {
     pub native_title: Option<String>,
 }
 
-/// The field separator between the four DOM values the probe script returns
+/// The field separator between the six DOM values the probe script returns
 /// (a unit separator never legitimately appears inside a URL or title).
 const FIELD_SEPARATOR: char = '\u{1f}';
 
@@ -68,7 +73,9 @@ pub fn probe_web_view(web_view: &Retained<WKWebView>, on_result: impl Fn(Content
     assert_main_thread();
     let mtm = MainThreadMarker::new().expect("content probe on the main thread");
     let script = "document.readyState + \"\\u001f\" + document.URL + \"\\u001f\" + \
-        document.title + \"\\u001f\" + (document.body ? \"1\" : \"0\")";
+        document.title + \"\\u001f\" + (document.body ? \"1\" : \"0\") + \"\\u001f\" + \
+        getComputedStyle(document.documentElement).backgroundColor + \"\\u001f\" + \
+        (document.body ? getComputedStyle(document.body).backgroundColor : \"\")";
     let ns_script = NSString::from_str(script);
     // BBR's own client content world, never the page's main content world:
     // the probe reads the shared DOM but cannot collide with or be observed
@@ -124,13 +131,13 @@ fn content_probe_from_result(
     probe
 }
 
-/// Fill the DOM fields from the script's four unit-separator-delimited
-/// values. A payload that is not exactly four fields (a malformed script
+/// Fill the DOM fields from the script's six unit-separator-delimited
+/// values. A payload that is not exactly six fields (a malformed script
 /// result, never a real page value) leaves the DOM fields absent — the
 /// probe never fabricates content.
 fn apply_dom_fields(probe: &mut ContentProbe, payload: &str) {
     let fields: Vec<&str> = payload.split(FIELD_SEPARATOR).collect();
-    if fields.len() != 4 {
+    if fields.len() != 6 {
         log::warn!("content probe: malformed payload ({} fields)", fields.len());
         return;
     }
@@ -138,6 +145,8 @@ fn apply_dom_fields(probe: &mut ContentProbe, payload: &str) {
     probe.dom_url = fields[1].to_owned();
     probe.dom_title = fields[2].to_owned();
     probe.has_body = fields[3] == "1";
+    probe.root_background_color = fields[4].to_owned();
+    probe.body_background_color = fields[5].to_owned();
 }
 
 fn native_url(web_view: &WKWebView) -> Option<String> {
@@ -168,21 +177,28 @@ mod tests {
         let mut probe = ContentProbe::default();
         apply_dom_fields(
             &mut probe,
-            "complete\u{1f}https://example.com/\u{1f}Example\u{1f}1",
+            "complete\u{1f}https://example.com/\u{1f}Example\u{1f}1\u{1f}rgb(21, 23, 25)\u{1f}rgb(21, 23, 25)",
         );
         assert_eq!(probe.ready_state, "complete");
         assert_eq!(probe.dom_url, "https://example.com/");
         assert_eq!(probe.dom_title, "Example");
         assert!(probe.has_body);
+        assert_eq!(probe.root_background_color, "rgb(21, 23, 25)");
+        assert_eq!(probe.body_background_color, "rgb(21, 23, 25)");
     }
 
     #[test]
     fn dom_fields_parse_blank_view() {
         let mut probe = ContentProbe::default();
-        apply_dom_fields(&mut probe, "complete\u{1f}about:blank\u{1f}\u{1f}1");
+        apply_dom_fields(
+            &mut probe,
+            "complete\u{1f}about:blank\u{1f}\u{1f}1\u{1f}rgb(21, 23, 25)\u{1f}rgb(21, 23, 25)",
+        );
         assert_eq!(probe.dom_url, "about:blank");
         assert_eq!(probe.dom_title, "");
         assert!(probe.has_body);
+        assert_eq!(probe.root_background_color, "rgb(21, 23, 25)");
+        assert_eq!(probe.body_background_color, "rgb(21, 23, 25)");
     }
 
     #[test]

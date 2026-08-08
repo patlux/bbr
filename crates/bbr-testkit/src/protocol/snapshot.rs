@@ -658,7 +658,8 @@ pub struct FindSnapshot {
 
 /// Real WebKit content evidence (testkit-only gateway): the committed
 /// document read in BBR's own client content world — `readyState`, `URL`,
-/// `title`, body presence — plus the native `WKWebView` `url`/`title`
+/// `title`, body presence, computed root/body backgrounds — plus the native
+/// `WKWebView` `url`/`title`
 /// properties sampled at the same point in time. The shell's visibility
 /// flags, geometry, and session bookkeeping can be perfectly green while
 /// the user sees a blank content area (the schemeless Cmd-T destination
@@ -680,6 +681,10 @@ pub struct WebContentProbe {
     pub dom_title: String,
     /// A document body exists in the DOM.
     pub has_body: bool,
+    /// Computed `background-color` of the document root.
+    pub root_background_color: String,
+    /// Computed `background-color` of the body, or empty when no body exists.
+    pub body_background_color: String,
     /// The native `WKWebView.url` (provisional or committed; `None` when no
     /// navigation has been accepted at all).
     pub native_url: Option<String>,
