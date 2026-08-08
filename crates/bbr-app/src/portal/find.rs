@@ -24,6 +24,7 @@ use crate::app::find::{
     FindSurface, FIND_BAR_ID, FIND_CLOSE_ID, FIND_COUNT_ID, FIND_FIELD_ID, FIND_NEXT_ID,
     FIND_PREVIOUS_ID, FIND_TEXT_ID,
 };
+use crate::components::Icon;
 use crate::theme::Spacing;
 
 /// Build the find bar at the resolved portal rect. The caller owns the
@@ -63,24 +64,30 @@ pub fn find_bar(model: &FindSurface, rect: Rect, cx: &mut Context<PortalRoot>) -
                 .text_color(p.ink_secondary)
                 .child(count),
         )
-        .child(control_button(FIND_PREVIOUS_ID, "‹", model).on_mouse_down(
-            MouseButton::Left,
-            cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
-                this.find_previous_clicked(cx);
-            }),
-        ))
-        .child(control_button(FIND_NEXT_ID, "›", model).on_mouse_down(
-            MouseButton::Left,
-            cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
-                this.find_next_clicked(cx);
-            }),
-        ))
-        .child(control_button(FIND_CLOSE_ID, "✕", model).on_mouse_down(
-            MouseButton::Left,
-            cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
-                this.find_close_clicked(cx);
-            }),
-        ))
+        .child(
+            control_button(FIND_PREVIOUS_ID, Icon::ChevronLeft, model).on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                    this.find_previous_clicked(cx);
+                }),
+            ),
+        )
+        .child(
+            control_button(FIND_NEXT_ID, Icon::ChevronRight, model).on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                    this.find_next_clicked(cx);
+                }),
+            ),
+        )
+        .child(
+            control_button(FIND_CLOSE_ID, Icon::Close, model).on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                    this.find_close_clicked(cx);
+                }),
+            ),
+        )
 }
 
 /// The query field: the live text plus a placeholder when empty.
@@ -120,12 +127,15 @@ fn field(model: &FindSurface) -> Stateful<Div> {
         )
 }
 
-/// One bar control (previous / next / close). The close control uses the
-/// §8 `density:hit-min.close` hit square; the step controls use
-/// `density:hit-min`.
-fn control_button(id: &'static str, glyph: &str, model: &FindSurface) -> Stateful<Div> {
+/// One bar control (previous / next / close), rendered with the §7 drawn
+/// catalog glyph (`Icon::ChevronLeft` / `Icon::ChevronRight` / `Icon::Close`)
+/// at the `icon:<density>` size. The close control uses the §8
+/// `density:hit-min.close` hit square; the step controls use
+/// `density:hit-min`. The owning div keeps the id, hit square, cursor, and
+/// listeners — the glyph is pure presentation (§14: no Unicode substitutes
+/// in chrome).
+fn control_button(id: &'static str, icon: Icon, model: &FindSurface) -> Stateful<Div> {
     let theme = &model.theme;
-    let p = theme.palette;
     let is_close = id == FIND_CLOSE_ID;
     let hit = if is_close {
         theme.density.hit_min_close()
@@ -137,13 +147,11 @@ fn control_button(id: &'static str, glyph: &str, model: &FindSurface) -> Statefu
         .w(hit)
         .h(hit)
         .rounded(theme.radius.medium())
-        .text_size(theme.type_.label.size)
-        .text_color(p.ink_secondary)
         .flex()
         .items_center()
         .justify_center()
         .cursor_pointer()
-        .child(SharedString::from(glyph))
+        .child(icon.canvas(theme, theme.density.icon()))
 }
 
 fn elev2_shadows(theme: &crate::theme::Theme) -> Vec<gpui::BoxShadow> {

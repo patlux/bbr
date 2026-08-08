@@ -53,10 +53,17 @@ menu follow-up, which may start after F2 closeout when that territory is free.
       `●`/`○`, loading `●`, new-space `+`, crash `!`, empty-pane brand `B`,
       and status-line `⚠` placeholders for drawn 1.5 pt glyphs from the
       reusable `components::icons` catalog — ids, hit targets, semantics,
-      focus, and listeners unchanged. Unit/geometry evidence green on the
-      lane; the existing real-app shell suites re-run at integration under
-      the host-wide GUI gate. The command-field prefix and sidebar brand text
-      stay with command composition.)*
+      focus, and listeners unchanged. The find bar's `‹`/`›`/`✕` controls
+      now use the same catalog (`ChevronLeft`/`ChevronRight`/`Close`), so no
+      Unicode substitute remains in component-owned chrome. Implementation
+      REVIEW_PASS and frozen awaiting orchestrator integration; not marked
+      complete before its declared integration gates — `just e2e-shell-find`
+      6/6 and `just verify` green, but `just e2e-shell-portal` is 5/7 (two
+      pre-existing base failures: minimize hit-test environment blocker,
+      parent-close Broken-pipe quit-on-owning-browser-window regression) and
+      canonical `just e2e` stops at the missing `e2e_shutdown` test target,
+      so `e2e-perf` has not run. The command-field prefix and sidebar brand
+      text stay with command composition.)*
 - [ ] Clear hierarchy between navigation controls, command surface, pinned tabs, regular tabs, and spaces.
 - [ ] Active tab and focused pane are unmistakable without visual noise.
 - [x] Profile identity is clear whenever tabs/spaces cross contexts. *(Every space row keeps its §12 chip with a round-robin hue and monogram, profile groups stack under hairlines, the empty pane names the owning profile, and a cross-profile space activation renders the destination profile chip + a `type:label` "in Profile · <title>" hint at the top of the command field for one interaction (the [cross-context profile-hint slice](../tasks/cross-context-profile-hint.md)) — identity never relies on color alone.)*

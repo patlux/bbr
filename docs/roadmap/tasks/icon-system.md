@@ -14,30 +14,45 @@ matched to `ink.secondary` at rest — while preserving every id, hit target,
 label, semantic, focus path, listener, performance budget, and Chassis & Glass
 token. No emoji/Unicode substitutes remain in the component-owned chrome.
 
+**Source-drift correction (current main):** the core swaps above were merged
+via the original lane commit `9f81f71` (`feat(ui): draw native chrome
+icons`) and the integration commit `2e10037` (`feat(ui): integrate the
+geometric icon system`). The one remaining component-owned placeholder this
+packet now closes is the find bar's `‹`/`›`/`✕` step/close controls in
+`crates/bbr-app/src/portal/find.rs` (a later find-in-page slice shipped
+Unicode instead of drawn glyphs), rendered through the same reusable
+`components::icons` catalog — plus the chevron geometry/name/color contract
+tests that lock the catalog extension.
+
 ## Scope
 
-- **New icon module** `crates/bbr-app/src/components/icons.rs`: a typed
-  `Icon` enum (`Close`, `Pin { pinned }`, `Lifering`, `ChassisMark`, `Plus`,
-  `LoadingArc`) rendered through GPUI's vector path/quad paint API
-  (`PathBuilder`/`paint_path`/`paint_quad` inside a sized non-interactive
-  `canvas`). No external icon dependency, no SVG assets, no gradients, no
-  emoji.
+- **Icon module** `crates/bbr-app/src/components/icons.rs` (merged base): a
+typed `Icon` enum (`Close`, `Pin { pinned }`, `Lifering`, `ChassisMark`,
+`Plus`, `LoadingArc`, `ChevronLeft`, `ChevronRight`) rendered through GPUI's
+vector path/quad paint API (`PathBuilder`/`paint_path`/`paint_quad` inside a
+sized non-interactive `canvas`). No external icon dependency, no SVG assets,
+no gradients, no emoji.
 - **Glyph swaps (bounded, component-owned files only):**
   - `tab_row.rs` — close control `×` → `Icon::Close`; pin control `●`/`○` →
     `Icon::Pin { pinned }` (disabled state keeps `ink.faint`); favicon
-    loading `●` → `Icon::LoadingArc` (accent, static).
+    loading `●` → `Icon::LoadingArc` (accent, static). *(Merged base.)*
   - `pane.rs` — crash `!` → `Icon::Lifering` (32 pt, `status.error`); empty
     pane brand `B` → `Icon::ChassisMark` (64 pt chassis frame + glass
-    aperture).
-  - `space.rs` — new-space `+` → `Icon::Plus`.
+    aperture). *(Merged base.)*
+  - `space.rs` — new-space `+` → `Icon::Plus`. *(Merged base.)*
   - `shell/presentation.rs` — status-line `⚠` removed (§14: no emoji in
     chrome); the crash line reads "Web content process terminated" and the
     error state keeps its §3.3 non-color companions (drawn lifering + error
-    surface + panel copy).
+    surface + panel copy). *(Merged base.)*
+  - `portal/find.rs` — find-bar step `‹`/`›` → `Icon::ChevronLeft` /
+    `Icon::ChevronRight` and close `✕` → `Icon::Close`, at the
+    `icon:<density>` size inside the unchanged `density:hit-min` /
+    `density:hit-min.close` hit squares. *(This lane.)*
 - **Tests:** lower-level geometry/name tests for the icon catalog
   (stable names, §7 stroke/density contract, glyphs fit their boxes, chassis
-  radius stays in the §5 range, palette-derived rest colors) and a
-  presentation unit test proving the status line carries no emoji glyphs.
+  radius stays in the §5 range, palette-derived rest colors, chevron
+  geometry) and a presentation unit test proving the status line carries no
+  emoji glyphs. *(Chevron additions and their contract tests: this lane.)*
 - **Docs:** this packet, linked from the ui-design-system track as the
   canonical owner.
 
@@ -63,23 +78,19 @@ token. No emoji/Unicode substitutes remain in the component-owned chrome.
 ## Parallel-lane contract
 
 ```text
-Base commit:      ec52bf07aba70a3071aa98f3b4d635b252c68b20
-                  (parallel/icon-system, clean at activation)
-Depends on:       the Phase-4 shell slice components (tab_row/space/pane),
-                  the §7/§14 DESIGN contract
-Provides/API:     crate::components::icons::{Icon, icon_stroke, ...}
-                  — canvas-based glyphs; callers keep their own ids/hit
-                  squares/listeners/labels on the wrapping divs
-Exclusive paths:  crates/bbr-app/src/components/icons.rs (new),
-                  crates/bbr-app/src/components/{mod,tab_row,space,pane}.rs,
-                  crates/bbr-app/src/shell/presentation.rs
-Shared integration points: none beyond the unchanged component signatures
-                  (`close_control`/`pin_control`/`favicon_tile`/
-                  `space_new_row`/`crash_panel`/`empty_space_pane` keep their
-                  exact call shapes, so render.rs/sidebar_view.rs compile
-                  unchanged)
-Integration order: after the icon slice is reviewed; the canonical `just e2e`
-                  gate runs at integration (not in this lane)
+Base commit:      9960079 (current main; the core icon slice merged earlier
+                  at 2e10037 already carried the components/* + presentation
+                  swaps, so this lane is a bounded find-bar completion)
+Depends on:       the merged components::icons catalog, DESIGN §7/§14
+Provides/API:     Icon::{ChevronLeft, ChevronRight} added to the existing
+                  catalog; find-bar controls render catalog glyphs (no API
+                  change for other callers)
+Exclusive paths:  crates/bbr-app/src/components/icons.rs,
+                  crates/bbr-app/src/portal/find.rs
+Shared integration points: components/icons.rs (F2a may add its own footer/
+                  space-strip catalog variants — enum-union merge expected)
+Integration order: after this lane is reviewed; canonical `just e2e` under
+                  the host-wide GUI lock
 ```
 
 ## Constraints
@@ -89,8 +100,9 @@ Integration order: after the icon slice is reviewed; the canonical `just e2e`
   manifests, `ROADMAP.md`, and portable crates stay untouched.
 - Stable element ids (`bbr-tab-close-<n>`, `bbr-tab-pin-<n>`,
   `bbr-tab-favicon-<n>`, `bbr-crash-panel`, `bbr-empty-new-tab`,
-  `bbr-space-new`, `bbr-status`), labels, semantics, focus, and listener
-  paths are preserved byte-for-byte where the tree asserts them.
+  `bbr-space-new`, `bbr-status`, `bbr-find-previous`, `bbr-find-next`,
+  `bbr-find-close`), labels, semantics, focus, and listener paths are
+  preserved byte-for-byte where the tree asserts them.
 - Colors come only from the palette tokens (`ink.secondary`, `ink.faint`,
   `accent`, `status.error`); no raw arbitrary colors, gradients, glow, or
   emoji.
@@ -106,24 +118,40 @@ Integration order: after the icon slice is reviewed; the canonical `just e2e`
 - [x] `crates/bbr-app/src/components/icons.rs` tests: catalog names stable,
       §7 stroke weight per density (1.25 S / 1.5 N·XL), glyph geometry fits
       its box at every shipped size, chassis frame radius stays in the §5
-      4–8 px range with the aperture inside the frame, and rest colors
-      resolve from the palette.
+      4–8 px range with the aperture inside the frame, chevron arm fits at
+      every shipped size, and rest colors resolve from the palette.
 - [x] `crates/bbr-app/src/shell/presentation.rs` test: the crash status line
       is exactly "Web content process terminated" and ASCII-only (no
       emoji-presentation glyphs), and non-crash statuses are unchanged.
 
 ### Real-app E2E
 
-- [ ] Existing shell suites must stay green — run at integration under the
-      host-wide GUI gate (not run in this lane by design). No new scenario:
-      this is visual replacement with no behavior change (AGENTS.md
-      browser-feature rule).
+- [x] `just e2e-shell-find` stays green — 6/6 (find-bar visual swap over
+      the real portal + WKWebView). No new scenario: this is visual
+      replacement with no behavior change (AGENTS.md browser-feature rule).
+- [ ] `just e2e-shell-portal` is **5/7**, not green. Both failures
+      reproduce identically on clean base `9960079` and are pre-existing,
+      not lane-caused: `host_hides_on_minimize_and_restores` (minimize
+      hit-test environment blocker — `CGSSessionScreenIsLocked` / foreign
+      frontmost-window interference) and
+      `host_tears_down_when_parent_closes_with_open_presentation`
+      (parent-close Broken-pipe base regression from the current
+      quit-on-owning-browser-window behavior introduced by the auth merge
+      `53a9590` and re-landed by F2c `26e19c1`). Neither failure is called
+      passed.
+- [ ] Canonical `just e2e` is **not green**: the run passed `e2e-smoke`
+      and then stopped because the current tracked justfile references the
+      missing test target `e2e_shutdown`; no such test file currently exists
+      in any worktree. Consequently `e2e-perf` did not run as part
+      of the canonical e2e; no integration evidence is claimed.
 
 ### Performance
 
-- [ ] No new scenario: glyphs are static paths/quads and only replace text
-      children on existing elements; the gate-enforced matrix runs at
-      integration.
+- [x] No new scenario and no new perf kind: glyphs are static paths/quads
+      and only replace text children on existing elements.
+- [ ] Full performance remains an integration gate, **pending**: `e2e-perf`
+      did not run as part of the canonical `just e2e` (stopped at the
+      missing `e2e_shutdown` target).
 
 ## Completion gates
 
@@ -131,28 +159,37 @@ Integration order: after the icon slice is reviewed; the canonical `just e2e`
 cargo fmt --all -- --check
 cargo test -p bbr --features testkit
 cargo clippy -p bbr --features testkit --all-targets -- -D warnings
+just verify
+just e2e-shell-find
+just e2e-shell-portal
+just e2e
 just roadmap
 git diff --check
 ```
 
-GUI E2E (`just e2e-*`) is deliberately excluded from this lane and runs at
-integration.
+GUI E2E (`just e2e-*`) runs under the host-wide GUI lock.
+
+Gate status: `just e2e-shell-portal` is 5/7 with two pre-existing base
+failures (see Real-app E2E) and canonical `just e2e` stops at the missing
+`e2e_shutdown` test target, so `e2e-perf` has not run; both remain open
+integration gates before this roadmap item can be marked complete.
 
 ## Delivery sequence
 
-1. One exclusive writer (this lane) implements and verifies the bounded
-   slice.
+1. One exclusive writer (this lane) audits the merged base for remaining
+   component-owned Unicode chrome glyphs, implements the bounded find-bar
+   completion, and verifies the slice.
 2. One independent read-only reviewer maps requirements to evidence.
 3. One remediation writer only for concrete findings, then a focused recheck.
-4. Integration of `parallel/icon-system` runs the canonical `just e2e` under
-   the host-wide GUI lock.
+4. Integration runs the canonical `just e2e` under the host-wide GUI lock.
 
 ## Iteration policy
 
-Start from the smallest end-to-end path (the icon module + the two row
-controls), verify with targeted unit tests and clippy, then expand to the
-panes/space/status swaps. After each failing check, identify the cause and
-change approach before retrying; never weaken a check to pass.
+Start from the smallest end-to-end path (the two catalog chevron variants +
+find-bar step controls), verify with targeted unit tests and clippy, then
+confirm the close control and the no-Unicode presentation contract. After
+each failing check, identify the cause and change approach before retrying;
+never weaken a check to pass.
 
 ## Blocked stop condition
 
@@ -164,19 +201,46 @@ glyph is achievable for a listed placeholder.
 ## Delivery ledger
 
 ```text
-Outcome:       All listed placeholders replaced by drawn §7 glyphs; ids/
-               semantics/focus/listeners unchanged; unit + clippy + testkit
-               green.
-Commits:       left uncommitted on parallel/icon-system for review
-               (no commit/push by lane policy in this run).
-Functional evidence: cargo test -p bbr --features testkit (64 unit +
-               all non-GUI integration binaries green); targeted
-               `icons`/`presentation` tests green.
-Real-app E2E:  not run (GUI gate at integration); existing suites unchanged.
-Performance:   not run (no new scenario; presentation-only change).
-Roadmap/docs:  this packet + ui-design-system track link (planning/evidence;
-               no checkbox claimed complete).
-Open blockers and non-goals: command-prefix/sidebar brand untouched; loading
-               arc static; §7 hit-target minimums deferred to a layout slice.
-Worktree state: clean base; implementation diff pending review.
+Outcome:       The merged icon catalog covers every component-owned chrome
+               glyph; the find bar's `‹`/`›`/`✕` placeholders are replaced
+               by `Icon::ChevronLeft`/`ChevronRight`/`Close` at the
+               `icon:<density>` size; ids/hit squares/listeners/semantics
+               unchanged; chevron geometry/name/color contract tests added.
+Commits:       none — coherent uncommitted tree left on
+               parallel/icon-system-completion (no commit/push by lane
+               policy in this run).
+Functional evidence: cargo test -p bbr --features testkit --bin bbr
+               252/252 (5 icon-catalog tests incl. the new chevron
+               arm/name/rest-color assertions); `cargo fmt --all --
+               --check`, `cargo clippy -p bbr --features testkit
+               --all-targets -- -D warnings`, `just verify`, `just
+               roadmap`, and `git diff --check` green.
+Real-app E2E:  `just e2e-shell-find` 6/6 green. `just e2e-shell-portal`
+               **5/7** — the two failures reproduce identically on clean
+               base 9960079 (pre-existing, not lane-caused):
+               `host_hides_on_minimize_and_restores` (minimize hit-test
+               environment blocker) and
+               `host_tears_down_when_parent_closes_with_open_presentation`
+               (parent-close Broken-pipe base regression from the current
+               quit-on-owning-browser-window behavior). Neither is called
+               passed. Canonical `just e2e` not green: e2e-smoke passed,
+               then stopped at the missing `e2e_shutdown` test target.
+Performance:   no new scenario and no new perf kind (static paths replacing
+               text children); full performance remains an integration
+               gate, pending — `e2e-perf` did not run as part of canonical
+               `just e2e`.
+Roadmap/docs:  this packet corrected for source drift + truthful gate
+               status; ui-design-system track item left unchecked with an
+               awaiting-integration note — the code lane is REVIEW_PASS and
+               frozen, but the roadmap item is not complete before its
+               declared integration gates.
+Open blockers and non-goals: command-composition surface (`▶` prefix, `↵`/
+               `→` result marks), sidebar brand text, and the `⌘T` key cue
+               stay with their owning surfaces; loading arc static; §7
+               hit-target minimums already settled via density tokens.
+Worktree state: coherent uncommitted tree (4 modified files); frozen
+               pending orchestrator integration.
+File sizes:    icons.rs 544 now vs 508 at base — bounded +36 catalog
+               extension (chevron variants + contract tests); planned
+               single-authority enum-union merge with F2a catalog variants.
 ```

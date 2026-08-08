@@ -55,6 +55,10 @@ pub enum Icon {
     Disclosure { expanded: bool },
     /// §10.5 loading arc (static; rotation is a later polish pass).
     LoadingArc,
+    /// §11.4 find bar: step to the previous match (left chevron).
+    ChevronLeft,
+    /// §11.4 find bar: step to the next match (right chevron).
+    ChevronRight,
 }
 
 impl Icon {
@@ -87,6 +91,8 @@ impl Icon {
                 }
             }
             Icon::LoadingArc => "loading-arc",
+            Icon::ChevronLeft => "chevron-left",
+            Icon::ChevronRight => "chevron-right",
         }
     }
 
@@ -106,6 +112,7 @@ impl Icon {
             | Icon::Pin { pinned: false } => palette.ink_secondary,
             Icon::Pin { pinned: true } | Icon::LoadingArc => palette.accent,
             Icon::Lifering => palette.status_error,
+            Icon::ChevronLeft | Icon::ChevronRight => palette.ink_secondary,
         }
     }
 
@@ -253,6 +260,20 @@ impl Icon {
                 );
                 paint_path(window, path, color);
             }
+            Icon::ChevronLeft | Icon::ChevronRight => {
+                let arm = chevron_arm(size);
+                let mut path = PathBuilder::stroke(stroke);
+                // A single chevron pointing in the step direction: apex at
+                // the trailing side, arms to the leading corners.
+                let (apex_x, arm_x) = match self {
+                    Icon::ChevronLeft => (cx - arm, cx),
+                    _ => (cx + arm, cx),
+                };
+                path.move_to(point(px(arm_x), px(cy - arm)));
+                path.line_to(point(px(apex_x), px(cy)));
+                path.line_to(point(px(arm_x), px(cy + arm)));
+                paint_path(window, path, color);
+            }
         }
     }
 }
@@ -288,6 +309,13 @@ pub fn lifering_radii(size: f32) -> (f32, f32) {
 /// Loading arc radius (§10.5: 14 pt arc inside the favicon slot).
 pub fn arc_radius(size: f32) -> f32 {
     size * 0.40
+}
+
+/// Find-bar step chevron: half the arm length from the apex to either
+/// corner — the same §7 geometry as the disclosure chevron, so one arm
+/// contract covers both families.
+pub fn chevron_arm(size: f32) -> f32 {
+    disclosure_arm(size)
 }
 
 /// Chassis mark: (frame corner radius, aperture ring radius). The frame
@@ -403,6 +431,8 @@ mod tests {
             "disclosure-expanded"
         );
         assert_eq!(Icon::LoadingArc.name(), "loading-arc");
+        assert_eq!(Icon::ChevronLeft.name(), "chevron-left");
+        assert_eq!(Icon::ChevronRight.name(), "chevron-right");
     }
 
     #[test]
@@ -434,6 +464,10 @@ mod tests {
             assert!(
                 arc_radius(size) + 1.5 / 2.0 <= size / 2.0,
                 "loading arc fits at {size}pt"
+            );
+            assert!(
+                chevron_arm(size) * 1.5 + 1.5 / 2.0 <= size / 2.0,
+                "step chevron fits at {size}pt"
             );
         }
     }
@@ -482,5 +516,7 @@ mod tests {
         assert_eq!(Icon::Pin { pinned: true }.rest_color(p), p.accent);
         assert_eq!(Icon::LoadingArc.rest_color(p), p.accent);
         assert_eq!(Icon::Lifering.rest_color(p), p.status_error);
+        assert_eq!(Icon::ChevronLeft.rest_color(p), p.ink_secondary);
+        assert_eq!(Icon::ChevronRight.rest_color(p), p.ink_secondary);
     }
 }
