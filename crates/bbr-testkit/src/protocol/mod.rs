@@ -38,7 +38,7 @@ pub use snapshot::{
     FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts, PaneLayoutSnapshot,
     PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, RestoreDisposition, SemanticNode,
     SemanticRole, Snapshot, SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceSnapshot,
-    SpaceStripScrollSnapshot, SpaceVisualState, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
+    SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
     StoreSnapshot, TabSnapshot, TabVisualState, WebContentProbe, ZoomSnapshot,
 };
 
