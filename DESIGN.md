@@ -773,6 +773,97 @@ scheme; a title consisting only of whitespace is treated as empty.
   `bbr-folder-toggle-<n>`, `bbr-folder-item-<n>-<m>` (+ `-title`/
   `-favicon`/`-close`).
 
+### 11.12 Downloads panel (Planned)
+
+The fixed footer `[Downloads]` control (§11.4) opens the downloads surface. It
+is an **anchored popover** (`bbr-downloads-panel`), not a sidebar region and
+not an above-glass surface: `elev:2` over `material:overlay` with the palette's
+shadow class (§2), `radius:lg`, anchored so its bottom edge is flush with the
+footer control's top edge and its leading edge with the sidebar column's
+leading edge. Width = the sidebar column's current width − 2 ×
+`density:row-inset` (S `sp:1` 4 / N `sp:2` 8 / XL `sp:3` 12), clamped to stay
+fully inside the window; the popover grows upward and its height clamps to the
+window. Because the popover is geometrically confined to the sidebar column it
+never overlaps the native web view, so it stays ordinary GPUI sidebar chrome
+(`GpuiDeferred`/ordinary composition) and never uses the Portal host — the
+Portal host remains reserved for chrome that must render above the glass
+(find-in-page bar). The anchored-popover form is the user-approved downloads
+draft and is **not** provisional; only the open questions named in §17 remain.
+
+- **Open/close:** activating the footer control (pointer or keyboard) toggles
+  the popover with an opacity fade `dur:fine` only — never translate or scale
+  (§6). Dismiss: Escape, outside pointer press (one pointer action, §13), or
+  re-activating the footer control. The panel never auto-opens; the footer
+  control keeps its §11.4 text alternative and `type:meta` `tnum` count at
+  rest (which attempts feed the count is open, §17.11).
+- **Anatomy (top → bottom):** two groups separated by a `hairline` —
+  **Active** (`bbr-downloads-active`, non-terminal attempts) above, **History**
+  (`bbr-downloads-history`, terminal attempts) below; `type:badge` labels
+  "Active"/"History" are hidden when a group is empty (§11.4 region-label
+  rule). Rows: `[status glyph `icon:<density>`] [name line + secondary line]
+  [action]` at `density:row` tall, padding-x `sp:2` (S) / `sp:3` (N) / `sp:4`
+  (XL) like §11.1; hover/active inset surfaces per §10.2/§10.3
+  (`density:row-inset`, `density:radius`); the action's hit area ≥
+  `density:hit-min`.
+  - **Status glyph** (§7 icon system): active rows (Waiting/Running) show the
+    §10.5 spinner at `icon:<density>` (accent, transient indication — allowed);
+    succeeded shows the `status.ok` check glyph; failed the §10.7
+    `status.error` glyph; cancelled a neutral glyph at `ink.secondary`. §3.3
+    non-color companions apply.
+  - **Name line:** filename, one line, end-ellipsis (§4); tooltip on hover
+    (Planned, §4).
+  - **Secondary line** (`type:meta`, `tnum`): active — a 2 pt progress bar
+    (the §10.5 bar geometry; track `hairline`, fill `color:accent`) plus
+    transferred/total bytes; a known total fills `fraction()`, an unknown
+    length runs the §10.5 indeterminate sweep (`load:indeterminate`) with
+    transferred bytes only; terminal — size + status copy naming the machine
+    outcome ("Completed" / the `DownloadFailure` reason / "Cancelled"; copy
+    follows the §11.8 tone).
+  - **Action:** exactly one contextual primary per row — active → **Cancel**,
+    failed → **Retry**, succeeded → **Reveal-in-Finder** (conventional macOS
+    "Show in Finder" copy; enabled only when the terminal record's resolved
+    path exists, otherwise §10.8 `disabled` with a reason tooltip). Cancelled
+    rows render no primary action in v1 (provisional, §17.8).
+- **Machine fidelity (L6 contract):** the panel never invents transitions.
+  Active = `Waiting { destination: None }`, `Waiting { destination: Some(..) }`,
+  `Running { .. }`; History = `Succeeded`, `Failed { failure }`, `Cancelled` —
+  terminal and immutable. Cancel is request/confirmation based: the row stays
+  active until the engine's terminal event lands and the first terminal event
+  wins (no optimistic state change). Retry is offered only on `Failed` (the
+  only retryable state) and starts a fresh attempt id linked via `retry_of`;
+  `Cancelled` is never retried by the UI. Progress is monotonic; a known total
+  is stable and never reverts to unknown; an unknown total may become known
+  (determinate replaces indeterminate); a zero-byte download succeeds with a
+  full bar (`fraction()` is never `NaN`). History records (final paths,
+  timestamps, attempt counts) live in the controller; persistence across
+  restarts is open (§17.10).
+- **Group transitions:** a running attempt moves to History on its terminal
+  event within the same frame (snap, `dur:instant`, §6). Ordering: Active in
+  attempt order (ascending `DownloadId`), History most-recent-terminal first —
+  deterministic, so row index `<n>` is stable for E2E.
+- **Overflow/scroll:** at most 6 visible rows (`density:row` each); beyond
+  that, bounded rendering (visible range + 8-row overscan, §11.6) and the
+  §11.6 scrollbar (8 pt track-less thumb, `ink.faint` 40% / 60% hover). The
+  full history is never laid out; a clamped popover height scrolls.
+- **Keyboard and pointer:** `↑`/`↓`/`PgUp`/`PgDn` move focus and scroll; Enter
+  activates the focused row's action; Tab/Shift-Tab move focus between rows;
+  Escape dismisses and returns focus to the footer `[Downloads]` control (§9
+  order: Downloads precedes the space chips). Pointer: click activates the
+  row's action directly; hover/press paint §10.2/§10.3. No persistent
+  selection — focus is the keyboard cursor; no multi-select in v1.
+- **Focus domain:** while open the panel is chrome focus (ring per §9; the
+  selected-tab rail stays the only accent). Opening preserves the active
+  tab/session; dismissing returns focus to the footer control per the
+  interaction contract.
+- **Empty state:** when the panel has no attempts at all, a single hint line
+  in `ink.secondary` ("No downloads yet") — no empty box, no icon graveyard.
+- **Modes:** tokens per §3; IC deepens washes and strengthens hairlines
+  (§3.4); reduced motion removes everything except `dur:fine` opacity (§6).
+- **Assert ids:** `bbr-downloads-panel`, `bbr-downloads-active`,
+  `bbr-downloads-history`, `bbr-download-row-<n>` (+ `-status`/`-name`/
+  `-meta`/`-progress`/`-action`), `bbr-downloads-empty`; the footer control
+  keeps `bbr-downloads` (§11.4).
+
 ## 12. Profile identity
 
 - **Chip:** 24 pt square (20 at S, 28 at XL), `radius:sm`, filled with the profile's
@@ -839,7 +930,11 @@ semantically — never by pixel comparison.
 
 - **Stable ids:** the `bbr-*` ids enumerated in §11 (plus `bbr-root`,
   `bbr-sidebar`, `bbr-command-bar`, already present in the placeholder
-  shell). Every interactive control carries one. The S1 scale table (§8)
+  shell). Every interactive control carries one. The downloads surface
+  registers `bbr-downloads-panel`, `bbr-downloads-active`,
+  `bbr-downloads-history`, `bbr-download-row-<n>` (+ `-status`/`-name`/
+  `-meta`/`-progress`/`-action`), and `bbr-downloads-empty` (§11.12); the
+  footer control keeps `bbr-downloads` (§11.4). The S1 scale table (§8)
   changes geometry tokens only — it does not change ids, the §10 state
   vocabulary, interaction behavior, dense-500 bounded-window rendering,
   scroll math, or any performance budget/sample count.
@@ -848,7 +943,12 @@ semantically — never by pixel comparison.
   error, disabled, dragging, drag-target, focused}` — exactly the §10 names.
   During a drag report both the source row (`dragging`) and any target
   (`drag-target`); the command-bar domain derives from the existing
-  `chrome_focused` + `command_bar_mode` fields.
+  `chrome_focused` + `command_bar_mode` fields. Downloads rows expose
+  `download_rows: Vec<DownloadRowSnapshot>` with `machine_state ∈ {Waiting,
+  Running, Succeeded, Failed, Cancelled}` (the L6 contract states), `group ∈
+  {active, history}`, `progress_fraction: Option<f64>`, `visual_state` (the
+  applicable §10 names), and `action ∈ {cancel, retry, reveal, none}` with
+  `action_enabled: bool`.
 - **Mode fields:** snapshot gains `theme (light|dark)`,
   `contrast (standard|increased)`, `density (small|normal|extralarge)`,
   `reduced_motion (bool)`, `profile_hue` — so every state assertion can
@@ -892,6 +992,27 @@ auto-switch; palette result grouping polish; peek choreography (its own task).
    opens the centered palette, Cmd-L and pointer focus on the field open the
    field-anchored overlay (§11.4); both run the §11.5 engine. Result
    grouping polish stays deferred (§16).
+7. **Downloads clear-history control:** the approved panel form has no Clear
+   control, though clearing download history is conventional macOS behavior.
+   Decide whether v1 exposes a Clear action and whether it clears the
+   controller history or only the visible list.
+8. **Downloads cancelled-row action:** cancelled attempts are terminal and
+   not retryable; the approved form renders them quiet. Decide whether a
+   cancelled row offers Reveal of a partial file or a fresh redownload.
+9. **Downloads destination policy:** the L6 contract supports `Suggested`
+   (engine default folder) and `Explicit` (caller-chosen) destinations;
+   decide the v1 default — silent suggested-destination downloads or a
+   per-download save panel.
+10. **Downloads history persistence:** in-memory session history vs
+    persisted history across restarts.
+11. **Downloads badge count:** which attempts feed the §11.4 footer `tnum`
+    count — in-flight only, or in-flight plus recent terminal attempts.
+12. **Downloads open-file action:** the approved form opens completed files
+    only through the per-row Reveal-in-Finder action (§11.12) — no auto-open
+    and no open-on-double-click in v1. Decide whether a later phase adds an
+    explicit Open action on succeeded rows, open-on-double-click, and/or
+    auto-open on completion, and which matches conventional macOS download
+    behavior.
 
 Resolving an item means moving its decision into the relevant section above
 and updating the affected roadmap track in the same group.
