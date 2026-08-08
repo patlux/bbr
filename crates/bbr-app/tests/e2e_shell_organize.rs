@@ -13,7 +13,7 @@
 //! (exactly like the sidebar-divider drag seam), never a direct reorder or
 //! move command.
 //!
-//! Drag geometry: §8 density rows are 32 pt and space rows 34 pt in the
+//! Drag geometry: §8 density rows are 36 pt and space rows 36 pt in the
 //! default density the shell renders; the app resolves targets relative to
 //! the press position, so these constants (mirroring `theme.density`) are the
 //! only layout values the scenarios need.
@@ -26,9 +26,9 @@ use bbr_testkit::protocol::{CommandBarMode, SpaceVisualState};
 use e2e_common::*;
 
 /// §8 normal-density tab row height (theme.density::Normal.row()).
-const ROW_H: f32 = 32.0;
+const ROW_H: f32 = 36.0;
 /// §8 space row height (theme.density::Normal.space_row()).
-const SPACE_ROW_H: f32 = 34.0;
+const SPACE_ROW_H: f32 = 36.0;
 
 /// The dy that places the pointer over the center of the `space_slot`-th
 /// visible space row above the tab list, for a drag starting at tab `source`
@@ -483,7 +483,7 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         assert_tab_order(&four, &[&page_two, &page_one, &page_two, &page_one], 2);
         let regular_view = four.tabs[2].web_view.expect("regular row view");
 
-        // Drag the first pinned row two rows down (dy = 2 × 32): the target
+        // Drag the first pinned row two rows down (dy = 2 × 36): the target
         // resolves to slot 2, the end of the pinned region — legal. The
         // snapshot reports the typed source/target/validity and the §15 tick
         // id renders at the slot.

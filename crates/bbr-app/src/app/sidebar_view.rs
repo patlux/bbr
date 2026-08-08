@@ -103,10 +103,15 @@ impl BbrApp {
                     .when(command_results.is_some(), |column| {
                         column.child(command_results.expect("checked above"))
                     })
+                    // §11.4: regions stack separated by `density:section-gap`
+                    // breathing (S `sp:3` / N `sp:4` / XL `sp:5`).
+                    .child(div().h(theme.density.section_gap()).flex_shrink_0())
                     // §11.4 region order: spaces (while revealed) → favorites →
                     // tabs → status → toggle → plus menu → footer.
                     .map(|column| self.u2_pre_tab_children(column, space_surface, favorites))
+                    .child(div().h(theme.density.section_gap()).flex_shrink_0())
                     .child(tab_surface)
+                    .child(div().h(theme.density.section_gap()).flex_shrink_0())
                     .child(
                         div()
                             .id("bbr-status")

@@ -13,7 +13,9 @@
 //! ```text
 //! type:title/label/meta/mono/key/badge/display → TypeRole::TITLE/…
 //! sp:N (4·N pt)            → Spacing::spN            radius:sm/md/lg/xl/full → Radius::*
-//! density:row / sidebar / icon / hit-min → Density::* (S/N/XL)
+//! density:row / row-tile / space-chip / sidebar / icon / hit-min /
+//! hit-min.close / row-inset / section-gap / favorites-gap / state-slot /
+//! row-padding-x / profile-chip / density-radius → Density::* (S/N/XL)
 //! dur:instant…emphasis / load:indeterminate → Motion::*
 //! elev:0/1/2               → Elevation::*            theme/contrast/density → §15 fields
 //! ```
@@ -22,22 +24,28 @@ use gpui::{px, FontWeight, Pixels};
 
 use crate::palette::Palette;
 
+/// The §8 density enum and its geometry tokens (moved into a submodule to
+/// keep this file under the ~500-line budget; re-exported unchanged so
+/// `crate::theme::Density` stays the single naming authority).
+mod density;
+pub use density::Density;
+
 /// Typography steps (DESIGN.md §4).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TypeRole {
-    /// 22 pt / 600 — empty-state headline only.
+    /// 24 pt / 600 — empty-state headline only (26 at XL).
     Display,
-    /// 13 pt / 500 — tab title, space name.
+    /// 14 pt / 500 — tab title, space name.
     Title,
-    /// 12 pt / 500 — buttons, nav labels, badges' base.
+    /// 13 pt / 500 — buttons, nav labels, badges' base.
     Label,
-    /// 11 pt / 400 — status, counts, timestamps (tabular).
+    /// 12 pt / 400 — status, counts, timestamps (tabular).
     Meta,
-    /// 12 pt / 400 — URLs in location mode and results.
+    /// 13 pt / 400 — URLs in location mode and results.
     Mono,
-    /// 11 pt / 500 — shortcut hints.
+    /// 12 pt / 500 — shortcut hints.
     Key,
-    /// 10 pt / 600 — section labels "Pinned"/"Tabs", uppercase.
+    /// 11 pt / 600 — section labels "Pinned"/"Tabs", uppercase.
     Badge,
 }
 
@@ -82,79 +90,6 @@ pub enum ContrastMode {
     Increased,
 }
 
-/// Density of the shell and tab rows (DESIGN.md §8). States and semantics
-/// are identical across densities; rows keep uniform heights per density.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Density {
-    Small,
-    Normal,
-    ExtraLarge,
-}
-
-impl Density {
-    pub fn row(self) -> Pixels {
-        px(match self {
-            Density::Small => 28.0,
-            Density::Normal => 32.0,
-            Density::ExtraLarge => 40.0,
-        })
-    }
-
-    /// Row tile height (row minus the 2 pt gutter).
-    pub fn row_tile(self) -> Pixels {
-        px(match self {
-            Density::Small => 26.0,
-            Density::Normal => 28.0,
-            Density::ExtraLarge => 36.0,
-        })
-    }
-
-    /// §8 space row height (`density:space-row`).
-    pub fn space_row(self) -> Pixels {
-        px(match self {
-            Density::Small => 30.0,
-            Density::Normal => 34.0,
-            Density::ExtraLarge => 44.0,
-        })
-    }
-
-    pub fn sidebar_width(self) -> Pixels {
-        px(match self {
-            Density::Small => 216.0,
-            Density::Normal => 260.0,
-            Density::ExtraLarge => 320.0,
-        })
-    }
-
-    /// `win:palette` (DESIGN.md §11.4): the centered Cmd-T palette width
-    /// (S 400 / N 480 / XL 560 pt) and the field-anchored overlay's upper
-    /// clamp.
-    pub fn palette_width(self) -> Pixels {
-        px(match self {
-            Density::Small => 400.0,
-            Density::Normal => 480.0,
-            Density::ExtraLarge => 560.0,
-        })
-    }
-
-    pub fn icon(self) -> Pixels {
-        px(match self {
-            Density::Small => 14.0,
-            Density::Normal => 16.0,
-            Density::ExtraLarge => 18.0,
-        })
-    }
-
-    /// Minimum hit target for interactive chrome controls.
-    pub fn hit_min(self) -> Pixels {
-        px(match self {
-            Density::Small => 28.0,
-            Density::Normal => 32.0,
-            Density::ExtraLarge => 40.0,
-        })
-    }
-}
-
 /// Typography steps resolved for a density (DESIGN.md §4 table).
 #[derive(Clone, Copy, Debug)]
 pub struct TypeScale {
@@ -177,17 +112,17 @@ const fn step(size: f32, weight: f32, leading: f32) -> TypeStep {
 
 fn type_scale(density: Density) -> TypeScale {
     let s = match density {
-        Density::Small => (11.0, 11.0, 10.0, 10.0, 11.0, 10.0),
-        Density::Normal => (13.0, 12.0, 11.0, 11.0, 12.0, 10.0),
-        Density::ExtraLarge => (15.0, 13.0, 12.0, 12.0, 13.0, 11.0),
+        Density::Small => (12.0, 12.0, 11.0, 12.0, 11.0, 11.0),
+        Density::Normal => (14.0, 13.0, 12.0, 13.0, 12.0, 11.0),
+        Density::ExtraLarge => (16.0, 14.0, 13.0, 14.0, 13.0, 12.0),
     };
     TypeScale {
-        // display: 22/24, title/label/meta/mono/key/badge per the §8 row.
+        // display: 24/24/26, title/label/meta/mono/key/badge per the §8 row.
         display: step(
-            if density == Density::ExtraLarge {
-                24.0
-            } else {
-                22.0
+            match density {
+                Density::Small => 24.0,
+                Density::Normal => 24.0,
+                Density::ExtraLarge => 26.0,
             },
             600.0,
             1.2,
@@ -232,22 +167,27 @@ impl Spacing {
     }
 }
 
-/// Corner radii (DESIGN.md §5): chrome stays in 4–8 px, never pill-cards.
+/// Corner radii (DESIGN.md §5): chrome stays in 6–10 px, never pill-cards;
+/// `radius:xl` (14) is reserved for the XL palette sheet.
 #[derive(Clone, Copy, Debug)]
 pub struct Radius;
 
 impl Radius {
+    /// §5 `radius:sm` 6 — small tile, profile chip, S-density rows.
     pub const fn small(self) -> Pixels {
-        px(4.0)
-    }
-    pub const fn medium(self) -> Pixels {
         px(6.0)
     }
-    pub const fn large(self) -> Pixels {
+    /// §5 `radius:md` 8 — N/XL row tiles, buttons.
+    pub const fn medium(self) -> Pixels {
         px(8.0)
     }
+    /// §5 `radius:lg` 10 — command field, N palette, crash panel.
+    pub const fn large(self) -> Pixels {
+        px(10.0)
+    }
+    /// §5 `radius:xl` 14 — reserved for the XL palette sheet.
     pub const fn xlarge(self) -> Pixels {
-        px(12.0)
+        px(14.0)
     }
     pub const fn full(self) -> Pixels {
         px(9999.0)
@@ -349,21 +289,58 @@ mod tests {
     #[test]
     fn density_geometry_is_uniform_per_density() {
         // §8: uniform row heights per density keep scroll math deterministic;
-        // normal density is the shipped 260 pt sidebar.
-        assert_eq!(Density::Normal.row(), px(32.0));
-        assert_eq!(Density::Normal.row_tile(), px(28.0));
-        assert_eq!(Density::Normal.sidebar_width(), px(260.0));
-        assert_eq!(Density::Small.sidebar_width(), px(216.0));
-        assert_eq!(Density::ExtraLarge.sidebar_width(), px(320.0));
-        // §11.4 `win:palette`: S 400 / N 480 / XL 560 pt.
-        assert_eq!(Density::Small.palette_width(), px(400.0));
-        assert_eq!(Density::Normal.palette_width(), px(480.0));
-        assert_eq!(Density::ExtraLarge.palette_width(), px(560.0));
-        assert_eq!(type_scale(Density::Small).title.size, px(11.0));
-        assert_eq!(type_scale(Density::Normal).title.size, px(13.0));
-        assert_eq!(type_scale(Density::ExtraLarge).title.size, px(15.0));
-        assert_eq!(type_scale(Density::Normal).badge.size, px(10.0));
+        // normal density is the shipped 280 pt sidebar.
+        assert_eq!(Density::Normal.row(), px(36.0));
+        assert_eq!(Density::Small.row(), px(32.0));
+        assert_eq!(Density::ExtraLarge.row(), px(44.0));
+        assert_eq!(Density::Small.row_tile(), px(28.0));
+        assert_eq!(Density::Normal.row_tile(), px(36.0));
+        assert_eq!(Density::ExtraLarge.row_tile(), px(44.0));
+        assert_eq!(Density::Normal.sidebar_width(), px(280.0));
+        assert_eq!(Density::Small.sidebar_width(), px(232.0));
+        assert_eq!(Density::ExtraLarge.sidebar_width(), px(340.0));
+        // §11.4 `win:palette`: S 440 / N 520 / XL 620 pt.
+        assert_eq!(Density::Small.palette_width(), px(440.0));
+        assert_eq!(Density::Normal.palette_width(), px(520.0));
+        assert_eq!(Density::ExtraLarge.palette_width(), px(620.0));
+        assert_eq!(type_scale(Density::Small).title.size, px(12.0));
+        assert_eq!(type_scale(Density::Normal).title.size, px(14.0));
+        assert_eq!(type_scale(Density::ExtraLarge).title.size, px(16.0));
+        assert_eq!(type_scale(Density::Normal).badge.size, px(11.0));
         assert!(f32::from(Density::ExtraLarge.hit_min()) > f32::from(Density::Small.hit_min()));
+    }
+
+    #[test]
+    fn density_scale_tokens_match_the_settled_table() {
+        // §8/§11/§12: the S1 scale's new geometry tokens, exact per density.
+        assert_eq!(Density::Small.hit_min_close(), px(24.0));
+        assert_eq!(Density::Normal.hit_min_close(), px(28.0));
+        assert_eq!(Density::ExtraLarge.hit_min_close(), px(32.0));
+        assert_eq!(Density::Small.row_inset(), px(4.0));
+        assert_eq!(Density::Normal.row_inset(), px(8.0));
+        assert_eq!(Density::ExtraLarge.row_inset(), px(12.0));
+        assert_eq!(Density::Small.section_gap(), px(12.0));
+        assert_eq!(Density::Normal.section_gap(), px(16.0));
+        assert_eq!(Density::ExtraLarge.section_gap(), px(20.0));
+        assert_eq!(Density::Small.favorites_gap(), px(4.0));
+        assert_eq!(Density::Normal.favorites_gap(), px(8.0));
+        assert_eq!(Density::ExtraLarge.favorites_gap(), px(8.0));
+        assert_eq!(Density::Small.state_slot(), px(8.0));
+        assert_eq!(Density::Normal.state_slot(), px(10.0));
+        assert_eq!(Density::ExtraLarge.state_slot(), px(10.0));
+        assert_eq!(Density::Small.row_padding_x(), px(8.0));
+        assert_eq!(Density::Normal.row_padding_x(), px(12.0));
+        assert_eq!(Density::ExtraLarge.row_padding_x(), px(16.0));
+        assert_eq!(Density::Small.profile_chip(), px(20.0));
+        assert_eq!(Density::Normal.profile_chip(), px(24.0));
+        assert_eq!(Density::ExtraLarge.profile_chip(), px(28.0));
+        assert_eq!(Density::Small.density_radius(), Radius.small());
+        assert_eq!(Density::Normal.density_radius(), Radius.medium());
+        assert_eq!(Density::ExtraLarge.density_radius(), Radius.large());
+        // §8: `density:space-chip` and `density:row` share one surface family.
+        assert_eq!(Density::Small.space_row(), Density::Small.row());
+        assert_eq!(Density::Normal.space_row(), Density::Normal.row());
+        assert_eq!(Density::ExtraLarge.space_row(), Density::ExtraLarge.row());
     }
 
     #[test]
@@ -381,11 +358,16 @@ mod tests {
                 "spacing stays on the 4 pt grid"
             );
         }
-        for r in [Radius, Radius, Radius, Radius] {
-            let pts = f32::from(r.small());
+        for r in [
+            Radius.small(),
+            Radius.medium(),
+            Radius.large(),
+            Radius.xlarge(),
+        ] {
+            let pts = f32::from(r);
             assert!(
-                (4.0..=12.0).contains(&pts),
-                "chrome radii stay 4–12 px, got {pts}"
+                (6.0..=14.0).contains(&pts),
+                "chrome radii stay 6–14 px, got {pts}"
             );
         }
     }

@@ -92,13 +92,13 @@ pub fn space_groups(browser: &ControllerSnapshot, budget: usize) -> Vec<SpaceGro
 }
 
 /// The §11.3 space-row title budget: sidebar width minus the fixed row
-/// anatomy (2× padding, the 20 pt chip, 2 gaps, the count column). Per-char
-/// width is the same conservative 0.45 × `type:title` estimate as the tab
-/// row budget.
+/// anatomy (2× padding, the §12 `density:profile-chip`, 2 gaps, the count
+/// column). Per-char width is the same conservative 0.45 × `type:title`
+/// estimate as the tab row budget.
 pub fn space_title_budget_chars(theme: &Theme) -> usize {
     let density = theme.density;
     let padding = f32::from(Spacing::sp2()) * 2.0;
-    let chip = 20.0;
+    let chip = f32::from(density.profile_chip());
     let gaps = f32::from(Spacing::sp2()) * 2.0;
     let count = 24.0;
     let area = f32::from(density.sidebar_width()) - padding - chip - gaps - count;

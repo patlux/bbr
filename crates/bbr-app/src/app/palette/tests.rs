@@ -144,13 +144,14 @@ fn protocol_conversion_maps_the_wire_enum_one_to_one() {
 #[test]
 fn overlay_portal_placement_anchors_to_the_measured_field_bottom_left() {
     let field = WebRect::new(12.0, 48.0, 280.0, 34.0);
-    let placement = overlay_placement(field, 320.0);
+    // §11.4: the anchored overlay width clamps to a 360 pt floor.
+    let placement = overlay_placement(field, 360.0);
     let PortalPlacement::Anchored(placement) = placement else {
         panic!("overlay must use anchored portal placement");
     };
     assert_eq!(placement.anchor_point, Pt::new(12.0, 82.0));
     assert_eq!(placement.anchor, PortalAnchor::TopLeft);
-    assert_eq!(placement.size, Sz::new(320.0, 320.0));
+    assert_eq!(placement.size, Sz::new(360.0, 320.0));
     assert_eq!(placement.offset, Pt::new(0.0, 0.0));
     assert_eq!(
         placement.fit,

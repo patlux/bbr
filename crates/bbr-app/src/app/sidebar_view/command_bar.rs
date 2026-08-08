@@ -52,7 +52,9 @@ impl BbrApp {
             .mx(Spacing::sp3())
             .my(Spacing::sp2())
             .px(Spacing::sp3())
-            .py(Spacing::sp2())
+            // §11.5: field height = `density:row` (S 32 / N 36 / XL 44);
+            // content centers inside the fixed-height field.
+            .h(theme.density.row())
             .rounded(theme.radius.large())
             .bg(if chrome_focused {
                 p.surface_field
@@ -78,6 +80,7 @@ impl BbrApp {
             .border_color(if chrome_focused { p.accent } else { p.hairline })
             .flex()
             .flex_row()
+            .items_center()
             .gap(Spacing::sp2())
             .when(profile_chip.is_some(), |el| {
                 let (index, spec) = profile_chip.as_ref().expect("checked above");

@@ -4,11 +4,11 @@
 //!
 //! A folder is a session-local container of tab identities (in-memory in
 //! v1, never persisted; Phase 7 owns restoration). Rows render
-//! `[disclosure glyph 14 §7] [name, trunc] [count, type:meta tnum]` at
-//! `density:row` tall; nested rows indent one `sp:2` step and reuse the
-//! §11.1 row anatomy. Toggling expands/collapses and snaps (`dur:instant`);
-//! the app layer holds the presentation state only ([`FolderPresentation`]
-//! — the domain model is L5-owned).
+//! `[disclosure glyph icon:m 18; S icon:s 16] [name, trunc] [count,
+//! type:meta tnum]` at `density:row` tall; nested rows indent one `sp:3`
+//! step and reuse the §11.1 row anatomy. Toggling expands/collapses and
+//! snaps (`dur:instant`); the app layer holds the presentation state only
+//! ([`FolderPresentation`] — the domain model is L5-owned).
 //!
 //! This module owns the folder identity contract (ids, the row spec
 //! derivation, the presentation state) and the folder-row anatomy. The
@@ -16,8 +16,7 @@
 //! rail composition; the id derivation for nested rows is already contract.
 
 use gpui::{
-    div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, SharedString, Stateful, Styled,
-    Window,
+    div, prelude::*, App, Div, MouseButton, MouseDownEvent, SharedString, Stateful, Styled, Window,
 };
 
 use crate::theme::{Radius, Spacing, Theme};
@@ -184,11 +183,12 @@ impl FolderPresentation {
     }
 }
 
-/// One §11.11 folder row: `[disclosure glyph 14 §7] [name, trunc] [count,
-/// type:meta tnum]` at `density:row` tall. `on_toggle` is the production
-/// disclosure listener; the rail composition wires it. Nested rows are
-/// appended below by the composition when `spec.expanded` (they reuse the
-/// §11.1 row anatomy and are not part of this module's anatomy).
+/// One §11.11 folder row: `[disclosure glyph icon:m 18; S icon:s 16]
+/// [name, trunc] [count, type:meta tnum]` at `density:row` tall.
+/// `on_toggle` is the production disclosure listener; the rail composition
+/// wires it. Nested rows are appended below by the composition when
+/// `spec.expanded` (they reuse the §11.1 row anatomy and are not part of
+/// this module's anatomy).
 pub fn folder_row(
     theme: &Theme,
     spec: &FolderRowSpec,
@@ -198,7 +198,7 @@ pub fn folder_row(
     div()
         .id(folder_row_id(spec.index))
         .h(theme.density.row())
-        .px(Spacing::sp2())
+        .px(theme.density.row_padding_x())
         .gap(Spacing::sp2())
         .items_center()
         .flex()
@@ -209,7 +209,7 @@ pub fn folder_row(
         .child(
             div()
                 .id(folder_toggle_id(spec.index))
-                .size(px(14.0))
+                .size(theme.density.icon())
                 .flex()
                 .items_center()
                 .justify_center()
@@ -218,7 +218,7 @@ pub fn folder_row(
                     Icon::Disclosure {
                         expanded: spec.expanded,
                     }
-                    .canvas(theme, px(14.0)),
+                    .canvas(theme, theme.density.icon()),
                 ),
         )
         .child(
@@ -270,10 +270,10 @@ pub fn folders_ids(rows: &[FolderRowSpec], members: &[FolderMemberVisual]) -> Ve
 }
 
 /// One §11.11 nested row (`bbr-folder-item-<n>-<m>`): the §11.1 anatomy
-/// `[favicon 16] · [title flex, trunc] · [close 16]` at `density:row` tall,
-/// indented one `sp:2` step. `on_select` activates the member tab,
-/// `on_close` closes it — the close listener is expected to stop
-/// propagation so a close press never also selects the member row.
+/// `[favicon 18] · [title flex, trunc] · [close hit-min.close]` at
+/// `density:row` tall, indented one `sp:3` step. `on_select` activates the
+/// member tab, `on_close` closes it — the close listener is expected to
+/// stop propagation so a close press never also selects the member row.
 pub fn folder_item_row(
     theme: &Theme,
     visual: &FolderMemberVisual,
@@ -300,8 +300,8 @@ pub fn folder_item_row(
     div()
         .id(folder_item_id(visual.folder, visual.member))
         .h(theme.density.row())
-        .pl(Spacing::sp4())
-        .pr(Spacing::sp2())
+        .pl(Spacing::sp3())
+        .pr(theme.density.row_padding_x())
         .gap(Spacing::sp2())
         .items_center()
         .flex()
@@ -324,12 +324,12 @@ pub fn folder_item_row(
         .child(
             div()
                 .id(folder_item_close_id(visual.folder, visual.member))
-                .size(px(16.0))
+                .size(theme.density.hit_min_close())
                 .flex()
                 .items_center()
                 .justify_center()
                 .on_mouse_down(MouseButton::Left, on_close)
-                .child(Icon::Close.canvas(theme, px(14.0))),
+                .child(Icon::Close.canvas(theme, theme.density.icon())),
         )
 }
 

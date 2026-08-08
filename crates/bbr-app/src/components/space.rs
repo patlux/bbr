@@ -20,15 +20,12 @@ pub fn profile_chip_id(profile_index: usize) -> SharedString {
     SharedString::from(format!("bbr-profile-chip-{profile_index}"))
 }
 
-/// §12 profile chip: 20 pt square (18 at S), `radius:sm`, filled with the
-/// profile's hue tile and a 1–2 character monogram. The letter derives from
-/// the profile title so identity is readable per row without a header.
+/// §12 profile chip: 24 pt square (20 at S, 28 at XL), `radius:sm`,
+/// filled with the profile's hue tile and a 1–2 character monogram. The
+/// letter derives from the profile title so identity is readable per row
+/// without a header.
 pub fn profile_chip(theme: &Theme, profile_index: usize, spec: &ProfileChipSpec) -> Stateful<Div> {
-    let size = if theme.density == crate::theme::Density::Small {
-        px(18.0)
-    } else {
-        px(20.0)
-    };
+    let size = theme.density.profile_chip();
     let tile = ProfileHueRamp::tile(spec.hue, theme.mode);
     div()
         .id(profile_chip_id(profile_index))
@@ -45,8 +42,8 @@ pub fn profile_chip(theme: &Theme, profile_index: usize, spec: &ProfileChipSpec)
 }
 
 /// §11.3 space row anatomy:
-/// `[profile chip 20] · sp:2 · [name, trunc] · [count, type:meta tnum]`,
-/// `density:space-row` tall. The active space shows the accent rail exactly
+/// `[profile chip 24] · sp:2 · [name, trunc] · [count, type:meta tnum]`,
+/// `density:space-chip` tall. The active space shows the accent rail exactly
 /// like a selected tab; a row a drag currently targets shows the §10.9
 /// drag-target outline + tint. `on_select` is the production view listener.
 pub fn space_row(
@@ -128,14 +125,14 @@ pub fn space_new_row(
         .on_mouse_down(MouseButton::Left, on_select)
         .child(
             div()
-                .size(px(20.0))
+                .size(theme.density.profile_chip())
                 .rounded(Radius.small())
                 .border_1()
                 .border_color(theme.palette.hairline)
                 .flex()
                 .items_center()
                 .justify_center()
-                .child(Icon::Plus.canvas(theme, px(16.0))),
+                .child(Icon::Plus.canvas(theme, theme.density.icon())),
         )
         .child(
             div()

@@ -12,9 +12,10 @@ use crate::theme::{Radius, Spacing, Theme, ThemeMode};
 
 use super::{FaviconSpec, Icon, RowVisuals, TabVisualState};
 
-/// §7.2 favicon tile: 16 pt (S: 14) square, `radius:sm`, monogram letter on
-/// the FNV-slate ramp; while loading the slot shows the §10.5 accent arc
-/// (drawn, static — rotation is a later polish pass).
+/// §7.2 favicon tile: the §8 density icon size (S 16 / N 18 / XL 20)
+/// square, `radius:sm`, monogram letter on the FNV-slate ramp; while
+/// loading the slot shows the §10.5 accent arc (drawn, static — rotation
+/// is a later polish pass).
 pub fn favicon_tile(
     theme: &Theme,
     index: usize,
@@ -72,13 +73,14 @@ pub fn row_title(theme: &Theme, index: usize, text: &str, state: TabVisualState)
         .child(SharedString::from(text.to_string()))
 }
 
-/// §11.1 state slot: the fixed 8 pt trailing slot that later holds the
-/// `attention` dot (§10.6). Present on every row so the `bbr-tab-state-<n>`
-/// assert id (§15) exists; empty until an attention surface ships.
+/// §11.1 state slot: the fixed `density:state-slot` trailing slot (S 8 /
+/// N 10 / XL 10) that later holds the `attention` dot (§10.6). Present on
+/// every row so the `bbr-tab-state-<n>` assert id (§15) exists; empty
+/// until an attention surface ships.
 pub fn row_state_slot(theme: &Theme, index: usize) -> Stateful<Div> {
     div()
         .id(("bbr-tab-state", index))
-        .size(px(8.0))
+        .size(theme.density.state_slot())
         .flex()
         .items_center()
         .justify_center()
@@ -87,14 +89,15 @@ pub fn row_state_slot(theme: &Theme, index: usize) -> Stateful<Div> {
 }
 
 /// §11.1 close control: the §7 drawn close glyph (two 1.5 pt diagonal
-/// strokes) in the density icon square. Always interactive from the first
-/// slice so the semantic id and the keyboard equivalent exist; the
-/// hover-reveal polish landed with the hover slice. The hit square is
-/// preserved exactly (layout/focus changes ride a later polish pass).
+/// strokes) at the density icon size, optically centered in the
+/// `density:hit-min.close` hit square (§7: close controls ≥ S 24 / N 28 /
+/// XL 32). Always interactive from the first slice so the semantic id and
+/// the keyboard equivalent exist; the hover-reveal polish landed with the
+/// hover slice.
 pub fn close_control(theme: &Theme, index: usize) -> Stateful<Div> {
     div()
         .id(("bbr-tab-close", index))
-        .size(theme.density.icon())
+        .size(theme.density.hit_min_close())
         .rounded(Radius.small())
         .flex()
         .items_center()
@@ -148,8 +151,11 @@ pub fn drag_tick(theme: &Theme, index: usize, invalid: bool) -> Stateful<Div> {
 }
 
 /// §11.1 vertical tab row anatomy:
-/// `[favicon 16] · [title flex, trunc] · [pin] · [state slot 8] · [close 16]`,
-/// tile per §8 with the selected rail at the leading edge.
+/// `[favicon 18] · [title flex, trunc] · [pin] · [state slot 10] ·
+/// [close hit-min.close]`, tile per §8 with the selected rail at the
+/// leading edge. The §10.2–§10.4 hover/active/selected wash paints an
+/// inset rounded surface (`density:row-inset` from the rail edges,
+/// `density:radius`) behind the content.
 ///
 /// `on_select`/`on_close`/`on_pin` are the production view listeners (built
 /// with `cx.listener` in the sidebar surface), so the pointer path stays in
@@ -202,19 +208,13 @@ pub fn tab_row(
     div()
         .id(("bbr-tab-row", visuals.index))
         .h(theme.density.row())
-        .px(Spacing::sp2())
+        .relative()
+        .px(theme.density.row_padding_x())
         .gap(Spacing::sp2())
         .items_center()
         .flex()
         .flex_row()
-        .rounded(Radius.medium())
-        .bg(bg)
         .cursor_pointer()
-        // §10.3: a pressed row deepens its wash with a 1 px inner hairline
-        // (no translation, no "press down" motion).
-        .when(visuals.state == TabVisualState::Active, |el| {
-            el.border_1().border_color(p.hairline)
-        })
         .when(dragging, |el| {
             // §10.9: the dragged row recedes (92% opacity) with an elev:2
             // shadow + strong outline, and its own controls are disabled.
@@ -223,9 +223,32 @@ pub fn tab_row(
                 .border_1()
                 .border_color(p.border_strong)
         })
-        .when(visuals.state == TabVisualState::DragTarget, |el| {
-            el.border_1().border_color(p.accent)
-        })
+        // §10.2–§10.4: the wash paints an inset rounded row surface
+        // (`density:row-inset` from the rail edges, `density:radius`)
+        // behind the content instead of a full-bleed band, so the trailing
+        // close control sits inside that surface. The more specific
+        // composed state already won in the caller, so the wash never
+        // fights selection/error/loading.
+        .child(
+            div()
+                .absolute()
+                .left(theme.density.row_inset())
+                .right(theme.density.row_inset())
+                .top(theme.density.row_inset())
+                .bottom(theme.density.row_inset())
+                .rounded(theme.density.density_radius())
+                .bg(bg)
+                // §10.3: a pressed row deepens its wash with a 1 px inner
+                // hairline (no translation, no "press down" motion).
+                .when(visuals.state == TabVisualState::Active, |el| {
+                    el.border_1().border_color(p.hairline)
+                })
+                // §10.9: the drop-target surface gets the accent outline
+                // and tint on the same inset surface.
+                .when(visuals.state == TabVisualState::DragTarget, |el| {
+                    el.border_1().border_color(p.accent)
+                }),
+        )
         .when(visuals.state == TabVisualState::Selected, |el| {
             el.child(
                 div()

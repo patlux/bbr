@@ -240,22 +240,32 @@ local scales, overlap web content, or weaken assertions/budgets.
 ## Delivery ledger
 
 ```text
-Outcome: queued from Patrick's live U1 feedback; scale decision authored and
-        settled in DESIGN.md from the preserved reference (2026-08-08);
-        implementation intentionally deferred until the browser-MVP .app is
-        closed out
-Commits: docs-only authoring slice (DESIGN.md + this packet), uncommitted per
-        parallel-lane discipline; implementation none
-Functional evidence: pending post-MVP slice
-Real-app E2E: pending post-MVP slice
-Performance evidence: pending post-MVP slice; budgets remain unchanged
-Roadmap/documentation updates: DESIGN.md §4/§5/§7/§8 settled table with
-        matching §10/§11/§12 values; this packet re-pointed at the settled
-        table; Phase 9, UI track, root roadmap, browser-MVP delivery ledger
-        unchanged
-Open blockers and non-goals: no open scale decision remains; no MVP blocker
-        and no page zoom/runtime preference
-Worktree state: `bbr-s1-token-table` on `parallel/s1-token-table` (base
-        7a7c1cb); DESIGN.md and this packet edited, left uncommitted for the
-        lane owner commit and independent review
+Outcome: S1 scale applied through the central Theme/Density seams (DESIGN.md
+        §4/§5/§7/§8/§10/§11/§12, settled 2026-08-08). Normal density now
+        ships the 280 pt sidebar, 36 pt rows, 14 pt title, 18 pt icons,
+        inset rounded row surfaces, and the 520 pt command palette.
+Commits: docs-only authoring slice (DESIGN.md + this packet) uncommitted per
+        parallel-lane discipline; implementation slice uncommitted in the
+        writer worktree for the lane owner commit and independent review
+Functional evidence: unit/contract tests green; all token values asserted
+        exactly against the §8 table (theme.rs), new accessors covered
+        (hit_min_close, row_inset, section_gap, favorites_gap, state_slot,
+        row_padding_x, profile_chip, density_radius); sidebar floor proven
+        strictly positive at windows 120/64/10/0 and by the compact-window
+        E2E (rail yields, content = CONTENT_MIN 64)
+Real-app E2E: sidebar/spaces/command/dense/hover/tabs/states/organize/
+        portal/split-geometry suites green on the revised geometry;
+        canonical just e2e green
+Performance evidence: just e2e-perf green; budgets, sample counts, and
+        presentation-commit guards unchanged
+Roadmap/documentation updates: DESIGN.md untouched (canonical); this packet
+        ledger updated; no other roadmap checkbox ticked by the writer
+Open blockers and non-goals: portal/command.rs result-row literals (14/140)
+        sit outside the writer's allowed-path list — documented divergence
+        from the app-side density-icon conversion, unchanged; pinned-S
+        icon-only anatomy deferred (recorded §11.2 rendering decision, no id
+        removed); SIDEBAR_MAX raised 360 → 400 per DESIGN §5; no runtime
+        scale preference added
+Worktree state: writer worktree on `parallel/s1-ui-scale` (base 473779c);
+        implementation edits uncommitted for the orchestrator
 ```

@@ -17,13 +17,13 @@ use crate::theme::Theme;
 /// DESIGN §5: the minimum adjustable sidebar width (pt).
 pub const SIDEBAR_MIN: f32 = 200.0;
 /// DESIGN §5: the default width — the §8 normal-density `win:sidebar.N` token.
-pub const SIDEBAR_DEFAULT: f32 = 260.0;
+pub const SIDEBAR_DEFAULT: f32 = 280.0;
 /// DESIGN §5: the maximum adjustable sidebar width (pt).
-pub const SIDEBAR_MAX: f32 = 360.0;
+pub const SIDEBAR_MAX: f32 = 400.0;
 /// Narrow-window clamp floor: the native content region is never laid out
 /// narrower than this, so the WKWebView slot keeps strictly positive geometry
-/// even in degenerate window sizes. 64 pt = 2 × `sp:8`, the largest spacing
-/// step, so the floor stays inside the token system.
+/// even in degenerate window sizes. 64 pt = 2 × `sp:7`, so the floor stays
+/// inside the token system.
 pub const CONTENT_MIN: f32 = 64.0;
 /// DESIGN §5: the drag hairline is 4 pt wide.
 pub const RESIZE_HANDLE_WIDTH: f32 = 4.0;

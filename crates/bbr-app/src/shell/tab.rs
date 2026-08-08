@@ -8,19 +8,20 @@
 use crate::theme::{Spacing, Theme};
 
 /// DESIGN.md §4 one-line row budget: the title area is the sidebar width
-/// minus the fixed row anatomy (2× row padding, the favicon tile, 3
-/// inter-item gaps, the 8 pt state slot, and the close control). Per-char
-/// width is a conservative 0.45 × the `type:title` size (SF Pro averages
-/// ≈0.5 em), so [`crate::shell::presentation::truncate_title`] never fires
-/// for a title that would fit: GPUI's `text_ellipsis` stays the pixel-exact
-/// backstop for the visual cut.
+/// minus the fixed row anatomy (2× `density:row-padding-x`, the favicon
+/// tile, 3 inter-item gaps, the `density:state-slot`, and the
+/// `density:hit-min.close` close hit square). Per-char width is a
+/// conservative 0.45 × the `type:title` size (SF Pro averages ≈0.5 em), so
+/// [`crate::shell::presentation::truncate_title`] never fires for a title
+/// that would fit: GPUI's `text_ellipsis` stays the pixel-exact backstop
+/// for the visual cut.
 pub fn title_budget_chars(theme: &Theme) -> usize {
     let density = theme.density;
-    let padding = f32::from(Spacing::sp2()) * 2.0;
+    let padding = f32::from(density.row_padding_x()) * 2.0;
     let favicon = f32::from(density.icon());
     let gaps = f32::from(Spacing::sp2()) * 3.0;
-    let state_slot = 8.0;
-    let close = f32::from(density.icon());
+    let state_slot = f32::from(density.state_slot());
+    let close = f32::from(density.hit_min_close());
     let fixed = padding + favicon + gaps + state_slot + close;
     let area = f32::from(density.sidebar_width()) - fixed;
     let per_char = f32::from(theme.type_.title.size) * 0.45;
@@ -140,7 +141,7 @@ mod tests {
             crate::theme::ContrastMode::Standard,
             crate::theme::Density::ExtraLarge,
         );
-        // Normal density ships the 260 pt sidebar: ~30 chars at 13 pt title.
+        // Normal density ships the 280 pt sidebar: ~27 chars at 14 pt title.
         assert!(title_budget_chars(&normal) >= 25);
         assert!(title_budget_chars(&normal) <= 40);
         // Wider sidebars get a larger budget than narrow ones.

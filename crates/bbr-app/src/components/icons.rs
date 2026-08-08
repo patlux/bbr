@@ -404,8 +404,8 @@ mod tests {
     #[test]
     fn glyph_geometry_stays_inside_its_box() {
         // Every arm/radius plus the stroke must fit the glyph's bounding box
-        // at every shipped size (14/16/18 rows, 32 crash, 64 chassis mark).
-        for size in [14.0, 16.0, 18.0, 32.0, 64.0] {
+        // at every shipped size (16/18/20 rows, 32 crash, 64 chassis mark).
+        for size in [16.0, 18.0, 20.0, 32.0, 64.0] {
             assert!(
                 close_arm(size) * 1.5 < size / 2.0,
                 "close arm fits at {size}pt"

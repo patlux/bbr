@@ -64,7 +64,7 @@ fn pointer_drag_resizes_with_stable_native_content_and_focus() {
         assert!(!settled.divider_dragging);
         assert_ids(&settled, &["bbr-sidebar", "bbr-sidebar-divider"]);
 
-        // The native slot reports the real WKWebView frame: rail 260, content
+        // The native slot reports the real WKWebView frame: rail 280, content
         // filling the remainder — never zero or negative. The slot's own
         // height is the drift baseline for every later geometry.
         let initial_rect = wait_for_content_rect_x(
@@ -95,7 +95,10 @@ fn pointer_drag_resizes_with_stable_native_content_and_focus() {
             content_rect_for(SIDEBAR_DEFAULT + 40.0, window_w, height),
             deadline(),
         );
-        assert_eq!(grown_rect.content_rect[2], window_w - 300.0);
+        assert_eq!(
+            grown_rect.content_rect[2],
+            window_w - (SIDEBAR_DEFAULT + 40.0)
+        );
         assert_eq!(grown_rect.content_rect[3], height, "no vertical drift");
 
         // Dragging far past the range clamps to the DESIGN §5 min…
@@ -190,17 +193,17 @@ fn keyboard_resize_and_reset_match_pointer_parity() {
         );
         let height = initial_rect.content_rect[3];
 
-        // Pointer sets 300 (300 = default + 40); the keyboard path must
+        // Pointer sets 320 (320 = default + 40); the keyboard path must
         // continue from exactly that value.
         client
             .send_ok(&dsl::drag_sidebar_divider(40.0))
-            .expect("drag to 300");
+            .expect("drag to 320");
         flush_frame(&mut client);
-        let at_300 = client.snapshot().expect("300 snapshot");
-        assert_eq!(at_300.sidebar_width, 300.0);
+        let at_320 = client.snapshot().expect("320 snapshot");
+        assert_eq!(at_320.sidebar_width, SIDEBAR_DEFAULT + 40.0);
         wait_for_content_rect(
             &mut client,
-            content_rect_for(300.0, window_w, height),
+            content_rect_for(SIDEBAR_DEFAULT + 40.0, window_w, height),
             deadline(),
         );
 
@@ -215,23 +218,26 @@ fn keyboard_resize_and_reset_match_pointer_parity() {
         let left = client.snapshot().expect("left snapshot");
         assert_eq!(
             left.sidebar_width,
-            300.0 - RESIZE_STEP,
+            SIDEBAR_DEFAULT + 40.0 - RESIZE_STEP,
             "pointer→keyboard parity"
         );
         assert_view_and_sessions_preserved(&left, first_view, sessions);
         wait_for_content_rect(
             &mut client,
-            content_rect_for(300.0 - RESIZE_STEP, window_w, height),
+            content_rect_for(SIDEBAR_DEFAULT + 40.0 - RESIZE_STEP, window_w, height),
             deadline(),
         );
 
         keystroke(&mut client, "left");
         let left2 = client.snapshot().expect("second left snapshot");
-        assert_eq!(left2.sidebar_width, 300.0 - 2.0 * RESIZE_STEP);
+        assert_eq!(
+            left2.sidebar_width,
+            SIDEBAR_DEFAULT + 40.0 - 2.0 * RESIZE_STEP
+        );
 
         keystroke(&mut client, "right");
         let right = client.snapshot().expect("right snapshot");
-        assert_eq!(right.sidebar_width, 300.0 - RESIZE_STEP);
+        assert_eq!(right.sidebar_width, SIDEBAR_DEFAULT + 40.0 - RESIZE_STEP);
 
         // Reset restores the §8 default regardless of the current width.
         keystroke(&mut client, "0");
@@ -250,7 +256,7 @@ fn keyboard_resize_and_reset_match_pointer_parity() {
         // values the drag would produce.
         client
             .send_ok(&dsl::drag_sidebar_divider(2.0 * RESIZE_STEP))
-            .expect("drag to 292");
+            .expect("drag to 312");
         flush_frame(&mut client);
         let parity = client.snapshot().expect("parity snapshot");
         assert_eq!(parity.sidebar_width, SIDEBAR_DEFAULT + 2.0 * RESIZE_STEP);
@@ -322,13 +328,13 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
         // Remember a non-default width for the collapse test.
         client
             .send_ok(&dsl::drag_sidebar_divider(40.0))
-            .expect("drag to 300");
+            .expect("drag to 320");
         flush_frame(&mut client);
-        let at_300 = client.snapshot().expect("300 snapshot");
-        assert_eq!(at_300.sidebar_width, 300.0);
+        let at_320 = client.snapshot().expect("320 snapshot");
+        assert_eq!(at_320.sidebar_width, SIDEBAR_DEFAULT + 40.0);
         wait_for_content_rect(
             &mut client,
-            content_rect_for(300.0, wide_w, height),
+            content_rect_for(SIDEBAR_DEFAULT + 40.0, wide_w, height),
             deadline(),
         );
 
@@ -357,20 +363,21 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
         assert_eq!(collapsed_rect.content_rect[2], wide_w);
         assert_eq!(collapsed_rect.content_rect[3], height);
 
-        // Cmd-B expands: the last expanded width (300) is restored, not the
+        // Cmd-B expands: the last expanded width (320) is restored, not the
         // default.
         keystroke(&mut client, "cmd-b");
         flush_frame(&mut client);
         let expanded = client.snapshot().expect("expanded snapshot");
         assert!(expanded.sidebar_visible);
         assert_eq!(
-            expanded.sidebar_width, 300.0,
+            expanded.sidebar_width,
+            SIDEBAR_DEFAULT + 40.0,
             "expand restores the last expanded width"
         );
         assert_view_and_sessions_preserved(&expanded, first_view, sessions);
         wait_for_content_rect(
             &mut client,
-            content_rect_for(300.0, wide_w, height),
+            content_rect_for(SIDEBAR_DEFAULT + 40.0, wide_w, height),
             deadline(),
         );
 
