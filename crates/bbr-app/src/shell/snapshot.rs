@@ -134,6 +134,12 @@ pub struct TestSnapshot {
     pub download_rows: Vec<bbr_testkit::protocol::DownloadRowSnapshot>,
     /// §11.12 downloads panel render contract (open, focus, bounded window).
     pub downloads: bbr_testkit::protocol::DownloadsPanelSnapshot,
+    /// The last completed real WebKit content probe (testkit-only; macOS):
+    /// the committed-document + native url/title observation the E2E gateway
+    /// uses as real content evidence. `None` until a probe completion
+    /// landed.
+    #[cfg(all(target_os = "macos", feature = "testkit"))]
+    pub web_content_probe: Option<bbr_testkit::protocol::WebContentProbe>,
 }
 
 #[cfg(feature = "testkit")]

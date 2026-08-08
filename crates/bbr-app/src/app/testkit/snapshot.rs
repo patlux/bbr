@@ -308,6 +308,22 @@ impl BbrApp {
                 .collect(),
             download_rows,
             downloads,
+            #[cfg(all(target_os = "macos", feature = "testkit"))]
+            web_content_probe: self
+                .web_content_probe
+                .borrow()
+                .as_ref()
+                .map(|(view, probe)| bbr_testkit::protocol::WebContentProbe {
+                    view: *view,
+                    ready_state: probe.ready_state.clone(),
+                    dom_url: probe.dom_url.clone(),
+                    dom_title: probe.dom_title.clone(),
+                    has_body: probe.has_body,
+                    native_url: probe.native_url.clone(),
+                    native_title: probe.native_title.clone(),
+                }),
+            #[cfg(not(all(target_os = "macos", feature = "testkit")))]
+            web_content_probe: None,
         }
     }
 

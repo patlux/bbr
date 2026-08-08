@@ -191,6 +191,19 @@ impl BbrApp {
             }
             Activation::RunAction { action } => self.run_registry_action(action, window, cx),
             Activation::Navigate { url } => {
+                // Every destination handed to a web session must be
+                // absolute: WebKit rejects a scheme-less URL before any
+                // provisional navigation starts, leaving the fresh view
+                // blank (the schemeless-nav regression: Cmd-T → "golem.de"
+                // → Enter rendered white while the scheme'd twin loaded).
+                // `navigate()` (Location mode) already normalizes its
+                // input; apply the same policy here so NewTab and Location
+                // deliver the identical absolute URL to the controller.
+                // `normalize_url` is idempotent for already-absolute URLs.
+                let url = bbr_web::normalize_url(&url);
+                if url.is_empty() {
+                    return false;
+                }
                 if new_tab {
                     if self.open_tab(&url, cx).is_some() {
                         self.finish_web_activation(window, cx);

@@ -186,6 +186,20 @@ pub struct BbrApp {
     /// the active `WKWebView` through it without creating/moving sessions.
     #[cfg(target_os = "macos")]
     find_engine: Option<crate::engine::NativeEngineRef>,
+    /// The last completed real WebKit content probe (testkit-only; macOS):
+    /// the completion block of an issued probe writes through this shared
+    /// slot and the snapshot reads it, so the E2E gateway observes what
+    /// WebKit actually committed — never our own visibility/geometry
+    /// bookkeeping (which can be green while the user sees a blank page).
+    #[cfg(all(target_os = "macos", feature = "testkit"))]
+    web_content_probe: std::rc::Rc<
+        std::cell::RefCell<
+            Option<(
+                bbr_web::WebViewId,
+                bbr_web_macos::content_probe::ContentProbe,
+            )>,
+        >,
+    >,
     /// The last frame's command-field rect in window coordinates, recorded
     /// by the field anchor element (DESIGN.md §11.4): the exact anchor for
     /// the field-anchored overlay (top/leading edge flush, width from the
@@ -284,6 +298,8 @@ impl BbrApp {
             download_engine: None,
             #[cfg(target_os = "macos")]
             find_engine: None,
+            #[cfg(all(target_os = "macos", feature = "testkit"))]
+            web_content_probe: std::rc::Rc::new(std::cell::RefCell::new(None)),
             command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
@@ -304,6 +320,27 @@ impl BbrApp {
     #[cfg(target_os = "macos")]
     pub fn set_find_engine(&mut self, engine: crate::engine::NativeEngineRef) {
         self.find_engine = Some(engine);
+    }
+
+    /// Issue a real WebKit content probe for a live view (testkit-only;
+    /// macOS): reads the committed document in BBR's own client content
+    /// world plus the native `WKWebView` url/title through the concrete
+    /// engine handle (never creating or moving sessions) and publishes the
+    /// observation on the next snapshot's `web_content_probe`. Returns
+    /// `false` when the native engine is absent or the view is unknown.
+    #[cfg(all(target_os = "macos", feature = "testkit"))]
+    pub fn probe_web_content(&mut self, view: bbr_web::WebViewId) -> bool {
+        let Some(native) = self.find_engine.as_ref() else {
+            return false;
+        };
+        let Some(web_view) = native.borrow().web_view(view) else {
+            return false;
+        };
+        let slot = self.web_content_probe.clone();
+        bbr_web_macos::content_probe::probe_web_view(&web_view, move |probe| {
+            *slot.borrow_mut() = Some((view, probe));
+        });
+        true
     }
 
     /// Install the macOS download composition (macOS only): the concrete

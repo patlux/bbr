@@ -32,6 +32,7 @@ mod activation;
 mod command_portal;
 mod cross_space;
 mod moved;
+mod navigation;
 mod palette;
 mod palette_surfaces;
 mod states;
