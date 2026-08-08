@@ -1,10 +1,26 @@
 use std::path::{Path, PathBuf};
 
+use crate::fields::{
+    CommandHistoryEntry, DownloadRecord, SearchSettings, SpaceGlyph, SpaceTint, StoreLoad,
+};
+
 /// The complete ordered structural state owned by the persistence repository.
+///
+/// Schema v2 adds the four field groups the blocked features need: per-space
+/// appearance identity, the global settings record, terminal download
+/// history, and visited command-history entries (all defined in
+/// [`crate::fields`]). All collections keep the caller's order; persistence
+/// derives dense per-table order keys from it.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Snapshot {
     pub profiles: Vec<Profile>,
     pub windows: Vec<WindowState>,
+    /// The single global settings record (one persisted row, id 1).
+    pub settings: SearchSettings,
+    /// Terminal download attempts, in persisted history order.
+    pub downloads: Vec<DownloadRecord>,
+    /// Visited command-history entries, in persisted corpus order.
+    pub command_history: Vec<CommandHistoryEntry>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -74,6 +90,10 @@ impl ProfileHue {
 pub struct Space {
     pub id: u64,
     pub title: String,
+    /// Curated tint identity (schema v2; see [`SpaceTint`]).
+    pub tint: SpaceTint,
+    /// Curated glyph identity (schema v2; see [`SpaceGlyph`]).
+    pub glyph: SpaceGlyph,
     pub tabs: Vec<Tab>,
     pub active_tab: Option<u64>,
     pub recently_closed: Vec<RecentlyClosedTab>,
@@ -139,6 +159,9 @@ impl Default for SidebarState {
 pub struct RestoreOutcome {
     pub snapshot: Snapshot,
     pub warnings: Vec<RecoveryWarning>,
+    /// Whether the persisted store was loaded as-is or discarded and
+    /// recreated empty (see [`StoreLoad`]).
+    pub store: StoreLoad,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -158,6 +181,12 @@ pub enum RecoveryWarning {
     Sidebar {
         window_id: u64,
     },
+    /// The persisted settings record was incoherent (invalid custom search
+    /// template, or a template without the custom engine) and fell back to
+    /// defaults.
+    Settings {
+        detail: String,
+    },
 }
 
 impl RecoveryWarning {
@@ -167,6 +196,7 @@ impl RecoveryWarning {
             Self::Split { space_id, .. } => (*space_id, 1),
             Self::WindowGeometry { window_id } => (*window_id, 2),
             Self::Sidebar { window_id } => (*window_id, 3),
+            Self::Settings { .. } => (u64::MAX, 4),
         }
     }
 }
@@ -193,7 +223,7 @@ impl Repository {
 pub struct WriteStats {
     /// Complete-snapshot replacement always commits exactly one transaction.
     pub committed_transactions: u64,
-    /// Six deterministic child-first DELETE statements plus one INSERT execution per row.
+    /// Nine deterministic child-first DELETE statements plus one INSERT execution per row.
     pub sql_statements: u64,
     pub deleted_rows: u64,
     pub inserted_rows: u64,
