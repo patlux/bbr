@@ -40,7 +40,9 @@ session hydration to the later serial startup integration.
 - No history/search provider exposed to `bbr-command` in this packet; that is a
   serial shared integration contract after both cores settle.
 - No metadata debounce scheduler, favicon blobs, per-site settings/zoom, or
-  broad future schema beyond the bounded structural model.
+  broad future schema beyond the bounded structural model. Durable global
+  Saved Pages and their next development schema are owned by the later
+  [B1 packet](saved-pages-portable-persistence.md), not retrofitted here.
 - No changes to `bbr-domain`, `bbr-browser`, `bbr-app`, `bbr-command`, `bbr-web`,
   testkit protocol, root workspace manifests, `Cargo.lock`, `justfile`, Phase 7,
   `ROADMAP.md`, or performance baselines from this lane. If another dependency

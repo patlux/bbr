@@ -933,9 +933,11 @@ and command authorities; it does not copy Zen/Firefox features or styling.
   portable command/controller authority. A missing capability omits its row or
   renders a useful disabled state; the renderer never invents behavior.
 - **Explicit omissions:** no Send-to-Mobile, Firefox Container Tab, route-for-
-  domain, extension-contributed rows, QR creator, bookmark duplication,
-  block-element command, video downloader, or bulk Select All without their own
-  BBR product contracts.
+  domain, extension-contributed rows, QR creator, block-element command, video
+  downloader, or bulk Select All without their own BBR product contracts.
+  After integrated B2, Tab/Favorite and BBR page-background menus may show
+  capability-gated `Bookmark Page` / `Remove Bookmark` rows; both invoke the
+  same app-owned Saved Page command as Cmd-D and never own duplicate policy.
 - **Stable family ids:** `bbr-tab-menu`, `bbr-favorite-menu`,
   `bbr-folder-menu`, and `bbr-page-menu`, with action/submenu ids owned by
   their bounded task packets.
@@ -1008,6 +1010,58 @@ HTML heuristics alone.
   they never claim real WebKit control or replace the deterministic media E2E.
 
 Canonical UI packet: [Sidebar media control](docs/roadmap/tasks/sidebar-media-control.md).
+
+### 11.16 Saved Pages result and Library (Planned)
+
+Saved Pages are durable global URL records, not live-tab presentations. Pin
+keeps one concrete Space-owned tab prominent; Favorite presents one concrete
+living `TabId` globally and disappears with it; a Saved Page carries no
+`TabId`, Space/Profile identity, WebView, native session, cookie, credential,
+or page snapshot and survives tab close and restart.
+
+- **Palette result row:** `[bookmark glyph] [title + URL] [collection label]`.
+  Title uses `type:title` with the captured title, then hostname/URL fallback;
+  URL uses `type:mono` and the §4 mid-ellipsis; the optional one-level
+  collection label uses `type:meta`. Default/hover/selected/focused states use
+  the existing command-row language; the selected result keeps the accent rail
+  and no Saved Page-specific color family is introduced.
+- **Activation:** opening a Saved Page creates exactly one fresh regular tab in
+  the currently active Space and therefore its current Profile. It never
+  silently selects an existing matching tab, switches Space/Profile, pins,
+  favorites, splits, or reuses a native session.
+- **Save/remove:** conventional macOS `Cmd-D` and the BBR-owned menu rows
+  `Bookmark Page` / `Remove Bookmark` call one command. Canonical-URL save is
+  idempotent; removing a Saved Page never closes or mutates an open tab, and
+  closing a tab never removes its Saved Page. The §11.5 address control remains
+  a display button; a later saved-state accessory is not required by B2.
+- **Library topology:** the full collection lives in one dedicated ordinary
+  GPUI Library surface after G1, never as a permanent Sidebar region and never
+  as a WebKit page or Portal. A small chrome/settings entry point may open it.
+  The first production surface supports search, deterministic sort, rename,
+  remove, multi-select, and one-level flat collections through shared `bbr-ui`
+  primitives.
+- **Library row:** bookmark/fallback glyph or normal favicon presentation,
+  title, mid-ellipsized URL, optional collection label, and selection state.
+  No favicon blob is stored in the record; missing favicon uses the §7.2
+  monogram. Hundreds/thousands of cold records use bounded/windowed rendering.
+- **States:** empty, loading, populated, no results, single/multi-selection,
+  destructive removal confirmation, long title/URL, missing title, missing
+  favicon, flat collection, and 1k bounded rendering. State changes snap;
+  transient opacity follows §6 and Reduced Motion.
+- **Stable ids:** `bbr-saved-page-result-<bookmark-id>`,
+  `bbr-saved-page-result-title-<bookmark-id>`,
+  `bbr-saved-page-result-url-<bookmark-id>`, `bbr-saved-pages-library`,
+  `bbr-saved-pages-search`, `bbr-saved-pages-sort`,
+  `bbr-saved-pages-collection-<collection-id>`,
+  `bbr-saved-pages-row-<bookmark-id>`, and
+  `bbr-saved-pages-remove-confirm`.
+- **Gallery:** G2/G3 append only the exact integrated B2/B3 production
+  components and models. Gallery renderability never proves persistence,
+  restart, command activation, or bounded product performance.
+
+Canonical packets: [B1 contract/persistence](docs/roadmap/tasks/saved-pages-portable-persistence.md),
+[B2 actions/command provider](docs/roadmap/tasks/saved-pages-actions-command.md),
+and [B3 Library](docs/roadmap/tasks/saved-pages-library.md).
 
 ## 12. Profile identity
 
@@ -1082,7 +1136,9 @@ semantically — never by pixel comparison.
   footer control keeps `bbr-downloads` (§11.4). Planned owned menu families
   register the §11.13 ids; the titlebar registers the §11.14 ids; an eligible
   media session registers the §11.15 `bbr-media-card*` ids and an absent card
-  registers none. The S1 scale table (§8) changes geometry tokens only — it
+  registers none. Integrated Saved Pages register the §11.16 result/Library
+  ids only for real records/surfaces; an absent Library/result registers none.
+  The S1 scale table (§8) changes geometry tokens only — it
   does not change ids, the §10 state
   vocabulary, interaction behavior, dense-500 bounded-window rendering,
   scroll math, or any performance budget/sample count.
@@ -1120,7 +1176,9 @@ Vibrancy/NSVisualEffect materials; site-adaptive or theme-marketable color;
 custom fonts; arbitrary emoji iconography outside the curated SpaceIdentity
 catalog; page thumbnails/previews; spring physics unrelated to direct gesture
 cancellation; auto-reload of crashed tabs; sidebar auto-collapse; density
-auto-switch; palette result grouping polish; peek choreography (its own task).
+auto-switch; palette result grouping polish; Saved Page cloud/mobile sync,
+offline copies, tags, nested collections, or page snapshots; peek choreography
+(its own task).
 
 ## 17. Open decisions
 

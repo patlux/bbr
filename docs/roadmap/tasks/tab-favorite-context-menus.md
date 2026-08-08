@@ -52,7 +52,7 @@ label (`Add to Favorites` / `Remove from Favorites`).
 - Initial BBR-owned action groups, only where their authority exists:
   - placement: `Move to Folder ›`, `Move to Space ›` with visible profile
     identity for cross-profile destinations;
-  - page/session: `Reload Tab`, Favorite toggle;
+  - page/session: `Reload Tab`, Favorite toggle; after integrated [B2 Saved Pages actions](saved-pages-actions-command.md), capability-gated `Bookmark Page` / `Remove Bookmark` rows invoke B2's one app-owned command against the bound tab/Favorite URL without retaining `TabId` in the Saved Page;
   - lifecycle: `Pin Tab` / `Unpin Tab`, `Suspend Tab`, `Duplicate Tab`;
   - system/share: `Copy Link`, the native macOS Share service picker;
   - ordering: `Move to Start`, `Move to End`;
@@ -64,8 +64,9 @@ label (`Add to Favorites` / `Remove from Favorites`).
   retain a disabled row with a deterministic reason.
 - Stable ids:
   `bbr-tab-menu`, `bbr-favorite-menu`, `bbr-tab-menu-<action>`,
-  `bbr-tab-menu-folder-<n>`, `bbr-tab-menu-space-<n>`, and
-  `bbr-tab-menu-close-<scope>`.
+  `bbr-tab-menu-folder-<n>`, `bbr-tab-menu-space-<n>`,
+  `bbr-tab-menu-bookmark` (label Bookmark Page/Remove Bookmark from B2 state),
+  and `bbr-tab-menu-close-<scope>`.
 - Add typed snapshot/semantic state, real-app E2E, and optimized presentation
   evidence for open and submenu commit.
 - Extend Gallery G2/G3 only by registering these real production components
@@ -74,8 +75,10 @@ label (`Add to Favorites` / `Remove from Favorites`).
 ## Non-goals
 
 - No `Send to Mobile`, route-for-domain, Firefox Container Tab, QR-code
-  creator, bookmark duplication, bulk Select All, extension-contributed rows,
-  or other Zen/Firefox features without a separate BBR contract.
+  creator, bulk Select All, extension-contributed rows, or other Zen/Firefox
+  features without a separate BBR contract. Saved Page rows are allowed only
+  after [B2](saved-pages-actions-command.md) and must call its shared command;
+  this menu packet never owns bookmark persistence or duplicate policy.
 - No Rename/Icon before durable tab-label/icon ownership exists.
 - No media Mute row before the portable media capability contract advertises
   it for the exact session.
@@ -90,7 +93,8 @@ label (`Add to Favorites` / `Remove from Favorites`).
 ```text
 Base commit:          verified main after F2c → F2b → fresh F2a and settled G1
 Depends on:           G1 production bbr-ui menu primitives; integrated F2
-                      wave; existing tab/favorite/folder/controller authority
+                      wave; existing tab/favorite/folder/controller authority;
+                      B2 only for Bookmark/Remove Bookmark rows
 Provides/API:         app/controller TabMenuSource + availability matrix;
                       presentation-only bbr-ui TabMenuModel; production menu
                       composition and typed command/native adapters
@@ -151,6 +155,9 @@ sidebar rendering, organization commands, or their Gallery stories.
       once and preserves isolation.
 - [ ] Pin, suspend, duplicate, Favorite toggle, Copy Link, ordering, close,
       and reopen target the source tab rather than the selected neighbor.
+- [ ] When B2 is integrated, Bookmark/Remove Bookmark captures the bound
+      source's current URL/title through B2 without selecting it, creates no
+      duplicate canonical URL, and leaves the tab/Favorite/session unchanged.
 - [ ] Favorite menu resolves and mutates the same concrete `TabId` as its tab
       row presentation.
 

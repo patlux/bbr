@@ -31,7 +31,9 @@ bounded nonblocking capacity-1 writer — ranking and render never touch SQLite.
 The provider scale (500 tabs + 10,000 history entries) is enforced by the
 `command_bar_first_result` real-app performance scenario. Still open and serial:
 per-site settings/zoom, lazy native session hydration, force-quit E2E, warm
-restore, and metadata debounce.
+restore, metadata debounce, and the [B1 Saved Pages schema/repository packet](../tasks/saved-pages-portable-persistence.md)
+once current repository ownership is free. B1 follows the standing development
+rule: schema bump plus discard, no migration or compatibility path.
 
 ## Checklist
 
@@ -46,6 +48,12 @@ restore, and metadata debounce.
 - [x] Recover optional corrupt session state without deleting profile browsing data. *(Repository projection returns ordered typed warnings without mutating persisted state.)*
 - [x] Add checked-in migration fixtures and force-quit recovery tests. *(Migration/recovery fixtures are integrated; real-app force-quit recovery E2E `e2e_shell_persistence` proves only the last committed repository state returns after a graceful restart and after a SIGKILL force quit — for the open and the tab-reorder mutation classes — never a partial or fast-but-wrong model.)*
 - [ ] Add first-run, empty, migration-error, and recovery UI states.
+
+Durable global Saved Page URL records, flat collections, canonical-URL
+idempotence, and the next development schema are a Phase-8 extension owned by
+[B1](../tasks/saved-pages-portable-persistence.md), not a second Phase-7
+checkbox owner. They carry no profile/session/tab ownership and add no
+migration/backcompat path.
 
 ## Deferred decisions
 

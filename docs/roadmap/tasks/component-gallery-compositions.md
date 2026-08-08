@@ -50,8 +50,11 @@ anywhere in the gallery.
   accepted production packets integrate, append composition stories for
   Tab/Favorite menus with submenus, Folder menu, enriched Page-background
   menu, the safe-titlebar navigation cluster, and the conditional Sidebar
-  media card. Existing StoryIds remain stable; these are append-only stories
-  of the same production components, never implementation authorization.
+  media card. Integrated B2/B3 later append Saved Page command/menu and Library
+  compositions; no StoryId or matrix row is reserved before those production
+  surfaces exist. Existing StoryIds remain stable; these are append-only
+  stories of the same production components, never implementation
+  authorization.
 - **`bbr-ui::split`:** split chrome frames (pane frame hairline, focused
   pane outline, shared-edge divider, split-zone frames per DESIGN §11.7)
   rendered by `bbr-app`'s split branch around the existing
@@ -157,6 +160,12 @@ Integration order:    packet 3 → this packet → post-G1 serial integration.
 | Titlebar navigation group (after production packet) | traffic-light-safe compact/wide layouts; sidebar collapsed/expanded; Back/Forward disabled combinations; Reload/loading; empty native drag region; standard/increased contrast | hardcoded traffic-light coordinates; duplicated status-row toggle; a titlebar with no draggable empty region |
 | Sidebar + media group (after media contract/UI packets) | no-session rail with zero reserved gap; playing/paused card; seekable known duration; unknown/live duration; capability subsets; multiple-session count/switch; dismissed identity; cross-profile source; compact/wide; reduced-motion; contrast | a card without actual session identity; a vertical card stack; unsupported decorative controls; fake total/scrubber; any story claiming real media command evidence |
 | Split preview (`bbr-ui::split`) | single pane (focused frame hairline); two panes (shared-edge divider, focused pane inset outline); split-zone frames (top/right/bottom/left) with accent frame + fill + corner glyph; reduced-motion; contrast | a zone frame without the accent language (zone fill is accent-only); a split with zero live panes (the `pane_layout()` split branch requires both live sessions — no false single-pane degradation — per [split-shared-contract](split-shared-contract.md#unit-and-contract); visuals per DESIGN §11.7) |
+
+Saved Page command/menu compositions append here only after integrated
+[B2](saved-pages-actions-command.md); the Saved Pages Library composition
+appends only after integrated [B3](saved-pages-library.md). This packet remains
+the canonical owner of their eventual StoryIds, matrix rows, variant families,
+and Gallery renderability checks. Nothing is predeclared as a story today.
 
 ## Evidence
 

@@ -36,6 +36,10 @@ Deliver a keyboard-complete real-app command bar that consumes the integrated `b
 - Result limit: 16.
 - Destructive actions: typed/destructive tint only in v1; no confirmation dialog.
 - History corpus: empty in this slice; no fake history provider.
+- Saved Pages are a later provider owned by [B2](saved-pages-actions-command.md)
+  after [B1](saved-pages-portable-persistence.md). B2 extends this one
+  composition/provider seam from an in-memory snapshot; it does not add a
+  second command authority or persistence dependency to `bbr-command`.
 
 ## Non-goals
 

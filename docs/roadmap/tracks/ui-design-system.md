@@ -27,7 +27,7 @@ menu follow-up, which may start after F2 closeout when that territory is free.
 - [ ] Enrich the existing Portal-backed [Page-background context menu](../tasks/page-background-context-menu.md) after F2 closeout while preserving WebKit-native link/image/selection/editable/media/JavaScript menus.
 - [ ] Move sidebar collapse plus Back/Forward/Reload into the traffic-light-safe [unified titlebar navigation](../tasks/titlebar-navigation-controls.md) without hardcoded geometry or duplicate authorities.
 - [ ] Establish the public-API-only [media-session capability contract](../tasks/media-session-capability-contract.md), then render the conditional [sidebar media control](../tasks/sidebar-media-control.md) from advertised capabilities only.
-- [ ] Append the corresponding G2/G3 stories to the existing Gallery packets from the exact production components; no copies and no Gallery substitution for browser/native E2E.
+- [ ] Append the corresponding G2/G3 stories to the existing Gallery packets from the exact production components; no copies and no Gallery substitution for browser/native E2E. Saved Page result/menu stories wait for integrated [B2](../tasks/saved-pages-actions-command.md); Library stories wait for integrated [B3](../tasks/saved-pages-library.md). Detailed story acceptance remains owned by the G2/G3 packets.
 
 ## Visual direction and tokens — Phase 4 start
 
@@ -70,7 +70,7 @@ menu follow-up, which may start after F2 closeout when that territory is free.
 - [ ] Split divider and pane focus are clear but quiet.
 - [ ] [Link Preview / Peek](../tasks/link-preview-peek.md) communicates its temporary state, fully covers the current page without looking like a generic modal, and makes dismissal versus promotion unmistakable.
 - [ ] Persistence/recovery states communicate trust and reversibility.
-- [ ] Downloads, permissions, errors, history, settings, and onboarding use the same components and language. Bounded follow-ups: [downloads sidebar panel](../tasks/downloads-sidebar-panel.md), [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), and [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md).
+- [ ] Downloads, permissions, errors, history, settings, Saved Pages, and onboarding use the same components and language. Bounded follow-ups: [downloads sidebar panel](../tasks/downloads-sidebar-panel.md), [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md), and the post-G1 [B3 Saved Pages Library](../tasks/saved-pages-library.md) after B1+B2.
 - [ ] Every new surface ships light/dark, empty/loading/error, keyboard-focus, and reduced-motion variants.
 
 ## Product-wide polish — Phase 9

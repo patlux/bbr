@@ -36,6 +36,12 @@ remains Phase 7 work.
 - [x] Add table-driven parser/ranking tests and real-app command-bar E2E. *(Portable parser/ranking suites plus `just e2e-shell-command` 11/11 cover text, results, actions, cross-space/profile identity, stale moved-tab activation, and truthful failure states.)*
 - [x] Keep first local result below 50 ms for 10,000 history entries and 500 tabs. *(Final parser-remediation gate, release mode: 400 samples, p50 0.117000 ms, p95 1.452917 ms, max 1.539583 ms against the strict p95/max <50 ms ceiling; in-process real-app presentation measurement is the app-composition packet's.)*
 
+Phase 8 extends this one provider/composition seam through
+[B2 Saved Page actions and command provider](../tasks/saved-pages-actions-command.md)
+after [B1](../tasks/saved-pages-portable-persistence.md) integrates. B2 is the
+canonical checklist owner: ranking consumes one loaded in-memory snapshot,
+while `bbr-command` remains provider-neutral and never queries SQLite.
+
 ## Phase exit
 
 - [x] Every implemented command-bar path is keyboard complete, exposed through the typed semantic tree, and visually consistent with Phase 4. *(History remains an intentionally empty real collection until Phase 7.)*

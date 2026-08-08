@@ -248,6 +248,34 @@ Additional rules:
   out of Favorites never changes its space membership, order, selection, or
   live session.
 
+### Saved Pages — Planned contract
+
+- A Saved Page is a durable global browser-installation URL record with a
+  stable `BookmarkId`; it is not a `TabId`, Favorite, pin, Space/Profile
+  member, native session, cookie/data-store container, history record, or page
+  snapshot.
+- Pin, Favorite, and Saved Page have different lifetimes: a pin and Favorite
+  die with their concrete tab; a Saved Page survives closing tabs, spaces,
+  windows, and restarting the browser.
+- Saving a tab, Favorite, or focused page captures only its current canonical
+  navigable URL and title as an independent record. No `TabId`/session link is
+  required afterward. Canonical-URL save is idempotent.
+- Removing a Saved Page never closes, navigates, unpins, unfavorites, moves, or
+  otherwise mutates an open tab. Closing a tab never removes its Saved Page.
+- Activating a Saved Page creates exactly one fresh regular tab in the
+  currently active Space, and therefore uses that Space's current Profile/data
+  store. It never silently switches context, selects/reuses a matching live
+  tab, or restores capture-time cookies/session state.
+- Saved Page search/ranking consumes one loaded global in-memory snapshot; no
+  synchronous repository query occurs from command ranking or GPUI render.
+- `Cmd-D`, Palette activation, and BBR-owned Tab/Favorite/page-background menu
+  rows route through the same app-owned save/remove/open authority. Menu
+  surfaces retain their own source-binding/focus/Portal contracts and do not
+  duplicate Saved Page behavior.
+- Canonical packets: [B1 persistence](../roadmap/tasks/saved-pages-portable-persistence.md),
+  [B2 actions/provider](../roadmap/tasks/saved-pages-actions-command.md), and
+  [B3 Library](../roadmap/tasks/saved-pages-library.md).
+
 ## Split view
 
 ### Open a split — Contract
@@ -406,6 +434,10 @@ visible UI slices land.
   **Contract** The restored tab keeps its identity/URL/title, receives a fresh
   native session, becomes active, and preserves the focus domain of the
   invoking command (chrome stays chrome, web stays web).
+- `Cmd-D` — toggle the focused/active page's Saved Page state through B2.
+  **Planned contract.** Saving is canonical-URL-idempotent and creates no tab;
+  removing never mutates the current tab. Missing/unsupported URLs reject
+  truthfully.
 - Tab-list keyboard: `↑`/`↓` move selection through the visible rows, `⌫`
   closes the active tab, Enter activates. **Contract** (rows stay in browser
   chrome while traversed).

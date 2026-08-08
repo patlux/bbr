@@ -31,6 +31,11 @@ exact tab/session/profile/space/split identity.
 - Extend the existing production page-menu model from Back/Forward/Reload/
   Copy Link/Open in New Tab with only currently owned commands:
   `Back`, `Forward`, `Reload`, `Select All`, `Copy Page Link`, and `Share…`.
+- After integrated [B2 Saved Pages actions](saved-pages-actions-command.md),
+  add capability-gated `Bookmark Page` / `Remove Bookmark` rows by invoking
+  B2's one app-owned command against the captured focused-page URL/title. This
+  packet owns Portal placement/source binding/focus evidence, never Saved Page
+  persistence, duplicate policy, or tab-open behavior.
 - Add `Save Page As…` only after the file-panel/save contract and native
   adapter are integrated.
 - Add `View Page Source` only after a typed capability opens source in a new
@@ -41,7 +46,8 @@ exact tab/session/profile/space/split identity.
   presentation, edge clamping, keyboard traversal, disabled reasons, focus
   restoration, resize/move tracking, and teardown.
 - Stable ids: `bbr-page-menu`, `bbr-page-menu-back`, `-forward`, `-reload`,
-  `-save`, `-select-all`, `-copy-link`, `-share`, `-view-source`, `-inspect`.
+  `-bookmark` (Bookmark Page/Remove Bookmark from B2 state), `-save`,
+  `-select-all`, `-copy-link`, `-share`, `-view-source`, `-inspect`.
 - Extend typed routing diagnostics, real-WKWebView E2E, semantic snapshots,
   command-commit performance where new visible commands warrant it, and the
   real-production Gallery G2/G3 menu stories after extraction.
@@ -51,9 +57,10 @@ exact tab/session/profile/space/split identity.
 - No global suppression or replacement of WebKit element menus.
 - No interception of page JavaScript context-menu behavior beyond the existing
   conservative ownership policy.
-- No bookmarks, extension rows, block-element action, video downloader,
-  Send-to-Mobile, accessibility inspector, or screenshot row in the normal
-  product menu.
+- No bookmark implementation local to this menu, extension rows, block-element
+  action, video downloader, Send-to-Mobile, accessibility inspector, or
+  screenshot row. Saved Page rows exist only after B2 and dispatch its shared
+  command; ambiguous/non-background WebKit menus remain native.
 - No private WebKit SPI, screenshot/texture page composition, second Portal
   host, or copied Gallery implementation.
 
@@ -63,7 +70,8 @@ exact tab/session/profile/space/split identity.
 Base commit:          verified main after complete F2 closeout
 Depends on:           integrated existing context-menu/Portal path; free
                       Portal/context-menu ownership; G1 components if already
-                      available (otherwise coordinate extraction, never copy)
+                      available (otherwise coordinate extraction, never copy);
+                      B2 only for Bookmark/Remove Bookmark rows
 Provides/API:         enriched PageMenuModel/actions and stronger typed
                       ownership diagnostics; no ownership-policy reversal
 Exclusive paths:      focused page-menu app/portal modules; conservative
@@ -114,6 +122,9 @@ classifier, or their testkit/performance registries.
       native WebKit behavior.
 - [ ] Share/Select All and any integrated Save/Source command target the exact
       page without selecting or recreating another tab.
+- [ ] When B2 is integrated, Bookmark/Remove Bookmark uses the same B2 command
+      as Cmd-D and Tab/Favorite menus, preserves the focused page/session, and
+      never affects WebKit-native element-menu ownership.
 - [ ] Resize, move, dismissal, and teardown leave no visible/attached orphan.
 
 ### Performance

@@ -51,7 +51,7 @@ root-roadmap contracts remain serial integration surfaces.
 - [x] [5 — Unified command bar](docs/roadmap/phases/05-command-bar.md) *(Local tabs/spaces/actions/navigation/search are keyboard-complete and benchmark-protected; persisted history composition remains owned by Phase 7.)*
 - [ ] [6 — Two-pane split view](docs/roadmap/phases/06-split-view.md)
 - [ ] [7 — Persistence and crash recovery](docs/roadmap/phases/07-persistence.md)
-- [ ] [8 — Daily-driver browser essentials](docs/roadmap/phases/08-daily-driver.md) — includes [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md), [downloads](docs/roadmap/tasks/downloads-sidebar-panel.md), [find in page](docs/roadmap/tasks/find-in-page-portal-bar.md), and deferred [Portal follow-ups](docs/roadmap/tasks/native-portal-hardening.md)
+- [ ] [8 — Daily-driver browser essentials](docs/roadmap/phases/08-daily-driver.md) — includes [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md), [downloads](docs/roadmap/tasks/downloads-sidebar-panel.md), [find in page](docs/roadmap/tasks/find-in-page-portal-bar.md), the Saved Pages sequence [B1](docs/roadmap/tasks/saved-pages-portable-persistence.md) → [B2](docs/roadmap/tasks/saved-pages-actions-command.md) → [B3](docs/roadmap/tasks/saved-pages-library.md), and deferred [Portal follow-ups](docs/roadmap/tasks/native-portal-hardening.md)
 - [ ] [9 — Accessibility, polish, performance, and release hardening](docs/roadmap/phases/09-quality-release.md)
 - [ ] [10 — Cross-platform adapters](docs/roadmap/phases/10-cross-platform.md)
 

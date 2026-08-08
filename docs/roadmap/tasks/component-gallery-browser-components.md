@@ -48,8 +48,11 @@ model and a recorder callback proving which interaction fired. No fake
   After their separately scheduled production packets integrate, append —
   without renumbering any existing StoryId — Tab/Favorite menu, Folder menu,
   enriched Page-background menu, Titlebar navigation controls, and Sidebar
-  media-card components. These rows register the same production symbols;
-  this Gallery packet does not authorize their behavior implementation.
+  media-card components. Integrated B2/B3 later append Saved Page result/menu
+  and Library rows/controls in the same way; no Saved Pages StoryId or matrix
+  row is reserved before the production component exists. These rows register
+  the same production symbols; this Gallery packet does not authorize their
+  behavior implementation.
   Each group: extract to `bbr-ui` → migrate `bbr-app` → delete old
   definition → re-run the affected `just e2e-shell-<suite>` + `just e2e-perf`.
 - **Story matrix** for each component in `bbr-gallery`, per the matrix
@@ -156,6 +159,12 @@ gallery fixture builder refuses to build them.
 | Context menu (`bbr-ui::surfaces::menu`) | existing page menu: item enabled/disabled, selection, Back/Forward enablement, Open New Tab / Reload / Copy Link / Back / Forward, keyboard cursor + pointer hover; post-packet append-only families: Tab/Favorite closed/open/submenu/disabled/danger/overflow bound to exact TabId; Folder empty/populated/move-submenu/destructive bound to FolderId; Page-background owned-command matrix while WebKit element-menu classes are represented as ownership metadata, not copied menus | a menu with zero items; activation of a disabled row; any source-less Tab/Favorite/Folder menu; any Gallery-owned rendering of WebKit link/image/selection/editable/media menus |
 | Titlebar navigation (`bbr-ui::components::titlebar_navigation`, after its production packet) | sidebar toggle collapsed/expanded; Back/Forward all enablement combinations; Reload/loading; S/N/XL; standard/increased contrast; focused/hover/disabled | hardcoded traffic-light geometry; a second sidebar-collapse or navigation authority; titlebar controls inside the address component |
 | Sidebar media card (`bbr-ui::components::media_card`, only after media contract + production UI) | absent; playing/paused; seekable known-duration; live/unknown duration; capability subsets for previous/next/mute; one/multiple sessions; dismissed identity; stale/ended disabled/removal state; cross-profile source identity; reduced motion/contrast | decorative unsupported controls; fake duration/scrubber; a model without opaque session + TabId/SpaceId/ProfileId identity; any fixture that claims WebKit control |
+
+Saved Page result/menu rows append here only after integrated
+[B2](saved-pages-actions-command.md); Saved Pages Library rows/controls append
+only after integrated [B3](saved-pages-library.md). Their production packets
+provide the source models, but this Gallery packet owns the eventual StoryIds,
+matrix rows, and renderability checks. Nothing is predeclared as a story today.
 
 ## Evidence
 
