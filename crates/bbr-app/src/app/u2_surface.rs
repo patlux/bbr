@@ -254,19 +254,24 @@ impl BbrApp {
     }
 
     /// §11.4 footer row with its production listeners wired: `[Downloads]`
-    /// is the placeholder control (the surface is Phase 8), `[Spaces]`
-    /// toggles the §11.3 space region, and `[+]` opens the plus menu. The
-    /// plus press marks itself as an inside press and stops propagation so
+    /// toggles the §11.12 downloads panel, `[Spaces]` toggles the §11.3
+    /// space region, and `[+]` opens the plus menu. The downloads and plus
+    /// presses mark themselves as inside presses and stop propagation so
     /// the sidebar's own chrome-focus handler and the root outside-press
-    /// dismissal never fight the freshly opened menu (focus stays on the
-    /// menu surface).
+    /// dismissal never fight the freshly opened surface (focus stays on the
+    /// panel/menu surface). The downloads control carries the §11.4
+    /// `type:meta` `tnum` count while any attempt exists (§17.11 open: v1
+    /// reports in-flight attempts).
     pub(crate) fn u2_footer_surface(
         &mut self,
         theme: &Theme,
+        window: &Window,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let on_downloads = cx.listener(|this, _e: &MouseDownEvent, window, cx| {
-            this.activate_downloads(window, cx);
+            this.mark_downloads_press_inside();
+            cx.stop_propagation();
+            crate::app::downloads_behavior::toggle_downloads(this, window, cx);
         });
         let on_spaces = cx.listener(|this, _e: &MouseDownEvent, window, cx| {
             this.toggle_spaces_region(window, cx);
@@ -276,7 +281,24 @@ impl BbrApp {
             cx.stop_propagation();
             this.toggle_plus_menu(window, cx);
         });
-        components::footer_surface(theme, on_downloads, on_spaces, on_plus)
+        components::footer_surface(
+            theme,
+            self.downloads_control_handle.clone(),
+            self.downloads_control_handle.is_focused(window),
+            self.downloads_controller_active_count(),
+            on_downloads,
+            on_spaces,
+            on_plus,
+        )
+    }
+
+    /// The §11.4 footer `[Downloads]` `tnum` count: present while any
+    /// attempt exists. Which attempts feed the count is DESIGN §17.11 —
+    /// open; v1 reports the in-flight (active) attempts, non-destructive
+    /// and reversible when the decision lands.
+    fn downloads_controller_active_count(&self) -> Option<usize> {
+        let count = self.downloads.controller.active_ids().len();
+        (count > 0).then_some(count)
     }
 
     /// §11.4 pre-tab region: the §11.3 spaces region (only while the footer
@@ -296,19 +318,28 @@ impl BbrApp {
             })
     }
 
-    /// §11.4 post-tab region: the plus menu (only while open) then the
-    /// footer row. Placed after the status row + collapse control.
+    /// §11.4 post-tab region: the downloads panel (only while open or
+    /// fading out — §11.12 anchors its bottom edge flush with the footer
+    /// control's top edge by being the footer's direct predecessor in the
+    /// column), the plus menu (only while open), then the footer row.
+    /// The downloads panel and the plus menu are mutually exclusive (open
+    /// closes the other), so the two never stack.
     pub(crate) fn u2_post_tab_children(
         &mut self,
         column: Stateful<Div>,
         plus_menu: Option<Stateful<Div>>,
         theme: &Theme,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
+        let downloads_panel = self.downloads_panel_surface(theme, window, cx);
         column
+            .when(downloads_panel.is_some(), |column| {
+                column.child(downloads_panel.expect("checked above"))
+            })
             .when(plus_menu.is_some(), |column| {
                 column.child(plus_menu.expect("checked above"))
             })
-            .child(self.u2_footer_surface(theme, cx))
+            .child(self.u2_footer_surface(theme, window, cx))
     }
 }

@@ -81,6 +81,14 @@ e2e-shell-dense:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_dense -- --ignored --nocapture
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_dense_edge -- --ignored --nocapture
 
+# Downloads sidebar panel (task packet `downloads-sidebar-panel`): the
+# anchored popover over real WKWebView downloads — progress (known and
+# unknown length), success/path, failure, cancel, retry, zero bytes, bounded
+# 6-row scroll, dismissal, identity preservation, and Reveal-in-Finder
+# request semantics.
+e2e-shell-downloads:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_downloads -- --ignored --nocapture
+
 e2e-perf:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance -- --ignored --nocapture
 
@@ -97,7 +105,7 @@ e2e-perf-inject:
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-perf
+e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-perf
 
 verify: fmt check test clippy roadmap script-tests
 

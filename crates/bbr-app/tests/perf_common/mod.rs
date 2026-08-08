@@ -8,6 +8,8 @@ mod benchmarks;
 mod benchmarks_u2;
 mod command;
 mod command_drive;
+mod downloads;
+mod downloads_drive;
 mod drive;
 mod find;
 mod find_drive;

@@ -128,6 +128,12 @@ pub struct TestSnapshot {
     /// §11.10 favorite tiles and §11.11 folder rows.
     pub favorites: Vec<bbr_testkit::protocol::FavoriteTileSnapshot>,
     pub folders: Vec<bbr_testkit::protocol::FolderRowSnapshot>,
+    /// §11.12 download rows in deterministic panel order (Active by
+    /// ascending `DownloadId`, then History most-recent-terminal first);
+    /// row index `<n>` is stable for E2E.
+    pub download_rows: Vec<bbr_testkit::protocol::DownloadRowSnapshot>,
+    /// §11.12 downloads panel render contract (open, focus, bounded window).
+    pub downloads: bbr_testkit::protocol::DownloadsPanelSnapshot,
 }
 
 #[cfg(feature = "testkit")]

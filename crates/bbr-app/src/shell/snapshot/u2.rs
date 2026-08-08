@@ -20,6 +20,13 @@ pub struct U2IdsInput<'a> {
     pub folders: &'a [bbr_browser::FolderSnapshot],
     pub expanded: crate::components::folders::FolderPresentation,
     pub plus_menu: crate::components::menu::PlusMenuState,
+    /// §11.12 downloads panel gating: open flag plus the bounded render
+    /// window and group layout the render built (the visible ids mirror the
+    /// panel's own gating — labels hidden with empty groups, rows only
+    /// inside the rendered window, the empty hint when nothing exists).
+    pub downloads_open: bool,
+    pub downloads_window: std::ops::Range<usize>,
+    pub downloads_layout: crate::app::downloads::PanelLayout,
 }
 
 impl<'a> Default for U2IdsInput<'a> {
@@ -30,6 +37,15 @@ impl<'a> Default for U2IdsInput<'a> {
             folders: &[],
             expanded: crate::components::folders::FolderPresentation::default(),
             plus_menu: crate::components::menu::PlusMenuState::default(),
+            downloads_open: false,
+            downloads_window: 0..0,
+            downloads_layout: crate::app::downloads::PanelLayout {
+                label_h: 0.0,
+                row_h: 0.0,
+                active_count: 0,
+                history_count: 0,
+                hairline: 1.0,
+            },
         }
     }
 }
@@ -58,8 +74,9 @@ pub(crate) fn extend_visible_ids(
         }
     }
     // The §11.4 U2 surfaces: the footer row (always part of the rail), the
-    // favorites grid / folders list (each hidden entirely while empty), and
-    // the plus menu (only while open) — the same gating the render uses.
+    // favorites grid / folders list (each hidden entirely while empty), the
+    // plus menu (only while open), and the §11.12 downloads panel (only
+    // while open) — the same gating the render uses.
     ids.extend(u2_visible_ids(
         browser,
         u2.favorites,
@@ -67,6 +84,13 @@ pub(crate) fn extend_visible_ids(
         &u2.expanded,
         &u2.plus_menu,
     ));
+    if u2.downloads_open {
+        ids.extend(crate::app::downloads_render::downloads_visible_ids(
+            u2.downloads_layout.active_count + u2.downloads_layout.history_count,
+            &u2.downloads_window,
+            &u2.downloads_layout,
+        ));
+    }
 }
 
 /// The U2 §15 id additions once the U2 surfaces render: the §11.4 footer row

@@ -33,6 +33,11 @@ mod command_corpus;
 pub(crate) mod command_rank;
 mod command_surface;
 mod command_text;
+pub(crate) mod downloads;
+pub(crate) mod downloads_behavior;
+#[cfg(feature = "testkit")]
+mod downloads_benchmarks;
+pub(crate) mod downloads_render;
 mod drag;
 mod drag_target;
 pub(crate) mod find;
@@ -141,6 +146,37 @@ pub struct BbrApp {
     /// the one find presentation per window — portable session, native
     /// adapter bound to the active view, and snapshot/render state.
     find: crate::app::find::FindController,
+    /// Downloads panel composition (task packet `downloads-sidebar-panel`):
+    /// the controller-owned attempt/history store (L6), the anchored
+    /// popover presentation state, and the deterministic row model.
+    pub(crate) downloads: downloads::DownloadsState,
+    /// GPUI focus handle of the open downloads panel (the keyboard cursor
+    /// domain; DESIGN.md §11.12 chrome focus while open).
+    downloads_panel_handle: FocusHandle,
+    /// GPUI focus handle of the footer `[Downloads]` control: dismissal
+    /// returns focus here (§11.12 focus domain; §9 order: Downloads
+    /// precedes the space chips).
+    downloads_control_handle: FocusHandle,
+    /// §13 one-pointer-action marker: a pointer press inside the open panel
+    /// (or on the footer control) sets it and stops propagation, so the
+    /// root outside-press handler never dismisses a press inside the panel.
+    downloads_press_inside: std::cell::Cell<bool>,
+    /// The live `WKWebView` slot the download adapter dispatches `Start`
+    /// requests on (the active session's view, refreshed before each
+    /// start/retry). Opaque: only the macOS adapter interprets the payload.
+    #[cfg(target_os = "macos")]
+    download_web_view: bbr_web_macos::downloads_adapter::DownloadWebViewSlot,
+    /// The concrete native download adapter (macOS only): routes portable
+    /// actions to the real `WKDownload` lifecycle and emits L6 events. The
+    /// action sink is wired at install time; the event sink routes through
+    /// the main-thread pump channel.
+    #[cfg(target_os = "macos")]
+    downloads_adapter: Option<std::rc::Rc<bbr_web_macos::downloads_adapter::NativeDownloadAdapter>>,
+    /// Concrete native engine handle (macOS only): `capture_download_web_view`
+    /// resolves the active session's live `WKWebView` through it without
+    /// creating or moving sessions.
+    #[cfg(target_os = "macos")]
+    download_engine: Option<crate::engine::NativeEngineRef>,
     /// GPUI focus handle of the find field. The find bar renders inside the
     /// non-activating portal window (never key by design), so keyboard input
     /// is handled by the main window: while a find presentation is open the
@@ -236,6 +272,16 @@ impl BbrApp {
                 find_tx,
             ),
             find_handle: cx.focus_handle(),
+            downloads: downloads::DownloadsState::new(),
+            downloads_panel_handle: cx.focus_handle(),
+            downloads_control_handle: cx.focus_handle(),
+            downloads_press_inside: std::cell::Cell::new(false),
+            #[cfg(target_os = "macos")]
+            download_web_view: bbr_web_macos::downloads_adapter::DownloadWebViewSlot::new(),
+            #[cfg(target_os = "macos")]
+            downloads_adapter: None,
+            #[cfg(target_os = "macos")]
+            download_engine: None,
             #[cfg(target_os = "macos")]
             find_engine: None,
             command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
@@ -258,6 +304,46 @@ impl BbrApp {
     #[cfg(target_os = "macos")]
     pub fn set_find_engine(&mut self, engine: crate::engine::NativeEngineRef) {
         self.find_engine = Some(engine);
+    }
+
+    /// Install the macOS download composition (macOS only): the concrete
+    /// adapter, the engine handle (for the live-web-view capture), and the
+    /// L6 event receiver the pump drains into [`Self::on_download_event`].
+    /// The controller's action sink dispatches through the adapter with the
+    /// shared web-view slot; the adapter's event sink forwards every L6
+    /// event into the channel the pump delivers on the main thread.
+    #[cfg(target_os = "macos")]
+    pub fn install_downloads(
+        &mut self,
+        adapter: std::rc::Rc<bbr_web_macos::downloads_adapter::NativeDownloadAdapter>,
+        engine: crate::engine::NativeEngineRef,
+        event_tx: smol::channel::Sender<bbr_web::downloads::DownloadEvent>,
+    ) {
+        // Adapter → pump: every native terminal/progress signal becomes an
+        // L6 event on the main thread (the adapter itself already filtered
+        // and mirrored the machine, so the pump applies only accepted
+        // events).
+        adapter.set_event_sink(Box::new(move |event| {
+            let _ = event_tx.try_send(event);
+        }));
+        let action_adapter = adapter.clone();
+        let action_slot = self.download_web_view.clone();
+        // Controller → adapter: `DownloadAction`s emitted synchronously by
+        // the portable controller (start/retry/cancel) dispatch onto the
+        // real WKDownload lifecycle with the active session's view.
+        self.downloads
+            .controller
+            .set_action_sink(Box::new(move |action| {
+                if let Err(error) = bbr_web_macos::downloads_adapter::dispatch_action(
+                    &action_adapter,
+                    action,
+                    &action_slot,
+                ) {
+                    log::warn!("download action dispatch failed: {error:?}");
+                }
+            }));
+        self.downloads_adapter = Some(adapter);
+        self.download_engine = Some(engine);
     }
 
     /// Open the initial controller-backed tab after the first window frame.
@@ -400,6 +486,8 @@ impl BbrApp {
             || self.divider_handle.is_focused(window)
             || self.u2.plus_menu_handle.is_focused(window)
             || self.u2.folders_handle.is_focused(window)
+            || self.downloads_panel_handle.is_focused(window)
+            || self.downloads_control_handle.is_focused(window)
     }
 
     fn emit_browser(&mut self, event: &ControllerEvent) {

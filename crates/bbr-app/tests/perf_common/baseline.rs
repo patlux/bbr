@@ -189,6 +189,27 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Downloads sidebar panel (task packet `downloads-sidebar-panel`,
+        // DESIGN.md §11.12): the footer `[Downloads]` open presents the
+        // anchored panel with the keyboard cursor — the warm-presentation
+        // class. The L6 progress commit (a deterministic event applied
+        // through the production pump re-renders the running row at the
+        // armed fraction) and the retry row action (the fresh attempt
+        // presented in the Active group) are the same warm next-frame
+        // presentation class, so all three carry the standard 50/100 ms
+        // warm budget.
+        "downloads_panel_open" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "download_progress_commit" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "download_row_retry" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -371,6 +392,9 @@ impl Baseline {
             "find_open",
             "find_query_result",
             "find_step",
+            "downloads_panel_open",
+            "download_progress_commit",
+            "download_row_retry",
         ]
         .into_iter()
         .chain(u2::seed_kinds())
@@ -600,6 +624,46 @@ mod tests {
         m.insert("warm_tab_switch".into(), measured(45.0, 90.0));
         m.insert("sidebar_toggle".into(), measured(40.0, 75.0));
         assert!(evaluate(&m, &b, true).is_empty());
+    }
+
+    #[test]
+    fn downloads_budgets_are_seeded_and_enforced() {
+        // Regression guard: the downloads-panel scenarios must carry their
+        // contract budgets in the seed so a future panel-open, progress
+        // commit, or retry-row render regression trips the gate instead of
+        // being silently unreported. All three are the warm presentation
+        // class (50/100): the footer `[Downloads]` open, the L6 progress
+        // commit, and the retry row action.
+        let b = Baseline::seed();
+        for (kind, p95, max) in [
+            ("downloads_panel_open", 50.0, 100.0),
+            ("download_progress_commit", 50.0, 100.0),
+            ("download_row_retry", 50.0, 100.0),
+        ] {
+            let entry = b
+                .entries
+                .get(kind)
+                .unwrap_or_else(|| panic!("seed baseline must carry the {kind} contract budget"));
+            assert_eq!(entry.budget_p95_ms, p95);
+            assert_eq!(entry.budget_max_ms, Some(max));
+            let mut slow = BTreeMap::new();
+            slow.insert(kind.into(), measured(p95 + 20.0, max + 20.0));
+            let r = evaluate(&slow, &b, false);
+            assert!(
+                r.iter().any(|x| x.rule == "abs_p95"),
+                "{kind} absolute p95 ceiling enforced"
+            );
+            assert!(
+                r.iter().any(|x| x.rule == "abs_max"),
+                "{kind} absolute max ceiling enforced"
+            );
+            let mut good = BTreeMap::new();
+            good.insert(kind.into(), measured(45.0, 90.0));
+            assert!(
+                evaluate(&good, &b, false).is_empty(),
+                "{kind} warm samples within budget stay green"
+            );
+        }
     }
 
     #[test]

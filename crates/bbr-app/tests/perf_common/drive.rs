@@ -27,6 +27,7 @@ use super::find_drive::drive_find_scenarios;
 mod u2;
 
 use super::command_drive::drive_command_scenarios;
+use super::downloads_drive::drive_downloads_scenarios;
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
 
@@ -43,6 +44,10 @@ pub fn drive_interaction_matrix(
     page_find: &str,
 ) -> BTreeMap<String, Vec<u64>> {
     let mut cursor = *since;
+    let fixtures_base = page_find
+        .rsplit_once('/')
+        .map(|(base, _)| base.to_string())
+        .unwrap_or_default();
     let raw = drive_matrix_inner(
         client,
         harness,
@@ -51,6 +56,7 @@ pub fn drive_interaction_matrix(
         page_one,
         page_two,
         page_find,
+        &fixtures_base,
     );
     *since = cursor;
     raw
@@ -65,6 +71,7 @@ fn drive_matrix_inner(
     page_one: &str,
     page_two: &str,
     page_find: &str,
+    fixtures_base: &str,
 ) -> BTreeMap<String, Vec<u64>> {
     let cursor = since;
     let mut since = *cursor;
@@ -977,6 +984,26 @@ fn drive_matrix_inner(
             &mut operation,
         );
 
+        // Downloads sidebar panel (task packet `downloads-sidebar-panel`):
+        // the production footer `[Downloads]` open, the L6 progress commit,
+        // and the retry row action — each measured at the render of the
+        // anchored panel that carried the armed identity (the in-app probe
+        // owns the fast-but-wrong guard). Fixture/network time is excluded:
+        // the history is seeded with real deterministic fixture downloads
+        // before any sample, and the progress/retry samples apply
+        // deterministic L6 events in-process (never through a network
+        // transfer). The block never touches tabs/sessions/views and
+        // restores the matrix state (panel closed) before the dense
+        // seeding below.
+        let downloads_samples = drive_downloads_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            fixtures_base,
+            &mut operation,
+        );
+
         // Dense-list scroll + selection through the bounded-window render
         // (Phase-4 dense slice, performance contract "dense-list scrolling"):
         // seed an S-density collection (230 identities, 10 pinned, 20 live)
@@ -1104,6 +1131,7 @@ fn drive_matrix_inner(
         raw.insert("sidebar_favorites".to_string(), favorites_samples);
         raw.insert("sidebar_folder_toggle".to_string(), folder_toggle_samples);
         raw.extend(find_samples);
+        raw.extend(downloads_samples);
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);
         raw.insert("dense_select".to_string(), dense_select_samples);
         raw

@@ -25,8 +25,10 @@ use crate::window_seam::with_app;
 
 mod dispatch;
 mod dispatch_benchmark;
+mod dispatch_benchmark_downloads;
 mod dispatch_benchmark_find;
 mod dispatch_benchmark_u2;
+mod dispatch_downloads;
 mod dispatch_drag;
 mod dispatch_find;
 mod dispatch_portal;
@@ -108,6 +110,9 @@ pub fn spawn_pump(
     #[cfg(target_os = "macos")] find_rx: smol::channel::Receiver<
         bbr_web_macos::find_mapping::FindCompletion,
     >,
+    #[cfg(target_os = "macos")] downloads_rx: smol::channel::Receiver<
+        bbr_web::downloads::DownloadEvent,
+    >,
     cmd_rx: smol::channel::Receiver<GatewayCommand>,
     server: Option<Arc<GatewayServer>>,
 ) {
@@ -120,16 +125,24 @@ pub fn spawn_pump(
             Event(Result<bbr_web::WebEvent, smol::channel::RecvError>),
             #[cfg(target_os = "macos")]
             Find(Result<bbr_web_macos::find_mapping::FindCompletion, smol::channel::RecvError>),
+            #[cfg(target_os = "macos")]
+            Download(Result<bbr_web::downloads::DownloadEvent, smol::channel::RecvError>),
         }
 
         let incoming = smol::future::race(
             async { Incoming::Command(cmd_rx.recv().await) },
             smol::future::race(
                 async { Incoming::Event(evt_rx.recv().await) },
-                #[cfg(target_os = "macos")]
-                async {
-                    Incoming::Find(find_rx.recv().await)
-                },
+                smol::future::race(
+                    #[cfg(target_os = "macos")]
+                    async {
+                        Incoming::Find(find_rx.recv().await)
+                    },
+                    #[cfg(target_os = "macos")]
+                    async {
+                        Incoming::Download(downloads_rx.recv().await)
+                    },
+                ),
             ),
         )
         .await;
@@ -169,9 +182,21 @@ pub fn spawn_pump(
                     });
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::Download(Ok(event)) => {
+                // L6 download events from the native adapter: route through
+                // the same main-thread app update path as engine events
+                // (the portable controller applies them — the first terminal
+                // event wins).
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        crate::app::downloads_behavior::on_download_event(view, event, cx)
+                    });
+                });
+            }
             Incoming::Command(Err(_)) | Incoming::Event(Err(_)) => break,
             #[cfg(target_os = "macos")]
-            Incoming::Find(Err(_)) => break,
+            Incoming::Find(Err(_)) | Incoming::Download(Err(_)) => break,
         }
     })
     .detach();

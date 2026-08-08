@@ -29,7 +29,13 @@ impl Render for BbrApp {
         self.performance.observe_render_state(
             browser.active_view,
             self.sidebar_visible,
-            chrome_focused,
+            // The presentation probe reports the chrome-focus **domain** (the
+            // union of chrome handles, DESIGN.md §9/§11.12: the open
+            // downloads panel is chrome focus) — not only the root chrome
+            // handle. Draw-path benchmarks commit from this observation, and
+            // the panel's own `chrome_focused(window)` is the authoritative
+            // domain value (the snapshot reports the same union).
+            self.chrome_focused(window),
             self.command_bar_mode.into(),
         );
 
@@ -165,18 +171,20 @@ impl Render for BbrApp {
             .size_full()
             .bg(p.surface_canvas)
             .on_key_down(cx.listener(Self::on_chrome_key_down))
-            // §11.4 plus-menu outside-press dismissal: any GPUI pointer press
-            // outside the open menu surface closes it (one pointer action, §13).
-            // The menu surface and the `[+]` control stop propagation for
-            // their own presses, so a press inside the menu never reaches
-            // this root handler; a press anywhere else (a tab row, a space
-            // row, a footer control, the divider) both performs its normal
-            // action and dismisses the menu. Clicks on the native web view
-            // are platform child-view events and never reach GPUI's tree.
+            // §11.4 plus-menu / §11.12 downloads-panel outside-press
+            // dismissal: any GPUI pointer press outside the open surface
+            // closes it (one pointer action, §13). The surface and its
+            // owning footer controls stop propagation for their own presses,
+            // so a press inside never reaches this root handler; a press
+            // anywhere else (a tab row, a space row, another footer control,
+            // the divider) both performs its normal action and dismisses the
+            // open surface. Clicks on the native web view are platform
+            // child-view events and never reach GPUI's tree.
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _e: &MouseDownEvent, window, cx| {
                     this.dismiss_plus_menu_on_outside_press(window, cx);
+                    this.dismiss_downloads_on_outside_press(window, cx);
                 }),
             )
             .on_mouse_move(cx.listener(Self::on_sidebar_drag_move))

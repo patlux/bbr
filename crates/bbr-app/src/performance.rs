@@ -18,6 +18,7 @@ use bbr_web::{WebEvent, WebRect, WebViewId};
 use crate::app::palette::CommandSurface;
 
 pub mod command;
+pub(crate) mod downloads;
 mod find;
 pub mod pane_geometry;
 pub mod slot;
@@ -48,6 +49,10 @@ struct State {
     /// The find-bar presentation the portal render actually drew; the find
     /// benchmarks commit only against it (render-gated, see `find`).
     latest_find: Option<find::FindObservation>,
+    /// The downloads-panel presentation the sidebar render actually drew;
+    /// the downloads benchmarks commit only against it (render-gated, see
+    /// `downloads`).
+    latest_downloads: Option<downloads::DownloadsObservation>,
     latest_active_web_view: Option<WebViewId>,
     latest_active_space: TestSpaceId,
     latest_sidebar_visible: bool,
@@ -107,6 +112,10 @@ struct Pending {
     /// The exact find-bar presentation identity the pending sample must
     /// commit from (open/focused, or the WebKit-reported report).
     find: Option<find::FindExpectation>,
+    /// The exact downloads-panel presentation identity the pending sample
+    /// must commit from (open/focused, an armed progress fraction on the
+    /// running row, or the fresh retry row in Active).
+    downloads: Option<downloads::DownloadsExpectation>,
 }
 
 impl PerformanceProbe {
@@ -117,6 +126,7 @@ impl PerformanceProbe {
                 inject_delay,
                 latest_command: None,
                 latest_find: None,
+                latest_downloads: None,
                 latest_active_web_view: None,
                 latest_active_space: TestSpaceId(0),
                 latest_sidebar_visible: true,
@@ -142,6 +152,7 @@ impl PerformanceProbe {
                     u2: u2::U2Expected::default(),
                     command: None,
                     find: None,
+                    downloads: None,
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
@@ -185,6 +196,7 @@ impl PerformanceProbe {
             u2: u2::U2Expected::default(),
             command: None,
             find: None,
+            downloads: None,
         });
         Ok(())
     }
@@ -419,6 +431,14 @@ impl PerformanceProbe {
         let Some(pending) = state.pending.as_ref() else {
             return;
         };
+        #[cfg(feature = "testkit")]
+        if !pending.armed {
+            log::warn!(
+                "probe reject op{:?} {:?}: not armed",
+                pending.operation_id,
+                pending.kind
+            );
+        }
         if !pending.armed
             || pending
                 .expected_active_web_view
@@ -448,7 +468,27 @@ impl PerformanceProbe {
             || pending.u2.mismatches(&state.u2)
             || !command::command_matches(pending, &state)
             || !find::find_matches(pending, &state)
+            || !downloads::downloads_matches(pending, &state)
         {
+            #[cfg(feature = "testkit")]
+            if let Some(_d) = pending.downloads.as_ref() {
+                log::warn!(
+                    "probe reject op{:?} {:?}: view={:?}/{:?} space={:?}/{:?} sidebar={:?}/{:?} chrome={:?}/{:?} mode={:?}/{:?} downloads_obs={:?}",
+                    pending.operation_id,
+                    pending.kind,
+                    pending.expected_active_web_view,
+                    state.latest_active_web_view,
+                    pending.expected_active_space,
+                    state.latest_active_space,
+                    pending.expected_sidebar_visible,
+                    state.latest_sidebar_visible,
+                    pending.expected_chrome_focused,
+                    state.latest_chrome_focused,
+                    pending.expected_command_bar_mode,
+                    state.latest_command_bar_mode,
+                    state.latest_downloads,
+                );
+            }
             return;
         }
 
@@ -521,6 +561,8 @@ fn monotonic_now_ns() -> u64 {
     0
 }
 
+#[cfg(test)]
+mod downloads_tests;
 #[cfg(test)]
 mod find_tests;
 #[cfg(test)]

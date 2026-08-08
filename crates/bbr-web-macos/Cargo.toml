@@ -31,6 +31,19 @@ objc2-foundation = { workspace = true, features = [
     "NSGeometry",
     "NSObject",
     "NSKeyValueObserving",
+    # Downloads: NSProgress (WKDownload progress KVO), NSFileManager
+    # (default download folder, file existence for suggested-destination
+    # uniquification and reveal eligibility), NSPathUtilities
+    # (NSDownloadsDirectory constant), NSURLResponse (the destination
+    # decision callback's declared content length), NSData (cancel resume
+    # data). NSProgress/NSURLResponse/NSData are also enabled transitively by
+    # objc2-web-kit's WKDownload/WKDownloadDelegate; NSFileManager and
+    # NSPathUtilities are direct.
+    "NSProgress",
+    "NSFileManager",
+    "NSPathUtilities",
+    "NSURLResponse",
+    "NSData",
     "objc2-core-foundation",
     "std",
 ] }
@@ -44,6 +57,9 @@ objc2-app-kit = { workspace = true, features = [
     "NSView",
     "NSWindow",
     "NSEvent",
+    # Downloads: NSWorkspace for Reveal-in-Finder
+    # (activateFileViewerSelectingURLs:).
+    "NSWorkspace",
 ] }
 
 # objc2-web-kit: WKWebView + configuration + delegates + data store.
@@ -62,6 +78,11 @@ objc2-web-kit = { workspace = true, features = [
     "WKProcessPool",
     "WKContentWorld",
     "WKFrameInfo",
+    # Downloads: WKDownload + WKDownloadDelegate (the modern WebKit download
+    # lifecycle: destination decision, progress via NSProgress, finish,
+    # fail-with-resume-data, cancel).
+    "WKDownload",
+    "WKDownloadDelegate",
     "block2",
     "objc2-app-kit",
     "objc2-core-foundation",

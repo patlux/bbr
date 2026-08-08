@@ -20,6 +20,24 @@
 pub mod delegate;
 
 #[cfg(target_os = "macos")]
+pub mod downloads_adapter;
+
+#[cfg(target_os = "macos")]
+pub mod downloads_delegate;
+
+#[cfg(target_os = "macos")]
+pub mod downloads_destination;
+
+#[cfg(target_os = "macos")]
+pub mod downloads_mapping;
+
+#[cfg(target_os = "macos")]
+pub mod downloads_strategy;
+
+#[cfg(target_os = "macos")]
+pub mod downloads_web_kit;
+
+#[cfg(target_os = "macos")]
 pub mod find_adapter;
 
 #[cfg(target_os = "macos")]
@@ -48,6 +66,23 @@ pub mod portal_frame;
 
 #[cfg(target_os = "macos")]
 pub mod webview;
+
+#[cfg(target_os = "macos")]
+pub use downloads_adapter::{
+    dispatch_action, AdapterDispatchError, AdapterError, DownloadEventSink, WebKitDownloadAdapter,
+};
+
+#[cfg(target_os = "macos")]
+pub use downloads_destination::{destination_plan, uniquify_name, DestinationPlan};
+
+#[cfg(target_os = "macos")]
+pub use downloads_mapping::{DownloadAdapterCore, NativeSignal};
+
+#[cfg(target_os = "macos")]
+pub use downloads_strategy::{DownloadSignalRouter, DownloadStrategy, RevealError};
+
+#[cfg(target_os = "macos")]
+pub use downloads_web_kit::{DownloadAdapterOptions, WebKitDownloadStrategy};
 
 #[cfg(target_os = "macos")]
 pub use find_adapter::WebKitFindAdapter;

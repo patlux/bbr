@@ -117,6 +117,67 @@ pub fn move_tab_into_folder(index: usize, folder: usize) -> Request {
     Request::MoveTabIntoFolder { index, folder }
 }
 
+pub fn download_start(url: impl Into<String>, destination: impl Into<String>) -> Request {
+    Request::DownloadStart {
+        url: url.into(),
+        destination: destination.into(),
+    }
+}
+
+pub fn download_cancel(id: u64) -> Request {
+    Request::DownloadCancel { id }
+}
+
+pub fn download_retry(id: u64) -> Request {
+    Request::DownloadRetry { id }
+}
+
+pub fn click_download_row_action(row: usize) -> Request {
+    Request::ClickDownloadRowAction { row }
+}
+
+pub fn click_downloads_outside() -> Request {
+    Request::ClickDownloadsOutside
+}
+
+pub fn scroll_downloads(delta_px: f32) -> Request {
+    Request::ScrollDownloads { delta_px }
+}
+
+pub fn benchmark_downloads_panel_open(operation_id: BenchmarkOperationId) -> Request {
+    Request::BenchmarkDownloadsPanelOpen { operation_id }
+}
+
+pub fn benchmark_downloads_progress(
+    operation_id: BenchmarkOperationId,
+    id: u64,
+    received: u64,
+    total: u64,
+) -> Request {
+    Request::BenchmarkDownloadsProgress {
+        operation_id,
+        id,
+        received,
+        total,
+    }
+}
+
+pub fn benchmark_downloads_row_retry(operation_id: BenchmarkOperationId, row: usize) -> Request {
+    Request::BenchmarkDownloadsRowRetry { operation_id, row }
+}
+
+pub fn seed_downloads_attempt(
+    url: impl Into<String>,
+    destination: impl Into<String>,
+    total: u64,
+) -> Request {
+    Request::SeedDownloadsAttempt {
+        url: url.into(),
+        destination: destination.into(),
+        total,
+    }
+}
+
 pub fn begin_tab_drag(index: usize, y: f32, press_in_row: f32) -> Request {
     Request::BeginTabDrag {
         index,

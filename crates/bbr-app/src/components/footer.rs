@@ -94,13 +94,41 @@ impl FooterControl {
 /// listeners; the rail composition wires them. The plus control is
 /// glyph-only per §11.4's `[+]` — its text alternative rides the semantic
 /// tree.
+///
+/// `downloads_count` renders the §11.4 `type:meta` `tnum` count on the
+/// `[Downloads]` control when content exists (which attempts feed the count
+/// is DESIGN §17.11 — open; v1 reports the in-flight attempts).
+/// `downloads_focus` makes the control keyboard-operable: it tracks the
+/// handle (so dismissal can return focus here, §11.12) and Enter/Space
+/// activate it like a pointer press.
 pub fn footer_surface(
     theme: &Theme,
+    downloads_focus: gpui::FocusHandle,
+    downloads_focused: bool,
+    downloads_count: Option<usize>,
     on_downloads: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
     on_spaces: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
     on_plus: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
+    // The listener is shared between the pointer path and the keyboard
+    // activation without requiring `Clone` (GPUI's `cx.listener` closures
+    // are not `Clone` in this version): an `Rc` owns the one listener and
+    // both paths call through it.
+    let on_downloads = std::rc::Rc::new(on_downloads);
+    let on_downloads_pointer = on_downloads.clone();
+    let on_downloads_pointer = move |event: &MouseDownEvent, window: &mut Window, cx: &mut App| {
+        on_downloads_pointer(event, window, cx)
+    };
+    let on_downloads_keyboard = on_downloads.clone();
+    let downloads_keyboard =
+        move |event: &gpui::KeyDownEvent, window: &mut Window, cx: &mut App| {
+            if matches!(event.keystroke.key.as_str(), "enter" | "space") {
+                cx.stop_propagation();
+                on_downloads_keyboard(&MouseDownEvent::default(), window, cx);
+            }
+        };
+    let focused = downloads_focused;
     div()
         .id(FOOTER_ID)
         .h(theme.density.row())
@@ -111,11 +139,27 @@ pub fn footer_surface(
         .items_center()
         .flex()
         .flex_row()
-        .child(footer_control(
-            theme,
-            FooterControl::Downloads,
-            on_downloads,
-        ))
+        .child(
+            footer_control(theme, FooterControl::Downloads, on_downloads_pointer)
+                .track_focus(&downloads_focus)
+                // §9 focus ring on the keyboard-focused control (structural cue —
+                // never color-only).
+                .when(focused, |el| {
+                    el.border_2()
+                        .border_color(theme.palette.accent)
+                        .rounded(theme.radius.small())
+                })
+                .when(downloads_count.is_some(), |el| {
+                    el.child(
+                        div()
+                            .text_size(theme.type_.meta.size)
+                            .font_weight(theme.type_.meta.weight)
+                            .text_color(p.ink_faint)
+                            .child(downloads_count.unwrap_or(0).to_string()),
+                    )
+                })
+                .on_key_down(downloads_keyboard),
+        )
         .child(footer_control(theme, FooterControl::Spaces, on_spaces))
         .child(footer_control(theme, FooterControl::Plus, on_plus))
 }

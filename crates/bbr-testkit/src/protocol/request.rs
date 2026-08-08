@@ -483,6 +483,49 @@ pub enum Request {
         expected_count: usize,
         expected_ordinal: Option<usize>,
     },
+    /// Measure the production footer `[Downloads]` open through
+    /// [`Self::ClickFooterDownloads`]'s exact seam (`toggle_downloads` →
+    /// `downloads_open`): the sample commits only from a render that drew
+    /// the anchored panel open with the keyboard cursor (chrome focus) over
+    /// the unchanged active view — warm-presentation class, no tab or
+    /// session is created.
+    BenchmarkDownloadsPanelOpen {
+        operation_id: BenchmarkOperationId,
+    },
+    /// Measure the production L6 progress path: apply a deterministic
+    /// [`DownloadEvent::Progress`] through the same main-thread pump the
+    /// adapter's event sink uses, and commit only when the panel render
+    /// drew the active row at the armed `received`/`total` fraction — warm
+    /// command-surface class; fixture/network time is excluded (the event
+    /// is applied in-process, never via a network transfer).
+    BenchmarkDownloadsProgress {
+        operation_id: BenchmarkOperationId,
+        id: u64,
+        received: u64,
+        total: u64,
+    },
+    /// Measure the production retry row action (`DownloadRetry`'s exact
+    /// seam `download_retry` → `controller.retry`): the fresh attempt
+    /// (linked via `retry_of`) must be presented in the Active group — the
+    /// user-visible row action, warm-presentation class.
+    BenchmarkDownloadsRowRetry {
+        operation_id: BenchmarkOperationId,
+        row: usize,
+    },
+    /// Seed a deterministic non-transferring download attempt for the
+    /// performance scenarios: mints the attempt through the portable
+    /// controller with an empty web-view slot (no `WKDownload` starts) and
+    /// applies `DestinationResolved` + an initial zero-byte `Progress`
+    /// event through the production event path, leaving the attempt
+    /// `Running` at the declared `total`. The driver reads the minted id
+    /// from the snapshot. Testkit-only deterministic seeding (the same
+    /// pattern as `SeedDenseState`); the real transfer lifecycle is proven
+    /// by the functional E2E.
+    SeedDownloadsAttempt {
+        url: String,
+        destination: String,
+        total: u64,
+    },
     /// U2 footer, favorites, and folders production pointer seams.
     ClickFooterDownloads,
     ClickFooterSpaces,
@@ -513,6 +556,43 @@ pub enum Request {
     MoveTabIntoFolder {
         index: usize,
         folder: usize,
+    },
+    /// Start a download through the production controller + native adapter
+    /// path: mints an attempt id, records the optimistic `Waiting` state,
+    /// and starts the transfer on the active web view. `destination` is the
+    /// suggested filename (L6 `Suggested`; the engine resolves the download
+    /// folder and uniquifies) — the save-panel policy stays open (§17.9).
+    DownloadStart {
+        url: String,
+        destination: String,
+    },
+    /// Request cancellation of the attempt (production `controller.cancel`
+    /// path): the row stays active until the engine's terminal event lands.
+    DownloadCancel {
+        id: u64,
+    },
+    /// Retry the failed attempt (production `controller.retry` path): a
+    /// fresh attempt id linked via `retry_of`.
+    DownloadRetry {
+        id: u64,
+    },
+    /// Activate a visible download row's contextual action through the
+    /// production pointer path (the exact app method the row's action
+    /// mouse-down listener calls): Cancel / Retry / Reveal-in-Finder.
+    ClickDownloadRowAction {
+        row: usize,
+    },
+    /// Drive the exact production outside-dismiss method the panel's
+    /// outside-press handler calls (DESIGN.md §13 one pointer action): a
+    /// pointer press outside the open panel dismisses it and returns focus
+    /// to the footer control.
+    ClickDownloadsOutside,
+    /// Move the downloads panel's shared scroll state by `delta_px` in the
+    /// native wheel listener's units and sign (DESIGN.md §11.12/§11.6
+    /// bounded-window scroll: visible range + 8-row overscan, the full
+    /// history never laid out).
+    ScrollDownloads {
+        delta_px: f32,
     },
     /// Full app snapshot.
     GetSnapshot,

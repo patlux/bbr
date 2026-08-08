@@ -204,6 +204,14 @@ fn main() {
         #[cfg(target_os = "macos")]
         let (find_tx, find_rx) =
             smol::channel::unbounded::<bbr_web_macos::find_mapping::FindCompletion>();
+        // L6 download events ride their own channel too: the native download
+        // adapter's sink sends `DownloadEvent`s from the WKDownload delegate
+        // callbacks, and the pump drains them into `BbrApp::on_download_event`
+        // (the portable controller applies them — the first terminal event
+        // wins).
+        #[cfg(target_os = "macos")]
+        let (downloads_tx, downloads_rx) =
+            smol::channel::unbounded::<bbr_web::downloads::DownloadEvent>();
         #[cfg(feature = "testkit")]
         let performance = performance::PerformanceProbe::new(
             process_started,
@@ -264,9 +272,42 @@ fn main() {
         // adapter binds a live WKWebView without creating/moving sessions)
         // is handed to the app after construction, like the portal host.
         #[cfg(target_os = "macos")]
-        if let Some(native) = native_engine {
+        if let Some(native) = native_engine.clone() {
             let _ = with_app(&window, &app, cx, |view, _w, _cx| {
                 view.set_find_engine(native);
+            });
+        }
+
+        // macOS-only download composition: the concrete native adapter
+        // (bound to the real WKDownload lifecycle) plus the engine handle
+        // for the active-view capture. Under the testkit feature the
+        // suggested-destination folder is the profile's own `downloads`
+        // directory (deterministic E2E destination; the v1 destination
+        // policy — silent suggested folder vs. a save panel — stays open,
+        // DESIGN §17.9); production uses the engine default (system
+        // downloads).
+        #[cfg(target_os = "macos")]
+        if let Some(native) = native_engine {
+            let mtm =
+                objc2::MainThreadMarker::new().expect("download adapter built on main thread");
+            let options = bbr_web_macos::downloads_web_kit::DownloadAdapterOptions {
+                #[cfg(feature = "testkit")]
+                download_folder: Some(
+                    cli.profile_dir
+                        .join("downloads")
+                        .to_string_lossy()
+                        .into_owned(),
+                ),
+                #[cfg(not(feature = "testkit"))]
+                download_folder: None,
+            };
+            let strategy =
+                bbr_web_macos::downloads_web_kit::WebKitDownloadStrategy::new(mtm, options);
+            let adapter = std::rc::Rc::new(
+                bbr_web_macos::downloads_adapter::NativeDownloadAdapter::with_strategy(strategy),
+            );
+            let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+                view.install_downloads(adapter, native, downloads_tx.clone());
             });
         }
 
@@ -338,6 +379,7 @@ fn main() {
                 evt_rx,
                 evt_tx.clone(),
                 find_rx,
+                downloads_rx,
                 cmd_rx,
                 server.clone(),
             );
@@ -376,7 +418,7 @@ fn main() {
         #[cfg(not(feature = "testkit"))]
         {
             // Event pump so the shell stays live even without the gateway.
-            spawn_event_pump(cx, &window, &app, evt_rx, find_rx);
+            spawn_event_pump(cx, &window, &app, evt_rx, find_rx, downloads_rx);
         }
 
         if !cli.hidden {

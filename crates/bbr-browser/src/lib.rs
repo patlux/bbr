@@ -38,6 +38,7 @@ pub type EngineRef = std::rc::Rc<std::cell::RefCell<dyn bbr_web::WebEngine>>;
 pub type ViewIdAllocator = Box<dyn FnMut() -> u64>;
 
 mod controller;
+mod downloads;
 mod error;
 #[cfg(test)]
 pub(crate) mod fake;
@@ -68,6 +69,10 @@ mod organization_tests;
 
 pub use bbr_domain::{ProfileHue, SpaceId, TabLifecycle};
 pub use controller::BrowserController;
+pub use downloads::{
+    display_filename, url_filename, ApplyOutcome, DownloadActionSink, DownloadController,
+    DownloadError, DownloadRecord,
+};
 pub use error::ControllerError;
 pub use hydration::{
     HydrationError, HydrationPolicy, IntentClosedTab, IntentProfile, IntentSpace, IntentSplit,

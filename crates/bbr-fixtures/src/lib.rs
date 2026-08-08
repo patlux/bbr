@@ -131,6 +131,16 @@ fn handle_connection(
 
     // Path-only target (strip any query string).
     let path = target.split('?').next().unwrap_or("/");
+    // Deterministic download fixtures (the Phase-8 downloads E2E): the
+    // download routes need response shapes the static-file path cannot
+    // express — known/unknown content length, slow trickle, zero bytes,
+    // and an HTTP failure — so they are dispatched before the generic
+    // router. Content is content-addressed and stable per path.
+    if let Some(response) = download_fixture(path) {
+        record_hit(hits, path);
+        response.respond(&mut stream)?;
+        return Ok(());
+    }
     match route(root, path, &headers)? {
         Route::File { data, content_type } => {
             let mut h = hits.lock().unwrap();
@@ -155,6 +165,126 @@ fn handle_connection(
         }
     }
     Ok(())
+}
+
+fn record_hit(hits: &Arc<Mutex<HashMap<String, u32>>>, path: &str) {
+    let mut h = hits.lock().unwrap();
+    *h.entry(path.to_string()).or_insert(0) += 1;
+}
+
+/// A deterministic download fixture response: the body writer owns the wire
+/// shape (headers, chunking, delays) so WebKit observes exactly the content
+/// contract each E2E scenario needs. The body is deterministic per path:
+/// 64 KiB of a repeating pattern for `known.bin`, the same payload with no
+/// `Content-Length` trickled in 8 KiB chunks for `unknown.bin` (indeterminate
+/// `Running` stays observable), an 8×8 KiB trickle for `slow.bin`,
+/// zero bytes for `zero.bin`, and a 500 for `fail.bin`. Retry reuses
+/// `known.bin` (content-addressed, so a retry is byte-identical).
+enum DownloadFixture {
+    /// Known length: `Content-Length` header, one-shot body.
+    Known(Vec<u8>),
+    /// Unknown length: no `Content-Length`, body until connection close,
+    /// trickled in 8 KiB chunks with a fixed 150 ms pause so the
+    /// indeterminate `Running` state is observable to the polling E2E (a
+    /// one-shot unknown-length body completes within milliseconds and the
+    /// `Running` state never becomes observable).
+    Unknown(Vec<u8>),
+    /// Known length, trickled in 8 KiB chunks with a fixed 150 ms pause
+    /// (deterministic slow progress and a stable cancellation window).
+    Slow(Vec<u8>),
+    /// Zero bytes: `Content-Length: 0` (a zero-byte download succeeds with
+    /// a full bar).
+    Zero,
+    /// HTTP failure: 500 status (the engine fails the attempt).
+    Fail,
+}
+
+/// The download fixture for `path`, or `None` when the path is not a
+/// download route.
+fn download_fixture(path: &str) -> Option<DownloadFixture> {
+    match path {
+        "/__fx/dl/known.bin" | "/__fx/dl/unknown.bin" | "/__fx/dl/slow.bin" => {
+            // 64 KiB deterministic payload: 8 repetitions of an 8 KiB
+            // pattern, so the bytes are content-addressed and stable.
+            let chunk: Vec<u8> = (0u8..255u8).cycle().take(8192).collect();
+            let body: Vec<u8> = chunk.repeat(8);
+            assert_eq!(body.len(), 65536);
+            match path {
+                "/__fx/dl/known.bin" => Some(DownloadFixture::Known(body)),
+                "/__fx/dl/unknown.bin" => Some(DownloadFixture::Unknown(body)),
+                _ => Some(DownloadFixture::Slow(body)),
+            }
+        }
+        "/__fx/dl/zero.bin" => Some(DownloadFixture::Zero),
+        "/__fx/dl/fail.bin" => Some(DownloadFixture::Fail),
+        _ => None,
+    }
+}
+
+impl DownloadFixture {
+    /// Write the fixture response to the stream.
+    fn respond(self, stream: &mut TcpStream) -> std::io::Result<()> {
+        const DISPOSITION: &str = "Content-Disposition: attachment; filename=\"download.bin\"\r\n";
+        match self {
+            DownloadFixture::Known(body) => {
+                let mut head = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n{}",
+                    body.len(),
+                    DISPOSITION
+                );
+                head.push_str("Connection: close\r\n\r\n");
+                stream.write_all(head.as_bytes())?;
+                stream.write_all(&body)?;
+                stream.flush()
+            }
+            DownloadFixture::Unknown(body) => {
+                // No Content-Length: HTTP/1.1 signals the length by closing
+                // the connection, so `expectedContentLength` is unknown and
+                // the download runs indeterminate. Trickle in 8 KiB chunks
+                // with a fixed pause so the indeterminate `Running` state is
+                // observable (same window as `slow.bin`).
+                let mut head = format!("HTTP/1.1 200 OK\r\n{}", DISPOSITION);
+                head.push_str("Connection: close\r\n\r\n");
+                stream.write_all(head.as_bytes())?;
+                for chunk in body.chunks(8192) {
+                    stream.write_all(chunk)?;
+                    stream.flush()?;
+                    std::thread::sleep(std::time::Duration::from_millis(150));
+                }
+                Ok(())
+            }
+            DownloadFixture::Slow(body) => {
+                let mut head = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n{}",
+                    body.len(),
+                    DISPOSITION
+                );
+                head.push_str("Connection: close\r\n\r\n");
+                stream.write_all(head.as_bytes())?;
+                // Trickle in 8 KiB chunks with a fixed pause: deterministic
+                // slow progress and a stable cancellation window.
+                for chunk in body.chunks(8192) {
+                    stream.write_all(chunk)?;
+                    stream.flush()?;
+                    std::thread::sleep(std::time::Duration::from_millis(150));
+                }
+                Ok(())
+            }
+            DownloadFixture::Zero => {
+                // `DISPOSITION` already ends with `\r\n`, so appending one
+                // `\r\n` completes the header block with the blank line —
+                // exactly one, matching the Known/Slow wire shape (a doubled
+                // blank line would leak a stray `\r\n` into the body).
+                let head = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n{}\r\n",
+                    DISPOSITION
+                );
+                stream.write_all(head.as_bytes())?;
+                stream.flush()
+            }
+            DownloadFixture::Fail => respond(stream, 500, "Internal Server Error", b"boom"),
+        }
+    }
 }
 
 enum Route {
@@ -441,5 +571,29 @@ mod tests {
         assert_eq!(body, b"hello from bbr-fixtures");
         let (code2, _) = get(&server.url("/__fx/robots")).unwrap();
         assert_eq!(code2, 200);
+    }
+
+    #[test]
+    fn download_fixtures_are_deterministic() {
+        let sb = Sandbox::new();
+        let server = FixtureServer::start(sb.dir.clone()).unwrap();
+        // Known length: 64 KiB payload, counted hits.
+        let (code, body) = get(&server.url("/__fx/dl/known.bin")).unwrap();
+        assert_eq!(code, 200);
+        assert_eq!(body.len(), 65536);
+        assert_eq!(server.hits("/__fx/dl/known.bin"), 1);
+        let (_c2, body2) = get(&server.url("/__fx/dl/known.bin")).unwrap();
+        assert_eq!(body, body2, "content-addressed: retries are byte-identical");
+        // Unknown length: same payload, no Content-Length (body until close).
+        let (code3, body3) = get(&server.url("/__fx/dl/unknown.bin")).unwrap();
+        assert_eq!(code3, 200);
+        assert_eq!(body3.len(), 65536);
+        // Zero bytes succeeds with an empty body.
+        let (code4, body4) = get(&server.url("/__fx/dl/zero.bin")).unwrap();
+        assert_eq!(code4, 200);
+        assert!(body4.is_empty());
+        // Failure is an HTTP 500.
+        let (code5, _) = get(&server.url("/__fx/dl/fail.bin")).unwrap();
+        assert_eq!(code5, 500);
     }
 }

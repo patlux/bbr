@@ -23,7 +23,10 @@ use gpui::{
 use crate::palette::Palette;
 use crate::theme::{Density, Theme};
 
-use super::u2_glyphs::{disclosure_arm, downloads_geometry, folder_geometry, spaces_geometry};
+use super::u2_glyphs::{
+    check_geometry, disclosure_arm, downloads_geometry, folder_geometry, spaces_geometry,
+    stopped_half,
+};
 
 /// §7 icon catalog: the bounded set of BBR-drawn chrome glyphs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,6 +44,11 @@ pub enum Icon {
     /// §11.4 footer `[Downloads]` control: an arrow dropping into an
     /// open-top tray.
     Downloads,
+    /// §11.12 downloads status: the `status.ok` check on succeeded rows.
+    Check,
+    /// §11.12 downloads status: the neutral cancelled marker (a short
+    /// horizontal bar at `ink.secondary`) on cancelled rows.
+    Stopped,
     /// §11.4 footer `[Spaces]` control: two offset stacked squares.
     Spaces,
     /// §11.11 folder identity: a folder silhouette with a top-left tab.
@@ -71,6 +79,8 @@ impl Icon {
             Icon::ChassisMark => "chassis-mark",
             Icon::Plus => "plus",
             Icon::Downloads => "downloads",
+            Icon::Check => "check",
+            Icon::Stopped => "stopped",
             Icon::Spaces => "spaces",
             Icon::Folder => "folder",
             Icon::Disclosure { expanded } => {
@@ -92,6 +102,8 @@ impl Icon {
             Icon::Close
             | Icon::Plus
             | Icon::Downloads
+            | Icon::Check
+            | Icon::Stopped
             | Icon::Spaces
             | Icon::Folder
             | Icon::Disclosure { .. }
@@ -183,6 +195,25 @@ impl Icon {
                 path.line_to(point(px(cx - tray_half), px(base_y)));
                 path.line_to(point(px(cx + tray_half), px(base_y)));
                 path.line_to(point(px(cx + tray_half), px(base_y - tray_side)));
+                paint_path(window, path, color);
+            }
+            Icon::Check => {
+                let (inner, outer) = check_geometry(size);
+                let mut path = PathBuilder::stroke(stroke);
+                // The short inner stroke then the long ascending stroke of
+                // the check mark.
+                path.move_to(point(px(cx - outer), px(cy)));
+                path.line_to(point(px(cx - inner), px(cy + inner)));
+                path.move_to(point(px(cx - inner), px(cy + inner)));
+                path.line_to(point(px(cx + outer), px(cy - outer)));
+                paint_path(window, path, color);
+            }
+            Icon::Stopped => {
+                let half = stopped_half(size);
+                let mut path = PathBuilder::stroke(stroke);
+                // A short horizontal bar: the neutral cancelled marker.
+                path.move_to(point(px(cx - half), px(cy)));
+                path.line_to(point(px(cx + half), px(cy)));
                 paint_path(window, path, color);
             }
             Icon::Spaces => {
@@ -383,6 +414,8 @@ mod tests {
         assert_eq!(Icon::ChassisMark.name(), "chassis-mark");
         assert_eq!(Icon::Plus.name(), "plus");
         assert_eq!(Icon::Downloads.name(), "downloads");
+        assert_eq!(Icon::Check.name(), "check");
+        assert_eq!(Icon::Stopped.name(), "stopped");
         assert_eq!(Icon::Spaces.name(), "spaces");
         assert_eq!(Icon::Folder.name(), "folder");
         assert_eq!(Icon::Disclosure { expanded: false }.name(), "disclosure");
@@ -454,6 +487,8 @@ mod tests {
         assert_eq!(Icon::Close.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Plus.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Downloads.rest_color(p), p.ink_secondary);
+        assert_eq!(Icon::Check.rest_color(p), p.ink_secondary);
+        assert_eq!(Icon::Stopped.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Spaces.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Folder.rest_color(p), p.ink_secondary);
         assert_eq!(

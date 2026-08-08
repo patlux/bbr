@@ -33,7 +33,7 @@ impl BbrApp {
         theme: &Theme,
         sidebar_width: f32,
         chrome_focused: bool,
-        window: &Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let p = theme.palette;
@@ -137,7 +137,7 @@ impl BbrApp {
                             )
                             .child("Sidebar (Cmd-B)"),
                     )
-                    .map(|column| self.u2_post_tab_children(column, plus_menu, theme, cx)),
+                    .map(|column| self.u2_post_tab_children(column, plus_menu, theme, window, cx)),
             )
             .child(sidebar_divider(
                 theme,
