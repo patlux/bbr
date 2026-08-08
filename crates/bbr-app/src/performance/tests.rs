@@ -136,6 +136,8 @@ fn command_presentation_guard_rejects_stale_generation_and_wrong_result() {
         Some("tab:2"),
         Some("tab:2"),
         CommandResultState::Results,
+        &[],
+        0,
     );
     probe.commit_current_presentation();
     assert_eq!(collected.borrow().len(), 0, "stale generation rejected");
@@ -147,6 +149,8 @@ fn command_presentation_guard_rejects_stale_generation_and_wrong_result() {
         Some("tab:1"),
         Some("tab:1"),
         CommandResultState::Results,
+        &[],
+        0,
     );
     probe.commit_current_presentation();
     assert_eq!(collected.borrow().len(), 0, "wrong first key rejected");
@@ -158,6 +162,8 @@ fn command_presentation_guard_rejects_stale_generation_and_wrong_result() {
         Some("tab:2"),
         Some("action:2"),
         CommandResultState::Results,
+        &[],
+        0,
     );
     probe.commit_current_presentation();
     assert_eq!(collected.borrow().len(), 0, "wrong selected row rejected");
@@ -169,6 +175,8 @@ fn command_presentation_guard_rejects_stale_generation_and_wrong_result() {
         Some("tab:2"),
         Some("tab:2"),
         CommandResultState::Loading,
+        &[],
+        0,
     );
     probe.commit_current_presentation();
     assert_eq!(collected.borrow().len(), 0, "wrong state rejected");
@@ -195,6 +203,8 @@ fn command_presentation_guard_rejects_stale_generation_and_wrong_result() {
         Some("tab:2"),
         Some("tab:2"),
         CommandResultState::Results,
+        &[],
+        0,
     );
     probe.commit_current_presentation();
     probe.commit_current_presentation();
@@ -240,7 +250,7 @@ fn pre_render_publication_cannot_commit_a_sample() {
 
     // A frame that omitted the palette (typed state Loading, rendered
     // false) clears the observation and must not commit either.
-    probe.observe_rendered_command(40, false, None, None, CommandResultState::Loading);
+    probe.observe_rendered_command(40, false, None, None, CommandResultState::Loading, &[], 0);
     probe.commit_current_presentation();
     assert_eq!(collected.borrow().len(), 0, "omitted palette rejected");
 
@@ -252,6 +262,8 @@ fn pre_render_publication_cannot_commit_a_sample() {
         Some("tab:2"),
         Some("tab:2"),
         CommandResultState::Results,
+        &[],
+        0,
     );
     probe.commit_current_presentation();
     let samples = collected.borrow();
@@ -282,6 +294,8 @@ fn old_render_identity_cannot_commit_a_new_arming() {
         Some("tab:2"),
         Some("tab:2"),
         CommandResultState::Results,
+        &[],
+        0,
     );
     probe.commit_current_presentation();
     assert_eq!(collected.borrow().len(), 1);
@@ -309,6 +323,8 @@ fn old_render_identity_cannot_commit_a_new_arming() {
         Some("tab:2"),
         Some("tab:2"),
         CommandResultState::Results,
+        &[],
+        0,
     );
     probe.commit_current_presentation();
     let samples = collected.borrow();
@@ -336,9 +352,107 @@ fn non_command_benchmarks_ignore_the_command_identity() {
         Some("tab:2"),
         Some("tab:2"),
         CommandResultState::Results,
+        &[],
+        0,
     );
     probe.commit_current_presentation();
     let samples = collected.borrow();
     assert_eq!(samples.len(), 1);
     assert_eq!(samples[0].kind, BenchmarkKind::WarmTabSwitch);
+}
+
+#[test]
+fn full_search_guard_requires_exact_window_and_total() {
+    // The `command_bar_full_search` guard (queue item 16): the complete
+    // result-set presentation must carry the exact limit-16 row-key window
+    // plus the truthful total match count — a partial/truncated window, a
+    // reordered window, a wrong total, or a stale generation must reject the
+    // sample, and only the render drawing the exact armed presentation
+    // commits. The first/selected-key guard alone cannot see a degraded
+    // complete presentation.
+    let (probe, collected) = probe_with_sink();
+    probe.observe_render_state(Some(WebViewId(1)), true, true, CommandBarMode::Location);
+    probe.observe_slot_rect(WebRect::new(260.0, 0.0, 820.0, 700.0));
+    probe.cancel(); // drop the fresh probe's startup pending
+    probe
+        .begin(
+            BenchmarkOperationId(60),
+            BenchmarkKind::CommandBarFullSearch,
+        )
+        .unwrap();
+    probe.expect_state(Some(WebViewId(1)), true, true, CommandBarMode::Location);
+    let keys: Vec<String> = (0..16).map(|i| format!("history:{}", 10000 - i)).collect();
+    probe.expect_command_full_set(90, &keys, 10_001, CommandResultState::Results);
+
+    // A stale generation with the exact window must never commit.
+    probe.observe_rendered_command(
+        89,
+        true,
+        Some("history:10000"),
+        Some("history:10000"),
+        CommandResultState::Results,
+        &keys,
+        10_001,
+    );
+    probe.commit_current_presentation();
+    assert_eq!(collected.borrow().len(), 0, "stale generation rejected");
+
+    // A truncated window (row 15 missing) must never commit.
+    let truncated: Vec<String> = keys[..15].to_vec();
+    probe.observe_rendered_command(
+        90,
+        true,
+        Some("history:10000"),
+        Some("history:10000"),
+        CommandResultState::Results,
+        &truncated,
+        10_001,
+    );
+    probe.commit_current_presentation();
+    assert_eq!(collected.borrow().len(), 0, "truncated window rejected");
+
+    // A reordered window must never commit.
+    let mut reordered = keys.clone();
+    reordered.swap(0, 1);
+    probe.observe_rendered_command(
+        90,
+        true,
+        Some("history:9999"),
+        Some("history:9999"),
+        CommandResultState::Results,
+        &reordered,
+        10_001,
+    );
+    probe.commit_current_presentation();
+    assert_eq!(collected.borrow().len(), 0, "reordered window rejected");
+
+    // A wrong total must never commit.
+    probe.observe_rendered_command(
+        90,
+        true,
+        Some("history:10000"),
+        Some("history:10000"),
+        CommandResultState::Results,
+        &keys,
+        1_000,
+    );
+    probe.commit_current_presentation();
+    assert_eq!(collected.borrow().len(), 0, "wrong total rejected");
+
+    // The render carrying the exact window and total commits exactly once.
+    probe.observe_rendered_command(
+        90,
+        true,
+        Some("history:10000"),
+        Some("history:10000"),
+        CommandResultState::Results,
+        &keys,
+        10_001,
+    );
+    probe.commit_current_presentation();
+    probe.commit_current_presentation();
+    let samples = collected.borrow();
+    assert_eq!(samples.len(), 1, "exactly one full-search sample");
+    assert_eq!(samples[0].kind, BenchmarkKind::CommandBarFullSearch);
+    assert_eq!(samples[0].operation_id, BenchmarkOperationId(60));
 }

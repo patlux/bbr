@@ -76,6 +76,10 @@ pub struct CommandRanking {
     pub state: CommandResultState,
     /// The latest published generation's rows (limit 16), in display order.
     pub results: Vec<CommandResultRow>,
+    /// The truthful total match count of the latest published generation
+    /// before the limit-16 window truncation (the full-search benchmark
+    /// presentation evidence; reset whenever the results are cleared).
+    pub total: usize,
     /// The selected row index (Up/Down move it within bounds).
     pub selected: usize,
     /// Monotonic generation; a publish only lands when it matches the
@@ -93,6 +97,7 @@ impl Default for CommandRanking {
         Self {
             state: CommandResultState::Inactive,
             results: Vec::new(),
+            total: 0,
             selected: 0,
             generation: 0,
             activation_error: None,
@@ -147,6 +152,7 @@ impl CommandRanking {
         self.state = CommandResultState::Empty;
         self.selected = 0;
         self.results.clear();
+        self.total = 0;
     }
 
     /// The surface closed: cancel the pending debounce and return to
@@ -156,6 +162,7 @@ impl CommandRanking {
         self.state = CommandResultState::Inactive;
         self.results.clear();
         self.selected = 0;
+        self.total = 0;
         self.activation_error = None;
     }
 
@@ -174,6 +181,7 @@ impl CommandRanking {
         if state == CommandResultState::Empty {
             self.results.clear();
             self.selected = 0;
+            self.total = 0;
             self.pending = None;
             return;
         }
@@ -269,10 +277,11 @@ impl BbrApp {
             self.command_ranking.state = CommandResultState::Empty;
             self.command_ranking.results.clear();
             self.command_ranking.selected = 0;
+            self.command_ranking.total = 0;
             self.command_ranking.activation_error = None;
             return;
         }
-        let (rows, _total) = self
+        let (rows, total) = self
             .store
             .with_history(|history| rank_text(&snapshot, history, self.command_bar_mode, &text));
         // Location/NewTab queries always carry the navigate/search fallback
@@ -280,6 +289,7 @@ impl BbrApp {
         // empty; there is no production NoMatch state in this slice.
         debug_assert!(!rows.is_empty(), "fallback row always publishes");
         self.command_ranking.results = rows;
+        self.command_ranking.total = total;
         self.command_ranking.state = CommandResultState::Results;
         self.command_ranking.selected = self
             .command_ranking

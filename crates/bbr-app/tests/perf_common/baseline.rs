@@ -157,10 +157,24 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
         // Command-surface scenarios (DESIGN.md §11.5): `command_type` spans
         // Cmd-L + replace-selection typing + the real ranking debounce
         // publishing the correct first result — the warm interaction class.
+        // `command_bar_first_result` is the history-rich twin (500 tabs +
+        // 10k history) of the same command-text path, and
+        // `command_bar_full_search` measures the *complete* limit-16 result
+        // window plus the truthful total for a query matching the whole
+        // provider — both stay in the same warm command-text class (50/100),
+        // no new budget class invented.
         // `command_activate` spans Enter routing the selected/typed
         // destination through the app/controller seams to the presented web
         // focus — the warm activation class (50/100 from the packet).
         "command_type" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "command_bar_first_result" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "command_bar_full_search" => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
@@ -475,6 +489,7 @@ impl Baseline {
             "tab_press",
             "command_type",
             "command_bar_first_result",
+            "command_bar_full_search",
             "command_activate",
             "command_activate_new_tab",
             "palette_open",
@@ -689,8 +704,9 @@ mod tests {
     fn command_budgets_are_seeded_and_enforced() {
         // Regression guard: the command-surface scenarios must carry their
         // contract budgets in the seed so a future command-surface regression
-        // trips the gate instead of being silently unreported. `command_type`
-        // and `command_activate` are warm (50/100); `command_activate_new_tab`
+        // trips the gate instead of being silently unreported. `command_type`,
+        // `command_bar_first_result`, `command_bar_full_search`, and
+        // `command_activate` are warm (50/100); `command_activate_new_tab`
         // opens a fresh tab/session — the session-recreation class (100/150);
         // `palette_open` and `overlay_open` present the two §11.4 surfaces on
         // the next frame — the warm class (50/100).
@@ -698,6 +714,7 @@ mod tests {
         for (kind, p95, max) in [
             ("command_type", 50.0, 100.0),
             ("command_bar_first_result", 50.0, 100.0),
+            ("command_bar_full_search", 50.0, 100.0),
             ("command_activate", 50.0, 100.0),
             ("command_activate_new_tab", 100.0, 150.0),
             ("palette_open", 50.0, 100.0),

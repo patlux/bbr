@@ -95,16 +95,33 @@ completion.
 - [x] Sidebar open/close toggle with resulting geometry and state assertions.
 - [x] Sidebar drag-resize commit and collapse/restore through the production path. *(The `sidebar_resize` scenario commits at the exact clamped geometry — typed min/default/max plus the content floor let the drivers compute the same expectation the render enforces, so a fast-but-wrong sample is rejected in the app; the `sidebar_restore` scenario measures expand restoring the last expanded width after an unmeasured production collapse. Both join the 30-sample matrix with the 50 ms p95 / 100 ms max next-frame budget; p95 ≈ 0.002 ms on this host.)*
 - [x] Space switching with already-warm selected sessions when Spaces land. *(The `space_switch` scenario alternates two warm spaces of one profile through the production activation path, asserting the destination space, its own WebViewId, the unchanged session count, chrome focus, and the rendered selected space row; p95 ≈ 0.1 ms on this host against the gate-enforced 50 ms p95 / 100 ms max warm budget.)*
+- [x] Command-bar first-result and full-search latency through the real
+      ranking debounce. *(Phase 5 `command_type` measures Cmd-L +
+      replace-selection typing + the real debounce publishing the correct
+      first result, committed only from a render of the result surface. With
+      the Phase-7 command-history provider, `command_bar_first_result`
+      measures the same path against the 500-tab + 10k-history corpus
+      (expected first row `history:1`), and `command_bar_full_search`
+      measures the *complete* ranked result-set presentation — the full
+      limit-16 window plus the truthful total match count for a query that
+      matches the whole provider (queue item 16). All three are the warm
+      command-text class (50/100) and commit render-inclusive with the
+      in-app fast-but-wrong guard; first-result p95 ≈ 36 ms and full-search
+      p95 ≈ 38 ms on this host, 30 samples each, report-only.)*
 - [x] Dense sidebar scroll/frame-time benchmark when the real Phase-4 list
       lands. *(The real Phase-4 list landed with the
       [dense-list slice](dense-list-slice.md); the `dense_scroll`/`dense_select`
       scenarios are wired into the interaction matrix, the baseline seed, and
       the full-gate sample-count asserts with the 50/100 ms warm budgets.
       Green here on the S-density 230-identity collection — `dense_scroll`
-      p95 ≈ 5.9 ms / max ≈ 6.1 ms, `dense_select` p95 ≈ 4.1 ms / max ≈ 4.2 ms,
-      30 samples each (`just e2e-perf`). The measured frame-time evidence for
-      the 500/50 acceptance on the canonical benchmark runner remains open in
-      the phase.)*
+      p95 ≈ 3.1 ms / max ≈ 3.1 ms, `dense_select` p95 ≈ 3.6 ms / max ≈ 3.8 ms,
+      30 samples each (`just e2e-perf`, Mac16,5 report-only). The 500/50
+      lifecycle is proven by the functional dense E2E; a perf-gate re-seed to
+      500/50 was measured and reverted because the perf matrix's prior WebKit
+      churn kills the active tab's process mid-loop on the dev host
+      (`PageCrashed`, 3/3 runs). The measured frame-time evidence for the
+      500/50 acceptance on the canonical benchmark runner remains open in the
+      phase.)*
 - [x] Pointer hover/press presentation benchmarks when the states land. *(The
       §10.2 hover and §10.3 press transitions are measured through the
       production listener methods (`tab_hover`/`tab_press`), commit only when

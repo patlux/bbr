@@ -17,7 +17,9 @@
 //!
 //! This focused module owns the command additions so `benchmarks.rs` stays
 //! at its pre-command size (its remaining scenarios are pre-existing
-//! non-command content).
+//! non-command content). The full-search (complete-result-set) expectations
+//! and driver live in the sibling module `command_full_search.rs` so this
+//! file also stays at its pre-full-search size.
 
 use std::time::{Duration, Instant};
 

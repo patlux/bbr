@@ -831,10 +831,14 @@ runner + suites.
    suites and the `space_switch` benchmark; the adjustable/collapsible
    sidebar landed with the shell-sidebar suite and the
    `sidebar_resize`/`sidebar_restore` benchmarks; the real-app command surface
-   landed with `just e2e-shell-command` plus render-inclusive `command_type` /
-   `command_activate` scenarios; production split UI, dialogs, routing,
-   remaining WebKit essentials, persistence, accessibility, and broader
-   performance scenarios follow Phases 6/8/7/9 on the implemented foundation.
+   landed with `just e2e-shell-command` plus the render-inclusive
+   `command_type` / `command_activate` scenarios and, with the Phase-7
+   command-history provider, the history-rich `command_bar_first_result` /
+   `command_bar_full_search` scenarios (the complete limit-16 result window
+   plus the truthful total, queue item 16); production split UI, dialogs,
+   routing, remaining WebKit essentials, persistence, accessibility, and
+   broader performance scenarios follow Phases 6/8/7/9 on the implemented
+   foundation.
 5. ⏳ Release-exclusion gate in CI (exit 64 + symbol/socket checks).
 
 Principle: **BBR's first executable ships with testkit sockets, sequential

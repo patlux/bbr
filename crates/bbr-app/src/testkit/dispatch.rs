@@ -635,6 +635,7 @@ pub(crate) fn dispatch(
         | Request::BenchmarkPressTab { .. }
         | Request::BenchmarkCommandType { .. }
         | Request::BenchmarkCommandBarFirstResult { .. }
+        | Request::BenchmarkCommandBarFullSearch { .. }
         | Request::BenchmarkCommandActivate { .. }
         | Request::BenchmarkCommandActivateNewTab { .. }
         | Request::BenchmarkPaletteOpen { .. }

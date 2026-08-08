@@ -25,8 +25,25 @@ Parent phases: [Phase 0](../phases/00-foundation.md), [Phase 4](../phases/04-ui-
 - [x] Tab/space switch latency for active, warm, suspended, and discarded states. *(Warm tab and warm space switching are measured through the production presentation path; the tab-organization slice adds the pin toggle, region-bounded reorder, and same-profile move to the warm class and the cross-profile move to the session-recreation class; the cross-context slice adds `space_switch_cross_profile` — the same warm view-only class as `space_switch` with the §11.3 command-field hint asserted in the driver snapshot and guarded in-app by the presentation probe. Active/suspended/discarded space states remain.)*
 - [x] Active-tab close to correct neighbor presentation.
 - [x] Sidebar open, close/toggle, resize, and restoration latency. *(Toggle, drag resize, and collapse/restore are measured through the production presentation path; `sidebar_resize`/`sidebar_restore` join the 30-sample interaction matrix with the same 50/100 ms next-frame budget.)*
-- [ ] Command-bar first-result and full-search latency.
-- [ ] Sidebar frame time with 500 tabs.
+- [x] Command-bar first-result and full-search latency. *(`command_bar_first_result`
+      (Phase 7 history provider: 500 tabs + 10k history, expected row
+      `history:1`, 30 samples) and its complete-result-set sibling
+      `command_bar_full_search` (the full limit-16 window plus the truthful
+      total for a query matching the whole provider) are measured through the
+      production command-text path with render-inclusive commits — the
+      performance contract's "first result, filtering" interactions now have
+      gate-enforced scenarios (queue item 16). Canonical-runner evidence for
+      both stays open with the dedicated runner.)*
+- [ ] Sidebar frame time with 500 tabs. *(The 500/50/450 lifecycle is proven
+      by the functional dense E2E (`just e2e-shell-dense`); the shipped
+      `dense_scroll`/`dense_select` 30-sample scenarios prove the
+      bounded-window frame path only at the S-density 230/20 collection on
+      the report-only dev host — a 500/50 perf-gate re-seed was measured and
+      reverted because the perf matrix's prior WebKit churn kills the active
+      tab's process mid-loop (`PageCrashed`, 3/3 runs), and neither the
+      functional lifecycle proof nor the >=500 command corpus is measured
+      frame-time evidence. The phase-4 measured-frame-time acceptance at
+      500/50 remains open for the dedicated canonical runner.)*
 - [ ] Idle CPU, wakeups, and energy impact.
 - [ ] Memory per active/warm tab and total memory under pressure.
 - [ ] Suspend/resume latency and state fidelity.

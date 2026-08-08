@@ -10,6 +10,7 @@ mod benchmarks;
 mod benchmarks_u2;
 mod command;
 mod command_drive;
+mod command_full_search;
 mod context_menu;
 mod context_menu_drive;
 mod downloads;

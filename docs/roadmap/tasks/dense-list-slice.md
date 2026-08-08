@@ -36,7 +36,12 @@ frame-time scenarios so a dense render regression fails the benchmark.
   render + deterministic anchor, keyboard traversal, warm/suspended selection
   recreation, edge states, dense drag tick.
 - `just e2e-perf` / `just e2e-perf-full`: `dense_scroll` / `dense_select`
-  scenarios, 30 samples each, against the 50/100 ms warm budgets.
+  scenarios, 30 samples each, against the 50/100 ms warm budgets (the perf
+  gate seeds the S-density 230/20 collection; the 500/50 lifecycle itself is
+  proven by the functional dense E2E, and the measured 500/50 frame-time
+  acceptance stays on the canonical runner below — a perf-gate re-seed to
+  500/50 was measured and reverted because the perf matrix's prior WebKit
+  churn kills the active tab's process mid-loop on the dev host).
 - Unit/contract: dense geometry (`dense.rs`), dense lifecycle
   (`controller_dense_tests.rs`, `tests_dense.rs`), baseline seeding guard.
 

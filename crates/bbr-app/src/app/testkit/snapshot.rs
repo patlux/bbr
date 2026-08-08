@@ -282,6 +282,7 @@ impl BbrApp {
             command_surface: self.command_surface.into(),
             command_result_state: command_result_state.into(),
             command_results,
+            command_result_total: self.command_ranking.total,
             command_cursor: self.command_text.cursor,
             command_selection: self.command_text.selection.map(|(start, end)| [start, end]),
             sidebar_visible: self.sidebar_visible,

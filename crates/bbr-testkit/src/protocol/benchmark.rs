@@ -94,6 +94,17 @@ pub enum BenchmarkKind {
     /// fast-but-wrong guard rejects a tab/fallback row or a stale
     /// generation. Same warm-interaction class as `command_type` (50/100).
     CommandBarFirstResult,
+    /// The history-rich twin of [`Self::CommandBarFirstResult`] measuring
+    /// the *complete ranked result-set presentation* (queue item 16,
+    /// `command_bar_full_search`; performance contract "filtering"): the
+    /// query matches far more rows than the limit-16 window, so the sample
+    /// commits only from a render of the full window whose exact row-key
+    /// set and truthful total match count match the armed expectation — a
+    /// partial, reordered, truncated, or stale window, or a wrong total,
+    /// rejects the measurement in the app. Same production command-text
+    /// path, same 500-tab + 10k-history corpus, same warm-interaction
+    /// class (50/100) as its first-result sibling.
+    CommandBarFullSearch,
     /// Enter activated the selected/typed command-bar destination through
     /// the production activation path: the correct destination, focus
     /// domain, and mode are presented (warm class — no session

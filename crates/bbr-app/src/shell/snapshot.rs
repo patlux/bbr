@@ -86,6 +86,9 @@ pub struct TestSnapshot {
     pub command_result_state: bbr_testkit::protocol::CommandResultState,
     /// The ranked results of the latest published generation (limit 16).
     pub command_results: Vec<bbr_testkit::protocol::CommandResultSnapshot>,
+    /// The truthful total match count before the limit-16 window truncation
+    /// (the full-search presentation evidence).
+    pub command_result_total: usize,
     /// Byte offset of the command-text cursor (UTF-8 safe).
     pub command_cursor: usize,
     /// Selected byte range `[start, end)` when non-empty.

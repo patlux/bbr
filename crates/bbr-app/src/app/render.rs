@@ -106,6 +106,13 @@ impl Render for BbrApp {
                 .get(self.command_ranking.selected)
                 .map(|row| row.key.as_str()),
             self.command_ranking.state.into(),
+            &self
+                .command_ranking
+                .results
+                .iter()
+                .map(|row| row.key.clone())
+                .collect::<Vec<_>>(),
+            self.command_ranking.total,
         );
 
         // §11.8-style error-surface presentation (task packet

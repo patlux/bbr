@@ -348,6 +348,33 @@ pub(crate) fn dispatch_benchmark(
         })
         .unwrap_or_else(err_response),
 
+        Request::BenchmarkCommandBarFullSearch {
+            operation_id,
+            text,
+            expected_keys,
+            expected_total,
+        } => with_app(window, app, cx, |view, window, cx| {
+            view.benchmark_command_bar_full_search(
+                *operation_id,
+                text,
+                expected_keys,
+                *expected_total,
+                window,
+                cx,
+            )
+        })
+        .map(|committed| {
+            if committed {
+                Response::Ok
+            } else {
+                Response::Error(Error::new(
+                    "benchmark_noop",
+                    "command full search did not present the complete result window",
+                ))
+            }
+        })
+        .unwrap_or_else(err_response),
+
         Request::BenchmarkCommandActivate {
             operation_id,
             expected_view,

@@ -34,6 +34,23 @@ pub(super) struct CommandExpectation {
     pub selected_key: Option<String>,
     /// The typed result state the presentation must show.
     pub result_state: CommandResultState,
+    /// The full-search twin ([`BenchmarkKind::CommandBarFullSearch`]): when
+    /// `Some`, the complete ranked result-set presentation must carry the
+    /// exact row-key window and the truthful total match count — a partial,
+    /// reordered, truncated, or stale window, or a wrong total, rejects the
+    /// sample. Takes precedence over the first/selected-key guard.
+    pub full_set: Option<FullSetExpectation>,
+}
+
+/// The exact complete result-set presentation a full-search sample commits
+/// from: the limit-16 row-key window plus the total match count before
+/// truncation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct FullSetExpectation {
+    /// The full limit-16 row-key window, in display order.
+    pub keys: Vec<String>,
+    /// The truthful total match count of the published generation.
+    pub total: usize,
 }
 
 /// The command-result presentation observed at the ranking publish.
@@ -43,6 +60,12 @@ pub(super) struct CommandObservation {
     pub first_key: Option<String>,
     pub selected_key: Option<String>,
     pub result_state: CommandResultState,
+    /// The full limit-16 row-key window the render actually drew, in display
+    /// order (the complete result-set presentation the full-search guard
+    /// compares against).
+    pub row_keys: Vec<String>,
+    /// The total match count the render's published generation reported.
+    pub total: usize,
 }
 
 impl PerformanceProbe {
@@ -66,10 +89,42 @@ impl PerformanceProbe {
                 first_key: Some(first_key.to_string()),
                 selected_key: Some(selected_key.to_string()),
                 result_state,
+                full_set: None,
             });
             // Only a render after this arming may satisfy the guard; an old
             // render's observation (from a previous sample or a pre-typing
             // frame) must never commit.
+            state.latest_command = None;
+        }
+    }
+
+    /// Arm the exact complete result-set presentation the pending sample
+    /// must commit from (generation, the full limit-16 row-key window, the
+    /// truthful total match count, and the typed state). The full-search
+    /// benchmark arms this instead of the first-key expectation; the commit
+    /// predicate then rejects any render whose drawn window or total differs
+    /// (a partial, reordered, truncated, or stale window, or a wrong total).
+    /// Arming clears any prior observation, exactly like the first-key arm.
+    pub fn expect_command_full_set(
+        &self,
+        generation: u64,
+        keys: &[String],
+        total: usize,
+        result_state: CommandResultState,
+    ) {
+        let mut state = self.inner.borrow_mut();
+        if let Some(pending) = state.pending.as_mut() {
+            pending.command = Some(CommandExpectation {
+                generation,
+                first_key: keys.first().cloned(),
+                selected_key: keys.first().cloned(),
+                result_state,
+                full_set: Some(FullSetExpectation {
+                    keys: keys.to_vec(),
+                    total,
+                }),
+            });
+            // Only a render after this arming may satisfy the guard.
             state.latest_command = None;
         }
     }
@@ -80,7 +135,10 @@ impl PerformanceProbe {
     /// the frame; otherwise the observation is cleared, so a pending sample
     /// cannot commit from a frame that omitted or did not present the
     /// palette. The ranking publication itself never records an observation
-    /// and therefore can never emit a measurement.
+    /// and therefore can never emit a measurement. `row_keys`/`total` carry
+    /// the complete result-set presentation the full-search guard compares
+    /// against.
+    #[allow(clippy::too_many_arguments)] // the flat observed-identity surface
     pub fn observe_rendered_command(
         &self,
         generation: u64,
@@ -88,6 +146,8 @@ impl PerformanceProbe {
         first_key: Option<&str>,
         selected_key: Option<&str>,
         result_state: CommandResultState,
+        row_keys: &[String],
+        total: usize,
     ) {
         let mut state = self.inner.borrow_mut();
         state.latest_command = if rendered {
@@ -96,6 +156,8 @@ impl PerformanceProbe {
                 first_key: first_key.map(str::to_string),
                 selected_key: selected_key.map(str::to_string),
                 result_state,
+                row_keys: row_keys.to_vec(),
+                total,
             })
         } else {
             None
@@ -136,7 +198,8 @@ impl PerformanceProbe {
     /// benchmark driver must validate caller-specific destination/session
     /// state before any sample can leave the process. `CommandBarFirstResult`
     /// is the history-rich twin of `CommandType` (same command-text entry
-    /// body and render-inclusive commit), so both kinds suppress the generic
+    /// body and render-inclusive commit), and `CommandBarFullSearch` is its
+    /// complete-result-set sibling — so all three kinds suppress the generic
     /// activation commit while pending.
     pub fn command_benchmark_pending(&self) -> bool {
         matches!(
@@ -144,6 +207,7 @@ impl PerformanceProbe {
             Some(
                 BenchmarkKind::CommandType
                     | BenchmarkKind::CommandBarFirstResult
+                    | BenchmarkKind::CommandBarFullSearch
                     | BenchmarkKind::CommandActivate
                     | BenchmarkKind::CommandActivateNewTab
                     | BenchmarkKind::PaletteOpen
@@ -160,6 +224,15 @@ pub(super) fn command_matches(pending: &Pending, state: &State) -> bool {
     match (pending.command.as_ref(), state.latest_command.as_ref()) {
         (None, _) => true,
         (Some(expected), Some(observed)) => {
+            // The full-search guard compares the complete rendered result-set
+            // presentation: the exact row-key window plus the truthful total,
+            // still gated on the generation and typed state.
+            if let Some(full) = expected.full_set.as_ref() {
+                return expected.generation == observed.generation
+                    && expected.result_state == observed.result_state
+                    && observed.row_keys == full.keys
+                    && observed.total == full.total;
+            }
             expected.generation == observed.generation
                 && expected.first_key.as_deref() == observed.first_key.as_deref()
                 && expected.selected_key.as_deref() == observed.selected_key.as_deref()

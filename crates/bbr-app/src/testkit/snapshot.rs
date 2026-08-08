@@ -150,6 +150,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             command_surface: self.command_surface,
             command_result_state: self.command_result_state,
             command_results: self.command_results.clone(),
+            command_result_total: self.command_result_total,
             command_cursor: self.command_cursor,
             command_selection: self.command_selection,
             all_tabs: self

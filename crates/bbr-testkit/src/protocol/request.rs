@@ -577,6 +577,20 @@ pub enum Request {
         text: String,
         expected_first_key: String,
     },
+    /// Measure the production command-text path against the same history-rich
+    /// corpus for the *complete ranked result-set presentation* (queue item
+    /// 16, `command_bar_full_search`): the query matches more rows than the
+    /// limit-16 window, so the expected identity is the exact full row-key
+    /// window plus the truthful total match count. The sample commits only
+    /// from a render of the result surface presenting exactly that key set
+    /// and total (fast-but-wrong guard: a partial, reordered, truncated, or
+    /// stale window or a wrong total rejects the measurement).
+    BenchmarkCommandBarFullSearch {
+        operation_id: BenchmarkOperationId,
+        text: String,
+        expected_keys: Vec<String>,
+        expected_total: usize,
+    },
     /// Measure the production Enter activation of the command bar (the
     /// selected/typed destination routed through the app/controller seams):
     /// the sample commits only when the expected destination view is

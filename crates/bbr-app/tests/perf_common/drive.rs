@@ -29,6 +29,7 @@ mod u2;
 use super::auth_drive::drive_auth_scenarios;
 use super::command::benchmark_command_bar_first_result;
 use super::command_drive::drive_command_scenarios;
+use super::command_full_search::benchmark_command_bar_full_search;
 use super::context_menu_drive::drive_context_menu_scenarios;
 use super::downloads_drive::drive_downloads_scenarios;
 use super::errors_drive::drive_error_surface_scenarios;
@@ -1086,6 +1087,18 @@ fn drive_matrix_inner(
         // 50-session lifecycle contract stays with the functional dense E2E;
         // this scenario proves the bounded-window frame path stays inside the
         // warm budgets while the list is genuinely dense.
+        //
+        // The 500/50 acceptance-scale re-seed of this block was measured and
+        // reverted: on the dev host the perf matrix (which churns hundreds of
+        // same-origin WKWebViews across its ~35 prior scenarios) plus the
+        // 500-tab dense seeding pushes WebKit's per-origin process limits and
+        // kills the active tab's web process mid-loop (`Web(PageCrashed)`,
+        // observed 3/3 runs; the dense scroll probe requires a live active
+        // view for every sample, so the gate goes red for an environmental
+        // reason). The functional dense E2E proves the 500/50/450 lifecycle
+        // itself (2/2 green on this host), and the measured frame-time
+        // acceptance at 500/50 belongs to the canonical benchmark runner per
+        // the phase acceptance.
         let dense_recent_start = 230 - (20 - 10);
         client
             .send_ok(&Request::SeedDenseState {
@@ -1211,33 +1224,40 @@ fn drive_matrix_inner(
         raw.insert("dense_select".to_string(), dense_select_samples);
 
         // Phase-7 command-history provider scale (queue item 16,
-        // `command_bar_first_result`): the production command-text path —
-        // Cmd-L, replace-selection typing, the real ranking debounce, and a
-        // render of the result surface committing the sample — measured
-        // against the history-rich corpus the task contract requires: the
-        // pre-spawned 10,000-entry provider (seeded through the production
-        // repository) plus >=500 open tabs in `all_tabs`. The dense block
-        // above left ~230 identities; the remaining identities are seeded
-        // here through the production controller open path in bounded
-        // batches (the canonical `seed_dense` pattern the functional dense
-        // E2E proves at 500 tabs), each batch converged with a snapshot so
-        // the transient live-session population never explodes. Every
-        // extra tab is opened then immediately suspended (`recent_start`
-        // above the seeded range, so no tab lands in the warm keep set):
-        // the ranking corpus maps tab *identities* — a suspended tab ranks
-        // exactly like a warm one — and a single unbounded burst of extra
-        // concurrent same-origin WKWebViews trips WebKit's process limits
-        // (the fixture sessions are all localhost, so a process kill
-        // cascade can destroy even the active tab's session and blank the
-        // measured render). The query matches exactly one seeded history
-        // record, so the correct first result is the ranked history row
-        // `history:1`; the in-app probe rejects any fast-but-wrong first
-        // result (a tab/fallback row), a stale generation, or a missing
-        // palette. The block runs last — the corpus state after it does
-        // not matter.
+        // `command_bar_first_result` / `command_bar_full_search`): the
+        // production command-text path — Cmd-L, replace-selection typing,
+        // the real ranking debounce, and a render of the result surface
+        // committing the sample — measured against the history-rich corpus
+        // the task contract requires: the pre-spawned 10,000-entry provider
+        // (seeded through the production repository) plus >=500 open tabs in
+        // `all_tabs`. The dense block above left an S-density corpus; the
+        // remaining identities are seeded here through the production
+        // controller open path in bounded batches (the canonical `seed_dense`
+        // pattern the functional dense E2E proves at 500), every extra tab
+        // opened then immediately suspended (`recent_start` above the seeded
+        // range, so no tab lands in the warm keep set): the ranking corpus
+        // maps tab *identities* — a suspended tab ranks exactly like a warm
+        // one — and a single unbounded burst of extra concurrent
+        // same-origin WKWebViews trips WebKit's process limits (the fixture
+        // sessions are all localhost, so a process kill cascade can destroy
+        // even the active tab's session and blank the measured render). The
+        // query `alpha-history` matches exactly one seeded
+        // history record, so the correct first result is the ranked history
+        // row `history:1`; the full-search query `history` matches the whole
+        // provider, so the complete limit-16 window plus the truthful total
+        // is the expected presentation. The in-app probe rejects any
+        // fast-but-wrong first result or window (a tab/fallback row, a
+        // partial/stale window, or a wrong total). The block runs last — the
+        // corpus state after it does not matter.
         let history_seed_total = 500usize;
         let pre_seed_tabs = client.snapshot().expect("pre seed snapshot").tabs.len();
         let to_open = history_seed_total.saturating_sub(pre_seed_tabs);
+        // The dense block above left an S-density corpus (230 identities);
+        // the leftover-seeding loop brings the history-rich corpus to the
+        // >=500-identity contract scale in bounded batches (the canonical
+        // `seed_dense` batch pattern the functional dense E2E proves,
+        // `recent_start` above the seeded range so no tab lands in the warm
+        // keep set).
         let mut seeded = 0;
         while seeded < to_open {
             let chunk = 100usize.min(to_open - seeded);
@@ -1329,6 +1349,67 @@ fn drive_matrix_inner(
                 .expect("escape after first result sample");
         }
         raw.insert("command_bar_first_result".to_string(), first_result_samples);
+
+        // Full-search (queue item 16, `command_bar_full_search`): the
+        // complete-result-set sibling of the first-result scenario — the same
+        // production command-text path and render-inclusive commit, measured
+        // for the *complete ranked result-set presentation* the performance
+        // contract's "filtering" interaction names. The query `history`
+        // matches the whole seeded 10k provider (plus the navigate/search
+        // fallback row), so the limit-16 window is full with the most
+        // recently visited history ids and the truthful total exceeds the
+        // window; the in-app probe arms the exact window plus the total, so
+        // a partial, reordered, truncated, or stale window, or a wrong
+        // total, rejects the sample (the first-result guard alone cannot see
+        // a degraded complete presentation). Discarded warm-up first (the
+        // heavier 10k-match ranking pass pays its one-time presentation
+        // cost outside the measured samples), then the 30-sample matrix with
+        // Escape between samples restoring the uniform web origin.
+        let (full_search_keys, full_search_total) =
+            super::command_full_search::full_search_expectations(config.seed_history);
+        let _ = benchmark_command_bar_full_search(
+            client,
+            &mut since,
+            operation,
+            "history",
+            &full_search_keys,
+            full_search_total,
+            history_view,
+        );
+        operation += 1;
+        client
+            .send_ok(&Request::DispatchKeystroke {
+                keystroke: "escape".into(),
+            })
+            .expect("escape after full search warm-up");
+        let mut full_search_samples = Vec::with_capacity(config.interaction_samples);
+        for _ in 0..config.interaction_samples {
+            let measured = benchmark_command_bar_full_search(
+                client,
+                &mut since,
+                operation,
+                "history",
+                &full_search_keys,
+                full_search_total,
+                history_view,
+            );
+            full_search_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("command_bar_full_search".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+            // Unmeasured setup: Escape after every sample restores the web
+            // origin (each sample starts from the uniform web focus).
+            client
+                .send_ok(&Request::DispatchKeystroke {
+                    keystroke: "escape".into(),
+                })
+                .expect("escape after full search sample");
+        }
+        raw.insert("command_bar_full_search".to_string(), full_search_samples);
         raw
     };
     *cursor = since;

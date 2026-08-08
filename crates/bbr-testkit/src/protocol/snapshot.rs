@@ -933,6 +933,11 @@ pub struct Snapshot {
     /// The ranked results of the latest published generation (limit 16).
     #[serde(default)]
     pub command_results: Vec<CommandResultSnapshot>,
+    /// The truthful total match count of the latest published generation
+    /// before the limit-16 window truncation (the full-search benchmark
+    /// presentation evidence: the window is full and the total exceeds it).
+    #[serde(default)]
+    pub command_result_total: usize,
     /// Byte offset of the command-text cursor (UTF-8 safe; the text model
     /// never splits a character).
     #[serde(default)]

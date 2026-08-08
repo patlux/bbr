@@ -1,33 +1,40 @@
-//! The history-rich command-first-result benchmark driver (Phase 7,
-//! command-history provider slice; queue item 16) and the shared
-//! command-text benchmark body it reuses.
+//! The history-rich command benchmark drivers (Phase 7, command-history
+//! provider slice; queue item 16) and the shared command-text benchmark body
+//! they reuse.
 //!
-//! `benchmark_command_type` (in `command_benchmarks.rs`) and
-//! `benchmark_command_bar_first_result` share the exact production
+//! `benchmark_command_type` (in `command_benchmarks.rs`),
+//! `benchmark_command_bar_first_result`, and
+//! `benchmark_command_bar_full_search` share the exact production
 //! command-text path — Cmd-L, replace-selection typing, the real ranking
 //! debounce, and a render-inclusive commit whose predicate enforces the
-//! exact generation, first/selected keys, typed state, mode, and focus
-//! (fast-but-wrong guard). The two kinds differ only in the expected
-//! identity they arm: `CommandType` expects a tab/fallback row, while
-//! `CommandBarFirstResult` expects the ranked history row `history:<id>`
+//! exact generation, keys, typed state, mode, and focus (fast-but-wrong
+//! guard). The three kinds differ only in the expected identity they arm:
+//! `CommandType` expects a tab/fallback row, `CommandBarFirstResult` expects
+//! the ranked history row `history:<id>`, and `CommandBarFullSearch` expects
+//! the complete limit-16 row-key window plus the truthful total match count
 //! against the seeded 500-tab + 10k-history corpus. This module owns the
-//! shared entry body and its render-inclusive commit so both kinds follow
-//! the identical presentation-milestone path without conflating identities.
+//! shared entry body and its render-inclusive commit so all three kinds
+//! follow the identical presentation-milestone path without conflating
+//! identities.
 
 use bbr_testkit::protocol::BenchmarkKind;
 use gpui::{App, AsyncApp, Context, Window};
 
 use super::BbrApp;
 
-/// True for the two kinds that share the command-text entry body and the
+/// True for the kinds that share the command-text entry body and the
 /// render-presentation commit: the sample may only leave from a render of
 /// the result surface carrying the armed command identity. The guard is
-/// kind-inclusive so both paths use the identical schedule/commit logic
-/// without conflating their expected identities.
+/// kind-inclusive so the paths use the identical schedule/commit logic
+/// without conflating their expected identities (`CommandBarFirstResult`
+/// arms the first history row; `CommandBarFullSearch` arms the complete
+/// limit-16 window plus the truthful total).
 pub(crate) fn is_command_text_kind(kind: BenchmarkKind) -> bool {
     matches!(
         kind,
-        BenchmarkKind::CommandType | BenchmarkKind::CommandBarFirstResult
+        BenchmarkKind::CommandType
+            | BenchmarkKind::CommandBarFirstResult
+            | BenchmarkKind::CommandBarFullSearch
     )
 }
 
@@ -56,6 +63,52 @@ impl BbrApp {
             window,
             cx,
         )
+    }
+
+    /// The complete-result-set twin of `benchmark_command_bar_first_result`
+    /// (queue item 16, `command_bar_full_search`; performance contract
+    /// "filtering"): the identical production command-text path — Cmd-L,
+    /// replace-selection typing, the real ranking debounce, and a render of
+    /// the result surface committing the sample — measured against the same
+    /// 500-tab + 10k-history corpus, but the query matches far more rows
+    /// than the limit-16 window. The probe is re-armed with the exact full
+    /// row-key window plus the truthful total match count, so a partial,
+    /// reordered, truncated, or stale window, or a wrong total, rejects the
+    /// sample in the app — the first-result guard alone cannot see a
+    /// degraded complete presentation.
+    pub fn benchmark_command_bar_full_search(
+        &mut self,
+        operation_id: bbr_testkit::protocol::BenchmarkOperationId,
+        text: &str,
+        expected_keys: &[String],
+        expected_total: usize,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let Some(first) = expected_keys.first() else {
+            return false;
+        };
+        if !self.benchmark_command_entry(
+            operation_id,
+            BenchmarkKind::CommandBarFullSearch,
+            text,
+            first,
+            window,
+            cx,
+        ) {
+            return false;
+        }
+        // Replace the first-key arm with the complete-result-set expectation
+        // (same generation the entry just scheduled — nothing re-scheduled
+        // in between): the full window plus the truthful total.
+        let expected_generation = self.command_ranking.generation;
+        self.performance.expect_command_full_set(
+            expected_generation,
+            expected_keys,
+            expected_total,
+            bbr_testkit::protocol::CommandResultState::Results,
+        );
+        true
     }
 
     /// The shared production command-text benchmark body (Cmd-L selects the
@@ -158,17 +211,16 @@ impl BbrApp {
         .detach();
     }
 
-    /// Commit the command-text sample (`CommandType` or
-    /// `CommandBarFirstResult`) from the render milestone: the probe
+    /// Commit the command-text sample (`CommandType`, `CommandBarFirstResult`,
+    /// or `CommandBarFullSearch`) from the render milestone: the probe
     /// compares the armed command identity against the observation the
     /// render recorded after constructing the palette, and the
     /// browser-state expectations against the state the render observed.
     /// Returns false and cancels when the render omitted the palette or the
     /// identity/state was wrong — a truthful rejection, never a
     /// fast-but-wrong pass. The pending-kind check is kind-inclusive: a
-    /// still-pending sample of either command-text kind means the
-    /// presentation did not match, while a committed sample has no pending
-    /// kind left.
+    /// still-pending sample of a command-text kind means the presentation
+    /// did not match, while a committed sample has no pending kind left.
     fn commit_command_text_benchmark(&self) -> bool {
         self.performance.commit_current_presentation();
         if self
