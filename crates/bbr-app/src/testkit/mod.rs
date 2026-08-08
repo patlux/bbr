@@ -29,6 +29,7 @@ mod dispatch_benchmark;
 mod dispatch_benchmark_context_menu;
 mod dispatch_benchmark_downloads;
 mod dispatch_benchmark_find;
+mod dispatch_benchmark_swipe;
 mod dispatch_benchmark_u2;
 mod dispatch_benchmark_zoom;
 mod dispatch_context_menu;

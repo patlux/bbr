@@ -478,6 +478,112 @@ pub(crate) fn benchmark_space_switch_cross_profile(
     measured
 }
 
+/// A §11.3 sidebar swipe commit measured through the real production gesture
+/// path (task packet `space-footer-strip-appearance-ui`, `swipe_commit`
+/// performance layer): the app drives `Started`/`Moved` wheel updates plus a
+/// zero-delta `TouchPhase::Ended` through the exact handler the sidebar's
+/// `on_scroll_wheel` listener calls, and the ended release resolves the
+/// tracking gesture into exactly one existing `activate_space` commit of the
+/// adjacent persistent `source` → `destination` pair (never a direct
+/// activation, never a benchmark-only state machine). Same warm class as
+/// `benchmark_space_switch`: the live-session count must never change, and
+/// the sample commits only when the exact destination space, its warm
+/// selected view, the Idle machine phase, and the source-deselected /
+/// destination-selected chip states are presented (fast-but-wrong guard).
+pub(crate) fn benchmark_swipe_commit(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    source: TestSpaceId,
+    destination: TestSpaceId,
+    expected_view: WebViewId,
+    expected_sessions: usize,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    assert_ne!(
+        source, destination,
+        "every sample is a real adjacent commit"
+    );
+    client
+        .send_ok(&Request::BenchmarkSwipeCommit {
+            operation_id,
+            destination,
+        })
+        .expect("benchmark swipe commit");
+    let (seq, measured) =
+        wait_measurement(client, BenchmarkKind::SwipeCommit, operation_id, *since);
+    *since = seq;
+    assert_eq!(
+        measured.active_space, destination,
+        "measured presentation shows the destination space"
+    );
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(
+        measured.chrome_focused,
+        "swipe commit keeps the chrome focus domain"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::Inactive);
+    assert!(
+        measured.content_rect[2] > 0.0 && measured.content_rect[3] > 0.0,
+        "swipe commit keeps non-zero native content geometry"
+    );
+    let snapshot = client.snapshot().expect("swipe commit snapshot");
+    assert_eq!(snapshot.active_space, destination);
+    assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert_eq!(
+        snapshot.engine_sessions, expected_sessions,
+        "warm swipe switching never recreates sessions"
+    );
+    assert!(snapshot.chrome_focused);
+    assert_eq!(
+        snapshot.command_profile_hint, None,
+        "same-profile swipes must not announce a profile transition"
+    );
+    // The machine returned Idle after the zero-delta Ended: a resolved
+    // gesture leaves no lingering source/destination (a repeated Ended can
+    // never double-commit, and a stale tracking machine is rejected here).
+    assert_eq!(snapshot.swipe.phase, "idle", "gesture Idle after Ended");
+    assert_eq!(snapshot.swipe.source, None);
+    assert_eq!(snapshot.swipe.destination, None);
+    assert_eq!(snapshot.swipe.progress, 0.0);
+    // Exact persistent chip states: the destination chip renders selected,
+    // the source chip is deselected, and the stable §11.3 chip/identity ids
+    // of the destination are present in the render.
+    let destination_chip = snapshot
+        .space_chips
+        .iter()
+        .find(|c| c.space == destination)
+        .expect("destination chip in the strip");
+    assert!(
+        destination_chip.selected,
+        "destination space chip renders selected"
+    );
+    let source_chip = snapshot
+        .space_chips
+        .iter()
+        .find(|c| c.space == source)
+        .expect("source chip in the strip");
+    assert!(
+        !source_chip.selected,
+        "source space chip is deselected after the commit"
+    );
+    assert!(
+        snapshot
+            .visible_ids
+            .iter()
+            .any(|id| id == &format!("bbr-space-chip-{}", destination.0)),
+        "destination space chip id present"
+    );
+    assert!(
+        snapshot
+            .visible_ids
+            .iter()
+            .any(|id| id == &format!("bbr-space-identity-{}", destination.0)),
+        "destination space identity id present"
+    );
+    measured
+}
+
 /// The production pin toggle of the active tab (`Cmd-Shift-P` path): the
 /// pinned/regular boundary moves while the selected tab and its live session
 /// stay. The sample must show the same active native view and the expected

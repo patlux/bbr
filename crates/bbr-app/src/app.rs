@@ -79,6 +79,8 @@ mod sidebar;
 mod sidebar_view;
 mod spaces;
 mod swipe;
+#[cfg(feature = "testkit")]
+mod swipe_benchmarks;
 mod tab;
 #[cfg(feature = "testkit")]
 mod testkit;

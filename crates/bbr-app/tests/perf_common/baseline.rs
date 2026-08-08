@@ -65,6 +65,16 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // §11.3 sidebar swipe commit (task packet
+        // `space-footer-strip-appearance-ui`, `swipe_commit`): the same warm
+        // next-frame presentation class as `space_switch` — the real
+        // Started/Moved gesture path plus the zero-delta Ended resolving into
+        // exactly one existing `activate_space` commit of a warm adjacent
+        // space, sessions never recreated. Same 50/100 ms warm budget.
+        "swipe_commit" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         "tab_select_pointer" => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -470,6 +480,7 @@ impl Baseline {
             "warm_tab_switch",
             "space_switch",
             "space_switch_cross_profile",
+            "swipe_commit",
             "tab_select_pointer",
             "tab_activate_keyboard",
             "tab_reopen",
@@ -640,6 +651,42 @@ mod tests {
         assert!(r.iter().any(|x| x.rule == "abs_max"));
         let mut good = BTreeMap::new();
         good.insert("space_switch_cross_profile".into(), measured(45.0, 90.0));
+        assert!(evaluate(&good, &b, false).is_empty());
+    }
+
+    #[test]
+    fn swipe_commit_budget_is_seeded_and_enforced() {
+        // Regression guard (F2a `swipe_commit`): the §11.3 swipe-commit
+        // scenario must carry its warm contract budget in the seed so a
+        // future gesture/render regression trips the gate instead of being
+        // silently unreported dead code. The real production gesture path is
+        // measured (Started/Moved + zero-delta Ended resolving into exactly
+        // one `activate_space` commit), same 50/100 ms warm class as
+        // `space_switch` — sessions are never recreated.
+        let b = Baseline::seed();
+        let entry = b
+            .entries
+            .get("swipe_commit")
+            .expect("seed baseline must carry the swipe_commit contract budget");
+        assert_eq!(entry.budget_p95_ms, 50.0, "swipe_commit warm p95 ceiling");
+        assert_eq!(
+            entry.budget_max_ms,
+            Some(100.0),
+            "swipe_commit warm max ceiling"
+        );
+        let mut bad = BTreeMap::new();
+        bad.insert("swipe_commit".into(), measured(120.0, 160.0));
+        let r = evaluate(&bad, &b, false);
+        assert!(
+            r.iter().any(|x| x.rule == "abs_p95"),
+            "swipe_commit absolute p95 ceiling enforced"
+        );
+        assert!(
+            r.iter().any(|x| x.rule == "abs_max"),
+            "swipe_commit absolute max ceiling enforced"
+        );
+        let mut good = BTreeMap::new();
+        good.insert("swipe_commit".into(), measured(45.0, 90.0));
         assert!(evaluate(&good, &b, false).is_empty());
     }
 

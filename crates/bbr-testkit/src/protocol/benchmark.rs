@@ -30,6 +30,17 @@ pub enum BenchmarkKind {
     /// Activation of a space with an already-warm selected tab (production
     /// activation path, warm sessions preserved).
     WarmSpaceSwitch,
+    /// A §11.3 sidebar swipe committed through the production gesture path
+    /// (DESIGN.md §11.3 / task packet `space-footer-strip-appearance-ui`):
+    /// the measured sample spans real `Started`/`Moved` wheel updates plus
+    /// the zero-delta `TouchPhase::Ended` that resolves the tracking gesture
+    /// into exactly one existing `activate_space` commit — never a direct
+    /// activation and never a benchmark-only state machine. Same-profile
+    /// warm switching (sessions untouched), so the sample shares the
+    /// 50/100 ms warm class and commits only when the exact persistent
+    /// destination space, its warm selected view, and the Idle machine
+    /// phase are presented.
+    SwipeCommit,
     /// The sidebar visibility changed through the production Cmd-B path
     /// (collapse and open/toggle share this kind).
     SidebarToggle,

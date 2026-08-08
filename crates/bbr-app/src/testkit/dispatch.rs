@@ -20,6 +20,7 @@ use crate::testkit::dispatch_auth::dispatch_auth;
 use crate::testkit::dispatch_benchmark::dispatch_benchmark;
 use crate::testkit::dispatch_benchmark_context_menu::dispatch_benchmark_context_menu;
 use crate::testkit::dispatch_benchmark_downloads::dispatch_benchmark_downloads;
+use crate::testkit::dispatch_benchmark_swipe::dispatch_benchmark_swipe;
 use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
 use crate::testkit::dispatch_context_menu::dispatch_context_menu;
 use crate::testkit::dispatch_downloads::dispatch_downloads;
@@ -44,6 +45,11 @@ pub(crate) fn dispatch(
     // The performance arms live in `dispatch_benchmark` so this router stays
     // under the ~500-line budget; every other request falls through here.
     if let Some(response) = dispatch_benchmark(&req, window, app, cx) {
+        return response;
+    }
+    // The §11.3 swipe-commit performance arm routes through its focused
+    // module (same split reason; the gesture runs entirely in the app).
+    if let Some(response) = dispatch_benchmark_swipe(&req, window, app, cx) {
         return response;
     }
     // The downloads performance arms (benchmark + deterministic seed) route
@@ -617,6 +623,12 @@ pub(crate) fn dispatch(
         // arms); reaching one here is a routing bug.
         Request::SwipeScroll { .. } | Request::SwipeCancel => {
             unreachable!("sidebar-swipe requests route through dispatch_u2")
+        }
+
+        // Routed by `dispatch_benchmark_swipe` before this match; reaching
+        // one here is a routing bug.
+        Request::BenchmarkSwipeCommit { .. } => {
+            unreachable!("swipe-commit benchmark requests route through dispatch_benchmark_swipe")
         }
 
         // Routed by `dispatch_benchmark` before this match; reaching one here

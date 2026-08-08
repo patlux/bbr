@@ -20,7 +20,7 @@ use super::benchmarks::{
     benchmark_keystroke, benchmark_move_tab, benchmark_pin_tab, benchmark_press, benchmark_reopen,
     benchmark_reorder_tab, benchmark_resize_sidebar, benchmark_restore_sidebar, benchmark_select,
     benchmark_sidebar, benchmark_space_switch, benchmark_space_switch_cross_profile,
-    wait_browser_change, wait_title,
+    benchmark_swipe_commit, wait_browser_change, wait_title,
 };
 use super::drive::u2::{drive_u2_sidebar, strip_presence};
 use super::find_drive::drive_find_scenarios;
@@ -650,6 +650,50 @@ fn drive_matrix_inner(
             operation += 1;
         }
 
+        // §11.3 swipe commit through the real production gesture path (task
+        // packet `space-footer-strip-appearance-ui`, `swipe_commit`
+        // performance layer): the app drives Started/Moved wheel updates plus
+        // a zero-delta Ended through the exact handler the sidebar's
+        // `on_scroll_wheel` listener calls, and the ended release resolves
+        // into exactly one existing `activate_space` commit of the adjacent
+        // persistent space — never a direct activation and never a
+        // benchmark-only state machine. The loop alternates directions
+        // between the two adjacent default-profile spaces (`default_space` ↔
+        // `benchmark_space`, the pair the space-switch block seeded), so
+        // every sample starts from the previous destination and performs a
+        // real adjacent commit — boundary/no-op gestures are rejected in the
+        // app (benchmark_noop), and the driver asserts the exact persistent
+        // destination selected / source deselected, the Idle machine phase,
+        // the unchanged warm-session count, and the stable view identities.
+        // The cross-profile loop above left the app on `default_space`, so
+        // the even samples start from it (Next) and the odd samples return
+        // (Prev), each a genuine same-profile commit with no hint.
+        let mut swipe_commit_samples = Vec::with_capacity(config.interaction_samples);
+        for sample in 0..config.interaction_samples {
+            let (source, destination, expected) = if sample % 2 == 0 {
+                (default_space, benchmark_space, benchmark_space_view)
+            } else {
+                (benchmark_space, default_space, default_space_view)
+            };
+            let measured = benchmark_swipe_commit(
+                client,
+                &mut since,
+                operation,
+                source,
+                destination,
+                expected,
+                sessions_cross,
+            );
+            swipe_commit_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("swipe_commit".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+        }
+
         // Tab organization through the production command paths: the pin
         // toggle (`Cmd-Shift-P`), region-bounded reorder (`Cmd-Shift-↑/↓`),
         // and moves between spaces (staged `Cmd-Shift-M` + Enter). The active
@@ -1207,6 +1251,7 @@ fn drive_matrix_inner(
             "space_switch_cross_profile".to_string(),
             cross_space_samples,
         );
+        raw.insert("swipe_commit".to_string(), swipe_commit_samples);
         raw.insert("tab_pin".to_string(), pin_samples);
         raw.insert("tab_reorder".to_string(), reorder_samples);
         raw.insert("tab_hover".to_string(), hover_samples);

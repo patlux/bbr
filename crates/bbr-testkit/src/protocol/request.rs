@@ -303,6 +303,20 @@ pub enum Request {
         operation_id: BenchmarkOperationId,
         space: TestSpaceId,
     },
+    /// Measure a §11.3 sidebar swipe commit through the production gesture
+    /// path: the app drives real `Started`/`Moved` wheel updates plus a
+    /// zero-delta `TouchPhase::Ended` through the exact handler the sidebar
+    /// `on_scroll_wheel` listener calls, and the ended release resolves into
+    /// exactly one existing `activate_space` commit of the adjacent
+    /// persistent `destination` (never a direct activation call, never a
+    /// benchmark-only state machine). The sample commits only when the
+    /// destination space, its warm selected view, the Idle machine phase,
+    /// and the unchanged session count are presented — same warm class as
+    /// [`Self::BenchmarkActivateSpace`], no session recreation.
+    BenchmarkSwipeCommit {
+        operation_id: BenchmarkOperationId,
+        destination: TestSpaceId,
+    },
     /// Activate a visible tab row through the pointer path and measure until
     /// the correct native view is presented with chrome focus preserved.
     BenchmarkClickTab {
