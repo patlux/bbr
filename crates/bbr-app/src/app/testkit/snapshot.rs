@@ -35,11 +35,16 @@ impl BbrApp {
         let drag_source = self.tab_drag.source();
         let rows = self.row_visuals(&browser.tabs, drag_source);
         let drag_slot = self.tab_drag.tab_slot();
-        let drag_space = self
-            .tab_drag
-            .space_target()
-            .map(|space| bbr_testkit::protocol::TestSpaceId(space.0));
-        let budget = crate::shell::space_title_budget_chars(&theme);
+        let space_chips: Vec<bbr_testkit::protocol::SpaceChipSnapshot> = self
+            .space_chip_visuals()
+            .into_iter()
+            .map(|chip| bbr_testkit::protocol::SpaceChipSnapshot {
+                space: bbr_testkit::protocol::TestSpaceId(chip.space.0),
+                title: chip.title,
+                identity: chip.identity,
+                selected: chip.selected,
+            })
+            .collect();
         let window_width = f32::from(window.bounds().size.width);
         let window_height = f32::from(window.bounds().size.height);
         let sidebar_width = if self.sidebar_visible {
@@ -99,7 +104,6 @@ impl BbrApp {
             &rows,
             window,
             sidebar_width,
-            &budget,
             &favorite_tiles,
             &folder_rows,
             &folder_members,
@@ -218,26 +222,8 @@ impl BbrApp {
             command_profile_hint: self.command_profile_hint.clone(),
             drag_source,
             drag_slot,
-            drag_space,
             drag_valid: self.tab_drag.valid(),
-            space_states: crate::shell::space_states(
-                &browser,
-                drag_space.map(|s| bbr_browser::SpaceId(s.0)),
-            )
-            .into_iter()
-            .map(|state| match state {
-                crate::components::SpaceVisualState::Default => {
-                    bbr_testkit::protocol::SpaceVisualState::Default
-                }
-                crate::components::SpaceVisualState::Selected => {
-                    bbr_testkit::protocol::SpaceVisualState::Selected
-                }
-                crate::components::SpaceVisualState::DragTarget => {
-                    bbr_testkit::protocol::SpaceVisualState::DragTarget
-                }
-            })
-            .collect(),
-            space_titles: crate::shell::space_titles(&browser, budget),
+            space_chips,
             visible_ids: crate::shell::snapshot::visible_ids_u2(
                 &browser,
                 self.chrome_focused(window),
@@ -253,7 +239,6 @@ impl BbrApp {
                 self.dense_window.get(),
                 pane_layout,
                 &crate::shell::snapshot::U2IdsInput {
-                    spaces_visible: self.u2.spaces_visible,
                     favorites: &organization.favorites,
                     folders: &organization.folders,
                     expanded: self.u2.folder_presentation.clone(),
@@ -317,7 +302,6 @@ impl BbrApp {
             },
             context_menu: self.context_menu_snapshot(),
             auth: self.auth_snapshot_protocol(),
-            spaces_visible: self.u2.spaces_visible,
             plus_menu_open: self.u2.plus_menu.open,
             plus_menu_selection: self.u2.plus_menu.selection,
             favorites: favorite_tiles
@@ -650,10 +634,10 @@ impl BbrApp {
     /// The typed semantic tree of the current render (DESIGN.md §15 /
     /// accessibility track). Mirrors the shell: only rows the render
     /// actually built (the pinned block + the bounded regular window), the
-    /// space rows grouped as rendered (gated by the §11.4 spaces toggle),
-    /// the U2 surfaces (footer, favorites grid, folders, plus menu), and
-    /// the content-pane branch. The focus state comes from GPUI's real
-    /// focus tree.
+    /// strip chips as rendered (the permanent §11.3 footer strip), the U2
+    /// surfaces (footer, favorites grid, folders, plus menu), and the
+    /// content-pane branch. The focus state comes from GPUI's real focus
+    /// tree.
     #[allow(clippy::too_many_arguments)]
     fn semantic_snapshot(
         &self,
@@ -661,7 +645,6 @@ impl BbrApp {
         rows: &[crate::components::RowVisuals],
         window: &Window,
         sidebar_width: f32,
-        budget: &usize,
         favorite_tiles: &[crate::components::FavoriteTileSpec],
         folder_rows: &[crate::components::FolderRowSpec],
         folder_members: &[crate::components::FolderMemberVisual],
@@ -681,11 +664,6 @@ impl BbrApp {
             .into_iter()
             .filter_map(|index| rows.get(index).cloned())
             .collect();
-        let space_rows: Vec<crate::components::SpaceRowVisuals> =
-            crate::shell::space_groups(browser, *budget)
-                .into_iter()
-                .flat_map(|group| group.rows.into_iter())
-                .collect();
         // The content branch mirrors the render exactly: the §11.8-style
         // error surface (task packet `error-surface-contract`) wins over
         // the native slot, the crash panel wins over the empty pane.
@@ -761,8 +739,7 @@ impl BbrApp {
             divider_label: crate::sidebar::SIDEBAR_DIVIDER_LABEL.to_string(),
             command_surface: self.command_surface,
             rows: &rendered_rows,
-            space_rows: &space_rows,
-            spaces_visible: self.u2.spaces_visible,
+            space_chips: &self.space_chip_visuals(),
             favorites: favorite_tiles,
             folder_rows,
             folder_members,

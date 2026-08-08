@@ -39,13 +39,6 @@ pub enum FooterControl {
 }
 
 impl FooterControl {
-    /// The two §11.4 fixed footer controls in order (the strip sits between
-    /// them as the flex region).
-    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // semantic footer node
-    pub fn all() -> [FooterControl; 2] {
-        [FooterControl::Downloads, FooterControl::Plus]
-    }
-
     /// The stable §15 id.
     pub fn id(self) -> &'static str {
         match self {
@@ -68,16 +61,6 @@ impl FooterControl {
         match self {
             FooterControl::Downloads => Icon::Downloads,
             FooterControl::Plus => Icon::Plus,
-        }
-    }
-
-    /// The §7 text alternative exposed as the semantic name (the plus
-    /// control's label is its glyph, so it needs an explicit name).
-    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // §15 semantic seam
-    pub fn semantic_name(self) -> &'static str {
-        match self {
-            FooterControl::Downloads => "Downloads",
-            FooterControl::Plus => FOOTER_PLUS_NAME,
         }
     }
 }
@@ -221,7 +204,7 @@ mod tests {
         assert_eq!(FooterControl::Plus.glyph(), Icon::Plus);
         assert_eq!(FooterControl::Downloads.glyph(), Icon::Downloads);
         // The glyph-only plus control keeps a non-empty text alternative.
-        assert!(!FooterControl::Plus.semantic_name().is_empty());
+        assert_eq!(FOOTER_PLUS_NAME, "More actions");
     }
 
     #[test]

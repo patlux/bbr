@@ -1,8 +1,9 @@
-//! U2 sidebar behavior (DESIGN.md §11.4/§11.10/§11.11): the footer
-//! controls, the spaces-region toggle, the plus context menu (keyboard
-//! selection, Escape/outside-press dismissal, action dispatch through the
-//! L5 organization commands), the favorites grid activation, and the folders
-//! disclosure/list behavior.
+//! U2 sidebar behavior (DESIGN.md §11.3/§11.4/§11.10/§11.11): the footer
+//! controls, the plus context menu (keyboard selection, Escape/outside-press
+//! dismissal, action dispatch through the L5 organization commands), the
+//! favorites grid activation, and the folders disclosure/list behavior.
+//! The permanent §11.3 space strip lives in `app::spaces`; there is no
+//! revealable spaces region or toggle state.
 //!
 //! The render surfaces live in `app::u2_surface` (this module owns the app
 //! mutations); the rail composition in `app::sidebar_view` wires the
@@ -28,7 +29,6 @@ pub const PLUS_NEW_FOLDER_TITLE: &str = "New Folder";
 pub(super) struct U2State {
     pub plus_menu_handle: FocusHandle,
     pub folders_handle: FocusHandle,
-    pub spaces_visible: bool,
     pub plus_menu: crate::components::menu::PlusMenuState,
     pub folder_presentation: crate::components::folders::FolderPresentation,
     pub folder_focus: usize,
@@ -40,7 +40,6 @@ impl U2State {
         Self {
             plus_menu_handle: cx.focus_handle(),
             folders_handle: cx.focus_handle(),
-            spaces_visible: false,
             plus_menu: crate::components::menu::PlusMenuState::default(),
             folder_presentation: crate::components::folders::FolderPresentation::default(),
             folder_focus: 0,
@@ -50,21 +49,6 @@ impl U2State {
 }
 
 impl BbrApp {
-    /// §11.4 footer `[Spaces]` control: reveal/hide the §11.3 space rows
-    /// under the command field. Toggling snaps (`dur:instant`); a second
-    /// activation hides it (§11.4). The compact default (hidden) and the
-    /// §11.4 Escape-hide land together with the migrated spaces suites.
-    ///
-    /// The permanent strip replaces the footer toggle in the rendered
-    /// composition; this legacy wire method is kept only for the testkit
-    /// dispatch seam until the revealed-list migration removes it.
-    #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
-    pub fn toggle_spaces_region(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let _ = window;
-        self.u2.spaces_visible = !self.u2.spaces_visible;
-        cx.notify();
-    }
-
     /// §11.4 footer `[Downloads]` control: toggles the §11.12 anchored
     /// downloads panel (pointer or keyboard activation; a second activation
     /// dismisses it). The panel is the Phase-8 surface; the controller and

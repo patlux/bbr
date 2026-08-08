@@ -1,16 +1,14 @@
-//! U2 harness helpers (DESIGN.md §11.4 compact rail): the fixed short
-//! `/tmp` harness root and gateway socket path (macOS `sockaddr_un.sun_path`
-//! is 104 bytes; `$TMPDIR` alone is 49+ bytes on standard macOS and grows
-//! further under direnv), the `[Spaces]`-region reveal driving the same
-//! production pointer path the migrated suites use, and the SUN_LEN
-//! regression test guarding the socket bound. Split from `super` so the
-//! shared module stays under the ~500-line budget.
+//! U2 harness helpers (DESIGN.md §11.3/§11.4): the fixed short `/tmp`
+//! harness root and gateway socket path (macOS `sockaddr_un.sun_path` is
+//! 104 bytes; `$TMPDIR` alone is 49+ bytes on standard macOS and grows
+//! further under direnv), the always-present §11.3 space strip verification
+//! driving the same production snapshot the migrated suites use, and the
+//! SUN_LEN regression test guarding the socket bound. Split from `super` so
+//! the shared module stays under the ~500-line budget.
 
 use std::path::PathBuf;
 
 use bbr_testkit::Client;
-
-use super::dsl;
 
 /// macOS `sockaddr_un.sun_path` is 104 bytes; the default `$TMPDIR`
 /// (`/var/folders/…/T/`) alone is 49 bytes and can grow further under
@@ -37,22 +35,21 @@ pub fn harness_socket_path(root_tag: &str, pid: u32) -> PathBuf {
         .join("bbr-test.sock")
 }
 
-/// §11.4 compact rail: reveal the §11.3 spaces region through the footer
-/// `[Spaces]` control (the production pointer path). The spaces region hides
-/// its rows by default; the spaces suites drive this before asserting space
-/// rows or clicking them.
+/// §11.3/§11.4: the permanent space strip is always part of the rail — no
+/// reveal step exists (the legacy `[Spaces]` toggle was removed). The
+/// suites drive a snapshot and assert the always-present strip ids through
+/// this seam so the migration keeps one assertion point.
 pub fn reveal_spaces_region(client: &mut Client) -> bbr_testkit::protocol::Snapshot {
     client
-        .send_ok(&dsl::click_footer_spaces())
-        .expect("reveal spaces region");
-    client
         .send_ok(&bbr_testkit::Request::FlushFrame)
-        .expect("flush after reveal");
-    let snapshot = client.snapshot().expect("spaces region snapshot");
-    assert!(snapshot.spaces_visible, "spaces region revealed");
+        .expect("flush frame");
+    let snapshot = client.snapshot().expect("spaces strip snapshot");
     assert!(
-        snapshot.visible_ids.iter().any(|id| id == "bbr-space-list"),
-        "revealed region renders the space list"
+        snapshot
+            .visible_ids
+            .iter()
+            .any(|id| id == "bbr-space-strip"),
+        "the permanent space strip always renders"
     );
     snapshot
 }

@@ -25,17 +25,13 @@ pub(crate) fn dispatch_u2(
     let response = match req {
         // §11.4 footer controls through the production pointer paths: the
         // exact app methods the footer row's mouse-down listeners call.
-        // `[Spaces]` toggles the §11.3 region, `[+]` marks its press inside
-        // (like the render listener) so the root outside-press handler never
-        // dismisses the freshly opened menu.
+        // There is no `[Spaces]` toggle — the §11.3 space strip is always
+        // part of the rail and space activation routes through `ClickSpace`
+        // (the chip pointer path). `[+]` marks its press inside (like the
+        // render listener) so the root outside-press handler never dismisses
+        // the freshly opened menu.
         Request::ClickFooterDownloads => with_app(window, app, cx, |view, window, cx| {
             view.activate_downloads(window, cx);
-            Response::Ok
-        })
-        .unwrap_or_else(err_response),
-
-        Request::ClickFooterSpaces => with_app(window, app, cx, |view, window, cx| {
-            view.toggle_spaces_region(window, cx);
             Response::Ok
         })
         .unwrap_or_else(err_response),

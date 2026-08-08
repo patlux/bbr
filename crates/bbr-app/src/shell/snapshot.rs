@@ -51,15 +51,15 @@ pub struct TestSnapshot {
     /// The dragged tab row's active-space index (§10.9). `None` when no drag
     /// is in flight; the dragged row renders `dragging`.
     pub drag_source: Option<usize>,
-    /// The current drag target: the tab insertion slot or the targeted
-    /// space's stable id, plus the drop's legality.
+    /// The current drag target: the tab insertion slot (within the source
+    /// region) or the §11.10 favorites grid.
     pub drag_slot: Option<usize>,
-    pub drag_space: Option<bbr_testkit::protocol::TestSpaceId>,
     pub drag_valid: bool,
-    /// §11.3 space states in render order (selected for the active space).
-    pub space_states: Vec<bbr_testkit::protocol::SpaceVisualState>,
-    /// §11.3 space row titles in render order, after §4 truncation.
-    pub space_titles: Vec<String>,
+    /// §11.3 permanent space strip: one chip per space in canonical display
+    /// order (the vector order is display order; the chip/identity ids
+    /// derive from the persistent `space` id). The strip is always part of
+    /// the rail; `selected` mirrors the active space exactly.
+    pub space_chips: Vec<bbr_testkit::protocol::SpaceChipSnapshot>,
     pub visible_ids: Vec<String>,
     /// The typed semantic tree of the current render (DESIGN.md §15 /
     /// accessibility track): roles, names, values, enabled/selected/focused
@@ -153,8 +153,6 @@ pub struct TestSnapshot {
     /// outcome, and masked edit flags. By construction no credential can
     /// appear in any wire shape.
     pub auth: bbr_testkit::protocol::AuthSnapshot,
-    /// Whether the §11.3 spaces region is revealed under the command field.
-    pub spaces_visible: bool,
     /// Whether the §11.4 plus menu is open and its selected item.
     pub plus_menu_open: bool,
     pub plus_menu_selection: usize,

@@ -2,23 +2,46 @@
 //!
 //! Covers DESIGN.md §11.3/§12 over real WKWebViews: complete profile/space
 //! collections with deterministic identity (round-robin hues, chips, stable
-//! `bbr-space-row-<n>` / `bbr-profile-chip-<n>` ids), active/selected space
-//! states, pointer activation through the production listener path,
-//! per-space active-tab restoration with warm WebViewIds and no reloads,
-//! empty-space pane naming, cross-profile view-only switches that keep
-//! cookie/data-store isolation without recreating sessions, and the
-//! recreation policy for tabs that actually cross profiles. The §11.3
-//! cross-context command-field hint lives in `e2e_shell_spaces_hint.rs`;
-//! the keyboard counterpart in `e2e_shell_spaces_keyboard.rs`. No sleeps:
-//! every step synchronizes on semantic events or snapshot state under a
-//! deadline. The shared harness lives in `e2e_common`.
+//! `bbr-space-chip-<persistent-space-id>` / `bbr-space-identity-<persistent-
+//! space-id>` ids), active/selected space states, pointer activation through
+//! the production listener path, per-space active-tab restoration with warm
+//! WebViewIds and no reloads, empty-space pane naming, cross-profile
+//! view-only switches that keep cookie/data-store isolation without
+//! recreating sessions, and the recreation policy for tabs that actually
+//! cross profiles. The §11.3 cross-context command-field hint lives in
+//! `e2e_shell_spaces_hint.rs`; the keyboard counterpart in
+//! `e2e_shell_spaces_keyboard.rs`. No sleeps: every step synchronizes on
+//! semantic events or snapshot state under a deadline. The shared harness
+//! lives in `e2e_common`.
 
 #![cfg(target_os = "macos")]
 
 mod e2e_common;
 
-use bbr_testkit::protocol::{CommandBarMode, SpaceVisualState, TestProfileId};
+use bbr_testkit::protocol::{CommandBarMode, TestProfileId};
 use e2e_common::*;
+
+/// Assert the strip's typed chip evidence: one chip per space in canonical
+/// display order with exactly one selected chip (the active space).
+fn assert_chip_evidence(
+    snapshot: &bbr_testkit::protocol::Snapshot,
+    active: bbr_testkit::protocol::TestSpaceId,
+) {
+    assert_eq!(
+        snapshot.space_chips.iter().filter(|c| c.selected).count(),
+        1,
+        "exactly one chip renders selected"
+    );
+    let active_chip = snapshot
+        .space_chips
+        .iter()
+        .find(|c| c.selected)
+        .expect("selected chip");
+    assert_eq!(
+        active_chip.space, active,
+        "the selected chip is exactly the active space"
+    );
+}
 
 /// Pointer activation of the visible space surface: complete collections with
 /// identity, per-space active-tab restoration (warm sessions, no reloads),
@@ -59,13 +82,9 @@ fn pointer_switches_spaces_with_identity_and_warm_sessions() {
         let default_space = initial.active_space;
         let default_profile = initial.active_profile;
 
-        // §11.4 compact rail: the footer `[Spaces]` control reveals the
-        // §11.3 space rows; drive it before asserting any space-row id or
-        // clicking a row. The region hides its rows by default.
-        assert!(
-            !initial.spaces_visible,
-            "compact rail starts with the spaces region hidden"
-        );
+        // §11.3/§11.4: the permanent space strip is always part of the rail
+        // — no reveal step exists. The strip seam verifies the always-present
+        // chip surface before the identity assertions.
         let revealed = reveal_spaces_region(&mut client);
 
         // Complete collections at launch: one profile (Default, cobalt — the
@@ -87,26 +106,31 @@ fn pointer_switches_spaces_with_identity_and_warm_sessions() {
         assert_eq!(revealed.spaces[0].active_view, Some(first_view));
         assert_eq!(revealed.active_profile_title.as_deref(), Some("Default"));
         assert_eq!(revealed.active_profile_hue.as_deref(), Some("cobalt"));
-        assert_eq!(revealed.space_states, vec![SpaceVisualState::Selected]);
-        assert_eq!(revealed.space_titles, vec!["Default"]);
-        // §11.3/§12/§15 ids for the space surface.
-        assert_ids(
-            &revealed,
-            &[
-                "bbr-space-list",
-                "bbr-space-new",
-                "bbr-space-row-0",
-                "bbr-space-title-0",
-                "bbr-space-count-0",
-                "bbr-profile-chip-0",
-            ],
+        assert_eq!(
+            revealed.space_chips.len(),
+            1,
+            "one chip per space in the permanent strip"
         );
+        assert_eq!(revealed.space_chips[0].space, default_space);
+        assert_eq!(revealed.space_chips[0].title, "Default");
+        assert!(revealed.space_chips[0].selected);
+        assert_chip_evidence(&revealed, default_space);
+        // §11.3/§12/§15 ids for the permanent strip (chip + identity ids
+        // derive from the persistent space id).
+        assert_ids(&revealed, &["bbr-space-strip"]);
         assert!(
-            !initial
+            revealed
                 .visible_ids
                 .iter()
-                .any(|id| id == "bbr-space-list" || id.starts_with("bbr-space-row")),
-            "hidden region renders no space rows before the reveal"
+                .any(|id| id == "bbr-space-chip-1"),
+            "chip id for the launch space"
+        );
+        assert!(
+            revealed
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-space-identity-1"),
+            "identity id for the launch space"
         );
 
         // A second space in the same profile: grouped under Default's group
@@ -133,13 +157,21 @@ fn pointer_switches_spaces_with_identity_and_warm_sessions() {
         assert_eq!(two.spaces[1].tab_count, 0);
         assert_eq!(two.spaces[1].active_tab, None);
         assert_eq!(
-            two.space_states,
-            vec![SpaceVisualState::Selected, SpaceVisualState::Default]
+            two.space_chips.len(),
+            2,
+            "one chip per space in canonical display order"
         );
-        assert_eq!(two.space_titles, vec!["Default", "Reading"]);
-        assert_ids(
-            &two,
-            &["bbr-space-row-1", "bbr-space-title-1", "bbr-space-count-1"],
+        assert_eq!(two.space_chips[0].space, default_space);
+        assert!(two.space_chips[0].selected);
+        assert_eq!(two.space_chips[1].space, reading);
+        assert_eq!(two.space_chips[1].title, "Reading");
+        assert!(!two.space_chips[1].selected);
+        assert_chip_evidence(&two, default_space);
+        assert!(
+            two.visible_ids
+                .iter()
+                .any(|id| id == &format!("bbr-space-chip-{}", reading.0)),
+            "reading chip id derives from its persistent space id"
         );
         assert_eq!(
             two.profiles[0].hue, "cobalt",
@@ -167,10 +199,7 @@ fn pointer_switches_spaces_with_identity_and_warm_sessions() {
         assert_eq!(activated.active_web_view, None, "empty space has no pane");
         assert_eq!(activated.engine_sessions, 1, "default tab stays warm");
         assert_eq!(activated.active_profile_title.as_deref(), Some("Default"));
-        assert_eq!(
-            activated.space_states,
-            vec![SpaceVisualState::Default, SpaceVisualState::Selected]
-        );
+        assert_chip_evidence(&activated, reading);
         assert_ids(
             &activated,
             &["bbr-empty-new-tab", "bbr-empty-new-tab-button"],
@@ -340,16 +369,7 @@ fn pointer_switches_spaces_with_identity_and_warm_sessions() {
             "view-only switch keeps all sessions"
         );
         assert_eq!(private_view.active_web_view, None);
-        assert_eq!(
-            private_view.space_states,
-            vec![
-                SpaceVisualState::Default,
-                SpaceVisualState::Default,
-                SpaceVisualState::Selected,
-            ],
-            "one selected row per group, in render order"
-        );
-        assert_ids(&private_view, &["bbr-profile-chip-1", "bbr-empty-new-tab"]);
+        assert_chip_evidence(&private_view, private_space);
         assert_eq!(private_view.spaces[2].tab_count, 0);
 
         // Private store cookie state: beta lives only in the private store.

@@ -194,13 +194,13 @@ fn visible_ids_mirror_the_render_for_each_pane_branch() {
 }
 
 #[test]
-fn space_row_chips_key_to_the_owning_profile_index() {
-    // DESIGN.md §12/§15: the chip id follows the profile's creation-order
-    // index, never the space index. In `space_snapshot` profile 0 owns
-    // spaces 0 and 2 while profile 1 owns space 1, so space indices and
-    // chip ids diverge. Regression: the render previously keyed the chip
-    // to the space index, attaching `bbr-profile-chip-2` to a row the
-    // contract identifies as `bbr-profile-chip-0`.
+fn strip_chip_ids_derive_from_the_persistent_space_id_not_the_index() {
+    // DESIGN.md §11.3/§15: the strip chip/identity ids follow the persistent
+    // `SpaceId`, never the creation-order index or render position. In
+    // `space_snapshot` the spaces render as Default (index 0, id 2),
+    // Reading (index 2, id 5), Private (index 1, id 4) — display order and
+    // persistent ids diverge, so id-by-index would attach `bbr-space-chip-0`
+    // to a row the contract identifies as `bbr-space-chip-2`.
     let browser = space_snapshot();
     let ids = visible_ids(
         &browser,
@@ -217,33 +217,31 @@ fn space_row_chips_key_to_the_owning_profile_index() {
         dense_all(0),
         None,
     );
-    let chips = crate::shell::space::space_groups(&browser, usize::MAX)
-        .into_iter()
-        .flat_map(|group| group.rows)
-        .map(|row| crate::components::profile_chip_id(row.profile_index).to_string())
-        .collect::<Vec<_>>();
-    // Render order: Default's spaces (indices 0, 2), then Private's space
-    // (index 1). Both Default rows attach the same profile-keyed chip.
-    assert_eq!(
-        chips,
-        vec![
-            "bbr-profile-chip-0".to_string(),
-            "bbr-profile-chip-0".to_string(),
-            "bbr-profile-chip-1".to_string(),
-        ]
-    );
-    for chip in &chips {
+    // Render order (grouped): Default id 2, Reading id 5, Private id 4.
+    let expected = [
+        "bbr-space-chip-2",
+        "bbr-space-identity-2",
+        "bbr-space-chip-5",
+        "bbr-space-identity-5",
+        "bbr-space-chip-4",
+        "bbr-space-identity-4",
+    ];
+    for id in expected {
+        assert!(ids.contains(&id.to_string()), "missing {id}: {ids:?}");
+    }
+    // The divergent creation-order index never leaks into a chip id: there
+    // is no `bbr-space-chip-0` (space index 0 is persistent id 2) and no
+    // index-keyed identity.
+    for stray in ["bbr-space-chip-0", "bbr-space-chip-1", "bbr-space-chip-3"] {
         assert!(
-            ids.contains(chip),
-            "rendered chip {chip} missing from the semantic snapshot"
+            !ids.iter().any(|id| id == stray),
+            "index-keyed chip id {stray} must not render"
         );
     }
-    // The divergent space index 2 must never leak into a chip id.
-    assert!(!ids.iter().any(|id| id == "bbr-profile-chip-2"));
 }
 
 #[test]
-fn visible_ids_include_space_rows_and_profile_chips() {
+fn visible_ids_include_the_strip_chips_and_identity_nodes() {
     let browser = space_snapshot();
     let ids = visible_ids(
         &browser,
@@ -261,22 +259,21 @@ fn visible_ids_include_space_rows_and_profile_chips() {
         None,
     );
     for required in [
-        "bbr-space-list",
-        "bbr-space-new",
-        "bbr-space-row-0",
-        "bbr-space-row-1",
-        "bbr-space-row-2",
-        "bbr-space-title-0",
-        "bbr-space-count-1",
-        "bbr-profile-chip-0",
-        "bbr-profile-chip-1",
+        "bbr-space-strip",
+        "bbr-space-chip-2",
+        "bbr-space-chip-4",
+        "bbr-space-chip-5",
+        "bbr-space-identity-2",
+        "bbr-space-identity-4",
+        "bbr-space-identity-5",
     ] {
         assert!(
             ids.contains(&required.to_string()),
             "missing {required}: {ids:?}"
         );
     }
-    // Sidebar hidden: space rows and chips disappear with the rail.
+    // Sidebar hidden: the strip's chips and identity nodes disappear with
+    // the rail.
     let hidden = visible_ids(
         &browser,
         false,

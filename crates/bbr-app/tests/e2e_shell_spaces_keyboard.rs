@@ -60,9 +60,9 @@ fn keyboard_selects_and_creates_spaces_and_moves_tabs_between_spaces() {
                 .expect("keystroke")
         };
 
-        // §11.4 compact rail: reveal the §11.3 space rows through the footer
-        // `[Spaces]` control first (the rows hide by default; the keyboard
-        // traversal and the row ids require the revealed region).
+        // §11.3/§11.4: the permanent space strip is always part of the rail
+        // (the strip presence seam verifies it; there is no reveal step for
+        // the keyboard traversal).
         reveal_spaces_region(&mut client);
 
         // Keyboard create: Cmd-Shift-N stages a space name in the command
@@ -97,7 +97,14 @@ fn keyboard_selects_and_creates_spaces_and_moves_tabs_between_spaces() {
         assert!(created.command_bar_text.is_empty());
         assert!(created.chrome_focused, "fresh space keeps chrome focus");
         assert_eq!(created.active_web_view, None);
-        assert_ids(&created, &["bbr-empty-new-tab", "bbr-space-row-1"]);
+        assert_ids(&created, &["bbr-empty-new-tab"]);
+        assert!(
+            created
+                .visible_ids
+                .iter()
+                .any(|id| id == &format!("bbr-space-chip-{}", reading.0)),
+            "created space chip id derives from its persistent space id"
+        );
 
         // Escape cancels a staged name: nothing is created, the previous
         // command-bar mode and focus domain are restored.
@@ -328,9 +335,9 @@ fn keyboard_cross_profile_traversal_sets_and_clears_the_profile_hint() {
         let default_space = initial.active_space;
         let default_profile = initial.active_profile;
 
-        // §11.4 compact rail: reveal the §11.3 space rows through the footer
-        // `[Spaces]` control before the pointer-focus and `↑`/`↓` traversal
-        // (the rows hide by default).
+        // §11.3/§11.4: the permanent space strip is always part of the rail
+        // (the strip presence seam verifies it before the pointer-focus and
+        // `↑`/`↓` traversal).
         reveal_spaces_region(&mut client);
 
         let keystroke = |client: &mut Client, key: &str| {

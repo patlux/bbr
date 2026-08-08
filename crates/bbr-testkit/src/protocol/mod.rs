@@ -37,8 +37,9 @@ pub use snapshot::{
     DownloadsPanelSnapshot, ErrorSurfaceCategory, ErrorSurfaceSnapshot, FavoriteTileSnapshot,
     FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts, PaneLayoutSnapshot,
     PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, RestoreDisposition, SemanticNode,
-    SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, StoreDiscardReasonSnapshot,
-    StoreLoadSnapshot, StoreSnapshot, TabSnapshot, TabVisualState, WebContentProbe, ZoomSnapshot,
+    SemanticRole, Snapshot, SpaceChipSnapshot, SpaceSnapshot, SpaceVisualState,
+    StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, TabSnapshot, TabVisualState,
+    WebContentProbe, ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.
@@ -288,8 +289,7 @@ mod tests {
                 "chrome_focused":false,"shell_modes":{"theme":"dark","contrast":"standard",
                 "density":"normal"},"tab_states":[],"row_titles":[],"pinned_count":0,
                 "command_bar_hint":null,"command_profile_hint":null,"drag_source":null,
-                "drag_slot":null,"drag_space":null,"drag_valid":false,"space_states":[],
-                "space_titles":[],"visible_ids":["bbr-root"],"semantics":[],
+                "drag_slot":null,"drag_valid":false,"space_chips":[],"visible_ids":["bbr-root"],"semantics":[],
                 "command_bar_mode":"Inactive","command_bar_text":"",
                 "sidebar_visible":true,"sidebar_width":260.0,"sidebar_min":200.0,
                 "sidebar_default":260.0,"sidebar_max":360.0,"content_min":64.0,
@@ -362,8 +362,7 @@ mod tests {
                 "chrome_focused":false,"shell_modes":{"theme":"dark","contrast":"standard",
                 "density":"normal"},"tab_states":[],"row_titles":[],"pinned_count":0,
                 "command_bar_hint":null,"command_profile_hint":null,"drag_source":null,
-                "drag_slot":null,"drag_space":null,"drag_valid":false,"space_states":[],
-                "space_titles":[],"visible_ids":["bbr-root"],"semantics":[],
+                "drag_slot":null,"drag_valid":false,"space_chips":[],"visible_ids":["bbr-root"],"semantics":[],
                 "command_bar_mode":"Inactive","command_bar_text":"",
                 "command_surface":"overlay",
                 "sidebar_visible":true,"sidebar_width":260.0,"sidebar_min":200.0,
@@ -497,8 +496,7 @@ mod tests {
             "chrome_focused":false,"shell_modes":{"theme":"dark","contrast":"standard",
             "density":"normal"},"tab_states":[],"row_titles":[],"pinned_count":0,
             "command_bar_hint":null,"command_profile_hint":null,"drag_source":null,
-            "drag_slot":null,"drag_space":null,"drag_valid":false,"space_states":[],
-            "space_titles":[],"visible_ids":["bbr-root"],"semantics":[],
+            "drag_slot":null,"drag_valid":false,"space_chips":[],"visible_ids":["bbr-root"],"semantics":[],
             "command_bar_mode":"Inactive","command_bar_text":"",
             "sidebar_visible":true,"sidebar_width":260.0,"sidebar_min":200.0,
             "sidebar_default":260.0,"sidebar_max":360.0,"content_min":64.0,
@@ -508,5 +506,40 @@ mod tests {
         )
         .unwrap();
         assert_eq!(snapshot.portal, PortalSnapshot::default());
+    }
+
+    /// The §11.3 strip chip wire shape stays plain and round-trips: the
+    /// persistent space id is the chip identity, `selected` is the exact
+    /// active-space evidence, and display order is the vector order (the
+    /// ids derive from `space`, never the position).
+    #[test]
+    fn space_chip_snapshot_round_trips_with_exact_wire_shape() {
+        use crate::protocol::TestSpaceId;
+        let chips = vec![
+            SpaceChipSnapshot {
+                space: TestSpaceId(2),
+                title: "Default".into(),
+                identity: "code".into(),
+                selected: true,
+            },
+            SpaceChipSnapshot {
+                space: TestSpaceId(5),
+                title: "Reading".into(),
+                identity: "book".into(),
+                selected: false,
+            },
+        ];
+        let json = serde_json::to_value(&chips).unwrap();
+        assert_eq!(
+            json,
+            json!([
+                {"space":2,"title":"Default","identity":"code","selected":true},
+                {"space":5,"title":"Reading","identity":"book","selected":false}
+            ])
+        );
+        let decoded: Vec<SpaceChipSnapshot> = serde_json::from_value(json).unwrap();
+        assert_eq!(decoded, chips);
+        // Exactly one chip carries the active-space selection.
+        assert_eq!(chips.iter().filter(|c| c.selected).count(), 1);
     }
 }

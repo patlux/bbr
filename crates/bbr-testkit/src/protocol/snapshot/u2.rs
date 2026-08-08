@@ -1,15 +1,31 @@
-//! U2 sidebar wire parts (DESIGN.md §11.10/§11.11): the favorite destination
-//! tile and the folder row snapshots. Plain data with `serde` derives, kept
-//! here so `snapshot` stays under the ~500-line budget; re-exported through
-//! `super` so callers keep the single `bbr_testkit::protocol::*` path.
+//! U2 sidebar wire parts (DESIGN.md §11.3/§11.10/§11.11): the permanent
+//! space-strip chip snapshot, the favorite destination tile, and the folder
+//! row snapshots. Plain data with `serde` derives, kept here so `snapshot`
+//! stays under the ~500-line budget; re-exported through `super` so callers
+//! keep the single `bbr_testkit::protocol::*` path.
 
 use serde::{Deserialize, Serialize};
 
-/// Serde default for the U2 `Snapshot.spaces_visible` field: the compact
-/// sidebar starts with the spaces region hidden; older clients without the
-/// field deserialize to the same presentation.
-pub(super) fn default_true() -> bool {
-    true
+use crate::protocol::TestSpaceId;
+
+/// One §11.3 identity chip on the wire (DESIGN.md §11.3/§15): the persistent
+/// space identity plus the space/identity strings the strip renders, in the
+/// strip's canonical display order (the vector order is display order; the
+/// `bbr-space-chip-<n>`/`bbr-space-identity-<n>` ids derive from the
+/// persistent `space` id alone — never render position, creation-order
+/// index, or profile index). The strip is always part of the rail, so the
+/// chips expose the exact selected evidence the active space renders.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SpaceChipSnapshot {
+    /// The persistent space identity — the only identity of the chip ids.
+    pub space: TestSpaceId,
+    /// The space title after §4 truncation.
+    pub title: String,
+    /// The validated curated identity in its canonical string form (the
+    /// emoji scalar or the glyph name).
+    pub identity: String,
+    /// Whether this is the active space (the chip renders selected).
+    pub selected: bool,
 }
 
 /// One favorite destination tile on the wire (DESIGN.md §11.10): the

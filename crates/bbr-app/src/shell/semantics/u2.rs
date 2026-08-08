@@ -1,20 +1,26 @@
-//! U2 §15 semantic node builders (DESIGN.md §11.4/§11.10/§11.11): the
-//! footer row, plus menu, favorites grid, and folders list nodes the
-//! semantic-tree composition step folds into `sidebar_node` once the U2
-//! surfaces render. The render currently ships none of these surfaces, so
-//! the builders stay un-wired (and dead-code-allowed) until then; the node
-//! shapes below are the typed §15 contract the §15 tests lock.
+//! U2 §15 semantic node builders (DESIGN.md §11.3/§11.4/§11.10/§11.11):
+//! the footer row with its permanent space strip and identity chips, the
+//! plus menu, favorites grid, and folders list nodes the semantic-tree
+//! composition step folds into `sidebar_node` once the U2 surfaces render.
+//! The node shapes below are the typed §15 contract the §15 tests lock.
 //!
 //! The footer row node carries the two fixed controls (`bbr-downloads` /
-//! `bbr-plus`); the §11.3 space strip sits between them as a flex region
-//! whose chip nodes are a following F2a slice.
+//! `bbr-plus`) with the §11.3 space strip between them: one `bbr-space-strip`
+//! list node with one `bbr-space-chip-<persistent-space-id>` row per chip
+//! (and its `bbr-space-identity-<persistent-space-id>` child) in canonical
+//! display order, `selected` exactly on the active space.
 
 use bbr_testkit::protocol::{SemanticNode, SemanticRole};
 
-/// The §11.4 footer row node: the container plus the two fixed controls
-/// (`bbr-downloads` / `bbr-plus`) with their §7 text alternatives (the
-/// strip chips follow in a later slice).
-pub fn footer_node() -> SemanticNode {
+use super::SemanticInput;
+use crate::components::{space_chip_id, space_identity_id, SpaceChipVisuals};
+
+/// The §11.4 footer row node: the container, the two fixed controls
+/// (`bbr-downloads` / `bbr-plus`) with their §7 text alternatives, and the
+/// permanent §11.3 space strip between them (one chip node per space in
+/// canonical display order; the chip ids derive from the persistent space
+/// id).
+pub fn footer_node(input: &SemanticInput<'_>) -> SemanticNode {
     let mut footer = node(
         crate::components::footer::FOOTER_ID,
         SemanticRole::Footer,
@@ -24,21 +30,74 @@ pub fn footer_node() -> SemanticNode {
         false,
         vec![],
     );
-    footer.children = crate::components::FooterControl::all()
-        .iter()
-        .map(|control| {
-            node(
-                control.id(),
-                SemanticRole::Button,
-                Some(control.semantic_name().into()),
-                None,
-                false,
-                false,
-                vec![],
-            )
-        })
-        .collect();
+    footer.children.push(node(
+        crate::components::footer::FOOTER_DOWNLOADS_ID,
+        SemanticRole::Button,
+        Some("Downloads".into()),
+        None,
+        false,
+        false,
+        vec![],
+    ));
+    footer.children.push(space_strip_node(input));
+    footer.children.push(node(
+        crate::components::footer::FOOTER_PLUS_ID,
+        SemanticRole::Button,
+        Some(crate::components::footer::FOOTER_PLUS_NAME.into()),
+        None,
+        false,
+        false,
+        vec![],
+    ));
     footer
+}
+
+/// The §11.3 permanent strip node: one `bbr-space-strip` list carrying one
+/// `bbr-space-chip-<persistent-space-id>` row per chip in canonical display
+/// order, each with its `bbr-space-identity-<persistent-space-id>` child.
+/// `selected` sits exactly on the active space's chip (and the selected chip
+/// of the focused strip owns `focused`), so the strip's selection evidence
+/// can never drift from the render.
+fn space_strip_node(input: &SemanticInput<'_>) -> SemanticNode {
+    let children: Vec<SemanticNode> = input
+        .space_chips
+        .iter()
+        .map(|chip| space_chip_node(chip, input.focus.spaces))
+        .collect();
+    node(
+        crate::components::footer::FOOTER_STRIP_ID,
+        SemanticRole::List,
+        Some("Spaces".into()),
+        None,
+        false,
+        input.focus.spaces,
+        children,
+    )
+}
+
+/// One §11.3 chip node: the persistent `bbr-space-chip-<SpaceId>` identity
+/// with its `bbr-space-identity-<SpaceId>` child. `selected` mirrors the
+/// chip's active-space evidence; the identity node carries the validated
+/// curated identity string so identity is never color-only.
+fn space_chip_node(chip: &SpaceChipVisuals, strip_focused: bool) -> SemanticNode {
+    SemanticNode {
+        id: space_chip_id(chip.space).to_string(),
+        role: SemanticRole::Row,
+        name: Some(chip.title.clone()),
+        value: None,
+        enabled: true,
+        selected: chip.selected,
+        focused: strip_focused && chip.selected,
+        children: vec![node(
+            space_identity_id(chip.space),
+            SemanticRole::Title,
+            Some(chip.identity.clone()),
+            None,
+            chip.selected,
+            false,
+            vec![],
+        )],
+    }
 }
 
 /// The §11.4 plus menu node while open: the `bbr-plus-menu` surface with

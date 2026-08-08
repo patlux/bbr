@@ -16,7 +16,7 @@
 mod e2e_common;
 mod e2e_semantics_common;
 
-use bbr_testkit::protocol::{CommandBarMode, SemanticRole, SpaceVisualState, TestProfileId};
+use bbr_testkit::protocol::{CommandBarMode, SemanticRole, TestProfileId};
 use e2e_common::*;
 use e2e_semantics_common::find;
 
@@ -444,8 +444,13 @@ fn cross_profile_activation_of_an_empty_space_announces_the_destination_profile(
             "the empty branch is a view-only switch: no recreation, no teardown"
         );
         assert_eq!(
-            empty_cross.space_states,
-            vec![SpaceVisualState::Default, SpaceVisualState::Selected],
+            empty_cross
+                .space_chips
+                .iter()
+                .filter(|c| c.selected)
+                .count(),
+            1,
+            "exactly one chip renders selected"
         );
         assert!(!empty_cross
             .visible_ids

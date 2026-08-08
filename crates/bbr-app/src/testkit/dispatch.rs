@@ -566,7 +566,6 @@ pub(crate) fn dispatch(
 
         // Routed by `dispatch_u2` before this match.
         Request::ClickFooterDownloads
-        | Request::ClickFooterSpaces
         | Request::ClickFooterPlus
         | Request::ClickPlusMenuItem { .. }
         | Request::ToggleFavoriteTab { .. }

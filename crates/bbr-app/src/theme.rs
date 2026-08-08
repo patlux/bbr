@@ -337,10 +337,6 @@ mod tests {
         assert_eq!(Density::Small.density_radius(), Radius.small());
         assert_eq!(Density::Normal.density_radius(), Radius.medium());
         assert_eq!(Density::ExtraLarge.density_radius(), Radius.large());
-        // §8: `density:space-chip` and `density:row` share one surface family.
-        assert_eq!(Density::Small.space_row(), Density::Small.row());
-        assert_eq!(Density::Normal.space_row(), Density::Normal.row());
-        assert_eq!(Density::ExtraLarge.space_row(), Density::ExtraLarge.row());
     }
 
     #[test]

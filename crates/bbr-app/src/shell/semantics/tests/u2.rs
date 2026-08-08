@@ -11,15 +11,23 @@ use super::*;
 // -------------------------------------------------------------------------
 
 #[test]
-fn footer_node_exposes_the_two_fixed_controls_with_text_alternatives() {
-    let footer = super::super::u2::footer_node();
+fn footer_node_exposes_the_fixed_controls_with_the_strip_between_them() {
+    let footer = super::super::u2::footer_node(&input(
+        SemanticFocus {
+            command: false,
+            spaces: false,
+            tabs: false,
+            divider: false,
+            folders: false,
+            plus_menu: false,
+        },
+        &browser(),
+        &[],
+        &[space_chip()],
+    ));
     assert_eq!(footer.id, "bbr-footer");
     assert_eq!(footer.role, SemanticRole::Footer);
-    assert_eq!(
-        footer.children.len(),
-        2,
-        "exactly two fixed footer controls"
-    );
+    assert_eq!(footer.children.len(), 3, "Downloads + space strip + Plus");
     for (id, name) in [("bbr-downloads", "Downloads"), ("bbr-plus", "More actions")] {
         let control = footer
             .children
@@ -29,6 +37,13 @@ fn footer_node_exposes_the_two_fixed_controls_with_text_alternatives() {
         assert_eq!(control.role, SemanticRole::Button);
         assert_eq!(control.name.as_deref(), Some(name));
     }
+    let strip = footer
+        .children
+        .iter()
+        .find(|node| node.id == "bbr-space-strip")
+        .expect("the permanent strip sits between the fixed controls");
+    assert_eq!(strip.role, SemanticRole::List);
+    assert_eq!(strip.children.len(), 1);
 }
 
 #[test]
@@ -259,7 +274,7 @@ fn folder_item_node_exposes_the_nested_row_anatomy() {
 fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
-    let space_rows = [space_row()];
+    let space_chips = [space_chip()];
     let mut input = input(
         SemanticFocus {
             command: false,
@@ -271,7 +286,7 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     );
     // §11.4 U2 surfaces: favorites tiles, an expanded folder with a member,
     // and an open plus menu selection. The derived specs are bound to locals
@@ -309,8 +324,8 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         selection: 0,
     };
     let tree = semantic_tree(&input);
-    // The footer row with exactly the two fixed controls (the strip is a
-    // following slice's semantic node) sits under the sidebar.
+    // The footer row with the two fixed controls plus the permanent space
+    // strip between them (one chip node per space) sits under the sidebar.
     let sidebar = find(&tree, "bbr-sidebar").expect("sidebar");
     let footer = sidebar
         .children
@@ -318,7 +333,15 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         .find(|node| node.id == "bbr-footer")
         .expect("footer under the sidebar");
     assert_eq!(footer.role, SemanticRole::Footer);
-    assert_eq!(footer.children.len(), 2);
+    assert_eq!(footer.children.len(), 3, "Downloads + strip + Plus");
+    let strip = footer
+        .children
+        .iter()
+        .find(|node| node.id == "bbr-space-strip")
+        .expect("strip between the fixed controls");
+    assert_eq!(strip.role, SemanticRole::List);
+    assert_eq!(strip.children.len(), 1, "one chip per space");
+    assert_eq!(strip.children[0].id, "bbr-space-chip-1");
     // The favorites section sits above the tab list.
     let favorites = sidebar
         .children
@@ -359,11 +382,13 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
 }
 
 #[test]
-fn hidden_spaces_region_renders_no_space_nodes() {
+fn the_permanent_strip_always_renders_chip_nodes() {
+    // The strip is the footer's flex region — it renders one chip per space
+    // unconditionally, selected exactly on the active space.
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
-    let space_rows = [space_row()];
-    let mut input = input(
+    let space_chips = [space_chip()];
+    let single = input(
         SemanticFocus {
             command: false,
             spaces: false,
@@ -374,20 +399,43 @@ fn hidden_spaces_region_renders_no_space_nodes() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     );
-    input.spaces_visible = false;
-    let tree = semantic_tree(&input);
-    assert!(
-        find(&tree, "bbr-space-list").is_none(),
-        "hidden space rows render no list node"
+    let tree = semantic_tree(&single);
+    let strip = find(&tree, "bbr-space-strip").expect("strip always renders");
+    assert_eq!(strip.role, SemanticRole::List);
+    assert_eq!(strip.name.as_deref(), Some("Spaces"));
+    let chip = find(&tree, "bbr-space-chip-1").expect("chip always renders");
+    assert!(chip.selected, "the active space's chip renders selected");
+    assert!(find(&tree, "bbr-space-identity-1").is_some());
+    // An unselected chip (a second, inactive space) stays quiet.
+    let quiet = SpaceChipVisuals {
+        space: bbr_browser::SpaceId(2),
+        title: "Reading".into(),
+        identity: "book".into(),
+        selected: false,
+    };
+    let chips = [space_chip(), quiet];
+    let two = input(
+        SemanticFocus {
+            command: false,
+            spaces: false,
+            tabs: false,
+            divider: false,
+            folders: false,
+            plus_menu: false,
+        },
+        &browser,
+        &rows,
+        &chips,
     );
-    assert!(
-        find(&tree, "bbr-space-row-0").is_none(),
-        "hidden space rows render no row node"
+    let tree = semantic_tree(&two);
+    let chip = find(&tree, "bbr-space-chip-1").expect("active chip");
+    assert!(chip.selected);
+    let quiet = find(&tree, "bbr-space-chip-2").expect("inactive chip");
+    assert!(!quiet.selected);
+    assert_eq!(
+        quiet.children[0].id, "bbr-space-identity-2",
+        "identity id derives from the persistent space id"
     );
-    // The favorites region still renders independently of the spaces toggle.
-    input.spaces_visible = true;
-    let tree = semantic_tree(&input);
-    assert!(find(&tree, "bbr-space-list").is_some());
 }

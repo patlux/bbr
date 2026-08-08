@@ -1,7 +1,8 @@
-//! U2 sidebar performance scenarios (DESIGN.md §11.4/§11.10/§11.11) for the
-//! warm interaction matrix: reveal the §11.3 spaces region before the
-//! space-switch samples (their asserted ids render only while revealed), then
-//! drive the plus-menu toggle, the favorites tile add/remove, and the folder
+//! U2 sidebar performance scenarios (DESIGN.md §11.3/§11.4/§11.10/§11.11)
+//! for the warm interaction matrix: the permanent §11.3 space strip is
+//! always part of the rail (its chip ids render unconditionally, so the
+//! space-switch samples assert them without any reveal step), then drive
+//! the plus-menu toggle, the favorites tile add/remove, and the folder
 //! disclosure through the production gateway paths with the in-app probe
 //! guard. Split from `super` so the driving matrix stays under the ~500-line
 //! budget.
@@ -14,23 +15,20 @@ use super::super::benchmarks_u2::{
 };
 use super::super::harness::AppHarness;
 
-/// §11.4 compact rail: the space-switch samples assert the rendered
-/// `bbr-space-row-<n>`/`bbr-profile-chip-<n>` ids (§11.3/§15), which only
-/// render while the footer `[Spaces]` control reveals the spaces region
-/// (hidden by default in the compact rail). Reveal it through the same
-/// production pointer path the migrated E2E suites drive.
+/// §11.3/§11.4: the space-switch samples assert the rendered
+/// `bbr-space-chip-<persistent-space-id>`/`bbr-space-identity-<persistent-
+/// space-id>` ids (§11.3/§15), which the permanent footer strip always
+/// renders (the legacy `[Spaces]` reveal toggle is gone). The seam verifies
+/// the always-present strip before the space benchmarks drive.
 pub(super) fn reveal_spaces_region(client: &mut Client) {
-    client
-        .send_ok(&Request::ClickFooterSpaces)
-        .expect("reveal spaces region before space benchmarks");
-    client
-        .send_ok(&Request::FlushFrame)
-        .expect("flush spaces reveal");
-    let revealed = client.snapshot().expect("spaces region revealed");
-    assert!(revealed.spaces_visible, "spaces region revealed");
+    client.send_ok(&Request::FlushFrame).expect("flush frame");
+    let revealed = client.snapshot().expect("spaces strip snapshot");
     assert!(
-        revealed.visible_ids.iter().any(|id| id == "bbr-space-list"),
-        "revealed region renders the space list"
+        revealed
+            .visible_ids
+            .iter()
+            .any(|id| id == "bbr-space-strip"),
+        "the permanent space strip always renders"
     );
 }
 

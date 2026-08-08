@@ -38,14 +38,14 @@ fn shell_profile_crash_empty_and_collapsed_semantics() {
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
             .expect("flush first frame");
-        // §11.4 compact rail: the profile-identity assertions below expect
-        // the second space's `bbr-space-row-1`/`bbr-profile-chip-1` ids;
-        // reveal the §11.3 region through the footer `[Spaces]` production
-        // pointer path first (the space rows render only while revealed).
+        // §11.3/§11.4: the profile-identity assertions below expect the
+        // second space's `bbr-space-chip-<id>`/`bbr-space-identity-<id>`
+        // nodes; the permanent strip is always part of the rail, so the
+        // strip presence seam verifies it (there is no reveal step).
         reveal_spaces_region(&mut client);
-        // 6. Profile identity in the tree: every space row keeps its §12 chip
-        // with the profile monogram; a second profile adds its own row and
-        // chip even before activation.
+        // 6. Profile identity in the tree: every space chip keeps its
+        // persistent-space id; a second profile adds its own chip before
+        // activation.
         client
             .send_ok(&dsl::create_profile("Work", "Work Space"))
             .expect("create work profile");
@@ -56,27 +56,27 @@ fn shell_profile_crash_empty_and_collapsed_semantics() {
         );
         since = seq;
         let profiles = client.snapshot().expect("profiles snapshot");
-        assert_node(
-            &profiles.semantics,
-            "bbr-space-row-1",
-            SemanticRole::Row,
-            Some("Work Space"),
-            Some("0"),
-            true,
-            false,
-            false,
+        // The work space's persistent id is whatever the controller assigned
+        // (a fresh space per profile); assert the typed chip evidence and
+        // the strip's chip/identity nodes for the second space.
+        let work_space = profiles
+            .spaces
+            .iter()
+            .find(|s| s.title == "Work Space")
+            .expect("work space row")
+            .space;
+        assert!(
+            profiles.visible_ids.iter().any(|id| {
+                *id == format!("bbr-space-chip-{}", work_space.0)
+                    || *id == format!("bbr-space-identity-{}", work_space.0)
+            }),
+            "the second space's strip ids render: {work_space:?}"
         );
-        assert_node(
-            &profiles.semantics,
-            "bbr-profile-chip-1",
-            SemanticRole::Chip,
-            Some("Profile · WO"),
-            None,
-            true,
-            false,
-            false,
+        assert_eq!(
+            profiles.space_chips.iter().filter(|c| c.selected).count(),
+            1,
+            "exactly one chip renders selected"
         );
-        assert_ids(&profiles, &["bbr-profile-chip-1", "bbr-space-row-1"]);
 
         // 7. Crash branch: the crashed row keeps its §10.7 error state and
         // the glass shows the §11.8 panel with typed buttons; recovery

@@ -43,16 +43,14 @@ pub use folders::{
     FolderRowSpec,
 };
 pub use footer::footer_surface;
-#[cfg(feature = "testkit")]
-pub use footer::FooterControl;
 pub use icons::Icon;
 pub use menu::plus_menu_items;
 pub use pane::{crash_panel, empty_space_pane};
 pub use section::section_label;
-#[cfg(feature = "testkit")]
-pub use space::profile_chip_id;
-pub use space::{profile_chip, space_new_row, space_row};
+pub use space::profile_chip;
 pub use space_strip::{space_chip, space_strip, SpaceChipVisuals};
+#[cfg(feature = "testkit")]
+pub use space_strip::{space_chip_id, space_identity_id};
 pub use tab_row::{drag_tick, tab_row};
 
 /// §10 row states the shell renders and E2E asserts. The slice renders the
@@ -105,19 +103,6 @@ pub struct RowVisuals {
     pub reveal_close: bool,
 }
 
-/// The one space-row visual state the shell renders (DESIGN.md §10/§11.3):
-/// the active space is `selected` (accent rail + tint), every other space is
-/// `default`. The states vocabulary matches the tab rows so the rail is the
-/// primary selection cue in both surfaces.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SpaceVisualState {
-    Default,
-    Selected,
-    /// §10.9: a tab drag currently targets this space row (the destination
-    /// profile chip replaces the insertion tick per §12.3).
-    DragTarget,
-}
-
 /// §12 profile chip identity: the 1–2 character monogram plus the stable
 /// round-robin hue the domain assigned to the profile.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -126,21 +111,17 @@ pub struct ProfileChipSpec {
     pub hue: bbr_browser::ProfileHue,
 }
 
-/// One rendered space row's identity, derived from the controller snapshot.
+/// One canonical space-surface row identity, derived from the controller
+/// snapshot: the persistent-space lookup key and the §4-truncated title. The
+/// `space_groups` derivation is the single canonical order the permanent
+/// §11.3 strip (chips), the keyboard traversal, and the §15 id derivation
+/// all consume; the chips themselves carry the appearance identity and the
+/// selected state from the same controller snapshot.
 #[derive(Debug, Clone)]
 pub struct SpaceRowVisuals {
-    /// The space's stable creation-order index (`bbr-space-row-<n>`).
+    /// The space's creation-order index (the persistent-space lookup key).
     pub index: usize,
-    /// The owning profile's creation-order index — the stable
-    /// `bbr-profile-chip-<n>` identity (DESIGN.md §12), never the space
-    /// index, so the rendered chip matches the E2E contract even when space
-    /// and profile indices diverge.
-    pub profile_index: usize,
     pub title: SharedString,
-    /// The §11.3 count column (`type:meta` tabular figures).
-    pub count: usize,
-    pub state: SpaceVisualState,
-    pub chip: ProfileChipSpec,
 }
 
 use gpui::SharedString;

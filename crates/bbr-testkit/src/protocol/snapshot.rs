@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewId};
 
 mod u2;
-pub use u2::{FavoriteTileSnapshot, FolderRowSnapshot};
+pub use u2::{FavoriteTileSnapshot, FolderRowSnapshot, SpaceChipSnapshot};
 
 /// The L6 contract state of one download attempt (DESIGN.md §15): the panel
 /// renders exactly these states and never invents a transition.
@@ -197,19 +197,6 @@ pub enum TabVisualState {
     Focused,
 }
 
-/// Visual state of one space row (DESIGN.md §11.3): the active space uses
-/// the selected rail + tint exactly like a selected tab; every other space
-/// rests. Asserted by E2E via the snapshot's `space_states`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum SpaceVisualState {
-    Default,
-    Selected,
-    /// §10.9: a tab drag currently targets this space row (the destination
-    /// profile chip replaces the insertion tick per §12.3).
-    DragTarget,
-}
-
 /// One profile's identity on the wire (DESIGN.md §12).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProfileSnapshot {
@@ -225,7 +212,8 @@ pub struct ProfileSnapshot {
 /// One space on the wire, including its own active tab and live session.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SpaceSnapshot {
-    /// Creation-order index — the stable `bbr-space-row-<n>` identity.
+    /// Creation-order index — the collection-order key (the strip chip ids
+    /// derive from the persistent [`TestSpaceId`], never this index).
     pub index: usize,
     pub space: TestSpaceId,
     pub profile: TestProfileId,
@@ -317,9 +305,9 @@ pub enum SemanticRole {
     Brand,
     /// A text field / command surface (`bbr-command-bar`).
     Field,
-    /// A keyboard-focusable list (`bbr-space-list` / `bbr-tab-list`).
+    /// A keyboard-focusable list (`bbr-space-strip` / `bbr-tab-list`).
     List,
-    /// A selectable row (`bbr-tab-row-*` / `bbr-space-row-*`).
+    /// A selectable row (`bbr-tab-row-*` / `bbr-space-chip-*`).
     Row,
     /// A profile identity chip (`bbr-profile-chip-*`).
     Chip,
@@ -335,7 +323,7 @@ pub enum SemanticRole {
     Content,
     /// A row's favicon / monogram tile (`bbr-tab-favicon-*`).
     Favicon,
-    /// A row's title text (`bbr-tab-title-*` / `bbr-space-title-*`).
+    /// A row's title text (`bbr-tab-title-*` / `bbr-space-identity-*`).
     Title,
     /// A row's count column (`bbr-space-count-*`).
     Count,
@@ -888,17 +876,17 @@ pub struct Snapshot {
     /// is in flight; the dragged row renders the `dragging` state.
     pub drag_source: Option<usize>,
     /// The current drag target: the tab insertion slot (within the source
-    /// region) or the targeted space's stable id.
+    /// region) or the §11.10 favorites grid.
     pub drag_slot: Option<usize>,
-    pub drag_space: Option<TestSpaceId>,
     /// Whether the current drag target is a legal drop (a boundary crossing
     /// or a non-droppable zone reports `false` and renders the muted tick).
     pub drag_valid: bool,
-    /// §11.3 space states (selected/default) in render order, grouped by
-    /// profile.
-    pub space_states: Vec<SpaceVisualState>,
-    /// §11.3 space row titles in render order, after §4 truncation.
-    pub space_titles: Vec<String>,
+    /// §11.3 permanent space strip: one chip per space in canonical display
+    /// order (the vector order is display order; the chip/identity ids
+    /// derive from the persistent `space` id). The strip is always part of
+    /// the rail.
+    #[serde(default)]
+    pub space_chips: Vec<SpaceChipSnapshot>,
     /// The stable `bbr-*` ids present in the current render (DESIGN.md §15).
     pub visible_ids: Vec<String>,
     /// The typed semantic tree of the current render (DESIGN.md §15 /
@@ -1017,8 +1005,6 @@ pub struct Snapshot {
     #[serde(default)]
     pub auth: AuthSnapshot,
     /// U2 compact-sidebar presentation state.
-    #[serde(default = "u2::default_true")]
-    pub spaces_visible: bool,
     #[serde(default)]
     pub plus_menu_open: bool,
     #[serde(default)]

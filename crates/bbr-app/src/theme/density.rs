@@ -39,15 +39,6 @@ impl Density {
         })
     }
 
-    /// §8 space row height (`density:space-chip`: S 32 / N 36 / XL 44).
-    pub fn space_row(self) -> Pixels {
-        px(match self {
-            Density::Small => 32.0,
-            Density::Normal => 36.0,
-            Density::ExtraLarge => 44.0,
-        })
-    }
-
     /// §8/§5 `win:sidebar` (S 232 / N 280 / XL 340 pt).
     pub fn sidebar_width(self) -> Pixels {
         px(match self {

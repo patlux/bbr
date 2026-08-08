@@ -3,49 +3,30 @@
 //! Covers the keyboard commands and the pointer drag over real WKWebViews:
 //! pin/unpin (`Cmd-Shift-P` + the row pin control), region-bounded reorder
 //! (`Cmd-Shift-↑/↓` + drag with a typed insertion tick), move between spaces
-//! (`Cmd-Shift-M` staging + drag into a visible space row), cancellation
-//! (Escape on the staged move and on an in-flight drag), the focus-domain
-//! contract, session identity (same-profile moves keep the WebViewId;
-//! cross-profile moves recreate exactly once in the destination store), and
-//! profile isolation. Every step synchronizes on semantic events or typed
-//! snapshot state under a deadline — no sleeps. The pointer drag goes through
-//! the production mouse-down/move/up listener methods with synthetic events
-//! (exactly like the sidebar-divider drag seam), never a direct reorder or
-//! move command.
+//! (`Cmd-Shift-M` staging), cancellation (Escape on the staged move and on
+//! an in-flight drag), the focus-domain contract, session identity
+//! (same-profile moves keep the WebViewId; cross-profile moves recreate
+//! exactly once in the destination store), and profile isolation. Every step
+//! synchronizes on semantic events or typed snapshot state under a deadline
+//! — no sleeps. The pointer drag goes through the production
+//! mouse-down/move/up listener methods with synthetic events (exactly like
+//! the sidebar-divider drag seam), never a direct reorder or move command.
 //!
-//! Drag geometry: §8 density rows are 36 pt and space rows 36 pt in the
-//! default density the shell renders; the app resolves targets relative to
-//! the press position, so these constants (mirroring `theme.density`) are the
-//! only layout values the scenarios need.
+//! Drag geometry: §8 density rows are 36 pt in the default density the shell
+//! renders; the app resolves targets relative to the press position, so this
+//! constant (mirroring `theme.density`) is the only layout value the
+//! scenarios need. The revealed-list drag-to-space band was removed with the
+//! legacy `[Spaces]` toggle; drag-to-chip is a later explicit F2a layer.
 
 #![cfg(target_os = "macos")]
 
 mod e2e_common;
 
-use bbr_testkit::protocol::{CommandBarMode, SpaceVisualState};
+use bbr_testkit::protocol::CommandBarMode;
 use e2e_common::*;
 
 /// §8 normal-density tab row height (theme.density::Normal.row()).
 const ROW_H: f32 = 36.0;
-/// §8 space row height (theme.density::Normal.space_row()).
-const SPACE_ROW_H: f32 = 36.0;
-
-/// The dy that places the pointer over the center of the `space_slot`-th
-/// visible space row above the tab list, for a drag starting at tab `source`
-/// with the press `press_in_row` within the source row (0 at the top edge).
-/// Mirrors `resolve_target`'s space-surface math: the surface height stacks
-/// each space row (plus a 1 pt hairline between profile groups) and the New
-/// Space foot; `from_bottom` inverts the pointer distance from the surface's
-/// bottom edge.
-fn space_dy(source: usize, press_in_row: f32, from_bottom: f32) -> f32 {
-    -(source as f32 * ROW_H + press_in_row + from_bottom)
-}
-
-/// The space surface height for `rows` space rows across `groups` profile
-/// groups (1 pt hairline between groups) plus the §11.3 New Space foot.
-fn space_surface_h(rows: usize, groups: usize) -> f32 {
-    rows as f32 * SPACE_ROW_H + (groups as f32 - 1.0) + SPACE_ROW_H
-}
 
 /// Assert the full tab row order by URL plus the pinned boundary and the
 /// selected row, so a wrong order or a wrong boundary fails loudly.
@@ -93,9 +74,9 @@ fn keyboard_pins_unpins_reorders_and_moves_tabs() {
             since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
         }
 
-        // §11.4 compact rail: the footer `[Spaces]` control reveals the
-        // §11.3 space rows; drive it before any space-row click or drag-to-
-        // space target (the rows hide by default).
+        // §11.3/§11.4: the permanent space strip is always part of the rail;
+        // the strip presence seam verifies it before the space-related
+        // keyboard steps.
         reveal_spaces_region(&mut client);
 
         let keystroke = |client: &mut Client, key: &str| {
@@ -455,9 +436,9 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
             since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
         }
 
-        // §11.4 compact rail: reveal the §11.3 space rows through the footer
-        // `[Spaces]` control (the rows hide by default; the pin/reorder
-        // pointers and the drag-to-space geometry need the revealed region).
+        // §11.3/§11.4: the permanent space strip is always part of the rail
+        // (the strip presence seam verifies it; there is no revealed region
+        // for the pin/reorder pointers).
         reveal_spaces_region(&mut client);
 
         // Seed the pinned region through the visible pin controls: two tabs,
@@ -496,7 +477,6 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         let during = client.snapshot().expect("during drag snapshot");
         assert_eq!(during.drag_source, Some(0));
         assert_eq!(during.drag_slot, Some(2));
-        assert_eq!(during.drag_space, None);
         assert!(during.drag_valid, "slot 2 is the pinned region's own end");
         assert_ids(&during, &["bbr-drag-tick-2"]);
         client.send_ok(&dsl::end_tab_drag()).expect("end drag");
@@ -611,261 +591,6 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         assert!(
             cancelled.chrome_focused,
             "cancelling the drag keeps the chrome domain"
-        );
-
-        client.quit().expect("quit");
-        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
-        assert!(status.success(), "app exit: {status}");
-    }));
-
-    finish(result, &mut harness, &socket, &token);
-}
-
-/// Pointer drag into a visible space row: same-profile moves keep the live
-/// WebViewId, cross-profile moves recreate the session exactly once in the
-/// destination profile's isolated store. The targeted space row renders the
-/// §10.9 `drag-target` state and the snapshot exposes the typed space target.
-#[test]
-#[ignore]
-fn pointer_drag_moves_tab_between_spaces() {
-    let _serial = serial_gui();
-    if !allow_gui() {
-        return;
-    }
-
-    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("bbr-fixtures")
-        .join("html");
-    let fixtures = FixtureServer::start(&fixtures_dir).expect("fixture server");
-    let page_one = fixtures.url("/page1.html");
-    let page_two = fixtures.url("/page2.html");
-    let set_alpha = fixtures.url("/__fx/cookie/set-alpha");
-    let set_beta = fixtures.url("/__fx/cookie/set-beta");
-    let read_cookie = fixtures.url("/__fx/cookie/read");
-
-    let (mut harness, socket, token) = spawn_harness("organize-drag-space", &page_one);
-
-    let result = catch_unwind(AssertUnwindSafe(|| {
-        let mut client = connect(&socket);
-        client.hello(&token).expect("hello");
-        let replay = client.attach(None).expect("attach");
-        let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
-
-        let initial = client.snapshot().expect("initial snapshot");
-        let first_view = initial.active_web_view.expect("first view");
-        if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {
-            since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
-        }
-        let default_space = initial.active_space;
-        let default_profile = initial.active_profile;
-
-        // §11.4 compact rail: reveal the §11.3 space rows through the footer
-        // `[Spaces]` control before dragging onto them (the rows hide by
-        // default; the drag resolver exposes no space targets while hidden).
-        reveal_spaces_region(&mut client);
-
-        // Second tab plus a second same-profile space: the space surface has
-        // two rows (Default, Reading) + the New Space foot.
-        let second_view = open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
-        client
-            .send_ok(&dsl::create_space(default_profile, "Reading"))
-            .expect("create reading space");
-        let (seq, created) = wait_browser_change_matching(
-            &mut client,
-            |kind| matches!(kind, BrowserChange::SpaceCreated { .. }),
-            since,
-        );
-        since = seq;
-        let reading = match created {
-            BrowserChange::SpaceCreated { space, .. } => space,
-            other => panic!("unexpected change: {other:?}"),
-        };
-
-        // Drag the second row (index 1) onto the Reading space row with an
-        // off-center press (8 pt below the row's top edge): the pointer sits
-        // above the tab list over the second space row of the single-profile
-        // group, and the app resolves the exact row from the recorded press
-        // offset — not a row-center approximation. The snapshot exposes the
-        // typed space target, the row renders `drag-target`, and no tab tick
-        // appears.
-        let space_h = space_surface_h(2, 1);
-        let reading_center = SPACE_ROW_H + SPACE_ROW_H / 2.0;
-        let dy = space_dy(1, 8.0, space_h - reading_center);
-        client
-            .send_ok(&dsl::begin_tab_drag(1, 400.0, 8.0))
-            .expect("begin space drag");
-        client
-            .send_ok(&dsl::move_tab_drag(dy))
-            .expect("move over the reading row");
-        let hovering = client.snapshot().expect("space-target snapshot");
-        assert_eq!(hovering.drag_source, Some(1));
-        assert_eq!(hovering.drag_slot, None, "space target replaces the tick");
-        assert_eq!(hovering.drag_space, Some(reading));
-        assert!(hovering.drag_valid);
-        let reading_index = hovering
-            .spaces
-            .iter()
-            .position(|s| s.space == reading)
-            .expect("reading row present");
-        assert_eq!(
-            hovering.space_states[reading_index],
-            SpaceVisualState::DragTarget,
-            "targeted space row renders drag-target"
-        );
-        assert!(
-            !hovering
-                .visible_ids
-                .iter()
-                .any(|id| id.starts_with("bbr-drag-tick")),
-            "a space target renders no tab tick"
-        );
-
-        // Release commits the same-profile move: the live session follows the
-        // tab (same WebViewId), the source space keeps its remaining tab and
-        // selection, and the destination row reports the moved tab.
-        client
-            .send_ok(&dsl::end_tab_drag())
-            .expect("drop on reading");
-        since = wait_browser_change(
-            &mut client,
-            BrowserChange::TabMoved {
-                to_space: reading,
-                recreated: false,
-            },
-            since,
-        );
-        let dropped = client.snapshot().expect("dropped snapshot");
-        assert_tab_order(&dropped, &[&page_one], 0);
-        assert_eq!(dropped.active_web_view, Some(first_view));
-        assert_eq!(dropped.engine_sessions, 2, "warm move keeps sessions");
-        let reading_row = dropped.spaces.iter().find(|s| s.space == reading).unwrap();
-        assert_eq!(reading_row.tab_count, 1);
-        assert_eq!(
-            reading_row.active_view,
-            Some(second_view),
-            "same-profile drag keeps the WebViewId"
-        );
-
-        // Cross-profile drag: create a Private profile, seed its store with
-        // beta, seed the default store with alpha, then drag the alpha tab
-        // onto the Private row. The group hairline shifts the space surface;
-        // the Private row is the first row of the second group.
-        client
-            .send_ok(&dsl::create_profile("Private", "Private"))
-            .expect("create private profile");
-        let (seq, created_profile) = wait_browser_change_matching(
-            &mut client,
-            |kind| matches!(kind, BrowserChange::ProfileCreated { .. }),
-            since,
-        );
-        since = seq;
-        let private_space = match created_profile {
-            BrowserChange::ProfileCreated { space, .. } => space,
-            other => panic!("unexpected change: {other:?}"),
-        };
-        client
-            .send_ok(&dsl::navigate(&set_alpha))
-            .expect("set alpha");
-        since = wait_title(&mut client, first_view, "Cookie Set alpha", since);
-        client
-            .send_ok(&dsl::navigate(&read_cookie))
-            .expect("read alpha");
-        since = wait_title(&mut client, first_view, "Cookie alpha", since);
-        client
-            .send_ok(&dsl::click_space(private_space))
-            .expect("open private");
-        since = wait_browser_change(
-            &mut client,
-            BrowserChange::SpaceActivated {
-                space: private_space,
-            },
-            since,
-        );
-        let private_view = open_tab(&mut client, &mut since, &set_beta, Some("Cookie Set beta"));
-        client
-            .send_ok(&dsl::navigate(&read_cookie))
-            .expect("read beta");
-        since = wait_title(&mut client, private_view, "Cookie beta", since);
-        client
-            .send_ok(&dsl::click_space(default_space))
-            .expect("back to default");
-        since = wait_browser_change(
-            &mut client,
-            BrowserChange::SpaceActivated {
-                space: default_space,
-            },
-            since,
-        );
-
-        // Drag the alpha tab (the only remaining default tab) onto the
-        // Private row with an off-center press (24 pt below the row's top
-        // edge). Two groups: [Default, Reading] + hairline + [Private] + New
-        // Space foot.
-        let space_h = space_surface_h(3, 2);
-        let private_center = 2.0 * SPACE_ROW_H + 1.0 + SPACE_ROW_H / 2.0;
-        let dy = space_dy(0, 24.0, space_h - private_center);
-        let sessions_before = client
-            .snapshot()
-            .expect("pre-drag snapshot")
-            .engine_sessions;
-        client
-            .send_ok(&dsl::begin_tab_drag(0, 400.0, 24.0))
-            .expect("begin cross drag");
-        client
-            .send_ok(&dsl::move_tab_drag(dy))
-            .expect("move over the private row");
-        let cross_hover = client.snapshot().expect("cross-target snapshot");
-        assert_eq!(cross_hover.drag_space, Some(private_space));
-        assert!(cross_hover.drag_valid);
-        client
-            .send_ok(&dsl::end_tab_drag())
-            .expect("drop on private");
-        since = wait_browser_change(
-            &mut client,
-            BrowserChange::TabMoved {
-                to_space: private_space,
-                recreated: true,
-            },
-            since,
-        );
-        let cross = client.snapshot().expect("cross drop snapshot");
-        assert!(
-            cross.tabs.is_empty(),
-            "default is empty after the cross-profile drag"
-        );
-        assert_eq!(
-            cross.engine_sessions, sessions_before,
-            "destroy + recreate exactly once keeps the count"
-        );
-
-        // The recreated session lives in the private store: it reads beta,
-        // never the default store's alpha.
-        client
-            .send_ok(&dsl::click_space(private_space))
-            .expect("view private");
-        since = wait_browser_change(
-            &mut client,
-            BrowserChange::SpaceActivated {
-                space: private_space,
-            },
-            since,
-        );
-        let after = client.snapshot().expect("private after drag");
-        let moved_view = after.active_web_view.expect("moved tab view");
-        assert_ne!(moved_view, first_view, "cross-profile drag recreates");
-        client
-            .send_ok(&dsl::navigate(&read_cookie))
-            .expect("read moved tab cookie");
-        wait_title(&mut client, moved_view, "Cookie beta", since);
-        assert_eq!(
-            client
-                .snapshot()
-                .expect("isolated cross drag")
-                .title
-                .as_deref(),
-            Some("Cookie beta"),
-            "the recreated tab uses the destination store"
         );
 
         client.quit().expect("quit");

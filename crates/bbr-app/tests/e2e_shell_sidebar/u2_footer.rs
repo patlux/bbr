@@ -1,14 +1,15 @@
 use super::*;
 use bbr_testkit::protocol::dsl;
-/// §11.4 footer row + compact spaces region: exactly `[Downloads] [Spaces]
-/// [+]` (no fourth control), the spaces region hidden at launch with no
-/// space/chip ids in the §9 traversal, the `[Spaces]` control revealing and
-/// hiding the §11.3 rows with unchanged `bbr-space-row-<n>` ids through the
-/// production pointer path, the empty favorites/folders regions hiding their
-/// labels, and the status row + collapse control ids unchanged.
+/// §11.3/§11.4 footer row: exactly `[Downloads] [Space Strip] [+]` (no
+/// fourth control), the permanent space strip always part of the rail with
+/// one `bbr-space-chip-<persistent-space-id>` + `bbr-space-identity-<persistent-
+/// space-id>` per space (selected exactly on the active space), the empty
+/// favorites/folders regions hiding their labels, and the status row +
+/// collapse control ids unchanged. The legacy `[Spaces]` reveal toggle is
+/// gone: the strip never hides and there is nothing to reveal.
 #[test]
 #[ignore]
-fn footer_row_and_spaces_toggle_reveal_and_hide_the_compact_rail() {
+fn footer_row_and_permanent_strip_render_in_the_compact_rail() {
     let _serial = serial_gui();
     if !allow_gui() {
         return;
@@ -30,7 +31,7 @@ fn footer_row_and_spaces_toggle_reveal_and_hide_the_compact_rail() {
         // fourth control id is exposed.
         assert_ids(
             &initial,
-            &["bbr-footer", "bbr-downloads", "bbr-spaces", "bbr-plus"],
+            &["bbr-footer", "bbr-downloads", "bbr-space-strip", "bbr-plus"],
         );
         assert!(
             !initial
@@ -42,18 +43,17 @@ fn footer_row_and_spaces_toggle_reveal_and_hide_the_compact_rail() {
         // Status row + collapse control keep their ids in the reordered rail.
         assert_ids(&initial, &["bbr-status", "bbr-sidebar-toggle"]);
 
-        // §11.4 compact default: the spaces region is hidden — no space-row,
-        // space-list, or chip id is part of the traversal.
-        assert!(!initial.spaces_visible, "spaces region hidden at launch");
-        for id in &initial.visible_ids {
-            assert!(
-                !(id.starts_with("bbr-space-row")
-                    || id == "bbr-space-list"
-                    || id == "bbr-space-new"
-                    || id.starts_with("bbr-profile-chip")),
-                "hidden region exposes {id}"
-            );
-        }
+        // §11.3 permanent strip: one chip (and its identity child) per
+        // space in canonical display order, ids from the persistent space
+        // id, selected exactly on the active space.
+        assert!(initial.visible_ids.iter().any(|id| id == "bbr-space-strip"));
+        assert_eq!(initial.space_chips.len(), 1);
+        assert_eq!(initial.space_chips[0].space, initial.active_space);
+        assert!(initial.space_chips[0].selected);
+        let chip_id = format!("bbr-space-chip-{}", initial.active_space.0);
+        let identity_id = format!("bbr-space-identity-{}", initial.active_space.0);
+        assert!(initial.visible_ids.contains(&chip_id));
+        assert!(initial.visible_ids.contains(&identity_id));
         // Empty favorites/folders regions hide their labels with them.
         assert!(!initial
             .visible_ids
@@ -62,41 +62,18 @@ fn footer_row_and_spaces_toggle_reveal_and_hide_the_compact_rail() {
         assert!(initial.favorites.is_empty());
         assert!(initial.folders.is_empty());
 
-        // The `[Spaces]` control reveals the §11.3 rows through the
-        // production pointer path: unchanged row ids, chips, and the active
-        // space selected.
-        let revealed = reveal_spaces_region(&mut client);
-        assert!(revealed.spaces_visible);
-        assert_ids(
-            &revealed,
-            &[
-                "bbr-space-list",
-                "bbr-space-new",
-                "bbr-space-row-0",
-                "bbr-space-title-0",
-                "bbr-space-count-0",
-                "bbr-profile-chip-0",
-            ],
+        // The strip is always present: a second snapshot shows the same
+        // always-rendered chip ids, and activation never touches sessions.
+        let always = reveal_spaces_region(&mut client);
+        assert!(always.space_chips.iter().any(|c| c.selected));
+        assert_eq!(always.active_web_view, Some(first_view));
+        assert_eq!(
+            always.engine_sessions, 1,
+            "strip presence never touches sessions"
         );
-        assert_eq!(revealed.active_web_view, Some(first_view));
-        assert_eq!(revealed.engine_sessions, 1, "toggle never touches sessions");
-
-        // A second activation hides the region again (snap back).
-        client
-            .send_ok(&dsl::click_footer_spaces())
-            .expect("hide spaces region");
-        client
-            .send_ok(&bbr_testkit::Request::FlushFrame)
-            .expect("flush after hide");
-        let hidden = client.snapshot().expect("hidden snapshot");
-        assert!(!hidden.spaces_visible);
-        assert!(!hidden
-            .visible_ids
-            .iter()
-            .any(|id| id == "bbr-space-list" || id.starts_with("bbr-space-row")));
         assert_ids(
-            &hidden,
-            &["bbr-footer", "bbr-downloads", "bbr-spaces", "bbr-plus"],
+            &always,
+            &["bbr-footer", "bbr-downloads", "bbr-space-strip", "bbr-plus"],
         );
 
         client.quit().expect("quit");
@@ -135,6 +112,8 @@ fn plus_menu_pointer_and_keyboard_create_real_space_and_folder() {
             since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
         }
         let default_profile = initial.active_profile;
+        // §11.3/§11.4: the permanent strip is always part of the rail; the
+        // strip presence seam verifies it before the plus-menu steps.
         reveal_spaces_region(&mut client);
 
         // `[+]` opens the menu: surface id, two item ids, selection 0.
@@ -211,7 +190,13 @@ fn plus_menu_pointer_and_keyboard_create_real_space_and_folder() {
         assert_eq!(after_space.spaces[1].tab_count, 0);
         assert!(!after_space.spaces[1].active, "creation does not switch");
         assert!(!after_space.plus_menu_open, "menu closed after commit");
-        assert_ids(&after_space, &["bbr-space-row-1", "bbr-space-title-1"]);
+        assert!(
+            after_space
+                .visible_ids
+                .iter()
+                .any(|id| id == &format!("bbr-space-chip-{}", created_space.0)),
+            "created space chip id derives from its persistent space id"
+        );
         assert_eq!(after_space.active_web_view, Some(first_view));
 
         // Pointer New Folder: a session-local folder with count 0 renders its

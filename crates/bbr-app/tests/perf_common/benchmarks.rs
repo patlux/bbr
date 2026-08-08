@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use bbr_testkit::protocol::{
     BenchmarkKind, BenchmarkOperationId, BrowserChange, CommandBarMode, Event,
-    PresentationMeasurement, Request, SpaceVisualState, TabVisualState, TestSpaceId,
+    PresentationMeasurement, Request, TabVisualState, TestSpaceId,
 };
 use bbr_testkit::Client;
 use bbr_web::{WebEvent, WebViewId};
@@ -322,7 +322,8 @@ pub(crate) fn benchmark_reopen(
 /// activation path must present the destination space's own active tab with
 /// the same native session (no recreation), keep the chrome focus domain
 /// (activation routes through the space-list pointer path), and expose the
-/// destination row as `selected` with its stable `bbr-space-row-<n>` id.
+/// destination space's chip as `selected` with its stable
+/// `bbr-space-chip-<persistent-space-id>` id.
 ///
 /// `expected_sessions` is the live-session count both spaces' tabs hold
 /// together; the activation must never change it (warm switching only
@@ -368,34 +369,31 @@ pub(crate) fn benchmark_space_switch(
         "same-profile switching must not announce a profile transition"
     );
     // Rendered space identity (DESIGN.md §11.3/§12/§15): the destination
-    // space row renders `selected` and its row/chip ids are present. The
-    // snapshot's space rows are grouped by profile in render order; with one
-    // profile the render order equals creation order, so the row position
-    // equals the space's creation-order index.
-    let active_index = snapshot
-        .spaces
+    // space's chip renders `selected` and its persistent-space chip id is
+    // present. The strip's display order is the canonical grouped order; the
+    // chip id derives from the persistent `SpaceId`, never render position.
+    let active_chip = snapshot
+        .space_chips
         .iter()
-        .find(|s| s.space == space)
-        .map(|s| s.index)
-        .expect("destination space in collection");
-    assert_eq!(
-        snapshot.space_states[active_index],
-        SpaceVisualState::Selected,
-        "destination space row renders selected"
+        .find(|c| c.space == space)
+        .expect("destination chip in the strip");
+    assert!(
+        active_chip.selected,
+        "destination space chip renders selected"
     );
     assert!(
         snapshot
             .visible_ids
             .iter()
-            .any(|id| id == &format!("bbr-space-row-{active_index}")),
-        "destination space row id present"
+            .any(|id| id == &format!("bbr-space-chip-{}", space.0)),
+        "destination space chip id present"
     );
     assert!(
         snapshot
             .visible_ids
             .iter()
-            .any(|id| id == "bbr-profile-chip-0"),
-        "profile chip id present"
+            .any(|id| id == &format!("bbr-space-identity-{}", space.0)),
+        "destination space identity id present"
     );
     measured
 }
@@ -459,24 +457,23 @@ pub(crate) fn benchmark_space_switch_cross_profile(
         );
     }
     // Rendered space identity (DESIGN.md §11.3/§12/§15): the destination
-    // space row renders `selected` with its stable row id.
-    let active_index = snapshot
-        .spaces
+    // space's chip renders `selected` with its stable persistent-space chip
+    // and identity ids.
+    let active_chip = snapshot
+        .space_chips
         .iter()
-        .find(|s| s.space == space)
-        .map(|s| s.index)
-        .expect("destination space in collection");
-    assert_eq!(
-        snapshot.space_states[active_index],
-        SpaceVisualState::Selected,
-        "destination space row renders selected"
+        .find(|c| c.space == space)
+        .expect("destination chip in the strip");
+    assert!(
+        active_chip.selected,
+        "destination space chip renders selected"
     );
     assert!(
         snapshot
             .visible_ids
             .iter()
-            .any(|id| id == &format!("bbr-space-row-{active_index}")),
-        "destination space row id present"
+            .any(|id| id == &format!("bbr-space-chip-{}", space.0)),
+        "destination space chip id present"
     );
     measured
 }

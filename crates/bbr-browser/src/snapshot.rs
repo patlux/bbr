@@ -97,7 +97,8 @@ pub struct ProfileSnapshot {
 /// live session — the "each space remembers its active tab" contract.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SpaceSnapshot {
-    /// Position in creation order — the stable `bbr-space-row-<n>` identity.
+    /// Position in creation order — the collection-order key (the chip ids
+    /// derive from the persistent [`SpaceId`], never this index).
     pub index: usize,
     pub id: SpaceId,
     pub profile: ProfileId,

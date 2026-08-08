@@ -322,21 +322,18 @@ impl BbrApp {
         (count > 0).then_some(count)
     }
 
-    /// §11.4 pre-tab region: the §11.3 spaces region (only while the footer
-    /// `[Spaces]` control reveals it) then the §11.10 favorites grid (hidden
-    /// entirely while empty). Placed between the command results and the tab
-    /// surface.
+    /// §11.4 pre-tab region: the §11.10 favorites grid (hidden entirely
+    /// while empty). Placed between the command results and the tab
+    /// surface. The §11.3 space strip is part of the footer (always
+    /// rendered), not a revealable region above the tab list.
     pub(crate) fn u2_pre_tab_children(
         &self,
         column: Stateful<Div>,
-        space_surface: Stateful<Div>,
         favorites: Option<Stateful<Div>>,
     ) -> Stateful<Div> {
-        column
-            .when(self.u2.spaces_visible, |column| column.child(space_surface))
-            .when(favorites.is_some(), |column| {
-                column.child(favorites.expect("checked above"))
-            })
+        column.when(favorites.is_some(), |column| {
+            column.child(favorites.expect("checked above"))
+        })
     }
 
     /// §11.4 post-tab region: the downloads panel (only while open or

@@ -5,7 +5,7 @@
 //! derivation: grouping, the per-space row visuals, the §11.3 title budget,
 //! and the testkit state/title lists the E2E asserts.
 
-use crate::components::{ProfileChipSpec, SpaceRowVisuals, SpaceVisualState};
+use crate::components::{ProfileChipSpec, SpaceRowVisuals};
 use crate::theme::{Spacing, Theme};
 use bbr_browser::ControllerSnapshot;
 
@@ -44,12 +44,12 @@ pub fn active_profile_chip(browser: &ControllerSnapshot) -> Option<(usize, Profi
         })
 }
 
-/// One sidebar space group: the spaces of one profile, in creation order,
-/// preceded by a hairline when it is not the first group (DESIGN.md §11.3:
-/// profile groups stack under a hairline, no repeated profile header in v1).
+/// One sidebar space group: the spaces of one profile, in creation order
+/// (DESIGN.md §11.3: profile groups stack, no repeated profile header in
+/// v1). The canonical order the permanent strip chips, the keyboard
+/// traversal, and the §15 id derivation all consume.
 pub struct SpaceGroup {
     pub rows: Vec<SpaceRowVisuals>,
-    pub hairline_before: bool,
 }
 
 /// Render-order space rows grouped by profile, derived from the controller
@@ -69,24 +69,10 @@ pub fn space_groups(browser: &ControllerSnapshot, budget: usize) -> Vec<SpaceGro
             .iter()
             .map(|s| SpaceRowVisuals {
                 index: s.index,
-                profile_index: profile.index,
                 title: truncate_title(&s.title, budget).into(),
-                count: s.tab_count,
-                state: if s.active {
-                    SpaceVisualState::Selected
-                } else {
-                    SpaceVisualState::Default
-                },
-                chip: ProfileChipSpec {
-                    letter: profile_monogram(&profile.title),
-                    hue: profile.hue,
-                },
             })
             .collect();
-        groups.push(SpaceGroup {
-            rows,
-            hairline_before: !groups.is_empty(),
-        });
+        groups.push(SpaceGroup { rows });
     }
     groups
 }
@@ -106,40 +92,9 @@ pub fn space_title_budget_chars(theme: &Theme) -> usize {
     (area / per_char).floor().max(1.0) as usize
 }
 
-/// §11.3 space visual states in render order (grouped), mirroring the rows
-/// the sidebar renders — `selected` for the active space, `drag-target` for
-/// the space a tab drag currently targets, else `default`.
-#[cfg(any(feature = "testkit", test))]
-pub fn space_states(
-    browser: &ControllerSnapshot,
-    drag_target: Option<bbr_browser::SpaceId>,
-) -> Vec<SpaceVisualState> {
-    space_groups(browser, usize::MAX)
-        .into_iter()
-        .flat_map(|group| group.rows.into_iter())
-        .map(|mut row| {
-            let space = browser
-                .spaces
-                .iter()
-                .find(|s| s.index == row.index)
-                .map(|s| s.id);
-            if space.is_some() && space == drag_target {
-                row.state = SpaceVisualState::DragTarget;
-            }
-            row.state
-        })
-        .collect()
-}
-
-/// §11.3 space row titles in render order, after §4 truncation — the same
-/// `space_groups` source the sidebar renders.
-#[cfg(any(feature = "testkit", test))]
-pub fn space_titles(browser: &ControllerSnapshot, budget: usize) -> Vec<String> {
-    space_groups(browser, budget)
-        .into_iter()
-        .flat_map(|group| group.rows.into_iter().map(|row| row.title.to_string()))
-        .collect()
-}
+// The `space_groups` derivation is the single canonical order the permanent
+// §11.3 strip (chips), the keyboard traversal, and the §15 id derivation
+// all consume; the chips carry the per-space title and selected state.
 
 #[cfg(test)]
 mod tests {
@@ -226,10 +181,7 @@ mod tests {
         let browser = space_snapshot();
         let groups = space_groups(&browser, 30);
         assert_eq!(groups.len(), 2);
-        // Default profile first (creation order), then Private; a hairline
-        // separates the groups; every row carries its profile chip.
-        assert!(!groups[0].hairline_before);
-        assert!(groups[1].hairline_before);
+        // Default profile first (creation order), then Private.
         assert_eq!(
             groups[0].rows.iter().map(|r| r.index).collect::<Vec<_>>(),
             vec![0, 2],
@@ -239,63 +191,41 @@ mod tests {
             groups[1].rows.iter().map(|r| r.index).collect::<Vec<_>>(),
             vec![1]
         );
-        // Chip identity: hue + monogram per row, never a repeated header.
-        assert_eq!(groups[0].rows[0].chip.hue, bbr_browser::ProfileHue::Cobalt);
-        assert_eq!(groups[0].rows[0].chip.letter, "DE");
-        assert_eq!(groups[1].rows[0].chip.hue, bbr_browser::ProfileHue::Violet);
-        assert_eq!(groups[1].rows[0].chip.letter, "PR");
-        // The §11.3 count column mirrors each space's tab count.
-        assert_eq!(groups[0].rows[0].count, 3);
-        assert_eq!(groups[1].rows[0].count, 1);
+        // The §4 title truncation is applied in the same derivation the
+        // strip chips consume.
+        assert_eq!(groups[0].rows[0].title, "Default");
+        assert_eq!(groups[1].rows[0].title, "Private");
     }
 
     #[test]
-    fn space_states_mark_only_the_active_space() {
+    fn grouped_order_keys_the_active_space_lookup() {
+        // The canonical grouped order resolves each row's persistent space
+        // id; the strip's display order is exactly this vector order, while
+        // the ids derive from the persistent `SpaceId` (never the index).
         let browser = space_snapshot();
+        let order: Vec<(usize, bbr_browser::SpaceId)> = space_groups(&browser, usize::MAX)
+            .into_iter()
+            .flat_map(|group| group.rows.into_iter())
+            .map(|row| {
+                let space = browser
+                    .spaces
+                    .iter()
+                    .find(|s| s.index == row.index)
+                    .expect("space row derives from the snapshot");
+                (row.index, space.id)
+            })
+            .collect();
+        // Render order is Default (id 2), Reading (id 5), Private (id 4) —
+        // creation order within the Default profile group, then the Private
+        // group. The display order (2, 5, 4) differs from the creation-index
+        // order (2, 4, 5), proving display order is separate from identity.
         assert_eq!(
-            space_states(&browser, None),
+            order,
             vec![
-                SpaceVisualState::Selected,
-                SpaceVisualState::Default,
-                SpaceVisualState::Default,
+                (0, bbr_browser::SpaceId(2)),
+                (2, bbr_browser::SpaceId(5)),
+                (1, bbr_browser::SpaceId(4))
             ]
-        );
-        // A targeted space renders `drag-target` instead of its rest state.
-        // Render order is Default, Reading, Private — Reading (id 5) is the
-        // second rendered row.
-        assert_eq!(
-            space_states(&browser, Some(bbr_browser::SpaceId(5))),
-            vec![
-                SpaceVisualState::Selected,
-                SpaceVisualState::DragTarget,
-                SpaceVisualState::Default,
-            ]
-        );
-        assert_eq!(
-            space_titles(&browser, 30),
-            vec![
-                "Default".to_string(),
-                "Reading".to_string(),
-                "Private".to_string()
-            ]
-        );
-    }
-
-    #[test]
-    fn space_titles_follow_the_truncation_contract() {
-        let browser = space_snapshot();
-        // A long name with an early separator cuts so the head survives (§4);
-        // names without a separator keep the full title (GPUI's text_ellipsis
-        // is the pixel-exact backstop).
-        let mut long = space_snapshot();
-        long.spaces[0].title =
-            "Reading List – a long suffix that surely exceeds the row budget".into();
-        let titles = space_titles(&long, 20);
-        assert_eq!(titles[0], "Reading List…");
-        assert_eq!(
-            space_titles(&browser, 6)[0],
-            "Default",
-            "no-separator names stay whole"
         );
     }
 }

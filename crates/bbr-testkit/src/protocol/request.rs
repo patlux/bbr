@@ -764,9 +764,10 @@ pub enum Request {
         destination: String,
         total: u64,
     },
-    /// U2 footer, favorites, and folders production pointer seams.
+    /// U2 footer, favorites, and folders production pointer seams. There
+    /// is no `[Spaces]` toggle request: the §11.3 space strip is always
+    /// part of the rail and space activation routes through `ClickSpace`.
     ClickFooterDownloads,
-    ClickFooterSpaces,
     ClickFooterPlus,
     ClickPlusMenuItem {
         index: usize,

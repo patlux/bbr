@@ -45,10 +45,9 @@ fn shell_hover_press_focus_and_drag_semantics() {
             .send_ok(&bbr_testkit::Request::FlushFrame)
             .expect("flush pointer setup");
 
-        // §11.4 compact rail: the focused-snapshot assertions below expect
-        // the §11.3 space list node; reveal the region through the footer
-        // `[Spaces]` production pointer path first (the space rows render
-        // only while revealed).
+        // §11.3/§11.4: the focused-snapshot assertions below expect the
+        // §11.3 space strip node — always part of the rail, so the strip
+        // presence seam verifies it (there is no revealable region).
         reveal_spaces_region(&mut client);
 
         // 3. Hover/press through the production listener methods: the row
@@ -155,7 +154,7 @@ fn shell_hover_press_focus_and_drag_semantics() {
         );
         assert_node(
             &focused.semantics,
-            "bbr-space-list",
+            "bbr-space-strip",
             SemanticRole::List,
             Some("Spaces"),
             None,

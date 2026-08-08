@@ -77,10 +77,6 @@ pub fn click_footer_downloads() -> Request {
     Request::ClickFooterDownloads
 }
 
-pub fn click_footer_spaces() -> Request {
-    Request::ClickFooterSpaces
-}
-
 pub fn click_footer_plus() -> Request {
     Request::ClickFooterPlus
 }

@@ -60,17 +60,12 @@ fn row(index: usize, state: TabVisualState) -> RowVisuals {
     }
 }
 
-fn space_row() -> SpaceRowVisuals {
-    SpaceRowVisuals {
-        index: 0,
-        profile_index: 0,
+fn space_chip() -> SpaceChipVisuals {
+    SpaceChipVisuals {
+        space: bbr_browser::SpaceId(1),
         title: "Default".into(),
-        count: 1,
-        state: SpaceVisualState::Selected,
-        chip: crate::components::ProfileChipSpec {
-            letter: "DE".into(),
-            hue: bbr_browser::ProfileHue::Cobalt,
-        },
+        identity: "book".into(),
+        selected: true,
     }
 }
 
@@ -78,7 +73,7 @@ fn input<'a>(
     focus: SemanticFocus,
     browser: &'a ControllerSnapshot,
     rows: &'a [RowVisuals],
-    space_rows: &'a [SpaceRowVisuals],
+    space_chips: &'a [SpaceChipVisuals],
 ) -> SemanticInput<'a> {
     SemanticInput {
         browser,
@@ -96,8 +91,7 @@ fn input<'a>(
         divider_label: "bbr-sidebar-divider".into(),
         command_surface: CommandSurface::None,
         rows,
-        space_rows,
-        spaces_visible: true,
+        space_chips,
         favorites: &[],
         folder_rows: &[],
         folder_members: &[],
@@ -122,7 +116,7 @@ fn find<'a>(nodes: &'a [SemanticNode], id: &str) -> Option<&'a SemanticNode> {
 fn tree_exposes_roles_names_values_and_hierarchy() {
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
-    let space_rows = [space_row()];
+    let space_chips = [space_chip()];
     let tree = semantic_tree(&input(
         SemanticFocus {
             command: false,
@@ -134,7 +128,7 @@ fn tree_exposes_roles_names_values_and_hierarchy() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     ));
     let root = &tree[0];
     assert_eq!(root.role, SemanticRole::Root);
@@ -151,15 +145,22 @@ fn tree_exposes_roles_names_values_and_hierarchy() {
     assert_eq!(close.role, SemanticRole::Button);
     assert_eq!(close.name.as_deref(), Some("Close tab"));
     assert!(close.enabled);
-    // The space row + its chip and count.
-    let space = find(&tree, "bbr-space-row-0").expect("space row");
-    assert_eq!(space.role, SemanticRole::Row);
-    assert!(space.selected);
-    assert_eq!(space.value.as_deref(), Some("1"));
-    let chip = find(&tree, "bbr-profile-chip-0").expect("chip");
-    assert_eq!(chip.role, SemanticRole::Chip);
-    let count = find(&tree, "bbr-space-count-0").expect("count");
-    assert_eq!(count.value.as_deref(), Some("1"));
+    // The permanent space strip: one chip row per space with its identity
+    // child; the active space's chip renders selected.
+    let strip = find(&tree, "bbr-space-strip").expect("space strip");
+    assert_eq!(strip.role, SemanticRole::List);
+    assert_eq!(strip.name.as_deref(), Some("Spaces"));
+    let chip = find(&tree, "bbr-space-chip-1").expect("space chip");
+    assert_eq!(chip.role, SemanticRole::Row);
+    assert_eq!(chip.name.as_deref(), Some("Default"));
+    assert!(chip.selected, "the active space's chip renders selected");
+    let identity = find(&tree, "bbr-space-identity-1").expect("identity child");
+    assert_eq!(identity.role, SemanticRole::Title);
+    assert_eq!(identity.name.as_deref(), Some("book"));
+    assert!(
+        identity.selected,
+        "the identity mirrors the chip's selection"
+    );
     // The divider exposes its width value and stable id.
     let divider = find(&tree, "bbr-sidebar-divider").expect("divider");
     assert_eq!(divider.role, SemanticRole::Divider);
@@ -173,7 +174,7 @@ fn cross_context_profile_hint_exposes_chip_and_label_under_the_field() {
     // monogram child) for one interaction after a cross-profile switch.
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
-    let space_rows = [space_row()];
+    let space_chips = [space_chip()];
     let mut input = input(
         SemanticFocus {
             command: false,
@@ -185,7 +186,7 @@ fn cross_context_profile_hint_exposes_chip_and_label_under_the_field() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     );
     input.command.profile_hint = Some(SemanticProfileHint {
         title: "Private".into(),
@@ -220,7 +221,7 @@ fn cross_context_profile_hint_exposes_chip_and_label_under_the_field() {
 fn focus_lands_on_the_owning_list_and_selected_row() {
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
-    let space_rows = [space_row()];
+    let space_chips = [space_chip()];
     let tree = semantic_tree(&input(
         SemanticFocus {
             command: false,
@@ -232,7 +233,7 @@ fn focus_lands_on_the_owning_list_and_selected_row() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     ));
     let tab_list = find(&tree, "bbr-tab-list").expect("tab list");
     assert!(tab_list.focused, "the focused list is exposed typed");
@@ -241,15 +242,15 @@ fn focus_lands_on_the_owning_list_and_selected_row() {
         row.focused,
         "the selected row of the focused list is focused"
     );
-    let space_list = find(&tree, "bbr-space-list").expect("space list");
-    assert!(!space_list.focused, "only the owning list is focused");
+    let strip = find(&tree, "bbr-space-strip").expect("space strip");
+    assert!(!strip.focused, "only the owning list is focused");
 }
 
 #[test]
 fn dragged_row_disables_its_controls() {
     let browser = browser();
     let rows = [row(0, TabVisualState::Dragging)];
-    let space_rows = [space_row()];
+    let space_chips = [space_chip()];
     let input = input(
         SemanticFocus {
             command: false,
@@ -261,7 +262,7 @@ fn dragged_row_disables_its_controls() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     );
     let tree = semantic_tree(&input);
     let close = find(&tree, "bbr-tab-close-0").expect("close control");
@@ -274,7 +275,7 @@ fn dragged_row_disables_its_controls() {
 fn content_branch_mirrors_the_render() {
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
-    let space_rows = [space_row()];
+    let space_chips = [space_chip()];
     let mut input = input(
         SemanticFocus {
             command: false,
@@ -286,7 +287,7 @@ fn content_branch_mirrors_the_render() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     );
     input.content = SemanticContent::Empty {
         profile_line: "in Profile · Default".into(),
@@ -307,7 +308,7 @@ fn content_branch_mirrors_the_render() {
 fn collapsed_sidebar_leaves_only_root_and_content() {
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
-    let space_rows = [space_row()];
+    let space_chips = [space_chip()];
     let mut input = input(
         SemanticFocus {
             command: false,
@@ -319,7 +320,7 @@ fn collapsed_sidebar_leaves_only_root_and_content() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     );
     input.sidebar_visible = false;
     let tree = semantic_tree(&input);
@@ -338,7 +339,7 @@ fn command_result_surface_exposes_typed_result_rows_under_the_staging_field() {
     // never carries a result list (the pill is display-only).
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
-    let space_rows = [space_row()];
+    let space_chips = [space_chip()];
     let mut input = input(
         SemanticFocus {
             command: true,
@@ -350,7 +351,7 @@ fn command_result_surface_exposes_typed_result_rows_under_the_staging_field() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     );
     input.command.mode = "newtab".into();
     input.command.results = vec![
@@ -410,7 +411,7 @@ fn command_result_surface_exposes_typed_result_rows_under_the_staging_field() {
 fn palette_and_overlay_surfaces_mirror_on_the_tree_only_while_open() {
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
-    let space_rows = [space_row()];
+    let space_chips = [space_chip()];
 
     // Closed: neither surface node exists anywhere on the tree.
     let tree = semantic_tree(&input(
@@ -424,7 +425,7 @@ fn palette_and_overlay_surfaces_mirror_on_the_tree_only_while_open() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     ));
     assert!(find(&tree, "bbr-palette").is_none());
     assert!(find(&tree, "bbr-command-overlay").is_none());
@@ -442,7 +443,7 @@ fn palette_and_overlay_surfaces_mirror_on_the_tree_only_while_open() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     );
     palette_input.command.mode = "newtab".into();
     palette_input.command.text = "https://example.com".into();
@@ -488,7 +489,7 @@ fn palette_and_overlay_surfaces_mirror_on_the_tree_only_while_open() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     );
     overlay_input.command.mode = "location".into();
     overlay_input.command.text = "https://example.com".into();
@@ -529,7 +530,7 @@ fn address_pill_is_a_display_only_button_never_a_field() {
     // carries a cursor or selection, in any state.
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
-    let space_rows = [space_row()];
+    let space_chips = [space_chip()];
     let mut input = input(
         SemanticFocus {
             command: true,
@@ -541,7 +542,7 @@ fn address_pill_is_a_display_only_button_never_a_field() {
         },
         &browser,
         &rows,
-        &space_rows,
+        &space_chips,
     );
     input.command.address = "example.com".into();
     let tree = semantic_tree(&input);

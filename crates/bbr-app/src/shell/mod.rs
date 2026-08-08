@@ -34,6 +34,4 @@ pub use presentation::{
 pub use snapshot::TestSnapshot;
 pub use space::space_groups;
 pub use space::space_title_budget_chars;
-#[cfg(feature = "testkit")]
-pub use space::{space_states, space_titles};
 pub use tab::{pinned_count, row_state, title_budget_chars};

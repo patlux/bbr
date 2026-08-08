@@ -41,7 +41,6 @@ impl BbrApp {
         // once per frame and shared by the tab/favorites/folders surfaces.
         let u2 = self.u2_rail_data();
         let tab_surface = self.tab_surface(theme, window, cx, &u2.folder_rows, &u2.folder_members);
-        let space_surface = self.space_surface(theme, window, cx);
         let command_bar = self.command_bar(theme, chrome_focused, cx);
         // §11.5 result palette: the only chrome surface opening over the
         // rail's own content (native web views are real child views).
@@ -106,9 +105,11 @@ impl BbrApp {
                     // §11.4: regions stack separated by `density:section-gap`
                     // breathing (S `sp:3` / N `sp:4` / XL `sp:5`).
                     .child(div().h(theme.density.section_gap()).flex_shrink_0())
-                    // §11.4 region order: spaces (while revealed) → favorites →
-                    // tabs → status → toggle → plus menu → footer.
-                    .map(|column| self.u2_pre_tab_children(column, space_surface, favorites))
+                    // §11.4 region order: favorites →
+                    // tabs → status → toggle → plus menu → footer (the
+                    // §11.3 space strip is the footer's flex region, always
+                    // part of the rail).
+                    .map(|column| self.u2_pre_tab_children(column, favorites))
                     .child(div().h(theme.density.section_gap()).flex_shrink_0())
                     .child(tab_surface)
                     .child(div().h(theme.density.section_gap()).flex_shrink_0())
@@ -317,71 +318,6 @@ impl BbrApp {
             .on_mouse_down(MouseButton::Left, press)
             .on_mouse_up(MouseButton::Left, release)
             .on_hover(hover)
-    }
-
-    /// The controller-backed space surface (DESIGN.md §11.3): every space
-    /// grouped under its profile with a per-row chip and a hairline between
-    /// profile groups, plus the New Space row at the foot. The active space
-    /// renders the selected rail; rows run the production pointer activation
-    /// path. The list owns its own GPUI focus handle so `↑/↓`/Enter traverse
-    /// the spaces region (DESIGN.md §9 order: command field → spaces → tabs).
-    fn space_surface(
-        &self,
-        theme: &Theme,
-        window: &Window,
-        cx: &mut Context<Self>,
-    ) -> Stateful<Div> {
-        let browser = self.controller.snapshot();
-        let budget = crate::shell::space_title_budget_chars(theme);
-        let drag_target_space = self.tab_drag.space_target();
-        let groups = crate::shell::space_groups(&browser, budget);
-        let mut children: Vec<gpui::AnyElement> = Vec::new();
-        for group in &groups {
-            if group.hairline_before {
-                children.push(
-                    div()
-                        .h(px(1.0))
-                        .w_full()
-                        .bg(theme.palette.hairline)
-                        .into_any(),
-                );
-            }
-            for row in &group.rows {
-                let space = browser
-                    .spaces
-                    .iter()
-                    .find(|s| s.index == row.index)
-                    .expect("space row derives from the snapshot")
-                    .id;
-                let select = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
-                    this.select_space_via_pointer(space, window, cx)
-                });
-                let mut row = row.clone();
-                if drag_target_space == Some(space) {
-                    row.state = crate::components::SpaceVisualState::DragTarget;
-                }
-                children.push(components::space_row(theme, &row, select).into_any());
-            }
-        }
-        let new_space = cx
-            .listener(|this, _e: &MouseDownEvent, window, cx| this.activate_new_space(window, cx));
-        children.push(components::space_new_row(theme, new_space).into_any());
-
-        div()
-            .id("bbr-space-list")
-            .track_focus(&self.space_strip_handle)
-            .flex()
-            .flex_col()
-            .px(Spacing::sp1())
-            // §9 keyboard-focus ring on the focused space list (the same
-            // structural cue the tab list uses).
-            .when(self.space_strip_handle.is_focused(window), |el| {
-                el.border_2()
-                    .border_color(theme.palette.accent)
-                    .rounded(theme.radius.medium())
-            })
-            .on_key_down(cx.listener(Self::on_space_strip_key_down))
-            .children(children)
     }
 
     /// Map a tab slice to per-row visuals for the current theme. The §4

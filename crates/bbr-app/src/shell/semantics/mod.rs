@@ -4,10 +4,10 @@
 //! Every shell element exposes a stable `bbr-*` id; this module derives the
 //! *typed* semantic model — roles, names, values, enabled/selected/focused
 //! state, and the parent/child hierarchy — from the same structures the
-//! render consumes (rows via [`crate::components::RowVisuals`], space rows
-//! via [`crate::shell::space::space_groups`], the content pane mirroring
-//! `Render::render`), so the E2E semantic assertions cannot drift from the
-//! shell.
+//! render consumes (rows via [`crate::components::RowVisuals`], the §11.3
+//! strip chips via [`crate::components::SpaceChipVisuals`], the content pane
+//! mirroring `Render::render`), so the E2E semantic assertions cannot drift
+//! from the shell.
 //!
 //! **Scope honesty:** this is the internal semantic contract shared with the
 //! testkit and the future platform Accessibility bridge. GPUI 0.2.2
@@ -24,7 +24,7 @@ use bbr_testkit::protocol::{SemanticNode, SemanticRole};
 use crate::app::palette::CommandSurface;
 
 mod command;
-use crate::components::{RowVisuals, SpaceRowVisuals, SpaceVisualState, TabVisualState};
+use crate::components::{RowVisuals, SpaceChipVisuals, TabVisualState};
 use command::{command_field_node, command_surface_node};
 mod content;
 use content::content_node;
@@ -106,11 +106,10 @@ pub struct SemanticInput<'a> {
     /// The rendered tab rows (pinned block + bounded regular window), with
     /// their composed visual states.
     pub rows: &'a [RowVisuals],
-    /// The rendered space rows in render order (grouped by profile).
-    pub space_rows: &'a [SpaceRowVisuals],
-    /// Whether the §11.3 spaces region is revealed under the command field
-    /// (hidden space rows are not part of the §9 traversal order).
-    pub spaces_visible: bool,
+    /// The rendered §11.3 strip chips in canonical display order (one chip
+    /// per space; the chip/identity ids derive from the persistent space
+    /// id, and `selected` mirrors the active space exactly).
+    pub space_chips: &'a [SpaceChipVisuals],
     /// The rendered §11.10 favorite destination tiles (empty → region
     /// hidden with its label).
     pub favorites: &'a [crate::components::FavoriteTileSpec],
@@ -167,13 +166,10 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
         ),
         command_field_node(input),
     ];
-    // §11.4 region order: command field → spaces region (only while
-    // revealed) → favorites grid → pinned → folders → regular tabs → status
-    // row → footer row. Hidden regions render no nodes (§15 mirrors the
-    // render; hidden space rows are not part of the §9 traversal order).
-    if input.spaces_visible {
-        children.push(spaces_list_node(input));
-    }
+    // §11.4 region order: command field → favorites grid → pinned → folders
+    // → regular tabs → status row → footer row (the permanent §11.3 space
+    // strip is the footer's flex region — always part of the rail). Hidden
+    // regions render no nodes (§15 mirrors the render).
     if let Some(favorites) = u2::favorites_node(input.favorites, input.browser) {
         children.push(favorites);
     }
@@ -206,7 +202,7 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
     if let Some(menu) = u2::plus_menu_node(&input.plus_menu) {
         children.push(menu);
     }
-    children.push(u2::footer_node());
+    children.push(u2::footer_node(input));
     children.push(SemanticNode {
         id: crate::sidebar::SIDEBAR_DIVIDER_ID.into(),
         role: SemanticRole::Divider,
@@ -225,75 +221,6 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
         enabled: true,
         selected: false,
         focused: false,
-        children,
-    }
-}
-
-fn spaces_list_node(input: &SemanticInput<'_>) -> SemanticNode {
-    let mut children: Vec<SemanticNode> = input
-        .space_rows
-        .iter()
-        .map(|row| space_row_node(row, input.focus.spaces))
-        .collect();
-    children.push(node(
-        "bbr-space-new",
-        SemanticRole::Button,
-        Some("New Space".into()),
-        None,
-        false,
-        false,
-        vec![],
-    ));
-    node(
-        "bbr-space-list",
-        SemanticRole::List,
-        Some("Spaces".into()),
-        None,
-        false,
-        input.focus.spaces,
-        children,
-    )
-}
-
-fn space_row_node(row: &SpaceRowVisuals, list_focused: bool) -> SemanticNode {
-    let selected = row.state == SpaceVisualState::Selected;
-    let children = vec![
-        node(
-            format!("bbr-profile-chip-{}", row.profile_index),
-            SemanticRole::Chip,
-            Some(format!("Profile · {}", row.chip.letter)),
-            None,
-            false,
-            false,
-            vec![],
-        ),
-        node(
-            format!("bbr-space-title-{}", row.index),
-            SemanticRole::Title,
-            Some(row.title.to_string()),
-            None,
-            selected,
-            false,
-            vec![],
-        ),
-        node(
-            format!("bbr-space-count-{}", row.index),
-            SemanticRole::Count,
-            None,
-            Some(row.count.to_string()),
-            false,
-            false,
-            vec![],
-        ),
-    ];
-    SemanticNode {
-        id: format!("bbr-space-row-{}", row.index),
-        role: SemanticRole::Row,
-        name: Some(row.title.to_string()),
-        value: Some(row.count.to_string()),
-        enabled: true,
-        selected,
-        focused: list_focused && selected,
         children,
     }
 }

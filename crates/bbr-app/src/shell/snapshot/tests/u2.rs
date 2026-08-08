@@ -1,14 +1,13 @@
 use super::*;
 
-/// The §11.4 compact rail hides the §11.3 space rows (and their chips)
-/// until the footer `[Spaces]` control reveals them; the rest of the rail
-/// (footer + tabs) stays intact either way.
+/// The permanent §11.3 space strip always renders its chip/identity ids as
+/// part of the footer; the rest of the rail (footer + tabs) stays intact
+/// either way.
 #[test]
-fn compact_spaces_region_hides_space_rows_until_revealed() {
-    // §11.4 compact rail: the footer `[Spaces]` control reveals the
-    // §11.3 space rows. With the region hidden, no space row/chip id is
-    // exposed and the §9 traversal cannot reach them; the rest of the
-    // rail (footer + tabs) stays intact.
+fn compact_rail_always_renders_the_space_strip_ids() {
+    // §11.4: the strip is the footer's flex region — its chip/identity ids
+    // render unconditionally (there is no revealable spaces region or
+    // toggle state).
     let browser = space_snapshot();
     let ids = visible_ids_u2(
         &browser,
@@ -24,27 +23,31 @@ fn compact_spaces_region_hides_space_rows_until_revealed() {
         None,
         dense_all(0),
         None,
-        &super::super::U2IdsInput {
-            spaces_visible: false,
-            ..Default::default()
-        },
+        &super::super::U2IdsInput::default(),
     );
-    assert!(
-        !ids.iter().any(|id| id.starts_with("bbr-space-row")
-            || id.starts_with("bbr-space-list")
-            || id.starts_with("bbr-space-new")
-            || id.starts_with("bbr-space-title")
-            || id.starts_with("bbr-space-count")),
-        "hidden region exposes no space ids: {ids:?}"
-    );
-    assert!(
-        !ids.iter().any(|id| id.starts_with("bbr-profile-chip")),
-        "hidden region exposes no chips: {ids:?}"
-    );
-    for required in ["bbr-footer", "bbr-downloads", "bbr-space-strip", "bbr-plus"] {
+    // One chip (and identity child) per space, ids from the persistent
+    // space id — never render position or creation-order index.
+    for space in &browser.spaces {
+        assert!(
+            ids.contains(&format!("bbr-space-chip-{}", space.id.0)),
+            "missing chip id for space {}: {ids:?}",
+            space.id.0
+        );
+        assert!(
+            ids.contains(&format!("bbr-space-identity-{}", space.id.0)),
+            "missing identity id for space {}: {ids:?}",
+            space.id.0
+        );
+    }
+    for required in [
+        "bbr-footer",
+        "bbr-downloads",
+        "bbr-space-strip",
+        "bbr-plus",
+        "bbr-tab-list",
+    ] {
         assert!(ids.contains(&required.to_string()), "missing {required}");
     }
-    assert!(ids.contains(&"bbr-tab-list".to_string()));
 }
 
 #[test]
