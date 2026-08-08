@@ -362,12 +362,11 @@ impl NativePortal {
         // makes the idle-portal test acceptance precise: a BBR-owned window
         // other than the parent at the probe point is a regression, a
         // foreign window is environment.
-        let frontmost_at_probe_point_is_this_app = frontmost_at_probe_point
-            .is_some_and(|number| {
-                let windows = NSApplication::sharedApplication(mtm).windows();
-                (0..windows.count())
-                    .any(|index| windows.objectAtIndex(index).windowNumber() as i64 == number)
-            });
+        let frontmost_at_probe_point_is_this_app = frontmost_at_probe_point.is_some_and(|number| {
+            let windows = NSApplication::sharedApplication(mtm).windows();
+            (0..windows.count())
+                .any(|index| windows.objectAtIndex(index).windowNumber() as i64 == number)
+        });
         PortalNativeDiagnostics {
             child_attached: self.attached,
             visible: self.visible,
