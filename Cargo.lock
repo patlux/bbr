@@ -576,6 +576,7 @@ name = "bbr"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-signal",
  "bbr-browser",
  "bbr-command",
  "bbr-domain",

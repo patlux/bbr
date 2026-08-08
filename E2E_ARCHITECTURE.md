@@ -105,7 +105,7 @@ JSON; no macOS, no GPUI, no WebKit).
 
 ### Handshake & auth
 
-- Client → `Hello { protocol_version: 6, token, capabilities }`. Wrong version
+- Client → `Hello { protocol_version: 7, token, capabilities }`. Wrong version
   → `Error("protocol_mismatch")`; wrong token → connection dropped. Correct →
   `Welcome { app_version, pid, capabilities, next_seq }`.
 - Token comes from `--bbr-test-token` (random per spawn, in the harness).
@@ -141,6 +141,7 @@ JSON; no macOS, no GPUI, no WebKit).
 | `ActivateApp` | Re-activate the shown browser window for native Window Server diagnostics; the portal remains non-activating |
 | `GetSnapshot` | Full typed `Snapshot` |
 | `Ping` | Liveness |
+| `CloseWindow` | Flush the successful response, then remove the real GPUI browser window; the production browser-window lifecycle observer calls `cx.quit()` and the process exits cleanly |
 | `Quit` | Gateway flushes `Response::Ok`, then emits `Quitting` and calls `cx.quit()` (graceful shutdown, clean exit without a response/EOF race) |
 
 ### Events (implemented)
@@ -321,6 +322,21 @@ lifecycle and typed resize snapshots):
    `DispatchKeystroke("escape")` → `ChromeFocusChanged{false}` (focus returned
    to the web view).
 9. `Quit` → process exits with success status within 10 s.
+
+## 7 — Process shutdown addendum (`bbr-app/tests/e2e_shutdown.rs`)
+
+One `#[ignore]`d macOS-only suite proves both user process-lifecycle paths:
+
+1. `CloseWindow` removes the real GPUI browser window through the production
+   window path; BBR's browser-window observer calls `cx.quit()` even if an
+   implementation-owned portal child window still exists, and the process
+   exits successfully within 10 seconds.
+2. A real `SIGINT` (the terminal Ctrl-C signal) reaches the async signal
+   listener, which schedules `cx.quit()` on GPUI's foreground/main thread; the
+   complete process exits successfully within 10 seconds.
+
+The suite waits on process state under explicit deadlines and uses the same
+failure artifacts as the other real-app E2E harnesses.
 
 ## 7a. The tabs test (`bbr-app/tests/e2e_tabs.rs`)
 

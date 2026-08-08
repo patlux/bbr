@@ -167,6 +167,12 @@ pub enum BenchmarkKind {
     /// portal window that drew the menu over the same active view — the
     /// warm-presentation class, no tab or session touched.
     ContextMenuOpen,
+    /// The credential sheet presented through the production path (queue
+    /// item 10): the sheet renders in the one `NativeAboveWeb` portal window
+    /// showing the awaiting challenge — the warm-presentation class on the
+    /// existing command-surface budget (no tab or session is created). The
+    /// awaiting challenge is the fixture, recorded before the sample.
+    AuthSheetOpen,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

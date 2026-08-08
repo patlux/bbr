@@ -27,6 +27,9 @@ mod e2e_common;
 #[path = "e2e_shell_portal/support.rs"]
 mod support;
 
+#[path = "e2e_shell_portal/hardening.rs"]
+mod hardening;
+
 use bbr_testkit::protocol::dsl;
 use e2e_common::*;
 use support::*;

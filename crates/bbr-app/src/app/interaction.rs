@@ -376,6 +376,13 @@ impl BbrApp {
     /// actions first and actions stop propagation, so this route is the
     /// panel's primary Escape dismissal).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Escape while a credential sheet is open cancels the challenge
+        // through the auth contract: the request fails and never retries
+        // (the global `escape → FocusWeb` binding routes here).
+        if self.auth_sheet_is_presented() {
+            self.auth_cancel(window, cx);
+            return;
+        }
         // Escape while a context menu is open closes it and restores the
         // origin focus domain (queue item 12, part B; the global
         // `escape → FocusWeb` binding routes here).
@@ -524,6 +531,14 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // A credential sheet owns the keyboard while it is open: printable
+        // chars edit the focused field, Tab moves between fields, Enter
+        // submits, Escape cancels (the sheet routes every decision through
+        // the merged auth contract).
+        if self.auth_sheet_is_presented() {
+            self.on_auth_key_down(event, window, cx);
+            return;
+        }
         // A context-menu presentation owns the keyboard while it is open:
         // Up/Down move the cursor (skipping disabled rows), Enter activates,
         // Escape dismisses (queue item 12, part B).

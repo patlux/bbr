@@ -18,6 +18,16 @@ use crate::portal::state::PortalState;
 use command_rank::CommandRanking;
 use command_text::CommandText;
 use palette::CommandSurface;
+// The credential sheet's only production trigger — the WebKit
+// authentication-challenge delegate — is later adapter work (contract packet
+// non-goals: "WebKit delegates ... remain later adapter work"), so the
+// challenge-arrival/record/present/snapshot seams are dead in a non-testkit
+// build by construction; the testkit build drives the full production seam
+// end to end (queue item 10 evidence).
+#[cfg_attr(not(feature = "testkit"), allow(dead_code))]
+pub(crate) mod auth;
+#[cfg(feature = "testkit")]
+mod auth_benchmarks;
 #[cfg(feature = "testkit")]
 mod benchmarks;
 #[cfg(feature = "testkit")]
@@ -171,6 +181,16 @@ pub struct BbrApp {
     /// area renders for TLS/navigation/offline failures, the contract-derived
     /// recovery routing, and the native-view hide/restore bookkeeping.
     pub(crate) error_surface: crate::app::error_surface::ErrorSurfaceState,
+    /// Authentication challenge sheet composition (queue item 10): the
+    /// coordinator (challenge records, contract lifecycle, redacted
+    /// credential store) and the sheet's edit state. The sheet itself holds
+    /// no authority over the challenge lifecycle; every decision routes
+    /// through the merged portable contract.
+    auth: crate::app::auth::AuthCoordinator,
+    /// GPUI focus handle of the credential sheet (main-window focus; the
+    /// portal window is never key, so keystrokes route through the root
+    /// listener while the sheet is open).
+    auth_handle: FocusHandle,
     /// Downloads panel composition (task packet `downloads-sidebar-panel`):
     /// the controller-owned attempt/history store (L6), the anchored
     /// popover presentation state, and the deterministic row model.
@@ -346,6 +366,8 @@ impl BbrApp {
             ),
             error_surface: crate::app::error_surface::ErrorSurfaceState::default(),
             find_handle: cx.focus_handle(),
+            auth: crate::app::auth::AuthCoordinator::new(),
+            auth_handle: cx.focus_handle(),
             downloads: downloads::DownloadsState::new(),
             downloads_panel_handle: cx.focus_handle(),
             downloads_control_handle: cx.focus_handle(),

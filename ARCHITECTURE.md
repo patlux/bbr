@@ -459,7 +459,11 @@ src/
    retain its entity, and wrap it in `Root::new`.
 5. Open the initial controller-backed tab after the window exists (via the seam).
 6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B, Cmd-T staging, the focus-preserving Cmd-W, command-result arrows/Enter/Cmd-Enter, and the tab-organization commands (Cmd-Shift-P pin toggle, Cmd-Shift-↑/↓ reorder, Cmd-Shift-M staged move) — every handler routes through `with_app` so actions address the app entity with `&mut Window` access from the Root window.
-7. Under testkit: start the gateway, pump engine events into the controller,
+7. Install process-lifecycle ownership: closing the browser window triggers
+   `cx.quit()` even on macOS (where GPUI otherwise stays resident after the
+   last window), and terminal `SIGINT`/Ctrl-C is received asynchronously then
+   routed onto GPUI's foreground/main thread for graceful `cx.quit()` teardown.
+8. Under testkit: start the gateway, pump engine events into the controller,
    and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
 

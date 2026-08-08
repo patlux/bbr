@@ -3,6 +3,8 @@
 //! test files (`e2e_performance.rs`, `e2e_performance_full.rs`,
 //! `e2e_performance_inject.rs`) for the two gate modes and the self-test.
 
+mod auth;
+mod auth_drive;
 pub mod baseline;
 mod benchmarks;
 mod benchmarks_u2;

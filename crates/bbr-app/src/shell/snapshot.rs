@@ -138,6 +138,11 @@ pub struct TestSnapshot {
     /// selection, the deterministic row model with genuine enablement, the
     /// pointer anchor, and the native bridge's ownership diagnostics.
     pub context_menu: bbr_testkit::protocol::ContextMenuSnapshot,
+    /// Typed credential-sheet presentation state (queue item 10): the
+    /// presented challenge's identity/metadata, lifecycle state, redacted
+    /// outcome, and masked edit flags. By construction no credential can
+    /// appear in any wire shape.
+    pub auth: bbr_testkit::protocol::AuthSnapshot,
     /// Whether the §11.3 spaces region is revealed under the command field.
     pub spaces_visible: bool,
     /// Whether the §11.4 plus menu is open and its selected item.

@@ -25,6 +25,7 @@
 //! …); the app probe (`BbrApp::portal_present` / `portal_dismiss` /
 //! `portal_outside_dismiss`) is the first production caller.
 
+pub mod auth_sheet;
 pub mod command;
 pub mod context_menu;
 pub mod find;

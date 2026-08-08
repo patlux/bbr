@@ -48,7 +48,9 @@ use engine::{build_engine, EngineConfig};
 use inject::{IdGen, RandomIdGen, SequentialIdGen};
 #[cfg(not(feature = "testkit"))]
 use window_seam::spawn_event_pump;
-use window_seam::{install_actions, with_app};
+use window_seam::{
+    install_actions, install_sigint_shutdown, quit_when_browser_window_closes, with_app,
+};
 
 /// Parsed command-line flags (all `--bbr-*` are test/injection knobs).
 struct Cli {
@@ -205,6 +207,7 @@ fn main() {
     let application = gpui_platform::application();
     application.run(move |cx: &mut App| {
         gpui_component::init(cx);
+        install_sigint_shutdown(cx);
 
         let bounds = Bounds::centered(None, size(px(cli.window_size.0), px(cli.window_size.1)), cx);
         let options = WindowOptions {
@@ -306,6 +309,7 @@ fn main() {
             })
             .expect("open window");
         let app = app_entity.expect("app entity built with the window root");
+        quit_when_browser_window_closes(cx, window);
 
         // macOS-only native seams: the concrete engine handle (the find
         // adapter binds a live WKWebView without creating/moving sessions)

@@ -9,6 +9,9 @@
 //! only consumer and owns the AppKit side.
 
 use bbr_web::WebRect;
+use objc2::msg_send;
+use objc2::MainThreadMarker;
+use objc2_app_kit::{NSApplication, NSWindow, NSWindowStyleMask};
 use objc2_foundation::{NSPoint, NSRect, NSSize};
 
 /// Epsilon (points) used for idempotent frame synchronization: sub-1/1000 pt
@@ -170,6 +173,144 @@ pub struct PortalNativeDiagnostics {
     /// The non-main policy holds: the portal is never main merely by
     /// showing.
     pub portal_is_main: bool,
+    /// The parent browser window is currently in native fullscreen
+    /// (`NSWindowStyleMaskFullScreen`; measured from the parent `NSWindow`
+    /// on the main thread). Hardening evidence: fullscreen enter/leave must
+    /// re-pin the portal frame and never recreate or orphan the host.
+    pub parent_fullscreen: bool,
+    /// The parent browser window is currently miniaturized
+    /// (`isMiniaturized`). Hardening evidence: while minimized the portal is
+    /// ordered out (never occluding/intercepting) and is re-shown on
+    /// restore when a presentation is still armed.
+    pub parent_minimized: bool,
+    /// The parent browser window is associated with the active space
+    /// (`isOnActiveSpace` — a real Window Server query). Hardening
+    /// evidence: the portal and its parent must always agree on active-space
+    /// membership (attached children follow their parent's space).
+    pub parent_on_active_space: bool,
+    /// The portal window is associated with the active space (same query).
+    /// The invariant is `parent_on_active_space == portal_on_active_space`.
+    pub portal_on_active_space: bool,
+    /// The portal window's backing scale factor (`backingScaleFactor`, a
+    /// real Window Server/display query). Hardening evidence: frame sync is
+    /// point-based, so a display with a different scale factor keeps the
+    /// portal pinned in points (scale only changes the backing pixels).
+    pub portal_scale_factor: f64,
+}
+
+/// The native-side diagnostics builder for the one portal host.
+///
+/// Reads the portal's live AppKit window state on the main thread and
+/// returns the typed [`PortalNativeDiagnostics`] the snapshot mirrors
+/// verbatim (task packet `native-portal-hardening` evidence). Defined next
+/// to its struct so the frame/diagnostics module stays free of the host's
+/// observer machinery; the struct fields are `pub(crate)` in `portal.rs`.
+impl crate::portal::NativePortal {
+    /// Narrow main-thread diagnostics (DESIGN §15 snapshot semantics).
+    pub fn diagnostics(&self, mtm: MainThreadMarker) -> PortalNativeDiagnostics {
+        let portal = self.portal_window.as_deref();
+        let parent = self.parent_window.as_deref();
+        let native_visible = portal.is_some_and(|window| window.isVisible());
+        let nonactivating_panel = portal.is_some_and(|window| {
+            window
+                .styleMask()
+                .contains(NSWindowStyleMask::NonactivatingPanel)
+        });
+        let (portal_is_key, portal_is_main) = portal.map_or((false, false), |window| {
+            (window.isKeyWindow(), window.isMainWindow())
+        });
+        let parent_fullscreen =
+            parent.is_some_and(|window| window.styleMask().contains(NSWindowStyleMask::FullScreen));
+        let parent_minimized = parent.is_some_and(|window| window.isMiniaturized());
+        // Real Window Server membership queries (`isOnActiveSpace`): the
+        // portal is an attached child, so it must always agree with its
+        // parent on active-space membership.
+        let parent_on_active_space = parent.is_some_and(|window| window.isOnActiveSpace());
+        let portal_on_active_space = portal.is_some_and(|window| window.isOnActiveSpace());
+        // Point-based frame evidence: the backing scale factor only changes
+        // the pixels, never the point frame the portal is pinned to. The
+        // `backingScaleFactor` selector is gated behind an objc2-app-kit
+        // feature this crate does not enable, so it is called through the
+        // runtime selector (CGFloat result), same as the NSColor seam.
+        let portal_scale_factor = portal.map_or(0.0, |window| unsafe {
+            msg_send![window, backingScaleFactor]
+        });
+        // The probe point is the last synced frame's center: the centered
+        // probe card's point. AppKit answers with the frontmost window that
+        // would receive a mouseDown there (any application); while the portal
+        // is visible above the parent, that is the portal window itself.
+        let frontmost_at_probe_point = self
+            .frame
+            .map(|frame| {
+                let point = NSPoint::new(frame.x + frame.width / 2.0, frame.y + frame.height / 2.0);
+                // `windowNumberAtPoint:belowWindowWithWindowNumber:` returns
+                // the frontmost window that would be hit by a mouseDown at
+                // the screen location (any application; 0 when no window).
+                NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(point, 0, mtm)
+            })
+            .map(|number| number as i64)
+            .filter(|&number| number != 0);
+        // Raw diagnostic only: with all-spaces/PopUp window behavior the
+        // window server's below-window answer can be an unrelated overlay,
+        // so the deterministic evidence is `portal_owns_probe_point` below.
+        let below_portal_at_probe_point = match (self.frame, portal.map(|w| w.windowNumber())) {
+            (Some(frame), Some(portal_number)) if portal_number != 0 => {
+                let point = NSPoint::new(frame.x + frame.width / 2.0, frame.y + frame.height / 2.0);
+                let below = NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(
+                    point,
+                    portal_number,
+                    mtm,
+                );
+                (below != 0).then_some(below as i64)
+            }
+            _ => None,
+        };
+        // Deterministic hit-test ownership: an attached, visible child
+        // window pinned to the parent content rect covers the probe point,
+        // and AppKit hit-tests child windows above their parent's views.
+        let portal_owns_probe_point = self.attached
+            && native_visible
+            && frame_matches_content(self.frame, self.parent_content_rect);
+        // Measured owner classification of the absolute frontmost answer:
+        // `NSApplication.windows` enumerates every window of this app
+        // (child windows and ordered-out windows included), so membership
+        // proves the number is BBR-owned. A foreign always-on-top window or
+        // a system overlay covering the probe point reports `false`. This
+        // makes the idle-portal test acceptance precise: a BBR-owned window
+        // other than the parent at the probe point is a regression, a
+        // foreign window is environment.
+        let frontmost_at_probe_point_is_this_app = frontmost_at_probe_point.is_some_and(|number| {
+            let windows = NSApplication::sharedApplication(mtm).windows();
+            (0..windows.count())
+                .any(|index| windows.objectAtIndex(index).windowNumber() as i64 == number)
+        });
+        PortalNativeDiagnostics {
+            child_attached: self.attached,
+            visible: self.visible,
+            native_visible,
+            frame: self.frame,
+            parent_content_rect: self.parent_content_rect,
+            synchronized: frame_matches_content(self.frame, self.parent_content_rect),
+            nonactivating_panel,
+            parent_window_number: parent
+                .map(|window| window.windowNumber() as i64)
+                .unwrap_or(0),
+            portal_window_number: portal
+                .map(|window| window.windowNumber() as i64)
+                .unwrap_or(0),
+            frontmost_at_probe_point,
+            frontmost_at_probe_point_is_this_app,
+            below_portal_at_probe_point,
+            portal_owns_probe_point,
+            portal_is_key,
+            portal_is_main,
+            parent_fullscreen,
+            parent_minimized,
+            parent_on_active_space,
+            portal_on_active_space,
+            portal_scale_factor,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -287,6 +428,11 @@ mod tests {
             portal_owns_probe_point: true,
             portal_is_key: false,
             portal_is_main: false,
+            parent_fullscreen: false,
+            parent_minimized: false,
+            parent_on_active_space: true,
+            portal_on_active_space: true,
+            portal_scale_factor: 2.0,
         };
         assert!(diagnostics.child_attached);
         assert!(!diagnostics.visible);
@@ -298,5 +444,10 @@ mod tests {
         assert!(diagnostics.portal_owns_probe_point);
         assert!(!diagnostics.portal_is_key);
         assert!(!diagnostics.portal_is_main);
+        assert!(!diagnostics.parent_fullscreen);
+        assert!(!diagnostics.parent_minimized);
+        assert!(diagnostics.parent_on_active_space);
+        assert!(diagnostics.portal_on_active_space);
+        assert_eq!(diagnostics.portal_scale_factor, 2.0);
     }
 }

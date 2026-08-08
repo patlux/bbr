@@ -53,5 +53,11 @@ gpui::actions!(
         ZoomOut,
         /// `Cmd-0`: reset the active view's site to the default zoom level.
         ZoomReset,
+        /// `Tab`/`Shift-Tab`: move the credential sheet's field cursor
+        /// between Username and Password while the sheet is open (queue item
+        /// 10). Bound app-wide so the binding outranks gpui-component's
+        /// default focus-traversal `Tab`; the handler is a no-op when no
+        /// sheet is presented (Tab had no observable effect before).
+        AuthSheetFieldTab,
     ]
 );

@@ -17,6 +17,7 @@ use bbr_web::{WebEvent, WebRect, WebViewId};
 
 use crate::app::palette::CommandSurface;
 
+mod auth;
 pub mod command;
 mod context_menu;
 pub(crate) mod downloads;
@@ -68,6 +69,10 @@ struct State {
     /// context-menu benchmarks commit only against it (render-gated, see
     /// `context_menu`).
     latest_context_menu: Option<context_menu::ContextMenuObservation>,
+    /// The credential-sheet presentation the portal render actually drew;
+    /// the auth benchmarks commit only against it (render-gated, redacted —
+    /// see `auth`).
+    latest_auth: Option<auth::AuthObservation>,
     latest_active_web_view: Option<WebViewId>,
     latest_active_space: TestSpaceId,
     latest_sidebar_visible: bool,
@@ -140,6 +145,9 @@ struct Pending {
     /// The exact context-menu presentation the pending sample must commit
     /// from (open/focused over the bound view at the armed anchor).
     context_menu: Option<context_menu::ContextMenuExpectation>,
+    /// The exact credential-sheet presentation identity the pending sample
+    /// must commit from (open with the armed challenge id).
+    auth: Option<auth::AuthExpectation>,
 }
 
 impl PerformanceProbe {
@@ -154,6 +162,7 @@ impl PerformanceProbe {
                 latest_error_surface: error_surface::ErrorSurfaceObservation::default(),
                 latest_zoom: None,
                 latest_context_menu: None,
+                latest_auth: None,
                 latest_active_web_view: None,
                 latest_active_space: TestSpaceId(0),
                 latest_sidebar_visible: true,
@@ -183,6 +192,7 @@ impl PerformanceProbe {
                     error_surface: None,
                     zoom: None,
                     context_menu: None,
+                    auth: None,
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
@@ -230,6 +240,7 @@ impl PerformanceProbe {
             error_surface: None,
             zoom: None,
             context_menu: None,
+            auth: None,
         });
         Ok(())
     }
@@ -505,6 +516,7 @@ impl PerformanceProbe {
             || !error_surface::error_surface_matches(pending, &state)
             || !zoom::zoom_matches(pending, &state)
             || !context_menu::context_menu_matches(pending, &state)
+            || !auth::auth_matches(pending, &state)
         {
             #[cfg(feature = "testkit")]
             if let Some(_d) = pending.downloads.as_ref() {

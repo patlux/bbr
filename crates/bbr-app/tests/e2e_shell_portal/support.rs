@@ -174,6 +174,75 @@ pub(super) fn assert_frontmost_ownership(snapshot: &Snapshot) {
     );
 }
 
+/// Poll until the portal snapshot satisfies `predicate` (the native-portal-
+/// hardening lifecycle waits: fullscreen/minimize/space transitions settle
+/// asynchronously through real AppKit + the Window Server, so the tests
+/// synchronize on typed snapshot state under the standard deadline).
+/// Returns the satisfying snapshot.
+pub(super) fn wait_portal_state(
+    client: &mut Client,
+    deadline: Instant,
+    what: &str,
+    predicate: impl Fn(&bbr_testkit::protocol::PortalSnapshot) -> bool,
+) -> bbr_testkit::protocol::Snapshot {
+    loop {
+        let snapshot = client.snapshot().expect("portal lifecycle snapshot");
+        if predicate(&snapshot.portal) {
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "portal lifecycle state {what:?} did not converge; last: \
+             parent_fullscreen {}, parent_minimized {}, frame_synced {}, \
+             native_visible {}, owns_probe {}, portal #{}, parent #{}",
+            snapshot.portal.parent_fullscreen,
+            snapshot.portal.parent_minimized,
+            snapshot.portal.frame_synced,
+            snapshot.portal.native_visible,
+            snapshot.portal.portal_owns_probe_point,
+            snapshot.portal.portal_window_number,
+            snapshot.portal.parent_window_number
+        );
+        std::thread::yield_now();
+    }
+}
+
+/// Assert the active-space membership invariant: the portal is an attached
+/// child, so it must always agree with its parent on Window Server
+/// active-space membership (real `isOnActiveSpace` queries).
+pub(super) fn assert_active_space_agreement(snapshot: &Snapshot) {
+    let p = &snapshot.portal;
+    assert!(
+        p.parent_on_active_space,
+        "the browser window must be on the active space"
+    );
+    assert_eq!(
+        p.parent_on_active_space, p.portal_on_active_space,
+        "the portal must follow its parent's space membership"
+    );
+}
+
+/// Poll the real Window Server (from the test process) until the app process
+/// `pid` has no on-screen window left. Bounded by `deadline`; on timeout the
+/// failure reports the current on-screen count. The native-portal-hardening
+/// close evidence: closing the browser window while a portal presentation is
+/// open must never leave the portal window on screen (never orphaned, never
+/// occluding, never intercepting input).
+pub(super) fn wait_no_onscreen_windows(pid: i32, deadline: Instant) -> usize {
+    loop {
+        let count = bbr_web_macos::window_server::onscreen_window_count(pid);
+        if count == 0 {
+            return count;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "BBR windows still on screen after the browser window closed: {count} \
+             (the portal must never be left orphaned/occluding/intercepting)"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+}
+
 /// Poll until the portal's deferred frame application and at least one real
 /// AppKit Window Server query corroborate the attached-child ordering. Bounded
 /// by the standard deadline; on timeout the failure reports both raw queries.

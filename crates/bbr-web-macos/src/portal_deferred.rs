@@ -14,7 +14,7 @@
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
 use objc2::{define_class, msg_send, sel, DefinedClass, MainThreadMarker, MainThreadOnly};
-use objc2_app_kit::{NSWindow, NSWindowStyleMask};
+use objc2_app_kit::{NSWindow, NSWindowCollectionBehavior, NSWindowStyleMask};
 use objc2_foundation::{NSObject, NSRect};
 
 /// `NSWindowAbove` (1) — the crate's `objc2-app-kit` features do not enable
@@ -45,6 +45,28 @@ pub(crate) enum DeferredWindowOp {
     /// borrow (e.g. a testkit dispatch's `update_window`) is held (the same
     /// re-entrancy hazard as the other ops).
     Close,
+    /// Enter/exit native fullscreen on the parent (`toggleFullScreen:`),
+    /// adding the primary fullscreen collection behavior first when the
+    /// window is not explicitly fullscreen-capable. Deferred: the fullscreen
+    /// transition synchronously resizes/moves the window and posts
+    /// move/resize notifications into GPUI, which re-borrows the `App`
+    /// (native-portal-hardening lifecycle driver).
+    ToggleFullscreen,
+    /// Minimize the parent (`miniaturize:`) — deferred for the same
+    /// notification re-entrancy reason.
+    Minimize,
+    /// Restore the parent (`deminiaturize:`) — deferred for the same
+    /// notification re-entrancy reason.
+    Deminimize,
+    /// Set the window's collection behavior (native-portal-hardening
+    /// Window Server space-assignment driver).
+    CollectionBehavior(NSWindowCollectionBehavior),
+    /// Close the parent browser window through the real AppKit close path
+    /// (`performClose:`). Deferred: the close synchronously posts
+    /// `NSWindowWillCloseNotification`, which GPUI handles by removing the
+    /// window from its arena and re-borrowing the `App` (the same
+    /// re-entrancy hazard as `Close`).
+    CloseParent,
 }
 
 /// Ivars of [`PortalDeferredWork`]: the retained window and the operation.
@@ -78,6 +100,27 @@ define_class!(
                 DeferredWindowOp::StyleMask(mask) => ivars.window.setStyleMask(*mask),
                 DeferredWindowOp::Frame(frame) => ivars.window.setFrame_display(*frame, false),
                 DeferredWindowOp::Close => ivars.window.close(),
+                DeferredWindowOp::ToggleFullscreen => {
+                    // Deterministic fullscreen capability: titled windows are
+                    // fullscreen-capable by default; make it explicit when
+                    // the behavior bit is missing (safe reads/writes on the
+                    // bare turn).
+                    let behavior = ivars.window.collectionBehavior();
+                    if !behavior.contains(NSWindowCollectionBehavior::FullScreenPrimary)
+                        && !behavior.contains(NSWindowCollectionBehavior::FullScreenAuxiliary)
+                    {
+                        ivars.window.setCollectionBehavior(
+                            behavior | NSWindowCollectionBehavior::FullScreenPrimary,
+                        );
+                    }
+                    ivars.window.toggleFullScreen(None);
+                }
+                DeferredWindowOp::Minimize => ivars.window.miniaturize(None),
+                DeferredWindowOp::Deminimize => ivars.window.deminiaturize(None),
+                DeferredWindowOp::CollectionBehavior(behavior) => {
+                    ivars.window.setCollectionBehavior(*behavior);
+                }
+                DeferredWindowOp::CloseParent => ivars.window.performClose(None),
                 DeferredWindowOp::AttachChild { parent, portal } => {
                     // SAFETY: main thread; both windows are live; the
                     // child-window attachment is an AppKit main-thread API

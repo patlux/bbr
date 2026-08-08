@@ -312,10 +312,10 @@ fn _connection_requests(
                 }
             }
             _other if !authenticated => return,
-            Request::Quit => {
-                // A Quit response must reach the client before the app exits.
-                // Dispatching Quit first lets `cx.quit()` tear down the
-                // process and socket while the response is still queued,
+            request @ (Request::Quit | Request::CloseWindow) => {
+                // A shutdown response must reach the client before the app exits.
+                // Dispatching shutdown first lets app/window teardown destroy
+                // the process and socket while the response is still queued,
                 // producing an EOF race under host contention. Flush the Ok
                 // frame through the connection's sole writer, then ask the
                 // app handler to perform graceful shutdown.
@@ -333,7 +333,7 @@ fn _connection_requests(
                     return;
                 }
                 let _ = flushed_rx.recv_timeout(Duration::from_secs(5));
-                let _ = handler(Request::Quit);
+                let _ = handler(request);
                 return;
             }
             other => handler(other),

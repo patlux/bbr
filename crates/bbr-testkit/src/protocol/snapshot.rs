@@ -546,6 +546,75 @@ pub struct PortalSnapshot {
     /// The non-main policy holds: the portal window is never main merely by
     /// showing.
     pub portal_is_main: bool,
+    /// The parent browser window is currently in native fullscreen
+    /// (native-portal-hardening evidence; `NSWindowStyleMaskFullScreen`
+    /// measured from the parent `NSWindow`). Fullscreen enter/leave must
+    /// re-pin the portal frame and never recreate or orphan the host.
+    #[serde(default)]
+    pub parent_fullscreen: bool,
+    /// The parent browser window is currently miniaturized
+    /// (native-portal-hardening evidence; `isMiniaturized`). While
+    /// minimized the portal must be ordered out — never occluding or
+    /// intercepting — and re-shown on restore when a presentation is armed.
+    #[serde(default)]
+    pub parent_minimized: bool,
+    /// The parent browser window is associated with the active space
+    /// (real Window Server `isOnActiveSpace` query). Hardening invariant:
+    /// the portal and its parent must always agree on active-space
+    /// membership.
+    #[serde(default)]
+    pub parent_on_active_space: bool,
+    /// The portal window is associated with the active space (same query).
+    #[serde(default)]
+    pub portal_on_active_space: bool,
+    /// The portal window's backing scale factor (real display query).
+    /// Frame sync is point-based, so a display with a different scale
+    /// factor keeps the portal pinned in points (scale only changes the
+    /// backing pixels).
+    #[serde(default)]
+    pub portal_scale_factor: f64,
+}
+
+/// Typed credential-sheet presentation state (queue item 10, P8c
+/// Auth-Adapter; DESIGN.md §15). Mirrors the app's redacted auth snapshot:
+/// the presented challenge's identity and authority metadata, its contract
+/// lifecycle state, the redacted decision representation (the contract's
+/// redaction: `credential:#<n>`, `cancelled`, `superseded:#<n>`, …), the
+/// focused field, and masked entered flags. By construction no field can
+/// hold a credential: the typed values never leave the sheet.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AuthSnapshot {
+    /// A credential sheet is currently presented.
+    pub open: bool,
+    /// The presented challenge's stable id.
+    pub challenge: Option<u64>,
+    /// The owning web view of the presented challenge.
+    pub web_view: Option<WebViewId>,
+    /// The normalized host the challenge belongs to (authority metadata,
+    /// never a credential).
+    pub host: String,
+    /// The realm label, when the challenge carried one.
+    pub realm: Option<String>,
+    /// The closed HTTP scheme name (`Basic`/`Digest`/`NTLM`/`Negotiate`).
+    pub scheme: String,
+    /// `origin` or `proxy`.
+    pub authority: String,
+    /// The presented challenge's contract lifecycle state label.
+    pub state: String,
+    /// The redacted decision representation (the contract's redaction) of
+    /// the presented challenge's terminal state, or of the last decided
+    /// challenge after the sheet closed (`credential:#<n>`, `cancelled`,
+    /// `superseded:#<n>`, …).
+    pub outcome: Option<String>,
+    /// Which sheet field owns the keyboard cursor.
+    pub focused_field: Option<String>,
+    /// Masked: whether the username field holds any characters.
+    pub username_entered: bool,
+    /// Masked: whether the password field holds any characters.
+    pub password_entered: bool,
+    /// Challenge ids recorded but not yet presented (FIFO awaits).
+    pub awaiting: Vec<u64>,
 }
 
 /// Typed find-in-page presentation state (task packet
@@ -911,6 +980,12 @@ pub struct Snapshot {
     /// anchor, and the native bridge's ownership diagnostics.
     #[serde(default)]
     pub context_menu: ContextMenuSnapshot,
+    /// Typed credential-sheet presentation state (queue item 10): the
+    /// presented challenge's identity/metadata, lifecycle state, redacted
+    /// outcome, and masked edit flags. By construction no credential can
+    /// appear in any wire shape.
+    #[serde(default)]
+    pub auth: AuthSnapshot,
     /// U2 compact-sidebar presentation state.
     #[serde(default = "u2::default_true")]
     pub spaces_visible: bool,

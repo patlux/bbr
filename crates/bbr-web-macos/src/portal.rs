@@ -34,16 +34,19 @@
 //! main (non-activating panel + `orderFront:` only).
 
 use objc2::rc::Retained;
-use objc2::{class, define_class, msg_send, sel, DefinedClass, MainThreadMarker, MainThreadOnly};
+use objc2::{class, msg_send, sel, MainThreadMarker};
 use objc2_app_kit::{
-    NSApplication, NSView, NSWindow, NSWindowAnimationBehavior, NSWindowDidMoveNotification,
-    NSWindowDidResizeNotification, NSWindowStyleMask,
+    NSView, NSWindow, NSWindowAnimationBehavior, NSWindowDidChangeScreenNotification,
+    NSWindowDidDeminiaturizeNotification, NSWindowDidEnterFullScreenNotification,
+    NSWindowDidMiniaturizeNotification, NSWindowDidMoveNotification, NSWindowDidResizeNotification,
+    NSWindowStyleMask, NSWindowWillCloseNotification,
 };
-use objc2_foundation::{NSNotification, NSNotificationCenter, NSObject, NSPoint};
+use objc2_foundation::{NSNotificationCenter, NSObject};
 
 use crate::portal_deferred::{defer_window_op, DeferredWindowOp};
 pub use crate::portal_frame::PortalNativeDiagnostics;
-use crate::portal_frame::{frame_matches_content, should_sync_frame, PortalFrame};
+use crate::portal_frame::{should_sync_frame, PortalFrame};
+use crate::portal_lifecycle::PortalSyncObserver;
 
 /// Why [`NativePortal::attach`] could not establish the portal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,52 +55,6 @@ pub enum PortalAttachError {
     NullPortalView,
     NoParentWindow,
     NoPortalWindow,
-}
-
-/// Ivars of [`PortalSyncObserver`]: a raw pointer to the owning portal's
-/// boxed heap allocation.
-///
-/// Main-thread-only: the observer is created by and retained by the portal,
-/// and removed before the portal is dropped, so the pointer is always valid
-/// while the observer can fire. The portal is allocated on the boxed heap in
-/// [`NativePortal::attach`] before the observer is installed and never moves
-/// afterwards (see the module-level safety invariant).
-struct PortalSyncIvars {
-    portal: *mut NativePortal,
-}
-
-define_class!(
-    /// Receives the parent window's move/resize notifications and re-pins
-    /// the portal frame to the parent content rect. Frame synchronization is
-    /// AppKit's job per the packet's constraint list, so it is observed
-    /// natively and never routed through GPUI.
-    #[unsafe(super = NSObject)]
-    #[ivars = PortalSyncIvars]
-    #[thread_kind = MainThreadOnly]
-    #[name = "BBRPortalSyncObserver"]
-    struct PortalSyncObserver;
-
-    impl PortalSyncObserver {
-        #[unsafe(method(portalSync:))]
-        fn portal_sync(&self, _notification: Option<&NSNotification>) {
-            // SAFETY: `portalSync:` fires on the main thread (window
-            // notifications are posted there), and the portal outlives the
-            // observer, which it owns and removes first. The pointer targets
-            // the portal's boxed heap allocation, which never moves.
-            let portal = unsafe { &mut *self.ivars().portal };
-            if let Some(mtm) = MainThreadMarker::new() {
-                portal.sync_frame(mtm);
-            }
-        }
-    }
-);
-
-impl PortalSyncObserver {
-    fn new(mtm: MainThreadMarker, portal: *mut NativePortal) -> Retained<Self> {
-        let this = Self::alloc(mtm).set_ivars(PortalSyncIvars { portal });
-        // SAFETY: `init` on the main thread (ChromeResponder pattern).
-        unsafe { msg_send![super(this), init] }
-    }
 }
 
 /// The one native portal host per BBR browser window.
@@ -114,16 +71,28 @@ impl PortalSyncObserver {
 pub struct NativePortal {
     /// Retained GPUI portal root view (keeps the raw pointer valid).
     portal_view: Option<Retained<NSView>>,
-    portal_window: Option<Retained<NSWindow>>,
-    parent_window: Option<Retained<NSWindow>>,
+    /// Retained portal `NSWindow` (keeps the raw pointer valid).
+    /// `pub(crate)`: the lifecycle-hardening and diagnostics impl blocks in
+    /// the sibling `portal_lifecycle` / `portal_frame` modules read it.
+    pub(crate) portal_window: Option<Retained<NSWindow>>,
+    /// Retained browser-window `NSWindow` (the parent). `pub(crate)`: see
+    /// `portal_window`.
+    pub(crate) parent_window: Option<Retained<NSWindow>>,
     observer: Option<Retained<PortalSyncObserver>>,
-    attached: bool,
-    visible: bool,
+    /// Child-window attachment established (diagnostics evidence).
+    /// `pub(crate)`: read by the `portal_frame` diagnostics impl.
+    pub(crate) attached: bool,
+    /// Commanded visibility (the presentation is armed). `pub(crate)`: read
+    /// by the `portal_lifecycle` restore/re-show paths and `portal_frame`
+    /// diagnostics.
+    pub(crate) visible: bool,
     torn_down: bool,
     /// Last frame pinned to the parent content rect (idempotence cache).
-    frame: Option<PortalFrame>,
+    /// `pub(crate)`: read by the `portal_frame` diagnostics impl.
+    pub(crate) frame: Option<PortalFrame>,
     /// Parent content rect the frame was derived from (diagnostics).
-    parent_content_rect: Option<PortalFrame>,
+    /// `pub(crate)`: read by the `portal_frame` diagnostics impl.
+    pub(crate) parent_content_rect: Option<PortalFrame>,
 }
 
 impl NativePortal {
@@ -305,91 +274,6 @@ impl NativePortal {
         }
     }
 
-    /// Narrow main-thread diagnostics (DESIGN §15 snapshot semantics).
-    pub fn diagnostics(&self, mtm: MainThreadMarker) -> PortalNativeDiagnostics {
-        let portal = self.portal_window.as_deref();
-        let parent = self.parent_window.as_deref();
-        let native_visible = portal.is_some_and(|window| window.isVisible());
-        let nonactivating_panel = portal.is_some_and(|window| {
-            window
-                .styleMask()
-                .contains(NSWindowStyleMask::NonactivatingPanel)
-        });
-        let (portal_is_key, portal_is_main) = portal.map_or((false, false), |window| {
-            (window.isKeyWindow(), window.isMainWindow())
-        });
-        // The probe point is the last synced frame's center: the centered
-        // probe card's point. AppKit answers with the frontmost window that
-        // would receive a mouseDown there (any application); while the portal
-        // is visible above the parent, that is the portal window itself.
-        let frontmost_at_probe_point = self
-            .frame
-            .map(|frame| {
-                let point = NSPoint::new(frame.x + frame.width / 2.0, frame.y + frame.height / 2.0);
-                // `windowNumberAtPoint:belowWindowWithWindowNumber:` returns
-                // the frontmost window that would be hit by a mouseDown at
-                // the screen location (any application; 0 when no window).
-                NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(point, 0, mtm)
-            })
-            .map(|number| number as i64)
-            .filter(|&number| number != 0);
-        // Raw diagnostic only: with all-spaces/PopUp window behavior the
-        // window server's below-window answer can be an unrelated overlay,
-        // so the deterministic evidence is `portal_owns_probe_point` below.
-        let below_portal_at_probe_point = match (self.frame, portal.map(|w| w.windowNumber())) {
-            (Some(frame), Some(portal_number)) if portal_number != 0 => {
-                let point = NSPoint::new(frame.x + frame.width / 2.0, frame.y + frame.height / 2.0);
-                let below = NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(
-                    point,
-                    portal_number,
-                    mtm,
-                );
-                (below != 0).then_some(below as i64)
-            }
-            _ => None,
-        };
-        // Deterministic hit-test ownership: an attached, visible child
-        // window pinned to the parent content rect covers the probe point,
-        // and AppKit hit-tests child windows above their parent's views.
-        let portal_owns_probe_point = self.attached
-            && native_visible
-            && frame_matches_content(self.frame, self.parent_content_rect);
-        // Measured owner classification of the absolute frontmost answer:
-        // `NSApplication.windows` enumerates every window of this app
-        // (child windows and ordered-out windows included), so membership
-        // proves the number is BBR-owned. A foreign always-on-top window or
-        // a system overlay covering the probe point reports `false`. This
-        // makes the idle-portal test acceptance precise: a BBR-owned window
-        // other than the parent at the probe point is a regression, a
-        // foreign window is environment.
-        let frontmost_at_probe_point_is_this_app = frontmost_at_probe_point.is_some_and(|number| {
-            let windows = NSApplication::sharedApplication(mtm).windows();
-            (0..windows.count())
-                .any(|index| windows.objectAtIndex(index).windowNumber() as i64 == number)
-        });
-        PortalNativeDiagnostics {
-            child_attached: self.attached,
-            visible: self.visible,
-            native_visible,
-            frame: self.frame,
-            parent_content_rect: self.parent_content_rect,
-            synchronized: frame_matches_content(self.frame, self.parent_content_rect),
-            nonactivating_panel,
-            parent_window_number: parent
-                .map(|window| window.windowNumber() as i64)
-                .unwrap_or(0),
-            portal_window_number: portal
-                .map(|window| window.windowNumber() as i64)
-                .unwrap_or(0),
-            frontmost_at_probe_point,
-            frontmost_at_probe_point_is_this_app,
-            below_portal_at_probe_point,
-            portal_owns_probe_point,
-            portal_is_key,
-            portal_is_main,
-        }
-    }
-
     fn install_observer(&mut self, mtm: MainThreadMarker) {
         let Some(parent_ptr) = self
             .parent_window
@@ -418,6 +302,42 @@ impl NativePortal {
                 &observer,
                 sel!(portalSync:),
                 Some(NSWindowDidResizeNotification),
+                Some(&*parent_ptr),
+            );
+            // Window-lifecycle hardening (task packet
+            // `native-portal-hardening`): fullscreen enter/leave, minimize/
+            // restore, display changes, and the parent's close all re-enter
+            // the host through the same observer on real AppKit
+            // notifications, so every transition leaves the host correct or
+            // cleanly torn down.
+            center.addObserver_selector_name_object(
+                &observer,
+                sel!(portalLifecycle:),
+                Some(NSWindowDidEnterFullScreenNotification),
+                Some(&*parent_ptr),
+            );
+            center.addObserver_selector_name_object(
+                &observer,
+                sel!(portalLifecycle:),
+                Some(NSWindowDidMiniaturizeNotification),
+                Some(&*parent_ptr),
+            );
+            center.addObserver_selector_name_object(
+                &observer,
+                sel!(portalLifecycle:),
+                Some(NSWindowDidDeminiaturizeNotification),
+                Some(&*parent_ptr),
+            );
+            center.addObserver_selector_name_object(
+                &observer,
+                sel!(portalLifecycle:),
+                Some(NSWindowDidChangeScreenNotification),
+                Some(&*parent_ptr),
+            );
+            center.addObserver_selector_name_object(
+                &observer,
+                sel!(portalLifecycle:),
+                Some(NSWindowWillCloseNotification),
                 Some(&*parent_ptr),
             );
         }

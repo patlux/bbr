@@ -93,6 +93,10 @@ pub enum PortalContent {
     /// surface from the app entity each frame, so the menu carries no data
     /// of its own.
     ContextMenu,
+    /// The conventional macOS credential sheet (queue item 10). The portal
+    /// render derives the redacted surface from the app entity each frame;
+    /// the raw credential never exists in any serializable shape.
+    Auth,
 }
 
 /// The portal window's render state, shared between the app (present/dismiss)
@@ -170,6 +174,14 @@ impl PortalProbeState {
                 crate::app::find::FIND_NEXT_ID.into(),
                 crate::app::find::FIND_CLOSE_ID.into(),
             ],
+            Some(PortalContent::Auth) => vec![
+                crate::app::auth::AUTH_SHEET_ID.into(),
+                crate::app::auth::AUTH_HEADER_ID.into(),
+                crate::app::auth::AUTH_USERNAME_ID.into(),
+                crate::app::auth::AUTH_PASSWORD_ID.into(),
+                crate::app::auth::AUTH_SUBMIT_ID.into(),
+                crate::app::auth::AUTH_CANCEL_ID.into(),
+            ],
             Some(PortalContent::Command(surface)) => vec![match surface {
                 crate::app::palette::CommandSurface::Palette => {
                     crate::app::palette::PALETTE_ID.into()
@@ -228,6 +240,15 @@ impl PortalProbeState {
     pub fn present_context_menu(&mut self, request: PortalRequest, viewport: Sz) {
         self.request = Some(request);
         self.content = Some(PortalContent::ContextMenu);
+        self.viewport = viewport;
+    }
+
+    /// Present the credential sheet (the render derives the redacted
+    /// surface from the app entity each frame; the raw credential never
+    /// enters this state).
+    pub fn present_auth(&mut self, request: PortalRequest, viewport: Sz) {
+        self.request = Some(request);
+        self.content = Some(PortalContent::Auth);
         self.viewport = viewport;
     }
 
@@ -354,6 +375,36 @@ impl PortalRoot {
             });
         });
     }
+
+    /// The credential sheet's Log In button path (the production submit
+    /// seam the keyboard Enter routes to): the decision is applied through
+    /// the merged auth contract by `BbrApp::auth_submit`.
+    pub(super) fn auth_submit_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.auth_submit(window, cx)
+            });
+        });
+    }
+
+    /// The credential sheet's Cancel button path (the production cancel
+    /// seam the keyboard Escape routes to): the challenge is cancelled
+    /// through the contract — the request fails and never retries.
+    pub(super) fn auth_cancel_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.auth_cancel(window, cx)
+            });
+        });
+    }
 }
 
 impl Render for PortalRoot {
@@ -437,10 +488,6 @@ impl Render for PortalRoot {
                     return div().size_full().bg(transparent_black()).into_any();
                 };
                 let surface = app.read(cx).context_menu_surface();
-                // The context-menu render milestone: record the menu state
-                // this render actually drew into the probe, so a pending
-                // context-menu benchmark can commit only from a frame that
-                // presented the armed open identity (fast-but-wrong guard).
                 #[cfg(feature = "testkit")]
                 app.read(cx).observe_portal_context_menu_render();
                 let card = crate::portal::context_menu::context_menu_card(&surface, rect, cx)
@@ -450,11 +497,6 @@ impl Render for PortalRoot {
                             cx.stop_propagation();
                         }),
                     );
-                // §13 one-pointer-action dismissal: a press on the portal
-                // backdrop (the whole window over the glass) closes the menu
-                // through the production close path. The surface root IS the
-                // backdrop, so it carries the registered §15 backdrop id
-                // (the tree matches `PortalProbeState::ids` exactly).
                 div()
                     .id(crate::app::context_menu::CONTEXT_MENU_BACKDROP_ID)
                     .size_full()
@@ -463,6 +505,30 @@ impl Render for PortalRoot {
                         MouseButton::Left,
                         cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
                             this.dismiss_context_menu_surface(cx);
+                        }),
+                    )
+                    .child(card)
+                    .into_any()
+            }
+            PortalContent::Auth => {
+                drop(probe);
+                let Some(app) = self.app.as_ref() else {
+                    return div().size_full().bg(transparent_black()).into_any();
+                };
+                let Some(surface) = app.read(cx).auth_surface() else {
+                    return div().size_full().bg(transparent_black()).into_any();
+                };
+                #[cfg(feature = "testkit")]
+                app.read(cx).observe_portal_auth_render(&surface);
+                let card = crate::portal::auth_sheet::auth_sheet(&surface, rect, cx);
+                div()
+                    .id("bbr-auth-portal-surface")
+                    .size_full()
+                    .bg(transparent_black())
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
+                            cx.stop_propagation();
                         }),
                     )
                     .child(card)

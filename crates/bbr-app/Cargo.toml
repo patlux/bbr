@@ -20,6 +20,7 @@ testkit = ["dep:bbr-testkit", "dep:mach2", "dep:serde_json"]
 
 [dependencies]
 anyhow = "1"
+async-signal = "0.2"
 bbr-browser.workspace = true
 bbr-command.workspace = true
 bbr-split.workspace = true

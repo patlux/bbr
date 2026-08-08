@@ -243,6 +243,30 @@ pub fn portal_teardown() -> Request {
     Request::PortalTeardown
 }
 
+/// Drive the parent's real AppKit fullscreen transition
+/// (`toggleFullScreen:`); the E2E polls `parent_fullscreen` + frame sync.
+pub fn portal_set_fullscreen(fullscreen: bool) -> Request {
+    Request::PortalSetFullscreen { fullscreen }
+}
+
+/// Drive the parent's real AppKit minimize/restore (`miniaturize:` /
+/// `deminiaturize:`).
+pub fn portal_set_minimized(minimized: bool) -> Request {
+    Request::PortalSetMinimized { minimized }
+}
+
+/// Drive a real Window Server space-assignment transition (set/clear the
+/// `CanJoinAllSpaces` collection behavior).
+pub fn portal_set_all_spaces(all_spaces: bool) -> Request {
+    Request::PortalSetAllSpaces { all_spaces }
+}
+
+/// Close the parent browser window through the real AppKit close path
+/// (`performClose:`) while a portal presentation is open.
+pub fn portal_close_window() -> Request {
+    Request::PortalCloseWindow
+}
+
 /// Open the find-in-page presentation over the active web view (the
 /// production `Cmd-F` path; task packet `find-in-page-portal-bar`).
 pub fn find_open() -> Request {
@@ -295,6 +319,53 @@ pub fn zoom_reset() -> Request {
 /// frontmost-evidence premise).
 pub fn activate_app() -> Request {
     Request::ActivateApp
+}
+
+/// Dispatch one keystroke through GPUI's real input path (the production
+/// key seam the command/find/auth suites drive).
+pub fn keystroke(keystroke: impl Into<String>) -> Request {
+    Request::DispatchKeystroke {
+        keystroke: keystroke.into(),
+    }
+}
+
+/// Present a deterministic authentication challenge through the production
+/// challenge-arrival seam (`BbrApp::auth_on_challenge`, queue item 10): the
+/// sheet opens over the active window. The fixture is an HTTPS origin Basic
+/// challenge for `intranet.example` with realm `Finance VPN`, bound to the
+/// owning `web_view`; it carries only authority metadata, never credentials.
+pub fn auth_present_challenge(profile: ProfileId, web_view: WebViewId) -> Request {
+    use bbr_web::auth_challenges::{AuthAuthority, AuthScheme, HttpScheme};
+    Request::AuthPresentChallenge {
+        profile,
+        web_view,
+        http_scheme: HttpScheme::Https,
+        scheme: AuthScheme::Basic,
+        host: "intranet.example".to_string(),
+        port: 0,
+        realm: Some("Finance VPN".to_string()),
+        authority: AuthAuthority::Origin,
+        user_initiated: true,
+    }
+}
+
+/// Record a deterministic authentication challenge WITHOUT presenting the
+/// sheet (the awaiting challenge the measured open and the staged
+/// presentations use). Same fixture as [`auth_present_challenge`]; never
+/// carries credentials.
+pub fn auth_record_challenge(profile: ProfileId, web_view: WebViewId) -> Request {
+    use bbr_web::auth_challenges::{AuthAuthority, AuthScheme, HttpScheme};
+    Request::AuthRecordChallenge {
+        profile,
+        web_view,
+        http_scheme: HttpScheme::Https,
+        scheme: AuthScheme::Basic,
+        host: "intranet.example".to_string(),
+        port: 0,
+        realm: Some("Finance VPN".to_string()),
+        authority: AuthAuthority::Origin,
+        user_initiated: true,
+    }
 }
 
 pub fn click_space(space: TestSpaceId) -> Request {

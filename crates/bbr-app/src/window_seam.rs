@@ -11,11 +11,13 @@ use bbr_web::WebEvent;
 use gpui::{App, Entity, KeyBinding, Window};
 #[cfg(not(feature = "testkit"))]
 use smol::channel::Receiver;
+#[cfg(unix)]
+use smol::prelude::*;
 
 use crate::actions::{
-    Back, CloseTab, FindInPage, FocusCommandBar, FocusWeb, Forward, MoveTab, NewSpace, NewTab,
-    OpenOverlay, OpenPalette, PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp,
-    ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
+    AuthSheetFieldTab, Back, CloseTab, FindInPage, FocusCommandBar, FocusWeb, Forward, MoveTab,
+    NewSpace, NewTab, OpenOverlay, OpenPalette, PinTab, Reload, ReopenTab, ReorderTabDown,
+    ReorderTabUp, ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
 };
 use crate::app::BbrApp;
 
@@ -23,6 +25,46 @@ use crate::app::BbrApp;
 /// retained `Entity<BbrApp>` with `&mut Window` access through the
 /// `gpui_component::Root` window. Every action, pump, dispatch, and
 /// presentation hook routes app mutation through this single contract.
+/// Terminate BBR when its browser window closes.
+///
+/// GPUI follows the native macOS convention by keeping an application alive
+/// after its last window closes. BBR is intentionally a single-browser-window
+/// process, so closing that owning window is a full application shutdown even
+/// while implementation-owned child windows (such as the native portal host)
+/// still exist.
+pub(crate) fn quit_when_browser_window_closes(
+    cx: &App,
+    browser_window: gpui::WindowHandle<gpui_component::Root>,
+) {
+    let browser_window_id = browser_window.window_id();
+    cx.on_window_closed(move |cx, closed_window_id| {
+        if closed_window_id == browser_window_id {
+            cx.quit();
+        }
+    })
+    .detach();
+}
+
+/// Convert terminal Ctrl-C (`SIGINT`) into GPUI's graceful shutdown path.
+///
+/// The signal listener lives on GPUI's foreground executor, so the signal
+/// handler itself remains async-signal-safe and every native object tears down
+/// on the application/main thread through `App::quit`.
+#[cfg(unix)]
+pub(crate) fn install_sigint_shutdown(cx: &App) {
+    let mut signals =
+        async_signal::Signals::new([async_signal::Signal::Int]).expect("install SIGINT listener");
+    cx.spawn(async move |async_cx| {
+        if signals.next().await.transpose().is_ok() {
+            async_cx.update(|cx| cx.quit());
+        }
+    })
+    .detach();
+}
+
+#[cfg(not(unix))]
+pub(crate) fn install_sigint_shutdown(_cx: &App) {}
+
 pub(crate) fn with_app<R>(
     window: &gpui::WindowHandle<gpui_component::Root>,
     app: &Entity<BbrApp>,
@@ -171,6 +213,34 @@ pub(crate) fn install_actions(
     });
     cx.on_action({
         let app = app.clone();
+        move |_: &AuthSheetFieldTab, cx| {
+            // Read the presented state synchronously: the keystroke
+            // dispatch holds only the window (the app entity is not
+            // borrowed here), so the read decides whether Tab is consumed
+            // before the deferred mutation runs. When no sheet is
+            // presented the handler is a no-op and leaves propagation
+            // open, so gpui-component's `Root` focus-traversal binding
+            // keeps handling Tab exactly as before.
+            if !app.read(cx).auth_sheet_is_presented() {
+                return;
+            }
+            // The sheet owns the keyboard while open: consume Tab so the
+            // gpui-component `Root` focus-traversal binding cannot move
+            // focus out of the sheet, then move the sheet's field cursor
+            // on the effect flush (the keystroke dispatch still holds the
+            // window borrowed, so a direct `with_app` would re-enter the
+            // window update).
+            cx.stop_propagation();
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.auth_field_tab(window, cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
         move |_: &NewTab, cx| {
             let app = app.clone();
             cx.defer(move |cx| {
@@ -282,6 +352,13 @@ pub(crate) fn install_actions(
         KeyBinding::new("cmd-=", ZoomIn, None),
         KeyBinding::new("cmd--", ZoomOut, None),
         KeyBinding::new("cmd-0", ZoomReset, None),
+        // App-wide (context-less) bindings resolve at the deepest depth, so
+        // they outrank gpui-component `Root`'s element-scoped `tab`/`shift-tab`
+        // focus-traversal bindings: Tab moves the credential sheet's field
+        // cursor while the sheet is open (the handler consumes it) and falls
+        // through to focus traversal otherwise (the no-op contract).
+        KeyBinding::new("tab", AuthSheetFieldTab, None),
+        KeyBinding::new("shift-tab", AuthSheetFieldTab, None),
     ]);
 }
 

@@ -24,6 +24,7 @@ use crate::app::BbrApp;
 use crate::window_seam::with_app;
 
 mod dispatch;
+mod dispatch_auth;
 mod dispatch_benchmark;
 mod dispatch_benchmark_context_menu;
 mod dispatch_benchmark_downloads;

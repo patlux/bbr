@@ -182,16 +182,21 @@ impl Render for BbrApp {
         div()
             .id("bbr-root")
             .relative()
-            // While a find or context-menu presentation is open the root
-            // tracks that surface's focus handle (the portal window is never
-            // key, so keystrokes are handled by the main window); otherwise
-            // the chrome handle owns the root focus.
+            // While a portal presentation is open the root tracks that
+            // surface's focus handle (the portal window is never key, so
+            // keystrokes remain handled by the main window); otherwise the
+            // chrome handle owns the root focus.
             .when(
-                !self.find.state.open && !self.context_menu.state.open,
+                !self.find.state.open
+                    && !self.auth_sheet_is_presented()
+                    && !self.context_menu.state.open,
                 |root| root.track_focus(&self.chrome_handle),
             )
             .when(self.find.state.open, |root| {
                 root.track_focus(&self.find_handle)
+            })
+            .when(self.auth_sheet_is_presented(), |root| {
+                root.track_focus(&self.auth_handle)
             })
             .when(self.context_menu.state.open, |root| {
                 root.track_focus(&self.menu_handle)
