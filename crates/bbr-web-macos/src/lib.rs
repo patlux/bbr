@@ -64,6 +64,15 @@ pub mod find_web_kit;
 #[cfg(target_os = "macos")]
 pub mod host;
 
+/// The pure WebKit page-menu ownership classification (task packet
+/// `bbr-context-menus-over-web`): given the item titles of the menu WebKit
+/// constructed, is it the generic page menu (BBR-owned) or an element menu
+/// (WebKit-owned)? Deterministic and conservative; unit-tested.
+mod menu_classify;
+
+#[cfg(target_os = "macos")]
+pub mod menu_adapter;
+
 #[cfg(target_os = "macos")]
 pub mod new_window;
 
@@ -78,6 +87,9 @@ pub mod portal_frame;
 
 #[cfg(target_os = "macos")]
 pub mod webview;
+
+#[cfg(target_os = "macos")]
+pub mod zoom_adapter;
 
 #[cfg(target_os = "macos")]
 pub use downloads_adapter::{
@@ -109,6 +121,11 @@ pub use find_adapter::WebKitFindAdapter;
 pub use find_web_kit::WebKitFindStrategy;
 
 #[cfg(target_os = "macos")]
+pub use menu_adapter::{
+    classify_menu, ContextMenuNativeDiagnostics, MenuOwnership, NativeContextMenuBridge,
+};
+
+#[cfg(target_os = "macos")]
 pub use new_window::{NewWindowContext, NewWindowCoordinator};
 
 #[cfg(target_os = "macos")]
@@ -116,3 +133,6 @@ pub use portal::NativePortal;
 
 #[cfg(target_os = "macos")]
 pub use webview::{EngineOptions, WebEngineWk};
+
+#[cfg(target_os = "macos")]
+pub use zoom_adapter::{page_zoom_factor, WebKitZoomAdapter};

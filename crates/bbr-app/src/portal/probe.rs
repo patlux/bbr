@@ -88,6 +88,11 @@ pub enum PortalContent {
     /// portal render derives the live surface from the app entity each
     /// frame, so the bar carries no data of its own.
     Find,
+    /// The BBR context menu over web content (task packet
+    /// `bbr-context-menus-over-web`). The portal render derives the live
+    /// surface from the app entity each frame, so the menu carries no data
+    /// of its own.
+    ContextMenu,
 }
 
 /// The portal window's render state, shared between the app (present/dismiss)
@@ -174,6 +179,21 @@ impl PortalProbeState {
                 }
                 crate::app::palette::CommandSurface::None => return Vec::new(),
             }],
+            Some(PortalContent::ContextMenu) => {
+                // The menu's stable surface ids: the backdrop, the card, and
+                // the deterministic row ids (the five fixed entries).
+                let mut ids = vec![
+                    crate::app::context_menu::CONTEXT_MENU_BACKDROP_ID.into(),
+                    crate::app::context_menu::CONTEXT_MENU_ID.into(),
+                ];
+                for index in 0..5 {
+                    ids.push(format!(
+                        "{}-{index}",
+                        crate::app::context_menu::CONTEXT_MENU_ROW_PREFIX
+                    ));
+                }
+                ids
+            }
         }
     }
 
@@ -203,6 +223,14 @@ impl PortalProbeState {
         self.viewport = viewport;
     }
 
+    /// Present the BBR context menu (the render derives the live surface
+    /// from the app entity, so no surface data is stored here).
+    pub fn present_context_menu(&mut self, request: PortalRequest, viewport: Sz) {
+        self.request = Some(request);
+        self.content = Some(PortalContent::ContextMenu);
+        self.viewport = viewport;
+    }
+
     /// Dismiss the active surface: the portal window renders nothing until
     /// the next presentation.
     pub fn clear(&mut self) {
@@ -222,8 +250,11 @@ impl Default for PortalProbeState {
 /// browser/session/profile/space lifetime.
 pub struct PortalRoot {
     probe: Rc<RefCell<PortalProbeState>>,
-    browser_window: gpui::WindowHandle<gpui_component::Root>,
-    app: Option<Entity<crate::app::BbrApp>>,
+    /// `pub(crate)`: the portal surface modules (command/find/context menu)
+    /// route pointer actions through the same deferred app contract.
+    pub(crate) browser_window: gpui::WindowHandle<gpui_component::Root>,
+    /// `pub(crate)`: see `browser_window`.
+    pub(crate) app: Option<Entity<crate::app::BbrApp>>,
     _app_subscription: gpui::Subscription,
 }
 
@@ -308,6 +339,21 @@ impl PortalRoot {
             });
         });
     }
+
+    /// The context menu's §13 one-pointer-action dismissal: a press on the
+    /// portal backdrop closes the menu through the production close path
+    /// (restores the origin focus domain).
+    fn dismiss_context_menu_surface(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.menu_close(window, cx)
+            });
+        });
+    }
 }
 
 impl Render for PortalRoot {
@@ -382,6 +428,43 @@ impl Render for PortalRoot {
                         MouseButton::Left,
                         cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
                             this.dismiss_find_surface(cx);
+                        }),
+                    )
+                    .child(card)
+                    .into_any()
+            }
+            PortalContent::ContextMenu => {
+                drop(probe);
+                let Some(app) = self.app.as_ref() else {
+                    return div().size_full().bg(transparent_black()).into_any();
+                };
+                let surface = app.read(cx).context_menu_surface();
+                // The context-menu render milestone: record the menu state
+                // this render actually drew into the probe, so a pending
+                // context-menu benchmark can commit only from a frame that
+                // presented the armed open identity (fast-but-wrong guard).
+                #[cfg(feature = "testkit")]
+                app.read(cx).observe_portal_context_menu_render();
+                let card = crate::portal::context_menu::context_menu_card(&surface, rect, cx)
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
+                            cx.stop_propagation();
+                        }),
+                    );
+                // §13 one-pointer-action dismissal: a press on the portal
+                // backdrop (the whole window over the glass) closes the menu
+                // through the production close path. The surface root IS the
+                // backdrop, so it carries the registered §15 backdrop id
+                // (the tree matches `PortalProbeState::ids` exactly).
+                div()
+                    .id(crate::app::context_menu::CONTEXT_MENU_BACKDROP_ID)
+                    .size_full()
+                    .bg(transparent_black())
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                            this.dismiss_context_menu_surface(cx);
                         }),
                     )
                     .child(card)

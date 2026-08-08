@@ -165,6 +165,7 @@ impl WebEngine for NullEngine {
             WebAction::Forward => self.actions.push("forward".into()),
             WebAction::Reload => self.actions.push("reload".into()),
             WebAction::Stop => self.actions.push("stop".into()),
+            WebAction::CopyLink => self.actions.push("copy-link".into()),
         }
     }
 

@@ -45,5 +45,13 @@ gpui::actions!(
         /// `Cmd-F`: open the find-in-page presentation over the active web
         /// view (task packet `find-in-page-portal-bar`).
         FindInPage,
+        /// `Cmd-Plus` / `Cmd-=`: zoom the active view's site one contract
+        /// step up (queue item 11, part A; task packet
+        /// `site-settings-zoom-contract`).
+        ZoomIn,
+        /// `Cmd-Minus`: zoom the active view's site one contract step down.
+        ZoomOut,
+        /// `Cmd-0`: reset the active view's site to the default zoom level.
+        ZoomReset,
     ]
 );

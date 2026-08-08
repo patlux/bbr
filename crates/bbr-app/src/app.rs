@@ -33,6 +33,9 @@ mod command_corpus;
 pub(crate) mod command_rank;
 mod command_surface;
 mod command_text;
+pub(crate) mod context_menu;
+#[cfg(feature = "testkit")]
+mod context_menu_benchmarks;
 pub(crate) mod downloads;
 pub(crate) mod downloads_behavior;
 #[cfg(feature = "testkit")]
@@ -66,6 +69,9 @@ mod u2;
 mod u2_surface;
 #[cfg(test)]
 mod u2_tests;
+pub(crate) mod zoom;
+#[cfg(feature = "testkit")]
+mod zoom_benchmarks;
 
 /// Sidebar width follows the §8 normal-density token (280 pt); Phase-4
 /// resize/drag will make it adjustable.
@@ -220,6 +226,33 @@ pub struct BbrApp {
     /// seam); the decision is always the merged portable contract's.
     #[cfg(target_os = "macos")]
     external_urls: bbr_web_macos::external_urls_adapter::ExternalUrlAdapterCore,
+    /// Per-site zoom composition (queue item 11, part A): the app-side
+    /// authority for the active view's zoom level — profile-scoped
+    /// lifecycles over the merged `site_settings` contract, an in-memory
+    /// store, and a native application target.
+    zoom: crate::app::zoom::ZoomController,
+    /// Concrete native engine handle (macOS only): the zoom target binds
+    /// the active `WKWebView` through it (`WebKitZoomAdapter::apply`) without
+    /// creating/moving/reselecting sessions.
+    #[cfg(target_os = "macos")]
+    zoom_engine: Option<crate::engine::NativeEngineRef>,
+    /// BBR context menus over web content (queue item 12, part B; task
+    /// packet `bbr-context-menus-over-web`): the app-side authority for the
+    /// page menu (Back/Forward/Reload/Copy Link/Open in New Tab) presented
+    /// through the one `NativeAboveWeb` portal host. Pure chrome state — no
+    /// session or adapter — plus the deterministic dismissal/activation
+    /// rules.
+    context_menu: crate::app::context_menu::ContextMenuController,
+    /// GPUI focus handle of the menu. The menu renders inside the
+    /// non-activating portal window (never key by design), so keyboard
+    /// input is handled by the main window: while a menu presentation is
+    /// open the root tracks this handle and routes key downs to menu mode.
+    menu_handle: FocusHandle,
+    /// Concrete native engine handle (macOS only): the native context-menu
+    /// bridge diagnostics (the right-click monitor and the page-vs-element
+    /// ownership classification counters) are read through it.
+    #[cfg(target_os = "macos")]
+    menu_engine: Option<crate::engine::NativeEngineRef>,
     /// The last frame's command-field rect in window coordinates, recorded
     /// by the field anchor element (DESIGN.md §11.4): the exact anchor for
     /// the field-anchored overlay (top/leading edge flush, width from the
@@ -323,6 +356,13 @@ impl BbrApp {
             web_content_probe: std::rc::Rc::new(std::cell::RefCell::new(None)),
             #[cfg(target_os = "macos")]
             external_urls: bbr_web_macos::external_urls_adapter::ExternalUrlAdapterCore::new(),
+            zoom: crate::app::zoom::ZoomController::new(crate::app::zoom::noop_target()),
+            #[cfg(target_os = "macos")]
+            zoom_engine: None,
+            context_menu: crate::app::context_menu::ContextMenuController::new(),
+            menu_handle: cx.focus_handle(),
+            #[cfg(target_os = "macos")]
+            menu_engine: None,
             command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
@@ -364,6 +404,37 @@ impl BbrApp {
             *slot.borrow_mut() = Some((view, probe));
         });
         true
+    }
+
+    /// Attach the concrete native engine handle (macOS only; the composition
+    /// root passes it after construction, like the find handle). The zoom
+    /// target binds the active `WKWebView` through
+    /// [`WebEngineWk::web_view`](bbr_web_macos::WebEngineWk::web_view) and
+    /// applies the level with `WebKitZoomAdapter` — a retained clone, never
+    /// a session mutation.
+    #[cfg(target_os = "macos")]
+    pub fn set_zoom_engine(&mut self, engine: crate::engine::NativeEngineRef) {
+        let target_engine = engine.clone();
+        self.zoom.set_target(std::rc::Rc::new(move |view, zoom| {
+            let Some(web_view) = target_engine.borrow().web_view(view) else {
+                return false;
+            };
+            let mtm = objc2::MainThreadMarker::new().expect("zoom target on the main thread");
+            let adapter = bbr_web_macos::WebKitZoomAdapter::new(mtm, web_view);
+            adapter.apply(zoom);
+            true
+        }));
+        self.zoom_engine = Some(engine);
+    }
+
+    /// Attach the concrete native engine handle (macOS only; the composition
+    /// root passes it after construction, like the find/zoom handles). The
+    /// context-menu bridge diagnostics (right-click monitor + ownership
+    /// classification counters) are read through it; the menu itself routes
+    /// actions through the portable engine seam.
+    #[cfg(target_os = "macos")]
+    pub fn set_menu_engine(&mut self, engine: crate::engine::NativeEngineRef) {
+        self.menu_engine = Some(engine);
     }
 
     /// Install the macOS download composition (macOS only): the concrete
@@ -442,6 +513,7 @@ impl BbrApp {
             // switched away from while its surface was shown): re-assert
             // native visibility against the surface.
             self.sync_error_surface_visibility();
+            self.zoom_after_activation();
             cx.notify();
         }
         result
@@ -466,6 +538,7 @@ impl BbrApp {
             // surface shows for the active view only): re-assert native
             // visibility against the surface.
             self.sync_error_surface_visibility();
+            self.zoom_after_activation();
             cx.notify();
         }
         result

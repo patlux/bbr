@@ -329,6 +329,27 @@ fn main() {
             });
         }
 
+        // macOS-only per-site zoom composition: the concrete engine handle
+        // binds the zoom target (WebKitZoomAdapter) to the active view's
+        // WKWebView without creating/moving sessions.
+        #[cfg(target_os = "macos")]
+        if let Some(native) = native_engine.clone() {
+            let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+                view.set_zoom_engine(native);
+            });
+        }
+
+        // macOS-only context-menu composition: the concrete engine handle
+        // exposes the native bridge's ownership diagnostics (the right-click
+        // monitor and the page-vs-element classification counters); the
+        // menu itself routes actions through the portable engine seam.
+        #[cfg(target_os = "macos")]
+        if let Some(native) = native_engine.clone() {
+            let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+                view.set_menu_engine(native);
+            });
+        }
+
         // macOS-only download composition: the concrete native adapter
         // (bound to the real WKDownload lifecycle) plus the engine handle
         // for the active-view capture. Under the testkit feature the

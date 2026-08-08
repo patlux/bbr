@@ -27,10 +27,12 @@ use super::find_drive::drive_find_scenarios;
 mod u2;
 
 use super::command_drive::drive_command_scenarios;
+use super::context_menu_drive::drive_context_menu_scenarios;
 use super::downloads_drive::drive_downloads_scenarios;
 use super::errors_drive::drive_error_surface_scenarios;
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
+use super::zoom_drive::drive_zoom_scenarios;
 
 /// Drive the full interaction matrix and return the raw samples per scenario.
 /// The `since` cursor is advanced past the last consumed event.
@@ -1018,6 +1020,45 @@ fn drive_matrix_inner(
         // dense seeding below.
         let error_surface_samples =
             drive_error_surface_scenarios(client, harness, &mut since, config, &mut operation);
+        // Per-site zoom (queue item 11, part A): the production Cmd-Plus
+        // step — the lifecycle change, the persistence write, and the native
+        // `pageZoom` application on the active view — measured on a
+        // deterministic fixture loaded before any sample (fixture/network
+        // time excluded). The sample commits only from the app's observed
+        // zoom state at the armed level, applied to the view, with no
+        // pending write (the in-app probe owns the fast-but-wrong guard).
+        // The block never touches tabs/sessions/views permanently and
+        // restores the matrix state (transient tab closed) before the dense
+        // seeding below.
+        let zoom_samples = drive_zoom_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            page_one,
+            &mut operation,
+        );
+
+        // BBR context menu over web content (queue item 12, part B): the
+        // production event-driven open — the exact seam the native bridge's
+        // `ContextMenuRequested` routes to (`menu_open_from_event`): the
+        // row-model build, the anchored placement, the portal
+        // presentation, and the focus handoff — measured on a deterministic
+        // fixture loaded before any sample (fixture/network time excluded).
+        // The sample commits only from a render of the one `NativeAboveWeb`
+        // portal window that drew the menu over the same active view at the
+        // armed pointer anchor (the in-app probe owns the fast-but-wrong
+        // guard). The block never touches tabs/sessions/views permanently
+        // and restores the matrix state (menu closed, transient tab closed)
+        // before the dense seeding below.
+        let context_menu_samples = drive_context_menu_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            page_one,
+            &mut operation,
+        );
 
         // Dense-list scroll + selection through the bounded-window render
         // (Phase-4 dense slice, performance contract "dense-list scrolling"):
@@ -1148,6 +1189,8 @@ fn drive_matrix_inner(
         raw.extend(find_samples);
         raw.extend(downloads_samples);
         raw.extend(error_surface_samples);
+        raw.extend(zoom_samples);
+        raw.extend(context_menu_samples);
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);
         raw.insert("dense_select".to_string(), dense_select_samples);
         raw

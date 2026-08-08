@@ -18,12 +18,14 @@ use bbr_web::{WebEvent, WebRect, WebViewId};
 use crate::app::palette::CommandSurface;
 
 pub mod command;
+mod context_menu;
 pub(crate) mod downloads;
 mod error_surface;
 mod find;
 pub mod pane_geometry;
 pub mod slot;
 mod u2;
+mod zoom;
 use command::{CommandExpectation, CommandObservation};
 use error_surface::ErrorSurfaceObservation;
 use pane_geometry::PaneGeometry;
@@ -59,6 +61,13 @@ struct State {
     /// the error-surface benchmark commits only against it (render-gated,
     /// see `error_surface`).
     latest_error_surface: ErrorSurfaceObservation,
+    /// The zoom state the production mutation path reached; the zoom
+    /// benchmarks commit only against it (see `zoom`).
+    latest_zoom: Option<zoom::ZoomObservation>,
+    /// The context-menu presentation the portal render actually drew; the
+    /// context-menu benchmarks commit only against it (render-gated, see
+    /// `context_menu`).
+    latest_context_menu: Option<context_menu::ContextMenuObservation>,
     latest_active_web_view: Option<WebViewId>,
     latest_active_space: TestSpaceId,
     latest_sidebar_visible: bool,
@@ -125,6 +134,12 @@ struct Pending {
     /// The exact error-surface presentation identity the pending sample must
     /// commit from (the surface drawn for the armed closed category).
     error_surface: Option<error_surface::ErrorSurfaceExpectation>,
+    /// The exact zoom state the pending sample must commit from (the armed
+    /// level, natively applied, persistence acknowledged).
+    zoom: Option<zoom::ZoomExpectation>,
+    /// The exact context-menu presentation the pending sample must commit
+    /// from (open/focused over the bound view at the armed anchor).
+    context_menu: Option<context_menu::ContextMenuExpectation>,
 }
 
 impl PerformanceProbe {
@@ -137,6 +152,8 @@ impl PerformanceProbe {
                 latest_find: None,
                 latest_downloads: None,
                 latest_error_surface: error_surface::ErrorSurfaceObservation::default(),
+                latest_zoom: None,
+                latest_context_menu: None,
                 latest_active_web_view: None,
                 latest_active_space: TestSpaceId(0),
                 latest_sidebar_visible: true,
@@ -164,6 +181,8 @@ impl PerformanceProbe {
                     find: None,
                     downloads: None,
                     error_surface: None,
+                    zoom: None,
+                    context_menu: None,
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
@@ -209,6 +228,8 @@ impl PerformanceProbe {
             find: None,
             downloads: None,
             error_surface: None,
+            zoom: None,
+            context_menu: None,
         });
         Ok(())
     }
@@ -482,6 +503,8 @@ impl PerformanceProbe {
             || !find::find_matches(pending, &state)
             || !downloads::downloads_matches(pending, &state)
             || !error_surface::error_surface_matches(pending, &state)
+            || !zoom::zoom_matches(pending, &state)
+            || !context_menu::context_menu_matches(pending, &state)
         {
             #[cfg(feature = "testkit")]
             if let Some(_d) = pending.downloads.as_ref() {

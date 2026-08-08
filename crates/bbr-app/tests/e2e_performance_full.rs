@@ -84,6 +84,8 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let find_open = report.results["find_open"].samples;
         let find_query_result = report.results["find_query_result"].samples;
         let find_step = report.results["find_step"].samples;
+        let zoom_step = report.results["zoom_step"].samples;
+        let context_menu_open = report.results["context_menu_open"].samples;
         let plus_menu = report.results["sidebar_plus_menu"].samples;
         let favorites = report.results["sidebar_favorites"].samples;
         let folder_toggle = report.results["sidebar_folder_toggle"].samples;
@@ -162,6 +164,14 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             find_step >= INTERACTION_SAMPLES,
             "find-step samples {find_step} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            zoom_step >= INTERACTION_SAMPLES,
+            "zoom-step samples {zoom_step} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            context_menu_open >= INTERACTION_SAMPLES,
+            "context-menu open samples {context_menu_open} < {INTERACTION_SAMPLES}"
         );
         assert!(
             plus_menu >= INTERACTION_SAMPLES,

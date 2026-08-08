@@ -289,6 +289,17 @@ impl BbrApp {
             window_size: [window_width, window_height],
             portal: self.portal_snapshot(),
             find: self.find_snapshot(window),
+            zoom: {
+                let zoom = self.zoom_snapshot();
+                bbr_testkit::protocol::ZoomSnapshot {
+                    level: zoom.level,
+                    site: zoom.site,
+                    view: zoom.view,
+                    applied: zoom.applied,
+                    pending: zoom.pending,
+                }
+            },
+            context_menu: self.context_menu_snapshot(),
             spaces_visible: self.u2.spaces_visible,
             plus_menu_open: self.u2.plus_menu.open,
             plus_menu_selection: self.u2.plus_menu.selection,

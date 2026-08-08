@@ -646,6 +646,97 @@ pub struct ErrorSurfaceSnapshot {
     pub lifecycle: Option<String>,
 }
 
+/// Per-site zoom state (queue item 11, part A; task packet
+/// `site-settings-zoom-contract`). Mirrors the app's
+/// `crate::app::zoom::ZoomSnapshotState`: the effective level of the active
+/// view's site, the normalized origin, the view the level applies to
+/// (identity-preservation evidence), the level actually applied to that
+/// native view, and whether a persistence write is pending.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct ZoomSnapshot {
+    /// Effective zoom percent of the active view's site (the documented
+    /// default 100 when no site is resolvable yet).
+    pub level: u16,
+    /// The normalized origin (`scheme://host:port`) the level belongs to,
+    /// when resolvable.
+    pub site: Option<String>,
+    /// The view the level applies to (identity-preservation evidence).
+    pub view: Option<WebViewId>,
+    /// The level actually applied to that native view (`None` when the view
+    /// has no live session or no site was resolved yet).
+    pub applied: Option<u16>,
+    /// A persistence write is scheduled but not yet acknowledged.
+    pub pending: bool,
+}
+
+/// One BBR context-menu entry on the wire (task packet
+/// `bbr-context-menus-over-web`): the stable key, the display title, and
+/// the genuine enablement (Back/Forward reflect the real session history
+/// availability from `CanGoBackChanged`/`CanGoForwardChanged`; Copy Link /
+/// Open in New Tab reflect a resolvable page URL).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ContextMenuItemSnapshot {
+    /// Stable key: `back` | `forward` | `reload` | `copy-link` |
+    /// `open-new-tab`.
+    pub key: String,
+    /// The display title (Back / Forward / Reload / Copy Link /
+    /// Open in New Tab).
+    pub title: String,
+    /// Whether the entry accepts interaction right now.
+    pub enabled: bool,
+}
+
+/// Typed BBR context-menu presentation state (task packet
+/// `bbr-context-menus-over-web`; DESIGN.md §13/§15). The menu renders
+/// inside the one `NativeAboveWeb` portal window; this mirrors the app's
+/// `ContextMenuState` exactly plus the native bridge's ownership
+/// diagnostics.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct ContextMenuSnapshot {
+    /// The menu presentation is open for this window.
+    pub open: bool,
+    /// The menu owns keyboard focus (main-window GPUI focus; the portal
+    /// window is never key by design).
+    pub focused: bool,
+    /// The keyboard cursor / hovered row (None while closed).
+    pub selected: Option<usize>,
+    /// The deterministic row model in render order.
+    pub items: Vec<ContextMenuItemSnapshot>,
+    /// The web view the menu was requested on (the active view at open;
+    /// identity-preservation evidence).
+    pub bound_view: Option<WebViewId>,
+    /// The pointer anchor in window content coordinates (top-left origin,
+    /// points) the menu placement resolved from.
+    pub point: [f32; 2],
+    /// The page URL the menu acts on (Copy Link / Open in New Tab); `None`
+    /// when no URL is resolvable (both entries then report disabled).
+    pub url: Option<String>,
+    /// The focus domain captured at open; dismissal restores it exactly
+    /// (focus-return evidence).
+    pub origin_chrome_focused: bool,
+    /// The native bridge's ownership diagnostics: the right-click monitor
+    /// is installed and classifies WebKit's page vs element menus
+    /// (page-owned requests the BBR menu; element-owned stays native).
+    #[serde(default)]
+    pub native: ContextMenuNativeSnapshot,
+}
+
+/// The native context-menu bridge diagnostics (task packet
+/// `bbr-context-menus-over-web`; the engine exposes them through
+/// `WebEngineWk::context_menu_diagnostics`).
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct ContextMenuNativeSnapshot {
+    /// The bridge's local right-click monitor is installed.
+    pub monitor_installed: bool,
+    /// Right-clicks observed over a live WKWebView (all of them: every
+    /// WebKit menu is classified, never suppressed blindly).
+    pub right_clicks_over_web: u64,
+    /// Classified as the generic page menu → the BBR menu was requested.
+    pub page_owned: u64,
+    /// Classified as element-owned → WebKit's native menu stayed untouched.
+    pub element_owned: u64,
+}
+
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
 /// Deliberately typed (no free-form JSON) so the harness can assert on
@@ -796,6 +887,17 @@ pub struct Snapshot {
     /// WebKit-reported count/ordinal, pending request, and staleness.
     #[serde(default)]
     pub find: FindSnapshot,
+    /// Typed per-site zoom state (queue item 11, part A; task packet
+    /// `site-settings-zoom-contract`): effective level of the active view's
+    /// site, the normalized origin, the applied level, and pending write.
+    #[serde(default)]
+    pub zoom: ZoomSnapshot,
+    /// Typed BBR context-menu presentation state (task packet
+    /// `bbr-context-menus-over-web`): open presentation, focus, selection,
+    /// the deterministic row model with genuine enablement, the pointer
+    /// anchor, and the native bridge's ownership diagnostics.
+    #[serde(default)]
+    pub context_menu: ContextMenuSnapshot,
     /// U2 compact-sidebar presentation state.
     #[serde(default = "u2::default_true")]
     pub spaces_visible: bool,
