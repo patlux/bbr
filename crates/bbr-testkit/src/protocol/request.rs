@@ -366,6 +366,14 @@ pub enum Request {
     /// flush cannot be observed; the production background writer uses the
     /// identical repository write).
     FlushPersistence,
+    /// Deterministic browser-state flush (testkit-only, Phase 7 warm-restore
+    /// slice): synchronously writes the current structural browser model
+    /// (profiles/spaces/tabs/window+sidebar) to the store in one transaction
+    /// — the deterministic seam the persistence/restart E2E uses to prove
+    /// committed-state recovery across restarts (the harness terminates the
+    /// app, so a clean quit flush cannot be observed; the production
+    /// background writer uses the identical repository write).
+    FlushBrowserState,
     /// Issue a real WebKit content probe for `view` (testkit-only): reads
     /// the committed document in BBR's own client content world
     /// (`readyState`/`URL`/`title`/body) plus the native `WKWebView`

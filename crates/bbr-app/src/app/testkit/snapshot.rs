@@ -296,6 +296,12 @@ impl BbrApp {
             pane_layout,
             pane_rects: pane_rect_snapshots,
             window_size: [window_width, window_height],
+            window_content_size: self
+                .window_geometry
+                .borrow()
+                .map_or([0.0, 0.0], |[_, _, width, height]| {
+                    [width as f32, height as f32]
+                }),
             portal: self.portal_snapshot(),
             find: self.find_snapshot(window),
             zoom: {
@@ -356,6 +362,17 @@ impl BbrApp {
             web_content_probe: None,
             error_surface,
             store: self.store_snapshot(),
+            restore: match self.restore_evidence() {
+                crate::app::RestoreEvidence::Fresh => {
+                    bbr_testkit::protocol::RestoreDisposition::Fresh
+                }
+                crate::app::RestoreEvidence::Restored { deferred_tabs } => {
+                    bbr_testkit::protocol::RestoreDisposition::Restored { deferred_tabs }
+                }
+                crate::app::RestoreEvidence::Failed => {
+                    bbr_testkit::protocol::RestoreDisposition::Failed
+                }
+            },
         }
     }
 

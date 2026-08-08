@@ -250,6 +250,10 @@ impl BbrApp {
                 self.focus_web(window, cx);
             }
             self.ensure_active_visible();
+            // The reopened tab restores a recently-closed identity into the
+            // live model: a structural mutation that must survive a force
+            // quit.
+            self.persist_structure();
             cx.notify();
         }
         result
@@ -275,6 +279,9 @@ impl BbrApp {
             self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
+            // Pin moves the identity into the pinned region: a structural
+            // mutation that must survive a force quit.
+            self.persist_structure();
             cx.notify();
         }
         result
@@ -303,6 +310,9 @@ impl BbrApp {
             self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
+            // Pin/unpin changes the pinned flag and the tab order: a
+            // structural mutation that must survive a force quit.
+            self.persist_structure();
             cx.notify();
         }
         result
@@ -382,6 +392,10 @@ impl BbrApp {
             self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
+            // The tab order is part of the persisted model: poke the one
+            // browser-state writer so a force quit recovers the reordered
+            // order.
+            self.persist_structure();
             cx.notify();
         }
         result
@@ -434,6 +448,10 @@ impl BbrApp {
             self.emit_browser(outcome);
             self.focus_tab_list(window, cx);
             self.ensure_active_visible();
+            // The tab changed space: a structural mutation (space membership
+            // and the source space's selection) that must survive a force
+            // quit.
+            self.persist_structure();
             cx.notify();
         }
         result
@@ -461,6 +479,9 @@ impl BbrApp {
             self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
+            // Unpin moves the identity to the end of the regular region: a
+            // structural mutation that must survive a force quit.
+            self.persist_structure();
             cx.notify();
         }
         result
@@ -488,6 +509,10 @@ impl BbrApp {
             self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
+            // The reorder is a structural mutation (tab order is persisted):
+            // poke the one browser-state writer so the E2E reorder survives a
+            // force quit.
+            self.persist_structure();
             cx.notify();
         }
         result

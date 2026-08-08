@@ -141,15 +141,26 @@ Integration order: land the portable policy first (this lane), then the serial
 
 ### Real-app E2E
 
-- [ ] Not applicable to this portable-core lane: it creates no app startup
-      behavior and launches no WKWebView. The serial composition slice owns
-      the real-app force-quit/chrome-first-restore E2E.
+- [x] Resolved by the F3 warm-restore composition slice (real-app
+      `e2e_shell_persistence`): a dense persisted model restores chrome-first
+      with exactly one live session (two for an active split) and the
+      remaining identities session-less until activation; a graceful restart
+      restores exactly the committed model; a force-quit (SIGKILL) recovers
+      exactly the last committed repository state — for the open and the
+      tab-reorder mutation classes, the flushed reorder returning its
+      committed order — never a partial or fast-but-wrong model; window
+      geometry/sidebar restore truthfully through the production window
+      options.
 
 ### Performance
 
-- [ ] No measured app performance is claimed in this lane. The warm-startup
-      performance scenario is **specified and prepared** below; its gate
-      wiring and canonical measurements remain serial.
+- [x] Resolved by the F3 warm-restore composition slice: the
+      `persisted_warm_startup` scenario runs the real optimized app against
+      a profile seeded through the actual repository, asserting the semantic
+      fast-but-wrong guards inside the trial. Evidence (host, non-canonical):
+      10 accepted warm samples, p50 151 ms / p95 156 ms / max 156 ms
+      (startup budget p95 ≤ 500 ms / max ≤ 750 ms), warm page-ready
+      p95 349 ms (≤ 1,000 ms), `regressions: []`, budgets unchanged.
 
 ## Warm-startup performance scenario specification/preparation
 
@@ -284,6 +295,42 @@ pre-quit showing space.
    or map it to typed controller errors. Id-range and `former_position`
    bound validation stays upstream in `bbr-persistence::validation` by
    design; this layer assumes a post-restore intent.
+
+### Serial integration status (F3 warm-restore slice)
+
+All seven serial integration needs above are resolved by the F3
+Persistence-App-Composition slice (worktree `bbr-f3-warm-restore`):
+
+1. **Domain id-preserving import** — `bbr-domain` `Browser::restore_*`
+   import API (ids, order, pins, active tabs, splits, recently-closed),
+   proven by `crates/bbr-domain/src/tests_restore.rs`.
+2. **Controller restore facade** — `BrowserController::restored` in
+   `crates/bbr-browser/src/restore.rs` implements `RestoreTarget`, rolls
+   back to a fresh default on any typed failure (the pinned
+   non-transactional apply contract), and keeps deferred tabs session-less.
+3. **App startup composition** — `main.rs` maps the repository-restored
+   snapshot through `store::browser::persisted_to_intent`, selects the
+   policy default active space, builds the controller via the restored
+   facade, and reports truthful `RestoreEvidence` (fresh/restored/failed).
+4. **Testkit wire** — typed `RestoreDisposition` + deferred count on the
+   snapshot, `FlushBrowserState` deterministic seam, `window_content_size`
+   truthful geometry evidence.
+5. **Performance registry** — `persisted_warm_startup`/`persisted_warm_page_ready`
+   registered in `just e2e-perf`/`just e2e-perf-full` with unchanged
+   budgets and ≥ 10 warm samples.
+6. **Window restore** — window geometry/sidebar persist through the one
+   `BrowserState` DTO (window identity derived above every domain id) and
+   compose through the production window options and the app restore seam;
+   the warm-startup E2E asserts `default_active_space` (first space with an
+   active tab), never a persisted showing-space.
+7. **Structured error detail** — `HydrationError::Target` strings are
+   logged by the composition and surface as `RestoreEvidence::Failed`
+   (never a partial restored window).
+
+Evidence: `cargo test -p bbr-domain -p bbr-browser -p bbr-persistence`
+(104 + 144 + 24 passed), workspace clippy `-D warnings` green, real-app
+`e2e_shell_persistence` 5/5, `e2e_performance`/`e2e_performance_full`
+green with 10 warm samples and zero regressions.
 
 ## Completion gates
 

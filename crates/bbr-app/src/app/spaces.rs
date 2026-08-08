@@ -221,6 +221,10 @@ impl BbrApp {
         // E2E and future consumers can distinguish creation from activation).
         self.emit_browser(&outcome);
         self.activate_space(space, window, cx);
+        // The new space is a structural mutation: poke the one browser-state
+        // writer so a force quit recovers the committed model with the new
+        // space.
+        self.persist_structure();
         Some(outcome)
     }
 

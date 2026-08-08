@@ -7,7 +7,7 @@ use crate::{
 
 pub(crate) const MAX_SQLITE_ID: u64 = i64::MAX as u64;
 pub(crate) const SIDEBAR_MIN: f64 = 200.0;
-pub(crate) const SIDEBAR_MAX: f64 = 360.0;
+pub(crate) const SIDEBAR_MAX: f64 = 400.0;
 
 /// Validates a snapshot before any repository write.
 ///

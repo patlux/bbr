@@ -18,8 +18,11 @@ use std::process::Child;
 use std::time::{Duration, Instant};
 
 use bbr_fixtures::FixtureServer;
-use bbr_persistence::{CommandHistoryEntry, Repository};
-use bbr_testkit::protocol::{BenchmarkKind, BenchmarkOperationId, Request};
+use bbr_persistence::{
+    BrowserState, CommandHistoryEntry, GlyphName, Profile, ProfileHue, RecentlyClosedTab,
+    Repository, SidebarState, Space, SpaceGlyph, SpaceTint, Tab, WindowGeometry, WindowState,
+};
+use bbr_testkit::protocol::{BenchmarkKind, BenchmarkOperationId, Request, RestoreDisposition};
 use bbr_web::WebViewId;
 
 use super::benchmarks::{self, connect, deadline};
@@ -80,6 +83,10 @@ pub const STARTUP_MAX_MS: f64 = 750.0;
 pub const COLD_STARTUP_SAMPLES: usize = 10;
 pub const INTERACTION_SAMPLES: usize = 30;
 pub const NEW_TAB_SAMPLES: usize = 10;
+/// Contract-required persisted warm-startup samples (≥10 per the startup
+/// contract: “at least 10 startup samples per mode”; the warm mode is the
+/// persisted-profile launch).
+pub const PERSISTED_WARM_STARTUP_SAMPLES: usize = 10;
 
 /// Spawn configuration for a cold trial.
 #[derive(Clone)]
@@ -101,6 +108,12 @@ pub struct TrialConfig {
 pub struct ColdSample {
     pub startup_ms: f64,
     pub page_ready_ms: f64,
+    /// Persisted warm-startup sample (Phase 7, warm-restore slice):
+    /// process-spawn → first usable presentation against a persisted
+    /// profile. `None` on cold fresh-profile trials.
+    pub warm_startup_ms: Option<f64>,
+    /// Persisted warm-startup page-ready sample (same trial).
+    pub warm_page_ready_ms: Option<f64>,
     /// Interaction raw samples (empty when the trial only measured startup).
     pub interactions: BTreeMap<String, Vec<u64>>,
 }
@@ -112,7 +125,271 @@ pub fn run_cold_trial(config: &TrialConfig, drive_interactions: bool, tag: &str)
     ColdSample {
         startup_ms,
         page_ready_ms,
+        warm_startup_ms: None,
+        warm_page_ready_ms: None,
         interactions,
+    }
+}
+
+/// The Phase-7 persisted warm-startup fixture (the packet's canonical dense
+/// shape): 500+ tab identities across two profiles and three spaces with
+/// per-space active tabs, pinned prefixes, and one recently-closed entry,
+/// written through the real repository before the app starts. The active
+/// space (the deterministic policy default: first space with an active tab)
+/// is single-pane and its selected tab points at the deterministic fixture
+/// page, so the expected session count is exactly **one** and the page-ready
+/// milestone is network-independent. Seeding happens outside any timed
+/// region — the measured samples start after the app has loaded.
+pub(crate) fn seed_browser_store(profile: &std::path::Path, page_url: &str) {
+    let repository = Repository::new(profile.join(STORE_FILE_NAME));
+    repository.initialize_and_restore().unwrap();
+    let state = BrowserState {
+        profiles: vec![
+            Profile {
+                id: 1,
+                title: "Work".into(),
+                hue: ProfileHue::Cobalt,
+                spaces: vec![
+                    Space {
+                        id: 10,
+                        title: "Main".into(),
+                        tint: SpaceTint::Cobalt,
+                        glyph: SpaceGlyph::Glyph(GlyphName::Code),
+                        tabs: vec![
+                            Tab {
+                                id: 100,
+                                title: "Pinned".into(),
+                                url: page_url.into(),
+                                pinned: true,
+                            },
+                            Tab {
+                                id: 101,
+                                title: "One".into(),
+                                url: page_url.into(),
+                                pinned: false,
+                            },
+                        ],
+                        active_tab: Some(101),
+                        recently_closed: vec![RecentlyClosedTab {
+                            tab_id: 900,
+                            title: "Closed".into(),
+                            url: "https://closed.example/".into(),
+                            pinned: false,
+                            former_position: 0,
+                        }],
+                        split: None,
+                    },
+                    Space {
+                        id: 11,
+                        title: "Second".into(),
+                        tint: SpaceTint::Slate,
+                        glyph: SpaceGlyph::Emoji("⚙".into()),
+                        tabs: vec![Tab {
+                            id: 110,
+                            title: "Solo".into(),
+                            url: "https://d.example/".into(),
+                            pinned: false,
+                        }],
+                        active_tab: Some(110),
+                        recently_closed: Vec::new(),
+                        split: None,
+                    },
+                ],
+            },
+            Profile {
+                id: 2,
+                title: "Dense".into(),
+                hue: ProfileHue::Violet,
+                spaces: vec![Space {
+                    id: 20,
+                    title: "Huge".into(),
+                    tint: SpaceTint::Violet,
+                    glyph: SpaceGlyph::Glyph(GlyphName::Code),
+                    tabs: (0..500)
+                        .map(|index| Tab {
+                            id: 1000 + index,
+                            title: format!("Tab {index}"),
+                            url: format!("https://dense{index}.example/"),
+                            pinned: index < 3,
+                        })
+                        .collect(),
+                    active_tab: Some(1000),
+                    recently_closed: Vec::new(),
+                    split: None,
+                }],
+            },
+        ],
+        windows: vec![WindowState {
+            id: 50,
+            geometry: Some(WindowGeometry {
+                x: -200.0,
+                y: 10.0,
+                width: 1080.0,
+                height: 700.0,
+            }),
+            sidebar: SidebarState {
+                width: 300.0,
+                collapsed: false,
+                last_expanded_width: 300.0,
+            },
+        }],
+    };
+    repository.store_browser_state(&state).unwrap();
+}
+
+/// The deferred identity count of the warm fixture: 503 live tabs across
+/// the three spaces minus the one hydrated session (recently-closed entries
+/// are closed identities, never session-less tabs).
+pub(crate) const PERSISTED_WARM_DEFERRED: usize = 502;
+
+/// Drive a persisted warm-startup trial and return its two startup
+/// milestones: process-spawn → first usable presentation (sidebar + the
+/// selected restored tab's native view, non-zero rect) and process-spawn →
+/// deterministic fixture page ready. The profile's browser state was written
+/// through the actual repository before spawn; the semantic fast-but-wrong
+/// guards are asserted before any sample is accepted: exactly one live
+/// engine session from 500+ persisted identities, the typed `Restored`
+/// restore disposition with the deferred count, and the persisted
+/// sidebar/geometry presented.
+pub fn run_persisted_warm_trial(config: &TrialConfig, tag: &str) -> (f64, f64) {
+    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("bbr-fixtures")
+        .join("html");
+    let fixtures = FixtureServer::start(&fixtures_dir).expect("fixture server");
+    let page_one = fixtures.url("/page1.html");
+
+    let root = PathBuf::from(format!(
+        "/tmp/bbr-e2e-perf-warm-{tag}-{}",
+        std::process::id()
+    ));
+    let profile = root.join("profile");
+    std::fs::create_dir_all(&profile).unwrap();
+    seed_browser_store(&profile, &page_one);
+    let socket = profile.join("bbr-test.sock");
+    let token = format!("perf-warm-{tag}");
+
+    let args: Vec<String> = vec![
+        "--bbr-initial-url".into(),
+        page_one.clone(),
+        "--bbr-profile-dir".into(),
+        profile.to_str().unwrap().into(),
+        "--bbr-test-token".into(),
+        token.clone(),
+        "--bbr-ids=sequential".into(),
+    ];
+
+    let spawned_at_ns = monotonic_now_ns();
+    let mut harness = AppHarness::spawn(
+        config.bin,
+        &args.iter().map(String::as_str).collect::<Vec<_>>(),
+        &root,
+    );
+
+    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let replay = client.attach(None).expect("attach");
+        let since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+
+        let startup = replay
+            .iter()
+            .find_map(|(_, event)| {
+                benchmarks::measurement(event, BenchmarkKind::Startup, BenchmarkOperationId(0))
+            })
+            .unwrap_or_else(|| {
+                benchmarks::wait_measurement(
+                    &mut client,
+                    BenchmarkKind::Startup,
+                    BenchmarkOperationId(0),
+                    0,
+                )
+                .1
+            });
+        let startup_ms = ns_to_ms(startup.monotonic_commit_ns.saturating_sub(spawned_at_ns));
+        harness.raw_log.startup_ms.push(startup_ms);
+        // Semantic fast-but-wrong guards on the startup presentation sample:
+        // the selected restored tab's native view is presented with a
+        // non-zero rect and the sidebar is visible.
+        assert_eq!(startup.active_web_view, Some(WebViewId(1)));
+        assert!(startup.sidebar_visible);
+        assert!(startup.content_rect[2] > 0.0 && startup.content_rect[3] > 0.0);
+        assert!(
+            startup_ms <= STARTUP_MAX_MS,
+            "warm startup presentation {startup_ms:.2}ms exceeded {STARTUP_MAX_MS:.0}ms ceiling"
+        );
+
+        // The typed restore disposition and the visible-set session count:
+        // exactly one live session from 500+ persisted identities, never the
+        // persisted tab count — the fast-but-wrong guard.
+        let snapshot = client.snapshot().expect("warm snapshot");
+        assert_eq!(
+            snapshot.restore,
+            RestoreDisposition::Restored {
+                deferred_tabs: PERSISTED_WARM_DEFERRED,
+            },
+            "the persisted model restored chrome-first with the deferred count"
+        );
+        assert_eq!(
+            snapshot.engine_sessions, 1,
+            "visible-set-only hydration: exactly one session, never 500+"
+        );
+        assert_eq!(
+            snapshot.sidebar_width, 300.0,
+            "the persisted sidebar width presented"
+        );
+        assert_eq!(snapshot.window_content_size, [1080.0, 700.0]);
+        assert_eq!(snapshot.window_size[0], 1080.0);
+
+        // Deterministic page-ready milestone on the restored selected tab.
+        client
+            .send_ok(&Request::BenchmarkPageReady {
+                operation_id: BenchmarkOperationId(1),
+                expected_view: WebViewId(1),
+                expected_title: PAGE_ONE_TITLE.to_string(),
+            })
+            .expect("arm page ready");
+        let (_seq, page_ready) = benchmarks::wait_measurement(
+            &mut client,
+            BenchmarkKind::PageReady,
+            BenchmarkOperationId(1),
+            since,
+        );
+        let page_ready_ms = ns_to_ms(page_ready.monotonic_commit_ns.saturating_sub(spawned_at_ns));
+        harness.raw_log.page_ready_ms.push(page_ready_ms);
+        assert_eq!(page_ready.page_title.as_deref(), Some(PAGE_ONE_TITLE));
+        assert!(
+            page_ready_ms <= 1500.0,
+            "warm page ready {page_ready_ms:.2}ms exceeded the 1500ms ceiling"
+        );
+
+        client.quit().expect("quit");
+        wait_for_exit(&mut harness.child, deadline());
+        (startup_ms, page_ready_ms)
+    }));
+
+    match outcome {
+        Ok(value) => {
+            harness.success = true;
+            value
+        }
+        Err(panic) => {
+            let partial = super::report::Aggregated::from(&harness.raw_log);
+            let failure = super::report::panic_message(&panic);
+            let (report, _baseline) = super::report::report_from_agg(
+                &partial,
+                config,
+                &super::baseline_path(),
+                &root,
+                "persisted-warm",
+                Some(failure.clone()),
+            );
+            super::harness::write_artifacts(&root, &report);
+            eprintln!("FAILED-TRIAL ARTIFACTS at {}", root.display());
+            eprintln!("FAILURE: {failure}");
+            harness.diagnostics(&socket, &token);
+            std::panic::resume_unwind(panic);
+        }
     }
 }
 

@@ -217,6 +217,24 @@
       "samples": 0,
       "source": "contract-budget"
     },
+    "persisted_warm_page_ready": {
+      "budget_max_ms": null,
+      "budget_p95_ms": 1000.0,
+      "max_ms": 1000.0,
+      "p50_ms": 0.0,
+      "p95_ms": 1000.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "persisted_warm_startup": {
+      "budget_max_ms": 750.0,
+      "budget_p95_ms": 500.0,
+      "max_ms": 750.0,
+      "p50_ms": 0.0,
+      "p95_ms": 500.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
     "sidebar_favorites": {
       "budget_max_ms": 100.0,
       "budget_p95_ms": 50.0,

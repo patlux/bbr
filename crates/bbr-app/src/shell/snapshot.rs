@@ -121,6 +121,13 @@ pub struct TestSnapshot {
     /// contract evidence: pane ids and their real WKWebView frames).
     pub pane_rects: Vec<bbr_testkit::protocol::PaneRectSnapshot>,
     pub window_size: [f32; 2],
+    /// The native window content-area size `[width, height]` in points
+    /// (excluding the title bar): the truthful restored geometry — GPUI's
+    /// window options apply the persisted bounds as the content rect, so
+    /// this is the size a persisted window row reproduces. Measured via
+    /// the live session's window `contentLayoutRect`; `[0.0, 0.0]` before
+    /// the first native session exists.
+    pub window_content_size: [f32; 2],
     /// Typed diagnostics of the one native portal host (task packet
     /// `native-portal-host`; DESIGN.md §15): the active presentation and its
     /// native attachment/frame/visibility evidence.
@@ -172,6 +179,10 @@ pub struct TestSnapshot {
     /// truthful startup store disposition, the effective global search
     /// engine, and the in-memory history provider size.
     pub store: bbr_testkit::protocol::StoreSnapshot,
+    /// Phase-7 startup restore evidence (warm-restore slice): whether a
+    /// persisted browser model was applied chrome-first and how many tab
+    /// identities stayed session-less (deferred) after the restore.
+    pub restore: bbr_testkit::protocol::RestoreDisposition,
 }
 
 #[cfg(feature = "testkit")]

@@ -27,6 +27,21 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 500.0,
             max_ms: Some(750.0),
         },
+        // Phase-7 persisted warm-startup scenario (warm-restore slice): the
+        // same startup contract applies to a warm launch against a persisted
+        // browser model — first usable frame ≤ 250 ms target, p95 ≤ 500 ms,
+        // max ≤ 750 ms.
+        "persisted_warm_startup" => Budget {
+            p95_ms: 500.0,
+            max_ms: Some(750.0),
+        },
+        // Warm page-ready: the performance contract's warm budget
+        // (p50 ≤ 500 ms / p95 ≤ 1,000 ms); the fixture is deterministic and
+        // network-independent, so the distribution is BBR's own.
+        "persisted_warm_page_ready" => Budget {
+            p95_ms: 1000.0,
+            max_ms: None,
+        },
         "page_ready" => Budget {
             p95_ms: 1500.0,
             max_ms: None,

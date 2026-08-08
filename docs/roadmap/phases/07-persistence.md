@@ -42,9 +42,9 @@ restore, and metadata debounce.
 - [ ] Per-site settings/zoom remain not done. *(Out of scope for the command-history slice; the next bounded slice owns per-site settings/zoom persistence and its real-app E2E.)*
 - [x] Write structural changes transactionally.
 - [ ] Debounce transient title/favicon/history metadata writes. *(The command-history provider persists through a bounded nonblocking coalesced writer; title/favicon metadata debounce remains open.)*
-- [ ] Restore browser chrome first and hydrate only visible sessions.
+- [x] Restore browser chrome first and hydrate only visible sessions. *(F3 warm-restore slice: the repository-restored snapshot maps through the portable chrome-first `HydrationPolicy` into id-preserving domain/controller restore; only the active space's visible set hydrates — the dense 500-tab real-app E2E ends with exactly one live session (two for an active split) and every other identity session-less until activation.)*
 - [x] Recover optional corrupt session state without deleting profile browsing data. *(Repository projection returns ordered typed warnings without mutating persisted state.)*
-- [ ] Add checked-in migration fixtures and force-quit recovery tests. *(Migration/recovery fixtures are integrated; real-app force-quit recovery remains in the composition slice.)*
+- [x] Add checked-in migration fixtures and force-quit recovery tests. *(Migration/recovery fixtures are integrated; real-app force-quit recovery E2E `e2e_shell_persistence` proves only the last committed repository state returns after a graceful restart and after a SIGKILL force quit — for the open and the tab-reorder mutation classes — never a partial or fast-but-wrong model.)*
 - [ ] Add first-run, empty, migration-error, and recovery UI states.
 
 ## Deferred decisions
@@ -58,5 +58,5 @@ restore, and metadata debounce.
 
 ## Phase exit
 
-- [ ] Force quit during navigation or tab reorder restores a valid model.
-- [ ] Startup does not instantiate every persisted WKWebView.
+- [x] Force quit during navigation or tab reorder restores a valid model. *(Real-app force-quit E2E: a flushed structural mutation survives a SIGKILL — a flushed tab reorder returns the committed reordered order, proven by `force_quit_after_reorder_recovers_committed_order`; an unflushed mutation is present only when the repository committed it — the app presents exactly the committed state.)*
+- [x] Startup does not instantiate every persisted WKWebView. *(Dense 500-tab real-app restore hydrates exactly one session (two for an active split); the optimized `persisted_warm_startup` scenario proves the same visible-set-only bound with 10 accepted samples.)*

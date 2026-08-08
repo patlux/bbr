@@ -57,6 +57,10 @@ objc2-app-kit = { workspace = true, features = [
     "NSView",
     "NSWindow",
     "NSEvent",
+    # Window-geometry persist source (Phase 7 warm-restore): the
+    # window-content measurement flips the AppKit screen rect into GPUI
+    # top-left coordinates using the screen frame (GPUI's `bounds()` space).
+    "NSScreen",
     # Downloads: NSWorkspace for Reveal-in-Finder
     # (activateFileViewerSelectingURLs:).
     "NSWorkspace",

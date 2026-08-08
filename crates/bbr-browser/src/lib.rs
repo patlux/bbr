@@ -49,6 +49,9 @@ mod nav;
 mod organization;
 mod outcome;
 mod pane;
+mod restore;
+#[cfg(test)]
+mod restore_tests;
 mod session;
 mod snapshot;
 #[cfg(test)]

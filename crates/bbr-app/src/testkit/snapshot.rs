@@ -191,6 +191,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
                 }),
             pane_rects: self.pane_rects.clone(),
             window_size: self.window_size,
+            window_content_size: self.window_content_size,
             portal: self.portal.clone(),
             find: self.find.clone(),
             zoom: self.zoom.clone(),
@@ -209,6 +210,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             web_content_probe: None,
             error_surface: self.error_surface.clone(),
             store: self.store.clone(),
+            restore: self.restore,
         }
     }
 }

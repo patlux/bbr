@@ -420,6 +420,17 @@ pub(crate) fn dispatch(
         })
         .unwrap_or_else(err_response),
 
+        // Deterministic browser-state flush (testkit-only, Phase 7 warm-
+        // restore slice): the synchronous write of the current structural
+        // browser model (the production background writer uses the identical
+        // repository write). The deterministic seam the persistence/restart
+        // E2E uses to prove committed-state recovery across restarts.
+        Request::FlushBrowserState => with_app(window, app, cx, |view, _w, _cx| {
+            view.flush_browser_state();
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
         Request::DispatchKeystroke { keystroke } => {
             let ks = match Keystroke::parse(&keystroke) {
                 Ok(ks) => ks,

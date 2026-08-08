@@ -114,6 +114,17 @@ impl SidebarGeometry {
         }
     }
 
+    /// Restore the persisted sidebar presentation state (Phase 7 warm
+    /// restore): the requested width and the collapse memory, both clamped
+    /// to the adjustable range exactly like every other input path. The
+    /// collapsed flag is the app's `sidebar_visible` decision, not geometry
+    /// state; an active drag is abandoned.
+    pub fn restore(&mut self, width: f32, last_expanded: f32) {
+        self.requested = width.clamp(SIDEBAR_MIN, SIDEBAR_MAX);
+        self.last_expanded = last_expanded.clamp(SIDEBAR_MIN, SIDEBAR_MAX);
+        self.dragging = false;
+    }
+
     /// Keyboard decrease (`←` on the focused divider).
     pub fn decrease(&mut self, visible: bool) {
         self.set_width(self.requested - RESIZE_STEP, visible);

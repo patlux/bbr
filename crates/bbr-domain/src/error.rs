@@ -32,6 +32,11 @@ pub enum DomainError {
         tab: TabId,
         requested: TabLifecycle,
     },
+    /// An id-preserving restore tried to import an identity whose id is
+    /// already owned by another profile, space, tab, or recently-closed
+    /// entry (the domain identity contract is global uniqueness across
+    /// kinds), or an id that is not a positive persisted value.
+    RestoreCollision(u64),
 }
 
 impl std::fmt::Display for DomainError {
@@ -59,6 +64,9 @@ impl std::fmt::Display for DomainError {
                 f,
                 "tab {tab:?} cannot enter {requested:?} while its visibility disagrees"
             ),
+            Self::RestoreCollision(id) => {
+                write!(f, "restore rejected identity {id}: id already owned")
+            }
         }
     }
 }

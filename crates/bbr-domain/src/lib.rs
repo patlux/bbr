@@ -52,6 +52,8 @@ mod tests_dense;
 mod tests_folders;
 #[cfg(test)]
 mod tests_layout;
+#[cfg(test)]
+mod tests_restore;
 
 pub use browser::Browser;
 pub use error::{DomainError, InvariantViolation};

@@ -175,13 +175,19 @@ fn main() {
 
     stderr_logger::init();
 
-    let mut idgen: Box<dyn IdGen> = match cli.ids {
-        IdMode::Sequential => Box::new(SequentialIdGen::default()),
-        IdMode::Random => Box::new(RandomIdGen::default()),
-    };
+    let idgen = std::rc::Rc::new(std::cell::RefCell::new(match cli.ids {
+        IdMode::Sequential => Box::new(SequentialIdGen::default()) as Box<dyn IdGen>,
+        IdMode::Random => Box::new(RandomIdGen::default()) as Box<dyn IdGen>,
+    }));
     // WebViewId allocation is injected into the portable controller so E2E
-    // can assert stable native-session identity across tab switches.
-    let allocate_view: bbr_browser::ViewIdAllocator = Box::new(move || idgen.next_u64());
+    // can assert stable native-session identity across tab switches. Built
+    // on demand per startup path (restore and fresh-fallback are mutually
+    // exclusive code paths, each owning one allocator), sharing the one
+    // underlying id generator so sequential ids stay deterministic.
+    let build_allocate_view = move || -> bbr_browser::ViewIdAllocator {
+        let idgen = idgen.clone();
+        Box::new(move || idgen.borrow_mut().next_u64())
+    };
 
     // GPUI-CE application start; gpui-component must be initialized before any
     // component (including `Root`) is used. The external-URL open delivery
@@ -231,9 +237,57 @@ fn main() {
                 store::AppStore::ephemeral()
             }
         };
+        // The two bounded nonblocking background writers (command-history
+        // provider + browser-state) run on the background executor; ranking
+        // and render never touch SQLite. Exactly one AppStore/Repository
+        // authority owns both persist paths.
         store.spawn_writer(cx.background_executor());
+        store.spawn_browser_writer(cx.background_executor());
 
-        let bounds = Bounds::centered(None, size(px(cli.window_size.0), px(cli.window_size.1)), cx);
+        // Phase-7 chrome-first warm-restore plan: the composition reads the
+        // repository-restored browser snapshot ONCE here (before the store
+        // moves into the app), maps it through the app-owned portable
+        // mapping, and selects the deterministic default active space (the
+        // policy default: first space with an active tab, else the first
+        // space — the pre-quit showing space is not persisted). The window
+        // presentation rows (geometry + sidebar) compose through the
+        // production window options and the app's restore seam below.
+        let restored_browser = store.restored_browser().clone();
+        let restore_intent = if restored_browser.profiles.is_empty() {
+            None
+        } else {
+            Some(store::browser::persisted_to_intent(
+                &restored_browser.profiles,
+            ))
+        };
+        let restore_active_space = restore_intent
+            .as_ref()
+            .and_then(store::browser::default_active_space);
+        let window_row = restored_browser.windows.first();
+        let window_geometry = window_row.and_then(|window| window.geometry);
+        let sidebar_state = window_row.map(|window| window.sidebar);
+        // Clamp the persisted window size to the positivity/finite contract
+        // (the repository already recovered invalid optional values with a
+        // typed warning; this is the app-layer safety net before the bounds
+        // reach the window options). A window too large for the screen is
+        // left to the window server, which clamps the visible frame.
+        let requested_bounds = match window_geometry {
+            Some(geometry)
+                if geometry.width.is_finite()
+                    && geometry.width > 0.0
+                    && geometry.height.is_finite()
+                    && geometry.height > 0.0 =>
+            {
+                Some(Bounds {
+                    origin: gpui::point(px(geometry.x as f32), px(geometry.y as f32)),
+                    size: size(px(geometry.width as f32), px(geometry.height as f32)),
+                })
+            }
+            _ => None,
+        };
+        let bounds = requested_bounds.unwrap_or_else(|| {
+            Bounds::centered(None, size(px(cli.window_size.0), px(cli.window_size.1)), cx)
+        });
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             focus: !cli.hidden,
@@ -291,6 +345,7 @@ fn main() {
         // retained separately so actions, pumps, dispatch, and presentation
         // hooks address the app directly (see `with_app`).
         let mut app_entity: Option<Entity<BbrApp>> = None;
+        let mut restore_evidence = app::RestoreEvidence::Fresh;
         #[cfg(target_os = "macos")]
         let mut native_engine: Option<crate::engine::NativeEngineRef> = None;
         let window = cx
@@ -308,14 +363,47 @@ fn main() {
                 {
                     native_engine = Some(built.native);
                 }
-                let controller = BrowserController::new(engine.clone(), allocate_view);
-                // The L5 companion service: one session-local organization
-                // controller per browser controller (NewFolder/NewSpace/
-                // FavoriteToggle/MoveIntoFolder commands + the favorites/
-                // folders read model the U2 regions consume).
+                let controller = match (&restore_intent, restore_active_space) {
+                    // Persisted browser model: restore chrome-first through
+                    // the restored facade. Only the active space's visible
+                    // set hydrates a session; every other tab stays
+                    // session-less until activation. A typed failure rolls
+                    // the controller back to a fresh default model (the
+                    // facade's pinned non-transactional recovery contract)
+                    // and reports [`RestoreEvidence::Failed`] — never a
+                    // partial restored window presented as valid.
+                    (Some(intent), Some(active_space)) => {
+                        match BrowserController::restored(
+                            engine.clone(),
+                            build_allocate_view(),
+                            intent,
+                            active_space,
+                        ) {
+                            Ok((controller, plan)) => {
+                                restore_evidence = app::RestoreEvidence::Restored {
+                                    deferred_tabs: plan.deferred.len(),
+                                };
+                                controller
+                            }
+                            Err(error) => {
+                                log::error!(
+                                    "browser-state restore rejected ({error}); starting fresh"
+                                );
+                                restore_evidence = app::RestoreEvidence::Failed;
+                                BrowserController::new(engine.clone(), build_allocate_view())
+                            }
+                        }
+                    }
+                    // No persisted browser model: the fresh path opens the
+                    // initial tab as before.
+                    _ => {
+                        restore_evidence = app::RestoreEvidence::Fresh;
+                        BrowserController::new(engine.clone(), build_allocate_view())
+                    }
+                };
                 let organization = bbr_browser::OrganizationController::new();
                 let app = cx.new(|cx| {
-                    BbrApp::new(
+                    let mut app = BbrApp::new(
                         engine,
                         controller,
                         organization,
@@ -327,14 +415,21 @@ fn main() {
                         view_performance,
                         store,
                         cx,
-                    )
+                    );
+                    app.set_restore_evidence(restore_evidence);
+                    app
                 });
                 app_entity = Some(app.clone());
                 cx.new(|cx| gpui_component::Root::new(app, window, cx))
             })
             .expect("open window");
         let app = app_entity.expect("app entity built with the window root");
-        quit_when_browser_window_closes(cx, window);
+        // Normal-quit persistence correctness: flush the latest structural
+        // browser model through the existing owning shutdown seam when the
+        // browser window closes (the background writer uses the identical
+        // repository write). Narrow seam only — no general deterministic
+        // process-shutdown behavior is implemented here (queue item 20).
+        quit_when_browser_window_closes(cx, window, app.clone());
 
         // macOS-only native seams: the concrete engine handle (the find
         // adapter binds a live WKWebView without creating/moving sessions)
@@ -379,6 +474,17 @@ fn main() {
             });
         }
 
+        // macOS-only window-geometry composition: the concrete engine handle
+        // lets the persist source read the live session's window content
+        // rect (contentLayoutRect) so the persisted geometry round-trips
+        // exactly through the content-semantics window options.
+        #[cfg(target_os = "macos")]
+        if let Some(native) = native_engine.clone() {
+            let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+                view.set_geometry_engine(native);
+            });
+        }
+
         // macOS-only download composition: the concrete native adapter
         // (bound to the real WKDownload lifecycle) plus the engine handle
         // for the active-view capture. Under the testkit feature the
@@ -412,10 +518,29 @@ fn main() {
             });
         }
 
-        // Create the web view with the initial URL (first prepaint will frame it).
-        let _ = with_app(&window, &app, cx, |view, _w, _cx| {
-            view.open_initial_tab(&cli.initial_url)
-        });
+        // Phase-7 window/sidebar presentation restore: the persisted sidebar
+        // geometry (width, collapse memory, collapsed flag) composes through
+        // the production restore seam with the same clamping every input
+        // path uses. The window bounds were already applied through the
+        // window options above. Invalid optional values were already
+        // recovered by the repository (typed warnings); the app clamps again
+        // as a safety net.
+        if let Some(sidebar) = sidebar_state {
+            let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+                view.restore_window_state(&sidebar);
+            });
+        }
+
+        // Create the web view with the initial URL (first prepaint will
+        // frame it) — only on the fresh/failed path. A chrome-first restore
+        // already owns a hydrated model: the active space's visible set has
+        // its session and every other tab is deferred (session-less until
+        // activation), so no initial tab may be added on top.
+        if !matches!(restore_evidence, app::RestoreEvidence::Restored { .. }) {
+            let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+                view.open_initial_tab(&cli.initial_url)
+            });
+        }
 
         // Native portal host (task packet native-portal-host): exactly one
         // transparent, non-activating portal window per browser window,

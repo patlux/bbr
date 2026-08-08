@@ -40,6 +40,42 @@ impl Render for BbrApp {
         );
 
         let window_width = f32::from(window.bounds().size.width);
+        // Phase-7 warm-restore persist source: record the last rendered
+        // window **content** rect (origin + size in points) so the
+        // structural persistence DTO carries the truthful window geometry
+        // the next startup restores through the window options. GPUI's
+        // window options apply the persisted bounds as the content rect, so
+        // the content rect is measured natively (via the live session's
+        // window `contentLayoutRect`, which excludes the title bar) — a
+        // frame-based value would grow by the title-bar height every
+        // launch. Before the first native session exists the frame bounds
+        // are the fallback. The repository validation rejects
+        // non-positive/non-finite values on write and recovers them on
+        // restore, so this raw observation is safe to persist as-is.
+        {
+            let bounds = window.bounds();
+            let content = {
+                #[cfg(target_os = "macos")]
+                {
+                    self.geometry_engine.as_ref().and_then(|engine| {
+                        self.controller
+                            .snapshot()
+                            .active_view
+                            .and_then(|view| engine.borrow().window_content_rect(view))
+                    })
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    None
+                }
+            };
+            self.window_geometry.replace(Some(content.unwrap_or([
+                bounds.origin.x.into(),
+                bounds.origin.y.into(),
+                bounds.size.width.into(),
+                bounds.size.height.into(),
+            ])));
+        }
         let sidebar_width = if self.sidebar_visible {
             self.sidebar.effective_width(window_width)
         } else {

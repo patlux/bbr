@@ -54,9 +54,13 @@ use bbr_command::search_settings::engine::{CustomUrlTemplate, SearchEngine};
 use bbr_command::search_settings::settings::SearchSettingsV1;
 use bbr_command::search_settings::store::{LoadOutcome, ResetOutcome, SettingsStore, StoreOutcome};
 use bbr_persistence::{
-    CommandHistoryEntry, PersistenceError, Repository, SearchEngineId, SearchSettings, StoreLoad,
+    BrowserState, CommandHistoryEntry, PersistenceError, Repository, SearchEngineId,
+    SearchSettings, StoreLoad,
 };
 use gpui::BackgroundExecutor;
+
+pub(crate) mod browser;
+pub(crate) mod browser_writer;
 
 /// The persistence store file name inside the profile directory. The E2E
 /// harness seeds stores at exactly this path before spawning the app.
@@ -102,6 +106,21 @@ pub struct AppStore {
     /// (the composition root spawns the writer after `open`; unit tests
     /// drive persistence synchronously through `flush_persistence`).
     write_rx: Option<smol::channel::Receiver<()>>,
+    /// The restored browser structural state (profiles/spaces/tabs plus the
+    /// window/sidebar presentation rows) the app composes at startup into
+    /// the chrome-first restore. Empty on a fresh or discarded store.
+    restored_browser: BrowserState,
+    /// The latest browser-state poke (shared with the background writer):
+    /// the app replaces it on every structural mutation, so the writer and
+    /// the quit flush always persist the current model.
+    browser_slot: std::sync::Arc<std::sync::Mutex<Option<BrowserState>>>,
+    /// Bounded nonblocking browser-state persist: one poke per structural
+    /// mutation; the background writer coalesces and replaces the browser
+    /// tables in one transaction.
+    browser_tx: smol::channel::Sender<()>,
+    /// The browser-state channel receiver, taken by
+    /// [`AppStore::spawn_browser_writer`].
+    browser_rx: Option<smol::channel::Receiver<()>>,
 }
 
 impl AppStore {
@@ -144,6 +163,11 @@ impl AppStore {
         // pending (an accepted coalesced signal), so the queue never grows
         // with rapid visits and the writer never misses the latest state.
         let (write_tx, write_rx) = smol::channel::bounded::<()>(1);
+        let (browser_tx, browser_rx) = smol::channel::bounded::<()>(1);
+        let restored_browser = BrowserState {
+            profiles: outcome.snapshot.profiles,
+            windows: outcome.snapshot.windows,
+        };
         Ok(AppStore {
             repository: Some(repository),
             store_load: Some(store_load),
@@ -154,6 +178,10 @@ impl AppStore {
             downloads: outcome.snapshot.downloads,
             write_tx,
             write_rx: Some(write_rx),
+            restored_browser,
+            browser_slot: Arc::new(Mutex::new(None)),
+            browser_tx,
+            browser_rx: Some(browser_rx),
         })
     }
 
@@ -164,6 +192,7 @@ impl AppStore {
     pub fn ephemeral() -> AppStore {
         // Same capacity-1 poke shape as the real store (see `open`).
         let (write_tx, write_rx) = smol::channel::bounded::<()>(1);
+        let (browser_tx, browser_rx) = smol::channel::bounded::<()>(1);
         AppStore {
             repository: None,
             store_load: None,
@@ -174,6 +203,10 @@ impl AppStore {
             downloads: Vec::new(),
             write_tx,
             write_rx: Some(write_rx),
+            restored_browser: BrowserState::default(),
+            browser_slot: Arc::new(Mutex::new(None)),
+            browser_tx,
+            browser_rx: Some(browser_rx),
         }
     }
 

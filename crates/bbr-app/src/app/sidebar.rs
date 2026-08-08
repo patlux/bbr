@@ -29,6 +29,7 @@ impl BbrApp {
     pub fn resize_sidebar_to(&mut self, width: f32, window: &mut Window, cx: &mut Context<Self>) {
         let visible = self.sidebar_visible;
         self.sidebar.set_width(width, visible);
+        self.persist_structure();
         cx.notify();
         #[cfg(feature = "testkit")]
         {

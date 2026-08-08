@@ -4,6 +4,17 @@ use crate::fields::{
     CommandHistoryEntry, DownloadRecord, SearchSettings, SpaceGlyph, SpaceTint, StoreLoad,
 };
 
+/// The browser structural state the app persists independently of the
+/// global stores: the profile/space/tab graph (with recently-closed entries
+/// and splits) plus the window/sidebar presentation state. The settings,
+/// download, and command-history rows belong to their own store methods and
+/// are never touched by a browser-state write.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct BrowserState {
+    pub profiles: Vec<Profile>,
+    pub windows: Vec<WindowState>,
+}
+
 /// The complete ordered structural state owned by the persistence repository.
 ///
 /// Schema v2 adds the four field groups the blocked features need: per-space
@@ -148,9 +159,9 @@ pub struct SidebarState {
 impl Default for SidebarState {
     fn default() -> Self {
         Self {
-            width: 260.0,
+            width: 280.0,
             collapsed: false,
-            last_expanded_width: 260.0,
+            last_expanded_width: 280.0,
         }
     }
 }

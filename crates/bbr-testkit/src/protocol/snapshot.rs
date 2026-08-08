@@ -972,8 +972,18 @@ pub struct Snapshot {
     /// secondary). Empty in single-pane mode only when the pane has not yet
     /// published a frame; the focused pane's entry equals `content_rect`.
     pub pane_rects: Vec<PaneRectSnapshot>,
-    /// Window content size in points (diagnostics only).
+    /// Window frame size in points (`window.bounds()`, which includes the
+    /// macOS title bar). Diagnostics only; the truthful restored content
+    /// area is [`Snapshot::window_content_size`].
     pub window_size: [f32; 2],
+    /// The native window content-area size `[width, height]` in points
+    /// (excluding the title bar): the truthful restored geometry — GPUI's
+    /// window options apply the persisted bounds as the content rect, so
+    /// this is the size a persisted window row reproduces. Measured via
+    /// the live session's window `contentLayoutRect`; `[0.0, 0.0]` before
+    /// the first native session exists.
+    #[serde(default)]
+    pub window_content_size: [f32; 2],
     /// Typed diagnostics of the one native portal host (task packet
     /// `native-portal-host`; DESIGN.md §15). Exposes only the active
     /// presentation and its native attachment/frame/visibility evidence.
@@ -1037,6 +1047,36 @@ pub struct Snapshot {
     /// fallback after a fatal open failure.
     #[serde(default)]
     pub store: StoreSnapshot,
+    /// Phase-7 startup restore evidence (warm-restore slice): whether a
+    /// persisted browser model was applied chrome-first and how many tab
+    /// identities stayed session-less (deferred) after the restore. A failed
+    /// restore rolls back to a fresh default model and reports `Failed` —
+    /// never a partial restored window presented as valid.
+    #[serde(default)]
+    pub restore: RestoreDisposition,
+}
+
+/// The Phase-7 startup restore outcome, surfaced truthfully in the testkit
+/// snapshot: whether a persisted browser model was applied chrome-first and
+/// how many tab identities stayed session-less (deferred) after the restore.
+/// The fast-but-wrong guard pairs this disposition with the snapshot's
+/// `engine_sessions` count: a restore that eagerly instantiated every
+/// persisted session reports the same deferred count but a session count of
+/// hundreds, so the E2E rejects it. A failed restore rolls back to a fresh
+/// default model and reports [`RestoreDisposition::Failed`] — never a
+/// partial restored window presented as valid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum RestoreDisposition {
+    /// No persisted browser model (fresh store) — the startup opened the
+    /// initial tab as before.
+    #[default]
+    Fresh,
+    /// A persisted browser model was applied; `deferred_tabs` identities
+    /// stayed session-less until activation.
+    Restored { deferred_tabs: usize },
+    /// The persisted model was rejected (validation or mid-apply failure)
+    /// and the controller rolled back to a fresh default model.
+    Failed,
 }
 
 /// The truthful startup disposition of the app-owned persistence store

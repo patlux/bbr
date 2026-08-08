@@ -20,7 +20,6 @@ use crate::actions::{
     ReorderTabUp, ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
 };
 use crate::app::BbrApp;
-
 /// Root-window + app-entity seam: run an update against the separately
 /// retained `Entity<BbrApp>` with `&mut Window` access through the
 /// `gpui_component::Root` window. Every action, pump, dispatch, and
@@ -32,13 +31,24 @@ use crate::app::BbrApp;
 /// process, so closing that owning window is a full application shutdown even
 /// while implementation-owned child windows (such as the native portal host)
 /// still exist.
+///
+/// Normal-quit persistence correctness: the owning window-close seam flushes
+/// the latest structural browser model before the app quits (one synchronous
+/// transaction through the identical repository write the background writer
+/// uses). This is a narrow persistence seam, not a general deterministic
+/// process-shutdown system (queue item 20 stays out of scope); the force-quit
+/// and crash paths recover exactly the last committed state.
 pub(crate) fn quit_when_browser_window_closes(
     cx: &App,
     browser_window: gpui::WindowHandle<gpui_component::Root>,
+    app: Entity<BbrApp>,
 ) {
     let browser_window_id = browser_window.window_id();
     cx.on_window_closed(move |cx, closed_window_id| {
         if closed_window_id == browser_window_id {
+            // The app entity outlives its window (retained by the
+            // composition root), so the flush runs before the quit.
+            app.update(cx, |view, _cx| view.flush_browser_state());
             cx.quit();
         }
     })

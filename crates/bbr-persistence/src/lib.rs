@@ -19,6 +19,7 @@ mod fields;
 mod load_helpers;
 mod model;
 mod repository;
+mod repository_browser;
 mod repository_load;
 mod repository_rows;
 mod schema;
@@ -32,6 +33,7 @@ pub use fields::{
     SearchSettings, SpaceGlyph, SpaceTint, StoreDiscardReason, StoreLoad,
 };
 pub use model::{
-    Profile, ProfileHue, RecentlyClosedTab, RecoveryWarning, Repository, RestoreOutcome,
-    SidebarState, Snapshot, Space, Split, Tab, WindowGeometry, WindowState, WriteStats,
+    BrowserState, Profile, ProfileHue, RecentlyClosedTab, RecoveryWarning, Repository,
+    RestoreOutcome, SidebarState, Snapshot, Space, Split, Tab, WindowGeometry, WindowState,
+    WriteStats,
 };

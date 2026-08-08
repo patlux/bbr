@@ -29,24 +29,24 @@ use crate::{ControllerError, EngineRef, ViewIdAllocator};
 
 /// Platform-neutral owner of the browser model and its web sessions.
 pub struct BrowserController {
-    engine: EngineRef,
-    browser: Browser,
-    registry: SessionRegistry,
+    pub(crate) engine: EngineRef,
+    pub(crate) browser: Browser,
+    pub(crate) registry: SessionRegistry,
     /// Fresh `WebViewId` allocation (injected so E2E is deterministic).
-    allocate_view: ViewIdAllocator,
+    pub(crate) allocate_view: ViewIdAllocator,
     /// The space all tab operations currently target.
-    active_space: bbr_domain::SpaceId,
+    pub(crate) active_space: bbr_domain::SpaceId,
     /// Profile each live session was created in (cross-profile move policy).
-    session_profiles: HashMap<WebViewId, ProfileId>,
+    pub(crate) session_profiles: HashMap<WebViewId, ProfileId>,
     /// Desired engine visibility per live session (avoids redundant shows).
-    visibility: HashMap<WebViewId, bool>,
+    pub(crate) visibility: HashMap<WebViewId, bool>,
     /// Live-session navigation state (url/title/loading/history/crashed),
     /// reset whenever a session is recreated.
-    nav: HashMap<WebViewId, NavState>,
+    pub(crate) nav: HashMap<WebViewId, NavState>,
     /// Tabs whose web process terminated. Survives the session destruction
     /// (the crash destroys the session but the tab identity stays); cleared
     /// when a fresh session is created or loads.
-    crashed_tabs: std::collections::HashSet<TabId>,
+    pub(crate) crashed_tabs: std::collections::HashSet<TabId>,
 }
 
 impl std::fmt::Debug for BrowserController {
@@ -603,7 +603,12 @@ impl BrowserController {
     /// Allocate a fresh session for `tab`: engine create + registry mapping.
     /// A fresh session clears the tab's crash flag (the recovered page is no
     /// longer in the §10.7 error state).
-    fn create_session(&mut self, tab: TabId, profile: ProfileId, url: &str) -> WebViewId {
+    pub(crate) fn create_session(
+        &mut self,
+        tab: TabId,
+        profile: ProfileId,
+        url: &str,
+    ) -> WebViewId {
         self.crashed_tabs.remove(&tab);
         let view = WebViewId((self.allocate_view)());
         self.engine.borrow_mut().create_web_view(view, profile, url);
@@ -616,7 +621,7 @@ impl BrowserController {
     }
 
     /// Destroy a tab's session if it has one (engine + registry + nav state).
-    fn destroy_session_of(&mut self, tab: TabId) {
+    pub(crate) fn destroy_session_of(&mut self, tab: TabId) {
         if let Some(view) = self.registry.remove_tab(tab) {
             self.engine.borrow_mut().destroy_web_view(view);
             self.visibility.remove(&view);
@@ -656,7 +661,7 @@ impl BrowserController {
     }
 
     /// Registry + engine structural agreement after every mutation.
-    fn check_invariants(&self) {
+    pub(crate) fn check_invariants(&self) {
         self.registry
             .check_invariants()
             .expect("registry bijection");

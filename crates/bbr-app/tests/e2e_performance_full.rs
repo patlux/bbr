@@ -12,8 +12,9 @@
 mod perf_common;
 
 use perf_common::scenarios::{
-    aggregate, evaluate_aggregate, run_cold_trial, ColdSample, TrialConfig, COLD_STARTUP_SAMPLES,
-    INTERACTION_SAMPLES, NEW_TAB_SAMPLES,
+    aggregate, evaluate_aggregate, run_cold_trial, run_persisted_warm_trial, ColdSample,
+    TrialConfig, COLD_STARTUP_SAMPLES, INTERACTION_SAMPLES, NEW_TAB_SAMPLES,
+    PERSISTED_WARM_STARTUP_SAMPLES,
 };
 use perf_common::{artifacts_dir, baseline_path, short_config, trend_dir};
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -41,7 +42,18 @@ fn full_repeated_cold_benchmark_meets_budgets() {
             samples.push(run_cold_trial(&config, drive, &format!("full-{i}")));
         }
 
-        let agg = aggregate(samples);
+        // Phase-7 persisted warm-startup scenario (warm-restore slice):
+        // `PERSISTED_WARM_STARTUP_SAMPLES` warm launches against the dense
+        // persisted fixture through the actual repository restore path, each
+        // with the semantic fast-but-wrong guards asserted inside the trial.
+        let mut agg = aggregate(samples);
+        for i in 0..PERSISTED_WARM_STARTUP_SAMPLES {
+            let (warm_startup, warm_page_ready) =
+                run_persisted_warm_trial(&config, &format!("full-warm-{i}"));
+            agg.warm_startup_ms.push(warm_startup);
+            agg.warm_page_ready_ms.push(warm_page_ready);
+        }
+
         let report = evaluate_aggregate(
             &agg,
             &config,
@@ -199,6 +211,18 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             auth_sheet_open >= INTERACTION_SAMPLES,
             "credential-sheet open samples {auth_sheet_open} < {INTERACTION_SAMPLES}"
+        );
+        // Contract-required persisted warm-startup repetition count (the
+        // warm page-ready distribution needs >=10 accepted samples too).
+        let warm_startup_samples = report.results["persisted_warm_startup"].samples;
+        let warm_page_samples = report.results["persisted_warm_page_ready"].samples;
+        assert!(
+            warm_startup_samples >= PERSISTED_WARM_STARTUP_SAMPLES,
+            "persisted warm-startup samples {warm_startup_samples} < {PERSISTED_WARM_STARTUP_SAMPLES}"
+        );
+        assert!(
+            warm_page_samples >= PERSISTED_WARM_STARTUP_SAMPLES,
+            "persisted warm page-ready samples {warm_page_samples} < {PERSISTED_WARM_STARTUP_SAMPLES}"
         );
         assert!(
             activate >= NEW_TAB_SAMPLES,

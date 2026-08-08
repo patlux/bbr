@@ -355,6 +355,201 @@ impl Browser {
         Ok(())
     }
 
+    // ---- Id-preserving restore (chrome-first hydration import) -------------
+
+    /// Reserve a persisted identity id: reject ids already owned by any kind
+    /// (profile, space, tab, or recently-closed entry — the domain identity
+    /// contract is global uniqueness across kinds, matching the persistence
+    /// identity contract) and advance the allocator past the imported id so
+    /// a fresh [`Browser::alloc_id`] never collides with restored state.
+    fn reserve_id(&mut self, id: u64) -> Result<(), DomainError> {
+        if id == 0 {
+            return Err(DomainError::RestoreCollision(id));
+        }
+        let owned = self.profiles.iter().any(|p| p.id.0 == id)
+            || self.spaces.iter().any(|s| s.id.0 == id)
+            || self.tabs.iter().any(|t| t.id.0 == id)
+            || self
+                .spaces
+                .iter()
+                .any(|s| s.recently_closed.iter().any(|c| c.tab.id.0 == id));
+        if owned {
+            return Err(DomainError::RestoreCollision(id));
+        }
+        self.next_id = self.next_id.max(id + 1);
+        Ok(())
+    }
+
+    /// Restore one profile identity with its persisted id and identity hue
+    /// (id-preserving import; the round-robin [`Browser::create_profile`]
+    /// assignment is a creation-time policy, not a restore fact).
+    pub fn restore_profile(
+        &mut self,
+        id: ProfileId,
+        hue: crate::ProfileHue,
+        title: &str,
+    ) -> Result<(), DomainError> {
+        self.reserve_id(id.0)?;
+        self.profiles.push(Profile::new(id, hue, title));
+        Ok(())
+    }
+
+    /// Restore one space identity attached to an already-restored profile.
+    pub fn restore_space(
+        &mut self,
+        id: SpaceId,
+        profile: ProfileId,
+        title: &str,
+    ) -> Result<(), DomainError> {
+        if !self.profiles.iter().any(|p| p.id == profile) {
+            return Err(DomainError::UnknownProfile(profile));
+        }
+        self.reserve_id(id.0)?;
+        self.spaces.push(Space::new(id, profile, title));
+        Ok(())
+    }
+
+    /// Restore one tab identity into `space` at its intended position. The
+    /// leading `pinned` tabs form the space's pinned prefix (the caller's
+    /// validation guarantees a pinned prefix). Imported tabs are
+    /// **session-less** (`Suspended`) by design: the chrome-first restore
+    /// hydrates only the visible set, and every other restored tab must
+    /// stay without a session until a later activation recreates it.
+    pub fn restore_tab(
+        &mut self,
+        id: TabId,
+        space: SpaceId,
+        title: &str,
+        url: &str,
+        pinned: bool,
+    ) -> Result<(), DomainError> {
+        if !self.spaces.iter().any(|s| s.id == space) {
+            return Err(DomainError::UnknownSpace(space));
+        }
+        self.reserve_id(id.0)?;
+        let mut tab = Tab::new(id, space, title, url);
+        tab.pinned = pinned;
+        tab.lifecycle = TabLifecycle::Suspended;
+        self.tabs.push(tab);
+        let sp = self.space_mut(space).expect("validated above");
+        if pinned {
+            sp.tabs.insert(sp.pinned_count, id);
+            sp.pinned_count += 1;
+        } else {
+            sp.tabs.push(id);
+        }
+        Ok(())
+    }
+
+    /// Restore a space's selected tab without the selection semantics:
+    /// `select_tab` would activate the tab and dissolve a split, but the
+    /// restore must preserve the persisted `active_tab` and split verbatim
+    /// (the policy's split precedence decides visibility).
+    pub fn restore_active_tab(
+        &mut self,
+        space: SpaceId,
+        tab: Option<TabId>,
+    ) -> Result<(), DomainError> {
+        let sp = self
+            .space_mut(space)
+            .ok_or(DomainError::UnknownSpace(space))?;
+        if let Some(tab) = tab {
+            if !sp.tabs.contains(&tab) {
+                return Err(DomainError::TabNotInSpace { tab, space });
+            }
+            sp.active_tab = Some(tab);
+        } else {
+            sp.active_tab = None;
+        }
+        Ok(())
+    }
+
+    /// Restore (or clear) a space's two-pane split verbatim: both panes must
+    /// be distinct members of the space, and the space must not already own
+    /// a split. Like [`Browser::set_split`], an active tab outside the panes
+    /// is reconciled to the primary pane (the domain invariant requires a
+    /// split space's active tab to be a member; the outside tab stays a
+    /// member identity of the space, never dropped). No other lifecycle/
+    /// selection side effects — visibility follows the policy's split
+    /// precedence through [`Browser::is_visible`].
+    pub fn restore_split(
+        &mut self,
+        space: SpaceId,
+        split: Option<Split>,
+    ) -> Result<(), DomainError> {
+        let sp = self
+            .space_mut(space)
+            .ok_or(DomainError::UnknownSpace(space))?;
+        match split {
+            Some(split) => {
+                if split.primary == split.secondary {
+                    return Err(DomainError::SplitRequiresDistinctTabs);
+                }
+                if sp.split.is_some() {
+                    return Err(DomainError::SplitAlreadyExists(space));
+                }
+                for pane in [split.primary, split.secondary] {
+                    if !sp.tabs.contains(&pane) {
+                        return Err(DomainError::TabNotInSpace { tab: pane, space });
+                    }
+                }
+                sp.split = Some(split);
+                if !matches!(sp.active_tab, Some(active) if active == split.primary || active == split.secondary)
+                {
+                    sp.active_tab = Some(split.primary);
+                }
+            }
+            None => sp.split = None,
+        }
+        Ok(())
+    }
+
+    /// Restore one recently-closed entry (identity only — it owns no
+    /// session). The closed tab's id joins the identity space so a fresh
+    /// allocation can never reuse it, and `former_position` is the index the
+    /// tab reopens at (clamped by [`Browser::reopen_tab`] as usual).
+    pub fn restore_recently_closed(
+        &mut self,
+        space: SpaceId,
+        tab: Tab,
+        former_position: usize,
+    ) -> Result<(), DomainError> {
+        if !self.spaces.iter().any(|s| s.id == space) {
+            return Err(DomainError::UnknownSpace(space));
+        }
+        self.reserve_id(tab.id.0)?;
+        let mut closed = tab;
+        closed.lifecycle = TabLifecycle::Suspended;
+        self.space_mut(space)
+            .expect("validated above")
+            .recently_closed
+            .push(ClosedTab {
+                tab: closed,
+                index: former_position,
+            });
+        Ok(())
+    }
+
+    /// Mark a restored tab Active after its session is hydrated (the
+    /// session policy requires Active/Warm tabs to own a session and
+    /// Suspended/Discarded tabs to own none). Deliberately does not touch
+    /// the active-tab or split fields: the restored `active_tab` and split
+    /// are persisted truth and only the domain's selection paths may change
+    /// them. Also marks the tab recently used (deterministic recency for the
+    /// session-budget keep set).
+    pub fn restore_activate_tab(&mut self, tab: TabId) -> Result<(), DomainError> {
+        let state = self
+            .tabs
+            .iter_mut()
+            .find(|t| t.id == tab)
+            .ok_or(DomainError::UnknownTab(tab))?;
+        if state.lifecycle != TabLifecycle::Active {
+            state.lifecycle = TabLifecycle::Active;
+        }
+        self.touch(tab);
+        Ok(())
+    }
+
     /// Move a hidden tab through the explicit resource lifecycle. Visibility
     /// changes themselves are driven by selection/split operations and cannot
     /// be bypassed through this method.

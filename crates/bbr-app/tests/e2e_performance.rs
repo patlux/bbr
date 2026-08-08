@@ -16,7 +16,9 @@
 
 mod perf_common;
 
-use perf_common::scenarios::{aggregate, evaluate_aggregate, run_cold_trial, TrialConfig};
+use perf_common::scenarios::{
+    aggregate, evaluate_aggregate, run_cold_trial, run_persisted_warm_trial, TrialConfig,
+};
 use perf_common::{artifacts_dir, baseline_path, short_config, trend_dir};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -34,7 +36,14 @@ fn startup_warm_tab_switch_and_sidebar_meet_initial_budgets() {
     let config: TrialConfig = short_config();
     let result = catch_unwind(AssertUnwindSafe(|| {
         let sample = run_cold_trial(&config, true, "short");
-        let agg = aggregate(vec![sample]);
+        // Phase-7 persisted warm-startup scenario (warm-restore slice): one
+        // warm sample through the actual repository restore path against the
+        // dense persisted fixture, with the semantic fast-but-wrong guards
+        // asserted inside the trial.
+        let (warm_startup, warm_page_ready) = run_persisted_warm_trial(&config, "short");
+        let mut agg = aggregate(vec![sample]);
+        agg.warm_startup_ms.push(warm_startup);
+        agg.warm_page_ready_ms.push(warm_page_ready);
         let report = evaluate_aggregate(
             &agg,
             &config,

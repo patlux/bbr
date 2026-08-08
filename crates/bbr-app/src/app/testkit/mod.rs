@@ -42,7 +42,13 @@ impl BbrApp {
         let result = self
             .controller
             .create_profile_space(profile_title, space_title);
-        self.apply_mutation(result, cx)
+        let outcome = self.apply_mutation(result, cx);
+        if outcome.is_some() {
+            // A new profile/space is a structural mutation: the same
+            // production poke so a force quit recovers the committed model.
+            self.persist_structure();
+        }
+        outcome
     }
 
     /// Create a space in an existing profile (E2E seam).
@@ -53,7 +59,11 @@ impl BbrApp {
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
         let result = self.controller.create_space_event(profile, title);
-        self.apply_mutation(result, cx)
+        let outcome = self.apply_mutation(result, cx);
+        if outcome.is_some() {
+            self.persist_structure();
+        }
+        outcome
     }
 
     /// Move a tab to another space (E2E seam; follows the profile-boundary
@@ -65,7 +75,13 @@ impl BbrApp {
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
         let result = self.controller.move_tab(index, to_space);
-        self.apply_mutation(result, cx)
+        let outcome = self.apply_mutation(result, cx);
+        if outcome.is_some() {
+            // The tab changed space: a structural mutation that must survive
+            // a force quit.
+            self.persist_structure();
+        }
+        outcome
     }
 
     /// Suspend a tab's native session (E2E seam).
@@ -84,14 +100,24 @@ impl BbrApp {
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
         let result = self.controller.open_split(primary, secondary);
-        self.apply_mutation(result, cx)
+        let outcome = self.apply_mutation(result, cx);
+        if outcome.is_some() {
+            // The split layout is part of the persisted model: poke the one
+            // browser-state writer so the split survives a force quit.
+            self.persist_structure();
+        }
+        outcome
     }
 
     /// Close the active space's split layout; both tabs and their warm
     /// sessions stay (E2E seam into the production controller path).
     pub fn close_split(&mut self, cx: &mut Context<Self>) -> Option<ControllerEvent> {
         let result = self.controller.close_split();
-        self.apply_mutation(result, cx)
+        let outcome = self.apply_mutation(result, cx);
+        if outcome.is_some() {
+            self.persist_structure();
+        }
+        outcome
     }
 
     /// Deterministic dense-list seeding (testkit-only setup, DESIGN.md

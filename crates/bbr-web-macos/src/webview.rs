@@ -124,6 +124,35 @@ impl WebEngineWk {
             .map(|session| session.web_view.clone())
     }
 
+    /// The browser window's content rect in GPUI host coordinates (points,
+    /// top-left origin): `[x, y, width, height]` of the window's content
+    /// area **excluding the title bar**, flipped like GPUI's
+    /// [`gpui::Window::bounds`]. The Phase-7 warm-restore persist source:
+    /// GPUI's window options apply the requested bounds as the content
+    /// rect, so persisting the true content rect makes the window-geometry
+    /// round trip exact (a frame-based value would grow by the title-bar
+    /// height on every launch). `None` when no live session is hosted (no
+    /// window exists yet).
+    pub fn window_content_rect(&self, id: WebViewId) -> Option<[f64; 4]> {
+        self.assert_main_thread();
+        let web_view = self.web_view(id)?;
+        let window = web_view.window()?;
+        let frame = window.frame();
+        let content = window.contentRectForFrameRect(frame);
+        let screen = window.screen()?;
+        let screen_frame = screen.frame();
+        // Mirror GPUI's `bounds()` coordinate flip (AppKit's y grows
+        // upwards from the screen bottom): same space the window options
+        // consume, so the persisted origin restores the same position.
+        let y = screen_frame.size.height - content.origin.y - content.size.height;
+        Some([
+            content.origin.x - screen_frame.origin.x,
+            y + screen_frame.origin.y,
+            content.size.width,
+            content.size.height,
+        ])
+    }
+
     /// Hand all subsequent classified web-error incidents to `sink`
     /// (task packet `error-surface-contract`). Replaces any previous sink.
     /// Inherent to the concrete engine (not part of the portable trait): the

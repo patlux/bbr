@@ -18,6 +18,10 @@ use super::stats::{stats_from_ms, Stats};
 pub struct Aggregated {
     pub startup_ms: Vec<f64>,
     pub page_ready_ms: Vec<f64>,
+    /// Persisted warm-startup samples (Phase 7, warm-restore slice).
+    pub warm_startup_ms: Vec<f64>,
+    /// Persisted warm-startup page-ready samples (same trials).
+    pub warm_page_ready_ms: Vec<f64>,
     pub interactions: BTreeMap<String, Vec<u64>>,
 }
 
@@ -25,6 +29,12 @@ impl Aggregated {
     fn push(&mut self, sample: super::scenarios::ColdSample) {
         self.startup_ms.push(sample.startup_ms);
         self.page_ready_ms.push(sample.page_ready_ms);
+        if let Some(warm) = sample.warm_startup_ms {
+            self.warm_startup_ms.push(warm);
+        }
+        if let Some(warm) = sample.warm_page_ready_ms {
+            self.warm_page_ready_ms.push(warm);
+        }
         for (kind, raw) in sample.interactions {
             self.interactions.entry(kind).or_default().extend(raw);
         }
@@ -38,6 +48,8 @@ impl From<&super::harness::RawLog> for Aggregated {
         Self {
             startup_ms: log.startup_ms.clone(),
             page_ready_ms: log.page_ready_ms.clone(),
+            warm_startup_ms: Vec::new(),
+            warm_page_ready_ms: Vec::new(),
             interactions: log.interactions.clone(),
         }
     }
@@ -101,6 +113,19 @@ pub fn report_from_agg(
     let mut raw_ns = BTreeMap::new();
     results.insert("startup".into(), stats_from_ms(&agg.startup_ms));
     results.insert("page_ready".into(), stats_from_ms(&agg.page_ready_ms));
+    // Phase-7 persisted warm-startup scenario (warm-restore slice): the
+    // distribution over the persisted-profile trials, evaluated against the
+    // contract budgets (p95 ≤ 500 ms startup / ≤ 1,000 ms warm page-ready).
+    if !agg.warm_startup_ms.is_empty() {
+        results.insert(
+            "persisted_warm_startup".into(),
+            stats_from_ms(&agg.warm_startup_ms),
+        );
+        results.insert(
+            "persisted_warm_page_ready".into(),
+            stats_from_ms(&agg.warm_page_ready_ms),
+        );
+    }
     for (kind, raw) in &agg.interactions {
         results.insert(kind.clone(), harness::KindStats::from(&Stats::from_ns(raw)));
         raw_ns.insert(kind.clone(), raw.clone());

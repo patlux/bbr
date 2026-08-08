@@ -96,6 +96,25 @@ pub type BrowserSink = Box<dyn FnMut(&ControllerEvent)>;
 /// Default window size for the spike.
 pub const DEFAULT_WINDOW_SIZE: (f32, f32) = (1080.0, 700.0);
 
+/// The Phase-7 startup restore outcome, surfaced truthfully in the testkit
+/// snapshot: whether a persisted browser model was applied chrome-first and
+/// how many tab identities stayed session-less (deferred) after the restore.
+/// A failed restore rolls back to a fresh default model and reports
+/// [`RestoreEvidence::Failed`] — never a partial restored window presented
+/// as valid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RestoreEvidence {
+    /// No persisted browser model (fresh store) — the startup opened the
+    /// initial tab as before.
+    Fresh,
+    /// A persisted browser model was applied; `deferred_tabs` identities
+    /// stayed session-less until activation.
+    Restored { deferred_tabs: usize },
+    /// The persisted model was rejected (validation or mid-apply failure)
+    /// and the controller rolled back to a fresh default model.
+    Failed,
+}
+
 /// The root view of the browser window.
 pub struct BbrApp {
     engine: EngineRef,
@@ -286,6 +305,25 @@ pub struct BbrApp {
     /// that owns the truthful store disposition, the global search
     /// settings, and the in-memory history provider ranking consumes.
     store: crate::store::AppStore,
+    /// The Phase-7 startup restore outcome (see [`RestoreEvidence`]).
+    restore_evidence: RestoreEvidence,
+    /// The last rendered window content rect `[x, y, width, height]` in
+    /// points (Phase 7, warm-restore slice): the persist-direction source
+    /// for the optional window-geometry presentation row. The content rect
+    /// (excluding the title bar) is measured natively where a live web
+    /// session exists — GPUI's window options apply the persisted bounds as
+    /// the content rect, so persisting the true content rect keeps the
+    /// round trip exact (a frame-based value would grow by the title-bar
+    /// height every launch) — with the frame bounds as the fallback before
+    /// the first session exists. Updated in `render`; `None` until the
+    /// first frame.
+    window_geometry: std::cell::RefCell<Option<[f64; 4]>>,
+    /// Concrete native engine handle (macOS only): the window-geometry
+    /// persist source reads the live session's window content rect through
+    /// it (`WebEngineWk::window_content_rect`) without creating/moving
+    /// sessions.
+    #[cfg(target_os = "macos")]
+    geometry_engine: Option<crate::engine::NativeEngineRef>,
     /// The last frame's command-field rect in window coordinates, recorded
     /// by the field anchor element (DESIGN.md §11.4): the exact anchor for
     /// the field-anchored overlay (top/leading edge flush, width from the
@@ -421,11 +459,15 @@ impl BbrApp {
             menu_handle: cx.focus_handle(),
             #[cfg(target_os = "macos")]
             menu_engine: None,
+            #[cfg(target_os = "macos")]
+            geometry_engine: None,
             command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
             command_profile_hint: None,
             store,
+            restore_evidence: RestoreEvidence::Fresh,
+            window_geometry: std::cell::RefCell::new(None),
             sidebar_visible: true,
             organization,
             u2: u2::U2State::new(cx),
@@ -444,6 +486,15 @@ impl BbrApp {
         self.find_engine = Some(engine);
     }
 
+    /// Attach the concrete native engine handle (macOS only; the composition
+    /// root passes it after construction, like the portal host). The
+    /// window-geometry persist source reads the live session's window
+    /// content rect through it.
+    #[cfg(target_os = "macos")]
+    pub fn set_geometry_engine(&mut self, engine: crate::engine::NativeEngineRef) {
+        self.geometry_engine = Some(engine);
+    }
+
     /// Deterministic persistence flush (testkit gateway seam): synchronously
     /// writes the in-memory command-history provider to the store in one
     /// transaction — the deterministic seam E2E uses to prove persistence
@@ -452,6 +503,86 @@ impl BbrApp {
     #[cfg(feature = "testkit")]
     pub(crate) fn flush_persistence(&self) {
         self.store.flush_persistence();
+    }
+
+    // ---- Phase-7 warm-restore composition ----------------------------------
+
+    /// The startup restore evidence (see [`RestoreEvidence`]); set by the
+    /// composition root after the controller was built. Testkit-only: the
+    /// testkit snapshot surfaces it; production composition consumes the
+    /// returned evidence directly at build time.
+    #[cfg(feature = "testkit")]
+    pub fn restore_evidence(&self) -> RestoreEvidence {
+        self.restore_evidence
+    }
+
+    /// Record the startup restore evidence (the composition root passes the
+    /// chrome-first plan's deferred count, or nothing on the fresh path).
+    pub fn set_restore_evidence(&mut self, evidence: RestoreEvidence) {
+        self.restore_evidence = evidence;
+    }
+
+    /// The current structural browser model as the persistence DTO: the
+    /// controller's live model export mapped through the app-owned mapping,
+    /// plus the single window's presentation rows (geometry + sidebar). The
+    /// window identity is derived above every domain id (global uniqueness
+    /// across kinds), so a fresh creation can never collide with the window
+    /// row. Appearance values are the canonical derived defaults of the
+    /// integrated space-appearance contract (see `store::browser`).
+    fn current_browser_state(&self) -> bbr_persistence::BrowserState {
+        use bbr_persistence::{SidebarState, WindowGeometry, WindowState};
+        let intent = self.controller.intent();
+        let profiles = crate::store::browser::intent_to_persisted(&intent);
+        let window_id = crate::store::browser::derived_window_id(&profiles);
+        let geometry = self
+            .window_geometry
+            .borrow()
+            .map(|[x, y, width, height]| WindowGeometry {
+                x,
+                y,
+                width,
+                height,
+            });
+        bbr_persistence::BrowserState {
+            profiles,
+            windows: vec![WindowState {
+                id: window_id,
+                geometry,
+                sidebar: SidebarState {
+                    width: f64::from(self.sidebar.requested()),
+                    collapsed: !self.sidebar_visible,
+                    last_expanded_width: f64::from(self.sidebar.last_expanded()),
+                },
+            }],
+        }
+    }
+
+    /// Poke the bounded browser-state writer after a structural mutation
+    /// (open/close/pin/reorder/move/split/space/profile/sidebar): the latest
+    /// model replaces the shared slot and the background writer coalesces
+    /// the write, so a force quit recovers the last structurally persisted
+    /// model. Off the render path; never blocks.
+    pub fn persist_structure(&self) {
+        self.store.poke_browser_state(self.current_browser_state());
+    }
+
+    /// The production quit flush: refresh the slot from the current model
+    /// and write the browser tables synchronously in one transaction (the
+    /// same repository write the background writer uses).
+    pub fn flush_browser_state(&self) {
+        self.persist_structure();
+        self.store.flush_browser_state();
+    }
+
+    /// Restore the persisted window presentation state (sidebar geometry +
+    /// collapsed flag) after the window opened. The window bounds were
+    /// already applied by the composition root through the window options;
+    /// this composes the remaining presentation row truthfully (invalid
+    /// optional values were already recovered by the repository).
+    pub fn restore_window_state(&mut self, state: &bbr_persistence::SidebarState) {
+        self.sidebar
+            .restore(state.width as f32, state.last_expanded_width as f32);
+        self.sidebar_visible = !state.collapsed;
     }
 
     /// Issue a real WebKit content probe for a live view (testkit-only;
@@ -583,6 +714,7 @@ impl BbrApp {
             // native visibility against the surface.
             self.sync_error_surface_visibility();
             self.zoom_after_activation();
+            self.persist_structure();
             cx.notify();
         }
         result
@@ -608,6 +740,7 @@ impl BbrApp {
             // visibility against the surface.
             self.sync_error_surface_visibility();
             self.zoom_after_activation();
+            self.persist_structure();
             cx.notify();
         }
         result
@@ -643,6 +776,7 @@ impl BbrApp {
                 self.error_surface.forget_view(view);
             }
             self.ensure_active_visible();
+            self.persist_structure();
             cx.notify();
         }
         result
@@ -731,6 +865,7 @@ impl BbrApp {
             self.sidebar.expand();
         }
         self.sidebar_visible = !self.sidebar_visible;
+        self.persist_structure();
         #[cfg(feature = "testkit")]
         {
             self.performance.arm_browser_state_if_pending(
