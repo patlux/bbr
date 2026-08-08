@@ -146,6 +146,16 @@ pub enum Request {
     InjectWebEvent {
         event: bbr_web::WebEvent,
     },
+    /// Deliver an external URL open through the exact production queue the
+    /// AppKit delegate path (`application:openURLs:` via GPUI's
+    /// `on_open_urls`) pushes into: the pump drains it into
+    /// `BbrApp::on_external_url`, the app-lifetime coordinator decides, and
+    /// the existing controller executes the outcome. Testkit-only seam into
+    /// the production path, so E2E proves delivery, burst dedup, rejection,
+    /// and identity preservation deterministically (queue item 13).
+    DeliverExternalUrl {
+        url: String,
+    },
     /// Activate a visible space row through the production pointer path: the
     /// same app method the row's mouse-down listener calls, with chrome focus.
     ClickSpace {
