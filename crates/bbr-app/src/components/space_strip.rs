@@ -11,12 +11,14 @@
 //! the §7 glyph paths themselves are a later icon-system slice, so the
 //! identity renders its canonical string form here). The chip's accessible
 //! name carries the space and profile names, so identity is never
-//! color-only. The active chip renders a persistent selected surface plus a
-//! focus-independent accent rail; inactive chips stay quiet. The strip
-//! scrolls the selected chip fully into view without changing order through
-//! the tracked [`ScrollHandle`].
+//! color-only. The active chip renders the space's **resolved theme tint**
+//! (the one central [`crate::theme::space_tint`] model — the active token
+//! tints the chip, never a raw consumer color) plus a persistent selected
+//! surface and a focus-independent accent rail; inactive chips stay quiet.
+//! The strip scrolls the selected chip fully into view without changing
+//! order through the tracked [`ScrollHandle`].
 
-use bbr_browser::SpaceId;
+use bbr_browser::{SpaceId, SpaceTheme};
 use gpui::{
     div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, ScrollHandle, SharedString,
     Stateful, Styled, Window,
@@ -59,6 +61,11 @@ pub struct SpaceChipVisuals {
     /// The validated curated identity in its canonical string form (the
     /// emoji scalar or the glyph name).
     pub identity: String,
+    /// The effective curated theme token of this space (from the one
+    /// controller appearance authority; derived defaults included). The
+    /// chip resolves its tint through [`crate::theme::space_tint`], so the
+    /// render, the snapshot, and the semantic tree share one theme source.
+    pub theme: SpaceTheme,
     /// Whether this is the active space (the chip renders selected).
     pub selected: bool,
 }
@@ -100,6 +107,10 @@ pub fn space_chip(
 ) -> Stateful<Div> {
     let p = theme.palette;
     let selected = visuals.selected;
+    // §11.3: the active token tints the chip through the one central
+    // resolver; text, the accent rail, and the §9 outline keep their own
+    // tokens (the tint is never the only state cue).
+    let tint = crate::theme::space_tint(visuals.theme, theme);
     div()
         .id(space_chip_id(visuals.space))
         .flex_shrink_0()
@@ -112,7 +123,7 @@ pub fn space_chip(
         .rounded(Radius.small())
         .cursor_pointer()
         .bg(if selected {
-            p.tint_selected
+            tint.chip_active
         } else {
             p.surface_sidebar
         })
@@ -161,6 +172,7 @@ mod tests {
             space,
             title: title.into(),
             identity: "book".into(),
+            theme: SpaceTheme::Ink,
             selected: false,
         }
     }
@@ -202,6 +214,29 @@ mod tests {
         let visuals = visuals(SpaceId(42), "Reading");
         assert_eq!(visuals.space, SpaceId(42));
         assert_eq!(visuals.identity, "book");
+        assert_eq!(visuals.theme, SpaceTheme::Ink);
         assert!(!visuals.selected);
+    }
+
+    #[test]
+    fn the_active_chip_consumes_the_central_tint_resolution() {
+        // The chip's resolved surfaces come from the one central model: the
+        // selected surface equals the resolver's chip tint for the chip's
+        // theme/mode/contrast, never a raw consumer color.
+        let theme = crate::theme::Theme::dark();
+        let selected = SpaceChipVisuals {
+            space: SpaceId(2),
+            title: "Default".into(),
+            identity: "code".into(),
+            theme: SpaceTheme::Cobalt,
+            selected: true,
+        };
+        let tint = crate::theme::space_tint(SpaceTheme::Cobalt, &theme);
+        // The selected chip's surface is the tinted chip surface — a
+        // stronger blend than the rail — distinct from the untinted
+        // material and from the generic selection token.
+        assert_ne!(tint.chip_active, theme.palette.surface_sidebar);
+        assert_ne!(tint.chip_active, theme.palette.tint_selected);
+        assert_eq!(selected.theme, SpaceTheme::Cobalt);
     }
 }

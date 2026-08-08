@@ -70,7 +70,7 @@ mod hydration_tests;
 #[cfg(test)]
 mod organization_tests;
 
-pub use bbr_domain::{ProfileHue, SpaceId, TabLifecycle};
+pub use bbr_domain::{ProfileHue, SpaceAppearance, SpaceId, SpaceTheme, TabLifecycle};
 pub use controller::BrowserController;
 pub use downloads::{
     display_filename, url_filename, ApplyOutcome, DownloadActionSink, DownloadController,

@@ -65,6 +65,7 @@ fn space_chip() -> SpaceChipVisuals {
         space: bbr_browser::SpaceId(1),
         title: "Default".into(),
         identity: "book".into(),
+        theme: bbr_browser::SpaceTheme::Cobalt,
         selected: true,
     }
 }

@@ -413,6 +413,7 @@ fn the_permanent_strip_always_renders_chip_nodes() {
         space: bbr_browser::SpaceId(2),
         title: "Reading".into(),
         identity: "book".into(),
+        theme: bbr_browser::SpaceTheme::Pine,
         selected: false,
     };
     let chips = [space_chip(), quiet];

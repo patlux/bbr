@@ -37,6 +37,12 @@ impl BbrApp {
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let p = theme.palette;
+        // §11.3: the active space's effective appearance tints the BBR-owned
+        // sidebar material through the one central resolver (the base is
+        // the shell's own `surface_sidebar` token). Text, hairlines, accent
+        // rails, icons, and the native web content keep their own tokens.
+        let chrome_tint =
+            crate::theme::space_tint(self.active_space_appearance().theme, theme).chrome;
         // The U2 rail inputs (favorites tiles, folder rows/members) derived
         // once per frame and shared by the tab/favorites/folders surfaces.
         let u2 = self.u2_rail_data();
@@ -68,7 +74,7 @@ impl BbrApp {
             .flex_shrink_0()
             .flex()
             .flex_row()
-            .bg(p.surface_sidebar)
+            .bg(chrome_tint)
             .border_r_1()
             .border_color(p.hairline)
             .on_mouse_down(

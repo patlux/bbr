@@ -39,6 +39,17 @@ pub enum Request {
     ActivateSpace {
         space: TestSpaceId,
     },
+    /// Set the curated theme token of a space through the production
+    /// controller appearance authority (`set_space_theme`; the explicit
+    /// record becomes authoritative over the derived profile-hue default).
+    /// `theme` is the canonical token name (`cobalt`…`ink`); unknown names
+    /// reject whole. Appearance has no settings/picker UI and no
+    /// persistence — this is the testkit seam into the already-supported
+    /// controller mutation.
+    SetSpaceTheme {
+        space: TestSpaceId,
+        theme: String,
+    },
     /// Open a new tab and make it active.
     OpenTab {
         url: String,

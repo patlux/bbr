@@ -30,6 +30,19 @@ use crate::palette::Palette;
 mod density;
 pub use density::Density;
 
+/// Per-space curated theme tokens → contrast-safe chrome tint (DESIGN.md
+/// §11.3): the one central presentation model that resolves every curated
+/// [`bbr_browser::SpaceTheme`] into light/dark × standard/increased
+/// chrome + active-chip colors. Consumers (the sidebar rail, the space
+/// chips, the snapshot evidence) call [`space_tint`]; no consumer authors
+/// a render color.
+mod space_tint;
+/// Testkit-only: the deterministic `#RRGGBB` wire form of a resolved chrome
+/// color (the typed snapshot evidence; never native/web pixels).
+#[cfg(feature = "testkit")]
+pub use space_tint::hex;
+pub use space_tint::space_tint;
+
 /// Typography steps (DESIGN.md §4).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TypeRole {

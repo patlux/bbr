@@ -14,7 +14,10 @@ use crate::protocol::TestSpaceId;
 /// `bbr-space-chip-<n>`/`bbr-space-identity-<n>` ids derive from the
 /// persistent `space` id alone — never render position, creation-order
 /// index, or profile index). The strip is always part of the rail, so the
-/// chips expose the exact selected evidence the active space renders.
+/// chips expose the exact selected evidence the active space renders. Each
+/// chip also carries the effective curated theme token name so the active
+/// appearance (explicit controller record or derived profile-hue default)
+/// is provable per chip.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SpaceChipSnapshot {
     /// The persistent space identity — the only identity of the chip ids.
@@ -24,8 +27,38 @@ pub struct SpaceChipSnapshot {
     /// The validated curated identity in its canonical string form (the
     /// emoji scalar or the glyph name).
     pub identity: String,
+    /// The effective curated theme token name (`cobalt`…`ink`), from the
+    /// one controller appearance authority — explicit record or derived
+    /// profile-hue default.
+    #[serde(default)]
+    pub theme: String,
     /// Whether this is the active space (the chip renders selected).
     pub selected: bool,
+}
+
+/// The resolved appearance evidence of the active space on the wire
+/// (DESIGN.md §11.3/§15): the effective theme/identity names plus the
+/// **resolved chrome/chip tint state** the render actually paints — typed
+/// `#RRGGBB` hex derived from the one central presentation model, never raw
+/// native/web pixels and never a parallel render store. E2E proves that
+/// cross-space/cross-profile activation through production activation
+/// changes this evidence exactly when the effective appearance changes.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SpaceAppearanceSnapshot {
+    /// The space whose appearance this is (the active space at snapshot
+    /// time).
+    pub space: TestSpaceId,
+    /// The effective curated theme token name (explicit record or derived
+    /// profile-hue default).
+    pub theme: String,
+    /// The effective validated identity in its canonical string form.
+    pub identity: String,
+    /// The resolved sidebar-rail chrome tint (`#RRGGBB`) for the active
+    /// space's theme in the shell's mode/contrast.
+    pub chrome_tint: String,
+    /// The resolved active-chip surface tint (`#RRGGBB`) for the active
+    /// space's theme in the shell's mode/contrast.
+    pub chip_tint: String,
 }
 
 /// §11.3/§11.4 strip scroll evidence on the wire: the strip's measured

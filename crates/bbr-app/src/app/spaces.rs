@@ -11,7 +11,7 @@
 //! warm sessions stay warm — including across profile boundaries (recreation
 //! stays reserved for actual cross-profile tab moves).
 
-use bbr_browser::{ControllerEvent, SpaceId};
+use bbr_browser::{ControllerEvent, SpaceAppearance, SpaceId, SpaceTheme};
 use gpui::{Context, KeyDownEvent, Window};
 
 use crate::command_bar::CommandBarMode;
@@ -121,6 +121,41 @@ impl BbrApp {
         }
     }
 
+    /// The effective appearance of the active space from the one controller
+    /// authority (the §11.3 chrome-tint source). The deterministic fallback
+    /// only covers the invariant-forbidden empty browser; the controller's
+    /// effective appearance (explicit record or profile-hue default) is
+    /// authoritative for every real space.
+    pub(crate) fn active_space_appearance(&self) -> SpaceAppearance {
+        let active = self.controller.snapshot().active_space;
+        self.controller
+            .space_appearance(active)
+            .unwrap_or_else(|| SpaceAppearance::default_for(active))
+    }
+
+    /// Set the curated theme token of `space` through the one controller
+    /// appearance authority (the explicit record becomes authoritative over
+    /// the derived profile-hue default). `theme` is the canonical token
+    /// name; unknown names reject whole with a message.
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit seam
+    pub(crate) fn set_space_theme(
+        &mut self,
+        space: SpaceId,
+        theme: &str,
+        cx: &mut Context<Self>,
+    ) -> Result<(), String> {
+        let token = SpaceTheme::ALL
+            .iter()
+            .find(|candidate| candidate.name() == theme)
+            .copied()
+            .ok_or_else(|| format!("unknown theme {theme:?}"))?;
+        self.controller
+            .set_space_theme(space, token)
+            .map_err(|error| error.to_string())?;
+        cx.notify();
+        Ok(())
+    }
+
     /// The §11.3 chip visuals for the current render, snapshot, and semantic
     /// tree: one chip per space in canonical grouped order (profile groups,
     /// creation order within each profile), each consuming the effective
@@ -139,18 +174,17 @@ impl BbrApp {
                     .iter()
                     .find(|s| s.index == row.index)
                     .expect("space row derives from the snapshot");
-                let identity = self
+                let appearance = self
                     .controller
                     .space_appearance(space.id)
-                    .expect("space exists")
-                    .identity
-                    .name();
+                    .expect("space exists");
                 crate::components::SpaceChipVisuals {
                     // The persistent id is the chip identity; the vector
                     // position is display order only.
                     space: space.id,
                     title: row.title.to_string(),
-                    identity,
+                    identity: appearance.identity.name(),
+                    theme: appearance.theme,
                     selected: space.active,
                 }
             })

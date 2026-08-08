@@ -37,9 +37,9 @@ pub use snapshot::{
     DownloadsPanelSnapshot, ErrorSurfaceCategory, ErrorSurfaceSnapshot, FavoriteTileSnapshot,
     FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts, PaneLayoutSnapshot,
     PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, RestoreDisposition, SemanticNode,
-    SemanticRole, Snapshot, SpaceChipSnapshot, SpaceSnapshot, SpaceStripScrollSnapshot,
-    SpaceVisualState, StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, TabSnapshot,
-    TabVisualState, WebContentProbe, ZoomSnapshot,
+    SemanticRole, Snapshot, SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceSnapshot,
+    SpaceStripScrollSnapshot, SpaceVisualState, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
+    StoreSnapshot, TabSnapshot, TabVisualState, WebContentProbe, ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.
@@ -506,12 +506,17 @@ mod tests {
         )
         .unwrap();
         assert_eq!(snapshot.portal, PortalSnapshot::default());
+        // An older harness client omitting the appearance evidence defaults
+        // to no active appearance (the field is additive, never required).
+        assert_eq!(snapshot.active_appearance, None);
     }
 
     /// The §11.3 strip chip wire shape stays plain and round-trips: the
     /// persistent space id is the chip identity, `selected` is the exact
-    /// active-space evidence, and display order is the vector order (the
-    /// ids derive from `space`, never the position).
+    /// active-space evidence, `theme` is the effective curated token name,
+    /// and display order is the vector order (the ids derive from `space`,
+    /// never the position). An older client omitting `theme` still
+    /// deserializes with the empty default.
     #[test]
     fn space_chip_snapshot_round_trips_with_exact_wire_shape() {
         use crate::protocol::TestSpaceId;
@@ -520,12 +525,14 @@ mod tests {
                 space: TestSpaceId(2),
                 title: "Default".into(),
                 identity: "code".into(),
+                theme: "cobalt".into(),
                 selected: true,
             },
             SpaceChipSnapshot {
                 space: TestSpaceId(5),
                 title: "Reading".into(),
                 identity: "book".into(),
+                theme: "pine".into(),
                 selected: false,
             },
         ];
@@ -533,14 +540,50 @@ mod tests {
         assert_eq!(
             json,
             json!([
-                {"space":2,"title":"Default","identity":"code","selected":true},
-                {"space":5,"title":"Reading","identity":"book","selected":false}
+                {"space":2,"title":"Default","identity":"code","theme":"cobalt","selected":true},
+                {"space":5,"title":"Reading","identity":"book","theme":"pine","selected":false}
             ])
         );
         let decoded: Vec<SpaceChipSnapshot> = serde_json::from_value(json).unwrap();
         assert_eq!(decoded, chips);
         // Exactly one chip carries the active-space selection.
         assert_eq!(chips.iter().filter(|c| c.selected).count(), 1);
+        // An older client omitting `theme` still deserializes (empty name).
+        let legacy = serde_json::from_value::<SpaceChipSnapshot>(json!(
+            {"space":2,"title":"Default","identity":"code","selected":true}
+        ))
+        .unwrap();
+        assert_eq!(legacy.theme, "");
+    }
+
+    /// The resolved appearance evidence round-trips as plain data: the
+    /// active space, the effective theme/identity names, and the resolved
+    /// chrome/chip tint hex from the one central presentation model. A
+    /// snapshot that omits the field (an older harness client) still
+    /// deserializes to `None`.
+    #[test]
+    fn active_appearance_snapshot_round_trips_and_defaults_to_none() {
+        use crate::protocol::SpaceAppearanceSnapshot;
+        let appearance = SpaceAppearanceSnapshot {
+            space: crate::protocol::TestSpaceId(2),
+            theme: "cobalt".into(),
+            identity: "code".into(),
+            chrome_tint: "#1C2028".into(),
+            chip_tint: "#222837".into(),
+        };
+        let json = serde_json::to_value(&appearance).unwrap();
+        assert_eq!(
+            json,
+            json!({
+                "space":2,
+                "theme":"cobalt",
+                "identity":"code",
+                "chrome_tint":"#1C2028",
+                "chip_tint":"#222837"
+            })
+        );
+        let decoded: SpaceAppearanceSnapshot = serde_json::from_value(json).unwrap();
+        assert_eq!(decoded, appearance);
     }
 
     /// The §11.3 strip scroll evidence round-trips as plain data: the raw

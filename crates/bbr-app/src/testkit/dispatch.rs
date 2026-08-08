@@ -564,7 +564,8 @@ pub(crate) fn dispatch(
             unreachable!("context-menu requests route through dispatch_context_menu")
         }
 
-        // Routed by `dispatch_u2` before this match.
+        // Routed by `dispatch_u2` before this match; reaching one here is
+        // a routing bug.
         Request::ClickFooterDownloads
         | Request::ClickFooterPlus
         | Request::ClickPlusMenuItem { .. }
@@ -574,7 +575,8 @@ pub(crate) fn dispatch(
         | Request::ClickFolderToggle { .. }
         | Request::ClickFolderMember { .. }
         | Request::ClickFolderMemberClose { .. }
-        | Request::MoveTabIntoFolder { .. } => {
+        | Request::MoveTabIntoFolder { .. }
+        | Request::SetSpaceTheme { .. } => {
             unreachable!("U2 sidebar requests route through dispatch_u2")
         }
 

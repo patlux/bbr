@@ -42,6 +42,7 @@ impl BbrApp {
                 space: bbr_testkit::protocol::TestSpaceId(chip.space.0),
                 title: chip.title,
                 identity: chip.identity,
+                theme: chip.theme.name().to_string(),
                 selected: chip.selected,
             })
             .collect();
@@ -136,6 +137,24 @@ impl BbrApp {
         let error_surface_visible = error_surface.visible;
         let error_surface_origin = error_surface.origin.is_some();
 
+        // §11.3 resolved appearance evidence: the active space's effective
+        // appearance (the one controller authority) resolved through the
+        // one central tint model. The snapshot carries the resolved
+        // chrome/chip tint hex — the exact state the render paints — so E2E
+        // can prove activation changes the appearance without reading raw
+        // pixels.
+        let active_appearance = {
+            let appearance = self.active_space_appearance();
+            let tint = crate::theme::space_tint(appearance.theme, &theme);
+            Some(bbr_testkit::protocol::SpaceAppearanceSnapshot {
+                space: bbr_testkit::protocol::TestSpaceId(appearance.space.0),
+                theme: appearance.theme.name().to_string(),
+                identity: appearance.identity.name(),
+                chrome_tint: crate::theme::hex(tint.chrome),
+                chip_tint: crate::theme::hex(tint.chip_active),
+            })
+        };
+
         TestSnapshot {
             url: browser.nav.url.clone(),
             title: browser.nav.title.clone(),
@@ -224,6 +243,7 @@ impl BbrApp {
             drag_slot,
             drag_valid: self.tab_drag.valid(),
             space_chips,
+            active_appearance,
             space_strip_scroll: self.space_strip_scroll_snapshot(),
             visible_ids: crate::shell::snapshot::visible_ids_u2(
                 &browser,

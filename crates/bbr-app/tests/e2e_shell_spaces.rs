@@ -16,6 +16,8 @@
 
 #![cfg(target_os = "macos")]
 
+#[path = "e2e_shell_spaces/appearance.rs"]
+mod appearance;
 mod e2e_common;
 #[path = "e2e_shell_spaces/strip.rs"]
 mod strip;

@@ -400,6 +400,16 @@ pub fn click_space(space: TestSpaceId) -> Request {
     Request::ClickSpace { space }
 }
 
+/// Set the curated theme token of a space through the production controller
+/// appearance authority (the explicit record becomes authoritative over the
+/// derived profile-hue default).
+pub fn set_space_theme(space: TestSpaceId, theme: impl Into<String>) -> Request {
+    Request::SetSpaceTheme {
+        space,
+        theme: theme.into(),
+    }
+}
+
 pub fn click_space_new() -> Request {
     Request::ClickSpaceNew
 }

@@ -9,7 +9,8 @@ use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewI
 
 mod u2;
 pub use u2::{
-    FavoriteTileSnapshot, FolderRowSnapshot, SpaceChipSnapshot, SpaceStripScrollSnapshot,
+    FavoriteTileSnapshot, FolderRowSnapshot, SpaceAppearanceSnapshot, SpaceChipSnapshot,
+    SpaceStripScrollSnapshot,
 };
 
 /// The L6 contract state of one download attempt (DESIGN.md §15): the panel
@@ -889,6 +890,12 @@ pub struct Snapshot {
     /// the rail.
     #[serde(default)]
     pub space_chips: Vec<SpaceChipSnapshot>,
+    /// §11.3 resolved appearance evidence of the active space: effective
+    /// theme/identity names plus the resolved chrome/chip tint hex the
+    /// render paints. `None` only in the invariant-forbidden empty browser;
+    /// every real active space resolves an appearance.
+    #[serde(default)]
+    pub active_appearance: Option<SpaceAppearanceSnapshot>,
     /// §11.3/§11.4 strip scroll evidence: the strip viewport, the signed
     /// tracked-scroll offset, the max offset, and each chip's raw layout
     /// bounds in canonical display order — read-only from the production

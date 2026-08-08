@@ -42,6 +42,23 @@ pub(crate) fn dispatch_u2(
         })
         .unwrap_or_else(err_response),
 
+        // §11.3 appearance seam: the production controller appearance
+        // authority (explicit theme records are authoritative over the
+        // derived profile-hue default). Rejects unknown theme names whole.
+        Request::SetSpaceTheme { space, theme } => {
+            with_app(window, app, cx, |view, _window, cx| {
+                if let Err(message) = view.set_space_theme(bbr_browser::SpaceId(space.0), theme, cx)
+                {
+                    return Response::Error(bbr_testkit::protocol::Error::new(
+                        "app_error",
+                        format!("set-space-theme: {message}"),
+                    ));
+                }
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+
         // §11.4 plus-menu item commit through the production pointer path:
         // the same selection + dispatch sequence the item's mouse-down
         // listener runs (selection is app-owned, clamped to the v1 range).

@@ -60,6 +60,11 @@ pub struct TestSnapshot {
     /// derive from the persistent `space` id). The strip is always part of
     /// the rail; `selected` mirrors the active space exactly.
     pub space_chips: Vec<bbr_testkit::protocol::SpaceChipSnapshot>,
+    /// §11.3 resolved appearance evidence of the active space: effective
+    /// theme/identity names plus the resolved chrome/chip tint hex the
+    /// render paints (the one central presentation model; never native/web
+    /// pixels). `None` only in the invariant-forbidden empty browser.
+    pub active_appearance: Option<bbr_testkit::protocol::SpaceAppearanceSnapshot>,
     /// §11.3/§11.4 strip scroll evidence (read-only from the production
     /// `space_strip_scroll` handle): the viewport, the signed offset, the
     /// max offset, and each chip's raw layout bounds in canonical order.
