@@ -1,5 +1,9 @@
 # 2026-08-07 — Browser-MVP: Parallel-Delivery-Plan & Live-Status
 
+> **Abgeschlossen.** Diese Datei ist das Protokoll des MVP-Closeouts und wird
+> nicht mehr fortgeschrieben. Die laufende Arbeitsliste steht in
+> [2026-08-08-post-mvp-delivery.md](2026-08-08-post-mvp-delivery.md).
+
 Orchestrierungs-Ledger für den MVP-Abend. **Kein kanonisches Roadmap-Dokument** —
 kanonische Checkboxen bleiben in `ROADMAP.md`/Phasen/Tracks/Task-Packets
 (siehe [docs/roadmap/README.md](../roadmap/README.md)). Diese Datei hält den
