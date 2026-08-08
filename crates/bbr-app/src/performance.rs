@@ -17,6 +17,7 @@ use bbr_web::{WebEvent, WebRect, WebViewId};
 
 use crate::app::palette::CommandSurface;
 
+mod auth;
 pub mod command;
 pub(crate) mod downloads;
 mod find;
@@ -53,6 +54,10 @@ struct State {
     /// the downloads benchmarks commit only against it (render-gated, see
     /// `downloads`).
     latest_downloads: Option<downloads::DownloadsObservation>,
+    /// The credential-sheet presentation the portal render actually drew;
+    /// the auth benchmarks commit only against it (render-gated, redacted —
+    /// see `auth`).
+    latest_auth: Option<auth::AuthObservation>,
     latest_active_web_view: Option<WebViewId>,
     latest_active_space: TestSpaceId,
     latest_sidebar_visible: bool,
@@ -116,6 +121,9 @@ struct Pending {
     /// must commit from (open/focused, an armed progress fraction on the
     /// running row, or the fresh retry row in Active).
     downloads: Option<downloads::DownloadsExpectation>,
+    /// The exact credential-sheet presentation identity the pending sample
+    /// must commit from (open with the armed challenge id).
+    auth: Option<auth::AuthExpectation>,
 }
 
 impl PerformanceProbe {
@@ -127,6 +135,7 @@ impl PerformanceProbe {
                 latest_command: None,
                 latest_find: None,
                 latest_downloads: None,
+                latest_auth: None,
                 latest_active_web_view: None,
                 latest_active_space: TestSpaceId(0),
                 latest_sidebar_visible: true,
@@ -153,6 +162,7 @@ impl PerformanceProbe {
                     command: None,
                     find: None,
                     downloads: None,
+                    auth: None,
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
@@ -197,6 +207,7 @@ impl PerformanceProbe {
             command: None,
             find: None,
             downloads: None,
+            auth: None,
         });
         Ok(())
     }
@@ -469,6 +480,7 @@ impl PerformanceProbe {
             || !command::command_matches(pending, &state)
             || !find::find_matches(pending, &state)
             || !downloads::downloads_matches(pending, &state)
+            || !auth::auth_matches(pending, &state)
         {
             #[cfg(feature = "testkit")]
             if let Some(_d) = pending.downloads.as_ref() {

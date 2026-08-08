@@ -89,6 +89,15 @@ e2e-shell-dense:
 e2e-shell-downloads:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_downloads -- --ignored --nocapture
 
+# Credential sheet (queue item 10): the conventional macOS credential sheet
+# in the one `NativeAboveWeb` portal window over a real WKWebView — realm/
+# host presentation, typed masked editing, submit/cancel through the merged
+# auth contract, redaction (credentials never in any snapshot/log/payload),
+# per-web-view challenge identity, cancel-fails-the-request, and the
+# wrong-credentials rechallenge path.
+e2e-auth:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_auth -- --ignored --nocapture
+
 e2e-perf:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance -- --ignored --nocapture
 
@@ -105,7 +114,7 @@ e2e-perf-inject:
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-perf
+e2e: e2e-smoke e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-auth e2e-perf
 
 verify: fmt check test clippy roadmap script-tests
 

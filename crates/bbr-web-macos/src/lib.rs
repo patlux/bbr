@@ -62,7 +62,13 @@ pub mod portal;
 mod portal_deferred;
 
 #[cfg(target_os = "macos")]
+mod portal_lifecycle;
+
+#[cfg(target_os = "macos")]
 pub mod portal_frame;
+
+#[cfg(target_os = "macos")]
+pub mod window_server;
 
 #[cfg(target_os = "macos")]
 pub mod webview;

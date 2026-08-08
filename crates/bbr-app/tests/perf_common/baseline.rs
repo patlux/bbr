@@ -210,6 +210,15 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Credential sheet (queue item 10): the sheet open presents the
+        // awaiting challenge in the one `NativeAboveWeb` portal window — the
+        // warm-presentation class (same 50/100 ms budget as the other
+        // command-surface/portal presentations, `find_open`/`palette_open`).
+        // No tab or session is created or touched.
+        "auth_sheet_open" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -395,6 +404,7 @@ impl Baseline {
             "downloads_panel_open",
             "download_progress_commit",
             "download_row_retry",
+            "auth_sheet_open",
         ]
         .into_iter()
         .chain(u2::seed_kinds())

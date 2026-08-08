@@ -147,8 +147,9 @@ mod macos {
         /// thread). After teardown the GPUI handle is dropped by the caller;
         /// closing natively removes the window from GPUI's arena through the
         /// platform close path. Exercised by the testkit `PortalTeardown`
-        /// request (`BbrApp::portal_teardown`); see the task packet's
-        /// teardown evidence.
+        /// request (`BbrApp::portal_teardown`) and by the host's own
+        /// will-close observer when the browser window closes; see the task
+        /// packet's teardown evidence.
         pub fn teardown(&mut self) {
             debug_assert!(
                 MainThreadMarker::new().is_some(),
@@ -156,6 +157,59 @@ mod macos {
             );
             if let Some(mtm) = MainThreadMarker::new() {
                 self.native.teardown(mtm);
+            }
+        }
+
+        /// Drive the parent's real AppKit fullscreen transition
+        /// (`toggleFullScreen:`) — the native-portal-hardening driver the
+        /// testkit request uses. Idempotent.
+        pub fn set_fullscreen(&mut self, fullscreen: bool) {
+            debug_assert!(
+                MainThreadMarker::new().is_some(),
+                "fullscreen drive off the main thread"
+            );
+            if let Some(mtm) = MainThreadMarker::new() {
+                self.native.set_fullscreen(mtm, fullscreen);
+            }
+        }
+
+        /// Drive the parent's real AppKit minimize/restore
+        /// (`miniaturize:` / `deminiaturize:`) — the hardening driver the
+        /// testkit request uses. Idempotent.
+        pub fn set_minimized(&mut self, minimized: bool) {
+            debug_assert!(
+                MainThreadMarker::new().is_some(),
+                "minimize drive off the main thread"
+            );
+            if let Some(mtm) = MainThreadMarker::new() {
+                self.native.set_minimized(mtm, minimized);
+            }
+        }
+
+        /// Drive a real Window Server space-assignment transition on the
+        /// parent (`CanJoinAllSpaces` collection behavior) — the hardening
+        /// driver the testkit request uses. Idempotent.
+        pub fn set_all_spaces(&mut self, all_spaces: bool) {
+            debug_assert!(
+                MainThreadMarker::new().is_some(),
+                "all-spaces drive off the main thread"
+            );
+            if let Some(mtm) = MainThreadMarker::new() {
+                self.native.set_all_spaces(mtm, all_spaces);
+            }
+        }
+
+        /// Close the parent browser window through the real AppKit close
+        /// path (`performClose:`) — the hardening driver the testkit
+        /// request uses; the host's will-close observer tears the portal
+        /// down deterministically.
+        pub fn close_parent(&mut self) {
+            debug_assert!(
+                MainThreadMarker::new().is_some(),
+                "parent close off the main thread"
+            );
+            if let Some(mtm) = MainThreadMarker::new() {
+                self.native.close_parent(mtm);
             }
         }
     }

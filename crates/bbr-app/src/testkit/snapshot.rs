@@ -190,6 +190,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             window_size: self.window_size,
             portal: self.portal.clone(),
             find: self.find.clone(),
+            auth: self.auth.clone(),
             spaces_visible: self.spaces_visible,
             plus_menu_open: self.plus_menu_open,
             plus_menu_selection: self.plus_menu_selection,

@@ -45,5 +45,11 @@ gpui::actions!(
         /// `Cmd-F`: open the find-in-page presentation over the active web
         /// view (task packet `find-in-page-portal-bar`).
         FindInPage,
+        /// `Tab`/`Shift-Tab`: move the credential sheet's field cursor
+        /// between Username and Password while the sheet is open (queue item
+        /// 10). Bound app-wide so the binding outranks gpui-component's
+        /// default focus-traversal `Tab`; the handler is a no-op when no
+        /// sheet is presented (Tab had no observable effect before).
+        AuthSheetFieldTab,
     ]
 );

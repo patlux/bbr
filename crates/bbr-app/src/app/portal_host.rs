@@ -160,4 +160,51 @@ impl BbrApp {
         self.portal_probe.borrow_mut().clear();
         self.portal.dismiss();
     }
+
+    /// Native-portal-hardening driver: drive the parent's real AppKit
+    /// fullscreen transition (`toggleFullScreen:`). Testkit-only seam into
+    /// the one native host (task packet `native-portal-hardening`); the
+    /// E2E polls `parent_fullscreen` + frame sync until the Window Server
+    /// settles the transition.
+    #[cfg(target_os = "macos")]
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // E2E lifecycle driver
+    pub fn portal_set_fullscreen(&mut self, fullscreen: bool) {
+        if let Some(bridge) = self.native_portal.as_mut() {
+            bridge.set_fullscreen(fullscreen);
+        }
+    }
+
+    /// Native-portal-hardening driver: drive the parent's real AppKit
+    /// minimize/restore (`miniaturize:` / `deminiaturize:`). Testkit-only
+    /// seam into the one native host.
+    #[cfg(target_os = "macos")]
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // E2E lifecycle driver
+    pub fn portal_set_minimized(&mut self, minimized: bool) {
+        if let Some(bridge) = self.native_portal.as_mut() {
+            bridge.set_minimized(minimized);
+        }
+    }
+
+    /// Native-portal-hardening driver: drive a real Window Server
+    /// space-assignment transition on the parent (`CanJoinAllSpaces`
+    /// collection behavior). Testkit-only seam into the one native host.
+    #[cfg(target_os = "macos")]
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // E2E lifecycle driver
+    pub fn portal_set_all_spaces(&mut self, all_spaces: bool) {
+        if let Some(bridge) = self.native_portal.as_mut() {
+            bridge.set_all_spaces(all_spaces);
+        }
+    }
+
+    /// Native-portal-hardening driver: close the parent browser window
+    /// through the real AppKit close path (`performClose:`); the host's
+    /// will-close observer tears the portal down deterministically.
+    /// Testkit-only seam into the one native host.
+    #[cfg(target_os = "macos")]
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // E2E lifecycle driver
+    pub fn portal_close_parent(&mut self) {
+        if let Some(bridge) = self.native_portal.as_mut() {
+            bridge.close_parent();
+        }
+    }
 }

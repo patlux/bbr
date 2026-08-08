@@ -13,9 +13,9 @@ use gpui::{App, Entity, KeyBinding, Window};
 use smol::channel::Receiver;
 
 use crate::actions::{
-    Back, CloseTab, FindInPage, FocusCommandBar, FocusWeb, Forward, MoveTab, NewSpace, NewTab,
-    OpenOverlay, OpenPalette, PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp,
-    ToggleSidebar,
+    AuthSheetFieldTab, Back, CloseTab, FindInPage, FocusCommandBar, FocusWeb, Forward, MoveTab,
+    NewSpace, NewTab, OpenOverlay, OpenPalette, PinTab, Reload, ReopenTab, ReorderTabDown,
+    ReorderTabUp, ToggleSidebar,
 };
 use crate::app::BbrApp;
 
@@ -144,6 +144,34 @@ pub(crate) fn install_actions(
     });
     cx.on_action({
         let app = app.clone();
+        move |_: &AuthSheetFieldTab, cx| {
+            // Read the presented state synchronously: the keystroke
+            // dispatch holds only the window (the app entity is not
+            // borrowed here), so the read decides whether Tab is consumed
+            // before the deferred mutation runs. When no sheet is
+            // presented the handler is a no-op and leaves propagation
+            // open, so gpui-component's `Root` focus-traversal binding
+            // keeps handling Tab exactly as before.
+            if !app.read(cx).auth_sheet_is_presented() {
+                return;
+            }
+            // The sheet owns the keyboard while open: consume Tab so the
+            // gpui-component `Root` focus-traversal binding cannot move
+            // focus out of the sheet, then move the sheet's field cursor
+            // on the effect flush (the keystroke dispatch still holds the
+            // window borrowed, so a direct `with_app` would re-enter the
+            // window update).
+            cx.stop_propagation();
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.auth_field_tab(window, cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
         move |_: &NewTab, cx| {
             let app = app.clone();
             cx.defer(move |cx| {
@@ -247,6 +275,13 @@ pub(crate) fn install_actions(
         KeyBinding::new("cmd-shift-m", MoveTab, None),
         KeyBinding::new("cmd-w", CloseTab, None),
         KeyBinding::new("cmd-shift-t", ReopenTab, None),
+        // App-wide (context-less) bindings resolve at the deepest depth, so
+        // they outrank gpui-component `Root`'s element-scoped `tab`/`shift-tab`
+        // focus-traversal bindings: Tab moves the credential sheet's field
+        // cursor while the sheet is open (the handler consumes it) and falls
+        // through to focus traversal otherwise (the no-op contract).
+        KeyBinding::new("tab", AuthSheetFieldTab, None),
+        KeyBinding::new("shift-tab", AuthSheetFieldTab, None),
     ]);
 }
 

@@ -120,6 +120,11 @@ pub struct TestSnapshot {
     /// `find-in-page-portal-bar`): open presentation, field focus, query,
     /// WebKit-reported count/ordinal, pending request, and staleness.
     pub find: bbr_testkit::protocol::FindSnapshot,
+    /// Typed credential-sheet presentation state (queue item 10): the
+    /// presented challenge's identity/metadata, lifecycle state, redacted
+    /// outcome, and masked edit flags. By construction no credential can
+    /// appear in any wire shape.
+    pub auth: bbr_testkit::protocol::AuthSnapshot,
     /// Whether the §11.3 spaces region is revealed under the command field.
     pub spaces_visible: bool,
     /// Whether the §11.4 plus menu is open and its selected item.

@@ -16,6 +16,7 @@ use gpui::{px, size, App, Entity, Keystroke, WindowHandle};
 use crate::window_seam::with_app;
 
 use crate::app::BbrApp;
+use crate::testkit::dispatch_auth::dispatch_auth;
 use crate::testkit::dispatch_benchmark::dispatch_benchmark;
 use crate::testkit::dispatch_benchmark_downloads::dispatch_benchmark_downloads;
 use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
@@ -68,6 +69,12 @@ pub(crate) fn dispatch(
     // Downloads start/cancel/retry/row-action/outside-dismiss route
     // separately (same bounded-router reason).
     if let Some(response) = dispatch_downloads(&req, window, app, cx) {
+        return response;
+    }
+    // The credential sheet (queue item 10) routes separately (same
+    // bounded-router reason): the presentation + seeding + benchmark arms
+    // flush the portal frame outside the mutable app lease.
+    if let Some(response) = dispatch_auth(&req, window, app, cx) {
         return response;
     }
     let broadcast = |server: &Option<Arc<GatewayServer>>, ev: Event| {
@@ -447,6 +454,10 @@ pub(crate) fn dispatch(
         | Request::PortalCloseProbe
         | Request::PortalOutsideDismiss
         | Request::PortalTeardown
+        | Request::PortalSetFullscreen { .. }
+        | Request::PortalSetMinimized { .. }
+        | Request::PortalSetAllSpaces { .. }
+        | Request::PortalCloseWindow
         | Request::FlushFrame => unreachable!("portal requests route through dispatch_portal"),
 
         // Routed by `dispatch_find` before this match; reaching one here is
@@ -481,6 +492,14 @@ pub(crate) fn dispatch(
         | Request::ClickDownloadsOutside
         | Request::ScrollDownloads { .. } => {
             unreachable!("downloads requests route through dispatch_downloads")
+        }
+
+        // Routed by `dispatch_auth` before this match (queue item 10);
+        // reaching one here is a routing bug.
+        Request::AuthPresentChallenge { .. }
+        | Request::AuthRecordChallenge { .. }
+        | Request::BenchmarkAuthSheetOpen { .. } => {
+            unreachable!("auth requests route through dispatch_auth")
         }
 
         // Routed by `dispatch_drag` before this match; reaching one here is

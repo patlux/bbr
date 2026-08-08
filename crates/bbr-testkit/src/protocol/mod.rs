@@ -31,11 +31,12 @@ pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
 pub use request::Request;
 pub use snapshot::{
-    CommandResultSnapshot, CommandResultState, CommandSurface, DenseListSnapshot, DownloadGroup,
-    DownloadMachineState, DownloadRowAction, DownloadRowSnapshot, DownloadsPanelSnapshot,
-    FavoriteTileSnapshot, FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts,
-    PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, SemanticNode,
-    SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, TabSnapshot, TabVisualState,
+    AuthSnapshot, CommandResultSnapshot, CommandResultState, CommandSurface, DenseListSnapshot,
+    DownloadGroup, DownloadMachineState, DownloadRowAction, DownloadRowSnapshot,
+    DownloadsPanelSnapshot, FavoriteTileSnapshot, FindSnapshot, FolderRowSnapshot,
+    GlobalTabSnapshot, LifecycleCounts, PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot,
+    ProfileSnapshot, SemanticNode, SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState,
+    TabSnapshot, TabVisualState,
 };
 
 /// Current protocol version understood by this crate.
@@ -421,6 +422,11 @@ mod tests {
             portal_owns_probe_point: true,
             portal_is_key: false,
             portal_is_main: false,
+            parent_fullscreen: false,
+            parent_minimized: false,
+            parent_on_active_space: true,
+            portal_on_active_space: true,
+            portal_scale_factor: 2.0,
         };
         assert_eq!(
             serde_json::to_value(&active).unwrap(),
@@ -441,7 +447,12 @@ mod tests {
                 "below_portal_at_probe_point": 11,
                 "portal_owns_probe_point": true,
                 "portal_is_key": false,
-                "portal_is_main": false
+                "portal_is_main": false,
+                "parent_fullscreen": false,
+                "parent_minimized": false,
+                "parent_on_active_space": true,
+                "portal_on_active_space": true,
+                "portal_scale_factor": 2.0
             })
         );
         let decoded: PortalSnapshot =

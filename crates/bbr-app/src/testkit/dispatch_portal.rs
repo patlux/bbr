@@ -60,6 +60,36 @@ pub(super) fn dispatch_portal(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // Native-portal-hardening drivers: real AppKit lifecycle mutations
+        // on the parent browser window (fullscreen, minimize/restore,
+        // Window Server space assignment, and the real close path). Each is
+        // idempotent and main-thread-only.
+        Request::PortalSetFullscreen { fullscreen } => {
+            with_app(window, app, cx, |view, _window, _cx| {
+                view.portal_set_fullscreen(*fullscreen);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+        Request::PortalSetMinimized { minimized } => {
+            with_app(window, app, cx, |view, _window, _cx| {
+                view.portal_set_minimized(*minimized);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+        Request::PortalSetAllSpaces { all_spaces } => {
+            with_app(window, app, cx, |view, _window, _cx| {
+                view.portal_set_all_spaces(*all_spaces);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+        Request::PortalCloseWindow => with_app(window, app, cx, |view, _window, _cx| {
+            view.portal_close_parent();
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
         Request::FlushFrame => {
             let main = (**window)
                 .update(cx, |_root, window, cx| {

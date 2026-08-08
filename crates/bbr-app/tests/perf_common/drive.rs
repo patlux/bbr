@@ -26,6 +26,7 @@ use super::drive::u2::{drive_u2_sidebar, reveal_spaces_region};
 use super::find_drive::drive_find_scenarios;
 mod u2;
 
+use super::auth_drive::drive_auth_scenarios;
 use super::command_drive::drive_command_scenarios;
 use super::downloads_drive::drive_downloads_scenarios;
 use super::harness::AppHarness;
@@ -1004,6 +1005,17 @@ fn drive_matrix_inner(
             &mut operation,
         );
 
+        // Credential sheet (queue item 10): the production open of the
+        // conventional macOS sheet in the one `NativeAboveWeb` portal window
+        // presenting the awaiting challenge — the warm-presentation class on
+        // the existing command-surface budget (no tab or session is
+        // created). Fixture time is excluded: the awaiting challenge is
+        // recorded deterministically before every sample, and the measured
+        // entry is the production presentation itself. The block restores
+        // the matrix state (sheet closed) before the dense seeding below.
+        let auth_samples =
+            drive_auth_scenarios(client, harness, &mut since, config, &mut operation);
+
         // Dense-list scroll + selection through the bounded-window render
         // (Phase-4 dense slice, performance contract "dense-list scrolling"):
         // seed an S-density collection (230 identities, 10 pinned, 20 live)
@@ -1132,6 +1144,7 @@ fn drive_matrix_inner(
         raw.insert("sidebar_folder_toggle".to_string(), folder_toggle_samples);
         raw.extend(find_samples);
         raw.extend(downloads_samples);
+        raw.extend(auth_samples);
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);
         raw.insert("dense_select".to_string(), dense_select_samples);
         raw

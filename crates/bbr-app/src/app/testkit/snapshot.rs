@@ -280,6 +280,7 @@ impl BbrApp {
             window_size: [window_width, window_height],
             portal: self.portal_snapshot(),
             find: self.find_snapshot(window),
+            auth: self.auth_snapshot_protocol(),
             spaces_visible: self.u2.spaces_visible,
             plus_menu_open: self.u2.plus_menu.open,
             plus_menu_selection: self.u2.plus_menu.selection,
@@ -442,6 +443,11 @@ impl BbrApp {
             portal.portal_owns_probe_point = native.portal_owns_probe_point;
             portal.portal_is_key = native.portal_is_key;
             portal.portal_is_main = native.portal_is_main;
+            portal.parent_fullscreen = native.parent_fullscreen;
+            portal.parent_minimized = native.parent_minimized;
+            portal.parent_on_active_space = native.parent_on_active_space;
+            portal.portal_on_active_space = native.portal_on_active_space;
+            portal.portal_scale_factor = native.portal_scale_factor;
         }
         portal
     }
@@ -460,6 +466,30 @@ impl BbrApp {
             current_match: state.current_match,
             pending: state.pending,
             stale: state.stale,
+        }
+    }
+
+    /// Typed credential-sheet presentation state (queue item 10): the
+    /// presented challenge's identity/metadata, lifecycle state, redacted
+    /// outcome, and masked edit flags. Mirrors the coordinator's redacted
+    /// `AuthSnapshotState` 1:1; by construction no field can hold a
+    /// credential (the typed values never leave the sheet).
+    fn auth_snapshot_protocol(&self) -> bbr_testkit::protocol::AuthSnapshot {
+        let snap = self.auth_snapshot();
+        bbr_testkit::protocol::AuthSnapshot {
+            open: snap.open,
+            challenge: snap.challenge,
+            web_view: snap.web_view,
+            host: snap.host,
+            realm: snap.realm,
+            scheme: snap.scheme,
+            authority: snap.authority,
+            state: snap.state,
+            outcome: snap.outcome,
+            focused_field: snap.focused_field,
+            username_entered: snap.username_entered,
+            password_entered: snap.password_entered,
+            awaiting: snap.awaiting,
         }
     }
 

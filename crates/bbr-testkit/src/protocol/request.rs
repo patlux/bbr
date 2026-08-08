@@ -2,6 +2,7 @@
 //! requests route through the same app methods the element listeners call so
 //! E2E exercises the production listener path.
 
+use bbr_web::auth_challenges::{AuthAuthority, AuthScheme, HttpScheme};
 use bbr_web::{ProfileId, WebAction, WebViewId};
 use serde::{Deserialize, Serialize};
 
@@ -309,6 +310,37 @@ pub enum Request {
     /// bridge — the app owns no portal afterwards. Terminal; the snapshot
     /// afterwards reports the empty/closed host.
     PortalTeardown,
+    /// Drive the parent's real AppKit fullscreen transition
+    /// (`toggleFullScreen:`) — native-portal-hardening driver. The E2E
+    /// polls the typed `parent_fullscreen` fact plus frame sync until the
+    /// Window Server settles the transition; the host must re-pin to the
+    /// fullscreen content rect without recreating or orphaning the portal.
+    PortalSetFullscreen {
+        fullscreen: bool,
+    },
+    /// Drive the parent's real AppKit minimize/restore
+    /// (`miniaturize:` / `deminiaturize:`) — native-portal-hardening
+    /// driver. While minimized the portal must be ordered out (never
+    /// occluding/intercepting) and re-shown on restore when a presentation
+    /// is still armed.
+    PortalSetMinimized {
+        minimized: bool,
+    },
+    /// Drive a real Window Server space-assignment transition on the parent
+    /// (set/clear the `CanJoinAllSpaces` collection behavior) —
+    /// native-portal-hardening driver. The parent and its attached child
+    /// must stay pinned and agree on active-space membership across the
+    /// transition.
+    PortalSetAllSpaces {
+        all_spaces: bool,
+    },
+    /// Close the parent browser window through the real AppKit close path
+    /// (`performClose:`) while a portal presentation is open —
+    /// native-portal-hardening driver. The host's will-close observer must
+    /// tear the portal down deterministically: no BBR window may remain on
+    /// screen afterwards (never orphaned, never occluding, never
+    /// intercepting input).
+    PortalCloseWindow,
     /// Open the find-in-page presentation over the active web view (task
     /// packet `find-in-page-portal-bar`; the production `Cmd-F` path). The
     /// bar renders in the one `NativeAboveWeb` portal window; opening never
@@ -593,6 +625,48 @@ pub enum Request {
     /// history never laid out).
     ScrollDownloads {
         delta_px: f32,
+    },
+    /// Seed a deterministic authentication challenge through the production
+    /// challenge-arrival seam (`BbrApp::auth_on_challenge`): records the
+    /// challenge bound to `web_view` and presents the credential sheet over
+    /// the active window (queue item 10). Carries only authority metadata
+    /// (host/port/realm/scheme/authority) — never credential text;
+    /// credentials are typed through the production key path, so the only
+    /// representation that ever leaves the sheet is the contract's redacted
+    /// handle.
+    AuthPresentChallenge {
+        profile: ProfileId,
+        web_view: WebViewId,
+        http_scheme: HttpScheme,
+        scheme: AuthScheme,
+        host: String,
+        port: u16,
+        realm: Option<String>,
+        authority: AuthAuthority,
+        user_initiated: bool,
+    },
+    /// Testkit-only deterministic seeding for the auth performance scenario:
+    /// record a challenge WITHOUT presenting the sheet (the awaiting
+    /// challenge the measured open presents). Carries only authority
+    /// metadata, never credentials.
+    AuthRecordChallenge {
+        profile: ProfileId,
+        web_view: WebViewId,
+        http_scheme: HttpScheme,
+        scheme: AuthScheme,
+        host: String,
+        port: u16,
+        realm: Option<String>,
+        authority: AuthAuthority,
+        user_initiated: bool,
+    },
+    /// Measure the production credential-sheet open (queue item 10): the
+    /// sample commits only from a render of the portal window that drew the
+    /// sheet presenting the awaiting challenge (fast-but-wrong guard). The
+    /// awaiting challenge is the fixture, recorded before the sample;
+    /// fixture/network time is excluded by construction.
+    BenchmarkAuthSheetOpen {
+        operation_id: BenchmarkOperationId,
     },
     /// Full app snapshot.
     GetSnapshot,

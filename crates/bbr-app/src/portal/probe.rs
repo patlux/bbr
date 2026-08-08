@@ -88,6 +88,10 @@ pub enum PortalContent {
     /// portal render derives the live surface from the app entity each
     /// frame, so the bar carries no data of its own.
     Find,
+    /// The conventional macOS credential sheet (queue item 10). The portal
+    /// render derives the redacted surface from the app entity each frame;
+    /// the raw credential never exists in any serializable shape.
+    Auth,
 }
 
 /// The portal window's render state, shared between the app (present/dismiss)
@@ -165,6 +169,14 @@ impl PortalProbeState {
                 crate::app::find::FIND_NEXT_ID.into(),
                 crate::app::find::FIND_CLOSE_ID.into(),
             ],
+            Some(PortalContent::Auth) => vec![
+                crate::app::auth::AUTH_SHEET_ID.into(),
+                crate::app::auth::AUTH_HEADER_ID.into(),
+                crate::app::auth::AUTH_USERNAME_ID.into(),
+                crate::app::auth::AUTH_PASSWORD_ID.into(),
+                crate::app::auth::AUTH_SUBMIT_ID.into(),
+                crate::app::auth::AUTH_CANCEL_ID.into(),
+            ],
             Some(PortalContent::Command(surface)) => vec![match surface {
                 crate::app::palette::CommandSurface::Palette => {
                     crate::app::palette::PALETTE_ID.into()
@@ -200,6 +212,15 @@ impl PortalProbeState {
     pub fn present_find(&mut self, request: PortalRequest, viewport: Sz) {
         self.request = Some(request);
         self.content = Some(PortalContent::Find);
+        self.viewport = viewport;
+    }
+
+    /// Present the credential sheet (the render derives the redacted
+    /// surface from the app entity each frame; the raw credential never
+    /// enters this state).
+    pub fn present_auth(&mut self, request: PortalRequest, viewport: Sz) {
+        self.request = Some(request);
+        self.content = Some(PortalContent::Auth);
         self.viewport = viewport;
     }
 
@@ -308,6 +329,36 @@ impl PortalRoot {
             });
         });
     }
+
+    /// The credential sheet's Log In button path (the production submit
+    /// seam the keyboard Enter routes to): the decision is applied through
+    /// the merged auth contract by `BbrApp::auth_submit`.
+    pub(super) fn auth_submit_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.auth_submit(window, cx)
+            });
+        });
+    }
+
+    /// The credential sheet's Cancel button path (the production cancel
+    /// seam the keyboard Escape routes to): the challenge is cancelled
+    /// through the contract — the request fails and never retries.
+    pub(super) fn auth_cancel_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.auth_cancel(window, cx)
+            });
+        });
+    }
 }
 
 impl Render for PortalRoot {
@@ -382,6 +433,41 @@ impl Render for PortalRoot {
                         MouseButton::Left,
                         cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
                             this.dismiss_find_surface(cx);
+                        }),
+                    )
+                    .child(card)
+                    .into_any()
+            }
+            PortalContent::Auth => {
+                drop(probe);
+                let Some(app) = self.app.as_ref() else {
+                    return div().size_full().bg(transparent_black()).into_any();
+                };
+                // The render derives the redacted sheet surface from the app
+                // entity each frame; the raw credential never exists in any
+                // serializable shape.
+                let Some(surface) = app.read(cx).auth_surface() else {
+                    return div().size_full().bg(transparent_black()).into_any();
+                };
+                // The credential-sheet render milestone: record the redacted
+                // sheet state this render actually drew into the probe, so a
+                // pending auth benchmark can commit only from a frame that
+                // presented the armed challenge identity (fast-but-wrong
+                // guard). Never carries credential text.
+                #[cfg(feature = "testkit")]
+                app.read(cx).observe_portal_auth_render(&surface);
+                let card = crate::portal::auth_sheet::auth_sheet(&surface, rect, cx);
+                // No outside-press dismissal: a credential sheet's only exits
+                // are Log In and Cancel (sensitive input; the backdrop stops
+                // every press).
+                div()
+                    .id("bbr-auth-portal-surface")
+                    .size_full()
+                    .bg(transparent_black())
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
+                            cx.stop_propagation();
                         }),
                     )
                     .child(card)
