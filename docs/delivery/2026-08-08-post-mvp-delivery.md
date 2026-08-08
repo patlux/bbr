@@ -78,12 +78,12 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 wartet auf Integration · ✅ erledigt
 | 1 | Manuelle Smoke-Prüfung des `.app` | ⬜ Patrick | `/Users/patwoz/dev/Personal/macos/bbr-mvp-smoke-checklist.md`. Sinnvoll erst nach P0 |
 | 2 | **URL-Leiste wird Domain-Control, Palette legt sich darüber** | ✅ Merge `963e94f` | Patricks erste konkrete Stelle zu „die UI passt nicht". Die Sidebar-Adresse ist kein Eingabefeld mehr, sondern ein Button, der nur die Domain zeigt — randlose transluzente Pill, kein Border, **kein Fokusring**, Trailing-Slot für spätere Action-Icons. Texteingabe nur noch in der Palette, die sich **über** die Leiste legt statt darunter aufzuklappen, mit voller URL vorselektiert. Der alte Feld-Fokus mit Teal-Ring entfällt ersatzlos; betroffene `e2e-shell-command`-Fälle werden umgeschrieben. DESIGN §11.4/§11.5 revidiert, Paket [`url-address-control-palette.md`](../roadmap/tasks/url-address-control-palette.md), offene Details §17.13/§17.14 |
 | 2b | Restliche UI-Anmutung nach S1 | ⬜ | Patrick-Befund „die UI passt nicht", noch ohne Detail. Braucht Screenshot oder konkrete Stelle, sonst raten wir |
-| 3 | Downloads-Nachzug aus den Entscheidungen | ⬜ | History-Persistenz, Clear-History, Cancelled-Zeile mit Neustart und Löschen |
+| 3 | Downloads-Nachzug aus den Entscheidungen | 🟦 F2b | History-Persistenz, Clear-History, Cancelled-Zeile mit Neustart und Löschen. F2b besitzt Downloads-Domain/Controller/UI und die download-spezifischen Repository-Methoden; der gemeinsame App-Persistenz-Bootstrap gehört exklusiv F2c und wird bei serieller Integration additiv angeschlossen |
 | 4 | Schema v2 ohne Migration | ✅ Merge `bb54841` (App-Verdrahtung in P7) | Versionskennung, bei Abweichung Store verwerfen. Trägt Space-Appearance, Settings, Downloads-History und P7 |
 | 5 | Settings-/Search-Contract integrieren | ✅ Merge `ddd09cd` | Fertig im Worktree `bbr-settings-search-contract`, wartet nur auf die Host-Empfehlung oben |
 | 6 | Space-Appearance-Contract integrieren | ✅ Merge `9f53f44` | Fertig im Worktree `bbr-space-appearance-contract`, wartet auf Palette/Emoji-Kalibrierung |
-| 7 | R1 Footer-Space-Strip + Appearance-UI + Swipe | ⬜ | Der größte sichtbare Slice. Paket: `docs/roadmap/tasks/space-footer-strip-appearance-ui.md` |
-| 8 | P7 Command-History-Provider | ⬜ **entblockt** | Das Veto beruhte allein auf dem fehlenden History-Schema. Mit „keine Migrationen" entfällt der Grund |
+| 7 | R1 Footer-Space-Strip + Appearance-UI + Swipe | 🟦 F2a | Der größte sichtbare Slice. Paket: `docs/roadmap/tasks/space-footer-strip-appearance-ui.md`. Nimmt nur die Icon-Reste mit, die dieselben Footer-/Sidebar-Renderdateien berühren; kein allgemeiner Icon-Cleanup |
+| 8 | P7 Command-History-Provider | 🟦 F2c | Das Veto beruhte allein auf dem fehlenden History-Schema. F2c besitzt exklusiv `bbr-command`↔`bbr-persistence`-Provider-Komposition **und** den bisher fehlenden `bbr-persistence`-App-Bootstrap |
 | 9 | P8b Error-Surfaces | ✅ Merge `a70e9a3` | TLS, Navigationsfehler, Offline, Renderer-Crash. Contract gemergt, Flächen fehlen |
 | 10 | P8c Auth-Adapter | ⚠️ Remediation läuft | Contract gemergt, natives Sheet fehlt |
 | 11 | P8e Zoom-Wiring | ✅ Merge `1d35693` | Cmd-Plus/Minus/0 auf die aktive WebView |
@@ -94,7 +94,7 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 wartet auf Integration · ✅ erledigt
 | 16 | Perf-Lücken | ⬜ | Ohne Canonical-Runner-Evidenz, namentlich `command_bar_first_result` |
 | 17 | Icon-System-Reste | ⬜ | Nach U2 offen geblieben |
 | 18 | L0-Reste | ⬜ | Split-Geometry-Flake, Xcode-/MSRV-Checkboxen |
-| 19 | Persistence-App-Composition / Warm-Restore | ⬜ | Fenster- und Tab-Wiederherstellung, ohne Split-View-Port |
+| 19 | Persistence-App-Composition / Warm-Restore | ⏭ F3 nach F2c | Nicht sicher parallel zu F2c: dieselbe Bootstrap-, StoreLoad- und Startup-/Restore-Naht. F2c legt die App-Persistenz-Komposition; Warm-Restore folgt auf diese gemergte Form statt parallel eine zweite zu erfinden |
 
 ## Status-Log
 
@@ -103,6 +103,17 @@ Legende: ⬜ offen · 🟦 läuft · 🟨 wartet auf Integration · ✅ erledigt
 | 08:03 | ✅ Downloads-Panel integriert (Merge `7cfdbd2`), kanonisches `just e2e` über 20 Suiten grün, `package-verify` grün, neues Bundle `b428910…` |
 | 08:50 | ⚠️ Patrick meldet am gepackten `.app`: Web-Fläche bleibt weiß. Orchestrator-Messung: WebKit lädt und malt (`DidFirstMeaningfulPaint`, `window occluded 0`), also kein WebKit-Problem. Patrick grenzt selbst präzise ein: mit Schema lädt es, ohne Schema nicht |
 | 08:55 | 🟦 Lane `schemeless-navigation-bug-msk0mwh9-7rnn94` gestartet (Worktree `bbr-schemeless-nav`, Base `78f3782`): erst fehlschlagender Regressionstest entlang des Produktionspfads, dann Fix, plus dauerhafte Evidenz, dass Seiteninhalt wirklich ankommt |
+| 14:47 | 🚀 **PATRICK-GO: Fanout-Welle F2 sofort mit drei Lanes gestartet**, alle vom verifizierten `main` `cd3b577`, `CARGO_BUILD_JOBS=4`, `agentRetries≥1`, kein Agent committen, GUI-Gates hostexklusiv. Der heutige Lock/Idle-Befund wird direkt umgesetzt: `agentIdleTimeoutMs=null`, weil korrekt wartende GUI-Lanes sonst nach acht Minuten getötet würden.
+
+**F2a — R1 Footer-Space-Strip + Appearance + Swipe** (`parallel/f2a-space-footer`, `bbr-f2a-space-footer`): konsumiert den gemergten Neun-Ton-Contract provisorisch wie von Patrick freigegeben; permanente scrollbare Space-Chips, warmes Switching über die bestehende Autorität, Chrome-only Tint, Swipe-State-Machine. Nimmt **nur** die Icon-Reste mit, die dieselben Footer-/Sidebar-Pfade berühren — kein benachbarter Cleanup.
+
+**F2b — Downloads-Nachzug** (`parallel/f2b-downloads-followup`, `bbr-f2b-downloads-followup`): Controller-History, Persistenz-Datenform und download-spezifische Repository-Methoden, Clear leert den Controller, Cancelled bietet Neustart + Löschen, Badge zählt nur laufende Attempts, Reveal-only. Der gemeinsame Store-Bootstrap ist ausdrücklich verboten — ihn zweimal zu bauen wäre keine Parallelität, sondern zwei konkurrierende Autoritäten.
+
+**F2c — P7 Command-History + Persistence-App-Composition** (`parallel/f2c-command-history`, `bbr-f2c-command-history`): besitzt **exklusiv** den fehlenden `bbr-app -> bbr-persistence`-Bootstrap, StoreLoad-Disposition und den History-Provider. F2b passt seinen download-spezifischen Adapter bei der Integration an diese Form an.
+
+**F2d Warm-Restore nicht in dieser Welle**: ehrliche Territoriumsanalyse zeigt dieselbe Bootstrap-/Startup-/Restore-Naht wie F2c. Es folgt direkt als F3 von der gemergten F2c-Form. Ebenfalls bewusst nicht parallel: U3/Perf-Evidenz braucht Quiet Window; L0-Split-Geometry braucht GUI-Slot.
+
+**Merge-Reihenfolge vorab: F2c → F2b → F2a.** Erst die gemeinsame Persistenzkomposition, dann der download-spezifische Anschluss, zuletzt der sichtbare Architektur-Slice, damit keine spätere Lane den neuen Footer um alte Annahmen herumbiegt. Auth-Proof läuft unabhängig weiter; Portal-Minimize bleibt bis zur Bildschirm-Entsperrung umgebungsblockiert |
 | 14:35 | ✅ **Address-Control gemergt (`963e94f`)** — Patricks größte UI-Beschwerde ist behoben. Die zweite Fläche, die eine Adresse im Editierzustand halten konnte, ist **entfernt**, nicht umgestylt: Die Sidebar-Adresse ist ein Display-Control mit Button-Semantik, ohne Border, ohne Fokusring, in **keinem** Zustand. Reviewer belegte es per grep (`on_key_down|focus_ring|\.focus\(` — keine Treffer) und per E2E (Pill-Name bleibt nach echten Tastendrücken unverändert, `focused:false` auch hinter dem Overlay). Palette liegt **bündig darüber** statt darunter aufzuklappen — zwei Szenarien prüfen die gemessenen Rects auf ≤0,5 pt. Volle URL vorselektiert, ein Tastendruck ersetzt sie. Neue `identity.rs` beweist Tab/Session/Profil/Space/WebView-Host **bit-identisch** über Öffnen, Schließen und Commit.
 
 **Umgeschriebene Szenarien wurden stärker, nicht schwächer**: `ClickCommandField`→`ClickAddress`, neue Ids, **plus** Deckungsgeometrie, Pill-nie-fokussiert und Escape-re-präsentiert-Overlay (`None`→`Overlay`). Kein Budget geändert; `overlay_open` auf der bestehenden Warm-Klasse 50/100.
