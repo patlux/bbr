@@ -354,6 +354,41 @@ impl BbrApp {
             #[cfg(not(all(target_os = "macos", feature = "testkit")))]
             web_content_probe: None,
             error_surface,
+            store: self.store_snapshot(),
+        }
+    }
+
+    /// The Phase-7 store composition snapshot: the truthful startup
+    /// disposition (never silently converted), the effective global search
+    /// engine feeding the command-bar fallback, and the in-memory history
+    /// provider population ranking consumes.
+    fn store_snapshot(&self) -> bbr_testkit::protocol::StoreSnapshot {
+        use bbr_testkit::protocol::{StoreDiscardReasonSnapshot, StoreLoadSnapshot};
+        let store_load = match self.store.store_load.as_ref() {
+            Some(bbr_persistence::StoreLoad::Loaded) => StoreLoadSnapshot::Loaded,
+            Some(bbr_persistence::StoreLoad::Discarded { reason }) => {
+                let reason = match reason {
+                    bbr_persistence::StoreDiscardReason::Unstamped => {
+                        StoreDiscardReasonSnapshot::Unstamped
+                    }
+                    bbr_persistence::StoreDiscardReason::VersionMismatch { found } => {
+                        StoreDiscardReasonSnapshot::VersionMismatch { found: *found }
+                    }
+                    bbr_persistence::StoreDiscardReason::Corrupt { detail } => {
+                        StoreDiscardReasonSnapshot::Corrupt {
+                            detail: detail.clone(),
+                        }
+                    }
+                };
+                StoreLoadSnapshot::Discarded { reason }
+            }
+            None => StoreLoadSnapshot::Unavailable,
+        };
+        let history_count = self.store.with_history(|history| history.len());
+        bbr_testkit::protocol::StoreSnapshot {
+            store_load,
+            search_engine: self.store.effective_settings().engine().id().to_string(),
+            history_count,
         }
     }
 

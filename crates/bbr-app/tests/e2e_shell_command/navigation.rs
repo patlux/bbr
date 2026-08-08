@@ -8,10 +8,9 @@
 //! asserted that web content actually arrived.
 //!
 //! One scenario drives the EXACT production activation (Cmd-T palette,
-//! typed text, Enter) with both inputs from the bug report, keeping the
-//! tab corpus clean between them (the fresh destination tab is closed so
-//! the next input cannot rank an existing tab): the same contract must
-//! hold for both — real WebKit content evidence, never our own flags:
+//! typed text, Enter) with both inputs from the bug report: the same
+//! contract must hold for both — real WebKit content evidence, never our
+//! own flags:
 //!
 //! - a client-content-world probe (`document.readyState` / `document.URL` /
 //!   `document.title` + the native `WKWebView` url/title) for committed
@@ -21,11 +20,17 @@
 //!   accepted navigation — network-independent.
 //!
 //! Phase A is the regression: "golem.de" (no scheme) must arrive like its
-//! scheme'd twin. Today it fails — WebKit rejects the scheme-less URL
-//! (`NSURLErrorUnsupportedURL`, "The URL can't be shown") before any
-//! provisional navigation starts, so neither the navigation event nor a
-//! committed document ever appears and the view stays blank. Phase B
-//! ("https://golem.de") is the passing twin. No sleeps: every step is
+//! scheme'd twin. The command-activation path normalizes the scheme-less
+//! input to its absolute `https://` destination before the controller
+//! navigates, so the engine accepts a real navigation and the visit is
+//! recorded in the app-owned history provider (Phase 7). Phase B ("https://
+//! golem.de") is the scheme'd twin — and, deterministically, the typed
+//! destination may now rank the *recorded history row* first (`history:`
+//! with an `OpenHistory` activation) instead of the navigate fallback; both
+//! rows must still open the intended golem destination through production.
+//! The fresh destination tab is closed between the phases so the tab corpus
+//! stays clean; the recorded history visit deliberately stays, which is
+//! exactly what Phase B's history-row path proves. No sleeps: every step is
 //! deadline-bounded snapshot/event synchronization.
 
 use super::*;
@@ -94,23 +99,30 @@ fn wait_content_probe(
 }
 
 /// One Cmd-T destination activation: stage the Cmd-T palette, type `input`,
-/// assert the ranked navigate-fallback row, press Enter, and assert the
-/// activation aftermath (new tab, fresh active view, palette closed, web
-/// focus, non-zero native geometry). Returns the fresh view.
+/// assert the ranked first row satisfies `expect_first` (the navigate
+/// fallback for the scheme-less regression input, or the recorded history
+/// row for a re-typed destination — both activate the same intended
+/// destination), press Enter, and assert the activation aftermath (new tab,
+/// fresh active view, palette closed, web focus, non-zero native geometry).
+/// Returns the fresh view.
 fn activate_cmd_t_destination(
     client: &mut Client,
     since: &mut u64,
     input: &str,
     tabs_before: usize,
+    expect_first: impl Fn(&bbr_testkit::protocol::CommandResultSnapshot, &str) -> bool,
+    what: &str,
 ) -> (WebViewId, bbr_testkit::protocol::Snapshot) {
     cmd_t_type(client, since, input);
     let rows = published_results(client);
-    assert_eq!(
-        rows.command_results[0].key,
-        format!("navigate:{input}"),
-        "the typed destination ranks the navigate fallback row"
+    let first = &rows.command_results[0];
+    assert!(
+        expect_first(first, input),
+        "{what}: the typed destination ranked {} ({}) — expected the navigate \
+         fallback and/or its recorded history row",
+        first.key,
+        first.group
     );
-    assert_eq!(rows.command_results[0].group, "fallback");
     let after = enter_cmd_t(client);
     let view = after.active_web_view.expect("fresh destination view");
     assert_eq!(after.tabs.len(), tabs_before + 1, "exactly one new tab");
@@ -128,7 +140,7 @@ fn activate_cmd_t_destination(
 
 #[test]
 #[ignore]
-fn cmd_t_schemeless_destination_is_blank_while_schemed_destination_loads() {
+fn cmd_t_schemeless_and_schemed_destinations_both_arrive() {
     let _serial = serial_gui();
     if !allow_gui() {
         return;
@@ -163,20 +175,28 @@ fn cmd_t_schemeless_destination_is_blank_while_schemed_destination_loads() {
             "the native WKWebView reports the committed fixture URL"
         );
 
-        // ---- Phase A (FAILS today): the scheme-less input from the bug
-        // report. The corpus is clean (only the initial fixture tab), so
-        // "golem.de" ranks the navigate fallback and Enter must deliver a
-        // real navigation/content — exactly like the scheme'd twin.
+        // ---- Phase A (the regression): the scheme-less input from the bug
+        // report. The corpus is clean (only the initial fixture tab, and no
+        // recorded visits yet), so "golem.de" ranks the navigate fallback
+        // and Enter must deliver a real navigation/content — exactly like
+        // the scheme'd twin. The activation normalizes the input to its
+        // absolute `https://golem.de` destination (the fix under test), so
+        // the engine accepts a real navigation and the visit is recorded in
+        // the app-owned history provider.
         let tabs_before = client.snapshot().expect("pre-A snapshot").tabs.len();
-        let (phase_a_view, after_a) =
-            activate_cmd_t_destination(&mut client, &mut since, "golem.de", tabs_before);
+        let (phase_a_view, after_a) = activate_cmd_t_destination(
+            &mut client,
+            &mut since,
+            "golem.de",
+            tabs_before,
+            |row, input| row.key == format!("navigate:{input}") && row.group == "fallback",
+            "the scheme-less input ranks the navigate fallback first (history is empty)",
+        );
         assert_ne!(phase_a_view, first_view, "the fresh view is a new session");
         // The regression: the scheme-less destination must arrive — a
         // committed golem document (client-world probe) or at least an
-        // accepted navigation (native URL). Today WebKit rejects the
-        // scheme-less URL before any provisional navigation, so the probe
-        // stays at `about:blank` with no native URL and this wait fails
-        // with that blank evidence.
+        // accepted navigation (native URL). The scheme-less URL must never
+        // leave the fresh view blank.
         let probe_a = wait_content_probe(
             &mut client,
             phase_a_view,
@@ -216,8 +236,11 @@ fn cmd_t_schemeless_destination_is_blank_while_schemed_destination_loads() {
             },
             since,
         );
-        // Keep the corpus clean for phase B: close the fresh destination
-        // tab so the next input cannot rank it.
+        // Keep the tab corpus clean for phase B: close the fresh destination
+        // tab so the next input cannot rank an existing tab. The recorded
+        // history visit deliberately stays (Phase 7 records every accepted
+        // activation) — Phase B proves the history-row activation path that
+        // re-typing the same destination deterministically ranks.
         let index = after_a.active_tab_index.expect("fresh tab index");
         client
             .send_ok(&bbr_testkit::Request::CloseTab { index })
@@ -229,12 +252,27 @@ fn cmd_t_schemeless_destination_is_blank_while_schemed_destination_loads() {
             "closing returns to the warm initial tab"
         );
 
-        // ---- Phase B (PASSES today): the scheme'd twin. Same production
-        // activation, same expectations — and real content arrives. This is
-        // the "https://golem.de works" side of the asymmetry.
+        // ---- Phase B (the scheme'd twin): same production activation, same
+        // expectations — and real content arrives. The scheme'd input
+        // matches the recorded history entry from Phase A exactly, so the
+        // ranked first row is deterministically the history row
+        // (`history:<id>`, `OpenHistory` activation) — or, if ranking ever
+        // favors the fallback, the navigate row; both activate the same
+        // intended golem destination through production, and the content
+        // contract below must hold for either route.
         let tabs_before = client.snapshot().expect("pre-B snapshot").tabs.len();
-        let (phase_b_view, _after_b) =
-            activate_cmd_t_destination(&mut client, &mut since, "https://golem.de", tabs_before);
+        let (phase_b_view, _after_b) = activate_cmd_t_destination(
+            &mut client,
+            &mut since,
+            "https://golem.de",
+            tabs_before,
+            |row, input| {
+                (row.group == "history" && row.key.starts_with("history:"))
+                    || (row.key == format!("navigate:{input}") && row.group == "fallback")
+            },
+            "the scheme'd twin ranks its recorded history row or the navigate fallback",
+        );
+        assert_ne!(phase_b_view, first_view, "the fresh view is a new session");
         // The engine must accept a real navigation to the scheme'd URL:
         // WebKit emits `UrlChanged` from `didStartProvisionalNavigation`
         // carrying the provisional URL (network-independent — it fires
@@ -248,6 +286,29 @@ fn cmd_t_schemeless_destination_is_blank_while_schemed_destination_loads() {
                 )
             },
             since,
+        );
+        // Same no-blank-page contract as Phase A: the history-row activation
+        // must still navigate the fresh view to the intended destination — a
+        // committed golem document or an accepted native URL.
+        let probe_b = wait_content_probe(
+            &mut client,
+            phase_b_view,
+            |probe| {
+                probe.dom_url.contains("golem.de")
+                    || probe
+                        .native_url
+                        .as_deref()
+                        .is_some_and(|url| url.contains("golem.de"))
+            },
+            "scheme'd Cmd-T destination (https://golem.de) stayed blank",
+        );
+        assert!(
+            probe_b.dom_url.contains("golem.de")
+                || probe_b
+                    .native_url
+                    .as_deref()
+                    .is_some_and(|url| url.contains("golem.de")),
+            "acceptance evidence must reference the golem host: {probe_b:?}"
         );
 
         client.quit().expect("quit");

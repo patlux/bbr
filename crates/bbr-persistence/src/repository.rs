@@ -188,7 +188,7 @@ impl Repository {
     }
 }
 
-const fn to_i64(value: u64) -> i64 {
+pub(crate) const fn to_i64(value: u64) -> i64 {
     value as i64
 }
 

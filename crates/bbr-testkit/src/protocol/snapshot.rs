@@ -1015,4 +1015,54 @@ pub struct Snapshot {
     /// renders, or the empty default when no error surface is shown.
     #[serde(default)]
     pub error_surface: ErrorSurfaceSnapshot,
+    /// Phase-7 app-owned persistence composition (task packet
+    /// `persistence-core` + the command-history provider slice): the truthful
+    /// startup store disposition, the effective global search engine, and the
+    /// in-memory history provider size. `Unavailable` only for the ephemeral
+    /// fallback after a fatal open failure.
+    #[serde(default)]
+    pub store: StoreSnapshot,
+}
+
+/// The truthful startup disposition of the app-owned persistence store
+/// (schema v2: no migrations, no backward compatibility — a mismatched or
+/// corrupt store is discarded and recreated empty, never loaded partially).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum StoreLoadSnapshot {
+    /// The store's stamp matched (or the store was a fresh empty database)
+    /// and it was loaded.
+    Loaded,
+    /// The store was discarded and recreated empty, with the typed reason
+    /// surfaced verbatim.
+    Discarded { reason: StoreDiscardReasonSnapshot },
+    /// No store exists (the ephemeral fallback after a fatal open failure).
+    #[default]
+    Unavailable,
+}
+
+/// Why a store was discarded and recreated empty (mirrors the persistence
+/// contract's typed reasons — never silently converted).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum StoreDiscardReasonSnapshot {
+    /// The store carried no version stamp but contained data (legacy).
+    Unstamped,
+    /// The store carried a different schema version stamp.
+    VersionMismatch { found: u32 },
+    /// The stamp matched but the structure failed validation.
+    Corrupt { detail: String },
+}
+
+/// Phase-7 store composition snapshot: disposition, effective settings, and
+/// the in-memory history provider population.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct StoreSnapshot {
+    pub store_load: StoreLoadSnapshot,
+    /// The effective global search-engine id (`duckduckgo` | `google` |
+    /// `bing` | `ecosia` | `kagi` | `custom`), feeding the command-bar
+    /// search fallback URL.
+    pub search_engine: String,
+    /// The number of provider history entries ranking consumes. No
+    /// retention cap in this slice (retention deferred in Phase 7); the
+    /// 10,000 scale is only the test/performance corpus size.
+    pub history_count: usize,
 }

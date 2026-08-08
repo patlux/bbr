@@ -143,7 +143,7 @@ fn validate_space_appearance(
     }
 }
 
-fn validate_settings(settings: &SearchSettings) -> Result<(), InvalidSnapshotIssue> {
+pub(crate) fn validate_settings(settings: &SearchSettings) -> Result<(), InvalidSnapshotIssue> {
     match (settings.engine, settings.custom_template.as_deref()) {
         (SearchEngineId::Custom, None) => Err(InvalidSnapshotIssue::InvalidSettings {
             detail: "custom engine requires a search template".into(),
@@ -197,7 +197,9 @@ fn validate_downloads(downloads: &[DownloadRecord]) -> Result<(), InvalidSnapsho
     Ok(())
 }
 
-fn validate_command_history(history: &[CommandHistoryEntry]) -> Result<(), InvalidSnapshotIssue> {
+pub(crate) fn validate_command_history(
+    history: &[CommandHistoryEntry],
+) -> Result<(), InvalidSnapshotIssue> {
     let mut ids = HashSet::new();
     for entry in history {
         validate_id("history entry", entry.id)?;

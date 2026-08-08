@@ -27,6 +27,7 @@ use super::find_drive::drive_find_scenarios;
 mod u2;
 
 use super::auth_drive::drive_auth_scenarios;
+use super::command::benchmark_command_bar_first_result;
 use super::command_drive::drive_command_scenarios;
 use super::context_menu_drive::drive_context_menu_scenarios;
 use super::downloads_drive::drive_downloads_scenarios;
@@ -1205,6 +1206,126 @@ fn drive_matrix_inner(
         raw.extend(auth_samples);
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);
         raw.insert("dense_select".to_string(), dense_select_samples);
+
+        // Phase-7 command-history provider scale (queue item 16,
+        // `command_bar_first_result`): the production command-text path —
+        // Cmd-L, replace-selection typing, the real ranking debounce, and a
+        // render of the result surface committing the sample — measured
+        // against the history-rich corpus the task contract requires: the
+        // pre-spawned 10,000-entry provider (seeded through the production
+        // repository) plus >=500 open tabs in `all_tabs`. The dense block
+        // above left ~230 identities; the remaining identities are seeded
+        // here through the production controller open path in bounded
+        // batches (the canonical `seed_dense` pattern the functional dense
+        // E2E proves at 500 tabs), each batch converged with a snapshot so
+        // the transient live-session population never explodes. Every
+        // extra tab is opened then immediately suspended (`recent_start`
+        // above the seeded range, so no tab lands in the warm keep set):
+        // the ranking corpus maps tab *identities* — a suspended tab ranks
+        // exactly like a warm one — and a single unbounded burst of extra
+        // concurrent same-origin WKWebViews trips WebKit's process limits
+        // (the fixture sessions are all localhost, so a process kill
+        // cascade can destroy even the active tab's session and blank the
+        // measured render). The query matches exactly one seeded history
+        // record, so the correct first result is the ranked history row
+        // `history:1`; the in-app probe rejects any fast-but-wrong first
+        // result (a tab/fallback row), a stale generation, or a missing
+        // palette. The block runs last — the corpus state after it does
+        // not matter.
+        let history_seed_total = 500usize;
+        let pre_seed_tabs = client.snapshot().expect("pre seed snapshot").tabs.len();
+        let to_open = history_seed_total.saturating_sub(pre_seed_tabs);
+        let mut seeded = 0;
+        while seeded < to_open {
+            let chunk = 100usize.min(to_open - seeded);
+            client
+                .send_ok(&Request::SeedDenseState {
+                    tab_count: chunk,
+                    pinned_count: 1,
+                    recent_start: 10_000,
+                    url: page_two.to_string(),
+                })
+                .expect("seed history corpus batch");
+            seeded += chunk;
+            // Bounded-transient evidence: preparing the history-rich corpus
+            // never holds the whole batch live (the same per-batch
+            // assertion the functional dense E2E uses).
+            let batch = client.snapshot().expect("post-batch snapshot");
+            assert!(
+                batch.engine_sessions <= 21,
+                "history corpus seeding must not hold more than 21 concurrent \
+                 sessions; observed {}",
+                batch.engine_sessions
+            );
+        }
+        client
+            .send_ok(&Request::EnforceSessionBudget { cap: 20 })
+            .expect("enforce history corpus budget");
+        client
+            .send_ok(&Request::FlushFrame)
+            .expect("flush history corpus frame");
+        let history_corpus = client.snapshot().expect("history corpus snapshot");
+        assert!(
+            history_corpus.all_tabs.len() >= 500,
+            "the history-rich corpus carries >=500 open tabs"
+        );
+        assert!(
+            history_corpus.store.history_count >= 10_000,
+            "the history-rich corpus carries the seeded 10k provider"
+        );
+        assert!(
+            history_corpus.active_web_view.is_some(),
+            "the history-rich corpus keeps the active session live"
+        );
+        let history_view = history_corpus
+            .active_web_view
+            .expect("history corpus active view");
+        // Discarded warm-up: the first command presentation after the
+        // 500-tab seed pays the one-time dense-list layout/presentation
+        // cost of the grown corpus. It is unmeasured setup — the same
+        // discarded-warm-up practice the release benchmarks use — so every
+        // accepted sample measures the steady production interaction.
+        let _ = benchmark_command_bar_first_result(
+            client,
+            &mut since,
+            operation,
+            "alpha-history",
+            "history:1",
+            history_view,
+        );
+        operation += 1;
+        client
+            .send_ok(&Request::DispatchKeystroke {
+                keystroke: "escape".into(),
+            })
+            .expect("escape after warm-up");
+        let mut first_result_samples = Vec::with_capacity(config.interaction_samples);
+        for _ in 0..config.interaction_samples {
+            let measured = benchmark_command_bar_first_result(
+                client,
+                &mut since,
+                operation,
+                "alpha-history",
+                "history:1",
+                history_view,
+            );
+            first_result_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("command_bar_first_result".into())
+                .or_default()
+                .push(measured.duration_ns);
+            operation += 1;
+            // Unmeasured setup: Escape after every sample restores the web
+            // origin (each sample starts from the uniform web focus).
+            client
+                .send_ok(&Request::DispatchKeystroke {
+                    keystroke: "escape".into(),
+                })
+                .expect("escape after first result sample");
+        }
+        raw.insert("command_bar_first_result".to_string(), first_result_samples);
         raw
     };
     *cursor = since;

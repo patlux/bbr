@@ -19,6 +19,7 @@
 use std::time::Duration;
 
 use bbr_browser::ControllerSnapshot;
+use bbr_command::corpus::HistoryEntry;
 use bbr_command::parse::{Mode, Query, QueryContext};
 use bbr_command::rank::{rank, Activation, CommandResult, ResultGroup};
 use bbr_command::registry::CommandRegistry;
@@ -206,11 +207,14 @@ impl CommandRanking {
     }
 }
 
-/// Build the corpus from the authoritative controller snapshot on demand and
-/// rank `text` in `mode`. Purely synchronous; used by the debounce publish,
-/// the testkit flush, and the activation fallback derivation.
+/// Build the corpus from the authoritative controller snapshot and the
+/// app-owned in-memory history provider on demand, then rank `text` in
+/// `mode`. Purely synchronous; used by the debounce publish, the testkit
+/// flush, and the activation fallback derivation. `history` is the
+/// already-loaded provider data — ranking never scans SQLite.
 pub fn rank_text(
     snapshot: &ControllerSnapshot,
+    history: &[HistoryEntry],
     mode: CommandBarMode,
     text: &str,
 ) -> (Vec<CommandResultRow>, usize) {
@@ -219,7 +223,7 @@ pub fn rank_text(
         CommandBarMode::NewTab => Mode::NewTab,
         _ => return (Vec::new(), 0),
     };
-    let corpus = corpus_from_snapshot(snapshot);
+    let corpus = corpus_from_snapshot(snapshot, history);
     let registry = CommandRegistry::builtin();
     let query = Query::new(core_mode, text);
     let context = QueryContext::with_current(
@@ -268,7 +272,9 @@ impl BbrApp {
             self.command_ranking.activation_error = None;
             return;
         }
-        let (rows, _total) = rank_text(&snapshot, self.command_bar_mode, &text);
+        let (rows, _total) = self
+            .store
+            .with_history(|history| rank_text(&snapshot, history, self.command_bar_mode, &text));
         // Location/NewTab queries always carry the navigate/search fallback
         // row (the portable core), so a published non-empty pass is never
         // empty; there is no production NoMatch state in this slice.
@@ -296,7 +302,7 @@ impl BbrApp {
         self.rank_command_now();
         cx.notify();
         #[cfg(feature = "testkit")]
-        self.schedule_command_render_commit(cx);
+        self.schedule_command_text_render_commit(cx);
     }
 
     /// Deterministic testkit flush: cancel the pending debounce timer and
@@ -415,12 +421,12 @@ mod tests {
 
     #[test]
     fn ranking_publishes_deterministic_rows_limited_to_16() {
-        let (rows, _total) = rank_text(&snapshot(), CommandBarMode::Location, "alpha");
+        let (rows, _total) = rank_text(&snapshot(), &[], CommandBarMode::Location, "alpha");
         assert!(!rows.is_empty());
         assert_eq!(rows[0].key, "tab:1");
         assert_eq!(rows[0].group, "exact_tab");
         assert!(!rows[0].destructive);
-        let (rows, _) = rank_text(&snapshot(), CommandBarMode::Location, "close");
+        let (rows, _) = rank_text(&snapshot(), &[], CommandBarMode::Location, "close");
         let close = rows
             .iter()
             .find(|r| {
@@ -431,7 +437,12 @@ mod tests {
             })
             .expect("close tab action row");
         assert!(close.destructive, "close tab is the destructive action");
-        let (rows, _) = rank_text(&snapshot(), CommandBarMode::Location, "nonexistent term");
+        let (rows, _) = rank_text(
+            &snapshot(),
+            &[],
+            CommandBarMode::Location,
+            "nonexistent term",
+        );
         assert!(
             rows.iter()
                 .any(|r| matches!(r.activation, Activation::Search { .. })),

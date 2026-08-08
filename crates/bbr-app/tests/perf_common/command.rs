@@ -144,6 +144,69 @@ pub(crate) fn benchmark_command_type(
     measured
 }
 
+/// The history-rich command-first-result path (Phase 7, queue item 16): the
+/// production command-text path — Cmd-L, replace-selection typing, the real
+/// ranking debounce, and a render of the result surface committing the
+/// sample in the app — measured against the 500-tab + 10k-history corpus the
+/// scenario seeds. The expected first result is a ranked history row
+/// (`history:<id>`); the in-app probe rejects a fast-but-wrong first result
+/// (a tab or fallback row), a stale generation, or a missing palette before
+/// the sample leaves.
+pub(crate) fn benchmark_command_bar_first_result(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    text: &str,
+    expected_first_key: &str,
+    expected_view: WebViewId,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkCommandBarFirstResult {
+            operation_id,
+            text: text.to_string(),
+            expected_first_key: expected_first_key.to_string(),
+        })
+        .expect("benchmark command bar first result");
+    let (seq, measured) = wait_measurement(
+        client,
+        BenchmarkKind::CommandBarFirstResult,
+        operation_id,
+        *since,
+    );
+    *since = seq;
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(
+        measured.chrome_focused,
+        "the typed surface keeps the chrome focus domain"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::Location);
+    let snapshot = client.snapshot().expect("command first result snapshot");
+    assert_eq!(snapshot.command_bar_mode, CommandBarMode::Location);
+    assert!(snapshot.chrome_focused);
+    assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert_eq!(
+        snapshot.command_results.first().map(|row| row.key.as_str()),
+        Some(expected_first_key),
+        "the published first result is the expected ranked history row"
+    );
+    assert_eq!(
+        snapshot
+            .command_results
+            .first()
+            .map(|row| row.group.as_str()),
+        Some("history")
+    );
+    // The seeded provider scale is in effect: the corpus the sample ranked
+    // carried the seeded history (enforced here so a missing seed silently
+    // degrades the measurement to an empty corpus).
+    assert!(
+        snapshot.store.history_count >= 10_000,
+        "the history-rich corpus must carry the seeded provider scale"
+    );
+    measured
+}
+
 /// The production Enter activation of the command bar: the selected exact-tab
 /// row activates through the app/controller seams and the expected
 /// destination view is presented in web focus with the surface closed.

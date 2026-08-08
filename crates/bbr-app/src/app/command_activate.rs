@@ -8,6 +8,7 @@ use bbr_browser::SpaceId;
 use bbr_command::id::ActionId;
 use bbr_command::parse::{Destination, Mode, Query};
 use bbr_command::rank::Activation;
+use bbr_command::search_settings::render_search_url;
 use bbr_web::WebAction;
 use gpui::{Context, Window};
 
@@ -16,25 +17,19 @@ use crate::command_bar::CommandBarMode;
 use super::command_rank::CommandResultState;
 use super::BbrApp;
 
-/// The settled search fallback (packet settled value): the terms are
-/// percent-encoded into the DuckDuckGo endpoint. E2E asserts the encoded
-/// intent, never the live provider.
-pub fn duckduckgo_url(terms: &str) -> String {
-    format!("https://duckduckgo.com/?q={}", percent_encode(terms))
-}
-
-/// RFC 3986 unreserved-preserving percent encoding for the query terms.
-fn percent_encode(input: &str) -> String {
-    let mut out = String::with_capacity(input.len() * 3);
-    for byte in input.bytes() {
-        match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                out.push(byte as char)
-            }
-            _ => out.push_str(&format!("%{byte:02X}")),
-        }
-    }
-    out
+/// The effective search URL for `terms` (Phase 7): the persisted global
+/// search-engine settings from `bbr-persistence` feed the existing
+/// provider-neutral fallback rendering. The default DuckDuckGo settings
+/// render byte-identically to the settled command-bar fallback
+/// (`https://duckduckgo.com/?q=<percent-encoded terms>`); a custom engine
+/// is constructor-validated, so dangerous `file:`/`javascript:`/`data:`
+/// templates cannot exist here. E2E asserts the encoded intent, never the
+/// live provider.
+pub fn search_url(
+    settings: &bbr_command::search_settings::settings::SearchSettingsV1,
+    terms: &str,
+) -> String {
+    render_search_url(settings.engine(), terms)
 }
 
 impl BbrApp {
@@ -183,11 +178,15 @@ impl BbrApp {
                 }
                 activated
             }
-            Activation::OpenHistory { .. } => {
-                // History stays an empty real collection in this slice, so no
-                // history row can be ranked; an unavailable history
-                // destination is rejected truthfully.
-                false
+            Activation::OpenHistory { history } => {
+                // Phase 7: a ranked history row activates its record — the
+                // URL is looked up in the in-memory provider (never SQLite)
+                // and opened like any other destination; an unavailable
+                // record is rejected truthfully.
+                match self.store.history_entry(history) {
+                    Some((url, title)) => self.open_destination(&url, &title, new_tab, window, cx),
+                    None => false,
+                }
             }
             Activation::RunAction { action } => self.run_registry_action(action, window, cx),
             Activation::Navigate { url } => {
@@ -196,45 +195,59 @@ impl BbrApp {
                 // provisional navigation starts, leaving the fresh view
                 // blank (the schemeless-nav regression: Cmd-T → "golem.de"
                 // → Enter rendered white while the scheme'd twin loaded).
-                // `navigate()` (Location mode) already normalizes its
-                // input; apply the same policy here so NewTab and Location
-                // deliver the identical absolute URL to the controller.
-                // `normalize_url` is idempotent for already-absolute URLs.
-                let url = bbr_web::normalize_url(&url);
-                if url.is_empty() {
-                    return false;
-                }
-                if new_tab {
-                    if self.open_tab(&url, cx).is_some() {
-                        self.finish_web_activation(window, cx);
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    self.navigate(&url, window, cx);
-                    true
-                }
+                // `open_destination` normalizes (idempotent for
+                // already-absolute URLs), so NewTab and Location deliver
+                // the identical absolute URL to the controller.
+                self.open_destination(&url, "", new_tab, window, cx)
             }
             Activation::Search { terms } => {
-                let url = duckduckgo_url(&terms);
-                if new_tab {
-                    if self.open_tab(&url, cx).is_some() {
-                        self.finish_web_activation(window, cx);
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    self.navigate(&url, window, cx);
-                    true
-                }
+                // The persisted global search-engine settings feed the
+                // provider-neutral fallback rendering (Phase 7): the
+                // default DuckDuckGo settings render the settled command-bar
+                // endpoint byte-identically, and a custom template is
+                // constructor-validated.
+                let url = search_url(self.store.effective_settings(), &terms);
+                self.open_destination(&url, "", new_tab, window, cx)
             }
         };
         if !ok {
             self.command_activation_error(window, cx);
         }
         ok
+    }
+
+    /// Opens `url` in the current or a new tab and, when accepted, records
+    /// the visit in the app-owned history provider (Phase 7): the in-memory
+    /// provider is updated on the main thread and the SQLite write is a
+    /// bounded poke on the background writer — never on the render path.
+    /// Returns false when the destination could not be opened.
+    fn open_destination(
+        &mut self,
+        url: &str,
+        title: &str,
+        new_tab: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let url = bbr_web::normalize_url(url);
+        if url.is_empty() {
+            return false;
+        }
+        let accepted = if new_tab {
+            if self.open_tab(&url, cx).is_some() {
+                self.finish_web_activation(window, cx);
+                true
+            } else {
+                false
+            }
+        } else {
+            self.navigate(&url, window, cx);
+            true
+        };
+        if accepted {
+            self.store.record_visit(&url, title);
+        }
+        accepted
     }
 
     /// Run a registered action through the existing app/controller method.
@@ -430,25 +443,45 @@ impl BbrApp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bbr_command::search_settings::settings::SearchSettingsV1;
 
     #[test]
-    fn duckduckgo_fallback_encodes_query_terms() {
+    fn search_fallback_renders_engine_encoded_terms() {
+        // The default (DuckDuckGo) settings render byte-identically to the
+        // settled command-bar fallback; the settings feed the provider-
+        // neutral rendering, so the encoded intent is asserted, never the
+        // live provider.
+        let defaults = SearchSettingsV1::defaults();
         assert_eq!(
-            duckduckgo_url("hello world"),
+            search_url(&defaults, "hello world"),
             "https://duckduckgo.com/?q=hello%20world"
         );
         assert_eq!(
-            duckduckgo_url("a&b=c"),
+            search_url(&defaults, "a&b=c"),
             "https://duckduckgo.com/?q=a%26b%3Dc"
         );
         assert_eq!(
-            duckduckgo_url("ümlaut"),
+            search_url(&defaults, "ümlaut"),
             "https://duckduckgo.com/?q=%C3%BCmlaut"
         );
         // Unreserved characters stay readable.
         assert_eq!(
-            duckduckgo_url("a-z_0.9~"),
+            search_url(&defaults, "a-z_0.9~"),
             "https://duckduckgo.com/?q=a-z_0.9~"
+        );
+        // A persisted custom engine feeds the same provider-neutral renderer
+        // (constructor-validated, so no dangerous template can exist).
+        let custom = SearchSettingsV1::with_engine(
+            bbr_command::search_settings::engine::SearchEngine::Custom(
+                bbr_command::search_settings::engine::CustomUrlTemplate::new(
+                    "https://search.example.test/?q=%s&lang=en",
+                )
+                .unwrap(),
+            ),
+        );
+        assert_eq!(
+            search_url(&custom, "hello world"),
+            "https://search.example.test/?q=hello%20world&lang=en"
         );
     }
 }

@@ -359,6 +359,13 @@ pub enum Request {
     /// results synchronously, so E2E asserts burst typing (only the final
     /// generation ever publishes) without waiting on real time.
     FlushCommandRanking,
+    /// Deterministic persistence flush (testkit-only): synchronously writes
+    /// the current in-memory command-history provider to the store in one
+    /// transaction — the deterministic seam E2E uses to prove persistence
+    /// across restarts (the harness terminates the app, so a clean quit
+    /// flush cannot be observed; the production background writer uses the
+    /// identical repository write).
+    FlushPersistence,
     /// Issue a real WebKit content probe for `view` (testkit-only): reads
     /// the committed document in BBR's own client content world
     /// (`readyState`/`URL`/`title`/body) plus the native `WKWebView`
@@ -547,6 +554,17 @@ pub enum Request {
     /// (fast-but-wrong guard). The deterministic flush is never used inside
     /// this measured scenario.
     BenchmarkCommandType {
+        operation_id: BenchmarkOperationId,
+        text: String,
+        expected_first_key: String,
+    },
+    /// Measure the production command-text path against the history-rich
+    /// corpus (Phase 7, command-history provider; queue item 16,
+    /// `command_bar_first_result`): identical to `BenchmarkCommandType`
+    /// except the expected first result is a ranked history row. The sample
+    /// commits only from a render of the result surface presenting the
+    /// exact first/selected key, generation, state, mode, and focus.
+    BenchmarkCommandBarFirstResult {
         operation_id: BenchmarkOperationId,
         text: String,
         expected_first_key: String,

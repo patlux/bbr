@@ -84,6 +84,16 @@ pub enum BenchmarkKind {
     /// presented. The sample commits only when the first result key matches
     /// the expectation (fast-but-wrong guard).
     CommandType,
+    /// The same production command-text path as [`Self::CommandType`]
+    /// measured against the history-rich corpus (Phase 7, command-history
+    /// provider): at least 500 tabs plus a 10,000-entry in-memory history
+    /// provider seed the ranking scale the portable command core proves
+    /// (queue item 16, `command_bar_first_result`). The expected first
+    /// result is a ranked history row (`history:<id>`), and the sample
+    /// commits only when that exact first key is presented — the
+    /// fast-but-wrong guard rejects a tab/fallback row or a stale
+    /// generation. Same warm-interaction class as `command_type` (50/100).
+    CommandBarFirstResult,
     /// Enter activated the selected/typed command-bar destination through
     /// the production activation path: the correct destination, focus
     /// domain, and mode are presented (warm class — no session

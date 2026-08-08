@@ -38,6 +38,8 @@ mod benchmarks_pointer;
 mod benchmarks_u2;
 mod command_activate;
 #[cfg(feature = "testkit")]
+mod command_benchmark_history;
+#[cfg(feature = "testkit")]
 mod command_benchmarks;
 mod command_corpus;
 pub(crate) mod command_rank;
@@ -278,6 +280,11 @@ pub struct BbrApp {
     /// ownership classification counters) are read through it.
     #[cfg(target_os = "macos")]
     menu_engine: Option<crate::engine::NativeEngineRef>,
+    /// The app-owned persistence composition (Phase 7, command-history
+    /// provider slice): the shared `bbr-app -> bbr-persistence` bootstrap
+    /// that owns the truthful store disposition, the global search
+    /// settings, and the in-memory history provider ranking consumes.
+    store: crate::store::AppStore,
     /// The last frame's command-field rect in window coordinates, recorded
     /// by the field anchor element (DESIGN.md §11.4): the exact anchor for
     /// the field-anchored overlay (top/leading edge flush, width from the
@@ -327,6 +334,7 @@ impl BbrApp {
             bbr_web_macos::find_mapping::FindCompletion,
         >,
         #[cfg(feature = "testkit")] performance: PerformanceProbe,
+        store: crate::store::AppStore,
         cx: &mut Context<Self>,
     ) -> Self {
         // Engine → app events: the sink runs on the main thread (delegate
@@ -395,6 +403,7 @@ impl BbrApp {
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
             command_profile_hint: None,
+            store,
             sidebar_visible: true,
             organization,
             u2: u2::U2State::new(cx),
@@ -411,6 +420,16 @@ impl BbrApp {
     #[cfg(target_os = "macos")]
     pub fn set_find_engine(&mut self, engine: crate::engine::NativeEngineRef) {
         self.find_engine = Some(engine);
+    }
+
+    /// Deterministic persistence flush (testkit gateway seam): synchronously
+    /// writes the in-memory command-history provider to the store in one
+    /// transaction — the deterministic seam E2E uses to prove persistence
+    /// across restarts; the production background writer uses the identical
+    /// repository write.
+    #[cfg(feature = "testkit")]
+    pub(crate) fn flush_persistence(&self) {
+        self.store.flush_persistence();
     }
 
     /// Issue a real WebKit content probe for a live view (testkit-only;

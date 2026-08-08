@@ -323,6 +323,31 @@ pub(crate) fn dispatch_benchmark(
         })
         .unwrap_or_else(err_response),
 
+        Request::BenchmarkCommandBarFirstResult {
+            operation_id,
+            text,
+            expected_first_key,
+        } => with_app(window, app, cx, |view, window, cx| {
+            view.benchmark_command_bar_first_result(
+                *operation_id,
+                text,
+                expected_first_key,
+                window,
+                cx,
+            )
+        })
+        .map(|committed| {
+            if committed {
+                Response::Ok
+            } else {
+                Response::Error(Error::new(
+                    "benchmark_noop",
+                    "command first result did not present the expected history row",
+                ))
+            }
+        })
+        .unwrap_or_else(err_response),
+
         Request::BenchmarkCommandActivate {
             operation_id,
             expected_view,

@@ -20,6 +20,7 @@ mod load_helpers;
 mod model;
 mod repository;
 mod repository_load;
+mod repository_rows;
 mod schema;
 mod schema_tables;
 mod setup;

@@ -31,6 +31,7 @@ bbr-domain = { path = "crates/bbr-domain" }
 bbr-web = { path = "crates/bbr-web" }
 bbr-browser = { path = "crates/bbr-browser" }
 bbr-command = { path = "crates/bbr-command" }
+bbr-persistence = { path = "crates/bbr-persistence" }
 bbr-split = { path = "crates/bbr-split" }
 bbr-web-macos = { path = "crates/bbr-web-macos" }
 serde = { version = "1", features = ["derive"] }

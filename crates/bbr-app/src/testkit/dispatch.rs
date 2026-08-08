@@ -411,6 +411,15 @@ pub(crate) fn dispatch(
         })
         .unwrap_or_else(err_response),
 
+        // Deterministic persistence flush (testkit-only): the synchronous
+        // write of the in-memory history provider (off the render path; the
+        // production background writer uses the identical repository write).
+        Request::FlushPersistence => with_app(window, app, cx, |view, _w, _cx| {
+            view.flush_persistence();
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
         Request::DispatchKeystroke { keystroke } => {
             let ks = match Keystroke::parse(&keystroke) {
                 Ok(ks) => ks,
@@ -612,6 +621,7 @@ pub(crate) fn dispatch(
         | Request::BenchmarkHoverTab { .. }
         | Request::BenchmarkPressTab { .. }
         | Request::BenchmarkCommandType { .. }
+        | Request::BenchmarkCommandBarFirstResult { .. }
         | Request::BenchmarkCommandActivate { .. }
         | Request::BenchmarkCommandActivateNewTab { .. }
         | Request::BenchmarkPaletteOpen { .. }

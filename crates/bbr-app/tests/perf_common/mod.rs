@@ -56,5 +56,12 @@ pub fn short_config() -> TrialConfig {
         interaction_samples: scenarios::INTERACTION_SAMPLES,
         new_tab_samples: scenarios::NEW_TAB_SAMPLES,
         inject_delay_ms: None,
+        // Phase-7 command-history provider scale (queue item 16): the
+        // interaction matrix measures the command surface against the
+        // history-rich corpus — the pre-spawned 10,000-entry provider feeds
+        // every command ranking pass (never fixture setup inside a sample),
+        // and the `command_bar_first_result` scenario adds the >=500 open
+        // tabs on top.
+        seed_history: 10_000,
     }
 }

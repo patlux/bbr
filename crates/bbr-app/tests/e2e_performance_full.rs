@@ -78,6 +78,7 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let hover = report.results["tab_hover"].samples;
         let press = report.results["tab_press"].samples;
         let command_type = report.results["command_type"].samples;
+        let command_first_result = report.results["command_bar_first_result"].samples;
         let command_activate = report.results["command_activate"].samples;
         let command_new_tab = report.results["command_activate_new_tab"].samples;
         let palette_open = report.results["palette_open"].samples;
@@ -142,6 +143,10 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             command_type >= INTERACTION_SAMPLES,
             "command-type samples {command_type} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            command_first_result >= INTERACTION_SAMPLES,
+            "command-first-result samples {command_first_result} < {INTERACTION_SAMPLES}"
         );
         assert!(
             command_activate >= INTERACTION_SAMPLES,

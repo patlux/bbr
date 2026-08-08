@@ -41,101 +41,14 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        if self
-            .performance
-            .begin(operation_id, BenchmarkKind::CommandType)
-            .is_err()
-        {
-            return false;
-        }
-        // Production entry: the Cmd-L path plus replace-selection typing
-        // (the exact mutation `on_chrome_key_down` runs), which restarts the
-        // real cancellable debounce.
-        self.activate_command_bar(window, cx);
-        self.command_text.replace_selection(text);
-        self.on_command_text_changed(cx);
-        // Arm the exact rendered-presentation identity now — the debounce
-        // is still 30 ms away, so no publication can land before arming:
-        // the generation the entry just scheduled, the correct first
-        // result, the selected row, the typed state, mode, and focus. The
-        // commit predicate only accepts the render carrying this identity.
-        let expected_generation = self.command_ranking.generation;
-        let active_view = self.controller.snapshot().active_view;
-        let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
-        self.performance
-            .expect_state(active_view, self.sidebar_visible, true, mode);
-        self.performance.expect_command_presentation(
-            expected_generation,
+        self.benchmark_command_entry(
+            operation_id,
+            BenchmarkKind::CommandType,
+            text,
             expected_first_key,
-            expected_first_key,
-            bbr_testkit::protocol::CommandResultState::Results,
-        );
-        // Observe the (unchanged) presented state at arm time: typing never
-        // changes the view/sidebar/focus/mode, so the render is compared
-        // against the state the surface actually presents.
-        self.performance
-            .observe_render_state(active_view, self.sidebar_visible, true, mode);
-        true
-    }
-
-    /// The ranking publication arrived: when a `CommandType` benchmark is
-    /// pending, the sample must commit only from a subsequent render of the
-    /// result surface — the ranking callback itself never emits it. This
-    /// schedules a bounded forced draw (the same testkit pattern the
-    /// render-dependent dense scenarios use) so the palette is actually
-    /// rendered in the hidden harness and the probe commits at the
-    /// presentation milestone. The draw runs on the main thread after this
-    /// update completes, through the untyped window path (the entity lease
-    /// is free then).
-    pub(crate) fn schedule_command_render_commit(&self, cx: &mut Context<Self>) {
-        if self.performance.pending_kind() != Some(BenchmarkKind::CommandType) {
-            return;
-        }
-        let Some(window) = cx.windows().into_iter().next() else {
-            return;
-        };
-        let weak = cx.weak_entity();
-        cx.spawn(async move |_, async_cx: &mut AsyncApp| {
-            // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).
-            async_cx.update(|cx| {
-                // Render the published result surface: the render
-                // observes the command identity after constructing the
-                // palette and refreshes the browser-state observation;
-                // the slot paint then commits the sample when the armed
-                // identity and state match (fast-but-wrong guard).
-                let _ = window.update(cx, |_root, window, cx| {
-                    let app: &mut App = cx;
-                    let _ = window.draw(app);
-                });
-                // Post-render commit through the app-entity contract (the
-                // window root is now `gpui_component::Root`, so the commit
-                // no longer downcasts the root): the explicit path
-                // validates the same identity + state and cancels
-                // truthfully when the render omitted the palette (no
-                // observation → no commit), so a broken palette render
-                // fails the sample instead of silently passing.
-                let _: bool = weak
-                    .update(cx, |this, _cx| this.commit_command_type_benchmark())
-                    .unwrap_or(false);
-            });
-        })
-        .detach();
-    }
-
-    /// Commit the `command_type` sample from the render milestone: the
-    /// probe compares the armed command identity against the observation
-    /// the render recorded after constructing the palette, and the
-    /// browser-state expectations against the state the render observed.
-    /// Returns false and cancels when the render omitted the palette or the
-    /// identity/state was wrong — a truthful rejection, never a
-    /// fast-but-wrong pass.
-    fn commit_command_type_benchmark(&self) -> bool {
-        self.performance.commit_current_presentation();
-        if self.performance.pending_kind() == Some(BenchmarkKind::CommandType) {
-            self.performance.cancel();
-            return false;
-        }
-        true
+            window,
+            cx,
+        )
     }
 
     /// Benchmark the production Enter activation of the command bar: the

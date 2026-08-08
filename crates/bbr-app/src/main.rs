@@ -37,6 +37,7 @@ mod shell;
 #[allow(dead_code)]
 mod sidebar;
 mod slot;
+mod store;
 #[cfg(feature = "testkit")]
 mod testkit;
 #[allow(dead_code)] // foundation tokens; consumed by the shell slices that follow this group
@@ -209,6 +210,29 @@ fn main() {
         gpui_component::init(cx);
         install_sigint_shutdown(cx);
 
+        // App-owned persistence composition (Phase 7, command-history
+        // provider slice): the one `bbr-app -> bbr-persistence` bootstrap.
+        // The store restores the global search settings and the
+        // command-history provider at startup and logs the truthful
+        // `StoreLoad` disposition (a discarded legacy/mismatched store is a
+        // normal, non-fatal startup path). The bounded nonblocking history
+        // writer runs on the background executor; ranking and render never
+        // touch SQLite.
+        let mut store = match store::AppStore::open(&cli.profile_dir) {
+            Ok(store) => store,
+            Err(error) => {
+                // A fatal open failure (the store cannot even be created)
+                // is logged truthfully and the app continues ephemeral:
+                // history/settings stay in memory for the session, every
+                // persist is refused with a warning, and the snapshot
+                // reports the store as unavailable — never a fabricated
+                // disposition.
+                log::error!("persistence store open failed ({error:?}); continuing ephemeral");
+                store::AppStore::ephemeral()
+            }
+        };
+        store.spawn_writer(cx.background_executor());
+
         let bounds = Bounds::centered(None, size(px(cli.window_size.0), px(cli.window_size.1)), cx);
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
@@ -301,6 +325,7 @@ fn main() {
                         find_tx.clone(),
                         #[cfg(feature = "testkit")]
                         view_performance,
+                        store,
                         cx,
                     )
                 });

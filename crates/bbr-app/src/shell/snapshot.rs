@@ -167,6 +167,11 @@ pub struct TestSnapshot {
     /// `error-surface-contract`): the classified incident the content area
     /// renders, or the empty default when no error surface is shown.
     pub error_surface: bbr_testkit::protocol::ErrorSurfaceSnapshot,
+    /// Phase-7 app-owned persistence composition (task packet
+    /// `persistence-core` + the command-history provider slice): the
+    /// truthful startup store disposition, the effective global search
+    /// engine, and the in-memory history provider size.
+    pub store: bbr_testkit::protocol::StoreSnapshot,
 }
 
 #[cfg(feature = "testkit")]

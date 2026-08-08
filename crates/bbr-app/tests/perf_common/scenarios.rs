@@ -13,11 +13,12 @@
 #![allow(dead_code)]
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Child;
 use std::time::{Duration, Instant};
 
 use bbr_fixtures::FixtureServer;
+use bbr_persistence::{CommandHistoryEntry, Repository};
 use bbr_testkit::protocol::{BenchmarkKind, BenchmarkOperationId, Request};
 use bbr_web::WebViewId;
 
@@ -26,6 +27,46 @@ use super::harness::{self, AppHarness};
 use super::report::{self, Aggregated};
 
 pub use super::report::{aggregate, evaluate_aggregate};
+
+/// The persistence store file name the app opens at startup (mirrors
+/// `crate::store::STORE_FILE_NAME`; the perf tests cannot import the bin
+/// crate's modules).
+const STORE_FILE_NAME: &str = "bbr.sqlite";
+
+/// Phase-7 command-history provider seed (pre-spawn): writes `count`
+/// deterministic history entries through the production repository so the
+/// app's startup restore loads exactly the history-rich provider the
+/// `command_bar_first_result` scenario measures. Entry 1 is the unique
+/// query target ("alpha-history" matches only it); every other entry is
+/// a distinct non-matching URL/title. Seeding happens outside any timed
+/// region — the measured samples start after the app has loaded.
+pub(crate) fn seed_history_store(profile: &Path, count: usize) {
+    let repository = Repository::new(profile.join(STORE_FILE_NAME));
+    repository.initialize_and_restore().unwrap();
+    let entries = (0..count)
+        .map(|index| {
+            let id = (index + 1) as u64;
+            if index == 0 {
+                CommandHistoryEntry {
+                    id,
+                    title: "Alpha History Target".into(),
+                    url: "https://alpha-history.example/".into(),
+                    visit_count: 1,
+                    last_visited: 0,
+                }
+            } else {
+                CommandHistoryEntry {
+                    id,
+                    title: format!("History Entry {index}"),
+                    url: format!("https://history-{index:05}.example/"),
+                    visit_count: 1,
+                    last_visited: index as u64,
+                }
+            }
+        })
+        .collect::<Vec<_>>();
+    repository.store_command_history(&entries).unwrap();
+}
 
 /// Deterministic fixture page titles (see `crates/bbr-fixtures/html`).
 pub const PAGE_ONE_TITLE: &str = "BBR Fixture One";
@@ -48,6 +89,12 @@ pub struct TrialConfig {
     pub interaction_samples: usize,
     pub new_tab_samples: usize,
     pub inject_delay_ms: Option<u64>,
+    /// Phase-7 command-history provider scale: seed this many history
+    /// entries into the profile store before the app starts (0 = no seed).
+    /// The `command_bar_first_result` scenario sets 10,000 so the measured
+    /// ranking corpus matches the command-core benchmark scale (500 tabs +
+    /// 10k history).
+    pub seed_history: usize,
 }
 
 /// One cold trial's measurements.
@@ -94,6 +141,13 @@ pub fn run_cold_trial_raw(
     let root = PathBuf::from(format!("/tmp/bbr-e2e-perf-{tag}-{}", std::process::id()));
     let profile = root.join("profile");
     std::fs::create_dir_all(&profile).unwrap();
+    // Phase-7 command-history provider seed: when the trial config requests
+    // the history-rich corpus, the store is seeded BEFORE the app starts so
+    // the measured ranking runs against the loaded provider (never fixture
+    // setup inside a sample).
+    if config.seed_history > 0 {
+        seed_history_store(&profile, config.seed_history);
+    }
     let socket = profile.join("bbr-test.sock");
     let token = format!("perf-{tag}");
 

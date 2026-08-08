@@ -208,6 +208,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             #[cfg(not(all(target_os = "macos", feature = "testkit")))]
             web_content_probe: None,
             error_surface: self.error_surface.clone(),
+            store: self.store.clone(),
         }
     }
 }

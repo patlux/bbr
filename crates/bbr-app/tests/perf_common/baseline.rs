@@ -440,6 +440,7 @@ impl Baseline {
             "tab_hover",
             "tab_press",
             "command_type",
+            "command_bar_first_result",
             "command_activate",
             "command_activate_new_tab",
             "palette_open",
@@ -659,6 +660,7 @@ mod tests {
         let b = Baseline::seed();
         for (kind, p95, max) in [
             ("command_type", 50.0, 100.0),
+            ("command_bar_first_result", 50.0, 100.0),
             ("command_activate", 50.0, 100.0),
             ("command_activate_new_tab", 100.0, 150.0),
             ("palette_open", 50.0, 100.0),

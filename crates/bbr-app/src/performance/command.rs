@@ -134,12 +134,16 @@ impl PerformanceProbe {
     /// True while a command benchmark is pending. The production activation
     /// path suppresses its generic synchronous commit for these kinds: the
     /// benchmark driver must validate caller-specific destination/session
-    /// state before any sample can leave the process.
+    /// state before any sample can leave the process. `CommandBarFirstResult`
+    /// is the history-rich twin of `CommandType` (same command-text entry
+    /// body and render-inclusive commit), so both kinds suppress the generic
+    /// activation commit while pending.
     pub fn command_benchmark_pending(&self) -> bool {
         matches!(
             self.pending_kind(),
             Some(
                 BenchmarkKind::CommandType
+                    | BenchmarkKind::CommandBarFirstResult
                     | BenchmarkKind::CommandActivate
                     | BenchmarkKind::CommandActivateNewTab
                     | BenchmarkKind::PaletteOpen

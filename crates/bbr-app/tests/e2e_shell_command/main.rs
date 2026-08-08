@@ -37,6 +37,9 @@ mod activation;
 mod address_control;
 mod command_portal;
 mod cross_space;
+mod history;
+mod history_global;
+mod history_support;
 mod identity;
 mod moved;
 mod navigation;
@@ -45,7 +48,10 @@ mod palette_surfaces;
 mod states;
 mod text;
 
-pub use bbr_testkit::protocol::{CommandBarMode, CommandResultState, SemanticRole};
+pub use bbr_testkit::protocol::{
+    CommandBarMode, CommandResultSnapshot, CommandResultState, SemanticRole,
+    StoreDiscardReasonSnapshot, StoreLoadSnapshot,
+};
 pub use e2e_common::*;
 pub use e2e_semantics_common::*;
 
