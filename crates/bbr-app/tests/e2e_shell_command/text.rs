@@ -26,7 +26,10 @@ fn cmd_l_selects_url_typing_replaces_and_escape_restores_origin() {
             since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
         }
 
-        // Cmd-L selects the current URL and focuses the field.
+        // Cmd-L opens the §11.4 overlay over the §11.5 address control with
+        // the full URL selected; the address pill stays behind it as a
+        // display-only Button (it never becomes the editing surface — the
+        // overlay's own field owns the text and the block cursor).
         let focused = cmd_l(&mut client, &mut since);
         assert_eq!(focused.command_bar_text, page_one);
         assert_eq!(
@@ -35,7 +38,28 @@ fn cmd_l_selects_url_typing_replaces_and_escape_restores_origin() {
             "Cmd-L selects the whole active URL"
         );
         assert_eq!(focused.command_cursor, page_one.len());
-        assert_ids(&focused, &["bbr-command-bar", "bbr-command-cursor"]);
+        assert_ids(
+            &focused,
+            &[
+                "bbr-command-overlay",
+                "bbr-command-overlay-field",
+                "bbr-command-overlay-cursor",
+                "bbr-address",
+            ],
+        );
+        assert!(
+            !focused
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-command-bar" || id == "bbr-command-text"),
+            "no sidebar field/cursor exists while the overlay is open"
+        );
+        let pill = find(&focused.semantics, "bbr-address").expect("address pill behind overlay");
+        assert_eq!(pill.role, SemanticRole::Button);
+        assert!(
+            !pill.focused,
+            "the address pill is never a focus-ring target, even behind the overlay"
+        );
 
         // Typing replaces the selection (real keystrokes through the
         // production key-down handler). 'q'/'z' match no tab/action, so the

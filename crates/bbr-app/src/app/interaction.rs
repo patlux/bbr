@@ -3,6 +3,7 @@
 use bbr_web::{WebAction, WebEvent};
 use gpui::{Context, KeyDownEvent, Window};
 
+use crate::app::palette::CommandSurface;
 use crate::command_bar::{CommandBarMode, CommandBarReturn};
 
 use super::BbrApp;
@@ -393,13 +394,20 @@ impl BbrApp {
         if let Some(restore) = self.command_bar_return.take() {
             // Restore the exact origin mode and text, re-open the ranking
             // surface only when the restored mode is a ranking mode, then
-            // hand focus back to the captured origin domain.
+            // hand focus back to the captured origin domain. A restored
+            // Location origin re-presents the field-anchored overlay: the
+            // §11.5 address control is display-only, so address editing
+            // always lives in the overlay — never back in the sidebar rail.
             self.command_bar_mode = restore.mode;
             self.command_text.set_text(restore.text);
-            if matches!(
-                self.command_bar_mode,
-                CommandBarMode::Location | CommandBarMode::NewTab
-            ) {
+            if self.command_bar_mode == CommandBarMode::Location {
+                // The overlay re-presents with the restored URL selected, so
+                // one keystroke replaces it (the §11.4 open contract).
+                self.command_surface = CommandSurface::Overlay;
+                self.command_text.select_all();
+                self.present_command_portal(CommandSurface::Overlay, window, cx);
+                self.open_command_ranking(cx);
+            } else if self.command_bar_mode == CommandBarMode::NewTab {
                 self.open_command_ranking(cx);
             } else {
                 self.command_ranking.close();
@@ -445,9 +453,23 @@ impl BbrApp {
         self.emit_focus(window);
     }
 
-    pub(super) fn sync_command_bar(&mut self) {
+    /// DESIGN.md §11.5 production hover path: the pointer entered the
+    /// address pill (`hovered == true`) or left it (`false`). This is the
+    /// exact app method the pill's `on_hover` element listener calls, so
+    /// the testkit seam drives the same path a real pointer move runs.
+    pub fn set_address_hover(&mut self, hovered: bool, cx: &mut Context<Self>) {
+        if self.address_hovered != hovered {
+            self.address_hovered = hovered;
+            cx.notify();
+        }
+    }
+
+    /// The live address the §11.5 pill derives its domain from: the nav URL
+    /// of the active session, falling back to the active tab's URL (the
+    /// same single source `sync_command_bar` mirrors into the input model).
+    pub(super) fn active_url(&self) -> String {
         let snapshot = self.controller.snapshot();
-        let url = snapshot
+        snapshot
             .nav
             .url
             .or_else(|| {
@@ -455,8 +477,11 @@ impl BbrApp {
                     .active_index
                     .and_then(|index| snapshot.tabs.get(index).map(|tab| tab.url.clone()))
             })
-            .unwrap_or_default();
-        self.command_text.set_text(url);
+            .unwrap_or_default()
+    }
+
+    pub(super) fn sync_command_bar(&mut self) {
+        self.command_text.set_text(self.active_url());
     }
 
     /// Handle printable typing + editing/selection keys while the command bar

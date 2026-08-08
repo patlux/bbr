@@ -48,14 +48,17 @@ fn pointer_opens_selects_closes_reopens_visible_tabs() {
         }
 
         // §15 semantic ids: the sidebar shell and the single visible row.
+        // The command slot renders the §11.5 address pill (display-only
+        // Button family), never a sidebar field.
         assert_ids(
             &initial,
             &[
                 "bbr-root",
                 "bbr-sidebar",
                 "bbr-brand",
-                "bbr-command-bar",
-                "bbr-command-text",
+                "bbr-address",
+                "bbr-address-domain",
+                "bbr-address-accessory",
                 "bbr-status",
                 "bbr-sidebar-toggle",
                 "bbr-tab-list",

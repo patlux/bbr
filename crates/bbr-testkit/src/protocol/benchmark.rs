@@ -100,6 +100,14 @@ pub enum BenchmarkKind {
     /// or invented surface). Warm-interaction class — no tab or session is
     /// created before Enter.
     PaletteOpen,
+    /// Cmd-L / address-pill click opened the field-anchored overlay
+    /// (DESIGN.md §11.4 `bbr-command-overlay`) over the address control:
+    /// the sample commits only from a render that actually constructed the
+    /// overlay with the Location mode, chrome focus, and the full URL
+    /// preselected (one keystroke replaces it) — the fast-but-wrong guard
+    /// rejects a missing or invented surface. Same warm-presentation class
+    /// as `palette_open` — no tab or session is created before Enter.
+    OverlayOpen,
     /// The §11.4 footer plus menu presented through the production path.
     SidebarPlusMenu,
     /// The §11.10 favorites grid committed the expected tile count.

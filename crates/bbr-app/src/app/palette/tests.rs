@@ -91,7 +91,12 @@ fn surface_ids_expose_palette_or_overlay_only_while_open() {
     );
     assert_eq!(
         surface_ids(CommandSurface::Overlay, closed_state, &[]),
-        vec![OVERLAY_ID]
+        vec![
+            OVERLAY_ID,
+            OVERLAY_FIELD_ID,
+            OVERLAY_TEXT_ID,
+            OVERLAY_CURSOR_ID,
+        ]
     );
 }
 
@@ -142,14 +147,16 @@ fn protocol_conversion_maps_the_wire_enum_one_to_one() {
 }
 
 #[test]
-fn overlay_portal_placement_anchors_to_the_measured_field_bottom_left() {
+fn overlay_portal_placement_covers_the_address_control() {
     let field = WebRect::new(12.0, 48.0, 280.0, 34.0);
-    // §11.4: the anchored overlay width clamps to a 360 pt floor.
+    // §11.4: the anchored overlay width clamps to a 360 pt floor, and the
+    // overlay **covers** the address control — top and leading edges flush
+    // with the control's, never a dropdown below it.
     let placement = overlay_placement(field, 360.0);
     let PortalPlacement::Anchored(placement) = placement else {
         panic!("overlay must use anchored portal placement");
     };
-    assert_eq!(placement.anchor_point, Pt::new(12.0, 82.0));
+    assert_eq!(placement.anchor_point, Pt::new(12.0, 48.0));
     assert_eq!(placement.anchor, PortalAnchor::TopLeft);
     assert_eq!(placement.size, Sz::new(360.0, 320.0));
     assert_eq!(placement.offset, Pt::new(0.0, 0.0));

@@ -691,6 +691,19 @@ pub struct Snapshot {
     pub semantics: Vec<SemanticNode>,
     pub command_bar_mode: CommandBarMode,
     pub command_bar_text: String,
+    /// The §11.5 address pill's derived domain (display-only — the pill
+    /// never holds the editable text, a cursor or a selection).
+    #[serde(default)]
+    pub address_domain: String,
+    /// The §11.5 address-pill hover state (the pointer is over the pill;
+    /// the translucent fill steps one brighter/darker via the token pair).
+    #[serde(default)]
+    pub address_hovered: bool,
+    /// The §11.5 address pill's measured window-relative rect (the §11.4
+    /// overlay anchor): the overlay covers this rect, so E2E asserts the
+    /// overlay's top/leading edges are flush with the pill's.
+    #[serde(default)]
+    pub address_rect: Option<[f32; 4]>,
     /// The open command-surface presentation (DESIGN.md §11.4): the centered
     /// Cmd-T palette, the field-anchored Cmd-L/click overlay, or none. At
     /// most one is open at a time (mutual exclusion by construction).

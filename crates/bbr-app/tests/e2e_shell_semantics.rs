@@ -78,7 +78,7 @@ fn shell_semantic_tree_and_fallbacks() {
                 "bbr-root",
                 "bbr-sidebar",
                 "bbr-brand",
-                "bbr-command-bar",
+                "bbr-address",
                 "bbr-tab-list",
                 "bbr-status",
                 "bbr-sidebar-toggle",
@@ -237,14 +237,25 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
         );
 
-        // Command field, status, divider: typed mode/value. The field
-        // mirrors the live URL once the title landed (§11.5).
+        // Command slot, status, divider: typed mode/value. The §11.5
+        // address pill is a display-only Button carrying the derived domain
+        // (scheme/path/query dropped); it is never a Field.
         assert_node(
             &initial.semantics,
-            "bbr-command-bar",
-            SemanticRole::Field,
-            Some(page_one.as_str()),
-            Some("inactive"),
+            "bbr-address",
+            SemanticRole::Button,
+            Some("127.0.0.1"),
+            None,
+            true,
+            false,
+            false,
+        );
+        assert_node(
+            &initial.semantics,
+            "bbr-address-domain",
+            SemanticRole::Title,
+            Some("127.0.0.1"),
+            None,
             true,
             false,
             false,

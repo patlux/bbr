@@ -138,6 +138,15 @@ pub struct Palette {
     pub wash_hover: Rgba,
     /// Pointer-down / pressed wash (§10.3).
     pub wash_active: Rgba,
+    /// §11.5 address-control fill: white-translucent on dark chrome,
+    /// black-translucent on light chrome — an alpha wash over the sidebar
+    /// material, so the token pair follows the theme and the space tint
+    /// through the material beneath (never a hardcoded color, never a
+    /// bordered field style).
+    pub address_fill: Rgba,
+    /// §11.5 address-control hover: one step brighter on dark chrome, one
+    /// step darker on light chrome (§10.2 wash mechanics at `dur:fine`).
+    pub address_fill_hover: Rgba,
     /// The two status surface washes at the IC level.
     pub surface_error_ic: Rgba,
     pub surface_attention_ic: Rgba,
@@ -191,6 +200,10 @@ impl Palette {
             surface_glass: SURFACE_GLASS_DARK.rgba(),
             wash_hover: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.05),
             wash_active: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.08),
+            // §11.5: white-translucent over the dark sidebar; the hover
+            // steps one fill brighter (a higher white alpha).
+            address_fill: rgba_8(255, 255, 255, 25),
+            address_fill_hover: rgba_8(255, 255, 255, 41),
             surface_error_ic: rgba_8(255, 106, 99, 30),
             surface_attention_ic: rgba_8(255, 198, 63, 30),
         }
@@ -210,6 +223,10 @@ impl Palette {
             tint_selected: TINT_SELECTED_IC_DARK.rgba(),
             wash_hover: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.07),
             wash_active: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.10),
+            // Increased contrast hardens the translucent address fill the
+            // same way it hardens the row washes.
+            address_fill: rgba_8(255, 255, 255, 30),
+            address_fill_hover: rgba_8(255, 255, 255, 48),
             ..base
         }
     }
@@ -239,6 +256,10 @@ impl Palette {
             surface_glass: SURFACE_GLASS_LIGHT.rgba(),
             wash_hover: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.045),
             wash_active: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.08),
+            // §11.5: black-translucent over the light sidebar; the hover
+            // steps one fill darker (a higher black alpha).
+            address_fill: rgba_8(0, 0, 0, 15),
+            address_fill_hover: rgba_8(0, 0, 0, 26),
             surface_error_ic: rgba_8(194, 46, 36, 30),
             surface_attention_ic: rgba_8(143, 92, 0, 30),
         }
@@ -256,6 +277,9 @@ impl Palette {
             accent: ACCENT_IC_LIGHT.rgba(),
             accent_ink: ACCENT_INK_IC_LIGHT.rgba(),
             tint_selected: TINT_SELECTED_IC_DARK.rgba(),
+            // Increased contrast deepens the translucent address fill.
+            address_fill: rgba_8(0, 0, 0, 18),
+            address_fill_hover: rgba_8(0, 0, 0, 30),
             ..base
         }
     }
@@ -332,7 +356,7 @@ impl ProfileHueRamp {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::theme::Theme;
+    use crate::theme::{ContrastMode, Density, Theme};
 
     /// §12: profile tile/letter pairs must compute ≥ 3:1 from the tokens —
     /// the same bar the §7.2 favicon monogram tiles use. The DESIGN table's
@@ -439,6 +463,53 @@ mod tests {
         assert!(HAIRLINE_IC_LIGHT.contrast(sidebar) >= 1.8);
         for (name, token) in [("error", ERROR_LIGHT), ("attention", ATTENTION_LIGHT)] {
             assert!(token.contrast(sidebar) >= 4.5, "light status {name}");
+        }
+    }
+
+    /// §11.5 address-control fill token pair: white-translucent on dark
+    /// chrome, black-translucent on light chrome; the hover step is one
+    /// fill brighter on dark and one fill darker on light — both derived
+    /// from the token pair, never a hardcoded color in the component.
+    #[test]
+    fn address_fill_pair_is_translucent_and_polarized_per_theme() {
+        for theme in [
+            Theme::dark(),
+            Theme::new(
+                crate::theme::ThemeMode::Light,
+                ContrastMode::Standard,
+                Density::Normal,
+            ),
+            Theme::new(
+                crate::theme::ThemeMode::Dark,
+                ContrastMode::Increased,
+                Density::Normal,
+            ),
+            Theme::new(
+                crate::theme::ThemeMode::Light,
+                ContrastMode::Increased,
+                Density::Normal,
+            ),
+        ] {
+            let fill = theme.palette.address_fill;
+            let hover = theme.palette.address_fill_hover;
+            assert!(fill.a > 0.0 && fill.a < 1.0, "fill stays translucent");
+            assert!(hover.a > 0.0 && hover.a < 1.0, "hover stays translucent");
+            match theme.mode {
+                crate::theme::ThemeMode::Dark => {
+                    // White-translucent: the RGB channels are near-white and
+                    // the hover is strictly brighter (higher alpha).
+                    assert!(fill.r >= 0.9 && fill.g >= 0.9 && fill.b >= 0.9);
+                    assert!(hover.a > fill.a, "dark hover brightens one step");
+                }
+                crate::theme::ThemeMode::Light => {
+                    // Black-translucent: RGB near-black and the hover is
+                    // strictly darker (higher alpha).
+                    assert!(fill.r <= 0.1 && fill.g <= 0.1 && fill.b <= 0.1);
+                    assert!(hover.a > fill.a, "light hover darkens one step");
+                }
+            }
+            // The hover is never a different hue — only the alpha steps.
+            assert_eq!((fill.r, fill.g, fill.b), (hover.r, hover.g, hover.b));
         }
     }
 

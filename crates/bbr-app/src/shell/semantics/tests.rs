@@ -85,6 +85,7 @@ fn input<'a>(
         focus,
         command: SemanticCommand {
             mode: "inactive".into(),
+            address: "example.com".into(),
             text: "".into(),
             hint: None,
             profile_hint: None,
@@ -192,12 +193,14 @@ fn cross_context_profile_hint_exposes_chip_and_label_under_the_field() {
         profile_index: 1,
     });
     let tree = semantic_tree(&input);
-    let field = find(&tree, "bbr-command-bar").expect("command field");
-    let hint = field
+    // At rest the §11.5 address pill (display-only Button) is the command
+    // slot; the cross-context hint renders under it.
+    let address = find(&tree, "bbr-address").expect("address pill");
+    let hint = address
         .children
         .iter()
         .find(|node| node.id == "bbr-command-profile-hint")
-        .expect("profile hint node under the command field");
+        .expect("profile hint node under the address pill");
     assert_eq!(hint.role, SemanticRole::Chip);
     assert_eq!(hint.name.as_deref(), Some("in Profile · Private"));
     let chip = hint
@@ -326,10 +329,13 @@ fn collapsed_sidebar_leaves_only_root_and_content() {
 }
 
 #[test]
-fn command_result_surface_exposes_typed_result_rows_under_the_field() {
-    // §11.5/§15: while the location/new-tab surface shows ranked results,
-    // the command field exposes a typed result list with one Result node per
-    // row carrying the selection state; with no results the list is absent.
+fn command_result_surface_exposes_typed_result_rows_under_the_staging_field() {
+    // §11.5/§15: while the staging surface (empty New Tab / New Space /
+    // Move Tab — a non-address command mode without a floating
+    // presentation) shows ranked results, the staging input exposes a typed
+    // result list with one Result node per row carrying the selection
+    // state; with no results the list is absent. The address pill at rest
+    // never carries a result list (the pill is display-only).
     let browser = browser();
     let rows = [row(0, TabVisualState::Selected)];
     let space_rows = [space_row()];
@@ -346,6 +352,7 @@ fn command_result_surface_exposes_typed_result_rows_under_the_field() {
         &rows,
         &space_rows,
     );
+    input.command.mode = "newtab".into();
     input.command.results = vec![
         SemanticResultRow {
             key: "tab:0".into(),
@@ -497,11 +504,80 @@ fn palette_and_overlay_surfaces_mirror_on_the_tree_only_while_open() {
     let overlay = find(&tree, "bbr-command-overlay").expect("overlay node while open");
     assert_eq!(overlay.role, SemanticRole::Palette);
     assert_eq!(overlay.value.as_deref(), Some("https://example.com"));
+    // §11.4: the overlay's own field row carries the full URL and the
+    // structural cursor while the overlay owns chrome focus.
+    let field = find(&tree, "bbr-command-overlay-field").expect("overlay field row");
+    assert_eq!(field.role, SemanticRole::Field);
+    assert_eq!(field.name.as_deref(), Some("https://example.com"));
+    assert!(field.focused);
+    let field_text = find(&tree, "bbr-command-overlay-text").expect("overlay field text");
+    assert_eq!(field_text.role, SemanticRole::Title);
+    assert_eq!(field_text.name.as_deref(), Some("https://example.com"));
+    assert!(find(&tree, "bbr-command-overlay-cursor").is_some());
     // The overlay keeps the §11.5 result ids of the in-rail surface.
     let result = find(&tree, "bbr-command-result-tab:0").expect("overlay result row");
     assert_eq!(result.role, SemanticRole::Result);
     assert!(result.selected);
     assert!(find(&tree, "bbr-palette").is_none());
+}
+
+#[test]
+fn address_pill_is_a_display_only_button_never_a_field() {
+    // §11.5: the sidebar address is a display control — the semantic node is
+    // a Button carrying the derived domain, with the domain title and the
+    // reserved accessory slot as children; it is never a Field and never
+    // carries a cursor or selection, in any state.
+    let browser = browser();
+    let rows = [row(0, TabVisualState::Selected)];
+    let space_rows = [space_row()];
+    let mut input = input(
+        SemanticFocus {
+            command: true,
+            spaces: false,
+            tabs: false,
+            divider: false,
+            folders: false,
+            plus_menu: false,
+        },
+        &browser,
+        &rows,
+        &space_rows,
+    );
+    input.command.address = "example.com".into();
+    let tree = semantic_tree(&input);
+    let pill = find(&tree, "bbr-address").expect("address pill");
+    assert_eq!(pill.role, SemanticRole::Button);
+    assert_eq!(pill.name.as_deref(), Some("example.com"));
+    assert!(pill.enabled);
+    assert!(!pill.focused, "the pill is never a focus ring target");
+    assert!(find(&tree, "bbr-command-bar").is_none(), "no field at rest");
+    assert!(
+        find(&tree, "bbr-command-cursor").is_none(),
+        "no cursor at rest"
+    );
+    assert!(
+        find(&tree, "bbr-command-text").is_none(),
+        "no editable text at rest"
+    );
+    let domain = find(&tree, "bbr-address-domain").expect("domain title");
+    assert_eq!(domain.role, SemanticRole::Title);
+    assert_eq!(domain.name.as_deref(), Some("example.com"));
+    let accessory = find(&tree, "bbr-address-accessory").expect("accessory slot");
+    assert_eq!(accessory.role, SemanticRole::Button);
+    assert!(
+        !accessory.enabled,
+        "the v1 accessory slot is empty (DESIGN.md §17.14 open)"
+    );
+
+    // The pill stays display-only behind an open overlay presentation.
+    input.command.mode = "location".into();
+    input.command.text = "https://example.com/a".into();
+    input.command_surface = CommandSurface::Overlay;
+    let tree = semantic_tree(&input);
+    let behind = find(&tree, "bbr-address").expect("pill behind the overlay");
+    assert_eq!(behind.role, SemanticRole::Button);
+    assert_eq!(behind.name.as_deref(), Some("example.com"));
+    assert!(find(&tree, "bbr-command-bar").is_none());
 }
 
 mod u2;

@@ -261,6 +261,14 @@ impl BbrApp {
             semantics,
             command_bar_mode: self.command_bar_mode.into(),
             command_bar_text: self.command_text.text.clone(),
+            address_domain: crate::command_bar::address_domain(&self.active_url()),
+            address_hovered: self.address_hovered,
+            address_rect: self
+                .command_field_rect
+                .borrow()
+                .as_ref()
+                .copied()
+                .map(|r| [r.x, r.y, r.width, r.height]),
             command_surface: self.command_surface.into(),
             command_result_state: command_result_state.into(),
             command_results,
@@ -545,6 +553,9 @@ impl BbrApp {
             },
             command: crate::shell::semantics::SemanticCommand {
                 mode: format!("{:?}", self.command_bar_mode).to_lowercase(),
+                // The §11.5 pill's derived domain (display-only; the pill
+                // never holds the editable text).
+                address: crate::command_bar::address_domain(&self.active_url()),
                 text: self.command_text.text.clone(),
                 hint: self.command_bar_hint(),
                 results: self

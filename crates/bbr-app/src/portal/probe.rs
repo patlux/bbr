@@ -334,12 +334,10 @@ impl Render for PortalRoot {
                 let model = app.read(cx).command_portal_model(surface);
                 #[cfg(feature = "testkit")]
                 app.read(cx).observe_portal_command_render(surface);
-                let card = crate::portal::command::command_card(&model, rect).on_mouse_down(
-                    MouseButton::Left,
-                    cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
-                        cx.stop_propagation();
-                    }),
-                );
+                // The card carries its own §13 stop-propagation handler (it
+                // is the surface, never an outside press); the backdrop
+                // below owns the one-pointer-action dismissal.
+                let card = crate::portal::command::command_card(&model, rect);
                 div()
                     .id("bbr-command-portal-surface")
                     .size_full()

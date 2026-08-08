@@ -21,7 +21,7 @@ use bbr_web::WebViewId;
 use super::benchmarks::wait_browser_change;
 use super::command::{
     benchmark_command_activate, benchmark_command_activate_new_tab, benchmark_command_type,
-    benchmark_palette_open, command_setup,
+    benchmark_overlay_open, benchmark_palette_open, command_setup,
 };
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE};
@@ -158,6 +158,65 @@ pub(super) fn drive_command_scenarios(
     assert_eq!(palette_escaped.command_bar_mode, CommandBarMode::Inactive);
     assert!(!palette_escaped.chrome_focused);
 
+    // The §11.4 overlay-open scenario: Cmd-L opens the field-anchored
+    // overlay (`bbr-command-overlay`) over the address control through the
+    // production seam; the sample commits only from a render that actually
+    // constructed the overlay with the Location mode, chrome focus, and the
+    // full URL preselected (the in-app fast-but-wrong guard rejects a
+    // missing or invented surface). Same warm-presentation class as
+    // `palette_open` — staged semantics, no tab or session is created, so
+    // the loop needs no tab restoration — only the unmeasured Escape back
+    // to web focus between samples, so every sample starts from the uniform
+    // web origin the command block requires. The expected URL is the live
+    // active tab's address (`command_bar_text` mirrors the active URL at
+    // rest).
+    let overlay_state = client.snapshot().expect("overlay state");
+    let overlay_view = overlay_state
+        .active_web_view
+        .expect("overlay open active view");
+    let overlay_tabs = overlay_state.tabs.len();
+    let overlay_sessions = overlay_state.engine_sessions;
+    let expected_url = overlay_state.command_bar_text.clone();
+    assert!(!expected_url.is_empty(), "the active tab has a live URL");
+    let mut overlay_open_samples = Vec::with_capacity(config.interaction_samples);
+    for _ in 0..config.interaction_samples {
+        let measured = benchmark_overlay_open(
+            client,
+            since,
+            *operation,
+            overlay_view,
+            overlay_tabs,
+            overlay_sessions,
+        );
+        overlay_open_samples.push(measured.duration_ns);
+        harness
+            .raw_log
+            .interactions
+            .entry("overlay_open".into())
+            .or_default()
+            .push(measured.duration_ns);
+        *operation += 1;
+        // Unmeasured setup: Escape after every sample restores the web
+        // origin (each sample then starts from web focus, and the next
+        // Cmd-L captures that uniform origin).
+        client
+            .send_ok(&Request::DispatchKeystroke {
+                keystroke: "escape".into(),
+            })
+            .expect("escape after overlay open sample");
+    }
+    let overlay_escaped = client.snapshot().expect("overlay escaped snapshot");
+    assert_eq!(
+        overlay_escaped.command_surface,
+        bbr_testkit::protocol::CommandSurface::None
+    );
+    assert_eq!(overlay_escaped.command_bar_mode, CommandBarMode::Inactive);
+    assert!(!overlay_escaped.chrome_focused);
+    assert_eq!(
+        overlay_escaped.command_bar_text, expected_url,
+        "Escape restored the previous state and focus origin"
+    );
+
     let mut command_activate_samples = Vec::with_capacity(config.interaction_samples);
     for sample in 0..config.interaction_samples {
         let (text, expected_key, expected_view) = if sample % 2 == 0 {
@@ -231,5 +290,6 @@ pub(super) fn drive_command_scenarios(
         command_new_tab_samples,
     );
     raw.insert("palette_open".to_string(), palette_open_samples);
+    raw.insert("overlay_open".to_string(), overlay_open_samples);
     raw
 }

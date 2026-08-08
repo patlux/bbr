@@ -69,6 +69,15 @@ pub struct TestSnapshot {
     pub semantics: Vec<bbr_testkit::protocol::SemanticNode>,
     pub command_bar_mode: bbr_testkit::protocol::CommandBarMode,
     pub command_bar_text: String,
+    /// The §11.5 address pill's derived domain (display-only — the pill
+    /// never holds the editable text, a cursor or a selection).
+    pub address_domain: String,
+    /// The §11.5 address-pill hover state (the fill steps one
+    /// brighter/darker via the token pair).
+    pub address_hovered: bool,
+    /// The §11.5 address pill's measured window-relative rect (the §11.4
+    /// overlay anchor: the overlay covers this rect).
+    pub address_rect: Option<[f32; 4]>,
     /// The open command-surface presentation (DESIGN.md §11.4): the centered
     /// Cmd-T palette, the field-anchored Cmd-L/click overlay, or none. At
     /// most one is open at a time (mutual exclusion by construction).
@@ -211,8 +220,6 @@ pub fn visible_ids_u2(
         for id in [
             "bbr-sidebar",
             "bbr-brand",
-            "bbr-command-bar",
-            "bbr-command-text",
             "bbr-status",
             "bbr-sidebar-toggle",
             "bbr-tab-list",
@@ -220,6 +227,22 @@ pub fn visible_ids_u2(
             "bbr-sidebar-divider",
         ] {
             ids.push(id.into());
+        }
+        // §11.5: the sidebar command slot renders the display-only address
+        // pill (`bbr-address` + domain + accessory) unless a non-address
+        // staging mode is active without a floating presentation (New
+        // Space / Move Tab / the empty New Tab surface) — only then is the
+        // `bbr-command-bar` staging input visible. The address pill is
+        // never a field: no `bbr-command-text`/`bbr-command-cursor` at rest
+        // or behind an open palette/overlay.
+        if open_surface == crate::app::palette::CommandSurface::None && command_bar_mode.is_active()
+        {
+            ids.push("bbr-command-bar".into());
+            ids.push("bbr-command-text".into());
+        } else {
+            ids.push("bbr-address".into());
+            ids.push("bbr-address-domain".into());
+            ids.push("bbr-address-accessory".into());
         }
         // The §11.5 result palette ids (rows or typed state rows) mirror the
         // render exactly (shared derivation in `command_surface`).
@@ -253,7 +276,10 @@ pub fn visible_ids_u2(
         command_state,
         command_results,
     ));
-    if chrome_focused && command_bar_mode.is_active() {
+    if chrome_focused
+        && command_bar_mode.is_active()
+        && open_surface == crate::app::palette::CommandSurface::None
+    {
         ids.push("bbr-command-cursor".into());
     }
     // The native content slots render whenever a pane layout exists (the

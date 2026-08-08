@@ -123,6 +123,11 @@ pub struct BbrApp {
     /// DESIGN.md §10.3 pressed state: the row whose primary button is
     /// currently down (driven by the production mouse-down/up listeners).
     pressed_row: Option<usize>,
+    /// DESIGN.md §11.5 address-control hover state: the pointer is over the
+    /// domain pill (driven by the production `on_hover` listener). The
+    /// hover moves the translucent fill one step brighter (dark chrome) /
+    /// darker (light chrome) via the §11.5 token pair.
+    address_hovered: bool,
     /// Current command-bar intent. `NewTab` stages navigation without creating
     /// a domain tab or native session until Enter commits it.
     pub command_bar_mode: CommandBarMode,
@@ -289,6 +294,7 @@ impl BbrApp {
             portal_probe: Rc::new(RefCell::new(PortalProbeState::new())),
             hovered_row: None,
             pressed_row: None,
+            address_hovered: false,
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
             command_surface: CommandSurface::None,

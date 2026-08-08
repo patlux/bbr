@@ -169,6 +169,16 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // §11.4 overlay-open: Cmd-L / address-pill click presents the
+        // field-anchored overlay (`bbr-command-overlay`, elev:2) **over**
+        // the address control on the next frame with the full URL
+        // preselected — the same warm-presentation class as `palette_open`
+        // (50/100 ms); staged semantics, no tab or session is created
+        // before Enter.
+        "overlay_open" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         // Find-in-page (task packet `find-in-page-portal-bar`): Cmd-F
         // presents the find bar in the one `NativeAboveWeb` portal window
         // with the field focused — the warm-presentation class. Query
@@ -389,6 +399,7 @@ impl Baseline {
             "command_activate",
             "command_activate_new_tab",
             "palette_open",
+            "overlay_open",
             "find_open",
             "find_query_result",
             "find_step",
@@ -594,12 +605,16 @@ mod tests {
         // contract budgets in the seed so a future command-surface regression
         // trips the gate instead of being silently unreported. `command_type`
         // and `command_activate` are warm (50/100); `command_activate_new_tab`
-        // opens a fresh tab/session — the session-recreation class (100/150).
+        // opens a fresh tab/session — the session-recreation class (100/150);
+        // `palette_open` and `overlay_open` present the two §11.4 surfaces on
+        // the next frame — the warm class (50/100).
         let b = Baseline::seed();
         for (kind, p95, max) in [
             ("command_type", 50.0, 100.0),
             ("command_activate", 50.0, 100.0),
             ("command_activate_new_tab", 100.0, 150.0),
+            ("palette_open", 50.0, 100.0),
+            ("overlay_open", 50.0, 100.0),
         ] {
             let entry = b
                 .entries

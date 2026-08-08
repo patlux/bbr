@@ -1,10 +1,14 @@
 //! Real-app command-bar composition E2E (Phase 5, command-composition slice;
-//! plus the §11.4 palette/overlay presentations of packet U1).
+//! plus the §11.4 palette/overlay presentations of packet U1 and the §11.5
+//! address-control display contract of `url-address-control-palette`).
 //!
-//! Covers DESIGN.md §11.5 over real WKWebViews: Cmd-L selects the active URL
-//! and typing replaces the selection; the deterministic debounce flush
-//! publishes only the final generation of ranked results; Up/Down moves the
-//! selection without leaving the field; Enter activates the selected
+//! Covers DESIGN.md §11.5 over real WKWebViews: the sidebar address is a
+//! display-only pill (domain only, no field state, no focus ring, no typed
+//! text) whose pointer press and Cmd-L open the overlay **over** the
+//! control with the full URL selected; Cmd-L selects the active URL and one
+//! keystroke replaces it; the deterministic debounce flush publishes only
+//! the final generation of ranked results; Up/Down moves the selection
+//! without leaving the field; Enter activates the selected
 //! tab/space/action through the app/controller seams; Cmd-Enter opens the
 //! destination in exactly one new tab/session and focuses it; Escape
 //! restores the exact origin text and focus domain (including after a
@@ -17,8 +21,9 @@
 //! synchronizes on semantic events or typed snapshot state under a deadline.
 //!
 //! The suite is split into focused scenario modules (`text`, `activation`,
-//! `states`, `cross_space`) so every file stays near the ~500-line budget;
-//! `just e2e-shell-command` still gates the one `e2e_shell_command` target.
+//! `states`, `cross_space`, `address_control`) so every file stays near the
+//! ~500-line budget; `just e2e-shell-command` still gates the one
+//! `e2e_shell_command` target.
 
 #![cfg(target_os = "macos")]
 
@@ -29,8 +34,10 @@ mod e2e_semantics_common;
 
 mod actions;
 mod activation;
+mod address_control;
 mod command_portal;
 mod cross_space;
+mod identity;
 mod moved;
 mod navigation;
 mod palette;
