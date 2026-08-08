@@ -6,6 +6,15 @@ Parent phases: [Phase 4](../phases/04-ui-shell.md), [Phase 5](../phases/05-comma
 
 Do not polish the current placeholder sidebar incrementally. Establish BBR's visual world before exposing the already-controller-backed tabs and spaces in Phase 4, then hold every UI feature to that system. Run a final product-wide polish pass in Phase 9.
 
+## Reusable UI library and development gallery — Post-MVP
+
+- [ ] Execute the serial [UI-library anchor](../tasks/ui-library-anchor.md) after the verified F2a footer/space integration. This is the extraction and dependency contract for the shared production `bbr-ui` crate; it does not authorize a parallel UI writer before the required ownership preflight.
+- [ ] Build the dev-only [BBR Gallery MVP](../tasks/component-gallery-mvp.md) from the settled anchor slice, using the same production tokens and primitives as `bbr-app`, with no WebKit or network listener.
+- [ ] Add the bounded [browser-component stories](../tasks/component-gallery-browser-components.md) from real production presentation models and callbacks, never copied gallery implementations.
+- [ ] Add the serial [composition stories](../tasks/component-gallery-compositions.md) for Sidebar, Command palette/overlay, Downloads, Find, Error/Crash, Auth, Context Menu, and Split Preview.
+
+Gallery verification supplements but never replaces the affected real-browser E2E and performance gates.
+
 ## Visual direction and tokens — Phase 4 start
 
 - [x] Create [DESIGN.md](../../../DESIGN.md) through an explicit visual-direction process.
