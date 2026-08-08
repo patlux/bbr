@@ -195,6 +195,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             plus_menu_selection: self.plus_menu_selection,
             favorites: self.favorites.clone(),
             folders: self.folders.clone(),
+            download_rows: self.download_rows.clone(),
+            downloads: self.downloads,
         }
     }
 }

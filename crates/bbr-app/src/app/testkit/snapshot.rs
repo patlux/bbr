@@ -91,6 +91,8 @@ impl BbrApp {
             &organization.folders,
             &browser.all_tabs,
         );
+        let download_rows = self.download_rows_snapshot();
+        let downloads = self.downloads_panel_snapshot();
         let semantics = self.semantic_snapshot(
             &browser,
             &rows,
@@ -249,6 +251,11 @@ impl BbrApp {
                     folders: &organization.folders,
                     expanded: self.u2.folder_presentation.clone(),
                     plus_menu: self.u2.plus_menu,
+                    downloads_open: self.downloads.open,
+                    downloads_window: self
+                        .downloads
+                        .window_for(self.downloads.render_state.scroll_anchor),
+                    downloads_layout: self.downloads_layout(),
                 },
             ),
             semantics,
@@ -299,6 +306,109 @@ impl BbrApp {
                     expanded: row.expanded,
                 })
                 .collect(),
+            download_rows,
+            downloads,
+        }
+    }
+
+    /// The §11.12 download rows in deterministic panel order (Active by
+    /// ascending `DownloadId`, then History most-recent-terminal first) —
+    /// row index `<n>` is stable for E2E. Derived from the same row model
+    /// the render builds, so the snapshot cannot drift from the shell.
+    fn download_rows_snapshot(&self) -> Vec<bbr_testkit::protocol::DownloadRowSnapshot> {
+        crate::app::downloads::row_visuals(&self.downloads, Some(self.downloads.focus))
+            .into_iter()
+            .map(|row| bbr_testkit::protocol::DownloadRowSnapshot {
+                row: row.index,
+                id: row.id,
+                machine_state: match row.machine {
+                    crate::app::downloads::DownloadMachine::Waiting => {
+                        bbr_testkit::protocol::DownloadMachineState::Waiting
+                    }
+                    crate::app::downloads::DownloadMachine::Running => {
+                        bbr_testkit::protocol::DownloadMachineState::Running
+                    }
+                    crate::app::downloads::DownloadMachine::Succeeded => {
+                        bbr_testkit::protocol::DownloadMachineState::Succeeded
+                    }
+                    crate::app::downloads::DownloadMachine::Failed => {
+                        bbr_testkit::protocol::DownloadMachineState::Failed
+                    }
+                    crate::app::downloads::DownloadMachine::Cancelled => {
+                        bbr_testkit::protocol::DownloadMachineState::Cancelled
+                    }
+                },
+                group: match row.group {
+                    crate::app::downloads::DownloadGroupKind::Active => {
+                        bbr_testkit::protocol::DownloadGroup::Active
+                    }
+                    crate::app::downloads::DownloadGroupKind::History => {
+                        bbr_testkit::protocol::DownloadGroup::History
+                    }
+                },
+                filename: row.filename.clone(),
+                progress_fraction: row.progress_fraction,
+                visual_state: match row.visual {
+                    crate::app::downloads::DownloadVisual::Default => {
+                        bbr_testkit::protocol::TabVisualState::Default
+                    }
+                    crate::app::downloads::DownloadVisual::Hover => {
+                        bbr_testkit::protocol::TabVisualState::Hover
+                    }
+                    crate::app::downloads::DownloadVisual::Pressed => {
+                        bbr_testkit::protocol::TabVisualState::Active
+                    }
+                    crate::app::downloads::DownloadVisual::Focused => {
+                        bbr_testkit::protocol::TabVisualState::Focused
+                    }
+                    crate::app::downloads::DownloadVisual::Disabled => {
+                        bbr_testkit::protocol::TabVisualState::Disabled
+                    }
+                },
+                action: match row.action {
+                    crate::app::downloads::DownloadActionKind::Cancel => {
+                        bbr_testkit::protocol::DownloadRowAction::Cancel
+                    }
+                    crate::app::downloads::DownloadActionKind::Retry => {
+                        bbr_testkit::protocol::DownloadRowAction::Retry
+                    }
+                    crate::app::downloads::DownloadActionKind::Reveal => {
+                        bbr_testkit::protocol::DownloadRowAction::Reveal
+                    }
+                    crate::app::downloads::DownloadActionKind::None => {
+                        bbr_testkit::protocol::DownloadRowAction::None
+                    }
+                },
+                action_enabled: row.action_enabled,
+                action_reason: row
+                    .action_reason
+                    .as_deref()
+                    .map(|reason| crate::app::downloads::disabled_reason(Some(reason)).to_string()),
+                meta: row.meta.clone(),
+                resolved_path: row.resolved_path.clone(),
+                retry_of: row.retry_of,
+                attempt: row.attempt,
+            })
+            .collect()
+    }
+
+    /// The §11.12 downloads panel render contract (open, focus, bounded
+    /// window): exactly what the last render built. Closed panels report the
+    /// empty default so a dismissed surface never exposes stale window
+    /// evidence.
+    fn downloads_panel_snapshot(&self) -> bbr_testkit::protocol::DownloadsPanelSnapshot {
+        let state = &self.downloads;
+        if !state.open {
+            return bbr_testkit::protocol::DownloadsPanelSnapshot::default();
+        }
+        bbr_testkit::protocol::DownloadsPanelSnapshot {
+            open: true,
+            focused_row: Some(state.focus),
+            anchor: state.render_state.scroll_anchor,
+            rendered_rows: state.render_state.rendered_rows,
+            total_rows: state.render_state.item_count,
+            viewport_rows: state.render_state.viewport_rows,
+            max_visible: crate::app::downloads::DOWNLOADS_MAX_VISIBLE,
         }
     }
 

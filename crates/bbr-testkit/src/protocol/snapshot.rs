@@ -10,6 +10,155 @@ use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewI
 mod u2;
 pub use u2::{FavoriteTileSnapshot, FolderRowSnapshot};
 
+/// The L6 contract state of one download attempt (DESIGN.md §15): the panel
+/// renders exactly these states and never invents a transition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DownloadMachineState {
+    /// The attempt was accepted; no bytes have flowed yet (destination
+    /// unresolved or resolved).
+    Waiting,
+    /// Bytes are transferring to the resolved destination.
+    Running,
+    /// The transfer finished successfully (terminal).
+    Succeeded,
+    /// The transfer ended in a closed `DownloadFailure` (terminal; the only
+    /// retryable state).
+    Failed,
+    /// The attempt was cancelled on request (terminal; never retried by the
+    /// UI).
+    Cancelled,
+}
+
+/// The panel group a row renders in (DESIGN.md §11.12): non-terminal
+/// attempts above, terminal attempts below.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DownloadGroup {
+    Active,
+    History,
+}
+
+/// The exactly-one contextual primary action of a download row (DESIGN.md
+/// §11.12): active → Cancel, failed → Retry, succeeded → Reveal-in-Finder,
+/// cancelled → none in v1.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DownloadRowAction {
+    Cancel,
+    Retry,
+    /// Conventional macOS "Show in Finder"; enabled only when the terminal
+    /// record's resolved path exists (§10.8 `disabled` with a reason
+    /// otherwise).
+    Reveal,
+    /// No primary action (cancelled rows in v1, §17.8 open).
+    None,
+}
+
+/// One download row on the wire (DESIGN.md §15): the L6 machine state, the
+/// panel group, the deterministic row index `<n>`, the byte progress
+/// fraction, the §10 visual state, the contextual action with its enabled
+/// flag, the secondary-line copy, and the retry linkage/attempt count. The
+/// resolved path is exposed so E2E can assert the exact destination and the
+/// disabled-reveal case.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DownloadRowSnapshot {
+    /// The stable panel row index `<n>` (`bbr-download-row-<n>`): Active by
+    /// ascending `DownloadId`, then History most-recent-terminal first.
+    pub row: usize,
+    /// The attempt id (fresh per retry; never reused).
+    pub id: u64,
+    /// The L6 contract state (DESIGN.md §15 vocabulary).
+    pub machine_state: DownloadMachineState,
+    /// The panel group the row renders in.
+    pub group: DownloadGroup,
+    /// The display filename (the panel's name line).
+    pub filename: String,
+    /// `received / total` when the total is known; `None` while the length
+    /// is unknown (indeterminate bar). A zero-byte download reports `1.0`.
+    pub progress_fraction: Option<f64>,
+    /// The §10 visual state of the row.
+    pub visual_state: TabVisualState,
+    /// The exactly-one contextual primary action.
+    pub action: DownloadRowAction,
+    /// Whether the action accepts interaction (Reveal-in-Finder is enabled
+    /// only for an existing resolved terminal path).
+    pub action_enabled: bool,
+    /// The disabled-action reason copy when `!action_enabled` (e.g. "file
+    /// missing"; §10.8 tooltip deferred with §17.2).
+    pub action_reason: Option<String>,
+    /// The secondary-line copy (`type:meta`, `tnum`): active — transferred/
+    /// total bytes; terminal — size + status copy naming the outcome.
+    pub meta: String,
+    /// The resolved destination path once the engine decided it.
+    pub resolved_path: Option<String>,
+    /// The failed attempt this attempt retries, when applicable (retry
+    /// linkage evidence).
+    pub retry_of: Option<u64>,
+    /// 1-based attempt count (increments per retry).
+    pub attempt: u32,
+}
+
+impl Default for DownloadRowSnapshot {
+    fn default() -> Self {
+        Self {
+            row: 0,
+            id: 0,
+            machine_state: DownloadMachineState::Waiting,
+            group: DownloadGroup::Active,
+            filename: String::new(),
+            progress_fraction: None,
+            visual_state: TabVisualState::Default,
+            action: DownloadRowAction::None,
+            action_enabled: false,
+            action_reason: None,
+            meta: String::new(),
+            resolved_path: None,
+            retry_of: None,
+            attempt: 1,
+        }
+    }
+}
+
+/// The downloads panel render contract (DESIGN.md §11.12): the open flag,
+/// the keyboard focus row, the deterministic scroll anchor, the bounded
+/// rendered window (never the full history), the total row count, the
+/// 6-row viewport, and the §11.12 `max_visible` bound.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DownloadsPanelSnapshot {
+    /// The anchored popover is open.
+    pub open: bool,
+    /// The keyboard-cursor row (`None` while closed; no persistent
+    /// selection — focus is the cursor).
+    pub focused_row: Option<usize>,
+    /// First row at the scroll viewport top (deterministic scroll position).
+    pub anchor: usize,
+    /// How many rows the last render actually built (bounded by the window).
+    pub rendered_rows: usize,
+    /// The full deterministic row list length (active + history).
+    pub total_rows: usize,
+    /// The scroll viewport's row count (`min(6, total)`).
+    pub viewport_rows: usize,
+    /// The §11.12 bound: at most this many rows are visible at once.
+    pub max_visible: usize,
+}
+
+impl Default for DownloadsPanelSnapshot {
+    fn default() -> Self {
+        Self {
+            open: false,
+            focused_row: None,
+            anchor: 0,
+            rendered_rows: 0,
+            total_rows: 0,
+            viewport_rows: 0,
+            max_visible: 6,
+        }
+    }
+}
+
 /// Visual state of one tab row, mirroring the DESIGN.md §10 vocabulary that
 /// the shell renders. Asserted by E2E via the snapshot's `tab_states`.
 /// The slice renders the full §15 vocabulary; hover/active/focused ride the
@@ -584,4 +733,12 @@ pub struct Snapshot {
     pub favorites: Vec<FavoriteTileSnapshot>,
     #[serde(default)]
     pub folders: Vec<FolderRowSnapshot>,
+    /// §11.12 download rows in deterministic panel order (Active ascending
+    /// `DownloadId`, then History most-recent-terminal first); row index
+    /// `<n>` is stable for E2E.
+    #[serde(default)]
+    pub download_rows: Vec<DownloadRowSnapshot>,
+    /// §11.12 downloads panel render contract (open, focus, bounded window).
+    #[serde(default)]
+    pub downloads: DownloadsPanelSnapshot,
 }

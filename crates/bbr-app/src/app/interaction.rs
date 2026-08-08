@@ -344,9 +344,13 @@ impl BbrApp {
     /// origin text and the originating focus domain (web or chrome, as
     /// captured at Cmd-L); staged tab/space/move modes restore their captured
     /// prior state. An active tab drag is cancelled first (chrome focus stays
-    /// in the tab list), and an open plus menu is dismissed without action
+    /// in the tab list), an open plus menu is dismissed without action
     /// (§11.4 — the menu's own focused handler stops propagation, this is the
-    /// fallback for any Escape that reaches the app while the menu is open).
+    /// fallback for any Escape that reaches the app while the menu is open),
+    /// and an open downloads panel is dismissed (§11.12 — the panel's own
+    /// key handler can never see Escape, because GPUI dispatches bound
+    /// actions first and actions stop propagation, so this route is the
+    /// panel's primary Escape dismissal).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         // Escape while a find presentation is open closes it and restores
         // the origin focus domain (the global `escape → FocusWeb` binding
@@ -361,6 +365,13 @@ impl BbrApp {
         }
         if self.u2.plus_menu.open {
             self.close_plus_menu(window, cx);
+            return;
+        }
+        // DESIGN.md §11.12 Dismiss: Escape dismisses the downloads panel
+        // unconditionally (independent of content — the empty panel
+        // included) and returns focus to the footer control.
+        if self.downloads.open {
+            crate::app::downloads_behavior::downloads_close(self, window, cx);
             return;
         }
         // Escaping a palette/overlay presentation closes it (DESIGN.md

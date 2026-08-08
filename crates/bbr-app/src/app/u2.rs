@@ -60,12 +60,13 @@ impl BbrApp {
         cx.notify();
     }
 
-    /// §11.4 footer `[Downloads]` control: the downloads *surface* is
-    /// Phase 8 (the portable capability contract is the L6 lane); the
-    /// control is present with its §7 glyph + label and is a no-op here.
+    /// §11.4 footer `[Downloads]` control: toggles the §11.12 anchored
+    /// downloads panel (pointer or keyboard activation; a second activation
+    /// dismisses it). The panel is the Phase-8 surface; the controller and
+    /// native adapter are installed by the composition root.
+    #[cfg(feature = "testkit")]
     pub fn activate_downloads(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let _ = (window, cx);
-        // Phase 8: open the downloads surface.
+        crate::app::downloads_behavior::toggle_downloads(self, window, cx);
     }
 
     /// §11.4 footer `[+]` control: open the plus menu, or close it on a

@@ -120,6 +120,24 @@ pub enum BenchmarkKind {
     /// path: WebKit reported the new ordinal and the bar re-rendered it —
     /// the warm command-surface class.
     FindStep,
+    /// The footer `[Downloads]` control opened the anchored downloads panel
+    /// through the production path: the sample commits only from a render
+    /// that drew the panel open with the keyboard cursor (DESIGN.md §11.12
+    /// chrome focus) over the unchanged active view — the warm-presentation
+    /// class (no tab or session is created).
+    DownloadsPanelOpen,
+    /// A progress update landed on a running attempt through the production
+    /// L6 event path and the panel re-rendered the row at the armed
+    /// fraction: the sample commits only from a render that drew the
+    /// exact received/total progress on the active row — the warm
+    /// command-surface class. Fixture/network time is excluded by
+    /// construction (the event is applied in-process through the same
+    /// main-thread pump the adapter's sink uses).
+    DownloadsProgressCommit,
+    /// Retry on a failed row through the production `controller.retry` path:
+    /// the fresh attempt (linked via `retry_of`) is presented in the Active
+    /// group — the user-visible row action, warm-presentation class.
+    DownloadsRowRetry,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

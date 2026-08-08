@@ -36,6 +36,18 @@ pub fn disclosure_arm(size: f32) -> f32 {
     size * 0.22
 }
 
+/// Check mark geometry: (inner stroke half-length, outer stroke half-length)
+/// — the short ascending stroke and the long ascending stroke of the ✓.
+pub fn check_geometry(size: f32) -> (f32, f32) {
+    (size * 0.12, size * 0.26)
+}
+
+/// Stopped bar: half the horizontal bar length of the neutral cancelled
+/// marker.
+pub fn stopped_half(size: f32) -> f32 {
+    size * 0.26
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -69,6 +81,16 @@ mod tests {
             assert!(
                 disclosure_arm(size) * 1.5 <= size / 2.0,
                 "disclosure chevron fits at {size}pt"
+            );
+            // Check: the outer stroke plus the stroke width fits; the inner
+            // stroke stays inside the outer one.
+            let (inner, outer) = check_geometry(size);
+            assert!(inner < outer, "check strokes ordered");
+            assert!(outer * 1.5 + stroke <= size / 2.0, "check fits at {size}pt");
+            // Stopped: the bar half plus the stroke fits.
+            assert!(
+                stopped_half(size) + stroke <= size / 2.0,
+                "stopped bar fits at {size}pt"
             );
         }
     }

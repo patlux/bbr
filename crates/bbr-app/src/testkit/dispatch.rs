@@ -17,7 +17,9 @@ use crate::window_seam::with_app;
 
 use crate::app::BbrApp;
 use crate::testkit::dispatch_benchmark::dispatch_benchmark;
+use crate::testkit::dispatch_benchmark_downloads::dispatch_benchmark_downloads;
 use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
+use crate::testkit::dispatch_downloads::dispatch_downloads;
 use crate::testkit::dispatch_drag::dispatch_drag;
 use crate::testkit::dispatch_find::dispatch_find;
 use crate::testkit::dispatch_portal::dispatch_portal;
@@ -35,6 +37,12 @@ pub(crate) fn dispatch(
     // The performance arms live in `dispatch_benchmark` so this router stays
     // under the ~500-line budget; every other request falls through here.
     if let Some(response) = dispatch_benchmark(&req, window, app, cx) {
+        return response;
+    }
+    // The downloads performance arms (benchmark + deterministic seed) route
+    // through their focused module before the fall-through (same split
+    // reason); the draw for the render-inclusive commit happens there.
+    if let Some(response) = dispatch_benchmark_downloads(&req, window, app, cx) {
         return response;
     }
     if let Some(response) = dispatch_benchmark_u2(&req, window, app, cx) {
@@ -55,6 +63,11 @@ pub(crate) fn dispatch(
     }
     // U2 footer/favorites/folders route separately to keep this router bounded.
     if let Some(response) = dispatch_u2(&req, window, app, cx) {
+        return response;
+    }
+    // Downloads start/cancel/retry/row-action/outside-dismiss route
+    // separately (same bounded-router reason).
+    if let Some(response) = dispatch_downloads(&req, window, app, cx) {
         return response;
     }
     let broadcast = |server: &Option<Arc<GatewayServer>>, ev: Event| {
@@ -459,6 +472,17 @@ pub(crate) fn dispatch(
             unreachable!("U2 sidebar requests route through dispatch_u2")
         }
 
+        // Routed by `dispatch_downloads` before this match; reaching one
+        // here is a routing bug.
+        Request::DownloadStart { .. }
+        | Request::DownloadCancel { .. }
+        | Request::DownloadRetry { .. }
+        | Request::ClickDownloadRowAction { .. }
+        | Request::ClickDownloadsOutside
+        | Request::ScrollDownloads { .. } => {
+            unreachable!("downloads requests route through dispatch_downloads")
+        }
+
         // Routed by `dispatch_drag` before this match; reaching one here is
         // a routing bug.
         Request::BeginTabDrag { .. }
@@ -493,7 +517,11 @@ pub(crate) fn dispatch(
         | Request::BenchmarkPaletteOpen { .. }
         | Request::BenchmarkFindOpen { .. }
         | Request::BenchmarkFindQueryResult { .. }
-        | Request::BenchmarkFindStep { .. } => {
+        | Request::BenchmarkFindStep { .. }
+        | Request::BenchmarkDownloadsPanelOpen { .. }
+        | Request::BenchmarkDownloadsProgress { .. }
+        | Request::BenchmarkDownloadsRowRetry { .. }
+        | Request::SeedDownloadsAttempt { .. } => {
             unreachable!("benchmark requests route through dispatch_benchmark")
         }
     }
