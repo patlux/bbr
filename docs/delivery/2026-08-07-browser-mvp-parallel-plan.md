@@ -390,6 +390,9 @@ seine betroffenen E2E-Suiten bilden eine eigene Gate-Welle.
 | Lane-Launch | 🟦 Queue-Punkt 3 zweite Hälfte gestartet: `downloads-panel-ui-msjrwhkx-ui0ito` (Worktree `/Users/patwoz/dev/Personal/macos/bbr-downloads-panel-ui`, Base `efadc43`) hält den GUI-Slot. Verbindet die beiden heute Nacht gemergten Hälften — L6-Maschine und §11.12-Fläche. Harte Auflagen: nur Zustände und Übergänge der L6-Maschine, Cancel bleibt Request bis zum Terminal-Event, Retry nur auf `Failed`, Fortschritt monoton; **kein** NativeAboveWeb-Host, die Fläche bleibt in der Sidebar-Spalte; Dateisystem- und AppKit-Typen bleiben im macOS-Adapter; die in DESIGN §17.7–§17.12 registrierten offenen Entscheidungen dürfen **nicht** still entschieden werden; neue Perf-Szenarien nehmen eine bestehende Budget-Klasse plus Guard-Test |
 | Queue 3 UI | ⚠️ Lane `downloads-panel-ui-msjrwhkx-ui0ito` **nicht abnahmefähig**. Adapter- und Surface-Schritt lieferten Code (53 Dateien, WKDownload/WKDownloadDelegate über bereits vendorte Features, neues `e2e-shell-downloads`-Rezept), aber Evidence- und Review-Agent gaben nach Idle-Abbruch und Retry **leere Ausgaben** zurück. Statt dem unbelegten Stand zu vertrauen, habe ich die Gates selbst gefahren: fmt, beide Clippy-Ziele und `just verify` grün (51 Test-Bins) — **`just e2e-shell-downloads` aber 2 passed / 5 FAILED**. Konkrete Mechanismen: (1) `Succeeded`-Zeile meldet `progress_fraction = None` statt voller Leiste, obwohl DESIGN §11.12 die volle Leiste bei Erfolg fordert; (2) Attempt erreicht nie `Running`; (3) Cancel erreicht nie den erwarteten Terminalzustand; (4) Retry landet im falschen Zustand; (5) Panel bleibt nach Dismissal offen (`open: true`). Worktree unangetastet erhalten |
 | Remediation | 🟦 Eng begrenzte Lane `downloads-panel-remediation-msjw1r6s-ox8hrf` auf genau diese fünf Fehlschläge angesetzt: erst Mechanismus-Diagnose aus dem Code, dann minimale Fixes. Ausdrücklich verboten: eine Assertion aufweichen, um grün zu werden — eine geänderte Erwartung ist nur zulässig, wenn sie nachweislich DESIGN §11.12 oder der L6-Maschine widerspricht, mit Zitat beider Seiten |
+| Queue 3 Downloads | ✅ **Integriert**: Lane-Commit `654304d`, Merge `7cfdbd2`. Remediation-Lane `downloads-panel-remediation-msjw1r6s-ox8hrf` hat alle fünf Fehlschläge **in der Implementierung** behoben, keine Assertion angefasst: (1) `progress_fraction` bei Terminal aus dem Record statt aus dem Live-Progress; (2)+(3)+(4) Attempt-Treiber/Terminal-Reihenfolge; (5) Escape lag hinter dem `total == 0`-Guard und wurde davor gehoben. Zusätzlich ein **latenter Perf-Defekt** gefunden: nach 13 Retries fiel der frische Attempt aus dem Render-Fenster, die Probe konnte ihn nie sehen und das Szenario lief in den Timeout statt zu scheitern — jetzt 30/30 Samples |
+| Strukturgate | ✅ Review-Befund abgearbeitet: `downloads_render.rs` lag mit 604 Zeilen über der ~500er-Grenze. Orchestrator-Split in `downloads_render.rs` (483) + `downloads_render/row_detail.rs` (138); Sekundärzeile und Zeilenaktion als `pub(super)`. Befund 2 (§17.11 Badge zählt nur In-flight) ist im Code ausdrücklich als provisional markiert und steht als Entscheidung in der Morgen-Liste — keine stille Festlegung |
+| Post-Merge | ✅ Auf `7cfdbd2`: `just verify` grün (992 Tests), kanonisches `just e2e` **`E2E_EXIT=0`** über 20 Suites inkl. neuem `e2e-shell-downloads` (7/7), `just package-verify` grün. Neues Bundle-Binary-SHA256 `b42891013e564f3227cf3425c3bed1d0310c0293e7a041902124ddf352e2e8fa` — enthält S1-Skala, Find-in-page und das Downloads-Panel |
 | User-Steering | ✅ Scheduling-Autorität an den Orchestrator übertragen: Reihenfolge, Parallelität und Wellen-Schnitt werden eigenständig nach Nutzerwert, Abhängigkeiten, Pfad-Disjunktheit, Risiko, GUI-Slot und Kontextökonomie entschieden. Präzisierung: die Autorität operiert ausschließlich auf diesem Ledger — Tasks kommen nur aus dieser Queue plus dokumentierten Steerings, jede Entscheidung wird hier festgehalten, und nach jedem Abschluss/jeder Kompaktierung ist diese Datei der erste Fortsetzungszeiger. Regeln als Standing Rule oben aufgenommen; erste Wellen (W-Now, W-Closeout, W-UI-1, W-UI-2, W-Portable) dokumentiert |
 | Produktrevision | ✅ Patrick revidiert nach Sichtung des gelieferten U2 den Footer: `[Spaces]`-Toggle plus aufklappbare Space-Region entfallen; stattdessen permanente, horizontal scrollbare Spaces-Leiste mit kuratierten Identitäts-Chips zwischen Downloads- und Plus-Icon, aktiver Space hervorgehoben, Klick = warmer Switch. Ausdrücklich als Produktrevision und **nicht** als U2-Defekt erfasst. DESIGN §11.3/§11.4, §9-Fokusreihenfolge, §10.2/§10.3-Row-Flächen, §14/§16-Emoji-Grenze und der Interaktionsvertrag (Space-Switch, Swipe, Drag-auf-Space) sind revidiert; neues Task-Paket bündelt Footer-Revision, Appearance-UI und Swipe in einem Slice, weil alle drei dieselbe Fläche und dieselben Assertions/Perf-Szenarien berühren |
 | Designkalibrierung | ✅ S1 ist nicht mehr provisional: Patricks Referenz-Screenshots liegen stabil unter `/Users/patwoz/dev/Personal/macos/bbr-design-references/` (`arc-sidebar-full.png`, `arc-tab-row-hover.png`, plus `zen-settings-*.png` für spätere Settings-Seiten). Ableitung für die S1-Tabelle: ca. 36–40 pt Rows, 14–15 pt Text, 18–20 pt Glyphen, inset abgerundete Hover-/Active-Row-Fläche mit Close-X, großzügige Sektionsabstände, große abgerundete Fav-Tiles. Der frühere blinde `+18 %`-Startwert entfällt; BBR-Materialien, Farbdisziplin, Semantik und Native-Web-Grenze bleiben unverändert, Dense-500-Windowing und Perf-Budgets ebenfalls |
@@ -407,8 +410,8 @@ danach in der Nacht lief, ist Post-MVP-Arbeit auf einem grünen Stand.
 
 Artefakt: `target/bbr-app/BBR.app`, `dev.patwoz.bbr` 0.1.0, arm64 thin,
 ad-hoc signiert. Binary-SHA256
-`50becd1355a9a228192c4a6f95144171d6348849ddd99536eeb08fbc5138246b` — enthält
-sowohl die kalibrierte S1-Skala als auch Find-in-page.
+`b42891013e564f3227cf3425c3bed1d0310c0293e7a041902124ddf352e2e8fa` — enthält
+die kalibrierte S1-Skala, Find-in-page und das Downloads-Panel.
 
 ### In der Nacht gemergt
 
@@ -418,6 +421,7 @@ sowohl die kalibrierte S1-Skala als auch Find-in-page.
 | External-URL-Contract (portabel) | `14f1093` | Noch unsichtbar: Klassifikation, Ablehnung gefährlicher Schemata, Dedup und Routing für Links aus fremden Apps. Die native Registrierung folgt als eigener Slice |
 | Downloads-Panel-Design | `ffcf0a6` | `DESIGN.md` §11.12 im Vokabular der gemergten L6-Maschine, plus sechs offene Produktfragen |
 | Find-in-page | `c12ecbc` | Sichtbar und benutzbar: Cmd-F öffnet die Leiste über der Web-View, Treffer werden gezählt, Enter/Shift-Enter springt |
+| Downloads-Panel | `7cfdbd2` | Sichtbar: der Footer-Knopf öffnet ein verankertes Panel in der Sidebar-Spalte mit Aktiv- und Verlaufsgruppe, Fortschritt, Abbrechen/Wiederholen/Im-Finder-zeigen |
 
 ### Wo ich einen Befund hatte, statt ihn zu übergehen
 
@@ -455,8 +459,6 @@ Morgen-Entscheidungsliste oben. Zusammengefasst:
 
 ### Offen und laufend
 
-- **Downloads-Panel**: Implementierung liegt im Worktree, fünf E2E-Szenarien
-  rot, Remediation-Lane läuft. Nicht gemergt — `main` bleibt grün.
 - **Uncommitted in Worktrees**: Space-Appearance, Settings/Search, Schema-v2 —
   alle warten auf eine Entscheidung von dir, keiner auf Technik.
 - **Restliche Queue**: Portal-Hardening, U3 Startup-Evidenz, Kontextmenüs über
