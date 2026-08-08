@@ -127,6 +127,11 @@ pub const PALETTE_STATE_ERROR: &str = "bbr-palette-error";
 /// The field-anchored overlay container (DESIGN.md §11.4); its results keep
 /// the §11.5 `bbr-command-result-<k>` ids of the in-rail surface.
 pub const OVERLAY_ID: &str = "bbr-command-overlay";
+/// The overlay's own field row (DESIGN.md §11.4): the full current URL is
+/// preselected here, so one keystroke replaces it.
+pub const OVERLAY_FIELD_ID: &str = "bbr-command-overlay-field";
+pub const OVERLAY_TEXT_ID: &str = "bbr-command-overlay-text";
+pub const OVERLAY_CURSOR_ID: &str = "bbr-command-overlay-cursor";
 
 pub const PALETTE_PRESENTATION_ID: PresentationId = PresentationId(0xC1);
 pub const OVERLAY_PRESENTATION_ID: PresentationId = PresentationId(0xC2);
@@ -170,7 +175,12 @@ pub fn surface_ids(
             ids
         }
         CommandSurface::Overlay => {
-            let mut ids = vec![OVERLAY_ID.into()];
+            let mut ids = vec![
+                OVERLAY_ID.into(),
+                OVERLAY_FIELD_ID.into(),
+                OVERLAY_TEXT_ID.into(),
+                OVERLAY_CURSOR_ID.into(),
+            ];
             match state {
                 CommandResultState::Results => ids.extend(
                     results
@@ -271,7 +281,7 @@ impl BbrApp {
         }
     }
 
-    fn present_command_portal(
+    pub(crate) fn present_command_portal(
         &mut self,
         surface: CommandSurface,
         window: &mut Window,
@@ -313,9 +323,14 @@ impl BbrApp {
     }
 }
 
+/// §11.4: the anchored overlay **covers** the §11.5 address control rather
+/// than dropping below it — top edge flush with the control's top edge,
+/// leading edge flush with the control's leading edge (DESIGN.md §11.4).
+/// The address control is not visible while the overlay is open: the
+/// overlay takes its place, so the address never appears twice.
 fn overlay_placement(field: WebRect, width: f32) -> PortalPlacement {
     PortalPlacement::Anchored(AnchoredPlacement {
-        anchor_point: Pt::new(field.x, field.y + field.height),
+        anchor_point: Pt::new(field.x, field.y),
         anchor: PortalAnchor::TopLeft,
         size: Sz::new(width, 320.0),
         offset: Pt::new(0.0, 0.0),

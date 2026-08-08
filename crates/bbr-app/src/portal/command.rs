@@ -4,15 +4,26 @@
 //! reads one cloned [`CommandPortalModel`] per render and builds GPUI chrome;
 //! AppKit continues to own only the native child-window boundary.
 
-use gpui::{div, prelude::*, px, Div, SharedString, Stateful};
+use gpui::{
+    div, prelude::*, px, Animation, AnimationExt, AnyElement, Div, MouseButton, MouseDownEvent,
+    SharedString, Stateful,
+};
 
 use super::geometry::Rect;
 use crate::app::command_rank::{CommandResultRow, CommandResultState};
 use crate::app::palette::{
-    CommandSurface, OVERLAY_ID, PALETTE_CURSOR_ID, PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID,
-    PALETTE_RESULT_PREFIX, PALETTE_TEXT_ID,
+    CommandSurface, OVERLAY_CURSOR_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_TEXT_ID,
+    PALETTE_CURSOR_ID, PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID, PALETTE_RESULT_PREFIX,
+    PALETTE_TEXT_ID,
 };
-use crate::theme::{Density, Radius, Spacing, Theme};
+use crate::theme::{Density, Motion, Radius, Spacing, Theme};
+
+/// The §11.4 open-animation element id of the field-anchored overlay: its
+/// entrance opacity fade at `dur:fine` (DESIGN.md §6/§11.4) — opacity only,
+/// never translate or scale. A render-internal element id, not a §15
+/// semantic id: `visible_ids` and the portal snapshot derive from
+/// `surface_ids`, so this id can never drift into E2E assertions.
+const OVERLAY_FADE_ELEMENT_ID: &str = "bbr-command-overlay-fade";
 
 /// Immutable command data consumed by one portal-window render.
 #[derive(Clone, Debug)]
@@ -27,12 +38,24 @@ pub struct CommandPortalModel {
 }
 
 /// Build the U1 card at the resolved portal rect. The caller owns the
-/// full-window backdrop and pointer propagation policy.
-pub fn command_card(model: &CommandPortalModel, rect: Rect) -> Stateful<Div> {
+/// full-window backdrop and pointer propagation policy; the card itself
+/// stops pointer propagation so a press on it never reaches the backdrop's
+/// one-pointer-action dismissal (DESIGN.md §13) — the same two-listener
+/// split the portal root composed before.
+pub fn command_card(model: &CommandPortalModel, rect: Rect) -> AnyElement {
     match model.surface {
-        CommandSurface::None => div().id("bbr-command-portal-closed"),
-        CommandSurface::Palette => palette_card(model, rect),
+        CommandSurface::None => div().id("bbr-command-portal-closed").into_any(),
+        CommandSurface::Palette => palette_card(model, rect).into_any(),
         CommandSurface::Overlay => overlay_card(model, rect),
+    }
+}
+
+/// §13 stop-propagation: a pointer press on the card never dismisses it
+/// through the backdrop listener (the card is the surface, not an outside
+/// press). Pure propagation control — no view state needed.
+fn card_stop_propagation() -> impl Fn(&MouseDownEvent, &mut gpui::Window, &mut gpui::App) {
+    |_e: &MouseDownEvent, _window: &mut gpui::Window, cx: &mut gpui::App| {
+        cx.stop_propagation();
     }
 }
 
@@ -58,11 +81,33 @@ fn palette_card(model: &CommandPortalModel, rect: Rect) -> Stateful<Div> {
         .shadow(elev2_shadows(theme))
         .flex()
         .flex_col()
-        .child(palette_field(model))
+        .child(field_row(
+            model,
+            PALETTE_FIELD_ID,
+            PALETTE_TEXT_ID,
+            PALETTE_CURSOR_ID,
+            "+",
+            Some("New Tab"),
+        ))
         .children(result_rows(model, PALETTE_RESULT_PREFIX, "bbr-palette"))
+        .on_mouse_down(MouseButton::Left, card_stop_propagation())
 }
 
-fn palette_field(model: &CommandPortalModel) -> Stateful<Div> {
+/// The §11.4 field row shared by both command-surface presentations: the
+/// prefix glyph, the `type:mono` text (`<text_id>`), an optional mode chip
+/// (the centered palette only), and the block cursor (`<cursor_id>`) while
+/// the surface owns chrome focus. The centered Cmd-T palette and the
+/// field-anchored Cmd-L/click overlay are the same §11.5 engine and input
+/// component; the overlay opens with the full current URL selected, so one
+/// keystroke replaces it.
+fn field_row(
+    model: &CommandPortalModel,
+    field_id: &'static str,
+    text_id: &'static str,
+    cursor_id: &'static str,
+    prefix: &'static str,
+    mode_chip: Option<&'static str>,
+) -> Stateful<Div> {
     let theme = &model.theme;
     let p = theme.palette;
     let text = if model.text.is_empty() {
@@ -71,7 +116,7 @@ fn palette_field(model: &CommandPortalModel) -> Stateful<Div> {
         SharedString::from(model.text.clone())
     };
     div()
-        .id(PALETTE_FIELD_ID)
+        .id(field_id)
         .px(Spacing::sp3())
         .py(Spacing::sp2())
         .gap(Spacing::sp2())
@@ -82,33 +127,35 @@ fn palette_field(model: &CommandPortalModel) -> Stateful<Div> {
             div()
                 .text_size(theme.type_.meta.size)
                 .text_color(p.ink_faint)
-                .child("+"),
+                .child(prefix),
         )
         .child(
             div()
-                .id(PALETTE_TEXT_ID)
+                .id(text_id)
                 .flex_1()
                 .text_size(theme.type_.mono.size)
                 .text_color(p.ink)
                 .child(text),
         )
-        .child(
-            div()
-                .id(PALETTE_MODE_ID)
-                .text_size(theme.type_.badge.size)
-                .font_weight(theme.type_.badge.weight)
-                .text_color(p.accent_ink)
-                .child("New Tab"),
-        )
+        .when(mode_chip.is_some(), |el| {
+            el.child(
+                div()
+                    .id(PALETTE_MODE_ID)
+                    .text_size(theme.type_.badge.size)
+                    .font_weight(theme.type_.badge.weight)
+                    .text_color(p.accent_ink)
+                    .child(mode_chip.expect("chip checked")),
+            )
+        })
         .when(model.chrome_focused, |el| {
-            el.child(div().id(PALETTE_CURSOR_ID).w(px(2.0)).h_full().bg(p.accent))
+            el.child(div().id(cursor_id).w(px(2.0)).h_full().bg(p.accent))
         })
 }
 
-fn overlay_card(model: &CommandPortalModel, rect: Rect) -> Stateful<Div> {
+fn overlay_card(model: &CommandPortalModel, rect: Rect) -> AnyElement {
     let theme = &model.theme;
     let p = theme.palette;
-    div()
+    let card = div()
         .id(OVERLAY_ID)
         .absolute()
         .left(px(rect.x))
@@ -121,8 +168,31 @@ fn overlay_card(model: &CommandPortalModel, rect: Rect) -> Stateful<Div> {
         .border_1()
         .border_color(p.hairline)
         .shadow(elev2_shadows(theme))
-        .py(Spacing::sp1())
+        .flex()
+        .flex_col()
+        // §11.4: the overlay's own field sits on top with the full URL
+        // preselected (the shared §11.5 input component; no mode chip — the
+        // overlay is Location mode by construction).
+        .child(field_row(
+            model,
+            OVERLAY_FIELD_ID,
+            OVERLAY_TEXT_ID,
+            OVERLAY_CURSOR_ID,
+            "▶",
+            None,
+        ))
         .children(result_rows(model, "bbr-command-result", "bbr-command"))
+        .on_mouse_down(MouseButton::Left, card_stop_propagation());
+    // §11.4: the overlay opens with an opacity fade `dur:fine` only — never
+    // translate or scale (§6). The fade is per-open: the animation element
+    // state is dropped when the overlay leaves the tree, so every re-present
+    // (Cmd-L, pointer press, or a restored Location origin) fades in again.
+    card.with_animation(
+        OVERLAY_FADE_ELEMENT_ID,
+        Animation::new(Motion::fine()),
+        |el, delta| el.opacity(delta),
+    )
+    .into_any()
 }
 
 fn result_rows(

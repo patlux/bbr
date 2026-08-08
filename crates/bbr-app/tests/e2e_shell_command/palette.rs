@@ -5,12 +5,13 @@
 //! exposes `bbr-palette-result-<k>` ids; Enter commits exactly one new
 //! tab/session and moves focus into the page; Escape cancels and restores
 //! the origin field text, mode, and chrome/web focus domain. Cmd-L and a
-//! pointer click on the command field open the field-anchored
-//! `bbr-command-overlay` in Location mode with the full URL selected; one
-//! pointer press outside (the §13 dismissal layer) closes it and restores
-//! the origin domain. Assertions are typed-snapshot and §15 semantic — no
-//! sleeps, no pixel comparisons. The mutual-exclusion and profile-hint
-//! evidence lives in the focused `palette_surfaces` module.
+//! pointer click on the §11.5 address control open the anchored
+//! `bbr-command-overlay` in Location mode with the full URL selected; the
+//! overlay **covers** the control (top/leading edges flush) rather than
+//! dropping below it; one pointer press outside (the §13 dismissal layer)
+//! closes it and restores the origin domain. Assertions are typed-snapshot
+//! and §15 semantic — no sleeps, no pixel comparisons. The mutual-exclusion
+//! and profile-hint evidence lives in the focused `palette_surfaces` module.
 
 use super::command_portal::{assert_command_portal_closed, assert_command_portal_open};
 use super::*;
@@ -315,7 +316,7 @@ fn cmd_l_opens_field_anchored_overlay_with_full_url_selected_and_escape_restores
 
 #[test]
 #[ignore]
-fn field_click_opens_overlay_and_outside_press_closes_web_and_chrome_origins() {
+fn address_click_opens_overlay_and_outside_press_closes_web_and_chrome_origins() {
     let _serial = serial_gui();
     if !allow_gui() {
         return;
@@ -335,14 +336,15 @@ fn field_click_opens_overlay_and_outside_press_closes_web_and_chrome_origins() {
             since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
         }
 
-        // Web origin: a pointer press on the command field opens the
-        // field-anchored overlay in Location mode with the full URL selected
-        // (the same engine and presentation as Cmd-L).
+        // Web origin: a pointer press on the §11.5 address control opens
+        // the overlay that **covers** it (top and leading edges flush with
+        // the pill, DESIGN.md §11.4) in Location mode with the full URL
+        // selected (the same engine and presentation as Cmd-L).
         client
-            .send_ok(&bbr_testkit::Request::ClickCommandField)
-            .expect("field click");
+            .send_ok(&bbr_testkit::Request::ClickAddress)
+            .expect("address click");
         since = wait_chrome_focus(&mut client, true, since);
-        let overlay = client.snapshot().expect("field-click overlay snapshot");
+        let overlay = client.snapshot().expect("address-click overlay snapshot");
         assert_command_portal_open(&overlay, CommandSurface::Overlay);
         let portal_window = overlay.portal.portal_window_number;
         assert_eq!(overlay.command_bar_mode, CommandBarMode::Location);
@@ -351,7 +353,22 @@ fn field_click_opens_overlay_and_outside_press_closes_web_and_chrome_origins() {
         assert_eq!(
             overlay.command_selection,
             Some([0, page_one.len()]),
-            "field click selects the full URL"
+            "address click selects the full URL"
+        );
+        // §11.4: the overlay covers the measured address pill — top and
+        // leading edges flush (tolerance 0.5 pt, the suite's geometry bar),
+        // the overlay strictly at least as wide/tall — so the address never
+        // appears twice and the eye stays where the pointer clicked.
+        let address_rect = overlay.address_rect.expect("measured address pill rect");
+        let portal_rect = overlay.portal.rect.expect("resolved overlay rect");
+        let flush = |a: f32, b: f32| (a - b).abs() <= 0.5;
+        assert!(
+            flush(portal_rect[0], address_rect[0]) && flush(portal_rect[1], address_rect[1]),
+            "top/leading edges flush with the control: pill {address_rect:?}, overlay {portal_rect:?}"
+        );
+        assert!(
+            portal_rect[2] >= address_rect[2] - 0.5 && portal_rect[3] >= address_rect[3] - 0.5,
+            "overlay must cover the pill: pill {address_rect:?}, overlay {portal_rect:?}"
         );
 
         // One pointer press outside the surface (the §13 dismissal layer):
@@ -368,15 +385,15 @@ fn field_click_opens_overlay_and_outside_press_closes_web_and_chrome_origins() {
         assert_eq!(dismissed.command_bar_text, page_one, "origin text restored");
 
         // Chrome origin: a pointer-selected tab row owns chrome focus; the
-        // field click still opens the overlay and Escape restores the chrome
-        // focus domain (never jumps to the page).
+        // address click still opens the overlay and Escape restores the
+        // chrome focus domain (never jumps to the page).
         client
             .send_ok(&bbr_testkit::Request::ClickTab { index: 0 })
             .expect("chrome focus");
         assert!(client.snapshot().expect("chrome snapshot").chrome_focused);
         client
-            .send_ok(&bbr_testkit::Request::ClickCommandField)
-            .expect("field click from chrome origin");
+            .send_ok(&bbr_testkit::Request::ClickAddress)
+            .expect("address click from chrome origin");
         since = wait_chrome_focus(&mut client, true, since);
         let chrome_overlay = client.snapshot().expect("chrome-origin overlay");
         assert_command_portal_open(&chrome_overlay, CommandSurface::Overlay);

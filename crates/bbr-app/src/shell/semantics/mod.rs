@@ -74,6 +74,9 @@ pub struct SemanticResultRow {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SemanticCommand {
     pub mode: String,
+    /// The §11.5 address pill's derived domain (display-only — the pill
+    /// never holds the editable text or a selection).
+    pub address: String,
     pub text: String,
     /// The rendered destination hint ("→ Space" / "in Profile · P → Space").
     pub hint: Option<String>,

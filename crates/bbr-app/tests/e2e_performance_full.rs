@@ -81,6 +81,7 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let command_activate = report.results["command_activate"].samples;
         let command_new_tab = report.results["command_activate_new_tab"].samples;
         let palette_open = report.results["palette_open"].samples;
+        let overlay_open = report.results["overlay_open"].samples;
         let find_open = report.results["find_open"].samples;
         let find_query_result = report.results["find_query_result"].samples;
         let find_step = report.results["find_step"].samples;
@@ -152,6 +153,10 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             palette_open >= INTERACTION_SAMPLES,
             "palette-open samples {palette_open} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            overlay_open >= INTERACTION_SAMPLES,
+            "overlay-open samples {overlay_open} < {INTERACTION_SAMPLES}"
         );
         assert!(
             find_open >= INTERACTION_SAMPLES,

@@ -165,13 +165,19 @@ fn shell_hover_press_focus_and_drag_semantics() {
         );
         assert_node(
             &focused.semantics,
-            "bbr-command-bar",
-            SemanticRole::Field,
-            Some(page_one.as_str()),
-            Some("inactive"),
+            "bbr-address",
+            SemanticRole::Button,
+            Some("127.0.0.1"),
+            None,
             true,
             false,
             false,
+        );
+        assert!(
+            !find(&focused.semantics, "bbr-address")
+                .expect("address pill")
+                .focused,
+            "the §11.5 address pill never carries a focus-ring state"
         );
 
         // Web focus: the chrome renders at ease (§9) — no node owns focus.
@@ -201,8 +207,11 @@ fn shell_hover_press_focus_and_drag_semantics() {
             "no row owns focus while web content has it"
         );
 
-        // Command focus: Cmd-L owns focus on the field and exposes the §9
-        // cursor node (visible_ids carries the same structural cue).
+        // Command focus: Cmd-L opens the §11.4 overlay **over** the §11.5
+        // address control; the overlay's own field owns focus and exposes
+        // the §9 block cursor (`bbr-command-overlay-cursor`; visible_ids
+        // carries the same structural cue). The pill behind it is never a
+        // focus-ring target.
         client
             .send_ok(&bbr_testkit::Request::DispatchKeystroke {
                 keystroke: "cmd-l".into(),
@@ -210,26 +219,32 @@ fn shell_hover_press_focus_and_drag_semantics() {
             .expect("cmd-l");
         let _ = wait_chrome_focus(&mut client, true, since);
         let command_focus = client.snapshot().expect("command focus snapshot");
-        assert_ids(&command_focus, &["bbr-command-cursor"]);
+        assert_ids(&command_focus, &["bbr-command-overlay-cursor"]);
         assert_node(
             &command_focus.semantics,
-            "bbr-command-bar",
+            "bbr-command-overlay-field",
             SemanticRole::Field,
             Some(page_one.as_str()),
-            Some("location"),
+            None,
             true,
             false,
             true,
         );
         assert_node(
             &command_focus.semantics,
-            "bbr-command-cursor",
+            "bbr-command-overlay-cursor",
             SemanticRole::Cursor,
             None,
             None,
             true,
             false,
-            false,
+            true,
+        );
+        assert!(
+            !find(&command_focus.semantics, "bbr-address")
+                .expect("address pill")
+                .focused,
+            "no focus ring on the address pill behind the overlay"
         );
         client
             .send_ok(&bbr_testkit::Request::DispatchKeystroke {

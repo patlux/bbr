@@ -236,6 +236,18 @@ pub(crate) fn dispatch(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // §11.5 address-pill hover: the same production `on_hover` path the
+        // pill's element listener calls — the wash follows the pointer.
+        Request::HoverAddress => with_app(window, app, cx, |view, _window, cx| {
+            view.set_address_hover(true, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::UnhoverAddress => with_app(window, app, cx, |view, _window, cx| {
+            view.set_address_hover(false, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
         Request::PressTabRow { index } => with_app(window, app, cx, |view, _window, cx| {
             view.set_row_pressed(index, cx);
             Response::Ok
@@ -340,10 +352,10 @@ pub(crate) fn dispatch(
         .map(|_| Response::Ok)
         .unwrap_or_else(err_response),
 
-        // §11.4 field-click pointer entry: the same app method the command
-        // field's mouse-down listener calls (opens the field-anchored
-        // overlay in Location mode with the full URL selected).
-        Request::ClickCommandField => with_app(window, app, cx, |view, window, cx| {
+        // §11.4/§11.5 address-control pointer entry: the same app method the
+        // pill's mouse-down listener calls (opens the overlay that covers
+        // the control in Location mode with the full URL selected).
+        Request::ClickAddress => with_app(window, app, cx, |view, window, cx| {
             view.open_overlay(window, cx)
         })
         .map(|_| Response::Ok)
@@ -580,6 +592,7 @@ pub(crate) fn dispatch(
         | Request::BenchmarkCommandActivate { .. }
         | Request::BenchmarkCommandActivateNewTab { .. }
         | Request::BenchmarkPaletteOpen { .. }
+        | Request::BenchmarkOverlayOpen { .. }
         | Request::BenchmarkFindOpen { .. }
         | Request::BenchmarkFindQueryResult { .. }
         | Request::BenchmarkFindStep { .. }

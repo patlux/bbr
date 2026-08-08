@@ -289,3 +289,72 @@ pub(crate) fn benchmark_palette_open(
     );
     measured
 }
+
+/// The production Cmd-L open of the field-anchored overlay (DESIGN.md §11.4
+/// `bbr-command-overlay`): the request routes through the production
+/// `open_overlay` seam in the app, and the sample commits only from a render
+/// that actually constructed the overlay with the Location mode, chrome
+/// focus, and the full URL preselected (the in-app fast-but-wrong guard
+/// rejects a missing or invented surface). The driver asserts the measured
+/// surface state and the typed snapshot: the overlay surface open over the
+/// address control, the Location mode, chrome focus, the full URL present
+/// and selected (one keystroke replaces it), the stable `bbr-command-*` ids
+/// exposed, and the staged semantics (no tab or session before Enter).
+pub(crate) fn benchmark_overlay_open(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    expected_view: WebViewId,
+    expected_tabs: usize,
+    expected_sessions: usize,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkOverlayOpen { operation_id })
+        .expect("benchmark overlay open");
+    let (seq, measured) =
+        wait_measurement(client, BenchmarkKind::OverlayOpen, operation_id, *since);
+    *since = seq;
+    assert_eq!(measured.active_web_view, Some(expected_view));
+    assert!(
+        measured.chrome_focused,
+        "the overlay keeps the chrome focus domain"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::Location);
+    let snapshot = client.snapshot().expect("overlay open snapshot");
+    assert_eq!(snapshot.command_surface, CommandSurface::Overlay);
+    assert_eq!(snapshot.command_bar_mode, CommandBarMode::Location);
+    assert!(snapshot.chrome_focused, "Cmd-L focuses the overlay field");
+    assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert_eq!(
+        snapshot.tabs.len(),
+        expected_tabs,
+        "staged semantics: no tab before Enter"
+    );
+    assert_eq!(
+        snapshot.engine_sessions, expected_sessions,
+        "staged semantics: no session before Enter"
+    );
+    let url = snapshot.command_bar_text.clone();
+    assert_eq!(
+        snapshot.command_selection,
+        Some([0, url.len()]),
+        "the full current URL is preselected (one keystroke replaces it)"
+    );
+    assert!(
+        snapshot
+            .visible_ids
+            .iter()
+            .any(|id| id == "bbr-command-overlay"),
+        "the anchored overlay ids are exposed: {:?}",
+        snapshot.visible_ids
+    );
+    assert!(
+        !snapshot
+            .visible_ids
+            .iter()
+            .any(|id| id.starts_with("bbr-palette")),
+        "the centered palette never coexists with the overlay"
+    );
+    measured
+}

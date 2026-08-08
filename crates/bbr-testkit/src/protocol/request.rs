@@ -104,6 +104,14 @@ pub enum Request {
     /// Pointer leave through the same production hover listener path: clears
     /// the row's hover state.
     UnhoverTabRow,
+    /// Pointer hover over the §11.5 address pill through the production
+    /// `on_hover` listener path (the exact app method the pill's element
+    /// handler calls): the pill renders the §10.2/§11.5 hover wash (one
+    /// fill step brighter on dark chrome, one step darker on light chrome).
+    HoverAddress,
+    /// Pointer leave through the same production hover listener path: clears
+    /// the pill's hover state.
+    UnhoverAddress,
     /// Pointer press on a visible tab row through the production mouse-down
     /// listener path: the row renders the DESIGN §10.3 active (pressed) wash
     /// while the button is down. Selection is not implied — the press
@@ -328,11 +336,12 @@ pub enum Request {
     ContextMenuClose,
     /// Focus the GPUI command bar (chrome) — the E2E reader of Cmd-L.
     ActivateCommandBar,
-    /// Pointer press on the sidebar command field through the production
-    /// pointer-entry path: the same app method the field's mouse-down
-    /// listener calls (DESIGN.md §11.4 field-click entry into the
-    /// field-anchored overlay, same engine as Cmd-L).
-    ClickCommandField,
+    /// Pointer press on the §11.5 address control through the production
+    /// pointer-entry path: the same app method the pill's mouse-down
+    /// listener calls (DESIGN.md §11.4 pointer entry into the overlay that
+    /// covers the control, same engine as Cmd-L). The address control is a
+    /// display-only button — it never accepts keyboard text.
+    ClickAddress,
     /// Pointer press on the window content right of the rail while a §11.4
     /// palette/overlay presentation is open: the same app method the §13
     /// dismissal layer's mouse-down listener calls (one pointer action
@@ -531,6 +540,15 @@ pub enum Request {
     /// the staged mode and chrome focus (fast-but-wrong guard). No tab or
     /// session is created before Enter.
     BenchmarkPaletteOpen {
+        operation_id: BenchmarkOperationId,
+    },
+    /// Measure the production Cmd-L / address-pill click open of the
+    /// field-anchored overlay (DESIGN.md §11.4 `bbr-command-overlay`) in
+    /// Location mode: the sample commits only from a render that actually
+    /// constructed the overlay with the full URL preselected and chrome
+    /// focus (fast-but-wrong guard). No tab or session is created before
+    /// Enter.
+    BenchmarkOverlayOpen {
         operation_id: BenchmarkOperationId,
     },
     /// Measure the production `Cmd-F` find-bar open (the exact seam the

@@ -9,6 +9,7 @@
 //! with a palette/overlay. Typed-snapshot and §15 semantic assertions, no
 //! sleeps.
 
+use super::command_portal::assert_command_portal_open;
 use super::*;
 use bbr_testkit::protocol::CommandSurface;
 
@@ -67,18 +68,21 @@ fn surfaces_are_mutually_exclusive_and_open_clears_the_profile_hint() {
             "opening the palette closes the overlay"
         );
         // Escape restores the origin captured at this Cmd-T — the open
-        // overlay's Location surface (chrome focus, page text), never a jump
-        // to the page; a second Escape returns to the original web origin.
+        // overlay's Location surface. The §11.5 address control is
+        // display-only, so a restored Location origin re-presents the
+        // overlay (the overlay's own field holds the restored URL, chrome
+        // focus); a second Escape returns to the original web origin.
         key(&mut client, "escape");
         let _ = wait_chrome_focus(&mut client, true, since);
         let intermediate = client.snapshot().expect("escape restores overlay origin");
-        assert_eq!(intermediate.command_surface, CommandSurface::None);
+        assert_eq!(intermediate.command_surface, CommandSurface::Overlay);
         assert_eq!(intermediate.command_bar_mode, CommandBarMode::Location);
         assert_eq!(intermediate.command_bar_text, page_one);
         assert!(
             intermediate.chrome_focused,
             "Escape restores the originating chrome focus domain"
         );
+        assert_command_portal_open(&intermediate, CommandSurface::Overlay);
         key(&mut client, "escape");
         let _ = wait_chrome_focus(&mut client, false, since);
         let web = client.snapshot().expect("web restored snapshot");

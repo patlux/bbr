@@ -336,4 +336,131 @@ impl BbrApp {
         }
         true
     }
+
+    /// Benchmark the production Cmd-L / address-click open of the
+    /// field-anchored overlay (DESIGN.md §11.4 `bbr-command-overlay`): the
+    /// sample starts at the production entry seam (`open_overlay`, the exact
+    /// method Cmd-L and the address-pill pointer press route to) and commits
+    /// only from a render that actually constructed the overlay with the
+    /// Location mode, chrome focus, the full URL present and **preselected**
+    /// (so one keystroke replaces it) — the fast-but-wrong guard rejects a
+    /// render that omitted the surface or drew the wrong
+    /// presentation/mode/focus/selection. Same warm-presentation class as
+    /// `palette_open`: staged semantics, no tab or session is created.
+    pub fn benchmark_overlay_open(
+        &mut self,
+        operation_id: BenchmarkOperationId,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if self
+            .performance
+            .begin(operation_id, BenchmarkKind::OverlayOpen)
+            .is_err()
+        {
+            return false;
+        }
+        // Production Cmd-L entry: the exact seam Cmd-L and the address-pill
+        // pointer press route to (same §11.5 engine as the in-rail bar).
+        let before = self.controller.snapshot();
+        self.open_overlay(window, cx);
+        // Fast-but-wrong guard: the overlay is actually open in Location
+        // mode with chrome focus, the full current URL is present and
+        // preselected (the §11.4 open contract — one keystroke replaces
+        // it), and the staged semantics hold — the active view is unchanged
+        // and no tab/session was created before Enter.
+        let after = self.controller.snapshot();
+        let url = self.active_url();
+        if self.command_surface != CommandSurface::Overlay
+            || self.command_bar_mode != CommandBarMode::Location
+            || !self.chrome_focused(window)
+            || after.active_view != before.active_view
+            || after.tabs.len() != before.tabs.len()
+            || after.engine_sessions != before.engine_sessions
+            || self.command_text.text != url
+            || self.command_text.selection != Some((0, url.len()))
+        {
+            self.performance.cancel();
+            return false;
+        }
+        // Arm the exact presentation the overlay render must show: the
+        // unchanged active view, the visible rail, chrome focus, and the
+        // Location mode. The sample then commits synchronously through the
+        // authoritative post-mutation state + geometry (the same
+        // `commit_benchmark_sync` pattern the Cmd-T palette path uses
+        // inside `activate_new_tab`) — never dependent on a frame that may
+        // not fire in the offscreen harness. The fast-but-wrong guard above
+        // already proved the overlay surface, mode, focus, staged semantics
+        // and the preselected URL; the synchronous commit re-validates the
+        // observed state.
+        self.performance.expect_state(
+            after.active_view,
+            self.sidebar_visible,
+            true,
+            CommandBarMode::Location.into(),
+        );
+        self.commit_benchmark_sync(window);
+        // The synchronous commit may reject when the probe's latest surface
+        // observation is still the previous presentation (the portal window
+        // renders on a deferred turn). In that case fall back to the
+        // render-inclusive commit (the `palette_open` pattern): a bounded
+        // forced draw so the overlay is actually rendered in the hidden
+        // harness, with the overlay surface armed so the commit predicate
+        // only accepts a render that drew it.
+        if self.performance.pending_kind() == Some(BenchmarkKind::OverlayOpen) {
+            self.performance.expect_surface(CommandSurface::Overlay);
+            self.schedule_overlay_render_commit(cx);
+        }
+        true
+    }
+
+    /// Schedule the render-inclusive commit for the pending overlay-open
+    /// sample: a bounded forced draw (the same testkit pattern the
+    /// render-dependent command/dense scenarios use) so the field-anchored
+    /// overlay is actually rendered in the hidden harness and the probe
+    /// commits at the presentation milestone.
+    pub(crate) fn schedule_overlay_render_commit(&self, cx: &mut Context<Self>) {
+        if self.performance.pending_kind() != Some(BenchmarkKind::OverlayOpen) {
+            return;
+        }
+        let Some(window) = cx.windows().into_iter().next() else {
+            return;
+        };
+        let weak = cx.weak_entity();
+        cx.spawn(async move |_, async_cx: &mut AsyncApp| {
+            // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).
+            async_cx.update(|cx| {
+                // Render the open overlay: the render observes the surface
+                // after constructing the presentation and refreshes the
+                // browser-state observation; the slot paint then commits the
+                // sample when the armed surface and state match.
+                let _ = window.update(cx, |_root, window, cx| {
+                    let app: &mut App = cx;
+                    let _ = window.draw(app);
+                });
+                // Post-render commit through the app-entity contract: the
+                // explicit path validates the same surface + state and
+                // cancels truthfully when the render omitted the overlay (no
+                // observation → no commit).
+                let _: bool = weak
+                    .update(cx, |this, _cx| this.commit_overlay_open_benchmark())
+                    .unwrap_or(false);
+            });
+        })
+        .detach();
+    }
+
+    /// Commit the `overlay_open` sample from the render milestone: the probe
+    /// compares the armed surface/state against the observations the render
+    /// recorded after constructing the overlay. Returns false and cancels
+    /// when the render omitted the overlay or the state was wrong — a
+    /// truthful rejection, never a fast-but-wrong pass.
+    fn commit_overlay_open_benchmark(&self) -> bool {
+        self.performance.commit_current_presentation();
+        if self.performance.pending_kind() == Some(BenchmarkKind::OverlayOpen) {
+            self.performance.cancel();
+            return false;
+        }
+        true
+    }
 }

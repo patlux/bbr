@@ -379,6 +379,25 @@ pub(crate) fn dispatch_benchmark(
             .unwrap_or_else(err_response)
         }
 
+        Request::BenchmarkOverlayOpen { operation_id } => {
+            // Production `open_overlay` seam; commits synchronously with a
+            // render-inclusive fallback (overlay-drawing frame only).
+            with_app(window, app, cx, |view, window, cx| {
+                view.benchmark_overlay_open(*operation_id, window, cx)
+            })
+            .map(|committed| {
+                if committed {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "overlay open did not present the overlay",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response)
+        }
+
         // Dense scroll: begin the measurement on the entity, drive the
         // production dense scroll state through the app's tracked handle,
         // draw the resulting frame through the untyped path, then commit
