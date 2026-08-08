@@ -630,6 +630,7 @@ pub(crate) fn dispatch(
         | Request::BenchmarkPinTab { .. }
         | Request::BenchmarkReorderTab { .. }
         | Request::BenchmarkMoveTab { .. }
+        | Request::BenchmarkDragMoveTab { .. }
         | Request::BenchmarkDenseScroll { .. }
         | Request::BenchmarkDenseSelect { .. }
         | Request::BenchmarkHoverTab { .. }

@@ -67,6 +67,8 @@ fn space_chip() -> SpaceChipVisuals {
         identity: "book".into(),
         theme: bbr_browser::SpaceTheme::Cobalt,
         selected: true,
+        drag_target: false,
+        companion: None,
     }
 }
 

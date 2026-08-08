@@ -148,6 +148,7 @@ pub fn semantic_tree(input: &SemanticInput<'_>) -> Vec<SemanticNode> {
             || input.focus.divider
             || input.focus.folders
             || input.focus.plus_menu,
+        drag_target: false,
         children: root_children,
     };
     vec![root]
@@ -211,6 +212,7 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
         enabled: true,
         selected: false,
         focused: input.focus.divider,
+        drag_target: false,
         children: vec![],
     });
     SemanticNode {
@@ -221,6 +223,7 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
         enabled: true,
         selected: false,
         focused: false,
+        drag_target: false,
         children,
     }
 }
@@ -327,6 +330,7 @@ fn tab_row_node(row: &RowVisuals, list_focused: bool) -> SemanticNode {
         enabled: true,
         selected,
         focused: list_focused && selected,
+        drag_target: false,
         children,
     }
 }
@@ -371,6 +375,7 @@ fn node(
         enabled: true,
         selected,
         focused,
+        drag_target: false,
         children,
     }
 }

@@ -256,7 +256,7 @@ fn shell_hover_press_focus_and_drag_semantics() {
         // pin nodes flip `enabled` false while dragging and back after
         // cancel — the model matches the render's disabled surface.
         client
-            .send_ok(&dsl::begin_tab_drag(0, 400.0, 16.0))
+            .send_ok(&dsl::begin_tab_drag(0, 130.0, 400.0, 16.0))
             .expect("begin drag");
         let dragging = client.snapshot().expect("dragging snapshot");
         assert_eq!(dragging.tab_states[0], TabVisualState::Dragging);

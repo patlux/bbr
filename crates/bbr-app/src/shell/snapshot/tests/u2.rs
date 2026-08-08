@@ -21,6 +21,7 @@ fn compact_rail_always_renders_the_space_strip_ids() {
         &[],
         &[],
         None,
+        None,
         dense_all(0),
         None,
         &super::super::U2IdsInput::default(),

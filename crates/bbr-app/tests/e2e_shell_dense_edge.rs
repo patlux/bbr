@@ -160,10 +160,10 @@ fn dense_edge_states_stay_usable() {
         );
         let dragged_url = at_top.tabs[10].url.clone();
         client
-            .send_ok(&dsl::begin_tab_drag(10, 400.0, ROW_H / 2.0))
+            .send_ok(&dsl::begin_tab_drag(10, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin dense drag");
         client
-            .send_ok(&dsl::move_tab_drag(2.0 * ROW_H))
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * ROW_H))
             .expect("move dense drag");
         let during = client.snapshot().expect("during dense drag snapshot");
         assert_eq!(during.drag_source, Some(10));

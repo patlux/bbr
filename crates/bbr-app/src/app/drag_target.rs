@@ -1,26 +1,27 @@
-//! Pure tab-drag target resolution (DESIGN.md §10.9, §11.2).
+//! Pure tab-drag target resolution (DESIGN.md §10.9, §11.2, §11.3).
 //!
-//! The geometry that turns a pointer displacement into a typed drop target:
-//! region-bounded insertion slots for the tab list and the §11.10 favorites
-//! grid band above it. Kept separate from the drag state machine in
-//! `super::drag` so the resolution math and its unit tests stay small and
-//! layout-independent — the only layout constants are the §8 density row
-//! heights, derived from the same theme tokens the render uses.
+//! The geometry that turns a pointer position into a typed drop target:
+//! region-bounded insertion slots for the tab list, the §11.10 favorites
+//! grid band above it, and the §11.3 permanent strip's rendered space chips
+//! below it. Kept separate from the drag state machine in `super::drag` so
+//! the resolution math and its unit tests stay small and layout-independent
+//! — the only layout constants are the §8 density row heights, derived from
+//! the same theme tokens the render uses, and the chip spans the app derives
+//! from the production strip layout (never invented render indices).
 //!
 //! Target resolution is anchored at the press: the pointer's distance above
 //! the tab list top is `-(dy) - (source * row_h + press_in_row)`, where
 //! `press_in_row` is the press's y within the source row (0 at the top edge,
 //! `row_h` at the bottom). Tab-slot resolution is exact in row units
 //! regardless of the press offset (row-unit rounding from the source row);
-//! the favorites band is addressed through the same anchor, so grid
-//! targeting is exact for the recorded press offset. When the layout cannot
-//! expose the true offset (GPUI 0.2.2 offers no element geometry), the
-//! caller anchors at the row center (`row_h / 2`), which bounds the
-//! favorites-band error at half a row.
-//!
-//! The revealed-list drag-to-space band was removed with the legacy §11.4
-//! `[Spaces]` toggle: dragging a tab into a space is a later explicit
-//! drag-to-chip F2a layer, not part of this geometry.
+//! the favorites band is addressed through the same anchor. The strip chips
+//! live below the tab list in the footer, so they are hit-tested by the
+//! pointer's absolute window position against the rendered chip spans — a
+//! pointer entering a rendered chip targets that exact persistent chip,
+//! never a render index. Outside the chips, the tab list, and the favorites
+//! grid there is no drop target (an invalid no-target state).
+
+use bbr_browser::SpaceId;
 
 /// §8 normal-density row height the drag resolution uses. Derived from the
 /// same theme token the shell renders with, so a density change is picked
@@ -30,44 +31,93 @@ pub fn tab_row_h(theme: &crate::theme::Theme) -> f32 {
 }
 
 /// A drag's current typed target (DESIGN.md §10.9): an insertion slot in
-/// the tab list or the §11.10 favorites grid. `Tab { slot }` means "insert
-/// before the row at `slot`"; `slot` equal to the source region's end
-/// renders at the end of that region. The favorites target toggles the
-/// dragged tab in/out of the window-global favorites grid (add/remove —
-/// never a copy or a move).
+/// the tab list, the §11.10 favorites grid, or the §11.3 space chip under
+/// the pointer. `Tab { slot }` means "insert before the row at `slot`";
+/// `slot` equal to the source region's end renders at the end of that
+/// region. `Chip { space }` moves the dragged tab into that space (the
+/// persistent [`SpaceId`] — never a render position). The favorites target
+/// toggles the dragged tab in/out of the window-global favorites grid
+/// (add/remove — never a copy or a move).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DragTarget {
     /// Insertion slot in the tab list, within the source tab's region.
     Tab { slot: usize },
     /// The §11.10 favorites grid: toggle the dragged tab as a favorite.
     Favorites,
+    /// A §11.3 identity chip in the permanent footer strip: move the
+    /// dragged tab into that exact persistent space.
+    Chip { space: SpaceId },
+}
+
+/// One rendered space chip's visual span inside the strip (DESIGN.md
+/// §11.3/§10.9), in window coordinates, clipped to the strip viewport. The
+/// app derives these from the production `space_strip_scroll` handle's
+/// laid-out chip bounds plus the signed scroll offset — the exact geometry
+/// the pointer enters — never from a render index or an invented layout.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ChipSpan {
+    /// The persistent space this chip presents (the chip id identity).
+    pub space: SpaceId,
+    pub x_left: f32,
+    pub x_right: f32,
+    pub y_top: f32,
+    pub y_bottom: f32,
+}
+
+impl ChipSpan {
+    /// The chip's horizontal center (the deterministic pointer entry point
+    /// the E2E seam and the benchmark driver use).
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
+    pub fn center_x(&self) -> f32 {
+        (self.x_left + self.x_right) / 2.0
+    }
+
+    /// The chip's vertical center.
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
+    pub fn center_y(&self) -> f32 {
+        (self.y_top + self.y_bottom) / 2.0
+    }
+
+    /// Whether the pointer at `(x, y)` lies inside this chip's visible
+    /// span (the production chip hit test).
+    pub fn contains(&self, x: f32, y: f32) -> bool {
+        x >= self.x_left && x < self.x_right && y >= self.y_top && y < self.y_bottom
+    }
 }
 
 /// The tab-list geometry a drag resolves against: the pinned/regular
-/// boundary (§11.2), the tab count, the §8 row height, and the favorites
-/// region above the list (its deterministic height; 0 when the grid is
-/// empty). Grouped so the pure resolver stays readable; the drag state
-/// machine builds it per move from the same theme tokens and the
-/// organization read model.
+/// boundary (§11.2), the tab count, the §8 row height, the favorites region
+/// above the list (its deterministic height; 0 when the grid is empty), and
+/// the rendered strip chips below it. Grouped so the pure resolver stays
+/// readable; the drag state machine builds it per move from the same theme
+/// tokens, the organization read model, and the production strip layout.
 #[derive(Debug, Clone, Copy)]
-pub struct DragGeometry {
+pub struct DragGeometry<'a> {
     pub pinned: usize,
     pub len: usize,
     pub row_h: f32,
     /// The §11.10 favorites region's deterministic height above the tab
     /// list (0 when the grid is empty/hidden — no droppable band).
     pub favorites_h: f32,
+    /// The §11.3 strip chips' visual spans, in canonical display order
+    /// (empty when the strip layout has not run yet — no chip targets).
+    pub chips: &'a [ChipSpan],
 }
 
-/// Resolve the drag target for a source row and a row-unit displacement.
+/// Resolve the drag target for a source row and a pointer position.
 ///
-/// Pure and unit-testable: `dy` is the pointer's vertical displacement from
-/// the press, `press_in_row` the press's y within the source row (0 at the
-/// row's top edge, `row_h` at its bottom; the caller passes the true offset
-/// when the layout exposes it and the row center `row_h / 2` otherwise), and
-/// `geometry` the tab-list layout (see [`DragGeometry`]).
+/// Pure and unit-testable: `pointer_x`/`pointer_y` are the pointer's
+/// window position, `dy` its vertical displacement from the press,
+/// `press_in_row` the press's y within the source row (0 at the row's top
+/// edge, `row_h` at its bottom; the caller passes the true offset when the
+/// layout exposes it and the row center `row_h / 2` otherwise), and
+/// `geometry` the tab-list/strip layout (see [`DragGeometry`]).
 ///
 /// Semantics (interaction contract):
+/// - A pointer inside a rendered chip's span targets that exact persistent
+///   chip (move). Chips win over the surrounding footer chrome, so a drop
+///   on the `[Downloads]`/`[+]` controls or the gap between chips never
+///   resolves to a slot.
 /// - The pointer over the tab list resolves to an insertion slot inside the
 ///   source region. A slot outside the region (the pinned/regular boundary
 ///   crossing) is illegal: the target clamps to the region edge so the tick
@@ -76,26 +126,56 @@ pub struct DragGeometry {
 ///   band (when the region is rendered — a drop toggles the dragged tab
 ///   in/out of the window-global favorites). The fixed chrome above the
 ///   grid is not droppable.
+/// - A pointer below the tab list that is not over a chip (the footer's
+///   fixed controls, the gaps) is **no target**: the drop is rejected whole.
 pub fn resolve_target(
     source: usize,
+    pointer_x: f32,
+    pointer_y: f32,
     dy: f32,
     press_in_row: f32,
     geometry: &DragGeometry,
-) -> (DragTarget, bool) {
+) -> (Option<DragTarget>, bool) {
     if geometry.len == 0 {
-        return (DragTarget::Tab { slot: 0 }, false);
+        return (None, false);
     }
     let DragGeometry {
         pinned,
         len,
         row_h,
         favorites_h,
+        chips,
     } = *geometry;
+    // §11.3 drag-to-chip: the strip sits below the tab list in the footer;
+    // a pointer inside a rendered chip's span targets that exact persistent
+    // chip. The chip hit is absolute (window position), independent of the
+    // press anchor, so it is exact for the pointer's real position over the
+    // rendered strip.
+    for chip in chips {
+        if chip.contains(pointer_x, pointer_y) {
+            return (Some(DragTarget::Chip { space: chip.space }), true);
+        }
+    }
+    // The footer band (the strip's y-range) without a chip hit is **no
+    // target**: the fixed `[Downloads]`/`[+]` controls and the gaps between
+    // chips reject the drop whole. The strip band comes from the rendered
+    // chip spans (all chips share the strip row band); with no laid-out
+    // chip yet there is no footer evidence and the legacy list geometry
+    // applies.
+    if let Some(strip) = chips.first() {
+        if pointer_y >= strip.y_top && pointer_y < strip.y_bottom {
+            return (None, false);
+        }
+    }
     // Distance from the pointer up to the tab list's top edge. The press
     // sits `source * row_h + press_in_row` below it; `dy` is the pointer's
     // displacement from the press.
     let above_list = -(dy) - (source as f32 * row_h + press_in_row);
     if above_list <= 0.0 {
+        // Pointer over (or below) the tab list: resolve the insertion slot.
+        // A pointer in the gap between the list bottom and the footer strip
+        // still drops at the region end (the pre-strip list geometry); the
+        // strip band itself is handled above.
         let raw = source as isize + (dy / row_h).round() as isize;
         let (lo, hi) = if source < pinned {
             (0, pinned)
@@ -111,17 +191,17 @@ pub fn resolve_target(
         let valid = (lo..=hi).contains(&(raw as usize))
             || (lo == 0 && raw < 0)
             || (hi == len && raw > len as isize);
-        (DragTarget::Tab { slot }, valid)
+        (Some(DragTarget::Tab { slot }), valid)
     } else {
         // Pointer above the tab list: the favorites region occupies the
         // `favorites_h` immediately above it (when rendered). A drop on the
         // favorites band toggles the dragged tab in the window-global grid.
         if favorites_h > 0.0 && above_list <= favorites_h {
-            return (DragTarget::Favorites, true);
+            return (Some(DragTarget::Favorites), true);
         }
         // Above the favorites band is the fixed chrome (the command field /
         // brand row) — not droppable.
-        (DragTarget::Tab { slot: source }, false)
+        (None, false)
     }
 }
 
@@ -145,75 +225,133 @@ mod tests {
         16.0
     }
 
-    /// A 32 pt row geometry over the given tab list.
-    fn geometry(pinned: usize, len: usize) -> DragGeometry {
+    /// A 32 pt row geometry over the given tab list (no chips rendered).
+    fn geometry<'a>(pinned: usize, len: usize, chips: &'a [ChipSpan]) -> DragGeometry<'a> {
         DragGeometry {
             pinned,
             len,
             row_h: 32.0,
             favorites_h: 0.0,
+            chips,
         }
     }
 
     /// The same geometry with a rendered favorites band above the list.
-    fn geometry_with_favorites(pinned: usize, len: usize, favorites_h: f32) -> DragGeometry {
+    fn geometry_with_favorites<'a>(
+        pinned: usize,
+        len: usize,
+        favorites_h: f32,
+        chips: &'a [ChipSpan],
+    ) -> DragGeometry<'a> {
         DragGeometry {
             pinned,
             len,
             row_h: 32.0,
             favorites_h,
+            chips,
+        }
+    }
+
+    /// A chip span at the given x/y (the pure resolver only consumes the
+    /// rect; the production derivation lives in `app::drag_chip`).
+    fn chip(space: u64, x_left: f32, x_right: f32, y_top: f32, y_bottom: f32) -> ChipSpan {
+        ChipSpan {
+            space: SpaceId(space),
+            x_left,
+            x_right,
+            y_top,
+            y_bottom,
         }
     }
 
     #[test]
     fn reorder_targets_stay_inside_the_source_region() {
         // Pinned region [0, 2), regular [2, 5).
-        let g = geometry(2, 5);
+        let chips = [];
+        let g = geometry(2, 5, &chips);
         // Regular tab at 3 dragged one row down: slot 4 (valid).
-        let (target, valid) = resolve_target(3, 32.0, center_press(), &g);
-        assert_eq!(target, DragTarget::Tab { slot: 4 });
+        let (target, valid) = resolve_target(3, 10.0, 232.0, 32.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Tab { slot: 4 }));
         assert!(valid);
         // …and one row up: slot 2 (still regular — the first regular slot).
-        let (target, valid) = resolve_target(3, -32.0, center_press(), &g);
-        assert_eq!(target, DragTarget::Tab { slot: 2 });
+        let (target, valid) = resolve_target(3, 10.0, 168.0, -32.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Tab { slot: 2 }));
         assert!(valid);
         // Pinned tab at 0 dragged one row down stays pinned.
-        let (target, valid) = resolve_target(0, 32.0, center_press(), &g);
-        assert_eq!(target, DragTarget::Tab { slot: 1 });
+        let (target, valid) = resolve_target(0, 10.0, 232.0, 32.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Tab { slot: 1 }));
         assert!(valid);
     }
 
     #[test]
     fn boundary_crossing_is_illegal_and_clamps_to_the_region_edge() {
-        let g = geometry(2, 5);
-        // Regular tab at 2 dragged far up: the target clamps to the region
-        // start (slot 2, the first regular row) but is invalid.
-        let (target, valid) = resolve_target(2, -2000.0, center_press(), &g);
-        assert_eq!(target, DragTarget::Tab { slot: 2 });
+        let chips = [];
+        let g = geometry(2, 5, &chips);
+        // Regular tab at 2 dragged one row up (still inside the list): the
+        // target clamps to the region start (slot 2, the first regular row)
+        // but is invalid — the pinned/regular boundary crossing.
+        let (target, valid) = resolve_target(2, 10.0, 368.0, -32.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Tab { slot: 2 }));
         assert!(!valid, "boundary crossing is rejected whole");
-        // Pinned tab dragged far down clamps to the region end and is invalid.
-        let (target, valid) = resolve_target(0, 2000.0, center_press(), &g);
-        assert_eq!(target, DragTarget::Tab { slot: 2 });
+        // Pinned tab dragged into the regular region (still inside the
+        // list): clamps to the region end and is invalid.
+        let (target, valid) = resolve_target(0, 10.0, 296.0, 96.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Tab { slot: 2 }));
         assert!(!valid);
     }
 
     #[test]
-    fn dragging_to_the_region_end_is_valid() {
-        let g = geometry(2, 5);
-        // Regular tab at 4 (last) dragged down: slot 5 = end of the regular
-        // region, valid.
-        let (target, valid) = resolve_target(4, 200.0, center_press(), &g);
-        assert_eq!(target, DragTarget::Tab { slot: 5 });
+    fn dragging_to_the_region_end_is_valid_at_the_list_bottom_edge() {
+        let chips = [];
+        let g = geometry(2, 5, &chips);
+        // Regular tab at 4 (last) dragged to the list's bottom edge
+        // (dy = list_bottom_dy = 5*32 - (4*32 + 16) = 16): slot 5 = end of
+        // the regular region, valid.
+        let (target, valid) = resolve_target(4, 10.0, 216.0, 16.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Tab { slot: 5 }));
         assert!(valid);
         // Pinned last tab at 1 dragged down to the boundary edge: slot 2
         // (end of the pinned region) is valid.
-        let (target, valid) = resolve_target(1, 32.0, center_press(), &g);
-        assert_eq!(target, DragTarget::Tab { slot: 2 });
+        let (target, valid) = resolve_target(1, 10.0, 232.0, 32.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Tab { slot: 2 }));
         assert!(valid);
         // …and one more row is the boundary crossing: invalid.
-        let (target, valid) = resolve_target(1, 64.0, center_press(), &g);
-        assert_eq!(target, DragTarget::Tab { slot: 2 });
+        let (target, valid) = resolve_target(1, 10.0, 264.0, 64.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Tab { slot: 2 }));
         assert!(!valid);
+    }
+
+    #[test]
+    fn below_the_list_outside_chips_is_no_target() {
+        // A rendered strip (the footer band) below the list: a pointer in
+        // the strip's y-range but outside every chip — the fixed
+        // `[Downloads]`/`[+]` controls or the gaps between chips — is **no
+        // target**: the drop is rejected whole.
+        let chips = [
+            chip(2, 60.0, 150.0, 640.0, 676.0),
+            chip(4, 170.0, 240.0, 640.0, 676.0),
+        ];
+        let g = geometry(2, 5, &chips);
+        // The gap between the two chips (y in the strip band, x between
+        // them): no chip hit, no target.
+        let (target, valid) = resolve_target(4, 160.0, 658.0, 200.0, center_press(), &g);
+        assert_eq!(target, None, "the chip gap is not a drop target");
+        assert!(!valid);
+        // The fixed `[Downloads]` control left of the strip (still in the
+        // strip band, outside the chips): no target.
+        let (target, valid) = resolve_target(4, 20.0, 658.0, 200.0, center_press(), &g);
+        assert_eq!(target, None, "fixed footer chrome is not a drop target");
+        assert!(!valid);
+        // A pointer still inside the gap between the list bottom and the
+        // strip band keeps the legacy list geometry: the drop lands at the
+        // region end.
+        let (target, valid) = resolve_target(4, 10.0, 600.0, 200.0, center_press(), &g);
+        assert_eq!(
+            target,
+            Some(DragTarget::Tab { slot: 5 }),
+            "end-of-region drop"
+        );
+        assert!(valid);
     }
 
     #[test]
@@ -222,25 +360,78 @@ mod tests {
         // list; a drop there toggles the dragged tab in/out of the grid.
         // Source row 1's center is 48 pt below the list top; the band is
         // 60 pt tall (a wrapped two-row grid at N density).
-        let g = geometry_with_favorites(0, 3, 60.0);
+        let chips = [];
+        let g = geometry_with_favorites(0, 3, 60.0, &chips);
         // 30 pt above the list top → inside the favorites band.
-        let (target, valid) = resolve_target(1, -(48.0 + 30.0), center_press(), &g);
-        assert_eq!(target, DragTarget::Favorites);
+        let (target, valid) = resolve_target(1, 10.0, -78.0, -(48.0 + 30.0), center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Favorites));
         assert!(valid);
         // The band's top edge boundary still targets favorites.
-        let (target, _valid) = resolve_target(1, -(48.0 + 60.0), center_press(), &g);
-        assert_eq!(target, DragTarget::Favorites);
+        let (target, _valid) = resolve_target(1, 10.0, -108.0, -(48.0 + 60.0), center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Favorites));
         // One point above the band is the fixed chrome: not droppable.
-        let (target, valid) = resolve_target(1, -(48.0 + 60.0 + 1.0), center_press(), &g);
-        assert_eq!(target, DragTarget::Tab { slot: 1 });
+        let (target, valid) =
+            resolve_target(1, 10.0, -109.0, -(48.0 + 60.0 + 1.0), center_press(), &g);
+        assert_eq!(target, None);
         assert!(
             !valid,
             "fixed chrome above the favorites band is not a drop target"
         );
         // Without a rendered favorites region there is no favorites target.
-        let g = geometry(0, 3);
-        let (target, _valid) = resolve_target(1, -(48.0 + 30.0), center_press(), &g);
-        assert_ne!(target, DragTarget::Favorites);
+        let g = geometry(0, 3, &chips);
+        let (target, _valid) = resolve_target(1, 10.0, -78.0, -(48.0 + 30.0), center_press(), &g);
+        assert_ne!(target, Some(DragTarget::Favorites));
+    }
+
+    #[test]
+    fn pointer_entering_a_rendered_chip_targets_that_exact_persistent_chip() {
+        // The strip chips sit below the tab list in the footer. The chip
+        // hit is absolute window position, so a pointer entering a chip's
+        // span targets that exact persistent chip regardless of the press
+        // anchor or the row displacement.
+        let chips = [
+            chip(7, 60.0, 150.0, 640.0, 676.0),
+            chip(4, 160.0, 240.0, 640.0, 676.0),
+        ];
+        let g = geometry(0, 3, &chips);
+        // Pointer over the second chip (persistent id 4): exact chip target,
+        // valid, even though the y is deep in the footer band.
+        let (target, valid) = resolve_target(1, 200.0, 658.0, 400.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Chip { space: SpaceId(4) }));
+        assert!(valid);
+        // The gap between chips is no target (the drop is rejected whole).
+        let (target, valid) = resolve_target(1, 155.0, 658.0, 400.0, center_press(), &g);
+        assert_eq!(target, None, "the gap between chips is not a target");
+        assert!(!valid);
+        // The footer chrome left of the strip is no target.
+        let (target, valid) = resolve_target(1, 20.0, 658.0, 400.0, center_press(), &g);
+        assert_eq!(
+            target, None,
+            "footer chrome outside the chips is not a target"
+        );
+        assert!(!valid);
+        // A pointer inside a chip's y band but outside every chip's x span
+        // is still no target.
+        let (target, _valid) = resolve_target(1, 300.0, 658.0, 400.0, center_press(), &g);
+        assert_eq!(target, None);
+    }
+
+    #[test]
+    fn chip_hit_wins_over_the_tab_slot_zone_and_is_exact_for_the_press() {
+        // A pointer in the footer band with a chip under it targets the
+        // chip even when the y-anchored slot math would otherwise clamp
+        // into the list.
+        let chips = [chip(9, 60.0, 150.0, 640.0, 676.0)];
+        let g = geometry(0, 3, &chips);
+        let (target, valid) = resolve_target(2, 100.0, 650.0, 500.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Chip { space: SpaceId(9) }));
+        assert!(valid);
+        // Chip spans clip: a pointer at the chip's bottom edge is inside;
+        // one point below is not.
+        let (target, _valid) = resolve_target(2, 100.0, 675.5, 500.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Chip { space: SpaceId(9) }));
+        let (target, _valid) = resolve_target(2, 100.0, 677.0, 500.0, center_press(), &g);
+        assert_ne!(target, Some(DragTarget::Chip { space: SpaceId(9) }));
     }
 
     #[test]

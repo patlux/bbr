@@ -45,8 +45,9 @@ pub fn space_identity_id(space: SpaceId) -> SharedString {
 
 /// One rendered space chip's identity, derived from the controller snapshot
 /// plus the effective space appearance (the portable appearance contract's
-/// validated identity). The render, the snapshot, and the semantic tree all
-/// consume this same source so the chip ids can never drift.
+/// validated identity) and the app's drag state. The render, the snapshot,
+/// and the semantic tree all consume this same source so the chip ids can
+/// never drift.
 ///
 /// Display ordering is the caller's vector order (canonical grouped order);
 /// the persistent id is [`Self::space`] alone.
@@ -68,6 +69,15 @@ pub struct SpaceChipVisuals {
     pub theme: SpaceTheme,
     /// Whether this is the active space (the chip renders selected).
     pub selected: bool,
+    /// §10.9: whether a pointer drag currently targets this exact chip (the
+    /// chip renders the drag-target outline + tint plus the §12
+    /// destination-profile companion). Derived from the app's drag state,
+    /// never a render position.
+    pub drag_target: bool,
+    /// The §12 destination-profile companion rendered while this chip is
+    /// the drag target; `None` at rest. Never the only identity cue — the
+    /// chip always carries its curated identity and title.
+    pub companion: Option<crate::components::ProfileCompanion>,
 }
 
 /// The §11.3 space strip: the single-line horizontal scroll viewport that
@@ -94,9 +104,11 @@ pub fn space_strip(
 }
 
 /// One §11.3 identity chip: `[identity] [title, trunc]`, `radius:sm`, with
-/// the persistent selected surface + accent rail on the active space.
-/// `on_select` is the production view listener (the same app method the
-/// keyboard traversal drives). Chips never shrink inside the scroll
+/// the persistent selected surface + accent rail on the active space and the
+/// §10.9 drag-target treatment (accent outline + selection tint + the §12
+/// destination-profile companion) while a pointer drag targets this exact
+/// chip. `on_select` is the production view listener (the same app method
+/// the keyboard traversal drives). Chips never shrink inside the scroll
 /// viewport (`flex_shrink_0`), so the strip's content width is the sum of
 /// its chips and the selected chip can be scrolled into view determinis-
 /// tically.
@@ -107,6 +119,7 @@ pub fn space_chip(
 ) -> Stateful<Div> {
     let p = theme.palette;
     let selected = visuals.selected;
+    let target = visuals.drag_target;
     // §11.3: the active token tints the chip through the one central
     // resolver; text, the accent rail, and the §9 outline keep their own
     // tokens (the tint is never the only state cue).
@@ -122,12 +135,16 @@ pub fn space_chip(
         .flex_row()
         .rounded(Radius.small())
         .cursor_pointer()
-        .bg(if selected {
+        .bg(if target {
+            // §10.9 drag-target: the selection tint + accent outline — the
+            // targeted chip is unmistakable without being the active chip.
+            p.tint_selected
+        } else if selected {
             tint.chip_active
         } else {
             p.surface_sidebar
         })
-        .when(selected, |el| {
+        .when(selected && !target, |el| {
             // The persistent selected surface plus a focus-independent
             // accent rail — the active chip is unmistakable without color
             // (the §9 outline rides the strip's keyboard focus).
@@ -138,6 +155,23 @@ pub fn space_chip(
                     .rounded(Radius.small())
                     .bg(p.accent),
             )
+        })
+        .when(target, |el| {
+            // §10.9/§11.3: the drag-target outline plus the §12
+            // destination-profile companion (monogram + hue tile), so the
+            // destination profile is never communicated by color alone.
+            let companion = visuals.companion.as_ref().map(|companion| {
+                let spec = crate::components::ProfileChipSpec {
+                    letter: companion.letter.clone(),
+                    hue: companion.hue,
+                };
+                crate::components::profile_chip(theme, companion.profile_index, &spec)
+            });
+            el.border_1()
+                .border_color(p.accent)
+                .when(companion.is_some(), |el| {
+                    el.child(companion.expect("checked above"))
+                })
         })
         .child(
             div()
@@ -174,6 +208,8 @@ mod tests {
             identity: "book".into(),
             theme: SpaceTheme::Ink,
             selected: false,
+            drag_target: false,
+            companion: None,
         }
     }
 
@@ -216,6 +252,47 @@ mod tests {
         assert_eq!(visuals.identity, "book");
         assert_eq!(visuals.theme, SpaceTheme::Ink);
         assert!(!visuals.selected);
+        assert!(!visuals.drag_target, "at rest no chip is a drag target");
+        assert_eq!(visuals.companion, None, "no companion at rest");
+    }
+
+    #[test]
+    fn the_drag_target_visuals_carry_the_destination_companion() {
+        // A targeted chip is not the active chip; its §12 companion carries
+        // the destination profile's identity (index, monogram, hue) — the
+        // non-color cue of §10.9/§11.3.
+        let target = SpaceChipVisuals {
+            space: SpaceId(4),
+            title: "Private".into(),
+            identity: "lock".into(),
+            theme: SpaceTheme::Violet,
+            selected: false,
+            drag_target: true,
+            companion: Some(crate::components::ProfileCompanion {
+                profile_index: 1,
+                letter: "PR".into(),
+                hue: bbr_browser::ProfileHue::Violet,
+            }),
+        };
+        assert!(target.drag_target);
+        let companion = target
+            .companion
+            .as_ref()
+            .expect("targeted chip carries a companion");
+        assert_eq!(companion.profile_index, 1);
+        assert_eq!(companion.letter, "PR");
+        assert_eq!(companion.hue, bbr_browser::ProfileHue::Violet);
+        // The active chip without a drag target stays selected with no
+        // companion.
+        let active = SpaceChipVisuals {
+            selected: true,
+            drag_target: false,
+            companion: None,
+            ..target.clone()
+        };
+        assert!(active.selected);
+        assert!(!active.drag_target);
+        assert_eq!(active.companion, None);
     }
 
     #[test]
@@ -230,6 +307,8 @@ mod tests {
             identity: "code".into(),
             theme: SpaceTheme::Cobalt,
             selected: true,
+            drag_target: false,
+            companion: None,
         };
         let tint = crate::theme::space_tint(SpaceTheme::Cobalt, &theme);
         // The selected chip's surface is the tinted chip surface — a

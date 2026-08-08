@@ -136,6 +136,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             command_profile_hint: self.command_profile_hint.clone(),
             drag_source: self.drag_source,
             drag_slot: self.drag_slot,
+            drag_chip: self.drag_chip,
             drag_valid: self.drag_valid,
             space_chips: self.space_chips.clone(),
             active_appearance: self.active_appearance.clone(),

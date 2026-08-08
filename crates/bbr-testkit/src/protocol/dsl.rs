@@ -206,16 +206,17 @@ pub fn seed_downloads_cancelled(
     }
 }
 
-pub fn begin_tab_drag(index: usize, y: f32, press_in_row: f32) -> Request {
+pub fn begin_tab_drag(index: usize, x: f32, y: f32, press_in_row: f32) -> Request {
     Request::BeginTabDrag {
         index,
+        x,
         y,
         press_in_row,
     }
 }
 
-pub fn move_tab_drag(dy: f32) -> Request {
-    Request::MoveTabDrag { dy }
+pub fn move_tab_drag(dx: f32, dy: f32) -> Request {
+    Request::MoveTabDrag { dx, dy }
 }
 
 pub fn end_tab_drag() -> Request {

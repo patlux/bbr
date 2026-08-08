@@ -35,6 +35,7 @@ impl BbrApp {
         let drag_source = self.tab_drag.source();
         let rows = self.row_visuals(&browser.tabs, drag_source);
         let drag_slot = self.tab_drag.tab_slot();
+        let drag_chip = self.tab_drag.chip_target();
         let space_chips: Vec<bbr_testkit::protocol::SpaceChipSnapshot> = self
             .space_chip_visuals()
             .into_iter()
@@ -44,6 +45,14 @@ impl BbrApp {
                 identity: chip.identity,
                 theme: chip.theme.name().to_string(),
                 selected: chip.selected,
+                drag_target: chip.drag_target,
+                companion: chip.companion.map(|companion| {
+                    bbr_testkit::protocol::ChipCompanionSnapshot {
+                        profile: companion.profile_index,
+                        monogram: companion.letter,
+                        hue: companion.hue.name().to_string(),
+                    }
+                }),
             })
             .collect();
         let window_width = f32::from(window.bounds().size.width);
@@ -241,6 +250,7 @@ impl BbrApp {
             command_profile_hint: self.command_profile_hint.clone(),
             drag_source,
             drag_slot,
+            drag_chip: drag_chip.map(|space| bbr_testkit::protocol::TestSpaceId(space.0)),
             drag_valid: self.tab_drag.valid(),
             space_chips,
             active_appearance,
@@ -257,6 +267,7 @@ impl BbrApp {
                 &self.command_ranking.results,
                 &in_rail_surface_ids,
                 drag_slot,
+                self.tab_drag.chip_target(),
                 self.dense_window.get(),
                 pane_layout,
                 &crate::shell::snapshot::U2IdsInput {

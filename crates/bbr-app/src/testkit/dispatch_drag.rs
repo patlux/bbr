@@ -27,6 +27,7 @@ pub(crate) fn dispatch_drag(
     let response = match req {
         Request::BeginTabDrag {
             index,
+            x,
             y,
             press_in_row,
         } => with_app(window, app, cx, |view, window, cx| {
@@ -34,7 +35,7 @@ pub(crate) fn dispatch_drag(
             view.begin_tab_drag(
                 &MouseDownEvent {
                     button: MouseButton::Left,
-                    position: point(px(130.0), px(*y)),
+                    position: point(px(*x), px(*y)),
                     modifiers: Modifiers::default(),
                     click_count: 1,
                     first_mouse: true,
@@ -51,14 +52,17 @@ pub(crate) fn dispatch_drag(
         })
         .unwrap_or_else(err_response),
 
-        Request::MoveTabDrag { dy } => with_app(window, app, cx, |view, window, cx| {
+        Request::MoveTabDrag { dx, dy } => with_app(window, app, cx, |view, window, cx| {
             use gpui::{point, px, Modifiers, MouseButton, MouseMoveEvent};
-            // The app only ever uses the displacement from the press y,
-            // so the seam's positions stay consistent by construction.
+            // The app only ever uses the displacement from the press
+            // position, so the seam's positions stay consistent by
+            // construction (the drag-to-chip path also enters the chip
+            // spans through the absolute pointer x).
+            let x = view.tab_drag_start_x().unwrap_or(0.0) + dx;
             let y = view.tab_drag_start_y().unwrap_or(0.0) + dy;
             view.on_tab_drag_move(
                 &MouseMoveEvent {
-                    position: point(px(130.0), px(y)),
+                    position: point(px(x), px(y)),
                     pressed_button: Some(MouseButton::Left),
                     modifiers: Modifiers::default(),
                 },

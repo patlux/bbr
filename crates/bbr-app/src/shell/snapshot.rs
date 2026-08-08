@@ -54,6 +54,11 @@ pub struct TestSnapshot {
     /// The current drag target: the tab insertion slot (within the source
     /// region) or the §11.10 favorites grid.
     pub drag_slot: Option<usize>,
+    /// The current drag target's persistent space chip (DESIGN.md §11.3):
+    /// the exact `bbr-space-chip-<persistent-space-id>` the pointer hovers
+    /// during a drag-to-chip. `None` outside the chips (tab slot, favorites
+    /// grid, or an invalid no-target zone).
+    pub drag_chip: Option<bbr_testkit::protocol::TestSpaceId>,
     pub drag_valid: bool,
     /// §11.3 permanent space strip: one chip per space in canonical display
     /// order (the vector order is display order; the chip/identity ids
@@ -220,6 +225,7 @@ pub fn visible_ids(
     command_results: &[crate::app::command_rank::CommandResultRow],
     command_surface: &[String],
     drag_slot: Option<usize>,
+    drag_chip: Option<bbr_browser::SpaceId>,
     dense: crate::dense::DenseRenderState,
     pane_layout: Option<bbr_browser::PaneLayout>,
 ) -> Vec<String> {
@@ -235,6 +241,7 @@ pub fn visible_ids(
         command_results,
         command_surface,
         drag_slot,
+        drag_chip,
         dense,
         pane_layout,
         &U2IdsInput::default(),
@@ -255,6 +262,7 @@ pub fn visible_ids_u2(
     command_results: &[crate::app::command_rank::CommandResultRow],
     command_surface: &[String],
     drag_slot: Option<usize>,
+    drag_chip: Option<bbr_browser::SpaceId>,
     dense: crate::dense::DenseRenderState,
     pane_layout: Option<bbr_browser::PaneLayout>,
     u2: &u2::U2IdsInput<'_>,
@@ -373,6 +381,17 @@ pub fn visible_ids_u2(
     }
     if let Some(slot) = drag_slot {
         ids.push(format!("bbr-drag-tick-{slot}"));
+    }
+    // §10.9/§11.3: while a drag targets a strip chip, the targeted chip
+    // renders its §12 destination-profile companion (`bbr-profile-chip-<n>`
+    // — the destination space's profile index), so the companion id is part
+    // of the rendered surface exactly while it is visible.
+    if let Some(drag_chip) = drag_chip {
+        if let Some(space) = browser.spaces.iter().find(|s| s.id == drag_chip) {
+            if let Some(profile) = browser.profiles.iter().find(|p| p.id == space.profile) {
+                ids.push(format!("bbr-profile-chip-{}", profile.index));
+            }
+        }
     }
     let active_tab = browser
         .active_index

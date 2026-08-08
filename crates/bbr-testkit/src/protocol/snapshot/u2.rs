@@ -8,6 +8,21 @@ use serde::{Deserialize, Serialize};
 
 use crate::protocol::TestSpaceId;
 
+/// The §12 destination-profile companion of a chip during a drag (DESIGN.md
+/// §10.9/§11.3): the destination space's profile identity rendered inside
+/// the targeted chip so isolation is never communicated by color alone. The
+/// `bbr-profile-chip-<n>` id derives from the profile's creation-order
+/// index.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ChipCompanionSnapshot {
+    /// The destination profile's creation-order index (the §12 chip id).
+    pub profile: usize,
+    /// The §12 monogram (the non-color identity).
+    pub monogram: String,
+    /// The profile hue name (DESIGN.md §12 allowed values).
+    pub hue: String,
+}
+
 /// One §11.3 identity chip on the wire (DESIGN.md §11.3/§15): the persistent
 /// space identity plus the space/identity strings the strip renders, in the
 /// strip's canonical display order (the vector order is display order; the
@@ -17,7 +32,9 @@ use crate::protocol::TestSpaceId;
 /// chips expose the exact selected evidence the active space renders. Each
 /// chip also carries the effective curated theme token name so the active
 /// appearance (explicit controller record or derived profile-hue default)
-/// is provable per chip.
+/// is provable per chip. While a drag targets this exact chip, the wire
+/// reports the §10.9 drag-target state and its §12 destination-profile
+/// companion.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SpaceChipSnapshot {
     /// The persistent space identity — the only identity of the chip ids.
@@ -34,6 +51,14 @@ pub struct SpaceChipSnapshot {
     pub theme: String,
     /// Whether this is the active space (the chip renders selected).
     pub selected: bool,
+    /// §10.9: whether a pointer drag currently targets this exact chip (the
+    /// chip renders the drag-target outline + tint plus the §12 companion).
+    #[serde(default)]
+    pub drag_target: bool,
+    /// The §12 destination-profile companion rendered while this chip is
+    /// the drag target; `None` at rest.
+    #[serde(default)]
+    pub companion: Option<ChipCompanionSnapshot>,
 }
 
 /// The resolved appearance evidence of the active space on the wire

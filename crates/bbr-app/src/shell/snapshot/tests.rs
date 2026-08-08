@@ -110,6 +110,7 @@ fn visible_ids_mirror_the_render_for_each_pane_branch() {
         &[],
         &[],
         None,
+        None,
         dense_all(tabs.len()),
         None,
     );
@@ -163,6 +164,7 @@ fn visible_ids_mirror_the_render_for_each_pane_branch() {
         &[],
         &[],
         None,
+        None,
         dense_all(1),
         None,
     );
@@ -186,6 +188,7 @@ fn visible_ids_mirror_the_render_for_each_pane_branch() {
         crate::app::command_rank::CommandResultState::Inactive,
         &[],
         &[],
+        None,
         None,
         dense_all(1),
         None,
@@ -213,6 +216,7 @@ fn strip_chip_ids_derive_from_the_persistent_space_id_not_the_index() {
         crate::app::command_rank::CommandResultState::Inactive,
         &[],
         &[],
+        None,
         None,
         dense_all(0),
         None,
@@ -255,6 +259,7 @@ fn visible_ids_include_the_strip_chips_and_identity_nodes() {
         &[],
         &[],
         None,
+        None,
         dense_all(0),
         None,
     );
@@ -286,6 +291,7 @@ fn visible_ids_include_the_strip_chips_and_identity_nodes() {
         &[],
         &[],
         None,
+        None,
         dense_all(0),
         None,
     );
@@ -310,6 +316,7 @@ fn visible_ids_expose_the_cross_context_profile_hint_when_shown() {
         &[],
         &[],
         None,
+        None,
         dense_all(0),
         None,
     );
@@ -325,6 +332,7 @@ fn visible_ids_expose_the_cross_context_profile_hint_when_shown() {
         crate::app::command_rank::CommandResultState::Inactive,
         &[],
         &[],
+        None,
         None,
         dense_all(0),
         None,
@@ -361,6 +369,7 @@ fn stale_dense_window_never_exposes_rows_the_model_removed() {
         crate::app::command_rank::CommandResultState::Inactive,
         &[],
         &[],
+        None,
         None,
         stale,
         None,

@@ -255,6 +255,31 @@ pub(crate) fn dispatch_benchmark(
         })
         .unwrap_or_else(err_response),
 
+        Request::BenchmarkDragMoveTab {
+            operation_id,
+            from_index,
+            to_space,
+        } => with_app(window, app, cx, |view, window, cx| {
+            view.benchmark_drag_move_tab(
+                *operation_id,
+                *from_index,
+                bbr_browser::SpaceId(to_space.0),
+                window,
+                cx,
+            )
+        })
+        .map(|started| {
+            if started {
+                Response::Ok
+            } else {
+                Response::Error(Error::new(
+                    "benchmark_busy",
+                    "another presentation measurement is pending",
+                ))
+            }
+        })
+        .unwrap_or_else(err_response),
+
         // Pointer-state benchmarks: the production hover/press listener
         // methods (`set_row_hover` / `set_row_pressed`) render the §10.2
         // hover wash + close reveal and the §10.3 active wash. Each sample

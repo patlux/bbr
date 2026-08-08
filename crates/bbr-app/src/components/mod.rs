@@ -111,6 +111,23 @@ pub struct ProfileChipSpec {
     pub hue: bbr_browser::ProfileHue,
 }
 
+/// The §12 destination-profile companion of a chip during a drag (DESIGN.md
+/// §10.9/§11.3): the destination space's profile identity — creation-order
+/// index (the `bbr-profile-chip-<n>` id), monogram, and hue — rendered
+/// inside the targeted chip so the cross-profile destination is unmistakable
+/// without relying on color. Derived from the controller snapshot in the
+/// same `space_chip_visuals` derivation the render, the snapshot, and the
+/// semantic tree consume.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProfileCompanion {
+    /// The destination profile's creation-order index (the §12 chip id).
+    pub profile_index: usize,
+    /// The §12 monogram (the non-color identity).
+    pub letter: String,
+    /// The §12 hue (the tile's identity; never the only cue).
+    pub hue: bbr_browser::ProfileHue,
+}
+
 /// One canonical space-surface row identity, derived from the controller
 /// snapshot: the persistent-space lookup key and the §4-truncated title. The
 /// `space_groups` derivation is the single canonical order the permanent

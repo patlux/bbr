@@ -469,10 +469,10 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         // snapshot reports the typed source/target/validity and the §15 tick
         // id renders at the slot.
         client
-            .send_ok(&dsl::begin_tab_drag(0, 400.0, ROW_H / 2.0))
+            .send_ok(&dsl::begin_tab_drag(0, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin drag");
         client
-            .send_ok(&dsl::move_tab_drag(2.0 * ROW_H))
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * ROW_H))
             .expect("move drag down");
         let during = client.snapshot().expect("during drag snapshot");
         assert_eq!(during.drag_source, Some(0));
@@ -499,10 +499,10 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         // boundary edge (slot 2) and reports invalid; release commits
         // nothing.
         client
-            .send_ok(&dsl::begin_tab_drag(1, 400.0, ROW_H / 2.0))
+            .send_ok(&dsl::begin_tab_drag(1, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin boundary drag");
         client
-            .send_ok(&dsl::move_tab_drag(2.0 * ROW_H))
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * ROW_H))
             .expect("move into the regular region");
         let illegal = client.snapshot().expect("illegal drag snapshot");
         assert_eq!(illegal.drag_source, Some(1));
@@ -532,10 +532,10 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         // Legal regular-region reorder: drag the first regular row (index 2)
         // two rows down — slot 4, the regular region's own end.
         client
-            .send_ok(&dsl::begin_tab_drag(2, 400.0, ROW_H / 2.0))
+            .send_ok(&dsl::begin_tab_drag(2, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin regular drag");
         client
-            .send_ok(&dsl::move_tab_drag(2.0 * ROW_H))
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * ROW_H))
             .expect("move regular down");
         assert!(
             client.snapshot().expect("regular drag snapshot").drag_valid,
@@ -570,10 +570,10 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         // Escape cancels an in-flight drag: the target clears, nothing is
         // committed, and chrome focus stays in the tab list.
         client
-            .send_ok(&dsl::begin_tab_drag(2, 400.0, ROW_H / 2.0))
+            .send_ok(&dsl::begin_tab_drag(2, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin cancel drag");
         client
-            .send_ok(&dsl::move_tab_drag(2.0 * ROW_H))
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * ROW_H))
             .expect("move cancel drag");
         assert!(client
             .snapshot()

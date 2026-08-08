@@ -111,7 +111,7 @@ impl BbrApp {
     /// Commit an organize benchmark synchronously from the authoritative
     /// post-mutation snapshot (active view, focus, mode), like the other
     /// interaction benchmarks.
-    fn commit_organize_benchmark(&self, window: &Window) {
+    pub(crate) fn commit_organize_benchmark(&self, window: &Window) {
         let active_view = self.controller.snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();

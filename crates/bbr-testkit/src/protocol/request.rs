@@ -136,20 +136,24 @@ pub enum Request {
     ReleaseTabRow,
     /// Pointer drag entry: press on a visible tab row through the production
     /// mouse-down listener path (the same method the row's listener calls),
-    /// anchored at `y` so the subsequent moves are relative to the press.
-    /// Pointer press on a tab row, starting a drag at window y `y` with the
-    /// press `press_in_row` within the source row (0 at the top edge, the
-    /// row height at the bottom). The seam passes the row-center offset
-    /// unless a scenario anchors an off-center press.
+    /// anchored at window `x`/`y` so the subsequent moves are relative to
+    /// the press. The press `press_in_row` is the offset within the source
+    /// row (0 at the top edge, the row height at the bottom). The seam
+    /// passes the row-center offset unless a scenario anchors an off-center
+    /// press; the anchor x matters for the §11.3 drag-to-chip path (the
+    /// pointer must enter a rendered chip's x/y span).
     BeginTabDrag {
         index: usize,
+        x: f32,
         y: f32,
         press_in_row: f32,
     },
-    /// Pointer drag move: a `dy` displacement from the press position, sent
-    /// through the production mouse-move listener path. The app resolves the
-    /// typed target (tab slot or space row) and its legality.
+    /// Pointer drag move: `dx`/`dy` displacements from the press position,
+    /// sent through the production mouse-move listener path. The app
+    /// resolves the typed target (tab slot, favorites grid, or the §11.3
+    /// space chip under the pointer) and its legality.
     MoveTabDrag {
+        dx: f32,
         dy: f32,
     },
     /// Pointer drag release through the production mouse-up listener path:
@@ -533,6 +537,18 @@ pub enum Request {
     /// session-recreation class (fresh view in the destination store).
     BenchmarkMoveTab {
         operation_id: BenchmarkOperationId,
+        to_space: TestSpaceId,
+    },
+    /// Measure the same tab move through the production drag-to-chip path:
+    /// the concrete row `from_index` is pressed, the pointer is moved onto
+    /// the destination space's rendered chip (the exact production chip-hit
+    /// geometry), and the release commits through the drag drop → the
+    /// existing move authority. Same typed kind/report key/budget class as
+    /// [`Request::BenchmarkMoveTab`]; only the measured production entry is
+    /// the drag-to-chip path rather than the direct move command.
+    BenchmarkDragMoveTab {
+        operation_id: BenchmarkOperationId,
+        from_index: usize,
         to_space: TestSpaceId,
     },
     /// Measure a dense-list scroll through the production scroll state: the

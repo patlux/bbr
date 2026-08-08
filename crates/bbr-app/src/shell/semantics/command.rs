@@ -51,6 +51,7 @@ fn address_control_node(input: &SemanticInput<'_>) -> SemanticNode {
             enabled: false,
             selected: false,
             focused: false,
+            drag_target: false,
             children: vec![],
         },
     ];
@@ -65,6 +66,7 @@ fn address_control_node(input: &SemanticInput<'_>) -> SemanticNode {
         enabled: true,
         selected: false,
         focused: false,
+        drag_target: false,
         children,
     }
 }
@@ -80,6 +82,7 @@ fn profile_hint_node(hint: &super::SemanticProfileHint) -> SemanticNode {
         enabled: true,
         selected: false,
         focused: false,
+        drag_target: false,
         children: vec![SemanticNode {
             id: format!("bbr-profile-chip-{}", hint.profile_index),
             role: SemanticRole::Chip,
@@ -88,6 +91,7 @@ fn profile_hint_node(hint: &super::SemanticProfileHint) -> SemanticNode {
             enabled: true,
             selected: false,
             focused: false,
+            drag_target: false,
             children: vec![],
         }],
     }
@@ -141,6 +145,7 @@ fn staging_field_node(input: &SemanticInput<'_>) -> SemanticNode {
             enabled: true,
             selected: false,
             focused: false,
+            drag_target: false,
             children: input
                 .command
                 .results
@@ -153,6 +158,7 @@ fn staging_field_node(input: &SemanticInput<'_>) -> SemanticNode {
                     enabled: true,
                     selected: row.selected,
                     focused: false,
+                    drag_target: false,
                     children: vec![],
                 })
                 .collect(),
@@ -214,6 +220,7 @@ pub(super) fn command_surface_node(input: &SemanticInput<'_>) -> Option<Semantic
                 enabled: true,
                 selected: false,
                 focused: input.focus.command,
+                drag_target: false,
                 children: field_children,
             }];
             children.extend(surface_result_nodes(input, "bbr-palette-result"));
@@ -225,6 +232,7 @@ pub(super) fn command_surface_node(input: &SemanticInput<'_>) -> Option<Semantic
                 enabled: true,
                 selected: false,
                 focused: input.focus.command,
+                drag_target: false,
                 children,
             })
         }
@@ -261,6 +269,7 @@ pub(super) fn command_surface_node(input: &SemanticInput<'_>) -> Option<Semantic
                 enabled: true,
                 selected: false,
                 focused: input.focus.command,
+                drag_target: false,
                 children: field_children,
             }];
             children.extend(surface_result_nodes(input, "bbr-command-result"));
@@ -272,6 +281,7 @@ pub(super) fn command_surface_node(input: &SemanticInput<'_>) -> Option<Semantic
                 enabled: true,
                 selected: false,
                 focused: input.focus.command,
+                drag_target: false,
                 children,
             })
         }
@@ -293,6 +303,7 @@ fn surface_result_nodes(input: &SemanticInput<'_>, id_prefix: &str) -> Vec<Seman
         enabled: true,
         selected: false,
         focused: false,
+        drag_target: false,
         children: input
             .command
             .results
@@ -305,6 +316,7 @@ fn surface_result_nodes(input: &SemanticInput<'_>, id_prefix: &str) -> Vec<Seman
                 enabled: true,
                 selected: row.selected,
                 focused: false,
+                drag_target: false,
                 children: vec![],
             })
             .collect(),

@@ -551,16 +551,22 @@ pub(crate) fn benchmark_reorder_tab(
     measured
 }
 
-/// The production move of the active tab into `to_space` through the staged
-/// command path. The sample must present the source space's repaired
-/// selection (the active space stays the source) and keep the chrome focus
-/// domain. `expected_recreated` asserts the wire event's recreation flag:
-/// same-profile moves keep the live session, cross-profile moves destroy and
-/// recreate it once in the destination store.
+/// The production drag-to-chip move of the tab at `from_index` into
+/// `to_space`: the concrete row is pressed, the pointer is moved onto the
+/// destination's rendered chip (the exact production chip-hit geometry), and
+/// the release commits through the drag drop → the existing move authority
+/// (`BenchmarkDragMoveTab`). The sample must present the source space's
+/// repaired selection (the active space stays the source) and keep the
+/// chrome focus domain. `expected_recreated` asserts the wire event's
+/// recreation flag: same-profile moves keep the live session, cross-profile
+/// moves destroy and recreate it once in the destination store. Same typed
+/// kinds/report keys/budgets as the direct move; only the measured
+/// production entry is the drag-to-chip path.
 pub(crate) fn benchmark_move_tab(
     client: &mut Client,
     since: &mut u64,
     operation: u64,
+    from_index: usize,
     to_space: TestSpaceId,
     source_repair_view: WebViewId,
     expected_recreated: bool,
@@ -568,11 +574,12 @@ pub(crate) fn benchmark_move_tab(
     let operation_id = BenchmarkOperationId(operation);
     let cursor = *since;
     client
-        .send_ok(&Request::BenchmarkMoveTab {
+        .send_ok(&Request::BenchmarkDragMoveTab {
             operation_id,
+            from_index,
             to_space,
         })
-        .expect("benchmark move");
+        .expect("benchmark drag move");
     let kind = if expected_recreated {
         BenchmarkKind::TabMoveCrossProfile
     } else {

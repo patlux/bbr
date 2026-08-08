@@ -816,7 +816,8 @@ fn drive_matrix_inner(
                 .or_else(|| before.tabs.get(active.wrapping_sub(1)))
                 .and_then(|t| t.web_view)
                 .expect("source keeps a neighbor view");
-            let measured = benchmark_move_tab(client, &mut since, operation, dest, repair, false);
+            let measured =
+                benchmark_move_tab(client, &mut since, operation, active, dest, repair, false);
             same_move_samples.push(measured.duration_ns);
             harness
                 .raw_log
@@ -928,7 +929,8 @@ fn drive_matrix_inner(
                 .or_else(|| before.tabs.get(active.wrapping_sub(1)))
                 .and_then(|t| t.web_view)
                 .expect("source keeps a neighbor view");
-            let measured = benchmark_move_tab(client, &mut since, operation, dest, repair, true);
+            let measured =
+                benchmark_move_tab(client, &mut since, operation, active, dest, repair, true);
             cross_move_samples.push(measured.duration_ns);
             harness
                 .raw_log

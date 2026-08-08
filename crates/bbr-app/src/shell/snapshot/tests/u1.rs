@@ -23,6 +23,7 @@ fn visible_ids_expose_the_open_command_surface_only_while_open() {
         &[],
         &[],
         None,
+        None,
         dense_all(0),
         None,
     );
@@ -52,6 +53,7 @@ fn visible_ids_expose_the_open_command_surface_only_while_open() {
         &[],
         &[],
         None,
+        None,
         dense_all(0),
         None,
     );
@@ -70,6 +72,7 @@ fn visible_ids_expose_the_open_command_surface_only_while_open() {
         crate::app::command_rank::CommandResultState::Inactive,
         &[],
         &[],
+        None,
         None,
         dense_all(0),
         None,
@@ -123,6 +126,7 @@ fn visible_ids_expose_the_open_surface_result_rows_when_published() {
         &rows,
         &[],
         None,
+        None,
         dense_all(0),
         None,
     );
@@ -145,6 +149,7 @@ fn visible_ids_expose_the_open_surface_result_rows_when_published() {
         state,
         &rows,
         &[],
+        None,
         None,
         dense_all(0),
         None,
@@ -171,6 +176,7 @@ fn visible_ids_expose_the_open_surface_result_rows_when_published() {
         &[],
         &[],
         None,
+        None,
         dense_all(0),
         None,
     );
@@ -186,6 +192,7 @@ fn visible_ids_expose_the_open_surface_result_rows_when_published() {
         crate::app::command_rank::CommandResultState::ActivationError,
         &[],
         &[],
+        None,
         None,
         dense_all(0),
         None,

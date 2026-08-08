@@ -78,8 +78,32 @@ fn space_strip_node(input: &SemanticInput<'_>) -> SemanticNode {
 /// One §11.3 chip node: the persistent `bbr-space-chip-<SpaceId>` identity
 /// with its `bbr-space-identity-<SpaceId>` child. `selected` mirrors the
 /// chip's active-space evidence; the identity node carries the validated
-/// curated identity string so identity is never color-only.
+/// curated identity string so identity is never color-only. While a drag
+/// targets this exact chip (§10.9), the node reports `drag_target` and
+/// carries the §12 destination-profile companion chip as a child, so the
+/// drag-target evidence is typed and derives from the same
+/// `space_chip_visuals` the render and the snapshot consume.
 fn space_chip_node(chip: &SpaceChipVisuals, strip_focused: bool) -> SemanticNode {
+    let mut children: Vec<SemanticNode> = vec![node(
+        space_identity_id(chip.space),
+        SemanticRole::Title,
+        Some(chip.identity.clone()),
+        None,
+        chip.selected,
+        false,
+        vec![],
+    )];
+    if let Some(companion) = &chip.companion {
+        children.push(node(
+            crate::components::space::profile_chip_id(companion.profile_index),
+            SemanticRole::Chip,
+            Some(companion.letter.clone()),
+            None,
+            false,
+            false,
+            vec![],
+        ));
+    }
     SemanticNode {
         id: space_chip_id(chip.space).to_string(),
         role: SemanticRole::Row,
@@ -88,15 +112,8 @@ fn space_chip_node(chip: &SpaceChipVisuals, strip_focused: bool) -> SemanticNode
         enabled: true,
         selected: chip.selected,
         focused: strip_focused && chip.selected,
-        children: vec![node(
-            space_identity_id(chip.space),
-            SemanticRole::Title,
-            Some(chip.identity.clone()),
-            None,
-            chip.selected,
-            false,
-            vec![],
-        )],
+        drag_target: chip.drag_target,
+        children,
     }
 }
 
@@ -156,6 +173,7 @@ pub fn favorites_node(
             enabled: true,
             selected: false,
             focused: false,
+            drag_target: false,
             children: vec![node(
                 crate::components::favorite_tile_icon_id(tile.index),
                 SemanticRole::Favicon,
@@ -274,6 +292,7 @@ pub fn folders_node(
                 enabled: true,
                 selected: false,
                 focused: false,
+                drag_target: false,
                 children: node_children,
             }
         })
@@ -303,6 +322,7 @@ pub fn folder_item_node(folder: usize, member: usize, title: &str, letter: char)
         enabled: true,
         selected: false,
         focused: false,
+        drag_target: false,
         children: vec![
             node(
                 crate::components::folder_item_favicon_id(folder, member),
@@ -364,6 +384,7 @@ fn node(
         enabled: true,
         selected,
         focused,
+        drag_target: false,
         children,
     }
 }

@@ -415,6 +415,8 @@ fn the_permanent_strip_always_renders_chip_nodes() {
         identity: "book".into(),
         theme: bbr_browser::SpaceTheme::Pine,
         selected: false,
+        drag_target: false,
+        companion: None,
     };
     let chips = [space_chip(), quiet];
     let two = input(

@@ -55,6 +55,9 @@ mod downloads_benchmarks;
 pub(crate) mod downloads_history;
 pub(crate) mod downloads_render;
 mod drag;
+#[cfg(feature = "testkit")]
+mod drag_benchmarks;
+mod drag_chip;
 mod drag_target;
 pub(crate) mod error_surface;
 pub(crate) mod error_surface_behavior;

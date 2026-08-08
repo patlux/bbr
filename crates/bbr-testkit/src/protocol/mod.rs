@@ -31,7 +31,7 @@ pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
 pub use request::Request;
 pub use snapshot::{
-    AuthSnapshot, CommandResultSnapshot, CommandResultState, CommandSurface,
+    AuthSnapshot, ChipCompanionSnapshot, CommandResultSnapshot, CommandResultState, CommandSurface,
     ContextMenuItemSnapshot, ContextMenuNativeSnapshot, ContextMenuSnapshot, DenseListSnapshot,
     DownloadGroup, DownloadMachineState, DownloadRowAction, DownloadRowSnapshot,
     DownloadsPanelSnapshot, ErrorSurfaceCategory, ErrorSurfaceSnapshot, FavoriteTileSnapshot,
@@ -527,6 +527,8 @@ mod tests {
                 identity: "code".into(),
                 theme: "cobalt".into(),
                 selected: true,
+                drag_target: false,
+                companion: None,
             },
             SpaceChipSnapshot {
                 space: TestSpaceId(5),
@@ -534,14 +536,16 @@ mod tests {
                 identity: "book".into(),
                 theme: "pine".into(),
                 selected: false,
+                drag_target: false,
+                companion: None,
             },
         ];
         let json = serde_json::to_value(&chips).unwrap();
         assert_eq!(
             json,
             json!([
-                {"space":2,"title":"Default","identity":"code","theme":"cobalt","selected":true},
-                {"space":5,"title":"Reading","identity":"book","theme":"pine","selected":false}
+                {"space":2,"title":"Default","identity":"code","theme":"cobalt","selected":true,"drag_target":false,"companion":null},
+                {"space":5,"title":"Reading","identity":"book","theme":"pine","selected":false,"drag_target":false,"companion":null}
             ])
         );
         let decoded: Vec<SpaceChipSnapshot> = serde_json::from_value(json).unwrap();

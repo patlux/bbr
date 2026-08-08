@@ -9,8 +9,8 @@ use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewI
 
 mod u2;
 pub use u2::{
-    FavoriteTileSnapshot, FolderRowSnapshot, SpaceAppearanceSnapshot, SpaceChipSnapshot,
-    SpaceStripScrollSnapshot,
+    ChipCompanionSnapshot, FavoriteTileSnapshot, FolderRowSnapshot, SpaceAppearanceSnapshot,
+    SpaceChipSnapshot, SpaceStripScrollSnapshot,
 };
 
 /// The L6 contract state of one download attempt (DESIGN.md §15): the panel
@@ -388,6 +388,12 @@ pub struct SemanticNode {
     pub selected: bool,
     /// Whether the element owns keyboard focus (GPUI focus tree; §9 ring).
     pub focused: bool,
+    /// §10.9: whether the element is the current drag target (a space chip
+    /// under the pointer renders the drag-target treatment plus its §12
+    /// destination-profile companion). Derived from the same drag state the
+    /// render and the snapshot consume.
+    #[serde(default)]
+    pub drag_target: bool,
     pub children: Vec<SemanticNode>,
 }
 
@@ -881,6 +887,14 @@ pub struct Snapshot {
     /// The current drag target: the tab insertion slot (within the source
     /// region) or the §11.10 favorites grid.
     pub drag_slot: Option<usize>,
+    /// The current drag target's persistent space chip (DESIGN.md §11.3):
+    /// the exact `bbr-space-chip-<persistent-space-id>` the pointer hovers
+    /// during a drag-to-chip. `None` when the drag targets a tab slot, the
+    /// favorites grid, or nothing (an invalid zone outside chips/list/
+    /// favorites). The identity is the persistent `SpaceId`, never a render
+    /// position.
+    #[serde(default)]
+    pub drag_chip: Option<TestSpaceId>,
     /// Whether the current drag target is a legal drop (a boundary crossing
     /// or a non-droppable zone reports `false` and renders the muted tick).
     pub drag_valid: bool,

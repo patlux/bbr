@@ -159,12 +159,16 @@ impl BbrApp {
     /// The §11.3 chip visuals for the current render, snapshot, and semantic
     /// tree: one chip per space in canonical grouped order (profile groups,
     /// creation order within each profile), each consuming the effective
-    /// space appearance from the one controller authority. The render, the
-    /// snapshot, and the semantic tree all call this same method so the
-    /// chip ids and states can never drift.
+    /// space appearance from the one controller authority and the app's
+    /// current drag-to-chip state. The render, the snapshot, and the
+    /// semantic tree all call this same method so the chip ids and states
+    /// can never drift.
     pub(crate) fn space_chip_visuals(&self) -> Vec<crate::components::SpaceChipVisuals> {
         let browser = self.controller.snapshot();
         let budget = crate::shell::space_title_budget_chars(&self.theme());
+        // The one drag-state source: the exact persistent chip the pointer
+        // currently hovers (None at rest / over another zone).
+        let drag_chip = self.tab_drag.chip_target();
         crate::shell::space_groups(&browser, budget)
             .into_iter()
             .flat_map(|group| group.rows.into_iter())
@@ -178,6 +182,7 @@ impl BbrApp {
                     .controller
                     .space_appearance(space.id)
                     .expect("space exists");
+                let targeted = drag_chip == Some(space.id);
                 crate::components::SpaceChipVisuals {
                     // The persistent id is the chip identity; the vector
                     // position is display order only.
@@ -186,6 +191,25 @@ impl BbrApp {
                     identity: appearance.identity.name(),
                     theme: appearance.theme,
                     selected: space.active,
+                    // §10.9/§11.3: the targeted chip renders the drag-target
+                    // treatment plus the §12 destination-profile companion
+                    // (the destination space's profile — monogram + hue +
+                    // the profile chip's creation-order index), derived from
+                    // the same controller snapshot the chip order consumes.
+                    drag_target: targeted,
+                    companion: targeted
+                        .then(|| {
+                            browser
+                                .profiles
+                                .iter()
+                                .find(|profile| profile.id == space.profile)
+                                .map(|profile| crate::components::ProfileCompanion {
+                                    profile_index: profile.index,
+                                    letter: crate::shell::space::profile_monogram(&profile.title),
+                                    hue: profile.hue,
+                                })
+                        })
+                        .flatten(),
                 }
             })
             .collect()
