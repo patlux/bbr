@@ -12,6 +12,7 @@ use std::rc::Rc;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2::{AnyThread, ClassType, MainThreadMarker, MainThreadOnly};
+use objc2_app_kit::NSColor;
 use objc2_foundation::{NSString, NSURLRequest, NSURL, NSUUID};
 use objc2_web_kit::{WKWebView, WKWebViewConfiguration, WKWebsiteDataStore};
 
@@ -299,6 +300,17 @@ impl WebEngine for WebEngineWk {
                 &config,
             )
         };
+        // Match DESIGN's dark `material:glass` behind page content so a new
+        // or navigating WKWebView never exposes WebKit's default white plane.
+        let under_page_background = NSColor::colorWithSRGBRed_green_blue_alpha(
+            0x15 as f64 / 255.0,
+            0x17 as f64 / 255.0,
+            0x19 as f64 / 255.0,
+            1.0,
+        );
+        unsafe {
+            web_view.setUnderPageBackgroundColor(Some(&under_page_background));
+        }
         let delegate = WebViewDelegate::new(
             mtm,
             id,

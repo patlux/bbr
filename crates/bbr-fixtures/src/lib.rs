@@ -163,6 +163,7 @@ fn handle_connection(
             let mut h = hits.lock().unwrap();
             *h.entry(path.to_string()).or_insert(0) += 1;
             drop(h);
+            let data = style_fixture_html(data, &content_type);
             respond_with_headers(
                 &mut stream,
                 200,
@@ -175,6 +176,12 @@ fn handle_connection(
             let mut h = hits.lock().unwrap();
             *h.entry(path.to_string()).or_insert(0) += 1;
             drop(h);
+            let content_type = headers
+                .iter()
+                .find(|(name, _)| name.eq_ignore_ascii_case("content-type"))
+                .map(|(_, value)| value.as_str())
+                .unwrap_or_default();
+            let body = style_fixture_html(body, content_type);
             respond_with_headers(&mut stream, 200, "OK", &headers, &body)?;
         }
         Route::NotFound => {
@@ -474,6 +481,33 @@ fn route(
     Ok(Route::File { data, content_type })
 }
 
+const DARK_FIXTURE_STYLE: &str = r#"<style data-bbr-fixture-theme>
+  :root { color-scheme: dark; background: #151719; color: #eceef1; }
+  body { background: #151719; color: #eceef1; font-family: system-ui, sans-serif; }
+  a { color: #3df0ce; }
+</style>"#;
+
+fn style_fixture_html(data: Vec<u8>, content_type: &str) -> Vec<u8> {
+    if !content_type.starts_with("text/html") {
+        return data;
+    }
+    let mut html = match String::from_utf8(data) {
+        Ok(html) => html,
+        Err(error) => return error.into_bytes(),
+    };
+    if html.contains("data-bbr-fixture-theme") {
+        return html.into_bytes();
+    }
+    if let Some(index) = html.find("</head>") {
+        html.insert_str(index, DARK_FIXTURE_STYLE);
+    } else if let Some(index) = html.find('>') {
+        html.insert_str(index + 1, DARK_FIXTURE_STYLE);
+    } else {
+        html.insert_str(0, DARK_FIXTURE_STYLE);
+    }
+    html.into_bytes()
+}
+
 fn content_type_for(path: &Path) -> String {
     match path.extension().and_then(|e| e.to_str()) {
         Some("html") => "text/html; charset=utf-8",
@@ -631,7 +665,10 @@ mod tests {
         let server = FixtureServer::start(sb.dir.clone()).unwrap();
         let (code, body) = get(&server.url("/page1.html")).unwrap();
         assert_eq!(code, 200);
-        assert_eq!(body, b"<html><title>One</title></html>");
+        let body = String::from_utf8(body).unwrap();
+        assert!(body.contains("<title>One</title>"));
+        assert!(body.contains("data-bbr-fixture-theme"));
+        assert!(body.contains("background: #151719"));
         assert_eq!(server.hits("/page1.html"), 1);
         let (_code2, _) = get(&server.url("/page1.html")).unwrap();
         assert_eq!(server.hits("/page1.html"), 2);
