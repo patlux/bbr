@@ -13,7 +13,25 @@ use bbr_web::{ProfileId, WebAction, WebEngine, WebEvent, WebRect, WebViewId};
 /// The engine as held by the app: main-thread-only, shared with the slot
 /// element and the test bridge.
 pub type EngineRef = Rc<RefCell<dyn WebEngine>>;
+/// Concrete native engine handle (macOS only): the find adapter binds a live
+/// `WKWebView` through [`bbr_web_macos::WebEngineWk::web_view`] without
+/// creating, moving, or reselecting a session. Both handles reference the
+/// same engine instance (`Rc` unsized-coercion), so native find state can
+/// never drift from the portable `dyn WebEngine` seam.
+#[cfg(target_os = "macos")]
+pub type NativeEngineRef = Rc<RefCell<bbr_web_macos::WebEngineWk>>;
 type EventSink = RefCell<Option<Box<dyn FnMut(WebEvent)>>>;
+
+/// What [`build_engine`] returns: the portable engine seam plus, on macOS,
+/// the concrete native handle for native-only integrations (the find
+/// adapter).
+pub struct BuiltEngine {
+    /// The portable `dyn WebEngine` seam (controller + app).
+    pub engine: EngineRef,
+    /// Concrete native engine handle (macOS only; unused on other targets).
+    #[cfg(target_os = "macos")]
+    pub native: NativeEngineRef,
+}
 
 /// Public runtime knobs for engine construction.
 #[derive(Debug, Clone)]
@@ -22,7 +40,8 @@ pub struct EngineConfig {
     pub non_persistent: bool,
 }
 
-/// Build the platform engine for the current process.
+/// Build the platform engine for the current process, returning the portable
+/// seam plus (on macOS) the concrete native handle.
 ///
 /// On macOS, `ns_view` is the GPUI root view captured from the window handle
 /// on the main thread; it is retained by the engine. On other platforms the
@@ -35,11 +54,11 @@ pub(crate) unsafe fn build_engine(
     ns_view: *mut std::ffi::c_void,
     config: &EngineConfig,
     engine_kind: &'static str,
-) -> EngineRef {
+) -> BuiltEngine {
     #[cfg(target_os = "macos")]
     {
         let mtm = objc2::MainThreadMarker::new().expect("engine built on main thread");
-        let engine = unsafe {
+        let native = Rc::new(RefCell::new(unsafe {
             bbr_web_macos::WebEngineWk::attach(
                 mtm,
                 ns_view,
@@ -47,13 +66,19 @@ pub(crate) unsafe fn build_engine(
                     non_persistent: config.non_persistent,
                 },
             )
-        };
+        }));
         let _ = engine_kind;
-        Rc::new(RefCell::new(engine))
+        // Unsized coercion: the SAME `Rc<RefCell<WebEngineWk>>` also serves
+        // as the `dyn WebEngine` seam, so the concrete find handle and the
+        // portable controller view can never diverge.
+        let engine: EngineRef = native.clone();
+        BuiltEngine { engine, native }
     }
     #[cfg(not(target_os = "macos"))]
     {
-        Rc::new(RefCell::new(NullEngine::default()))
+        BuiltEngine {
+            engine: Rc::new(RefCell::new(NullEngine::default())),
+        }
     }
 }
 

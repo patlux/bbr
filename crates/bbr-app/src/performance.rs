@@ -18,6 +18,7 @@ use bbr_web::{WebEvent, WebRect, WebViewId};
 use crate::app::palette::CommandSurface;
 
 pub mod command;
+mod find;
 pub mod pane_geometry;
 pub mod slot;
 mod u2;
@@ -44,6 +45,9 @@ struct State {
     /// selected result keys, typed state) observed at the ranking publish;
     /// the command benchmarks commit only against it.
     latest_command: Option<CommandObservation>,
+    /// The find-bar presentation the portal render actually drew; the find
+    /// benchmarks commit only against it (render-gated, see `find`).
+    latest_find: Option<find::FindObservation>,
     latest_active_web_view: Option<WebViewId>,
     latest_active_space: TestSpaceId,
     latest_sidebar_visible: bool,
@@ -100,6 +104,9 @@ struct Pending {
     /// commit from: generation, first/selected result key, typed state. Only
     /// the publish that carries this identity can satisfy the commit.
     command: Option<CommandExpectation>,
+    /// The exact find-bar presentation identity the pending sample must
+    /// commit from (open/focused, or the WebKit-reported report).
+    find: Option<find::FindExpectation>,
 }
 
 impl PerformanceProbe {
@@ -109,6 +116,7 @@ impl PerformanceProbe {
                 process_started,
                 inject_delay,
                 latest_command: None,
+                latest_find: None,
                 latest_active_web_view: None,
                 latest_active_space: TestSpaceId(0),
                 latest_sidebar_visible: true,
@@ -133,6 +141,7 @@ impl PerformanceProbe {
                     expected_profile_hint: None,
                     u2: u2::U2Expected::default(),
                     command: None,
+                    find: None,
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
@@ -175,6 +184,7 @@ impl PerformanceProbe {
             expected_profile_hint: None,
             u2: u2::U2Expected::default(),
             command: None,
+            find: None,
         });
         Ok(())
     }
@@ -437,6 +447,7 @@ impl PerformanceProbe {
                 .is_some_and(|expected| expected != &state.latest_profile_hint)
             || pending.u2.mismatches(&state.u2)
             || !command::command_matches(pending, &state)
+            || !find::find_matches(pending, &state)
         {
             return;
         }
@@ -510,5 +521,7 @@ fn monotonic_now_ns() -> u64 {
     0
 }
 
+#[cfg(test)]
+mod find_tests;
 #[cfg(test)]
 mod tests;

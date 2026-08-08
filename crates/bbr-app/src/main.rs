@@ -197,6 +197,13 @@ fn main() {
 
         let engine_kind = current_engine_kind();
         let (evt_tx, evt_rx) = smol::channel::unbounded::<bbr_web::WebEvent>();
+        // Find completions ride their own channel (the WebEvent channel is
+        // typed for engine navigation events): the find adapter's sink sends
+        // `FindCompletion`s from the WebKit completion block, and the pump
+        // drains them into `BbrApp::on_find_completion` on the main thread.
+        #[cfg(target_os = "macos")]
+        let (find_tx, find_rx) =
+            smol::channel::unbounded::<bbr_web_macos::find_mapping::FindCompletion>();
         #[cfg(feature = "testkit")]
         let performance = performance::PerformanceProbe::new(
             process_started,
@@ -210,6 +217,8 @@ fn main() {
         // retained separately so actions, pumps, dispatch, and presentation
         // hooks address the app directly (see `with_app`).
         let mut app_entity: Option<Entity<BbrApp>> = None;
+        #[cfg(target_os = "macos")]
+        let mut native_engine: Option<crate::engine::NativeEngineRef> = None;
         let window = cx
             .open_window(options, |window, cx| {
                 // Capture the GPUI root NSView pointer BEFORE building the
@@ -219,7 +228,12 @@ fn main() {
                     non_persistent: cli.test_token.as_ref().is_some(),
                 };
                 // SAFETY: `ns_view` is the live GPUI root view on the main thread.
-                let engine = unsafe { build_engine(ns_view, &config, engine_kind) };
+                let built = unsafe { build_engine(ns_view, &config, engine_kind) };
+                let engine = built.engine;
+                #[cfg(target_os = "macos")]
+                {
+                    native_engine = Some(built.native);
+                }
                 let controller = BrowserController::new(engine.clone(), allocate_view);
                 // The L5 companion service: one session-local organization
                 // controller per browser controller (NewFolder/NewSpace/
@@ -233,6 +247,8 @@ fn main() {
                         organization,
                         engine_kind,
                         evt_tx.clone(),
+                        #[cfg(target_os = "macos")]
+                        find_tx.clone(),
                         #[cfg(feature = "testkit")]
                         view_performance,
                         cx,
@@ -243,6 +259,16 @@ fn main() {
             })
             .expect("open window");
         let app = app_entity.expect("app entity built with the window root");
+
+        // macOS-only native seams: the concrete engine handle (the find
+        // adapter binds a live WKWebView without creating/moving sessions)
+        // is handed to the app after construction, like the portal host.
+        #[cfg(target_os = "macos")]
+        if let Some(native) = native_engine {
+            let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+                view.set_find_engine(native);
+            });
+        }
 
         // Create the web view with the initial URL (first prepaint will frame it).
         let _ = with_app(&window, &app, cx, |view, _w, _cx| {
@@ -311,6 +337,7 @@ fn main() {
                 &app,
                 evt_rx,
                 evt_tx.clone(),
+                find_rx,
                 cmd_rx,
                 server.clone(),
             );
@@ -349,7 +376,7 @@ fn main() {
         #[cfg(not(feature = "testkit"))]
         {
             // Event pump so the shell stays live even without the gateway.
-            spawn_event_pump(cx, &window, &app, evt_rx);
+            spawn_event_pump(cx, &window, &app, evt_rx, find_rx);
         }
 
         if !cli.hidden {

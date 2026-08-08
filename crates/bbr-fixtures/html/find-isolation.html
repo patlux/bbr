@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>BBR Find Isolation (probe active)</title>
+  </head>
+  <body>
+    <main>
+      <!-- Content-world isolation fixture (task packet find-in-page-portal-bar).
+           The BBR find strategy executes in WKContentWorld::defaultClientWorld,
+           a separate JS global object from this page's world. The page probe
+           below proves it: it scans the PAGE world's own window for any
+           client-world machinery (__bbr* globals, the "bbr-find" custom
+           highlight) and, on a leak, changes the title to "LEAK:...". The
+           page's own __bbrPage* globals are excluded — they must survive a
+           find run untouched. The probe rescans on every selectionchange
+           (the find strategy moves the selection in the shared DOM) and on
+           a fast interval, so a find run is always observed. -->
+      <h1 id="heading">Isolation probe</h1>
+      <p id="one">alice alice</p>
+      <p id="two">alice</p>
+    </main>
+    <script>
+      window.__bbrPageSentinel = "page-owned";
+      window.__bbrPageProbe = [];
+      window.__bbrPageScan = function () {
+        var own = ["__bbrPageSentinel", "__bbrPageProbe", "__bbrPageScan"];
+        var leaked = [];
+        var names = Object.getOwnPropertyNames(window);
+        for (var i = 0; i < names.length; i++) {
+          var name = names[i];
+          if (name.indexOf("__bbr") === 0 && own.indexOf(name) === -1) {
+            if (window.__bbrPageProbe.indexOf(name) === -1) {
+              window.__bbrPageProbe.push(name);
+            }
+            leaked.push(name);
+          }
+        }
+        try {
+          if (typeof CSS !== "undefined" && CSS.highlights && CSS.highlights.has("bbr-find")) {
+            leaked.push("highlight:bbr-find");
+          }
+        } catch (e) {}
+        if (leaked.length > 0) {
+          document.title = "LEAK:" + leaked.join(",");
+        }
+      };
+      window.__bbrPageScan();
+      document.addEventListener("selectionchange", window.__bbrPageScan);
+      setInterval(window.__bbrPageScan, 30);
+    </script>
+  </body>
+</html>

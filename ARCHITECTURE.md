@@ -224,6 +224,49 @@ overlay), and every close/commit/cancel/navigation context path dismisses the
 same host. The browser root no longer paints a duplicate floating command
 surface underneath WebKit.
 
+The find-in-page bar (task packet `find-in-page-portal-bar`) is the next
+consumer: `Cmd-F` presents a `NativeAboveWeb` request (`PresentationId(0xC3)`)
+anchored top-right of the content area with the §11.4 command-surface compact
+clamp (360 pt) at `density:row` height — settled S1 tokens, no invented sizes.
+Exactly one active find presentation per browser window; tab/space/session
+switches discard it (`find_discard_if_unbound`), while a navigation of the
+bound view invalidates the reported results in place (the bar stays open,
+`find_navigation_invalidated`). The bar reads the app's live `FindSurface` per
+render, so the WebKit-reported count/ordinal can never drift from the app. The
+portal window is non-activating and never key by design; keystrokes are handled
+by the main window's find-focus handle, and Escape/close restore the focus
+domain captured at open (`origin_chrome_focused`). The real-app find suite
+proves the same owner-classified Window Server hit-test evidence for the bar
+over the live `WKWebView`, and the `find_open`/`find_query_result`/`find_step`
+performance scenarios measure the warm presentation path against the
+command-surface budget.
+
+### WebKit find adapter (content-world isolated, non-destructive)
+
+The portable `bbr-web::find_in_page` session owns the L7 request/result
+lifecycle (start/report/find_next/find_previous/finish/invalidate). The macOS
+adapter (`bbr-web-macos::find_adapter` + `find_mapping` + `find_web_kit` +
+`js/find_strategy.js`) binds once at open to the active view's retained
+`WKWebView` and drops at close; opening, stepping, and closing never create,
+destroy, move, or reselect a web session. The adapter echoes portable request
+ids and drops stale completions; the portable session rejects stale ids
+independently — count/ordinal always come from WebKit's content process, never
+synthesized in GPUI.
+
+The strategy executes through
+`evaluateJavaScript_inFrame_inContentWorld_completionHandler` in
+[`WKContentWorld::defaultClientWorld`] — BBR's own client world, never the
+page's main content world. The client world shares the DOM (the strategy can
+read text runs and move the selection) but has a separate JavaScript global
+object, so the `__bbr*` globals and the MutationObserver are unobservable by
+and cannot collide with page scripts; the `find-isolation.html` fixture proves
+this in the real app (the page world records every unexpected global it can
+see and finds none after a find run). The strategy is non-destructive: it may
+read the DOM and move the selection, but never persistently mutates page
+structure, attributes, styles, or globals — highlights (CSS Custom Highlight
+registry) and the selection are transient and cleared on
+finish/invalidate/zero-match.
+
 A portal-window testkit draw must happen after the mutable `BbrApp` lease is
 released: the portal render reads that same entity. The gateway therefore
 copies the portal `AnyWindowHandle` during `with_app`, then calls

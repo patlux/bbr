@@ -116,6 +116,10 @@ pub struct TestSnapshot {
     /// `native-portal-host`; DESIGN.md §15): the active presentation and its
     /// native attachment/frame/visibility evidence.
     pub portal: bbr_testkit::protocol::PortalSnapshot,
+    /// Typed find-in-page presentation state (task packet
+    /// `find-in-page-portal-bar`): open presentation, field focus, query,
+    /// WebKit-reported count/ordinal, pending request, and staleness.
+    pub find: bbr_testkit::protocol::FindSnapshot,
     /// Whether the §11.3 spaces region is revealed under the command field.
     pub spaces_visible: bool,
     /// Whether the §11.4 plus menu is open and its selected item.

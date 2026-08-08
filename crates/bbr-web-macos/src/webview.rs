@@ -97,6 +97,17 @@ impl WebEngineWk {
         self.sessions.get(&id).map(|session| session.profile)
     }
 
+    /// A retained clone of the live `WKWebView` for `id` — the find
+    /// adapter's bind point. Never creates, moves, or reselects a session:
+    /// the caller binds one adapter per active view and the adapter only
+    /// scripts the existing view. `None` for an unknown/destroyed id.
+    pub fn web_view(&self, id: WebViewId) -> Option<Retained<WKWebView>> {
+        self.assert_main_thread();
+        self.sessions
+            .get(&id)
+            .map(|session| session.web_view.clone())
+    }
+
     fn assert_main_thread(&self) {
         debug_assert!(
             MainThreadMarker::new().is_some(),

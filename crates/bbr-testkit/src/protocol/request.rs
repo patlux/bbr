@@ -309,6 +309,24 @@ pub enum Request {
     /// bridge — the app owns no portal afterwards. Terminal; the snapshot
     /// afterwards reports the empty/closed host.
     PortalTeardown,
+    /// Open the find-in-page presentation over the active web view (task
+    /// packet `find-in-page-portal-bar`; the production `Cmd-F` path). The
+    /// bar renders in the one `NativeAboveWeb` portal window; opening never
+    /// creates, moves, or reselects a web session.
+    FindOpen,
+    /// Close the find presentation through the production close path
+    /// (Escape/close-button semantics): restores the origin focus domain and
+    /// clears highlights on the bound view.
+    FindClose,
+    /// Set the find query and start a fresh search (the typing/backspace
+    /// path; empty text clears highlights and the report).
+    FindSetQuery {
+        query: String,
+    },
+    /// Navigate to the next match (Enter / next-button path).
+    FindNext,
+    /// Navigate to the previous match (Shift-Enter / previous-button path).
+    FindPrevious,
     /// Bring the app to the foreground (testkit-only): the shown-harness
     /// portal frontmost test needs the BBR window to be the active app's
     /// front window so the real `windowNumberAtPoint` evidence at the probe
@@ -435,6 +453,35 @@ pub enum Request {
     /// session is created before Enter.
     BenchmarkPaletteOpen {
         operation_id: BenchmarkOperationId,
+    },
+    /// Measure the production `Cmd-F` find-bar open (the exact seam the
+    /// `FindInPage` action routes to): the sample commits only from a render
+    /// that presented the find bar with the field focused over the same
+    /// active view — warm class, no tab/session touched.
+    BenchmarkFindOpen {
+        operation_id: BenchmarkOperationId,
+    },
+    /// Measure the production find-query path (`FindSetQuery`, the exact
+    /// mutation typing/backspace route to): the sample commits only when
+    /// WebKit reported the expected match count/ordinal through the portable
+    /// contract and the bar re-rendered it (fast-but-wrong guard — a
+    /// pending, stale, or mismatched report can never commit). Fixture and
+    /// transport time are excluded by construction.
+    BenchmarkFindQueryResult {
+        operation_id: BenchmarkOperationId,
+        query: String,
+        expected_count: usize,
+        expected_ordinal: Option<usize>,
+    },
+    /// Measure the production find step (`FindNext`/`FindPrevious`, the exact
+    /// seams Enter/Shift-Enter and the bar buttons route to): the sample
+    /// commits only when WebKit reported the expected ordinal and the bar
+    /// re-rendered it — warm command-surface class.
+    BenchmarkFindStep {
+        operation_id: BenchmarkOperationId,
+        next: bool,
+        expected_count: usize,
+        expected_ordinal: Option<usize>,
     },
     /// U2 footer, favorites, and folders production pointer seams.
     ClickFooterDownloads,

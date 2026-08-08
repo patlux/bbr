@@ -201,6 +201,11 @@ impl BbrApp {
             })
             .ok();
         if let Some(event) = &outcome {
+            // A browser mutation that changes the active session ends the
+            // one-per-window find presentation (tab/space/session switch);
+            // mutations that keep the bound view active (e.g. a budget
+            // convergence) leave it open.
+            self.find_discard_if_unbound(cx);
             self.emit_browser(event);
             cx.notify();
         }

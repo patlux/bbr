@@ -19,6 +19,7 @@ use crate::app::BbrApp;
 use crate::testkit::dispatch_benchmark::dispatch_benchmark;
 use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
 use crate::testkit::dispatch_drag::dispatch_drag;
+use crate::testkit::dispatch_find::dispatch_find;
 use crate::testkit::dispatch_portal::dispatch_portal;
 use crate::testkit::dispatch_u2::dispatch_u2;
 use crate::testkit::dispatch_util::{browser_mutation, err_response};
@@ -46,6 +47,10 @@ pub(crate) fn dispatch(
     // Portal probe/teardown/flush routing lives separately because the
     // portal-window draw must happen outside the mutable app lease.
     if let Some(response) = dispatch_portal(&req, window, app, cx) {
+        return response;
+    }
+    // Find-in-page routing shares the same portal-frame flush rule.
+    if let Some(response) = dispatch_find(&req, window, app, cx) {
         return response;
     }
     // U2 footer/favorites/folders route separately to keep this router bounded.
@@ -431,6 +436,14 @@ pub(crate) fn dispatch(
         | Request::PortalTeardown
         | Request::FlushFrame => unreachable!("portal requests route through dispatch_portal"),
 
+        // Routed by `dispatch_find` before this match; reaching one here is
+        // a routing bug.
+        Request::FindOpen
+        | Request::FindClose
+        | Request::FindSetQuery { .. }
+        | Request::FindNext
+        | Request::FindPrevious => unreachable!("find requests route through dispatch_find"),
+
         // Routed by `dispatch_u2` before this match.
         Request::ClickFooterDownloads
         | Request::ClickFooterSpaces
@@ -477,7 +490,10 @@ pub(crate) fn dispatch(
         | Request::BenchmarkCommandType { .. }
         | Request::BenchmarkCommandActivate { .. }
         | Request::BenchmarkCommandActivateNewTab { .. }
-        | Request::BenchmarkPaletteOpen { .. } => {
+        | Request::BenchmarkPaletteOpen { .. }
+        | Request::BenchmarkFindOpen { .. }
+        | Request::BenchmarkFindQueryResult { .. }
+        | Request::BenchmarkFindStep { .. } => {
             unreachable!("benchmark requests route through dispatch_benchmark")
         }
     }

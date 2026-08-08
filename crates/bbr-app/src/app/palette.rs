@@ -195,6 +195,9 @@ impl BbrApp {
     /// surface presentation (single-state field → mutual exclusion) and
     /// clears the §11.3 profile hint through the shared command-bar entry.
     pub fn open_palette(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Opening a command surface replaces any open find presentation
+        // (exactly one active portal surface per window).
+        self.find_discard(cx);
         self.dismiss_command_portal(cx);
         self.command_surface = CommandSurface::Palette;
         self.activate_new_tab(window, cx);
@@ -207,6 +210,7 @@ impl BbrApp {
     /// activation as the in-rail command bar. `Cmd-L` and the field
     /// pointer-click route here.
     pub fn open_overlay(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.find_discard(cx);
         self.dismiss_command_portal(cx);
         self.command_surface = CommandSurface::Overlay;
         self.activate_command_bar(window, cx);

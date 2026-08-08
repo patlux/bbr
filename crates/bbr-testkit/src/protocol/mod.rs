@@ -32,7 +32,7 @@ pub use event::{BrowserChange, Event};
 pub use request::Request;
 pub use snapshot::{
     CommandResultSnapshot, CommandResultState, CommandSurface, DenseListSnapshot,
-    FavoriteTileSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts,
+    FavoriteTileSnapshot, FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts,
     PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, SemanticNode,
     SemanticRole, Snapshot, SpaceSnapshot, SpaceVisualState, TabSnapshot, TabVisualState,
 };

@@ -169,6 +169,26 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Find-in-page (task packet `find-in-page-portal-bar`): Cmd-F
+        // presents the find bar in the one `NativeAboveWeb` portal window
+        // with the field focused — the warm-presentation class. Query
+        // results and warm next/previous steps span the production entry,
+        // WebKit's content-process computation, and the re-rendered
+        // WebKit-reported report — the command-surface warm budget (packet:
+        // "Opening and warm result navigation meet the existing
+        // command-surface warm budget").
+        "find_open" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "find_query_result" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "find_step" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -348,6 +368,9 @@ impl Baseline {
             "command_activate",
             "command_activate_new_tab",
             "palette_open",
+            "find_open",
+            "find_query_result",
+            "find_step",
         ]
         .into_iter()
         .chain(u2::seed_kinds())
@@ -577,6 +600,45 @@ mod tests {
         m.insert("warm_tab_switch".into(), measured(45.0, 90.0));
         m.insert("sidebar_toggle".into(), measured(40.0, 75.0));
         assert!(evaluate(&m, &b, true).is_empty());
+    }
+
+    #[test]
+    fn find_budgets_are_seeded_and_enforced() {
+        // Regression guard: the find-in-page scenarios must carry their
+        // contract budgets in the seed so a future find-presentation or
+        // WebKit-report regression trips the gate instead of being silently
+        // unreported. All three are the warm command-surface class
+        // (50/100): Cmd-F open, query result, and warm next/previous step.
+        let b = Baseline::seed();
+        for (kind, p95, max) in [
+            ("find_open", 50.0, 100.0),
+            ("find_query_result", 50.0, 100.0),
+            ("find_step", 50.0, 100.0),
+        ] {
+            let entry = b
+                .entries
+                .get(kind)
+                .unwrap_or_else(|| panic!("seed baseline must carry the {kind} contract budget"));
+            assert_eq!(entry.budget_p95_ms, p95);
+            assert_eq!(entry.budget_max_ms, Some(max));
+            let mut slow = BTreeMap::new();
+            slow.insert(kind.into(), measured(p95 + 20.0, max + 20.0));
+            let r = evaluate(&slow, &b, false);
+            assert!(
+                r.iter().any(|x| x.rule == "abs_p95"),
+                "{kind} absolute p95 ceiling enforced"
+            );
+            assert!(
+                r.iter().any(|x| x.rule == "abs_max"),
+                "{kind} absolute max ceiling enforced"
+            );
+            let mut good = BTreeMap::new();
+            good.insert(kind.into(), measured(45.0, 90.0));
+            assert!(
+                evaluate(&good, &b, false).is_empty(),
+                "{kind} warm samples within budget stay green"
+            );
+        }
     }
 
     #[test]

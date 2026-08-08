@@ -182,6 +182,36 @@ pub fn portal_teardown() -> Request {
     Request::PortalTeardown
 }
 
+/// Open the find-in-page presentation over the active web view (the
+/// production `Cmd-F` path; task packet `find-in-page-portal-bar`).
+pub fn find_open() -> Request {
+    Request::FindOpen
+}
+
+/// Close the find presentation through the production close path (Escape /
+/// close-button semantics): restores the origin focus domain and clears
+/// highlights on the bound view.
+pub fn find_close() -> Request {
+    Request::FindClose
+}
+
+/// Set the find query and start a fresh search (the typing/backspace path).
+pub fn find_set_query(query: impl Into<String>) -> Request {
+    Request::FindSetQuery {
+        query: query.into(),
+    }
+}
+
+/// Navigate to the next match (Enter / next-button path).
+pub fn find_next() -> Request {
+    Request::FindNext
+}
+
+/// Navigate to the previous match (Shift-Enter / previous-button path).
+pub fn find_previous() -> Request {
+    Request::FindPrevious
+}
+
 /// Bring the app to the foreground (testkit-only; the shown-harness
 /// frontmost-evidence premise).
 pub fn activate_app() -> Request {

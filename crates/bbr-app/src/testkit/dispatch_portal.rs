@@ -89,7 +89,7 @@ fn portal_dismiss_response(dismissed: bool, message: &str) -> Response {
     }
 }
 
-fn flush_portal_frame(handle: Option<AnyWindowHandle>, cx: &mut App) {
+pub(super) fn flush_portal_frame(handle: Option<AnyWindowHandle>, cx: &mut App) {
     if let Some(handle) = handle {
         let _ = handle.update(cx, |_root, window, cx| {
             let app: &mut App = cx;

@@ -9,6 +9,8 @@ mod benchmarks_u2;
 mod command;
 mod command_drive;
 mod drive;
+mod find;
+mod find_drive;
 pub mod harness;
 pub mod machine;
 mod report;

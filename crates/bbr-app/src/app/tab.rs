@@ -232,6 +232,9 @@ impl BbrApp {
         if let Some(outcome) = &result {
             self.clear_command_profile_hint();
             self.sync_command_bar();
+            // A fresh session for the reopened tab ends any find
+            // presentation bound to the previous active view.
+            self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
             if chrome_focused {
                 self.focus_tab_list(window, cx);
@@ -416,6 +419,10 @@ impl BbrApp {
         if let Some(outcome) = &result {
             self.clear_command_profile_hint();
             self.sync_command_bar();
+            // A cross-profile move recreates the session; a same-profile
+            // move can also change the active view. Either ends a find
+            // presentation bound elsewhere.
+            self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
             self.focus_tab_list(window, cx);
             self.ensure_active_visible();

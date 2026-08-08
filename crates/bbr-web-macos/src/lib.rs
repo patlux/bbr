@@ -20,6 +20,18 @@
 pub mod delegate;
 
 #[cfg(target_os = "macos")]
+pub mod find_adapter;
+
+#[cfg(target_os = "macos")]
+pub mod find_mapping;
+
+#[cfg(target_os = "macos")]
+pub mod find_strategy;
+
+#[cfg(target_os = "macos")]
+pub mod find_web_kit;
+
+#[cfg(target_os = "macos")]
 pub mod host;
 
 #[cfg(target_os = "macos")]
@@ -36,6 +48,12 @@ pub mod portal_frame;
 
 #[cfg(target_os = "macos")]
 pub mod webview;
+
+#[cfg(target_os = "macos")]
+pub use find_adapter::WebKitFindAdapter;
+
+#[cfg(target_os = "macos")]
+pub use find_web_kit::WebKitFindStrategy;
 
 #[cfg(target_os = "macos")]
 pub use new_window::{NewWindowContext, NewWindowCoordinator};

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>BBR Find Mutate</title>
+  </head>
+  <body>
+    <main>
+      <!-- The page-mutation fixture: "target" appears exactly twice in the
+           initial DOM. After a fixed delay the page appends a third "target"
+           and changes the title to the (changed) marker. The title change is
+           the deterministic event the E2E synchronizes on; the strategy's
+           MutationObserver then reports the content change as stale on the
+           next request. -->
+      <h1 id="heading">Mutate me</h1>
+      <p id="a">target target</p>
+      <p id="b">nothing</p>
+    </main>
+    <script>
+      setTimeout(function () {
+        var p = document.createElement("p");
+        p.textContent = "target";
+        document.body.appendChild(p);
+        document.title = "BBR Find Mutate (changed)";
+      }, 700);
+    </script>
+  </body>
+</html>
