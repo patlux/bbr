@@ -153,3 +153,56 @@ pub struct FolderRowSnapshot {
     /// Whether the nested row list is expanded.
     pub expanded: bool,
 }
+
+/// DESIGN.md §11.3 sidebar-swipe evidence on the wire (F2a swipe kernel):
+/// the truthful active space plus the gesture's source/destination
+/// persistent space ids, the display-order direction resolved at begin, the
+/// signed progress (clamped to [-1, 1], `0.0` while Idle), and — only while
+/// tracking — the resolved chrome/chip tints the render interpolates from
+/// the one central `space_tint` resolver (typed `#RRGGBB` hex, never raw
+/// pixels). The gesture never changes browser state: the selected chip and
+/// `active_appearance` stay truthful until a committed release reaches the
+/// destination through the existing `activate_space` authority.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SwipeSnapshot {
+    /// The active space at snapshot time — truthful at every phase: a
+    /// tracking gesture never changes the selected space.
+    pub active: TestSpaceId,
+    /// `tracking` while a gesture is in progress, `idle` otherwise.
+    pub phase: String,
+    /// The source space of a tracking gesture (the space the gesture began
+    /// from). `None` while Idle.
+    pub source: Option<TestSpaceId>,
+    /// The one adjacent persistent destination space id resolved at begin.
+    /// `None` while Idle (boundary gestures never begin).
+    pub destination: Option<TestSpaceId>,
+    /// The display-order direction resolved at begin: `next` (positive
+    /// delta) or `prev` (negative). `None` while Idle.
+    pub direction: Option<String>,
+    /// The signed progress, clamped to [-1, 1]: positive toward the
+    /// destination, negative back toward/past the source. `0.0` while Idle.
+    pub progress: f64,
+    /// The interpolated sidebar-rail chrome tint (`#RRGGBB`) while tracking
+    /// — the exact color the render paints during the gesture. `None` while
+    /// Idle (cancel returns the exact source presentation).
+    pub interpolated_chrome_tint: Option<String>,
+    /// The interpolated active-chip surface tint (`#RRGGBB`) while tracking.
+    /// `None` while Idle.
+    pub interpolated_chip_tint: Option<String>,
+}
+
+impl Default for SwipeSnapshot {
+    fn default() -> Self {
+        Self {
+            active: TestSpaceId(0),
+            phase: "idle".to_string(),
+            source: None,
+            destination: None,
+            direction: None,
+            progress: 0.0,
+            interpolated_chrome_tint: None,
+            interpolated_chip_tint: None,
+        }
+    }
+}

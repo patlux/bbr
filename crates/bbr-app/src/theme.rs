@@ -42,6 +42,7 @@ mod space_tint;
 #[cfg(feature = "testkit")]
 pub use space_tint::hex;
 pub use space_tint::space_tint;
+pub use space_tint::SpaceTint;
 
 /// Typography steps (DESIGN.md §4).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

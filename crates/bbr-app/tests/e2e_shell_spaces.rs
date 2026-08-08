@@ -19,8 +19,11 @@
 #[path = "e2e_shell_spaces/appearance.rs"]
 mod appearance;
 mod e2e_common;
+mod e2e_semantics_common;
 #[path = "e2e_shell_spaces/strip.rs"]
 mod strip;
+#[path = "e2e_shell_spaces/swipe/mod.rs"]
+mod swipe;
 
 use bbr_testkit::protocol::{CommandBarMode, TestProfileId};
 use e2e_common::*;

@@ -32,6 +32,11 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
+        // Any activation from any path ends a tracking swipe: a stale
+        // gesture destination must never commit a second switch after a
+        // manual activation (the swipe's own commit already took the
+        // gesture, so this is a no-op there).
+        self.cancel_swipe(cx);
         let source_profile = self.controller.active_profile();
         let result = self
             .controller

@@ -6,7 +6,7 @@ use bbr_web::auth_challenges::{AuthAuthority, AuthScheme, HttpScheme};
 use bbr_web::{ProfileId, WebAction, WebViewId};
 use serde::{Deserialize, Serialize};
 
-use super::{BenchmarkKind, BenchmarkOperationId, TestSpaceId};
+use super::{BenchmarkKind, BenchmarkOperationId, SwipePhaseWire, TestSpaceId};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Request {
@@ -216,6 +216,23 @@ pub enum Request {
     /// Activate the New Space row through the production pointer path (stages
     /// the NewSpace command-bar mode).
     ClickSpaceNew,
+    /// Drive one synthetic GPUI scroll-wheel event through the production
+    /// sidebar swipe handler (`BbrApp::on_sidebar_scroll_wheel` — the exact
+    /// method the production `on_scroll_wheel` listener calls; DESIGN.md
+    /// §11.3 swipe). `delta` is the raw wheel delta `[x, y]` in natural
+    /// pixels and `phase` the touch phase; the handler applies the same
+    /// horizontal-dominance filter, phase gating, commit threshold, and
+    /// `activate_space` authority as a real trackpad gesture. Public
+    /// synthetic GPUI event dispatch is unavailable, so the testkit drives
+    /// the production handler directly — never a controller mutation.
+    SwipeScroll {
+        delta: [f32; 2],
+        phase: SwipePhaseWire,
+    },
+    /// Explicitly cancel a tracking sidebar swipe (`BbrApp::cancel_swipe`):
+    /// the machine returns Idle with no commit and the chrome tint returns
+    /// to the exact source space presentation.
+    SwipeCancel,
     /// Move an active-space tab into another space.
     MoveTab {
         index: usize,

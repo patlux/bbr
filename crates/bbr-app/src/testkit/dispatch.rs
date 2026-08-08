@@ -613,6 +613,12 @@ pub(crate) fn dispatch(
         | Request::EndTabDrag
         | Request::CancelTabDrag => unreachable!("tab-drag requests route through dispatch_drag"),
 
+        // Routed by `dispatch_u2` before this match (the §11.3 sidebar swipe
+        // arms); reaching one here is a routing bug.
+        Request::SwipeScroll { .. } | Request::SwipeCancel => {
+            unreachable!("sidebar-swipe requests route through dispatch_u2")
+        }
+
         // Routed by `dispatch_benchmark` before this match; reaching one here
         // is a routing bug.
         Request::BenchmarkSelectTab { .. }

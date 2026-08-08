@@ -78,6 +78,7 @@ mod render;
 mod sidebar;
 mod sidebar_view;
 mod spaces;
+mod swipe;
 mod tab;
 #[cfg(feature = "testkit")]
 mod testkit;
@@ -356,6 +357,10 @@ pub struct BbrApp {
     /// U2 sidebar presentation/focus state; organization authority stays in
     /// the controller above, while this group owns only local UI state.
     u2: u2::U2State,
+    /// DESIGN.md §11.3 sidebar swipe composition (F2a swipe kernel): the one
+    /// in-app gesture state. Idle unless a horizontal trackpad gesture is in
+    /// progress; commits through the existing `activate_space` authority.
+    swipe: swipe::SwipeState,
     /// Focus-change sink (main thread): called after any focus mutation with
     /// the actual chrome-focus state. Wired by the testkit glue to broadcast
     /// `ChromeFocusChanged`; unused in production builds.
@@ -479,6 +484,7 @@ impl BbrApp {
             sidebar_visible: true,
             organization,
             u2: u2::U2State::new(cx),
+            swipe: swipe::SwipeState::new(),
             focus_sink: Rc::new(RefCell::new(None)),
             browser_sink: Rc::new(RefCell::new(None)),
             #[cfg(feature = "testkit")]

@@ -255,6 +255,7 @@ impl BbrApp {
             space_chips,
             active_appearance,
             space_strip_scroll: self.space_strip_scroll_snapshot(),
+            swipe: self.swipe_snapshot(),
             visible_ids: crate::shell::snapshot::visible_ids_u2(
                 &browser,
                 self.chrome_focused(window),

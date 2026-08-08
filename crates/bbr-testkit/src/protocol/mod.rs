@@ -38,12 +38,24 @@ pub use snapshot::{
     FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts, PaneLayoutSnapshot,
     PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, RestoreDisposition, SemanticNode,
     SemanticRole, Snapshot, SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceSnapshot,
-    SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
-    StoreSnapshot, TabSnapshot, TabVisualState, WebContentProbe, ZoomSnapshot,
+    SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot,
+    SwipeSnapshot, TabSnapshot, TabVisualState, WebContentProbe, ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.
 pub const PROTOCOL_VERSION: u32 = 7;
+
+/// The GPUI `TouchPhase` of one synthetic swipe event on the wire
+/// (DESIGN.md §11.3 swipe): `started` begins a tracking gesture, `moved`
+/// feeds progress, `ended` commits or cancels. The protocol carries its own
+/// vocabulary so the wire never leaks the GPUI type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SwipePhaseWire {
+    Started,
+    Moved,
+    Ended,
+}
 
 /// Observable command-bar intent, independent from native focus ownership.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

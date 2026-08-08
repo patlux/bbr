@@ -415,6 +415,22 @@ pub fn click_space_new() -> Request {
     Request::ClickSpaceNew
 }
 
+/// Drive one synthetic horizontal scroll-wheel event through the production
+/// sidebar swipe handler (DESIGN.md §11.3): `delta` is the raw wheel delta
+/// `[x, y]` in natural pixels, `phase` the touch phase. `started` begins a
+/// tracking gesture when the delta is horizontal-dominant, `moved` feeds
+/// progress, `ended` commits (beyond the threshold) or cancels (below it).
+pub fn swipe_scroll(delta: [f32; 2], phase: super::SwipePhaseWire) -> Request {
+    Request::SwipeScroll { delta, phase }
+}
+
+/// Explicitly cancel a tracking sidebar swipe through the production
+/// cancel seam: no commit, the chrome tint returns to the exact source
+/// presentation.
+pub fn swipe_cancel() -> Request {
+    Request::SwipeCancel
+}
+
 pub fn benchmark_activate_space(operation_id: BenchmarkOperationId, space: TestSpaceId) -> Request {
     Request::BenchmarkActivateSpace {
         operation_id,

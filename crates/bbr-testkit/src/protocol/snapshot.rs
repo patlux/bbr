@@ -10,7 +10,7 @@ use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewI
 mod u2;
 pub use u2::{
     ChipCompanionSnapshot, FavoriteTileSnapshot, FolderRowSnapshot, SpaceAppearanceSnapshot,
-    SpaceChipSnapshot, SpaceStripScrollSnapshot,
+    SpaceChipSnapshot, SpaceStripScrollSnapshot, SwipeSnapshot,
 };
 
 /// The L6 contract state of one download attempt (DESIGN.md §15): the panel
@@ -917,6 +917,16 @@ pub struct Snapshot {
     /// selecting an offscreen chip scrolls it fully into view.
     #[serde(default)]
     pub space_strip_scroll: SpaceStripScrollSnapshot,
+    /// DESIGN.md §11.3 swipe gesture evidence: the active space (truthful
+    /// at every phase — a tracking gesture never changes the selected
+    /// space), the source/destination persistent space ids and display-order
+    /// direction resolved at begin, the signed progress clamped to [-1, 1],
+    /// and the resolved chrome/chip tints the render interpolates while
+    /// tracking (from the one central `space_tint` resolver; `None` while
+    /// Idle). The selected chip changes only when a committed swipe reaches
+    /// the destination through `activate_space`.
+    #[serde(default)]
+    pub swipe: SwipeSnapshot,
     /// The stable `bbr-*` ids present in the current render (DESIGN.md §15).
     pub visible_ids: Vec<String>,
     /// The typed semantic tree of the current render (DESIGN.md §15 /

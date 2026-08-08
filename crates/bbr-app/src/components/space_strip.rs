@@ -108,13 +108,17 @@ pub fn space_strip(
 /// §10.9 drag-target treatment (accent outline + selection tint + the §12
 /// destination-profile companion) while a pointer drag targets this exact
 /// chip. `on_select` is the production view listener (the same app method
-/// the keyboard traversal drives). Chips never shrink inside the scroll
-/// viewport (`flex_shrink_0`), so the strip's content width is the sum of
-/// its chips and the selected chip can be scrolled into view determinis-
-/// tically.
+/// the keyboard traversal drives). `swipe_tint` carries the chrome-only
+/// interpolated presentation while a sidebar swipe tracks (`None` at rest):
+/// the active chip's surface follows the gesture progress toward the
+/// adjacent space while `visuals.selected`/`visuals.theme` stay truthful.
+/// Chips never shrink inside the scroll viewport (`flex_shrink_0`), so the
+/// strip's content width is the sum of its chips and the selected chip can
+/// be scrolled into view deterministically.
 pub fn space_chip(
     theme: &Theme,
     visuals: &SpaceChipVisuals,
+    swipe_tint: Option<crate::theme::SpaceTint>,
     on_select: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
@@ -122,8 +126,15 @@ pub fn space_chip(
     let target = visuals.drag_target;
     // §11.3: the active token tints the chip through the one central
     // resolver; text, the accent rail, and the §9 outline keep their own
-    // tokens (the tint is never the only state cue).
+    // tokens (the tint is never the only state cue). While a swipe tracks,
+    // the active chip's surface interpolates toward the adjacent space's
+    // presentation (chrome-only; the selected evidence never changes).
     let tint = crate::theme::space_tint(visuals.theme, theme);
+    let chip_surface = if selected {
+        swipe_tint.map_or(tint.chip_active, |swipe| swipe.chip_active)
+    } else {
+        p.surface_sidebar
+    };
     div()
         .id(space_chip_id(visuals.space))
         .flex_shrink_0()
@@ -139,10 +150,8 @@ pub fn space_chip(
             // §10.9 drag-target: the selection tint + accent outline — the
             // targeted chip is unmistakable without being the active chip.
             p.tint_selected
-        } else if selected {
-            tint.chip_active
         } else {
-            p.surface_sidebar
+            chip_surface
         })
         .when(selected && !target, |el| {
             // The persistent selected surface plus a focus-independent

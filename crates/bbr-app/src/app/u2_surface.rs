@@ -288,6 +288,11 @@ impl BbrApp {
         // `select_space_via_pointer` → `activate_space` (chrome focus stays
         // in the strip); the strip carries the §9 keyboard traversal and the
         // tracked scroll handle that brings the selected chip into view.
+        // While a sidebar swipe tracks, the active chip's surface
+        // interpolates toward the adjacent space's presentation (the same
+        // chrome-only interpolation the rail consumes; selection evidence
+        // stays truthful).
+        let swipe_tint = self.swipe_tint();
         let chips = self
             .space_chip_visuals()
             .iter()
@@ -296,7 +301,7 @@ impl BbrApp {
                 let select = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
                     this.select_space_via_pointer(space, window, cx)
                 });
-                components::space_chip(theme, visual, select)
+                components::space_chip(theme, visual, swipe_tint, select)
             })
             .collect::<Vec<Stateful<Div>>>();
         let strip = components::space_strip(theme, self.space_strip_scroll.clone(), chips)

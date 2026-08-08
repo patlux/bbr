@@ -6,8 +6,8 @@
 //! from `super::dispatch` so no gateway module outgrows the ~500-line
 //! budget, mirroring the `dispatch_benchmark`/`dispatch_drag` routers.
 
-use bbr_testkit::protocol::{Request, Response};
-use gpui::{App, Entity, WindowHandle};
+use bbr_testkit::protocol::{Request, Response, SwipePhaseWire};
+use gpui::{point, px, App, Entity, ScrollDelta, ScrollWheelEvent, TouchPhase, WindowHandle};
 
 use crate::app::BbrApp;
 use crate::window_seam::with_app;
@@ -64,6 +64,35 @@ pub(crate) fn dispatch_u2(
         // listener runs (selection is app-owned, clamped to the v1 range).
         Request::ClickPlusMenuItem { index } => with_app(window, app, cx, |view, window, cx| {
             view.commit_plus_menu_item(*index, window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
+        // §11.3 sidebar swipe: drives one synthetic GPUI scroll-wheel event
+        // through the exact production handler the sidebar's `on_scroll_wheel`
+        // element listener calls (`BbrApp::on_sidebar_scroll_wheel`). Public
+        // synthetic event dispatch is unavailable, so the testkit drives the
+        // production method itself — same dominance filter, phase gating,
+        // threshold, and `activate_space` authority; never a controller
+        // mutation. `SwipeCancel` drives the explicit production cancel seam.
+        Request::SwipeScroll { delta, phase } => with_app(window, app, cx, |view, window, cx| {
+            let event = ScrollWheelEvent {
+                position: point(px(0.0), px(0.0)),
+                delta: ScrollDelta::Pixels(point(px(delta[0]), px(delta[1]))),
+                modifiers: gpui::Modifiers::default(),
+                touch_phase: match phase {
+                    SwipePhaseWire::Started => TouchPhase::Started,
+                    SwipePhaseWire::Moved => TouchPhase::Moved,
+                    SwipePhaseWire::Ended => TouchPhase::Ended,
+                },
+            };
+            view.on_sidebar_scroll_wheel(&event, window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
+        Request::SwipeCancel => with_app(window, app, cx, |view, _window, cx| {
+            view.cancel_swipe(cx);
             Response::Ok
         })
         .unwrap_or_else(err_response),

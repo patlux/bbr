@@ -9,7 +9,8 @@
 //! surfaces themselves.
 
 use gpui::{
-    div, prelude::*, px, Context, Div, MouseButton, MouseDownEvent, SharedString, Stateful, Window,
+    div, prelude::*, px, Context, Div, MouseButton, MouseDownEvent, ScrollWheelEvent, SharedString,
+    Stateful, Window,
 };
 
 use crate::components::{self, RowVisuals};
@@ -39,10 +40,11 @@ impl BbrApp {
         let p = theme.palette;
         // §11.3: the active space's effective appearance tints the BBR-owned
         // sidebar material through the one central resolver (the base is
-        // the shell's own `surface_sidebar` token). Text, hairlines, accent
-        // rails, icons, and the native web content keep their own tokens.
-        let chrome_tint =
-            crate::theme::space_tint(self.active_space_appearance().theme, theme).chrome;
+        // the shell's own `surface_sidebar` token), and a tracking swipe
+        // interpolates that chrome toward the adjacent space's presentation
+        // (chrome-only — text, hairlines, accent rails, icons, and the
+        // native web content keep their own tokens).
+        let chrome_tint = self.active_chrome_tint();
         // The U2 rail inputs (favorites tiles, folder rows/members) derived
         // once per frame and shared by the tab/favorites/folders surfaces.
         let u2 = self.u2_rail_data();
@@ -77,6 +79,9 @@ impl BbrApp {
             .bg(chrome_tint)
             .border_r_1()
             .border_color(p.hairline)
+            .on_scroll_wheel(cx.listener(|this, event: &ScrollWheelEvent, window, cx| {
+                this.on_sidebar_scroll_wheel(event, window, cx)
+            }))
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _e: &MouseDownEvent, window, cx| this.focus_chrome(window, cx)),

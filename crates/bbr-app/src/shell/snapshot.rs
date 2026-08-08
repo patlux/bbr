@@ -74,6 +74,11 @@ pub struct TestSnapshot {
     /// `space_strip_scroll` handle): the viewport, the signed offset, the
     /// max offset, and each chip's raw layout bounds in canonical order.
     pub space_strip_scroll: bbr_testkit::protocol::SpaceStripScrollSnapshot,
+    /// DESIGN.md §11.3 sidebar-swipe evidence: the truthful active space at
+    /// every phase plus the gesture's source/destination persistent space
+    /// ids, display-order direction, signed progress, and the interpolated
+    /// chrome/chip tints while tracking (chrome-only presentation).
+    pub swipe: bbr_testkit::protocol::SwipeSnapshot,
     pub visible_ids: Vec<String>,
     /// The typed semantic tree of the current render (DESIGN.md §15 /
     /// accessibility track): roles, names, values, enabled/selected/focused
