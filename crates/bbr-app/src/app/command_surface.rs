@@ -153,7 +153,7 @@ impl BbrApp {
             })
             .child(
                 div()
-                    .size(px(14.0))
+                    .size(theme.density.icon())
                     .flex()
                     .items_center()
                     .justify_center()

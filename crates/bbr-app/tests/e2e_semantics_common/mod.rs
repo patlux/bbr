@@ -3,7 +3,7 @@ use bbr_testkit::protocol::{SemanticNode, SemanticRole};
 // Shared helper module included by several E2E binaries; each binary uses a
 // subset of the helpers, so dead-code is expected for the unused rest.
 #[allow(dead_code)]
-pub const SIDEBAR_DEFAULT: f32 = 260.0;
+pub const SIDEBAR_DEFAULT: f32 = 280.0;
 
 pub fn find<'a>(nodes: &'a [SemanticNode], id: &str) -> Option<&'a SemanticNode> {
     for node in nodes {

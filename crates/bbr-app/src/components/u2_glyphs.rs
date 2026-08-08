@@ -43,9 +43,9 @@ mod tests {
     #[test]
     fn u2_glyph_geometry_stays_inside_its_box() {
         // Every arm/radius plus the 1.5 pt stroke must fit the glyph's
-        // bounding box at every shipped size (14/16/18 rows, 32 crash,
+        // bounding box at every shipped size (16/18/20 rows, 32 crash,
         // 64 chassis mark) — the same contract as the other catalog glyphs.
-        for size in [14.0, 16.0, 18.0, 32.0, 64.0] {
+        for size in [16.0, 18.0, 20.0, 32.0, 64.0] {
             let stroke = 1.5 / 2.0;
             // Downloads: the stem and the tray base plus the stroke fit.
             let (arm, _arrow, tray_half, tray_depth, tray_side) = downloads_geometry(size);

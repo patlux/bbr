@@ -2,9 +2,10 @@
 //! a grid of square destination tiles.
 //!
 //! The grid renders the §7.2 favicon/monogram tile centered in a
-//! `radius:sm` tile at `density:row-tile` size, `sp:1` gap, with fixed
-//! per-density column counts (S 5 / N 4 / XL 3) so the tile → index mapping
-//! is deterministic at every sidebar width. Favorites are destinations
+//! `radius:sm` tile at `density:row-tile` size, `density:favorites-gap`
+//! (S `sp:1` / N `sp:2` / XL `sp:2`) apart, with fixed per-density column
+//! counts (S 5 / N 4 / XL 3) so the tile → index mapping is deterministic
+//! at every sidebar width. Favorites are destinations
 //! (title + url identities from the L5 session-local grid), never tab
 //! references — tab lifecycle states do not apply.
 //!
@@ -96,25 +97,26 @@ pub fn favorite_tiles(favorites: &[bbr_browser::FavoriteSnapshot]) -> Vec<Favori
         .collect()
 }
 
-/// The favorites grid anatomy: a `flex_wrap` grid of pre-built tiles. The
-/// rail composition builds the per-tile listeners (exactly like the tab/
-/// space surfaces build per-row listeners) and calls this only while tiles
-/// exist so the empty region hides its section label.
-pub fn favorites_grid(children: Vec<gpui::AnyElement>) -> Stateful<Div> {
+/// The favorites grid anatomy: a `flex_wrap` grid of pre-built tiles at the
+/// §11.10 `density:favorites-gap`. The rail composition builds the
+/// per-tile listeners (exactly like the tab/space surfaces build per-row
+/// listeners) and calls this only while tiles exist so the empty region
+/// hides its section label.
+pub fn favorites_grid(theme: &Theme, children: Vec<gpui::AnyElement>) -> Stateful<Div> {
     div()
         .id(FAVORITES_ID)
         .flex()
         .flex_wrap()
-        .gap(Spacing::sp1())
+        .gap(theme.density.favorites_gap())
         .px(Spacing::sp2())
         .children(children)
 }
 
 /// One §11.10 destination tile: the §7.2 monogram tile centered in a
-/// `radius:sm` square at `density:row-tile` size, `sp:1` apart. The tile id
-/// and the inner icon id are the stable §15 identity pair.
-/// `on_activate` is the production activation listener (open-vs-focus
-/// semantics is an open decision).
+/// `radius:sm` square at `density:row-tile` size, `density:favorites-gap`
+/// apart. The tile id and the inner icon id are the stable §15 identity
+/// pair. `on_activate` is the production activation listener
+/// (open-vs-focus semantics is an open decision).
 pub fn favorite_tile(
     theme: &Theme,
     tile: &FavoriteTileSpec,
@@ -160,7 +162,7 @@ pub fn favorites_region_height(theme: &Theme, tile_count: usize) -> f32 {
     }
     let columns = grid_columns(theme.density);
     let tile = f32::from(theme.density.row_tile());
-    let gap = f32::from(Spacing::sp1());
+    let gap = f32::from(theme.density.favorites_gap());
     let rows = tile_count.div_ceil(columns);
     let grid = rows as f32 * tile + (rows.saturating_sub(1)) as f32 * gap;
     // Label: `py:sp1` on both sides + the badge line (size × 1.2 lh).

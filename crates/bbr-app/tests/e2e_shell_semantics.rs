@@ -264,7 +264,7 @@ fn shell_semantic_tree_and_fallbacks() {
             "bbr-sidebar-divider",
             SemanticRole::Divider,
             Some("Sidebar divider"),
-            Some("260 pt"),
+            Some("280 pt"),
             true,
             false,
             false,

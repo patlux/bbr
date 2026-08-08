@@ -4,9 +4,7 @@
 //! behavior handlers live in `app::u2`. All ids come from the `components`
 //! contract modules; listeners route through the production app methods.
 
-use gpui::{
-    div, prelude::*, px, Context, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window,
-};
+use gpui::{div, prelude::*, Context, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window};
 
 use crate::components;
 use crate::theme::{Radius, Spacing, Theme};
@@ -53,11 +51,11 @@ impl BbrApp {
                     })
                     .child(
                         div()
-                            .size(px(14.0))
+                            .size(theme.density.icon())
                             .flex()
                             .items_center()
                             .justify_center()
-                            .child(item.glyph.canvas(theme, px(14.0))),
+                            .child(item.glyph.canvas(theme, theme.density.icon())),
                     )
                     .child(
                         div()
@@ -129,7 +127,7 @@ impl BbrApp {
                 components::favorite_tile(theme, tile, activate).into_any()
             })
             .collect();
-        let grid = components::favorites_grid(children);
+        let grid = components::favorites_grid(theme, children);
         Some(
             div()
                 .id(components::favorites::FAVORITES_SECTION_ID)

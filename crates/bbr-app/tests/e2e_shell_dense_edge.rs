@@ -31,7 +31,7 @@ use e2e_dense_common::*;
 
 /// §8 normal-density tab row height (theme.density::Normal.row()); the edge
 /// collection is 120 identities (< 200 regular → N density).
-const ROW_H: f32 = 32.0;
+const ROW_H: f32 = 36.0;
 
 /// Edge states inside dense collections: long/separator titles stay on one
 /// truncated line, monogram favicon tiles cover missing icons, a crashed

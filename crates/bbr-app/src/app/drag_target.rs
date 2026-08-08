@@ -27,7 +27,7 @@ pub fn tab_row_h(theme: &crate::theme::Theme) -> f32 {
     f32::from(theme.density.row())
 }
 
-/// §8 space-row height (`density:space-row`).
+/// §8 space-row height (`density:space-chip`).
 pub fn space_row_h(theme: &crate::theme::Theme) -> f32 {
     f32::from(theme.density.space_row())
 }

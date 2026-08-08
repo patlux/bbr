@@ -50,7 +50,7 @@ mod u2_surface;
 #[cfg(test)]
 mod u2_tests;
 
-/// Sidebar width follows the §8 normal-density token (260 pt); Phase-4
+/// Sidebar width follows the §8 normal-density token (280 pt); Phase-4
 /// resize/drag will make it adjustable.
 /// Focus-change sink: invoked on the main thread after any focus mutation.
 pub type FocusSink = Box<dyn FnMut(bool)>;
