@@ -13,8 +13,9 @@ use gpui::{App, Entity, KeyBinding, Window};
 use smol::channel::Receiver;
 
 use crate::actions::{
-    Back, CloseTab, FocusCommandBar, FocusWeb, Forward, MoveTab, NewSpace, NewTab, OpenOverlay,
-    OpenPalette, PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp, ToggleSidebar,
+    Back, CloseTab, FindInPage, FocusCommandBar, FocusWeb, Forward, MoveTab, NewSpace, NewTab,
+    OpenOverlay, OpenPalette, PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp,
+    ToggleSidebar,
 };
 use crate::app::BbrApp;
 
@@ -132,6 +133,17 @@ pub(crate) fn install_actions(
     });
     cx.on_action({
         let app = app.clone();
+        move |_: &FindInPage, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.find_open(window, cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
         move |_: &NewTab, cx| {
             let app = app.clone();
             cx.defer(move |cx| {
@@ -220,6 +232,7 @@ pub(crate) fn install_actions(
     });
 
     cx.bind_keys([
+        KeyBinding::new("cmd-f", FindInPage, None),
         KeyBinding::new("cmd-l", OpenOverlay, None),
         KeyBinding::new("escape", FocusWeb, None),
         KeyBinding::new("cmd-[", Back, None),
@@ -244,18 +257,42 @@ pub(crate) fn spawn_event_pump(
     window: &gpui::WindowHandle<gpui_component::Root>,
     app: &Entity<BbrApp>,
     evt_rx: Receiver<WebEvent>,
+    #[cfg(target_os = "macos")] find_rx: Receiver<bbr_web_macos::find_mapping::FindCompletion>,
 ) {
     let window = *window;
     let app = app.clone();
     cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
-        let ev = match evt_rx.recv().await {
-            Ok(ev) => ev,
-            Err(_) => break,
-        };
-        // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).
-        async_cx.update(|cx| {
-            let _ = with_app(&window, &app, cx, |view, _w, cx| view.on_web_event(ev, cx));
-        });
+        enum Incoming {
+            Event(Result<WebEvent, smol::channel::RecvError>),
+            #[cfg(target_os = "macos")]
+            Find(Result<bbr_web_macos::find_mapping::FindCompletion, smol::channel::RecvError>),
+        }
+        let incoming = smol::future::race(
+            async { Incoming::Event(evt_rx.recv().await) },
+            #[cfg(target_os = "macos")]
+            async {
+                Incoming::Find(find_rx.recv().await)
+            },
+        )
+        .await;
+        match incoming {
+            Incoming::Event(Ok(ev)) => {
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| view.on_web_event(ev, cx));
+                });
+            }
+            #[cfg(target_os = "macos")]
+            Incoming::Find(Ok(completion)) => {
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_find_completion(completion, cx)
+                    });
+                });
+            }
+            Incoming::Event(Err(_)) => break,
+            #[cfg(target_os = "macos")]
+            Incoming::Find(Err(_)) => break,
+        }
     })
     .detach();
 }

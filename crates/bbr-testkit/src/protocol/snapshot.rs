@@ -399,6 +399,30 @@ pub struct PortalSnapshot {
     pub portal_is_main: bool,
 }
 
+/// Typed find-in-page presentation state (task packet
+/// `find-in-page-portal-bar`; DESIGN.md §15). Mirrors the app's
+/// `FindState` exactly: open presentation, field focus, the live query, the
+/// WebKit-reported match count/ordinal, a pending request, and the stale
+/// marker after a document change.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct FindSnapshot {
+    /// A find presentation is open for this window.
+    pub open: bool,
+    /// The find field owns keyboard focus (main-window GPUI focus; the
+    /// portal window is never key by design).
+    pub focused: bool,
+    /// The live query text (what the field renders).
+    pub query: String,
+    /// Total matches reported by WebKit (`None` until a result lands).
+    pub match_count: Option<usize>,
+    /// Current 1-based ordinal (`None` for zero matches / no result).
+    pub current_match: Option<usize>,
+    /// A start/step request is awaiting a WebKit completion.
+    pub pending: bool,
+    /// A document change made the reported results stale.
+    pub stale: bool,
+}
+
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
 /// Deliberately typed (no free-form JSON) so the harness can assert on
@@ -544,6 +568,11 @@ pub struct Snapshot {
     /// presentation and its native attachment/frame/visibility evidence.
     #[serde(default)]
     pub portal: PortalSnapshot,
+    /// Typed find-in-page presentation state (task packet
+    /// `find-in-page-portal-bar`): open presentation, field focus, query,
+    /// WebKit-reported count/ordinal, pending request, and staleness.
+    #[serde(default)]
+    pub find: FindSnapshot,
     /// U2 compact-sidebar presentation state.
     #[serde(default = "u2::default_true")]
     pub spaces_visible: bool,

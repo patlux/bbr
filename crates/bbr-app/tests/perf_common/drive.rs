@@ -23,6 +23,7 @@ use super::benchmarks::{
     wait_browser_change, wait_title,
 };
 use super::drive::u2::{drive_u2_sidebar, reveal_spaces_region};
+use super::find_drive::drive_find_scenarios;
 mod u2;
 
 use super::command_drive::drive_command_scenarios;
@@ -39,9 +40,18 @@ pub fn drive_interaction_matrix(
     config: &TrialConfig,
     page_one: &str,
     page_two: &str,
+    page_find: &str,
 ) -> BTreeMap<String, Vec<u64>> {
     let mut cursor = *since;
-    let raw = drive_matrix_inner(client, harness, &mut cursor, config, page_one, page_two);
+    let raw = drive_matrix_inner(
+        client,
+        harness,
+        &mut cursor,
+        config,
+        page_one,
+        page_two,
+        page_find,
+    );
     *since = cursor;
     raw
 }
@@ -54,6 +64,7 @@ fn drive_matrix_inner(
     config: &TrialConfig,
     page_one: &str,
     page_two: &str,
+    page_find: &str,
 ) -> BTreeMap<String, Vec<u64>> {
     let cursor = since;
     let mut since = *cursor;
@@ -950,6 +961,22 @@ fn drive_matrix_inner(
             config.interaction_samples,
         );
 
+        // Find-in-page (task packet `find-in-page-portal-bar`): the
+        // production Cmd-F open, the query path (WebKit computes count /
+        // ordinal through the portable contract), and warm next/previous
+        // stepping — each measured at the exact WebKit-reported presentation
+        // the in-app probe requires, on a deterministic multi-match fixture
+        // loaded before any sample (fixture/network time excluded). The
+        // block restores the matrix state before the dense seeding below.
+        let find_samples = drive_find_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            page_find,
+            &mut operation,
+        );
+
         // Dense-list scroll + selection through the bounded-window render
         // (Phase-4 dense slice, performance contract "dense-list scrolling"):
         // seed an S-density collection (230 identities, 10 pinned, 20 live)
@@ -1076,6 +1103,7 @@ fn drive_matrix_inner(
         raw.insert("sidebar_plus_menu".to_string(), plus_menu_samples);
         raw.insert("sidebar_favorites".to_string(), favorites_samples);
         raw.insert("sidebar_folder_toggle".to_string(), folder_toggle_samples);
+        raw.extend(find_samples);
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);
         raw.insert("dense_select".to_string(), dense_select_samples);
         raw

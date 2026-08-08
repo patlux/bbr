@@ -43,6 +43,9 @@ impl BbrApp {
             .ok();
         if let Some(outcome) = &result {
             self.sync_command_bar();
+            // Space activation switches the active session; a find
+            // presentation bound to the previous space's view ends.
+            self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
             self.focus_space_list(window, cx);
             self.ensure_active_visible();

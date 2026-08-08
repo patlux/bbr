@@ -84,6 +84,10 @@ pub fn probe_request() -> PortalRequest {
 pub enum PortalContent {
     Probe,
     Command(crate::app::palette::CommandSurface),
+    /// The find-in-page bar (task packet `find-in-page-portal-bar`). The
+    /// portal render derives the live surface from the app entity each
+    /// frame, so the bar carries no data of its own.
+    Find,
 }
 
 /// The portal window's render state, shared between the app (present/dismiss)
@@ -152,6 +156,15 @@ impl PortalProbeState {
                 PROBE_BACKDROP_ID.into(),
                 PROBE_CARD_ID.into(),
             ],
+            Some(PortalContent::Find) => vec![
+                crate::app::find::FIND_BAR_ID.into(),
+                crate::app::find::FIND_FIELD_ID.into(),
+                crate::app::find::FIND_TEXT_ID.into(),
+                crate::app::find::FIND_COUNT_ID.into(),
+                crate::app::find::FIND_PREVIOUS_ID.into(),
+                crate::app::find::FIND_NEXT_ID.into(),
+                crate::app::find::FIND_CLOSE_ID.into(),
+            ],
             Some(PortalContent::Command(surface)) => vec![match surface {
                 crate::app::palette::CommandSurface::Palette => {
                     crate::app::palette::PALETTE_ID.into()
@@ -179,6 +192,14 @@ impl PortalProbeState {
     ) {
         self.request = Some(request);
         self.content = Some(PortalContent::Command(surface));
+        self.viewport = viewport;
+    }
+
+    /// Present the find-in-page bar (the render derives the live surface
+    /// from the app entity, so no surface data is stored here).
+    pub fn present_find(&mut self, request: PortalRequest, viewport: Sz) {
+        self.request = Some(request);
+        self.content = Some(PortalContent::Find);
         self.viewport = viewport;
     }
 
@@ -233,6 +254,60 @@ impl PortalRoot {
             });
         });
     }
+
+    /// The find bar's §13 one-pointer-action dismissal: a press on the
+    /// portal backdrop closes the find presentation through the production
+    /// close path (restores the origin focus domain, clears highlights).
+    fn dismiss_find_surface(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.find_close(window, cx)
+            });
+        });
+    }
+
+    /// The find bar's previous-button pointer path (production app method).
+    pub(super) fn find_previous_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, _w, cx| {
+                view.find_previous(cx)
+            });
+        });
+    }
+
+    /// The find bar's next-button pointer path (production app method).
+    pub(super) fn find_next_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, _w, cx| {
+                view.find_next(cx)
+            });
+        });
+    }
+
+    /// The find bar's close-button pointer path (production close path).
+    pub(super) fn find_close_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.find_close(window, cx)
+            });
+        });
+    }
 }
 
 impl Render for PortalRoot {
@@ -273,6 +348,40 @@ impl Render for PortalRoot {
                         MouseButton::Left,
                         cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
                             this.dismiss_command_surface(cx);
+                        }),
+                    )
+                    .child(card)
+                    .into_any()
+            }
+            PortalContent::Find => {
+                drop(probe);
+                let Some(app) = self.app.as_ref() else {
+                    return div().size_full().bg(transparent_black()).into_any();
+                };
+                let surface = app.read(cx).find_surface();
+                // The find-bar render milestone: record the find state this
+                // render actually drew into the probe, so a pending find
+                // benchmark can commit only from a frame that presented the
+                // armed open/report identity (fast-but-wrong guard).
+                #[cfg(feature = "testkit")]
+                app.read(cx).observe_portal_find_render();
+                let card = crate::portal::find::find_bar(&surface, rect, cx).on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
+                        cx.stop_propagation();
+                    }),
+                );
+                // §13 one-pointer-action dismissal: a press on the portal
+                // backdrop (the whole window over the glass) closes the find
+                // bar through the production close path.
+                div()
+                    .id("bbr-find-portal-surface")
+                    .size_full()
+                    .bg(transparent_black())
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                            this.dismiss_find_surface(cx);
                         }),
                     )
                     .child(card)

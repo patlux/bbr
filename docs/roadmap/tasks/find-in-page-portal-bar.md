@@ -60,28 +60,45 @@ composition, testkit wire, and performance matrix.
 
 ### Unit and contract
 
-- [ ] Adapter mapping covers query start, count/ordinal report, next/previous,
+- [x] Adapter mapping covers query start, count/ordinal report, next/previous,
       wrap/no-wrap boundaries, zero matches, finish, and stale invalidation.
-- [ ] Portal placement/focus/dismissal tests preserve the L7 state invariants.
+      *(20 contract tests in `crates/bbr-web-macos/src/find_mapping/tests.rs`,
+      green under `just verify`; the adapter echoes portable request ids and
+      drops stale completions.)*
+- [x] Portal placement/focus/dismissal tests preserve the L7 state invariants.
+      *(Portal geometry/state/probe unit tests plus the `e2e-shell-portal`
+      suite: one `NativeAboveWeb` host per window, non-key/non-main policy,
+      frame sync, outside-dismiss — green.)*
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-find` opens over a real WKWebView and proves native
+- [x] `just e2e-shell-find` opens over a real WKWebView and proves native
       visibility/frontmost ownership, query entry, exact count/ordinal, Enter
       and Shift-Enter navigation, zero matches, Escape dismissal, and focus
-      return.
-- [ ] Resize while open proves Portal follow; tab/session/WebView identity and
-      profile/space remain unchanged.
-- [ ] Typed snapshots/events and deterministic fixtures only; no sleeps or
-      pixel comparisons.
+      return. *(6 scenarios, green; the shown-window scenario proves AppKit
+      hit-test ownership at the portal frame center over the live WKWebView.)*
+- [x] Resize while open proves Portal follow; tab/session/WebView identity and
+      profile/space remain unchanged. *(`resize_isolation.rs`: resize follows
+      in the same portal window, tab-switch discards, both sessions alive;
+      every scenario asserts `assert_ownership_preserved`.)*
+- [x] Typed snapshots/events and deterministic fixtures only; no sleeps or
+      pixel comparisons. *(All scenarios poll typed snapshots with explicit
+      deadlines; fixtures are deterministic local pages.)*
 
 ### Performance
 
-- [ ] Add `find_open`, `find_query_result`, and `find_step` optimized scenarios
+- [x] Add `find_open`, `find_query_result`, and `find_step` optimized scenarios
       with at least 30 accepted samples and semantic/native presentation
-      milestones.
-- [ ] Opening and warm result navigation meet the command-surface warm budget;
-      fixture/network time is excluded from app timings.
+      milestones. *(30 accepted samples each in `just e2e-perf`; each sample
+      commits only from a portal render that drew the armed WebKit-reported
+      open/report identity — fast-but-wrong guard, render-inclusive.)*
+- [x] Opening and warm result navigation meet the command-surface warm budget;
+      fixture/network time is excluded from app timings. *(Measured on the
+      local benchmark host, release build, warm fixture page: `find_open`
+      p95 0.26 ms / max 1.40 ms; `find_query_result` p95 0.68 ms / max
+      2.23 ms; `find_step` p95 0.42 ms / max 0.69 ms against the 50/100 ms
+      command-surface warm budget. The deterministic fixture is loaded before
+      any sample, so fixture/network time never enters the measured path.)*
 
 ## Completion gates
 
@@ -122,12 +139,26 @@ hidden behind WebKit.
 ## Delivery ledger
 
 ```text
-Outcome: post-MVP packet documented
-Commits: planning only
-Functional evidence: pending
-Real-app E2E: pending
-Performance evidence: pending
-Roadmap/documentation updates: task packet + Phase 8/track links
-Open blockers and non-goals: requires integrated Portal host and L7 adapter work
-Worktree state: no implementation lane active
+Outcome: post-MVP packet implemented and evidenced
+Commits: planning only (all implementation left uncommitted for the orchestrator)
+Functional evidence: adapter mapping contract tests (20) green; probe find-guard
+  unit tests (5) green; portal placement/state/probe unit tests green
+Real-app E2E: just e2e-shell-find 6/6 green (open over real WKWebView with
+  native frontmost-ownership evidence, count/ordinal, Enter/Shift-Enter wrap,
+  zero matches, Escape/close focus restoration, stale navigation, page
+  mutation, resize follow, tab-switch discard, page-world isolation)
+Performance evidence: find_open / find_query_result / find_step scenarios,
+  30 accepted samples each, p95 0.26 / 0.68 / 0.42 ms and max 1.40 / 2.23 /
+  0.69 ms against the 50/100 ms command-surface warm budget (local host,
+  report-only; absolute ceilings enforced). The strategy executes in
+  WKContentWorld::defaultClientWorld (page-world isolation proven by the
+  find-isolation E2E) and stays non-destructive (reads DOM + moves selection
+  only; highlights/selection transient, cleared on finish/invalidate/zero)
+Roadmap/documentation updates: task packet evidence + ledger; ARCHITECTURE.md
+  adapter/portal-bar section; E2E_ARCHITECTURE.md find suite section
+Open blockers and non-goals: none within scope; no regex/whole-word/
+  case-sensitive/selection-only UI, no cross-tab/history/PDF search, no
+  GPUI overlay behind WebKit, no screenshot matching
+Worktree state: implementation lane active; independent native-boundary
+  review (packet step 5) remains before closeout
 ```

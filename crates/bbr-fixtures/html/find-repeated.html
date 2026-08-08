@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>BBR Find Repeated</title>
+  </head>
+  <body>
+    <main>
+      <!-- Deterministic match counts for the find-in-page E2E (task packet
+           find-in-page-portal-bar). Visible "alice" (case-insensitive) is
+           exactly 3: two in #one, one in #two. The hidden #hidden div must
+           be skipped by the strategy (hidden text is not a match), and
+           "malice" is deliberately absent so substring folding cannot change
+           the count. -->
+      <h1 id="heading">Find Repeated</h1>
+      <p id="one">alice alice</p>
+      <p id="two">Alice</p>
+      <p id="three">bob</p>
+      <div id="hidden" hidden>alice must not match here</div>
+    </main>
+  </body>
+</html>

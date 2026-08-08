@@ -100,6 +100,16 @@ impl BbrApp {
 
     /// Apply an engine event to the owning controller tab and refresh chrome.
     pub fn on_web_event(&mut self, event: WebEvent, cx: &mut Context<Self>) {
+        // A new navigation started on the bound find view: the current
+        // results are stale (the adapter drops the old document's in-flight
+        // completions by correlation; the portable session rejects further
+        // steps until a fresh query). Page-initiated navigations and the
+        // WebAction back/forward/reload paths both surface here.
+        if let WebEvent::LoadingChanged(view, true) = &event {
+            if self.find.state.open && self.find.bound_view == Some(*view) {
+                self.find_navigation_invalidated(cx);
+            }
+        }
         let _ = self.controller.apply_event(event.clone());
         if !self.command_bar_mode.is_active() {
             self.sync_command_bar();
@@ -117,6 +127,10 @@ impl BbrApp {
     /// overwriting the original return point, so Escape still restores the
     /// original web/chrome origin (not an intermediate edit state).
     pub fn activate_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // A rail-mode entry replaces any open find presentation (exactly one
+        // active portal surface per window); the command surface owns the
+        // focus afterwards.
+        self.find_discard(cx);
         self.clear_command_profile_hint();
         // A mode entry preserves the surface presentation only when its
         // coupled mode is re-entered (the overlay in Location); any other
@@ -142,6 +156,7 @@ impl BbrApp {
 
     /// `Cmd-T`: stage a destination without creating a tab or WKWebView.
     pub fn activate_new_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.find_discard(cx);
         self.clear_command_profile_hint();
         // A mode entry preserves the surface presentation only when its
         // coupled mode is re-entered (the centered palette in New Tab
@@ -179,6 +194,8 @@ impl BbrApp {
         if self.controller.snapshot().active_index.is_none() {
             return;
         }
+        // A rail mode entry replaces any open find presentation.
+        self.find_discard(cx);
         // A rail mode entry replaces any open palette/overlay presentation
         // (the surface state couples to Location/NewTab only).
         self.dismiss_command_portal(cx);
@@ -331,6 +348,13 @@ impl BbrApp {
     /// (§11.4 — the menu's own focused handler stops propagation, this is the
     /// fallback for any Escape that reaches the app while the menu is open).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Escape while a find presentation is open closes it and restores
+        // the origin focus domain (the global `escape → FocusWeb` binding
+        // routes here).
+        if self.find.state.open {
+            self.find_close(window, cx);
+            return;
+        }
         if self.tab_drag.is_active() {
             self.cancel_tab_drag(window, cx);
             return;
@@ -434,6 +458,12 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // A find presentation owns the keyboard while it is open: printable
+        // chars edit the query, Enter/Shift-Enter step, Escape closes.
+        if self.find.state.open {
+            self.on_find_key_down(event, window, cx);
+            return;
+        }
         if !self.command_bar_mode.is_active() {
             return;
         }

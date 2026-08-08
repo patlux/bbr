@@ -272,6 +272,7 @@ impl BbrApp {
             pane_rects: pane_rect_snapshots,
             window_size: [window_width, window_height],
             portal: self.portal_snapshot(),
+            find: self.find_snapshot(window),
             spaces_visible: self.u2.spaces_visible,
             plus_menu_open: self.u2.plus_menu.open,
             plus_menu_selection: self.u2.plus_menu.selection,
@@ -333,6 +334,23 @@ impl BbrApp {
             portal.portal_is_main = native.portal_is_main;
         }
         portal
+    }
+
+    /// Typed find-in-page presentation state (task packet
+    /// `find-in-page-portal-bar`): the open flag, the find field's real
+    /// GPUI focus, the live query, the WebKit-reported count/ordinal, a
+    /// pending request, and the stale marker after a document change.
+    fn find_snapshot(&self, window: &Window) -> bbr_testkit::protocol::FindSnapshot {
+        let state = &self.find.state;
+        bbr_testkit::protocol::FindSnapshot {
+            open: state.open,
+            focused: state.open && self.find_handle.is_focused(window),
+            query: state.query.clone(),
+            match_count: state.match_count,
+            current_match: state.current_match,
+            pending: state.pending,
+            stale: state.stale,
+        }
     }
 
     /// The typed semantic tree of the current render (DESIGN.md §15 /

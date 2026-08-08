@@ -35,6 +35,9 @@ mod command_surface;
 mod command_text;
 mod drag;
 mod drag_target;
+pub(crate) mod find;
+#[cfg(feature = "testkit")]
+mod find_benchmarks;
 mod interaction;
 pub(crate) mod palette;
 mod portal_host;
@@ -134,6 +137,19 @@ pub struct BbrApp {
     /// the same §11.5 engine.
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
     command_surface: CommandSurface,
+    /// Find-in-page composition (task packet `find-in-page-portal-bar`):
+    /// the one find presentation per window — portable session, native
+    /// adapter bound to the active view, and snapshot/render state.
+    find: crate::app::find::FindController,
+    /// GPUI focus handle of the find field. The find bar renders inside the
+    /// non-activating portal window (never key by design), so keyboard input
+    /// is handled by the main window: while a find presentation is open the
+    /// root tracks this handle and routes key downs to find mode.
+    find_handle: FocusHandle,
+    /// Concrete native engine handle (macOS only): the find adapter binds
+    /// the active `WKWebView` through it without creating/moving sessions.
+    #[cfg(target_os = "macos")]
+    find_engine: Option<crate::engine::NativeEngineRef>,
     /// The last frame's command-field rect in window coordinates, recorded
     /// by the field anchor element (DESIGN.md §11.4): the exact anchor for
     /// the field-anchored overlay (top/leading edge flush, width from the
@@ -169,12 +185,19 @@ pub struct BbrApp {
 }
 
 impl BbrApp {
+    /// The wiring constructor: engine, controller, organization, event
+    /// channels, native find channel (macOS), and the testkit performance
+    /// probe are all injected together.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         engine: EngineRef,
         controller: BrowserController,
         organization: bbr_browser::OrganizationController,
         engine_kind: &'static str,
         evt_tx: smol::channel::Sender<WebEvent>,
+        #[cfg(target_os = "macos")] find_tx: smol::channel::Sender<
+            bbr_web_macos::find_mapping::FindCompletion,
+        >,
         #[cfg(feature = "testkit")] performance: PerformanceProbe,
         cx: &mut Context<Self>,
     ) -> Self {
@@ -208,6 +231,13 @@ impl BbrApp {
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
             command_surface: CommandSurface::None,
+            find: crate::app::find::FindController::new(
+                #[cfg(target_os = "macos")]
+                find_tx,
+            ),
+            find_handle: cx.focus_handle(),
+            #[cfg(target_os = "macos")]
+            find_engine: None,
             command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
@@ -220,6 +250,14 @@ impl BbrApp {
             #[cfg(feature = "testkit")]
             performance,
         }
+    }
+
+    /// Attach the concrete native engine handle (macOS only; the composition
+    /// root passes it after construction, like the portal host). The find
+    /// adapter binds a live `WKWebView` through it.
+    #[cfg(target_os = "macos")]
+    pub fn set_find_engine(&mut self, engine: crate::engine::NativeEngineRef) {
+        self.find_engine = Some(engine);
     }
 
     /// Open the initial controller-backed tab after the first window frame.
@@ -249,6 +287,9 @@ impl BbrApp {
         if let Some(outcome) = &result {
             self.clear_command_profile_hint();
             self.sync_command_bar();
+            // A new active tab/session ends the one-per-window find
+            // presentation (canonical interaction contract).
+            self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
             self.ensure_active_visible();
             cx.notify();
@@ -268,6 +309,7 @@ impl BbrApp {
         if let Some(outcome) = &result {
             self.clear_command_profile_hint();
             self.sync_command_bar();
+            self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
             self.ensure_active_visible();
             cx.notify();
@@ -287,6 +329,7 @@ impl BbrApp {
         if let Some(outcome) = &result {
             self.clear_command_profile_hint();
             self.sync_command_bar();
+            self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
             self.ensure_active_visible();
             cx.notify();

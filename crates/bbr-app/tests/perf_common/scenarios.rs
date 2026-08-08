@@ -82,6 +82,10 @@ pub fn run_cold_trial_raw(
     let fixtures = FixtureServer::start(&fixtures_dir).expect("fixture server");
     let page_one = fixtures.url("/page1.html");
     let page_two = fixtures.url("/page2.html");
+    // The deterministic multi-match fixture the find-in-page performance
+    // scenarios drive (task packet `find-in-page-portal-bar`); loaded before
+    // any sample, so fixture/network time never enters app timings.
+    let page_find = fixtures.url("/find-repeated.html");
 
     // Keep the root under the fixed short `/tmp` prefix (macOS-only module):
     // the gateway socket must stay strictly below macOS's 104-byte `sun_path`
@@ -181,6 +185,7 @@ pub fn run_cold_trial_raw(
             config,
             &page_one,
             &page_two,
+            &page_find,
         );
 
         client.quit().expect("quit");

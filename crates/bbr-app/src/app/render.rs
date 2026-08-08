@@ -149,7 +149,16 @@ impl Render for BbrApp {
         div()
             .id("bbr-root")
             .relative()
-            .track_focus(&self.chrome_handle)
+            // While a find presentation is open the root tracks the find
+            // field's focus handle (the portal window is never key, so
+            // keystrokes are handled by the main window); otherwise the
+            // chrome handle owns the root focus.
+            .when(!self.find.state.open, |root| {
+                root.track_focus(&self.chrome_handle)
+            })
+            .when(self.find.state.open, |root| {
+                root.track_focus(&self.find_handle)
+            })
             .key_context("bbr_chrome")
             .flex()
             .flex_row()

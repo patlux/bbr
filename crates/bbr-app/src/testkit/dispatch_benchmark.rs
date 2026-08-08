@@ -12,6 +12,7 @@ use gpui::{App, Entity, Keystroke, WindowHandle};
 use crate::app::BbrApp;
 use crate::window_seam::with_app;
 
+use super::dispatch_benchmark_find::dispatch_benchmark_find;
 use super::dispatch_util::{browser_mutation, err_response, flush_dense_frame};
 
 /// Handle `Request::Benchmark*` arms; `None` for every other request so
@@ -22,6 +23,12 @@ pub(crate) fn dispatch_benchmark(
     app: &Entity<BbrApp>,
     cx: &mut App,
 ) -> Option<Response> {
+    // Find benchmarks route through their focused module first (the
+    // `BenchmarkFind*` arms), so `dispatch_benchmark` stays under the
+    // ~500-line budget.
+    if let Some(response) = dispatch_benchmark_find(req, window, app, cx) {
+        return Some(response);
+    }
     let response = match req {
         Request::BenchmarkSelectTab {
             operation_id,

@@ -42,5 +42,8 @@ gpui::actions!(
         Reload,
         /// `Escape`: return focus to the web view.
         FocusWeb,
+        /// `Cmd-F`: open the find-in-page presentation over the active web
+        /// view (task packet `find-in-page-portal-bar`).
+        FindInPage,
     ]
 );

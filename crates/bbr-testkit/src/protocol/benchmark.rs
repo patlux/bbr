@@ -106,6 +106,20 @@ pub enum BenchmarkKind {
     SidebarFavorites,
     /// The §11.11 folder disclosure committed the expected state.
     SidebarFolderToggle,
+    /// `Cmd-F` opened the find bar through the production path: the §11.4
+    /// command-surface-family presentation rendered in the one
+    /// `NativeAboveWeb` portal window with the find field focused — the
+    /// warm-presentation class (no tab or session is created before Enter).
+    FindOpen,
+    /// A find query entered through the production path: WebKit's content
+    /// process computed the match count/ordinal, the completion rode the
+    /// portable contract, and the bar re-rendered the report — the warm
+    /// command-surface class.
+    FindQueryResult,
+    /// Enter/Shift-Enter stepped the find session through the production
+    /// path: WebKit reported the new ordinal and the bar re-rendered it —
+    /// the warm command-surface class.
+    FindStep,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

@@ -130,6 +130,9 @@ JSON; no macOS, no GPUI, no WebKit).
 | `BenchmarkCommandActivate { operation_id, expected_view }` / `BenchmarkCommandActivateNewTab { operation_id }` | Measure Enter/Cmd-Enter activation with exact destination, focus, mode, tab/session-count, and presentation guards armed before dispatch |
 | `HoverTabRow { index }` / `UnhoverTabRow` / `PressTabRow { index }` / `ReleaseTabRow` | Drive the exact production hover/press app methods the row `on_hover` and mouse-down/up element handlers call — the §10.2 hover wash + close reveal and the §10.3 pressed wash (never a snapshot mutation) |
 | `BenchmarkHoverTab { index }` / `BenchmarkPressTab { index }` | Measure the production pointer hover/press entry transitions; the sample commits only when the derived row state actually shows the §10.2 `hover` / §10.3 `active` wash |
+| `FindOpen` / `FindClose` / `FindSetQuery { query }` / `FindNext` / `FindPrevious` | Route to the production find seams (`find_open` / `find_close` / `find_set_query` / `find_next` / `find_previous`); the portal frame is flushed after the mutable `BbrApp` lease is released |
+| `BenchmarkFindOpen { operation_id }` | Measure the production Cmd-F open; the sample commits only from a render of the portal window that drew the find bar open with the field focused (fast-but-wrong guard) |
+| `BenchmarkFindQueryResult { operation_id, query, expected_count, expected_ordinal }` / `BenchmarkFindStep { operation_id, next, expected_count, expected_ordinal }` | Measure the production query/step paths; the sample commits only when WebKit's content process reported the armed count/ordinal through the portable contract and the bar re-rendered it (pending/stale/mismatched reports reject in the app) |
 | `DragSidebarDivider { dx }` / `FocusSidebarDivider` | Drive the exact production pointer/focus listener methods the divider element handlers call (never a controller mutation) |
 | `FlushFrame` | Force one synchronous real GPUI draw (`Window::draw`) so paint-driven native geometry callbacks fire under the hidden harness (no display link) |
 | `SetWindowSize { width, height }` | `window.resize`; native view re-framed next frame |
@@ -680,6 +683,42 @@ the content probe to name the browser parent rather than the portal. WebKit
 title events and stable WebView/session identities corroborate content
 presentation. This closes the gap where typed logical visibility alone could
 miss a stale native child window that still occluded or intercepted content.
+
+## 7k. The find-in-page suite (`bbr-app/tests/e2e_shell_find/`)
+
+`just e2e-shell-find` contains 6 real-app scenarios for the find-in-page Portal
+bar (task packet `find-in-page-portal-bar`):
+
+1. **Open over a real WKWebView:** the shown-window scenario drives `Cmd-F`
+   through GPUI's real input path, then requires the `0xC3` `NativeAboveWeb`
+   presentation, the stable `bbr-find-*` ids, child attachment, frame sync,
+   non-activating/non-key/non-main policy, `portal_owns_probe_point`, and at
+   least one real AppKit Window Server corroboration at the portal frame
+   center over the live web view — plus the exact WebKit-reported count 3 /
+   ordinal 1 for the deterministic repeated fixture (hidden text excluded).
+2. **Navigation:** Enter/Shift-Enter wrap at both boundaries, a replacement
+   query restarts the search, and zero matches report count 0 with no ordinal.
+3. **Focus restoration:** Escape and the explicit close path restore the
+   captured origin focus domain (web → page; chrome/Cmd-L → command bar with
+   the origin mode intact) and clear highlights; identity is untouched.
+4. **Stale navigation and page mutation:** a navigation of the bound view
+   invalidates in place (bar stays open, old report kept); a fixture that
+   mutates its own DOM is observed by the strategy and reported fresh+stale.
+5. **Resize + tab-switch isolation:** a resize while open proves the same
+   portal window follows; a tab switch discards the presentation with both
+   sessions alive and profile/space untouched.
+6. **Page-world isolation:** the `find-isolation.html` fixture records every
+   unexpected global and CSS-highlight entry the page world can observe on
+   every selection change; after a full open + start + next + previous +
+   close run the title proves the page world never sees the client-world
+   find machinery (the strategy runs in
+   `WKContentWorld::defaultClientWorld`, never the page's main world).
+
+The suite uses typed snapshots/deadlines only — no sleeps or pixel
+comparisons. The optimized `find_open`/`find_query_result`/`find_step`
+scenarios run in the `e2e_performance` matrix (30 accepted samples each,
+commit only from a portal render that drew the armed WebKit-reported report,
+command-surface warm budget).
 
 ## 8. Security & release exclusion
 

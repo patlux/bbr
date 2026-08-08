@@ -81,6 +81,9 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let command_activate = report.results["command_activate"].samples;
         let command_new_tab = report.results["command_activate_new_tab"].samples;
         let palette_open = report.results["palette_open"].samples;
+        let find_open = report.results["find_open"].samples;
+        let find_query_result = report.results["find_query_result"].samples;
+        let find_step = report.results["find_step"].samples;
         let plus_menu = report.results["sidebar_plus_menu"].samples;
         let favorites = report.results["sidebar_favorites"].samples;
         let folder_toggle = report.results["sidebar_folder_toggle"].samples;
@@ -147,6 +150,18 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             palette_open >= INTERACTION_SAMPLES,
             "palette-open samples {palette_open} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            find_open >= INTERACTION_SAMPLES,
+            "find-open samples {find_open} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            find_query_result >= INTERACTION_SAMPLES,
+            "find-query samples {find_query_result} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            find_step >= INTERACTION_SAMPLES,
+            "find-step samples {find_step} < {INTERACTION_SAMPLES}"
         );
         assert!(
             plus_menu >= INTERACTION_SAMPLES,

@@ -25,8 +25,10 @@ use crate::window_seam::with_app;
 
 mod dispatch;
 mod dispatch_benchmark;
+mod dispatch_benchmark_find;
 mod dispatch_benchmark_u2;
 mod dispatch_drag;
+mod dispatch_find;
 mod dispatch_portal;
 mod dispatch_u2;
 mod dispatch_util;
@@ -96,12 +98,16 @@ fn dispatch_from_worker(req: Request, cmd_tx: &smol::channel::Sender<GatewayComm
 /// `window` lets the pump mutate the app on the main thread; `server` (when
 /// given) receives event broadcasts. The event pump always runs so the shell
 /// stays live even without the testkit feature.
+#[allow(clippy::too_many_arguments)] // the pump wiring: channels, handles, server
 pub fn spawn_pump(
     cx: &App,
     window: &WindowHandle<gpui_component::Root>,
     app: &Entity<BbrApp>,
     evt_rx: smol::channel::Receiver<bbr_web::WebEvent>,
     inject_tx: smol::channel::Sender<bbr_web::WebEvent>,
+    #[cfg(target_os = "macos")] find_rx: smol::channel::Receiver<
+        bbr_web_macos::find_mapping::FindCompletion,
+    >,
     cmd_rx: smol::channel::Receiver<GatewayCommand>,
     server: Option<Arc<GatewayServer>>,
 ) {
@@ -112,13 +118,21 @@ pub fn spawn_pump(
         enum Incoming {
             Command(Result<GatewayCommand, smol::channel::RecvError>),
             Event(Result<bbr_web::WebEvent, smol::channel::RecvError>),
+            #[cfg(target_os = "macos")]
+            Find(Result<bbr_web_macos::find_mapping::FindCompletion, smol::channel::RecvError>),
         }
 
-        let incoming =
-            smol::future::race(async { Incoming::Command(cmd_rx.recv().await) }, async {
-                Incoming::Event(evt_rx.recv().await)
-            })
-            .await;
+        let incoming = smol::future::race(
+            async { Incoming::Command(cmd_rx.recv().await) },
+            smol::future::race(
+                async { Incoming::Event(evt_rx.recv().await) },
+                #[cfg(target_os = "macos")]
+                async {
+                    Incoming::Find(find_rx.recv().await)
+                },
+            ),
+        )
+        .await;
         match incoming {
             Incoming::Command(Ok(msg)) => {
                 // Deterministic event injection rides the same channel the
@@ -144,7 +158,20 @@ pub fn spawn_pump(
                     let _ = with_app(&window, &app, cx, |view, _w, cx| view.on_web_event(ev, cx));
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::Find(Ok(completion)) => {
+                // Find completions arrive from the WebKit completion block;
+                // route them through the same main-thread app update path
+                // as engine events (`BbrApp::on_find_completion`).
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_find_completion(completion, cx)
+                    });
+                });
+            }
             Incoming::Command(Err(_)) | Incoming::Event(Err(_)) => break,
+            #[cfg(target_os = "macos")]
+            Incoming::Find(Err(_)) => break,
         }
     })
     .detach();
