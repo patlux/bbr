@@ -17,11 +17,13 @@ use objc2::runtime::AnyObject;
 use objc2::{define_class, msg_send, ClassType, DefinedClass, MainThreadMarker, MainThreadOnly};
 use objc2_foundation::{
     NSKeyValueObservingOptions, NSObject, NSObjectNSKeyValueObserverRegistration, NSObjectProtocol,
-    NSString,
+    NSString, NSURL,
 };
 use objc2_web_kit::{WKNavigation, WKNavigationDelegate, WKUIDelegate, WKWebView};
 
-use bbr_web::{WebEvent, WebViewId};
+use bbr_web::{ProfileId, WebEvent, WebViewId};
+
+use crate::error_mapping::{classify, map_error, map_termination, ClassifiedIncident};
 
 /// The `title` key path observed on the WKWebView (see [`WebViewDelegate::new`]).
 const TITLE_KEY_PATH: &str = "title";
@@ -76,12 +78,22 @@ pub(crate) unsafe fn unobserve_title(web_view: &WKWebView, observer: &NSObject) 
 /// How the delegate reports navigation observations back to the engine.
 pub(crate) type EventSink = Rc<RefCell<Option<Box<dyn FnMut(WebEvent)>>>>;
 
+/// How the delegate reports classified web-error incidents back to the
+/// engine (task packet `error-surface-contract`): the native adapter maps
+/// WebKit failures onto the merged contract's closed taxonomy, and the app
+/// owns the incident-id allocation on top of that classification.
+pub(crate) type IncidentSink = Rc<RefCell<Option<Box<dyn FnMut(ClassifiedIncident)>>>>;
+
 /// Instance variables for the navigation delegate.
 pub(crate) struct WebViewDelegateIvars {
     /// The web view this delegate belongs to (used to key events).
     pub(crate) web_view_id: WebViewId,
+    /// The profile this web view was created in (incident scope).
+    pub(crate) profile: ProfileId,
     /// Shared with the engine; updated by `set_events`.
     pub(crate) sink: EventSink,
+    /// Shared with the engine; updated by `set_incidents`.
+    pub(crate) incident_sink: IncidentSink,
 }
 
 define_class!(
@@ -140,7 +152,7 @@ define_class!(
         #[unsafe(method(webView:didFailProvisionalNavigation:withError:))]
         fn did_fail_provisional_navigation(
             &self,
-            _web_view: &WKWebView,
+            web_view: &WKWebView,
             _navigation: Option<&WKNavigation>,
             error: &objc2_foundation::NSError,
         ) {
@@ -149,12 +161,13 @@ define_class!(
                 self.id(),
                 self.error_message(error),
             ));
+            self.emit_incident(error, web_view);
         }
 
         #[unsafe(method(webView:didFailNavigation:withError:))]
         fn did_fail_navigation(
             &self,
-            _web_view: &WKWebView,
+            web_view: &WKWebView,
             _navigation: Option<&WKNavigation>,
             error: &objc2_foundation::NSError,
         ) {
@@ -163,11 +176,24 @@ define_class!(
                 self.id(),
                 self.error_message(error),
             ));
+            self.emit_incident(error, web_view);
         }
 
         #[unsafe(method(webViewWebContentProcessDidTerminate:))]
         fn web_content_process_did_terminate(&self, _web_view: &WKWebView) {
             self.emit(WebEvent::PageCrashed(self.id()));
+            // The renderer-termination path is classified too: the contract's
+            // only class for a dead web process is `ProcessCrash`, and the
+            // surface's recovery (Restore — recreate the session) is derived
+            // from that classification.
+            if let Some(sink) = self.ivars().incident_sink.borrow_mut().as_mut() {
+                sink(classify(
+                    self.ivars().profile,
+                    self.id(),
+                    map_termination(),
+                    None,
+                ));
+            }
         }
     }
 
@@ -188,13 +214,20 @@ define_class!(
 );
 
 impl WebViewDelegate {
-    /// Create a new delegate for `web_view_id`.
+    /// Create a new delegate for `web_view_id` in `profile`.
     pub(crate) fn new(
         mtm: MainThreadMarker,
         web_view_id: WebViewId,
+        profile: ProfileId,
         sink: EventSink,
+        incident_sink: IncidentSink,
     ) -> Retained<Self> {
-        let this = Self::alloc(mtm).set_ivars(WebViewDelegateIvars { web_view_id, sink });
+        let this = Self::alloc(mtm).set_ivars(WebViewDelegateIvars {
+            web_view_id,
+            profile,
+            sink,
+            incident_sink,
+        });
         // SAFETY: `init` is the NSObject initializer; we are on the main thread.
         unsafe { msg_send![super(this), init] }
     }
@@ -206,6 +239,61 @@ impl WebViewDelegate {
     fn emit(&self, event: WebEvent) {
         if let Some(sink) = self.ivars().sink.borrow_mut().as_mut() {
             sink(event);
+        }
+    }
+
+    /// Classify a native `NSError` into the merged contract and emit the
+    /// classified incident. Codes the taxonomy cannot name honestly are
+    /// dropped (never a guessed cause); the raw `NavigationFailed` event
+    /// still flows for legacy navigation-state consumers.
+    fn emit_incident(&self, error: &objc2_foundation::NSError, web_view: &WKWebView) {
+        let domain = error.domain().to_string();
+        let code = error.code() as i64;
+        // The failing URL rides in the error's userInfo. WebKit is not
+        // consistent about the key or the value type: some failures carry
+        // `NSErrorFailingURLStringKey` (an NSString), others carry
+        // `NSErrorFailingURLKey` (an NSURL or NSString), and some (a TLS
+        // handshake that never establishes) carry neither — the view's own
+        // URL is then also uncommitted, so the incident honestly has no
+        // retry target and no readable origin. Try every source in order
+        // so the surface and the retry action use the real failing URL
+        // whenever the engine reported one.
+        let failing_url = error
+            .userInfo()
+            .objectForKey(&NSString::from_str(crate::error_mapping::FAILING_URL_KEY))
+            .and_then(|value| value.downcast::<NSString>().ok())
+            .map(|s| s.to_string())
+            .or_else(|| {
+                error
+                    .userInfo()
+                    .objectForKey(&NSString::from_str(crate::error_mapping::FAILING_NSURL_KEY))
+                    .and_then(|value| {
+                        if let Some(url) = value
+                            .clone()
+                            .downcast::<NSURL>()
+                            .ok()
+                            .and_then(|url| url.absoluteString())
+                        {
+                            return Some(url.to_string());
+                        }
+                        value.downcast::<NSString>().ok().map(|s| s.to_string())
+                    })
+            })
+            .or_else(|| {
+                unsafe { web_view.URL() }
+                    .and_then(|u| u.absoluteString())
+                    .map(|s| s.to_string())
+            });
+        let Some(outcome) = map_error(&domain, code) else {
+            return;
+        };
+        if let Some(sink) = self.ivars().incident_sink.borrow_mut().as_mut() {
+            sink(classify(
+                self.ivars().profile,
+                self.id(),
+                outcome,
+                failing_url.as_deref(),
+            ));
         }
     }
 
@@ -237,10 +325,13 @@ impl WebViewDelegate {
     fn error_message(&self, error: &objc2_foundation::NSError) -> String {
         let desc = error.localizedDescription().to_string();
         let code = error.code();
+        let domain = error.domain().to_string();
+        // Diagnostic evidence for logs/contract tests only; the UI surface
+        // never renders this string (it presents the classified incident).
         if desc.is_empty() {
-            format!("webkit error code {code}")
+            format!("{domain} error {code}")
         } else {
-            desc
+            format!("{desc} ({domain} {code})")
         }
     }
 }

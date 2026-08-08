@@ -572,6 +572,49 @@ pub struct FindSnapshot {
     pub stale: bool,
 }
 
+/// The error-surface category on the wire (task packet
+/// `error-surface-contract`, DESIGN.md §11.8): the closed contract category
+/// the classified incident carries. The process-crash class is **not** a
+/// wire variant here: a crashed tab is presented by the §11.8 crash panel
+/// (the controller-driven `bbr-crash-*` surface), so the error surface
+/// only ever presents TLS, navigation, and offline classes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ErrorSurfaceCategory {
+    Tls,
+    Navigation,
+    Offline,
+}
+
+/// The §11.8-style error-surface presentation (task packet
+/// `error-surface-contract`): the classified incident the content area
+/// renders — the contract category, the privacy-safe failing origin, the
+/// calm title/copy the surface drew, the contract-legal primary action, and
+/// the lifecycle state. The empty default means no error surface is shown.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct ErrorSurfaceSnapshot {
+    /// The surface is rendered in the content area.
+    pub visible: bool,
+    /// The web view the incident is scoped to (unchanged by showing /
+    /// dismissing — identity is never touched).
+    pub view: Option<WebViewId>,
+    /// The closed contract category of the classified incident.
+    pub category: Option<ErrorSurfaceCategory>,
+    /// The contract subreason, e.g. "navigation: server not found".
+    pub reason: Option<String>,
+    /// The privacy-safe failing origin the surface presents readably
+    /// (scheme://host[:port]); `None` when the origin is unknown.
+    pub origin: Option<String>,
+    /// The calm title the surface drew (never a raw platform code).
+    pub title: Option<String>,
+    /// The primary recovery action label the surface drew (contract-legal
+    /// for the category).
+    pub action: Option<String>,
+    /// The contract lifecycle state (reported / recovery requested /
+    /// recovery failed).
+    pub lifecycle: Option<String>,
+}
+
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
 /// Deliberately typed (no free-form JSON) so the harness can assert on
@@ -741,4 +784,9 @@ pub struct Snapshot {
     /// §11.12 downloads panel render contract (open, focus, bounded window).
     #[serde(default)]
     pub downloads: DownloadsPanelSnapshot,
+    /// §11.8 error-surface presentation (task packet
+    /// `error-surface-contract`): the classified incident the content area
+    /// renders, or the empty default when no error surface is shown.
+    #[serde(default)]
+    pub error_surface: ErrorSurfaceSnapshot,
 }

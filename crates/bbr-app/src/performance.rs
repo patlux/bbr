@@ -19,11 +19,13 @@ use crate::app::palette::CommandSurface;
 
 pub mod command;
 pub(crate) mod downloads;
+mod error_surface;
 mod find;
 pub mod pane_geometry;
 pub mod slot;
 mod u2;
 use command::{CommandExpectation, CommandObservation};
+use error_surface::ErrorSurfaceObservation;
 use pane_geometry::PaneGeometry;
 
 pub type PresentationSink = Box<dyn FnMut(PresentationMeasurement)>;
@@ -53,6 +55,10 @@ struct State {
     /// the downloads benchmarks commit only against it (render-gated, see
     /// `downloads`).
     latest_downloads: Option<downloads::DownloadsObservation>,
+    /// The error-surface presentation the content-area render actually drew;
+    /// the error-surface benchmark commits only against it (render-gated,
+    /// see `error_surface`).
+    latest_error_surface: ErrorSurfaceObservation,
     latest_active_web_view: Option<WebViewId>,
     latest_active_space: TestSpaceId,
     latest_sidebar_visible: bool,
@@ -116,6 +122,9 @@ struct Pending {
     /// must commit from (open/focused, an armed progress fraction on the
     /// running row, or the fresh retry row in Active).
     downloads: Option<downloads::DownloadsExpectation>,
+    /// The exact error-surface presentation identity the pending sample must
+    /// commit from (the surface drawn for the armed closed category).
+    error_surface: Option<error_surface::ErrorSurfaceExpectation>,
 }
 
 impl PerformanceProbe {
@@ -127,6 +136,7 @@ impl PerformanceProbe {
                 latest_command: None,
                 latest_find: None,
                 latest_downloads: None,
+                latest_error_surface: error_surface::ErrorSurfaceObservation::default(),
                 latest_active_web_view: None,
                 latest_active_space: TestSpaceId(0),
                 latest_sidebar_visible: true,
@@ -153,6 +163,7 @@ impl PerformanceProbe {
                     command: None,
                     find: None,
                     downloads: None,
+                    error_surface: None,
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
@@ -197,6 +208,7 @@ impl PerformanceProbe {
             command: None,
             find: None,
             downloads: None,
+            error_surface: None,
         });
         Ok(())
     }
@@ -469,6 +481,7 @@ impl PerformanceProbe {
             || !command::command_matches(pending, &state)
             || !find::find_matches(pending, &state)
             || !downloads::downloads_matches(pending, &state)
+            || !error_surface::error_surface_matches(pending, &state)
         {
             #[cfg(feature = "testkit")]
             if let Some(_d) = pending.downloads.as_ref() {

@@ -18,6 +18,7 @@ use objc2_web_kit::{WKWebView, WKWebViewConfiguration, WKWebsiteDataStore};
 use bbr_web::{ProfileId, WebAction, WebEngine, WebEvent, WebRect, WebViewId};
 
 use crate::delegate::{self, WebViewDelegate};
+use crate::error_mapping::ClassifiedIncident;
 use crate::host::HostBridge;
 
 /// Options that change engine behaviour; populated by the composition root.
@@ -54,6 +55,8 @@ pub struct WebEngineWk {
     sessions: HashMap<WebViewId, NativeWebSession>,
     /// Shared with every delegate; replaced by [`WebEngine::set_events`].
     sink: delegate::EventSink,
+    /// Shared with every delegate; replaced by [`WebEngineWk::set_incidents`].
+    incident_sink: delegate::IncidentSink,
     /// Profile → website data store cache. Stores outlive individual views.
     stores: HashMap<ProfileId, Retained<WKWebsiteDataStore>>,
     /// Per-view geometry cache: the last host-layout rect published for each
@@ -82,6 +85,7 @@ impl WebEngineWk {
             options,
             sessions: HashMap::new(),
             sink: Rc::new(RefCell::new(None)),
+            incident_sink: Rc::new(RefCell::new(None)),
             stores: HashMap::new(),
             geometry: HashMap::new(),
         }
@@ -106,6 +110,15 @@ impl WebEngineWk {
         self.sessions
             .get(&id)
             .map(|session| session.web_view.clone())
+    }
+
+    /// Hand all subsequent classified web-error incidents to `sink`
+    /// (task packet `error-surface-contract`). Replaces any previous sink.
+    /// Inherent to the concrete engine (not part of the portable trait): the
+    /// app wires it once at composition, like the find/downloads adapters.
+    pub fn set_incidents(&mut self, sink: Box<dyn FnMut(ClassifiedIncident)>) {
+        self.assert_main_thread();
+        *self.incident_sink.borrow_mut() = Some(sink);
     }
 
     fn assert_main_thread(&self) {
@@ -231,7 +244,13 @@ impl WebEngine for WebEngineWk {
                 &config,
             )
         };
-        let delegate = WebViewDelegate::new(mtm, id, self.sink.clone());
+        let delegate = WebViewDelegate::new(
+            mtm,
+            id,
+            profile,
+            self.sink.clone(),
+            self.incident_sink.clone(),
+        );
         unsafe {
             web_view.setNavigationDelegate(Some(ProtocolObject::from_ref(&*delegate)));
             web_view.setUIDelegate(Some(ProtocolObject::from_ref(&*delegate)));

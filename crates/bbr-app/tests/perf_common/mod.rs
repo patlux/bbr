@@ -11,6 +11,7 @@ mod command_drive;
 mod downloads;
 mod downloads_drive;
 mod drive;
+mod errors_drive;
 mod find;
 mod find_drive;
 pub mod harness;

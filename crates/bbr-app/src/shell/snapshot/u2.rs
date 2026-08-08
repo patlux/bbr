@@ -27,6 +27,15 @@ pub struct U2IdsInput<'a> {
     pub downloads_open: bool,
     pub downloads_window: std::ops::Range<usize>,
     pub downloads_layout: crate::app::downloads::PanelLayout,
+    /// §11.8-style error-surface gating (task packet
+    /// `error-surface-contract`): the classified incident surface is
+    /// rendered in the content area, so it replaces the active view's
+    /// native slot ids in the visible-id list (the surface render draws
+    /// `bbr-error-*` ids and never the slot it replaced).
+    pub error_surface_visible: bool,
+    /// The surface's URL line is rendered (the contract knows the failing
+    /// origin).
+    pub error_surface_origin: bool,
 }
 
 impl<'a> Default for U2IdsInput<'a> {
@@ -46,6 +55,8 @@ impl<'a> Default for U2IdsInput<'a> {
                 history_count: 0,
                 hairline: 1.0,
             },
+            error_surface_visible: false,
+            error_surface_origin: false,
         }
     }
 }

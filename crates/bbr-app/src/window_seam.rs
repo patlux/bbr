@@ -259,6 +259,9 @@ pub(crate) fn spawn_event_pump(
     evt_rx: Receiver<WebEvent>,
     #[cfg(target_os = "macos")] find_rx: Receiver<bbr_web_macos::find_mapping::FindCompletion>,
     #[cfg(target_os = "macos")] downloads_rx: Receiver<bbr_web::downloads::DownloadEvent>,
+    #[cfg(target_os = "macos")] incidents_rx: Receiver<
+        bbr_web_macos::error_mapping::ClassifiedIncident,
+    >,
 ) {
     let window = *window;
     let app = app.clone();
@@ -269,17 +272,27 @@ pub(crate) fn spawn_event_pump(
             Find(Result<bbr_web_macos::find_mapping::FindCompletion, smol::channel::RecvError>),
             #[cfg(target_os = "macos")]
             Download(Result<bbr_web::downloads::DownloadEvent, smol::channel::RecvError>),
+            #[cfg(target_os = "macos")]
+            Incident(
+                Result<bbr_web_macos::error_mapping::ClassifiedIncident, smol::channel::RecvError>,
+            ),
         }
         let incoming = smol::future::race(
             async { Incoming::Event(evt_rx.recv().await) },
             smol::future::race(
+                smol::future::race(
+                    #[cfg(target_os = "macos")]
+                    async {
+                        Incoming::Find(find_rx.recv().await)
+                    },
+                    #[cfg(target_os = "macos")]
+                    async {
+                        Incoming::Download(downloads_rx.recv().await)
+                    },
+                ),
                 #[cfg(target_os = "macos")]
                 async {
-                    Incoming::Find(find_rx.recv().await)
-                },
-                #[cfg(target_os = "macos")]
-                async {
-                    Incoming::Download(downloads_rx.recv().await)
+                    Incoming::Incident(incidents_rx.recv().await)
                 },
             ),
         )
@@ -308,9 +321,22 @@ pub(crate) fn spawn_event_pump(
                     });
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::Incident(Ok(incident)) => {
+                // Classified web-error incidents from the native delegate's
+                // incident sink: the same main-thread app update path as
+                // engine/find/downloads events.
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_incident(incident, cx)
+                    });
+                });
+            }
             Incoming::Event(Err(_)) => break,
             #[cfg(target_os = "macos")]
-            Incoming::Find(Err(_)) | Incoming::Download(Err(_)) => break,
+            Incoming::Find(Err(_)) | Incoming::Download(Err(_)) | Incoming::Incident(Err(_)) => {
+                break
+            }
         }
     })
     .detach();

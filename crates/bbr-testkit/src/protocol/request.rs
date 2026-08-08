@@ -146,6 +146,34 @@ pub enum Request {
     InjectWebEvent {
         event: bbr_web::WebEvent,
     },
+    /// Deterministic classified-incident injection (testkit-only): pushes a
+    /// classified web-error incident through the exact seam the native
+    /// delegate's incident sink drives (`BbrApp::on_incident`), so E2E can
+    /// exercise the production error-surface presentation for a closed
+    /// contract category without depending on host network state (a
+    /// genuinely-offline host cannot be toggled deterministically). The
+    /// native-code → taxonomy mapping itself stays unit-proven in
+    /// `bbr-web-macos::error_mapping`; this injects the *classified* result
+    /// (a contract subreason, which derives its category).
+    InjectErrorIncident {
+        profile: ProfileId,
+        view: WebViewId,
+        reason: bbr_web::web_errors::IncidentSubReason,
+        url: Option<String>,
+    },
+    /// Press the error surface's primary action (the recovery button, task
+    /// packet `error-surface-contract`): routes through the exact
+    /// production mouse-down seam the `bbr-error-action` button's listener
+    /// calls (`BbrApp::error_recover`), which requests the contract-legal
+    /// action for the active view's incident and dispatches the engine
+    /// action (Retry re-issues the failing URL).
+    ClickErrorAction,
+    /// Press the error surface's Dismiss button (task packet
+    /// `error-surface-contract`): routes through the exact production
+    /// mouse-down seam the `bbr-error-dismiss` button's listener calls
+    /// (`BbrApp::error_dismiss`) — a lifecycle event, identity never
+    /// touched.
+    ClickErrorDismiss,
     /// Activate a visible space row through the production pointer path: the
     /// same app method the row's mouse-down listener calls, with chrome focus.
     ClickSpace {
@@ -511,6 +539,17 @@ pub enum Request {
     BenchmarkDownloadsRowRetry {
         operation_id: BenchmarkOperationId,
         row: usize,
+    },
+    /// Measure the production error-surface presentation (task packet
+    /// `error-surface-contract`): a classified incident enters through the
+    /// exact seam the native incident sink drives (`on_incident` → the
+    /// contract `present` path) and the sample commits only from a render
+    /// that drew the error surface for the armed category over the unchanged
+    /// active view — warm-presentation class, no tab or session is created
+    /// or touched. Fixture/network time is excluded by construction (the
+    /// incident is applied in-process, never through a network transfer).
+    BenchmarkErrorSurfacePresent {
+        operation_id: BenchmarkOperationId,
     },
     /// Seed a deterministic non-transferring download attempt for the
     /// performance scenarios: mints the attempt through the portable

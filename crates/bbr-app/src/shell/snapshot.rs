@@ -134,6 +134,10 @@ pub struct TestSnapshot {
     pub download_rows: Vec<bbr_testkit::protocol::DownloadRowSnapshot>,
     /// §11.12 downloads panel render contract (open, focus, bounded window).
     pub downloads: bbr_testkit::protocol::DownloadsPanelSnapshot,
+    /// §11.8-style error-surface presentation (task packet
+    /// `error-surface-contract`): the classified incident the content area
+    /// renders, or the empty default when no error surface is shown.
+    pub error_surface: bbr_testkit::protocol::ErrorSurfaceSnapshot,
 }
 
 #[cfg(feature = "testkit")]
@@ -254,7 +258,19 @@ pub fn visible_ids_u2(
     // focused/active view hosts a live native session). Every rendered slot
     // id is keyed by its `WebViewId`; `visible_ids` must not advertise an
     // unkeyed element that GPUI did not render.
-    if let Some(layout) = pane_layout {
+    // The §11.8-style error surface (task packet `error-surface-contract`)
+    // replaces the active view's native slot in the content area: the
+    // render draws `bbr-error-*` ids and never the slot it replaced.
+    if u2.error_surface_visible {
+        ids.push("bbr-error-panel".into());
+        ids.push("bbr-error-title".into());
+        ids.push("bbr-error-copy".into());
+        if u2.error_surface_origin {
+            ids.push("bbr-error-url".into());
+        }
+        ids.push("bbr-error-action".into());
+        ids.push("bbr-error-dismiss".into());
+    } else if let Some(layout) = pane_layout {
         ids.push(format!("bbr-native-web-slot-{}", layout.primary.0));
         if let Some(secondary) = layout.secondary {
             ids.push(format!("bbr-native-web-slot-{}", secondary.0));

@@ -212,6 +212,17 @@ fn main() {
         #[cfg(target_os = "macos")]
         let (downloads_tx, downloads_rx) =
             smol::channel::unbounded::<bbr_web::downloads::DownloadEvent>();
+        // Classified web-error incidents ride their own channel too (task
+        // packet `error-surface-contract`): the native delegate's incident
+        // sink sends `ClassifiedIncident`s from the WKWebView delegate
+        // callbacks, and the pump drains them into `BbrApp::on_incident` on
+        // the main thread — the same pattern as the find/downloads
+        // adapters. The classification itself (NSError domain+code → the
+        // merged contract taxonomy) happens in `bbr-web-macos`; the app
+        // only presents the classified result.
+        #[cfg(target_os = "macos")]
+        let (incidents_tx, incidents_rx) =
+            smol::channel::unbounded::<bbr_web_macos::error_mapping::ClassifiedIncident>();
         #[cfg(feature = "testkit")]
         let performance = performance::PerformanceProbe::new(
             process_started,
@@ -275,6 +286,18 @@ fn main() {
         if let Some(native) = native_engine.clone() {
             let _ = with_app(&window, &app, cx, |view, _w, _cx| {
                 view.set_find_engine(native);
+            });
+        }
+
+        // Error-surface composition (task packet `error-surface-contract`):
+        // the concrete engine's classified-incident sink forwards every
+        // native failure into the incidents channel the pump drains into
+        // `BbrApp::on_incident`. Installed before the download composition
+        // consumes the native handle, like the find seam.
+        #[cfg(target_os = "macos")]
+        if let Some(native) = native_engine.clone() {
+            let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+                view.install_error_surface(native, incidents_tx.clone());
             });
         }
 
@@ -380,6 +403,7 @@ fn main() {
                 evt_tx.clone(),
                 find_rx,
                 downloads_rx,
+                incidents_rx,
                 cmd_rx,
                 server.clone(),
             );
@@ -418,7 +442,15 @@ fn main() {
         #[cfg(not(feature = "testkit"))]
         {
             // Event pump so the shell stays live even without the gateway.
-            spawn_event_pump(cx, &window, &app, evt_rx, find_rx, downloads_rx);
+            spawn_event_pump(
+                cx,
+                &window,
+                &app,
+                evt_rx,
+                find_rx,
+                downloads_rx,
+                incidents_rx,
+            );
         }
 
         if !cli.hidden {

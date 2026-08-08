@@ -40,6 +40,10 @@ mod downloads_benchmarks;
 pub(crate) mod downloads_render;
 mod drag;
 mod drag_target;
+pub(crate) mod error_surface;
+pub(crate) mod error_surface_behavior;
+#[cfg(feature = "testkit")]
+mod error_surface_benchmarks;
 pub(crate) mod find;
 #[cfg(feature = "testkit")]
 mod find_benchmarks;
@@ -146,6 +150,11 @@ pub struct BbrApp {
     /// the one find presentation per window — portable session, native
     /// adapter bound to the active view, and snapshot/render state.
     find: crate::app::find::FindController,
+    /// Web-error surface composition (task packet `error-surface-contract`):
+    /// per-view incident lifecycles, the classified presentation the content
+    /// area renders for TLS/navigation/offline failures, the contract-derived
+    /// recovery routing, and the native-view hide/restore bookkeeping.
+    pub(crate) error_surface: crate::app::error_surface::ErrorSurfaceState,
     /// Downloads panel composition (task packet `downloads-sidebar-panel`):
     /// the controller-owned attempt/history store (L6), the anchored
     /// popover presentation state, and the deterministic row model.
@@ -271,6 +280,7 @@ impl BbrApp {
                 #[cfg(target_os = "macos")]
                 find_tx,
             ),
+            error_surface: crate::app::error_surface::ErrorSurfaceState::default(),
             find_handle: cx.focus_handle(),
             downloads: downloads::DownloadsState::new(),
             downloads_panel_handle: cx.focus_handle(),
@@ -378,6 +388,10 @@ impl BbrApp {
             self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
             self.ensure_active_visible();
+            // The new active view may carry a tracked incident (a tab
+            // switched away from while its surface was shown): re-assert
+            // native visibility against the surface.
+            self.sync_error_surface_visibility();
             cx.notify();
         }
         result
@@ -398,12 +412,25 @@ impl BbrApp {
             self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
             self.ensure_active_visible();
+            // The newly selected view may carry a tracked incident (the
+            // surface shows for the active view only): re-assert native
+            // visibility against the surface.
+            self.sync_error_surface_visibility();
             cx.notify();
         }
         result
     }
 
     pub fn close_tab(&mut self, index: usize, cx: &mut Context<Self>) -> Option<ControllerEvent> {
+        // The closed tab's disposable session id, captured before the
+        // controller destroys it (the `TabClosed` outcome only carries the
+        // index): its error-surface presentation must be dropped with it.
+        let closed_view = self
+            .controller
+            .snapshot()
+            .tabs
+            .get(index)
+            .and_then(|tab| tab.web_view);
         let result = self
             .controller
             .close_tab(index)
@@ -417,6 +444,12 @@ impl BbrApp {
             self.sync_command_bar();
             self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
+            // A closed tab's session is gone: drop its error-surface
+            // presentation entirely (no native restore is needed — the
+            // view id is released with the tab).
+            if let Some(view) = closed_view {
+                self.error_surface.forget_view(view);
+            }
             self.ensure_active_visible();
             cx.notify();
         }

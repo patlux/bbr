@@ -28,6 +28,7 @@ mod u2;
 
 use super::command_drive::drive_command_scenarios;
 use super::downloads_drive::drive_downloads_scenarios;
+use super::errors_drive::drive_error_surface_scenarios;
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
 
@@ -1004,6 +1005,20 @@ fn drive_matrix_inner(
             &mut operation,
         );
 
+        // Web-error surface (task packet `error-surface-contract`): the
+        // production incident-presentation through the exact seam the
+        // native delegate's incident sink drives (`on_incident` → the
+        // contract `present` lifecycle), committing only from a render of
+        // the content area that drew the surface for the armed navigation
+        // category over the unchanged active view (the in-app probe owns
+        // the fast-but-wrong guard). Fixture/network time is excluded:
+        // the classified incident is applied in-process, never through a
+        // network transfer. The block never touches tabs/sessions/views
+        // and restores the matrix state (surface dismissed) before the
+        // dense seeding below.
+        let error_surface_samples =
+            drive_error_surface_scenarios(client, harness, &mut since, config, &mut operation);
+
         // Dense-list scroll + selection through the bounded-window render
         // (Phase-4 dense slice, performance contract "dense-list scrolling"):
         // seed an S-density collection (230 identities, 10 pinned, 20 live)
@@ -1132,6 +1147,7 @@ fn drive_matrix_inner(
         raw.insert("sidebar_folder_toggle".to_string(), folder_toggle_samples);
         raw.extend(find_samples);
         raw.extend(downloads_samples);
+        raw.extend(error_surface_samples);
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);
         raw.insert("dense_select".to_string(), dense_select_samples);
         raw

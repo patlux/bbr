@@ -207,6 +207,14 @@ impl BbrApp {
 
     /// Reload the crashed active tab from the crash panel (fresh session).
     pub fn reload_active_from_panel(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        // The crash-panel Reload is the contract's `Restore` recovery for
+        // the crash incident the adapter classified: drop the tracked
+        // incident so the surface never re-presents a stale crash after the
+        // session is rebuilt (the crash panel is the visible surface for
+        // the process-crash class).
+        if let Some(view) = self.controller.snapshot().active_view {
+            self.error_surface.clear_view(view);
+        }
         self.reload();
         cx.notify();
     }

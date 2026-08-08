@@ -197,6 +197,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             folders: self.folders.clone(),
             download_rows: self.download_rows.clone(),
             downloads: self.downloads,
+            error_surface: self.error_surface.clone(),
         }
     }
 }
