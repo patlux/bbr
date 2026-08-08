@@ -1020,9 +1020,10 @@ living `TabId` globally and disappears with it; a Saved Page carries no
 or page snapshot and survives tab close and restart.
 
 - **Palette result row:** `[bookmark glyph] [title + URL] [collection label]`.
-  Title uses `type:title` with the captured title, then hostname/URL fallback;
-  URL uses `type:mono` and the §4 mid-ellipsis; the optional one-level
-  collection label uses `type:meta`. Default/hover/selected/focused states use
+  Title uses `type:title` with the user label when present, otherwise the
+  captured title, then hostname/URL fallback; URL uses `type:mono` and the §4
+  mid-ellipsis; the optional one-level collection label uses `type:meta`.
+  Default/hover/selected/focused states use
   the existing command-row language; the selected result keeps the accent rail
   and no Saved Page-specific color family is introduced.
 - **Activation:** opening a Saved Page creates exactly one fresh regular tab in
@@ -1041,7 +1042,8 @@ or page snapshot and survives tab close and restart.
   remove, multi-select, and one-level flat collections through shared `bbr-ui`
   primitives.
 - **Library row:** bookmark/fallback glyph or normal favicon presentation,
-  title, mid-ellipsized URL, optional collection label, and selection state.
+  user label or captured-title fallback, mid-ellipsized URL, optional
+  collection label, and selection state.
   No favicon blob is stored in the record; missing favicon uses the §7.2
   monogram. Hundreds/thousands of cold records use bounded/windowed rendering.
 - **States:** empty, loading, populated, no results, single/multi-selection,
