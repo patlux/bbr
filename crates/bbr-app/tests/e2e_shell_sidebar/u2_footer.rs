@@ -40,6 +40,15 @@ fn footer_row_and_permanent_strip_render_in_the_compact_rail() {
                 .any(|id| id.starts_with("bbr-downloads-2")),
             "no fourth footer control"
         );
+        // The legacy reveal surface is gone end to end: no `[Spaces]`
+        // toggle id and no revealed-list row/identity ids render anywhere
+        // in the rail.
+        assert!(
+            !initial.visible_ids.iter().any(|id| id == "bbr-spaces"
+                || id.starts_with("bbr-space-row")
+                || id.starts_with("bbr-space-list")),
+            "no legacy [Spaces] toggle or revealed-list ids render"
+        );
         // Status row + collapse control keep their ids in the reordered rail.
         assert_ids(&initial, &["bbr-status", "bbr-sidebar-toggle"]);
 
@@ -64,7 +73,7 @@ fn footer_row_and_permanent_strip_render_in_the_compact_rail() {
 
         // The strip is always present: a second snapshot shows the same
         // always-rendered chip ids, and activation never touches sessions.
-        let always = reveal_spaces_region(&mut client);
+        let always = strip_presence(&mut client);
         assert!(always.space_chips.iter().any(|c| c.selected));
         assert_eq!(always.active_web_view, Some(first_view));
         assert_eq!(
@@ -87,7 +96,7 @@ fn footer_row_and_permanent_strip_render_in_the_compact_rail() {
 /// §11.4 plus menu over the real app: `[+]` opens `bbr-plus-menu` with the
 /// two v1 items; keyboard `↑`/`↓` wraps the selection, Enter commits, Escape
 /// dismisses without action; the pointer path commits New Space (a real
-/// space in the active profile, visible in the revealed region, without
+/// space in the active profile, visible in the permanent strip, without
 /// switching) and New Folder (a session-local folder with count 0).
 #[test]
 #[ignore]
@@ -114,7 +123,7 @@ fn plus_menu_pointer_and_keyboard_create_real_space_and_folder() {
         let default_profile = initial.active_profile;
         // §11.3/§11.4: the permanent strip is always part of the rail; the
         // strip presence seam verifies it before the plus-menu steps.
-        reveal_spaces_region(&mut client);
+        strip_presence(&mut client);
 
         // `[+]` opens the menu: surface id, two item ids, selection 0.
         client
@@ -160,7 +169,7 @@ fn plus_menu_pointer_and_keyboard_create_real_space_and_folder() {
         assert_eq!(dismissed.engine_sessions, 1);
 
         // Pointer New Space: the menu opens again, the item commits a real
-        // space in the active profile (visible in the revealed region, not
+        // space in the active profile (visible in the permanent strip, not
         // activated), and the menu closes.
         client
             .send_ok(&dsl::click_footer_plus())

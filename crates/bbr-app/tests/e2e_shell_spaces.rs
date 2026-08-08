@@ -17,6 +17,8 @@
 #![cfg(target_os = "macos")]
 
 mod e2e_common;
+#[path = "e2e_shell_spaces/strip.rs"]
+mod strip;
 
 use bbr_testkit::protocol::{CommandBarMode, TestProfileId};
 use e2e_common::*;
@@ -85,51 +87,51 @@ fn pointer_switches_spaces_with_identity_and_warm_sessions() {
         // §11.3/§11.4: the permanent space strip is always part of the rail
         // — no reveal step exists. The strip seam verifies the always-present
         // chip surface before the identity assertions.
-        let revealed = reveal_spaces_region(&mut client);
+        let present = strip_presence(&mut client);
 
         // Complete collections at launch: one profile (Default, cobalt — the
         // first §12 hue) owning one space with its tab. Identity is stable
         // and typed, never a hardcoded label.
-        assert_eq!(revealed.profiles.len(), 1);
-        assert_eq!(revealed.profiles[0].index, 0);
-        assert_eq!(revealed.profiles[0].id, TestProfileId(1));
-        assert_eq!(revealed.profiles[0].title, "Default");
-        assert_eq!(revealed.profiles[0].hue, "cobalt");
-        assert_eq!(revealed.spaces.len(), 1);
-        assert_eq!(revealed.spaces[0].index, 0);
-        assert_eq!(revealed.spaces[0].space, default_space);
-        assert_eq!(revealed.spaces[0].profile, TestProfileId(1));
-        assert_eq!(revealed.spaces[0].title, "Default");
-        assert!(revealed.spaces[0].active);
-        assert_eq!(revealed.spaces[0].tab_count, 1);
-        assert_eq!(revealed.spaces[0].active_tab, Some(0));
-        assert_eq!(revealed.spaces[0].active_view, Some(first_view));
-        assert_eq!(revealed.active_profile_title.as_deref(), Some("Default"));
-        assert_eq!(revealed.active_profile_hue.as_deref(), Some("cobalt"));
+        assert_eq!(present.profiles.len(), 1);
+        assert_eq!(present.profiles[0].index, 0);
+        assert_eq!(present.profiles[0].id, TestProfileId(1));
+        assert_eq!(present.profiles[0].title, "Default");
+        assert_eq!(present.profiles[0].hue, "cobalt");
+        assert_eq!(present.spaces.len(), 1);
+        assert_eq!(present.spaces[0].index, 0);
+        assert_eq!(present.spaces[0].space, default_space);
+        assert_eq!(present.spaces[0].profile, TestProfileId(1));
+        assert_eq!(present.spaces[0].title, "Default");
+        assert!(present.spaces[0].active);
+        assert_eq!(present.spaces[0].tab_count, 1);
+        assert_eq!(present.spaces[0].active_tab, Some(0));
+        assert_eq!(present.spaces[0].active_view, Some(first_view));
+        assert_eq!(present.active_profile_title.as_deref(), Some("Default"));
+        assert_eq!(present.active_profile_hue.as_deref(), Some("cobalt"));
         assert_eq!(
-            revealed.space_chips.len(),
+            present.space_chips.len(),
             1,
             "one chip per space in the permanent strip"
         );
-        assert_eq!(revealed.space_chips[0].space, default_space);
-        assert_eq!(revealed.space_chips[0].title, "Default");
-        assert!(revealed.space_chips[0].selected);
-        assert_chip_evidence(&revealed, default_space);
+        assert_eq!(present.space_chips[0].space, default_space);
+        assert_eq!(present.space_chips[0].title, "Default");
+        assert!(present.space_chips[0].selected);
+        assert_chip_evidence(&present, default_space);
         // §11.3/§12/§15 ids for the permanent strip (chip + identity ids
         // derive from the persistent space id).
-        assert_ids(&revealed, &["bbr-space-strip"]);
+        assert_ids(&present, &["bbr-space-strip"]);
         assert!(
-            revealed
+            present
                 .visible_ids
                 .iter()
-                .any(|id| id == "bbr-space-chip-1"),
+                .any(|id| id == &format!("bbr-space-chip-{}", default_space.0)),
             "chip id for the launch space"
         );
         assert!(
-            revealed
+            present
                 .visible_ids
                 .iter()
-                .any(|id| id == "bbr-space-identity-1"),
+                .any(|id| id == &format!("bbr-space-identity-{}", default_space.0)),
             "identity id for the launch space"
         );
 

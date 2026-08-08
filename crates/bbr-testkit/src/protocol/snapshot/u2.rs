@@ -28,6 +28,33 @@ pub struct SpaceChipSnapshot {
     pub selected: bool,
 }
 
+/// §11.3/§11.4 strip scroll evidence on the wire: the strip's measured
+/// viewport plus the tracked-scroll state and one raw layout bounds rect
+/// per chip in canonical display order, read-only from the production
+/// `space_strip_scroll` [`gpui::ScrollHandle`] the render tracks (never a
+/// snapshot mutation). The E2E combines a raw chip rect with the signed
+/// `offset` to compute the chip's visual position (`visual = raw + offset`)
+/// and asserts the selected chip lies fully inside the viewport after an
+/// activation — the §11.3 overflow rule fails loudly when an offscreen chip
+/// is not brought fully into view.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct SpaceStripScrollSnapshot {
+    /// The strip viewport's window-relative bounds `[x, y, w, h]` in points.
+    pub viewport: [f32; 4],
+    /// The current scroll offset `[x, y]` in points. GPUI's scroll offset is
+    /// signed and non-positive: `[0, 0]` means no scroll, a negative `x`
+    /// means the content has been scrolled left.
+    pub offset: [f32; 2],
+    /// The maximum scroll offset `[x, y]` in points (non-negative); a zero
+    /// `x` means the chip row fits the viewport and cannot scroll.
+    pub max_offset: [f32; 2],
+    /// One raw window-relative layout bounds `[x, y, w, h]` per chip in
+    /// canonical display order (the same order as [`SpaceChipSnapshot`]s).
+    /// The raw rects ignore the scroll offset; combine with `offset` for
+    /// the visual position.
+    pub chip_bounds: Vec<[f32; 4]>,
+}
+
 /// One favorite destination tile on the wire (DESIGN.md §11.10): the
 /// creation-order index (the `bbr-fav-<n>` identity), the concrete tab
 /// owner (`TabId + SpaceId + ProfileId` — the §11.10 data-source contract:

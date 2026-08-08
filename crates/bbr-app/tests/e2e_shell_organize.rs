@@ -77,7 +77,7 @@ fn keyboard_pins_unpins_reorders_and_moves_tabs() {
         // §11.3/§11.4: the permanent space strip is always part of the rail;
         // the strip presence seam verifies it before the space-related
         // keyboard steps.
-        reveal_spaces_region(&mut client);
+        strip_presence(&mut client);
 
         let keystroke = |client: &mut Client, key: &str| {
             client
@@ -439,7 +439,7 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         // §11.3/§11.4: the permanent space strip is always part of the rail
         // (the strip presence seam verifies it; there is no revealed region
         // for the pin/reorder pointers).
-        reveal_spaces_region(&mut client);
+        strip_presence(&mut client);
 
         // Seed the pinned region through the visible pin controls: two tabs,
         // both pinned via `bbr-tab-pin-<n>` on the production listener path.

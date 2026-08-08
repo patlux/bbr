@@ -20,14 +20,11 @@ use super::super::harness::AppHarness;
 /// space-id>` ids (§11.3/§15), which the permanent footer strip always
 /// renders (the legacy `[Spaces]` reveal toggle is gone). The seam verifies
 /// the always-present strip before the space benchmarks drive.
-pub(super) fn reveal_spaces_region(client: &mut Client) {
+pub(super) fn strip_presence(client: &mut Client) {
     client.send_ok(&Request::FlushFrame).expect("flush frame");
-    let revealed = client.snapshot().expect("spaces strip snapshot");
+    let present = client.snapshot().expect("spaces strip snapshot");
     assert!(
-        revealed
-            .visible_ids
-            .iter()
-            .any(|id| id == "bbr-space-strip"),
+        present.visible_ids.iter().any(|id| id == "bbr-space-strip"),
         "the permanent space strip always renders"
     );
 }

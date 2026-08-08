@@ -138,6 +138,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             drag_slot: self.drag_slot,
             drag_valid: self.drag_valid,
             space_chips: self.space_chips.clone(),
+            space_strip_scroll: self.space_strip_scroll.clone(),
             visible_ids: self.visible_ids.clone(),
             semantics: self.semantics.clone(),
             command_bar_mode: self.command_bar_mode,

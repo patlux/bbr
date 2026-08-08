@@ -58,10 +58,10 @@ fn cross_profile_switch_shows_and_clears_the_command_field_profile_hint() {
         let default_space = initial.active_space;
         let default_profile = initial.active_profile;
 
-        // §11.4 compact rail: reveal the §11.3 space rows (and their §12
-        // chips) through the footer `[Spaces]` control before asserting the
-        // cross-context chip evidence.
-        reveal_spaces_region(&mut client);
+        // §11.4 compact rail: the §11.3 space strip is always part of the
+        // footer, so the strip presence seam verifies the chip surface
+        // before the cross-context evidence is asserted.
+        strip_presence(&mut client);
 
         // A same-profile space and a cross-profile profile+space, both warm.
         client
@@ -158,7 +158,11 @@ fn cross_profile_switch_shows_and_clears_the_command_field_profile_hint() {
             Some("in Profile · Private"),
             "cross-profile destination hint copy"
         );
-        assert_ids(&cross, &["bbr-command-profile-hint", "bbr-profile-chip-1"]);
+        assert_ids(&cross, &["bbr-command-profile-hint"]);
+        // `visible_ids` carries the hint root; the destination profile chip
+        // is the root's semantic child and is intentionally not flattened
+        // into `visible_ids` — its role, name, and parent relationship are
+        // proven through the typed semantic tree below.
         let hint_node =
             find(&cross.semantics, "bbr-command-profile-hint").expect("hint semantic node");
         assert_eq!(hint_node.role, SemanticRole::Chip);
@@ -167,11 +171,15 @@ fn cross_profile_switch_shows_and_clears_the_command_field_profile_hint() {
             Some("in Profile · Private"),
             "semantic hint name"
         );
-        assert!(
-            hint_node
-                .children
-                .iter()
-                .any(|c| c.id == "bbr-profile-chip-1" && c.name.as_deref() == Some("Profile · PR")),
+        let profile_chip = hint_node
+            .children
+            .iter()
+            .find(|c| c.id == "bbr-profile-chip-1")
+            .expect("hint chip child in the semantic tree");
+        assert_eq!(profile_chip.role, SemanticRole::Chip, "profile chip role");
+        assert_eq!(
+            profile_chip.name.as_deref(),
+            Some("Profile · PR"),
             "hint chip child carries the §12 monogram"
         );
         assert_eq!(cross.active_space, private_space);
@@ -222,7 +230,7 @@ fn cross_profile_switch_shows_and_clears_the_command_field_profile_hint() {
             })
             .expect("escape");
         // Escape restores the prior chrome focus domain (the activation left
-        // focus in the space list), so no focus event needs waiting here;
+        // focus in the space strip), so no focus event needs waiting here;
         // the staged mode is simply gone.
         let escaped = client.snapshot().expect("escaped snapshot");
         assert_eq!(escaped.command_bar_mode, CommandBarMode::Inactive);
@@ -337,10 +345,10 @@ fn cross_profile_activation_of_an_empty_space_announces_the_destination_profile(
         let default_profile = initial.active_profile;
         let sessions_at_launch = initial.engine_sessions;
 
-        // §11.4 compact rail: reveal the §11.3 space rows (and their §12
-        // chips) through the footer `[Spaces]` control before asserting the
-        // cross-context chip evidence.
-        reveal_spaces_region(&mut client);
+        // §11.4 compact rail: the §11.3 space strip is always part of the
+        // footer, so the strip presence seam verifies the chip surface
+        // before the empty-branch cross-context evidence is asserted.
+        strip_presence(&mut client);
 
         // A second profile whose single space starts empty; creation must
         // not activate it.
@@ -414,11 +422,14 @@ fn cross_profile_activation_of_an_empty_space_announces_the_destination_profile(
             &empty_cross,
             &[
                 "bbr-command-profile-hint",
-                "bbr-profile-chip-1",
                 "bbr-empty-new-tab",
                 "bbr-empty-new-tab-button",
             ],
         );
+        // `visible_ids` carries the hint root; the destination profile chip
+        // is the root's semantic child and is intentionally not flattened
+        // into `visible_ids` — its role, name, and parent relationship are
+        // proven through the typed semantic tree below.
         let hint_node = find(&empty_cross.semantics, "bbr-command-profile-hint")
             .expect("hint semantic node on the empty branch");
         assert_eq!(hint_node.role, SemanticRole::Chip);
@@ -427,11 +438,19 @@ fn cross_profile_activation_of_an_empty_space_announces_the_destination_profile(
             Some("in Profile · Private"),
             "semantic hint name on the empty branch"
         );
-        assert!(
-            hint_node
-                .children
-                .iter()
-                .any(|c| c.id == "bbr-profile-chip-1" && c.name.as_deref() == Some("Profile · PR")),
+        let profile_chip = hint_node
+            .children
+            .iter()
+            .find(|c| c.id == "bbr-profile-chip-1")
+            .expect("hint chip child in the semantic tree on the empty branch");
+        assert_eq!(
+            profile_chip.role,
+            SemanticRole::Chip,
+            "profile chip role on the empty branch"
+        );
+        assert_eq!(
+            profile_chip.name.as_deref(),
+            Some("Profile · PR"),
             "hint chip child carries the §12 monogram on the empty branch"
         );
         assert!(

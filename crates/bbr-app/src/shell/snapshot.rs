@@ -60,6 +60,10 @@ pub struct TestSnapshot {
     /// derive from the persistent `space` id). The strip is always part of
     /// the rail; `selected` mirrors the active space exactly.
     pub space_chips: Vec<bbr_testkit::protocol::SpaceChipSnapshot>,
+    /// §11.3/§11.4 strip scroll evidence (read-only from the production
+    /// `space_strip_scroll` handle): the viewport, the signed offset, the
+    /// max offset, and each chip's raw layout bounds in canonical order.
+    pub space_strip_scroll: bbr_testkit::protocol::SpaceStripScrollSnapshot,
     pub visible_ids: Vec<String>,
     /// The typed semantic tree of the current render (DESIGN.md §15 /
     /// accessibility track): roles, names, values, enabled/selected/focused

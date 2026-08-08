@@ -224,6 +224,7 @@ impl BbrApp {
             drag_slot,
             drag_valid: self.tab_drag.valid(),
             space_chips,
+            space_strip_scroll: self.space_strip_scroll_snapshot(),
             visible_ids: crate::shell::snapshot::visible_ids_u2(
                 &browser,
                 self.chrome_focused(window),

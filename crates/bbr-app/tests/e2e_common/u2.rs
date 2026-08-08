@@ -39,7 +39,7 @@ pub fn harness_socket_path(root_tag: &str, pid: u32) -> PathBuf {
 /// reveal step exists (the legacy `[Spaces]` toggle was removed). The
 /// suites drive a snapshot and assert the always-present strip ids through
 /// this seam so the migration keeps one assertion point.
-pub fn reveal_spaces_region(client: &mut Client) -> bbr_testkit::protocol::Snapshot {
+pub fn strip_presence(client: &mut Client) -> bbr_testkit::protocol::Snapshot {
     client
         .send_ok(&bbr_testkit::Request::FlushFrame)
         .expect("flush frame");

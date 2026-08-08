@@ -48,7 +48,7 @@ fn shell_hover_press_focus_and_drag_semantics() {
         // §11.3/§11.4: the focused-snapshot assertions below expect the
         // §11.3 space strip node — always part of the rail, so the strip
         // presence seam verifies it (there is no revealable region).
-        reveal_spaces_region(&mut client);
+        strip_presence(&mut client);
 
         // 3. Hover/press through the production listener methods: the row
         // states derive from app state the real pointer paths drive, never a

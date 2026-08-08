@@ -42,7 +42,7 @@ fn shell_profile_crash_empty_and_collapsed_semantics() {
         // second space's `bbr-space-chip-<id>`/`bbr-space-identity-<id>`
         // nodes; the permanent strip is always part of the rail, so the
         // strip presence seam verifies it (there is no reveal step).
-        reveal_spaces_region(&mut client);
+        strip_presence(&mut client);
         // 6. Profile identity in the tree: every space chip keeps its
         // persistent-space id; a second profile adds its own chip before
         // activation.

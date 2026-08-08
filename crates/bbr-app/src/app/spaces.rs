@@ -1,9 +1,9 @@
 //! Visible profile/space navigation (DESIGN.md §11.3, §12).
 //!
-//! The sidebar's space region renders every space grouped under its profile
-//! with a per-row profile chip; this module owns the production activation
-//! paths: pointer row selection, keyboard traversal (`↑`/`↓`/Enter on the
-//! focused space list), and the `Cmd-Shift-N` / New Space row staging that
+//! The sidebar's footer renders every space as a chip in the permanent
+//! §11.3/§11.4 space strip; this module owns the production activation
+//! paths: pointer chip selection, keyboard traversal (`↑`/`↓`/Enter on the
+//! focused space strip), and the `Cmd-Shift-N` / New Space row staging that
 //! creates a space in the active profile through the command bar.
 //!
 //! Activation keeps the chrome focus domain and routes through the portable
@@ -213,6 +213,51 @@ impl BbrApp {
         }
     }
 
+    /// §11.3/§11.4 read-only strip scroll evidence for the E2E snapshot:
+    /// the tracked handle's current viewport, signed offset, max offset, and
+    /// one raw layout bounds rect per chip in canonical display order (the
+    /// same vector the render, the snapshot, and the scroll seam consume).
+    /// The E2E combines a raw chip rect with the signed offset to assert the
+    /// selected chip lies fully inside the viewport after an activation
+    /// (the §11.3 overflow rule). Never mutates the handle.
+    #[cfg(feature = "testkit")]
+    pub(crate) fn space_strip_scroll_snapshot(
+        &self,
+    ) -> bbr_testkit::protocol::SpaceStripScrollSnapshot {
+        let scroll = &self.space_strip_scroll;
+        let viewport = scroll.bounds();
+        let offset = scroll.offset();
+        let max_offset = scroll.max_offset();
+        // GPUI's `Pixels` field is crate-private; the public `From<Pixels>
+        // for f32` conversion keeps the f32 wire values without reaching
+        // into the tuple field.
+        let px = f32::from;
+        let count = self.space_chip_visuals().len();
+        let chip_bounds = (0..count)
+            .map(|index| {
+                scroll.bounds_for_item(index).map_or([0.0; 4], |bounds| {
+                    [
+                        px(bounds.left()),
+                        px(bounds.top()),
+                        px(bounds.size.width),
+                        px(bounds.size.height),
+                    ]
+                })
+            })
+            .collect();
+        bbr_testkit::protocol::SpaceStripScrollSnapshot {
+            viewport: [
+                px(viewport.left()),
+                px(viewport.top()),
+                px(viewport.size.width),
+                px(viewport.size.height),
+            ],
+            offset: [px(offset.x), px(offset.y)],
+            max_offset: [px(max_offset.x), px(max_offset.y)],
+            chip_bounds,
+        }
+    }
+
     /// `Cmd-Shift-N` / New Space row: stage a space name without creating a
     /// profile or space until Enter commits it (the NewTab staging pattern).
     pub fn activate_new_space(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -244,7 +289,7 @@ impl BbrApp {
     }
 
     /// Commit a staged New Space name: create the space in the active
-    /// profile and activate it. Chrome focus stays in the space list — a
+    /// profile and activate it. Chrome focus stays in the space strip — a
     /// fresh space is empty, so there is no page to hand focus to.
     pub fn commit_new_space(
         &mut self,

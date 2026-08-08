@@ -18,7 +18,7 @@ use std::sync::{Arc, Mutex};
 mod u2;
 
 #[allow(unused_imports)] // each suite uses a subset of the shared helpers
-pub use u2::{harness_root, harness_socket_path, reveal_spaces_region};
+pub use u2::{harness_root, harness_socket_path, strip_presence};
 
 /// GUI suites must not run in parallel: AppKit window geometry interferes
 /// through screen clamping, so every test in this binary takes the lock.

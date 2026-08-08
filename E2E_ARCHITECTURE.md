@@ -178,7 +178,8 @@ Snapshot {
   chrome_focused: bool,
   shell_modes: ShellModes,      // theme/contrast/density (§15)
   tab_states: Vec<TabVisualState>, row_titles: Vec<String>,
-  space_states: Vec<SpaceVisualState>, space_titles: Vec<String>,
+  space_chips: Vec<SpaceChipSnapshot>, // one chip per space, canonical display order
+  space_strip_scroll: SpaceStripScrollSnapshot, // typed viewport/offset/max/chip rects (§11.3)
   visible_ids: Vec<String>,     // rendered bbr-* ids (§15)
   command_bar_mode: Inactive | Location | NewTab | NewSpace | MoveTab,
   command_bar_text: String,
@@ -437,10 +438,14 @@ Three `#[ignore]`d macOS-only suites (the shared harness lives in
 `tests/e2e_common/`) prove the visible profile/space surface over real
 WKWebViews:
 
-1. **Pointer suite** (`just e2e-shell-spaces`): complete typed profile/space
-   collections with §12 round-robin hues and stable `bbr-space-row-<n>` /
-   `bbr-profile-chip-<n>` ids, active/selected `space_states`, pointer row
-   activation through the production listener (chrome focus domain preserved),
+1. **Pointer suite** (`just e2e-shell-spaces`): the permanent §11.3/§11.4
+   footer `[Downloads][Space Strip][+]` over complete typed profile/space
+   collections with §12 round-robin hues, stable `bbr-space-chip-<persistent-
+   space-id>` / `bbr-space-identity-<persistent-space-id>` ids derived from
+   the persistent `SpaceId` alone (never render position or creation-order
+   index), the typed `space_chips` with exactly one selected chip (the
+   active space), pointer chip activation through the production listener
+   (chrome focus domain preserved),
    per-space active-tab restoration with the same WebViewId and **zero load
    events in the replay window**, empty-space pane naming from
    `active_profile_title`, cross-profile view-only switches that keep cookie
@@ -450,7 +455,10 @@ WKWebViews:
    reading the destination store's cookie).
 2. **Keyboard suite** (`just e2e-shell-spaces` second binary): `Cmd-Shift-N`
    staging (Escape cancels, Enter commits + activates, `SpaceCreated` is
-   broadcast), real `↑/↓` traversal of the focused space list, and same-
+   broadcast), real `↑/↓`/Enter traversal of the focused space strip through
+   the one strip focus/activation authority (exact active space, exactly-
+   one-selected chip `selected == active`, warm WebViewId, unchanged session
+   count, no reload, chrome focus, and the cross-profile hint), and same-
    profile moves that keep the WebViewId (`recreated: false`) versus
    cross-profile moves that recreate it.
 3. **Hint suite** (`just e2e-shell-spaces` third binary,
@@ -545,10 +553,11 @@ like the sidebar-divider drag seam) — never a direct reorder or move command:
    `drag_source`/`drag_slot`/`drag_valid` snapshot fields and the §15
    `bbr-drag-tick-<n>` id (accent when legal, muted at the clamped region
    edge when illegal), an illegal boundary drop rejected whole, Escape
-   cancellation, and drag-into-space moves: hovering a visible space row
-   reports the space target and renders the row `drag-target` (no tab tick),
-   release commits a same-profile move with the same WebViewId or a
-   cross-profile move with a fresh view reading the destination store.
+   cancellation, and the staged `Cmd-Shift-M` + Enter move between spaces
+   (same-profile keeps the WebViewId; cross-profile recreates exactly once
+   with a fresh view reading the destination store). Pointer drag-to-chip
+   (the §10.9 drag-target treatment over the strip chips) is a later F2a
+   layer and is not claimed by this suite.
 
 The `tab_pin`, `tab_reorder`, `tab_move_same_profile`, and
 `tab_move_cross_profile` interaction benchmarks (in
@@ -582,13 +591,14 @@ and the internal §15 semantic tree over real WKWebViews:
    `selected`). Hover and press never select.
 2. **Typed semantic tree**: one root node (`bbr-root`, role `Root`); the
    sidebar (`Sidebar`) with brand, command field (`Field`, typed mode/value),
-   space list (`List` → `Row` + `Chip` + `Count`), tab list (`List` → section
+   space strip (`List` → `Row` chips with `Title` identity children),
+   tab list (`List` → section
    labels (`Section`) + rows with `Favicon`/`Title`/`Button` pin + `State` +
    `Button` close children), status (`Status`), toggle, and divider
    (`Divider` with the width value); the glass content branch (`Content` =
    native slot, crash panel, or empty pane naming the profile).
 3. **Focus clarity**: after pointer selection the owning list and its
-   selected row expose `focused: true` (the space list and command field do
+   selected row expose `focused: true` (the space strip and command field do
    not); web focus renders the chrome at ease (nothing focused); Cmd-L
    focuses the field and exposes the `bbr-command-cursor` node; section
    labels never own focus.

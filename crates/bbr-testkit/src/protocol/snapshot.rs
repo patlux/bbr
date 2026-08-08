@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewId};
 
 mod u2;
-pub use u2::{FavoriteTileSnapshot, FolderRowSnapshot, SpaceChipSnapshot};
+pub use u2::{
+    FavoriteTileSnapshot, FolderRowSnapshot, SpaceChipSnapshot, SpaceStripScrollSnapshot,
+};
 
 /// The L6 contract state of one download attempt (DESIGN.md §15): the panel
 /// renders exactly these states and never invents a transition.
@@ -325,7 +327,7 @@ pub enum SemanticRole {
     Favicon,
     /// A row's title text (`bbr-tab-title-*` / `bbr-space-identity-*`).
     Title,
-    /// A row's count column (`bbr-space-count-*`).
+    /// A row's count column (`bbr-folder-count-*`).
     Count,
     /// A row's trailing state slot (`bbr-tab-state-*`).
     State,
@@ -887,6 +889,13 @@ pub struct Snapshot {
     /// the rail.
     #[serde(default)]
     pub space_chips: Vec<SpaceChipSnapshot>,
+    /// §11.3/§11.4 strip scroll evidence: the strip viewport, the signed
+    /// tracked-scroll offset, the max offset, and each chip's raw layout
+    /// bounds in canonical display order — read-only from the production
+    /// `space_strip_scroll` handle so E2E can prove overflow and that
+    /// selecting an offscreen chip scrolls it fully into view.
+    #[serde(default)]
+    pub space_strip_scroll: SpaceStripScrollSnapshot,
     /// The stable `bbr-*` ids present in the current render (DESIGN.md §15).
     pub visible_ids: Vec<String>,
     /// The typed semantic tree of the current render (DESIGN.md §15 /

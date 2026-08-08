@@ -22,7 +22,7 @@ use super::benchmarks::{
     benchmark_sidebar, benchmark_space_switch, benchmark_space_switch_cross_profile,
     wait_browser_change, wait_title,
 };
-use super::drive::u2::{drive_u2_sidebar, reveal_spaces_region};
+use super::drive::u2::{drive_u2_sidebar, strip_presence};
 use super::find_drive::drive_find_scenarios;
 mod u2;
 
@@ -458,9 +458,10 @@ fn drive_matrix_inner(
             operation += 1;
         }
 
-        // §11.4 compact rail: reveal the spaces region before the
-        // space-switch samples (see `drive::u2`).
-        reveal_spaces_region(client);
+        // §11.4 compact rail: the permanent space strip is always part of
+        // the rail — verify its presence before the space-switch samples
+        // (see `drive::u2`).
+        strip_presence(client);
 
         // Warm space switching: create a second space in the default profile
         // with its own warm tab, then measure alternating activation between

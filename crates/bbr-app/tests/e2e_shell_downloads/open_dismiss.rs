@@ -43,8 +43,43 @@ fn footer_open_empty_ids_and_dismissal_preserves_identity() {
         let profile = initial.active_profile;
         let space = initial.active_space;
         assert!(!initial.downloads.open, "panel closed at launch");
-        // The §11.4 footer control keeps its §15 id at rest.
-        assert_ids(&initial, &["bbr-downloads"]);
+        // The §11.4 footer is exactly `[Downloads][Space Strip][+]` in the
+        // permanent strip revision: the fixed downloads control, the flex
+        // space strip (always part of the rail), and the fixed plus control
+        // — with exactly one chip/identity pair per space, the active-only
+        // badge at rest, and no legacy toggle/reveal id anywhere.
+        assert_ids(
+            &initial,
+            &["bbr-footer", "bbr-downloads", "bbr-space-strip", "bbr-plus"],
+        );
+        assert!(
+            !initial
+                .visible_ids
+                .iter()
+                .any(|id| id.starts_with("bbr-downloads-2")),
+            "no fourth footer control"
+        );
+        assert!(
+            initial
+                .visible_ids
+                .iter()
+                .any(|id| id == &format!("bbr-space-chip-{}", initial.active_space.0))
+                && initial
+                    .visible_ids
+                    .iter()
+                    .any(|id| id == &format!("bbr-space-identity-{}", initial.active_space.0)),
+            "the permanent strip renders its chip identity pair"
+        );
+        assert!(
+            !initial.visible_ids.iter().any(|id| id == "bbr-spaces"
+                || id.starts_with("bbr-space-row")
+                || id.starts_with("bbr-space-list")),
+            "no legacy [Spaces] toggle or revealed-list id renders"
+        );
+        assert_eq!(
+            initial.downloads.footer_count, 0,
+            "active-only badge at rest: nothing transfers"
+        );
 
         // Open: the anchored popover ids, the empty hint, and — because the
         // groups are empty — no group labels (§11.4 region-label rule).

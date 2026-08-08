@@ -122,7 +122,7 @@ fn surfaces_are_mutually_exclusive_and_open_clears_the_profile_hint() {
         );
 
         // Cmd-T: the centered palette opens and clears the hint. The origin
-        // at this Cmd-T is chrome (the cross-profile space list focus), so
+        // at this Cmd-T is chrome (the cross-profile space strip focus), so
         // one Escape closes the surface and a second returns to web.
         key(&mut client, "cmd-t");
         since = wait_chrome_focus(&mut client, true, since);

@@ -2,7 +2,7 @@
 //!
 //! The keyboard half of DESIGN.md §11.3/§12 with real keystrokes:
 //! Cmd-Shift-N stages a space name (Escape cancels, Enter commits and
-//! activates), `↑/↓` traverse the focused space list through the production
+//! activates), `↑/↓` traverse the focused space strip through the production
 //! activation path, and moves between spaces preserve or recreate sessions
 //! exactly per the profile-boundary policy. The pointer counterpart lives in
 //! `e2e_shell_spaces.rs`; the shared harness in `e2e_common`.
@@ -10,13 +10,15 @@
 #![cfg(target_os = "macos")]
 
 mod e2e_common;
+#[path = "e2e_shell_spaces_keyboard/enter.rs"]
+mod enter;
 
 use bbr_testkit::protocol::CommandBarMode;
 use e2e_common::*;
 
 /// Keyboard control of the visible space surface with real keystrokes:
 /// Cmd-Shift-N stages a space name (Escape cancels, Enter commits and
-/// activates), `↑/↓` traverse the focused space list through the production
+/// activates), `↑/↓` traverse the focused space strip through the production
 /// activation path, and moves between spaces preserve or recreate sessions
 /// exactly per the profile-boundary policy.
 #[test]
@@ -63,7 +65,7 @@ fn keyboard_selects_and_creates_spaces_and_moves_tabs_between_spaces() {
         // §11.3/§11.4: the permanent space strip is always part of the rail
         // (the strip presence seam verifies it; there is no reveal step for
         // the keyboard traversal).
-        reveal_spaces_region(&mut client);
+        strip_presence(&mut client);
 
         // Keyboard create: Cmd-Shift-N stages a space name in the command
         // bar without creating anything; a typed name commits on Enter and
@@ -122,14 +124,14 @@ fn keyboard_selects_and_creates_spaces_and_moves_tabs_between_spaces() {
         assert_eq!(cancelled.active_space, reading);
         assert!(cancelled.command_bar_text.is_empty());
 
-        // Warm a tab in reading, then drive the space list with real
-        // arrow keys from the production pointer-focused list: down/up
+        // Warm a tab in reading, then drive the space strip with real
+        // arrow keys from the production pointer-focused strip: down/up
         // activate the next/previous space (wrap-around), restoring each
         // space's own warm tab without recreating sessions.
         let second_view = open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
         client
             .send_ok(&dsl::click_space(default_space))
-            .expect("focus the space list on default");
+            .expect("focus the space strip on default");
         since = wait_browser_change(
             &mut client,
             BrowserChange::SpaceActivated {
@@ -299,7 +301,7 @@ fn keyboard_selects_and_creates_spaces_and_moves_tabs_between_spaces() {
 }
 
 /// The §11.3 cross-context rule through the keyboard traversal: real `↑`/`↓`
-/// on the focused space list set the command-field profile hint only when the
+/// on the focused space strip set the command-field profile hint only when the
 /// destination crosses a profile boundary, and clear it when a same-profile
 /// activation follows — the deterministic interaction boundary on the
 /// keyboard path.
@@ -338,7 +340,7 @@ fn keyboard_cross_profile_traversal_sets_and_clears_the_profile_hint() {
         // §11.3/§11.4: the permanent space strip is always part of the rail
         // (the strip presence seam verifies it before the pointer-focus and
         // `↑`/`↓` traversal).
-        reveal_spaces_region(&mut client);
+        strip_presence(&mut client);
 
         let keystroke = |client: &mut Client, key: &str| {
             client
@@ -398,7 +400,7 @@ fn keyboard_cross_profile_traversal_sets_and_clears_the_profile_hint() {
         let private_view = open_tab(&mut client, &mut since, &page_one, Some(PAGE_ONE_TITLE));
         let sessions = client.snapshot().expect("sessions").engine_sessions;
 
-        // Focus the space list on the default space (render order: Default,
+        // Focus the space strip on the default space (render order: Default,
         // Reading, Private), then traverse with real keys.
         client
             .send_ok(&dsl::click_space(default_space))
@@ -477,15 +479,16 @@ fn keyboard_cross_profile_traversal_sets_and_clears_the_profile_hint() {
             up_cross.command_profile_hint.as_deref(),
             Some("in Profile · Private")
         );
+
+        // up → Reading: Reading belongs to the default profile, so Private →
+        // Reading crosses the profile boundary again and the hint names the
+        // new destination ("in Profile · Default") instead of clearing.
         keystroke(&mut client, "up");
         let _ = wait_browser_change(
             &mut client,
             BrowserChange::SpaceActivated { space: reading },
             since,
         );
-        // Reading belongs to the default profile, so Private → Reading
-        // crosses the profile boundary again: the hint names the new
-        // destination ("in Profile · Default") instead of clearing.
         let up_same = client.snapshot().expect("up cross snapshot");
         assert_eq!(
             up_same.command_profile_hint.as_deref(),

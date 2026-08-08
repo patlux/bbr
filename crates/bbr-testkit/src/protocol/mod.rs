@@ -37,9 +37,9 @@ pub use snapshot::{
     DownloadsPanelSnapshot, ErrorSurfaceCategory, ErrorSurfaceSnapshot, FavoriteTileSnapshot,
     FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts, PaneLayoutSnapshot,
     PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, RestoreDisposition, SemanticNode,
-    SemanticRole, Snapshot, SpaceChipSnapshot, SpaceSnapshot, SpaceVisualState,
-    StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, TabSnapshot, TabVisualState,
-    WebContentProbe, ZoomSnapshot,
+    SemanticRole, Snapshot, SpaceChipSnapshot, SpaceSnapshot, SpaceStripScrollSnapshot,
+    SpaceVisualState, StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, TabSnapshot,
+    TabVisualState, WebContentProbe, ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.
@@ -541,5 +541,40 @@ mod tests {
         assert_eq!(decoded, chips);
         // Exactly one chip carries the active-space selection.
         assert_eq!(chips.iter().filter(|c| c.selected).count(), 1);
+    }
+
+    /// The §11.3 strip scroll evidence round-trips as plain data: the raw
+    /// viewport/offset/max offset plus one bounds rect per chip in display
+    /// order. A snapshot that omits the field (an older harness client)
+    /// still deserializes: the scroll evidence defaults to the idle strip.
+    #[test]
+    fn space_strip_scroll_evidence_round_trips_with_an_idle_default() {
+        use crate::protocol::SpaceStripScrollSnapshot;
+        let scroll = SpaceStripScrollSnapshot {
+            viewport: [260.0, 664.0, 168.0, 36.0],
+            offset: [-312.0, 0.0],
+            max_offset: [312.0, 0.0],
+            chip_bounds: vec![[264.0, 668.0, 96.0, 28.0], [368.0, 668.0, 104.0, 28.0]],
+        };
+        let json = serde_json::to_value(&scroll).unwrap();
+        assert_eq!(
+            json,
+            json!({
+                "viewport":[260.0,664.0,168.0,36.0],
+                "offset":[-312.0,0.0],
+                "max_offset":[312.0,0.0],
+                "chip_bounds":[[264.0,668.0,96.0,28.0],[368.0,668.0,104.0,28.0]]
+            })
+        );
+        let decoded: SpaceStripScrollSnapshot = serde_json::from_value(json).unwrap();
+        assert_eq!(decoded, scroll);
+        // The default is the all-zero idle strip (an older harness client
+        // omitting the field still deserializes): no viewport, no offset,
+        // no chip rects.
+        let idle = SpaceStripScrollSnapshot::default();
+        assert_eq!(idle.viewport, [0.0; 4]);
+        assert_eq!(idle.offset, [0.0, 0.0]);
+        assert_eq!(idle.max_offset, [0.0, 0.0]);
+        assert!(idle.chip_bounds.is_empty());
     }
 }

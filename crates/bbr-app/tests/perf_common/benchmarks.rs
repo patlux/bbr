@@ -321,8 +321,8 @@ pub(crate) fn benchmark_reopen(
 /// Activation of a space whose selected tab is already warm: the production
 /// activation path must present the destination space's own active tab with
 /// the same native session (no recreation), keep the chrome focus domain
-/// (activation routes through the space-list pointer path), and expose the
-/// destination space's chip as `selected` with its stable
+/// (activation routes through the space-strip chip pointer path), and expose
+/// the destination space's chip as `selected` with its stable
 /// `bbr-space-chip-<persistent-space-id>` id.
 ///
 /// `expected_sessions` is the live-session count both spaces' tabs hold

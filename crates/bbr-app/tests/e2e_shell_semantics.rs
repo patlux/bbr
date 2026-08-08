@@ -180,10 +180,13 @@ fn shell_semantic_tree_and_fallbacks() {
 
         // Space strip: the §11.3 footer strip always renders one chip (and
         // its identity child) per space — selected exactly on the active
-        // space — under the `bbr-space-strip` list node.
-        let revealed = reveal_spaces_region(&mut client);
+        // space — under the `bbr-space-strip` list node. The chip and
+        // identity semantic ids derive from the real active persistent
+        // SpaceId (the launch space is id 2: the default profile consumed
+        // allocator id 1), never a hardcoded position literal.
+        let present = strip_presence(&mut client);
         assert_node(
-            &revealed.semantics,
+            &present.semantics,
             "bbr-space-strip",
             SemanticRole::List,
             Some("Spaces"),
@@ -192,9 +195,10 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
             false,
         );
+        let launch_space = initial.active_space;
         let chip = assert_node(
-            &revealed.semantics,
-            "bbr-space-chip-1",
+            &present.semantics,
+            &format!("bbr-space-chip-{}", launch_space.0),
             SemanticRole::Row,
             Some("Default"),
             None,
@@ -204,8 +208,8 @@ fn shell_semantic_tree_and_fallbacks() {
         );
         assert!(chip.selected, "the active space's chip renders selected");
         assert_node(
-            &revealed.semantics,
-            "bbr-space-identity-1",
+            &present.semantics,
+            &format!("bbr-space-identity-{}", launch_space.0),
             SemanticRole::Title,
             Some("code"),
             None,

@@ -39,7 +39,7 @@ impl BbrApp {
             CommandBarMode::Inactive | CommandBarMode::Location | CommandBarMode::NewTab => {}
             CommandBarMode::NewSpace => {
                 // Create the space in the active profile and activate it;
-                // chrome focus stays in the space list (a fresh space is
+                // chrome focus stays in the space strip (a fresh space is
                 // empty, so there is no page to hand focus to).
                 let name = input.trim().to_string();
                 if name.is_empty() {
