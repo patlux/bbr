@@ -26,6 +26,49 @@ Before implementation work:
 - Never weaken tests, budgets, validators, architecture boundaries, or acceptance criteria to shorten the workflow. The optimization removes redundant orchestration and duplicate gates, not evidence.
 - Record a delivery ledger and measured timing where runtime evidence exists; label reconstructed timing as an estimate.
 
+### Parallel delivery is the default
+
+When a delivery document is the active work contract, optimize for maximum
+safe progress across the whole queue rather than finishing one topic before
+looking for the next:
+
+- At every scheduling checkpoint — task start, workflow completion, review,
+  remediation, merge, gate, blocker, and context restoration — read the active
+  delivery document completely and audit every open queue item for work that
+  can run now.
+- Start all defensible bounded lanes in isolated sibling worktrees from a
+  recorded verified base, subject to the host's safe concurrency limit. Do not
+  leave runnable queue items idle merely because another lane is already
+  active.
+- Expected merge conflicts are an integration cost, not a reason to avoid
+  parallel work. Shared registry files, manifests, test lists, snapshots,
+  baselines, roadmap roll-ups, and composition roots may be edited in parallel
+  when each lane's product authority and intended result are distinct.
+  Predeclare the shared integration points and serial merge order, then resolve
+  conflicts semantically during orchestrator integration. Merge JSON
+  baselines as structured data and registry/list changes as unions where the
+  contracts require both sides.
+- Serialize a lane only for a real dependency: it cannot make a truthful
+  implementation or test claim before another contract lands, it would create
+  a second runtime/product authority, it would violate an explicit ownership
+  lock, or it needs the same mutable worktree. Mere conflict probability does
+  not qualify.
+- Exactly one writer still owns each worktree. Each lane keeps the bounded
+  writer → independent read-only reviewer → concrete remediation → focused
+  recheck lifecycle. Only the orchestrator commits, merges, and performs the
+  serial integration kernel.
+- Implementation and non-GUI checks may run concurrently. Real-app GUI, E2E,
+  and performance gates remain host-exclusive through the repository GUI lock;
+  waiting for that lock is not lane inactivity.
+- Use `homelab-llm/deepseek-v4-flash:high` explicitly for every implementation,
+  review, remediation, research, and planning subagent. The orchestrator model
+  is not delegated to subagents unless Patrick explicitly changes this rule.
+- Record each parallelism audit in the delivery ledger: runnable candidates,
+  lanes started, lanes deliberately deferred with the exact dependency or
+  ownership reason, worktree/base/territory, expected conflicts, and merge
+  order. When open runnable queue work exists, keep at least one background
+  workflow active instead of ending with unused delivery capacity.
+
 ## Roadmap handling
 
 The live hierarchy is:
