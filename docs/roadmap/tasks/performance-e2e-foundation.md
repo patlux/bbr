@@ -54,9 +54,10 @@ completion.
 ## Harness and statistics
 
 - [x] Spawn the optimized app with isolated fresh and persisted profiles. *(A
-      fresh-profile cold launch is implemented. Persisted warm startup remains
-      open — it depends on the absent persistence repository; a test-only seed
-      that bypasses the future persistence path is not acceptance evidence.)*
+      fresh-profile cold launch is implemented. F3 added the persisted-profile
+      path through the real repository, not a test-only bypass; it restores the
+      selected identity and hydrates only the active space's visible session
+      set.)*
 - [x] Add warm-up and measured iteration control.
 - [x] Collect raw samples plus p50, p95, maximum, build revision, build profile,
       OS/hardware identity, display refresh rate, and fixture mode.
@@ -87,8 +88,14 @@ completion.
 
 - [x] Cold startup: fresh profile → first usable presentation contains both the full
       sidebar and selected tab's visible native web view.
-- [ ] Warm startup: persisted state → correct selected tab and sidebar presented
-      without eagerly creating every stored tab session.
+- [x] Warm startup: persisted state → correct selected tab and sidebar presented
+      without eagerly creating every stored tab session. *(F3's
+      `persisted_warm_startup` / `persisted_warm_page_ready` scenarios use the
+      real repository, enforce the semantic selected-tab/sidebar/session-count
+      guard, and collect at least 10 accepted warm samples. Latest integrated
+      evidence: p95/max 220.82 ms to first usable presentation and p95
+      380.53 ms to deterministic page-ready on the report-only dev host;
+      budgets unchanged.)*
 - [x] Deterministic fixture readiness measured separately from usable shell.
 - [x] Warm tab switch in both directions with stable WebViewIds and no reload.
 - [x] Active-tab close → correct neighbor visible and focused.
@@ -171,10 +178,12 @@ completion.
       `DEVELOPER_DIR`/`SDKROOT` the just recipes set.)
 - [x] Functional smoke/tabs/profile suites remain green. *(Verified on this
       host: `just e2e-smoke`, `just e2e-tabs`, `just e2e-profiles` all pass.)*
-- [x] `just verify`, affected individual E2E suites, and canonical sequential
-      `just e2e` pass. *(`just verify` green plus all seven sequential real-app
-      GUI suites — smoke, tabs, profiles, shell-tabs, shell-spaces,
-      shell-sidebar, and the optimized performance gate.)*
+- [ ] `just verify`, affected individual E2E suites, and canonical sequential
+      `just e2e` pass. *(The implemented Queue-16 and F3 focused suites are
+      green and `just verify` passes. The current canonical `just e2e` cannot
+      complete because it references the not-yet-implemented `e2e_shutdown`
+      target; Portal also retains the separately documented environment/base
+      failures. Queue 20 owns the fresh shutdown target before F2 closeout.)*
 - [x] `ARCHITECTURE.md`, `E2E_ARCHITECTURE.md`, and roadmap status describe only
       the implemented, evidenced benchmark path.
 

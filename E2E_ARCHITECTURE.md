@@ -423,12 +423,13 @@ the separately retained `Entity<BbrApp>` through the Root-window seam
 (`crate::with_app`); snapshots still expose the production browser state
 — no synthetic Root-only proxy substitutes for app evidence.
 
-FUTURE: visible spaces/splits/dialogs/routing/persistence scenarios,
-persisted-profile warm startup (depends on the absent persistence repository),
-naming a dedicated canonical runner so `canonical_host_model` is populated and
-the >15% relative rule activates, and the `bbr-e2e` crate with `manifest.toml`
-per suite, `scripts/run_e2e.py` runner, `nextest.toml` `[profile.e2e]`, and
-`docs/e2e-protocol.md` remain planned.
+FUTURE: the remaining split/dialog/routing/persistence scenarios, naming a
+dedicated canonical runner so `canonical_host_model` is populated and the
+>15% relative rule activates, resource instrumentation, and the `bbr-e2e`
+crate with `manifest.toml` per suite, `scripts/run_e2e.py` runner,
+`nextest.toml` `[profile.e2e]`, and `docs/e2e-protocol.md` remain planned.
+F3 integrated the real repository-backed persisted-profile warm-startup
+scenario with visible-set-only hydration and at least ten accepted samples.
 
 ## 7d. The shell-spaces suites (`bbr-app/tests/e2e_shell_spaces{,_hint,_keyboard}.rs`)
 
@@ -813,7 +814,7 @@ runner + suites.
 | macOS CI headless constraints | WKWebView needs a window + GUI session; `BBR_SKIP_GUI_TESTS=1` for headless; real smoke requires a self-hosted/GUI Mac runner. Verified locally on the installed Xcode 26.2.0 Metal toolchain in a display-attached session |
 | Event-ring memory growth | Fixed cap (4096) + client cursors; snapshot on demand |
 | Protocol evolution | `PROTOCOL_VERSION = 5` added command-bar modes, typed benchmark operation IDs/presentation measurements, a deterministic `PageReady` milestone, and request types. `PROTOCOL_VERSION = 6` adds per-tab `pinned`/`loading`/`crashed` flags and per-row `tab_states` + resolved `shell_modes` to snapshots, the pointer-path `ClickTab`/`ClickTabClose` and `ReopenTab`/`PinTab` requests, deterministic `InjectWebEvent` (rides the real event transport), and the `TabSelectPointer`/`TabReopen` benchmark kinds. Additive growth after v6 (still version 6): snapshots expose the rendered `bbr-*` `visible_ids`, per-row `row_titles` (after §4 truncation), `active_profile_title`, the typed sidebar geometry (`sidebar_width`/`sidebar_min`/`sidebar_default`/`sidebar_max`, `content_min`, `divider_dragging`, `divider_label`) and the last engine-received native `content_rect`; `TabActivateKeyboard`, `SidebarResize`, and `SidebarRestore` join the benchmark kinds; `DragSidebarDivider`/`FocusSidebarDivider` join the pointer seams and `FlushFrame` the paint drivers; the hover/press seams (`HoverTabRow`/`UnhoverTabRow`/`PressTabRow`/`ReleaseTabRow`) plus the `BenchmarkHoverTab`/`BenchmarkPressTab` kinds and the typed §15 `semantics` tree join the protocol; the split shared contract adds the `SetSplit`/`CloseSplit` requests, `SplitOpened`/`SplitClosed` outcomes, and the keyed `pane_layout`/`pane_rects` snapshot fields (test seam only — production split UI/perf kinds stay future); command composition adds `FlushCommandRanking`, typed command result/cursor/selection plus complete `all_tabs` snapshot evidence, and the `CommandType`/`CommandActivate`/`CommandActivateNewTab` benchmark kinds while retaining protocol v6; `ServerFrame::Response` is boxed internally (JSON wire shape unchanged); future additive growth stays typed |
-| Dedicated-runner / external gaps | No dedicated stable macOS runner or public trend publication is provisioned yet. `canonical_host_model` is therefore empty, so the >15% relative baseline rule stays report-only until a runner is named; display refresh is recorded `null` with an explicit reason (window is offscreen and the OS refresh API is not linked). Absolute ceilings are enforced on every machine. Persisted warm startup stays open until the persistence repository lands — a test-only seed that bypasses the future persistence path is not acceptance evidence. |
+| Dedicated-runner / external gaps | No dedicated stable macOS runner or public trend publication is provisioned yet. `canonical_host_model` is therefore empty, so the >15% relative baseline rule stays report-only until a runner is named; display refresh is recorded `null` with an explicit reason (window is offscreen and the OS refresh API is not linked). Absolute ceilings are enforced on every machine. F3 integrated persisted warm startup through the real repository; canonical-runner distributions, resource metrics, and measured dense 500/50 frame-time evidence remain open. |
 
 ---
 

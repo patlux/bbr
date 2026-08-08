@@ -20,7 +20,7 @@ Parent phases: [Phase 0](../phases/00-foundation.md), [Phase 4](../phases/04-ui-
 
 ## Performance measurements
 
-- [ ] Cold and warm startup to first usable sidebar + selected native content presentation. *(Fresh-profile cold startup implemented; persisted warm startup remains and depends on the absent persistence repository.)*
+- [x] Cold and warm startup to first usable sidebar + selected native content presentation. *(Fresh-profile cold startup is gate-enforced. F3 integrated `persisted_warm_startup` through the real repository with visible-set-only hydration and at least 10 accepted samples; latest integrated report-only evidence was p95/max 220.82 ms with unchanged 500/750 ms budgets. A named canonical-runner distribution remains open separately.)*
 - [x] Time to deterministic local fixture readiness, measured separately from shell presentation.
 - [x] Tab/space switch latency for active, warm, suspended, and discarded states. *(Warm tab and warm space switching are measured through the production presentation path; the tab-organization slice adds the pin toggle, region-bounded reorder, and same-profile move to the warm class and the cross-profile move to the session-recreation class; the cross-context slice adds `space_switch_cross_profile` — the same warm view-only class as `space_switch` with the §11.3 command-field hint asserted in the driver snapshot and guarded in-app by the presentation probe. Active/suspended/discarded space states remain.)*
 - [x] Active-tab close to correct neighbor presentation.
