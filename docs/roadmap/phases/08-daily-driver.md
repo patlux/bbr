@@ -16,7 +16,8 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 - [ ] Define the typed taxonomy and legal recovery actions through the bounded [web error and recovery contract](../tasks/error-surface-contract.md), then deliver TLS, navigation, offline, and process-crash surfaces.
 - [ ] History UI and clear-data controls per profile.
 - [ ] Default-browser registration and external URL opening, starting with the portable [external-URL open contract](../tasks/external-url-open-contract.md).
-- [ ] Native menus, Services, window lifecycle, and app updates, including [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md).
+- [ ] Native menus, Services, window lifecycle, and app updates, including the integrated [BBR-owned context-menu boundary over web content](../tasks/bbr-context-menus-over-web.md) and its bounded [Page-background menu follow-up](../tasks/page-background-context-menu.md). WebKit-native element menus remain untouched.
+- [ ] Define a public-API-only [portable media-session capability contract](../tasks/media-session-capability-contract.md), then deliver the capability-driven [sidebar media control](../tasks/sidebar-media-control.md); no SPI, inferred transport controls, or fake duration.
 - [ ] Define profile-isolated site keys, settings overrides, and zoom lifecycle through the bounded [per-site settings and zoom contract](../tasks/site-settings-zoom-contract.md), then integrate persistence, native zoom, and UI.
 - [ ] Implement popup/new-window policy and target-blank flows, including the dedicated [Link Preview / Peek](../tasks/link-preview-peek.md) lifecycle for eligible user-created links.
 - [ ] Manual representative-site matrix: login, media, editors, conferencing, upload/download, payments, passkeys.

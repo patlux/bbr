@@ -46,7 +46,12 @@ anywhere in the gallery.
   existing render-only composition, extracted whole.
 - **Group stories:** Downloads panel, Find bar, Error/Crash panes, Auth
   sheet, Context menu, Split preview — as compositions in context (not
-  isolated rows), with the variant families below.
+  isolated rows), with the variant families below. After their independently
+  accepted production packets integrate, append composition stories for
+  Tab/Favorite menus with submenus, Folder menu, enriched Page-background
+  menu, the safe-titlebar navigation cluster, and the conditional Sidebar
+  media card. Existing StoryIds remain stable; these are append-only stories
+  of the same production components, never implementation authorization.
 - **`bbr-ui::split`:** split chrome frames (pane frame hairline, focused
   pane outline, shared-edge divider, split-zone frames per DESIGN §11.7)
   rendered by `bbr-app`'s split branch around the existing
@@ -148,7 +153,9 @@ Integration order:    packet 3 → this packet → post-G1 serial integration.
 | Find group | open/focused; query empty/typed; n of m; 0 of 0; stale; reduced-motion; contrast | ordinal without count; step enabled at zero matches |
 | Error/Crash group | each TLS/Navigation/Offline category with calm copy + contract-legal action; origin shown/omitted; crash panel; empty pane; reduced-motion; contrast | a non-category-legal recovery action (validated against the category-legal matrix — TLS/Navigation/Offline → Retry only, no bypass, per `crates/bbr-app/src/app/error_surface.rs` `ErrorSurfaceSpec`/`IncidentCategory` and the [error-surface-contract](error-surface-contract.md) packet); raw platform codes |
 | Auth group | realm present/absent; origin-server/proxy; username/password focus; masked password; Cancel/Log In; reduced-motion; contrast | unmasked render; outside-press dismissal; serializable credentials |
-| Context menu group | enabled/disabled items; selection; Back/Forward enablement; reduced-motion; contrast | a zero-item menu; activation of a disabled row |
+| Context menu group | existing page menu enabled/disabled items, selection, Back/Forward enablement, reduced-motion, contrast; post-packet append-only contexts: inactive Tab/Favorite source without selection, nested Folder/Space/Share/Close submenus, Folder empty/populated/destructive, Page-background versus WebKit-native ownership metadata, edge flipping and overflow | a zero-item menu; activation of a disabled row; source identity changing while a submenu is open; a Gallery copy of a WebKit element menu |
+| Titlebar navigation group (after production packet) | traffic-light-safe compact/wide layouts; sidebar collapsed/expanded; Back/Forward disabled combinations; Reload/loading; empty native drag region; standard/increased contrast | hardcoded traffic-light coordinates; duplicated status-row toggle; a titlebar with no draggable empty region |
+| Sidebar + media group (after media contract/UI packets) | no-session rail with zero reserved gap; playing/paused card; seekable known duration; unknown/live duration; capability subsets; multiple-session count/switch; dismissed identity; cross-profile source; compact/wide; reduced-motion; contrast | a card without actual session identity; a vertical card stack; unsupported decorative controls; fake total/scrubber; any story claiming real media command evidence |
 | Split preview (`bbr-ui::split`) | single pane (focused frame hairline); two panes (shared-edge divider, focused pane inset outline); split-zone frames (top/right/bottom/left) with accent frame + fill + corner glyph; reduced-motion; contrast | a zone frame without the accent language (zone fill is accent-only); a split with zero live panes (the `pane_layout()` split branch requires both live sessions — no false single-pane degradation — per [split-shared-contract](split-shared-contract.md#unit-and-contract); visuals per DESIGN §11.7) |
 
 ## Evidence

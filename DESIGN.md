@@ -389,12 +389,14 @@ that changes row height — row heights are stable for the whole session view.
 | Web-content focus | chrome renders "at ease": no ring anywhere, command cursor hidden, row hover washes active but no accent tint on the field; the selected-tab rail stays as the only accent |
 
 - **Order:** command field → favorites grid (row-major) → pinned → folders
-  (expanded rows, then their nested rows) → regular tabs → collapse control →
+  (expanded rows, then their nested rows) → regular tabs → the planned media
+  card controls when an eligible session exists (§11.15) → collapse control →
   Downloads → space identity chips in footer order → Plus → (after the last
   chrome control) focus moves into the native web view; Shift-Tab from web
   content returns to the first sidebar control. Section labels, brand, and the
-  non-interactive space-strip viewport are skipped. Both directions are
-  verified by real-app focus E2E (a11y track).
+  non-interactive space-strip viewport are skipped. An absent media card adds
+  no focus stop. Both directions are verified by real-app focus E2E (a11y
+  track).
 - **Focus after tab mutation:** governed by the browser interaction contract;
   the visual system only guarantees the ring lands on the correct control in
   the same presentation frame as the selection change.
@@ -556,12 +558,15 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Anatomy (top → bottom):** brand block (app mark + name) `sp:4`
   padding (`bbr-brand`); command field (§11.5) directly under; Favorites grid
   (§11.10); Pinned region (§11.2); Folders (§11.11); Tabs region (§11.1);
-  status line (`bbr-status`, copy unchanged) carrying the collapse control at
-  its trailing edge (`bbr-sidebar-toggle`); footer row at the very bottom —
+  status line (`bbr-status`, copy unchanged); footer row at the very bottom —
   exactly `[Downloads icon] [horizontally scrollable Spaces strip, flex:1]
   [Plus icon]` (`bbr-downloads`, `bbr-space-strip`, `bbr-plus`), separated
   from the list above by a `hairline`. The former `[Spaces]` reveal-toggle and
-  its upper space-row region do not exist in the target composition.
+  its upper space-row region do not exist in the target composition. The
+  current pre-G1 shell keeps its existing trailing status-row collapse control
+  while fresh F2a lands; the bounded §11.14 titlebar packet later performs one
+  atomic cutover to `bbr-titlebar-sidebar-toggle` and removes the duplicate
+  status-row control. F2a does not implement or anticipate that later cutover.
 - **Regions:** section labels use `type:badge` and are hidden when their
   region is empty (`bbr-section-favorites` / `bbr-section-pinned` /
   `bbr-section-folders` / `bbr-section-tabs`); profile groups and regions
@@ -886,6 +891,112 @@ draft and is **not** provisional; only the open questions named in §17 remain.
   `-meta`/`-progress`/`-action`), `bbr-downloads-empty`; the footer control
   keeps `bbr-downloads` (§11.4).
 
+### 11.13 Shared context-menu language and owned families (Planned)
+
+The Zen references in
+`/Users/patwoz/dev/Personal/macos/bbr-design-references/zen-*-context-menu*.png`
+are information-architecture and native-macOS behavior references only. BBR
+uses its own Chassis & Glass tokens, copy, product capabilities, profile model,
+and command authorities; it does not copy Zen/Firefox features or styling.
+
+- **Material and geometry:** production BBR menus use `material:overlay`,
+  `elev:2`, `radius:md`, `type:label`, and hairline group separators. Native
+  platform/accent selection is allowed; Zen blue, oversized cards, gradients,
+  and copied translucent slabs are not.
+- **Interaction:** secondary-click opens at the source pointer, clamped to the
+  browser window. Up/Down traverse; Right/Left enter/leave submenus; Return
+  commits; Escape or one outside press dismisses. Disabled rows remain visible
+  only when their surrounding group is useful and expose a deterministic
+  reason. Danger state has a text/glyph companion; color never carries it
+  alone.
+- **Source identity:** a menu stays bound to the exact `TabId`, Favorite-backed
+  `TabId`, `FolderId`, or page/pane that opened it. Opening, traversing, or
+  dismissing never implicitly selects, activates, expands, moves, reloads,
+  closes, suspends, or recreates that source.
+- **Ownership:** sidebar tab/Favorite/folder menus are ordinary GPUI chrome.
+  Only BBR page-background menus overlap WebKit and use the existing one-per-
+  window `NativeAboveWeb` Portal. Link/image/selection/editable/media and
+  JavaScript/unclassified WebKit element menus remain native and untouched.
+- **Commands:** callbacks route through an existing or explicitly added
+  portable command/controller authority. A missing capability omits its row or
+  renders a useful disabled state; the renderer never invents behavior.
+- **Explicit omissions:** no Send-to-Mobile, Firefox Container Tab, route-for-
+  domain, extension-contributed rows, QR creator, bookmark duplication,
+  block-element command, video downloader, or bulk Select All without their own
+  BBR product contracts.
+- **Stable family ids:** `bbr-tab-menu`, `bbr-favorite-menu`,
+  `bbr-folder-menu`, and `bbr-page-menu`, with action/submenu ids owned by
+  their bounded task packets.
+- **Gallery:** G2/G3 stories register closed/open/submenu/disabled/danger/
+  overflow states from the exact production `bbr-ui` menu components. Gallery
+  fixtures never rebuild menu anatomy and never replace real-browser E2E.
+
+Canonical packets: [Tab/Favorite menus](docs/roadmap/tasks/tab-favorite-context-menus.md),
+[Folder menu](docs/roadmap/tasks/folder-context-menu.md), and
+[Page-background follow-up](docs/roadmap/tasks/page-background-context-menu.md).
+
+### 11.14 Unified titlebar navigation controls (Planned)
+
+The post-F2a/G1 titlebar target is
+`[traffic lights] [sidebar collapse/expand] … [Back] [Forward] [Reload]`
+inside the actual macOS safe titlebar layout guide.
+
+- The collapse control sits immediately after the traffic lights, uses the same
+  sidebar-width/collapse authority as Cmd-B, changes glyph for collapsed versus
+  expanded, and replaces rather than duplicates the pre-G1 status-row control.
+- Back/Forward/Reload form a compact trailing cluster and target the selected
+  tab in single-pane mode or the focused split pane. Enablement derives from
+  real navigation state.
+- Glyphs use the BBR geometric 18 pt family with normal-density hit areas at
+  least 32 pt, transparent rest state, §10.2 hover wash, and §10.8 disabled
+  treatment. No bordered toolbar capsule and no duplicate controls in the
+  address display.
+- Layout uses the native safe area; traffic-light x/y values are never
+  hardcoded. Empty titlebar space remains draggable. Fullscreen,
+  multi-display, narrow-window, and collapsed-sidebar states must preserve
+  reachability without overlap.
+- Stable ids: `bbr-titlebar`, `bbr-titlebar-sidebar-toggle`, `bbr-nav-back`,
+  `bbr-nav-forward`, `bbr-nav-reload`.
+
+Canonical packet: [Unified titlebar navigation controls](docs/roadmap/tasks/titlebar-navigation-controls.md).
+
+### 11.15 Sidebar media control (Planned; capability-first)
+
+The media card is conditional ordinary GPUI sidebar chrome above the footer
+hairline and therefore above `[Downloads] [Space strip] [+]`. It consumes no
+layout or focus space when no eligible session exists. The Zen media reference
+sets composition only; BBR capabilities come exclusively from the portable
+[media-session contract](docs/roadmap/tasks/media-session-capability-contract.md)
+using public WebKit APIs or an isolated content-world bridge — never SPI or
+HTML heuristics alone.
+
+- **Identity and capability:** the card is bound to one opaque media session
+  plus its exact TabId/SpaceId/ProfileId. Every command revalidates that
+  identity. Controls `{play,pause,seek,previous,next,mute}` appear or enable
+  only when explicitly advertised; Previous/Next and duration are never
+  assumed.
+- **Anatomy:** title + source/meta + dismiss; elapsed/duration and a determinate
+  scrubber only for known, seekable duration; live/unknown media has no fake
+  total or scrubber; source activation, capability-gated transport controls,
+  and mute. Dismiss hides the current media identity until it changes and does
+  not stop playback.
+- **Multiplicity:** when several tabs play, show only the most recently user-
+  controlled eligible session plus a compact count/switch affordance — never a
+  vertical card stack.
+- **Focus:** controls enter §9 before Downloads. Source activation selects the
+  exact owning tab/space/profile and visibly communicates cross-profile
+  identity; other media commands do not select or focus the tab.
+- **Visuals:** `material:field`, `elev:1`, `radius:lg`, BBR text/glyph tokens,
+  and `color:accent` progress. No copied Zen blue. Playback/progress indication
+  honors Reduced Motion and never hides static state.
+- **Stable ids:** `bbr-media-card`, `-title`, `-source`, `-progress`,
+  `-elapsed`, `-duration`, `-previous`, `-play-pause`, `-next`, `-mute`,
+  `-dismiss`, `-session-count`.
+- **Gallery:** static capability/state stories use the same production card;
+  they never claim real WebKit control or replace the deterministic media E2E.
+
+Canonical UI packet: [Sidebar media control](docs/roadmap/tasks/sidebar-media-control.md).
+
 ## 12. Profile identity
 
 - **Chip:** 24 pt square (20 at S, 28 at XL), `radius:sm`, filled with the profile's
@@ -956,8 +1067,11 @@ semantically — never by pixel comparison.
   registers `bbr-downloads-panel`, `bbr-downloads-active`,
   `bbr-downloads-history`, `bbr-download-row-<n>` (+ `-status`/`-name`/
   `-meta`/`-progress`/`-action`), and `bbr-downloads-empty` (§11.12); the
-  footer control keeps `bbr-downloads` (§11.4). The S1 scale table (§8)
-  changes geometry tokens only — it does not change ids, the §10 state
+  footer control keeps `bbr-downloads` (§11.4). Planned owned menu families
+  register the §11.13 ids; the titlebar registers the §11.14 ids; an eligible
+  media session registers the §11.15 `bbr-media-card*` ids and an absent card
+  registers none. The S1 scale table (§8) changes geometry tokens only — it
+  does not change ids, the §10 state
   vocabulary, interaction behavior, dense-500 bounded-window rendering,
   scroll math, or any performance budget/sample count.
 - **State vocabulary:** snapshot field `tab_states: Vec<VisualState>` with

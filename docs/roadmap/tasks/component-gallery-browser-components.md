@@ -45,6 +45,11 @@ model and a recorder callback proving which interaction fired. No fake
      strip chips), Plus menu;
   4. Downloads panel (post-F2b rows: cancel/retry/reveal/restart/delete);
   5. Find bar; 6. Error/Crash surfaces; 7. Auth sheet; 8. Context menu.
+  After their separately scheduled production packets integrate, append —
+  without renumbering any existing StoryId — Tab/Favorite menu, Folder menu,
+  enriched Page-background menu, Titlebar navigation controls, and Sidebar
+  media-card components. These rows register the same production symbols;
+  this Gallery packet does not authorize their behavior implementation.
   Each group: extract to `bbr-ui` → migrate `bbr-app` → delete old
   definition → re-run the affected `just e2e-shell-<suite>` + `just e2e-perf`.
 - **Story matrix** for each component in `bbr-gallery`, per the matrix
@@ -148,7 +153,9 @@ gallery fixture builder refuses to build them.
 | Find bar (`bbr-ui::surfaces::find`) | open/focused; query empty (placeholder) vs typed; count/ordinal ("n of m"); 0 of 0; stale flag; prev/next/close controls at `density:hit-min(_close)` | an ordinal without a count (WebKit reports both or neither); a "next" enabled at 0 matches (no matches → no step) |
 | Error / Crash (`bbr-ui::surfaces::error`, `bbr-ui::components::pane`) | error: TLS (expired/untrusted/revoked/mismatch/handshake), Navigation (server-not-found/refused/timeout/redirect-loop/unsupported-scheme), Offline (no-network/proxy-unreachable/network-unreachable) — each with its calm title/copy + contract-legal action; origin shown vs omitted; crash panel (Reload/Close tab); empty pane (profile line + New Tab ⌘T) | a TLS action other than Retry (no bypass — `crates/bbr-app/src/app/error_surface.rs` `ErrorSurfaceSpec`/`IncidentCategory` maps TLS/Navigation/Offline to Retry only and the closed action set has no bypass variant, per the [error-surface-contract](error-surface-contract.md) matrix); a crash panel on a healthy tab; raw platform error codes in any copy |
 | Auth sheet (`bbr-ui::surfaces::auth`) | realm present vs absent; origin-server vs proxy authority; username typed/empty; password masked bullets; focus username vs password; Cancel vs Log In | an unmasked password render (bullets always); outside-press dismissal (no backdrop dismissal for credentials); any serializable credential shape |
-| Context menu (`bbr-ui::surfaces::menu`) | item enabled/disabled; selection; Back/Forward enablement from canGoBack/canGoForward; Open New Tab / Reload / Copy Link / Back / Forward; keyboard cursor + pointer hover | an enabled action on a disabled-legal item (a disabled row never activates, §portal/context_menu.rs); a menu with zero items |
+| Context menu (`bbr-ui::surfaces::menu`) | existing page menu: item enabled/disabled, selection, Back/Forward enablement, Open New Tab / Reload / Copy Link / Back / Forward, keyboard cursor + pointer hover; post-packet append-only families: Tab/Favorite closed/open/submenu/disabled/danger/overflow bound to exact TabId; Folder empty/populated/move-submenu/destructive bound to FolderId; Page-background owned-command matrix while WebKit element-menu classes are represented as ownership metadata, not copied menus | a menu with zero items; activation of a disabled row; any source-less Tab/Favorite/Folder menu; any Gallery-owned rendering of WebKit link/image/selection/editable/media menus |
+| Titlebar navigation (`bbr-ui::components::titlebar_navigation`, after its production packet) | sidebar toggle collapsed/expanded; Back/Forward all enablement combinations; Reload/loading; S/N/XL; standard/increased contrast; focused/hover/disabled | hardcoded traffic-light geometry; a second sidebar-collapse or navigation authority; titlebar controls inside the address component |
+| Sidebar media card (`bbr-ui::components::media_card`, only after media contract + production UI) | absent; playing/paused; seekable known-duration; live/unknown duration; capability subsets for previous/next/mute; one/multiple sessions; dismissed identity; stale/ended disabled/removal state; cross-profile source identity; reduced motion/contrast | decorative unsupported controls; fake duration/scrubber; a model without opaque session + TabId/SpaceId/ProfileId identity; any fixture that claims WebKit control |
 
 ## Evidence
 

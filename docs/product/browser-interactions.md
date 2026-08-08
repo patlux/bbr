@@ -318,6 +318,67 @@ Split routing, pointer controls, keyboard tab traversal, and reopen commands
 must assert both selected-tab state and actual chrome/web native focus as their
 visible UI slices land.
 
+## Context menus — Planned contracts
+
+- Opening a tab, Favorite, folder, or page-background menu binds it to the
+  exact source identity that invoked it. Opening, traversing, Escape, and
+  outside-click dismissal do not implicitly activate, select, expand, move,
+  reload, close, suspend, recreate, or change that source's profile/space/
+  session.
+- A Favorite menu targets the same persistent `TabId` as the corresponding tab
+  row. It is not a URL shortcut or second session.
+- Sidebar tab/Favorite/folder menus remain GPUI-owned. A page-background menu
+  uses the existing one-per-window NativeAboveWeb Portal; link, image,
+  selection, editable, media, page-JavaScript, and unclassified WebKit menus
+  remain native.
+- Menu actions route through typed portable commands. Capability-dependent rows
+  are omitted or use a deterministic disabled reason; no render callback
+  invents behavior.
+- Same-profile menu moves preserve the live session. Cross-profile moves
+  recreate exactly once in the destination store and retain the persistent
+  tab identity.
+- Keyboard operation follows native macOS expectations: Up/Down traversal,
+  Right/Left submenus, Return commit, Escape dismissal. Focus returns to the
+  invoking domain after dismissal unless the committed command explicitly
+  targets another surface.
+- Detailed action/omission matrices live in the bounded
+  [Tab/Favorite](../roadmap/tasks/tab-favorite-context-menus.md),
+  [Folder](../roadmap/tasks/folder-context-menu.md), and
+  [Page-background](../roadmap/tasks/page-background-context-menu.md) packets.
+
+## Titlebar navigation — Planned contract
+
+- The unified macOS titlebar will expose one sidebar collapse/expand control
+  and Back/Forward/Reload controls. The collapse control and Cmd-B are the same
+  authority; the titlebar placement replaces, rather than duplicates, the
+  pre-G1 status-row control.
+- Back/Forward/Reload target the selected tab in single-pane mode and the
+  focused pane in split mode. Disabled actions do not dispatch.
+- Empty safe-titlebar space remains a native window-drag region. Fullscreen,
+  multiple displays, narrow windows, and sidebar collapse do not change
+  navigation target or tab/session identity.
+- Canonical packet: [titlebar navigation controls](../roadmap/tasks/titlebar-navigation-controls.md).
+
+## Media sessions — Planned, capability-first
+
+- Media observation and commands exist only for an actual session reported by
+  the portable [media capability contract](../roadmap/tasks/media-session-capability-contract.md).
+  Public WebKit APIs or an isolated content-world bridge may supply facts; SPI
+  and HTML heuristics alone may not.
+- Every command carries and revalidates opaque media identity plus owning tab/
+  space/profile/session generation. A stale command rejects and never controls
+  a newer or different tab.
+- Play, Pause, Seek, Previous, Next, and Mute are independent capabilities.
+  Unsupported commands are absent/disabled; unknown/live duration has no fake
+  total or scrubber.
+- Ordinary media commands do not select or focus the owning tab. Explicit
+  source activation selects the exact persistent TabId through its owning
+  space/profile and follows the normal cross-profile identity contract.
+- Dismissing the sidebar card hides that media identity until it changes; it
+  does not pause or stop playback. End, navigation, reload, crash, close, or
+  session replacement invalidates the card/commands deterministically.
+- Canonical UI packet: [sidebar media control](../roadmap/tasks/sidebar-media-control.md).
+
 ## Commands
 
 ### Existing and planned shortcuts

@@ -5,7 +5,11 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [native-integration track](../tracks/native-integration.md) ·
 [UI design-system track](../tracks/ui-design-system.md).
 
-Status: **post-MVP Portal follow-up.**
+Status: **implemented ownership/Portal foundation.** The bounded action and
+ownership-matrix enrichment is owned by the
+[Page-background context-menu follow-up](page-background-context-menu.md);
+that packet preserves this conservative router and may start only after F2
+closeout when Portal/context-menu territory is free.
 
 ## Outcome
 
@@ -28,7 +32,8 @@ use their native path and are never replaced by generic BBR chrome.
 
 ## Non-goals
 
-- No replacement or restyling of WebKit's link/image/selection context menu.
+- No replacement or restyling of WebKit's link/image/selection/editable/media
+  context menus; the follow-up keeps these classes native.
 - No interception of page JavaScript context-menu behavior beyond explicit
   product policy.
 - No menu-specific native window; use the one host per browser window.

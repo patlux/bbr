@@ -15,6 +15,20 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 
 Gallery verification supplements but never replaces the affected real-browser E2E and performance gates.
 
+## Zen-reference interaction surfaces — post-F2/G1
+
+Zen supplies information architecture and native-macOS interaction reference,
+not BBR feature inventory or visual identity. Production implementation remains
+queued behind **F2c → F2b → fresh F2a → G1** except the Portal-specific page
+menu follow-up, which may start after F2 closeout when that territory is free.
+
+- [ ] Deliver one shared production [Tab/Favorite context-menu](../tasks/tab-favorite-context-menus.md) authority bound to the invoking persistent TabId, with capability-gated rows and no Firefox/container/mobile/extension invention.
+- [ ] Deliver the bounded [Folder context menu](../tasks/folder-context-menu.md) over explicit flat, session-local folder semantics; nesting, conversion, persistence, and ambiguous deletion stay omitted until separately owned.
+- [ ] Enrich the existing Portal-backed [Page-background context menu](../tasks/page-background-context-menu.md) after F2 closeout while preserving WebKit-native link/image/selection/editable/media/JavaScript menus.
+- [ ] Move sidebar collapse plus Back/Forward/Reload into the traffic-light-safe [unified titlebar navigation](../tasks/titlebar-navigation-controls.md) without hardcoded geometry or duplicate authorities.
+- [ ] Establish the public-API-only [media-session capability contract](../tasks/media-session-capability-contract.md), then render the conditional [sidebar media control](../tasks/sidebar-media-control.md) from advertised capabilities only.
+- [ ] Append the corresponding G2/G3 stories to the existing Gallery packets from the exact production components; no copies and no Gallery substitution for browser/native E2E.
+
 ## Visual direction and tokens — Phase 4 start
 
 - [x] Create [DESIGN.md](../../../DESIGN.md) through an explicit visual-direction process.
