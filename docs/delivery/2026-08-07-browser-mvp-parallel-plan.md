@@ -396,6 +396,74 @@ seine betroffenen E2E-Suiten bilden eine eigene Gate-Welle.
 | 15:09 | Alter Writer-Wächter (Session `019fdb6b`, Pane bbr:1.0) gestoppt — kein Doppel-Writer-Risiko |
 | 15:09 | ✅ Handoff: sol-Orchestrator gestartet — tmux `tws_personal_macos_bbr-orchestrator`, Pi-Session `019fdc57-7afb-7f81`, gpt-5.6-sol:high. Ab jetzt einziger Orchestrator und Ledger-Owner; die fable-Session (`019fdba4`) zieht sich zurück |
 
+## Morgen-Report 2026-08-08
+
+### Das Wichtigste zuerst
+
+Das MVP ist geschlossen und liegt als verifiziertes `.app` vor. Der einzige
+offene MVP-Punkt ist deine manuelle Smoke-Prüfung gegen
+`/Users/patwoz/dev/Personal/macos/bbr-mvp-smoke-checklist.md`. Alles, was
+danach in der Nacht lief, ist Post-MVP-Arbeit auf einem grünen Stand.
+
+Artefakt: `target/bbr-app/BBR.app`, `dev.patwoz.bbr` 0.1.0, arm64 thin,
+ad-hoc signiert. Binary-SHA256
+`50becd1355a9a228192c4a6f95144171d6348849ddd99536eeb08fbc5138246b` — enthält
+sowohl die kalibrierte S1-Skala als auch Find-in-page.
+
+### In der Nacht gemergt
+
+| Slice | Merge | Was du siehst |
+|---|---|---|
+| S1 globaler UI-Scale | `bf54450` | Die Oberfläche ist an deinen Referenz-Screenshots kalibriert: 36-pt-Rows, 14-pt-Titel, 18-pt-Glyphen in Normal. S/N/XL sind eine Tabelle in `DESIGN.md`, keine Prozentformel |
+| External-URL-Contract (portabel) | `14f1093` | Noch unsichtbar: Klassifikation, Ablehnung gefährlicher Schemata, Dedup und Routing für Links aus fremden Apps. Die native Registrierung folgt als eigener Slice |
+| Downloads-Panel-Design | `ffcf0a6` | `DESIGN.md` §11.12 im Vokabular der gemergten L6-Maschine, plus sechs offene Produktfragen |
+| Find-in-page | `c12ecbc` | Sichtbar und benutzbar: Cmd-F öffnet die Leiste über der Web-View, Treffer werden gezählt, Enter/Shift-Enter springt |
+
+### Wo ich einen Befund hatte, statt ihn zu übergehen
+
+**Der Portal-E2E-Fehlschlag war kein Produktfehler, aber auch keine
+Flakiness.** Ein fremdes Fenster lag am Prüfpunkt über BBR, und der Test hatte
+stillschweigend angenommen, dass dort nur BBR liegen kann. Gelöst durch eine
+**zusätzliche gemessene Tatsache** — wem das frontmost Fenster gehört — nicht
+durch Aufweichen der Prüfung (`7f25d03`).
+
+**Find-in-page hatte ein echtes Plattformproblem.** Die gepinnte öffentliche
+WebKit-API liefert nur ein `matchFound`-Bool, keine Trefferzahl und keinen
+Ordinal. Vier unabhängige Belege bestätigen das. Private SPI wurde verworfen.
+Die Zählung führt jetzt WebKit selbst aus, isoliert in BBRs eigener
+Content-World — die Seite kann die Find-Maschinerie weder sehen noch stören.
+
+**Der Downloads-Slice kam als „fertig" zurück und war es nicht.** Die
+berichtenden Agenten lieferten nach Idle-Abbruch leere Ausgaben. Ich habe die
+Gates selbst gefahren: statisch grün, aber fünf von sieben realen Szenarien
+fallen. Details unten.
+
+### Was ich von dir brauche
+
+Alle Punkte stehen mit Optionen, Empfehlung und Auswirkung in der
+Morgen-Entscheidungsliste oben. Zusammengefasst:
+
+1. **Manuelle Smoke-Prüfung des `.app`** — der letzte MVP-Punkt.
+2. **Sechs Downloads-Produktfragen** (§17.7–§17.12). Meine Empfehlungen folgen
+   konventionellem macOS-Verhalten: still in den Standardordner laden, Badge
+   zählt nur Laufendes, kein Clear solange History nicht persistiert.
+3. **Settings/Search-Contract-Host**: `bbr-web` (Empfehlung) oder
+   `bbr-command`. Der fertige Contract wartet uncommitted im Worktree.
+4. **Schema-v2-Scope** — blockiert zugleich P7 History und die
+   Downloads-History-Persistenz.
+5. **Space-Appearance-Kalibrierung**: Palette- und Emoji-Regeln.
+
+### Offen und laufend
+
+- **Downloads-Panel**: Implementierung liegt im Worktree, fünf E2E-Szenarien
+  rot, Remediation-Lane läuft. Nicht gemergt — `main` bleibt grün.
+- **Uncommitted in Worktrees**: Space-Appearance, Settings/Search, Schema-v2 —
+  alle warten auf eine Entscheidung von dir, keiner auf Technik.
+- **Restliche Queue**: Portal-Hardening, U3 Startup-Evidenz, Kontextmenüs über
+  Web, P8e Zoom-Wiring, native External-URL-Hälfte, P8c Auth-Adapter, P8b
+  Error-Surfaces, Perf-Lücken, Icon-System-Reste, Footer-Strip-/Appearance-/
+  Swipe-Slice.
+
 ## Kickoff-Anweisung für die sol-Orchestrator-Session
 
 Du bist der einzige Orchestrator für diesen Plan. Arbeitsvertrag:
