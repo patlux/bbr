@@ -1370,6 +1370,9 @@ fn drive_matrix_inner(
                 keystroke: "escape".into(),
             })
             .expect("escape after warm-up");
+        client
+            .send_ok(&Request::FlushFrame)
+            .expect("settle escape after first-result warm-up");
         let mut first_result_samples = Vec::with_capacity(config.interaction_samples);
         for _ in 0..config.interaction_samples {
             let measured = benchmark_command_bar_first_result(
@@ -1395,6 +1398,9 @@ fn drive_matrix_inner(
                     keystroke: "escape".into(),
                 })
                 .expect("escape after first result sample");
+            client
+                .send_ok(&Request::FlushFrame)
+                .expect("settle escape after first-result sample");
         }
         raw.insert("command_bar_first_result".to_string(), first_result_samples);
 
@@ -1430,6 +1436,9 @@ fn drive_matrix_inner(
                 keystroke: "escape".into(),
             })
             .expect("escape after full search warm-up");
+        client
+            .send_ok(&Request::FlushFrame)
+            .expect("settle escape after full-search warm-up");
         let mut full_search_samples = Vec::with_capacity(config.interaction_samples);
         for _ in 0..config.interaction_samples {
             let measured = benchmark_command_bar_full_search(
@@ -1456,6 +1465,9 @@ fn drive_matrix_inner(
                     keystroke: "escape".into(),
                 })
                 .expect("escape after full search sample");
+            client
+                .send_ok(&Request::FlushFrame)
+                .expect("settle escape after full-search sample");
         }
         raw.insert("command_bar_full_search".to_string(), full_search_samples);
         raw
