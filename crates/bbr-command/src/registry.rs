@@ -181,6 +181,13 @@ impl CommandRegistry {
                 ActionCategory::Tab,
                 Some("⇧⌘↓"),
             ),
+            Action::new(
+                ActionId(14),
+                "Set as Default Browser",
+                ["default", "browser", "handler", "open", "links"],
+                ActionCategory::View,
+                None,
+            ),
         ];
         CommandRegistry { actions }
     }
@@ -226,6 +233,7 @@ mod tests {
             (11, "Toggle Sidebar", ActionCategory::View, Some("⌘B")),
             (12, "Reorder Tab Up", ActionCategory::Tab, Some("⇧⌘↑")),
             (13, "Reorder Tab Down", ActionCategory::Tab, Some("⇧⌘↓")),
+            (14, "Set as Default Browser", ActionCategory::View, None),
         ];
         let registry = CommandRegistry::builtin();
         let actual: Vec<_> = registry

@@ -163,6 +163,13 @@ fn main() {
     // ARCHITECTURE.md.
     let _clock = cli.clock;
 
+    // External-URL open delivery (queue item 13): the unbounded queue the
+    // AppKit delegate path and the testkit seam share. Created before the
+    // run loop so every URL — including one delivered before the app has
+    // finished launching — is buffered and drained once the pump starts.
+    #[cfg(target_os = "macos")]
+    let (external_url_tx, external_url_rx) = smol::channel::unbounded::<String>();
+
     stderr_logger::init();
 
     let mut idgen: Box<dyn IdGen> = match cli.ids {
@@ -174,8 +181,29 @@ fn main() {
     let allocate_view: bbr_browser::ViewIdAllocator = Box::new(move || idgen.next_u64());
 
     // GPUI-CE application start; gpui-component must be initialized before any
-    // component (including `Root`) is used.
-    gpui_platform::application().run(move |cx: &mut App| {
+    // component (including `Root`) is used. The external-URL open delivery
+    // (queue item 13) registers on the `Application` builder: GPUI's AppKit
+    // delegate (`application:openURLs:` on its `GPUIApplicationDelegate`)
+    // forwards OS-dispatched URLs here, and the callback pushes each URL
+    // into the unbounded queue the pump drains once the app entity exists —
+    // a link arriving while the app is still launching is buffered, never
+    // dropped (a dropped cold-start link is a real user-visible failure).
+    #[cfg(target_os = "macos")]
+    let application = {
+        let app = gpui_platform::application();
+        let tx = external_url_tx.clone();
+        app.on_open_urls(move |urls: Vec<String>| {
+            for url in urls {
+                if let Err(error) = tx.try_send(url) {
+                    log::warn!("could not queue external url: {error}");
+                }
+            }
+        });
+        app
+    };
+    #[cfg(not(target_os = "macos"))]
+    let application = gpui_platform::application();
+    application.run(move |cx: &mut App| {
         gpui_component::init(cx);
 
         let bounds = Bounds::centered(None, size(px(cli.window_size.0), px(cli.window_size.1)), cx);
@@ -380,6 +408,10 @@ fn main() {
                 evt_tx.clone(),
                 find_rx,
                 downloads_rx,
+                #[cfg(target_os = "macos")]
+                external_url_rx,
+                #[cfg(target_os = "macos")]
+                external_url_tx,
                 cmd_rx,
                 server.clone(),
             );
@@ -418,7 +450,15 @@ fn main() {
         #[cfg(not(feature = "testkit"))]
         {
             // Event pump so the shell stays live even without the gateway.
-            spawn_event_pump(cx, &window, &app, evt_rx, find_rx, downloads_rx);
+            spawn_event_pump(
+                cx,
+                &window,
+                &app,
+                evt_rx,
+                find_rx,
+                downloads_rx,
+                external_url_rx,
+            );
         }
 
         if !cli.hidden {

@@ -40,6 +40,11 @@ mod downloads_benchmarks;
 pub(crate) mod downloads_render;
 mod drag;
 mod drag_target;
+/// External-URL open composition (queue item 13): the app-lifetime
+/// coordinator plus execution of the contract's routing outcome through the
+/// existing controller. macOS-only body; the module is compiled everywhere
+/// so the app composition stays portable.
+pub(crate) mod external_urls;
 pub(crate) mod find;
 #[cfg(feature = "testkit")]
 mod find_benchmarks;
@@ -186,6 +191,12 @@ pub struct BbrApp {
     /// the active `WKWebView` through it without creating/moving sessions.
     #[cfg(target_os = "macos")]
     find_engine: Option<crate::engine::NativeEngineRef>,
+    /// External-URL open delivery store (macOS only, queue item 13): the
+    /// app-lifetime coordinator plus request-id/tick watermarks. Fed one URL
+    /// per OS delivery through the AppKit delegate path (or the testkit
+    /// seam); the decision is always the merged portable contract's.
+    #[cfg(target_os = "macos")]
+    external_urls: bbr_web_macos::external_urls_adapter::ExternalUrlAdapterCore,
     /// The last frame's command-field rect in window coordinates, recorded
     /// by the field anchor element (DESIGN.md §11.4): the exact anchor for
     /// the field-anchored overlay (top/leading edge flush, width from the
@@ -284,6 +295,8 @@ impl BbrApp {
             download_engine: None,
             #[cfg(target_os = "macos")]
             find_engine: None,
+            #[cfg(target_os = "macos")]
+            external_urls: bbr_web_macos::external_urls_adapter::ExternalUrlAdapterCore::new(),
             command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),

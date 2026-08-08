@@ -524,5 +524,12 @@ pub(crate) fn dispatch(
         | Request::SeedDownloadsAttempt { .. } => {
             unreachable!("benchmark requests route through dispatch_benchmark")
         }
+        // External-URL delivery is macOS-only; the pump intercepts
+        // `DeliverExternalUrl` before dispatch on macOS, so reaching here
+        // means the platform cannot deliver (queue item 13).
+        Request::DeliverExternalUrl { .. } => Response::Error(Error::new(
+            "unsupported",
+            "external url delivery is macOS-only",
+        )),
     }
 }

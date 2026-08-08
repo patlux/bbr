@@ -188,7 +188,7 @@ fn empty_location_and_newtab_yield_nothing() {
 fn empty_action_lists_all_actions_in_registry_order() {
     let corpus = fixture_corpus();
     let results = rank_all(&corpus, "", Mode::Action);
-    let expected: Vec<String> = (1..=13).map(|id| format!("action:{id}")).collect();
+    let expected: Vec<String> = (1..=14).map(|id| format!("action:{id}")).collect();
     assert_eq!(keys(&results), expected);
     assert!(results.iter().all(|r| r.group == ResultGroup::Action));
 }

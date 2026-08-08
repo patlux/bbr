@@ -133,6 +133,15 @@ class BundleTests(unittest.TestCase):
         self.assertEqual(plist["CFBundleVersion"], build_app.workspace_version())
         self.assertTrue(plist["NSHighResolutionCapable"])
 
+        # Queue item 13: the bundle declares exactly the schemes BBR genuinely
+        # handles — http/https, the supported web schemes of the merged
+        # contract. A scheme the contract rejects must never be declared (it
+        # would make BBR a black hole for the user's links).
+        url_types = plist["CFBundleURLTypes"]
+        self.assertEqual(len(url_types), 1)
+        schemes = url_types[0]["CFBundleURLSchemes"]
+        self.assertEqual(sorted(schemes), ["http", "https"])
+
     def test_deterministic_rebuild(self) -> None:
         binary = make_binary(self.root)
         first = self.root / "a.app"

@@ -259,6 +259,10 @@ pub(crate) fn spawn_event_pump(
     evt_rx: Receiver<WebEvent>,
     #[cfg(target_os = "macos")] find_rx: Receiver<bbr_web_macos::find_mapping::FindCompletion>,
     #[cfg(target_os = "macos")] downloads_rx: Receiver<bbr_web::downloads::DownloadEvent>,
+    // External-URL open deliveries (queue item 13): buffered URLs from the
+    // AppKit delegate path, drained on the main thread into
+    // `BbrApp::on_external_url` (the production, non-testkit pump).
+    #[cfg(target_os = "macos")] external_url_rx: Receiver<String>,
 ) {
     let window = *window;
     let app = app.clone();
@@ -269,6 +273,8 @@ pub(crate) fn spawn_event_pump(
             Find(Result<bbr_web_macos::find_mapping::FindCompletion, smol::channel::RecvError>),
             #[cfg(target_os = "macos")]
             Download(Result<bbr_web::downloads::DownloadEvent, smol::channel::RecvError>),
+            #[cfg(target_os = "macos")]
+            ExternalUrl(Result<String, smol::channel::RecvError>),
         }
         let incoming = smol::future::race(
             async { Incoming::Event(evt_rx.recv().await) },
@@ -277,10 +283,16 @@ pub(crate) fn spawn_event_pump(
                 async {
                     Incoming::Find(find_rx.recv().await)
                 },
-                #[cfg(target_os = "macos")]
-                async {
-                    Incoming::Download(downloads_rx.recv().await)
-                },
+                smol::future::race(
+                    #[cfg(target_os = "macos")]
+                    async {
+                        Incoming::Download(downloads_rx.recv().await)
+                    },
+                    #[cfg(target_os = "macos")]
+                    async {
+                        Incoming::ExternalUrl(external_url_rx.recv().await)
+                    },
+                ),
             ),
         )
         .await;
@@ -308,9 +320,23 @@ pub(crate) fn spawn_event_pump(
                     });
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::ExternalUrl(Ok(url)) => {
+                // External-URL open from the AppKit delegate path: the same
+                // main-thread app update path as engine events. URLs buffered
+                // before the app finished launching are drained here, in
+                // order, so a cold-start link lands exactly once.
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_external_url(url, cx)
+                    });
+                });
+            }
             Incoming::Event(Err(_)) => break,
             #[cfg(target_os = "macos")]
-            Incoming::Find(Err(_)) | Incoming::Download(Err(_)) => break,
+            Incoming::Find(Err(_)) | Incoming::Download(Err(_)) | Incoming::ExternalUrl(Err(_)) => {
+                break
+            }
         }
     })
     .detach();

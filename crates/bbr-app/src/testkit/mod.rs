@@ -113,6 +113,17 @@ pub fn spawn_pump(
     #[cfg(target_os = "macos")] downloads_rx: smol::channel::Receiver<
         bbr_web::downloads::DownloadEvent,
     >,
+    // External-URL open deliveries (queue item 13): buffered URLs from the
+    // AppKit delegate path or the testkit seam, drained on the main thread
+    // into `BbrApp::on_external_url`. The unbounded queue doubles as the
+    // cold-start buffer: a link arriving before the app finished launching
+    // waits here until the pump starts.
+    #[cfg(target_os = "macos")] external_url_rx: smol::channel::Receiver<String>,
+    // The external-URL delivery queue's sender: the testkit
+    // `DeliverExternalUrl` request pushes into the exact channel the AppKit
+    // delegate path uses, so the seam and the production path share one
+    // transport (queue item 13).
+    #[cfg(target_os = "macos")] external_url_tx: smol::channel::Sender<String>,
     cmd_rx: smol::channel::Receiver<GatewayCommand>,
     server: Option<Arc<GatewayServer>>,
 ) {
@@ -127,6 +138,8 @@ pub fn spawn_pump(
             Find(Result<bbr_web_macos::find_mapping::FindCompletion, smol::channel::RecvError>),
             #[cfg(target_os = "macos")]
             Download(Result<bbr_web::downloads::DownloadEvent, smol::channel::RecvError>),
+            #[cfg(target_os = "macos")]
+            ExternalUrl(Result<String, smol::channel::RecvError>),
         }
 
         let incoming = smol::future::race(
@@ -138,10 +151,16 @@ pub fn spawn_pump(
                     async {
                         Incoming::Find(find_rx.recv().await)
                     },
-                    #[cfg(target_os = "macos")]
-                    async {
-                        Incoming::Download(downloads_rx.recv().await)
-                    },
+                    smol::future::race(
+                        #[cfg(target_os = "macos")]
+                        async {
+                            Incoming::Download(downloads_rx.recv().await)
+                        },
+                        #[cfg(target_os = "macos")]
+                        async {
+                            Incoming::ExternalUrl(external_url_rx.recv().await)
+                        },
+                    ),
                 ),
             ),
         )
@@ -156,6 +175,15 @@ pub fn spawn_pump(
                 let resp = match &msg.req {
                     Request::InjectWebEvent { event } => {
                         let _ = inject_tx.try_send(event.clone());
+                        Response::Ok
+                    }
+                    // The external-URL delivery seam pushes into the exact
+                    // queue the AppKit delegate path uses; the pump's own
+                    // `ExternalUrl` arm drains it into the app through
+                    // `on_external_url` — one production transport.
+                    #[cfg(target_os = "macos")]
+                    Request::DeliverExternalUrl { url } => {
+                        let _ = external_url_tx.try_send(url.clone());
                         Response::Ok
                     }
                     _ => handle_command(msg.req, &window, &app, &server, async_cx).await,
@@ -194,9 +222,23 @@ pub fn spawn_pump(
                     });
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::ExternalUrl(Ok(url)) => {
+                // External-URL open from the AppKit delegate path (or the
+                // testkit seam): route through the same main-thread app
+                // update path as engine events. URLs buffered before the app
+                // finished launching are drained here, in order.
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_external_url(url, cx)
+                    });
+                });
+            }
             Incoming::Command(Err(_)) | Incoming::Event(Err(_)) => break,
             #[cfg(target_os = "macos")]
-            Incoming::Find(Err(_)) | Incoming::Download(Err(_)) => break,
+            Incoming::Find(Err(_)) | Incoming::Download(Err(_)) | Incoming::ExternalUrl(Err(_)) => {
+                break
+            }
         }
     })
     .detach();

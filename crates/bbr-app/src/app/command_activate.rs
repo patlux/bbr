@@ -343,6 +343,15 @@ impl BbrApp {
                 }
                 reordered
             }
+            14 => {
+                // Set as Default Browser (queue item 13): a user-triggered
+                // LaunchServices claim for http/https under the main bundle
+                // identifier — never invoked automatically. The request is
+                // terminal; its result is reported through the app log.
+                self.request_default_browser();
+                self.finish_action_activation(window, cx);
+                true
+            }
             _ => false,
         }
     }

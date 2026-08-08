@@ -62,6 +62,17 @@ objc2-app-kit = { workspace = true, features = [
     "NSWorkspace",
 ] }
 
+# objc2-core-foundation: CFBundle (the main-bundle identifier for the
+# default-browser claim) and CFString (the scheme strings passed to
+# LSSetDefaultHandlerForURLScheme). Already resolved in the lockfile via
+# objc2-foundation/objc2-web-kit; a direct dependency only adds the two
+# feature-gated CF types, no new crate.
+objc2-core-foundation = { version = "0.3.2", default-features = false, features = [
+    "CFBundle",
+    "CFString",
+    "std",
+] }
+
 # objc2-web-kit: WKWebView + configuration + delegates + data store.
 # `objc2-app-kit` is a feature of objc2-web-kit that gates the delegate
 # protocol method definitions (they reference NSView/NSWindow).

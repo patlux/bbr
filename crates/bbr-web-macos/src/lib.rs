@@ -23,6 +23,12 @@ pub mod delegate;
 pub mod downloads_adapter;
 
 #[cfg(target_os = "macos")]
+pub mod external_urls_adapter;
+
+#[cfg(target_os = "macos")]
+pub mod external_urls_launch_services;
+
+#[cfg(target_os = "macos")]
 pub mod downloads_delegate;
 
 #[cfg(target_os = "macos")]
@@ -71,6 +77,12 @@ pub mod webview;
 pub use downloads_adapter::{
     dispatch_action, AdapterDispatchError, AdapterError, DownloadEventSink, WebKitDownloadAdapter,
 };
+
+#[cfg(target_os = "macos")]
+pub use external_urls_adapter::{ExternalUrlAdapterCore, DECLARED_URL_SCHEMES};
+
+#[cfg(target_os = "macos")]
+pub use external_urls_launch_services::{request_default_browser, DefaultBrowserError};
 
 #[cfg(target_os = "macos")]
 pub use downloads_destination::{destination_plan, uniquify_name, DestinationPlan};
