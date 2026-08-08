@@ -141,6 +141,23 @@ fn handle_connection(
         response.respond(&mut stream)?;
         return Ok(());
     }
+    // Deterministic error fixtures (the Phase-8 web-error E2E): the raw
+    // wire shapes the generic router cannot express — an endless 302
+    // redirect loop (the engine fails with `NSURLErrorHTTPTooManyRedirects`
+    // → the contract's `Navigation/RedirectLoop`), a fixed 500 server
+    // error, a truncated 500 (declared length never delivered → the engine
+    // fails the navigation), and a flaky route that fails its first request
+    // and succeeds afterwards (the recovery E2E retries it). All are
+    // deterministic and content-addressed.
+    if let Some(response) = error_fixture(path) {
+        // The flaky route keys its behavior on the number of prior requests
+        // (request 1 fails, later requests succeed), so the prior count is
+        // read before the hit is recorded.
+        let prior = { hits.lock().unwrap().get(path).copied().unwrap_or(0) };
+        record_hit(hits, path);
+        response.respond(&mut stream, prior)?;
+        return Ok(());
+    }
     match route(root, path, &headers)? {
         Route::File { data, content_type } => {
             let mut h = hits.lock().unwrap();
@@ -287,6 +304,86 @@ impl DownloadFixture {
     }
 }
 
+/// A deterministic error-surface fixture response: the raw wire shape the
+/// engine turns into a navigation failure.
+#[derive(Debug, Clone, Copy)]
+enum ErrorFixture {
+    /// Answer every request with a 302 to the same path, forever: WebKit
+    /// aborts the navigation with `NSURLErrorHTTPTooManyRedirects`.
+    RedirectLoop,
+    /// A fixed 500 with a small HTML body (deterministic server error).
+    ServerError,
+    /// A 500 whose declared `Content-Length` is never satisfied (the
+    /// connection closes early): the engine fails the navigation with an
+    /// NSURLError HTTP-domain code (bad server response / connection lost).
+    TruncatedError,
+    /// Fail the first request (a truncated 500, so the engine reports a
+    /// navigation failure) and answer every later request with a real page:
+    /// the recovery E2E retries this route and must see the surface clear
+    /// when the retried navigation succeeds.
+    FlakyError,
+}
+
+/// The error fixture for `path`, or `None` when the path is not an error
+/// route.
+fn error_fixture(path: &str) -> Option<ErrorFixture> {
+    match path {
+        "/__fx/error/redirect-loop" => Some(ErrorFixture::RedirectLoop),
+        "/__fx/error/server-error" => Some(ErrorFixture::ServerError),
+        "/__fx/error/truncated-error" => Some(ErrorFixture::TruncatedError),
+        "/__fx/error/flaky" => Some(ErrorFixture::FlakyError),
+        _ => None,
+    }
+}
+
+impl ErrorFixture {
+    /// Write the fixture response to the stream. `prior` is the number of
+    /// earlier requests to this route (drives the flaky route's fail-then-
+    /// succeed shape; ignored by the fixed shapes).
+    fn respond(self, stream: &mut TcpStream, prior: u32) -> std::io::Result<()> {
+        match self {
+            ErrorFixture::RedirectLoop => {
+                let head =
+                    "HTTP/1.1 302 Found\r\nLocation: /__fx/error/redirect-loop\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+                stream.write_all(head.as_bytes())?;
+                stream.flush()
+            }
+            ErrorFixture::ServerError => respond(
+                stream,
+                500,
+                "Internal Server Error",
+                b"<!doctype html><html><head><title>Server Error</title></head><body>boom</body></html>",
+            ),
+            ErrorFixture::TruncatedError => {
+                // 500 status, declares 64 KiB, delivers 4 bytes, closes.
+                let head =
+                    "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 65536\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n";
+                stream.write_all(head.as_bytes())?;
+                stream.write_all(b"boom")?;
+                stream.flush()
+            }
+            ErrorFixture::FlakyError => {
+                if prior == 0 {
+                    // First request: fail like the truncated route.
+                    let head =
+                        "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 65536\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n";
+                    stream.write_all(head.as_bytes())?;
+                    stream.write_all(b"boom")?;
+                    stream.flush()
+                } else {
+                    // Later requests: a real deterministic page.
+                    respond(
+                        stream,
+                        200,
+                        "OK",
+                        b"<!doctype html><html><head><title>BBR Flaky Recovery</title></head><body>recovered</body></html>",
+                    )
+                }
+            }
+        }
+    }
+}
+
 enum Route {
     File {
         data: Vec<u8>,
@@ -347,6 +444,14 @@ fn route(
                 "<html><title>Cookie {value}</title><body>{value}</body></html>"
             )));
         }
+        // Deterministic error-surface fixtures (the Phase-8 web-error E2E):
+        // HTTP-level failures WebKit turns into navigation errors.
+        // `/__fx/error/redirect-loop` answers every request with a 302 to
+        // itself, so the engine fails the navigation with
+        // `NSURLErrorHTTPTooManyRedirects` (the contract's
+        // `Navigation/RedirectLoop`). `/__fx/error/server-error` answers a
+        // deterministic 500 with a small body (what WebKit does with it is
+        // observed by the E2E).
         _ => {}
     }
 
@@ -543,6 +648,39 @@ mod tests {
         assert_eq!(code2, 404);
         let (code3, _) = get(&server.url("/")).unwrap();
         assert_eq!(code3, 404);
+    }
+
+    #[test]
+    fn error_fixtures_are_deterministic() {
+        let sb = Sandbox::new();
+        let server = FixtureServer::start(sb.dir.clone()).unwrap();
+        // The 500 route answers a fixed server error.
+        let (code, body) = get(&server.url("/__fx/error/server-error")).unwrap();
+        assert_eq!(code, 500);
+        assert!(String::from_utf8(body).unwrap().contains("boom"));
+        assert_eq!(server.hits("/__fx/error/server-error"), 1);
+        // The redirect-loop route keeps redirecting to itself (302 → same
+        // location) — a client that follows redirects never terminates.
+        let (code2, _) = get(&server.url("/__fx/error/redirect-loop")).unwrap();
+        assert_eq!(code2, 302);
+        let body2 = get(&server.url("/__fx/error/redirect-loop")).unwrap().1;
+        assert!(body2.is_empty());
+        assert_eq!(server.hits("/__fx/error/redirect-loop"), 2);
+        // The truncated-error route declares a 64 KiB body but delivers 4
+        // bytes: the wire shape is deterministic and the client observes the
+        // premature close (the engine fails the navigation).
+        let (code3, body3) = get(&server.url("/__fx/error/truncated-error")).unwrap();
+        assert_eq!(code3, 500);
+        assert_eq!(body3, b"boom");
+        // The flaky route fails its first request and succeeds afterwards
+        // (the recovery E2E retries it): request 1 is the truncated 500,
+        // request 2 is a real page.
+        let (code4, body4) = get(&server.url("/__fx/error/flaky")).unwrap();
+        assert_eq!(code4, 500);
+        assert_eq!(body4, b"boom");
+        let (code5, body5) = get(&server.url("/__fx/error/flaky")).unwrap();
+        assert_eq!(code5, 200);
+        assert!(String::from_utf8(body5).unwrap().contains("recovered"));
     }
 
     #[test]

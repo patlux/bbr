@@ -30,6 +30,8 @@ mod dispatch_benchmark_find;
 mod dispatch_benchmark_u2;
 mod dispatch_downloads;
 mod dispatch_drag;
+#[cfg(target_os = "macos")]
+mod dispatch_errors;
 mod dispatch_find;
 mod dispatch_portal;
 mod dispatch_probe;
@@ -125,6 +127,9 @@ pub fn spawn_pump(
     // delegate path uses, so the seam and the production path share one
     // transport (queue item 13).
     #[cfg(target_os = "macos")] external_url_tx: smol::channel::Sender<String>,
+    #[cfg(target_os = "macos")] incidents_rx: smol::channel::Receiver<
+        bbr_web_macos::error_mapping::ClassifiedIncident,
+    >,
     cmd_rx: smol::channel::Receiver<GatewayCommand>,
     server: Option<Arc<GatewayServer>>,
 ) {
@@ -141,6 +146,10 @@ pub fn spawn_pump(
             Download(Result<bbr_web::downloads::DownloadEvent, smol::channel::RecvError>),
             #[cfg(target_os = "macos")]
             ExternalUrl(Result<String, smol::channel::RecvError>),
+            #[cfg(target_os = "macos")]
+            Incident(
+                Result<bbr_web_macos::error_mapping::ClassifiedIncident, smol::channel::RecvError>,
+            ),
         }
 
         let incoming = smol::future::race(
@@ -157,10 +166,16 @@ pub fn spawn_pump(
                         async {
                             Incoming::Download(downloads_rx.recv().await)
                         },
-                        #[cfg(target_os = "macos")]
-                        async {
-                            Incoming::ExternalUrl(external_url_rx.recv().await)
-                        },
+                        smol::future::race(
+                            #[cfg(target_os = "macos")]
+                            async {
+                                Incoming::ExternalUrl(external_url_rx.recv().await)
+                            },
+                            #[cfg(target_os = "macos")]
+                            async {
+                                Incoming::Incident(incidents_rx.recv().await)
+                            },
+                        ),
                     ),
                 ),
             ),
@@ -235,11 +250,25 @@ pub fn spawn_pump(
                     });
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::Incident(Ok(incident)) => {
+                // Classified web-error incidents from the native delegate's
+                // incident sink: route through the same main-thread app
+                // update path as engine/find/downloads events (the surface
+                // presents the classified incident without touching tab,
+                // session, profile, or space identity).
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_incident(incident, cx)
+                    });
+                });
+            }
             Incoming::Command(Err(_)) | Incoming::Event(Err(_)) => break,
             #[cfg(target_os = "macos")]
-            Incoming::Find(Err(_)) | Incoming::Download(Err(_)) | Incoming::ExternalUrl(Err(_)) => {
-                break
-            }
+            Incoming::Find(Err(_))
+            | Incoming::Download(Err(_))
+            | Incoming::ExternalUrl(Err(_))
+            | Incoming::Incident(Err(_)) => break,
         }
     })
     .detach();

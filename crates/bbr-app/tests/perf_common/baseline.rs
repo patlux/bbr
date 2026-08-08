@@ -210,6 +210,18 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Web-error surface (task packet `error-surface-contract`): the
+        // production incident-presentation (`on_incident` → the contract
+        // `present` lifecycle, surface drawn over the unchanged active
+        // view) is ordinary GPUI chrome in the warm next-frame
+        // presentation class — the same 50/100 ms budget as the other
+        // warm presentation commits. Fixture/network time is excluded by
+        // construction (the classified incident is applied in-process,
+        // never through a network transfer).
+        "error_surface_present" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -395,6 +407,7 @@ impl Baseline {
             "downloads_panel_open",
             "download_progress_commit",
             "download_row_retry",
+            "error_surface_present",
         ]
         .into_iter()
         .chain(u2::seed_kinds())

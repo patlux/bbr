@@ -138,6 +138,14 @@ pub enum BenchmarkKind {
     /// the fresh attempt (linked via `retry_of`) is presented in the Active
     /// group — the user-visible row action, warm-presentation class.
     DownloadsRowRetry,
+    /// A classified web-error incident surfaced through the production
+    /// `on_incident` path: the error surface rendered the contract-derived
+    /// title/copy/action for the armed category over the unchanged active
+    /// view — the warm-presentation class (no tab or session is created or
+    /// touched). Fixture/network time is excluded by construction: the
+    /// classified incident is applied in-process through the same seam the
+    /// native delegate's incident sink drives.
+    ErrorSurfacePresent,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

@@ -47,6 +47,9 @@ pub mod downloads_strategy;
 pub mod downloads_web_kit;
 
 #[cfg(target_os = "macos")]
+pub mod error_mapping;
+
+#[cfg(target_os = "macos")]
 pub mod find_adapter;
 
 #[cfg(target_os = "macos")]

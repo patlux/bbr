@@ -298,6 +298,44 @@ pub fn inject_web_event(event: bbr_web::WebEvent) -> Request {
     Request::InjectWebEvent { event }
 }
 
+/// Deterministic classified-incident injection (testkit-only): drives the
+/// exact production `on_incident` seam the native delegate's incident sink
+/// uses, for a closed contract subreason (task packet
+/// `error-surface-contract`).
+pub fn inject_error_incident(
+    profile: ProfileId,
+    view: WebViewId,
+    reason: bbr_web::web_errors::IncidentSubReason,
+    url: Option<&str>,
+) -> Request {
+    Request::InjectErrorIncident {
+        profile,
+        view,
+        reason,
+        url: url.map(str::to_owned),
+    }
+}
+
+/// Measure the production error-surface presentation: the classified
+/// incident enters through the same seam the native incident sink drives
+/// and the sample commits from the render that drew the surface (warm
+/// presentation class).
+pub fn benchmark_error_surface_present(operation_id: BenchmarkOperationId) -> Request {
+    Request::BenchmarkErrorSurfacePresent { operation_id }
+}
+
+/// Press the error surface's primary recovery action through the exact
+/// production mouse-down seam (`BbrApp::error_recover`).
+pub fn click_error_action() -> Request {
+    Request::ClickErrorAction
+}
+
+/// Press the error surface's Dismiss button through the exact production
+/// mouse-down seam (`BbrApp::error_dismiss`).
+pub fn click_error_dismiss() -> Request {
+    Request::ClickErrorDismiss
+}
+
 pub fn move_tab(index: usize, to_space: TestSpaceId) -> Request {
     Request::MoveTab { index, to_space }
 }

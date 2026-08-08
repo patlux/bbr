@@ -21,6 +21,8 @@ use crate::testkit::dispatch_benchmark_downloads::dispatch_benchmark_downloads;
 use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
 use crate::testkit::dispatch_downloads::dispatch_downloads;
 use crate::testkit::dispatch_drag::dispatch_drag;
+#[cfg(target_os = "macos")]
+use crate::testkit::dispatch_errors::dispatch_errors;
 use crate::testkit::dispatch_find::dispatch_find;
 use crate::testkit::dispatch_portal::dispatch_portal;
 use crate::testkit::dispatch_probe::dispatch_probe;
@@ -51,6 +53,13 @@ pub(crate) fn dispatch(
     }
     // The tab-drag pointer arms live in `dispatch_drag` (same split reason).
     if let Some(response) = dispatch_drag(&req, window, app, cx) {
+        return response;
+    }
+    // Error-surface incident injection + benchmark arms route through their
+    // focused module (macOS-only: the classified payload is produced by the
+    // native adapter's mapping).
+    #[cfg(target_os = "macos")]
+    if let Some(response) = dispatch_errors(&req, window, app, cx) {
         return response;
     }
     // Portal probe/teardown/flush routing lives separately because the
@@ -463,6 +472,17 @@ pub(crate) fn dispatch(
         | Request::FindNext
         | Request::FindPrevious => unreachable!("find requests route through dispatch_find"),
 
+        // Routed by `dispatch_errors` before this match (macOS-only: the
+        // classified payload is produced by the native adapter's mapping);
+        // reaching one here is a routing bug.
+        #[cfg(target_os = "macos")]
+        Request::InjectErrorIncident { .. }
+        | Request::ClickErrorAction
+        | Request::ClickErrorDismiss
+        | Request::BenchmarkErrorSurfacePresent { .. } => {
+            unreachable!("error-surface requests route through dispatch_errors")
+        }
+
         // Routed by `dispatch_u2` before this match.
         Request::ClickFooterDownloads
         | Request::ClickFooterSpaces
@@ -542,6 +562,14 @@ pub(crate) fn dispatch(
         Request::DeliverExternalUrl { .. } => Response::Error(Error::new(
             "unsupported",
             "external url delivery is macOS-only",
+        )),
+        #[cfg(not(target_os = "macos"))]
+        Request::InjectErrorIncident { .. }
+        | Request::ClickErrorAction
+        | Request::ClickErrorDismiss
+        | Request::BenchmarkErrorSurfacePresent { .. } => Response::Error(Error::new(
+            "unsupported",
+            "error-surface requests require the macOS engine",
         )),
     }
 }

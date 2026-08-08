@@ -72,7 +72,34 @@ impl Render for BbrApp {
             self.command_ranking.state.into(),
         );
 
-        let content: gpui::AnyElement = if let Some(layout) = self.controller.pane_layout() {
+        // §11.8-style error-surface presentation (task packet
+        // `error-surface-contract`): the classified incident the content
+        // area renders for the active view (TLS, navigation, offline — the
+        // process-crash class is the DESIGN §11.8 crash panel below). The
+        // render records the drawn surface identity for the presentation
+        // probe (the render milestone); a frame without the surface records
+        // the empty observation so a stale surface can never satisfy a
+        // later benchmark arm.
+        #[cfg(feature = "testkit")]
+        {
+            let surface = self.active_error_surface_spec();
+            self.performance.observe_error_surface(
+                surface.is_some(),
+                surface.as_ref().map(|spec| spec.incident.reason.category()),
+            );
+        }
+        let content: gpui::AnyElement = if let Some(spec) = self.active_error_surface_spec() {
+            // The surface replaces the active view's native slot (the view
+            // was hidden by `sync_error_surface_visibility`; never
+            // destroyed — identity is untouched).
+            crate::app::error_surface::error_surface(
+                &theme,
+                &spec,
+                cx.listener(|this, _e, window, cx| this.error_recover(window, cx)),
+                cx.listener(|this, _e, window, cx| this.error_dismiss(window, cx)),
+            )
+            .into_any()
+        } else if let Some(layout) = self.controller.pane_layout() {
             // The authoritative pane layout drives the native surface:
             // one slot per visible pane, each addressing its own
             // `WebViewId`. Single-pane geometry is exactly the previous

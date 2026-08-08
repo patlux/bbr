@@ -250,20 +250,47 @@ pub(crate) fn install_actions(
     ]);
 }
 
+/// The channels the production event pump drains.
+///
+/// Grouped rather than passed individually: every capability that reaches the
+/// app from a native delegate adds a receiver here, so an argument list would
+/// grow without bound and each addition would touch the same signature. The
+/// struct keeps the additions additive and names each source at the call site.
+#[cfg(not(feature = "testkit"))]
+pub(crate) struct EventPumpChannels {
+    pub(crate) events: Receiver<WebEvent>,
+    #[cfg(target_os = "macos")]
+    pub(crate) find: Receiver<bbr_web_macos::find_mapping::FindCompletion>,
+    #[cfg(target_os = "macos")]
+    pub(crate) downloads: Receiver<bbr_web::downloads::DownloadEvent>,
+    /// External-URL open deliveries (queue item 13): buffered URLs from the
+    /// AppKit delegate path, drained on the main thread into
+    /// `BbrApp::on_external_url`.
+    #[cfg(target_os = "macos")]
+    pub(crate) external_urls: Receiver<String>,
+    /// Classified web-error incidents from the native delegate's incident
+    /// sink, drained into `BbrApp::on_incident`.
+    #[cfg(target_os = "macos")]
+    pub(crate) incidents: Receiver<bbr_web_macos::error_mapping::ClassifiedIncident>,
+}
+
 /// Non-testkit builds still need the event pump to keep the shell live.
 #[cfg(not(feature = "testkit"))]
 pub(crate) fn spawn_event_pump(
     cx: &App,
     window: &gpui::WindowHandle<gpui_component::Root>,
     app: &Entity<BbrApp>,
-    evt_rx: Receiver<WebEvent>,
-    #[cfg(target_os = "macos")] find_rx: Receiver<bbr_web_macos::find_mapping::FindCompletion>,
-    #[cfg(target_os = "macos")] downloads_rx: Receiver<bbr_web::downloads::DownloadEvent>,
-    // External-URL open deliveries (queue item 13): buffered URLs from the
-    // AppKit delegate path, drained on the main thread into
-    // `BbrApp::on_external_url` (the production, non-testkit pump).
-    #[cfg(target_os = "macos")] external_url_rx: Receiver<String>,
+    channels: EventPumpChannels,
 ) {
+    let evt_rx = channels.events;
+    #[cfg(target_os = "macos")]
+    let find_rx = channels.find;
+    #[cfg(target_os = "macos")]
+    let downloads_rx = channels.downloads;
+    #[cfg(target_os = "macos")]
+    let external_url_rx = channels.external_urls;
+    #[cfg(target_os = "macos")]
+    let incidents_rx = channels.incidents;
     let window = *window;
     let app = app.clone();
     cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
@@ -275,22 +302,32 @@ pub(crate) fn spawn_event_pump(
             Download(Result<bbr_web::downloads::DownloadEvent, smol::channel::RecvError>),
             #[cfg(target_os = "macos")]
             ExternalUrl(Result<String, smol::channel::RecvError>),
+            #[cfg(target_os = "macos")]
+            Incident(
+                Result<bbr_web_macos::error_mapping::ClassifiedIncident, smol::channel::RecvError>,
+            ),
         }
         let incoming = smol::future::race(
             async { Incoming::Event(evt_rx.recv().await) },
             smol::future::race(
-                #[cfg(target_os = "macos")]
-                async {
-                    Incoming::Find(find_rx.recv().await)
-                },
                 smol::future::race(
+                    #[cfg(target_os = "macos")]
+                    async {
+                        Incoming::Find(find_rx.recv().await)
+                    },
                     #[cfg(target_os = "macos")]
                     async {
                         Incoming::Download(downloads_rx.recv().await)
                     },
+                ),
+                smol::future::race(
                     #[cfg(target_os = "macos")]
                     async {
                         Incoming::ExternalUrl(external_url_rx.recv().await)
+                    },
+                    #[cfg(target_os = "macos")]
+                    async {
+                        Incoming::Incident(incidents_rx.recv().await)
                     },
                 ),
             ),
@@ -332,11 +369,23 @@ pub(crate) fn spawn_event_pump(
                     });
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::Incident(Ok(incident)) => {
+                // Classified web-error incidents from the native delegate's
+                // incident sink: the same main-thread app update path as
+                // engine/find/downloads events.
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_incident(incident, cx)
+                    });
+                });
+            }
             Incoming::Event(Err(_)) => break,
             #[cfg(target_os = "macos")]
-            Incoming::Find(Err(_)) | Incoming::Download(Err(_)) | Incoming::ExternalUrl(Err(_)) => {
-                break
-            }
+            Incoming::Find(Err(_))
+            | Incoming::Download(Err(_))
+            | Incoming::ExternalUrl(Err(_))
+            | Incoming::Incident(Err(_)) => break,
         }
     })
     .detach();

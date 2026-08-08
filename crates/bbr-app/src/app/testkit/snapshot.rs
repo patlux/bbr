@@ -93,6 +93,7 @@ impl BbrApp {
         );
         let download_rows = self.download_rows_snapshot();
         let downloads = self.downloads_panel_snapshot();
+        let error_surface = self.error_surface_snapshot();
         let semantics = self.semantic_snapshot(
             &browser,
             &rows,
@@ -125,6 +126,12 @@ impl BbrApp {
                 &self.command_ranking.results,
             )
         };
+        // The error-surface id branch mirrors the render (task packet
+        // `error-surface-contract`): the surface replaces the active view's
+        // native slot, so the slot ids are not advertised while it shows.
+        let error_surface_visible = error_surface.visible;
+        let error_surface_origin = error_surface.origin.is_some();
+
         TestSnapshot {
             url: browser.nav.url.clone(),
             title: browser.nav.title.clone(),
@@ -256,6 +263,8 @@ impl BbrApp {
                         .downloads
                         .window_for(self.downloads.render_state.scroll_anchor),
                     downloads_layout: self.downloads_layout(),
+                    error_surface_visible,
+                    error_surface_origin,
                 },
             ),
             semantics,
@@ -324,6 +333,45 @@ impl BbrApp {
                 }),
             #[cfg(not(all(target_os = "macos", feature = "testkit")))]
             web_content_probe: None,
+            error_surface,
+        }
+    }
+
+    /// The §11.8-style error-surface presentation (task packet
+    /// `error-surface-contract`): the classified incident the content area
+    /// renders for the active view, derived from the same presentation
+    /// state the render consumes (the render excludes the process-crash
+    /// class — the DESIGN §11.8 crash panel is its surface). The empty
+    /// default means no error surface is shown.
+    fn error_surface_snapshot(&self) -> bbr_testkit::protocol::ErrorSurfaceSnapshot {
+        let Some(view) = self.controller.snapshot().active_view else {
+            return bbr_testkit::protocol::ErrorSurfaceSnapshot::default();
+        };
+        let Some(spec) = self.error_surface.spec_for(view) else {
+            return bbr_testkit::protocol::ErrorSurfaceSnapshot::default();
+        };
+        if spec.incident.reason.category() == bbr_web::web_errors::IncidentCategory::ProcessCrash {
+            return bbr_testkit::protocol::ErrorSurfaceSnapshot::default();
+        }
+        use bbr_testkit::protocol::ErrorSurfaceCategory;
+        bbr_testkit::protocol::ErrorSurfaceSnapshot {
+            visible: true,
+            view: Some(view),
+            category: Some(match spec.incident.reason.category() {
+                bbr_web::web_errors::IncidentCategory::Tls => ErrorSurfaceCategory::Tls,
+                bbr_web::web_errors::IncidentCategory::Navigation => {
+                    ErrorSurfaceCategory::Navigation
+                }
+                bbr_web::web_errors::IncidentCategory::Offline => ErrorSurfaceCategory::Offline,
+                bbr_web::web_errors::IncidentCategory::ProcessCrash => {
+                    unreachable!("the crash class is presented by the §11.8 crash panel")
+                }
+            }),
+            reason: Some(spec.incident.reason.to_string()),
+            origin: spec.origin.clone(),
+            title: Some(spec.title.to_string()),
+            action: Some(spec.action_label.to_string()),
+            lifecycle: Some(spec.state.to_string()),
         }
     }
 
@@ -518,7 +566,18 @@ impl BbrApp {
                 .into_iter()
                 .flat_map(|group| group.rows.into_iter())
                 .collect();
-        let content = if browser.active_view.is_some() {
+        // The content branch mirrors the render exactly: the §11.8-style
+        // error surface (task packet `error-surface-contract`) wins over
+        // the native slot, the crash panel wins over the empty pane.
+        let content = if let Some(spec) = self.active_error_surface_spec() {
+            crate::shell::semantics::SemanticContent::Error {
+                title: spec.title.to_string(),
+                origin: spec.origin.clone(),
+                copy: spec.copy.to_string(),
+                action: spec.action_label.to_string(),
+                dismiss: spec.dismiss_label.to_string(),
+            }
+        } else if browser.active_view.is_some() {
             crate::shell::semantics::SemanticContent::Native
         } else if browser
             .active_index

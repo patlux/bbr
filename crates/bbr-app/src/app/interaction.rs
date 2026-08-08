@@ -109,6 +109,16 @@ impl BbrApp {
             if self.find.state.open && self.find.bound_view == Some(*view) {
                 self.find_navigation_invalidated(cx);
             }
+            // A recovery in flight for the view completes when the retried
+            // navigation starts: the incident lifecycle moves to Recovered,
+            // the surface clears, and the native view we hid is restored
+            // (identity untouched). If the retry fails again, the adapter
+            // reports a fresh incident that supersedes this one.
+            if let Some(action) = self.error_surface.recovery_in_flight(*view) {
+                if self.error_surface.recovered(*view, action) {
+                    self.sync_error_surface_visibility();
+                }
+            }
         }
         let _ = self.controller.apply_event(event.clone());
         if !self.command_bar_mode.is_active() {
