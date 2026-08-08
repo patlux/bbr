@@ -16,6 +16,8 @@ pub struct TestSnapshot {
     pub can_go_back: bool,
     pub can_go_forward: bool,
     pub web_view_hosted: bool,
+    /// Native dark cover over WebKit's provisional-navigation plane.
+    pub navigation_cover_visible: bool,
     pub active_profile: bbr_web::ProfileId,
     pub active_profile_title: Option<String>,
     /// The active profile's identity hue name (DESIGN.md §12).

@@ -15,6 +15,7 @@ use std::rc::Rc;
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
 use objc2::{define_class, msg_send, ClassType, DefinedClass, MainThreadMarker, MainThreadOnly};
+use objc2_app_kit::NSView;
 use objc2_foundation::{
     NSKeyValueObservingOptions, NSObject, NSObjectNSKeyValueObserverRegistration, NSObjectProtocol,
     NSString, NSURL,
@@ -94,6 +95,8 @@ pub(crate) struct WebViewDelegateIvars {
     pub(crate) sink: EventSink,
     /// Shared with the engine; updated by `set_incidents`.
     pub(crate) incident_sink: IncidentSink,
+    /// Native loading cover above this view's WebKit plane.
+    pub(crate) navigation_cover: Retained<NSView>,
 }
 
 define_class!(
@@ -134,6 +137,7 @@ define_class!(
             web_view: &WKWebView,
             _navigation: Option<&WKNavigation>,
         ) {
+            self.ivars().navigation_cover.setHidden(false);
             self.emit_loading(true);
             self.emit_state(web_view);
         }
@@ -145,6 +149,7 @@ define_class!(
 
         #[unsafe(method(webView:didFinishNavigation:))]
         fn did_finish_navigation(&self, web_view: &WKWebView, _navigation: Option<&WKNavigation>) {
+            self.ivars().navigation_cover.setHidden(true);
             self.emit_loading(false);
             self.emit_state(web_view);
         }
@@ -156,6 +161,7 @@ define_class!(
             _navigation: Option<&WKNavigation>,
             error: &objc2_foundation::NSError,
         ) {
+            self.ivars().navigation_cover.setHidden(true);
             self.emit_loading(false);
             self.emit(WebEvent::NavigationFailed(
                 self.id(),
@@ -171,6 +177,7 @@ define_class!(
             _navigation: Option<&WKNavigation>,
             error: &objc2_foundation::NSError,
         ) {
+            self.ivars().navigation_cover.setHidden(true);
             self.emit_loading(false);
             self.emit(WebEvent::NavigationFailed(
                 self.id(),
@@ -181,6 +188,7 @@ define_class!(
 
         #[unsafe(method(webViewWebContentProcessDidTerminate:))]
         fn web_content_process_did_terminate(&self, _web_view: &WKWebView) {
+            self.ivars().navigation_cover.setHidden(true);
             self.emit(WebEvent::PageCrashed(self.id()));
             // The renderer-termination path is classified too: the contract's
             // only class for a dead web process is `ProcessCrash`, and the
@@ -221,12 +229,14 @@ impl WebViewDelegate {
         profile: ProfileId,
         sink: EventSink,
         incident_sink: IncidentSink,
+        navigation_cover: Retained<NSView>,
     ) -> Retained<Self> {
         let this = Self::alloc(mtm).set_ivars(WebViewDelegateIvars {
             web_view_id,
             profile,
             sink,
             incident_sink,
+            navigation_cover,
         });
         // SAFETY: `init` is the NSObject initializer; we are on the main thread.
         unsafe { msg_send![super(this), init] }

@@ -163,6 +163,11 @@ impl BbrApp {
                 chip_tint: crate::theme::hex(tint.chip_active),
             })
         };
+        let navigation_cover_visible = browser.active_view.is_some_and(|view| {
+            self.find_engine
+                .as_ref()
+                .is_some_and(|engine| engine.borrow().navigation_cover_visible(view))
+        });
 
         TestSnapshot {
             url: browser.nav.url.clone(),
@@ -171,6 +176,7 @@ impl BbrApp {
             can_go_back: browser.nav.can_go_back,
             can_go_forward: browser.nav.can_go_forward,
             web_view_hosted: browser.web_view_hosted,
+            navigation_cover_visible,
             active_profile: browser.active_profile,
             active_profile_title: browser.active_profile_title.clone(),
             active_profile_hue: browser.active_profile_hue.map(|hue| hue.name().to_string()),

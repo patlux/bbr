@@ -12,7 +12,7 @@ use std::rc::Rc;
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2::{AnyThread, ClassType, MainThreadMarker, MainThreadOnly};
-use objc2_app_kit::NSColor;
+use objc2_app_kit::{NSColor, NSView};
 use objc2_foundation::{NSString, NSURLRequest, NSURL, NSUUID};
 use objc2_web_kit::{WKWebView, WKWebViewConfiguration, WKWebsiteDataStore};
 
@@ -21,6 +21,7 @@ use bbr_web::{ProfileId, WebAction, WebEngine, WebEvent, WebRect, WebViewId};
 use crate::delegate::{self, WebViewDelegate};
 use crate::error_mapping::ClassifiedIncident;
 use crate::host::HostBridge;
+use crate::navigation_cover::NavigationCover;
 
 const DARK_BLANK_PAGE: &str = r#"<!doctype html>
 <html style="color-scheme: dark; background: #151719">
@@ -40,6 +41,8 @@ pub struct EngineOptions {
 struct NativeWebSession {
     profile: ProfileId,
     web_view: Retained<WKWebView>,
+    /// Dark sibling view masking WebKit's white provisional-navigation plane.
+    navigation_cover: Retained<NSView>,
     /// WebKit does not retain navigation/UI delegates.
     delegate: Retained<WebViewDelegate>,
     visible: bool,
@@ -51,6 +54,7 @@ impl NativeWebSession {
         unsafe {
             delegate::unobserve_title(&self.web_view, self.delegate.as_super());
         }
+        self.navigation_cover.removeFromSuperview();
         self.web_view.removeFromSuperview();
     }
 }
@@ -118,6 +122,15 @@ impl WebEngineWk {
     /// Profile identity of a live session (native integration diagnostics).
     pub fn session_profile(&self, id: WebViewId) -> Option<ProfileId> {
         self.sessions.get(&id).map(|session| session.profile)
+    }
+
+    /// Whether the dark native cover is currently masking WebKit's
+    /// provisional-navigation plane for `id`.
+    pub fn navigation_cover_visible(&self, id: WebViewId) -> bool {
+        self.assert_main_thread();
+        self.sessions
+            .get(&id)
+            .is_some_and(|session| !session.navigation_cover.isHidden())
     }
 
     /// A retained clone of the live `WKWebView` for `id` — the find
@@ -291,6 +304,7 @@ impl WebEngine for WebEngineWk {
         self.geometry.insert(id, rect);
         if let Some(session) = self.sessions.get_mut(&id) {
             session.web_view.setFrame(frame);
+            session.navigation_cover.setFrame(frame);
         }
     }
 
@@ -324,12 +338,15 @@ impl WebEngine for WebEngineWk {
         unsafe {
             web_view.setUnderPageBackgroundColor(Some(&under_page_background));
         }
+        let navigation_cover: Retained<NSView> =
+            NavigationCover::new(mtm, self.initial_frame()).into_super();
         let delegate = WebViewDelegate::new(
             mtm,
             id,
             profile,
             self.sink.clone(),
             self.incident_sink.clone(),
+            navigation_cover.clone(),
         );
         unsafe {
             web_view.setNavigationDelegate(Some(ProtocolObject::from_ref(&*delegate)));
@@ -337,8 +354,10 @@ impl WebEngine for WebEngineWk {
             delegate::observe_title(&web_view, delegate.as_super());
         }
         web_view.setHidden(true);
+        navigation_cover.setHidden(true);
         if let Some(root) = self.host.root_view() {
             root.addSubview(&web_view);
+            root.addSubview(&navigation_cover);
         }
         if !initial_url.is_empty() {
             Self::load_url(&web_view, initial_url);
@@ -348,6 +367,7 @@ impl WebEngine for WebEngineWk {
             NativeWebSession {
                 profile,
                 web_view: web_view.clone(),
+                navigation_cover,
                 delegate,
                 visible: false,
             },
@@ -378,6 +398,9 @@ impl WebEngine for WebEngineWk {
             return;
         };
         session.web_view.setHidden(!visible);
+        session
+            .navigation_cover
+            .setHidden(!visible || !unsafe { session.web_view.isLoading() });
         session.visible = visible;
         if !visible {
             let mtm = MainThreadMarker::new().expect("main thread");
@@ -408,6 +431,9 @@ impl WebEngine for WebEngineWk {
             },
             WebAction::Stop => unsafe {
                 web_view.stopLoading();
+                if let Some(session) = self.sessions.get(&id) {
+                    session.navigation_cover.setHidden(true);
+                }
                 self.emit_state(id);
             },
             // The BBR context menu's Copy Link entry: the engine owns the

@@ -72,6 +72,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             can_go_back: self.can_go_back,
             can_go_forward: self.can_go_forward,
             web_view_hosted: self.web_view_hosted,
+            navigation_cover_visible: self.navigation_cover_visible,
             active_profile: self.active_profile,
             active_profile_title: self.active_profile_title.clone(),
             active_profile_hue: self.active_profile_hue.clone(),
