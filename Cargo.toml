@@ -12,6 +12,7 @@ members = [
     "crates/bbr-command",
     "crates/bbr-persistence",
     "crates/bbr-split",
+    "crates/bbr-gallery",
 ]
 
 [workspace.package]

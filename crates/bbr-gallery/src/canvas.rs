@@ -1,0 +1,82 @@
+//! The gallery canvas surface (packet `component-gallery-mvp.md`): renders
+//! the selected story with the resolved theme (mode/contrast/density) and
+//! the story's own state. The canvas is the semantic root of the story
+//! (`bbr-gallery-canvas`, `bbr-gallery-canvas-story-<id>`); the E2E asserts
+//! the §15 mode fields through the app snapshot, never pixels.
+
+use bbr_ui::theme::Theme;
+use gpui::{div, prelude::*, AnyElement, SharedString};
+
+use crate::registry::{CatalogRegistry, ControlsStory, StoryContext, StoryId};
+
+/// Everything the canvas needs to render the selected story.
+pub struct CanvasModel<'a> {
+    pub registry: &'a CatalogRegistry,
+    pub selected: StoryId,
+    pub theme: &'a Theme,
+    pub reduced_motion: bool,
+    pub story_state: &'a str,
+    /// The Core Controls context (`Some` only when a Core Controls story is
+    /// selected) — see [`ControlsStory`].
+    pub controls: Option<ControlsStory<'a>>,
+}
+
+/// The canvas surface: a header (story label + state) above the story.
+pub fn canvas_surface(model: CanvasModel) -> AnyElement {
+    let story = model
+        .registry
+        .story(model.selected)
+        .expect("selected story is registered");
+    let context = StoryContext {
+        theme: model.theme,
+        reduced_motion: model.reduced_motion,
+        state: model.story_state,
+        controls: model.controls,
+    };
+    let content = (story.render)(&context);
+    div()
+        .id("bbr-gallery-canvas")
+        .flex()
+        .flex_col()
+        .size_full()
+        .bg(model.theme.palette.surface_canvas)
+        .child(
+            div()
+                .flex()
+                .flex_row()
+                .items_center()
+                .justify_between()
+                .px_3()
+                .py_2()
+                .border_b_1()
+                .border_color(model.theme.palette.hairline)
+                .child(
+                    div()
+                        .text_size(model.theme.type_.title.size)
+                        .font_weight(model.theme.type_.title.weight)
+                        .text_color(model.theme.palette.ink)
+                        .child(story.label),
+                )
+                .child(
+                    div()
+                        .text_size(model.theme.type_.meta.size)
+                        .text_color(model.theme.palette.ink_faint)
+                        .child(SharedString::from(format!(
+                            "story {} · state {}",
+                            story.id.0, model.story_state
+                        ))),
+                ),
+        )
+        .child(
+            div()
+                .id(SharedString::from(format!(
+                    "bbr-gallery-canvas-story-{}",
+                    story.id.0
+                )))
+                .flex()
+                .flex_1()
+                .size_full()
+                .child(content),
+        )
+        .into_any()
+}
