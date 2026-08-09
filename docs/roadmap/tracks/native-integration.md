@@ -28,7 +28,8 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 
 - [x] Multi-WebView session registry.
 - [x] Deterministic persistent ProfileId → WKWebsiteDataStore mapping.
-- [ ] Popup/new-window policy, including transient native sessions for [Link Preview / Peek](../tasks/link-preview-peek.md). *(Phase 8)*
+- [ ] Popup/new-window policy, including transient native sessions for [Link Preview / Peek](../tasks/link-preview-peek.md). Requests resolved to regular tabs establish the opener provenance used by [web-content navigation gestures](../tasks/web-content-navigation-gestures.md). *(Phase 8)*
+- [ ] Public-API web-content horizontal Back/Forward gesture routing, isolated from sidebar space swipe and chrome/Portal hit testing, through the bounded [navigation gesture/opener-return packet](../tasks/web-content-navigation-gestures.md). *(Phase 8)*
 - [x] Complete the [find-in-page WebKit adapter and Portal bar](../tasks/find-in-page-portal-bar.md). *(Phase 8; real-app and performance evidence in the packet.)*
 - [x] Route [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md) without replacing WebKit-owned page menus. *(Integrated at `1d35693`; richer Page-background actions remain a separate follow-up.)*
 - [x] Complete the [downloads adapter and sidebar panel](../tasks/downloads-sidebar-panel.md). *(Phase 8; terminal-history follow-up integrated at `cd1bc65`.)*

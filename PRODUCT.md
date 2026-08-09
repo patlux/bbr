@@ -53,7 +53,10 @@ Detailed, canonical behavior for tab selection, close/reopen, spaces, splits,
 keyboard focus, and unresolved UX decisions lives in
 [docs/product/browser-interactions.md](docs/product/browser-interactions.md).
 Implementation and UI changes must preserve that contract or update it
-explicitly together with tests.
+explicitly together with tests. The cross-phase inventory of ordinary browser
+muscle-memory and reliability gaps lives in
+[docs/product/daily-driver-capability-inventory.md](docs/product/daily-driver-capability-inventory.md);
+each concrete capability still requires one bounded canonical task packet.
 
 ## Performance Contract
 

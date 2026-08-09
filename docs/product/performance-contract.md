@@ -45,6 +45,11 @@ allowed distribution before the test fails.
 | Reopen a closed tab → fresh native session presented with preserved identity | ≤ 100 ms | p95 ≤ 100 ms; max ≤ 150 ms |
 | Open, close, or toggle the sidebar → chrome and native content geometry committed | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Focus a tab/split pane or route a browser command to the active target | next display frame when visual | p95 ≤ 50 ms; max ≤ 100 ms |
+| Commit web-content Back/Forward gesture → correct history state presented | next display frame after native commit | p95 ≤ 50 ms; max ≤ 100 ms |
+| Commit Back at a regular child tab's root → child closed and exact warm opener presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
+| Eligible new-window request → Peek's fresh native preview presented above the origin | ≤ 100 ms | p95 ≤ 100 ms; max ≤ 150 ms |
+| Dismiss Peek → exact warm origin presented/focused | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
+| Promote Peek → same preview session presented as a regular tab without reload | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 
 Budgets cover the production mutation path, render/layout work, native-view
 visibility or geometry updates, and presentation-commit observation. Testkit
@@ -101,7 +106,10 @@ group. This includes, as capabilities land:
 - command-bar activation, first result, filtering, and activation;
 - split creation, pane focus, divider movement, and split close;
 - session suspend, resume, discard recovery, and persistence restoration;
-- window creation and restoration.
+- window creation and restoration;
+- web-content Back/Forward gesture commit and child-tab Back-at-root opener
+  return, distinct from sidebar space swipe and ordinary tab close;
+- Peek request-to-present, dismiss-to-origin, and no-reload promotion-to-tab.
 
 A fast but incorrect transition fails. Benchmarks must assert the selected tab,
 visible native session, sidebar state, focus target, and final geometry before

@@ -4,15 +4,32 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [Native integration track](../tracks/native-integration.md) ·
 [UI design-system track](../tracks/ui-design-system.md) ·
 [Accessibility track](../tracks/accessibility.md) ·
-[Testing track](../tracks/testing.md)
+[Testing track](../tracks/testing.md) ·
+[browser interaction contract](../../product/browser-interactions.md) ·
+[daily-driver capability inventory](../../product/daily-driver-capability-inventory.md).
 
-## Objective
+Status: **planned for the first feature-complete MVP.** Peek is a standalone
+Delivery lane after one accepted typed new-window request/disposition seam. It
+may proceed independently of regular-child navigation gestures only after that
+shared contract lands; it never duplicates regular-tab opener provenance.
+
+## Outcome
 
 Open eligible link-created windows in a temporary, focused preview above the
 current page instead of immediately adding a regular tab. The originating tab
 and its native session stay intact underneath. The user can dismiss the preview
 without changing tab state or promote it to a regular tab without reloading or
 losing the preview's navigation state.
+
+## Scope
+
+- Define one portable Peek disposition and transient preview lifecycle after the
+  shared typed new-window request/disposition seam is integrated.
+- Add controller/native/app composition for source-profile-isolated temporary
+  sessions, exact focus restoration, and same-session promotion.
+- Add the required production UI, accessibility semantics, deterministic
+  fixtures, typed testkit evidence, real-app E2E, performance scenarios, Gallery
+  stories after production integration, and roadmap/architecture truth.
 
 ## Product behavior
 
@@ -38,10 +55,40 @@ losing the preview's navigation state.
       inside Peek replaces or navigates the existing preview according to the
       documented policy rather than stacking unbounded previews.
 
+## Delivery dependency and lane contract
+
+```text
+Base commit:          fresh verified integrated checkpoint chosen by the
+                      delivery orchestrator
+Depends on:           one accepted typed new-window request/disposition seam;
+                      native transient-session/z-order APIs; free controller,
+                      app, testkit, Portal/window, and bbr-ui ownership
+Provides/API:         portable Peek disposition/lifecycle; transient preview
+                      identity/session; dismiss and no-reload promotion
+Exclusive paths:      focused Peek policy/controller/native/UI/E2E/perf modules
+Shared integration points: bbr-web request/event contract, controller facade,
+                      macOS WKUIDelegate/session registry, native z-order,
+                      bbr-app focus/composition, testkit protocol, justfile,
+                      canonical E2E/performance registries, Gallery/roadmap
+Integration order:    serial new-window request/disposition seam → Peek and N1
+                      may proceed in isolated lanes → production Gallery stories
+```
+
+No concurrent writer may own new-window disposition, transient native-session
+adoption, the same native z-order/composition surface, or the same testkit and
+performance registry entries. The
+[web-content gesture/opener-return packet](web-content-navigation-gestures.md)
+owns only regular-tab provenance and Back-at-root behavior after disposition;
+Peek owns transient preview policy/lifecycle.
+
 ## Eligibility and safety policy
 
 - [ ] Add a typed portable new-window request containing source tab/session,
       target URL, disposition, user-gesture state, and relevant WebKit metadata.
+      When policy resolves the request to a regular tab, this same authority
+      establishes the session-local child→opener provenance consumed by the
+      [web-content Back-at-root contract](web-content-navigation-gestures.md);
+      the gesture layer never independently interprets WebKit popup metadata.
 - [ ] Keep policy decisions outside the macOS delegate: the adapter reports the
       request, while portable orchestration chooses Peek, regular tab, external
       handling, or rejection.
@@ -51,9 +98,24 @@ losing the preview's navigation state.
       permission flows, or explicitly sized/tool-style popups into Peek unless a
       later documented policy marks them safe.
 - [ ] Preserve WebKit opener/security semantics deliberately; do not expose a
-      stronger opener relationship than an ordinary browser-created tab would.
+      stronger JavaScript opener relationship than an ordinary browser-created
+      tab would. BBR's internal `TabId` provenance is browser orchestration data
+      for deterministic focus/close behavior, not page-script access.
 - [ ] Surface blocked or unsupported popup requests without silently losing the
       user's action.
+
+## Constraints
+
+- Peek owns transient preview policy/lifecycle only; it does not duplicate the
+  shared new-window disposition seam or N1's regular-tab opener provenance and
+  Back-at-root behavior.
+- Preserve source-profile isolation, the exact warm origin session, one preview
+  per pane, native webpage rendering, public platform APIs, and deterministic
+  focus/session teardown.
+- No private SPI, global event tap, screenshot/texture-composed webpage, second
+  navigation authority, or synchronous persistence in render/ranking paths.
+- Keep files below roughly 500 lines and do not weaken tests, semantic guards,
+  budgets, sample counts, deadlines, or canonical GUI serialization.
 
 ## Architecture and lifecycle
 
@@ -89,7 +151,7 @@ losing the preview's navigation state.
 - [ ] Make every pointer action keyboard-operable; document shortcuts and avoid
       conflicts with page-reserved key handling.
 
-## Automated evidence
+## Evidence
 
 - [ ] Portable controller tests cover request policy, transient identity,
       command routing, replacement, dismissal, promotion, origin removal, and
@@ -107,9 +169,61 @@ losing the preview's navigation state.
 - [ ] Add a bounded `just e2e-peek` suite and include it in canonical sequential
       `just e2e` once stable; GUI suites remain sequential.
 - [ ] Extend performance E2E with request-to-present, dismiss-to-origin-present,
-      and promotion-to-tab-present milestones.
-- [ ] Run `just verify`, `just e2e-peek`, all affected suites, and canonical
-      sequential `just e2e` before checking this task complete.
+      and promotion-to-tab-present milestones. Request-to-present is a fresh
+      native-session class (p95 ≤ 100 ms; max ≤ 150 ms); dismissal back to the
+      warm origin and no-reload promotion use the warm interaction ceiling
+      (p95 ≤ 50 ms; max ≤ 100 ms), with at least 30 accepted samples each in
+      the full gate and typed fast-but-wrong guards.
+- [ ] Run `just verify`, `just e2e-peek`, all affected suites, optimized
+      performance, and canonical sequential `just e2e` before checking this
+      task complete.
+
+## Iteration policy
+
+Start with one eligible user-originated request, one source pane, and a fresh
+source-profile preview that can dismiss back to the exact warm origin. Add
+same-session promotion only after that end-to-end path works, then exclusions,
+replacement, split/profile, crash/failure, accessibility, and performance
+matrices. After each failure, identify whether the cause is disposition,
+session ownership, native z-order, focus, teardown, or evidence before editing.
+Use targeted gates while iterating and run canonical sequential E2E once the
+complete slice is stable; do not broaden into N1 or unrelated Phase-8 work.
+
+## Blocked stop condition
+
+If public AppKit/WebKit APIs cannot provide deterministic transient-session
+z-order/adoption without reloading, crossing profiles, stealing origin input,
+or duplicating the new-window authority, stop with:
+
+- exact API/source and runtime evidence;
+- attempted public approaches and observed failure mode;
+- preserved worktree/branch/fingerprints and current owner;
+- affected contract/E2E/performance claims still open; and
+- the smallest serial platform, architecture, or product decision required.
+
+Do not fall back to private SPI, a global event tap, texture composition,
+reload-on-promotion disguised as adoption, or weaker assertions.
+
+## Completion gates
+
+```bash
+cargo fmt --all -- --check
+CARGO_BUILD_JOBS=4 cargo test -p bbr-browser
+CARGO_BUILD_JOBS=4 cargo test -p bbr-web
+CARGO_BUILD_JOBS=4 cargo test -p bbr-web-macos
+CARGO_BUILD_JOBS=4 cargo clippy -p bbr --features testkit --all-targets -- -D warnings
+nix develop -c just verify
+nix develop -c just e2e-smoke
+nix develop -c just e2e-tabs
+nix develop -c just e2e-profiles
+nix develop -c just e2e-shell-portal
+nix develop -c just e2e-peek
+nix develop -c just e2e-perf
+nix develop -c just e2e
+nix develop -c just roadmap
+```
+
+GUI/performance suites run sequentially under the repository GUI lock.
 
 ## Non-goals
 
@@ -119,3 +233,38 @@ losing the preview's navigation state.
   JavaScript utility windows with Peek.
 - Cross-profile preview-session transfer.
 - Pixel-composed webpage previews.
+
+## Delivery sequence
+
+1. Re-read Current delivery and settle the shared NW-SEAM plus exact ownership.
+2. Implement one source-pane preview path with portable policy and native
+   source-profile session creation.
+3. Prove dismissal, exact focus restoration, teardown, and origin warmth.
+4. Add same-session promotion, then exclusions/replacement and split/profile
+   matrices.
+5. Add real-app E2E, optimized performance, accessibility, and Gallery stories
+   only after production behavior is integrated.
+6. Run independent read-only review, bounded remediation only for concrete
+   findings, focused recheck, and orchestrator integration.
+
+## Delivery ledger
+
+```text
+Outcome:
+Commits:
+Functional evidence:
+Real-app E2E:
+Performance evidence:
+Roadmap/documentation updates:
+Open blockers and non-goals:
+Worktree state:
+
+Planning/read-only:
+Implementation:
+Test execution:
+Review:
+Remediation:
+Waiting/retries:
+Total elapsed:
+Human intervention:
+```

@@ -8,6 +8,12 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 
 ## Checklist
 
+- [ ] Close the ordinary-browser behavior gaps tracked in the
+  [daily-driver capability inventory](../../product/daily-driver-capability-inventory.md)
+  through bounded packets rather than a phase-wide implementation. First
+  canonical slice: [web-content Back/Forward gestures and child-tab opener
+  return](../tasks/web-content-navigation-gestures.md). New-window disposition,
+  background opening, and insertion policy remain separate explicit decisions.
 - [x] Deliver downloads destination, progress, history, reveal, retry, and failure UI through the bounded [downloads sidebar panel](../tasks/downloads-sidebar-panel.md) — including the settled post-MVP follow-up (terminal-history persistence, durable Clear/Delete, cancelled Restart, active-only badge).
 - [x] Deliver find in page with keyboard navigation and result count through the completed [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), including real WKWebView E2E and `find_open`/query/step performance evidence.
 - [x] Define the portable request/decision authority through the completed [permissions contract](../tasks/permissions-contract.md).
@@ -23,7 +29,7 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 - [ ] Native menus, Services, broader window lifecycle, and app updates. The BBR-owned/WebKit-owned context-menu boundary is integrated and its bounded [Page-background menu follow-up](../tasks/page-background-context-menu.md) remains dependency-gated; WebKit-native element menus remain untouched.
 - [ ] Define a public-API-only [portable media-session capability contract](../tasks/media-session-capability-contract.md), then deliver the capability-driven [sidebar media control](../tasks/sidebar-media-control.md); no SPI, inferred transport controls, or fake duration.
 - [ ] Define profile-isolated site keys, settings overrides, and zoom lifecycle through the bounded [per-site settings and zoom contract](../tasks/site-settings-zoom-contract.md), then integrate persistence, native zoom, and UI.
-- [ ] Implement popup/new-window policy and target-blank flows, including the dedicated [Link Preview / Peek](../tasks/link-preview-peek.md) lifecycle for eligible user-created links.
+- [ ] Implement popup/new-window policy and target-blank flows, including the dedicated [Link Preview / Peek](../tasks/link-preview-peek.md) lifecycle for eligible user-created links. Requests resolved to a regular tab establish the session-local opener provenance consumed by [web-content gesture Back-at-root return](../tasks/web-content-navigation-gestures.md); Peek/external/block/background policy remains owned here, not by the gesture layer.
 - [ ] Manual representative-site matrix: login, media, editors, conferencing, upload/download, payments, passkeys.
 - [ ] Harden all empty, loading, error, cancellation, and destructive states.
 - [ ] Harden the one-per-window native Portal lifecycle, focus, multi-window ownership, display geometry, and teardown through the bounded [Portal host hardening packet](../tasks/native-portal-hardening.md).

@@ -31,7 +31,10 @@ never duplicate address entry or invent a second navigation state.
   identical sidebar geometry authority as Cmd-B. Its glyph reflects collapsed
   versus expanded state.
 - Back/Forward/Reload target the selected tab in single-pane mode and the
-  focused pane in split mode using existing controller/navigation state.
+  focused pane in split mode using existing controller/navigation state. The
+  [web-content gesture packet](web-content-navigation-gestures.md) consumes the
+  same history availability/action authority; titlebar and gesture paths never
+  maintain separate navigation truth.
 - Use production `bbr-ui` geometric 18 pt glyphs, normal-density hit areas at
   least 32 pt, transparent rest state, DESIGN hover/pressed/disabled/focus
   tokens, and no bordered toolbar capsule.
@@ -49,7 +52,7 @@ never duplicate address entry or invent a second navigation state.
 - No copied Zen translucent slab, bordered toolbar pill, second address field,
   or duplicated controls inside the address display.
 - No new browser navigation authority, tab selection state, split focus state,
-  or sidebar width state in `bbr-ui`.
+  opener-return policy, or sidebar width state in `bbr-ui`.
 - No stop button or additional toolbar actions without a separate contract.
 - No window-management redesign or multi-window work.
 
@@ -66,7 +69,7 @@ Exclusive paths:      post-G1a bbr-ui titlebar/navigation modules; focused
 Shared integration points: app window options/composition, focus/input routing,
                       native safe-area geometry, testkit snapshot, perf and
                       Gallery G2/G3 registries, roadmap roll-ups
-Integration order:    F2c → F2b → fresh F2a → G1aa → this packet
+Integration order:    F2c → F2b → fresh F2a → G1a → this packet
 ```
 
 No concurrent writer may own titlebar/window composition, sidebar toggle

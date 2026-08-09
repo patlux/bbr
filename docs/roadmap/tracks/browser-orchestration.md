@@ -11,6 +11,10 @@ Own the portable boundary between persistent browser objects (`bbr-domain`) and 
 - [x] [BrowserController](../tasks/browser-controller.md)
 - [x] [Deterministic fake WebEngine](../tasks/fake-web-engine.md)
 
+## Planned task packets
+
+- [ ] [Web-content navigation gestures and opener return](../tasks/web-content-navigation-gestures.md) — one real history authority plus session-local child→opener provenance and atomic Back-at-root return.
+
 ## Durable checklist
 
 - [x] Every live `TabId` maps to exactly one `WebViewId`.
@@ -21,6 +25,11 @@ Own the portable boundary between persistent browser objects (`bbr-domain`) and 
 - [x] Same-profile moves preserve sessions.
 - [x] Cross-profile moves destroy and recreate sessions in the destination store.
 - [x] Commands target the active tab or focused pane explicitly.
+- [ ] A web-content Back/Forward gesture targets the exact native pane without
+      colliding with sidebar space swipe or chrome/Portal hit testing.
+- [ ] A regular link-created child records exact session-local opener `TabId`
+      provenance; Back at settled history root closes only that child and
+      activates the surviving opener atomically.
 - [x] WebEvents update the owning tab and navigation state deterministically.
 - [x] Unknown/stale WebEvents are reported without corrupting state.
 - [x] Controller operations expose typed outcomes suitable for UI and E2E events.

@@ -79,6 +79,9 @@ into a duplicate execution queue:
   → [Gallery MVP](docs/roadmap/tasks/component-gallery-mvp.md)
   → [browser components](docs/roadmap/tasks/component-gallery-browser-components.md)
   → [compositions](docs/roadmap/tasks/component-gallery-compositions.md)
+- **Daily-driver browser essentials:** [capability inventory](docs/product/daily-driver-capability-inventory.md)
+  → [web-content navigation gestures](docs/roadmap/tasks/web-content-navigation-gestures.md)
+  → [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md)
 - **Release:** [deterministic app packaging](docs/roadmap/tasks/macos-app-packaging.md)
   and [deterministic process shutdown](docs/roadmap/tasks/process-lifecycle-shutdown.md)
 

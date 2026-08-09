@@ -32,6 +32,10 @@ These concepts must not be conflated:
   command bar.
 - **Web-content focus** — keyboard focus is inside a native web view.
 - **Warm tab** — hidden tab retaining its live native web session.
+- **Opener tab** — the concrete existing `TabId` from whose web content a
+  user-originated new-window/link request created a regular child tab.
+- **Child tab** — a regular tab with session-local opener provenance. This is
+  not inferred from adjacency, URL, title, or navigation history.
 - **Activation** — selecting a tab or pane as the browser command target. It
   does not by itself define whether native keyboard focus moves to chrome or
   web content.
@@ -48,6 +52,26 @@ These concepts must not be conflated:
 - Opening a normal single-pane tab dissolves an existing split.
 - The new tab belongs to the active space and therefore uses that space's
   profile.
+
+### Link-created regular child tabs — Planned contract
+
+- The canonical popup/new-window policy first decides whether a user-originated
+  request becomes Peek, a regular tab, external handling, or rejection.
+- If it becomes a regular tab, the controller records a session-local relation
+  from the child `TabId` to the exact opener `TabId` and browser window.
+- The relation is identity-based and survives navigation, reload, reorder,
+  same-window moves, suspension, crash, and native-session recreation. Closing
+  either tab or ending the process invalidates it; v1 does not persist it.
+- Cmd-T, Saved Page activation, reopen, external URLs, and tabs without a
+  concrete source tab do not invent opener provenance.
+- Insertion position, background versus foreground opening, and modifier/middle-
+  click behavior remain explicit decisions below. The opener relation does not
+  settle them.
+
+Canonical implementation packet:
+[web-content navigation gestures and opener return](../roadmap/tasks/web-content-navigation-gestures.md).
+The request/disposition authority remains owned by
+[Link Preview / Peek](../roadmap/tasks/link-preview-peek.md).
 
 ### Select a tab — Contract
 
@@ -178,6 +202,48 @@ Additional rules:
 - Every pointer operation above has a keyboard equivalent: the row pin control
   ↔ `Cmd-Shift-P`, drag reorder ↔ `Cmd-Shift-↑/↓`, drag-into-space ↔ staged
   `Cmd-Shift-M` + Enter.
+
+## Web-content navigation gestures — Planned contract
+
+### History Back/Forward
+
+- A horizontal trackpad gesture beginning over native web content targets the
+  exact pane under the pointer. A gesture over the sidebar remains the existing
+  space swipe; chrome, Portal, palette, find, and menus keep their own input.
+- The macOS adapter normalizes raw platform direction into logical Back or
+  Forward. Portable code receives no device-specific deltas.
+- A committed Back/Forward gesture dispatches exactly once through the same
+  navigation authority as titlebar controls and shortcuts. Before the threshold,
+  on cancel, under vertical dominance, or at an unavailable boundary, it commits
+  nothing.
+- Back/Forward state comes from the real bound WebKit session. GPUI and the
+  gesture layer own no second history-state copy.
+- In split mode the gesture targets only its pane and follows the existing
+  focused-pane command contract.
+
+### Back at a child tab's root
+
+When a committed Back gesture targets a regular child tab whose real session
+cannot go back, BBR closes the child and returns to its opener only if the
+initial document is settled and the exact session-local opener `TabId` still
+exists in the same browser window.
+
+- Closing uses the normal tab/session teardown and recently-closed authority.
+- The exact opener is activated by identity at its current Space/Profile; a
+  warm session is reused and a suspended/discarded one is recreated only under
+  existing lifecycle policy.
+- The opener receives native web focus. In split mode closing the child
+  dissolves the split under the existing close contract before presenting the
+  opener.
+- If the child has older page history, ordinary Back navigation happens first;
+  only a later Back at root may return.
+- No opener, stale opener, provisional load, cancelled gesture, or unavailable
+  history is a no-op. An unrelated root tab is never closed.
+- This gesture-specific opener return does not alter ordinary Cmd-W/close-button
+  neighbor selection.
+
+Canonical packet:
+[web-content navigation gestures and opener return](../roadmap/tasks/web-content-navigation-gestures.md).
 
 ## Spaces and profiles
 
@@ -493,8 +559,11 @@ These items require explicit product decisions before their affected UI ships:
    user-facing command should also search across spaces or windows.
 6. **Bulk close commands:** close other tabs, tabs above/below, tabs to an edge,
    and whether pinned tabs are protected.
-7. **Opener relationships:** whether child tabs return focus to their opener
-   when closed.
+7. ~~**Opener relationships**~~ **Resolved for explicit Back-at-root gesture
+   return:** a regular child tab records session-local `TabId` provenance and a
+   committed Back gesture at its settled history root closes it atomically and
+   activates the surviving opener. Ordinary close remains visual-neighbor based;
+   insertion/background policy remains open in items 1 and 3.
 8. **Cross-space activation:** whether moving the active tab selects the source
    neighbor, follows the moved tab into the destination, or varies by command.
 9. **Split close command:** distinguish “close pane layout” from “close the
