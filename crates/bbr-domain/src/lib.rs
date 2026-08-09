@@ -41,6 +41,7 @@ mod folders;
 mod invariants;
 mod lifecycle;
 mod model;
+mod saved_pages;
 mod space_appearance;
 mod split;
 
@@ -54,6 +55,8 @@ mod tests_folders;
 mod tests_layout;
 #[cfg(test)]
 mod tests_restore;
+#[cfg(test)]
+mod tests_saved_pages;
 
 pub use browser::Browser;
 pub use error::{DomainError, InvariantViolation};
@@ -62,6 +65,11 @@ pub use folders::{
 };
 pub use lifecycle::{LifecycleError, TabLifecycle};
 pub use model::{ClosedTab, Profile, ProfileHue, Space, Tab};
+pub use saved_pages::{
+    canonical_url, deterministic_order, validate_collection, BookmarkId, CanonicalUrl, Collection,
+    CollectionId, SavedPage, SavedPageError, MAX_CAPTURED_TITLE_LEN, MAX_COLLECTION_TITLE_LEN,
+    MAX_USER_LABEL_LEN,
+};
 pub use space_appearance::{
     AppearanceError, AppearanceInvariantViolation, BbrGlyph, IdentityKind, SpaceAppearance,
     SpaceAppearanceStore, SpaceEmoji, SpaceIdentity, SpaceTheme, ALLOWED_EMOJI,

@@ -7,6 +7,8 @@
 //! downloads shape) live in `repository_downloads.rs`; both targets share
 //! the narrowly scoped `support` module.
 
+#[path = "modules/contract_saved_pages.rs"]
+mod contract_saved_pages;
 mod support;
 
 use bbr_persistence::{
@@ -19,9 +21,9 @@ use bbr_persistence::{
 use support::{download_record, inventory, sample_snapshot, TempDb};
 
 #[test]
-fn first_run_creates_v2_store_then_round_trips() {
+fn first_run_creates_v3_store_then_round_trips() {
     // A fresh file and an empty stamp-0 database are indistinguishable
-    // first runs: both create the v2 schema, load as `Loaded`, and are
+    // first runs: both create the v3 schema, load as `Loaded`, and are
     // immediately writable.
     for db in [TempDb::new("first-run"), TempDb::from_fixture("schema_v0")] {
         let initial = db.repository().initialize_and_restore().unwrap();
@@ -31,68 +33,15 @@ fn first_run_creates_v2_store_then_round_trips() {
         let snapshot = sample_snapshot(3);
         let stats = db.repository().replace_snapshot(&snapshot).unwrap();
         assert_eq!(stats.committed_transactions, 1);
-        assert_eq!(stats.sql_statements, 20);
+        // Schema v3: eleven DELETE statements (the nine v2 tables plus
+        // saved_pages and collections) + 11 inserted rows.
+        assert_eq!(stats.sql_statements, 22);
         assert_eq!(stats.inserted_rows, 11);
         assert_eq!(
             db.repository().restore_read_only().unwrap().snapshot,
             snapshot
         );
     }
-}
-
-#[test]
-fn schema_v2_fixture_restores_without_writes() {
-    let db = TempDb::from_fixture("schema_v2");
-    let before = inventory(&db.0);
-    let outcome = db.repository().restore_read_only().unwrap();
-    assert_eq!(outcome.store, StoreLoad::Loaded);
-    assert!(outcome.warnings.is_empty());
-    let snapshot = outcome.snapshot;
-    assert_eq!(snapshot.profiles.len(), 1);
-    let space = &snapshot.profiles[0].spaces[0];
-    assert_eq!(space.tabs.len(), 2);
-    assert_eq!(space.tint, SpaceTint::Pine);
-    assert_eq!(space.glyph, SpaceGlyph::Emoji("🚀".into()));
-    assert_eq!(
-        snapshot.settings,
-        SearchSettings {
-            engine: SearchEngineId::Custom,
-            custom_template: Some("https://search.example.test/?q=%s".into()),
-        }
-    );
-    assert_eq!(
-        snapshot.downloads,
-        vec![
-            DownloadRecord {
-                url: "https://example.test/report.pdf".into(),
-                filename: "report.pdf".into(),
-                ..download_record(
-                    700,
-                    DownloadOutcome::Succeeded,
-                    4096,
-                    Some("/tmp/report.pdf"),
-                    1000
-                )
-            },
-            DownloadRecord {
-                url: "https://example.test/archive.zip".into(),
-                filename: "archive.zip".into(),
-                attempt: 2,
-                ..download_record(701, DownloadOutcome::Cancelled, 12, None, 2000)
-            },
-        ]
-    );
-    assert_eq!(
-        snapshot.command_history,
-        vec![CommandHistoryEntry {
-            id: 800,
-            title: "Example".into(),
-            url: "https://example.test/".into(),
-            visit_count: 3,
-            last_visited: 2000,
-        }]
-    );
-    assert_eq!(inventory(&db.0), before);
 }
 
 #[test]
@@ -105,7 +54,7 @@ fn mismatched_stamp_discards_and_is_immediately_rewritable() {
         db.repository().restore_read_only().unwrap_err(),
         PersistenceError::SchemaMismatch {
             found: 1,
-            supported: 2
+            supported: 3
         }
     );
     assert_eq!(inventory(&db.0), before);
@@ -143,8 +92,8 @@ fn newer_stamp_is_refused_read_only_and_discarded_on_write() {
     assert_eq!(
         db.repository().restore_read_only().unwrap_err(),
         PersistenceError::SchemaMismatch {
-            found: 3,
-            supported: 2
+            found: 4,
+            supported: 3
         }
     );
     assert_eq!(inventory(&db.0), before);
@@ -153,7 +102,7 @@ fn newer_stamp_is_refused_read_only_and_discarded_on_write() {
     assert_eq!(
         outcome.store,
         StoreLoad::Discarded {
-            reason: StoreDiscardReason::VersionMismatch { found: 3 }
+            reason: StoreDiscardReason::VersionMismatch { found: 4 }
         }
     );
 }
@@ -233,8 +182,8 @@ fn optional_corruption_projects_all_warnings_without_writes() {
 }
 
 #[test]
-fn v2_round_trip_preserves_every_new_field() {
-    let db = TempDb::new("v2-round-trip");
+fn v3_round_trip_preserves_every_new_field() {
+    let db = TempDb::new("v3-round-trip");
     let repository = db.repository();
     let snapshot = Snapshot {
         profiles: vec![
@@ -310,11 +259,15 @@ fn v2_round_trip_preserves_every_new_field() {
                 last_visited: 1500,
             },
         ],
+        // The global Saved Pages/collections round trip moved to
+        // `contract_saved_pages` with the other B1-owned contract tests.
+        collections: Vec::new(),
+        saved_pages: Vec::new(),
     };
     repository.replace_snapshot(&snapshot).unwrap();
     assert_eq!(repository.restore_read_only().unwrap().snapshot, snapshot);
     // And again after a discard: a store that was discarded and recreated
-    // empty is immediately writable with the full v2 shape.
+    // empty is immediately writable with the full v3 shape.
     let outcome = repository.initialize_and_restore().unwrap();
     assert_eq!(outcome.store, StoreLoad::Loaded);
     repository.replace_snapshot(&snapshot).unwrap();
@@ -460,6 +413,8 @@ fn all_six_profile_hues_round_trip_without_domain_dependency() {
             settings: SearchSettings::default(),
             downloads: Vec::new(),
             command_history: Vec::new(),
+            saved_pages: Vec::new(),
+            collections: Vec::new(),
         };
         repository.replace_snapshot(&snapshot).unwrap();
         let connection = rusqlite::Connection::open(&db.0).unwrap();
@@ -503,9 +458,10 @@ fn deterministic_write_counts_include_deletes_and_inserts() {
             first.deleted_rows,
             first.inserted_rows
         ),
-        // The first write also deletes the settings row that schema
-        // creation seeds (id 1, DuckDuckGo defaults).
-        (1, 20, 1, 11)
+        // Schema v3: eleven DELETE statements + the sample's 11 inserts on
+        // the first write (the settings row seeded by schema creation is
+        // also deleted), then the same 11 again on the second write.
+        (1, 22, 1, 11)
     );
     let second = repository.replace_snapshot(&snapshot).unwrap();
     assert_eq!(
@@ -515,7 +471,7 @@ fn deterministic_write_counts_include_deletes_and_inserts() {
             second.deleted_rows,
             second.inserted_rows
         ),
-        (1, 20, 11, 11)
+        (1, 22, 11, 11)
     );
 }
 

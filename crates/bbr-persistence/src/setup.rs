@@ -1,6 +1,6 @@
 //! Store lifecycle: the schema version stamp and discard-on-mismatch.
 //!
-//! Schema v2 has **no migrations and no backward compatibility** (product
+//! Schema v3 has **no migrations and no backward compatibility** (product
 //! decision 2026-08-08): the store carries the current schema version in
 //! `PRAGMA user_version`, and any store whose stamp or structure does not
 //! match the current schema is discarded and recreated empty. This is a
@@ -19,7 +19,7 @@ use crate::{schema, PersistenceError, StoreDiscardReason, StoreLoad};
 ///   and recreate, `Discarded { Corrupt }`;
 /// - stamp mismatch with existing data → discard and recreate, `Discarded`
 ///   with `Unstamped` or `VersionMismatch`;
-/// - stamp mismatch on a fresh empty database → create the v2 schema,
+/// - stamp mismatch on a fresh empty database → create creates the v3 schema,
 ///   `Loaded` (a genuine first run discards nothing).
 ///
 /// Every write path runs this before any read or write, so a discarded
@@ -52,12 +52,12 @@ pub(crate) fn prepare_store(connection: &mut Connection) -> Result<StoreLoad, Pe
     Ok(StoreLoad::Discarded { reason })
 }
 
-/// Creates the complete v2 schema and pins the version stamp in one
+/// Creates the complete v3 schema and pins the version stamp in one
 /// transaction. The DDL lives in `schema.rs` beside its validator.
 pub(crate) fn create_schema(connection: &mut Connection) -> Result<(), PersistenceError> {
     let transaction = connection.transaction().map_err(schema::storage)?;
     transaction
-        .execute_batch(schema::CREATE_SCHEMA_V2)
+        .execute_batch(schema::CREATE_SCHEMA_V3)
         .map_err(schema::storage)?;
     transaction
         .pragma_update(None, "user_version", schema::SCHEMA_VERSION)
@@ -69,7 +69,7 @@ pub(crate) fn create_schema(connection: &mut Connection) -> Result<(), Persisten
     }
 }
 
-/// Drops every user table and view, then recreates the v2 schema from
+/// Drops every user table and view, then recreates the v3 schema from
 /// scratch in one transaction. Used only to discard a store whose stamp or
 /// structure does not match the current schema.
 pub(crate) fn discard_and_recreate(connection: &mut Connection) -> Result<(), PersistenceError> {
@@ -103,7 +103,7 @@ pub(crate) fn discard_and_recreate(connection: &mut Connection) -> Result<(), Pe
             .map_err(schema::storage)?;
     }
     transaction
-        .execute_batch(schema::CREATE_SCHEMA_V2)
+        .execute_batch(schema::CREATE_SCHEMA_V3)
         .map_err(schema::storage)?;
     transaction
         .pragma_update(None, "user_version", schema::SCHEMA_VERSION)

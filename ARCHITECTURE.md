@@ -772,6 +772,60 @@ app owns no independent focused-pane state — the focused pane is the
 browser command target because it is the domain active tab's view. This is
 the serial composition surface the split-core lane consumes.
 
+## 9b. `bbr-persistence` — schema v3 global Saved Pages (B1 packet)
+
+B1 adds the portable Saved Page contract and its durable schema-v3 store
+(`bbr-domain::saved_pages` + `bbr-persistence`). A Saved Page is a **global
+installation URL record**: no `ProfileId`, space, tab, session, cookie,
+credential, history, snapshot, or favicon blob — it survives closing tabs,
+spaces, windows, and restart, and B2 opens it as exactly one fresh regular
+tab in the currently active Space/Profile.
+
+**Canonical URL seam (one authority).** `bbr-domain::saved_pages::canonical_url`
+reuses `bbr_web::normalize_url` for scheme defaulting, then ASCII-case-folds
+only the scheme and host. Path, query, fragment, explicit port, trailing
+slash, `www.`, and percent-encoding are preserved byte-for-byte; default
+ports are never elided and no bookmark-only rewrite exists. Supported schemes
+are exactly `http`, `https`, and `about`; userinfo credentials in the
+authority reject whole, so records are credential-free by construction and
+`Debug` is privacy-safe. Save/lookup/remove/search share this one typed
+`CanonicalUrl` seam; persistence stores the canonical key **opaquely**
+(bounded `valid_url` only) and enforces at-most-one-active-record-per-key
+through the `UNIQUE` column plus write-side validation.
+
+**Schema v3.** `SCHEMA_VERSION` is `3`; the v3 DDL adds `collections` and
+`saved_pages` (canonical key `UNIQUE`, `collection_id` a strict foreign key
+into `collections`, dense `position` order keys). Per the standing development
+rule there is **no migration and no backward compatibility**: a store whose
+stamp or shape does not match is discarded and recreated empty (`StoreLoad`
+records the disposition), and matching valid reads perform zero writes.
+Same-version corruption — a broken shape, duplicate canonical keys, or a
+dangling collection reference — is refused read-only and discarded on write.
+
+**Repository contract.** `Repository::store_saved_page` is idempotent
+(re-save returns the existing `BookmarkId`, no second row, preserves
+`created_at`, never touches a user label, and updates the captured title only
+when no user label exists and the title changed; a byte-identical re-save
+performs no write). `saved_page_by_id`/`saved_page_by_url`/`load_saved_pages`/
+`load_collections` are read-only; `search_saved_pages` is a deterministic
+case-insensitive literal-substring search over title/label/URL. `update_saved_page`
+applies field updates, `remove_saved_page` is an idempotent no-op on unknown
+ids and re-compacts dense positions, `replace_collections` rewrites the flat
+collection set whole (removal while referenced rejects; id-preserving renames
+use deferred foreign keys), and `move_saved_page_collection` moves a record
+into or out of one flat collection. The `Snapshot` aggregate carries the new
+collections; browser-state writes never touch the Saved Pages tables.
+Deterministic order is `(updated_at, id)` ascending in the domain
+(`SavedPage::sort_key`), with persistence preserving caller order in dense
+`position` keys.
+
+Evidence: 117 `bbr-domain` tests and the focused `repository_saved_pages`
+contract target; checked-in `schema_v3`, `schema_v3_corrupt`,
+`schema_v3_duplicate_url`, and `schema_v3_collection_integrity` fixtures;
+release `repository_benchmark` with a ≥1,000-record Saved Pages
+write/list/search distribution. B2 owns app composition, Cmd-D, the command
+provider, menus, and fresh-tab E2E; B3 owns the Library.
+
 ---
 
 ## 10. Build & verification (bounded recipes, `justfile`)

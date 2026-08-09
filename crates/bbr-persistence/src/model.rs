@@ -1,7 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use crate::fields::{
-    CommandHistoryEntry, DownloadRecord, SearchSettings, SpaceGlyph, SpaceTint, StoreLoad,
+    CollectionRecord, CommandHistoryEntry, DownloadRecord, SavedPageRecord, SearchSettings,
+    SpaceGlyph, SpaceTint, StoreLoad,
 };
 
 /// The browser structural state the app persists independently of the
@@ -20,8 +21,9 @@ pub struct BrowserState {
 /// Schema v2 adds the four field groups the blocked features need: per-space
 /// appearance identity, the global settings record, terminal download
 /// history, and visited command-history entries (all defined in
-/// [`crate::fields`]). All collections keep the caller's order; persistence
-/// derives dense per-table order keys from it.
+/// [`crate::fields`]). Schema v3 adds the global Saved Pages tables
+/// (`saved_pages`, `collections`). All collections keep the caller's order;
+/// persistence derives dense per-table order keys from it.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Snapshot {
     pub profiles: Vec<Profile>,
@@ -32,6 +34,10 @@ pub struct Snapshot {
     pub downloads: Vec<DownloadRecord>,
     /// Visited command-history entries, in persisted corpus order.
     pub command_history: Vec<CommandHistoryEntry>,
+    /// Global Saved Page records (schema v3), in persisted order.
+    pub saved_pages: Vec<SavedPageRecord>,
+    /// Flat Saved Page collections (schema v3), in persisted order.
+    pub collections: Vec<CollectionRecord>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

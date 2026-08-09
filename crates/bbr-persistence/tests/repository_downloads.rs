@@ -18,32 +18,34 @@ use bbr_persistence::{
 use support::{download_record, inventory, sample_snapshot, TempDb};
 
 #[test]
-fn legacy_downloads_shape_drift_is_discarded_and_immediately_rewritable() {
+fn prior_schema_downloads_shape_is_discarded_and_immediately_rewritable() {
     // The downloads table shape grew within schema version 2 (the settled
     // post-MVP persistence decision added `url`/`filename`/`retry_of`/
-    // `attempt`). There are no migrations: a store whose downloads table
-    // predates that shape carries the same `user_version = 2` stamp but
-    // fails structural validation, so the read-only path refuses it
-    // untouched and the write path discards it as corrupt — never a partial
-    // load — and is immediately rewritable with the new shape.
+    // `attempt`). Under schema v3 that legacy store is simply a prior-schema
+    // store: the read-only path refuses it with a typed SchemaMismatch and
+    // leaves it untouched, and the write path discards it as a version
+    // mismatch — never a partial load — and is immediately rewritable with
+    // the current shape. (Same-version structural corruption is proven by
+    // the schema_v3_corrupt fixture.)
     let db = TempDb::from_fixture("schema_v2_legacy_downloads");
     let before = inventory(&db.0);
-    assert!(matches!(
-        db.repository().restore_read_only(),
-        Err(PersistenceError::Schema(
-            bbr_persistence::SchemaIssue::UnexpectedColumns { table }
-        )) if table == "downloads"
-    ));
+    assert_eq!(
+        db.repository().restore_read_only().unwrap_err(),
+        PersistenceError::SchemaMismatch {
+            found: 2,
+            supported: 3
+        }
+    );
     assert_eq!(inventory(&db.0), before, "read-only never writes");
 
     let outcome = db.repository().initialize_and_restore().unwrap();
     assert_eq!(outcome.snapshot, Snapshot::default());
-    assert!(matches!(
+    assert_eq!(
         outcome.store,
         StoreLoad::Discarded {
-            reason: StoreDiscardReason::Corrupt { .. }
+            reason: StoreDiscardReason::VersionMismatch { found: 2 }
         }
-    ));
+    );
     // Immediately rewritable: the full snapshot round-trips with the new
     // downloads shape.
     let snapshot = sample_snapshot(3);

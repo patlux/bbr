@@ -3,12 +3,15 @@
 
 use rusqlite::{Connection, Transaction};
 
+use crate::schema_tables_saved_pages::{
+    saved_pages_foreign_keys, SAVED_PAGES_DELETE_TABLES, SAVED_PAGES_TABLES,
+};
 use crate::{PersistenceError, SchemaIssue};
 
-struct ExpectedColumn {
-    name: &'static str,
-    not_null: bool,
-    primary_key: bool,
+pub(crate) struct ExpectedColumn {
+    pub(crate) name: &'static str,
+    pub(crate) not_null: bool,
+    pub(crate) primary_key: bool,
 }
 
 const TABLES: &[(&str, &[ExpectedColumn])] = &[
@@ -340,7 +343,10 @@ const TABLES: &[(&str, &[ExpectedColumn])] = &[
 ];
 
 pub(crate) fn validate_schema(connection: &Connection) -> Result<(), PersistenceError> {
-    for (table, expected_columns) in TABLES {
+    // The schema-v3 Saved Pages tables are chained after the v2 tables so
+    // the whole expected shape is validated in one pass (B1-owned shape in
+    // `schema_tables_saved_pages`).
+    for (table, expected_columns) in TABLES.iter().chain(SAVED_PAGES_TABLES) {
         validate_columns(connection, table, expected_columns)?;
         validate_foreign_keys(connection, table)?;
     }
@@ -396,6 +402,7 @@ fn validate_foreign_keys(connection: &Connection, table: &str) -> Result<(), Per
         "spaces" => vec![("profiles", "profile_id", "id")],
         "tabs" => vec![("spaces", "space_id", "id")],
         "recently_closed" => vec![("spaces", "space_id", "id")],
+        "saved_pages" => saved_pages_foreign_keys(),
         _ => Vec::new(),
     };
     let mut statement = connection
@@ -451,6 +458,8 @@ pub(crate) fn user_version(connection: &Connection) -> Result<u32, PersistenceEr
 
 pub(crate) fn deleted_rows(transaction: &Transaction<'_>) -> Result<u64, PersistenceError> {
     let mut total = 0;
+    // The schema-v3 Saved Pages DELETE order is appended after the v2 tables
+    // (child `saved_pages` before parent `collections`).
     for table in [
         "recently_closed",
         "splits",
@@ -461,7 +470,10 @@ pub(crate) fn deleted_rows(transaction: &Transaction<'_>) -> Result<u64, Persist
         "settings",
         "downloads",
         "command_history",
-    ] {
+    ]
+    .iter()
+    .chain(SAVED_PAGES_DELETE_TABLES)
+    {
         total += transaction
             .execute(&format!("DELETE FROM {table}"), [])
             .map_err(storage)? as u64;

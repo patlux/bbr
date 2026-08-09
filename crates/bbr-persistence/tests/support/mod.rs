@@ -1,9 +1,14 @@
 //! Shared test-support helpers for the bbr-persistence integration tests
 //! (narrowly scoped: temp database lifecycle, byte-for-byte inventory
 //! comparison, the full sample snapshot, and the terminal download-record
-//! constructor). Two integration targets share this module via `mod support;`
-//! so no test-support authority is duplicated; it never reaches production
-//! code.
+//! constructor). Several integration targets share this module via `mod
+//! support;` so no test-support authority is duplicated; it never reaches
+//! production code.
+//!
+//! Each helper is exercised by at least one target, but not every target
+//! uses every helper; `dead_code` is allowed here so a focused target that
+//! needs only a subset does not fail the `-D warnings` gates.
+#![allow(dead_code)]
 
 use std::{
     fs,
@@ -12,9 +17,9 @@ use std::{
 };
 
 use bbr_persistence::{
-    CommandHistoryEntry, DownloadOutcome, DownloadRecord, GlyphName, Profile, ProfileHue,
-    RecentlyClosedTab, Repository, SearchSettings, SidebarState, Snapshot, Space, SpaceGlyph,
-    SpaceTint, Split, Tab, WindowGeometry, WindowState,
+    CollectionRecord, CommandHistoryEntry, DownloadOutcome, DownloadRecord, GlyphName, Profile,
+    ProfileHue, RecentlyClosedTab, Repository, SavedPageRecord, SearchSettings, SidebarState,
+    Snapshot, Space, SpaceGlyph, SpaceTint, Split, Tab, WindowGeometry, WindowState,
 };
 
 static NEXT_TEMP: AtomicU64 = AtomicU64::new(1);
@@ -215,7 +220,76 @@ pub fn sample_snapshot(tab_count: usize) -> Snapshot {
             visit_count: 3,
             last_visited: 2000,
         }],
+        // Schema v3: the sample snapshot deliberately seeds no Saved Pages
+        // so the legacy write-count arithmetic stays small and exact; the
+        // dedicated saved-pages tests build their own records.
+        saved_pages: Vec::new(),
+        collections: Vec::new(),
     }
+}
+
+/// A Saved Page record in persisted shape (schema v3). `canonical_url` is
+/// the caller-provided canonical key — persistence treats it as opaque and
+/// never re-canonicalizes.
+pub fn saved_page_record(
+    id: u64,
+    canonical_url: &str,
+    captured_title: &str,
+    user_label: Option<&str>,
+    created_at: u64,
+    updated_at: u64,
+    collection_id: Option<u64>,
+) -> SavedPageRecord {
+    SavedPageRecord {
+        id,
+        canonical_url: canonical_url.into(),
+        captured_title: captured_title.into(),
+        user_label: user_label.map(str::to_owned),
+        created_at,
+        updated_at,
+        collection_id,
+    }
+}
+
+/// A flat collection record in persisted shape (schema v3).
+pub fn collection_record(id: u64, title: &str) -> CollectionRecord {
+    CollectionRecord {
+        id,
+        title: title.into(),
+    }
+}
+
+/// Seeds a store with the baseline browser snapshot plus one collection and
+/// two Saved Pages (one member, one labelled), returning the saved-page
+/// records that must survive every isolated write. Shared by the focused
+/// saved-pages test modules.
+pub fn seeded_saved_pages(db: &TempDb) -> Vec<SavedPageRecord> {
+    let repository = db.repository();
+    repository.initialize_and_restore().unwrap();
+    let mut snapshot = sample_snapshot(3);
+    snapshot.collections = vec![collection_record(1, "Work")];
+    snapshot.saved_pages = vec![
+        saved_page_record(
+            1000,
+            "https://example.test/alpha",
+            "Alpha",
+            None,
+            100,
+            100,
+            Some(1),
+        ),
+        saved_page_record(
+            1001,
+            "https://example.test/beta",
+            "Beta",
+            Some("work label"),
+            200,
+            200,
+            None,
+        ),
+    ];
+    repository.replace_snapshot(&snapshot).unwrap();
+    snapshot.saved_pages
 }
 
 /// A terminal download record in persisted-history shape. The base carries
