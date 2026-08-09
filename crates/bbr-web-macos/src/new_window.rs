@@ -25,13 +25,15 @@ use std::fmt;
 use std::rc::Rc;
 
 use bbr_web::new_window::{
-    decide, NewWindowDecision, NewWindowFeatures, NewWindowOutcome, NewWindowRequest,
-    NewWindowTarget,
+    decide, NewWindowDecision, NewWindowDelivery, NewWindowFeatures, NewWindowOutcome,
+    NewWindowRequest, NewWindowTarget,
 };
 use bbr_web::{ProfileId, WebViewId};
 
 /// Main-thread callback that reports a blocked request for surfacing.
 type NewWindowBlockedReporter = dyn FnMut(NewWindowRequest);
+/// Main-thread callback that delivers every decided request to the app.
+type NewWindowDeliveryReporter = dyn FnMut(NewWindowDelivery);
 
 /// Plain-value snapshot of a WebKit new-window call — everything a
 /// `createWebViewWithConfiguration:…` delegate method extracts before deciding.
@@ -74,9 +76,11 @@ impl NewWindowContext {
 /// main-thread-only shape as the engine's `set_events` sink.
 ///
 /// [`handle`]: NewWindowCoordinator::handle
+#[derive(Clone)]
 pub struct NewWindowCoordinator {
     handler: Rc<RefCell<Option<Box<bbr_web::new_window::NewWindowHandler>>>>,
     blocked: Rc<RefCell<Option<Box<NewWindowBlockedReporter>>>>,
+    delivery: Rc<RefCell<Option<Box<NewWindowDeliveryReporter>>>>,
 }
 
 impl NewWindowCoordinator {
@@ -86,6 +90,7 @@ impl NewWindowCoordinator {
         Self {
             handler: Rc::new(RefCell::new(None)),
             blocked: Rc::new(RefCell::new(None)),
+            delivery: Rc::new(RefCell::new(None)),
         }
     }
 
@@ -98,6 +103,13 @@ impl NewWindowCoordinator {
     /// [`NewWindowOutcome::Blocked`], replacing any previous one.
     pub fn set_blocked_reporter(&mut self, reporter: Box<NewWindowBlockedReporter>) {
         *self.blocked.borrow_mut() = Some(reporter);
+    }
+
+    /// Install the app delivery sink invoked once for every decided request.
+    /// The sink executes the plain outcome through the controller; the native
+    /// delegate still returns `None` and never creates an untracked view.
+    pub fn set_delivery_reporter(&mut self, reporter: Box<NewWindowDeliveryReporter>) {
+        *self.delivery.borrow_mut() = Some(reporter);
     }
 
     /// Report `context` to orchestration and return the outcome to execute.
@@ -115,8 +127,14 @@ impl NewWindowCoordinator {
         let outcome = decide(&request, decision);
         if matches!(outcome, NewWindowOutcome::Blocked) {
             if let Some(reporter) = self.blocked.borrow_mut().as_mut() {
-                reporter(request);
+                reporter(request.clone());
             }
+        }
+        if let Some(reporter) = self.delivery.borrow_mut().as_mut() {
+            reporter(NewWindowDelivery {
+                request,
+                outcome: outcome.clone(),
+            });
         }
         outcome
     }
@@ -133,6 +151,7 @@ impl fmt::Debug for NewWindowCoordinator {
         f.debug_struct("NewWindowCoordinator")
             .field("has_handler", &self.handler.borrow().is_some())
             .field("has_blocked_reporter", &self.blocked.borrow().is_some())
+            .field("has_delivery_reporter", &self.delivery.borrow().is_some())
             .finish()
     }
 }

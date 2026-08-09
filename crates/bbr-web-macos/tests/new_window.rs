@@ -12,7 +12,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use bbr_web::new_window::{
-    NewWindowDecision, NewWindowDisposition, NewWindowFeatures, NewWindowOutcome, NewWindowRequest,
+    NewWindowDecision, NewWindowDelivery, NewWindowDisposition, NewWindowFeatures,
+    NewWindowOutcome, NewWindowRequest,
 };
 use bbr_web::{ProfileId, WebViewId};
 use bbr_web_macos::{NewWindowContext, NewWindowCoordinator};
@@ -93,6 +94,31 @@ fn handler_receives_the_exact_request() {
     assert_eq!(seen.url, c.url);
     assert_eq!(seen.user_initiated, c.user_initiated);
     assert_eq!(seen.features, c.features);
+}
+
+#[test]
+fn every_decision_is_delivered_exactly_once_with_its_request() {
+    for decision in [
+        NewWindowDecision::Preview,
+        NewWindowDecision::OpenTab,
+        NewWindowDecision::External,
+        NewWindowDecision::Block,
+    ] {
+        let mut coordinator = NewWindowCoordinator::new();
+        coordinator.set_handler(Box::new(move |_| decision));
+        let deliveries: Rc<RefCell<Vec<NewWindowDelivery>>> = Rc::new(RefCell::new(Vec::new()));
+        let delivered = Rc::clone(&deliveries);
+        coordinator.set_delivery_reporter(Box::new(move |delivery| {
+            delivered.borrow_mut().push(delivery);
+        }));
+
+        let expected = context("https://example.com/delivered").to_request();
+        let outcome = coordinator.handle(&context("https://example.com/delivered"));
+        let deliveries = deliveries.borrow();
+        assert_eq!(deliveries.len(), 1, "one delivery for {decision:?}");
+        assert_eq!(deliveries[0].request, expected);
+        assert_eq!(deliveries[0].outcome, outcome);
+    }
 }
 
 #[test]

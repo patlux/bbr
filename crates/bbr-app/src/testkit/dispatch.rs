@@ -170,6 +170,30 @@ pub(crate) fn dispatch(
             }))
         }
 
+        Request::NewWindow {
+            source,
+            source_profile,
+            url,
+            user_initiated,
+        } => {
+            let request = bbr_web::NewWindowRequest {
+                source,
+                source_profile,
+                url,
+                user_initiated,
+                target: bbr_web::NewWindowTarget::NewWindow,
+                features: bbr_web::NewWindowFeatures::default(),
+            };
+            let decision = bbr_web::default_decision(&request);
+            let delivery = bbr_web::NewWindowDelivery {
+                outcome: bbr_web::decide(&request, decision),
+                request,
+            };
+            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
+                view.on_new_window_request(delivery, cx)
+            }))
+        }
+
         Request::SelectTab { index } => {
             browser_mutation(with_app(window, app, cx, |view, _window, cx| {
                 view.select_tab(index, cx)

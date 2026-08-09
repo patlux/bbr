@@ -823,6 +823,14 @@ pub struct ContextMenuNativeSnapshot {
     pub element_owned: u64,
 }
 
+/// Productive new-window seam diagnostics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct NewWindowSnapshot {
+    pub requests: u64,
+    pub created_tabs: u64,
+    pub blocked_reported: u64,
+}
+
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
 /// Deliberately typed (no free-form JSON) so the harness can assert on
@@ -1093,6 +1101,9 @@ pub struct Snapshot {
     /// never a partial restored window presented as valid.
     #[serde(default)]
     pub restore: RestoreDisposition,
+    /// Productive new-window request/open/block counters.
+    #[serde(default)]
+    pub new_window: NewWindowSnapshot,
 }
 
 /// The Phase-7 startup restore outcome, surfaced truthfully in the testkit

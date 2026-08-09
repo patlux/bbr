@@ -73,6 +73,7 @@ pub(crate) mod find;
 #[cfg(feature = "testkit")]
 mod find_benchmarks;
 mod interaction;
+mod new_window;
 pub(crate) mod palette;
 mod portal_host;
 mod render;
@@ -383,6 +384,9 @@ pub struct BbrApp {
     /// `ChromeFocusChanged`; unused in production builds.
     focus_sink: Rc<RefCell<Option<FocusSink>>>,
     browser_sink: Rc<RefCell<Option<BrowserSink>>>,
+    /// Productive new-window seam diagnostics (requests, created regular tabs,
+    /// reported blocks). Updated only by `on_new_window_request`.
+    new_window: new_window::NewWindowState,
     #[cfg(feature = "testkit")]
     performance: PerformanceProbe,
 }
@@ -505,6 +509,7 @@ impl BbrApp {
             swipe: swipe::SwipeState::new(),
             focus_sink: Rc::new(RefCell::new(None)),
             browser_sink: Rc::new(RefCell::new(None)),
+            new_window: new_window::NewWindowState::default(),
             #[cfg(feature = "testkit")]
             performance,
         }

@@ -22,6 +22,7 @@ use crate::delegate::{self, WebViewDelegate};
 use crate::error_mapping::ClassifiedIncident;
 use crate::host::HostBridge;
 use crate::navigation_cover::NavigationCover;
+use crate::new_window::NewWindowCoordinator;
 
 const DARK_BLANK_PAGE: &str = r#"<!doctype html>
 <html style="color-scheme: dark; background: #151719">
@@ -68,6 +69,9 @@ pub struct WebEngineWk {
     sink: delegate::EventSink,
     /// Shared with every delegate; replaced by [`WebEngineWk::set_incidents`].
     incident_sink: delegate::IncidentSink,
+    /// Shared synchronous portable policy and app-delivery seam for every
+    /// WKUI delegate.
+    new_window: NewWindowCoordinator,
     /// Profile → website data store cache. Stores outlive individual views.
     stores: HashMap<ProfileId, Retained<WKWebsiteDataStore>>,
     /// Per-view geometry cache: the last host-layout rect published for each
@@ -108,6 +112,7 @@ impl WebEngineWk {
             // bridge shares it; the incident sink is independent.
             sink,
             incident_sink: Rc::new(RefCell::new(None)),
+            new_window: NewWindowCoordinator::new(),
             stores: HashMap::new(),
             geometry: HashMap::new(),
             menu_bridge,
@@ -180,6 +185,31 @@ impl WebEngineWk {
     pub fn set_incidents(&mut self, sink: Box<dyn FnMut(ClassifiedIncident)>) {
         self.assert_main_thread();
         *self.incident_sink.borrow_mut() = Some(sink);
+    }
+
+    /// Install portable new-window policy for every existing and future
+    /// delegate. Replaces any previous handler.
+    pub fn set_new_window_handler(&mut self, handler: Box<bbr_web::new_window::NewWindowHandler>) {
+        self.assert_main_thread();
+        self.new_window.set_handler(handler);
+    }
+
+    /// Install the app delivery sink for every decided new-window request.
+    pub fn set_new_window_delivery(
+        &mut self,
+        reporter: Box<dyn FnMut(bbr_web::new_window::NewWindowDelivery)>,
+    ) {
+        self.assert_main_thread();
+        self.new_window.set_delivery_reporter(reporter);
+    }
+
+    /// Install the blocked-request diagnostic sink.
+    pub fn set_new_window_blocked_reporter(
+        &mut self,
+        reporter: Box<dyn FnMut(bbr_web::new_window::NewWindowRequest)>,
+    ) {
+        self.assert_main_thread();
+        self.new_window.set_blocked_reporter(reporter);
     }
 
     /// Narrow diagnostics of the one native context-menu bridge (task
@@ -347,6 +377,7 @@ impl WebEngine for WebEngineWk {
             self.sink.clone(),
             self.incident_sink.clone(),
             navigation_cover.clone(),
+            self.new_window.clone(),
         );
         unsafe {
             web_view.setNavigationDelegate(Some(ProtocolObject::from_ref(&*delegate)));

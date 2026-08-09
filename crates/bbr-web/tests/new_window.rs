@@ -6,8 +6,8 @@
 //! depends on (profile preservation, no invented navigation, no silent block).
 
 use bbr_web::new_window::{
-    decide, NewWindowDecision, NewWindowDisposition, NewWindowFeatures, NewWindowOutcome,
-    NewWindowRequest, NewWindowTarget,
+    decide, default_decision, NewWindowDecision, NewWindowDisposition, NewWindowFeatures,
+    NewWindowOutcome, NewWindowRequest, NewWindowTarget,
 };
 use bbr_web::{ProfileId, WebViewId};
 
@@ -36,6 +36,16 @@ fn request_carries_user_gesture_state() {
     let mut r = request("https://example.com");
     r.user_initiated = false;
     assert!(!r.user_initiated);
+}
+
+#[test]
+fn default_policy_opens_direct_activations_and_blocks_scripts() {
+    let direct = request("https://example.com/direct");
+    assert_eq!(default_decision(&direct), NewWindowDecision::OpenTab);
+
+    let mut script = request("https://example.com/script");
+    script.user_initiated = false;
+    assert_eq!(default_decision(&script), NewWindowDecision::Block);
 }
 
 #[test]

@@ -163,6 +163,17 @@ pub enum Request {
     /// Cancel an in-flight drag (the production Escape path): nothing is
     /// committed, chrome focus stays in the tab list.
     CancelTabDrag,
+    /// Drive the exact productive app new-window execution method used by
+    /// the native coordinator delivery pump. The hidden harness cannot
+    /// synthesize a trustworthy LinkActivated click, so direct-activation
+    /// E2E injects the already-extracted typed request here; it never calls
+    /// the controller operation directly.
+    NewWindow {
+        source: WebViewId,
+        source_profile: ProfileId,
+        url: String,
+        user_initiated: bool,
+    },
     /// Deterministic engine-event injection (testkit-only): pushes a native
     /// `WebEvent` through the exact event transport the real engine uses, so
     /// E2E can exercise the production crash/error path without killing a

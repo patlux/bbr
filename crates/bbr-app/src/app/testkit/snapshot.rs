@@ -399,6 +399,14 @@ impl BbrApp {
                     bbr_testkit::protocol::RestoreDisposition::Failed
                 }
             },
+            new_window: {
+                let state = self.new_window_state();
+                bbr_testkit::protocol::NewWindowSnapshot {
+                    requests: state.requests,
+                    created_tabs: state.created_tabs,
+                    blocked_reported: state.blocked_reported,
+                }
+            },
         }
     }
 

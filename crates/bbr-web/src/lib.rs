@@ -36,8 +36,8 @@ pub use external_urls::{
     ExternalUrlRequest, ExternalUrlRequestId, RoutingDecision, UrlClass,
 };
 pub use new_window::{
-    decide, NewWindowDecision, NewWindowDisposition, NewWindowFeatures, NewWindowOutcome,
-    NewWindowRequest, NewWindowSession, NewWindowTarget,
+    decide, default_decision, NewWindowDecision, NewWindowDelivery, NewWindowDisposition,
+    NewWindowFeatures, NewWindowOutcome, NewWindowRequest, NewWindowSession, NewWindowTarget,
 };
 
 /// Stable identifier of a browsing profile. Maps 1:1 to a persistent

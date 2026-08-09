@@ -41,6 +41,12 @@ pub enum BrowserChange {
     TabOpened {
         index: usize,
     },
+    NewWindowOpened {
+        index: usize,
+        space: TestSpaceId,
+        profile: ProfileId,
+        view: bbr_web::WebViewId,
+    },
     TabSelected {
         index: usize,
     },

@@ -308,6 +308,7 @@ Every `objc2`/WebKit call is `unsafe`. It is concentrated **inside
 | Delegate protocol objects | `bbr-web-macos::delegate` | `define_class!` implementing `WKNavigationDelegate` + `WKUIDelegate`; kept alive for the view's lifetime (WebKit does not retain delegates). KVO `title` observation is paired `observe_title`/`unobserve_title` before view dealloc (avoids `NSKVODeallocateException`) |
 | `raw-window-handle` | `bbr-app::main` | `ns_view` → `objc2` `id` cast is sound only because the caller controls lifecycle and thread; gated `#[cfg(target_os = "macos")]` |
 | Native portal observer | `bbr-web-macos::portal` | `NativePortal` is boxed before observer installation; the observer raw pointer targets the stable heap allocation. Install/remove and every AppKit mutation are main-thread-only; teardown removes observation before close |
+| New-window UI delegate | `bbr-web-macos::delegate` / `new_window` | The live `WKNavigationAction` and `WKWindowFeatures` are copied into portable values on the main thread. The coordinator applies portable policy and publishes a plain delivery; the delegate always returns `None`, so no native view escapes the controller registry |
 
 **Safety invariant:** `bbr-web` and `bbr-domain` are `#![forbid(unsafe_code)]`.
 `bbr-app`'s only unsafe is the engine build on macOS; `bbr-testkit` and
@@ -405,6 +406,15 @@ phases — the trait remains deliberately narrow. The event sink is
 `serde` feature (enabled by `bbr-testkit`) so the wire format never leaks
 framework types.
 
+The productive new-window seam is also portable. `NewWindowRequest` carries the
+exact source `WebViewId`, source `ProfileId`, verbatim URL, user-activation
+classification, target, and window-feature metadata. `default_decision` is the
+single MVP policy: direct user activation becomes `OpenTab`; script-created
+requests become `Block`. `decide` produces a typed `NewWindowOutcome`, and
+`NewWindowDelivery` keeps the request beside that outcome so the app/controller
+can fail closed on stale source identity or profile mismatch. No adapter may
+normalize the URL or choose a second disposition policy.
+
 ---
 
 ## 7. `bbr-web-macos` organization
@@ -440,8 +450,11 @@ src/
   `didCommitNavigation` (state), `didFinishNavigation` (loading=false + state),
   `didFailProvisionalNavigation`/`didFailNavigation` (`NavigationFailed` with the
   localized description), `webViewWebContentProcessDidTerminate`
-  (`PageCrashed`). `createWebViewWithConfiguration…` returns `None` — popups are
-  suppressed in Phase 1 for deterministic tests.
+  (`PageCrashed`). `createWebViewWithConfiguration…` extracts the live request,
+  runs the shared `NewWindowCoordinator`, and publishes one decided delivery to
+  the app. It still always returns `None`: neither the delegate nor WebKit
+  creates an untracked BBR session. The coordinator reports blocked outcomes
+  and delivers every request/outcome pair exactly once.
 - **Actions:** `loadRequest`, `goBack`/`goForward` (guarded by `canGoBack`/
   `canGoForward`), `reload`, `stopLoading` + explicit state re-emit (`Stop`).
 - **Main thread:** all entry points re-assert with `MainThreadMarker`; the
@@ -498,7 +511,14 @@ src/
    runs, so a successful response can never race process/socket teardown
    (unit-tested in `bbr-testkit`; the real-app `e2e_shutdown` suite proves
    both user paths through real process exit).
-8. Under testkit: start the gateway, pump engine events into the controller,
+8. Compose productive new-window handling before opening sessions: install
+   `bbr_web::default_decision` in `WebEngineWk`, forward each
+   `NewWindowDelivery` over the main-loop channel, and drain it into the same
+   `BbrApp::on_new_window_request` method used by typed testkit injection. That
+   method records request/open/block counters and delegates all tab/session
+   creation to `BrowserController`; native and test paths therefore cannot
+   acquire separate execution authorities.
+9. Under testkit: start the gateway, pump engine events into the controller,
    and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
 
@@ -749,12 +769,17 @@ Session policy (the crate's core invariant):
 
 `BrowserController` exposes the first vertical slice (open/select/close/reopen),
 navigation routing to the focused tab or split pane, suspend, profile moves,
-split open/close with no-session-orphan teardown, and `apply_event` for
-`WebEvent`s (URL/title map to the owning tab; loading/history/crash/failure are
-tracked per session in `NavState`; unknown or stale `WebViewId`s are reported
-as `ControllerEvent::UnknownWebView` without corrupting state). Every mutation
-returns exactly one typed `ControllerEvent`, and a read-only `snapshot()`
-publishes the tab list, active view, and live-session count for UI and E2E.
+split open/close with no-session-orphan teardown, productive new-window tab
+creation, and `apply_event` for `WebEvent`s (URL/title map to the owning tab;
+loading/history/crash/failure are tracked per session in `NavState`; unknown or
+stale `WebViewId`s are reported as `ControllerEvent::UnknownWebView` without
+corrupting state). `open_tab_from_new_window` resolves the exact source session,
+validates its owning profile against the decided session, and opens one regular
+tab in the source Space/Profile. An inactive source Space stays inactive and
+its fresh warm session stays hidden; stale sources and profile mismatches fail
+before domain or engine mutation. Every successful mutation returns exactly one
+typed `ControllerEvent`, and a read-only `snapshot()` publishes the tab list,
+active view, and live-session count for UI and E2E.
 
 Testability: the deterministic `FakeEngine` (in `crate::fake`,
 `#[cfg(test)]`-only) records every engine call into an op log — including
@@ -985,8 +1010,15 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
    evidence measures the real timer and commits only after the result palette is
    rendered. A product-wide `TimeSource` remains deferred until persistence and
    broader scheduling need one.
-4. **Popups/new windows are suppressed** (`createWebViewWithConfiguration` →
-   `None`); wired popups land in a later phase.
+4. **The MVP new-window seam is wired; richer disposition remains deferred.**
+   Direct user activations open one regular tab in the exact source
+   Space/Profile through `BbrApp` and `BrowserController`; script-created
+   `window.open` requests are blocked and reported. The native delegate still
+   returns `None`. Peek, opener provenance, background/insertion policy,
+   named-window reuse, popup allow-lists, and second browser windows remain
+   later bounded work. Functional real-app evidence is green; the required
+   optimized performance scenario remains explicitly unexecuted and unpassed
+   under the active delivery override.
 5. **No find-in-page, zoom, downloads, permission prompts, WebAuthn, or
    process-termination recovery UI yet** (Phase 8). `PageCrashed` is
    observable in the status line and snapshot, but there is no recovery
