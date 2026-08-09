@@ -14,17 +14,19 @@ packets. Full chronology and detailed evidence remain in the preserved
 | Generation | `post-mvp-f2a` |
 | Candidate prepared from | `main` `0dc22fee16d737a077aa1b097e359e2f1d08a764` |
 | Canonical-ledger refresh through | `main` `0dc22fee16d737a077aa1b097e359e2f1d08a764` (F2a integrated at `7180128`; documentary closeout and its green `just roadmap`/`just verify` evidence committed at `0dc22fe`) |
-| Cutover commit | the single commit that first tracks this current snapshot; resolve after integration with `git log -1 --format=%H -- docs/delivery/current.md` and transmit the exact SHA in the atomic handoff |
+| Cutover commit | `781e862ca4547cee16be23e251767f6b2fa938fb` (tree `8e87a7931bab248faa707dbb131f7df6e341db80`, parent `0dc22fee16d737a077aa1b097e359e2f1d08a764`) |
+| Atomic handoff | acknowledged after committed-HEAD audit and independent `COMMITTED_READBACK_PASS` |
 | Verified product base | `main@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
+| First-wave branch base | this committed post-handoff scheduling snapshot; resolve its exact SHA with `git log -1 --format=%H -- docs/delivery/current.md` and transmit the same SHA to SHUTDOWN, B1, and G1a |
 | Previous canonical pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md` |
 | Rollback pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
 | Target Orchestrator session | `019fdc57-7afb-7f81-8963-756586fe0a6b`; current verified pane `tws_personal_macos_bbr-orchestrator:3.0` (pane is runtime data and must be reverified immediately before handoff) |
 
-These exact metadata values are staged candidate values only until the
-Orchestrator completes the atomic cutover, verifies the resulting committed
-HEAD, obtains an independent fresh-operator readback, and performs the atomic
-handoff. Until then the old ledger remains operationally canonical. A
-filesystem-only copy or partial merge is never a cutover.
+The atomic cutover is complete. `ROADMAP.md` and this committed snapshot are
+now the sole execution authority; the old ledger is preserved evidence and the
+rollback target, never a parallel queue. A filesystem-only copy, stale
+worktree, historical workflow, or uncommitted main-worktree document has no
+product authority.
 
 ## Status vocabulary
 
@@ -53,7 +55,7 @@ complete, none has product authority.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| CUTOVER | Delivery-Control authority cutover | `integrating` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator only; no second writer | [completion audit](delivery-control-completion-audit.md) | normal gates, one commit, HEAD audit, independent readback, atomic handoff |
+| CUTOVER | Delivery-Control authority cutover | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator only; no second writer | [completion audit](delivery-control-completion-audit.md) | complete at `781e862`; committed-HEAD audit and independent readback passed |
 
 ## Post-F2a parallel wave
 
@@ -65,12 +67,12 @@ prepared beforehand only outside repository/worktree/index state; the current
 preflight `post-f2a-parallel-readonly-preflight-mskx3emg-aqoxwp` grants no
 product authority and every bundle is stale until refreshed after F2a.
 
-| ID | Status before F2a close | Exclusive territory | Start condition | Integration priority |
-|---|---|---|---|---|
-| SHUTDOWN | `ready` | app lifecycle, real SIGINT and owning-window close, portal-child isolation, testkit response flush, fresh `e2e_shutdown`, required E2E registry | atomic cutover acknowledged; lifecycle/testkit/registry territory writer-free | **1 — first** |
-| B1 | `ready` | focused portable domain/persistence Saved Pages modules, canonical URL equality, CRUD/search/list, schema v3 bump+discard, fixtures/benchmarks | atomic cutover acknowledged; URL decision recorded; repository/schema territory writer-free | after F2 closeout, normally before G1a |
-| G1a | `ready` | extraction of integrated production Foundations/Primitives authority into `bbr-ui`; no copies; exact direct dependencies `gpui` + `bbr-domain`; approved transitivity only `bbr-domain → bbr-web`, never direct `bbr-ui → bbr-web` | atomic cutover acknowledged; theme/components/footer/sidebar/portal-render territory writer-free; dependency preflight confirms the closure has not widened | after F2 closeout, normally after B1 |
-| G1b | `planned` | dev-only Gallery MVP consuming G1a's exact production symbols; no WebKit/network/testkit listener | G1a settled; Gallery territory writer-free | after G1a |
+| ID | Status before F2a close | Worktree / owner | Exclusive territory | Start condition | Integration priority |
+|---|---|---|---|---|---|
+| SHUTDOWN | `ready` | `/Users/patwoz/dev/Personal/macos/bbr-shutdown-lifecycle`; one exclusive DeepSeek-high writer after dispatch | app lifecycle, real SIGINT and owning-window close, portal-child isolation, testkit response flush, fresh `e2e_shutdown`, required E2E registry | acknowledged cutover; lifecycle/testkit/registry territory audited writer-free | **1 — first** |
+| B1 | `ready` | `/Users/patwoz/dev/Personal/macos/bbr-saved-pages-b1`; one exclusive DeepSeek-high writer after dispatch | focused portable domain/persistence Saved Pages modules, canonical URL equality, CRUD/search/list, schema v3 bump+discard, fixtures/benchmarks | acknowledged cutover; URL decision below recorded; repository/schema territory audited writer-free | after F2 closeout, normally before G1a |
+| G1a | `ready` | `/Users/patwoz/dev/Personal/macos/bbr-ui-g1a-foundations`; one exclusive DeepSeek-high writer after dispatch | extraction of integrated production Foundations/Primitives authority into `bbr-ui`; no copies; exact direct dependencies `gpui` + `bbr-domain`; approved transitivity only `bbr-domain → bbr-web`, never direct `bbr-ui → bbr-web` | acknowledged cutover; theme/components/footer/sidebar/portal-render territory audited writer-free; dependency closure unchanged | after F2 closeout, normally after B1 |
+| G1b | `planned` | no worktree or writer until G1a settles | dev-only Gallery MVP consuming G1a's exact production symbols; no WebKit/network/testkit listener | G1a settled; Gallery territory writer-free | after G1a |
 
 Shared registry, manifest, lockfile, Justfile, composition-root, and E2E-list
 conflicts are predeclared serial integration costs, not reasons to duplicate
@@ -145,6 +147,11 @@ forbidden.
 - Pin, Favorite, and Saved Page remain distinct authorities. Saved Page is a
   global durable canonical-URL record without Tab/WebView/Session/Profile and
   opens exactly one fresh ordinary tab in the currently active Space/Profile.
+- B1 canonical-URL equality is settled for this slice: normalize/default the
+  navigable scheme through the existing authority, then ASCII-case-fold only
+  the scheme and host. Preserve path, query, fragment, explicit port, trailing
+  slash, `www.`, and percent-encoding byte-for-byte; do not elide default ports
+  or add any bookmark-only rewrite. Unsupported/dangerous URLs reject whole.
 - One writer per worktree; one product authority per concern; only the
   Orchestrator commits, merges, and integrates.
 - Never weaken tests, validators, budgets, sample counts, deadlines, or
@@ -154,29 +161,27 @@ forbidden.
 - Preserve unrelated dirty files and worktrees by explicit scope and
   fingerprint.
 
+## Scheduling checkpoints
+
+| Checkpoint | Runnable audit | Decision / evidence |
+|---|---|---|
+| Atomic handoff | CUTOVER only until committed verification completed | `781e862` committed; tree/parent/pointer/scope audit passed; independent `COMMITTED_READBACK_PASS`; historical ledger demoted to evidence |
+| First post-cutover audit | SHUTDOWN, B1, G1a runnable; G1b and all downstream rows dependency-gated | no current workflow owns their territories; proposed branch/worktree names are free; repository GUI lock is unheld; stale dirty historical worktrees grant no authority |
+| Parallelism decision | start all three first-wave lanes from one identical committed scheduling base | expected shared conflicts are declared integration costs: SHUTDOWN—app composition/testkit/E2E list; B1—schema version/repository DTO aggregates; G1a—root manifest/lockfile/Justfile/ROADMAP/app composition. SHUTDOWN still integrates first; GUI/perf gates remain serialized |
+| Deliberate deferrals | G1b, B2, B3, G2, G3, Z1–Z5, ENGINE-SPIKE, blocked evidence rows | exact dependencies remain those in the tables above; no item is deferred merely for conflict probability |
+
 ## Cutover and rollback protocol
 
-This candidate becomes canonical only when all conditions hold:
+The cutover conditions were satisfied at `781e862`: complete F2a on the
+verified product base, status-equivalence audit, one documentation/validator
+commit, exact rollback metadata, green focused and repository gates,
+committed-HEAD audit, independent fresh-operator readback, and atomic handoff.
+The commit is self-resolving through the exact SHA transmitted above; it could
+not contain its own SHA before creation.
 
-1. F2a is fully integrated on a verified `main`; no F2a writer remains.
-2. The old ledger has been read completely and the status-equivalence audit
-   has no missing or ambiguous item.
-3. Exactly one documentation/validator integration commit contains this
-   pointer, its ROADMAP entry, the historical-ledger supersession note, the
-   durable Shutdown packet, the validator/tests, and the evidence audit.
-4. The metadata above contains the exact post-F2a and rollback SHAs. The
-   cutover commit remains self-resolving because a Git commit cannot
-   contain its own SHA; its exact resulting SHA is verified after commit and
-   transmitted in the atomic handoff.
-5. Focused validator tests, worktree/index/HEAD documentation audits,
-   `just roadmap`, and `just verify` are green.
-6. One atomic `tmux-pi` message gives the target Orchestrator the old pointer,
-   new pointer, cutover SHA, verified post-F2a base, status-equivalence result,
-   full open queue, settled workflow/ownership state, integration order, and
-   rollback pointer.
-7. The target Orchestrator reads the new files and acknowledges those facts
-   before starting any post-F2a lane.
-
-If any condition fails, do not cut over. Continue from the previous canonical
-pointer and pre-cutover SHA; preserve this candidate and report the exact
-mismatch.
+For recovery, first verify the current pointer and commit object. If this
+snapshot is corrupt, ambiguous, or unreachable, fail closed: stop product
+writers, preserve every lane/worktree/commit, and restore execution authority
+to `docs/delivery/2026-08-08-post-mvp-delivery.md@0dc22fee16d737a077aa1b097e359e2f1d08a764`.
+Do not mix queue rows from both authorities or reconstruct state from stale
+workflow wrappers.
