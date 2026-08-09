@@ -51,14 +51,16 @@ as additional status words.
 
 F2a and its documentary closeout are integrated. The atomic cutover and
 fresh-operator acknowledgement are complete. SHUTDOWN and the two bounded F2
-recoveries are integrated on the current control checkpoint. B1 and G1a are
-reviewed and frozen, but remain intentionally unintegrated until the complete
-F2 closeout passes.
+recoveries are integrated on the current control checkpoint. All 27 functional
+E2E suites are green. Patrick explicitly prioritizes a feature-complete first
+MVP over further startup investigation: the known startup-performance debt and
+full release closeout move to Phase 9 without changing the `≤500 ms` contract.
+B1 is therefore the next serial integration, followed by G1a and G1b.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
 | CUTOVER | Delivery-Control authority cutover | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator only; no second writer | [completion audit](delivery-control-completion-audit.md) | complete at `781e862`; committed-HEAD audit and independent readback passed |
-| F2-STARTUP | Cold fresh-profile startup regression remediation | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-f2-startup-remediation`; branch `parallel/f2-startup-remediation`; clean unchanged base `1eb74b1df4a7651cd6357eabb75346389110da00` / tree and index `0941b044e100edc26914ffe1a817a781f3959dcc` | bounded implementation workflow `bbr-f2-startup-bounded-implementation-mslsp99m-l84a3h` closed without product mutation; no active writer and no further writer authorized | [performance E2E foundation](../roadmap/tasks/performance-e2e-foundation.md) | allowed post-frame seams are materially insufficient; retain the hard `≤500 ms` contract and consumed unchanged reproduction. Next action requires a separately committed product/runner decision that names a new causal territory and evidence plan; no automatic budget, harness, sample, baseline, Xcode, milestone, Portal, or initial-tab change is authorized |
+| F2-STARTUP | Cold fresh-profile startup regression remediation | `planned` | `/Users/patwoz/dev/Personal/macos/bbr-f2-startup-remediation`; branch `parallel/f2-startup-remediation`; clean unchanged base `1eb74b1df4a7651cd6357eabb75346389110da00` / tree and index `0941b044e100edc26914ffe1a817a781f3959dcc` | no active writer; further startup work deliberately deferred until the first feature-complete MVP | [performance E2E foundation](../roadmap/tasks/performance-e2e-foundation.md) | Phase-9 release hardening after MVP feature delivery: retain the hard `≤500 ms` contract and consumed unchanged reproduction, then define new causal territory or canonical-runner policy. No automatic budget, harness, sample, baseline, Xcode, milestone, Portal, or initial-tab change is authorized |
 
 ## Post-F2a parallel wave
 
@@ -72,9 +74,9 @@ product authority and every bundle is stale until refreshed after F2a.
 
 | ID | Status before F2a close | Worktree / owner | Exclusive territory | Start condition | Integration priority |
 |---|---|---|---|---|---|
-| SHUTDOWN | `integrated` | `/Users/patwoz/dev/Personal/macos/bbr-shutdown-lifecycle`; branch `parallel/shutdown-lifecycle`; no writer; exact reviewed lane commit `48f2841b9db46f19ebbd8f8b9b3637496f07e37d` | app lifecycle, real SIGINT and owning-window close, portal-child isolation, testkit response flush, fresh `e2e_shutdown`, required E2E registry | merged as `12431c95…`; deterministic error-fixture recovery merged as `1e42d835…`; deferred Portal visibility recovery merged at control checkpoint `6ff70eab…`. `just verify` and all 27 functional E2E suites are green, including Portal 7/7 and errors 10/10; no `RefCell already borrowed`. F2 remains open only because canonical performance/package closeout evidence is not yet complete | **1 — product integrated; closeout blocked** |
-| B1 | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-saved-pages-b1`; branch `parallel/saved-pages-b1`; no writer; focused recheck returned direct `REVIEW_PASS`; exact reviewed lane commit `a23d9335240ff4c6cbc0d5d8b80744339f4a335e` | focused portable domain/persistence Saved Pages modules, canonical URL equality, CRUD/search/list, schema v3 bump+discard, fixtures/benchmarks | commit tree exactly `0c728df48ecf495375b6b4ad096dce35d41cfbbf`; worktree clean; F1–F5 and unchanged B1 contracts passed independent recheck; still waits for an actually successful F2 closeout, now blocked by the reproduced startup regression and the resulting missing complete closeout sequence | after F2 closeout, normally before G1a |
-| G1a | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-ui-g1a-foundations`; branch `parallel/ui-g1a-foundations`; no writer; focused recheck returned direct `REVIEW_PASS`; exact reviewed commit `e6d3ab85a49b8754764553b31d0eac996015ce25` | extraction of integrated production Foundations/Primitives authority into `bbr-ui`; no copies; exact direct dependencies `gpui` + `bbr-domain`; approved transitivity only `bbr-domain → bbr-web`, never direct `bbr-ui → bbr-web` | commit tree exactly `8c441f2ccee86792b4475a314b472299717d11fb`; F1–F3, workspace membership, `ui-deps`, 46 script tests, dependency closure, affected E2E, module budgets, and architecture truth passed; worktree clean. Integration waits for successful F2 closeout and B1 | after F2 closeout and B1 |
+| SHUTDOWN | `integrated` | `/Users/patwoz/dev/Personal/macos/bbr-shutdown-lifecycle`; branch `parallel/shutdown-lifecycle`; no writer; exact reviewed lane commit `48f2841b9db46f19ebbd8f8b9b3637496f07e37d` | app lifecycle, real SIGINT and owning-window close, portal-child isolation, testkit response flush, fresh `e2e_shutdown`, required E2E registry | merged as `12431c95…`; deterministic error-fixture recovery merged as `1e42d835…`; deferred Portal visibility recovery merged at control checkpoint `6ff70eab…`. `just verify` and all 27 functional E2E suites are green, including Portal 7/7 and errors 10/10; no `RefCell already borrowed`. Startup performance remains explicit Phase-9 debt rather than a feature-delivery blocker | **1 — product integrated; functional checkpoint accepted** |
+| B1 | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-saved-pages-b1`; branch `parallel/saved-pages-b1`; no writer; focused recheck returned direct `REVIEW_PASS`; exact reviewed lane commit `a23d9335240ff4c6cbc0d5d8b80744339f4a335e` | focused portable domain/persistence Saved Pages modules, canonical URL equality, CRUD/search/list, schema v3 bump+discard, fixtures/benchmarks | commit tree exactly `0c728df48ecf495375b6b4ad096dce35d41cfbbf`; worktree clean; F1–F5 and unchanged B1 contracts passed independent recheck. Functional F2 is green and Patrick explicitly deferred startup hardening, so the serial integration gate is now open | **next — integrate before G1a** |
+| G1a | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-ui-g1a-foundations`; branch `parallel/ui-g1a-foundations`; no writer; focused recheck returned direct `REVIEW_PASS`; exact reviewed commit `e6d3ab85a49b8754764553b31d0eac996015ce25` | extraction of integrated production Foundations/Primitives authority into `bbr-ui`; no copies; exact direct dependencies `gpui` + `bbr-domain`; approved transitivity only `bbr-domain → bbr-web`, never direct `bbr-ui → bbr-web` | commit tree exactly `8c441f2ccee86792b4475a314b472299717d11fb`; F1–F3, workspace membership, `ui-deps`, 46 script tests, dependency closure, affected E2E, module budgets, and architecture truth passed; worktree clean. Integration waits only for B1 serial integration | after B1 |
 | G1b | `planned` | no worktree or writer until G1a settles | dev-only Gallery MVP consuming G1a's exact production symbols; no WebKit/network/testkit listener | G1a settled; Gallery territory writer-free | after G1a |
 
 Shared registry, manifest, lockfile, Justfile, composition-root, and E2E-list
@@ -96,19 +98,21 @@ forbidden.
    base. Start G1b immediately when G1a settles. All substantive work uses
    isolated background workflows with explicit DeepSeek-v4-flash high.
 4. Integrate SHUTDOWN first.
-5. Complete the canonical F2 closeout. The one allowed unchanged-tree,
-   idle-observed, repository-default-Xcode reproduction is consumed and red:
-   startup p95 `535.87 ms > 500 ms`. Do not retry that tree or change an
-   acceptance threshold. The next executable product gate is one bounded
-   causal startup investigation and remediation lane. After its exact reviewed
-   candidate is integrated, run the complete sequence from `just verify` →
-   `just e2e` → `just e2e-perf` → `package-verify`; record canonicality,
-   Bundle/Binary SHA, and clean process/GUI-lock state. A changed candidate's
-   required verification is not a retry of the rejected unchanged tree.
+5. Accept the integrated F2 functional checkpoint for continued MVP feature
+   delivery: `just verify` and all 27 functional E2E suites are green. Preserve
+   the reproduced startup p95 `535.87 ms > 500 ms` as explicit Phase-9 release
+   debt; do not retry the unchanged tree or change an acceptance threshold.
+   Required feature-specific regression and performance scenarios remain in
+   force, but no further dedicated startup-remediation work runs before the
+   first feature-complete MVP.
 6. Integrate B1, G1a, and G1b serially according to the actual reviewed trees;
    default order B1 → G1a → G1b unless concrete dependency evidence requires
    another semantic integration order.
-7. Keep G2, G3, B2, B3, and Z packages dependency- and ownership-gated; at
+7. Continue MVP feature delivery through the dependency queue. Before release,
+   return to F2 startup and run the complete closeout sequence from
+   `just verify` → `just e2e` → `just e2e-perf` → `package-verify`; record
+   canonicality, Bundle/Binary SHA, and clean process/GUI-lock state.
+8. Keep G2, G3, B2, B3, and Z packages dependency- and ownership-gated; at
    every scheduling checkpoint refill every safely runnable bounded lane.
 
 ## Downstream dependency queue
@@ -121,7 +125,7 @@ forbidden.
 | G3 | `planned` | integrated G2 and corresponding production compositions |
 | Z1 | `planned` | integrated F2a + G1a; Bookmark row additionally waits for B2 |
 | Z2 | `planned` | integrated F2a + G1a; flat session-local Folder authority only |
-| Z3 | `planned` | successful F2 closeout and free Portal/context-menu territory; Bookmark row additionally waits for B2 |
+| Z3 | `planned` | integrated functionally green F2 checkpoint and free Portal/context-menu territory; Bookmark row additionally waits for B2 |
 | Z4 | `planned` | integrated F2a + G1a; one titlebar/navigation authority |
 | Z5 | `planned` | integrated F2a + G1a and public capability-first media contract |
 | ICON | `integrated` | reviewed icon commits are included in F2a integration `7180128`; obsolete Spaces glyph authority remains absent |
@@ -134,7 +138,7 @@ forbidden.
 | MANUAL-SMOKE | `blocked` | Patrick runs the packaged-app smoke checklist after the next stable bundle |
 | UI-2B | `blocked` | Patrick provides a screenshot or concrete problematic UI location |
 | PORTAL-MINIMIZE | `closed` | deferred `NativePortal::show/hide` ordering is integrated at `6ff70eab…`; the real integrated-head Portal suite is 7/7 including `host_hides_on_minimize_and_restores`, with no `RefCell already borrowed`. Portal is no longer the F2 blocker. |
-| F2-CLOSEOUT | `blocked` | Two idle observations at `2026-08-09T10:20:48Z` and `10:24:10Z` proved no Tart/runner SSH, no competing BBR build/test/package process, and a free GUI lock. The one allowed unchanged-tree reproduction then ran exactly once on clean control HEAD `a6750d0295a57aacca88f417c909c0d2f38f62fb` / tree `0467dc994b9ace551a458f6c5b8d0018a7588dbb` with `CARGO_BUILD_JOBS=4`, repository Xcode 26.2, and no Xcode override. It failed exit 101: startup p95/max `535.866375 ms > 500 ms` p95 ceiling, while command first-result p95/max `40.241083/40.528958 ms` passed and `regressions` contained exactly the startup `abs_p95` failure. The fresh artifact is report-only (`canonical: false`). Log `/tmp/f2-controlled-perf-20260809T103013Z.log` SHA-256 `8a9506d5bc85ee56ca42d30cf852f52669235614a44ece659a1d9c6c546a6a99`; JSON SHA-256 `bda9b7708193d631c837c8a959a9b456e01e6f8181ad626c00f0164f98c021d7`; raw samples SHA-256 `8a901414caa62a9ea4f75bbd1df060dad56b2b103137735f4dc4190733411988`. The reproduction is consumed; no unchanged-tree rerun and no threshold/sample/baseline relaxation are permitted. A final isolated diagnostic measured the six allowed adapter seams at less than `6 ms` total versus the required approximately `36 ms` recovery; the only large measured synchronous interval was forbidden `open_initial_tab` at `73 ms`. No product candidate exists, the one changed-candidate performance run remains unused, and the complete closeout sequence remains correctly unstarted. Next gate: a separately reviewed and committed decision defining genuinely new causal product territory or canonical-runner policy without silently relaxing acceptance. |
+| F2-CLOSEOUT | `planned` | Deferred by Patrick until the first feature-complete MVP so delivery does not over-invest in startup performance now. The one allowed unchanged-tree reproduction remains consumed and red at startup p95/max `535.866375 ms > 500 ms`; command first-result p95/max `40.241083/40.528958 ms` passed. No retry, threshold/sample/baseline relaxation, or silent closeout claim is permitted. The six previously allowed adapter seams were measured below `6 ms` total versus approximately `36 ms` required recovery; no candidate exists and the changed-candidate performance run remains unused. Before release, define new causal territory or canonical-runner policy, then execute the full canonical verify/E2E/performance/package sequence. Existing evidence fingerprints remain recorded in the F2 rows below. |
 | PERF-500-50 | `blocked` | stable measured 500-tab/50-session frame-time evidence on a dedicated canonical runner; functional 500/50 and measured 230/20 are not substitutes |
 | PERF-RUNNER | `blocked` | name/provision the canonical runner and accepted baseline publication surface |
 | PERF-RESOURCES | `planned` | CPU, wakeups, energy, memory pressure, and suspend/resume evidence |
@@ -166,6 +170,11 @@ forbidden.
   Orchestrator commits, merges, and integrates.
 - Never weaken tests, validators, budgets, sample counts, deadlines, or
   acceptance criteria.
+- Dedicated startup optimization and the full release closeout are deliberately
+  deferred until the first feature-complete MVP. This changes scheduling only:
+  the `≤500 ms` target and all recorded red evidence remain authoritative.
+- Feature-specific regression coverage and required bounded performance E2E
+  remain part of each user-visible implementation slice.
 - GUI, real-app E2E, and performance gates are strictly serialized through the
   repository GUI lock.
 - Preserve unrelated dirty files and worktrees by explicit scope and
@@ -202,9 +211,9 @@ forbidden.
 | F2 allowed-seam materiality blocker | bounded workflow `bbr-f2-startup-bounded-implementation-mslsp99m-l84a3h`; one diagnostic only; no acceptance or changed-candidate gate | release+testkit diagnostic under the repository GUI lock measured harness spawn→commit `588.83 ms` and app process→commit `228.02 ms`. App-relative points: application run `60 ms`, store open `66 ms`, window options `67 ms`, engine build `120 ms`, window complete `129 ms`, each of find/error/zoom/menu/geometry/downloads start and finish at `129 ms`, initial-tab open `129→202 ms` (`73 ms`), Portal `202→210 ms` (`8 ms`), PresentationCommitted `228 ms`; cold-profile restore-window-state was absent. Because each of the six allowed seams was below one-millisecond resolution, their combined cost is less than `6 ms`, far below the approximately `36 ms` required recovery. The only large measured interval, `open_initial_tab`, and Portal were outside this lane. The writer therefore made no product candidate and did not consume the changed-candidate performance run. Evidence log `/tmp/f2-diag-startup-20260809T125051Z.log`, SHA-256 `c9248864ae54036b2d1a3b04ecf779e6aa91a9f30ab17f02fc394fc925b5f54d`. All `F2DIAG` code, both `zz_diag` tests, diagnostic profiles under `/tmp/bbr-f2diag`, and the failed no-op log were removed. Lane is byte-clean at `1eb74b1…` / `0941b044…`; status-z SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`; no BBR process or GUI-lock holder remains. |
 | G1a recovery settlement/review | recovery candidate `49bee8bf…` survived independent gates unchanged | first reviewer found only F1 duplicate `SpaceChipVisuals`, F2 crate-local lock, and F3 stale architecture wording; dependency closure, behavior cutover, module budgets, non-GUI gates, affected E2E, and repeated perf passes were accepted. |
 | G1a remediation and serial completion | bounded writer resolved F1–F3, then Orchestrator added only the required root workspace and Justfile serial points | one canonical `bbr-ui::state::SpaceChipVisuals`; no crate-local lock; implemented architecture truth; root `Cargo.toml` includes `crates/bbr-ui`; `just verify` includes `ui-deps`; 46 script tests registered. Complete tree `8c441f2c…`, status `5c7f058f…`, mixed real index unchanged. |
-| G1a focused pass/freeze | fresh reviewer returned direct `REVIEW_PASS` with every fingerprint stable and all focused gates green | Orchestrator committed the exact reviewed tree as `e6d3ab85…`; commit tree `8c441f2c…`; worktree clean. No control-trunk integration occurred because successful F2 closeout and then B1 remain serial predecessors. G1b remains blocked until G1a is integrated. |
+| G1a focused pass/freeze | fresh reviewer returned direct `REVIEW_PASS` with every fingerprint stable and all focused gates green | Orchestrator committed the exact reviewed tree as `e6d3ab85…`; commit tree `8c441f2c…`; worktree clean. It originally waited behind successful F2 closeout and B1; the MVP-first scheduling decision below removes only the F2 performance dependency. B1 remains the serial predecessor, and G1b remains blocked until G1a is integrated. |
 | Downstream read-only readiness | B1/G1a/G1b integration preflights plus B2/B3, G2/G3, Z1–Z5, and evidence-lane maps completed without mutation | durable packet-grounded dependencies are prepared, but findings derived from the unrelated dirty `bbr@0dc22fe` worktree were rejected. No readiness workflow authorizes a writer; only this committed snapshot and fresh identity/ownership audits may unlock work. |
-| Deliberate deferrals | G1b, B1 integration, G1a integration, B2, B3, G2, G3, Z1–Z5, ENGINE-SPIKE, blocked evidence rows | B1 and G1a are technically frozen but deliberately remain dependency-gated by the explicit successful-F2-closeout and B1→G1a order; no item is deferred merely for conflict probability |
+| MVP-first scheduling decision | F2 startup closeout deferred; B1 and G1a frozen; G1b and downstream dependency-gated | Patrick explicitly moved dedicated startup optimization and full performance/package closeout behind the first feature-complete MVP without changing the `≤500 ms` target. Functional F2 evidence is green, so B1 integration is now executable; G1a follows B1, then G1b. Other items remain gated only by their product and ownership dependencies, not by the deferred startup closeout. |
 
 ## Cutover and rollback protocol
 
