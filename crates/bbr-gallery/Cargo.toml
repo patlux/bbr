@@ -1,0 +1,45 @@
+[package]
+name = "bbr-gallery"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "BBR Gallery — dev-only keyboard-first component browser (never packaged, never in just e2e)."
+
+[[bin]]
+name = "bbr-gallery"
+path = "src/main.rs"
+
+[dependencies]
+bbr-ui = { path = "../bbr-ui" }
+# The single hue/identity authority (bbr_domain::ProfileHue) the §12
+# profile-chip story needs; bbr-ui does not re-export it. bbr-domain is the
+# portable identity crate (the same dependency bbr-ui itself declares), not
+# a runtime authority — the forbidden set stays browser/engine/persistence/
+# testkit/fixtures/app.
+bbr-domain.workspace = true
+gpui.workspace = true
+gpui_platform.workspace = true
+# The established vendored gpui-component 0.5.1 production control stack
+# (the same source bbr-app already consumes) for the G1b Core Controls
+# stories: Button, Input, Checkbox, Switch, Radio, Slider, Progress. The
+# gallery renders the exact production symbols — no Gallery-local
+# reimplementation/restyle/copy — and initializes gpui_component + the Root
+# window wrapper through the same production integration pattern the
+# controls require.
+gpui-component.workspace = true
+
+# Linux/FreeBSD: keep the workspace evaluating (GPUI-CE needs a platform
+# backend to compile its platform layer; gpui_platform pulls gpui_linux).
+[target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
+gpui_platform = { workspace = true, features = ["wayland"] }
+
+[dev-dependencies]
+# GPUI's established main-thread test support (`gpui::TestApp`/`TestAppWindow`
+# with `TestPlatform`): the in-process E2E harness runs on the test thread
+# without a real window server or the real main thread. The feature is a
+# dev-only union on the already-allowed `gpui` dependency (the same pattern
+# the vendored gpui-component uses for its own tests); the direct-dependency
+# allowlist is unchanged.
+gpui = { workspace = true, features = ["test-support"] }
+toml = "0.8"

@@ -156,6 +156,17 @@ e2e-perf-full:
 e2e-perf-inject:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_full_timeout}} cargo test --release -p bbr --features testkit --test e2e_performance_inject -- --ignored --nocapture
 
+# --- Gallery lane (G1b): dev-only component browser, never in `just e2e` ---
+# The gallery is a separate native GPUI app (crates/bbr-gallery) with an
+# in-process, non-network E2E suite. Both recipes are GUI-locked and
+# dev-only; the gallery is never packaged into the .app and never joins
+# the canonical `just e2e`.
+gallery:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{run_timeout}} cargo run -p bbr-gallery
+
+e2e-gallery:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr-gallery --bin bbr-gallery -- --ignored --nocapture
+
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
 e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-auth e2e-perf
