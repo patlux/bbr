@@ -12,7 +12,7 @@ use gpui::{
     Stateful, Styled, Window,
 };
 
-use crate::theme::Theme;
+use bbr_ui::theme::Theme;
 
 /// DESIGN §5: the minimum adjustable sidebar width (pt).
 pub const SIDEBAR_MIN: f32 = 200.0;

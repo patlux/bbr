@@ -86,8 +86,12 @@ mod tab;
 mod testkit;
 mod u2;
 mod u2_surface;
+// App-owned snapshot → bbr-ui DTO adapters (Favorite/Folder/browser
+// snapshot conversions stay in bbr-app; the DTOs and rendering live in
+// bbr-ui).
 #[cfg(test)]
 mod u2_tests;
+pub(crate) mod ui_adapters;
 pub(crate) mod zoom;
 #[cfg(feature = "testkit")]
 mod zoom_benchmarks;

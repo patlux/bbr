@@ -6,6 +6,7 @@ members = [
     "crates/bbr-fixtures",
     "crates/bbr-web-macos",
     "crates/bbr-app",
+    "crates/bbr-ui",
     "crates/bbr-domain",
     "crates/bbr-browser",
     "crates/bbr-command",

@@ -112,6 +112,11 @@ impl CommandText {
     }
 
     /// True when the field is empty.
+    ///
+    /// Consumed by the test suite only since the G1a cutover moved the
+    /// legacy inline field render (the only production caller) into
+    /// `bbr_ui::components::address`; gated so the bin build stays clean.
+    #[cfg(test)]
     pub fn is_empty(&self) -> bool {
         self.text.is_empty()
     }

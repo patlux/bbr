@@ -39,7 +39,7 @@ use bbr_web_macos::find_mapping::FindCompletion;
 
 use crate::portal::geometry::{Edges, FitMode, PortalAnchor, Pt, Sz};
 use crate::portal::state::{DismissalPolicy, PortalPlacement, PortalRequest};
-use crate::theme::Theme;
+use bbr_ui::theme::Theme;
 
 use super::BbrApp;
 
@@ -488,7 +488,7 @@ impl BbrApp {
 /// clamp ([`FIND_BAR_WIDTH`]); both come from settled tokens, never local
 /// literals.
 fn find_placement(viewport: Sz, theme: &Theme) -> PortalPlacement {
-    let gap = f32::from(crate::theme::Spacing::sp2());
+    let gap = f32::from(bbr_ui::theme::Spacing::sp2());
     let row = f32::from(theme.density.row());
     PortalPlacement::Anchored(crate::portal::state::AnchoredPlacement {
         anchor_point: Pt::new(viewport.width - gap, gap),

@@ -40,7 +40,7 @@
 //! # Chrome-only interpolation
 //!
 //! While tracking, [`BbrApp::swipe_tint`] derives the source/destination
-//! chrome presentations from the one central [`crate::theme::space_tint`]
+//! chrome presentations from the one central [`bbr_ui::theme::space_tint`]
 //! resolver and blends them by the signed progress
 //! ([`interpolate_tint`], progress clamped to [0, 1] so a reversal returns
 //! the exact source). Only BBR-owned sidebar material and the active-chip
@@ -52,7 +52,7 @@
 use bbr_browser::{SpaceId, SpaceTheme};
 use gpui::{Context, Rgba, ScrollDelta, ScrollWheelEvent, TouchPhase, Window};
 
-use crate::theme::{space_tint, SpaceTint};
+use bbr_ui::theme::{space_tint, SpaceTint};
 
 use super::BbrApp;
 
@@ -489,8 +489,8 @@ impl BbrApp {
             destination: gesture.map(|gesture| TestSpaceId(gesture.destination().0)),
             direction: gesture.map(|gesture| gesture.direction().name().to_string()),
             progress: gesture.map_or(0.0, |gesture| gesture.progress()),
-            interpolated_chrome_tint: tint.map(|tint| crate::theme::hex(tint.chrome)),
-            interpolated_chip_tint: tint.map(|tint| crate::theme::hex(tint.chip_active)),
+            interpolated_chrome_tint: tint.map(|tint| bbr_ui::theme::hex(tint.chrome)),
+            interpolated_chip_tint: tint.map(|tint| bbr_ui::theme::hex(tint.chip_active)),
         }
     }
 }

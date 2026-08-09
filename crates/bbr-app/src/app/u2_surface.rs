@@ -6,9 +6,10 @@
 
 use gpui::{div, prelude::*, Context, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window};
 
-use crate::components;
-use crate::theme::{Radius, Spacing, Theme};
+use bbr_ui::components as ui;
+use bbr_ui::theme::{Radius, Spacing, Theme};
 
+use super::ui_adapters;
 use super::BbrApp;
 
 impl BbrApp {
@@ -27,7 +28,7 @@ impl BbrApp {
         }
         let p = theme.palette;
         let selected = self.u2.plus_menu.selected_item();
-        let items: Vec<gpui::AnyElement> = crate::components::plus_menu_items()
+        let items: Vec<gpui::AnyElement> = ui::plus_menu_items()
             .iter()
             .enumerate()
             .map(|(index, item)| {
@@ -70,7 +71,7 @@ impl BbrApp {
             .collect();
         Some(
             div()
-                .id(components::menu::PLUS_MENU_ID)
+                .id(ui::menu::PLUS_MENU_ID)
                 .track_focus(&self.u2.plus_menu_handle)
                 .mx(Spacing::sp2())
                 .mb(Spacing::sp1())
@@ -108,7 +109,7 @@ impl BbrApp {
     pub fn favorites_surface(
         &self,
         theme: &Theme,
-        tiles: &[components::FavoriteTileSpec],
+        tiles: &[ui::FavoriteTileSpec],
         cx: &mut Context<Self>,
     ) -> Option<Stateful<Div>> {
         if tiles.is_empty() {
@@ -124,13 +125,13 @@ impl BbrApp {
                 let activate = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
                     this.activate_favorite(index, window, cx);
                 });
-                components::favorite_tile(theme, tile, activate).into_any()
+                ui::favorite_tile(theme, tile, activate).into_any()
             })
             .collect();
-        let grid = components::favorites_grid(theme, children);
+        let grid = ui::favorites_grid(theme, children);
         Some(
             div()
-                .id(components::favorites::FAVORITES_SECTION_ID)
+                .id(ui::favorites::FAVORITES_SECTION_ID)
                 .flex()
                 .flex_col()
                 .pb(Spacing::sp1())
@@ -163,8 +164,8 @@ impl BbrApp {
     pub fn folders_surface(
         &self,
         theme: &Theme,
-        rows: &[components::FolderRowSpec],
-        members: &[components::FolderMemberVisual],
+        rows: &[ui::FolderRowSpec],
+        members: &[ui::FolderMemberVisual],
         window: &Window,
         cx: &mut Context<Self>,
     ) -> Option<Stateful<Div>> {
@@ -174,7 +175,7 @@ impl BbrApp {
         let p = theme.palette;
         let focused = self.u2.folders_handle.is_focused(window);
         let mut children: Vec<gpui::AnyElement> =
-            vec![components::section_label(theme, "Folders", focused).into_any()];
+            vec![ui::section_label(theme, "Folders", focused).into_any()];
         for row in rows {
             let index = row.index;
             let focus = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
@@ -185,7 +186,7 @@ impl BbrApp {
                 this.toggle_folder(index, cx);
             });
             children.push(
-                components::folder_row(theme, row, toggle)
+                ui::folder_row(theme, row, toggle)
                     .on_mouse_down(MouseButton::Left, focus)
                     .into_any(),
             );
@@ -199,12 +200,12 @@ impl BbrApp {
                     cx.stop_propagation();
                     this.close_folder_member(folder, member_index, window, cx);
                 });
-                children.push(components::folder_item_row(theme, member, select, close).into_any());
+                children.push(ui::folder_item_row(theme, member, select, close).into_any());
             }
         }
         Some(
             div()
-                .id(components::folders::FOLDERS_ID)
+                .id(ui::folders::FOLDERS_ID)
                 .track_focus(&self.u2.folders_handle)
                 .flex()
                 .flex_col()
@@ -226,9 +227,9 @@ impl BbrApp {
 /// organization read model, shared by the tab surface, the favorites grid,
 /// and the folders list (and by the snapshot's §15 derivation).
 pub struct U2Rail {
-    pub favorite_tiles: Vec<crate::components::FavoriteTileSpec>,
-    pub folder_rows: Vec<crate::components::FolderRowSpec>,
-    pub folder_members: Vec<crate::components::FolderMemberVisual>,
+    pub favorite_tiles: Vec<ui::FavoriteTileSpec>,
+    pub folder_rows: Vec<ui::FolderRowSpec>,
+    pub folder_members: Vec<ui::FolderMemberVisual>,
 }
 
 impl BbrApp {
@@ -238,10 +239,10 @@ impl BbrApp {
     /// source the snapshot reports.
     pub(crate) fn u2_rail_data(&mut self) -> U2Rail {
         let organization = self.organization.organization_snapshot(&self.controller);
-        let favorite_tiles = components::favorite_tiles(&organization.favorites);
+        let favorite_tiles = ui_adapters::favorite_tiles(&organization.favorites);
         let folder_rows =
-            components::folder_row_specs(&organization.folders, &self.u2.folder_presentation);
-        let folder_members = components::folder_member_visuals(
+            ui_adapters::folder_row_specs(&organization.folders, &self.u2.folder_presentation);
+        let folder_members = ui_adapters::folder_member_visuals(
             &folder_rows,
             &organization.folders,
             &self.controller.snapshot().all_tabs,
@@ -301,13 +302,13 @@ impl BbrApp {
                 let select = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
                     this.select_space_via_pointer(space, window, cx)
                 });
-                components::space_chip(theme, visual, swipe_tint, select)
+                crate::components::space_chip(theme, visual, swipe_tint, select)
             })
             .collect::<Vec<Stateful<Div>>>();
-        let strip = components::space_strip(theme, self.space_strip_scroll.clone(), chips)
+        let strip = crate::components::space_strip(theme, self.space_strip_scroll.clone(), chips)
             .track_focus(&self.space_strip_handle)
             .on_key_down(cx.listener(Self::on_space_strip_key_down));
-        components::footer_surface(
+        ui::footer_surface(
             theme,
             self.downloads_control_handle.clone(),
             self.downloads_control_handle.is_focused(window),

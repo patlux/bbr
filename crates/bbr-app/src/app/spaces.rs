@@ -168,7 +168,7 @@ impl BbrApp {
     /// current drag-to-chip state. The render, the snapshot, and the
     /// semantic tree all call this same method so the chip ids and states
     /// can never drift.
-    pub(crate) fn space_chip_visuals(&self) -> Vec<crate::components::SpaceChipVisuals> {
+    pub(crate) fn space_chip_visuals(&self) -> Vec<bbr_ui::state::SpaceChipVisuals> {
         let browser = self.controller.snapshot();
         let budget = crate::shell::space_title_budget_chars(&self.theme());
         // The one drag-state source: the exact persistent chip the pointer
@@ -188,7 +188,7 @@ impl BbrApp {
                     .space_appearance(space.id)
                     .expect("space exists");
                 let targeted = drag_chip == Some(space.id);
-                crate::components::SpaceChipVisuals {
+                bbr_ui::state::SpaceChipVisuals {
                     // The persistent id is the chip identity; the vector
                     // position is display order only.
                     space: space.id,
@@ -208,7 +208,7 @@ impl BbrApp {
                                 .profiles
                                 .iter()
                                 .find(|profile| profile.id == space.profile)
-                                .map(|profile| crate::components::ProfileCompanion {
+                                .map(|profile| bbr_ui::state::ProfileCompanion {
                                     profile_index: profile.index,
                                     letter: crate::shell::space::profile_monogram(&profile.title),
                                     hue: profile.hue,

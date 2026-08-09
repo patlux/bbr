@@ -12,19 +12,20 @@
 //! identity renders its canonical string form here). The chip's accessible
 //! name carries the space and profile names, so identity is never
 //! color-only. The active chip renders the space's **resolved theme tint**
-//! (the one central [`crate::theme::space_tint`] model — the active token
+//! (the one central [`bbr_ui::theme::space_tint`] model — the active token
 //! tints the chip, never a raw consumer color) plus a persistent selected
 //! surface and a focus-independent accent rail; inactive chips stay quiet.
 //! The strip scrolls the selected chip fully into view without changing
 //! order through the tracked [`ScrollHandle`].
 
-use bbr_browser::{SpaceId, SpaceTheme};
+use bbr_browser::SpaceId;
 use gpui::{
     div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, ScrollHandle, SharedString,
     Stateful, Styled, Window,
 };
 
-use crate::theme::{Radius, Spacing, Theme};
+use bbr_ui::state::SpaceChipVisuals;
+use bbr_ui::theme::{Radius, Spacing, Theme};
 
 /// The §15 id of the permanent space strip.
 pub const SPACE_STRIP_ID: &str = "bbr-space-strip";
@@ -41,43 +42,6 @@ pub fn space_chip_id(space: SpaceId) -> SharedString {
 /// persistent [`SpaceId`] (`bbr-space-identity-<persistent-space-id>`).
 pub fn space_identity_id(space: SpaceId) -> SharedString {
     SharedString::from(format!("bbr-space-identity-{}", space.0))
-}
-
-/// One rendered space chip's identity, derived from the controller snapshot
-/// plus the effective space appearance (the portable appearance contract's
-/// validated identity) and the app's drag state. The render, the snapshot,
-/// and the semantic tree all consume this same source so the chip ids can
-/// never drift.
-///
-/// Display ordering is the caller's vector order (canonical grouped order);
-/// the persistent id is [`Self::space`] alone.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SpaceChipVisuals {
-    /// The persistent space identity — the only identity of the chip ids
-    /// (`bbr-space-chip-<persistent-space-id>`). Never the render position,
-    /// the creation-order index, or the profile index.
-    pub space: SpaceId,
-    /// The space title after §4 truncation.
-    pub title: String,
-    /// The validated curated identity in its canonical string form (the
-    /// emoji scalar or the glyph name).
-    pub identity: String,
-    /// The effective curated theme token of this space (from the one
-    /// controller appearance authority; derived defaults included). The
-    /// chip resolves its tint through [`crate::theme::space_tint`], so the
-    /// render, the snapshot, and the semantic tree share one theme source.
-    pub theme: SpaceTheme,
-    /// Whether this is the active space (the chip renders selected).
-    pub selected: bool,
-    /// §10.9: whether a pointer drag currently targets this exact chip (the
-    /// chip renders the drag-target outline + tint plus the §12
-    /// destination-profile companion). Derived from the app's drag state,
-    /// never a render position.
-    pub drag_target: bool,
-    /// The §12 destination-profile companion rendered while this chip is
-    /// the drag target; `None` at rest. Never the only identity cue — the
-    /// chip always carries its curated identity and title.
-    pub companion: Option<crate::components::ProfileCompanion>,
 }
 
 /// The §11.3 space strip: the single-line horizontal scroll viewport that
@@ -118,7 +82,7 @@ pub fn space_strip(
 pub fn space_chip(
     theme: &Theme,
     visuals: &SpaceChipVisuals,
-    swipe_tint: Option<crate::theme::SpaceTint>,
+    swipe_tint: Option<bbr_ui::theme::SpaceTint>,
     on_select: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
@@ -129,7 +93,7 @@ pub fn space_chip(
     // tokens (the tint is never the only state cue). While a swipe tracks,
     // the active chip's surface interpolates toward the adjacent space's
     // presentation (chrome-only; the selected evidence never changes).
-    let tint = crate::theme::space_tint(visuals.theme, theme);
+    let tint = bbr_ui::theme::space_tint(visuals.theme, theme);
     let chip_surface = if selected {
         swipe_tint.map_or(tint.chip_active, |swipe| swipe.chip_active)
     } else {
@@ -170,11 +134,11 @@ pub fn space_chip(
             // destination-profile companion (monogram + hue tile), so the
             // destination profile is never communicated by color alone.
             let companion = visuals.companion.as_ref().map(|companion| {
-                let spec = crate::components::ProfileChipSpec {
+                let spec = bbr_ui::components::ProfileChipSpec {
                     letter: companion.letter.clone(),
                     hue: companion.hue,
                 };
-                crate::components::profile_chip(theme, companion.profile_index, &spec)
+                bbr_ui::components::profile_chip(theme, companion.profile_index, &spec)
             });
             el.border_1()
                 .border_color(p.accent)
@@ -207,6 +171,7 @@ pub fn space_chip(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bbr_browser::SpaceTheme;
 
     /// A chip visual for a persistent space; the fields that are irrelevant
     /// to id stability vary per caller.
@@ -277,7 +242,7 @@ mod tests {
             theme: SpaceTheme::Violet,
             selected: false,
             drag_target: true,
-            companion: Some(crate::components::ProfileCompanion {
+            companion: Some(bbr_ui::state::ProfileCompanion {
                 profile_index: 1,
                 letter: "PR".into(),
                 hue: bbr_browser::ProfileHue::Violet,
@@ -309,7 +274,7 @@ mod tests {
         // The chip's resolved surfaces come from the one central model: the
         // selected surface equals the resolver's chip tint for the chip's
         // theme/mode/contrast, never a raw consumer color.
-        let theme = crate::theme::Theme::dark();
+        let theme = bbr_ui::theme::Theme::dark();
         let selected = SpaceChipVisuals {
             space: SpaceId(2),
             title: "Default".into(),
@@ -319,7 +284,7 @@ mod tests {
             drag_target: false,
             companion: None,
         };
-        let tint = crate::theme::space_tint(SpaceTheme::Cobalt, &theme);
+        let tint = bbr_ui::theme::space_tint(SpaceTheme::Cobalt, &theme);
         // The selected chip's surface is the tinted chip surface — a
         // stronger blend than the rail — distinct from the untinted
         // material and from the generic selection token.

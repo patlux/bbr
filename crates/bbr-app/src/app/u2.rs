@@ -29,8 +29,8 @@ pub const PLUS_NEW_FOLDER_TITLE: &str = "New Folder";
 pub(super) struct U2State {
     pub plus_menu_handle: FocusHandle,
     pub folders_handle: FocusHandle,
-    pub plus_menu: crate::components::menu::PlusMenuState,
-    pub folder_presentation: crate::components::folders::FolderPresentation,
+    pub plus_menu: bbr_ui::components::menu::PlusMenuState,
+    pub folder_presentation: bbr_ui::components::folders::FolderPresentation,
     pub folder_focus: usize,
     pub plus_menu_press_inside: bool,
 }
@@ -40,8 +40,8 @@ impl U2State {
         Self {
             plus_menu_handle: cx.focus_handle(),
             folders_handle: cx.focus_handle(),
-            plus_menu: crate::components::menu::PlusMenuState::default(),
-            folder_presentation: crate::components::folders::FolderPresentation::default(),
+            plus_menu: bbr_ui::components::menu::PlusMenuState::default(),
+            folder_presentation: bbr_ui::components::folders::FolderPresentation::default(),
             folder_focus: 0,
             plus_menu_press_inside: false,
         }
@@ -170,7 +170,7 @@ impl BbrApp {
     pub fn commit_plus_menu(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let selected = self.u2.plus_menu.selected_item();
         match selected.id {
-            crate::components::menu::PLUS_NEW_SPACE_ID => {
+            bbr_ui::components::menu::PLUS_NEW_SPACE_ID => {
                 match self
                     .organization
                     .new_space(&mut self.controller, PLUS_NEW_SPACE_TITLE)
@@ -190,7 +190,7 @@ impl BbrApp {
                     Err(error) => log::error!("could not create space: {error}"),
                 }
             }
-            crate::components::menu::PLUS_NEW_FOLDER_ID => {
+            bbr_ui::components::menu::PLUS_NEW_FOLDER_ID => {
                 match self
                     .organization
                     .new_folder(&self.controller, PLUS_NEW_FOLDER_TITLE)

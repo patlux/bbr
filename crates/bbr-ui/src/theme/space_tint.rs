@@ -24,28 +24,8 @@
 //!   ([`chrome_wash_hue`]) blended into the base material at a small alpha
 //!   — never the saturated identity hue itself — so the §3.1
 //!   text/hairline/accent contrast contracts hold on every tinted surface.
-//!
-//! # Calibration (empirically verified, provisional S1)
-//!
-//! - **Dark mode** washes are muted medium-dark hues (luminance ≈ 0.15): a
-//!   visible colored wash on the dark rail that still keeps light text
-//!   (`ink` ≈ 0.85 luminance) at ≥ 14:1 and `ink.secondary` at ≥ 5.9:1
-//!   (≥ 9:1 in IC).
-//! - **Light mode** washes are pale near-white pastels (luminance ≈ 0.92):
-//!   the light rail's `ink.secondary` sits only ≈ 5.92:1 above the
-//!   untinted material, so a darkening wash would break the contract; a
-//!   brightening wash raises the text contrast instead.
-//! - **Increased contrast deepens the tint** by raising the blend alpha,
-//!   which moves the chrome strictly further from the base material
-//!   (`d_ic > d_std` — the gate below recomputes the WCAG distances from
-//!   the actual blended colors for every token, mode, and contrast level
-//!   and asserts the strict inequality), while the §3.1 text contracts
-//!   still hold.
-//!
-//! Patrick accepts this calibration as provisional: the hue pairs and
-//! blend alphas are the S1 starting point, not a final color decision.
 
-use bbr_browser::SpaceTheme;
+use bbr_domain::SpaceTheme;
 use gpui::{rgb, Rgba};
 
 use crate::palette::ProfileHueRamp;
@@ -102,10 +82,14 @@ pub fn space_tint(token: SpaceTheme, theme: &Theme) -> SpaceTint {
 }
 
 /// The deterministic `#RRGGBB` wire form of a resolved chrome color (the
-/// snapshot exposes the resolved tint state as typed hex evidence; it never
-/// exposes native/web pixels). Rounding is the same per-channel rounding
-/// the render applies when blending, so the wire value equals the rendered
-/// color.
+/// §15 snapshot exposes the resolved tint state as typed hex evidence; it
+/// never exposes native/web pixels). Rounding is the same per-channel
+/// rounding the render applies when blending, so the wire value equals the
+/// rendered color.
+///
+/// Consumed by the app's testkit snapshot seam; `bbr-ui` itself uses it
+/// only from its unit tests, so the lint is relaxed.
+#[allow(dead_code)]
 pub fn hex(rgba: Rgba) -> String {
     let channel = |value: f32| (value * 255.0).round() as u8;
     format!(
@@ -319,7 +303,7 @@ mod tests {
     /// hue/mode, so there is exactly one authored identity hue per token.
     #[test]
     fn identity_tokens_reuse_the_profile_hue_tiles() {
-        use bbr_browser::ProfileHue;
+        use bbr_domain::ProfileHue;
         for mode in [ThemeMode::Dark, ThemeMode::Light] {
             let theme = Theme::new(mode, ContrastMode::Standard, Density::Normal);
             for hue in [

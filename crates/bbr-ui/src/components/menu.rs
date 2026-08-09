@@ -15,7 +15,7 @@
 //! `selection` index. The action dispatch (which command the selected item
 //! routes to) is the app layer's concern (`app::u2`).
 
-use super::Icon;
+use crate::icons::Icon;
 
 /// The §15 id of the plus menu surface.
 pub const PLUS_MENU_ID: &str = "bbr-plus-menu";
@@ -83,7 +83,7 @@ impl PlusMenuState {
 
 /// The plus-menu id set for the §15 `visible_ids` derivation: the menu
 /// surface plus its two items, exposed only while the menu is open.
-#[cfg_attr(not(feature = "testkit"), allow(dead_code))] // §15 visible-ids seam
+#[allow(dead_code)] // §15 visible-ids seam
 pub fn plus_menu_ids(state: &PlusMenuState) -> Vec<String> {
     if !state.open {
         return Vec::new();

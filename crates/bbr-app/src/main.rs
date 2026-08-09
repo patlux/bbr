@@ -21,8 +21,6 @@ mod components;
 mod dense;
 mod engine;
 mod inject;
-#[allow(dead_code)] // foundation tokens; consumed by the shell slices that follow this group
-mod palette;
 #[cfg(feature = "testkit")]
 mod performance;
 // The general Portal API (deferred host, anchored placement, escape
@@ -40,8 +38,6 @@ mod slot;
 mod store;
 #[cfg(feature = "testkit")]
 mod testkit;
-#[allow(dead_code)] // foundation tokens; consumed by the shell slices that follow this group
-mod theme;
 mod window_seam;
 
 use app::BbrApp;

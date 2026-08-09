@@ -10,7 +10,9 @@
 //! references — tab lifecycle states do not apply.
 //!
 //! This module owns the tile identity contract (ids, per-density grid
-//! columns, the tile spec derivation) and the grid anatomy. The rail
+//! columns, the tile spec) and the grid anatomy. The snapshot→spec
+//! derivation (`favorite_tiles`) stays an app-owned adapter that builds
+//! [`FavoriteTileSpec`] from the controller read model; the rail
 //! composition wires the per-tile activation listeners and the
 //! empty-region hiding (the section label renders only while tiles exist).
 
@@ -25,6 +27,7 @@ use crate::theme::{Density, Radius, Spacing, Theme, ThemeMode};
 pub const FAVORITES_ID: &str = "bbr-favorites";
 /// The §15 id of the "Favorites" section label (hidden when the grid is
 /// empty — the §11.4 region rule).
+#[allow(dead_code)] // §15 visible-ids seam; consumed by the app's snapshot
 pub const FAVORITES_SECTION_ID: &str = "bbr-section-favorites";
 
 /// The stable tile id `bbr-fav-<n>` (DESIGN.md §11.10).
@@ -48,10 +51,9 @@ pub fn grid_columns(density: Density) -> usize {
     }
 }
 
-/// One favorite destination tile's rendered identity, derived from the L5
-/// `FavoriteSnapshot` (title + url). The §7.2 monogram fallback derives
-/// deterministically from the hostname, so the tile identity never needs
-/// the favicon pipeline.
+/// One favorite destination tile's rendered identity: the §7.2 monogram
+/// fallback derives deterministically from the hostname, so the tile
+/// identity never needs the favicon pipeline.
 ///
 /// The tile also carries the concrete `TabId + SpaceId + ProfileId` the L5
 /// read model reports (DESIGN.md §11.10 data source): a favorite is an
@@ -77,24 +79,6 @@ pub struct FavoriteTileSpec {
     pub letter: char,
     /// §7.2 FNV slate-hue ramp index (0..6).
     pub hue: usize,
-}
-
-/// Derive the rendered tile specs from the session-local favorites in
-/// deterministic insertion order (the same source the grid renders).
-pub fn favorite_tiles(favorites: &[bbr_browser::FavoriteSnapshot]) -> Vec<FavoriteTileSpec> {
-    favorites
-        .iter()
-        .map(|favorite| FavoriteTileSpec {
-            index: favorite.index,
-            tab: favorite.tab.0,
-            space: favorite.space.0,
-            profile: favorite.profile.0,
-            title: favorite.title.clone(),
-            url: favorite.url.clone(),
-            letter: crate::shell::monogram_letter(&favorite.url),
-            hue: crate::shell::monogram_hue(&favorite.url),
-        })
-        .collect()
 }
 
 /// The favorites grid anatomy: a `flex_wrap` grid of pre-built tiles at the
@@ -174,7 +158,7 @@ pub fn favorites_region_height(theme: &Theme, tile_count: usize) -> f32 {
 /// The §15 id set for the `visible_ids` derivation: the section label only
 /// while tiles exist, then the grid, the tiles, and their icon slots. The
 /// caller decides the empty-region hiding exactly like the render.
-#[cfg_attr(not(feature = "testkit"), allow(dead_code))] // §15 visible-ids seam
+#[allow(dead_code)] // §15 visible-ids seam; consumed by the app's snapshot
 pub fn favorites_ids(tiles: &[FavoriteTileSpec]) -> Vec<String> {
     let mut ids = Vec::new();
     if tiles.is_empty() {
@@ -192,37 +176,38 @@ pub fn favorites_ids(tiles: &[FavoriteTileSpec]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bbr_browser::{FavoriteSnapshot, SpaceId};
-    use bbr_domain::TabId;
-    use bbr_web::ProfileId;
 
-    fn favorites() -> Vec<FavoriteSnapshot> {
+    fn tiles() -> Vec<FavoriteTileSpec> {
         vec![
-            FavoriteSnapshot {
+            FavoriteTileSpec {
                 index: 0,
-                tab: TabId(11),
-                space: SpaceId(1),
-                profile: ProfileId(1),
+                tab: 11,
+                space: 1,
+                profile: 1,
                 title: "Example".into(),
                 url: "https://example.com/a".into(),
+                letter: 'E',
+                hue: 0,
             },
-            FavoriteSnapshot {
+            FavoriteTileSpec {
                 index: 1,
-                tab: TabId(22),
-                space: SpaceId(1),
-                profile: ProfileId(1),
+                tab: 22,
+                space: 1,
+                profile: 1,
                 title: "Local".into(),
                 url: "http://localhost:8080/x".into(),
+                letter: 'L',
+                hue: 1,
             },
         ]
     }
 
     #[test]
-    fn tile_specs_keep_the_exact_tab_owner_from_the_snapshot() {
+    fn tile_specs_keep_the_exact_tab_owner() {
         // A favorite is an additional presentation of one concrete `TabId`;
         // the resolved tile carries the same tab/space/profile the L5 read
         // model reports (DESIGN.md §11.10 data-source contract).
-        let tiles = favorite_tiles(&favorites());
+        let tiles = tiles();
         assert_eq!(tiles[0].index, 0);
         assert_eq!(tiles[0].tab, 11);
         assert_eq!(tiles[0].space, 1);
@@ -267,7 +252,7 @@ mod tests {
     #[test]
     fn favorites_ids_hide_the_empty_region() {
         assert!(favorites_ids(&[]).is_empty());
-        let tiles = favorite_tiles(&favorites());
+        let tiles = tiles();
         let ids = favorites_ids(&tiles);
         assert!(ids.contains(&"bbr-section-favorites".to_string()));
         assert!(ids.contains(&"bbr-favorites".to_string()));

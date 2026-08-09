@@ -53,10 +53,10 @@ fn compact_rail_always_renders_the_space_strip_ids() {
 
 #[test]
 fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
-    use crate::components::folders::FolderPresentation;
-    use crate::components::menu::PlusMenuState;
     use bbr_browser::{FavoriteSnapshot, FolderSnapshot, SpaceId};
     use bbr_domain::{FolderId, TabId};
+    use bbr_ui::components::folders::FolderPresentation;
+    use bbr_ui::components::menu::PlusMenuState;
 
     // A controller snapshot whose global tab model resolves the folder
     // members (TabId 1 and 2) to the nested row ids.

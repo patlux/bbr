@@ -156,3 +156,39 @@ impl Density {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::theme::Radius;
+    use gpui::px;
+
+    #[test]
+    fn density_scale_tokens_match_the_settled_table() {
+        // §8/§11/§12: the S1 scale's new geometry tokens, exact per density.
+        assert_eq!(Density::Small.hit_min_close(), px(24.0));
+        assert_eq!(Density::Normal.hit_min_close(), px(28.0));
+        assert_eq!(Density::ExtraLarge.hit_min_close(), px(32.0));
+        assert_eq!(Density::Small.row_inset(), px(4.0));
+        assert_eq!(Density::Normal.row_inset(), px(8.0));
+        assert_eq!(Density::ExtraLarge.row_inset(), px(12.0));
+        assert_eq!(Density::Small.section_gap(), px(12.0));
+        assert_eq!(Density::Normal.section_gap(), px(16.0));
+        assert_eq!(Density::ExtraLarge.section_gap(), px(20.0));
+        assert_eq!(Density::Small.favorites_gap(), px(4.0));
+        assert_eq!(Density::Normal.favorites_gap(), px(8.0));
+        assert_eq!(Density::ExtraLarge.favorites_gap(), px(8.0));
+        assert_eq!(Density::Small.state_slot(), px(8.0));
+        assert_eq!(Density::Normal.state_slot(), px(10.0));
+        assert_eq!(Density::ExtraLarge.state_slot(), px(10.0));
+        assert_eq!(Density::Small.row_padding_x(), px(8.0));
+        assert_eq!(Density::Normal.row_padding_x(), px(12.0));
+        assert_eq!(Density::ExtraLarge.row_padding_x(), px(16.0));
+        assert_eq!(Density::Small.profile_chip(), px(20.0));
+        assert_eq!(Density::Normal.profile_chip(), px(24.0));
+        assert_eq!(Density::ExtraLarge.profile_chip(), px(28.0));
+        assert_eq!(Density::Small.density_radius(), Radius.small());
+        assert_eq!(Density::Normal.density_radius(), Radius.medium());
+        assert_eq!(Density::ExtraLarge.density_radius(), Radius.large());
+    }
+}

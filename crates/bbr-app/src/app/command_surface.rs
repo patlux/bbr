@@ -10,7 +10,7 @@
 
 use gpui::{div, prelude::*, px, Div, SharedString, Stateful, Styled};
 
-use crate::theme::{Radius, Spacing, Theme};
+use bbr_ui::theme::{Radius, Spacing, Theme};
 
 use super::command_rank::{CommandResultRow, CommandResultState};
 use super::BbrApp;

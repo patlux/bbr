@@ -25,6 +25,7 @@ bbr-browser.workspace = true
 bbr-command.workspace = true
 bbr-persistence.workspace = true
 bbr-split.workspace = true
+bbr-ui = { path = "../bbr-ui" }
 bbr-web.workspace = true
 gpui.workspace = true
 gpui-component.workspace = true

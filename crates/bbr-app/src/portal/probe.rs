@@ -37,7 +37,7 @@ use super::geometry::{Edges, Rect, Sz};
 use super::state::{
     DismissalPolicy, PortalHost, PortalPlacement, PortalPresentation, PortalRequest,
 };
-use crate::theme::{Spacing, Theme};
+use bbr_ui::theme::{Spacing, Theme};
 
 /// The one portal host per BBR browser window (allocated once at window
 /// construction; stable for the window's lifetime, mirroring `WebViewId`

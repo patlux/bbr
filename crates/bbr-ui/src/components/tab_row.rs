@@ -7,50 +7,28 @@ use gpui::{
     Window,
 };
 
-use crate::palette::FaviconSlate;
+use crate::icons::Icon;
+use crate::state::TabVisualState;
 use crate::theme::{Radius, Spacing, Theme, ThemeMode};
 
-use super::{FaviconSpec, Icon, RowVisuals, TabVisualState};
+use super::favicon::{favicon_tile, FaviconSpec};
 
-/// §7.2 favicon tile: the §8 density icon size (S 16 / N 18 / XL 20)
-/// square, `radius:sm`, monogram letter on the FNV-slate ramp; while
-/// loading the slot shows the §10.5 accent arc (drawn, static — rotation
-/// is a later polish pass).
-pub fn favicon_tile(
-    theme: &Theme,
-    index: usize,
-    spec: Option<FaviconSpec>,
-    state: TabVisualState,
-) -> Stateful<Div> {
-    let size = theme.density.icon();
-    let (bg, fg) = match spec {
-        Some(spec) => {
-            let bg = match theme.mode {
-                ThemeMode::Dark => FaviconSlate::dark(spec.hue),
-                ThemeMode::Light => FaviconSlate::light(spec.hue),
-            };
-            (bg, theme.palette.surface_glass)
-        }
-        None => (theme.palette.surface_field, theme.palette.ink_faint),
-    };
-    let letter = spec.map(|s| s.letter).unwrap_or('?');
-    div()
-        .id(("bbr-tab-favicon", index))
-        .size(size)
-        .rounded(Radius.small())
-        .bg(bg)
-        .flex()
-        .items_center()
-        .justify_center()
-        .text_size(theme.type_.badge.size)
-        .font_weight(theme.type_.badge.weight)
-        .text_color(fg)
-        .when(state == TabVisualState::Loading, |el| {
-            el.child(Icon::LoadingArc.canvas(theme, size))
-        })
-        .when(state != TabVisualState::Loading, |el| {
-            el.child(SharedString::from(letter.to_string()))
-        })
+/// One row's rendered identity, derived from the controller snapshot.
+#[derive(Debug, Clone)]
+pub struct RowVisuals {
+    pub index: usize,
+    pub title: SharedString,
+    pub state: TabVisualState,
+    pub favicon: Option<FaviconSpec>,
+    /// §11.2: whether the row is in the pinned region (drives the pin
+    /// control's region identity).
+    pub pinned: bool,
+    pub show_close: bool,
+    /// §10.2 hover-reveal: the close control is visible when the pointer
+    /// hovers or presses the row, the row is selected (keyboard users), or
+    /// the row is being dragged — never at rest, so the row stays quiet
+    /// until interaction.
+    pub reveal_close: bool,
 }
 
 /// §11.1 row title: one line, end-ellipsis, `type:title`; the §11.9 fallback
@@ -219,7 +197,7 @@ pub fn tab_row(
             // §10.9: the dragged row recedes (92% opacity) with an elev:2
             // shadow + strong outline, and its own controls are disabled.
             el.opacity(0.92)
-                .shadow(elev2_shadow(theme))
+                .shadow(drag_shadow(theme))
                 .border_1()
                 .border_color(p.border_strong)
         })
@@ -277,8 +255,11 @@ pub fn tab_row(
         .on_mouse_down(MouseButton::Left, on_begin_drag)
 }
 
-/// §10.9 elev:2 shadow for the dragged row: bounded GPUI shadow, no blur.
-fn elev2_shadow(theme: &Theme) -> Vec<gpui::BoxShadow> {
+/// §10.9 the dragged row's elev:2 shadow (the distinct single-shadow
+/// variant the dragged row uses — not the §2 floating-surface pair, which
+/// lives in [`crate::theme::elevation::elev2`]): bounded GPUI shadow, no
+/// blur beyond the documented radius.
+fn drag_shadow(theme: &Theme) -> Vec<gpui::BoxShadow> {
     let color = if theme.mode == ThemeMode::Dark {
         gpui::rgba(0x00000073).into()
     } else {

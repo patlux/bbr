@@ -10,22 +10,26 @@
 //! snaps (`dur:instant`); the app layer holds the presentation state only
 //! ([`FolderPresentation`] — the domain model is L5-owned).
 //!
-//! This module owns the folder identity contract (ids, the row spec
-//! derivation, the presentation state) and the folder-row anatomy. The
-//! nested-row rendering consumes member tab visuals and is wired by the
-//! rail composition; the id derivation for nested rows is already contract.
+//! This module owns the folder identity contract (ids, the row spec types,
+//! the presentation state) and the folder-row anatomy. The snapshot→spec
+//! derivations (`folder_row_specs`, `folder_member_visuals`) stay
+//! app-owned adapters that build [`FolderRowSpec`]/[`FolderMemberVisual`]
+//! from the controller read model; the nested-row rendering consumes member
+//! tab visuals and is wired by the rail composition; the id derivation for
+//! nested rows is already contract.
 
 use gpui::{
     div, prelude::*, App, Div, MouseButton, MouseDownEvent, SharedString, Stateful, Styled, Window,
 };
 
-use crate::theme::{Radius, Spacing, Theme};
-
-use super::Icon;
+use crate::icons::Icon;
+use crate::palette::FaviconSlate;
+use crate::theme::{Radius, Spacing, Theme, ThemeMode};
 
 /// The §15 id of the folders list container.
 pub const FOLDERS_ID: &str = "bbr-folders";
 /// The §15 id of the "Folders" section label (hidden when empty).
+#[allow(dead_code)] // §15 visible-ids seam; consumed by the app's snapshot
 pub const FOLDERS_SECTION_ID: &str = "bbr-section-folders";
 
 /// The stable folder-row id `bbr-folder-row-<n>` (DESIGN.md §11.11).
@@ -84,25 +88,6 @@ pub struct FolderRowSpec {
     pub expanded: bool,
 }
 
-/// Derive the rendered folder rows in creation order (the same source the
-/// folders list renders). Member counts come from the L5 snapshot; the
-/// expanded/collapsed value from the app-local presentation state.
-pub fn folder_row_specs(
-    folders: &[bbr_browser::FolderSnapshot],
-    presentation: &FolderPresentation,
-) -> Vec<FolderRowSpec> {
-    folders
-        .iter()
-        .map(|folder| FolderRowSpec {
-            index: folder.index,
-            id: folder.id.0,
-            title: folder.title.clone(),
-            count: folder.members.len(),
-            expanded: presentation.is_expanded(folder.index),
-        })
-        .collect()
-}
-
 /// One nested §11.1 row's rendered identity inside an expanded folder:
 /// the folder/nested positions that key the stable `bbr-folder-item-<n>-<m>`
 /// ids plus the member's display title, §7.2 monogram letter, and slate hue.
@@ -116,42 +101,6 @@ pub struct FolderMemberVisual {
     pub letter: char,
     /// §7.2 FNV slate-hue ramp index (0..6), from the member's URL.
     pub hue: usize,
-}
-
-/// Resolve the expanded folders' member rows from the L5 snapshot: each
-/// member `TabId` maps through the controller's global read model to its
-/// display title and monogram letter, in folder order, for expanded folders
-/// only (collapsed folders render no nested rows). Deterministic: the folder
-/// creation-order index and the member's folder position are the ids.
-pub fn folder_member_visuals(
-    rows: &[FolderRowSpec],
-    folders: &[bbr_browser::FolderSnapshot],
-    tabs: &[bbr_browser::GlobalTabSnapshot],
-) -> Vec<FolderMemberVisual> {
-    let mut visuals = Vec::new();
-    for spec in rows {
-        if !spec.expanded {
-            continue;
-        }
-        let folder = folders
-            .iter()
-            .find(|folder| folder.index == spec.index)
-            .expect("folder row derives from the snapshot");
-        for (member, tab_id) in folder.members.iter().enumerate() {
-            let tab = tabs
-                .iter()
-                .find(|tab| tab.id == *tab_id)
-                .expect("reconciled folder member exists in the controller");
-            visuals.push(FolderMemberVisual {
-                folder: spec.index,
-                member,
-                title: crate::shell::display_title(&tab.url, &tab.title),
-                letter: crate::shell::monogram_letter(&tab.url),
-                hue: crate::shell::monogram_hue(&tab.url),
-            });
-        }
-    }
-    visuals
 }
 
 /// The session-local folder presentation state the app layer owns
@@ -246,7 +195,7 @@ pub fn folder_row(
 /// ids, and — for expanded folders — the nested row ids plus their
 /// title/favicon/close slots (`bbr-folder-item-<n>-<m>` + `-title`/
 /// `-favicon`/`-close`, deterministic 0-based nested positions).
-#[cfg_attr(not(feature = "testkit"), allow(dead_code))] // §15 visible-ids seam
+#[allow(dead_code)] // §15 visible-ids seam; consumed by the app's snapshot
 pub fn folders_ids(rows: &[FolderRowSpec], members: &[FolderMemberVisual]) -> Vec<String> {
     let mut ids = Vec::new();
     if rows.is_empty() {
@@ -282,8 +231,8 @@ pub fn folder_item_row(
 ) -> Stateful<Div> {
     let p = theme.palette;
     let slate = match theme.mode {
-        crate::theme::ThemeMode::Dark => crate::palette::FaviconSlate::dark(visual.hue),
-        crate::theme::ThemeMode::Light => crate::palette::FaviconSlate::light(visual.hue),
+        ThemeMode::Dark => FaviconSlate::dark(visual.hue),
+        ThemeMode::Light => FaviconSlate::light(visual.hue),
     };
     let monogram = div()
         .id(folder_item_favicon_id(visual.folder, visual.member))
@@ -336,25 +285,22 @@ pub fn folder_item_row(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bbr_browser::FolderSnapshot;
-    use bbr_browser::SpaceId;
-    use bbr_domain::{FolderId, TabId};
 
-    fn folders() -> Vec<FolderSnapshot> {
+    fn rows() -> Vec<FolderRowSpec> {
         vec![
-            FolderSnapshot {
+            FolderRowSpec {
                 index: 0,
-                id: FolderId(1),
-                space: SpaceId(1),
+                id: 1,
                 title: "Work".into(),
-                members: vec![TabId(1), TabId(2)],
+                count: 2,
+                expanded: false,
             },
-            FolderSnapshot {
+            FolderRowSpec {
                 index: 1,
-                id: FolderId(2),
-                space: SpaceId(1),
+                id: 2,
                 title: "Reading".into(),
-                members: vec![],
+                count: 0,
+                expanded: false,
             },
         ]
     }
@@ -393,10 +339,11 @@ mod tests {
     }
 
     #[test]
-    fn folder_rows_derive_counts_and_expansion() {
+    fn folder_rows_carry_counts_and_expansion() {
         let mut presentation = FolderPresentation::default();
         presentation.toggle(0);
-        let rows = folder_row_specs(&folders(), &presentation);
+        let mut rows = rows();
+        rows[0].expanded = presentation.is_expanded(0);
         assert_eq!(rows.len(), 2);
         assert_eq!(rows[0].index, 0);
         assert_eq!(rows[0].title, "Work");
@@ -410,10 +357,8 @@ mod tests {
     #[test]
     fn folders_ids_hide_the_empty_region_and_mirror_expansion() {
         assert!(folders_ids(&[], &[]).is_empty());
-        let mut presentation = FolderPresentation::default();
-        let collapsed = folder_row_specs(&folders(), &presentation);
-        let members = folder_member_visuals(&collapsed, &folders(), &tabs());
-        let ids = folders_ids(&collapsed, &members);
+        let rows = rows();
+        let ids = folders_ids(&rows, &[]);
         assert!(ids.contains(&"bbr-section-folders".to_string()));
         assert!(ids.contains(&"bbr-folders".to_string()));
         assert!(ids.contains(&"bbr-folder-row-0".to_string()));
@@ -421,10 +366,23 @@ mod tests {
             !ids.iter().any(|id| id.starts_with("bbr-folder-item")),
             "collapsed folders expose no nested ids"
         );
-        presentation.toggle(0);
-        let expanded = folder_row_specs(&folders(), &presentation);
-        let members = folder_member_visuals(&expanded, &folders(), &tabs());
-        let ids = folders_ids(&expanded, &members);
+        let members = [
+            FolderMemberVisual {
+                folder: 0,
+                member: 0,
+                title: "Example".into(),
+                letter: 'E',
+                hue: 0,
+            },
+            FolderMemberVisual {
+                folder: 0,
+                member: 1,
+                title: "Local".into(),
+                letter: 'L',
+                hue: 1,
+            },
+        ];
+        let ids = folders_ids(&rows, &members);
         for required in [
             "bbr-folder-item-0-0",
             "bbr-folder-item-0-0-title",
@@ -439,49 +397,33 @@ mod tests {
         }
         assert!(
             !ids.iter().any(|id| id.starts_with("bbr-folder-item-1")),
-            "the collapsed folder 1 exposes no nested ids"
+            "folder 1 exposes no nested ids"
         );
     }
 
     #[test]
-    fn member_visuals_resolve_ids_titles_and_monograms_in_folder_order() {
-        let mut presentation = FolderPresentation::default();
-        presentation.toggle(0);
-        let rows = folder_row_specs(&folders(), &presentation);
-        let visuals = folder_member_visuals(&rows, &folders(), &tabs());
-        assert_eq!(visuals.len(), 2, "only the expanded folder's members");
-        assert_eq!(visuals[0].folder, 0);
-        assert_eq!(visuals[0].member, 0);
-        assert_eq!(visuals[0].letter, 'E');
-        assert_eq!(visuals[1].member, 1);
-        assert_eq!(visuals[1].letter, 'L');
-        assert!((0..6).contains(&visuals[0].hue));
-        // Collapsed folder 1 contributes nothing even though it is empty.
-        presentation.toggle(1);
-        let rows = folder_row_specs(&folders(), &presentation);
-        let visuals = folder_member_visuals(&rows, &folders(), &tabs());
-        assert_eq!(visuals.len(), 2, "empty folder 1 adds no members");
-    }
-
-    fn tabs() -> Vec<bbr_browser::GlobalTabSnapshot> {
-        vec![
-            global_tab(1, 0, "https://example.com/a", "Example"),
-            global_tab(2, 1, "http://localhost:8080/x", "Local"),
-        ]
-    }
-
-    fn global_tab(id: u64, index: usize, url: &str, title: &str) -> bbr_browser::GlobalTabSnapshot {
-        bbr_browser::GlobalTabSnapshot {
-            id: bbr_domain::TabId(id),
-            space: bbr_browser::SpaceId(1),
-            profile: bbr_web::ProfileId(1),
-            index,
-            url: url.into(),
-            title: title.into(),
-            pinned: false,
-            web_view: None,
-            lifecycle: bbr_browser::TabLifecycle::Warm,
-            last_used: 0,
-        }
+    fn member_visuals_carry_folder_order_identity() {
+        let members = [
+            FolderMemberVisual {
+                folder: 0,
+                member: 0,
+                title: "Example".into(),
+                letter: 'E',
+                hue: 0,
+            },
+            FolderMemberVisual {
+                folder: 0,
+                member: 1,
+                title: "Local".into(),
+                letter: 'L',
+                hue: 1,
+            },
+        ];
+        assert_eq!(members[0].folder, 0);
+        assert_eq!(members[0].member, 0);
+        assert_eq!(members[0].letter, 'E');
+        assert_eq!(members[1].member, 1);
+        assert_eq!(members[1].letter, 'L');
+        assert!((0..6).contains(&members[0].hue));
     }
 }

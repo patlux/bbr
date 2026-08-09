@@ -13,7 +13,8 @@
 use bbr_testkit::protocol::{SemanticNode, SemanticRole};
 
 use super::SemanticInput;
-use crate::components::{space_chip_id, space_identity_id, SpaceChipVisuals};
+use crate::components::{space_chip_id, space_identity_id};
+use bbr_ui::state::SpaceChipVisuals;
 
 /// The §11.4 footer row node: the container, the two fixed controls
 /// (`bbr-downloads` / `bbr-plus`) with their §7 text alternatives, and the
@@ -22,7 +23,7 @@ use crate::components::{space_chip_id, space_identity_id, SpaceChipVisuals};
 /// id).
 pub fn footer_node(input: &SemanticInput<'_>) -> SemanticNode {
     let mut footer = node(
-        crate::components::footer::FOOTER_ID,
+        bbr_ui::components::footer::FOOTER_ID,
         SemanticRole::Footer,
         Some("Footer".into()),
         None,
@@ -31,7 +32,7 @@ pub fn footer_node(input: &SemanticInput<'_>) -> SemanticNode {
         vec![],
     );
     footer.children.push(node(
-        crate::components::footer::FOOTER_DOWNLOADS_ID,
+        bbr_ui::components::footer::FOOTER_DOWNLOADS_ID,
         SemanticRole::Button,
         Some("Downloads".into()),
         None,
@@ -41,9 +42,9 @@ pub fn footer_node(input: &SemanticInput<'_>) -> SemanticNode {
     ));
     footer.children.push(space_strip_node(input));
     footer.children.push(node(
-        crate::components::footer::FOOTER_PLUS_ID,
+        bbr_ui::components::footer::FOOTER_PLUS_ID,
         SemanticRole::Button,
-        Some(crate::components::footer::FOOTER_PLUS_NAME.into()),
+        Some(bbr_ui::components::footer::FOOTER_PLUS_NAME.into()),
         None,
         false,
         false,
@@ -65,7 +66,7 @@ fn space_strip_node(input: &SemanticInput<'_>) -> SemanticNode {
         .map(|chip| space_chip_node(chip, input.focus.spaces))
         .collect();
     node(
-        crate::components::footer::FOOTER_STRIP_ID,
+        bbr_ui::components::footer::FOOTER_STRIP_ID,
         SemanticRole::List,
         Some("Spaces".into()),
         None,
@@ -95,7 +96,7 @@ fn space_chip_node(chip: &SpaceChipVisuals, strip_focused: bool) -> SemanticNode
     )];
     if let Some(companion) = &chip.companion {
         children.push(node(
-            crate::components::space::profile_chip_id(companion.profile_index),
+            bbr_ui::components::space::profile_chip_id(companion.profile_index),
             SemanticRole::Chip,
             Some(companion.letter.clone()),
             None,
@@ -120,12 +121,12 @@ fn space_chip_node(chip: &SpaceChipVisuals, strip_focused: bool) -> SemanticNode
 /// The §11.4 plus menu node while open: the `bbr-plus-menu` surface with
 /// the two v1 items, `selected` on the keyboard selection. `None` while the
 /// menu is closed (the surface is not rendered).
-pub fn plus_menu_node(state: &crate::components::menu::PlusMenuState) -> Option<SemanticNode> {
+pub fn plus_menu_node(state: &bbr_ui::components::menu::PlusMenuState) -> Option<SemanticNode> {
     if !state.open {
         return None;
     }
     let selected = state.selected_item();
-    let children = crate::components::plus_menu_items()
+    let children = bbr_ui::components::plus_menu_items()
         .iter()
         .map(|item| {
             node(
@@ -140,7 +141,7 @@ pub fn plus_menu_node(state: &crate::components::menu::PlusMenuState) -> Option<
         })
         .collect();
     Some(node(
-        crate::components::menu::PLUS_MENU_ID,
+        bbr_ui::components::menu::PLUS_MENU_ID,
         SemanticRole::Menu,
         Some("Plus menu".into()),
         None,
@@ -157,7 +158,7 @@ pub fn plus_menu_node(state: &crate::components::menu::PlusMenuState) -> Option<
 /// space/profile when they differ from the current context, so cross-space
 /// favorites stay distinguishable without color.
 pub fn favorites_node(
-    tiles: &[crate::components::FavoriteTileSpec],
+    tiles: &[bbr_ui::components::FavoriteTileSpec],
     browser: &bbr_browser::ControllerSnapshot,
 ) -> Option<SemanticNode> {
     if tiles.is_empty() {
@@ -166,7 +167,7 @@ pub fn favorites_node(
     let children = tiles
         .iter()
         .map(|tile| SemanticNode {
-            id: crate::components::favorite_tile_id(tile.index).to_string(),
+            id: bbr_ui::components::favorite_tile_id(tile.index).to_string(),
             role: SemanticRole::Tile,
             name: Some(favorite_tile_name(tile, browser)),
             value: None,
@@ -175,7 +176,7 @@ pub fn favorites_node(
             focused: false,
             drag_target: false,
             children: vec![node(
-                crate::components::favorite_tile_icon_id(tile.index),
+                bbr_ui::components::favorite_tile_icon_id(tile.index),
                 SemanticRole::Favicon,
                 Some(tile.letter.to_string()),
                 None,
@@ -187,7 +188,7 @@ pub fn favorites_node(
         .collect();
     let mut section = section_node("Favorites", false);
     section.children.push(node(
-        crate::components::favorites::FAVORITES_ID,
+        bbr_ui::components::favorites::FAVORITES_ID,
         SemanticRole::Grid,
         Some("Favorites grid".into()),
         None,
@@ -203,7 +204,7 @@ pub fn favorites_node(
 /// window-global presentation of one concrete tab, so the owner context
 /// must be readable from any space/profile).
 fn favorite_tile_name(
-    tile: &crate::components::FavoriteTileSpec,
+    tile: &bbr_ui::components::FavoriteTileSpec,
     browser: &bbr_browser::ControllerSnapshot,
 ) -> String {
     let mut name = tile.title.clone();
@@ -231,8 +232,8 @@ fn favorite_tile_name(
 /// rows of expanded folders under their owning row (`bbr-folder-item-<n>-<m>`
 /// with `-title`/`-favicon`/`-close` slots).
 pub fn folders_node(
-    rows: &[crate::components::FolderRowSpec],
-    members: &[crate::components::FolderMemberVisual],
+    rows: &[bbr_ui::components::FolderRowSpec],
+    members: &[bbr_ui::components::FolderMemberVisual],
 ) -> Option<SemanticNode> {
     if rows.is_empty() {
         return None;
@@ -242,7 +243,7 @@ pub fn folders_node(
         .map(|row| {
             let mut node_children = vec![
                 node(
-                    crate::components::folder_toggle_id(row.index),
+                    bbr_ui::components::folder_toggle_id(row.index),
                     SemanticRole::Disclosure,
                     Some("Toggle folder".into()),
                     Some(
@@ -258,7 +259,7 @@ pub fn folders_node(
                     vec![],
                 ),
                 node(
-                    crate::components::folder_name_id(row.index),
+                    bbr_ui::components::folder_name_id(row.index),
                     SemanticRole::Title,
                     Some(row.title.clone()),
                     None,
@@ -267,7 +268,7 @@ pub fn folders_node(
                     vec![],
                 ),
                 node(
-                    crate::components::folder_count_id(row.index),
+                    bbr_ui::components::folder_count_id(row.index),
                     SemanticRole::Count,
                     None,
                     Some(row.count.to_string()),
@@ -285,7 +286,7 @@ pub fn folders_node(
                     }),
             );
             SemanticNode {
-                id: crate::components::folder_row_id(row.index).to_string(),
+                id: bbr_ui::components::folder_row_id(row.index).to_string(),
                 role: SemanticRole::Folder,
                 name: Some(row.title.clone()),
                 value: Some(row.count.to_string()),
@@ -299,7 +300,7 @@ pub fn folders_node(
         .collect();
     let mut section = section_node("Folders", false);
     section.children.push(node(
-        crate::components::folders::FOLDERS_ID,
+        bbr_ui::components::folders::FOLDERS_ID,
         SemanticRole::List,
         Some("Folders".into()),
         None,
@@ -315,7 +316,7 @@ pub fn folders_node(
 /// as the semantic row, so the nested tree mirrors the render.
 pub fn folder_item_node(folder: usize, member: usize, title: &str, letter: char) -> SemanticNode {
     SemanticNode {
-        id: crate::components::folder_item_id(folder, member).to_string(),
+        id: bbr_ui::components::folder_item_id(folder, member).to_string(),
         role: SemanticRole::Row,
         name: Some(title.to_string()),
         value: None,
@@ -325,7 +326,7 @@ pub fn folder_item_node(folder: usize, member: usize, title: &str, letter: char)
         drag_target: false,
         children: vec![
             node(
-                crate::components::folder_item_favicon_id(folder, member),
+                bbr_ui::components::folder_item_favicon_id(folder, member),
                 SemanticRole::Favicon,
                 Some(letter.to_string()),
                 None,
@@ -334,7 +335,7 @@ pub fn folder_item_node(folder: usize, member: usize, title: &str, letter: char)
                 vec![],
             ),
             node(
-                crate::components::folder_item_title_id(folder, member),
+                bbr_ui::components::folder_item_title_id(folder, member),
                 SemanticRole::Title,
                 Some(title.to_string()),
                 None,
@@ -343,7 +344,7 @@ pub fn folder_item_node(folder: usize, member: usize, title: &str, letter: char)
                 vec![],
             ),
             node(
-                crate::components::folder_item_close_id(folder, member),
+                bbr_ui::components::folder_item_close_id(folder, member),
                 SemanticRole::Button,
                 Some("Close tab".into()),
                 None,

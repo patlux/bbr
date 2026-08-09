@@ -10,7 +10,7 @@
 
 use gpui::{div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window};
 
-use crate::theme::{Spacing, Theme};
+use bbr_ui::theme::{Spacing, Theme};
 
 use super::super::downloads::action_label;
 use super::super::BbrApp;
