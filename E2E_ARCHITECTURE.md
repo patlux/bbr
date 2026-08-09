@@ -434,9 +434,11 @@ scenario with visible-set-only hydration and at least ten accepted samples.
 
 ## 7d. The shell-spaces suites (`bbr-app/tests/e2e_shell_spaces{,_hint,_keyboard}.rs`)
 
-Three `#[ignore]`d macOS-only suites (the shared harness lives in
-`tests/e2e_common/`) prove the visible profile/space surface over real
-WKWebViews:
+Three `#[ignore]`d macOS-only binaries (the shared harness lives in
+`tests/e2e_common/`) run under `just e2e-shell-spaces`; the
+`e2e_shell_spaces` binary additionally compiles the typed `appearance`
+(tint) and `swipe/` modules. Together they prove the visible profile/space
+surface over real WKWebViews:
 
 1. **Pointer suite** (`just e2e-shell-spaces`): the permanent §11.3/§11.4
    footer `[Downloads][Space Strip][+]` over complete typed profile/space
@@ -474,6 +476,30 @@ WKWebViews:
    (hint + chip + semantic node) while the empty pane names the owning
    profile and renders no web view, with the hint re-set on a reverse
    cross-profile activation and cleared by the command-bar boundary.
+4. **Appearance/tint** (`e2e_shell_spaces/appearance.rs`): the active
+   space's **effective appearance** — the one controller authority, an
+   explicit curated theme record or the derived profile-hue default —
+   resolves the chrome/chip tint, and production chip activation across
+   spaces and profiles flips the typed `active_appearance` (theme/identity
+   names plus the resolved chrome/chip tint hex from the one central
+   presentation model, never raw pixels) exactly with the active space
+   while warm-session counts, per-space WebViewIds, the native content
+   rect, the pane layout, and chrome focus stay untouched.
+5. **Swipe commit/cancel** (`e2e_shell_spaces/swipe/`): every phase drives
+   the exact production `on_sidebar_scroll_wheel` handler through the typed
+   `SwipeScroll` request, with the release always a real **zero-delta**
+   `Ended` resolved independent of horizontal dominance (what a real macOS
+   `Ended` carries). Above-threshold release commits exactly one switch in
+   both display directions through the existing `activate_space` authority
+   — warm WebView/session identity, unchanged content/pane geometry, chrome
+   focus; below-threshold release and explicit cancel emit no switch and
+   restore the exact source presentation; boundary (no adjacent space) and
+   vertical-dominant deltas are no-ops; the typed snapshot carries
+   active/source/destination/direction/progress plus the interpolated
+   chrome/chip tints while the semantic selected chip stays on the source
+   until commit; and a cross-profile adjacent swipe keeps the same
+   authority (no session recreation) with the one-interaction command-field
+   profile hint.
 
 Both activation paths (pointer rows and keyboard traversal) assert the
 §11.3 rule; the hint suite covers the pointer path plus the empty-space
@@ -486,8 +512,12 @@ session count, chrome focus, and the rendered selected space row + chip ids;
 the `space_switch_cross_profile` benchmark measures the same warm view-only
 class across profile boundaries and additionally asserts the hint copy in
 the accepted snapshot while the in-app presentation probe rejects any
-presentation that misses or invents it. Both are part of `just e2e-perf` and
-the full gate.
+presentation that misses or invents it. The `swipe_commit` interaction
+benchmark measures the production swipe entry — the real Started/Moved
+gesture path plus the zero-delta Ended resolving into exactly one existing
+`activate_space` commit of a warm adjacent space — with 30 render-inclusive
+samples against the same 50/100 ms warm budget and sessions never recreated.
+All three are part of `just e2e-perf` and the full gate.
 
 ## 7e. The shell-sidebar suite (`bbr-app/tests/e2e_shell_sidebar.rs`)
 
@@ -527,11 +557,14 @@ last-expanded width after an unmeasured production collapse. Both join the
 
 ---
 
-## 7f. The shell-organize suite (`bbr-app/tests/e2e_shell_organize.rs`)
+## 7f. The shell-organize and drag-to-chip suites (`bbr-app/tests/e2e_shell_organize.rs` + `e2e_shell_drag_chip/`)
 
-One `#[ignore]`d macOS-only suite (shared harness in `tests/e2e_common/`)
-proves the tab-organization slice over real WKWebViews. Keyboard scenarios
-dispatch **real shortcuts** through the GPUI keybinding path
+Two `#[ignore]`d macOS-only binaries run under `just e2e-shell-organize`:
+the organize suite (`e2e_shell_organize.rs`, shared harness in
+`tests/e2e_common/`) proves the tab-organization slice over real WKWebViews,
+and the dedicated drag-to-chip suite (`e2e_shell_drag_chip/`) proves the
+production tab drag onto the §11.3 space chips. Keyboard scenarios of the
+organize suite dispatch **real shortcuts** through the GPUI keybinding path
 (`DispatchKeystroke` → `window.dispatch_keystroke`); pointer scenarios drive
 the production mouse-down/move/up listener methods with synthetic events
 (`BeginTabDrag`/`MoveTabDrag`/`EndTabDrag`/`CancelTabDrag` seams, exactly
@@ -552,25 +585,66 @@ like the sidebar-divider drag seam) — never a direct reorder or move command:
    drag reorder within the pinned and regular regions with the typed
    `drag_source`/`drag_slot`/`drag_valid` snapshot fields and the §15
    `bbr-drag-tick-<n>` id (accent when legal, muted at the clamped region
-   edge when illegal), an illegal boundary drop rejected whole, Escape
-   cancellation, and the staged `Cmd-Shift-M` + Enter move between spaces
-   (same-profile keeps the WebViewId; cross-profile recreates exactly once
-   with a fresh view reading the destination store). Pointer drag-to-chip
-   (the §10.9 drag-target treatment over the strip chips) is a later F2a
-   layer and is not claimed by this suite.
+   edge when illegal), an illegal boundary drop rejected whole, and Escape
+   cancellation. The pointer drag-to-chip move (§10.9/§11.3, dragging a tab
+   row onto a strip chip) is deliberately not part of this binary: it is
+   delivered as the dedicated `e2e_shell_drag_chip` suite below, which the
+   same `just e2e-shell-organize` recipe runs after this one.
 
 The `tab_pin`, `tab_reorder`, `tab_move_same_profile`, and
 `tab_move_cross_profile` interaction benchmarks (in
-`tests/perf_common/benchmarks.rs`) drive the production `Cmd-Shift-P`
-toggle, `Cmd-Shift-↑/↓` step, and staged `Cmd-Shift-M` + Enter move through
-`BenchmarkPinTab` / `BenchmarkReorderTab` / `BenchmarkMoveTab`: each sample
-commits from the authoritative post-mutation snapshot (active view, focus,
-mode) and the drivers assert the region boundary, the source-space repair
-view, the wire `recreated` flag, and — via the destination activation after
-each measured move — the session identity (same WebViewId for same-profile,
-fresh incarnation for cross-profile) and an unchanged net session count. The
+`tests/perf_common/benchmarks.rs`) keep their existing typed kinds, report
+keys, budgets, and guards. The pin and reorder scenarios drive the
+production `Cmd-Shift-P` toggle and `Cmd-Shift-↑/↓` step through
+`BenchmarkPinTab` / `BenchmarkReorderTab`. The two move scenarios
+(`tab_move_same_profile`, `tab_move_cross_profile`) now enter through the
+delivered drag-to-chip production path (`BenchmarkDragMoveTab`): the
+concrete row is pressed, the pointer is moved onto the destination space's
+rendered **visible clipped chip** (the driver brings the chip into view
+through the one tracked `space_strip_scroll` handle plus a settled
+main-window draw, so the pointer never targets hidden hit geometry), and
+the release commits through the drag drop → the existing single move
+authority — never a direct move command. Each sample commits from the
+authoritative post-mutation snapshot (active view, focus, mode) and the
+drivers assert the region boundary, the source-space repair view, the wire
+`recreated` flag, and — via the destination activation after each measured
+move — the session identity (same WebViewId for same-profile, fresh
+incarnation for cross-profile) and an unchanged net session count. The
 cross-profile move is the session-recreation class with its own 100/150 ms
 budget; the other three share the 50/100 ms warm ceiling.
+
+### The drag-to-chip suite (`bbr-app/tests/e2e_shell_drag_chip/`)
+
+The dedicated drag-to-chip binary — one `#[ignore]`d macOS-only suite run
+by the same `just e2e-shell-organize` recipe after `e2e_shell_organize` —
+proves the production tab drag onto a §11.3 strip chip over real WKWebViews.
+Every drag drives the production request/handler path
+(`BeginTabDrag`/`MoveTabDrag`/`EndTabDrag`/`CancelTabDrag`), every commit
+goes through the single existing tab-move authority, and the footer
+`[Downloads][Space Strip][+]` composition, the active theme tint, the
+tracked strip scroll, and the downloads panel stay invariant:
+
+1. **Same-profile move** (`same_profile`): the concrete pressed row — not
+   the implicit active row — moves into the exact persistent chip under the
+   pointer; the typed during-drag chip target + §12 destination-profile
+   companion are reported on the snapshot and in the semantic tree; the
+   moved tab keeps its live session/WebViewId and the source selection
+   repairs.
+2. **Cross-profile move** (`cross_profile`): the destination-store
+   recreation happens exactly once (`recreated: true`), the recreated view
+   reads only the destination store's cookie, the net session count is
+   unchanged, and the source selection repairs.
+3. **No-op contract** (`noops`): own-space drops, gap drops, drops on the
+   fixed `[Downloads]`/`[+]` controls, and Escape cancel all commit nothing —
+   no `TabMoved`/`TabReordered` event leaves the app.
+4. **Invariants** (`invariants`): a completed same-profile drag-to-chip move
+   leaves the footer composition, the active tint, the strip scroll
+   geometry, and the downloads panel byte-for-byte unchanged.
+
+The drag entry is deliberately distinct from the organize keyboard suite's
+staged `Cmd-Shift-M` + Enter move: the drag scenarios exercise the production
+pointer geometry over the visible clipped chips, while the keyboard scenarios
+exercise the staged command path.
 
 ---
 
