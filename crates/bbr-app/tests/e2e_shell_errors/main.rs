@@ -7,9 +7,11 @@
 //!   the plaintext fixture server) presents the TLS surface, an unreachable
 //!   host (a closed loopback port) presents the navigation surface, the
 //!   redirect-loop fixture (an HTTP error condition WebKit actually fails)
-//!   presents `Navigation/RedirectLoop`, and the truncated-500 fixture
-//!   presents the navigation surface — while a plain 500 with a delivered
-//!   body renders the server page and never invents an incident;
+//!   presents `Navigation/RedirectLoop`, and the truncated-500 fixture (a
+//!   chunked response closed mid-chunk, which WebKit fails with
+//!   `NSURLErrorNetworkConnectionLost`) presents the navigation surface —
+//!   while a plain 500 with a delivered body renders the server page and
+//!   never invents an incident;
 //! - the offline class: the classified offline incident enters through the
 //!   exact production `on_incident` seam (a genuinely-offline host cannot be
 //!   toggled deterministically; the native-code → taxonomy mapping stays
