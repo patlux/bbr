@@ -55,10 +55,10 @@ recoveries are integrated on the current control checkpoint. All 27 functional
 E2E suites are green. Patrick explicitly prioritizes a feature-complete first
 MVP over further startup investigation: the known startup-performance debt and
 full release closeout move to Phase 9 without changing the `≤500 ms` contract.
-B1 is integrated and independently verified. G1a serial integration is now
-active under Orchestrator ownership. In parallel, read-only launch planning for
-G1b and B2 may continue; no downstream product writer starts before its
-committed dependency and ownership gates pass.
+B1 and G1a are integrated and independently verified. G1b Gallery MVP and B2
+Saved Page command/provider are now the maximum safe parallel MVP lanes: they
+start from one exact common base in isolated worktrees with disjoint primary
+territories. GUI/E2E/performance gates remain host-exclusive and serial.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
@@ -79,8 +79,8 @@ product authority and every bundle is stale until refreshed after F2a.
 |---|---|---|---|---|---|
 | SHUTDOWN | `integrated` | `/Users/patwoz/dev/Personal/macos/bbr-shutdown-lifecycle`; branch `parallel/shutdown-lifecycle`; no writer; exact reviewed lane commit `48f2841b9db46f19ebbd8f8b9b3637496f07e37d` | app lifecycle, real SIGINT and owning-window close, portal-child isolation, testkit response flush, fresh `e2e_shutdown`, required E2E registry | merged as `12431c95…`; deterministic error-fixture recovery merged as `1e42d835…`; deferred Portal visibility recovery merged at control checkpoint `6ff70eab…`. `just verify` and all 27 functional E2E suites are green, including Portal 7/7 and errors 10/10; no `RefCell already borrowed`. Startup performance remains explicit Phase-9 debt rather than a feature-delivery blocker | **1 — product integrated; functional checkpoint accepted** |
 | B1 | `integrated` | `/Users/patwoz/dev/Personal/macos/bbr-saved-pages-b1`; branch `parallel/saved-pages-b1`; frozen lane commit `a23d9335240ff4c6cbc0d5d8b80744339f4a335e` / tree `0c728df48ecf495375b6b4ad096dce35d41cfbbf` remains clean | no writer; integrated by Orchestrator merge `eaa0078d8e1c98560055ee1eeb723060fed53570` / tree `ffccb1349d2b5448003c5ec16e09a1ffd4af37ee` | focused portable domain/persistence Saved Pages modules, canonical URL equality, CRUD/search/list, schema v3 bump+discard, fixtures/benchmarks | exact 39-path merge; no conflict or unstaged mutation; all B1 gates green and independent exact-index `REVIEW_PASS`. B2 may satisfy only its integrated-B1 dependency; its remaining contract decisions and ownership gates still apply |
-| G1a | `integrating` | `/Users/patwoz/dev/Personal/macos/bbr-ui-g1a-foundations`; branch `parallel/ui-g1a-foundations`; exact reviewed commit `e6d3ab85a49b8754764553b31d0eac996015ce25` / tree `8c441f2ccee86792b4475a314b472299717d11fb` remains clean | Orchestrator exclusively owns the clean control worktree and serial merge; no lane writer | extraction of integrated production Foundations/Primitives authority into `bbr-ui`; no copies; exact direct dependencies `gpui` + `bbr-domain`; approved transitivity only `bbr-domain → bbr-web`, never direct `bbr-ui → bbr-web` | merge the exact reviewed G1a commit into B1 integration `eaa0078…`, preserve B1 ARCHITECTURE/schema facts, then run `ui-deps`, full verify, affected real-app E2E and bounded performance under the GUI lock before independent exact-index review | after integrated B1 |
-| G1b | `planned` | no worktree or writer until G1a integrates; one isolated read-only launch preflight may run | no writer | dev-only Gallery MVP consuming G1a's exact production symbols; no WebKit/network/testkit listener | refresh the smallest writer handoff against the projected B1→G1a state; start a writer only after committed G1a integration and a fresh ownership audit | after G1a |
+| G1a | `integrated` | `/Users/patwoz/dev/Personal/macos/bbr-ui-g1a-foundations`; frozen lane `e6d3ab85a49b8754764553b31d0eac996015ce25` / `8c441f2ccee86792b4475a314b472299717d11fb` remains clean | no writer; integrated by Orchestrator merge `e076911a1a0f6938cc394020c1735628ce580f91` / tree `1643060ddcb1a61cab8308c95c66258bfa3848ec` | one production `bbr-ui` authority; exact direct deps `gpui` + `bbr-domain`; only `bbr-domain → bbr-web` transitivity; app consumes the same production symbols | `ui-deps`, clean full verify, testkit Clippy, persistence, roadmap, and all functional E2E except the carried host-evidence case passed; independent `REVIEW_PASS_HOST_EXCEPTION`. Portal minimize/restore remains explicitly unpassed on this host because persistent `loginwindow` window `48252` layer 2004 wins Window-Server hit-testing; native Portal and test files are byte-identical to the green F2 checkpoint. No retry or test relaxation. Startup performance remains Phase-9 debt |
+| G1b | `ready` | allocate `/Users/patwoz/dev/Personal/macos/bbr-gallery-g1b-mvp`; branch `parallel/gallery-g1b-mvp`; exact base is this scheduling commit over integrated G1a `e076911…` | one isolated writer after committed allocation; no other writer may own `crates/bbr-gallery/**` | dev-only Gallery MVP consuming exact production `bbr-ui` symbols; no WebKit/network/testkit listener; no G2/G3 stories or component invention | create the clean worktree, implement the smallest registry→tree→one-story vertical slice, then complete Foundations/primitives, `just e2e-gallery`, non-GUI gates, independent review, bounded remediation | parallel with B2 after allocation |
 
 Shared registry, manifest, lockfile, Justfile, composition-root, and E2E-list
 conflicts are predeclared serial integration costs, not reasons to duplicate
@@ -122,7 +122,7 @@ forbidden.
 
 | ID | Status | Depends on / boundary |
 |---|---|---|
-| B2 | `planned` | integrated B1; free command-provider territory; consumes one shared save/remove/open authority |
+| B2 | `ready` | integrated B1 and G1a; command-provider/store/testkit/perf territory currently writer-free; one shared save/remove/open authority; budget and ranking decisions below are settled |
 | B3 | `planned` | integrated B1 + B2 + G1a; ordinary GPUI Saved Pages Library, no permanent sidebar region |
 | G2 | `planned` | integrated G1a + G1b and each corresponding production component; stories never precede production |
 | G3 | `planned` | integrated G2 and corresponding production compositions |
@@ -169,6 +169,12 @@ forbidden.
   the scheme and host. Preserve path, query, fragment, explicit port, trailing
   slash, `www.`, and percent-encoding byte-for-byte; do not elide default ports
   or add any bookmark-only rewrite. Unsupported/dangerous URLs reject whole.
+- B2 Saved Page command/provider decisions are settled: Saved Page results rank
+  after standalone Spaces and before History (`ExactTab < CurrentPinned <
+  CurrentTab < OtherSpace < Space < SavedPage < History < Action < Fallback`).
+  `saved_page_search_first_result` uses the existing warm command-type budget
+  p95/max `50/100 ms`; `saved_page_open` uses the existing session-recreation
+  budget p95/max `100/150 ms`. No new budget class is introduced.
 - One writer per worktree; one product authority per concern; only the
   Orchestrator commits, merges, and integrates.
 - Never weaken tests, validators, budgets, sample counts, deadlines, or
@@ -217,7 +223,7 @@ forbidden.
 | G1a focused pass/freeze | fresh reviewer returned direct `REVIEW_PASS` with every fingerprint stable and all focused gates green | Orchestrator committed the exact reviewed tree as `e6d3ab85…`; commit tree `8c441f2c…`; worktree clean. It originally waited behind successful F2 closeout and B1; the MVP-first scheduling decision below removes only the F2 performance dependency. B1 remains the serial predecessor, and G1b remains blocked until G1a is integrated. |
 | Downstream read-only readiness | B1/G1a/G1b integration preflights plus B2/B3, G2/G3, Z1–Z5, and evidence-lane maps completed without mutation | durable packet-grounded dependencies are prepared, but findings derived from the unrelated dirty `bbr@0dc22fe` worktree were rejected. No readiness workflow authorizes a writer; only this committed snapshot and fresh identity/ownership audits may unlock work. |
 | MVP-first scheduling decision | F2 startup closeout deferred; B1 and G1a frozen; G1b and downstream dependency-gated | Patrick explicitly moved dedicated startup optimization and full performance/package closeout behind the first feature-complete MVP without changing the `≤500 ms` target. Functional F2 evidence is green, so B1 integration is now executable; G1a follows B1, then G1b. Other items remain gated only by their product and ownership dependencies, not by the deferred startup closeout. |
-| MVP-first parallel refill | B1 integrated; G1a integration runnable; G1b/B2 preparation runnable read-only; remaining queue dependency-gated | B1 merge `eaa0078…` / tree `ffccb134…` has exact-index `REVIEW_PASS`; format, domain/persistence tests, both Clippy gates, ≥1,000-record benchmark, `just verify`, `just roadmap`, and diff check are green. Projected G1a preflight returned `INTEGRATION_READY`: only `ARCHITECTURE.md` overlaps B1/G1a and must remain a semantic union; root workspace/lockfile/Justfile/app cutover are G1a-owned. Orchestrator takes exclusive G1a merge ownership. G1b/B2 launch planning remains read-only until committed G1a and decision gates. Merge order remains B1 → G1a → G1b; G2/G3/B3/Z writers remain deferred for exact product dependencies, not conflict probability. |
+| MVP-first parallel refill | B1 and G1a integrated; G1b and B2 ready; remaining queue dependency-gated | G1a merge `e076911…` / tree `1643060d…` has exact-tree `REVIEW_PASS_HOST_EXCEPTION`, clean non-GUI gates, and every current functional suite except the non-product-attributable Portal minimize host-evidence case. G1b and B2 launch from the same committed scheduling base in isolated sibling worktrees. G1b primary territory is `crates/bbr-gallery/**`; B2 owns focused app/command/provider/testkit/perf paths. Predeclared shared integration points: root manifest/lockfile/Justfile, ROADMAP/ARCHITECTURE roll-ups, and later E2E/perf registries; Orchestrator resolves semantic unions. G2/G3/B3/Z writers remain deferred for exact dependencies, not conflict probability. |
 
 ## Cutover and rollback protocol
 

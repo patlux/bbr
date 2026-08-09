@@ -43,7 +43,11 @@ existing NewTab/navigation authority. No matching live tab is silently selected.
 - Extend the provider-neutral command corpus with a distinct Saved Page result
   kind carrying `BookmarkId`, title/label, URL, and optional flat collection
   label. Deterministic ranking/search consumes only the loaded in-memory
-  snapshot and does not make `bbr-command` depend on persistence.
+  snapshot and does not make `bbr-command` depend on persistence. Saved Page
+  results form one deterministic group after standalone Spaces and before
+  History: `ExactTab < CurrentPinned < CurrentTab < OtherSpace < Space <
+  SavedPage < History < Action < Fallback`. No existing group's relative order
+  changes.
 - Render the DESIGN §11.16 result row: bookmark glyph, title or settled
   fallback, mid-ellipsized URL, optional collection label, stable result key,
   selected/focused states, and truthful empty/error behavior.
@@ -95,7 +99,7 @@ Shared integration points: app bootstrap/store snapshot, command corpus/rank
                       Z1/Z3 menu models, Phase 5/8 and ROADMAP roll-ups
 Integration order:    B1 → B2 command/provider core; Z1/Z3 consume the same
                       command when their menu surfaces integrate; B3 follows
-                      B2 and G1aa
+                      B2 and G1a
 ```
 
 No concurrent writer may own command provider/ranking registries, Saved Page
@@ -132,7 +136,8 @@ edits serially rather than cloning behavior.
       session/profile/space state.
 - [ ] Command corpus/ranking has a distinct stable Saved Page result key,
       deterministic order/search, collection label projection, and no
-      persistence dependency in `bbr-command`.
+      persistence dependency in `bbr-command`; the `SavedPage` group is exactly
+      after `Space` and before `History`.
 - [ ] Activation revalidates the record then dispatches exactly one fresh
       regular NewTab into the active Space/Profile; an existing matching tab is
       not selected or reused.
@@ -154,8 +159,12 @@ edits serially rather than cloning behavior.
 
 - [ ] Seed/enforce `saved_page_search_first_result` over at least 1,000 loaded
       records and `saved_page_open`, each with at least 30 optimized accepted
-      samples, production-path semantic commit, raw artifacts, and unchanged
-      applicable command/session-recreation budgets.
+      samples, production-path semantic commit, and raw artifacts.
+      `saved_page_search_first_result` uses the existing warm command-type
+      class (p95 `≤ 50 ms`, max `≤ 100 ms`, same as `command_type`);
+      `saved_page_open` uses the existing session-recreation class (p95
+      `≤ 100 ms`, max `≤ 150 ms`, same as `command_activate_new_tab` and
+      `tab_reopen`). No new budget class is introduced.
 - [ ] Fixture/repository setup is outside app timing; fast-but-wrong guards
       verify exact result identity and exactly-one-tab activation.
 
