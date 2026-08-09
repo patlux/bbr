@@ -87,18 +87,16 @@ pub(crate) fn benchmark_favorite_toggle(
 /// The §11.11 folder disclosure through the production toggle path: the
 /// sample commits only when the folder's expanded/collapsed value matches
 /// the toggle (guard — a presentation without the nested rows is rejected).
+/// The folder is keyed by its stable domain id.
 pub(crate) fn benchmark_folder_toggle(
     client: &mut Client,
     since: &mut u64,
     operation: u64,
-    index: usize,
+    id: u64,
 ) -> PresentationMeasurement {
     let operation_id = BenchmarkOperationId(operation);
     client
-        .send_ok(&Request::BenchmarkFolderToggle {
-            operation_id,
-            index,
-        })
+        .send_ok(&Request::BenchmarkFolderToggle { operation_id, id })
         .expect("benchmark folder toggle");
     let (seq, measured) = wait_measurement(
         client,
@@ -108,8 +106,13 @@ pub(crate) fn benchmark_folder_toggle(
     );
     *since = seq;
     let snapshot = client.snapshot().expect("folder toggle snapshot");
+    let folder = snapshot
+        .folders
+        .iter()
+        .find(|folder| folder.id == id)
+        .expect("folder under benchmark");
     assert_eq!(
-        snapshot.folders[index].expanded, measured.folder_expanded,
+        folder.expanded, measured.folder_expanded,
         "the sample and the snapshot agree on the disclosure"
     );
     measured

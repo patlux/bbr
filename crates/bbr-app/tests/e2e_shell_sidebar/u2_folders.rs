@@ -41,8 +41,9 @@ fn folders_region_disclosure_and_nested_rows() {
             .expect("flush after folder creation");
         let created = client.snapshot().expect("folder created snapshot");
         assert_eq!(created.folders.len(), 1);
+        let folder_id = created.folders[0].id;
         assert!(
-            created.folders[0].id > 0,
+            folder_id > 0,
             "the wire snapshot carries the domain folder id"
         );
         assert_eq!(created.folders[0].tab_count, 0);
@@ -59,11 +60,11 @@ fn folders_region_disclosure_and_nested_rows() {
             ],
         );
 
-        // Move tab 0 into the folder through the L5 command path (folder 0
-        // = the creation-order row just created): the count updates; the
-        // row/name/count/toggle ids stay stable.
+        // Move tab 0 into the folder through the L5 command path (the
+        // folder just created, keyed by its stable domain id): the count
+        // updates; the row/name/count/toggle ids stay stable.
         client
-            .send_ok(&dsl::move_tab_into_folder(0, 0))
+            .send_ok(&dsl::move_tab_into_folder(0, folder_id))
             .expect("move tab into folder");
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
@@ -95,7 +96,7 @@ fn folders_region_disclosure_and_nested_rows() {
         // Pointer disclosure toggle: the nested rows render with the
         // deterministic `bbr-folder-item-<n>-<m>` ids and their slots.
         client
-            .send_ok(&dsl::click_folder_toggle(0))
+            .send_ok(&dsl::click_folder_toggle(folder_id))
             .expect("expand folder");
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
@@ -123,7 +124,7 @@ fn folders_region_disclosure_and_nested_rows() {
         // Nested row selection activates the member tab through the
         // production path.
         client
-            .send_ok(&dsl::click_folder_member(0, 0))
+            .send_ok(&dsl::click_folder_member(folder_id, 0))
             .expect("select folder member");
         let selected = client.snapshot().expect("member selected snapshot");
         assert_eq!(selected.active_tab_index, Some(0), "member tab selected");
@@ -136,7 +137,7 @@ fn folders_region_disclosure_and_nested_rows() {
         // The second toggle collapses: the nested ids vanish, the row ids
         // stay stable.
         client
-            .send_ok(&dsl::click_folder_toggle(0))
+            .send_ok(&dsl::click_folder_toggle(folder_id))
             .expect("collapse folder");
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
@@ -155,10 +156,10 @@ fn folders_region_disclosure_and_nested_rows() {
         // Nested close removes the member row (the folder row survives with
         // the reconciled count).
         client
-            .send_ok(&dsl::click_folder_toggle(0))
+            .send_ok(&dsl::click_folder_toggle(folder_id))
             .expect("expand again");
         client
-            .send_ok(&dsl::click_folder_member_close(0, 0))
+            .send_ok(&dsl::click_folder_member_close(folder_id, 0))
             .expect("close folder member");
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)

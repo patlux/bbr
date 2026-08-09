@@ -93,23 +93,23 @@ pub fn click_favorite_tile(index: usize) -> Request {
     Request::ClickFavoriteTile { index }
 }
 
-pub fn click_folder_row(index: usize) -> Request {
-    Request::ClickFolderRow { index }
+pub fn click_folder_row(id: u64) -> Request {
+    Request::ClickFolderRow { id }
 }
 
-pub fn click_folder_toggle(index: usize) -> Request {
-    Request::ClickFolderToggle { index }
+pub fn click_folder_toggle(id: u64) -> Request {
+    Request::ClickFolderToggle { id }
 }
 
-pub fn click_folder_member(folder: usize, member: usize) -> Request {
+pub fn click_folder_member(folder: u64, member: usize) -> Request {
     Request::ClickFolderMember { folder, member }
 }
 
-pub fn click_folder_member_close(folder: usize, member: usize) -> Request {
+pub fn click_folder_member_close(folder: u64, member: usize) -> Request {
     Request::ClickFolderMemberClose { folder, member }
 }
 
-pub fn move_tab_into_folder(index: usize, folder: usize) -> Request {
+pub fn move_tab_into_folder(index: usize, folder: u64) -> Request {
     Request::MoveTabIntoFolder { index, folder }
 }
 

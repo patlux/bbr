@@ -360,7 +360,7 @@ impl BbrApp {
                 .iter()
                 .map(|row| bbr_testkit::protocol::FolderRowSnapshot {
                     index: row.index,
-                    id: row.id,
+                    id: row.id.0,
                     title: row.title.clone(),
                     tab_count: row.count,
                     expanded: row.expanded,

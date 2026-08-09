@@ -127,7 +127,9 @@ impl From<FolderError> for OrganizationError {
 /// One folder as presented to the UI/E2E.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FolderSnapshot {
-    /// Position in creation order — the stable `bbr-folder-<n>` identity.
+    /// Position in creation order — presentation/order metadata only (the
+    /// position-derived `bbr-folder-<n>` id source). `id` is the stable
+    /// identity; state and commands key on `id`, never on this position.
     pub index: usize,
     pub id: bbr_domain::FolderId,
     pub space: SpaceId,

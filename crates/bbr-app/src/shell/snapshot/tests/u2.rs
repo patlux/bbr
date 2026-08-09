@@ -115,7 +115,7 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
         members: vec![TabId(1), TabId(2)],
     }];
     let mut expanded = FolderPresentation::default();
-    expanded.toggle(0);
+    expanded.toggle(FolderId(1));
     let plus_menu = PlusMenuState {
         open: true,
         selection: 1,

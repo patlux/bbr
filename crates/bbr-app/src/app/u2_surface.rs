@@ -177,20 +177,20 @@ impl BbrApp {
         let mut children: Vec<gpui::AnyElement> =
             vec![ui::section_label(theme, "Folders", focused).into_any()];
         for row in rows {
-            let index = row.index;
+            let id = row.id;
             let focus = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
-                this.focus_folder_row(index, window, cx);
+                this.focus_folder_row(id, window, cx);
             });
             let toggle = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
-                this.focus_folder_row(index, window, cx);
-                this.toggle_folder(index, cx);
+                this.focus_folder_row(id, window, cx);
+                this.toggle_folder(id, cx);
             });
             children.push(
                 ui::folder_row(theme, row, toggle)
                     .on_mouse_down(MouseButton::Left, focus)
                     .into_any(),
             );
-            for member in members.iter().filter(|member| member.folder == row.index) {
+            for member in members.iter().filter(|member| member.folder == row.id) {
                 let folder = member.folder;
                 let member_index = member.member;
                 let select = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
