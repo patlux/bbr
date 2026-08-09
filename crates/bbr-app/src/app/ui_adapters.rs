@@ -37,7 +37,8 @@ pub fn favorite_tiles(favorites: &[FavoriteSnapshot]) -> Vec<FavoriteTileSpec> {
 
 /// Derive the rendered folder rows in creation order (the same source the
 /// folders list renders). Member counts come from the L5 snapshot; the
-/// expanded/collapsed value from the app-local presentation state.
+/// expanded/collapsed value from the app-local presentation state, keyed by
+/// the stable domain folder id.
 pub fn folder_row_specs(
     folders: &[FolderSnapshot],
     presentation: &FolderPresentation,
@@ -46,10 +47,10 @@ pub fn folder_row_specs(
         .iter()
         .map(|folder| FolderRowSpec {
             index: folder.index,
-            id: folder.id.0,
+            id: folder.id,
             title: folder.title.clone(),
             count: folder.members.len(),
-            expanded: presentation.is_expanded(folder.index),
+            expanded: presentation.is_expanded(folder.id),
         })
         .collect()
 }
@@ -57,8 +58,9 @@ pub fn folder_row_specs(
 /// Resolve the expanded folders' member rows from the L5 snapshot: each
 /// member `TabId` maps through the controller's global read model to its
 /// display title and monogram letter, in folder order, for expanded folders
-/// only (collapsed folders render no nested rows). Deterministic: the folder
-/// creation-order index and the member's folder position are the ids.
+/// only (collapsed folders render no nested rows). Deterministic: the
+/// member's owning folder is resolved by its stable domain id; the folder
+/// creation-order position and the member's folder position are the ids.
 pub fn folder_member_visuals(
     rows: &[FolderRowSpec],
     folders: &[FolderSnapshot],
@@ -71,7 +73,7 @@ pub fn folder_member_visuals(
         }
         let folder = folders
             .iter()
-            .find(|folder| folder.index == spec.index)
+            .find(|folder| folder.id == spec.id)
             .expect("folder row derives from the snapshot");
         for (member, tab_id) in folder.members.iter().enumerate() {
             let tab = tabs
@@ -79,7 +81,8 @@ pub fn folder_member_visuals(
                 .find(|tab| tab.id == *tab_id)
                 .expect("reconciled folder member exists in the controller");
             visuals.push(FolderMemberVisual {
-                folder: spec.index,
+                folder: folder.id,
+                folder_index: spec.index,
                 member,
                 title: display_title(&tab.url, &tab.title),
                 letter: monogram_letter(&tab.url),

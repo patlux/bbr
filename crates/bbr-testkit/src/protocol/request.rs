@@ -296,7 +296,7 @@ pub enum Request {
     },
     BenchmarkFolderToggle {
         operation_id: BenchmarkOperationId,
-        index: usize,
+        id: u64,
     },
     /// Activate a space and measure until its warm selected tab is presented.
     BenchmarkActivateSpace {
@@ -837,22 +837,22 @@ pub enum Request {
         index: usize,
     },
     ClickFolderRow {
-        index: usize,
+        id: u64,
     },
     ClickFolderToggle {
-        index: usize,
+        id: u64,
     },
     ClickFolderMember {
-        folder: usize,
+        folder: u64,
         member: usize,
     },
     ClickFolderMemberClose {
-        folder: usize,
+        folder: u64,
         member: usize,
     },
     MoveTabIntoFolder {
         index: usize,
-        folder: usize,
+        folder: u64,
     },
     /// Start a download through the production controller + native adapter
     /// path: mints an attempt id, records the optimistic `Waiting` state,

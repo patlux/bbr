@@ -172,7 +172,7 @@ fn favorite_tile_name_includes_the_owner_context_when_it_differs() {
 fn folders_node_mirrors_expansion_values_and_nested_items() {
     assert!(super::super::u2::folders_node(&[], &[]).is_none());
     let mut presentation = bbr_ui::components::folders::FolderPresentation::default();
-    presentation.toggle(0);
+    presentation.toggle(bbr_domain::FolderId(1));
     let rows = crate::app::ui_adapters::folder_row_specs(
         &[bbr_browser::FolderSnapshot {
             index: 0,
@@ -301,7 +301,7 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
     }]);
     input.favorites = &favorites;
     let mut presentation = bbr_ui::components::folders::FolderPresentation::default();
-    presentation.toggle(0);
+    presentation.toggle(bbr_domain::FolderId(1));
     let folder_snapshots = [bbr_browser::FolderSnapshot {
         index: 0,
         id: bbr_domain::FolderId(1),
@@ -312,7 +312,8 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
     let folder_rows = crate::app::ui_adapters::folder_row_specs(&folder_snapshots, &presentation);
     input.folder_rows = &folder_rows;
     let folder_members = [bbr_ui::components::FolderMemberVisual {
-        folder: 0,
+        folder: bbr_domain::FolderId(1),
+        folder_index: 0,
         member: 0,
         title: "Example".into(),
         letter: 'E',

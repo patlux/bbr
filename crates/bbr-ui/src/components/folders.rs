@@ -79,8 +79,9 @@ pub fn folder_item_close_id(folder: usize, member: usize) -> SharedString {
 pub struct FolderRowSpec {
     /// Position in creation order — the `bbr-folder-row-<n>` id.
     pub index: usize,
-    /// The domain folder id (the L5 `MoveIntoFolder` command's target).
-    pub id: u64,
+    /// The domain folder id (the L5 `MoveIntoFolder` command's target and
+    /// the identity every folder command keys on).
+    pub id: bbr_domain::FolderId,
     pub title: String,
     /// Member tab count (§11.11 count column, `type:meta` `tnum`).
     pub count: usize,
@@ -89,12 +90,18 @@ pub struct FolderRowSpec {
 }
 
 /// One nested §11.1 row's rendered identity inside an expanded folder:
-/// the folder/nested positions that key the stable `bbr-folder-item-<n>-<m>`
-/// ids plus the member's display title, §7.2 monogram letter, and slate hue.
+/// the owning folder's domain id plus the folder/nested positions that key
+/// the stable `bbr-folder-item-<n>-<m>` ids, and the member's display
+/// title, §7.2 monogram letter, and slate hue.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FolderMemberVisual {
-    /// The owning folder's creation-order index (`<n>`).
-    pub folder: usize,
+    /// The owning folder's domain id (identity; the surface filter and the
+    /// member commands key on it).
+    pub folder: bbr_domain::FolderId,
+    /// The owning folder's creation-order position (`<n>` in the
+    /// `bbr-folder-item-<n>-<m>` ids — position-derived under the Z2-1
+    /// default).
+    pub folder_index: usize,
     /// The nested position within the folder, 0-based (`<m>`).
     pub member: usize,
     pub title: String,
@@ -105,30 +112,37 @@ pub struct FolderMemberVisual {
 
 /// The session-local folder presentation state the app layer owns
 /// (DESIGN.md §11.11: "the app layer may hold folder presentation state
-/// only"): one expanded/collapsed value per folder in creation order,
-/// defaulting to collapsed. Deterministic id stability across toggles:
-/// the vector index is the folder's creation-order index, which never
-/// changes in v1 (folders are never deleted).
+/// only"): one expanded/collapsed value per folder, keyed by the stable
+/// domain [`bbr_domain::FolderId`], defaulting to collapsed. Entries are
+/// kept in deterministic first-toggle order; unknown ids (a folder
+/// created after the last toggle) read collapsed. Keying by `FolderId`
+/// (not the creation-order index) keeps expansion state stable across any
+/// future folder deletion or reorder.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct FolderPresentation {
-    expanded: Vec<bool>,
+    expanded: Vec<(bbr_domain::FolderId, bool)>,
 }
 
 impl FolderPresentation {
-    /// Whether the folder at creation-order `index` is expanded. Unknown
-    /// indices (a folder created after the last toggle) read collapsed.
-    pub fn is_expanded(&self, index: usize) -> bool {
-        self.expanded.get(index).copied().unwrap_or(false)
+    /// Whether the folder with domain id `id` is expanded. Unknown ids
+    /// (a folder created after the last toggle) read collapsed.
+    pub fn is_expanded(&self, id: bbr_domain::FolderId) -> bool {
+        self.expanded
+            .iter()
+            .find(|(folder, _)| *folder == id)
+            .map(|(_, expanded)| *expanded)
+            .unwrap_or(false)
     }
 
-    /// Toggle the folder at `index` (collapsed → expanded and back),
-    /// growing the state vector deterministically for folders created
-    /// after the last toggle.
-    pub fn toggle(&mut self, index: usize) {
-        if index >= self.expanded.len() {
-            self.expanded.resize(index + 1, false);
+    /// Toggle the folder with domain id `id` (collapsed → expanded and
+    /// back), appending a deterministic entry for folders toggled for the
+    /// first time.
+    pub fn toggle(&mut self, id: bbr_domain::FolderId) {
+        if let Some((_, expanded)) = self.expanded.iter_mut().find(|(folder, _)| *folder == id) {
+            *expanded = !*expanded;
+        } else {
+            self.expanded.push((id, true));
         }
-        self.expanded[index] = !self.expanded[index];
     }
 }
 
@@ -210,10 +224,10 @@ pub fn folders_ids(rows: &[FolderRowSpec], members: &[FolderMemberVisual]) -> Ve
         ids.push(folder_toggle_id(row.index).to_string());
     }
     for member in members {
-        ids.push(folder_item_id(member.folder, member.member).to_string());
-        ids.push(folder_item_title_id(member.folder, member.member).to_string());
-        ids.push(folder_item_favicon_id(member.folder, member.member).to_string());
-        ids.push(folder_item_close_id(member.folder, member.member).to_string());
+        ids.push(folder_item_id(member.folder_index, member.member).to_string());
+        ids.push(folder_item_title_id(member.folder_index, member.member).to_string());
+        ids.push(folder_item_favicon_id(member.folder_index, member.member).to_string());
+        ids.push(folder_item_close_id(member.folder_index, member.member).to_string());
     }
     ids
 }
@@ -235,7 +249,7 @@ pub fn folder_item_row(
         ThemeMode::Light => FaviconSlate::light(visual.hue),
     };
     let monogram = div()
-        .id(folder_item_favicon_id(visual.folder, visual.member))
+        .id(folder_item_favicon_id(visual.folder_index, visual.member))
         .size(theme.density.icon())
         .rounded(Radius.small())
         .bg(slate)
@@ -247,7 +261,7 @@ pub fn folder_item_row(
         .text_color(p.surface_glass)
         .child(SharedString::from(visual.letter.to_string()));
     div()
-        .id(folder_item_id(visual.folder, visual.member))
+        .id(folder_item_id(visual.folder_index, visual.member))
         .h(theme.density.row())
         .pl(Spacing::sp3())
         .pr(theme.density.row_padding_x())
@@ -261,7 +275,7 @@ pub fn folder_item_row(
         .child(monogram)
         .child(
             div()
-                .id(folder_item_title_id(visual.folder, visual.member))
+                .id(folder_item_title_id(visual.folder_index, visual.member))
                 .flex_1()
                 .overflow_hidden()
                 .text_ellipsis()
@@ -272,7 +286,7 @@ pub fn folder_item_row(
         )
         .child(
             div()
-                .id(folder_item_close_id(visual.folder, visual.member))
+                .id(folder_item_close_id(visual.folder_index, visual.member))
                 .size(theme.density.hit_min_close())
                 .flex()
                 .items_center()
@@ -290,14 +304,14 @@ mod tests {
         vec![
             FolderRowSpec {
                 index: 0,
-                id: 1,
+                id: bbr_domain::FolderId(1),
                 title: "Work".into(),
                 count: 2,
                 expanded: false,
             },
             FolderRowSpec {
                 index: 1,
-                id: 2,
+                id: bbr_domain::FolderId(2),
                 title: "Reading".into(),
                 count: 0,
                 expanded: false,
@@ -329,21 +343,27 @@ mod tests {
     #[test]
     fn presentation_defaults_to_collapsed_and_toggles_deterministically() {
         let mut presentation = FolderPresentation::default();
-        assert!(!presentation.is_expanded(0));
-        assert!(!presentation.is_expanded(7), "unknown reads collapsed");
-        presentation.toggle(2);
-        assert!(presentation.is_expanded(2));
-        presentation.toggle(2);
-        assert!(!presentation.is_expanded(2));
-        assert!(!presentation.is_expanded(1), "toggling 2 leaves 1 alone");
+        assert!(!presentation.is_expanded(bbr_domain::FolderId(0)));
+        assert!(
+            !presentation.is_expanded(bbr_domain::FolderId(7)),
+            "unknown reads collapsed"
+        );
+        presentation.toggle(bbr_domain::FolderId(2));
+        assert!(presentation.is_expanded(bbr_domain::FolderId(2)));
+        presentation.toggle(bbr_domain::FolderId(2));
+        assert!(!presentation.is_expanded(bbr_domain::FolderId(2)));
+        assert!(
+            !presentation.is_expanded(bbr_domain::FolderId(1)),
+            "toggling 2 leaves 1 alone"
+        );
     }
 
     #[test]
     fn folder_rows_carry_counts_and_expansion() {
         let mut presentation = FolderPresentation::default();
-        presentation.toggle(0);
+        presentation.toggle(bbr_domain::FolderId(1));
         let mut rows = rows();
-        rows[0].expanded = presentation.is_expanded(0);
+        rows[0].expanded = presentation.is_expanded(bbr_domain::FolderId(1));
         assert_eq!(rows.len(), 2);
         assert_eq!(rows[0].index, 0);
         assert_eq!(rows[0].title, "Work");
@@ -368,14 +388,16 @@ mod tests {
         );
         let members = [
             FolderMemberVisual {
-                folder: 0,
+                folder: bbr_domain::FolderId(1),
+                folder_index: 0,
                 member: 0,
                 title: "Example".into(),
                 letter: 'E',
                 hue: 0,
             },
             FolderMemberVisual {
-                folder: 0,
+                folder: bbr_domain::FolderId(1),
+                folder_index: 0,
                 member: 1,
                 title: "Local".into(),
                 letter: 'L',
@@ -405,21 +427,24 @@ mod tests {
     fn member_visuals_carry_folder_order_identity() {
         let members = [
             FolderMemberVisual {
-                folder: 0,
+                folder: bbr_domain::FolderId(1),
+                folder_index: 0,
                 member: 0,
                 title: "Example".into(),
                 letter: 'E',
                 hue: 0,
             },
             FolderMemberVisual {
-                folder: 0,
+                folder: bbr_domain::FolderId(1),
+                folder_index: 0,
                 member: 1,
                 title: "Local".into(),
                 letter: 'L',
                 hue: 1,
             },
         ];
-        assert_eq!(members[0].folder, 0);
+        assert_eq!(members[0].folder, bbr_domain::FolderId(1));
+        assert_eq!(members[0].folder_index, 0);
         assert_eq!(members[0].member, 0);
         assert_eq!(members[0].letter, 'E');
         assert_eq!(members[1].member, 1);

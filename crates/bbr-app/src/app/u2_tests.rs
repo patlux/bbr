@@ -277,12 +277,18 @@ fn plus_menu_new_folder_creates_a_session_local_folder_in_the_active_space() {
 fn folder_presentation_grows_deterministically_and_toggles_per_folder() {
     use bbr_ui::components::folders::FolderPresentation;
     let mut p = FolderPresentation::default();
-    assert!(!p.is_expanded(0));
-    p.toggle(0);
-    assert!(p.is_expanded(0));
-    p.toggle(0);
-    assert!(!p.is_expanded(0), "snap back on the second toggle");
-    p.toggle(3);
-    assert!(p.is_expanded(3));
-    assert!(!p.is_expanded(2), "toggling 3 leaves earlier folders alone");
+    assert!(!p.is_expanded(bbr_domain::FolderId(0)));
+    p.toggle(bbr_domain::FolderId(0));
+    assert!(p.is_expanded(bbr_domain::FolderId(0)));
+    p.toggle(bbr_domain::FolderId(0));
+    assert!(
+        !p.is_expanded(bbr_domain::FolderId(0)),
+        "snap back on the second toggle"
+    );
+    p.toggle(bbr_domain::FolderId(3));
+    assert!(p.is_expanded(bbr_domain::FolderId(3)));
+    assert!(
+        !p.is_expanded(bbr_domain::FolderId(2)),
+        "toggling 3 leaves earlier folders alone"
+    );
 }

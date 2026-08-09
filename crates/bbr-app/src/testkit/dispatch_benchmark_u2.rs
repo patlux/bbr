@@ -6,6 +6,7 @@
 //! `super::dispatch_benchmark` so no gateway module outgrows the ~500-line
 //! budget, mirroring the `dispatch_u2`/`dispatch_drag` routers.
 
+use bbr_browser::FolderId;
 use bbr_testkit::protocol::{Error, Request, Response};
 use gpui::{App, Entity, WindowHandle};
 
@@ -58,23 +59,22 @@ pub(crate) fn dispatch_benchmark_u2(
         })
         .unwrap_or_else(err_response),
 
-        Request::BenchmarkFolderToggle {
-            operation_id,
-            index,
-        } => with_app(window, app, cx, |view, window, cx| {
-            view.benchmark_folder_toggle(*operation_id, *index, window, cx)
-        })
-        .map(|committed| {
-            if committed {
-                Response::Ok
-            } else {
-                Response::Error(Error::new(
-                    "benchmark_noop",
-                    "folder disclosure did not present the expected expanded state",
-                ))
-            }
-        })
-        .unwrap_or_else(err_response),
+        Request::BenchmarkFolderToggle { operation_id, id } => {
+            with_app(window, app, cx, |view, window, cx| {
+                view.benchmark_folder_toggle(*operation_id, FolderId(*id), window, cx)
+            })
+            .map(|committed| {
+                if committed {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_noop",
+                        "folder disclosure did not present the expected expanded state",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response)
+        }
 
         _ => return None,
     };

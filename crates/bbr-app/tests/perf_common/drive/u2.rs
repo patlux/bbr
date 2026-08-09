@@ -95,15 +95,16 @@ pub(super) fn drive_u2_sidebar(
         folder_snapshot.folders[0].id > 0,
         "folder carries its domain id"
     );
+    let folder_id = folder_snapshot.folders[0].id;
     client
         .send_ok(&Request::MoveTabIntoFolder {
             index: favorites_index,
-            folder: 0,
+            folder: folder_id,
         })
         .expect("move tab into folder");
     let mut folder_toggle_samples = Vec::with_capacity(samples);
     for _ in 0..samples {
-        let measured = benchmark_folder_toggle(client, since, *operation, 0);
+        let measured = benchmark_folder_toggle(client, since, *operation, folder_id);
         folder_toggle_samples.push(measured.duration_ns);
         harness
             .raw_log

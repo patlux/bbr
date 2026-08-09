@@ -6,6 +6,7 @@
 //! from `super::dispatch` so no gateway module outgrows the ~500-line
 //! budget, mirroring the `dispatch_benchmark`/`dispatch_drag` routers.
 
+use bbr_browser::FolderId;
 use bbr_testkit::protocol::{Request, Response, SwipePhaseWire};
 use gpui::{point, px, App, Entity, ScrollDelta, ScrollWheelEvent, TouchPhase, WindowHandle};
 
@@ -115,23 +116,25 @@ pub(crate) fn dispatch_u2(
         // §11.11 folder rows through the production pointer paths: row entry
         // focuses the folders region, the disclosure toggles the row, nested
         // rows select/close their member tabs (the close stops propagation
-        // exactly like the render listener).
-        Request::ClickFolderRow { index } => with_app(window, app, cx, |view, window, cx| {
-            view.focus_folder_row(*index, window, cx);
+        // exactly like the render listener). The folder is keyed by its
+        // stable domain id.
+        Request::ClickFolderRow { id } => with_app(window, app, cx, |view, window, cx| {
+            view.focus_folder_row(FolderId(*id), window, cx);
             Response::Ok
         })
         .unwrap_or_else(err_response),
 
-        Request::ClickFolderToggle { index } => with_app(window, app, cx, |view, window, cx| {
-            view.focus_folder_row(*index, window, cx);
-            view.toggle_folder(*index, cx);
+        Request::ClickFolderToggle { id } => with_app(window, app, cx, |view, window, cx| {
+            let id = FolderId(*id);
+            view.focus_folder_row(id, window, cx);
+            view.toggle_folder(id, cx);
             Response::Ok
         })
         .unwrap_or_else(err_response),
 
         Request::ClickFolderMember { folder, member } => {
             with_app(window, app, cx, |view, window, cx| {
-                view.select_folder_member(*folder, *member, window, cx);
+                view.select_folder_member(FolderId(*folder), *member, window, cx);
                 Response::Ok
             })
             .unwrap_or_else(err_response)
@@ -139,7 +142,7 @@ pub(crate) fn dispatch_u2(
 
         Request::ClickFolderMemberClose { folder, member } => {
             with_app(window, app, cx, |view, window, cx| {
-                view.close_folder_member(*folder, *member, window, cx);
+                view.close_folder_member(FolderId(*folder), *member, window, cx);
                 Response::Ok
             })
             .unwrap_or_else(err_response)
@@ -147,10 +150,10 @@ pub(crate) fn dispatch_u2(
 
         // §11.11 move-into-folder through the L5 `MoveIntoFolder` command
         // path (the drag drop into a folder row routes through the same
-        // command). `folder` is the creation-order index.
+        // command). `folder` is the stable domain folder id.
         Request::MoveTabIntoFolder { index, folder } => {
             with_app(window, app, cx, |view, window, cx| {
-                view.move_tab_into_folder(*index, *folder, window, cx);
+                view.move_tab_into_folder(*index, FolderId(*folder), window, cx);
                 Response::Ok
             })
             .unwrap_or_else(err_response)

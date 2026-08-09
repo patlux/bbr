@@ -9,7 +9,7 @@
 //! mutations); the rail composition in `app::sidebar_view` wires the
 //! listeners to the components.
 
-use bbr_browser::OrganizationEvent;
+use bbr_browser::{FolderId, OrganizationEvent};
 use gpui::{Context, FocusHandle, KeyDownEvent, Window};
 
 use crate::command_bar::CommandBarMode;
@@ -31,7 +31,10 @@ pub(super) struct U2State {
     pub folders_handle: FocusHandle,
     pub plus_menu: bbr_ui::components::menu::PlusMenuState,
     pub folder_presentation: bbr_ui::components::folders::FolderPresentation,
-    pub folder_focus: usize,
+    /// The keyboard focus anchor: the focused folder's stable domain id
+    /// (`None` before any row is focused — traversal starts at the first
+    /// row).
+    pub folder_focus: Option<FolderId>,
     pub plus_menu_press_inside: bool,
 }
 
@@ -42,7 +45,7 @@ impl U2State {
             folders_handle: cx.focus_handle(),
             plus_menu: bbr_ui::components::menu::PlusMenuState::default(),
             folder_presentation: bbr_ui::components::folders::FolderPresentation::default(),
-            folder_focus: 0,
+            folder_focus: None,
             plus_menu_press_inside: false,
         }
     }
@@ -280,22 +283,22 @@ impl BbrApp {
         }
     }
 
-    /// §11.11 folder disclosure: expand/collapse the folder at creation-order
-    /// `index`. Toggling snaps (`dur:instant`); the presentation state is
+    /// §11.11 folder disclosure: expand/collapse the folder with domain id
+    /// `id`. Toggling snaps (`dur:instant`); the presentation state is
     /// app-local (the domain model is L5-owned).
-    pub fn toggle_folder(&mut self, index: usize, cx: &mut Context<Self>) {
-        self.u2.folder_presentation.toggle(index);
+    pub fn toggle_folder(&mut self, id: FolderId, cx: &mut Context<Self>) {
+        self.u2.folder_presentation.toggle(id);
         cx.notify();
     }
 
     /// Pointer entry into a folder row: focus the folders region with that
-    /// row as the keyboard anchor (§11.11 pointer or keyboard Enter/Space
-    /// toggling).
-    pub fn focus_folder_row(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
+    /// row's folder id as the keyboard anchor (§11.11 pointer or keyboard
+    /// Enter/Space toggling).
+    pub fn focus_folder_row(&mut self, id: FolderId, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
         self.command_ranking.close();
-        self.u2.folder_focus = index;
+        self.u2.folder_focus = Some(id);
         window.focus(&self.u2.folders_handle, cx);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
@@ -304,7 +307,10 @@ impl BbrApp {
 
     /// §11.11 folders-region keyboard operation: `↑`/`↓` move the focused
     /// folder row (wrapping), Enter/Space toggle it. Runs only while the
-    /// folders region owns chrome focus and no command mode is active.
+    /// folders region owns chrome focus and no command mode is active. The
+    /// anchor is a `FolderId`; traversal moves through the snapshot's
+    /// folder list by position and resolves back to the id (a stale anchor
+    /// for a deleted folder falls back to the first row).
     pub(super) fn on_folders_key_down(
         &mut self,
         event: &KeyDownEvent,
@@ -319,17 +325,21 @@ impl BbrApp {
         if count == 0 {
             return;
         }
+        let focused_position = self
+            .u2
+            .folder_focus
+            .and_then(|id| organization.folders.iter().position(|f| f.id == id))
+            .unwrap_or(0);
         match event.keystroke.key.as_str() {
             "up" | "down" => {
                 let delta = if event.keystroke.key == "up" { -1 } else { 1 };
-                self.u2.folder_focus =
-                    (self.u2.folder_focus as isize + delta).rem_euclid(count as isize) as usize;
+                let next = (focused_position as isize + delta).rem_euclid(count as isize) as usize;
+                self.u2.folder_focus = Some(organization.folders[next].id);
                 cx.stop_propagation();
             }
             "enter" | "space" => {
-                self.u2
-                    .folder_presentation
-                    .toggle(self.u2.folder_focus.min(count - 1));
+                let id = organization.folders[focused_position.min(count - 1)].id;
+                self.u2.folder_presentation.toggle(id);
                 cx.stop_propagation();
             }
             _ => {}
@@ -340,10 +350,11 @@ impl BbrApp {
 
     /// §11.11 nested row activation: select the member tab (the folder's
     /// members are active-space tabs; the member's space-local index is the
-    /// production selection path).
+    /// production selection path). The folder is resolved by its stable
+    /// domain id.
     pub fn select_folder_member(
         &mut self,
-        folder: usize,
+        folder: FolderId,
         member: usize,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -358,10 +369,11 @@ impl BbrApp {
     }
 
     /// §11.11 nested row close: close the member tab (the folder keeps its
-    /// row; the L5 reconcile drops the stale membership).
+    /// row; the L5 reconcile drops the stale membership). The folder is
+    /// resolved by its stable domain id.
     pub fn close_folder_member(
         &mut self,
-        folder: usize,
+        folder: FolderId,
         member: usize,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -376,31 +388,21 @@ impl BbrApp {
     }
 
     /// §11.11 move-into-folder command path: route the active space's tab at
-    /// `index` into the session-local folder at creation-order `folder_index`
-    /// through the L5 `MoveIntoFolder` command (the drag drop into a folder
-    /// row routes through the same command). The folder's domain id resolves
-    /// from the L5 read model; grouping only — the tab's space membership,
-    /// order, selection, and live session are untouched.
+    /// `index` into the session-local folder with domain id `folder` through
+    /// the L5 `MoveIntoFolder` command (the drag drop into a folder row
+    /// routes through the same command). Grouping only — the tab's space
+    /// membership, order, selection, and live session are untouched.
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit gateway seam
     pub fn move_tab_into_folder(
         &mut self,
         index: usize,
-        folder_index: usize,
+        folder: FolderId,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let organization = self.organization.organization_snapshot(&self.controller);
-        let Some(folder) = organization
-            .folders
-            .iter()
-            .find(|f| f.index == folder_index)
-        else {
-            log::error!("unknown folder index {folder_index}");
-            return;
-        };
         match self
             .organization
-            .move_tab_into_folder(&self.controller, index, folder.id)
+            .move_tab_into_folder(&self.controller, index, folder)
         {
             Ok(OrganizationEvent::TabMovedIntoFolder { tab, folder }) => {
                 log::debug!("tab {tab:?} moved into folder {folder:?}");
@@ -416,10 +418,10 @@ impl BbrApp {
 
     /// Resolve a folder's member position to the active-space tab index via
     /// the L5 read model (membership reconciles on read, so the member
-    /// always exists).
-    fn folder_member_tab_index(&mut self, folder: usize, member: usize) -> Option<usize> {
+    /// always exists). The folder is resolved by its stable domain id.
+    fn folder_member_tab_index(&mut self, folder: FolderId, member: usize) -> Option<usize> {
         let organization = self.organization.organization_snapshot(&self.controller);
-        let folder_snapshot = organization.folders.iter().find(|f| f.index == folder)?;
+        let folder_snapshot = organization.folders.iter().find(|f| f.id == folder)?;
         let tab_id = *folder_snapshot.members.get(member)?;
         self.controller
             .snapshot()

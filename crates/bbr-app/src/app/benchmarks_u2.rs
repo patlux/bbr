@@ -5,6 +5,7 @@
 //! the in-app probe guard rejects a fast-but-wrong presentation (missing
 //! menu, wrong tile count, wrong expanded value) before it leaves the app.
 
+use bbr_browser::FolderId;
 use gpui::{Context, Window};
 
 use super::BbrApp;
@@ -127,11 +128,11 @@ impl BbrApp {
     /// Benchmark the §11.11 folder disclosure through the production toggle
     /// path: the sample commits only when the folder's expanded/collapsed
     /// value matches the toggle (guard — a presentation without the nested
-    /// rows is rejected).
+    /// rows is rejected). The folder is keyed by its stable domain id.
     pub fn benchmark_folder_toggle(
         &mut self,
         operation_id: bbr_testkit::protocol::BenchmarkOperationId,
-        index: usize,
+        id: FolderId,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
@@ -145,11 +146,11 @@ impl BbrApp {
         {
             return false;
         }
-        let expected = !self.u2.folder_presentation.is_expanded(index);
+        let expected = !self.u2.folder_presentation.is_expanded(id);
         // The production disclosure path (pointer toggle and keyboard
         // Enter/Space share this method).
-        self.toggle_folder(index, cx);
-        let expanded = self.u2.folder_presentation.is_expanded(index);
+        self.toggle_folder(id, cx);
+        let expanded = self.u2.folder_presentation.is_expanded(id);
         if expanded != expected {
             self.performance.cancel();
             return false;

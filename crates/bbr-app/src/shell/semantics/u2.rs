@@ -277,14 +277,16 @@ pub fn folders_node(
                     vec![],
                 ),
             ];
-            node_children.extend(
-                members
-                    .iter()
-                    .filter(|member| member.folder == row.index)
-                    .map(|member| {
-                        folder_item_node(member.folder, member.member, &member.title, member.letter)
-                    }),
-            );
+            node_children.extend(members.iter().filter(|member| member.folder == row.id).map(
+                |member| {
+                    folder_item_node(
+                        member.folder_index,
+                        member.member,
+                        &member.title,
+                        member.letter,
+                    )
+                },
+            ));
             SemanticNode {
                 id: bbr_ui::components::folder_row_id(row.index).to_string(),
                 role: SemanticRole::Folder,
