@@ -8,12 +8,13 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [DESIGN.md](../../../DESIGN.md) §5/§7/§8/§10/§11.3/§11.4/§15.
 
 The portable space-appearance contract (curated theme tokens plus the validated
-emoji/glyph `SpaceIdentity` catalog) is delivered but not yet integrated; its
-task packet lands with that serial integration and is linked from here then.
+emoji/glyph `SpaceIdentity` catalog) is integrated and consumed by this slice.
 
-Status: **queued post-MVP UI slice.** It follows the browser-MVP closeout and
-the [global UI scale pass](global-ui-scale-density.md), and it follows serial
-integration of the portable space-appearance contract.
+Status: **integrated on `main` at `7180128`.** The complete F2a product,
+real-app, performance, icon-union, latest-main, and E2E-architecture truth
+layers passed independent review and were fast-forwarded from the isolated
+integration worktree. The wider F2 closeout still waits for Queue 20 to add the
+missing shutdown target and reconcile the owning-window lifecycle contract.
 
 ## Product revision context
 
@@ -169,32 +170,32 @@ writer. Drag remains independently runnable from the common Tint base.
 
 ### Unit and contract
 
-- [ ] Strip composition tests: fixed controls plus flex strip, deterministic
+- [x] Strip composition tests: fixed controls plus flex strip, deterministic
       chip order, overflow scrolling without wrapping, selected chip scrolled
       into view, no toggle state remaining anywhere in the model.
-- [ ] Identity/tint tests: only validated curated values render; tinted sidebar
+- [x] Identity/tint tests: only validated curated values render; tinted sidebar
       material still satisfies the §3 contrast contract at standard and
       increased contrast in light and dark.
-- [ ] Swipe state machine tests: in-progress emits no switch, below-threshold
+- [x] Swipe state machine tests: in-progress emits no switch, below-threshold
       release restores the source with no event, above-threshold release emits
       exactly one switch, and interpolation is bounded to chrome tint.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-sidebar` proves the revised footer ids, chip activation,
+- [x] `just e2e-shell-sidebar` proves the revised footer ids, chip activation,
       overflow scrolling, drag-target chips, and the removal of the former
       toggle behavior.
-- [ ] `just e2e-shell-spaces` is migrated off the reveal toggle and proves
+- [x] `just e2e-shell-spaces` is migrated off the reveal toggle and proves
       pointer, keyboard, and swipe switching with unchanged selected-tab and
       session identity, plus the unchanged cross-profile hint.
-- [ ] `just e2e-shell-organize` proves drag-into-space through chips with
+- [x] `just e2e-shell-organize` proves drag-into-space through chips with
       same-profile session preservation and cross-profile single recreation.
 
 ### Performance
 
-- [ ] Existing `space_switch` and `space_switch_cross_profile` scenarios stay
+- [x] Existing `space_switch` and `space_switch_cross_profile` scenarios stay
       green and unchanged.
-- [ ] A swipe-commit scenario measures the committed switch through semantic
+- [x] A swipe-commit scenario measures the committed switch through semantic
       presentation commit with ≥30 samples against the unchanged warm budget
       class, with a guard rejecting a fast-but-wrong commit.
 
@@ -214,6 +215,14 @@ just roadmap
 ```
 
 GUI recipes run sequentially under the host-wide lock.
+
+Gate status at integration: all affected unit/contract, Clippy, `just verify`,
+roadmap, Sidebar/Spaces/Keyboard/Hint/Drag/Organize/Hover/Downloads/Persistence,
+Find, States, and optimized performance gates are green. The canonical
+`just e2e` remains a wider F2-closeout gate rather than F2a evidence: it stops
+at the still-missing `e2e_shutdown` target, and the Portal suite retains its
+separately documented environment/owning-window failures. No F2a acceptance,
+budget, sample count, deadline, baseline, or validator was weakened.
 
 ## Delivery sequence
 
@@ -245,14 +254,32 @@ own slice.
 ## Delivery ledger
 
 ```text
-Outcome: queued from Patrick's post-U2 product revision; implementation pending
-Commits: planning/documentation only
-Functional evidence: pending
-Real-app E2E: pending
-Performance evidence: pending; budgets unchanged
-Roadmap/documentation updates: DESIGN §11.3/§11.4, interaction contract,
-        this packet, roadmap roll-ups, delivery ledger
-Open blockers and non-goals: appearance persistence, settings pages, and free
-        emoji entry are explicitly out of scope
-Worktree state: not created; branches after the appearance-contract integration
+Outcome: permanent [Downloads][Space Strip][+] footer, curated active-space
+        tint, pointer/keyboard/swipe activation, drag-to-chip, and additive
+        swipe_commit performance authority integrated on main.
+Integration: 7180128 (final reviewed integration tree plus E2E architecture
+        truth); product/perf settlement immediately before it: 5cfff50.
+Functional evidence: permanent strip and legacy removal; truthful persistent
+        SpaceId chip/identity/target semantics; contrast-safe Light/Dark ×
+        Standard/IC tint; zero-delta Ended swipe commit/cancel; production
+        clipped-chip drag entry; current Restore/F3/Dark-Blank/navigation-cover
+        authorities retained.
+Real-app E2E: States 1/1; Sidebar 7/7; Spaces 9/9; Keyboard 4/4; Hint 2/2;
+        Drag-chip 4/4; Organize 2/2 plus drag 4/4; Hover/Semantics/Branches
+        3/3; Downloads 11/11; Persistence 5/5; Find unchanged retry 6/6.
+Performance evidence: unchanged retry green — startup 443.59 ms;
+        command_bar_first_result p95 40.59/max 43.32 ms; swipe_commit 30
+        samples p95 0.059 ms; tab_move_same_profile p95 0.687 ms;
+        tab_move_cross_profile p95 24.585 ms; regressions empty. Baseline
+        SHA-256 08847b955d66af76c3762817b8674f6ca077dbd26672ad4c3d6a198a7bf68f0f.
+Reviews: final current-tree review found one stale E2E-topology claim; bounded
+        docs remediation and attribution recheck ended directly REVIEW_PASS
+        in f2a-final-docs-attribution-recheck-msl1j280-iapnt1.
+Roadmap/documentation updates: E2E_ARCHITECTURE topology, this packet, phase
+        roll-up, UI/icon integration truth, and canonical delivery ledger.
+Open blockers and non-goals: canonical just e2e waits for Queue 20's missing
+        shutdown target; Portal minimize/owning-window failures remain separate;
+        appearance settings UI and free emoji entry stay out of scope.
+Worktree state: integration/f2a-complete clean after commit 7180128; main
+        fast-forwarded with protected foreign docs byte/status-identical.
 ```

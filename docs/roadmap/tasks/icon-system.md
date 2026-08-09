@@ -149,9 +149,10 @@ Integration order: after this lane is reviewed; canonical `just e2e` under
 
 - [x] No new scenario and no new perf kind: glyphs are static paths/quads
       and only replace text children on existing elements.
-- [ ] Full performance remains an integration gate, **pending**: `e2e-perf`
-      did not run as part of the canonical `just e2e` (stopped at the
-      missing `e2e_shutdown` target).
+- [x] Full optimized performance passed after the icon/F2a/latest-main union
+      with unchanged budgets, samples, baseline, and validators. The canonical
+      `just e2e` remains a separate wider F2-closeout gate because it still
+      stops at the missing `e2e_shutdown` target.
 
 ## Completion gates
 
@@ -169,10 +170,11 @@ git diff --check
 
 GUI E2E (`just e2e-*`) runs under the host-wide GUI lock.
 
-Gate status: `just e2e-shell-portal` is 5/7 with two pre-existing base
-failures (see Real-app E2E) and canonical `just e2e` stops at the missing
-`e2e_shutdown` test target, so `e2e-perf` has not run; both remain open
-integration gates before this roadmap item can be marked complete.
+Gate status at integration: `just verify`, Find 6/6, all affected F2a GUI
+suites, and full optimized performance are green on the final union. Portal
+remains 5/7 with the two pre-existing failures above, and canonical `just e2e`
+still stops at the missing `e2e_shutdown` target; those are wider Queue-20/F2
+closeout gates rather than blockers to the reviewed static icon replacement.
 
 ## Delivery sequence
 
@@ -206,9 +208,8 @@ Outcome:       The merged icon catalog covers every component-owned chrome
                by `Icon::ChevronLeft`/`ChevronRight`/`Close` at the
                `icon:<density>` size; ids/hit squares/listeners/semantics
                unchanged; chevron geometry/name/color contract tests added.
-Commits:       `bf42a8a feat(ui): draw find bar control icons` — committed
-               by the orchestrator after REVIEW_PASS and final gates; not
-               merged into `main`.
+Commits:       lane `bf42a8a`; semantic integration `41775ce`; final
+               F2a/icon/latest-main/docs integration on `main` `7180128`.
 Functional evidence: cargo test -p bbr --features testkit --bin bbr
                252/252 (5 icon-catalog tests incl. the new chevron
                arm/name/rest-color assertions); `cargo fmt --all --
@@ -226,20 +227,15 @@ Real-app E2E:  `just e2e-shell-find` 6/6 green. `just e2e-shell-portal`
                passed. Canonical `just e2e` not green: e2e-smoke passed,
                then stopped at the missing `e2e_shutdown` test target.
 Performance:   no new scenario and no new perf kind (static paths replacing
-               text children); full performance remains an integration
-               gate, pending — `e2e-perf` did not run as part of canonical
-               `just e2e`.
-Roadmap/docs:  this packet corrected for source drift + truthful gate
-               status; ui-design-system track item left unchecked with an
-               awaiting-integration note — the code lane is REVIEW_PASS and
-               frozen, but the roadmap item is not complete before its
-               declared integration gates.
+               text children); full optimized performance passed on the
+               final union with `regressions: []` and unchanged baseline.
+Roadmap/docs:  source-drift correction and truthful final integration status;
+               UI-track icon item is complete on `main`.
 Open blockers and non-goals: command-composition surface (`▶` prefix, `↵`/
                `→` result marks), sidebar brand text, and the `⌘T` key cue
                stay with their owning surfaces; loading arc static; §7
                hit-target minimums already settled via density tokens.
-Worktree state: clean at `bf42a8a`; frozen pending serial orchestrator
-               integration.
+Worktree state: source lane remains frozen; integrated main is `7180128`.
 File sizes:    icons.rs 544 now vs 508 at base — bounded +36 catalog
                extension (chevron variants + contract tests); planned
                single-authority enum-union merge with F2a catalog variants.

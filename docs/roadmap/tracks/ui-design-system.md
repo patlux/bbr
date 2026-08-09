@@ -48,22 +48,18 @@ menu follow-up, which may start after F2 closeout when that territory is free.
 - [x] Establish the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), then compose standard input/menu/button behavior through gpui-component while retaining BBR tokens, geometric icons, native WKWebViews, and browser-specific orchestration. *(Integrated and canonical-E2E green at `f89a479`.)*
 - [ ] Collapse address entry into one surface through the [address control and palette packet](../tasks/url-address-control-palette.md). The sidebar address becomes a borderless translucent domain pill with button semantics and no focus ring; the palette opens over it with the full URL preselected. Two editing surfaces produced two focus appearances and two answers to "what is the current address" - this removes the second one rather than restyling it.
 - [ ] Refine the sidebar through the bounded [browser-MVP sidebar UI packet](../tasks/browser-mvp-sidebar-ui.md) into the compact Zed-inspired BBR hierarchy, including the footer row and a real plus-menu for New Space/New Folder. *(Patrick's post-delivery product revision replaces the footer `[Spaces]` toggle with the permanent scrollable space-identity strip owned by the [footer space strip, appearance, and swipe packet](../tasks/space-footer-strip-appearance-ui.md).)*
-- [ ] Replace placeholder chrome glyphs with the BBR-drawn §7 icon set. *(The
+- [x] Replace placeholder chrome glyphs with the BBR-drawn §7 icon set. *(The
       [icon-system slice](../tasks/icon-system.md) swaps the close `×`, pin
       `●`/`○`, loading `●`, new-space `+`, crash `!`, empty-pane brand `B`,
       and status-line `⚠` placeholders for drawn 1.5 pt glyphs from the
       reusable `components::icons` catalog — ids, hit targets, semantics,
       focus, and listeners unchanged. The find bar's `‹`/`›`/`✕` controls
-      now use the same catalog (`ChevronLeft`/`ChevronRight`/`Close`), so no
-      Unicode substitute remains in component-owned chrome. Implementation
-      REVIEW_PASS and frozen awaiting orchestrator integration; not marked
-      complete before its declared integration gates — `just e2e-shell-find`
-      6/6 and `just verify` green, but `just e2e-shell-portal` is 5/7 (two
-      pre-existing base failures: minimize hit-test environment blocker,
-      parent-close Broken-pipe quit-on-owning-browser-window regression) and
-      canonical `just e2e` stops at the missing `e2e_shutdown` test target,
-      so `e2e-perf` has not run. The command-field prefix and sidebar brand
-      text stay with command composition.)*
+      use `ChevronLeft`/`ChevronRight`/`Close`; the semantic icon union with
+      F2a retained the removed Spaces glyph absence. Integrated on `main` at
+      `7180128`; `just verify`, Find 6/6, affected GUI suites, and optimized
+      performance are green. Portal 5/7 and the missing `e2e_shutdown` target
+      remain separate wider F2-closeout blockers. The command-field prefix
+      and sidebar brand text stay with command composition.)*
 - [ ] Clear hierarchy between navigation controls, command surface, pinned tabs, regular tabs, and spaces.
 - [ ] Active tab and focused pane are unmistakable without visual noise.
 - [x] Profile identity is clear whenever tabs/spaces cross contexts. *(Every space row keeps its §12 chip with a round-robin hue and monogram, profile groups stack under hairlines, the empty pane names the owning profile, and a cross-profile space activation renders the destination profile chip + a `type:label` "in Profile · <title>" hint at the top of the command field for one interaction (the [cross-context profile-hint slice](../tasks/cross-context-profile-hint.md)) — identity never relies on color alone.)*
