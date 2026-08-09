@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slice:** [B1 portable Saved Pages persistence](docs/roadmap/tasks/saved-pages-portable-persistence.md)
+- **Active product slice:** [G1a shared UI foundations and primitives](docs/roadmap/tasks/ui-library-anchor.md)
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:
