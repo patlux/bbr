@@ -10,8 +10,11 @@ Predecessors: [Gallery MVP](component-gallery-mvp.md) ·
 Workflow: [development workflow](../../development-workflow.md) ·
 Template: [task-packet template](../templates/task-packet.md)
 
-Program position: **G3**, activated only from the settled browser-components state recorded in [Current delivery](../../delivery/current.md).
-This packet delivers the composition surfaces — `SidebarModel` plus
+Program position: **G3**, activated immediately from the settled and
+integrated G2 browser-components state recorded in [Current delivery](../../delivery/current.md).
+Its required first wave is Sidebar, Command Palette/Overlay, Downloads, Find,
+Error/Crash, Auth, Menu, and Split compositions. This packet delivers the
+composition surfaces — `SidebarModel` plus
 Callbacks, `CommandPortalModel` palette/overlay, and the Downloads/Find/
 Error/Auth/Menu/Split groups — into `bbr-ui` and their gallery stories,
 including the compact/wide, empty/dense, long-title/missing-icon,
@@ -162,8 +165,8 @@ Integration order:    G2 → G3 → post-G1a serial integration.
 | Sidebar + media group (after media contract/UI packets) | no-session rail with zero reserved gap; playing/paused card; seekable known duration; unknown/live duration; capability subsets; multiple-session count/switch; dismissed identity; cross-profile source; compact/wide; reduced-motion; contrast | a card without actual session identity; a vertical card stack; unsupported decorative controls; fake total/scrubber; any story claiming real media command evidence |
 | Split preview (`bbr-ui::split`) | single pane (focused frame hairline); two panes (shared-edge divider, focused pane inset outline); split-zone frames (top/right/bottom/left) with accent frame + fill + corner glyph; reduced-motion; contrast | a zone frame without the accent language (zone fill is accent-only); a split with zero live panes (the `pane_layout()` split branch requires both live sessions — no false single-pane degradation — per [split-shared-contract](split-shared-contract.md#unit-and-contract); visuals per DESIGN §11.7) |
 
-Saved Page command/menu compositions append here only after integrated
-[B2](saved-pages-actions-command.md); the Saved Pages Library composition
+Saved Page command/menu compositions remain strictly append-only and start
+only after integrated [B2](saved-pages-actions-command.md); the Saved Pages Library composition
 appends only after integrated [B3](saved-pages-library.md). This packet remains
 the canonical owner of their eventual StoryIds, matrix rows, variant families,
 and Gallery renderability checks. Nothing is predeclared as a story today.

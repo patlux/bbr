@@ -9,9 +9,9 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 ## Reusable UI library and development gallery — Post-MVP
 
 - [ ] Execute the serial [UI-library anchor](../tasks/ui-library-anchor.md) after the verified F2a footer/space integration. This is the extraction and dependency contract for the shared production `bbr-ui` crate; its gate permits the existing portable `bbr-domain → bbr-web` profile-identity edge while forbidding any direct `bbr-ui → bbr-web` import or second hue/identity authority. It does not authorize a parallel UI writer before the required ownership preflight.
-- [ ] Build the dev-only [BBR Gallery MVP](../tasks/component-gallery-mvp.md) from the settled anchor slice, using the same production tokens and primitives as `bbr-app`, with no WebKit or network listener.
-- [ ] Add the bounded [browser-component stories](../tasks/component-gallery-browser-components.md) from real production presentation models and callbacks, never copied gallery implementations.
-- [ ] Add the serial [composition stories](../tasks/component-gallery-compositions.md) for Sidebar, Command palette/overlay, Downloads, Find, Error/Crash, Auth, Context Menu, and Split Preview.
+- [ ] Build the dev-only [BBR Gallery MVP](../tasks/component-gallery-mvp.md) from the settled anchor slice as an honestly labeled **Foundations / Primitives** explorer. It uses the same `bbr-ui` production tokens/BBR primitives plus real vendored `gpui-component` Button, Text Input, Checkbox, Switch, Radio, Slider, and Progress controls; its tree has working visible pointer disclosure and keyboard collapse/expand, with no WebKit or network listener.
+- [ ] Immediately after G1b settles and integrates, execute the [browser-component stories](../tasks/component-gallery-browser-components.md) from real production presentation models and callbacks, never copied gallery implementations. First wave: Status line, Tab Row, Address/Input pieces, Favorites/Folders/Footer/Space chip, Downloads, Find, Error/Crash, Auth, and Context Menu.
+- [ ] Immediately after G2 settles and integrates, execute the serial [composition stories](../tasks/component-gallery-compositions.md) for Sidebar, Command palette/overlay, Downloads, Find, Error/Crash, Auth, Context Menu, and Split Preview. Saved Pages rows remain append-only after integrated B2/B3.
 
 Gallery verification supplements but never replaces the affected real-browser E2E and performance gates.
 

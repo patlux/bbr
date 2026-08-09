@@ -20,9 +20,12 @@ crate/API/dependency boundary and a source-grounded extraction table for every
 surface the Gallery later stories. Volatile readiness, base SHA, active owner,
 and integration status live in [Current delivery](../../delivery/current.md).
 The bounded G1a slice executes this packet's Scope — the `bbr-ui`
-foundations and primitives cutover (crate, DTOs, ids, dependency-boundary
-gate). G1b, G2, and G3 then implement the Gallery MVP, browser components, and
-compositions from the settled preceding production slice
+foundations and BBR-owned primitives cutover (crate, DTOs, ids,
+dependency-boundary gate). G1b then presents those symbols plus the already
+established vendored `gpui-component` core-control authority (Button, real
+Input, and the bounded common-control set) without copying either authority.
+G2 and G3 implement browser components and compositions from the settled
+preceding production slice
 ([Gallery MVP](component-gallery-mvp.md), [Browser Components](component-gallery-browser-components.md),
 [Compositions](component-gallery-compositions.md)).
 
@@ -265,24 +268,40 @@ extraction is mechanical and gallery stories can drive the same components:
 
 ## Primitive inventory (honest)
 
-Only extract anatomy that already exists with repeated same intent. The
-following are **not** present as standalone primitives in the source and are
-**not** claimed by this program: Button, Input/TextField, Icon *button*
-(a bare icon glyph exists; the button row anatomy lives inline in each
-surface), Badge, Chip (a `SpaceIdentity` chip is a composition of
-`profile_chip` + label + rail — see [G3](component-gallery-compositions.md)),
-Divider (the `hairline` is a 1 px `div` + token today, not a component),
-Progress (only the downloads secondary-line bar and the §10.5 loading arc
-exist). The gallery Foundations pages therefore story **existing** pieces
-(hairline/rule tokens, section labels, favicon/monogram tiles, profile
-chips, status glyphs, loading arc) and the MVP packet may add *component*
-stories only where the same anatomy already renders in two or more surfaces
-(that is the "repeated same-intent anatomy" bar). The four packets' story
-matrices stay inside this inventory; inventing a Button/Input/Badge
-primitive is out of scope until a product surface genuinely needs it and
-extracts it.
+There are two production presentation authorities, with distinct ownership:
+
+1. `bbr-ui` owns BBR-specific tokens, states, identity pieces, browser
+   components, and compositions under the strict dependency boundary above.
+2. The vendored, pinned `gpui-component 0.5.1` is the already-integrated
+   framework-control authority used by the product's `Root`. It provides real
+   reusable Button and Input/InputState implementations plus common controls;
+   the Gallery may consume these exact symbols directly and must initialize
+   and root them through the same production integration path. This does not
+   add `gpui-component` to `bbr-ui` and does not weaken `bbr-ui`'s exact
+   `gpui + bbr-domain` dependency contract.
+
+G1b therefore includes real framework-control stories for **Button**, **Text
+Input** (`Input` + `InputState`), **Checkbox**, **Switch**, **Radio**,
+**Slider**, and **Progress**. These are bounded core-control examples, not
+Gallery-local wrappers, BBR restyles, or a claim that every upstream widget is
+part of the MVP. Existing BBR-owned G1b pieces remain hairline/rule tokens,
+section labels, favicon/monogram tiles, profile chips, status glyphs, and the
+loading arc. Browser-specific Address/Input anatomy remains G2 because it must
+first be extracted from the actual BBR command/address production surface;
+full browser compositions remain G3.
+
+The following are still not claimed as new BBR-owned primitives merely because
+an upstream framework type exists: Icon *button* anatomy, a BBR Badge/Chip,
+Divider, or browser Progress semantics. A `SpaceIdentity` chip is a composition
+of `profile_chip` + label + rail (see G3), the hairline is a tokenized `div`,
+and Downloads progress stays browser-surface-owned. No Gallery copy may fill a
+missing production authority.
 
 ## Extraction table
+
+The `gpui-component` core controls above need no BBR extraction: G1b consumes
+the vendored production symbols directly and proves their real interaction
+paths. The table below covers BBR-owned symbols that must move into `bbr-ui`.
 
 Columns: **current symbol/file** → **future `bbr-ui` module** →
 **model/callback input** → **`bbr-app` migration owner** → **gallery story
@@ -333,7 +352,7 @@ prefixed.
 | `sidebar_surface` + `u2_pre_tab_children`/`u2_post_tab_children` rail composition — `app/sidebar_view.rs`, `app/u2_surface.rs`; `SidebarGeometry` — `sidebar.rs` + `app/sidebar.rs` (geometry model only) | `bbr-ui::sidebar` (`SidebarModel` + `Callbacks`) + `bbr-ui::sidebar::geometry` | `SidebarModel` DTO (theme, width, visible, brand, command/address, favorites tiles, folder rows, tab rows, spaces, status, toggle, divider, footer DTOs) + callback struct (command-open, row select/close/pin/drag, space activate, toggle, divider drag/keyboard, downloads toggle, space-strip, plus) | `app/sidebar_view.rs` becomes a thin `bbr-app` assembler that builds `SidebarModel` from the controller snapshot and passes `cx.listener` callbacks; `app/render.rs` root | G3 Compositions: Sidebar |
 | Split chrome frames: `app/render.rs` split `div` composition (the two-slot row + shared-edge divider) per DESIGN §11.7 — the slot itself (`NativeWebViewSlot`) stays app-owned; `crates/bbr-split` geometry stays as-is | `bbr-ui::split` (`SplitPaneFrame`, `SplitDivider`, split-zone frames) | `SplitModel` DTO (pane count, focused pane, divider geometry) + no callbacks (render-only; splits are app-created) | `app/render.rs` split branch renders `bbr-ui::split` chrome around the existing slots | G3 Compositions: Split preview |
 | Space strip chips + `space_theme` tint (post-F2a: `crates/bbr-app/src/space_theme.rs` nine-tone contract) | `bbr-ui::components::space_strip` + `bbr-ui::theme::space_tint` | `SpaceChipModel` DTO (identity, active, tint token) + activate callback; `SpaceTheme` DTO mapped from the F2a contract | F2a-integrated `u2_surface.rs`/`space_theme.rs` consumers | G3 Compositions: Cross-profile / Space strip |
-| `status_line`, `bbr-status` render — `shell/presentation.rs`, `app/sidebar_view.rs` | `bbr-ui::components::status` | status text DTO | `app/sidebar_view.rs` | G1b Foundations: Status line |
+| `status_line`, `bbr-status` render — `shell/presentation.rs`, `app/sidebar_view.rs` | `bbr-ui::components::status` | status text DTO | `app/sidebar_view.rs` | G2 Browser: Status line (extract/migrate/delete first; then append its first real story) |
 | Brand block (inline in `sidebar_surface`) | `bbr-ui::components::brand` | brand text DTO | `app/sidebar_view.rs` | G1b Foundations: Brand |
 
 ## Serial cutover
