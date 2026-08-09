@@ -208,9 +208,10 @@ fn host_follows_window_server_space_assignment() {
 /// parent closes through the real AppKit close path while the probe is
 /// presented. The Window Server (queried from the test process) must show
 /// zero BBR windows once the close lands — the portal is never left
-/// orphaned, occluding the desktop, or intercepting input — the app stays
-/// healthy (macOS quit-mode is Explicit: a zero-window app keeps running),
-/// and the gateway still answers so the test quits cleanly.
+/// orphaned, occluding the desktop, or intercepting input — and the
+/// complete process must then exit: closing the owning browser window is
+/// full application shutdown, and an implementation-owned portal child
+/// window never keeps the process resident.
 #[test]
 #[ignore]
 fn host_tears_down_when_parent_closes_with_open_presentation() {
@@ -262,15 +263,17 @@ fn host_tears_down_when_parent_closes_with_open_presentation() {
         let remaining = wait_no_onscreen_windows(pid, deadline());
         assert_eq!(remaining, 0, "no BBR window may survive the close");
 
-        // The app stays alive and healthy (macOS quit-mode Explicit keeps a
-        // zero-window app running): the gateway still answers and the app
-        // quits cleanly when asked.
-        client
-            .send_ok(&bbr_testkit::Request::Ping)
-            .expect("gateway stays alive after the window closes");
-        client.quit().expect("quit after close");
-        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
-        assert!(status.success(), "app exit after close: {status}");
+        // Closing the owning browser window is full application shutdown:
+        // the portal child window must not keep the process resident. The
+        // process must exit successfully within the standard deadline — no
+        // further gateway round trip is possible after the owning window
+        // is gone.
+        let exit = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(
+            exit.success(),
+            "owning-window close must terminate the process (portal child \
+             never owns lifetime), got {exit}"
+        );
     }));
 
     finish(result, &mut harness, &socket, &token);

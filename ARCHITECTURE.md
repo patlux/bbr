@@ -475,6 +475,22 @@ src/
    `cx.quit()` even on macOS (where GPUI otherwise stays resident after the
    last window), and terminal `SIGINT`/Ctrl-C is received asynchronously then
    routed onto GPUI's foreground/main thread for graceful `cx.quit()` teardown.
+
+   The lifecycle seam lives in `crate::window_seam`: `is_owning_window` is the
+   pure owning-window predicate (unit-tested against portal/unrelated window
+   ids), `quit_when_browser_window_closes` flushes the latest structural
+   browser model before `cx.quit()`, and `install_sigint_shutdown` installs an
+   `async_signal` listener on GPUI's foreground executor whose handler performs
+   no direct native mutation. The one implementation-owned child window (the
+   native portal host) carries a distinct `WindowId` and never satisfies the
+   quit rule; the find bar and auth sheet are in-window elements and never
+   produce an independent window-closed event. Closing a child is a
+   dismissal, closing the owning browser window is full application shutdown.
+   Under the testkit feature the gateway flushes the `Quit`/`CloseWindow`
+   response through the connection's sole writer before the shutdown handler
+   runs, so a successful response can never race process/socket teardown
+   (unit-tested in `bbr-testkit`; the real-app `e2e_shutdown` suite proves
+   both user paths through real process exit).
 8. Under testkit: start the gateway, pump engine events into the controller,
    and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
@@ -770,6 +786,7 @@ just clippy     # cargo clippy --workspace --all-targets -- -D warnings
 just roadmap    # validate hierarchical roadmap Markdown links
 just verify     # fmt + check + test + clippy + roadmap
 just e2e-smoke  # baseline real-WKWebView navigation/focus/resize
+just e2e-shutdown # deterministic process shutdown: real SIGINT + owning-window close (portal-child isolation)
 just e2e-tabs   # real multi-tab/session behavior
 just e2e-profiles # real profile isolation, moves, and suspend lifecycle
 just e2e-shell-tabs    # real vertical-tab surface: open/select/close/reopen
@@ -777,7 +794,7 @@ just e2e-shell-spaces  # real profile/space switching (pointer + keyboard)
 just e2e-shell-sidebar # real sidebar drag/keyboard/collapse/geometry clamp
 just e2e-shell-split-geometry # keyed per-WebViewId panes, focus, resize, close (split anchor)
 just e2e-perf   # optimized startup and production-path interaction budgets
-just e2e        # canonical sequential GUI gate (smoke, tabs, profiles,
+just e2e        # canonical sequential GUI gate (smoke, shutdown, tabs, profiles,
                  # shell-tabs, shell-spaces, shell-sidebar, shell-split-geometry,
                  # performance)
 ```

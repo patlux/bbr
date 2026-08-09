@@ -38,6 +38,20 @@ use crate::app::BbrApp;
 /// uses). This is a narrow persistence seam, not a general deterministic
 /// process-shutdown system (queue item 20 stays out of scope); the force-quit
 /// and crash paths recover exactly the last committed state.
+///
+/// True only when the closed window is BBR's owning browser window.
+///
+/// The one implementation-owned child window (the native portal host)
+/// carries a distinct [`gpui::WindowId`] and must never satisfy the
+/// process-exit rule. The find bar and auth sheet are in-window elements
+/// and never produce an independent window-closed event. Closing a child
+/// is a dismissal, closing the owning browser window is full application
+/// shutdown. The predicate is pure so the owning-window rule is
+/// unit-testable without a display server.
+pub(crate) fn is_owning_window(closed: gpui::WindowId, owning: gpui::WindowId) -> bool {
+    closed == owning
+}
+
 pub(crate) fn quit_when_browser_window_closes(
     cx: &App,
     browser_window: gpui::WindowHandle<gpui_component::Root>,
@@ -45,7 +59,7 @@ pub(crate) fn quit_when_browser_window_closes(
 ) {
     let browser_window_id = browser_window.window_id();
     cx.on_window_closed(move |cx, closed_window_id| {
-        if closed_window_id == browser_window_id {
+        if is_owning_window(closed_window_id, browser_window_id) {
             // The app entity outlives its window (retained by the
             // composition root), so the flush runs before the quit.
             app.update(cx, |view, _cx| view.flush_browser_state());
@@ -513,4 +527,45 @@ pub(crate) fn spawn_event_pump(
         }
     })
     .detach();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::WindowId;
+
+    #[test]
+    fn owning_window_close_is_a_process_quit_signal() {
+        let owning = WindowId::from(7);
+        assert!(
+            is_owning_window(owning, owning),
+            "closing the owning browser window must satisfy the quit rule"
+        );
+    }
+
+    #[test]
+    fn portal_child_window_never_satisfies_the_quit_rule() {
+        let owning = WindowId::from(7);
+        // The one native portal host (and any other implementation-owned
+        // child window) has its own WindowId: closing it is a dismissal,
+        // never a process quit.
+        let portal_child = WindowId::from(8);
+        assert!(
+            !is_owning_window(portal_child, owning),
+            "a portal child window id must not terminate the process"
+        );
+        assert!(
+            !is_owning_window(WindowId::from(9), owning),
+            "an unrelated window id must not terminate the process"
+        );
+    }
+
+    #[test]
+    fn distinct_window_ids_never_match() {
+        let a = WindowId::from(1);
+        let b = WindowId::from(2);
+        assert_ne!(a, b);
+        assert!(!is_owning_window(b, a));
+        assert!(!is_owning_window(a, b));
+    }
 }
