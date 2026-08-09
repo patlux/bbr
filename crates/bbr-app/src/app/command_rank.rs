@@ -21,8 +21,9 @@ use std::time::Duration;
 use bbr_browser::ControllerSnapshot;
 use bbr_command::corpus::HistoryEntry;
 use bbr_command::parse::{Mode, Query, QueryContext};
-use bbr_command::rank::{rank, Activation, CommandResult, ResultGroup};
+use bbr_command::rank::rank;
 use bbr_command::registry::CommandRegistry;
+use bbr_persistence::{CollectionRecord, SavedPageRecord};
 use gpui::{AsyncApp, Context, Task};
 
 use super::command_corpus::{corpus_from_snapshot, RESULT_LIMIT};
@@ -61,15 +62,7 @@ pub enum CommandResultState {
 /// One published ranked row. The typed [`Activation`] stays app-local so the
 /// activation path routes through existing controller/app methods; the
 /// testkit snapshot mapping strips it onto the wire `CommandResultSnapshot`.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CommandResultRow {
-    pub key: String,
-    pub group: String,
-    pub title: String,
-    pub subtitle: Option<String>,
-    pub destructive: bool,
-    pub activation: Activation,
-}
+pub use super::command_result::CommandResultRow;
 
 /// The result-surface state plus the cancellable debounce handle.
 pub struct CommandRanking {
@@ -106,42 +99,10 @@ impl Default for CommandRanking {
     }
 }
 
-/// The §11.5 group name on the wire (`snake_case`, stable for E2E asserts).
-pub fn group_name(group: ResultGroup) -> &'static str {
-    match group {
-        ResultGroup::ExactTab => "exact_tab",
-        ResultGroup::CurrentPinned => "current_pinned",
-        ResultGroup::CurrentTab => "current_tab",
-        ResultGroup::OtherSpace => "other_space",
-        ResultGroup::Space => "space",
-        ResultGroup::History => "history",
-        ResultGroup::Action => "action",
-        ResultGroup::Fallback => "fallback",
-    }
-}
-
 /// Map one portable ranked result onto the app row. Destructive actions
 /// (the settled §11.5 destructive set) carry the destructive flag that
 /// drives the error/destructive tint; no confirmation dialog is invented.
-pub fn row_from_result(result: CommandResult) -> CommandResultRow {
-    let destructive = matches!(
-        &result.activation,
-        Activation::RunAction { action }
-            if *action == bbr_command::id::ActionId(DESTRUCTIVE_ACTION_CLOSE_TAB)
-    );
-    CommandResultRow {
-        key: result.key,
-        group: group_name(result.group).to_string(),
-        title: result.title,
-        subtitle: result.subtitle,
-        destructive,
-        activation: result.activation,
-    }
-}
-
-/// The registry action id of "Close Tab" — the only destructive command in
-/// the v1 catalog (typed/destructive tint only, no confirmation).
-pub const DESTRUCTIVE_ACTION_CLOSE_TAB: u64 = 2;
+pub use super::command_result::row_from_result;
 
 impl CommandRanking {
     /// The surface opened (`Cmd-L` / `Cmd-T`): reset error state and start a
@@ -216,13 +177,16 @@ impl CommandRanking {
 }
 
 /// Build the corpus from the authoritative controller snapshot and the
-/// app-owned in-memory history provider on demand, then rank `text` in
-/// `mode`. Purely synchronous; used by the debounce publish, the testkit
-/// flush, and the activation fallback derivation. `history` is the
-/// already-loaded provider data — ranking never scans SQLite.
+/// app-owned in-memory providers (history + Saved Pages) on demand, then
+/// rank `text` in `mode`. Purely synchronous; used by the debounce publish,
+/// the testkit flush, and the activation fallback derivation. `history` and
+/// `saved_pages`/`collections` are the already-loaded provider data —
+/// ranking never scans SQLite.
 pub fn rank_text(
     snapshot: &ControllerSnapshot,
     history: &[HistoryEntry],
+    saved_pages: &[SavedPageRecord],
+    collections: &[CollectionRecord],
     mode: CommandBarMode,
     text: &str,
 ) -> (Vec<CommandResultRow>, usize) {
@@ -231,7 +195,7 @@ pub fn rank_text(
         CommandBarMode::NewTab => Mode::NewTab,
         _ => return (Vec::new(), 0),
     };
-    let corpus = corpus_from_snapshot(snapshot, history);
+    let corpus = corpus_from_snapshot(snapshot, history, saved_pages, collections);
     let registry = CommandRegistry::builtin();
     let query = Query::new(core_mode, text);
     let context = QueryContext::with_current(
@@ -281,9 +245,18 @@ impl BbrApp {
             self.command_ranking.activation_error = None;
             return;
         }
-        let (rows, total) = self
-            .store
-            .with_history(|history| rank_text(&snapshot, history, self.command_bar_mode, &text));
+        let (rows, total) = self.store.with_history(|history| {
+            self.store.with_saved_pages(|saved_pages, collections| {
+                rank_text(
+                    &snapshot,
+                    history,
+                    saved_pages,
+                    collections,
+                    self.command_bar_mode,
+                    &text,
+                )
+            })
+        });
         // Location/NewTab queries always carry the navigate/search fallback
         // row (the portable core), so a published non-empty pass is never
         // empty; there is no production NoMatch state in this slice.
@@ -352,6 +325,8 @@ impl From<CommandResultState> for bbr_testkit::protocol::CommandResultState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::app::command_result::group_name;
+    use bbr_command::rank::{Activation, ResultGroup};
 
     fn snapshot() -> ControllerSnapshot {
         let tab = |index: usize, url: &str, title: &str, pinned: bool| bbr_browser::TabSnapshot {
@@ -424,6 +399,7 @@ mod tests {
         assert_eq!(group_name(ResultGroup::CurrentTab), "current_tab");
         assert_eq!(group_name(ResultGroup::OtherSpace), "other_space");
         assert_eq!(group_name(ResultGroup::Space), "space");
+        assert_eq!(group_name(ResultGroup::SavedPage), "saved_page");
         assert_eq!(group_name(ResultGroup::History), "history");
         assert_eq!(group_name(ResultGroup::Action), "action");
         assert_eq!(group_name(ResultGroup::Fallback), "fallback");
@@ -431,12 +407,26 @@ mod tests {
 
     #[test]
     fn ranking_publishes_deterministic_rows_limited_to_16() {
-        let (rows, _total) = rank_text(&snapshot(), &[], CommandBarMode::Location, "alpha");
+        let (rows, _total) = rank_text(
+            &snapshot(),
+            &[],
+            &[],
+            &[],
+            CommandBarMode::Location,
+            "alpha",
+        );
         assert!(!rows.is_empty());
         assert_eq!(rows[0].key, "tab:1");
         assert_eq!(rows[0].group, "exact_tab");
         assert!(!rows[0].destructive);
-        let (rows, _) = rank_text(&snapshot(), &[], CommandBarMode::Location, "close");
+        let (rows, _) = rank_text(
+            &snapshot(),
+            &[],
+            &[],
+            &[],
+            CommandBarMode::Location,
+            "close",
+        );
         let close = rows
             .iter()
             .find(|r| {
@@ -449,6 +439,8 @@ mod tests {
         assert!(close.destructive, "close tab is the destructive action");
         let (rows, _) = rank_text(
             &snapshot(),
+            &[],
+            &[],
             &[],
             CommandBarMode::Location,
             "nonexistent term",

@@ -188,6 +188,16 @@ impl BbrApp {
                     None => false,
                 }
             }
+            Activation::OpenSavedPage { bookmark } => {
+                // B2: a ranked Saved Page row activates through the one
+                // app-owned command authority — the record is revalidated in
+                // the in-memory provider and exactly one fresh regular tab
+                // opens in the currently active Space/Profile. A stale or
+                // deleted `BookmarkId` rejects truthfully; an existing
+                // matching tab is never silently selected.
+                let command = self.saved_pages;
+                command.open(self, bbr_command::id::BookmarkId(bookmark.0), window, cx)
+            }
             Activation::RunAction { action } => self.run_registry_action(action, window, cx),
             Activation::Navigate { url } => {
                 // Every destination handed to a web session must be
@@ -384,7 +394,7 @@ impl BbrApp {
 
     /// A destination activation that ends in web content: close the surface
     /// and move focus into the page.
-    fn finish_web_activation(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(super) fn finish_web_activation(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.focus_web(window, cx);
         // The sync commit must observe the *post-focus* state: focus_web has
         // already cleared the mode and blurred the chrome, so the probe sees

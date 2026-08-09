@@ -196,6 +196,23 @@ impl BbrApp {
                         .child(SharedString::from(subtitle)),
                 )
             })
+            .when(row.collection.is_some(), |el| {
+                // §11.16 optional one-level collection label (`type:meta`).
+                let collection = row.collection.clone().expect("checked above");
+                el.child(
+                    div()
+                        .id(SharedString::from(format!(
+                            "{id_prefix}-collection-{}",
+                            row.key
+                        )))
+                        .max_w(px(96.0))
+                        .overflow_hidden()
+                        .text_ellipsis()
+                        .text_size(theme.type_.meta.size)
+                        .text_color(p.ink_faint)
+                        .child(SharedString::from(collection)),
+                )
+            })
             .when(row.destructive || selected, |el| {
                 el.child(
                     div()
@@ -216,11 +233,13 @@ impl BbrApp {
 }
 
 /// The stable leading glyph of a result row: the group's one-letter mark
-/// (`T` tab / `S` space / `A` action / `H` history / `→` fallback).
+/// (`T` tab / `S` space / `★` Saved Page / `H` history / `A` action / `→`
+/// fallback). The Saved Page bookmark glyph is the §11.16 settled mark.
 fn group_glyph(row: &CommandResultRow) -> String {
     match row.group.as_str() {
         "tab" | "exact_tab" | "current_pinned" | "current_tab" | "other_space" => "T".into(),
         "space" => "S".into(),
+        "saved_page" => "★".into(),
         "action" => "A".into(),
         "history" => "H".into(),
         _ => "→".into(),
@@ -257,6 +276,7 @@ mod tests {
             group: group.into(),
             title: "Title".into(),
             subtitle: Some("https://example.com".into()),
+            collection: None,
             destructive: false,
             activation: Activation::Navigate {
                 url: "https://example.com".into(),
@@ -310,6 +330,7 @@ mod tests {
             ("current_tab", "T"),
             ("other_space", "T"),
             ("space", "S"),
+            ("saved_page", "★"),
             ("action", "A"),
             ("history", "H"),
             ("fallback", "→"),

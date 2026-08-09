@@ -949,6 +949,70 @@ pub enum Request {
     BenchmarkAuthSheetOpen {
         operation_id: BenchmarkOperationId,
     },
+    /// Save the canonical URL as a Saved Page through the one app-owned
+    /// command authority (B2 packet `saved-pages-actions-command`): the
+    /// same `SavedPageCommand::save` seam Cmd-D and the menu rows share.
+    /// Canonical-URL-idempotent: a duplicate returns the existing
+    /// `BookmarkId` and never creates a second record. `title` is the
+    /// captured title (the display ladder falls back to the URL when
+    /// empty).
+    SaveSavedPage {
+        url: String,
+        title: String,
+    },
+    /// Probe the availability of `Bookmark Page` and `Remove Bookmark` for
+    /// `url` through the one app-owned command authority (B2 packet
+    /// `saved-pages-actions-command`): the availability matrix (saved/
+    /// unsaved, navigable/invalid/missing URL) without mutating source
+    /// state. Replies with [`Response::SavedPageAvailability`].
+    SavedPageAvailability {
+        url: String,
+    },
+    /// Remove the Saved Page record by stable `BookmarkId` through the one
+    /// app-owned command authority (idempotent: an unknown or already-
+    /// removed identity is a no-op success). Never mutates a tab.
+    RemoveSavedPage {
+        id: u64,
+    },
+    /// Open the Saved Page record by stable `BookmarkId` through the one
+    /// app-owned command authority: the record is revalidated in the
+    /// in-memory provider, then exactly one fresh regular tab opens in the
+    /// currently active Space/Profile through the existing NewTab
+    /// authority. Never silently selects an existing matching tab.
+    OpenSavedPage {
+        id: u64,
+    },
+    /// Deterministic Saved Pages flush (testkit-only): synchronously
+    /// persists the current in-memory Saved Page provider to the store in
+    /// one transaction — the deterministic seam the restart E2E uses to
+    /// prove committed Saved Pages across restarts (the harness terminates
+    /// the app, so a clean quit flush cannot be observed; the production
+    /// background writer uses the identical repository write).
+    FlushSavedPages,
+    /// Measure the production command-text path against the Saved Page
+    /// provider (B2 packet `saved-pages-actions-command`,
+    /// `saved_page_search_first_result`): identical to
+    /// `BenchmarkCommandBarFirstResult` except the expected first result is
+    /// a ranked Saved Page row (`saved_page:<id>`) over the seeded
+    /// ≥1,000-record provider. The sample commits only from a render of the
+    /// result surface presenting the exact first/selected key, generation,
+    /// state, mode, and focus — the warm command-type class (50/100).
+    BenchmarkSavedPageSearchFirstResult {
+        operation_id: BenchmarkOperationId,
+        text: String,
+        expected_first_key: String,
+    },
+    /// Measure the production open of a Saved Page result (B2 packet
+    /// `saved-pages-actions-command`, `saved_page_open`): the record is
+    /// revalidated in the in-memory provider and exactly one fresh regular
+    /// tab/session opens in the currently active Space/Profile through the
+    /// existing NewTab authority — the session-recreation class (100/150).
+    /// The sample commits only when the fresh tab/session is presented and
+    /// focused with the surface closed.
+    BenchmarkSavedPageOpen {
+        operation_id: BenchmarkOperationId,
+        bookmark_id: u64,
+    },
     /// Full app snapshot.
     GetSnapshot,
     /// Liveness probe.

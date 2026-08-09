@@ -71,6 +71,48 @@ pub(crate) fn seed_history_store(profile: &Path, count: usize) {
     repository.store_command_history(&entries).unwrap();
 }
 
+/// B2 Saved Page provider seed (pre-spawn): writes `count` deterministic
+/// global Saved Page records through the production repository so the app's
+/// startup restore loads exactly the ≥1,000-record provider the
+/// `saved_page_search_first_result` scenario measures. Entry 1 is the
+/// unique query target ("Alpha Saved Target" — the query `alpha saved`
+/// matches only it — with the deterministic navigable fixture page URL);
+/// every other entry is a distinct non-matching title/URL. The records
+/// carry no tab/session/space/profile identity (the B2 contract). Seeding
+/// happens outside any timed region — the measured samples start after the
+/// app has loaded.
+pub(crate) fn seed_saved_pages_store(profile: &Path, count: usize, target_url: &str) {
+    let repository = Repository::new(profile.join(STORE_FILE_NAME));
+    repository.initialize_and_restore().unwrap();
+    let pages = (0..count)
+        .map(|index| {
+            let id = (index + 1) as u64;
+            if index == 0 {
+                bbr_persistence::SavedPageRecord {
+                    id,
+                    canonical_url: target_url.into(),
+                    captured_title: "Alpha Saved Target".into(),
+                    user_label: None,
+                    created_at: 0,
+                    updated_at: 0,
+                    collection_id: None,
+                }
+            } else {
+                bbr_persistence::SavedPageRecord {
+                    id,
+                    canonical_url: format!("https://saved-{index:05}.example/"),
+                    captured_title: format!("Saved Page {index}"),
+                    user_label: None,
+                    created_at: index as u64,
+                    updated_at: index as u64,
+                    collection_id: None,
+                }
+            }
+        })
+        .collect::<Vec<_>>();
+    repository.replace_saved_pages(&pages).unwrap();
+}
+
 /// Deterministic fixture page titles (see `crates/bbr-fixtures/html`).
 pub const PAGE_ONE_TITLE: &str = "BBR Fixture One";
 pub const PAGE_TWO_TITLE: &str = "BBR Fixture Two";
@@ -102,6 +144,12 @@ pub struct TrialConfig {
     /// ranking corpus matches the command-core benchmark scale (500 tabs +
     /// 10k history).
     pub seed_history: usize,
+    /// B2 Saved Page provider scale: seed this many global Saved Page
+    /// records into the profile store before the app starts (0 = no seed).
+    /// The `saved_page_search_first_result` scenario sets 1,000 so the
+    /// measured ranking corpus matches the B2 contract scale (≥1,000
+    /// loaded records).
+    pub seed_saved_pages: usize,
 }
 
 /// One cold trial's measurements.
@@ -424,6 +472,13 @@ pub fn run_cold_trial_raw(
     // setup inside a sample).
     if config.seed_history > 0 {
         seed_history_store(&profile, config.seed_history);
+    }
+    // B2 Saved Page provider seed: when the trial config requests the
+    // ≥1,000-record provider, the store is seeded BEFORE the app starts so
+    // the measured ranking runs against the loaded provider (never fixture
+    // setup inside a sample).
+    if config.seed_saved_pages > 0 {
+        seed_saved_pages_store(&profile, config.seed_saved_pages, &page_one);
     }
     let socket = profile.join("bbr-test.sock");
     let token = format!("perf-{tag}");

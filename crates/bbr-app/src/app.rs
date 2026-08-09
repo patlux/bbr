@@ -43,6 +43,7 @@ mod command_benchmark_history;
 mod command_benchmarks;
 mod command_corpus;
 pub(crate) mod command_rank;
+mod command_result;
 mod command_surface;
 mod command_text;
 pub(crate) mod context_menu;
@@ -75,6 +76,9 @@ mod interaction;
 pub(crate) mod palette;
 mod portal_host;
 mod render;
+mod saved_pages;
+#[cfg(feature = "testkit")]
+mod saved_pages_benchmarks;
 mod sidebar;
 mod sidebar_view;
 mod spaces;
@@ -353,6 +357,13 @@ pub struct BbrApp {
     /// result surface (state machine + debounce handle). Inactive unless a
     /// location/new-tab mode is open.
     command_ranking: CommandRanking,
+    /// The one app-owned Saved Page command authority (B2 packet
+    /// `saved-pages-actions-command`): availability and dispatch for
+    /// `Bookmark Page`, `Remove Bookmark`, and `Open Saved Page`, shared by
+    /// Cmd-D, the Command Palette, and the capability-gated Z1/Z3 menu
+    /// rows. Stateless: all state lives in the store provider and the
+    /// controller.
+    saved_pages: saved_pages::SavedPageCommand,
     pub sidebar_visible: bool,
     /// The L5 session-local favorites/folders organization read model
     /// (DESIGN.md §11.10/§11.11): the source the U2 regions render and the
@@ -483,6 +494,7 @@ impl BbrApp {
             command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
+            saved_pages: saved_pages::SavedPageCommand,
             command_profile_hint: None,
             store,
             restore_evidence: RestoreEvidence::Fresh,
@@ -523,6 +535,24 @@ impl BbrApp {
     #[cfg(feature = "testkit")]
     pub(crate) fn flush_persistence(&self) {
         self.store.flush_persistence();
+    }
+
+    /// The production Saved Page quit flush: synchronously persists the
+    /// current in-memory Saved Page provider to the store in one transaction
+    /// (B2 packet `saved-pages-actions-command`). The owning window-close
+    /// seam runs it right before `cx.quit()` so a normal quit never loses a
+    /// committed save; the deterministic testkit seam and the background
+    /// writer use the identical repository write.
+    pub(crate) fn flush_saved_pages(&self) {
+        self.store.flush_saved_pages();
+    }
+
+    /// The one app-owned Saved Page command authority (B2 packet
+    /// `saved-pages-actions-command`): the testkit dispatch routes
+    /// save/remove/open through the same seam Cmd-D and the menu rows share.
+    #[cfg(feature = "testkit")]
+    pub(crate) fn saved_pages_command(&self) -> saved_pages::SavedPageCommand {
+        self.saved_pages
     }
 
     // ---- Phase-7 warm-restore composition ----------------------------------

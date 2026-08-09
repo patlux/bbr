@@ -26,3 +26,12 @@ pub struct HistoryId(pub u64);
 /// Stable identifier of a registered browser command action.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ActionId(pub u64);
+
+/// Stable identifier of one global Saved Page record (B2 packet
+/// `saved-pages-actions-command`; mirrors `bbr_domain::BookmarkId`).
+///
+/// A Saved Page is a durable global URL record with no tab/session/space/
+/// profile identity; the app-composition seam maps the domain identity onto
+/// this provider-neutral newtype when it builds the owned corpus.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct BookmarkId(pub u64);

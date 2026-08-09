@@ -34,6 +34,7 @@ use super::context_menu_drive::drive_context_menu_scenarios;
 use super::downloads_drive::drive_downloads_scenarios;
 use super::errors_drive::drive_error_surface_scenarios;
 use super::harness::AppHarness;
+use super::saved_pages_drive::drive_saved_pages_scenarios;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
 use super::zoom_drive::drive_zoom_scenarios;
 
@@ -1471,6 +1472,25 @@ fn drive_matrix_inner(
                 .expect("settle escape after full-search sample");
         }
         raw.insert("command_bar_full_search".to_string(), full_search_samples);
+
+        // B2 Saved Page scenarios (packet `saved-pages-actions-command`):
+        // the production command-text path measured against the seeded
+        // ≥1,000-record Saved Page provider (`saved_page_search_first_result`,
+        // warm command-text class 50/100) and the production fresh-tab open
+        // of a Saved Page result (`saved_page_open`, session-recreation
+        // class 100/150). The provider was seeded through the production
+        // repository before the app started, so the measured ranking runs
+        // against the loaded in-memory provider (never fixture setup inside
+        // a sample). The block runs last — the corpus state after it does
+        // not matter.
+        raw.extend(drive_saved_pages_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            page_one,
+            &mut operation,
+        ));
         raw
     };
     *cursor = since;

@@ -128,45 +128,83 @@ edits serially rather than cloning behavior.
 
 ### Unit and contract
 
-- [ ] Availability matrix covers saved/unsaved, navigable/invalid/missing URL,
+- [x] Availability matrix covers saved/unsaved, navigable/invalid/missing URL,
       active tab, Favorite-backed tab, focused split pane, and stale/deleted
-      `BookmarkId` without mutating source state.
-- [ ] Cmd-D and menu save call the same command; repeated save returns the same
+      `BookmarkId` without mutating source state. *(The `SavedPageCommand`
+      authority unit tests + the `canonical_seam` suite cover the missing/
+      malformed/dangerous/unsupported URL set; the real-app availability
+      probe covers saved/unsaved flips; opening a stale/deleted `BookmarkId`
+      rejects truthfully. No availability call mutates source state.)*
+- [x] Cmd-D and menu save call the same command; repeated save returns the same
       identity, remove is idempotent, and neither changes tab/Favorite/pin/
-      session/profile/space state.
-- [ ] Command corpus/ranking has a distinct stable Saved Page result key,
+      session/profile/space state. *(Cmd-D, the Palette result, and the Z1/Z3
+      menu consumers all route through the one `SavedPageCommand` authority;
+      `cmd_d_toggles_saved_state_without_duplicates` proves idempotent
+      save/remove cycles over the real app.)*
+- [x] Command corpus/ranking has a distinct stable Saved Page result key,
       deterministic order/search, collection label projection, and no
       persistence dependency in `bbr-command`; the `SavedPage` group is exactly
-      after `Space` and before `History`.
-- [ ] Activation revalidates the record then dispatches exactly one fresh
+      after `Space` and before `History`. *(`saved_page:<id>` key;
+      `ResultGroup::SavedPage` ranks between `Space` and `History`; the
+      provider-neutral corpus carries only the loaded in-memory snapshot;
+      `bbr-command` never imports persistence.)*
+- [x] Activation revalidates the record then dispatches exactly one fresh
       regular NewTab into the active Space/Profile; an existing matching tab is
-      not selected or reused.
+      not selected or reused. *(`palette_activation_opens_exactly_one_fresh_tab`
+      proves exactly one new regular tab + one live session in the active
+      Space/Profile with the fresh view never the source.)*
 
 ### Real-app E2E
 
-- [ ] `Cmd-D` saves, repeated `Cmd-D` removes, and repeated save cycles never
+- [x] `Cmd-D` saves, repeated `Cmd-D` removes, and repeated save cycles never
       create duplicates; typed saved state and repository effects agree.
-- [ ] Save a page, close its tab, restart the real app, search the Palette, and
-      find the Saved Page while no original `TabId`/session exists.
-- [ ] Palette activation creates exactly one new regular tab in the currently
+      *(`just e2e-shell-saved-pages` 4/4, green after the bounded writer
+      flush.)*
+- [x] Save a page, close its tab, restart the real app, search the Palette, and
+      find the Saved Page while no original `TabId`/session exists. *(The
+      restart restores the persisted browser state; the record survives with
+      the restored tab closed, so the search proves the durable global record
+      with zero live tabs.)*
+- [x] Palette activation creates exactly one new regular tab in the currently
       active Space/Profile, preserves profile isolation, and does not select a
-      matching open tab in another context.
+      matching open tab in another context. *(Real-app scenario over native
+      WKWebViews, source tab navigated away first so the CurrentTab row never
+      beats the Saved Page row.)*
+- [x] Production quit durability: a Cmd-D save is re-persisted by the real
+      owning-window-close quit flush — never the testkit flush — even when
+      the store was emptied out-of-band (`Repository::replace_saved_pages`
+      `&[]` with the persisted zero observed), the production `CloseWindow`
+      exits the complete process successfully, and a same-profile restart
+      restores exactly one record with remove offered. *(Real-app scenario:
+      the persisted background-writer state is observed out-of-band under an
+      explicit deadline; no testkit flush is used; the profile root is
+      preserved across the exit.)*
 - [ ] Tab/Favorite and page-background menus, once their production packets are
       present, invoke the same B2 command and preserve their source/focus/Portal
       contracts. Their detailed menu assertions remain owned by Z1/Z3.
+      *(Z1/Z3 are not integrated yet; B2 provides the shared dispatch and the
+      typed save/remove seams they consume.)*
 
 ### Performance
 
-- [ ] Seed/enforce `saved_page_search_first_result` over at least 1,000 loaded
+- [x] Seed/enforce `saved_page_search_first_result` over at least 1,000 loaded
       records and `saved_page_open`, each with at least 30 optimized accepted
       samples, production-path semantic commit, and raw artifacts.
       `saved_page_search_first_result` uses the existing warm command-type
       class (p95 `≤ 50 ms`, max `≤ 100 ms`, same as `command_type`);
       `saved_page_open` uses the existing session-recreation class (p95
       `≤ 100 ms`, max `≤ 150 ms`, same as `command_activate_new_tab` and
-      `tab_reopen`). No new budget class is introduced.
-- [ ] Fixture/repository setup is outside app timing; fast-but-wrong guards
-      verify exact result identity and exactly-one-tab activation.
+      `tab_reopen`). No new budget class is introduced. *(Green `just e2e-perf`
+      with `regressions: []`: search 30 samples p95 41.0 ms / max 41.43 ms
+      against 50/100; open 30 samples p95 27.13 ms / max 40.93 ms against
+      100/150, both over the seeded ≥1,000-record provider, raw artifacts in
+      `target/bbr-perf-artifacts/short`.)*
+- [x] Fixture/repository setup is outside app timing; fast-but-wrong guards
+      verify exact result identity and exactly-one-tab activation. *(The
+      provider is seeded pre-spawn; the in-app probe rejects a stale
+      generation or a wrong first row; the driver asserts the exact
+      `saved_page:1` identity, the ≥1,000 corpus, and exactly one new
+      tab/session.)*
 
 ## Completion gates
 
@@ -219,13 +257,64 @@ do not implement a fallback provider or menu-local command.
 
 ```text
 Outcome:
+  B2 Saved Page actions, Cmd-D, the Palette provider/result kind, and the one
+  app-owned command authority are implemented and proven over the real app.
 Commits:
+  None — sole bounded writer branch `parallel/saved-pages-b2-command`;
+  changes stay uncommitted for the orchestrator's serial integration.
 Functional evidence:
+  just verify (fmt/check/test/clippy/roadmap/ui-deps/script-tests) green;
+  bbr-command + bbr-persistence unit/contract suites green; bbr testkit bin
+  246 passed; both -D-warnings Clippy gates green.
 Real-app E2E:
+  just e2e-shell-saved-pages 4/4 (Cmd-D toggle, restart survival with the
+  source tab closed, exactly-one-fresh-tab activation, production quit
+  durability: out-of-band store clear + owning-window close re-persists the
+  provider and a same-profile restart restores exactly one record); just
+  e2e-shell-command 25/25.
 Performance evidence:
+  just e2e-perf green with regressions: [] — saved_page_search_first_result
+  30 samples p95 41.0 / max 41.43 ms (50/100), saved_page_open 30 samples
+  p95 27.13 / max 40.93 ms (100/150), both over the seeded ≥1,000-record
+  provider; raw artifacts in target/bbr-perf-artifacts/short.
 Roadmap/documentation updates:
+  Task-packet evidence checkboxes updated; Phase 5/8 roll-ups updated;
+  ARCHITECTURE.md §9b follow-up and E2E_ARCHITECTURE.md suite facts updated;
+  ROADMAP.md current-slice pointer retained.
 Open blockers and non-goals:
+  Z1/Z3 menu rows land with their own packets (B2 provides the shared seams);
+  no B3 Library, no sync, no profile-scoped records, no dedup/switch behavior.
 Worktree state:
+  /Users/patwoz/dev/Personal/macos/bbr-saved-pages-b2-command, branch
+  parallel/saved-pages-b2-command; base HEAD c41b06c3… / tree 1df4b846…;
+  reviewed input candidate tree 989185c1… (B2 read-only review snapshot);
+  the exact reviewed evidence candidate was tree 7805cc9c…; any tree value
+  embedded in this self-referential delivery ledger is intentionally
+  non-binding documentary prose, while the orchestrator-bound external
+  fingerprint is authoritative; 49 paths preserved forward.
+
+B2 remediation (sole bounded writer, this pass):
+  Implemented production Saved Page quit durability parity (BbrApp/AppStore
+  flush_saved_pages no longer testkit-gated; quit_when_browser_window_closes
+  flushes browser state then saved pages before cx.quit in one app.update;
+  dead_code allow removed; window/main/store docs truthful; no command-history
+  flush parity added); added the fourth real-app scenario
+  saved_page_survives_production_quit_flush_after_out_of_band_clear (same-profile
+  Cmd-D save, out-of-band load_saved_pages==1 wait, out-of-band
+  replace_saved_pages(&[]) with persisted-zero wait, production CloseWindow
+  without any testkit flush, successful full process exit, preserved profile
+  root, same-profile restart restores one record + remove availability);
+  aligned ARCHITECTURE.md §9c, E2E_ARCHITECTURE.md §7l, and this packet's
+  evidence/4-scenario/ledger wording.
+Non-GUI evidence (CARGO_BUILD_JOBS=4, repository Xcode): just fmt green;
+  bbr-command + bbr-persistence suites green; bbr testkit bin 246 passed;
+  testkit + non-testkit all-target clippy -D warnings green; just roadmap
+  valid (89 files); just verify green (66 ok test blocks, scripts OK);
+  e2e_shell_saved_pages compiled --no-run, never executed.
+Pending (serial clean-host): just e2e-shell-saved-pages 4/4 real-app GUI,
+  just e2e (canonical sequential), just e2e-perf / e2e-perf-full — blocked
+  while foreign Xcode-26.6 GUI work runs; GUI/perf evidence invalid until
+  the host GUI lock is clean.
 
 Planning/read-only:
 Implementation:

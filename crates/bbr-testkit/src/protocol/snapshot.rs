@@ -1159,4 +1159,10 @@ pub struct StoreSnapshot {
     /// retention cap in this slice (retention deferred in Phase 7); the
     /// 10,000 scale is only the test/performance corpus size.
     pub history_count: usize,
+    /// The number of in-memory Saved Page provider records ranking consumes
+    /// (B2 packet `saved-pages-actions-command`): the single runtime
+    /// authority, loaded once at startup and updated only after accepted
+    /// save/remove mutations — never queried from SQLite during ranking or
+    /// render.
+    pub saved_pages_count: usize,
 }

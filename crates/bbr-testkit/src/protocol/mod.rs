@@ -143,6 +143,11 @@ pub enum Response {
     },
     /// Reply to [`Request::GetSnapshot`].
     Snapshot(Snapshot),
+    /// Reply to [`Request::SavedPageAvailability`] (B2 packet
+    /// `saved-pages-actions-command`): the availability of `Bookmark Page`
+    /// and `Remove Bookmark` for the probed URL through the one app-owned
+    /// command authority, without mutating source state.
+    SavedPageAvailability { can_save: bool, can_remove: bool },
     /// Failure carrying a human-readable reason.
     Error(Error),
 }

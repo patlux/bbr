@@ -23,6 +23,7 @@ anyhow = "1"
 async-signal = "0.2"
 bbr-browser.workspace = true
 bbr-command.workspace = true
+bbr-domain.workspace = true
 bbr-persistence.workspace = true
 bbr-split.workspace = true
 bbr-ui = { path = "../bbr-ui" }

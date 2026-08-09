@@ -9,6 +9,7 @@ fn row(key: &str, group: &str) -> CommandResultRow {
         group: group.into(),
         title: "Title".into(),
         subtitle: Some("https://example.com".into()),
+        collection: None,
         destructive: false,
         activation: Activation::Navigate {
             url: "https://example.com".into(),

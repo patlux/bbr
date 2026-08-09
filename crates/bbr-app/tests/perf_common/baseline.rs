@@ -192,6 +192,24 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // B2 Saved Page scenarios (packet `saved-pages-actions-command`):
+        // `saved_page_search_first_result` is the Saved Page twin of the
+        // command-text path — Cmd-L, replace-selection typing, the real
+        // ranking debounce, and a render of the result surface committing
+        // the sample — measured against the seeded ≥1,000-record provider,
+        // so it stays in the same warm command-text class (50/100).
+        // `saved_page_open` revalidates the record and opens exactly one
+        // fresh regular tab/session in the active Space/Profile — the
+        // session-recreation class with its own budget (100/150), like
+        // reopen and cross-profile moves.
+        "saved_page_search_first_result" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "saved_page_open" => Budget {
+            p95_ms: 100.0,
+            max_ms: Some(150.0),
+        },
         // Cmd-Enter opens the destination in exactly one fresh tab/session
         // and focuses it — the session-recreation class with its own budget,
         // like reopen and cross-profile moves.

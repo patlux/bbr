@@ -836,6 +836,50 @@ scenarios run in the `e2e_performance` matrix (30 accepted samples each,
 commit only from a portal render that drew the armed WebKit-reported report,
 command-surface warm budget).
 
+## 7l. The Saved Pages suite (`bbr-app/tests/e2e_shell_saved_pages.rs`)
+
+`just e2e-shell-saved-pages` contains 4 real-app scenarios for the B2 packet
+(`saved-pages-actions-command`) — the one app-owned Saved Page command
+authority driven over real WKWebViews:
+
+1. **Idempotent Cmd-D toggle:** the first `Cmd-D` saves the active fixture
+   page, the availability matrix flips (save hidden, remove offered), a
+   second `Cmd-D` removes it, and repeated save/remove cycles never create
+   duplicates; the typed `saved_pages_count` and the repository effects
+   agree after the deterministic flush.
+2. **Survives tab close and restart:** save, open a second tab, close the
+   source tab (no `TabId` link), flush, restart the real app on the same
+   profile — the record restores while no original tab/session exists. The
+   restart restores the persisted browser state, so the restored tab is
+   closed before the Palette search: the Saved Page ranks as the distinct
+   `saved_page:<id>` row (CurrentTab < SavedPage is fixed) and the record
+   is findable even with zero live tabs.
+3. **Exactly-one-fresh-tab activation:** the source tab is navigated to a
+   non-matching page first so the CurrentTab row never beats the Saved Page
+   row; activating the result opens exactly one new regular tab + one live
+   session in the currently active Space/Profile, with the fresh view never
+   the source, the surface closed in web focus, and the destination the
+   record's canonical URL.
+4. **Production quit durability:** same-profile Cmd-D save; the bounded
+   background writer's persisted state is observed deterministically
+   out-of-band (`load_saved_pages` == 1); a foreign
+   `Repository::replace_saved_pages(&[])` empties the store and the
+   persisted zero is observed; the production `CloseWindow` (no testkit
+   flush) exits the complete process successfully; the profile root is
+   preserved and a same-profile restart restores exactly one record with
+   the availability matrix offering remove — the real owning-window-close
+   quit flush, never the testkit seam, carried the record across the exit.
+
+No sleeps: every step synchronizes on typed snapshot state or semantic
+events under an explicit deadline, and the suite takes the serial GUI lock.
+
+The optimized matrix (`just e2e-perf`) adds the B2 scenarios
+`saved_page_search_first_result` (warm command-text class 50/100) and
+`saved_page_open` (session-recreation class 100/150), each with 30 accepted
+samples over the pre-spawned ≥1,000-record provider with fast-but-wrong
+identity/one-tab guards; raw artifacts land in
+`target/bbr-perf-artifacts/short`.
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature
@@ -884,6 +928,7 @@ just e2e-shell-spaces  # visible profile/space surface (pointer + keyboard suite
 just e2e-shell-sidebar # adjustable/collapsible sidebar surface (drag, keys, collapse, clamp)
 just e2e-shell-split-geometry # keyed per-WebViewId split panes, focus, resize, close (split anchor)
 just e2e-shell-command  # command engine + U1 NativeAboveWeb palette/overlay + AppKit boundary evidence
+just e2e-shell-saved-pages # Saved Pages command authority: Cmd-D toggle, restart survival, exactly-one-fresh-tab, production quit durability (B2)
 just e2e-shell-hover    # pointer hover/press states + the internal §15 semantic tree
 just e2e-perf      # optimized startup and interaction latency budgets
 just e2e-perf-full # bounded repeated canonical gate (COLD_STARTUP_SAMPLES launches + 30-sample interactions)

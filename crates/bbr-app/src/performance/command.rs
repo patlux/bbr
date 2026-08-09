@@ -208,8 +208,10 @@ impl PerformanceProbe {
                 BenchmarkKind::CommandType
                     | BenchmarkKind::CommandBarFirstResult
                     | BenchmarkKind::CommandBarFullSearch
+                    | BenchmarkKind::SavedPageSearchFirstResult
                     | BenchmarkKind::CommandActivate
                     | BenchmarkKind::CommandActivateNewTab
+                    | BenchmarkKind::SavedPageOpen
                     | BenchmarkKind::PaletteOpen
             )
         )

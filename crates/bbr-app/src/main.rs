@@ -239,6 +239,7 @@ fn main() {
         // authority owns both persist paths.
         store.spawn_writer(cx.background_executor());
         store.spawn_browser_writer(cx.background_executor());
+        store.spawn_saved_pages_writer(cx.background_executor());
 
         // Phase-7 chrome-first warm-restore plan: the composition reads the
         // repository-restored browser snapshot ONCE here (before the store
@@ -421,10 +422,11 @@ fn main() {
             .expect("open window");
         let app = app_entity.expect("app entity built with the window root");
         // Normal-quit persistence correctness: flush the latest structural
-        // browser model through the existing owning shutdown seam when the
-        // browser window closes (the background writer uses the identical
-        // repository write). Narrow seam only — no general deterministic
-        // process-shutdown behavior is implemented here (queue item 20).
+        // browser model and the current Saved Page provider through the
+        // existing owning shutdown seam when the browser window closes (the
+        // background writers use the identical repository write). Narrow
+        // seam only — no general deterministic process-shutdown behavior is
+        // implemented here (queue item 20).
         quit_when_browser_window_closes(cx, window, app.clone());
 
         // macOS-only native seams: the concrete engine handle (the find

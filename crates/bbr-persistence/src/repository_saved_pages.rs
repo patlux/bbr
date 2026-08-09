@@ -26,7 +26,7 @@ use crate::repository_saved_pages_rows::load_collections;
 use crate::validation_saved_pages::validate_saved_pages;
 use crate::{
     schema, setup, validation, CollectionRecord, InvalidSnapshotIssue, PersistenceError,
-    Repository, SavedPageRecord, SavedPageSaveOutcome, SavedPageUpdate,
+    Repository, SavedPageRecord, SavedPageSaveOutcome, SavedPageUpdate, WriteStats,
 };
 
 impl Repository {
@@ -264,6 +264,68 @@ impl Repository {
             .map_err(schema::storage)?;
         transaction.commit().map_err(schema::storage)?;
         Ok(())
+    }
+
+    /// Validates and atomically replaces **only** the persisted Saved Page
+    /// records, leaving every other table (including the flat collections
+    /// they reference) untouched.
+    ///
+    /// This is the whole-collection write path the B2 app composition
+    /// attaches to the bounded nonblocking writer (the same pattern as
+    /// [`Repository::replace_downloads`]): the in-memory provider is the
+    /// single runtime authority, and each accepted mutation replaces the
+    /// persisted collection in one transaction, so a removed record can
+    /// never return from the store. The records arrive in the provider's
+    /// deterministic presentation order (`position` = index). The whole
+    /// write validates against the current collection set before any
+    /// mutation — a duplicate canonical URL, duplicate identity, or dangling
+    /// collection reference rejects whole and leaves the store
+    /// byte-identical.
+    pub fn replace_saved_pages(
+        &self,
+        pages: &[SavedPageRecord],
+    ) -> Result<WriteStats, PersistenceError> {
+        let mut connection = Connection::open(self.path()).map_err(schema::storage)?;
+        setup::prepare_store(&mut connection)?;
+        connection
+            .pragma_update(None, "foreign_keys", true)
+            .map_err(schema::storage)?;
+        // Validate against the current collection set before any write (the
+        // same combined contract `replace_snapshot` enforces).
+        let collections = load_collections(&connection, &mut HashSet::new())?;
+        validate_saved_pages(pages, &collections).map_err(PersistenceError::InvalidSnapshot)?;
+        let transaction = connection.transaction().map_err(schema::storage)?;
+        let deleted_rows = transaction
+            .execute("DELETE FROM saved_pages", [])
+            .map_err(schema::storage)? as u64;
+        let mut inserted_rows = 0_u64;
+        for (position, page) in pages.iter().enumerate() {
+            transaction
+                .execute(
+                    "INSERT INTO saved_pages(id, canonical_url, captured_title, user_label, \
+                     created_at, updated_at, collection_id, position) VALUES (?, ?, ?, ?, ?, ?, \
+                     ?, ?)",
+                    params![
+                        to_i64(page.id),
+                        page.canonical_url,
+                        page.captured_title,
+                        page.user_label,
+                        to_i64(page.created_at),
+                        to_i64(page.updated_at),
+                        page.collection_id.map(to_i64),
+                        position as i64
+                    ],
+                )
+                .map_err(schema::storage)?;
+            inserted_rows += 1;
+        }
+        transaction.commit().map_err(schema::storage)?;
+        Ok(WriteStats {
+            committed_transactions: 1,
+            sql_statements: 1 + inserted_rows,
+            deleted_rows,
+            inserted_rows,
+        })
     }
 }
 

@@ -17,7 +17,7 @@ use smol::prelude::*;
 use crate::actions::{
     AuthSheetFieldTab, Back, CloseTab, FindInPage, FocusCommandBar, FocusWeb, Forward, MoveTab,
     NewSpace, NewTab, OpenOverlay, OpenPalette, PinTab, Reload, ReopenTab, ReorderTabDown,
-    ReorderTabUp, ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
+    ReorderTabUp, ToggleBookmark, ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
 };
 use crate::app::BbrApp;
 /// Root-window + app-entity seam: run an update against the separately
@@ -33,11 +33,12 @@ use crate::app::BbrApp;
 /// still exist.
 ///
 /// Normal-quit persistence correctness: the owning window-close seam flushes
-/// the latest structural browser model before the app quits (one synchronous
-/// transaction through the identical repository write the background writer
-/// uses). This is a narrow persistence seam, not a general deterministic
-/// process-shutdown system (queue item 20 stays out of scope); the force-quit
-/// and crash paths recover exactly the last committed state.
+/// the latest structural browser model and the current Saved Page provider
+/// before the app quits (each one synchronous transaction through the
+/// identical repository write the background writer uses). This is a narrow
+/// persistence seam, not a general deterministic process-shutdown system
+/// (queue item 20 stays out of scope); the force-quit and crash paths
+/// recover exactly the last committed state.
 ///
 /// True only when the closed window is BBR's owning browser window.
 ///
@@ -61,8 +62,13 @@ pub(crate) fn quit_when_browser_window_closes(
     cx.on_window_closed(move |cx, closed_window_id| {
         if is_owning_window(closed_window_id, browser_window_id) {
             // The app entity outlives its window (retained by the
-            // composition root), so the flush runs before the quit.
-            app.update(cx, |view, _cx| view.flush_browser_state());
+            // composition root), so both flushes run before the quit in the
+            // same update: the structural browser model and the Saved Page
+            // provider are each persisted in one synchronous transaction.
+            app.update(cx, |view, _cx| {
+                view.flush_browser_state();
+                view.flush_saved_pages();
+            });
             cx.quit();
         }
     })
@@ -265,6 +271,17 @@ pub(crate) fn install_actions(
     });
     cx.on_action({
         let app = app.clone();
+        move |_: &ToggleBookmark, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.toggle_bookmark(window, cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
         move |_: &NewTab, cx| {
             let app = app.clone();
             cx.defer(move |cx| {
@@ -376,6 +393,10 @@ pub(crate) fn install_actions(
         KeyBinding::new("cmd-=", ZoomIn, None),
         KeyBinding::new("cmd--", ZoomOut, None),
         KeyBinding::new("cmd-0", ZoomReset, None),
+        // Cmd-D toggles the active page's saved state (B2 packet
+        // `saved-pages-actions-command`; conventional macOS bookmark
+        // shortcut).
+        KeyBinding::new("cmd-d", ToggleBookmark, None),
         // App-wide (context-less) bindings resolve at the deepest depth, so
         // they outrank gpui-component `Root`'s element-scoped `tab`/`shift-tab`
         // focus-traversal bindings: Tab moves the credential sheet's field

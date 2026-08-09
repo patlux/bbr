@@ -22,6 +22,7 @@ mod find_drive;
 pub mod harness;
 pub mod machine;
 mod report;
+mod saved_pages_drive;
 pub mod scenarios;
 pub mod stats;
 mod zoom;
@@ -64,5 +65,10 @@ pub fn short_config() -> TrialConfig {
         // and the `command_bar_first_result` scenario adds the >=500 open
         // tabs on top.
         seed_history: 10_000,
+        // B2 Saved Page provider scale (packet `saved-pages-actions-command`):
+        // the interaction matrix measures the Saved Page command-text path
+        // against the pre-spawned ≥1,000-record provider (never fixture
+        // setup inside a sample).
+        seed_saved_pages: 1_000,
     }
 }

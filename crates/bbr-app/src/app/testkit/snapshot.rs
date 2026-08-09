@@ -429,10 +429,12 @@ impl BbrApp {
             None => StoreLoadSnapshot::Unavailable,
         };
         let history_count = self.store.with_history(|history| history.len());
+        let saved_pages_count = self.store.saved_pages_count();
         bbr_testkit::protocol::StoreSnapshot {
             store_load,
             search_engine: self.store.effective_settings().engine().id().to_string(),
             history_count,
+            saved_pages_count,
         }
     }
 
