@@ -13,6 +13,7 @@
 //! through the production `on_hover` path. Typed-snapshot and §15
 //! semantic assertions only — no sleeps, no pixel comparisons.
 
+use super::command_portal;
 use super::command_portal::assert_command_portal_open;
 use super::*;
 use bbr_testkit::protocol::CommandSurface;
@@ -226,7 +227,11 @@ fn pointer_activation_covers_the_control_and_one_keystroke_replaces_then_enter_n
             .send_ok(&bbr_testkit::Request::ClickAddress)
             .expect("address press");
         since = wait_chrome_focus(&mut client, true, since);
-        let overlay = client.snapshot().expect("address-activated overlay");
+        let overlay = command_portal::wait_command_portal_open(
+            &mut client,
+            CommandSurface::Overlay,
+            deadline(),
+        );
         assert_command_portal_open(&overlay, CommandSurface::Overlay);
         let address_rect = overlay.address_rect.expect("measured pill rect");
         let portal_rect = overlay.portal.rect.expect("resolved overlay rect");

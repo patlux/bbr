@@ -54,8 +54,7 @@ fn host_hides_on_minimize_and_restores() {
             .send_ok(&dsl::portal_open_probe())
             .expect("open probe");
         flush_frame(&mut client);
-        let open = client.snapshot().expect("open snapshot");
-        assert_probe_open(&open);
+        let open = wait_probe_open(&mut client, deadline());
         wait_for_frontmost_evidence(&mut client, deadline());
         let portal_window_number = open.portal.portal_window_number;
 
@@ -154,8 +153,7 @@ fn host_follows_window_server_space_assignment() {
             .send_ok(&dsl::portal_open_probe())
             .expect("open probe");
         flush_frame(&mut client);
-        let open = client.snapshot().expect("open snapshot");
-        assert_probe_open(&open);
+        let open = wait_probe_open(&mut client, deadline());
         wait_for_frontmost_evidence(&mut client, deadline());
         let portal_window_number = open.portal.portal_window_number;
         assert_active_space_agreement(&open);
@@ -237,8 +235,7 @@ fn host_tears_down_when_parent_closes_with_open_presentation() {
             .send_ok(&dsl::portal_open_probe())
             .expect("open probe");
         flush_frame(&mut client);
-        let open = client.snapshot().expect("open snapshot");
-        assert_probe_open(&open);
+        let open = wait_probe_open(&mut client, deadline());
         wait_for_frontmost_evidence(&mut client, deadline());
         assert_ownership_preserved(&open, &settled);
         assert_eq!(open.active_web_view, Some(first_view));

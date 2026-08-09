@@ -262,6 +262,9 @@ pub(super) fn wait_sheet_open(
         if snapshot.auth.open
             && snapshot.auth.web_view == Some(web_view)
             && snapshot.portal.presentation == Some(AUTH_PRESENTATION_ID)
+            && snapshot.portal.visible
+            && snapshot.portal.native_visible
+            && snapshot.portal.frame_synced
         {
             return snapshot;
         }
@@ -275,7 +278,11 @@ pub(super) fn wait_sheet_open(
 pub(super) fn wait_sheet_closed(client: &mut Client, deadline: Instant) -> Snapshot {
     loop {
         let snapshot = client.snapshot().expect("auth closed snapshot");
-        if !snapshot.auth.open {
+        if !snapshot.auth.open
+            && snapshot.portal.presentation.is_none()
+            && !snapshot.portal.visible
+            && !snapshot.portal.native_visible
+        {
             assert_sheet_closed(&snapshot);
             return snapshot;
         }

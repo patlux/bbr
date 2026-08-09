@@ -245,24 +245,31 @@ impl NativePortal {
     /// Order the portal window front. A non-activating panel never becomes
     /// key or main merely by showing, so focus stays in BBR's existing
     /// focus choreography.
+    ///
+    /// The commanded visibility becomes true immediately for lifecycle
+    /// policy, while AppKit ordering is deferred to a bare main-run-loop turn.
+    /// `orderFront:` can synchronously notify GPUI and re-borrow its `App`,
+    /// exactly like the already-deferred frame/attachment/close mutations.
     pub fn show(&mut self, mtm: MainThreadMarker) {
         // Re-pin before showing: the parent may have moved while hidden.
         self.sync_frame(mtm);
-        let Some(portal) = self.portal_window.as_deref() else {
+        let Some(portal) = self.portal_window.clone() else {
             return;
         };
-        portal.orderFront(None);
         self.visible = true;
+        defer_window_op(mtm, portal, DeferredWindowOp::Show);
     }
 
     /// Order the portal window out (used when no native presentation is
-    /// active and during teardown).
-    pub fn hide(&mut self, _mtm: MainThreadMarker) {
-        let Some(portal) = self.portal_window.as_deref() else {
+    /// active and during teardown). The lifecycle flag clears immediately;
+    /// native ordering converges on the next bare main-run-loop turn so GPUI
+    /// is never re-entered while its `App` is borrowed.
+    pub fn hide(&mut self, mtm: MainThreadMarker) {
+        let Some(portal) = self.portal_window.clone() else {
             return;
         };
-        portal.orderOut(None);
         self.visible = false;
+        defer_window_op(mtm, portal, DeferredWindowOp::Hide);
     }
 
     /// Commanded visibility: `show`/`hide` on the active presentation path.

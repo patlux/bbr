@@ -13,6 +13,7 @@
 //! and §15 semantic — no sleeps, no pixel comparisons. The mutual-exclusion
 //! and profile-hint evidence lives in the focused `palette_surfaces` module.
 
+use super::command_portal;
 use super::command_portal::{assert_command_portal_closed, assert_command_portal_open};
 use super::*;
 use bbr_testkit::protocol::CommandSurface;
@@ -47,7 +48,11 @@ fn cmd_t_opens_centered_palette_in_new_tab_staging_and_escape_restores() {
         // tab or session before Enter.
         key(&mut client, "cmd-t");
         since = wait_chrome_focus(&mut client, true, since);
-        let palette = client.snapshot().expect("palette snapshot");
+        let palette = command_portal::wait_command_portal_open(
+            &mut client,
+            CommandSurface::Palette,
+            deadline(),
+        );
         assert_command_portal_open(&palette, CommandSurface::Palette);
         let portal_window = palette.portal.portal_window_number;
         assert_eq!(palette.command_bar_mode, CommandBarMode::NewTab);
@@ -128,8 +133,8 @@ fn cmd_t_opens_centered_palette_in_new_tab_staging_and_escape_restores() {
         // to web, nothing created.
         key(&mut client, "escape");
         let _ = wait_chrome_focus(&mut client, false, since);
-        let restored = client.snapshot().expect("restored snapshot");
-        assert_eq!(restored.command_surface, CommandSurface::None);
+        let restored =
+            command_portal::wait_command_portal_closed(&mut client, portal_window, deadline());
         assert_command_portal_closed(&restored, portal_window);
         assert_eq!(restored.command_bar_mode, CommandBarMode::Inactive);
         assert_eq!(
@@ -193,7 +198,11 @@ fn enter_in_palette_commits_exactly_one_new_tab_and_focuses_the_page() {
         client
             .send_ok(&bbr_testkit::Request::FlushCommandRanking)
             .expect("flush staging");
-        let staged = client.snapshot().expect("staged snapshot");
+        let staged = command_portal::wait_command_portal_open(
+            &mut client,
+            CommandSurface::Palette,
+            deadline(),
+        );
         assert_command_portal_open(&staged, CommandSurface::Palette);
         assert_eq!(staged.command_bar_mode, CommandBarMode::NewTab);
         let expected_key = tab_key(&staged, &page_two, None);
@@ -263,7 +272,11 @@ fn cmd_l_opens_field_anchored_overlay_with_full_url_selected_and_escape_restores
         // full URL selected; the palette ids never appear; the §15 overlay
         // node carries the field text as its value.
         cmd_l(&mut client, &mut since);
-        let overlay = client.snapshot().expect("overlay snapshot");
+        let overlay = command_portal::wait_command_portal_open(
+            &mut client,
+            CommandSurface::Overlay,
+            deadline(),
+        );
         assert_command_portal_open(&overlay, CommandSurface::Overlay);
         let portal_window = overlay.portal.portal_window_number;
         assert_eq!(overlay.command_bar_mode, CommandBarMode::Location);
@@ -291,8 +304,8 @@ fn cmd_l_opens_field_anchored_overlay_with_full_url_selected_and_escape_restores
         // text are restored.
         key(&mut client, "escape");
         let _ = wait_chrome_focus(&mut client, false, since);
-        let restored = client.snapshot().expect("restored snapshot");
-        assert_eq!(restored.command_surface, CommandSurface::None);
+        let restored =
+            command_portal::wait_command_portal_closed(&mut client, portal_window, deadline());
         assert_command_portal_closed(&restored, portal_window);
         assert_eq!(restored.command_bar_mode, CommandBarMode::Inactive);
         assert_eq!(restored.command_bar_text, page_one, "origin text restored");
@@ -344,7 +357,11 @@ fn address_click_opens_overlay_and_outside_press_closes_web_and_chrome_origins()
             .send_ok(&bbr_testkit::Request::ClickAddress)
             .expect("address click");
         since = wait_chrome_focus(&mut client, true, since);
-        let overlay = client.snapshot().expect("address-click overlay snapshot");
+        let overlay = command_portal::wait_command_portal_open(
+            &mut client,
+            CommandSurface::Overlay,
+            deadline(),
+        );
         assert_command_portal_open(&overlay, CommandSurface::Overlay);
         let portal_window = overlay.portal.portal_window_number;
         assert_eq!(overlay.command_bar_mode, CommandBarMode::Location);
@@ -377,7 +394,8 @@ fn address_click_opens_overlay_and_outside_press_closes_web_and_chrome_origins()
             .send_ok(&bbr_testkit::Request::ClickContentOutside)
             .expect("outside press");
         let _ = wait_chrome_focus(&mut client, false, since);
-        let dismissed = client.snapshot().expect("outside-press snapshot");
+        let dismissed =
+            command_portal::wait_command_portal_closed(&mut client, portal_window, deadline());
         assert_eq!(dismissed.command_surface, CommandSurface::None);
         assert_command_portal_closed(&dismissed, portal_window);
         assert_eq!(dismissed.command_bar_mode, CommandBarMode::Inactive);
@@ -395,13 +413,17 @@ fn address_click_opens_overlay_and_outside_press_closes_web_and_chrome_origins()
             .send_ok(&bbr_testkit::Request::ClickAddress)
             .expect("address click from chrome origin");
         since = wait_chrome_focus(&mut client, true, since);
-        let chrome_overlay = client.snapshot().expect("chrome-origin overlay");
+        let chrome_overlay = command_portal::wait_command_portal_open(
+            &mut client,
+            CommandSurface::Overlay,
+            deadline(),
+        );
         assert_command_portal_open(&chrome_overlay, CommandSurface::Overlay);
         assert!(chrome_overlay.chrome_focused);
         key(&mut client, "escape");
         let _ = wait_chrome_focus(&mut client, true, since);
-        let chrome_restored = client.snapshot().expect("chrome-origin restore");
-        assert_eq!(chrome_restored.command_surface, CommandSurface::None);
+        let chrome_restored =
+            command_portal::wait_command_portal_closed(&mut client, portal_window, deadline());
         assert_command_portal_closed(&chrome_restored, portal_window);
         assert_eq!(chrome_restored.command_bar_mode, CommandBarMode::Inactive);
         assert!(

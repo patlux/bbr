@@ -90,7 +90,14 @@ pub(super) fn wait_menu_open(
     loop {
         let snapshot = client.snapshot().expect("menu open snapshot");
         let m = &snapshot.context_menu;
-        if m.open && m.bound_view == Some(view) && m.point == point {
+        if m.open
+            && m.bound_view == Some(view)
+            && m.point == point
+            && snapshot.portal.presentation == Some(MENU_PRESENTATION_ID)
+            && snapshot.portal.visible
+            && snapshot.portal.native_visible
+            && snapshot.portal.frame_synced
+        {
             assert_menu_open(&snapshot, view, point);
             return snapshot;
         }
@@ -110,7 +117,11 @@ pub(super) fn wait_menu_open(
 pub(super) fn wait_menu_closed(client: &mut Client, deadline: Instant) -> Snapshot {
     loop {
         let snapshot = client.snapshot().expect("menu closed snapshot");
-        if !snapshot.context_menu.open {
+        if !snapshot.context_menu.open
+            && snapshot.portal.presentation.is_none()
+            && !snapshot.portal.visible
+            && !snapshot.portal.native_visible
+        {
             assert_menu_closed(&snapshot);
             return snapshot;
         }

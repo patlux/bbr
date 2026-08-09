@@ -42,6 +42,34 @@ pub fn assert_command_portal_open(snapshot: &Snapshot, surface: CommandSurface) 
     assert!(!portal.portal_is_main, "command portal never becomes main");
 }
 
+pub fn wait_command_portal_open(
+    client: &mut Client,
+    surface: CommandSurface,
+    until: Instant,
+) -> Snapshot {
+    loop {
+        let snapshot = client.snapshot().expect("command portal open snapshot");
+        if snapshot.command_surface == surface
+            && snapshot.portal.visible
+            && snapshot.portal.native_visible
+            && snapshot.portal.frame_synced
+        {
+            assert_command_portal_open(&snapshot, surface);
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < until,
+            "command portal did not become natively visible for {surface:?}: logical {:?}, presentation {:?}, visible {}, native {}, frame_synced {}",
+            snapshot.command_surface,
+            snapshot.portal.presentation,
+            snapshot.portal.visible,
+            snapshot.portal.native_visible,
+            snapshot.portal.frame_synced
+        );
+        std::thread::yield_now();
+    }
+}
+
 pub fn assert_command_portal_closed(snapshot: &Snapshot, window_number: i64) {
     let portal = &snapshot.portal;
     assert_eq!(portal.presentation, None);
@@ -58,6 +86,33 @@ pub fn assert_command_portal_closed(snapshot: &Snapshot, window_number: i64) {
     assert_eq!(portal.portal_window_number, window_number);
     assert!(!portal.portal_is_key);
     assert!(!portal.portal_is_main);
+}
+
+pub fn wait_command_portal_closed(
+    client: &mut Client,
+    window_number: i64,
+    until: Instant,
+) -> Snapshot {
+    loop {
+        let snapshot = client.snapshot().expect("command portal closed snapshot");
+        if snapshot.command_surface == CommandSurface::None
+            && snapshot.portal.presentation.is_none()
+            && !snapshot.portal.visible
+            && !snapshot.portal.native_visible
+        {
+            assert_command_portal_closed(&snapshot, window_number);
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < until,
+            "command portal did not become natively hidden: logical {:?}, presentation {:?}, visible {}, native {}",
+            snapshot.command_surface,
+            snapshot.portal.presentation,
+            snapshot.portal.visible,
+            snapshot.portal.native_visible
+        );
+        std::thread::yield_now();
+    }
 }
 
 fn spawn_harness_shown(root_tag: &str, page_one: &str) -> (Harness, PathBuf, String) {
@@ -152,9 +207,8 @@ fn palette_is_window_server_frontmost_over_the_real_webview() {
 
         key(&mut client, "escape");
         let _ = wait_chrome_focus(&mut client, false, since);
-        let closed = client.snapshot().expect("closed portal snapshot");
+        let closed = wait_command_portal_closed(&mut client, window_number, deadline());
         assert_eq!(closed.command_surface, CommandSurface::None);
-        assert_command_portal_closed(&closed, window_number);
         assert_eq!(closed.active_web_view, Some(first_view));
         assert_eq!(closed.engine_sessions, baseline.engine_sessions);
 

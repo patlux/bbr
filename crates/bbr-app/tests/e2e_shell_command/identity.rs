@@ -10,6 +10,7 @@
 //! destination is a warm switch that reuses the live sessions. Typed
 //! snapshots and §15 semantic assertions only — no sleeps.
 
+use super::command_portal;
 use super::command_portal::assert_command_portal_open;
 use super::*;
 use bbr_testkit::protocol::CommandSurface;
@@ -88,7 +89,11 @@ fn opening_and_closing_the_overlay_preserves_tab_session_space_and_profile_ident
             .send_ok(&bbr_testkit::Request::ClickAddress)
             .expect("address press");
         since = wait_chrome_focus(&mut client, true, since);
-        let open = client.snapshot().expect("overlay open identity snapshot");
+        let open = command_portal::wait_command_portal_open(
+            &mut client,
+            CommandSurface::Overlay,
+            deadline(),
+        );
         assert_command_portal_open(&open, CommandSurface::Overlay);
         assert_eq!(open.command_bar_mode, CommandBarMode::Location);
         assert!(open.chrome_focused);

@@ -184,8 +184,7 @@ fn host_starts_hidden_and_probe_opens_above_real_webview() {
             .send_ok(&dsl::portal_open_probe())
             .expect("open probe");
         flush_frame(&mut client);
-        let open = client.snapshot().expect("open snapshot");
-        assert_probe_open(&open);
+        let open = wait_probe_open(&mut client, deadline());
         // The probe card must resolve centered from the present-time window:
         // the rect is frozen at present and the snapshot observes the same
         // geometry, so the expectation is derived from this snapshot's own
@@ -206,8 +205,7 @@ fn host_starts_hidden_and_probe_opens_above_real_webview() {
             .send_ok(&dsl::portal_open_probe())
             .expect("re-present probe");
         flush_frame(&mut client);
-        let refreshed = client.snapshot().expect("refreshed snapshot");
-        assert_probe_open(&refreshed);
+        let refreshed = wait_probe_open(&mut client, deadline());
         wait_for_frontmost_evidence(&mut client, deadline());
         assert_eq!(
             refreshed.portal.presentation,
@@ -255,8 +253,7 @@ fn portal_follows_parent_resize_without_session_recreation() {
             .send_ok(&dsl::portal_open_probe())
             .expect("open probe");
         flush_frame(&mut client);
-        let open = client.snapshot().expect("open snapshot");
-        assert_probe_open(&open);
+        let open = wait_probe_open(&mut client, deadline());
         let portal_window_number = open.portal.portal_window_number;
         assert!(portal_window_number > 0);
         assert_ownership_preserved(&open, &settled);
@@ -297,7 +294,10 @@ fn portal_follows_parent_resize_without_session_recreation() {
         let deadline = deadline();
         let resized = loop {
             let snapshot = client.snapshot().expect("resize snapshot");
-            if (snapshot.window_size[0] - new_w).abs() <= 0.5 && snapshot.portal.frame_synced {
+            if (snapshot.window_size[0] - new_w).abs() <= 0.5
+                && snapshot.portal.frame_synced
+                && snapshot.portal.native_visible
+            {
                 break snapshot;
             }
             assert!(
@@ -367,8 +367,7 @@ fn outside_dismiss_orders_host_out_and_preserves_state() {
             .send_ok(&dsl::portal_open_probe())
             .expect("open probe");
         flush_frame(&mut client);
-        let open = client.snapshot().expect("open snapshot");
-        assert_probe_open(&open);
+        let open = wait_probe_open(&mut client, deadline());
         let portal_window_number = open.portal.portal_window_number;
 
         // One outside pointer action (the exact production method the
@@ -378,8 +377,7 @@ fn outside_dismiss_orders_host_out_and_preserves_state() {
             .send_ok(&dsl::portal_outside_dismiss())
             .expect("outside dismiss");
         flush_frame(&mut client);
-        let dismissed = client.snapshot().expect("dismissed snapshot");
-        assert_host_closed(&dismissed);
+        let dismissed = wait_host_closed(&mut client, deadline());
         assert_eq!(
             dismissed.portal.portal_window_number, portal_window_number,
             "the same portal window is reused after dismissal"
@@ -392,8 +390,7 @@ fn outside_dismiss_orders_host_out_and_preserves_state() {
             .send_ok(&dsl::portal_open_probe())
             .expect("re-open probe");
         flush_frame(&mut client);
-        let reopened = client.snapshot().expect("reopened snapshot");
-        assert_probe_open(&reopened);
+        let reopened = wait_probe_open(&mut client, deadline());
         assert_eq!(
             reopened.portal.portal_window_number, portal_window_number,
             "re-open must reuse the one portal window"
@@ -406,8 +403,7 @@ fn outside_dismiss_orders_host_out_and_preserves_state() {
             .send_ok(&dsl::portal_close_probe())
             .expect("close probe");
         flush_frame(&mut client);
-        let closed = client.snapshot().expect("closed snapshot");
-        assert_host_closed(&closed);
+        let closed = wait_host_closed(&mut client, deadline());
         assert_ownership_preserved(&closed, &settled);
 
         // Deterministic teardown of the one native portal host (task packet

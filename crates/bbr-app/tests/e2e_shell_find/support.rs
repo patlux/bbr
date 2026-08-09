@@ -255,7 +255,13 @@ pub(super) fn wait_find_report(
 pub(super) fn wait_find_open(client: &mut Client, deadline: Instant) -> Snapshot {
     loop {
         let snapshot = client.snapshot().expect("find open snapshot");
-        if snapshot.find.open && snapshot.portal.presentation == Some(FIND_PRESENTATION_ID) {
+        if snapshot.find.open
+            && snapshot.portal.presentation == Some(FIND_PRESENTATION_ID)
+            && snapshot.portal.visible
+            && snapshot.portal.native_visible
+            && snapshot.portal.frame_synced
+        {
+            assert_find_open(&snapshot);
             return snapshot;
         }
         assert!(Instant::now() < deadline, "find did not open");
@@ -268,7 +274,11 @@ pub(super) fn wait_find_open(client: &mut Client, deadline: Instant) -> Snapshot
 pub(super) fn wait_for_find_closed(client: &mut Client, deadline: Instant) -> Snapshot {
     loop {
         let snapshot = client.snapshot().expect("find closed snapshot");
-        if !snapshot.find.open {
+        if !snapshot.find.open
+            && snapshot.portal.presentation.is_none()
+            && !snapshot.portal.visible
+            && !snapshot.portal.native_visible
+        {
             assert_find_closed(&snapshot);
             return snapshot;
         }

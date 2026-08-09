@@ -237,7 +237,11 @@ fn assert_auth_closed(snapshot: &Snapshot) {
 fn wait_find_open(client: &mut Client, deadline: Instant) -> Snapshot {
     loop {
         let snapshot = client.snapshot().expect("find open snapshot");
-        if snapshot.find.open {
+        if snapshot.find.open
+            && snapshot.portal.visible
+            && snapshot.portal.native_visible
+            && snapshot.portal.frame_synced
+        {
             return snapshot;
         }
         assert!(Instant::now() < deadline, "find did not open");
@@ -249,7 +253,11 @@ fn wait_find_open(client: &mut Client, deadline: Instant) -> Snapshot {
 fn wait_find_closed(client: &mut Client, deadline: Instant) -> Snapshot {
     loop {
         let snapshot = client.snapshot().expect("find closed snapshot");
-        if !snapshot.find.open {
+        if !snapshot.find.open
+            && snapshot.portal.presentation.is_none()
+            && !snapshot.portal.visible
+            && !snapshot.portal.native_visible
+        {
             assert_auth_closed(&snapshot);
             return snapshot;
         }

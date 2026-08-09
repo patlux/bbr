@@ -9,6 +9,7 @@
 //! with a palette/overlay. Typed-snapshot and §15 semantic assertions, no
 //! sleeps.
 
+use super::command_portal;
 use super::command_portal::assert_command_portal_open;
 use super::*;
 use bbr_testkit::protocol::CommandSurface;
@@ -74,7 +75,11 @@ fn surfaces_are_mutually_exclusive_and_open_clears_the_profile_hint() {
         // focus); a second Escape returns to the original web origin.
         key(&mut client, "escape");
         let _ = wait_chrome_focus(&mut client, true, since);
-        let intermediate = client.snapshot().expect("escape restores overlay origin");
+        let intermediate = command_portal::wait_command_portal_open(
+            &mut client,
+            CommandSurface::Overlay,
+            deadline(),
+        );
         assert_eq!(intermediate.command_surface, CommandSurface::Overlay);
         assert_eq!(intermediate.command_bar_mode, CommandBarMode::Location);
         assert_eq!(intermediate.command_bar_text, page_one);
