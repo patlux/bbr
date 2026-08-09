@@ -6,7 +6,7 @@
 //! database or render path. Lowercase projections are precomputed once so
 //! repeated ranking never re-folds case.
 
-use crate::id::{HistoryId, ProfileId, SpaceId, TabId};
+use crate::id::{BookmarkId, HistoryId, ProfileId, SpaceId, TabId};
 
 /// One open tab in the corpus.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,6 +65,85 @@ impl TabEntry {
     /// Precomputed lowercase URL used for deterministic matching.
     pub fn url_lower(&self) -> &str {
         &self.url_lower
+    }
+}
+
+/// One global Saved Page record (B2 packet `saved-pages-actions-command`).
+///
+/// A Saved Page is a durable global URL record with no tab/session/space/
+/// profile identity; the app-composition seam maps the domain record onto
+/// this provider-neutral entry when it builds the owned corpus. The display
+/// title is the settled §11.16 fallback ladder (user label, then captured
+/// title, then the URL); the captured title stays a separate match surface
+/// so a search on the captured title still matches when a user label
+/// overrides the display. Lowercase projections are precomputed once so
+/// repeated ranking never re-folds case.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SavedPageEntry {
+    /// Stable global Saved Page identity.
+    pub id: BookmarkId,
+    /// Display title: user label when present, else captured title, else URL.
+    pub title: String,
+    /// Canonical navigable URL (display + match surface).
+    pub url: String,
+    /// Optional flat collection label (display; at most one per record).
+    pub collection: Option<String>,
+    title_lower: String,
+    url_lower: String,
+    /// The captured title's lowercase projection, present only when a user
+    /// label overrides the display title (so a search on the captured title
+    /// still matches the record).
+    captured_lower: Option<String>,
+}
+
+impl SavedPageEntry {
+    /// Builds a Saved Page entry, precomputing the lowercase match
+    /// projections. `title` is the settled display title (user label when
+    /// present, else captured title, else URL); `captured_title` is the raw
+    /// captured title used as the extra match surface when a label overrides
+    /// the display.
+    pub fn new(
+        id: BookmarkId,
+        title: impl Into<String>,
+        url: impl Into<String>,
+        collection: Option<String>,
+        captured_title: impl Into<String>,
+    ) -> Self {
+        let title = title.into();
+        let url = url.into();
+        let captured_title = captured_title.into();
+        let title_lower = title.to_lowercase();
+        let url_lower = url.to_lowercase();
+        let captured_lower = if captured_title == title {
+            None
+        } else {
+            Some(captured_title.to_lowercase())
+        };
+        SavedPageEntry {
+            id,
+            title,
+            url,
+            collection,
+            title_lower,
+            url_lower,
+            captured_lower,
+        }
+    }
+
+    /// Precomputed lowercase display title used for deterministic matching.
+    pub fn title_lower(&self) -> &str {
+        &self.title_lower
+    }
+
+    /// Precomputed lowercase URL used for deterministic matching.
+    pub fn url_lower(&self) -> &str {
+        &self.url_lower
+    }
+
+    /// The captured title's lowercase projection, when a user label
+    /// overrides the display title.
+    pub fn captured_lower(&self) -> Option<&str> {
+        self.captured_lower.as_deref()
     }
 }
 
@@ -191,6 +270,10 @@ pub struct Corpus {
     pub profiles: Vec<ProfileEntry>,
     /// Local history records in corpus order.
     pub history: Vec<HistoryEntry>,
+    /// Global Saved Page records in corpus order (B2 packet
+    /// `saved-pages-actions-command`): the provider's deterministic
+    /// presentation order, preserved verbatim by ranking.
+    pub saved_pages: Vec<SavedPageEntry>,
 }
 
 impl Corpus {

@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use crate::corpus::{Corpus, HistoryEntry, SpaceEntry, TabEntry};
+use crate::corpus::{Corpus, HistoryEntry, SavedPageEntry, SpaceEntry, TabEntry};
 use crate::id::SpaceId;
 use crate::parse::{Destination, Query, QueryContext};
 use crate::rank::{Activation, CommandResult, MatchQuality, RankKey, ResultGroup};
@@ -114,6 +114,7 @@ fn tab_result(
         group,
         title,
         subtitle,
+        collection: None,
         profile: Some(tab.profile),
         key: format!("tab:{}", tab.id.0),
         score,
@@ -187,8 +188,51 @@ fn space_result(
         group: ResultGroup::Space,
         title,
         subtitle: Some(subtitle),
+        collection: None,
         profile: Some(space.profile),
         key: format!("space:{}", space.id.0),
+        score,
+    }
+}
+
+pub(crate) fn collect_saved_page_matches(
+    corpus: &Corpus,
+    needle: &str,
+    rows: &mut Vec<(RankKey, CommandResult)>,
+) {
+    for (idx, page) in corpus.saved_pages.iter().enumerate() {
+        // The match surface mirrors `bbr-domain::SavedPage::matches`: the
+        // display title (label or captured title), the captured title when a
+        // label overrides the display, and the canonical URL.
+        let mut haystacks: Vec<&str> = vec![page.title_lower(), page.url_lower()];
+        if let Some(captured) = page.captured_lower() {
+            haystacks.push(captured);
+        }
+        let Some(quality) = match_quality(haystacks, needle) else {
+            continue;
+        };
+        // The provider's deterministic presentation order is the secondary
+        // key (the app presents most-recently-updated first); the bookmark
+        // id is the absolute tie-break.
+        let key = RankKey {
+            group: ResultGroup::SavedPage.rank(),
+            quality,
+            secondary: idx as u64,
+            tie: page.id.0,
+        };
+        rows.push((key, saved_page_result(page, key)));
+    }
+}
+
+fn saved_page_result(page: &SavedPageEntry, score: RankKey) -> CommandResult {
+    CommandResult {
+        activation: Activation::OpenSavedPage { bookmark: page.id },
+        group: ResultGroup::SavedPage,
+        title: page.title.clone(),
+        subtitle: Some(page.url.clone()),
+        collection: page.collection.clone(),
+        profile: None,
+        key: format!("saved_page:{}", page.id.0),
         score,
     }
 }
@@ -244,6 +288,7 @@ pub(crate) fn collect_history_matches(
                 group: ResultGroup::History,
                 title,
                 subtitle: None,
+                collection: None,
                 profile: None,
                 key: format!("history:{}", entry.id.0),
                 score: key,
@@ -308,6 +353,7 @@ fn action_result(action: &Action, quality: MatchQuality, secondary: u64) -> Comm
         group: ResultGroup::Action,
         title: action.title.clone(),
         subtitle: action.shortcut.map(str::to_owned),
+        collection: None,
         profile: None,
         key: format!("action:{}", action.id.0),
         score: key,
@@ -346,6 +392,7 @@ pub(crate) fn collect_fallback(query: &Query, rows: &mut Vec<(RankKey, CommandRe
             group: ResultGroup::Fallback,
             title,
             subtitle: None,
+            collection: None,
             profile: None,
             key: key_string,
             score,

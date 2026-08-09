@@ -40,6 +40,7 @@ mod dispatch_errors;
 mod dispatch_find;
 mod dispatch_portal;
 mod dispatch_probe;
+mod dispatch_saved_pages;
 mod dispatch_u2;
 mod dispatch_util;
 mod dispatch_zoom;

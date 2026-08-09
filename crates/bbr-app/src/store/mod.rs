@@ -59,8 +59,11 @@ use bbr_persistence::{
 };
 use gpui::BackgroundExecutor;
 
+use self::saved_pages::{provider_order, SavedPagesProvider};
+
 pub(crate) mod browser;
 pub(crate) mod browser_writer;
+pub(crate) mod saved_pages;
 
 /// The persistence store file name inside the profile directory. The E2E
 /// harness seeds stores at exactly this path before spawning the app.
@@ -121,6 +124,13 @@ pub struct AppStore {
     /// The browser-state channel receiver, taken by
     /// [`AppStore::spawn_browser_writer`].
     browser_rx: Option<smol::channel::Receiver<()>>,
+    /// The in-memory Saved Page provider (B2 packet
+    /// `saved-pages-actions-command`): the single runtime authority ranking
+    /// and the command consume, plus its bounded nonblocking writer. Loaded
+    /// once at startup from the schema-v3 repository; updated only after
+    /// accepted save/remove mutations; never queried from SQLite during
+    /// ranking or render.
+    saved_pages: SavedPagesProvider,
 }
 
 impl AppStore {
@@ -168,7 +178,27 @@ impl AppStore {
             profiles: outcome.snapshot.profiles,
             windows: outcome.snapshot.windows,
         };
+        let next_bookmark_id = outcome
+            .snapshot
+            .saved_pages
+            .iter()
+            .map(|page| page.id)
+            .max()
+            .unwrap_or(0)
+            + 1;
+        // The provider's deterministic presentation order: the persisted
+        // dense order is the B1 write order, so the loaded snapshot is
+        // re-presented most-recently-updated first (the one allowed
+        // presentation rule, never a second sort).
+        let mut saved_pages = outcome.snapshot.saved_pages;
+        provider_order(&mut saved_pages);
         Ok(AppStore {
+            saved_pages: SavedPagesProvider::new(
+                Some(repository.clone()),
+                saved_pages,
+                outcome.snapshot.collections,
+                next_bookmark_id,
+            ),
             repository: Some(repository),
             store_load: Some(store_load),
             settings,
@@ -207,6 +237,7 @@ impl AppStore {
             browser_slot: Arc::new(Mutex::new(None)),
             browser_tx,
             browser_rx: Some(browser_rx),
+            saved_pages: SavedPagesProvider::new(None, Vec::new(), Vec::new(), 1),
         }
     }
 

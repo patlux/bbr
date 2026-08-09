@@ -15,9 +15,11 @@
 //! 4. tabs in other spaces, labeled with profile/space identity
 //!    ([`ResultGroup::OtherSpace`]);
 //! 5. standalone spaces ([`ResultGroup::Space`]);
-//! 6. local history ([`ResultGroup::History`]);
-//! 7. browser commands ([`ResultGroup::Action`]);
-//! 8. navigate/search fallback ([`ResultGroup::Fallback`]).
+//! 6. global Saved Page records ([`ResultGroup::SavedPage`], B2 packet
+//!    `saved-pages-actions-command`);
+//! 7. local history ([`ResultGroup::History`]);
+//! 8. browser commands ([`ResultGroup::Action`]);
+//! 9. navigate/search fallback ([`ResultGroup::Fallback`]).
 //!
 //! The per-group collection passes live in the private [`collect`] module.
 
@@ -25,11 +27,12 @@ use std::cmp::Ordering;
 
 use crate::collect::{
     collect_action_matches, collect_all_actions, collect_empty_current_tabs, collect_fallback,
-    collect_history_matches, collect_space_matches, collect_tab_matches,
+    collect_history_matches, collect_saved_page_matches, collect_space_matches,
+    collect_tab_matches,
 };
 
 use crate::corpus::Corpus;
-use crate::id::{ActionId, HistoryId, ProfileId, SpaceId, TabId};
+use crate::id::{ActionId, BookmarkId, HistoryId, ProfileId, SpaceId, TabId};
 use crate::parse::{Mode, Query, QueryContext};
 use crate::registry::CommandRegistry;
 
@@ -46,6 +49,8 @@ pub enum ResultGroup {
     OtherSpace,
     /// A selectable standalone space.
     Space,
+    /// A global Saved Page record (B2 packet `saved-pages-actions-command`).
+    SavedPage,
     /// A local history record.
     History,
     /// A registered browser command.
@@ -63,9 +68,10 @@ impl ResultGroup {
             ResultGroup::CurrentTab => 2,
             ResultGroup::OtherSpace => 3,
             ResultGroup::Space => 4,
-            ResultGroup::History => 5,
-            ResultGroup::Action => 6,
-            ResultGroup::Fallback => 7,
+            ResultGroup::SavedPage => 5,
+            ResultGroup::History => 6,
+            ResultGroup::Action => 7,
+            ResultGroup::Fallback => 8,
         }
     }
 }
@@ -123,6 +129,9 @@ pub enum Activation {
     SelectSpace { space: SpaceId },
     /// Open the given local history record.
     OpenHistory { history: HistoryId },
+    /// Open the given global Saved Page record in a fresh regular tab of the
+    /// currently active Space/Profile (B2 packet `saved-pages-actions-command`).
+    OpenSavedPage { bookmark: BookmarkId },
     /// Run the given browser command.
     RunAction { action: ActionId },
     /// Navigate the active pane to the given address.
@@ -140,8 +149,13 @@ pub struct CommandResult {
     pub group: ResultGroup,
     /// Primary display title.
     pub title: String,
-    /// Secondary display line (cross-space identity label, shortcut hint).
+    /// Secondary display line (cross-space identity label, shortcut hint,
+    /// or the Saved Page's canonical URL).
     pub subtitle: Option<String>,
+    /// Optional flat collection label of a Saved Page result (B2 packet
+    /// `saved-pages-actions-command`; DESIGN.md §11.16 `type:meta` label).
+    /// `None` for every other group.
+    pub collection: Option<String>,
     /// Owning profile when the result has one (tabs always do).
     pub profile: Option<ProfileId>,
     /// Stable external key suitable for later snapshot/testkit identity.
@@ -182,6 +196,7 @@ pub fn rank(
         } else {
             collect_tab_matches(corpus, context, needle, &mut rows);
             collect_space_matches(corpus, context, needle, &mut rows);
+            collect_saved_page_matches(corpus, needle, &mut rows);
             collect_history_matches(corpus, needle, &mut rows);
             collect_action_matches(registry, needle, &mut rows);
             collect_fallback(query, &mut rows);

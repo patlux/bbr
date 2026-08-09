@@ -2,8 +2,10 @@
 //! identity labels, deterministic tie-breaking, deduplication, fallback
 //! semantics, unicode, empty input, and result limits.
 
-use bbr_command::corpus::{Corpus, HistoryEntry, ProfileEntry, SpaceEntry, TabEntry};
-use bbr_command::id::{HistoryId, ProfileId, SpaceId, TabId};
+use bbr_command::corpus::{
+    Corpus, HistoryEntry, ProfileEntry, SavedPageEntry, SpaceEntry, TabEntry,
+};
+use bbr_command::id::{BookmarkId, HistoryId, ProfileId, SpaceId, TabId};
 use bbr_command::parse::{Mode, Query, QueryContext};
 use bbr_command::rank::{rank, Activation, ResultGroup};
 use bbr_command::registry::CommandRegistry;
@@ -125,6 +127,40 @@ fn fixture_corpus() -> Corpus {
             .history
             .push(HistoryEntry::new(HistoryId(id), title, url, visits, last));
     }
+
+    // saved pages: (id, display title, canonical url, collection, captured title)
+    let saved = [
+        (
+            1,
+            "Inbox — Example Mail",
+            "https://mail.example.com",
+            Some("Work"),
+            "Inbox — Example Mail",
+        ),
+        (
+            2,
+            "Rust Book",
+            "https://book.example.com",
+            None,
+            "Rust Book",
+        ),
+        (
+            3,
+            "My Recipes",
+            "https://recipes.example.com",
+            Some("Cooking"),
+            "Pasta Recipes",
+        ),
+    ];
+    for (id, title, url, collection, captured) in saved {
+        corpus.saved_pages.push(SavedPageEntry::new(
+            BookmarkId(id),
+            title,
+            url,
+            collection.map(str::to_owned),
+            captured,
+        ));
+    }
     corpus
 }
 
@@ -205,6 +241,7 @@ fn exact_title_beats_prefix_and_history() {
             "tab:6",
             "tab:2",
             "tab:4",
+            "saved_page:1",
             "history:0",
             "search:inbox"
         ]
@@ -214,8 +251,9 @@ fn exact_title_beats_prefix_and_history() {
     assert_eq!(results[2].group, ResultGroup::ExactTab);
     assert_eq!(results[3].group, ResultGroup::CurrentTab);
     assert_eq!(results[4].group, ResultGroup::OtherSpace);
-    assert_eq!(results[5].group, ResultGroup::History);
-    assert_eq!(results[6].group, ResultGroup::Fallback);
+    assert_eq!(results[5].group, ResultGroup::SavedPage);
+    assert_eq!(results[6].group, ResultGroup::History);
+    assert_eq!(results[7].group, ResultGroup::Fallback);
 }
 
 #[test]
@@ -276,18 +314,121 @@ fn cross_space_tabs_ordered_by_position() {
 fn history_deduplicates_by_url_keeping_most_recent() {
     let corpus = fixture_corpus();
     let results = rank_all(&corpus, "rust", Mode::Switcher);
-    // H5/H6/H4 survive; H1 is dropped because H4 shares its URL and is newer.
+    // The Saved Page record "Rust Book" ranks before the history group
+    // (settled B2 order `SavedPage < History`); H5/H6/H4 survive, H1 is
+    // dropped because H4 shares its URL and is newer.
     assert_eq!(
         keys(&results),
-        ["history:5", "history:6", "history:4", "search:rust"]
+        [
+            "saved_page:2",
+            "history:5",
+            "history:6",
+            "history:4",
+            "search:rust"
+        ]
     );
-    for result in &results[..3] {
+    assert_eq!(results[0].group, ResultGroup::SavedPage);
+    for result in &results[1..4] {
         assert_eq!(result.group, ResultGroup::History);
         match result.activation {
             Activation::OpenHistory { history } => assert_ne!(history, HistoryId(1)),
             ref other => panic!("expected history activation, got {other:?}"),
         }
     }
+}
+
+#[test]
+fn saved_page_group_ranks_after_space_before_history() {
+    // The settled B2 group order: `Space < SavedPage < History`. A dedicated
+    // corpus where one query matches a standalone space, a Saved Page
+    // record, and a history record at once makes the group precedence
+    // directly observable.
+    let mut corpus = Corpus::new();
+    corpus.spaces.push(SpaceEntry::new(S1, "Alpha", P0, 0));
+    corpus.saved_pages.push(SavedPageEntry::new(
+        BookmarkId(1),
+        "Alpha Page",
+        "https://alpha.example.com",
+        None,
+        "Alpha Page",
+    ));
+    corpus.history.push(HistoryEntry::new(
+        HistoryId(1),
+        "Alpha History",
+        "https://alpha-history.example.com",
+        1,
+        1,
+    ));
+    let results = rank_all(&corpus, "alpha", Mode::Switcher);
+    let groups: Vec<ResultGroup> = results.iter().map(|r| r.group).collect();
+    assert_eq!(
+        groups,
+        [
+            ResultGroup::Space,
+            ResultGroup::SavedPage,
+            ResultGroup::History,
+            ResultGroup::Fallback,
+        ]
+    );
+    assert_eq!(
+        keys(&results),
+        ["space:11", "saved_page:1", "history:1", "search:alpha"]
+    );
+}
+
+#[test]
+fn saved_page_result_carries_bookmark_activation_url_and_collection() {
+    let corpus = fixture_corpus();
+    let results = rank_all(&corpus, "recipes", Mode::Switcher);
+    assert_eq!(keys(&results), ["saved_page:3", "search:recipes"]);
+    let page = &results[0];
+    assert_eq!(page.group, ResultGroup::SavedPage);
+    assert_eq!(
+        page.activation,
+        Activation::OpenSavedPage {
+            bookmark: BookmarkId(3)
+        }
+    );
+    assert_eq!(page.title, "My Recipes");
+    assert_eq!(
+        page.subtitle.as_deref(),
+        Some("https://recipes.example.com")
+    );
+    assert_eq!(page.collection.as_deref(), Some("Cooking"));
+    assert_eq!(page.profile, None, "Saved Pages carry no profile identity");
+}
+
+#[test]
+fn saved_page_matches_captured_title_when_label_overrides_display() {
+    // The display title is the user label ("My Recipes"), but the captured
+    // title ("Pasta Recipes") stays a match surface, mirroring
+    // `bbr-domain::SavedPage::matches`.
+    let corpus = fixture_corpus();
+    let results = rank_all(&corpus, "pasta", Mode::Switcher);
+    assert_eq!(keys(&results), ["saved_page:3", "search:pasta"]);
+    assert_eq!(results[0].group, ResultGroup::SavedPage);
+}
+
+#[test]
+fn saved_page_ordering_preserves_provider_order() {
+    // Two Saved Page records matching the same query keep the provider's
+    // deterministic corpus order (most-recently-updated first), never a
+    // hash-map or insertion-order guess.
+    let mut corpus = fixture_corpus();
+    corpus.saved_pages.push(SavedPageEntry::new(
+        BookmarkId(9),
+        "Inbox Archive",
+        "https://archive.example.com",
+        None,
+        "Inbox Archive",
+    ));
+    let results = rank_all(&corpus, "inbox", Mode::Switcher);
+    let saved: Vec<&str> = results
+        .iter()
+        .filter(|r| r.group == ResultGroup::SavedPage)
+        .map(|r| r.key.as_str())
+        .collect();
+    assert_eq!(saved, ["saved_page:1", "saved_page:9"]);
 }
 
 #[test]
@@ -366,6 +507,9 @@ fn fallback_searches_for_plain_text() {
 fn url_text_ranks_tabs_then_history_then_fallback() {
     let corpus = fixture_corpus();
     let results = rank_all(&corpus, "example.com", Mode::Switcher);
+    // The Saved Page record (mail.example.com) ranks between the other-space
+    // tabs and the history group; the limit-16 window then drops the
+    // navigate fallback row.
     assert_eq!(
         keys(&results),
         [
@@ -378,13 +522,13 @@ fn url_text_ranks_tabs_then_history_then_fallback() {
             "tab:6",
             "tab:4",
             "tab:5", // other spaces
+            "saved_page:1",
+            "saved_page:2",
+            "saved_page:3",
             "history:5",
             "history:6",
             "history:4",
             "history:0",
-            "history:2",
-            "history:7",
-            "navigate:example.com",
         ]
     );
 }
@@ -400,7 +544,7 @@ fn limit_truncates_but_reports_total() {
         3,
     );
     assert_eq!(ranked.results.len(), 3);
-    assert_eq!(ranked.total, 16);
+    assert_eq!(ranked.total, 19);
     assert_eq!(keys(&ranked.results), ["tab:0", "tab:1", "tab:2"]);
 }
 
@@ -477,6 +621,7 @@ fn empty_context_labels_every_space() {
             "tab:6",
             "tab:2",
             "tab:4",
+            "saved_page:1",
             "history:0",
             "search:inbox"
         ]

@@ -220,6 +220,24 @@ pub enum BenchmarkKind {
     /// existing command-surface budget (no tab or session is created). The
     /// awaiting challenge is the fixture, recorded before the sample.
     AuthSheetOpen,
+    /// The production command-text path measured against the Saved Page
+    /// provider (B2 packet `saved-pages-actions-command`,
+    /// `saved_page_search_first_result`): Cmd-L, replace-selection typing,
+    /// the real ranking debounce, and a render of the result surface
+    /// committing the sample — the expected first result is a ranked Saved
+    /// Page row (`saved_page:<id>`) over the seeded ≥1,000-record provider.
+    /// The fast-but-wrong guard rejects a tab/fallback row or a stale
+    /// generation. Same warm command-type class as `command_type` (50/100).
+    SavedPageSearchFirstResult,
+    /// The production open of a Saved Page result (B2 packet
+    /// `saved-pages-actions-command`, `saved_page_open`): the record is
+    /// revalidated in the in-memory provider and exactly one fresh regular
+    /// tab/session opens in the currently active Space/Profile through the
+    /// existing NewTab authority — the session-recreation class with its
+    /// own budget (100/150), like `command_activate_new_tab` and
+    /// `tab_reopen`. The sample commits only when the fresh tab/session is
+    /// presented and focused with the surface closed.
+    SavedPageOpen,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

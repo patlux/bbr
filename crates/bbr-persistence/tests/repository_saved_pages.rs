@@ -10,6 +10,8 @@
 mod repository_saved_pages_collections;
 #[path = "modules/repository_saved_pages_reads.rs"]
 mod repository_saved_pages_reads;
+#[path = "modules/repository_saved_pages_replace.rs"]
+mod repository_saved_pages_replace;
 #[path = "modules/repository_saved_pages_search.rs"]
 mod repository_saved_pages_search;
 mod support;

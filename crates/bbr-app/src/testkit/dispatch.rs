@@ -30,6 +30,7 @@ use crate::testkit::dispatch_errors::dispatch_errors;
 use crate::testkit::dispatch_find::dispatch_find;
 use crate::testkit::dispatch_portal::dispatch_portal;
 use crate::testkit::dispatch_probe::dispatch_probe;
+use crate::testkit::dispatch_saved_pages::dispatch_saved_pages;
 use crate::testkit::dispatch_u2::dispatch_u2;
 use crate::testkit::dispatch_util::{browser_mutation, err_response};
 use crate::testkit::dispatch_zoom::dispatch_zoom;
@@ -115,6 +116,11 @@ pub(crate) fn dispatch(
     // bounded-router reason): the presentation + seeding + benchmark arms
     // flush the portal frame outside the mutable app lease.
     if let Some(response) = dispatch_auth(&req, window, app, cx) {
+        return response;
+    }
+    // Saved Page save/remove/open/flush + benchmark arms route separately
+    // (B2 packet `saved-pages-actions-command`; same bounded-router reason).
+    if let Some(response) = dispatch_saved_pages(&req, window, app, cx) {
         return response;
     }
     let broadcast = |server: &Option<Arc<GatewayServer>>, ev: Event| {
@@ -674,6 +680,18 @@ pub(crate) fn dispatch(
         | Request::SeedDownloadsAttempt { .. }
         | Request::SeedDownloadsCancelled { .. } => {
             unreachable!("benchmark requests route through dispatch_benchmark")
+        }
+        // Saved Page save/remove/open/flush + benchmark arms route through
+        // `dispatch_saved_pages` before this fall-through (B2 packet
+        // `saved-pages-actions-command`).
+        Request::SaveSavedPage { .. }
+        | Request::SavedPageAvailability { .. }
+        | Request::RemoveSavedPage { .. }
+        | Request::OpenSavedPage { .. }
+        | Request::FlushSavedPages
+        | Request::BenchmarkSavedPageSearchFirstResult { .. }
+        | Request::BenchmarkSavedPageOpen { .. } => {
+            unreachable!("saved-page requests route through dispatch_saved_pages")
         }
         // External-URL delivery is macOS-only; the pump intercepts
         // `DeliverExternalUrl` before dispatch on macOS, so reaching here

@@ -16,16 +16,25 @@
 use bbr_browser::ControllerSnapshot;
 use bbr_command::corpus::{Corpus, HistoryEntry, ProfileEntry, SpaceEntry, TabEntry};
 use bbr_command::id::{ProfileId, SpaceId, TabId};
+use bbr_persistence::{CollectionRecord, SavedPageRecord};
+
+use crate::store::saved_pages::saved_page_to_entry;
 
 /// Build the ranking corpus from the current controller snapshot plus the
-/// app-owned in-memory history provider (Phase 7): tab/space/profile
-/// identity and deterministic ordering are preserved, and history entries
-/// rank in the exact persisted corpus order the provider owns. The corpus
-/// is rebuilt per ranking pass (a few hundred tab entries at most plus the
-/// bounded history provider), never cached, so it cannot drift from
-/// controller or provider state — and it never touches SQLite: `history` is
-/// the already-loaded provider data (see [`crate::store::AppStore`]).
-pub fn corpus_from_snapshot(snapshot: &ControllerSnapshot, history: &[HistoryEntry]) -> Corpus {
+/// app-owned in-memory providers (Phase 7 history, B2 Saved Pages):
+/// tab/space/profile identity and deterministic ordering are preserved, and
+/// history/Saved Page entries rank in the exact persisted corpus order the
+/// providers own. The corpus is rebuilt per ranking pass (a few hundred tab
+/// entries at most plus the bounded providers), never cached, so it cannot
+/// drift from controller or provider state — and it never touches SQLite:
+/// `history` and `saved_pages` are the already-loaded provider data (see
+/// [`crate::store::AppStore`]).
+pub fn corpus_from_snapshot(
+    snapshot: &ControllerSnapshot,
+    history: &[HistoryEntry],
+    saved_pages: &[SavedPageRecord],
+    collections: &[CollectionRecord],
+) -> Corpus {
     let mut corpus = Corpus::new();
     for (index, profile) in snapshot.profiles.iter().enumerate() {
         corpus.profiles.push(ProfileEntry::new(
@@ -62,6 +71,15 @@ pub fn corpus_from_snapshot(snapshot: &ControllerSnapshot, history: &[HistoryEnt
     // History from the app-owned in-memory provider, in persisted corpus
     // order: the single runtime authority ranking consumes (Phase 7).
     corpus.history.extend(history.iter().cloned());
+    // Saved Pages from the app-owned in-memory provider (B2 packet
+    // `saved-pages-actions-command`): the provider's deterministic
+    // presentation order (most recently updated first) is preserved
+    // verbatim — ranking never re-sorts and never queries SQLite.
+    corpus.saved_pages.extend(
+        saved_pages
+            .iter()
+            .map(|page| saved_page_to_entry(page, collections)),
+    );
     corpus
 }
 
@@ -167,7 +185,7 @@ mod tests {
 
     #[test]
     fn corpus_preserves_ids_order_pinned_and_labels() {
-        let corpus = corpus_from_snapshot(&snapshot(), &[]);
+        let corpus = corpus_from_snapshot(&snapshot(), &[], &[], &[]);
         assert_eq!(corpus.profiles.len(), 2);
         assert_eq!(corpus.profiles[0].id, ProfileId(1));
         assert_eq!(corpus.profiles[0].name, "Default");
@@ -199,7 +217,7 @@ mod tests {
 
     #[test]
     fn history_stays_an_empty_real_collection_without_the_provider() {
-        let corpus = corpus_from_snapshot(&snapshot(), &[]);
+        let corpus = corpus_from_snapshot(&snapshot(), &[], &[], &[]);
         assert!(corpus.history.is_empty());
     }
 
@@ -226,7 +244,7 @@ mod tests {
                 9,
             ),
         ];
-        let corpus = corpus_from_snapshot(&snapshot(), &history);
+        let corpus = corpus_from_snapshot(&snapshot(), &history, &[], &[]);
         assert_eq!(corpus.history.len(), 2);
         assert_eq!(corpus.history[0].id, HistoryId(7));
         assert_eq!(corpus.history[1].id, HistoryId(3));
@@ -236,7 +254,7 @@ mod tests {
 
     #[test]
     fn corpus_ranking_produces_deterministic_local_results() {
-        let corpus = corpus_from_snapshot(&snapshot(), &[]);
+        let corpus = corpus_from_snapshot(&snapshot(), &[], &[], &[]);
         let registry = bbr_command::CommandRegistry::builtin();
         // "alpha" matches the pinned tab exactly and nothing else.
         let query = bbr_command::Query::new(bbr_command::Mode::Location, "alpha");
@@ -269,7 +287,7 @@ mod tests {
 
     #[test]
     fn ranking_exposes_cross_profile_space_identity() {
-        let corpus = corpus_from_snapshot(&snapshot(), &[]);
+        let corpus = corpus_from_snapshot(&snapshot(), &[], &[], &[]);
         let registry = bbr_command::CommandRegistry::builtin();
         let query = bbr_command::Query::new(bbr_command::Mode::Location, "private");
         let context = bbr_command::QueryContext::with_current(
@@ -299,7 +317,7 @@ mod tests {
         // The complete corpus exposes tabs in other spaces with their
         // persistent ids; the ranker labels them with profile/space identity
         // (same-profile: the space name; cross-profile: profile + space).
-        let corpus = corpus_from_snapshot(&snapshot(), &[]);
+        let corpus = corpus_from_snapshot(&snapshot(), &[], &[], &[]);
         let registry = bbr_command::CommandRegistry::builtin();
         let query = bbr_command::Query::new(bbr_command::Mode::Location, "gamma");
         let context = bbr_command::QueryContext::with_current(

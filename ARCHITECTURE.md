@@ -833,6 +833,61 @@ release `repository_benchmark` with a ≥1,000-record Saved Pages
 write/list/search distribution. B2 owns app composition, Cmd-D, the command
 provider, menus, and fresh-tab E2E; B3 owns the Library.
 
+## 9c. App-owned Saved Page command + Palette provider (B2 packet)
+
+B2 composes B1's global snapshot into the one AppStore and adds one typed
+app-owned command authority (`SavedPageCommand`) that Cmd-D, the Command
+Palette, and the later Z1/Z3 menu rows share. The provider is the **single
+runtime authority**: loaded once at startup from the schema-v3 repository
+into an in-memory snapshot (`SavedPagesProvider` in
+`crates/bbr-app/src/store/saved_pages.rs`), updated only after accepted
+save/remove mutations, and never queried from SQLite during ranking or
+render. Persistence flows through the same bounded nonblocking writer
+discipline (capacity-1 poke, background coalesce, one
+`replace_saved_pages` transaction; the testkit flush and the production
+owning-window-close quit flush write synchronously through the identical
+repository call, so a normal quit never loses a committed save).
+`bbr-command` stays provider-neutral — the corpus carries the loaded
+snapshot and never imports persistence.
+
+**Semantics (settled B2 contract).** Saving is canonical-URL-idempotent
+(duplicate returns the existing `BookmarkId`, never a second record);
+removing never mutates a tab and closing the source tab never removes the
+record (a Saved Page carries no `TabId`/session link); missing, malformed,
+dangerous, internal-unsupported, or non-navigable URLs reject or omit the
+action with the canonical seam's typed reason. `Cmd-D` toggles the active
+page's saved state. Opening revalidates the record in the in-memory
+provider, then appends exactly one **fresh regular tab** to the currently
+active Space/Profile through the existing NewTab/navigation authority — it
+never silently selects an existing matching tab, switches Space/Profile,
+pins, favorites, splits, or reuses a session; the Space's current Profile
+supplies the native website-data store.
+
+**Distinct result kind.** The corpus carries a `SavedPageEntry` with
+`BookmarkId`, display title (label → captured title → URL ladder), the
+canonical URL, the optional flat collection label, and a stable
+`saved_page:<id>` key. Ranking places the `SavedPage` group exactly between
+standalone Spaces and History: `ExactTab < CurrentPinned < CurrentTab <
+OtherSpace < Space < SavedPage < History < Action < Fallback`; no existing
+group's relative order changes. Deterministic search consumes only the
+loaded in-memory snapshot. `Cmd-D` and the availability/mutation seams are
+what Z1 (Tab/Favorite menus) and Z3 (page-background menu) consume without
+duplicating the authority.
+
+Evidence: `just e2e-shell-saved-pages` 4/4 real-app scenarios (idempotent
+Cmd-D toggle with typed saved-state/repository agreement; save → close
+source tab → restart → Palette find with no original `TabId`/session;
+exactly-one-fresh-tab activation in the active Space/Profile; production
+quit durability — out-of-band store clear + owning-window close re-persists
+the provider and a same-profile restart restores exactly one record); the
+optimized 30-sample scenarios `saved_page_search_first_result` (p95
+41.0 ms / max 41.43 ms against the warm command-text 50/100 budget) and
+`saved_page_open` (p95 27.13 ms / max 40.93 ms against the
+session-recreation 100/150 budget) over the seeded ≥1,000-record provider
+with `just e2e-perf` green (`regressions: []`); the shared ranking contract
+suite in `bbr-command`. Z1/Z3 own their menu placement/source/focus/Portal
+behavior; B3 owns the Library.
+
 ---
 
 ## 10. Build & verification (bounded recipes, `justfile`)

@@ -35,6 +35,7 @@ pub(crate) fn is_command_text_kind(kind: BenchmarkKind) -> bool {
         BenchmarkKind::CommandType
             | BenchmarkKind::CommandBarFirstResult
             | BenchmarkKind::CommandBarFullSearch
+            | BenchmarkKind::SavedPageSearchFirstResult
     )
 }
 

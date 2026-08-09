@@ -78,8 +78,8 @@ pub mod search_settings;
 
 mod collect;
 
-pub use corpus::{Corpus, HistoryEntry, ProfileEntry, SpaceEntry, TabEntry};
-pub use id::{ActionId, HistoryId, ProfileId, SpaceId, TabId};
+pub use corpus::{Corpus, HistoryEntry, ProfileEntry, SavedPageEntry, SpaceEntry, TabEntry};
+pub use id::{ActionId, BookmarkId, HistoryId, ProfileId, SpaceId, TabId};
 pub use parse::{Destination, Mode, Query, QueryContext};
 pub use rank::{
     rank, Activation, CommandResult, MatchQuality, RankKey, RankedResults, ResultGroup,
