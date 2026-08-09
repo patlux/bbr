@@ -8,9 +8,14 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [interaction contract](../../product/browser-interactions.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.13.
 
-Activation condition: F2 closeout is complete and Portal/context-menu ownership is
-free.** This is the bounded enrichment of the already integrated BBR
-page-background menu, not a replacement router.
+Activation condition: the integrated functionally green F2 checkpoint (per
+[Current delivery](../../delivery/current.md): `just verify` and all 27
+functional E2E suites green) and free Portal/context-menu ownership.** The F2
+startup/release closeout remains deliberately deferred Phase-9 debt: the
+consumed reproduction stays red at startup p95/max `535.866375 ms > 500 ms`
+and is never treated as passed; this activation does not imply startup or
+release performance acceptance. This is the bounded enrichment of the already
+integrated BBR page-background menu, not a replacement router.
 
 Stable information-architecture reference, not a feature or visual copy:
 `/Users/patwoz/dev/Personal/macos/bbr-design-references/zen-page-context-menu.png`.
@@ -67,7 +72,10 @@ exact tab/session/profile/space/split identity.
 ## Parallel-lane contract
 
 ```text
-Base condition:       verified main after complete F2 closeout
+Base condition:       verified main at the integrated functionally green F2
+                      checkpoint (startup/release closeout remains deferred
+                      Phase-9 debt; startup p95/max
+                      `535.866375 ms > 500 ms` stays red)
 Depends on:           integrated existing context-menu/Portal path; free
                       Portal/context-menu ownership; G1a components if already
                       available (otherwise coordinate extraction, never copy);
@@ -80,8 +88,11 @@ Exclusive paths:      focused page-menu app/portal modules; conservative
 Shared integration points: bbr-web events/actions, bbr-app portal stack/input,
                       testkit wire, perf registry, Gallery G2/G3 registry,
                       Phase 8/UI-track roll-ups
-Integration order:    F2 closeout → this packet when Portal territory is free;
-                      coordinate with G2 extraction rather than duplicating UI
+Integration order:    integrated functionally green F2 checkpoint → this
+                      packet when Portal territory is free; coordinate with
+                      G2 extraction rather than duplicating UI. Full F2
+                      closeout remains Phase-9-deferred and is not a
+                      precondition of this packet
 ```
 
 No concurrent writer may own Portal/context-menu rendering, the native menu
@@ -152,7 +163,9 @@ GUI suites run sequentially under the repository lock.
 
 ## Delivery sequence
 
-1. Confirm F2 closeout and free Portal/context-menu ownership.
+1. Confirm the integrated functionally green F2 checkpoint and free
+   Portal/context-menu ownership (startup/release closeout remains deferred
+   Phase-9 debt, never treated as passed).
 2. Strengthen typed background-versus-element evidence without changing the
    conservative fallback.
 3. Add currently owned page commands to the existing production menu.

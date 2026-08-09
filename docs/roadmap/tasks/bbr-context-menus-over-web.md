@@ -8,8 +8,11 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 Status: **implemented ownership/Portal foundation.** The bounded action and
 ownership-matrix enrichment is owned by the
 [Page-background context-menu follow-up](page-background-context-menu.md);
-that packet preserves this conservative router and may start only after F2
-closeout when Portal/context-menu territory is free.
+that packet preserves this conservative router and may start only after the
+integrated functionally green F2 checkpoint (per
+[Current delivery](../../delivery/current.md)) when Portal/context-menu
+territory is free; the F2 startup/release closeout remains deferred Phase-9
+debt and is not a precondition.
 
 ## Outcome
 
