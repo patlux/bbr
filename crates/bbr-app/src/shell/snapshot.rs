@@ -279,7 +279,7 @@ pub fn visible_ids_u2(
         for id in [
             "bbr-sidebar",
             "bbr-brand",
-            "bbr-status",
+            bbr_ui::components::STATUS_ID,
             "bbr-sidebar-toggle",
             "bbr-tab-list",
             "bbr-tab-scroll",

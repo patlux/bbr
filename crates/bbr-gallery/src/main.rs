@@ -43,7 +43,8 @@ use gpui::{px, size, App, AppContext, Bounds, Entity, WindowBounds, WindowOption
 
 /// The gallery window title — the visible app copy (finding 3).
 #[cfg(target_os = "macos")]
-pub const GALLERY_WINDOW_TITLE: &str = "BBR Gallery — Foundations / Primitives";
+pub const GALLERY_WINDOW_TITLE: &str =
+    "BBR Gallery — Foundations / Primitives / Browser Components";
 
 /// The gallery window options — shared by the production app and the
 /// in-process test harness so both open the same window (bounds, focus,

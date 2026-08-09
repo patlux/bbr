@@ -63,7 +63,8 @@ pub struct GallerySnapshot {
     pub reduced_motion: bool,
     pub story_state: String,
     pub story_state_index: usize,
-    /// The honest scope copy (finding 3): "Foundations / Primitives".
+    /// The honest scope copy (finding 3): "Foundations / Primitives /
+    /// Browser Components".
     pub scope: String,
     /// The honest continuation note pointing to G2/G3 (finding 3).
     pub continuation: String,

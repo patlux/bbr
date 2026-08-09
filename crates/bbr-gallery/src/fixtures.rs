@@ -4,7 +4,7 @@
 //! non-empty, ids stable) — proven by the fixture-builder tests below.
 
 use bbr_domain::ProfileHue;
-use bbr_ui::components::{FaviconSpec, ProfileChipSpec};
+use bbr_ui::components::{FaviconSpec, ProfileChipSpec, StatusModel};
 
 /// A deterministic favicon spec for a known hostname (the §7.2 monogram
 /// tile): the first letter of the registrable host, uppercased, on the
@@ -87,6 +87,23 @@ pub const STATE_VOCABULARY: [&str; 11] = [
 /// the tile actually renders).
 pub const FAVICON_STATES: [&str; 3] = ["default", "loading", "error"];
 
+/// A status-line model fixture: the plain text the §11.4 line renders.
+/// The gallery builds the model directly — it never imports the app's
+/// controller-snapshot derivation.
+pub fn status_model(text: &str) -> StatusModel {
+    StatusModel { text: text.into() }
+}
+
+/// The status-line story variants: the §11.8 derivation branches as plain
+/// fixture text (empty, loading, title, URL fallback, crash).
+pub const STATUS_VARIANTS: [&str; 5] = [
+    "No page",
+    "Loading…",
+    "Example",
+    "https://example.com/path",
+    "Web content process terminated",
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -135,5 +152,20 @@ mod tests {
         assert_eq!(STATE_VOCABULARY[6], "error");
         assert_eq!(STATE_VOCABULARY[9], "drag-target");
         assert_eq!(FAVICON_STATES, ["default", "loading", "error"]);
+    }
+
+    #[test]
+    fn status_fixtures_are_valid_and_stable() {
+        for text in STATUS_VARIANTS {
+            let model = status_model(text);
+            assert_eq!(model.text, text, "fixture text round-trips");
+            assert_eq!(model, status_model(text), "stable per text");
+        }
+        // Distinct texts yield distinct models.
+        assert_ne!(status_model("No page"), status_model("Example"));
+        // The crash line stays plain ASCII (DESIGN.md §14: no emoji).
+        assert!(status_model("Web content process terminated")
+            .text
+            .is_ascii());
     }
 }
