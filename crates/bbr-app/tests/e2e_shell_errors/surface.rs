@@ -206,9 +206,11 @@ fn redirect_loop_presents_redirect_loop_surface() {
     finish(result, &mut harness, &socket, &token);
 }
 
-/// The truncated-500 fixture declares a body it never delivers; the engine
-/// fails the navigation with an HTTP-domain code the adapter classifies as
-/// the navigation class (transient transport failure).
+/// The truncated-500 fixture serves a chunked 500 whose first chunk
+/// declares 64 KiB but delivers only 4 bytes before the connection closes;
+/// the engine fails the navigation with `NSURLErrorNetworkConnectionLost`,
+/// which the adapter classifies as the navigation class (transient
+/// transport failure).
 #[test]
 #[ignore]
 fn truncated_500_presents_navigation_surface() {

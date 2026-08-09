@@ -145,10 +145,11 @@ fn handle_connection(
     // wire shapes the generic router cannot express — an endless 302
     // redirect loop (the engine fails with `NSURLErrorHTTPTooManyRedirects`
     // → the contract's `Navigation/RedirectLoop`), a fixed 500 server
-    // error, a truncated 500 (declared length never delivered → the engine
-    // fails the navigation), and a flaky route that fails its first request
-    // and succeeds afterwards (the recovery E2E retries it). All are
-    // deterministic and content-addressed.
+    // error, a truncated 500 (a chunked response that closes in the middle
+    // of its declared chunk → the engine fails the navigation with
+    // `NSURLErrorNetworkConnectionLost`), and a flaky route that fails its
+    // first request and succeeds afterwards (the recovery E2E retries it).
+    // All are deterministic and content-addressed.
     if let Some(response) = error_fixture(path) {
         // The flaky route keys its behavior on the number of prior requests
         // (request 1 fails, later requests succeed), so the prior count is
@@ -320,9 +321,14 @@ enum ErrorFixture {
     RedirectLoop,
     /// A fixed 500 with a small HTML body (deterministic server error).
     ServerError,
-    /// A 500 whose declared `Content-Length` is never satisfied (the
-    /// connection closes early): the engine fails the navigation with an
-    /// NSURLError HTTP-domain code (bad server response / connection lost).
+    /// A 500 served chunked whose first chunk declares 64 KiB (hex
+    /// `10000`) but delivers only 4 bytes before the connection closes: an
+    /// EOF in the middle of a chunked body is an unambiguous framing
+    /// violation, so the engine fails the navigation with
+    /// `NSURLErrorNetworkConnectionLost`. (A `Content-Length`-declared 500
+    /// truncated by a clean close is accepted by WebKit as an empty
+    /// completion — the chunked framing is what makes the failure
+    /// deterministic.)
     TruncatedError,
     /// Fail the first request (a truncated 500, so the engine reports a
     /// navigation failure) and answer every later request with a real page:
@@ -362,19 +368,26 @@ impl ErrorFixture {
                 b"<!doctype html><html><head><title>Server Error</title></head><body>boom</body></html>",
             ),
             ErrorFixture::TruncatedError => {
-                // 500 status, declares 64 KiB, delivers 4 bytes, closes.
-                let head =
-                    "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 65536\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n";
+                // 500 status, chunked framing: the first chunk declares
+                // 64 KiB (hex `10000`) but only 4 bytes are delivered
+                // before the connection closes. An EOF mid-chunk is an
+                // unambiguous framing violation that CFNetwork reports as
+                // `NSURLErrorNetworkConnectionLost`; the adapter maps that
+                // to the navigation class. The chunked body never reaches
+                // its terminating `0\r\n\r\n`, so the transfer is
+                // observably incomplete (never an accepted empty body).
+                let head = "HTTP/1.1 500 Internal Server Error\r\nTransfer-Encoding: chunked\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n";
                 stream.write_all(head.as_bytes())?;
+                stream.write_all(b"10000\r\n")?;
                 stream.write_all(b"boom")?;
                 stream.flush()
             }
             ErrorFixture::FlakyError => {
                 if prior == 0 {
-                    // First request: fail like the truncated route.
-                    let head =
-                        "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 65536\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n";
+                    // First request: fail like the truncated chunked route.
+                    let head = "HTTP/1.1 500 Internal Server Error\r\nTransfer-Encoding: chunked\r\nContent-Type: text/html; charset=utf-8\r\nConnection: close\r\n\r\n";
                     stream.write_all(head.as_bytes())?;
+                    stream.write_all(b"10000\r\n")?;
                     stream.write_all(b"boom")?;
                     stream.flush()
                 } else {
@@ -687,6 +700,23 @@ mod tests {
         assert_eq!(code3, 404);
     }
 
+    /// Read a URL's complete raw response bytes (status line, headers, and
+    /// body) with no HTTP parsing, so a test can pin the exact wire shape
+    /// the engine observes.
+    fn raw_get(url: &str) -> std::io::Result<Vec<u8>> {
+        let rest = url.trim_start_matches("http://");
+        let (authority, path) = match rest.find('/') {
+            Some(i) => (&rest[..i], &rest[i..]),
+            None => (rest, "/"),
+        };
+        let mut stream = TcpStream::connect(authority)?;
+        let req = format!("GET {path} HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n");
+        stream.write_all(req.as_bytes())?;
+        let mut bytes = Vec::new();
+        stream.read_to_end(&mut bytes)?;
+        Ok(bytes)
+    }
+
     #[test]
     fn error_fixtures_are_deterministic() {
         let sb = Sandbox::new();
@@ -703,21 +733,56 @@ mod tests {
         let body2 = get(&server.url("/__fx/error/redirect-loop")).unwrap().1;
         assert!(body2.is_empty());
         assert_eq!(server.hits("/__fx/error/redirect-loop"), 2);
-        // The truncated-error route declares a 64 KiB body but delivers 4
-        // bytes: the wire shape is deterministic and the client observes the
-        // premature close (the engine fails the navigation).
+        // The truncated-error route serves a 500 chunked whose first chunk
+        // declares 64 KiB (hex `10000`) but delivers only 4 bytes before
+        // the connection closes: the raw client observes the premature
+        // close in the middle of the chunk — the chunked body never reaches
+        // its terminating zero chunk, so the transfer is observably
+        // incomplete. This framing (not a `Content-Length` truncation,
+        // which WebKit accepts as an empty completion) is what makes the
+        // engine fail the navigation; the wire is pinned byte-for-byte so
+        // the shape cannot drift.
         let (code3, body3) = get(&server.url("/__fx/error/truncated-error")).unwrap();
         assert_eq!(code3, 500);
-        assert_eq!(body3, b"boom");
-        // The flaky route fails its first request and succeeds afterwards
-        // (the recovery E2E retries it): request 1 is the truncated 500,
-        // request 2 is a real page.
+        assert_eq!(body3, b"10000\r\nboom");
+        let raw3 = raw_get(&server.url("/__fx/error/truncated-error")).unwrap();
+        assert!(
+            raw3.starts_with(b"HTTP/1.1 500 Internal Server Error\r\n"),
+            "the truncated fixture stays a 500: {raw3:?}"
+        );
+        assert!(
+            String::from_utf8_lossy(&raw3).contains("Transfer-Encoding: chunked"),
+            "the truncated fixture must use chunked framing: {raw3:?}"
+        );
+        assert!(
+            raw3.windows(7).any(|w| w == b"10000\r\n"),
+            "the truncated fixture declares the 64 KiB chunk size: {raw3:?}"
+        );
+        assert!(
+            !raw3.windows(5).any(|w| w == b"0\r\n\r\n"),
+            "the truncated fixture must never terminate the chunked body: {raw3:?}"
+        );
+        assert_eq!(
+            raw3.windows(4).filter(|w| *w == b"boom").count(),
+            1,
+            "exactly the 4-byte chunk payload is delivered: {raw3:?}"
+        );
+        // The flaky route fails its first request (the same truncated
+        // chunked 500) and succeeds afterwards (the recovery E2E retries
+        // it): request 1 is the truncated chunked 500, request 2 is a real
+        // page. Hit counting is pinned so the fail-then-succeed decision
+        // cannot drift.
         let (code4, body4) = get(&server.url("/__fx/error/flaky")).unwrap();
         assert_eq!(code4, 500);
-        assert_eq!(body4, b"boom");
+        assert_eq!(body4, b"10000\r\nboom");
         let (code5, body5) = get(&server.url("/__fx/error/flaky")).unwrap();
         assert_eq!(code5, 200);
         assert!(String::from_utf8(body5).unwrap().contains("recovered"));
+        assert_eq!(
+            server.hits("/__fx/error/flaky"),
+            2,
+            "request 1 fails, request 2 succeeds"
+        );
     }
 
     #[test]
