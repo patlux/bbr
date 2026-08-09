@@ -15,7 +15,10 @@
 //! - Split and event-application coverage live in `controller_event_tests`.
 
 use bbr_domain::{AppearanceError, BbrGlyph, SpaceEmoji, SpaceIdentity, SpaceTheme};
-use bbr_web::{ProfileId, WebAction, WebEvent, WebViewId};
+use bbr_web::{
+    decide, NewWindowDecision, NewWindowFeatures, NewWindowOutcome, NewWindowRequest,
+    NewWindowTarget, ProfileId, WebAction, WebEvent, WebViewId,
+};
 
 use crate::fake::EngineOp;
 use crate::harness::{open, plain, wired};
@@ -84,6 +87,142 @@ fn profile_setup_and_space_activation_are_typed() {
             visible: true,
         },
     ]));
+}
+
+fn new_window_session(
+    source: WebViewId,
+    profile: ProfileId,
+    url: &str,
+) -> bbr_web::NewWindowSession {
+    let request = NewWindowRequest {
+        source,
+        source_profile: profile,
+        url: url.into(),
+        user_initiated: true,
+        target: NewWindowTarget::NewWindow,
+        features: NewWindowFeatures::default(),
+    };
+    match decide(&request, NewWindowDecision::OpenTab) {
+        NewWindowOutcome::CreateSession { session } => session,
+        other => panic!("expected session, got {other:?}"),
+    }
+}
+
+#[test]
+fn new_window_opens_exactly_once_in_the_source_space_and_profile() {
+    let (mut c, h) = plain();
+    open(&mut c, "https://source.example");
+    let source = c.snapshot().active_view.unwrap();
+    h.reset_ops();
+
+    let event = c
+        .open_tab_from_new_window(
+            source,
+            &new_window_session(source, ProfileId(1), "https://child.example"),
+        )
+        .unwrap();
+    assert_eq!(
+        event,
+        ControllerEvent::NewWindowOpened {
+            index: 1,
+            url: "https://child.example".into(),
+            space: c.snapshot().active_space,
+            profile: ProfileId(1),
+            view: WebViewId(2),
+        }
+    );
+    assert_eq!(c.snapshot().tabs.len(), 2);
+    assert_eq!(c.snapshot().engine_sessions, 2);
+    assert!(h.recorded(&[
+        EngineOp::Create {
+            view: WebViewId(2),
+            profile: ProfileId(1),
+            url: "https://child.example".into(),
+        },
+        EngineOp::Show {
+            view: WebViewId(1),
+            visible: false,
+        },
+        EngineOp::Show {
+            view: WebViewId(2),
+            visible: true,
+        },
+    ]));
+}
+
+#[test]
+fn new_window_in_inactive_source_space_keeps_active_space_unchanged() {
+    let (mut c, h) = plain();
+    open(&mut c, "https://source.example");
+    let source_space = c.snapshot().active_space;
+    let source = c.snapshot().active_view.unwrap();
+    let other = c.create_space(ProfileId(1), "Other").unwrap();
+    c.activate_space(other).unwrap();
+    open(&mut c, "https://active.example");
+    let active_view = c.snapshot().active_view.unwrap();
+    h.reset_ops();
+
+    let event = c
+        .open_tab_from_new_window(
+            source,
+            &new_window_session(source, ProfileId(1), "https://child.example"),
+        )
+        .unwrap();
+    assert!(matches!(
+        event,
+        ControllerEvent::NewWindowOpened {
+            space,
+            profile: ProfileId(1),
+            view: WebViewId(3),
+            ..
+        } if space == source_space
+    ));
+    let snapshot = c.snapshot();
+    assert_eq!(snapshot.active_space, other);
+    assert_eq!(snapshot.active_view, Some(active_view));
+    assert_eq!(snapshot.tabs.len(), 1);
+    assert_eq!(
+        snapshot
+            .spaces
+            .iter()
+            .find(|space| space.id == source_space)
+            .unwrap()
+            .tab_count,
+        2
+    );
+    assert!(h.recorded(&[EngineOp::Create {
+        view: WebViewId(3),
+        profile: ProfileId(1),
+        url: "https://child.example".into(),
+    }]));
+}
+
+#[test]
+fn new_window_rejects_stale_source_and_profile_mismatch_without_mutation() {
+    let (mut c, h) = plain();
+    open(&mut c, "https://source.example");
+    let source = c.snapshot().active_view.unwrap();
+    let before = c.snapshot();
+    h.reset_ops();
+
+    let stale = c.open_tab_from_new_window(
+        WebViewId(999),
+        &new_window_session(WebViewId(999), ProfileId(1), "https://child.example"),
+    );
+    assert_eq!(stale, Err(ControllerError::UnknownWebView(WebViewId(999))));
+    let mismatch = c.open_tab_from_new_window(
+        source,
+        &new_window_session(source, ProfileId(77), "https://child.example"),
+    );
+    assert_eq!(
+        mismatch,
+        Err(ControllerError::NewWindowProfileMismatch {
+            source: ProfileId(1),
+            requested: ProfileId(77),
+        })
+    );
+    assert_eq!(c.snapshot(), before);
+    assert!(h.ops().is_empty());
 }
 
 #[test]

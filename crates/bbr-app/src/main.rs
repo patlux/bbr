@@ -329,6 +329,12 @@ fn main() {
         #[cfg(target_os = "macos")]
         let (incidents_tx, incidents_rx) =
             smol::channel::unbounded::<bbr_web_macos::error_mapping::ClassifiedIncident>();
+        // Productive WKUI new-window deliveries: the synchronous native
+        // coordinator decides through portable policy, then publishes a plain
+        // request/outcome pair for the main-thread app/controller pump.
+        #[cfg(target_os = "macos")]
+        let (new_windows_tx, new_windows_rx) =
+            smol::channel::unbounded::<bbr_web::NewWindowDelivery>();
         #[cfg(feature = "testkit")]
         let performance = performance::PerformanceProbe::new(
             process_started,
@@ -437,6 +443,26 @@ fn main() {
             let _ = with_app(&window, &app, cx, |view, _w, _cx| {
                 view.set_find_engine(native);
             });
+        }
+
+        // Productive new-window composition (NW-SEAM): one portable default
+        // policy, one native delegate coordinator, and one app/controller
+        // execution channel. The delegate always returns `None`; no WebKit-
+        // owned view bypasses the controller session registry.
+        #[cfg(target_os = "macos")]
+        if let Some(native) = native_engine.clone() {
+            let delivery_tx = new_windows_tx.clone();
+            let mut engine = native.borrow_mut();
+            engine.set_new_window_handler(Box::new(|request| bbr_web::default_decision(&request)));
+            engine.set_new_window_delivery(Box::new(move |delivery| {
+                let _ = delivery_tx.try_send(delivery);
+            }));
+            engine.set_new_window_blocked_reporter(Box::new(|request| {
+                log::info!(
+                    "native coordinator blocked new-window request from {:?}",
+                    request.source
+                );
+            }));
         }
 
         // Error-surface composition (task packet `error-surface-contract`):
@@ -609,6 +635,7 @@ fn main() {
                 #[cfg(target_os = "macos")]
                 external_url_tx,
                 incidents_rx,
+                new_windows_rx,
                 cmd_rx,
                 server.clone(),
             );
@@ -657,6 +684,7 @@ fn main() {
                     downloads: downloads_rx,
                     external_urls: external_url_rx,
                     incidents: incidents_rx,
+                    new_windows: new_windows_rx,
                 },
             );
         }

@@ -23,6 +23,18 @@ pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange>
         ControllerEvent::TabOpened { index, .. } => {
             Some(BrowserChange::TabOpened { index: *index })
         }
+        ControllerEvent::NewWindowOpened {
+            index,
+            space,
+            profile,
+            view,
+            ..
+        } => Some(BrowserChange::NewWindowOpened {
+            index: *index,
+            space: bbr_testkit::protocol::TestSpaceId(space.0),
+            profile: *profile,
+            view: *view,
+        }),
         ControllerEvent::TabSelected { index } => {
             Some(BrowserChange::TabSelected { index: *index })
         }
@@ -214,6 +226,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             error_surface: self.error_surface.clone(),
             store: self.store.clone(),
             restore: self.restore,
+            new_window: self.new_window,
         }
     }
 }

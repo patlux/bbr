@@ -25,6 +25,7 @@ use objc2_web_kit::{WKNavigation, WKNavigationDelegate, WKUIDelegate, WKWebView}
 use bbr_web::{ProfileId, WebEvent, WebViewId};
 
 use crate::error_mapping::{classify, map_error, map_termination, ClassifiedIncident};
+use crate::new_window::{extract_context, NewWindowCoordinator};
 
 /// The `title` key path observed on the WKWebView (see [`WebViewDelegate::new`]).
 const TITLE_KEY_PATH: &str = "title";
@@ -97,6 +98,8 @@ pub(crate) struct WebViewDelegateIvars {
     pub(crate) incident_sink: IncidentSink,
     /// Native loading cover above this view's WebKit plane.
     pub(crate) navigation_cover: Retained<NSView>,
+    /// Shared productive new-window request coordinator.
+    pub(crate) new_window: NewWindowCoordinator,
 }
 
 define_class!(
@@ -211,11 +214,23 @@ define_class!(
             &self,
             _web_view: &WKWebView,
             _configuration: &objc2_web_kit::WKWebViewConfiguration,
-            _action: &objc2_web_kit::WKNavigationAction,
-            _features: &objc2_web_kit::WKWindowFeatures,
+            action: &objc2_web_kit::WKNavigationAction,
+            features: &objc2_web_kit::WKWindowFeatures,
         ) -> Option<Retained<WKWebView>> {
-            // Phase 1: suppress new-window popups so test navigation is fully
-            // deterministic. Wired popups land in a later phase.
+            // SAFETY: WebKit delivered live action/features objects to this
+            // main-thread delegate call. The coordinator applies portable
+            // policy and publishes a plain delivery to the app/controller.
+            let context = unsafe {
+                extract_context(
+                    action,
+                    features,
+                    self.ivars().web_view_id,
+                    self.ivars().profile,
+                )
+            };
+            let _ = self.ivars().new_window.handle(&context);
+            // Controller/session ownership stays outside WebKit: never return
+            // a detached or untracked WKWebView from this delegate.
             None
         }
     }
@@ -230,6 +245,7 @@ impl WebViewDelegate {
         sink: EventSink,
         incident_sink: IncidentSink,
         navigation_cover: Retained<NSView>,
+        new_window: NewWindowCoordinator,
     ) -> Retained<Self> {
         let this = Self::alloc(mtm).set_ivars(WebViewDelegateIvars {
             web_view_id,
@@ -237,6 +253,7 @@ impl WebViewDelegate {
             sink,
             incident_sink,
             navigation_cover,
+            new_window,
         });
         // SAFETY: `init` is the NSObject initializer; we are on the main thread.
         unsafe { msg_send![super(this), init] }

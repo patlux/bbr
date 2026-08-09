@@ -24,6 +24,8 @@ use bbr_domain::{
 };
 use bbr_web::{ProfileId, WebAction, WebEvent, WebViewId};
 
+mod new_window;
+
 use crate::nav::NavState;
 use crate::outcome::ControllerEvent;
 use crate::pane::PaneLayout;

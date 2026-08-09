@@ -182,6 +182,31 @@ pub enum NewWindowOutcome {
 /// Deliberately not `Send`: the engine and its delegates are main-thread-only.
 pub type NewWindowHandler = dyn FnMut(NewWindowRequest) -> NewWindowDecision;
 
+/// One fully decided request delivered from a platform adapter to the app.
+///
+/// The adapter publishes this plain value after portable policy ran; the app
+/// executes it through the browser controller. Keeping request and outcome
+/// together lets execution validate source identity/profile without asking the
+/// adapter to create a native session.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewWindowDelivery {
+    pub request: NewWindowRequest,
+    pub outcome: NewWindowOutcome,
+}
+
+/// MVP default policy for the productive new-window seam.
+///
+/// A direct user activation opens one regular tab. Script-created requests are
+/// blocked and reported. Peek, external handling, background selection,
+/// insertion policy, and opener provenance remain later bounded decisions.
+pub fn default_decision(request: &NewWindowRequest) -> NewWindowDecision {
+    if request.user_initiated {
+        NewWindowDecision::OpenTab
+    } else {
+        NewWindowDecision::Block
+    }
+}
+
 /// Translate a host decision into the native outcome for `request`.
 ///
 /// This is the single pure decision-translation every platform adapter shares,

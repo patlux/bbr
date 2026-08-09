@@ -19,6 +19,16 @@ pub enum ControllerEvent {
     SpaceActivated { space: SpaceId },
     /// A tab was opened at `index` in the active space.
     TabOpened { index: usize, url: String },
+    /// A user-initiated new-window request opened one regular tab in the
+    /// source tab's owning space/profile. `index` is source-space-local and
+    /// the active space may remain unchanged.
+    NewWindowOpened {
+        index: usize,
+        url: String,
+        space: SpaceId,
+        profile: ProfileId,
+        view: WebViewId,
+    },
     /// The tab at `index` became the active tab.
     TabSelected { index: usize },
     /// The tab at `index` was closed (session destroyed).

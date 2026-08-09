@@ -429,6 +429,9 @@ pub(crate) struct EventPumpChannels {
     /// sink, drained into `BbrApp::on_incident`.
     #[cfg(target_os = "macos")]
     pub(crate) incidents: Receiver<bbr_web_macos::error_mapping::ClassifiedIncident>,
+    /// Fully decided new-window deliveries from the WKUI delegate.
+    #[cfg(target_os = "macos")]
+    pub(crate) new_windows: Receiver<bbr_web::NewWindowDelivery>,
 }
 
 /// Non-testkit builds still need the event pump to keep the shell live.
@@ -448,6 +451,8 @@ pub(crate) fn spawn_event_pump(
     let external_url_rx = channels.external_urls;
     #[cfg(target_os = "macos")]
     let incidents_rx = channels.incidents;
+    #[cfg(target_os = "macos")]
+    let new_windows_rx = channels.new_windows;
     let window = *window;
     let app = app.clone();
     cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
@@ -463,6 +468,8 @@ pub(crate) fn spawn_event_pump(
             Incident(
                 Result<bbr_web_macos::error_mapping::ClassifiedIncident, smol::channel::RecvError>,
             ),
+            #[cfg(target_os = "macos")]
+            NewWindow(Result<bbr_web::NewWindowDelivery, smol::channel::RecvError>),
         }
         let incoming = smol::future::race(
             async { Incoming::Event(evt_rx.recv().await) },
@@ -482,10 +489,16 @@ pub(crate) fn spawn_event_pump(
                     async {
                         Incoming::ExternalUrl(external_url_rx.recv().await)
                     },
-                    #[cfg(target_os = "macos")]
-                    async {
-                        Incoming::Incident(incidents_rx.recv().await)
-                    },
+                    smol::future::race(
+                        #[cfg(target_os = "macos")]
+                        async {
+                            Incoming::Incident(incidents_rx.recv().await)
+                        },
+                        #[cfg(target_os = "macos")]
+                        async {
+                            Incoming::NewWindow(new_windows_rx.recv().await)
+                        },
+                    ),
                 ),
             ),
         )
@@ -539,12 +552,21 @@ pub(crate) fn spawn_event_pump(
                     });
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::NewWindow(Ok(delivery)) => {
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_new_window_request(delivery, cx)
+                    });
+                });
+            }
             Incoming::Event(Err(_)) => break,
             #[cfg(target_os = "macos")]
             Incoming::Find(Err(_))
             | Incoming::Download(Err(_))
             | Incoming::ExternalUrl(Err(_))
-            | Incoming::Incident(Err(_)) => break,
+            | Incoming::Incident(Err(_))
+            | Incoming::NewWindow(Err(_)) => break,
         }
     })
     .detach();

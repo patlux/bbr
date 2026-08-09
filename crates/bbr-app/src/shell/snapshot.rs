@@ -205,6 +205,8 @@ pub struct TestSnapshot {
     /// persisted browser model was applied chrome-first and how many tab
     /// identities stayed session-less (deferred) after the restore.
     pub restore: bbr_testkit::protocol::RestoreDisposition,
+    /// Productive new-window request/open/block counters.
+    pub new_window: bbr_testkit::protocol::NewWindowSnapshot,
 }
 
 #[cfg(feature = "testkit")]

@@ -7,6 +7,7 @@
 //! errors cover missing focus targets and sessions.
 
 use bbr_domain::{DomainError, SpaceId, TabId};
+use bbr_web::{ProfileId, WebViewId};
 
 /// Errors returned by controller operations.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,6 +26,13 @@ pub enum ControllerError {
     NoSession(TabId),
     /// The target space is unknown.
     UnknownSpace(SpaceId),
+    /// A new-window request named no live source session.
+    UnknownWebView(WebViewId),
+    /// Portable request/session profile disagreed with the source tab owner.
+    NewWindowProfileMismatch {
+        source: ProfileId,
+        requested: ProfileId,
+    },
 }
 
 impl std::fmt::Display for ControllerError {
@@ -39,6 +47,11 @@ impl std::fmt::Display for ControllerError {
             Self::NoActiveTab => write!(f, "no active tab to target"),
             Self::NoSession(tab) => write!(f, "tab {tab:?} has no live session"),
             Self::UnknownSpace(space) => write!(f, "unknown space {space:?}"),
+            Self::UnknownWebView(view) => write!(f, "unknown web view {view:?}"),
+            Self::NewWindowProfileMismatch { source, requested } => write!(
+                f,
+                "new-window source profile {source:?} does not match requested {requested:?}"
+            ),
         }
     }
 }

@@ -137,6 +137,7 @@ pub fn spawn_pump(
     #[cfg(target_os = "macos")] incidents_rx: smol::channel::Receiver<
         bbr_web_macos::error_mapping::ClassifiedIncident,
     >,
+    #[cfg(target_os = "macos")] new_windows_rx: smol::channel::Receiver<bbr_web::NewWindowDelivery>,
     cmd_rx: smol::channel::Receiver<GatewayCommand>,
     server: Option<Arc<GatewayServer>>,
 ) {
@@ -157,6 +158,8 @@ pub fn spawn_pump(
             Incident(
                 Result<bbr_web_macos::error_mapping::ClassifiedIncident, smol::channel::RecvError>,
             ),
+            #[cfg(target_os = "macos")]
+            NewWindow(Result<bbr_web::NewWindowDelivery, smol::channel::RecvError>),
         }
 
         let incoming = smol::future::race(
@@ -178,10 +181,16 @@ pub fn spawn_pump(
                             async {
                                 Incoming::ExternalUrl(external_url_rx.recv().await)
                             },
-                            #[cfg(target_os = "macos")]
-                            async {
-                                Incoming::Incident(incidents_rx.recv().await)
-                            },
+                            smol::future::race(
+                                #[cfg(target_os = "macos")]
+                                async {
+                                    Incoming::Incident(incidents_rx.recv().await)
+                                },
+                                #[cfg(target_os = "macos")]
+                                async {
+                                    Incoming::NewWindow(new_windows_rx.recv().await)
+                                },
+                            ),
                         ),
                     ),
                 ),
@@ -272,12 +281,21 @@ pub fn spawn_pump(
                     });
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::NewWindow(Ok(delivery)) => {
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_new_window_request(delivery, cx)
+                    });
+                });
+            }
             Incoming::Command(Err(_)) | Incoming::Event(Err(_)) => break,
             #[cfg(target_os = "macos")]
             Incoming::Find(Err(_))
             | Incoming::Download(Err(_))
             | Incoming::ExternalUrl(Err(_))
-            | Incoming::Incident(Err(_)) => break,
+            | Incoming::Incident(Err(_))
+            | Incoming::NewWindow(Err(_)) => break,
         }
     })
     .detach();
