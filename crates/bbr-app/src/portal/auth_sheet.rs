@@ -26,7 +26,7 @@ use crate::app::auth::{
     AuthField, AuthSheetSurface, AUTH_CANCEL_ID, AUTH_HEADER_ID, AUTH_PASSWORD_ID, AUTH_SHEET_ID,
     AUTH_SUBMIT_ID, AUTH_USERNAME_ID,
 };
-use crate::theme::Spacing;
+use bbr_ui::theme::Spacing;
 
 /// Build the credential sheet at the resolved portal rect. The caller owns
 /// the full-window backdrop and pointer propagation policy (the backdrop
@@ -36,7 +36,7 @@ pub fn auth_sheet(
     rect: Rect,
     cx: &mut Context<PortalRoot>,
 ) -> Stateful<Div> {
-    let theme = crate::theme::Theme::dark();
+    let theme = bbr_ui::theme::Theme::dark();
     let p = theme.palette;
     let authority = match surface.authority.as_str() {
         "proxy" => "proxy",
@@ -87,8 +87,8 @@ pub fn auth_sheet(
 fn header(
     surface: &AuthSheetSurface,
     authority: &str,
-    theme: &crate::theme::Theme,
-    p: &crate::palette::Palette,
+    theme: &bbr_ui::theme::Theme,
+    p: &bbr_ui::palette::Palette,
 ) -> Stateful<Div> {
     let (title, detail) = match surface.realm.as_deref() {
         Some(realm) => (
@@ -128,7 +128,7 @@ fn field(
     value: String,
     surface: &AuthSheetSurface,
 ) -> Stateful<Div> {
-    let theme = crate::theme::Theme::dark();
+    let theme = bbr_ui::theme::Theme::dark();
     let p = theme.palette;
     let focused = (id == AUTH_USERNAME_ID && surface.focused == AuthField::Username)
         || (id == AUTH_PASSWORD_ID && surface.focused == AuthField::Password);
@@ -184,7 +184,7 @@ fn button(
     primary: bool,
     cx: &mut Context<PortalRoot>,
 ) -> Stateful<Div> {
-    let theme = crate::theme::Theme::dark();
+    let theme = bbr_ui::theme::Theme::dark();
     let p = theme.palette;
     let hit = theme.density.hit_min();
     let mut el = div()

@@ -5,14 +5,33 @@
 //! creation-order index, never the space index. The revealed `space_row` /
 //! `space_new_row` list components were removed with the legacy §11.4
 //! `[Spaces]` toggle: the permanent space strip renders identity chips
-//! instead (see [`super::space_strip`]).
+//! instead (see the app's `components::space_strip`).
 
+use bbr_domain::ProfileHue;
 use gpui::{div, prelude::*, Div, SharedString, Stateful, Styled};
 
 use crate::palette::ProfileHueRamp;
 use crate::theme::{Radius, Theme};
 
-use super::ProfileChipSpec;
+/// §12 profile chip identity: the 1–2 character monogram plus the stable
+/// round-robin hue the domain assigned to the profile.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProfileChipSpec {
+    pub letter: String,
+    pub hue: ProfileHue,
+}
+
+/// One canonical space-surface row identity, derived from the controller
+/// snapshot: the persistent-space lookup key and the §4-truncated title. The
+/// `space_groups` derivation is the single canonical order the permanent
+/// §11.3 strip (chips), the keyboard traversal, and the §15 id derivation
+/// all consume.
+#[derive(Debug, Clone)]
+pub struct SpaceRowVisuals {
+    /// The space's creation-order index (the persistent-space lookup key).
+    pub index: usize,
+    pub title: SharedString,
+}
 
 /// The §15 semantic id of a profile chip, keyed to the *profile* index
 /// (DESIGN.md §12) — never the space index. The §11.3 command-field

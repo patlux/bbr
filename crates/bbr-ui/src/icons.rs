@@ -14,6 +14,10 @@
 //! §10.5 circular arc in accent; it renders statically because rotation is
 //! transient-indication motion that belongs to a later polish pass — this
 //! slice replaces the placeholder, it does not introduce animation.
+//!
+//! The pure path geometry lives in [`glyphs`].
+
+pub mod glyphs;
 
 use gpui::{
     canvas, point, px, quad, size, transparent_black, BorderStyle, Bounds, Canvas, PathBuilder,
@@ -21,10 +25,12 @@ use gpui::{
 };
 
 use crate::palette::Palette;
-use crate::theme::{Density, Theme};
+use crate::theme::Theme;
 
-use super::u2_glyphs::{
-    check_geometry, disclosure_arm, downloads_geometry, folder_geometry, stopped_half,
+use glyphs::{
+    arc_radius, chassis_radii, check_geometry, chevron_arm, close_arm, disclosure_arm,
+    downloads_geometry, folder_geometry, icon_stroke, lifering_radii, pin_radius, plus_arm,
+    stopped_half,
 };
 
 /// §7 icon catalog: the bounded set of BBR-drawn chrome glyphs.
@@ -129,7 +135,7 @@ impl Icon {
         Self::paint_canvas(self, theme.density, size, color)
     }
 
-    fn paint_canvas(self, density: Density, size: Pixels, color: Rgba) -> Canvas<()> {
+    fn paint_canvas(self, density: crate::theme::Density, size: Pixels, color: Rgba) -> Canvas<()> {
         canvas(
             |_bounds, _window, _cx| (),
             move |bounds, (), window, _cx| {
@@ -139,7 +145,13 @@ impl Icon {
         .size(size)
     }
 
-    fn paint(self, bounds: Bounds<Pixels>, window: &mut Window, density: Density, color: Rgba) {
+    fn paint(
+        self,
+        bounds: Bounds<Pixels>,
+        window: &mut Window,
+        density: crate::theme::Density,
+        color: Rgba,
+    ) {
         let stroke = icon_stroke(density);
         let size = f32::from(bounds.size.width);
         let cx = f32::from(bounds.center().x);
@@ -278,52 +290,6 @@ impl Icon {
     }
 }
 
-/// §7 stroke weight: 1.5 pt at N/XL density, 1.25 pt at S.
-pub fn icon_stroke(density: Density) -> Pixels {
-    px(match density {
-        Density::Small => 1.25,
-        Density::Normal | Density::ExtraLarge => 1.5,
-    })
-}
-
-/// Close ×: half the diagonal stroke length (of the full stroke).
-pub fn close_arm(size: f32) -> f32 {
-    size * 0.28
-}
-
-/// New-space plus: half the stroke length.
-pub fn plus_arm(size: f32) -> f32 {
-    size * 0.28
-}
-
-/// Pin dot: the radius of the filled dot / hollow ring.
-pub fn pin_radius(size: f32) -> f32 {
-    size * 0.30
-}
-
-/// Lifering: (outer ring radius, inner ring radius).
-pub fn lifering_radii(size: f32) -> (f32, f32) {
-    (size * 0.44, size * 0.28)
-}
-
-/// Loading arc radius (§10.5: 14 pt arc inside the favicon slot).
-pub fn arc_radius(size: f32) -> f32 {
-    size * 0.40
-}
-
-/// Find-bar step chevron: half the arm length from the apex to either
-/// corner — the same §7 geometry as the disclosure chevron, so one arm
-/// contract covers both families.
-pub fn chevron_arm(size: f32) -> f32 {
-    disclosure_arm(size)
-}
-
-/// Chassis mark: (frame corner radius, aperture ring radius). The frame
-/// corner keeps the §5 4–8 px chrome radius at the 64 pt mark size.
-pub fn chassis_radii(size: f32) -> (f32, f32) {
-    (size * 0.125, size * 0.30)
-}
-
 /// One rotated diagonal stroke (close × half). The line is built in local
 /// coordinates, rotated about the glyph center, then translated there.
 fn paint_stroke(
@@ -412,6 +378,7 @@ fn paint_rounded_square_ring(
 mod tests {
     use super::*;
     use crate::theme::{ContrastMode, ThemeMode};
+    use glyphs::{arc_radius, chassis_radii, chevron_arm, close_arm, lifering_radii, plus_arm};
 
     #[test]
     fn catalog_names_are_stable() {
@@ -438,9 +405,9 @@ mod tests {
     #[test]
     fn stroke_weight_follows_the_density_contract() {
         // DESIGN.md §7: 1.5 pt stroke, 1.25 pt at S density.
-        assert_eq!(icon_stroke(Density::Small), px(1.25));
-        assert_eq!(icon_stroke(Density::Normal), px(1.5));
-        assert_eq!(icon_stroke(Density::ExtraLarge), px(1.5));
+        assert_eq!(icon_stroke(crate::theme::Density::Small), px(1.25));
+        assert_eq!(icon_stroke(crate::theme::Density::Normal), px(1.5));
+        assert_eq!(icon_stroke(crate::theme::Density::ExtraLarge), px(1.5));
     }
 
     #[test]
@@ -495,7 +462,11 @@ mod tests {
 
     #[test]
     fn rest_colors_come_from_the_palette() {
-        let theme = Theme::new(ThemeMode::Dark, ContrastMode::Standard, Density::Normal);
+        let theme = Theme::new(
+            ThemeMode::Dark,
+            ContrastMode::Standard,
+            crate::theme::Density::Normal,
+        );
         let p = theme.palette;
         assert_eq!(Icon::Close.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::Plus.rest_color(p), p.ink_secondary);

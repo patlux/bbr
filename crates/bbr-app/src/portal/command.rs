@@ -16,7 +16,8 @@ use crate::app::palette::{
     PALETTE_CURSOR_ID, PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID, PALETTE_RESULT_PREFIX,
     PALETTE_TEXT_ID,
 };
-use crate::theme::{Density, Motion, Radius, Spacing, Theme};
+use bbr_ui::theme::elevation::elev2;
+use bbr_ui::theme::{Density, Motion, Radius, Spacing, Theme};
 
 /// The §11.4 open-animation element id of the field-anchored overlay: its
 /// entrance opacity fade at `dur:fine` (DESIGN.md §6/§11.4) — opacity only,
@@ -78,7 +79,7 @@ fn palette_card(model: &CommandPortalModel, rect: Rect) -> Stateful<Div> {
         .bg(p.surface_overlay)
         .border_1()
         .border_color(p.hairline)
-        .shadow(elev2_shadows(theme))
+        .shadow(elev2(theme))
         .flex()
         .flex_col()
         .child(field_row(
@@ -167,7 +168,7 @@ fn overlay_card(model: &CommandPortalModel, rect: Rect) -> AnyElement {
         .bg(p.surface_overlay)
         .border_1()
         .border_color(p.hairline)
-        .shadow(elev2_shadows(theme))
+        .shadow(elev2(theme))
         .flex()
         .flex_col()
         // §11.4: the overlay's own field sits on top with the full URL
@@ -325,44 +326,6 @@ fn state_row(theme: &Theme, id: String, text: &str) -> Stateful<Div> {
             theme.palette.ink_faint
         })
         .child(SharedString::from(text.to_string()))
-}
-
-fn elev2_shadows(theme: &Theme) -> Vec<gpui::BoxShadow> {
-    use gpui::{hsla, point, BoxShadow};
-    match theme.mode {
-        crate::theme::ThemeMode::Dark => vec![
-            BoxShadow {
-                color: hsla(0.0, 0.0, 1.0, 0.05),
-                offset: point(px(0.0), px(0.0)),
-                blur_radius: px(0.0),
-                spread_radius: px(1.0),
-                inset: false,
-            },
-            BoxShadow {
-                color: hsla(0.0, 0.0, 0.0, 0.45),
-                offset: point(px(0.0), px(16.0)),
-                blur_radius: px(32.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-        ],
-        crate::theme::ThemeMode::Light => vec![
-            BoxShadow {
-                color: hsla(0.0, 0.0, 0.0, 0.04),
-                offset: point(px(0.0), px(1.0)),
-                blur_radius: px(0.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-            BoxShadow {
-                color: hsla(0.0, 0.0, 0.09, 0.10),
-                offset: point(px(0.0), px(12.0)),
-                blur_radius: px(24.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-        ],
-    }
 }
 
 fn group_glyph(row: &CommandResultRow) -> String {

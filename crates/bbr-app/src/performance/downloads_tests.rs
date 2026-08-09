@@ -314,7 +314,7 @@ fn observe_row_maps_the_l6_machine_states() {
             machine,
             group: crate::app::downloads::DownloadGroupKind::Active,
             progress_fraction: None,
-            visual: crate::app::downloads::DownloadVisual::Default,
+            visual: bbr_ui::state::DownloadVisual::Default,
             action: crate::app::downloads::DownloadActionKind::Cancel,
             action_enabled: true,
             action_reason: None,

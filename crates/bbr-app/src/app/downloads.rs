@@ -26,6 +26,7 @@
 use std::collections::HashMap;
 
 use bbr_browser::DownloadController;
+use bbr_ui::state::DownloadVisual;
 use bbr_web::downloads::{DownloadFailure, DownloadId, DownloadState};
 use gpui::{ScrollHandle, Transition};
 
@@ -97,23 +98,16 @@ pub enum DownloadActionKind {
     Reveal,
 }
 
-/// The §10 visual state of a download row (the applicable names for the
-/// panel: focus is the keyboard cursor, no persistent selection).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DownloadVisual {
-    Default,
-    Hover,
-    Pressed,
-    Focused,
-    Disabled,
-}
-
 /// One download row's render model: the deterministic panel index `<n>`,
 /// the machine/group/action identity, the progress fraction, the
 /// secondary-line copy, and the reveal eligibility. Derived from the
 /// controller records + app presentation state; the render and the testkit
 /// snapshot consume the same model, so the snapshot cannot drift from the
 /// shell.
+///
+/// The §10 visual state vocabulary ([`bbr_ui::state::DownloadVisual`])
+/// moved to `bbr-ui` in the G1a cutover; the render model references it
+/// from there.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DownloadRowVisual {
     pub index: usize,

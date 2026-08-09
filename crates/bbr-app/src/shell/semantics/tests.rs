@@ -50,7 +50,7 @@ fn row(index: usize, state: TabVisualState) -> RowVisuals {
         index,
         title: "Example".into(),
         state,
-        favicon: Some(crate::components::FaviconSpec {
+        favicon: Some(bbr_ui::components::FaviconSpec {
             letter: 'E',
             hue: 0,
         }),
@@ -98,7 +98,7 @@ fn input<'a>(
         favorites: &[],
         folder_rows: &[],
         folder_members: &[],
-        plus_menu: crate::components::menu::PlusMenuState::default(),
+        plus_menu: bbr_ui::components::menu::PlusMenuState::default(),
         content: SemanticContent::Native,
     }
 }

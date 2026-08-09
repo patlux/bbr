@@ -584,6 +584,7 @@ dependencies = [
  "bbr-persistence",
  "bbr-split",
  "bbr-testkit",
+ "bbr-ui",
  "bbr-web",
  "bbr-web-macos",
  "gpui",
@@ -643,6 +644,14 @@ dependencies = [
  "bbr-web",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "bbr-ui"
+version = "0.1.0"
+dependencies = [
+ "bbr-domain",
+ "gpui",
 ]
 
 [[package]]

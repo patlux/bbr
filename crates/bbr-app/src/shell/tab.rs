@@ -5,14 +5,14 @@
 //! and the pinned/regular region boundary. All derive from the same snapshot
 //! source the sidebar renders.
 
-use crate::theme::{Spacing, Theme};
+use bbr_ui::theme::{Spacing, Theme};
 
 /// DESIGN.md §4 one-line row budget: the title area is the sidebar width
 /// minus the fixed row anatomy (2× `density:row-padding-x`, the favicon
 /// tile, 3 inter-item gaps, the `density:state-slot`, and the
 /// `density:hit-min.close` close hit square). Per-char width is a
 /// conservative 0.45 × the `type:title` size (SF Pro averages ≈0.5 em), so
-/// [`crate::shell::presentation::truncate_title`] never fires for a title
+/// [`bbr_ui::text::truncate_title`] never fires for a title
 /// that would fit: GPUI's `text_ellipsis` stays the pixel-exact backstop
 /// for the visual cut.
 pub fn title_budget_chars(theme: &Theme) -> usize {
@@ -40,23 +40,23 @@ pub fn row_state(
     crashed: bool,
     pressed: bool,
     hovered: bool,
-) -> crate::components::TabVisualState {
+) -> bbr_ui::state::TabVisualState {
     if crashed {
-        return crate::components::TabVisualState::Error;
+        return bbr_ui::state::TabVisualState::Error;
     }
     if loading {
-        return crate::components::TabVisualState::Loading;
+        return bbr_ui::state::TabVisualState::Loading;
     }
     if pressed {
-        return crate::components::TabVisualState::Active;
+        return bbr_ui::state::TabVisualState::Active;
     }
     if active {
-        return crate::components::TabVisualState::Selected;
+        return bbr_ui::state::TabVisualState::Selected;
     }
     if hovered {
-        return crate::components::TabVisualState::Hover;
+        return bbr_ui::state::TabVisualState::Hover;
     }
-    crate::components::TabVisualState::Default
+    bbr_ui::state::TabVisualState::Default
 }
 
 /// Index of the first non-pinned tab — the pinned/regular region boundary
@@ -73,37 +73,37 @@ mod tests {
     fn row_state_ordering_is_error_then_loading_then_pressed_then_selected() {
         assert_eq!(
             row_state(true, false, true, false, false),
-            crate::components::TabVisualState::Error
+            bbr_ui::state::TabVisualState::Error
         );
         assert_eq!(
             row_state(true, true, false, false, false),
-            crate::components::TabVisualState::Loading
+            bbr_ui::state::TabVisualState::Loading
         );
         // A pressed row shows the §10.3 active wash even when it is (or
         // just became) selected; hover never overrides press or selection.
         assert_eq!(
             row_state(true, false, false, true, true),
-            crate::components::TabVisualState::Active
+            bbr_ui::state::TabVisualState::Active
         );
         assert_eq!(
             row_state(true, false, false, false, true),
-            crate::components::TabVisualState::Selected
+            bbr_ui::state::TabVisualState::Selected
         );
         assert_eq!(
             row_state(false, false, false, true, false),
-            crate::components::TabVisualState::Active
+            bbr_ui::state::TabVisualState::Active
         );
         assert_eq!(
             row_state(false, false, false, false, true),
-            crate::components::TabVisualState::Hover
+            bbr_ui::state::TabVisualState::Hover
         );
         assert_eq!(
             row_state(false, false, false, false, false),
-            crate::components::TabVisualState::Default
+            bbr_ui::state::TabVisualState::Default
         );
         assert_eq!(
             row_state(false, true, true, false, false),
-            crate::components::TabVisualState::Error
+            bbr_ui::state::TabVisualState::Error
         );
     }
 
@@ -132,14 +132,14 @@ mod tests {
     fn title_budget_tracks_density_geometry() {
         let normal = Theme::dark();
         let small = Theme::new(
-            crate::theme::ThemeMode::Dark,
-            crate::theme::ContrastMode::Standard,
-            crate::theme::Density::Small,
+            bbr_ui::theme::ThemeMode::Dark,
+            bbr_ui::theme::ContrastMode::Standard,
+            bbr_ui::theme::Density::Small,
         );
         let xl = Theme::new(
-            crate::theme::ThemeMode::Dark,
-            crate::theme::ContrastMode::Standard,
-            crate::theme::Density::ExtraLarge,
+            bbr_ui::theme::ThemeMode::Dark,
+            bbr_ui::theme::ContrastMode::Standard,
+            bbr_ui::theme::Density::ExtraLarge,
         );
         // Normal density ships the 280 pt sidebar: ~27 chars at 14 pt title.
         assert!(title_budget_chars(&normal) >= 25);

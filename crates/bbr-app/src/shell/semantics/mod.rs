@@ -4,8 +4,8 @@
 //! Every shell element exposes a stable `bbr-*` id; this module derives the
 //! *typed* semantic model — roles, names, values, enabled/selected/focused
 //! state, and the parent/child hierarchy — from the same structures the
-//! render consumes (rows via [`crate::components::RowVisuals`], the §11.3
-//! strip chips via [`crate::components::SpaceChipVisuals`], the content pane
+//! render consumes (rows via [`bbr_ui::components::RowVisuals`], the §11.3
+//! strip chips via [`bbr_ui::state::SpaceChipVisuals`], the content pane
 //! mirroring `Render::render`), so the E2E semantic assertions cannot drift
 //! from the shell.
 //!
@@ -24,7 +24,9 @@ use bbr_testkit::protocol::{SemanticNode, SemanticRole};
 use crate::app::palette::CommandSurface;
 
 mod command;
-use crate::components::{RowVisuals, SpaceChipVisuals, TabVisualState};
+use bbr_ui::components::RowVisuals;
+use bbr_ui::state::SpaceChipVisuals;
+use bbr_ui::state::TabVisualState;
 use command::{command_field_node, command_surface_node};
 mod content;
 use content::content_node;
@@ -112,13 +114,13 @@ pub struct SemanticInput<'a> {
     pub space_chips: &'a [SpaceChipVisuals],
     /// The rendered §11.10 favorite destination tiles (empty → region
     /// hidden with its label).
-    pub favorites: &'a [crate::components::FavoriteTileSpec],
+    pub favorites: &'a [bbr_ui::components::FavoriteTileSpec],
     /// The rendered §11.11 folder rows (empty → region hidden).
-    pub folder_rows: &'a [crate::components::FolderRowSpec],
+    pub folder_rows: &'a [bbr_ui::components::FolderRowSpec],
     /// The expanded folders' nested member rows (title/letter per position).
-    pub folder_members: &'a [crate::components::FolderMemberVisual],
+    pub folder_members: &'a [bbr_ui::components::FolderMemberVisual],
     /// The §11.4 plus-menu state (the menu node renders only while open).
-    pub plus_menu: crate::components::menu::PlusMenuState,
+    pub plus_menu: bbr_ui::components::menu::PlusMenuState,
     /// The content-pane branch.
     pub content: SemanticContent,
 }

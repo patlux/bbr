@@ -42,8 +42,8 @@ use bbr_web::web_errors::{
 use bbr_web::{ProfileId, WebViewId};
 use gpui::{div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window};
 
-use crate::components::Icon;
-use crate::theme::{Spacing, Theme};
+use bbr_ui::icons::Icon;
+use bbr_ui::theme::{Spacing, Theme};
 
 /// The readable failing URL the surface presents: the contract's
 /// privacy-safe reduced origin (scheme://host[:port]). `None` when the

@@ -47,7 +47,7 @@ use bbr_web::{WebRect, WebViewId};
 
 use crate::portal::geometry::{Edges, FitMode, PortalAnchor, Pt, Sz};
 use crate::portal::state::PortalPlacement;
-use crate::theme::Theme;
+use bbr_ui::theme::Theme;
 
 /// The menu's stable presentation id (allocated in the portal
 /// presentation-id space next to the probe `0xB9`, the command surfaces
@@ -203,8 +203,8 @@ pub struct ContextMenuSurface {
 /// never local literals.
 fn context_menu_placement(point: WebRect, theme: &Theme) -> PortalPlacement {
     let row_height =
-        f32::from(theme.type_.label.size) + 2.0 * f32::from(crate::theme::Spacing::sp2());
-    let card_padding = 2.0 * f32::from(crate::theme::Spacing::sp1());
+        f32::from(theme.type_.label.size) + 2.0 * f32::from(bbr_ui::theme::Spacing::sp2());
+    let card_padding = 2.0 * f32::from(bbr_ui::theme::Spacing::sp1());
     let size = Sz::new(CONTEXT_MENU_WIDTH, 5.0 * row_height + card_padding);
     PortalPlacement::Anchored(crate::portal::state::AnchoredPlacement {
         anchor_point: Pt::new(point.x, point.y),

@@ -14,7 +14,7 @@
 use bbr_testkit::protocol::{BenchmarkKind, BenchmarkOperationId};
 use gpui::{Context, Window};
 
-use crate::components::TabVisualState;
+use bbr_ui::state::TabVisualState;
 
 use super::BbrApp;
 

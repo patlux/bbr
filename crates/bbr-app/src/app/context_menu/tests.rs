@@ -129,8 +129,8 @@ fn placement_anchors_at_the_pointer_and_clamps_fully_on_screen() {
     // pointer when there is room.
     let viewport = Sz::new(1080.0, 700.0);
     let theme = Theme::for_collection(
-        crate::theme::ThemeMode::Dark,
-        crate::theme::ContrastMode::Standard,
+        bbr_ui::theme::ThemeMode::Dark,
+        bbr_ui::theme::ContrastMode::Standard,
         0,
     );
     let placement = context_menu_placement(WebRect::new(1060.0, 680.0, 0.0, 0.0), &theme);

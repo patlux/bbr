@@ -275,7 +275,7 @@ fn plus_menu_new_folder_creates_a_session_local_folder_in_the_active_space() {
 
 #[test]
 fn folder_presentation_grows_deterministically_and_toggles_per_folder() {
-    use crate::components::folders::FolderPresentation;
+    use bbr_ui::components::folders::FolderPresentation;
     let mut p = FolderPresentation::default();
     assert!(!p.is_expanded(0));
     p.toggle(0);

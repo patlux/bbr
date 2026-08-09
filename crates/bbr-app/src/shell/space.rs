@@ -5,11 +5,11 @@
 //! derivation: grouping, the per-space row visuals, the §11.3 title budget,
 //! and the testkit state/title lists the E2E asserts.
 
-use crate::components::{ProfileChipSpec, SpaceRowVisuals};
-use crate::theme::{Spacing, Theme};
 use bbr_browser::ControllerSnapshot;
+use bbr_ui::components::{ProfileChipSpec, SpaceRowVisuals};
+use bbr_ui::theme::{Spacing, Theme};
 
-use crate::shell::presentation::truncate_title;
+use bbr_ui::text::truncate_title;
 
 /// DESIGN.md §12 profile chip monogram: the first 1–2 title characters,
 /// uppercased. Identity is readable per row without a header.

@@ -274,7 +274,7 @@ impl BbrApp {
         let organization = self.organization.organization_snapshot(&self.controller);
         // The favorites band is rendered whenever tiles exist, in the same
         // column position the render uses (above the tab list).
-        let favorites_h = crate::components::favorites::favorites_region_height(
+        let favorites_h = bbr_ui::components::favorites::favorites_region_height(
             &theme,
             organization.favorites.len(),
         );

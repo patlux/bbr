@@ -1,10 +1,64 @@
-//! DESIGN.md §7 U2 glyph geometry — the icon-system slice carry-over.
+//! DESIGN.md §7 glyph geometry — the shared path math for the icon catalog.
 //!
-//! The four U2 catalog glyphs (`Downloads`, `Spaces`, `Folder`,
-//! `Disclosure`) keep their geometry here so the catalog file stays under
-//! the size budget: pure §7 math (arms, radii, offsets at the 1.5 pt stroke
-//! weight), consumed by the `Icon` paint arms in [`super::icons`]. The fit
-//! contract tests live next to the numbers they lock.
+//! Every arm, radius, and offset at the §7 stroke weight lives here (pure
+//! `f32` math, no GPUI types except nothing) so the catalog file stays
+//! under the size budget and the geometry contract tests sit next to the
+//! numbers they lock. The `u2_glyphs` geometry (Downloads, Folder,
+//! Disclosure, Check, Stopped) moved here verbatim from the app's
+//! `components/u2_glyphs.rs`; the catalog's own geometry
+//! ([`icon_stroke`], [`close_arm`], [`plus_arm`], [`pin_radius`],
+//! [`lifering_radii`], [`arc_radius`], [`chevron_arm`],
+//! [`chassis_radii`]) joined it so `bbr-ui::icons` stays under the module
+//! budget.
+
+use crate::theme::Density;
+use gpui::Pixels;
+
+/// §7 stroke weight: 1.5 pt at N/XL density, 1.25 pt at S.
+pub fn icon_stroke(density: Density) -> Pixels {
+    gpui::px(match density {
+        Density::Small => 1.25,
+        Density::Normal | Density::ExtraLarge => 1.5,
+    })
+}
+
+/// Close ×: half the diagonal stroke length (of the full stroke).
+pub fn close_arm(size: f32) -> f32 {
+    size * 0.28
+}
+
+/// New-space plus: half the stroke length.
+pub fn plus_arm(size: f32) -> f32 {
+    size * 0.28
+}
+
+/// Pin dot: the radius of the filled dot / hollow ring.
+pub fn pin_radius(size: f32) -> f32 {
+    size * 0.30
+}
+
+/// Lifering: (outer ring radius, inner ring radius).
+pub fn lifering_radii(size: f32) -> (f32, f32) {
+    (size * 0.44, size * 0.28)
+}
+
+/// Loading arc radius (§10.5: 14 pt arc inside the favicon slot).
+pub fn arc_radius(size: f32) -> f32 {
+    size * 0.40
+}
+
+/// Find-bar step chevron: half the arm length from the apex to either
+/// corner — the same §7 geometry as the disclosure chevron, so one arm
+/// contract covers both families.
+pub fn chevron_arm(size: f32) -> f32 {
+    disclosure_arm(size)
+}
+
+/// Chassis mark: (frame corner radius, aperture ring radius). The frame
+/// corner keeps the §5 4–8 px chrome radius at the 64 pt mark size.
+pub fn chassis_radii(size: f32) -> (f32, f32) {
+    (size * 0.125, size * 0.30)
+}
 
 /// Downloads arrow-into-tray geometry: (stem half-length, arrowhead
 /// half-arm, tray half-width, tray base offset below center, tray side

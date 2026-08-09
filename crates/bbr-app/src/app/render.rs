@@ -10,9 +10,9 @@
 
 use gpui::{div, prelude::*, Context, MouseButton, MouseDownEvent, Render, Window};
 
-use crate::components;
 use crate::slot::NativeWebViewSlot;
-use crate::theme::{ContrastMode, Theme, ThemeMode};
+use bbr_ui::components;
+use bbr_ui::theme::{ContrastMode, Theme, ThemeMode};
 use bbr_web::WebViewId;
 
 #[cfg(feature = "testkit")]

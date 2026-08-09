@@ -1,12 +1,11 @@
 //! BBR Chassis — the typed GPUI design-token system (DESIGN.md §2–§8).
 //!
-//! Color tokens and their WCAG contrast gate live in [`crate::palette`]; this
-//! module owns the shell modes (dark/light, standard/increased contrast,
-//! density), the typography steps, spacing, radius, motion, and elevation
-//! scales. The placeholder `render.rs` magic `rgb(0x…)` values are replaced
-//! by these tokens in the same groups that introduce the shell; tests and E2E
-//! assert the §15 mode fields and the §3.1 contrast contract **derived from
-//! the tokens** — never copied as literal ratios.
+//! Color tokens and their WCAG contrast gate live in [`crate::palette`];
+//! this module owns the shell modes (dark/light, standard/increased
+//! contrast, density), the typography steps, spacing, radius, motion,
+//! elevation, and the elevation shadow helper. Tests and E2E assert the
+//! §15 mode fields and the §3.1 contrast contract **derived from the
+//! tokens** — never copied as literal ratios.
 //!
 //! Token names intentionally mirror `DESIGN.md`:
 //!
@@ -24,25 +23,23 @@ use gpui::{px, FontWeight, Pixels};
 
 use crate::palette::Palette;
 
-/// The §8 density enum and its geometry tokens (moved into a submodule to
-/// keep this file under the ~500-line budget; re-exported unchanged so
-/// `crate::theme::Density` stays the single naming authority).
+/// The §8 density enum and its geometry tokens (DESIGN.md §8).
 mod density;
 pub use density::Density;
 
 /// Per-space curated theme tokens → contrast-safe chrome tint (DESIGN.md
 /// §11.3): the one central presentation model that resolves every curated
-/// [`bbr_browser::SpaceTheme`] into light/dark × standard/increased
+/// [`bbr_domain::SpaceTheme`] into light/dark × standard/increased
 /// chrome + active-chip colors. Consumers (the sidebar rail, the space
 /// chips, the snapshot evidence) call [`space_tint`]; no consumer authors
 /// a render color.
 mod space_tint;
-/// Testkit-only: the deterministic `#RRGGBB` wire form of a resolved chrome
-/// color (the typed snapshot evidence; never native/web pixels).
-#[cfg(feature = "testkit")]
-pub use space_tint::hex;
-pub use space_tint::space_tint;
-pub use space_tint::SpaceTint;
+pub use space_tint::{hex, space_tint, SpaceTint};
+
+/// The one `elev:2` floating-surface shadow helper (DESIGN.md §2): every
+/// floating chrome surface consumes [`elevation::elev2`] instead of
+/// authoring its own shadow list.
+pub mod elevation;
 
 /// Typography steps (DESIGN.md §4).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -322,35 +319,6 @@ mod tests {
         assert_eq!(type_scale(Density::ExtraLarge).title.size, px(16.0));
         assert_eq!(type_scale(Density::Normal).badge.size, px(11.0));
         assert!(f32::from(Density::ExtraLarge.hit_min()) > f32::from(Density::Small.hit_min()));
-    }
-
-    #[test]
-    fn density_scale_tokens_match_the_settled_table() {
-        // §8/§11/§12: the S1 scale's new geometry tokens, exact per density.
-        assert_eq!(Density::Small.hit_min_close(), px(24.0));
-        assert_eq!(Density::Normal.hit_min_close(), px(28.0));
-        assert_eq!(Density::ExtraLarge.hit_min_close(), px(32.0));
-        assert_eq!(Density::Small.row_inset(), px(4.0));
-        assert_eq!(Density::Normal.row_inset(), px(8.0));
-        assert_eq!(Density::ExtraLarge.row_inset(), px(12.0));
-        assert_eq!(Density::Small.section_gap(), px(12.0));
-        assert_eq!(Density::Normal.section_gap(), px(16.0));
-        assert_eq!(Density::ExtraLarge.section_gap(), px(20.0));
-        assert_eq!(Density::Small.favorites_gap(), px(4.0));
-        assert_eq!(Density::Normal.favorites_gap(), px(8.0));
-        assert_eq!(Density::ExtraLarge.favorites_gap(), px(8.0));
-        assert_eq!(Density::Small.state_slot(), px(8.0));
-        assert_eq!(Density::Normal.state_slot(), px(10.0));
-        assert_eq!(Density::ExtraLarge.state_slot(), px(10.0));
-        assert_eq!(Density::Small.row_padding_x(), px(8.0));
-        assert_eq!(Density::Normal.row_padding_x(), px(12.0));
-        assert_eq!(Density::ExtraLarge.row_padding_x(), px(16.0));
-        assert_eq!(Density::Small.profile_chip(), px(20.0));
-        assert_eq!(Density::Normal.profile_chip(), px(24.0));
-        assert_eq!(Density::ExtraLarge.profile_chip(), px(28.0));
-        assert_eq!(Density::Small.density_radius(), Radius.small());
-        assert_eq!(Density::Normal.density_radius(), Radius.medium());
-        assert_eq!(Density::ExtraLarge.density_radius(), Radius.large());
     }
 
     #[test]

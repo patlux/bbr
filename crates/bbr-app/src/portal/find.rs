@@ -24,8 +24,9 @@ use crate::app::find::{
     FindSurface, FIND_BAR_ID, FIND_CLOSE_ID, FIND_COUNT_ID, FIND_FIELD_ID, FIND_NEXT_ID,
     FIND_PREVIOUS_ID, FIND_TEXT_ID,
 };
-use crate::components::Icon;
-use crate::theme::Spacing;
+use bbr_ui::icons::Icon;
+use bbr_ui::theme::elevation::elev2;
+use bbr_ui::theme::Spacing;
 
 /// Build the find bar at the resolved portal rect. The caller owns the
 /// full-window backdrop and pointer propagation policy.
@@ -49,7 +50,7 @@ pub fn find_bar(model: &FindSurface, rect: Rect, cx: &mut Context<PortalRoot>) -
         .bg(p.surface_overlay)
         .border_1()
         .border_color(p.hairline)
-        .shadow(elev2_shadows(theme))
+        .shadow(elev2(theme))
         .px(Spacing::sp2())
         .gap(Spacing::sp1())
         .flex()
@@ -152,42 +153,4 @@ fn control_button(id: &'static str, icon: Icon, model: &FindSurface) -> Stateful
         .justify_center()
         .cursor_pointer()
         .child(icon.canvas(theme, theme.density.icon()))
-}
-
-fn elev2_shadows(theme: &crate::theme::Theme) -> Vec<gpui::BoxShadow> {
-    use gpui::{hsla, point, BoxShadow};
-    match theme.mode {
-        crate::theme::ThemeMode::Dark => vec![
-            BoxShadow {
-                color: hsla(0.0, 0.0, 1.0, 0.05),
-                offset: point(px(0.0), px(0.0)),
-                blur_radius: px(0.0),
-                spread_radius: px(1.0),
-                inset: false,
-            },
-            BoxShadow {
-                color: hsla(0.0, 0.0, 0.0, 0.45),
-                offset: point(px(0.0), px(16.0)),
-                blur_radius: px(32.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-        ],
-        crate::theme::ThemeMode::Light => vec![
-            BoxShadow {
-                color: hsla(0.0, 0.0, 0.0, 0.04),
-                offset: point(px(0.0), px(1.0)),
-                blur_radius: px(0.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-            BoxShadow {
-                color: hsla(0.0, 0.0, 0.09, 0.10),
-                offset: point(px(0.0), px(12.0)),
-                blur_radius: px(24.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-        ],
-    }
 }

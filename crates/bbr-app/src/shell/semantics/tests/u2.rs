@@ -49,11 +49,11 @@ fn footer_node_exposes_the_fixed_controls_with_the_strip_between_them() {
 #[test]
 fn plus_menu_node_mirrors_open_state_and_selection() {
     assert!(
-        super::super::u2::plus_menu_node(&crate::components::menu::PlusMenuState::default())
+        super::super::u2::plus_menu_node(&bbr_ui::components::menu::PlusMenuState::default())
             .is_none(),
         "a closed menu renders no node"
     );
-    let state = crate::components::menu::PlusMenuState {
+    let state = bbr_ui::components::menu::PlusMenuState {
         open: true,
         selection: 1,
     };
@@ -83,7 +83,7 @@ fn plus_menu_node_mirrors_open_state_and_selection() {
 fn favorites_node_mirrors_the_grid_and_hides_when_empty() {
     let browser = browser();
     assert!(super::super::u2::favorites_node(&[], &browser).is_none());
-    let tiles = crate::components::favorite_tiles(&[bbr_browser::FavoriteSnapshot {
+    let tiles = crate::app::ui_adapters::favorite_tiles(&[bbr_browser::FavoriteSnapshot {
         index: 0,
         tab: bbr_domain::TabId(7),
         space: bbr_browser::SpaceId(1),
@@ -142,7 +142,7 @@ fn favorite_tile_name_includes_the_owner_context_when_it_differs() {
         title: "Personal".into(),
         hue: bbr_browser::ProfileHue::Fuchsia,
     });
-    let tiles = crate::components::favorite_tiles(&[bbr_browser::FavoriteSnapshot {
+    let tiles = crate::app::ui_adapters::favorite_tiles(&[bbr_browser::FavoriteSnapshot {
         index: 0,
         tab: bbr_domain::TabId(7),
         space: bbr_browser::SpaceId(2),
@@ -171,9 +171,9 @@ fn favorite_tile_name_includes_the_owner_context_when_it_differs() {
 #[test]
 fn folders_node_mirrors_expansion_values_and_nested_items() {
     assert!(super::super::u2::folders_node(&[], &[]).is_none());
-    let mut presentation = crate::components::folders::FolderPresentation::default();
+    let mut presentation = bbr_ui::components::folders::FolderPresentation::default();
     presentation.toggle(0);
-    let rows = crate::components::folder_row_specs(
+    let rows = crate::app::ui_adapters::folder_row_specs(
         &[bbr_browser::FolderSnapshot {
             index: 0,
             id: bbr_domain::FolderId(1),
@@ -215,7 +215,7 @@ fn folders_node_mirrors_expansion_values_and_nested_items() {
     assert_eq!(count.value.as_deref(), Some("2"));
 
     // The collapsed folder reports the collapsed value.
-    let collapsed = crate::components::folder_row_specs(
+    let collapsed = crate::app::ui_adapters::folder_row_specs(
         &[bbr_browser::FolderSnapshot {
             index: 1,
             id: bbr_domain::FolderId(2),
@@ -223,7 +223,7 @@ fn folders_node_mirrors_expansion_values_and_nested_items() {
             title: "Reading".into(),
             members: vec![],
         }],
-        &crate::components::folders::FolderPresentation::default(),
+        &bbr_ui::components::folders::FolderPresentation::default(),
     );
     let section = super::super::u2::folders_node(&collapsed, &[]).expect("folders node");
     let list = section
@@ -291,7 +291,7 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
     // §11.4 U2 surfaces: favorites tiles, an expanded folder with a member,
     // and an open plus menu selection. The derived specs are bound to locals
     // so the input's borrowed slices outlive the tree construction.
-    let favorites = crate::components::favorite_tiles(&[bbr_browser::FavoriteSnapshot {
+    let favorites = crate::app::ui_adapters::favorite_tiles(&[bbr_browser::FavoriteSnapshot {
         index: 0,
         tab: bbr_domain::TabId(7),
         space: bbr_browser::SpaceId(1),
@@ -300,7 +300,7 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         url: "https://example.com".into(),
     }]);
     input.favorites = &favorites;
-    let mut presentation = crate::components::folders::FolderPresentation::default();
+    let mut presentation = bbr_ui::components::folders::FolderPresentation::default();
     presentation.toggle(0);
     let folder_snapshots = [bbr_browser::FolderSnapshot {
         index: 0,
@@ -309,9 +309,9 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         title: "Work".into(),
         members: vec![bbr_domain::TabId(1)],
     }];
-    let folder_rows = crate::components::folder_row_specs(&folder_snapshots, &presentation);
+    let folder_rows = crate::app::ui_adapters::folder_row_specs(&folder_snapshots, &presentation);
     input.folder_rows = &folder_rows;
-    let folder_members = [crate::components::FolderMemberVisual {
+    let folder_members = [bbr_ui::components::FolderMemberVisual {
         folder: 0,
         member: 0,
         title: "Example".into(),
@@ -319,7 +319,7 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         hue: 0,
     }];
     input.folder_members = &folder_members;
-    input.plus_menu = crate::components::menu::PlusMenuState {
+    input.plus_menu = bbr_ui::components::menu::PlusMenuState {
         open: true,
         selection: 0,
     };

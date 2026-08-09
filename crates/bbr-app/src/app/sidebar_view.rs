@@ -13,9 +13,10 @@ use gpui::{
     Stateful, Window,
 };
 
-use crate::components::{self, RowVisuals};
 use crate::sidebar::sidebar_divider;
-use crate::theme::{Radius, Spacing, Theme};
+use bbr_ui::components::favicon::{monogram_hue, monogram_letter};
+use bbr_ui::components::{self, RowVisuals};
+use bbr_ui::theme::{Radius, Spacing, Theme};
 
 use super::BbrApp;
 
@@ -181,8 +182,8 @@ impl BbrApp {
         theme: &Theme,
         window: &Window,
         cx: &mut Context<Self>,
-        folder_rows: &[crate::components::FolderRowSpec],
-        folder_members: &[crate::components::FolderMemberVisual],
+        folder_rows: &[bbr_ui::components::FolderRowSpec],
+        folder_members: &[bbr_ui::components::FolderMemberVisual],
     ) -> Stateful<Div> {
         let browser = self.controller.snapshot();
         let pinned = crate::shell::pinned_count(&browser.tabs);
@@ -348,12 +349,12 @@ impl BbrApp {
         tabs.iter()
             .map(|tab| RowVisuals {
                 index: tab.index,
-                title: SharedString::from(crate::shell::truncate_title(
-                    &crate::shell::display_title(&tab.url, &tab.title),
+                title: SharedString::from(bbr_ui::text::truncate_title(
+                    &bbr_ui::text::display_title(&tab.url, &tab.title),
                     budget,
                 )),
                 state: if drag_source == Some(tab.index) {
-                    crate::components::TabVisualState::Dragging
+                    bbr_ui::state::TabVisualState::Dragging
                 } else {
                     crate::shell::row_state(
                         tab.active,
@@ -364,8 +365,8 @@ impl BbrApp {
                     )
                 },
                 favicon: Some(components::FaviconSpec {
-                    letter: crate::shell::monogram_letter(&tab.url),
-                    hue: crate::shell::monogram_hue(&tab.url),
+                    letter: monogram_letter(&tab.url),
+                    hue: monogram_hue(&tab.url),
                 }),
                 pinned: tab.pinned,
                 show_close: true,

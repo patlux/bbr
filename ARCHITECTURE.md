@@ -37,13 +37,17 @@ baseline claim is made.
 
 ```
 bbr/
-  Cargo.toml            # [workspace] members = the seven crates below; resolver = "2"
+  Cargo.toml            # [workspace] members = the crates below; resolver = "2"
   flake.nix             # dev shell for aarch64/x86_64 darwin + linux
   justfile              # bounded local verification: fmt/check/test/clippy/verify/e2e-smoke
   crates/
     bbr-web/            # lib: platform-neutral contracts (no objc, no gpui, no unsafe)
     bbr-web-macos/      # lib: WKWebView + AppKit bridge (target_os = "macos" only)
     bbr-app/            # bin `bbr`: composition root, GPUI window, E2E gateway glue
+    bbr-ui/             # lib: portable presentation authority — Chassis tokens
+                        #   (Theme/Palette/Density/elevation/space tint), §15 state
+                        #   vocabulary, plain (Model, Theme, Callbacks) components;
+                        #   exact direct deps: gpui + bbr-domain only
     bbr-domain/         # lib: portable browser core model (Phase 2 slice)
     bbr-browser/        # lib: portable controller: tabs ↔ disposable web sessions
     bbr-testkit/        # lib: typed E2E protocol, gateway server + client (unix sockets)
@@ -57,7 +61,7 @@ bbr/
 ```text
 bbr-web-macos  ──uses──▶  bbr-web        (implement the WebEngine trait)
 bbr-domain     ──uses──▶  bbr-web        (ProfileId for profile identity)
-future bbr-ui  ──uses──▶  gpui, bbr-domain (exact direct set; no direct bbr-web)
+bbr-ui         ──uses──▶  gpui, bbr-domain (exact direct set; no direct bbr-web)
                  └──────▶  bbr-web only through bbr-domain's existing ProfileId edge
 bbr-browser    ──uses──▶  bbr-domain, bbr-web (orchestration + engine contract)
 bbr-testkit    ──uses──▶  bbr-web        (serde feature: WebEvent/WebAction/ids)
@@ -71,11 +75,11 @@ bbr-persistence──uses──▶  rusqlite (exact 0.38.0, bundled; repository 
 - `bbr-web` **must not** depend on `gpui`, `objc2*`, `raw-window-handle`, or any
   AppKit/WebKit symbol. It is a pure contract crate and carries
   `#![forbid(unsafe_code)]`. Current portable engine-aware crates
-  (`bbr-domain`, `bbr-browser`) may depend on it. The planned `bbr-ui` crate
-  may not: its exact direct dependencies are `gpui` and `bbr-domain`, and its
-  only allowed first-party transitivity is the existing
-  `bbr-domain → bbr-web` `ProfileId` edge. Any direct `bbr-ui → bbr-web`
-  dependency, import, or API use is forbidden.
+  (`bbr-domain`, `bbr-browser`) may depend on it. `bbr-ui` may not: its exact
+  direct dependencies are `gpui` and `bbr-domain`, and its only allowed
+  first-party transitivity is the existing `bbr-domain → bbr-web` `ProfileId`
+  edge. Any direct `bbr-ui → bbr-web` dependency, import, or API use is
+  forbidden.
 - `bbr-web-macos` is gated `#[cfg(target_os = "macos")]` at the crate and module
   level (`bbr-web-macos/src/lib.rs` is empty elsewhere), so the workspace still
   evaluates on Linux. `bbr-app` uses a portable `NullEngine` on non-macOS
@@ -87,12 +91,15 @@ bbr-persistence──uses──▶  rusqlite (exact 0.38.0, bundled; repository 
 - `bbr-domain` is fully portable: `#![forbid(unsafe_code)]`, no GPUI, no macOS
   frameworks, no SQLite, no display server. Runtime engine state (live
   WKWebViews) is deliberately kept outside it, keyed by `bbr_web::WebViewId`.
-- The planned shared presentation cutover keeps one design-system authority:
-  central tokens/theming and dumb `(Model, Theme, Callbacks)` components live
-  in `bbr-ui`; `bbr-app` and the dev-only Gallery consume the same production
-  symbols. Sidebar and Command Palette remain real compositions, not copied
-  Gallery anatomy. Generic Button/Input/Badge-style primitives are not added
-  speculatively; extraction requires repeated same-intent product anatomy.
+- The G1a Foundations/Primitives cutover made `bbr-ui` the one design-system
+  authority: central tokens/theming (Theme/Palette/Density/elevation/space
+  tint) and dumb `(Model, Theme, Callbacks)` components live there, and
+  `bbr-app` consumes the same production symbols. The app keeps only
+  composition: the space strip, the controller-snapshot DTO adapters, and
+  the portal geometry/native-boundary code stay app-owned. Sidebar and
+  Command Palette remain real compositions, not copied Gallery anatomy.
+  Generic Button/Input/Badge-style primitives are not added speculatively;
+  extraction requires repeated same-intent product anatomy.
 - `bbr-command` is fully portable and dependency-free. It owns typed command
   modes/identities/activations, strict deterministic URL-vs-search parsing, an
   owned provider-neutral corpus, the 13-action catalog, standalone tab/space/

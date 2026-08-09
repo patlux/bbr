@@ -17,8 +17,8 @@ use bbr_browser::ControllerSnapshot;
 pub struct U2IdsInput<'a> {
     pub favorites: &'a [bbr_browser::FavoriteSnapshot],
     pub folders: &'a [bbr_browser::FolderSnapshot],
-    pub expanded: crate::components::folders::FolderPresentation,
-    pub plus_menu: crate::components::menu::PlusMenuState,
+    pub expanded: bbr_ui::components::folders::FolderPresentation,
+    pub plus_menu: bbr_ui::components::menu::PlusMenuState,
     /// §11.12 downloads panel gating: open flag plus the bounded render
     /// window and group layout the render built (the visible ids mirror the
     /// panel's own gating — labels hidden with empty groups, rows only
@@ -45,8 +45,8 @@ impl<'a> Default for U2IdsInput<'a> {
         U2IdsInput {
             favorites: &[],
             folders: &[],
-            expanded: crate::components::folders::FolderPresentation::default(),
-            plus_menu: crate::components::menu::PlusMenuState::default(),
+            expanded: bbr_ui::components::folders::FolderPresentation::default(),
+            plus_menu: bbr_ui::components::menu::PlusMenuState::default(),
             downloads_open: false,
             downloads_window: 0..0,
             downloads_layout: crate::app::downloads::PanelLayout {
@@ -76,7 +76,7 @@ pub(crate) fn extend_visible_ids(
     // §11.3 permanent strip: the footer's flex region always renders one
     // chip (and its identity child) per space in canonical display order;
     // the chip ids derive from the persistent space id alone.
-    ids.push(crate::components::footer::FOOTER_STRIP_ID.into());
+    ids.push(bbr_ui::components::footer::FOOTER_STRIP_ID.into());
     for space in &browser.spaces {
         ids.push(crate::components::space_strip::space_chip_id(space.id).to_string());
         ids.push(crate::components::space_strip::space_identity_id(space.id).to_string());
@@ -163,17 +163,16 @@ pub(crate) fn u2_visible_ids(
     browser: &ControllerSnapshot,
     favorites: &[bbr_browser::FavoriteSnapshot],
     folders: &[bbr_browser::FolderSnapshot],
-    expanded: &crate::components::folders::FolderPresentation,
-    plus_menu: &crate::components::menu::PlusMenuState,
+    expanded: &bbr_ui::components::folders::FolderPresentation,
+    plus_menu: &bbr_ui::components::menu::PlusMenuState,
 ) -> Vec<String> {
-    let mut ids = crate::components::footer::footer_ids();
-    ids.extend(crate::components::favorites::favorites_ids(
-        &crate::components::favorites::favorite_tiles(favorites),
+    let mut ids = bbr_ui::components::footer::footer_ids();
+    ids.extend(bbr_ui::components::favorites::favorites_ids(
+        &crate::app::ui_adapters::favorite_tiles(favorites),
     ));
-    let rows = crate::components::folders::folder_row_specs(folders, expanded);
-    let members =
-        crate::components::folders::folder_member_visuals(&rows, folders, &browser.all_tabs);
-    ids.extend(crate::components::folders::folders_ids(&rows, &members));
-    ids.extend(crate::components::menu::plus_menu_ids(plus_menu));
+    let rows = crate::app::ui_adapters::folder_row_specs(folders, expanded);
+    let members = crate::app::ui_adapters::folder_member_visuals(&rows, folders, &browser.all_tabs);
+    ids.extend(bbr_ui::components::folders::folders_ids(&rows, &members));
+    ids.extend(bbr_ui::components::menu::plus_menu_ids(plus_menu));
     ids
 }

@@ -26,7 +26,7 @@ use bbr_browser::SpaceId;
 /// §8 normal-density row height the drag resolution uses. Derived from the
 /// same theme token the shell renders with, so a density change is picked
 /// up by construction.
-pub fn tab_row_h(theme: &crate::theme::Theme) -> f32 {
+pub fn tab_row_h(theme: &bbr_ui::theme::Theme) -> f32 {
     f32::from(theme.density.row())
 }
 

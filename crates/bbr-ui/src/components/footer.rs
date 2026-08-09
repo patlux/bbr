@@ -3,9 +3,10 @@
 //! The footer is the rail's bottom row, separated from the list above by a
 //! hairline. The fixed controls keep stable §15 ids; `[Downloads]` opens the
 //! downloads surface, the middle flex region is the permanent §11.3 space
-//! strip (rendered by [`super::space_strip`]), and `[+]` opens the plus menu
-//! (see `menu`). There is no `[Spaces]` toggle and no revealable space-row
-//! region — the strip is always part of the rail.
+//! strip (rendered by the app's `space_strip` composition, which stays
+//! app-owned until the G3 strip row), and `[+]` opens the plus menu (see
+//! [`super::menu`]). There is no `[Spaces]` toggle and no revealable
+//! space-row region — the strip is always part of the rail.
 //!
 //! This module owns the control identity contract (ids, labels, glyphs) and
 //! the row anatomy. The rail composition step wires the production
@@ -13,9 +14,8 @@
 
 use gpui::{div, prelude::*, App, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window};
 
+use crate::icons::Icon;
 use crate::theme::{Spacing, Theme};
-
-use super::Icon;
 
 /// The §15 id of the footer row container.
 pub const FOOTER_ID: &str = "bbr-footer";
@@ -27,7 +27,7 @@ pub const FOOTER_STRIP_ID: &str = "bbr-space-strip";
 pub const FOOTER_PLUS_ID: &str = "bbr-plus";
 /// The §7 text alternative of the glyph-only `[+]` control (the label is
 /// the glyph itself; the semantic tree exposes this name).
-#[cfg_attr(not(feature = "testkit"), allow(dead_code))] // §15 semantic seam
+#[allow(dead_code)] // §15 semantic seam
 pub const FOOTER_PLUS_NAME: &str = "More actions";
 
 /// One fixed footer control (§11.4: exactly two, the strip is the middle
@@ -179,7 +179,7 @@ pub fn footer_control(
 
 /// The complete footer id set for the §15 `visible_ids` derivation (the
 /// container, the two fixed controls, and the permanent strip).
-#[cfg_attr(not(feature = "testkit"), allow(dead_code))] // §15 visible-ids seam
+#[allow(dead_code)] // §15 visible-ids seam
 pub fn footer_ids() -> Vec<String> {
     [
         FOOTER_ID,

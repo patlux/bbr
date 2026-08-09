@@ -21,7 +21,8 @@ use gpui::{
 use super::geometry::Rect;
 use super::probe::PortalRoot;
 use crate::app::context_menu::{ContextMenuSurface, CONTEXT_MENU_ID, CONTEXT_MENU_ROW_PREFIX};
-use crate::theme::Spacing;
+use bbr_ui::theme::elevation::elev2;
+use bbr_ui::theme::Spacing;
 
 /// Build the menu card at the resolved portal rect. The caller owns the
 /// full-window backdrop and pointer propagation policy.
@@ -92,7 +93,7 @@ pub fn context_menu_card(
         // the menu owns keyboard focus (the main-window menu handle).
         .border_2()
         .border_color(if model.focused { p.accent } else { p.hairline })
-        .shadow(elev2_shadows(theme))
+        .shadow(elev2(theme))
         .py(Spacing::sp1())
         .flex()
         .flex_col()
@@ -126,45 +127,5 @@ impl super::probe::PortalRoot {
                 view.menu_activate(index, window, cx)
             });
         });
-    }
-}
-
-/// The §11.4 `elev:2` shadow (the same two-stop shadow the command surfaces
-/// and the find bar use).
-fn elev2_shadows(theme: &crate::theme::Theme) -> Vec<gpui::BoxShadow> {
-    use gpui::{hsla, point, BoxShadow};
-    match theme.mode {
-        crate::theme::ThemeMode::Dark => vec![
-            BoxShadow {
-                color: hsla(0.0, 0.0, 1.0, 0.05),
-                offset: point(px(0.0), px(0.0)),
-                blur_radius: px(0.0),
-                spread_radius: px(1.0),
-                inset: false,
-            },
-            BoxShadow {
-                color: hsla(0.0, 0.0, 0.0, 0.45),
-                offset: point(px(0.0), px(16.0)),
-                blur_radius: px(32.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-        ],
-        crate::theme::ThemeMode::Light => vec![
-            BoxShadow {
-                color: hsla(0.0, 0.0, 0.0, 0.04),
-                offset: point(px(0.0), px(1.0)),
-                blur_radius: px(0.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-            BoxShadow {
-                color: hsla(0.0, 0.0, 0.09, 0.10),
-                offset: point(px(0.0), px(12.0)),
-                blur_radius: px(24.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-        ],
     }
 }

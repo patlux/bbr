@@ -96,12 +96,12 @@ impl BbrApp {
         // folder member rows resolve through the controller's global read
         // model (deterministic nested positions within expanded folders).
         let organization = self.organization.organization_snapshot(&self.controller);
-        let favorite_tiles = crate::components::favorite_tiles(&organization.favorites);
-        let folder_rows = crate::components::folder_row_specs(
+        let favorite_tiles = crate::app::ui_adapters::favorite_tiles(&organization.favorites);
+        let folder_rows = crate::app::ui_adapters::folder_row_specs(
             &organization.folders,
             &self.u2.folder_presentation,
         );
-        let folder_members = crate::components::folder_member_visuals(
+        let folder_members = crate::app::ui_adapters::folder_member_visuals(
             &folder_rows,
             &organization.folders,
             &browser.all_tabs,
@@ -154,13 +154,13 @@ impl BbrApp {
         // pixels.
         let active_appearance = {
             let appearance = self.active_space_appearance();
-            let tint = crate::theme::space_tint(appearance.theme, &theme);
+            let tint = bbr_ui::theme::space_tint(appearance.theme, &theme);
             Some(bbr_testkit::protocol::SpaceAppearanceSnapshot {
                 space: bbr_testkit::protocol::TestSpaceId(appearance.space.0),
                 theme: appearance.theme.name().to_string(),
                 identity: appearance.identity.name(),
-                chrome_tint: crate::theme::hex(tint.chrome),
-                chip_tint: crate::theme::hex(tint.chip_active),
+                chrome_tint: bbr_ui::theme::hex(tint.chrome),
+                chip_tint: bbr_ui::theme::hex(tint.chip_active),
             })
         };
         let navigation_cover_visible = browser.active_view.is_some_and(|view| {
@@ -199,53 +199,53 @@ impl BbrApp {
             dense: self.dense_snapshot(&browser),
             shell_modes: bbr_testkit::protocol::ShellModes {
                 theme: match theme.mode {
-                    crate::theme::ThemeMode::Light => "light".into(),
-                    crate::theme::ThemeMode::Dark => "dark".into(),
+                    bbr_ui::theme::ThemeMode::Light => "light".into(),
+                    bbr_ui::theme::ThemeMode::Dark => "dark".into(),
                 },
                 contrast: match theme.contrast {
-                    crate::theme::ContrastMode::Standard => "standard".into(),
-                    crate::theme::ContrastMode::Increased => "increased".into(),
+                    bbr_ui::theme::ContrastMode::Standard => "standard".into(),
+                    bbr_ui::theme::ContrastMode::Increased => "increased".into(),
                 },
                 density: match theme.density {
-                    crate::theme::Density::Small => "small".into(),
-                    crate::theme::Density::Normal => "normal".into(),
-                    crate::theme::Density::ExtraLarge => "extralarge".into(),
+                    bbr_ui::theme::Density::Small => "small".into(),
+                    bbr_ui::theme::Density::Normal => "normal".into(),
+                    bbr_ui::theme::Density::ExtraLarge => "extralarge".into(),
                 },
             },
             tab_states: rows
                 .iter()
                 .map(|row| match row.state {
-                    crate::components::TabVisualState::Default => {
+                    bbr_ui::state::TabVisualState::Default => {
                         bbr_testkit::protocol::TabVisualState::Default
                     }
-                    crate::components::TabVisualState::Hover => {
+                    bbr_ui::state::TabVisualState::Hover => {
                         bbr_testkit::protocol::TabVisualState::Hover
                     }
-                    crate::components::TabVisualState::Active => {
+                    bbr_ui::state::TabVisualState::Active => {
                         bbr_testkit::protocol::TabVisualState::Active
                     }
-                    crate::components::TabVisualState::Selected => {
+                    bbr_ui::state::TabVisualState::Selected => {
                         bbr_testkit::protocol::TabVisualState::Selected
                     }
-                    crate::components::TabVisualState::Loading => {
+                    bbr_ui::state::TabVisualState::Loading => {
                         bbr_testkit::protocol::TabVisualState::Loading
                     }
-                    crate::components::TabVisualState::Attention => {
+                    bbr_ui::state::TabVisualState::Attention => {
                         bbr_testkit::protocol::TabVisualState::Attention
                     }
-                    crate::components::TabVisualState::Error => {
+                    bbr_ui::state::TabVisualState::Error => {
                         bbr_testkit::protocol::TabVisualState::Error
                     }
-                    crate::components::TabVisualState::Disabled => {
+                    bbr_ui::state::TabVisualState::Disabled => {
                         bbr_testkit::protocol::TabVisualState::Disabled
                     }
-                    crate::components::TabVisualState::Dragging => {
+                    bbr_ui::state::TabVisualState::Dragging => {
                         bbr_testkit::protocol::TabVisualState::Dragging
                     }
-                    crate::components::TabVisualState::DragTarget => {
+                    bbr_ui::state::TabVisualState::DragTarget => {
                         bbr_testkit::protocol::TabVisualState::DragTarget
                     }
-                    crate::components::TabVisualState::Focused => {
+                    bbr_ui::state::TabVisualState::Focused => {
                         bbr_testkit::protocol::TabVisualState::Focused
                     }
                 })
@@ -295,7 +295,7 @@ impl BbrApp {
             semantics,
             command_bar_mode: self.command_bar_mode.into(),
             command_bar_text: self.command_text.text.clone(),
-            address_domain: crate::command_bar::address_domain(&self.active_url()),
+            address_domain: bbr_ui::text::address_domain(&self.active_url()),
             address_hovered: self.address_hovered,
             address_rect: self
                 .command_field_rect
@@ -512,19 +512,19 @@ impl BbrApp {
                 filename: row.filename.clone(),
                 progress_fraction: row.progress_fraction,
                 visual_state: match row.visual {
-                    crate::app::downloads::DownloadVisual::Default => {
+                    bbr_ui::state::DownloadVisual::Default => {
                         bbr_testkit::protocol::TabVisualState::Default
                     }
-                    crate::app::downloads::DownloadVisual::Hover => {
+                    bbr_ui::state::DownloadVisual::Hover => {
                         bbr_testkit::protocol::TabVisualState::Hover
                     }
-                    crate::app::downloads::DownloadVisual::Pressed => {
+                    bbr_ui::state::DownloadVisual::Pressed => {
                         bbr_testkit::protocol::TabVisualState::Active
                     }
-                    crate::app::downloads::DownloadVisual::Focused => {
+                    bbr_ui::state::DownloadVisual::Focused => {
                         bbr_testkit::protocol::TabVisualState::Focused
                     }
-                    crate::app::downloads::DownloadVisual::Disabled => {
+                    bbr_ui::state::DownloadVisual::Disabled => {
                         bbr_testkit::protocol::TabVisualState::Disabled
                     }
                 },
@@ -683,12 +683,12 @@ impl BbrApp {
     fn semantic_snapshot(
         &self,
         browser: &bbr_browser::ControllerSnapshot,
-        rows: &[crate::components::RowVisuals],
+        rows: &[bbr_ui::components::RowVisuals],
         window: &Window,
         sidebar_width: f32,
-        favorite_tiles: &[crate::components::FavoriteTileSpec],
-        folder_rows: &[crate::components::FolderRowSpec],
-        folder_members: &[crate::components::FolderMemberVisual],
+        favorite_tiles: &[bbr_ui::components::FavoriteTileSpec],
+        folder_rows: &[bbr_ui::components::FolderRowSpec],
+        folder_members: &[bbr_ui::components::FolderMemberVisual],
     ) -> Vec<bbr_testkit::protocol::SemanticNode> {
         // Intersect the row visuals with the render's bounded window, like
         // `visible_ids`: a dense collection never exposes rows it did not
@@ -701,7 +701,7 @@ impl BbrApp {
             (dense.first_rendered..dense.first_rendered + dense.rendered_rows)
                 .filter(|&index| index < total),
         );
-        let rendered_rows: Vec<crate::components::RowVisuals> = rendered_indices
+        let rendered_rows: Vec<bbr_ui::components::RowVisuals> = rendered_indices
             .into_iter()
             .filter_map(|index| rows.get(index).cloned())
             .collect();
@@ -745,7 +745,7 @@ impl BbrApp {
                 mode: format!("{:?}", self.command_bar_mode).to_lowercase(),
                 // The §11.5 pill's derived domain (display-only; the pill
                 // never holds the editable text).
-                address: crate::command_bar::address_domain(&self.active_url()),
+                address: bbr_ui::text::address_domain(&self.active_url()),
                 text: self.command_text.text.clone(),
                 hint: self.command_bar_hint(),
                 results: self

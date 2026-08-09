@@ -2,9 +2,8 @@
 
 use gpui::{div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window};
 
+use crate::icons::Icon;
 use crate::theme::{Spacing, Theme};
-
-use super::Icon;
 
 /// §11.8 empty space pane: `material:canvas` mark, `type:display` headline,
 /// profile line, and a primary "New Tab ⌘T" button that focuses the command

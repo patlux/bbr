@@ -23,8 +23,9 @@ use gpui::{
     div, prelude::*, px, Context, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window,
 };
 
-use crate::components::Icon;
-use crate::theme::{Spacing, Theme};
+use bbr_ui::icons::Icon;
+use bbr_ui::theme::elevation::elev2;
+use bbr_ui::theme::{Spacing, Theme};
 
 use super::downloads::{row_visuals, DownloadMachine, PanelLayout, DOWNLOADS_MAX_VISIBLE};
 use super::BbrApp;
@@ -88,7 +89,7 @@ impl BbrApp {
         // mounted; at zero it unmounts.
         if self.downloads.opacity.is_none() {
             let transition =
-                window.use_transition(cx, crate::theme::Motion::fine(), |_, _| 0.0_f32);
+                window.use_transition(cx, bbr_ui::theme::Motion::fine(), |_, _| 0.0_f32);
             if self.downloads.open {
                 transition.update(cx, |value, cx| {
                     *value = 1.0;
@@ -211,7 +212,7 @@ impl BbrApp {
             .bg(p.surface_overlay)
             .border_1()
             .border_color(p.hairline)
-            .shadow(elev2_shadow(theme))
+            .shadow(elev2(theme))
             .overflow_hidden()
             // §9 ring while the panel owns chrome focus (the same structural
             // cue as the tab/space lists; the selected-tab rail stays the
@@ -371,15 +372,15 @@ impl BbrApp {
             .flex_row()
             .min_w_0()
             .when(
-                visual.visual == super::downloads::DownloadVisual::Hover,
+                visual.visual == bbr_ui::state::DownloadVisual::Hover,
                 |el| el.bg(p.wash_hover),
             )
             .when(
-                visual.visual == super::downloads::DownloadVisual::Pressed,
+                visual.visual == bbr_ui::state::DownloadVisual::Pressed,
                 |el| el.bg(p.wash_active),
             )
             .when(
-                visual.visual == super::downloads::DownloadVisual::Focused,
+                visual.visual == bbr_ui::state::DownloadVisual::Focused,
                 |el| {
                     el.border_2()
                         .border_color(p.accent)
@@ -420,46 +421,5 @@ impl BbrApp {
             .on_mouse_down(MouseButton::Left, press)
             .on_mouse_up(MouseButton::Left, release)
             .on_hover(hover)
-    }
-}
-
-/// The §2 `elev:2` shadow token (the palette's shadow class): light
-/// `0 1 0 rgba(0,0,0,0.04) + 0 12 24 rgba(23,26,29,0.10)`, dark
-/// `0 0 0 1px rgba(255,255,255,0.05) + 0 16 32 rgba(0,0,0,0.45)` — bounded
-/// GPUI shadows, no blur beyond the token.
-fn elev2_shadow(theme: &Theme) -> Vec<gpui::BoxShadow> {
-    match theme.mode {
-        crate::theme::ThemeMode::Light => vec![
-            gpui::BoxShadow {
-                color: gpui::rgba(0x0000000a).into(),
-                offset: gpui::point(px(0.0), px(1.0)),
-                blur_radius: px(0.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-            gpui::BoxShadow {
-                color: gpui::rgba(0x171a1d1a).into(),
-                offset: gpui::point(px(0.0), px(12.0)),
-                blur_radius: px(24.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-        ],
-        crate::theme::ThemeMode::Dark => vec![
-            gpui::BoxShadow {
-                color: gpui::rgba(0xffffff0d).into(),
-                offset: gpui::point(px(0.0), px(0.0)),
-                blur_radius: px(0.0),
-                spread_radius: px(1.0),
-                inset: false,
-            },
-            gpui::BoxShadow {
-                color: gpui::rgba(0x00000073).into(),
-                offset: gpui::point(px(0.0), px(16.0)),
-                blur_radius: px(32.0),
-                spread_radius: px(0.0),
-                inset: false,
-            },
-        ],
     }
 }
