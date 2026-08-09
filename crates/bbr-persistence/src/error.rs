@@ -64,11 +64,27 @@ impl fmt::Display for SchemaIssue {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CorruptionIssue {
     ForeignKeyViolation,
-    InvalidRequiredValue { table: String, detail: String },
-    InvalidOrder { owner: String },
-    DuplicateIdentity { id: u64 },
-    InvalidPinnedRegion { space_id: u64 },
-    InvalidRecentlyClosed { tab_id: u64, detail: String },
+    InvalidRequiredValue {
+        table: String,
+        detail: String,
+    },
+    InvalidOrder {
+        owner: String,
+    },
+    DuplicateIdentity {
+        id: u64,
+    },
+    /// Two saved-page rows carry the same canonical URL key (schema v3).
+    DuplicateCanonicalUrl {
+        id: u64,
+    },
+    InvalidPinnedRegion {
+        space_id: u64,
+    },
+    InvalidRecentlyClosed {
+        tab_id: u64,
+        detail: String,
+    },
 }
 
 impl fmt::Display for CorruptionIssue {
@@ -80,6 +96,10 @@ impl fmt::Display for CorruptionIssue {
             }
             Self::InvalidOrder { owner } => write!(formatter, "invalid order keys for {owner}"),
             Self::DuplicateIdentity { id } => write!(formatter, "duplicate identity {id}"),
+            Self::DuplicateCanonicalUrl { id } => write!(
+                formatter,
+                "saved page {id} duplicates the canonical URL of another record"
+            ),
             Self::InvalidPinnedRegion { space_id } => {
                 write!(formatter, "space {space_id} does not have a pinned prefix")
             }
@@ -145,6 +165,30 @@ pub enum InvalidSnapshotIssue {
         id: u64,
         detail: String,
     },
+    /// A saved-page record violates a persisted-shape rule (schema v3).
+    InvalidSavedPage {
+        id: u64,
+        detail: String,
+    },
+    /// Two saved-page records share a canonical URL key (schema v3).
+    DuplicateCanonicalUrl {
+        id: u64,
+    },
+    /// A saved-page record references a collection that does not exist
+    /// (schema v3).
+    UnknownCollection {
+        id: u64,
+    },
+    /// A mutation targets a saved-page identity that does not exist
+    /// (schema v3).
+    UnknownBookmark {
+        id: u64,
+    },
+    /// A collection record violates a persisted-shape rule (schema v3).
+    InvalidCollection {
+        id: u64,
+        detail: String,
+    },
 }
 
 impl fmt::Display for InvalidSnapshotIssue {
@@ -189,6 +233,22 @@ impl fmt::Display for InvalidSnapshotIssue {
             }
             Self::InvalidHistory { id, detail } => {
                 write!(formatter, "invalid command-history record {id}: {detail}")
+            }
+            Self::InvalidSavedPage { id, detail } => {
+                write!(formatter, "invalid saved-page record {id}: {detail}")
+            }
+            Self::DuplicateCanonicalUrl { id } => write!(
+                formatter,
+                "saved page {id} duplicates the canonical URL of another record"
+            ),
+            Self::UnknownCollection { id } => {
+                write!(formatter, "unknown collection id {id}")
+            }
+            Self::UnknownBookmark { id } => {
+                write!(formatter, "unknown bookmark id {id}")
+            }
+            Self::InvalidCollection { id, detail } => {
+                write!(formatter, "invalid collection record {id}: {detail}")
             }
         }
     }

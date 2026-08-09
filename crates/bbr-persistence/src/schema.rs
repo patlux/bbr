@@ -4,14 +4,15 @@ use crate::PersistenceError;
 
 /// The current persistence schema version stamp.
 ///
-/// The store carries this stamp in SQLite's `PRAGMA user_version`. Schema v2
-/// adds space appearance identity, the global settings record, terminal
+/// The store carries this stamp in SQLite's `PRAGMA user_version`. Schema v3
+/// adds the global Saved Pages tables (`saved_pages`, `collections`) on top
+/// of v2's space appearance identity, global settings record, terminal
 /// download history, and visited command-history entries. There are **no
 /// migrations**: a store whose stamp does not match this constant is
 /// discarded and recreated empty (see [`crate::setup`]).
-pub(crate) const SCHEMA_VERSION: u32 = 2;
+pub(crate) const SCHEMA_VERSION: u32 = 3;
 
-pub(crate) const CREATE_SCHEMA_V2: &str = r#"
+pub(crate) const CREATE_SCHEMA_V3: &str = r#"
 CREATE TABLE profiles (
     id INTEGER PRIMARY KEY NOT NULL,
     title TEXT NOT NULL,
@@ -90,6 +91,23 @@ CREATE TABLE command_history (
 -- created with the deterministic defaults (DuckDuckGo, no custom template)
 -- so "exactly one settings row" is an invariant restore can rely on.
 INSERT INTO settings(id, search_engine, custom_search_template) VALUES (1, 'duckduckgo', NULL);
+CREATE TABLE collections (
+    id INTEGER PRIMARY KEY NOT NULL,
+    title TEXT NOT NULL,
+    position INTEGER NOT NULL
+);
+CREATE TABLE saved_pages (
+    id INTEGER PRIMARY KEY NOT NULL,
+    canonical_url TEXT NOT NULL UNIQUE,
+    captured_title TEXT NOT NULL,
+    user_label TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    collection_id INTEGER REFERENCES collections(id),
+    position INTEGER NOT NULL
+);
+
+
 "#;
 
 // The schema-shape validators and version/order helpers live in

@@ -12,6 +12,10 @@ use bbr_persistence::{
     SpaceGlyph, SpaceTint, Split, Tab, WindowGeometry, WindowState, WriteStats,
 };
 
+#[path = "modules/benchmark_saved_pages.rs"]
+mod benchmark_saved_pages;
+use benchmark_saved_pages::{saved_pages_snapshot, SAVED_PAGES_COLLECTIONS, SAVED_PAGES_CORPUS};
+
 const WARMUPS: usize = 10;
 const SAMPLES: usize = 100;
 static NEXT_TEMP: AtomicU64 = AtomicU64::new(1);
@@ -135,14 +139,14 @@ fn repository_benchmark() {
         .collect::<Vec<_>>();
     let dense = dense_snapshot();
 
-    let first_run = measure("schema_v2_first_run_load", |index| {
+    let first_run = measure("schema_v3_first_run_load", |index| {
         let outcome = Repository::new(&first_run_databases[index].0)
             .initialize_and_restore()
             .unwrap();
         assert_eq!(outcome.snapshot, Snapshot::default());
         None
     });
-    let current_load = measure("schema_v2_current_load", |_| {
+    let current_load = measure("schema_v3_current_load", |_| {
         let outcome = current_repository.restore_read_only().unwrap();
         assert_eq!(outcome.snapshot, Snapshot::default());
         None
@@ -151,12 +155,44 @@ fn repository_benchmark() {
         let repository = Repository::new(&write_databases[index].0);
         let stats = repository.replace_snapshot(&dense).unwrap();
         assert_eq!(stats.committed_transactions, 1);
-        assert_eq!(stats.sql_statements, 517);
+        // Schema v3: eleven DELETE statements + 508 inserted rows.
+        assert_eq!(stats.sql_statements, 519);
         assert_eq!(stats.inserted_rows, 508);
         assert_eq!(repository.restore_read_only().unwrap().snapshot, dense);
         Some(stats)
     });
-    let operations = [first_run, current_load, dense_write];
+    // Saved Pages write/list/search distribution over at least 1,000
+    // records (schema v3). Each sample writes the corpus to a fresh store,
+    // lists every record back, and runs one deterministic search; the whole
+    // sequence is the measured distribution (fixture construction happens
+    // outside the timed region).
+    let saved_pages_dbs = (0..WARMUPS + SAMPLES)
+        .map(|index| TempDb::current(&format!("saved-pages-{index}")))
+        .collect::<Vec<_>>();
+    let saved_pages = saved_pages_snapshot(SAVED_PAGES_CORPUS, SAVED_PAGES_COLLECTIONS);
+    let saved_pages_write_list_search = measure("saved_pages_write_list_search", |index| {
+        let repository = Repository::new(&saved_pages_dbs[index].0);
+        let stats = repository.replace_snapshot(&saved_pages).unwrap();
+        assert_eq!(stats.committed_transactions, 1);
+        assert_eq!(stats.sql_statements, 11 + 1_021);
+        assert_eq!(
+            stats.deleted_rows, 1,
+            "fresh store: only the seeded settings row"
+        );
+        assert_eq!(stats.inserted_rows, 1_021);
+        let list = repository.load_saved_pages().unwrap();
+        assert_eq!(list.len(), SAVED_PAGES_CORPUS);
+        let search = repository.search_saved_pages("page 0500").unwrap();
+        assert_eq!(search.len(), 1);
+        assert_eq!(search[0].id, 10_500);
+        Some(stats)
+    });
+    let operations = [
+        first_run,
+        current_load,
+        dense_write,
+        saved_pages_write_list_search,
+    ];
     let contents = render_artifact(&artifact, &run_id, &operations);
     let temporary = root.join(format!(".repository-benchmark-{}.tmp", std::process::id()));
     fs::write(&temporary, &contents).unwrap();
@@ -164,14 +200,14 @@ fn repository_benchmark() {
 
     let persisted = fs::read_to_string(&artifact).unwrap();
     let parsed = parse_artifact(&persisted, &run_id).unwrap();
-    assert_eq!(parsed.operations.len(), 3);
+    assert_eq!(parsed.operations.len(), 4);
     assert_eq!(
         parsed.metadata["artifact_path"],
         artifact.display().to_string()
     );
     assert!(parse_artifact(&persisted, "stale-run-id").is_err());
     assert!(parse_artifact(
-        &persisted.replace("operation_count=3", "operation_count=2"),
+        &persisted.replace("operation_count=4", "operation_count=2"),
         &run_id
     )
     .is_err());
@@ -300,13 +336,14 @@ fn parse_artifact(contents: &str, expected_run_id: &str) -> Result<ParsedArtifac
     let operation_count = metadata["operation_count"]
         .parse::<usize>()
         .map_err(|_| "operation count")?;
-    if operation_count != operations.len() || operations.len() != 3 {
+    if operation_count != operations.len() || operations.len() != 4 {
         return Err("wrong operation count".into());
     }
     for required in [
-        "schema_v2_first_run_load",
-        "schema_v2_current_load",
+        "schema_v3_first_run_load",
+        "schema_v3_current_load",
         "dense_structural_write",
+        "saved_pages_write_list_search",
     ] {
         if !operations.contains_key(required) {
             return Err(format!("missing operation {required}"));
@@ -426,5 +463,9 @@ fn dense_snapshot() -> Snapshot {
             visit_count: 1,
             last_visited: 800,
         }],
+        // Schema v3: the dense structural snapshot keeps its own scale; the
+        // Saved Pages corpus is a separate snapshot below.
+        saved_pages: Vec::new(),
+        collections: Vec::new(),
     }
 }

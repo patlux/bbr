@@ -336,7 +336,7 @@ fn row_writes_discard_a_mismatched_store_then_succeed() {
         repository.load_settings().unwrap_err(),
         PersistenceError::SchemaMismatch {
             found: 1,
-            supported: 2
+            supported: 3
         }
     );
     repository

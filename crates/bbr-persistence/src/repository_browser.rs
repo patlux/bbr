@@ -47,6 +47,12 @@ impl Repository {
             settings: SearchSettings::default(),
             downloads: Vec::new(),
             command_history: Vec::new(),
+            // Schema v3: the global Saved Pages tables are never part of a
+            // browser-state write (isolation is asserted in the saved-pages
+            // repository tests); empty defaults keep the shared snapshot
+            // contract valid.
+            saved_pages: Vec::new(),
+            collections: Vec::new(),
         };
         validation::validate_snapshot(&full).map_err(PersistenceError::InvalidSnapshot)?;
         let mut connection = Connection::open(self.path()).map_err(schema::storage)?;

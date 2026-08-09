@@ -31,9 +31,13 @@ bounded nonblocking capacity-1 writer — ranking and render never touch SQLite.
 The provider scale (500 tabs + 10,000 history entries) is enforced by the
 `command_bar_first_result` real-app performance scenario. Still open and serial:
 per-site settings/zoom, lazy native session hydration, force-quit E2E, warm
-restore, metadata debounce, and the [B1 Saved Pages schema/repository packet](../tasks/saved-pages-portable-persistence.md)
-once current repository ownership is free. B1 follows the standing development
-rule: schema bump plus discard, no migration or compatibility path.
+restore, and metadata debounce. The [B1 Saved Pages schema/repository packet](../tasks/saved-pages-portable-persistence.md)
+landed on `parallel/saved-pages-b1` for serial integration: it adds the
+portable Saved Page contract (`bbr-domain::saved_pages`, one shared canonical
+URL seam reusing `bbr_web::normalize_url`) and schema **v3** with the global
+`saved_pages`/`collections` tables plus repository CRUD/search/collections and
+checked-in fixtures, following the standing development rule — schema bump
+plus discard, no migration or compatibility path.
 
 ## Checklist
 

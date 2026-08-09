@@ -1,12 +1,13 @@
-//! Schema-v2 field groups: the persisted identity and record types.
+//! Schema-v3 field groups: the persisted identity and record types.
 //!
-//! These are the four field groups the v2 shape carries for the blocked
-//! features: per-space appearance identity, the global settings record,
-//! terminal download history, and visited command-history entries, plus the
-//! store-load disposition. The closed identity sets mirror the portable
-//! feature contracts (space appearance, search settings, downloads,
-//! command corpus) as the repository's persisted contract — the persistence
-//! crate must not depend on `bbr-domain` or `bbr-command` (see
+//! These are the field groups the current shape carries: per-space
+//! appearance identity, the global settings record, terminal download
+//! history, visited command-history entries, and the schema-v3 global Saved
+//! Pages (`saved_pages`/`collections`), plus the store-load disposition.
+//! The closed identity sets mirror the portable feature contracts (space
+//! appearance, search settings, downloads, command corpus, Saved Pages) as
+//! the repository's persisted contract — the persistence crate must not
+//! depend on `bbr-domain` or `bbr-command` (see
 //! [`crate::model::ProfileHue`] for the precedent).
 
 /// A curated space tint token (schema v2).
@@ -352,8 +353,77 @@ pub struct CommandHistoryEntry {
     pub last_visited: u64,
 }
 
-/// How the persisted store was treated during a load.
+/// One durable global Saved Page record (schema v3).
 ///
+/// The persisted-contract mirror of the portable `bbr-domain` Saved Page:
+/// a global installation URL record with **no** `ProfileId`, space, tab,
+/// session, or native identity. The `canonical_url` key is the persisted
+/// duplicate-rejection authority: the canonicalization **rule** lives in
+/// `bbr-domain` (reusing `bbr_web::normalize_url`), and the repository
+/// treats the key as opaque and enforces at-most-one-active-record-per-key
+/// through the `UNIQUE` column plus write-side validation. `collection_id`
+/// is an optional strict reference into `collections` (flat membership, at
+/// most one per record). `position` is the dense deterministic order key
+/// every persisted table carries; the portable sort key
+/// (`(updated_at, id)`) is derived in `bbr-domain`, not duplicated here.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SavedPageRecord {
+    /// Stable global identity (`BookmarkId`); the primary key.
+    pub id: u64,
+    /// The canonical navigable URL — the dedupe key (opaque here).
+    pub canonical_url: String,
+    /// Display title captured at save time; may be empty.
+    pub captured_title: String,
+    /// Explicit user label; `None` when the user never set one.
+    pub user_label: Option<String>,
+    /// Deterministic creation timestamp (persisted integer range).
+    pub created_at: u64,
+    /// Deterministic last-mutation timestamp; always `>= created_at`.
+    pub updated_at: u64,
+    /// Optional flat collection membership (strict reference).
+    pub collection_id: Option<u64>,
+}
+
+/// One flat Saved Page collection (schema v3).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CollectionRecord {
+    /// Stable collection identity (`CollectionId`); the primary key.
+    pub id: u64,
+    /// Bounded, non-empty collection title.
+    pub title: String,
+}
+
+/// The outcome of one idempotent Saved Page save (schema v3).
+///
+/// Saving a canonical URL that already exists returns the **existing**
+/// identity and makes no second row; the caller keeps its own
+/// already-allocated id for the insert case.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SavedPageSaveOutcome {
+    /// The `BookmarkId` of the active record for the canonical URL.
+    pub id: u64,
+    /// `true` when the canonical URL already had an active record.
+    pub existed: bool,
+}
+
+/// A field-level Saved Page update (schema v3).
+///
+/// Every field is optional so a caller can update exactly what changed;
+/// `updated_at` is applied only when the update actually mutates the row.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SavedPageUpdate {
+    /// The stable identity of the record to update.
+    pub id: u64,
+    /// New captured title; `Some` sets it, `None` leaves it untouched.
+    pub captured_title: Option<String>,
+    /// New user label: `Some(Some(v))` sets it, `Some(None)` clears it,
+    /// `None` leaves it untouched.
+    pub user_label: Option<Option<String>>,
+    /// New `updated_at` timestamp, applied when the update mutates the row.
+    pub updated_at: u64,
+}
+
+/// How the persisted store was treated during a load.
 /// A discarded store is a normal, logged, non-fatal startup path (schema v2
 /// product decision: no migrations, no backward compatibility — in
 /// development, a store whose version stamp does not match the current

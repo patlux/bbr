@@ -1,11 +1,17 @@
 use std::collections::HashSet;
 
+use crate::validation_saved_pages::{validate_collections, validate_saved_pages};
 use crate::{
     CommandHistoryEntry, DownloadRecord, InvalidSnapshotIssue, ProfileHue, SearchEngineId,
     SearchSettings, Snapshot, SpaceGlyph, WindowGeometry,
 };
 
 pub(crate) const MAX_SQLITE_ID: u64 = i64::MAX as u64;
+/// Bounded Saved Page text limits (mirror of the portable contract in
+/// `bbr-domain::saved_pages`; never weakened later).
+pub(crate) const MAX_CAPTURED_TITLE_LEN: usize = 1024;
+pub(crate) const MAX_USER_LABEL_LEN: usize = 256;
+pub(crate) const MAX_COLLECTION_TITLE_LEN: usize = 128;
 pub(crate) const SIDEBAR_MIN: f64 = 200.0;
 pub(crate) const SIDEBAR_MAX: f64 = 400.0;
 
@@ -120,6 +126,8 @@ pub(crate) fn validate_snapshot(snapshot: &Snapshot) -> Result<(), InvalidSnapsh
     validate_settings(&snapshot.settings)?;
     validate_downloads(&snapshot.downloads)?;
     validate_command_history(&snapshot.command_history)?;
+    validate_collections(&snapshot.collections)?;
+    validate_saved_pages(&snapshot.saved_pages, &snapshot.collections)?;
 
     Ok(())
 }
@@ -255,6 +263,9 @@ pub(crate) fn validate_command_history(
     Ok(())
 }
 
+/// Validates the flat collection set and the global saved-page set (schema
+/// v3) — both moved to [`crate::validation_saved_pages`] (B1-owned module)
+/// so this snapshot validator keeps its pre-B1 size.
 fn insert_identity(ids: &mut HashSet<u64>, id: u64) -> Result<(), InvalidSnapshotIssue> {
     if ids.insert(id) {
         Ok(())

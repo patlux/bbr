@@ -10,6 +10,7 @@ use crate::repository_load::{
     load_command_history, load_downloads, load_recently_closed, load_settings, load_windows,
     project_soft_references, validate_nested_orders, validate_tab_orders_and_pins,
 };
+use crate::repository_saved_pages_rows::{load_collections, load_saved_pages};
 use crate::{
     schema, setup, validation, CorruptionIssue, DownloadRecord, PersistenceError, Profile,
     ProfileHue, RecoveryWarning, Repository, RestoreOutcome, Snapshot, Space, SpaceGlyph,
@@ -178,10 +179,40 @@ impl Repository {
             ).map_err(schema::storage)?;
             inserted_rows += 1;
         }
+        for (position, collection) in snapshot.collections.iter().enumerate() {
+            transaction
+                .execute(
+                    "INSERT INTO collections(id, title, position) VALUES (?, ?, ?)",
+                    params![to_i64(collection.id), collection.title, position as i64],
+                )
+                .map_err(schema::storage)?;
+            inserted_rows += 1;
+        }
+        for (position, page) in snapshot.saved_pages.iter().enumerate() {
+            transaction.execute(
+                "INSERT INTO saved_pages(id, canonical_url, captured_title, user_label, created_at, \
+                 updated_at, collection_id, position) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                params![
+                    to_i64(page.id),
+                    page.canonical_url,
+                    page.captured_title,
+                    page.user_label,
+                    to_i64(page.created_at),
+                    to_i64(page.updated_at),
+                    page.collection_id.map(to_i64),
+                    position as i64
+                ],
+            )
+            .map_err(schema::storage)?;
+            inserted_rows += 1;
+        }
         transaction.commit().map_err(schema::storage)?;
         Ok(WriteStats {
             committed_transactions: 1,
-            sql_statements: 9 + inserted_rows,
+            // Schema v3: eleven deterministic child-first DELETE statements
+            // (the nine v2 tables plus saved_pages and collections) plus one
+            // INSERT execution per row.
+            sql_statements: 11 + inserted_rows,
             deleted_rows,
             inserted_rows,
         })
@@ -301,6 +332,8 @@ fn restore_from_connection(connection: &Connection) -> Result<RestoreOutcome, Pe
     let settings = load_settings(connection, &mut warnings)?;
     let downloads = load_downloads(connection, &mut HashSet::new())?;
     let command_history = load_command_history(connection, &mut HashSet::new())?;
+    let collections = load_collections(connection, &mut HashSet::new())?;
+    let saved_pages = load_saved_pages(connection, &mut HashSet::new(), &collections)?;
     warnings.sort_by_key(RecoveryWarning::sort_key);
     Ok(RestoreOutcome {
         snapshot: Snapshot {
@@ -309,6 +342,8 @@ fn restore_from_connection(connection: &Connection) -> Result<RestoreOutcome, Pe
             settings,
             downloads,
             command_history,
+            saved_pages,
+            collections,
         },
         warnings,
         store: StoreLoad::Loaded,

@@ -117,26 +117,26 @@ portable identities while B1 runs.
 
 ### Unit and contract
 
-- [ ] Identifier, URL, title/label, timestamp, sort-key, and collection
+- [x] Identifier, URL, title/label, timestamp, sort-key, and collection
       validation cover boundaries and privacy-safe debug output.
-- [ ] Canonical duplicate tests prove repeated save returns the same
+- [x] Canonical duplicate tests prove repeated save returns the same
       `BookmarkId`, creates no second row, and follows the settled title/label
       update rule.
-- [ ] Ordering/search are deterministic for equal titles, URLs, timestamps,
+- [x] Ordering/search are deterministic for equal titles, URLs, timestamps,
       and collection membership; global ownership has no profile dimension.
-- [ ] Update/remove/collection moves are idempotent where specified and reject
+- [x] Update/remove/collection moves are idempotent where specified and reject
       unknown or invalid references whole.
 
 ### Persistence
 
-- [ ] Current-schema round-trip preserves every field and deterministic order;
+- [x] Current-schema round-trip preserves every field and deterministic order;
       matching valid reads produce no writes.
-- [ ] Prior/mismatched schema and same-version structural corruption are
+- [x] Prior/mismatched schema and same-version structural corruption are
       discarded under the development rule and the repository is immediately
       rewritable; no migration/compatibility branch exists.
-- [ ] Duplicate canonical URLs and invalid collection references cannot enter
+- [x] Duplicate canonical URLs and invalid collection references cannot enter
       the committed store; rollback leaves the complete prior state intact.
-- [ ] A repository reopen proves Saved Pages survive process-independent store
+- [x] A repository reopen proves Saved Pages survive process-independent store
       close/reopen without any tab/session object.
 
 ### Real-app E2E
@@ -146,7 +146,7 @@ portable identities while B1 runs.
 
 ### Performance
 
-- [ ] Repository list/search/write distributions over at least 1,000 records
+- [x] Repository list/search/write distributions over at least 1,000 records
       are retained as test evidence without claiming UI or product latency.
       B2/B3 own optimized presentation budgets.
 
@@ -165,6 +165,53 @@ git diff --check
 ```
 
 No GUI gate is required because B1 changes no user-visible browser path.
+
+## B1 decisions (recorded, not silently changed later)
+
+- **Supported schemes:** exactly `http`, `https`, and `about` (BBR's
+  product-navigation schemes). `javascript:`, `data:`, `file:`, `mailto:`,
+  and every other scheme reject whole as unsupported/dangerous.
+- **Credential-free by construction:** userinfo in the authority
+  (`https://user:pass@host`) rejects whole, so a record can never embed
+  credentials and its `Debug` output is privacy-safe.
+- **Protocol-relative input** (`//host`) rejects (no scheme after
+  defaulting). NUL/whitespace/control bytes reject.
+- **Canonical seam:** `bbr-domain::saved_pages::canonical_url` reuses
+  `bbr_web::normalize_url` for scheme defaulting, then ASCII-case-folds only
+  scheme and host (percent-escape sequences in the host preserved
+  byte-for-byte). Path, query, fragment, explicit port, trailing slash,
+  `www.`, and percent-encoding are preserved byte-for-byte; no default-port
+  elision and no bookmark-only rewrite. Persistence stores the key opaquely
+  (bounded `valid_url` only) and enforces uniqueness via the `UNIQUE` column
+  plus write-side validation.
+- **Deterministic sort key:** `(updated_at, id)` ascending
+  ([`SavedPage::sort_key`]); equal timestamps tie-break by id. The domain
+  exposes `deterministic_order`; persistence preserves caller order in dense
+  `position` keys.
+- **Duplicate semantics:** re-save returns the existing `BookmarkId`, never
+  creates a second row, preserves `created_at`, never touches a user label,
+  and updates the captured title only when no user label exists and the title
+  actually changed (a byte-identical re-save performs no write). The stored
+  `updated_at` can never regress below the stored `created_at`: a stale
+  re-save/update timestamp is clamped up to the existing record's
+  `created_at` (smallest consistent contract), so the loader-enforced
+  monotonic invariant is unbreakable through the public API and the next
+  write never discards data.
+- **Search:** repository `search_saved_pages` is read-only, case-insensitive,
+  literal-substring over title/label/canonical URL, deterministic in
+  persisted order. Matching is one small Rust Unicode-lowercase authority
+  mirroring `bbr-domain::SavedPage::matches` — no SQL pattern is built, so
+  `%`/`_`/`\` in the query are literal by construction and non-ASCII
+  (umlaut) queries fold exactly like the domain predicate; SQLite `LIKE`
+  folds ASCII case only and is never used.
+- **Collection membership is strict:** `saved_pages.collection_id` is a
+  declared foreign key into `collections`. A dangling reference is structural
+  corruption (discarded under the development rule). Removing a collection
+  that is still referenced rejects whole — collection removal is an explicit
+  two-step move-out-then-remove.
+- **Schema v3:** adds `collections` and `saved_pages` tables (canonical key
+  `UNIQUE`, strict collection FK, dense `position`); stamp bump plus discard
+  only, no migration/backcompat path anywhere.
 
 ## Delivery sequence
 
@@ -194,21 +241,42 @@ needed, and do not start B2.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Persistence evidence:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: portable bbr-domain Saved Page contract (BookmarkId, CollectionId,
+  CanonicalUrl seam, SavedPage/Collection values, validation, deterministic
+  ordering, privacy-safe Debug) plus the schema-v3 bbr-persistence repository
+  (idempotent save, get by id/URL, deterministic list/search, update,
+  idempotent remove, whole-set collection replace, membership moves),
+  checked-in fixtures, reopen proof, and the >=1,000-record distribution.
+Commits: none (writer leaves the coherent uncommitted tree; the Orchestrator
+  commits and integrates the lane per the parallel-delivery contract).
+Functional evidence: 117 bbr-domain tests + 43 bbr-persistence tests green
+  (validation boundaries, canonical equality/duplicates, deterministic
+  order/search, idempotent update/remove/moves, whole-write rejection with
+  byte-identical inventory, reopen, browser-write isolation).
+Persistence evidence: schema v3 bump discards prior/corrupt/duplicate/
+  dangling-ref stores and is immediately rewritable (fixtures schema_v3,
+  schema_v2, newer_schema v4, schema_v3_corrupt, schema_v3_duplicate_url,
+  schema_v3_collection_integrity); matching valid reads produce zero writes
+  (byte-identical inventory on schema_v3).
+Performance evidence: release repository_benchmark, 4 operations; new
+  saved_pages_write_list_search over 1,000 records + 20 collections
+  (write 1,032 statements / 1,021 rows; list + literal search assertions);
+  dense_structural_write 519 statements / 508 rows. Artifact retained under
+  target/bbr-persistence-artifacts/repository-benchmark.txt.
+Roadmap/documentation updates: this packet (evidence boxes + decisions),
+  Phase 7 wording, ARCHITECTURE.md implemented-facts section. ROADMAP.md and
+  docs/delivery/current.md untouched (serial integration-owned).
+Open blockers and non-goals: none in scope; B2 owns app composition, Cmd-D,
+  Palette provider, menus, and fresh-tab E2E. No UI/command/app work landed.
+Worktree state: uncommitted changes in the exclusive B1 worktree on
+  parallel/saved-pages-b1 over clean base e9f5d30214e7efc46586cb3ae11c6472e0b1801c.
 
-Planning/read-only:
-Implementation:
-Test execution:
-Review:
-Remediation:
-Waiting/retries:
-Total elapsed:
-Human intervention:
+Planning/read-only: ~0.5 h (documents, source map, contract model)
+Implementation: ~4 h (domain contract, schema v3, repository, fixtures, tests)
+Test execution: ~1 h (iterative targeted runs + gates)
+Review: pending (independent read-only reviewer follows)
+Remediation: pending
+Waiting/retries: none
+Total elapsed: ~5.5 h (labeled estimate; not wall-clock measured)
+Human intervention: none
 ```
