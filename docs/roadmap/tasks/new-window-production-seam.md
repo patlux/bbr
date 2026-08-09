@@ -129,29 +129,29 @@ or the same E2E/Justfile entries.
 
 ### Unit and contract
 
-- [ ] Portable default-policy matrix proves direct activation → `OpenTab` and
+- [x] Portable default-policy matrix proves direct activation → `OpenTab` and
       script request → `Block`; all existing request/decision/outcome tests stay
       green.
-- [ ] Coordinator tests prove installed/missing handler, verbatim URL,
+- [x] Coordinator tests prove installed/missing handler, verbatim URL,
       source-profile preservation, and exactly-once blocked reporting.
-- [ ] Controller fake-engine tests prove one source-Space/Profile tab/session,
+- [x] Controller fake-engine tests prove one source-Space/Profile tab/session,
       inactive-source-space neutrality, exact profile store, typed outcome,
       no duplicates, and stale/mismatched source refusal without mutation.
-- [ ] App/testkit contract tests prove native-pump and injected requests share
+- [x] App/testkit contract tests prove native-pump and injected requests share
       one `BbrApp::on_new_window_request` execution method and typed counters.
 
 ### Real-app E2E
 
-- [ ] Real `popup.html` script invokes the production WKUI delegate and is
+- [x] Real `popup.html` script invokes the production WKUI delegate and is
       blocked/reported with unchanged tab/session/source identity.
-- [ ] Typed user-initiated injection through the production app seam opens
+- [x] Typed user-initiated injection through the production app seam opens
       exactly one fresh regular tab at the verbatim URL in the source
       Space/Profile.
-- [ ] A non-default-profile source uses that profile's isolated native store;
+- [x] A non-default-profile source uses that profile's isolated native store;
       an inactive source Space remains inactive and the active selection is
       unchanged.
-- [ ] Unknown/stale source and script-block paths create no tab/session.
-- [ ] Stable typed events/snapshots, deterministic local fixtures, explicit
+- [x] Unknown/stale source and script-block paths create no tab/session.
+- [x] Stable typed events/snapshots, deterministic local fixtures, explicit
       deadlines, no sleeps, and no pixel assertions.
 
 ### Performance
@@ -229,14 +229,14 @@ weaker assertions.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: Integrated productive delegate → portable policy → app/controller seam; direct activation opens one source-Space/Profile regular tab, script popup blocks/reports, delegate returns None.
+Commits: lane `3bc016b075df917af0c57f46f5cbf5d6e2f33509` / tree `bc6427e33a7cf12538ad3ec19e374c4d43dc6232`; merge `05765724e8ca5516e5cb060a77af0dea2c887bed` / tree `5ae07734fbeb043e6388e513c598ef787b792a4e`.
+Functional evidence: post-merge `just verify`, explicit testkit Clippy, roadmap, and diff-check green; `/tmp/bbr-nw-seam-merge-nonperf-20260810T0110Z.log`, SHA-256 `d33b5638a7a05e3a555a20e7498bee3fa25748c357f349a16b8fed13a44af961`.
+Real-app E2E: post-merge NW-SEAM 4/4 (`33823febbb2a61d1a4bd7987b4ba558eba550522cacd3288550497453e7eb572`), Tabs 1/1 (`0a20c8be9473a43675e061d29615c91179193bb3cc497ed928ec8a810572d2af`), Profiles 1/1 (`80ecd9411312dce53232bb5da3f6c1d15f9ea3485d2be6cefa2537a0e8d5ef9d`).
+Performance evidence: unexecuted and unpassed under Patrick's active scheduling override; recipe, scenario contract, budgets, baselines, samples, and deadlines unchanged.
+Roadmap/documentation updates: implemented facts in `ARCHITECTURE.md`; task evidence checked and Current delivery advanced after post-merge gates.
+Open blockers and non-goals: performance acceptance remains debt; Peek, opener provenance, background/insertion policy, named-window reuse, and second-window behavior remain outside this slice.
+Worktree state: lane committed clean after exact-candidate `REVIEW_PASS`; integration worktree clean before authority update.
 
 Planning/read-only:
 Implementation:
