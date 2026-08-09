@@ -6,42 +6,23 @@ BBR phases are product acceptance milestones, not a requirement to implement
 all browser capabilities in one serial branch. Parallel work is allowed when
 its contracts, ownership, evidence, and integration order are explicit.
 
-## Stable integration anchor
+## Runtime integration anchor and lane state
 
-The final Phase-4 cross-context closeout settled at `20628ff`; the verified
-parallel-delivery implementation landed at `03b9e8b`, and its delivery-ledger
-follow-up `9352ded` is the exact branch point for prepared feature lanes.
-
-A new feature worktree must name the **current clean foundation commit** in its
-task packet and branch from that exact commit. For the first prepared lanes that
-commit is `9352ded94075d3c82f90c682fb7ff248d0ee2fe6`. Never infer the anchor
-from a stale worktree or from an uncommitted `main`.
-
-The existing `/Users/patwoz/dev/Personal/macos/bbr-url-input` worktree on
-`parallel/url-input` predates the foundation (`5fcebb8`). It remains preserved
-and is not an active lane until an explicit owner settles or hands it off and a
-separate integration decision records how its work is carried forward.
-
-## Execution lanes
+This document owns the durable parallel-delivery rules, not a particular
+execution wave. The exact verified base SHA, active/frozen lanes, worktrees,
+writers, shared integration points, and serial merge order live only in the
+[Current delivery](delivery/current.md), reached through [ROADMAP.md](../ROADMAP.md).
+Never infer an anchor from a stale worktree, historical example, task-packet
+planning SHA, or uncommitted `main`.
 
 A lane is one bounded task packet, one branch, one worktree, and at most one
 writer. Multiple phases may have active lanes when their owned files and
-contracts do not overlap.
-
-| Lane | Canonical owner | Parallel-safe owned surface | Shared integration point | State |
-|---|---|---|---|---|
-| Parallel-delivery foundation | [task packet](roadmap/tasks/parallel-delivery-foundation.md) | workflow docs, portable crate landing zones, GUI lock | workspace manifest, `justfile`, `ROADMAP.md` | active until its completion gates pass |
-| Command core | [Phase 5](roadmap/phases/05-command-bar.md) | `crates/bbr-command/**`, portable parser/ranking tests and benchmarks | app composition, history provider, command snapshot | [packet](roadmap/tasks/command-core.md) implemented, independently reviewed, remediated, and integrated on `main` at `b7c475a029f166cd6a3842affe7454d79691cf7a`; branch writer-free |
-| Persistence core | [Phase 7](roadmap/phases/07-persistence.md) | `crates/bbr-persistence/**`, schema/repository/migration fixtures | domain export/import DTOs, app startup/shutdown | implementation committed on `parallel/persistence-core`; bounded review-finding remediation precedes integration |
-| Split core | [Phase 6](roadmap/phases/06-split-view.md) | new split-focused domain/controller modules and tests | `WebEngine` geometry, controller facade, app composition | blocked on a serial contract-extraction packet |
-| Performance runner | [performance track](roadmap/tracks/performance-release.md) | runner provisioning, accepted metadata/trends | canonical baseline acceptance | externally provisioned; does not block portable core lanes |
-| Phase-8 WebKit capabilities | [Phase 8](roadmap/phases/08-daily-driver.md) | one native adapter module per accepted capability contract | `bbr-web` events/actions, testkit wire, app surfaces | blocked on serial capability contracts |
-
-A prepared lane still needs its packet promoted through the serial roadmap
-integration surface before a product writer starts. The packet must state base
-commit, dependencies, provided API, exclusive paths, shared integration points,
-E2E/performance evidence, and merge order. Packet-only worktrees may exist for
-review, but they are writer-free and make no product implementation claim.
+contracts do not overlap. Before a product writer starts, the current-delivery
+snapshot must record the exact clean base commit, dependencies, provided API,
+exclusive paths, shared integration points, and integration order. A
+packet-only or research worktree may exist for read-only preparation, but it
+makes no product implementation claim and is not an active lane unless the
+current-delivery snapshot says so.
 
 ## Serial integration kernel
 
@@ -55,7 +36,9 @@ changes in their packet; they do not independently evolve the contract:
 - testkit protocol version and top-level wire envelope;
 - performance baseline policy and canonical scenario registration;
 - SQLite migration numbering and domain persistence DTOs;
-- `ROADMAP.md` current-focus roll-ups and canonical `just e2e` ordering.
+- the one Current-delivery runtime snapshot and canonical `just e2e` ordering.
+  `ROADMAP.md` itself remains the stable entry point/product roll-up and changes
+  only for durable pointer, hierarchy, or acceptance updates.
 
 Implementations behind an accepted seam remain lane-owned. Shared-contract
 changes land first as small serial slices, after which dependent worktrees

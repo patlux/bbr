@@ -8,7 +8,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [interaction contract](../../product/browser-interactions.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.13.
 
-Status: **queued after F2 closeout when Portal/context-menu ownership is
+Activation condition: F2 closeout is complete and Portal/context-menu ownership is
 free.** This is the bounded enrichment of the already integrated BBR
 page-background menu, not a replacement router.
 
@@ -67,9 +67,9 @@ exact tab/session/profile/space/split identity.
 ## Parallel-lane contract
 
 ```text
-Base commit:          verified main after complete F2 closeout
+Base condition:       verified main after complete F2 closeout
 Depends on:           integrated existing context-menu/Portal path; free
-                      Portal/context-menu ownership; G1 components if already
+                      Portal/context-menu ownership; G1a components if already
                       available (otherwise coordinate extraction, never copy);
                       B2 only for Bookmark/Remove Bookmark rows
 Provides/API:         enriched PageMenuModel/actions and stronger typed

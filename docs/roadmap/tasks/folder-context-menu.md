@@ -8,9 +8,9 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [Gallery browser components](component-gallery-browser-components.md) ·
 [Gallery compositions](component-gallery-compositions.md).
 
-Status: **queued after fresh F2a and G1.** Documentation only today.
+Activation condition: complete F2a and G1a are integrated and Folder/menu territory is writer-free, as recorded in [Current delivery](../../delivery/current.md).
 Implementation must not interrupt F2c → F2b → fresh F2a or start before the
-settled G1 `bbr-ui` anchor.
+settled G1a `bbr-ui` anchor.
 
 Stable information-architecture reference, not a feature or visual copy:
 `/Users/patwoz/dev/Personal/macos/bbr-design-references/zen-folder-context-menu.png`.
@@ -66,19 +66,19 @@ and routes through a portable organization authority.
 ## Parallel-lane contract
 
 ```text
-Base commit:          verified main after F2c → F2b → fresh F2a and settled G1
-Depends on:           G1 bbr-ui menu/folder components; existing session-local
+Base condition:       verified main after F2c → F2b → fresh F2a and settled G1a
+Depends on:           G1a bbr-ui menu/folder components; existing session-local
                       folder organization authority
 Provides/API:         app/controller FolderMenuSource + availability;
                       presentation-only bbr-ui FolderMenuModel; typed folder
                       commands/results and production menu composition
-Exclusive paths:      post-G1 bbr-ui folder-menu modules; focused organization
+Exclusive paths:      post-G1a bbr-ui folder-menu modules; focused organization
                       domain/controller modules; sidebar menu composition;
                       focused E2E/perf modules
 Shared integration points: controller facade, bbr-app focus/input routing,
                       testkit snapshot, perf registry, Gallery G2/G3 registry,
                       roadmap roll-ups
-Integration order:    F2c → F2b → fresh F2a → G1 → this packet
+Integration order:    F2c → F2b → fresh F2a → G1aa → this packet
 ```
 
 No concurrent writer may own folder components, organization commands,
@@ -150,7 +150,7 @@ GUI suites run sequentially under the repository lock.
 
 ## Delivery sequence
 
-1. Confirm F2/G1 integration and settle the delete-container rule in this
+1. Confirm F2/G1a integration and settle the delete-container rule in this
    packet before implementation.
 2. Add typed folder availability and commands to the portable organization
    seam.

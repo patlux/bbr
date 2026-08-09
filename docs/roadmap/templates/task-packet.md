@@ -24,13 +24,16 @@ Complete this section when the packet may run in a sibling worktree; otherwise
 state `Not parallelized`.
 
 ```text
-Base commit:
+Base condition:          <durable dependency/integration condition; exact runtime SHA lives in Current delivery>
 Depends on:
 Provides/API:
 Exclusive paths:
 Shared integration points:
 Integration order:
 ```
+
+Do not put active run ids, current owners, temporary branch/worktree paths, or
+"today's" SHA in this packet. Current delivery owns those volatile facts.
 
 ## Constraints
 

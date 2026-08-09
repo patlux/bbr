@@ -8,18 +8,18 @@ Do not polish the current placeholder sidebar incrementally. Establish BBR's vis
 
 ## Reusable UI library and development gallery — Post-MVP
 
-- [ ] Execute the serial [UI-library anchor](../tasks/ui-library-anchor.md) after the verified F2a footer/space integration. This is the extraction and dependency contract for the shared production `bbr-ui` crate; it does not authorize a parallel UI writer before the required ownership preflight.
+- [ ] Execute the serial [UI-library anchor](../tasks/ui-library-anchor.md) after the verified F2a footer/space integration. This is the extraction and dependency contract for the shared production `bbr-ui` crate; its gate permits the existing portable `bbr-domain → bbr-web` profile-identity edge while forbidding any direct `bbr-ui → bbr-web` import or second hue/identity authority. It does not authorize a parallel UI writer before the required ownership preflight.
 - [ ] Build the dev-only [BBR Gallery MVP](../tasks/component-gallery-mvp.md) from the settled anchor slice, using the same production tokens and primitives as `bbr-app`, with no WebKit or network listener.
 - [ ] Add the bounded [browser-component stories](../tasks/component-gallery-browser-components.md) from real production presentation models and callbacks, never copied gallery implementations.
 - [ ] Add the serial [composition stories](../tasks/component-gallery-compositions.md) for Sidebar, Command palette/overlay, Downloads, Find, Error/Crash, Auth, Context Menu, and Split Preview.
 
 Gallery verification supplements but never replaces the affected real-browser E2E and performance gates.
 
-## Zen-reference interaction surfaces — post-F2/G1
+## Zen-reference interaction surfaces — post-F2/G1a
 
 Zen supplies information architecture and native-macOS interaction reference,
 not BBR feature inventory or visual identity. Production implementation remains
-queued behind **F2c → F2b → fresh F2a → G1** except the Portal-specific page
+queued behind **F2c → F2b → fresh F2a → G1aa** except the Portal-specific page
 menu follow-up, which may start after F2 closeout when that territory is free.
 
 - [ ] Deliver one shared production [Tab/Favorite context-menu](../tasks/tab-favorite-context-menus.md) authority bound to the invoking persistent TabId, with capability-gated rows and no Firefox/container/mobile/extension invention.
@@ -46,8 +46,8 @@ menu follow-up, which may start after F2 closeout when that territory is free.
 ## Shell craft — Phase 4
 
 - [x] Establish the serial [GPUI-CE + gpui-component Root anchor](../tasks/gpui-ce-components-anchor.md), then compose standard input/menu/button behavior through gpui-component while retaining BBR tokens, geometric icons, native WKWebViews, and browser-specific orchestration. *(Integrated and canonical-E2E green at `f89a479`.)*
-- [ ] Collapse address entry into one surface through the [address control and palette packet](../tasks/url-address-control-palette.md). The sidebar address becomes a borderless translucent domain pill with button semantics and no focus ring; the palette opens over it with the full URL preselected. Two editing surfaces produced two focus appearances and two answers to "what is the current address" - this removes the second one rather than restyling it.
-- [ ] Refine the sidebar through the bounded [browser-MVP sidebar UI packet](../tasks/browser-mvp-sidebar-ui.md) into the compact Zed-inspired BBR hierarchy, including the footer row and a real plus-menu for New Space/New Folder. *(Patrick's post-delivery product revision replaces the footer `[Spaces]` toggle with the permanent scrollable space-identity strip owned by the [footer space strip, appearance, and swipe packet](../tasks/space-footer-strip-appearance-ui.md).)*
+- [x] Collapse address entry into one surface through the [address control and palette packet](../tasks/url-address-control-palette.md). The integrated control is a borderless domain pill with button semantics and no focus ring; the palette covers it with the full URL preselected, leaving one editing authority.
+- [x] Deliver the bounded [browser-MVP sidebar UI packet](../tasks/browser-mvp-sidebar-ui.md) as the compact Zed-inspired BBR hierarchy with Favorites, Folders, tabs, footer controls, and real New Space/New Folder actions. Patrick's later product revision replaced the footer `[Spaces]` toggle through the completed [footer space strip, appearance, and swipe packet](../tasks/space-footer-strip-appearance-ui.md).
 - [x] Replace placeholder chrome glyphs with the BBR-drawn §7 icon set. *(The
       [icon-system slice](../tasks/icon-system.md) swaps the close `×`, pin
       `●`/`○`, loading `●`, new-space `+`, crash `!`, empty-pane brand `B`,
@@ -69,16 +69,17 @@ menu follow-up, which may start after F2 closeout when that territory is free.
 
 ## Feature-level polish — Phases 5–8
 
-- [ ] Command bar feels fast, layered, and visually integrated rather than a generic modal through the bounded [browser-MVP palette UI packet](../tasks/browser-mvp-palette-ui.md).
+- [x] Command bar feels fast, layered, and visually integrated rather than a generic modal through the completed [browser-MVP palette UI packet](../tasks/browser-mvp-palette-ui.md), with NativeAboveWeb Portal ownership and gate-enforced palette/overlay performance.
 - [ ] Split divider and pane focus are clear but quiet.
 - [ ] [Link Preview / Peek](../tasks/link-preview-peek.md) communicates its temporary state, fully covers the current page without looking like a generic modal, and makes dismissal versus promotion unmistakable.
 - [ ] Persistence/recovery states communicate trust and reversibility.
-- [ ] Downloads, permissions, errors, history, settings, Saved Pages, and onboarding use the same components and language. Bounded follow-ups: [downloads sidebar panel](../tasks/downloads-sidebar-panel.md), [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md), and the post-G1 [B3 Saved Pages Library](../tasks/saved-pages-library.md) after B1+B2.
+- [ ] Downloads, permissions, errors, history, settings, Saved Pages, and onboarding use the same components and language. Bounded follow-ups: [downloads sidebar panel](../tasks/downloads-sidebar-panel.md), [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md), and the post-G1a [B3 Saved Pages Library](../tasks/saved-pages-library.md) after B1+B2.
 - [ ] Every new surface ships light/dark, empty/loading/error, keyboard-focus, and reduced-motion variants.
 
 ## Product-wide polish — Phase 9
 
-- [ ] Complete the bounded [global UI scale and density pass](../tasks/global-ui-scale-density.md) as the first slice after browser-MVP closeout. Patrick's live U1 review found the whole chrome clearly too small; revise typography, leading, spacing, row/control/hit-target, sidebar, and palette geometry through one canonical DESIGN/Theme token decision, calibrated against the preserved user reference screenshots in `/Users/patwoz/dev/Personal/macos/bbr-design-references/` (approximately 36–40 pt rows, 14–15 pt text, 18–20 pt glyphs, inset rounded row surfaces, large Favorite tiles) rather than a blanket percentage, while preserving semantic IDs, dense-500 windowing, and performance budgets.
+- [x] Apply the bounded [global UI scale and density pass](../tasks/global-ui-scale-density.md) through one canonical DESIGN/Theme token decision, calibrated against the preserved user reference screenshots (approximately 36–40 pt rows, 14–15 pt text, 18–20 pt glyphs, inset rounded row surfaces, large Favorite tiles) rather than a blanket percentage, while preserving semantic IDs, dense-500 windowing, native-content geometry, and performance budgets. *(Integrated `bf54450`; automated shell, Portal, dense, performance, canonical E2E, and package evidence recorded in the packet.)*
+- [ ] Complete Patrick's manual packaged-app readability smoke for the integrated S1 scale; this external acceptance remains tracked in Current delivery.
 - [ ] Run a bounded visual critique of all major workflows.
 - [ ] Correct typography rhythm, alignment, optical icon balance, density, and inconsistent materials.
 - [ ] Remove placeholder glyphs/copy and accidental one-off styling.

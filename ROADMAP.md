@@ -1,45 +1,25 @@
 # BBR Roadmap
 
-Live product roadmap and status index. Product intent lives in [PRODUCT.md](PRODUCT.md), architectural rationale in [PLAN.md](PLAN.md), and implemented facts in [ARCHITECTURE.md](ARCHITECTURE.md).
+Live product roadmap and the repository's sole stable delivery entry point.
+Product intent lives in [PRODUCT.md](PRODUCT.md), target architecture in
+[PLAN.md](PLAN.md), implemented facts in [ARCHITECTURE.md](ARCHITECTURE.md),
+and the visual contract in [DESIGN.md](DESIGN.md).
 
-Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/README.md). Repository workflow, mandatory E2E policy, and Angular commit rules: [AGENTS.md](AGENTS.md).
+Checklist ownership and update rules: [docs/roadmap/README.md](docs/roadmap/README.md).
+Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 
-## Current focus
+## Current execution
 
-> **Ship the first usable browser MVP on the reviewed GPUI-CE Root anchor.** The serial [GPUI-CE/components anchor](docs/roadmap/tasks/gpui-ce-components-anchor.md) and [native portal host above WebKit](docs/roadmap/tasks/native-portal-host.md) are integrated, preserving native WKWebViews behind one shared browser/window authority and one native-above-web Portal host. Finish the preserved [centered/field-anchored palette](docs/roadmap/tasks/browser-mvp-palette-ui.md), then the [Zed-inspired sidebar](docs/roadmap/tasks/browser-mvp-sidebar-ui.md), canonical E2E, and final package verification without reopening visual scale. Patrick's live U1 test found the whole chrome clearly too small; the bounded [global UI scale and density pass](docs/roadmap/tasks/global-ui-scale-density.md) is explicitly the **first slice after MVP closeout**, using one DESIGN/Theme token decision rather than local tuning. Prepared WebKit contracts follow later in serial order. Phase 4's canonical dense frame-time evidence remains an independent infrastructure acceptance.
+- **Current delivery:** [Current delivery](docs/delivery/current.md)
+- **Active product slice:** [F2a footer space strip, appearance, swipe, and drag](docs/roadmap/tasks/space-footer-strip-appearance-ui.md)
+- **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
-- [x] [Establish the parallel-delivery foundation](docs/roadmap/tasks/parallel-delivery-foundation.md), then activate bounded command-core and persistence-core task packets from its clean verified anchor. Preserve the pre-foundation `parallel/url-input` worktree until explicit settlement/handoff. *(Worktree contract, serial kernel, portable landing zones, host-wide GUI lock, unit contracts, `just verify`, testkit Clippy, smoke, performance, and canonical `just e2e` are green.)*
-- [ ] [Establish real-app startup and interaction performance E2E](docs/roadmap/tasks/performance-e2e-foundation.md) before broad sidebar implementation. *(Benchmark path, budgets, trend/artifact machinery, warm space switching, tab pin/reorder/move, and the history-rich `command_bar_first_result` / `command_bar_full_search` scenarios are integrated. F3 also supplies the real repository-backed persisted-warm-startup distribution with 10 accepted samples and visible-set-only hydration. The dedicated canonical runner, public trend publication, resource metrics, and measured dense 500/50 frame-time acceptance remain open.)*
-- [x] Resolve the tab-mutation focus matrix in the [browser interaction contract](docs/product/browser-interactions.md).
-- [x] [Create `DESIGN.md`](DESIGN.md) with a distinct native macOS visual direction and semantic tokens.
-- [x] [Implement the first controller-backed vertical-tab shell slice](docs/roadmap/phases/04-ui-shell.md) — visible tab rows (pointer + keyboard open/select/close/reopen), pinned/regular regions, states, empty space, crash recovery — with functional and performance E2E.
-- [x] [Render and switch spaces with unmistakable profile identity](docs/roadmap/phases/04-ui-shell.md) — visible profile/space navigation with round-robin identity hues, pointer + keyboard activation, per-space active-tab restoration without recreating warm sessions, and real-app E2E + warm-switch performance coverage. *(`Cmd-Shift-M` staged moves and drag-into-space arrive with the tab-organization slice; the cross-context command-field profile hint for cross-profile switching is the [cross-context profile-hint slice](docs/roadmap/tasks/cross-context-profile-hint.md).)*
-- [x] [Add an adjustable, collapsible sidebar with stable native-content geometry](docs/roadmap/phases/04-ui-shell.md) — DESIGN §5/§11.4 widths (200–360 pt, default 260), a visible 4 pt drag hairline with pointer drag through the production GPUI listener path, keyboard equivalents on the focused divider (`←`/`→` step, `0` reset), Cmd-B collapse/expand that restores the last expanded width, narrow-window clamping that keeps the native content at its 64 pt floor (never zero/negative), typed snapshot state (visible, width, min/default/max, divider id/state, content rect), and real-app E2E + resize/restore performance coverage.
-- [x] [Tab organization: pin/unpin, region-bounded reorder, and move between spaces](docs/roadmap/phases/04-ui-shell.md) — complete keyboard commands (`Cmd-Shift-P`, `Cmd-Shift-↑/↓`, staged `Cmd-Shift-M` + Enter) and visible controls (row pin dot, §10.9 insertion tick with legality, drag-target space rows), real pointer drag through the production GPUI press/move/release listeners, illegal boundary drops rejected whole, same-profile moves that preserve the WebViewId and warm native session, cross-profile moves that recreate exactly once in the destination store with cookie isolation, and pin/reorder/move presentation benchmarks. Proven by `just e2e-shell-organize` and the `tab_pin`/`tab_reorder`/`tab_move_same_profile`/`tab_move_cross_profile` scenarios in the gate-enforced perf matrix.
-- [x] [Dense-500 list slice: bounded lifecycle, windowed rendering, recency, and gate-wired scroll/select benchmarks](docs/roadmap/tasks/dense-list-slice.md) — 500 tab identities with exactly 50 live sessions and 450 suspended through the production controller paths (bounded concurrent-session peak while preparing the state), a bounded-window regular region that follows the production scroll offset and never lays out the collection, a pinned + recently-used keep set with exactly-one-session suspended recreation, and `dense_scroll`/`dense_select` scenarios wired into the perf matrix with contract budgets and full-gate sample-count asserts (the perf gate measures the S-density 230/20 frame path; the 500/50 lifecycle is proven by the functional dense E2E, and the measured 500/50 frame-time acceptance on the canonical runner remains open in the task packet). Proven by `just verify`, `just e2e-shell-dense`/`e2e_shell_dense_edge`, and the canonical `just e2e`. *(The dense state is in-memory — 500 identities / 50 live / 450 suspended — and never claims persisted restoration, which Phase 7 owns.)*
-- [x] [Pointer-state and typed semantic tree: §10.2 hover / §10.3 press through the production listeners and the internal §15 semantic model](docs/roadmap/tracks/accessibility.md) — hover wash + close reveal and the pressed wash derive from app state the real pointer paths drive; the typed tree (roles/names/values/enabled/selected/focused/hierarchy) mirrors the render from the same row/space visuals, with real-app E2E (`just e2e-shell-hover`) and `tab_hover`/`tab_press` scenarios in the gate-enforced perf matrix. *(Internal model only — GPUI 0.2.2 has no platform Accessibility layer; the macOS Accessibility/VoiceOver/Appium bridge and packaged-app acceptance are Phase 9.)*
-
-## Active execution lanes
-
-Roadmap phases remain product acceptance milestones; implementation lanes may
-prepare independent foundations in parallel under the
-[parallel-delivery contract](docs/parallel-delivery.md). Shared `bbr-web`,
-controller, app-composition, testkit-wire, performance-baseline, migration, and
-root-roadmap contracts remain serial integration surfaces.
-
-| Lane | Phase/track owner | Readiness |
-|---|---|---|
-| Parallel-delivery foundation | [task packet](docs/roadmap/tasks/parallel-delivery-foundation.md) | implemented and verified; anchor recorded in its ledger |
-| Command core / composition | [Phase 5](docs/roadmap/phases/05-command-bar.md) · [portable core](docs/roadmap/tasks/command-core.md) · [app composition](docs/roadmap/tasks/command-composition.md) | core integrated at `b7c475a`; complete reviewed/remediated real-app composition integrated at `872d222`; history provider deferred to Phase 7 |
-| Persistence core | [Phase 7](docs/roadmap/phases/07-persistence.md) · [task packet](docs/roadmap/tasks/persistence-core.md) | implemented, independently reviewed, remediated, and integrated at `3a3c7f1`; branch writer-free; schema v2 (no migrations) per the [decision record](docs/roadmap/tasks/schema-v2-migration-decision.md); command-history provider + global settings integrated in the F2c lane; per-site settings/zoom, warm restore, and force-quit remain open |
-| GPUI-CE / gpui-component Root anchor | [Phase 4](docs/roadmap/phases/04-ui-shell.md) · [task packet](docs/roadmap/tasks/gpui-ce-components-anchor.md) | integrated and post-merge green at `f89a479`; one GPUI-CE type world, Root seam, native WKWebViews, canonical `just e2e` |
-| Native portal host above WebKit | [Phase 4](docs/roadmap/phases/04-ui-shell.md) · [Phase 5](docs/roadmap/phases/05-command-bar.md) · [task packet](docs/roadmap/tasks/native-portal-host.md) | active serial architecture kernel; general Portal API with `GpuiDeferred` and one-per-window `NativeAboveWeb` host; must prove real AppKit z-order/hit-testing before U1 integration |
-| Browser-MVP palette UI (U1) | [Phase 5](docs/roadmap/phases/05-command-bar.md) · [task packet](docs/roadmap/tasks/browser-mvp-palette-ui.md) | implementation preserved and semantic/E2E gates green, but native-boundary review blocked integration; resumes only on the integrated native portal host |
-| Browser-MVP sidebar UI (U2) | [Phase 4](docs/roadmap/phases/04-ui-shell.md) · [task packet](docs/roadmap/tasks/browser-mvp-sidebar-ui.md) | active isolated lane; depends on L5 concrete-tab favorites and later serial Portal/U1 integration; exact footer/menu/Favorites/Folders target |
-| Global UI scale/density | [Phase 9](docs/roadmap/phases/09-quality-release.md) · [task packet](docs/roadmap/tasks/global-ui-scale-density.md) | queued first after MVP closeout; whole-chrome DESIGN/Theme token revision from live U1 feedback; must not delay U1 → U2 → package-verify |
-| Split shared contract / core / app composition | [Phase 6](docs/roadmap/phases/06-split-view.md) · [shared contract](docs/roadmap/tasks/split-shared-contract.md) · [portable core](docs/roadmap/tasks/split-core.md) · [app composition](docs/roadmap/tasks/split-app-composition.md) | per-view geometry/controller anchor integrated at `29c34e6`; reviewed portable split planning integrated at `9eeb6b2`; uncommitted production composition preserved and parked until the Root-anchor port |
-| Performance runner | [performance track](docs/roadmap/tracks/performance-release.md) | external infrastructure lane |
-| WebKit capability lanes | [Phase 8](docs/roadmap/phases/08-daily-driver.md) | after serial `bbr-web` capability contracts |
+The current-delivery document is the only owner of volatile execution state:
+verified base SHA, active/frozen lanes, writer ownership, next executable gate,
+blockers, and serial integration order. Task packets own scope and acceptance;
+phases and tracks own durable product acceptance. Historical ledgers are
+preserved as evidence and never resumed as current execution after a recorded
+cutover.
 
 ## Product phases
 
@@ -47,134 +27,62 @@ root-roadmap contracts remain serial integration surfaces.
 - [x] [1 — Native GPUI + WKWebView integration baseline](docs/roadmap/phases/01-native-integration.md)
 - [x] [2 — Portable browser orchestration](docs/roadmap/phases/02-browser-core.md)
 - [x] [3 — Multi-session macOS WebKit adapter](docs/roadmap/phases/03-multi-session-webkit.md)
-- [ ] [4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md) **← current**
-- [x] [5 — Unified command bar](docs/roadmap/phases/05-command-bar.md) *(Local tabs/spaces/actions/navigation/search are keyboard-complete and benchmark-protected; persisted history composition remains owned by Phase 7.)*
+- [ ] [4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md) **← current product milestone**
+- [x] [5 — Unified command bar](docs/roadmap/phases/05-command-bar.md)
 - [ ] [6 — Two-pane split view](docs/roadmap/phases/06-split-view.md)
 - [ ] [7 — Persistence and crash recovery](docs/roadmap/phases/07-persistence.md)
-- [ ] [8 — Daily-driver browser essentials](docs/roadmap/phases/08-daily-driver.md) — includes [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md), [downloads](docs/roadmap/tasks/downloads-sidebar-panel.md), [find in page](docs/roadmap/tasks/find-in-page-portal-bar.md), the Saved Pages sequence [B1](docs/roadmap/tasks/saved-pages-portable-persistence.md) → [B2](docs/roadmap/tasks/saved-pages-actions-command.md) → [B3](docs/roadmap/tasks/saved-pages-library.md), and deferred [Portal follow-ups](docs/roadmap/tasks/native-portal-hardening.md)
+- [ ] [8 — Daily-driver browser essentials](docs/roadmap/phases/08-daily-driver.md)
 - [ ] [9 — Accessibility, polish, performance, and release hardening](docs/roadmap/phases/09-quality-release.md)
 - [ ] [10 — Cross-platform adapters](docs/roadmap/phases/10-cross-platform.md)
 
-## When the UI becomes beautiful
-
-UI work is deliberately staged rather than deferred until the end:
-
-1. **Phase 4 starts with visual direction and design tokens** before the real tab/sidebar shell is implemented.
-2. **Every UI feature phase includes its own interaction, accessibility, empty/error-state, and visual-polish acceptance items.**
-3. **Phase 9 contains a dedicated alpha/beta polish pass** across the complete product, including motion, typography, iconography, density, dark mode, VoiceOver, performance, and consistency.
-
-This avoids polishing placeholder UI now, while also preventing a functional-but-ugly shell from accumulating until release.
+A phase checkbox is an acceptance roll-up, not an executable queue item. It is
+checked only when every required linked acceptance item is directly proven.
+Partially implemented outcomes remain open or are split at their canonical
+owner; they are never mass-checked from commit history alone.
 
 ## Cross-cutting tracks
 
 - [Testing and deterministic E2E](docs/roadmap/tracks/testing.md)
 - [Accessibility and input](docs/roadmap/tracks/accessibility.md)
 - [UI design system and visual quality](docs/roadmap/tracks/ui-design-system.md)
-- [Performance, energy, and release safety](docs/roadmap/tracks/performance-release.md) · [performance contract](docs/product/performance-contract.md)
+- [Performance, energy, and release safety](docs/roadmap/tracks/performance-release.md)
+- [Browser orchestration](docs/roadmap/tracks/browser-orchestration.md)
+- [Native web-engine integration](docs/roadmap/tracks/native-integration.md)
 
-## Status snapshot
+## Delivery contracts
 
-Completed today:
+- [Development workflow](docs/development-workflow.md): bounded slice,
+  writer/reviewer/remediation lifecycle, evidence, and closeout.
+- [Parallel delivery](docs/parallel-delivery.md): ownership, isolated worktrees,
+  serial integration kernel, and host-wide GUI lock.
+- [Task-packet template](docs/roadmap/templates/task-packet.md): required
+  outcome, scope, constraints, evidence, gates, iteration policy, and blocked
+  stop condition.
 
-- Reproducible Nix/direnv Rust environment.
-- Multi-crate workspace and portable WebEngine contracts.
-- Native macOS WKWebView child-view bridge inside GPUI.
-- Real focus hand-off, title observation, resize synchronization, and navigation events.
-- Deterministic Unix-socket testkit, fixture server, event replay/cursors, deadlines, and cleanup.
-- Real-app WKWebView smoke covering load, navigation, back/forward, reload, resize, focus, and shutdown.
-- Portable profile/space/tab/split/lifecycle domain model with 41 tests.
-- Portable `bbr-browser` controller + deterministic fake engine: 54 tests
-  covering tab/session/navigation/split/lifecycle policy, active-space visibility,
-  profile moves, and typed controller events (`just verify` green).
-- Real-app profiles suite proving cookie isolation across two WKWebsiteDataStores,
-  same-profile WebView reuse, cross-profile recreation, and suspend cleanup.
-- First controller-backed vertical-tab shell slice: reusable Chassis tokens/components,
-  visible pinned/regular tab surface, favicon/title/loading/crash states, pointer +
-  keyboard open/select/close/reopen with the focus-domain contract, empty-space
-  handling, and crash recovery — proven by `just e2e-shell-tabs` and real-app
-  performance scenarios (`tab_select_pointer`, `tab_reopen`).
-- Visible profile/space navigation slice: complete profile/space collections with
-  round-robin identity hues and per-row chips, pointer + keyboard activation,
-  per-space active-tab restoration without recreating warm sessions, empty-space
-  pane naming, and cross-profile switches that preserve cookie isolation — proven
-  by `just e2e-shell-spaces` and the `space_switch` performance scenario
-  (p95 ≈ 0.1 ms against the 50 ms warm budget).
-- Adjustable/collapsible sidebar slice: DESIGN §5/§11.4 width contract
-  (200–360 pt adjustable, 260 default, 64 pt native-content floor), the visible
-  4 pt drag hairline with pointer drag through the production listener path,
-  keyboard resize/reset parity on the focused divider, Cmd-B collapse/expand
-  restoring the last expanded width, and narrow-window clamping that keeps the
-  native WKWebView geometry strictly positive — proven by
-  `just e2e-shell-sidebar` (pointer drag, keyboard parity, collapse/reopen,
-  compact-window clamp, native content rect, WebViewId/session preservation,
-  focus contract) and the `sidebar_resize`/`sidebar_restore` performance
-  scenarios (p95 ≈ 0.002 ms against the 50 ms next-frame budget).
-- Tab-organization slice: complete keyboard commands (`Cmd-Shift-P` pin/unpin,
-  `Cmd-Shift-↑/↓` region-bounded reorder, `Cmd-Shift-M` staged move + Enter /
-  Escape), visible pin control + §10.9 drag tick with invalid variant + drag-
-  target space rows, real pointer drag through the production press/move/
-  release listeners, illegal boundary drops rejected whole, same-profile moves
-  that preserve the WebViewId and warm session, cross-profile moves that
-  recreate exactly once in the destination store with cookie isolation, and
-  Escape cancellation — proven by `just e2e-shell-organize` and the
-  `tab_pin`/`tab_reorder`/`tab_move_same_profile`/`tab_move_cross_profile`
-  performance scenarios (session-recreation class for the cross-profile move).
-- Dense-500 list slice: 500 identities with exactly 50 live sessions and 450
-  suspended through the production lifecycle paths (bounded concurrent-session
-  peak during preparation), the bounded-window regular region with a
-  deterministic scroll anchor, the pinned + recent recency keep set with
-  warm-selection reuse and exactly-one-session suspended recreation, keyboard
-  traversal with instant scroll-into-view, edge states, and the dense drag
-  tick — proven by `just e2e-shell-dense` / `e2e_shell_dense_edge` plus the
-  dense unit/contract suites, with `dense_scroll`/`dense_select` scenarios
-  wired into the gate-enforced perf matrix (contract budgets seeded; the
-  gate measures the S-density 230/20 frame path — the 500/50 lifecycle is
-  proven by the functional dense E2E and the measured 500/50 frame-time
-  acceptance stays on the canonical runner; an attempted 500/50 perf-gate
-  re-seed was reverted because the perf matrix's prior WebKit churn kills
-  the active tab's process mid-loop on the dev host). The dense state is
-  in-memory only — persisted restoration is Phase 7.
-- Pointer-state + typed semantic-tree slice: the §10.2 hover wash + close
-  reveal and the §10.3 pressed wash derive from app state the production
-  `on_hover` / mouse-down/up listeners drive (never a snapshot mutation), the
-  composed §10 row states expose `hover`/`active` with the more specific
-  state winning, and the internal §15 semantic model (roles/names/values/
-  enabled/selected/focused + hierarchy) mirrors the render from the same
-  row/space visuals — proven by `just e2e-shell-hover` (hover/press
-  transitions, close-reveal presence, typed focus clarity, disabled controls
-  while dragging, profile chips, long-title/missing-favicon names, crash /
-  empty / collapsed-sidebar branches) and the `tab_hover`/`tab_press`
-  scenarios in the gate-enforced perf matrix. Internal model only: GPUI 0.2.2
-  has no platform Accessibility layer; the macOS Accessibility bridge and the
-  packaged-app VoiceOver/Appium/manual acceptance are Phase 9.
-- Cross-context profile-hint slice: DESIGN §11.3 — after a successful
-  cross-profile space activation the destination profile appears at the top
-  of the command field for one interaction as the §12 chip plus a `type:label`
-  "in Profile · <title>" hint, so a cross-profile destination is unmistakable
-  without relying on color; same-profile switching never announces a profile
-  transition; the lifetime is a deterministic user-interaction boundary (the
-  next chrome context mutation — a space activation, tab mutation, or
-  command-bar mode entry), never a timer; and the staged `MoveTab` hint is a
-  separate surface that never coexists with it. The hint renders through the
-  production command-field path with a stable `bbr-command-profile-hint` id,
-  typed snapshot exposure, and a §15 `Chip` semantic node — proven by
-  `just e2e-shell-spaces` (pointer, keyboard, and hint suites — the hint
-  suite covers the pointer path, the keyboard path, and the empty cross-
-  profile branch) and the new
-  `space_switch_cross_profile` scenario in the gate-enforced perf matrix
-  (stored artifact `crates/bbr-app/target/bbr-perf-artifacts/short/performance.json`,
-  Mac16,5, canonical=false: samples 30, p95 0.066125 ms, max 0.079875 ms
-  against the 50/100 ms warm budget, sessions never recreated).
-  Full slice: [cross-context profile-hint task packet](docs/roadmap/tasks/cross-context-profile-hint.md).
+## Long-lived product programs
 
-Next release-shaped outcome:
+These links make every prepared task discoverable without turning the roadmap
+into a duplicate execution queue:
 
-- A benchmark-protected vertical-tab and space shell that opens with sidebar and
-  selected web content presented together, keeps warm tab/space switching,
-  sidebar interaction (toggle, drag resize, keyboard resize/reset, collapse /
-  restore), tab organization (pin/unpin, reorder, move between spaces), and
-  dense-list interaction (scroll/select through the bounded-window render)
-  within explicit latency budgets, and has defined visual, focus,
-  profile-identity, pointer, and keyboard behavior proven through the real app.
-  Next shell slice: the remaining shell craft items and the measured
-  dense frame-time evidence on the canonical runner.
+- **Performance foundation and remaining canonical-runner evidence:**
+  [performance E2E foundation](docs/roadmap/tasks/performance-e2e-foundation.md)
+- **Persistence:** [portable core](docs/roadmap/tasks/persistence-core.md),
+  [chrome-first hydration](docs/roadmap/tasks/persistence-hydration.md), and
+  [schema-v2 decision](docs/roadmap/tasks/schema-v2-migration-decision.md)
+- **Settings and appearance:** [global search settings contract](docs/roadmap/tasks/general-search-settings-contract.md),
+  [space appearance contract](docs/roadmap/tasks/space-appearance-contract.md),
+  and [footer appearance UI](docs/roadmap/tasks/space-footer-strip-appearance-ui.md)
+- **Saved Pages:** [B1 portable persistence](docs/roadmap/tasks/saved-pages-portable-persistence.md)
+  → [B2 actions and command provider](docs/roadmap/tasks/saved-pages-actions-command.md)
+  → [B3 library](docs/roadmap/tasks/saved-pages-library.md)
+- **Shared UI and Gallery:** [UI-library anchor](docs/roadmap/tasks/ui-library-anchor.md)
+  → [Gallery MVP](docs/roadmap/tasks/component-gallery-mvp.md)
+  → [browser components](docs/roadmap/tasks/component-gallery-browser-components.md)
+  → [compositions](docs/roadmap/tasks/component-gallery-compositions.md)
+- **Release:** [deterministic app packaging](docs/roadmap/tasks/macos-app-packaging.md)
+  and [deterministic process shutdown](docs/roadmap/tasks/process-lifecycle-shutdown.md)
+
+The detailed dependency and scheduling state for these programs lives only in
+the Current-delivery pointer above. Delivery-control completion is audited
+requirement-by-requirement in the
+[delivery-control completion audit](docs/delivery/delivery-control-completion-audit.md).

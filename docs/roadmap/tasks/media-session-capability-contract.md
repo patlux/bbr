@@ -5,7 +5,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [interaction contract](../../product/browser-interactions.md) ·
 [sidebar media-control UI](sidebar-media-control.md).
 
-Status: **queued after fresh F2a and G1 as the required contract predecessor
+Activation condition: complete F2a and G1a are integrated; this remains the required contract predecessor
 for media UI.** Documentation only today. The contract/native implementation
 may be scheduled only when its `bbr-web`/WebKit territory is free; the sidebar
 UI remains blocked until this packet is integrated.
@@ -67,7 +67,7 @@ rejects stale commands without controlling another tab. No UI is included.
 ## Parallel-lane contract
 
 ```text
-Base commit:          verified main after F2 closeout; may run after G1 starts
+Base condition:       verified main after F2 closeout; may run after G1a starts
                       only when bbr-web/native adapter/testkit territories are
                       disjoint from active lanes
 Depends on:           settled portable identity types and WebEngine/event seams

@@ -1,6 +1,6 @@
 # BBR implementation plan
 
-> This document explains the architectural sequence and target behavior. The live, hierarchical checklist is [ROADMAP.md](ROADMAP.md); implemented facts are recorded in [ARCHITECTURE.md](ARCHITECTURE.md).
+> This document preserves the long-lived architectural sequence and target behavior. The sole current delivery entry point is [ROADMAP.md](ROADMAP.md); implemented facts are recorded in [ARCHITECTURE.md](ARCHITECTURE.md). Historical milestone descriptions below are not execution pointers.
 
 ## Product target
 
@@ -320,9 +320,9 @@ Do not promise identical engine behavior across operating systems. Promise consi
 - Manual smoke suite against representative sites: authentication, video/audio, WebGL/WebGPU where supported, editors, conferencing, downloads/uploads, payments, and passkeys.
 - Instruments measurements for Time Profiler, Allocations, Energy Log, and hangs.
 
-## Immediate next milestone
+## Initial risk-retirement milestone — completed
 
-Build only the native-view spike before the full workspace:
+The project began by building only the native-view spike before the full workspace:
 
 1. Minimal Cargo workspace with `bbr-app`, `bbr-web`, and `bbr-web-macos`.
 2. GPUI window and fixed sidebar.
@@ -331,4 +331,4 @@ Build only the native-view spike before the full workspace:
 5. Focus and overlay test.
 6. Document the integration boundary and measured idle behavior.
 
-This milestone retires the primary architectural risk and provides a thin end-to-end product on which every later capability can grow.
+This completed milestone retired the primary architectural risk and provided the thin end-to-end product on which later capabilities grew. Current execution is intentionally not repeated here; follow [ROADMAP.md](ROADMAP.md).

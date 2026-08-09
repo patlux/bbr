@@ -5,9 +5,11 @@ optimizes for short feedback loops without weakening real-app E2E, performance,
 architecture, or roadmap acceptance.
 
 Repository rules in [AGENTS.md](../AGENTS.md) remain authoritative. Roadmap
-ownership rules live in [docs/roadmap/README.md](roadmap/README.md). Parallel
-worktree lanes, the serial integration kernel, and the host-wide GUI gate are
-defined in [parallel delivery](parallel-delivery.md).
+ownership rules live in [docs/roadmap/README.md](roadmap/README.md). Start every
+continuation at [ROADMAP.md](../ROADMAP.md), which points to exactly one
+committed [Current delivery](delivery/current.md) for volatile execution state.
+Parallel worktree lanes, the serial integration kernel, and the host-wide GUI
+gate are defined in [parallel delivery](parallel-delivery.md).
 
 ## Default unit of delivery: a bounded vertical slice
 
@@ -158,6 +160,11 @@ ownership file must never be treated as stronger evidence than actual process,
 workflow, session, branch, and worktree state.
 
 ## Delivery ledger and metrics
+
+The current-delivery snapshot owns live base/owner/status/gate/blocker/order
+state. Task packets remain durable acceptance contracts; historical ledgers and
+evidence reports preserve chronology and detail. Do not repeat transient run
+ids or "today's" base SHAs in phase/track/task documents.
 
 Every completed slice records:
 

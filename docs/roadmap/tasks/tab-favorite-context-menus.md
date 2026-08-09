@@ -8,9 +8,9 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [Gallery browser components](component-gallery-browser-components.md) ·
 [Gallery compositions](component-gallery-compositions.md).
 
-Status: **queued after fresh F2a and G1.** Documentation only today. The
+Activation condition: complete F2a and G1a are integrated, and Bookmark rows additionally wait for B2, as recorded in [Current delivery](../../delivery/current.md). The
 implementation must not start before the verified integration sequence
-F2c → F2b → fresh F2a and the settled G1 `bbr-ui` anchor.
+F2c → F2b → fresh F2a and the settled G1a `bbr-ui` anchor.
 
 Stable information-architecture references (not feature or visual copies):
 
@@ -91,20 +91,20 @@ label (`Add to Favorites` / `Remove from Favorites`).
 ## Parallel-lane contract
 
 ```text
-Base commit:          verified main after F2c → F2b → fresh F2a and settled G1
-Depends on:           G1 production bbr-ui menu primitives; integrated F2
+Base condition:       verified main after F2c → F2b → fresh F2a and settled G1a
+Depends on:           G1a production bbr-ui menu primitives; integrated F2
                       wave; existing tab/favorite/folder/controller authority;
                       B2 only for Bookmark/Remove Bookmark rows
 Provides/API:         app/controller TabMenuSource + availability matrix;
                       presentation-only bbr-ui TabMenuModel; production menu
                       composition and typed command/native adapters
-Exclusive paths:      post-G1 bbr-ui tab/favorite menu modules; corresponding
+Exclusive paths:      post-G1a bbr-ui tab/favorite menu modules; corresponding
                       bbr-app sidebar menu composition; focused controller
                       command modules; focused E2E/perf modules
 Shared integration points: bbr-app input/focus routing, controller facade,
                       native Share adapter, testkit snapshot, perf registry,
                       Gallery G2/G3 registries, roadmap roll-ups
-Integration order:    F2c → F2b → fresh F2a → G1 → this packet; Gallery
+Integration order:    F2c → F2b → fresh F2a → G1aa → this packet; Gallery
                       stories register with the same production cutover
 ```
 
@@ -187,7 +187,7 @@ GUI suites run sequentially under the repository lock.
 
 ## Delivery sequence
 
-1. Confirm F2 and G1 are integrated and UI ownership is free.
+1. Confirm F2 and G1a are integrated and UI ownership is free.
 2. Add the portable availability/command seam and prove no-open mutation.
 3. Cut over one shared production Tab/Favorite menu in `bbr-ui`.
 4. Add pointer/keyboard/submenu semantics and native Share adaptation.

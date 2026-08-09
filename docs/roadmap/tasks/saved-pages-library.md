@@ -10,7 +10,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.16 ·
 Source decision: `/Users/patwoz/dev/Personal/macos/bbr-saved-pages-bookmarks-plan.md`.
 
-Status: **queued after integrated B1+B2 and settled G1.** This packet is the
+Activation condition: B1 and B2 are integrated and G1a is settled, as recorded in [Current delivery](../../delivery/current.md). This packet is the
 canonical detail owner for the dedicated production Saved Pages Library. It
 does not own Saved Page identity/persistence (B1), save/open/Palette/menu
 commands (B2), or Gallery-only copies.
@@ -27,7 +27,7 @@ permanent Sidebar region.
 ## Scope
 
 - Build one ordinary BBR-owned GPUI Library surface from shared production
-  `bbr-ui` primitives after G1. It is not a web page, native Portal, WebKit
+  `bbr-ui` primitives after G1a. It is not a web page, native Portal, WebKit
   view, or permanent Sidebar section. A small entry point may integrate with
   the settled chrome/command/settings navigation, but it must not duplicate the
   Palette provider or add a second Saved Page authority.
@@ -74,7 +74,7 @@ permanent Sidebar region.
 ## Parallel-lane contract
 
 ```text
-Base commit:          verified main after B1+B2 and settled G1
+Base condition:       verified main after B1+B2 and settled G1a
 Depends on:           production bbr-ui primitives/Library composition seam;
                       one AppStore and loaded Saved Page snapshot; B2 commands;
                       free broad UI/Gallery/testkit/perf territory
@@ -88,7 +88,7 @@ Exclusive paths:      focused bbr-ui Saved Page row/library modules;
 Shared integration points: app chrome/internal-surface navigation, bbr-ui and
                       Gallery registries, testkit/perf registries, Phase 8/UI
                       track and ROADMAP roll-ups
-Integration order:    B1 → B2; G1 → B3 production cutover → append-only G2/G3
+Integration order:    B1 → B2; G1a → B3 production cutover → append-only G2/G3
                       registration; import/export is a later packet
 ```
 
@@ -179,7 +179,7 @@ GUI suites run sequentially under the repository lock.
 
 ## Delivery sequence
 
-1. Confirm B1+B2 and G1 are integrated and broad UI/Gallery ownership is free.
+1. Confirm B1+B2 and G1aa are integrated and broad UI/Gallery ownership is free.
 2. Establish the presentation model and smallest empty/populated Library.
 3. Add search/sort, then single-record rename/remove/open, then multi-select and
    flat collection mutations; keep every stage working end to end.
@@ -198,7 +198,7 @@ or Gallery duplication. Never move repository/controller authority into
 
 ## Blocked stop condition
 
-Stop with preserved state if G1/B1/B2 is not integrated, no defensible ordinary
+Stop with preserved state if G1a/B1/B2 is not integrated, no defensible ordinary
 GPUI Library host exists without a second browser authority, UI/Gallery
 territory is occupied, or 1k bounded rendering cannot preserve typed
 selection/scroll evidence. Report the exact owner/API/architecture blocker and

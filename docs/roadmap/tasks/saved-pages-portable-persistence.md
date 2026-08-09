@@ -6,7 +6,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [interaction contract](../../product/browser-interactions.md) ·
 Source decision: `/Users/patwoz/dev/Personal/macos/bbr-saved-pages-bookmarks-plan.md`.
 
-Status: **queued when repository/schema territory is writer-free.** This is the
+Activation condition: the verified delivery base and repository/schema territory must be writer-free as recorded in [Current delivery](../../delivery/current.md). This is the
 canonical detail owner for Saved Page identity, validation, canonical-URL
 duplicate behavior, flat collections, repository operations, and the next
 development schema shape. Higher roadmap levels contain links and roll-ups only.
@@ -78,7 +78,7 @@ link to that tab remains.
 ## Parallel-lane contract
 
 ```text
-Base commit:          verified main after the current F2 integration kernel
+Base condition:       verified main after the current F2 integration kernel
                       and after every active repository/schema writer settles
 Depends on:           one integrated AppStore/repository authority; current
                       schema truth; free bbr-domain/bbr-persistence territory

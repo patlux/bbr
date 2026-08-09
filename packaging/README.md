@@ -1,7 +1,7 @@
 # BBR packaging lane (L1) — deterministic `.app` bundle
 
 Owned by the prepared Phase 9 release-safety lane
-[docs/roadmap/tasks/macos-app-packaging.md](../../docs/roadmap/tasks/macos-app-packaging.md).
+[docs/roadmap/tasks/macos-app-packaging.md](../docs/roadmap/tasks/macos-app-packaging.md).
 This lane deliberately does **not** integrate with the later GPUI anchor or
 any app code: it consumes the already-built `bbr` Mach-O binary generically.
 

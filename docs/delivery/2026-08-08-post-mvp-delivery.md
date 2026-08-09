@@ -1,8 +1,15 @@
-# 2026-08-08 — Post-MVP-Delivery: Live-Status und Arbeitsliste
+# 2026-08-08 — Post-MVP-Delivery: Ausführungsledger und Evidenz
 
-Diese Datei löst `2026-08-07-browser-mvp-parallel-plan.md` als **einzige
-Quelle der Arbeitsliste und der Wahrheit** ab. Der Vorgänger bleibt als
-Nacht-Protokoll des MVP-Closeouts erhalten und wird nicht mehr fortgeschrieben.
+> **Cutover-Hinweis:** Diese Datei bleibt bis zum atomar verifizierten
+> Delivery-Control-Cutover die kanonische operative Quelle. Nach dem Cutover
+> wird sie als unverändertes Chronologie-/Recovery-/Evidenzarchiv bewahrt; der
+> alleinige aktuelle Pointer liegt dann in [ROADMAP.md](../../ROADMAP.md) und
+> zeigt auf [Current delivery](current.md). Ein bloß vorhandener, uncommitteter
+> oder noch `PENDING_*` enthaltender Kandidat ändert diese Autorität nicht.
+
+Diese Datei löste `2026-08-07-browser-mvp-parallel-plan.md` als operative
+Quelle ab. Der Vorgänger bleibt als Nacht-Protokoll des MVP-Closeouts erhalten
+und wird nicht mehr fortgeschrieben.
 
 Der Ausgangsstand: das MVP ist geschlossen, `main` steht auf `78f3782`, das
 gepackte `.app` trägt Binary-SHA256
@@ -60,14 +67,18 @@ Find-in-page, Downloads-Panel).
 | Post-F2a-Delivery-Welle | **Erst F2a vollständig mit Tint, Swipe, Drag-to-chip, `swipe_commit`, Reviews, Orchestrator-Gates und serieller Integration abschließen. Danach das komplette Ledger erneut lesen, alle offenen Queue-Punkte per Parallelism-/Ownership-Audit klassifizieren und Queue 20, B1 und G1 maximal sicher aus demselben verifizierten post-F2a-`main` starten.** Shutdown besitzt Lifecycle/Testkit/E2E; B1 nur portable Domain/Persistence/Schema; G1 extrahiert ausschließlich die integrierte Produktionsautorität ohne Kopien. Implementierung/Non-GUI parallel, GUI/E2E/Perf hostexklusiv. | Shutdown wird zuerst integriert, danach kanonischer F2-Closeout. B1/G1 dürfen währenddessen weiterlaufen oder `REVIEW_PASS`/frozen erreichen; anschließend serielle Integration, standardmäßig B1 vor dem breiteren G1-Kernel, sofern Evidenz oder Abhängigkeiten nichts anderes verlangen |
 | Folgeabhängigkeiten nach A/B/C | **Die parallele post-F2a-Welle entblockt keine nachgelagerten Produktpakete vorzeitig.** | G2/G3, B2/B3 und Z1/Z2/Z4/Z5 starten nicht vor ihren bestehenden Produktabhängigkeiten. Z3 startet erst nach erfolgreichem F2-Closeout und bei erneut freiem Portal-/Context-Menu-Territorium |
 
-## Offene Entscheidungen mit Empfehlung
+## Historische Entscheidungen und spätere Auflösung
 
-| Punkt | Frage | Empfehlung |
+Die folgenden Punkte waren zu Beginn dieses Ledgers offen. Die später
+integrierte Produktentscheidung ist jeweils maßgeblich und wird beim Cutover in
+[Current delivery](current.md) übernommen:
+
+| Punkt | Frühe Empfehlung | Integrierte Auflösung |
 |---|---|---|
-| Settings-Contract-Host | Wohnt der Settings-/Suchmaschinen-Contract in `bbr-web` oder `bbr-command`? | **`bbr-web`.** Settings sind persistenznah und werden vom Store geladen und geschrieben; `bbr-command` ist bewusst provider-neutral und darf keine Produktkonfiguration besitzen, sonst wird die Palette zum zweiten Zustandshalter |
-| Space-Appearance-Palette | Welche Farben und welches Emoji-Set? | Siehe Vorschlag unten |
+| Settings-Contract-Host | zunächst `bbr-web` erwogen | `bbr-command` besitzt den portablen provider-neutralen Search-Settings-Contract; `bbr-app`/`bbr-persistence` besitzen Composition und Speicherung. Integration `ddd09cd`/`26e19c1`; kein zweiter Ranking- oder DB-Owner |
+| Space-Appearance-Palette | zunächst acht Töne vorgeschlagen | der integrierte Contract besitzt neun stabile `SpaceTheme`-Tokens (sechs `ProfileHue`-kompatible plus drei Space-only) und den validierten kuratierten Identity-Katalog. Integration `9f53f44` |
 
-### Vorschlag Space-Appearance (zur Kalibrierung)
+### Historischer Vorschlag Space-Appearance (vor der integrierten Auflösung)
 
 - **Palette:** acht kuratierte Töne statt freier Farbwahl, weil freie Wahl in
   einer getönten Chrome zuverlässig unlesbar wird. Vorschlag entlang der

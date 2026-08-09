@@ -9,9 +9,9 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [Gallery browser components](component-gallery-browser-components.md) ·
 [Gallery compositions](component-gallery-compositions.md).
 
-Status: **queued after fresh F2a, G1, and the integrated media capability
+Activation condition: complete F2a and G1a plus the integrated media capability
 contract.** Documentation only today. It must not interrupt
-F2c → F2b → fresh F2a or start before the settled G1 `bbr-ui` anchor.
+F2c → F2b → fresh F2a or start before the settled G1a `bbr-ui` anchor.
 
 Stable composition reference, not a feature or visual copy:
 `/Users/patwoz/dev/Personal/macos/bbr-design-references/zen-sidebar-media-control.png`.
@@ -68,19 +68,19 @@ and never controls a stale or different session.
 ## Parallel-lane contract
 
 ```text
-Base commit:          verified main after F2c → F2b → fresh F2a, settled G1,
+Base condition:       verified main after F2c → F2b → fresh F2a, settled G1a,
                       and integrated media-session capability contract
-Depends on:           media capability API/adapter; G1 bbr-ui foundations and
+Depends on:           media capability API/adapter; G1a bbr-ui foundations and
                       sidebar/footer composition
 Provides/API:         production MediaCardModel/component/composition,
                       app selection/dismiss policy, semantic/perf evidence
-Exclusive paths:      post-G1 bbr-ui media modules; focused bbr-app sidebar
+Exclusive paths:      post-G1a bbr-ui media modules; focused bbr-app sidebar
                       composition/media presentation; focused E2E/perf and
                       Gallery G2/G3 story modules
 Shared integration points: app event pump, sidebar focus order/composition,
                       testkit snapshot, perf registry, Gallery registries,
                       Phase 8/UI-track roll-ups
-Integration order:    F2c → F2b → fresh F2a → G1 → media contract → this UI
+Integration order:    F2c → F2b → fresh F2a → G1aa → media contract → this UI
 ```
 
 No concurrent writer may own sidebar/footer composition, media components,
@@ -163,7 +163,7 @@ GUI suites run sequentially under the repository lock.
 
 ## Delivery sequence
 
-1. Confirm F2/G1/media-contract integration and free sidebar/media ownership.
+1. Confirm F2/G1a/media-contract integration and free sidebar/media ownership.
 2. Add the plain production model/component and conditional one-card layout.
 3. Wire capability-gated commands, dismiss identity, source activation, and
    multi-session selection.

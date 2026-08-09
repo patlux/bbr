@@ -10,7 +10,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.13, §11.16 ·
 Source decision: `/Users/patwoz/dev/Personal/macos/bbr-saved-pages-bookmarks-plan.md`.
 
-Status: **queued after integrated B1 when command-provider ownership is free.**
+Activation condition: B1 is integrated and command-provider ownership is free, as recorded in [Current delivery](../../delivery/current.md).
 This packet is the canonical detail owner for Saved Page save/remove/open
 semantics, Cmd-D, the in-memory Palette provider/result kind, and the one
 app-owned menu command consumed by Z1/Z3. Z1 and Z3 remain canonical owners of
@@ -66,7 +66,7 @@ existing NewTab/navigation authority. No matching live tab is silently selected.
 ## Non-goals
 
 - No permanent Saved Pages sidebar region or full Library UI; B3 owns it after
-  G1.
+  G1a.
 - No address accessory requirement; the existing address control remains a
   display button and never becomes a second input.
 - No open-tab dedup/switch behavior, background open policy, profile-scoped
@@ -80,7 +80,7 @@ existing NewTab/navigation authority. No matching live tab is silently selected.
 ## Parallel-lane contract
 
 ```text
-Base commit:          verified main with B1 integrated
+Base condition:       verified main with B1 integrated
 Depends on:           B1 portable/repository contract; one AppStore; free
                       command-provider/perf/testkit territory; existing NewTab
                       and navigation authority
@@ -95,7 +95,7 @@ Shared integration points: app bootstrap/store snapshot, command corpus/rank
                       Z1/Z3 menu models, Phase 5/8 and ROADMAP roll-ups
 Integration order:    B1 → B2 command/provider core; Z1/Z3 consume the same
                       command when their menu surfaces integrate; B3 follows
-                      B2 and G1
+                      B2 and G1aa
 ```
 
 No concurrent writer may own command provider/ranking registries, Saved Page

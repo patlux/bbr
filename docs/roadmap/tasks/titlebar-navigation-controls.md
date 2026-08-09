@@ -8,9 +8,9 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [Gallery browser components](component-gallery-browser-components.md) ·
 [Gallery compositions](component-gallery-compositions.md).
 
-Status: **queued after fresh F2a and G1.** Documentation only today.
+Activation condition: complete F2a and G1a are integrated and titlebar/navigation territory is writer-free, as recorded in [Current delivery](../../delivery/current.md).
 Implementation must not interrupt F2c → F2b → fresh F2a or start before the
-settled G1 `bbr-ui` anchor.
+settled G1a `bbr-ui` anchor.
 
 Stable composition reference, not a visual copy:
 `/Users/patwoz/dev/Personal/macos/bbr-design-references/zen-titlebar-sidebar-navigation.png`.
@@ -56,17 +56,17 @@ never duplicate address entry or invent a second navigation state.
 ## Parallel-lane contract
 
 ```text
-Base commit:          verified main after F2c → F2b → fresh F2a and settled G1
-Depends on:           G1 bbr-ui theme/icons/components; existing sidebar and
+Base condition:       verified main after F2c → F2b → fresh F2a and settled G1a
+Depends on:           G1a bbr-ui theme/icons/components; existing sidebar and
                       navigation authorities; focused-pane routing
 Provides/API:         production TitlebarNavigationModel/composition and
                       macOS safe-titlebar adapter
-Exclusive paths:      post-G1 bbr-ui titlebar/navigation modules; focused
+Exclusive paths:      post-G1a bbr-ui titlebar/navigation modules; focused
                       bbr-app window/titlebar composition; focused E2E/perf
 Shared integration points: app window options/composition, focus/input routing,
                       native safe-area geometry, testkit snapshot, perf and
                       Gallery G2/G3 registries, roadmap roll-ups
-Integration order:    F2c → F2b → fresh F2a → G1 → this packet
+Integration order:    F2c → F2b → fresh F2a → G1aa → this packet
 ```
 
 No concurrent writer may own titlebar/window composition, sidebar toggle
@@ -137,7 +137,7 @@ GUI suites run sequentially under the repository lock.
 
 ## Delivery sequence
 
-1. Confirm F2/G1 integration and free window/titlebar/UI ownership.
+1. Confirm F2/G1a integration and free window/titlebar/UI ownership.
 2. Establish the safe-titlebar geometry seam and plain production model.
 3. Wire sidebar toggle, then Back/Forward/Reload through existing authorities.
 4. Add semantics, real-app geometry/focus evidence, performance coverage, and

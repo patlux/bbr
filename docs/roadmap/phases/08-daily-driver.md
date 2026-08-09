@@ -9,15 +9,18 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 ## Checklist
 
 - [x] Deliver downloads destination, progress, history, reveal, retry, and failure UI through the bounded [downloads sidebar panel](../tasks/downloads-sidebar-panel.md) — including the settled post-MVP follow-up (terminal-history persistence, durable Clear/Delete, cancelled Restart, active-only badge).
-- [ ] Deliver find in page with keyboard navigation and result count through the bounded [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md).
-- [ ] Define the portable request/decision authority through the bounded [permissions contract](../tasks/permissions-contract.md), then deliver camera, microphone, location, notification, and clipboard surfaces where supported.
-- [ ] Define HTTP authentication and supported client-certificate request/response authority through the bounded [authentication challenges contract](../tasks/auth-challenges-contract.md), then implement native delegates and credential surfaces.
-- [ ] Define portable upload/save request-completion semantics through the bounded [file upload/save-panel contract](../tasks/file-panels-contract.md), then implement native panel orchestration as a separate adapter slice.
-- [ ] Define the typed taxonomy and legal recovery actions through the bounded [web error and recovery contract](../tasks/error-surface-contract.md), then deliver TLS, navigation, offline, and process-crash surfaces.
+- [x] Deliver find in page with keyboard navigation and result count through the completed [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), including real WKWebView E2E and `find_open`/query/step performance evidence.
+- [x] Define the portable request/decision authority through the completed [permissions contract](../tasks/permissions-contract.md).
+- [ ] Deliver camera, microphone, location, notification, and clipboard adapter/UI surfaces where supported, consuming the one portable permissions authority above.
+- [x] Define HTTP origin/proxy authentication and client-certificate request/response authority through the completed [authentication challenges contract](../tasks/auth-challenges-contract.md); the HTTP credential delegate/sheet is integrated through `53a9590`.
+- [ ] Implement supported native client-certificate enumeration/selection without weakening the portable identity and secret-redaction contract.
+- [x] Define portable upload/save request-completion semantics through the completed [file upload/save-panel contract](../tasks/file-panels-contract.md).
+- [ ] Implement native AppKit/WebKit upload/save panel orchestration, sandbox access, cancellation, and real-app E2E.
+- [x] Define the typed taxonomy and legal recovery actions through the completed [web error and recovery contract](../tasks/error-surface-contract.md), then deliver the integrated TLS/navigation/offline/process-crash surfaces (`a70e9a3`).
 - [ ] History UI and clear-data controls per profile.
 - [ ] Deliver durable global **Saved Pages** through the bounded sequence: [B1 portable contract + persistence](../tasks/saved-pages-portable-persistence.md) → [B2 Cmd-D, shared save/remove/open command, Palette provider, and menu consumers](../tasks/saved-pages-actions-command.md) → [B3 Saved Pages Library](../tasks/saved-pages-library.md). Pin and Favorite remain concrete live-tab presentations; Saved Pages are profile-free URL records that survive tab close and restart.
-- [ ] Default-browser registration and external URL opening, starting with the portable [external-URL open contract](../tasks/external-url-open-contract.md).
-- [ ] Native menus, Services, window lifecycle, and app updates, including the integrated [BBR-owned context-menu boundary over web content](../tasks/bbr-context-menus-over-web.md) and its bounded [Page-background menu follow-up](../tasks/page-background-context-menu.md). WebKit-native element menus remain untouched.
+- [x] Default-browser registration and external URL opening through the completed [external-URL open contract](../tasks/external-url-open-contract.md) and native integration `e5dab25`.
+- [ ] Native menus, Services, broader window lifecycle, and app updates. The BBR-owned/WebKit-owned context-menu boundary is integrated and its bounded [Page-background menu follow-up](../tasks/page-background-context-menu.md) remains dependency-gated; WebKit-native element menus remain untouched.
 - [ ] Define a public-API-only [portable media-session capability contract](../tasks/media-session-capability-contract.md), then deliver the capability-driven [sidebar media control](../tasks/sidebar-media-control.md); no SPI, inferred transport controls, or fake duration.
 - [ ] Define profile-isolated site keys, settings overrides, and zoom lifecycle through the bounded [per-site settings and zoom contract](../tasks/site-settings-zoom-contract.md), then integrate persistence, native zoom, and UI.
 - [ ] Implement popup/new-window policy and target-blank flows, including the dedicated [Link Preview / Peek](../tasks/link-preview-peek.md) lifecycle for eligible user-created links.

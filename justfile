@@ -34,8 +34,8 @@ roadmap:
     timeout --kill-after=10s {{check_timeout}} python3 scripts/check_roadmap.py
 
 script-tests:
-    timeout --kill-after=10s {{test_timeout}} python3 -m unittest scripts/test_with_gui_lock.py -v
-    timeout --kill-after=10s {{check_timeout}} python3 -m py_compile scripts/check_roadmap.py scripts/with_gui_lock.py scripts/test_with_gui_lock.py
+    timeout --kill-after=10s {{test_timeout}} python3 -m unittest scripts/test_with_gui_lock.py scripts/test_check_roadmap.py -v
+    timeout --kill-after=10s {{check_timeout}} python3 -m py_compile scripts/check_roadmap.py scripts/roadmap_validation_support.py scripts/test_check_roadmap.py scripts/with_gui_lock.py scripts/test_with_gui_lock.py
 
 e2e-smoke:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_smoke -- --ignored --nocapture

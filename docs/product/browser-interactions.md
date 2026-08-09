@@ -379,7 +379,7 @@ visible UI slices land.
 - The unified macOS titlebar will expose one sidebar collapse/expand control
   and Back/Forward/Reload controls. The collapse control and Cmd-B are the same
   authority; the titlebar placement replaces, rather than duplicates, the
-  pre-G1 status-row control.
+  pre-G1a status-row control.
 - Back/Forward/Reload target the selected tab in single-pane mode and the
   focused pane in split mode. Disabled actions do not dispatch.
 - Empty safe-titlebar space remains a native window-drag region. Fullscreen,

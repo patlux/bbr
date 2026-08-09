@@ -10,7 +10,7 @@ Predecessors: [Gallery MVP](component-gallery-mvp.md) ·
 Workflow: [development workflow](../../development-workflow.md) ·
 Template: [task-packet template](../templates/task-packet.md)
 
-Status: **G1 packet 4.** Bases from the settled browser-components slice.
+Program position: **G3**, activated only from the settled browser-components state recorded in [Current delivery](../../delivery/current.md).
 This packet delivers the composition surfaces — `SidebarModel` plus
 Callbacks, `CommandPortalModel` palette/overlay, and the Downloads/Find/
 Error/Auth/Menu/Split groups — into `bbr-ui` and their gallery stories,
@@ -89,9 +89,9 @@ anywhere in the gallery.
 ## Parallel-lane contract
 
 ```text
-Base commit:          the settled browser-components slice (bbr-ui
+Base condition:       the settled browser-components slice (bbr-ui
                       browser-component modules + gallery story matrix).
-Depends on:           packets 1–3; F2a (footer/space strip) and F2b
+Depends on:           G1a + G1b + G2; F2a (footer/space strip) and F2b
                       (downloads) integrated onto main; the F2c app-persistence
                       bootstrap does not affect this packet (no persistence).
 Provides/API:         bbr-ui::sidebar (SidebarModel + Callbacks + geometry),
@@ -105,16 +105,17 @@ Exclusive paths:      crates/bbr-ui/** (composition modules), crates/
 Shared integration points: root Cargo.toml/Cargo.lock, justfile (no new
                       recipe expected), E2E registries, bbr-app composition,
                       UI track and ROADMAP roll-ups, ARCHITECTURE.md facts.
-Integration order:    packet 3 → this packet → post-G1 serial integration.
+Integration order:    G2 → G3 → post-G1a serial integration.
                       Parallel-safe against F3 / U3 / non-UI lanes as long
                       as no lane touches the migrating render modules.
 ```
 
 ## Constraints
 
-- All anchor constraints apply (dependencies, `#![forbid(unsafe_code)]`,
-  forbidden-dependency gate, zero local duplicates, stable semantics,
-  module size, no weakened gates).
+- All anchor constraints apply (exact direct dependencies, the approved
+  first-party `bbr-domain → bbr-web` identity closure with no direct
+  `bbr-web` import, `#![forbid(unsafe_code)]`, dependency-boundary gate, zero
+  local duplicates, stable semantics, module size, and no weakened gates).
 - **`SidebarModel` plus `Callbacks`** is the single input contract of the
   rail: the model is plain data (theme, widths, brand, command/address,
   favorites, folders, tab rows, spaces, status, toggle, divider, footer,
@@ -196,14 +197,14 @@ and Gallery renderability checks. Nothing is predeclared as a story today.
       suites) — ids, §15 fields, focus domains, and typed semantic trees
       unchanged.
 - [ ] `just e2e-gallery` extended: composition stories render through the
-      production compositions with stable StoryIds appended (packets 2–3
+      production compositions with stable StoryIds appended (G1b/G2
       ids unrenumbered) and the variant families asserted.
 
 ### Performance
 
 - [ ] `just e2e-perf` passes unchanged after each composition migration
       (no budget, sample-count, or semantic-commit change).
-- [ ] Gallery perf remains sanity-only (packet 2), never a product budget.
+- [ ] Gallery perf remains sanity-only (G1b), never a product budget.
 
 ## Completion gates
 

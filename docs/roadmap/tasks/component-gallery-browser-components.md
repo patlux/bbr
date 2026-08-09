@@ -9,10 +9,10 @@ Predecessor: [Gallery MVP](component-gallery-mvp.md) ·
 Workflow: [development workflow](../../development-workflow.md) ·
 Template: [task-packet template](../templates/task-packet.md)
 
-Status: **G1 packet 3.** Bases from the settled Gallery MVP slice. This
+Program position: **G2**, activated only from the settled Gallery MVP state recorded in [Current delivery](../../delivery/current.md). This
 packet stages real `bbr-ui` adoption of the surfaces the anchor's extraction
-table assigns to Packet 3 — the Packet-3-owned browser-component rows
-(Downloads, Find, Error/Crash, Auth, Context Menu) and the Packet-3-owned
+table assigns to G2 — the G2-owned browser-component rows
+(Downloads, Find, Error/Crash, Auth, Context Menu) and G2-owned
 browser primitives (Tab Row, Space row, Empty/Crash pane, Favorites,
 Folders, Footer, Plus menu, Address pieces) — and adds their story matrix to
 the gallery: Tab Row, Space row, address/input pieces,
@@ -35,7 +35,7 @@ model and a recorder callback proving which interaction fired. No fake
 
 - **Staged real adoption** (in this order, each a serial cutover group):
   1. Tab Row (row anatomy, states, close/pin/drag-tick) — the row's
-     favicon slot embeds the already-extracted Packet-2
+     favicon slot embeds the already-extracted G1b
      `bbr-ui::components::favicon` component; Tab Row stories cover the
      missing-favicon monogram and loading-arc variants inline, with no
      separate favicon story owner in this packet;
@@ -69,8 +69,8 @@ model and a recorder callback proving which interaction fired. No fake
 - **No compositions here.** The full Sidebar, CommandPortalModel palette/
   overlay *compositions*, Downloads/Find/Error/Auth/Menu/Split *groups*,
   cross-profile and compact/wide stories are
-  [packet 4](component-gallery-compositions.md). This packet stories the
-  components; packet 4 stories their composition in context.
+  [G3](component-gallery-compositions.md). This packet stories the
+  components; G3 stories their composition in context.
 - **No product behavior change.** Ids, states, focus, and §15 snapshot
   fields stay byte-identical through each cutover (the existing suites are
   the guard).
@@ -88,9 +88,9 @@ model and a recorder callback proving which interaction fired. No fake
 ## Parallel-lane contract
 
 ```text
-Base commit:          the settled Gallery MVP slice (bbr-gallery registry,
+Base condition:       the settled Gallery MVP slice (bbr-gallery registry,
                       tree, canvas, controls, Foundations stories).
-Depends on:           packet 2; packet 1's bbr-ui boundary and DTOs; F2a
+Depends on:           G1b; G1a's bbr-ui boundary and DTOs; F2a
                       (footer/space strip) and F2b (downloads follow-up)
                       integrated onto main before their rows are extracted.
 Provides/API:         bbr-ui browser-component modules (per the anchor's
@@ -106,7 +106,7 @@ Shared integration points: root Cargo.toml/Cargo.lock, justfile (no new
                       recipe expected — existing suites re-run), E2E
                       registries, bbr-app imports/composition, UI track and
                       ROADMAP roll-ups, ARCHITECTURE.md facts.
-Integration order:    packet 2 → this packet → packet 4 → post-G1 serial
+Integration order:    G1b → G2 → G3 → post-G1a serial
                       integration. Parallel-safe against F3 / U3 / non-UI
                       lanes (disjoint paths) as long as no lane touches the
                       migrating render modules.
@@ -114,10 +114,12 @@ Integration order:    packet 2 → this packet → packet 4 → post-G1 serial
 
 ## Constraints
 
-- All anchor constraints apply: allowed dependencies (gpui, bbr-domain for
-  `ProfileHue`, std), `#![forbid(unsafe_code)]`, forbidden-dependency audit
-  gate, zero local duplicates, stable `bbr-*` ids and §15 fields, module
-  size budget, no weakened tests/budgets/validators.
+- All anchor constraints apply: exact direct `bbr-ui` dependencies (`gpui`,
+  `bbr-domain` for `ProfileHue`, implicit std), the approved first-party
+  `bbr-domain → bbr-web` identity closure with no direct `bbr-web` import,
+  `#![forbid(unsafe_code)]`, dependency-boundary audit gate, zero local
+  duplicates, stable `bbr-*` ids and §15 fields, module size budget, and no
+  weakened tests/budgets/validators.
 - **Presentation models only:** each `bbr-ui` surface takes its DTO +
   callbacks; `bbr-app` keeps the controller, lifecycle, and DTO building
   (e.g. `ErrorSurfaceState` keeps the incident lifecycle; `downloads.rs`
@@ -145,7 +147,7 @@ gallery fixture builder refuses to build them.
 
 | Component | Valid variants | Rejected (why) |
 |---|---|---|
-| Tab Row (`bbr-ui::components::tab_row`) | states: default/hover/active/selected/loading/attention/error/disabled/dragging/drag-target/focused (§10); pinned + regular; S (icon-only pinned) / N / XL; long-title truncation; favicon slot: monogram tile / missing-favicon host-scheme fallback / loading-arc replacement (the embedded Packet-2 `bbr-ui::components::favicon` component — its variants are consumed inline, not re-storied); reveal-close on hover/selected; drag-tick legal vs clamped-invalid | attention on a crashed row (error wins, §10 composition order); selected+dragging without the drag state machine; S-density pinned with a title (icon-only, §8/§11.2); a real favicon bitmap (the tile is monogram-or-arc today, §7.2) |
+| Tab Row (`bbr-ui::components::tab_row`) | states: default/hover/active/selected/loading/attention/error/disabled/dragging/drag-target/focused (§10); pinned + regular; S (icon-only pinned) / N / XL; long-title truncation; favicon slot: monogram tile / missing-favicon host-scheme fallback / loading-arc replacement (the embedded G1b `bbr-ui::components::favicon` component — its variants are consumed inline, not re-storied); reveal-close on hover/selected; drag-tick legal vs clamped-invalid | attention on a crashed row (error wins, §10 composition order); selected+dragging without the drag state machine; S-density pinned with a title (icon-only, §8/§11.2); a real favicon bitmap (the tile is monogram-or-arc today, §7.2) |
 | Space row (`bbr-ui::components::space` — `space_row`/`space_new_row`/`ProfileChipSpec`; source `components/space.rs`, `shell/space.rs`; chip/identity contract DESIGN §11.3) | per-profile groups (hairline between groups); row states: default / selected (accent rail + tint, §10.4) / drag-target (§10.9 accent outline + tint); S / N / XL density (profile chip 20/24/28); long-title truncation at `space_title_budget_chars`; count column `type:meta` tnum (live tab count); profile chip per row (1–2 char monogram, hue tile, id `bbr-profile-chip-<profile_index>` — profile-keyed, repeats per profile, §12); row/title/count ids `bbr-space-row-<n>` / `bbr-space-title-<n>` / `bbr-space-count-<n>`; new-space affordance row at the foot (`bbr-space-new`, NewSpace mode §11.3/§11.5, the pointer half of Cmd-Shift-N); focused space list (`bbr-space-list`, §9 focus ring) | a row without its profile chip (mandatory anatomy — `space_row` always renders the chip); `selected` + `drag-target` combined (mutually exclusive; drag-target replaces selected, §10 composition order); a title not truncated at the §11.3 budget (`space_title_budget_chars` is the single truncation authority — ellipsis, never wrap); a profile chip keyed to the space index (the id contract is profile-keyed, §12, never the space index); a count other than the live tab count (rows derive from the controller snapshot); an active space without the accent rail (selected rows always render the 3 pt rail) |
 | Address / input pieces (`bbr-ui::components::address`) | domain pill (with/without www, IDN, port); accessory slot reserved-empty vs Copy-Link (future); hover fill step; profile-hint chip presence; staging field (New Space / Move Tab / empty New Tab) with block cursor | pill-as-text-field (no editing state, no cursor, no selection — §11.5); a focus ring on the pill (never, any state) |
 | Favorites grid (`bbr-ui::components::favorites`) | S 5-col / N 4-col / XL 3-col; tile default/hover/active/focused; drag-target wash; empty region (label hidden) | reorder during selection (tiles never reorder, §11.10); a tile without a resolved TabId+SpaceId+ProfileId semantic name |
@@ -191,14 +193,14 @@ matrix rows, and renderability checks. Nothing is predeclared as a story today.
       (and the F2a-integrated footer/spaces suites) — ids, §15 fields, focus
       domains, and typed semantic trees unchanged.
 - [ ] `just e2e-gallery` extended: the new story matrix renders through the
-      production components with stable StoryIds appended (packet-2 ids
+      production components with stable StoryIds appended (G1b ids
       unrenumbered).
 
 ### Performance
 
 - [ ] `just e2e-perf` passes unchanged after each user-visible presentation
       migration (no budget, sample-count, or semantic-commit change).
-- [ ] Gallery perf remains sanity-only (packet 2), never a product budget.
+- [ ] Gallery perf remains sanity-only (G1b), never a product budget.
 
 ## Completion gates
 
@@ -236,7 +238,7 @@ sequentially under `python3 scripts/with_gui_lock.py --`.
 ## Iteration policy
 
 Adopt in the Scope order because each surface depends on the previous one
-(Tab Row depends on the Packet-2 favicon component — already extracted, not
+(Tab Row depends on the G1b favicon component — already extracted, not
 re-extracted here; footer after F2a). For each failure, classify it as
 cutover (migration/import), DTO shape, matrix validity, or native-boundary
 confusion; change the smallest central cause and re-run the focused suite.

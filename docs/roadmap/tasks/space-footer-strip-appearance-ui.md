@@ -7,14 +7,12 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [Performance contract](../../product/performance-contract.md) ·
 [DESIGN.md](../../../DESIGN.md) §5/§7/§8/§10/§11.3/§11.4/§15.
 
-The portable space-appearance contract (curated theme tokens plus the validated
-emoji/glyph `SpaceIdentity` catalog) is integrated and consumed by this slice.
-
-Status: **integrated on `main` at `7180128`.** The complete F2a product,
-real-app, performance, icon-union, latest-main, and E2E-architecture truth
-layers passed independent review and were fast-forwarded from the isolated
-integration worktree. The wider F2 closeout still waits for Queue 20 to add the
-missing shutdown target and reconcile the owning-window lifecycle contract.
+The portable [space-appearance contract](space-appearance-contract.md) supplies
+the curated theme tokens and validated emoji/glyph `SpaceIdentity` catalog.
+This packet owns only their production UI consumption. The complete F2a scope
+is integrated and its committed evidence remains in the historical delivery
+ledger; current lifecycle blockers and next gates live only in
+[Current delivery](../../delivery/current.md), not in this durable contract.
 
 ## Product revision context
 
@@ -94,11 +92,10 @@ is in progress.
 ## Parallel-lane contract
 
 ```text
-Base commit:          the verified main commit after MVP closeout, the global
-                      UI scale slice, and serial integration of the portable
-                      space-appearance contract
+Base condition:       complete verified prerequisite kernel; exact SHA recorded in Current delivery when
+                      the lane is activated
 Depends on:           portable space-appearance contract integrated; U2 sidebar
-                      integrated; S1 token table settled
+                      and the settled token table integrated
 Provides/API:         permanent footer space strip, chip identity/tint
                       presentation, swipe-driven space switching
 Exclusive paths:      bbr-app sidebar footer/space presentation modules, their
@@ -107,8 +104,8 @@ Exclusive paths:      bbr-app sidebar footer/space presentation modules, their
 Shared integration points: testkit snapshot wire fields, perf-matrix scenario
                       registration, DESIGN §11.3/§11.4, interaction contract,
                       roadmap roll-ups
-Integration order:    MVP closeout → global UI scale → space-appearance
-                      contract → this slice
+Integration order:    space-appearance contract and U2 production authority
+                      → this complete slice → post-F2a ownership audit
 ```
 
 ### F2a completion lanes after the verified Tint checkpoint
@@ -253,33 +250,8 @@ own slice.
 
 ## Delivery ledger
 
-```text
-Outcome: permanent [Downloads][Space Strip][+] footer, curated active-space
-        tint, pointer/keyboard/swipe activation, drag-to-chip, and additive
-        swipe_commit performance authority integrated on main.
-Integration: 7180128 (final reviewed integration tree plus E2E architecture
-        truth); product/perf settlement immediately before it: 5cfff50.
-Functional evidence: permanent strip and legacy removal; truthful persistent
-        SpaceId chip/identity/target semantics; contrast-safe Light/Dark ×
-        Standard/IC tint; zero-delta Ended swipe commit/cancel; production
-        clipped-chip drag entry; current Restore/F3/Dark-Blank/navigation-cover
-        authorities retained.
-Real-app E2E: States 1/1; Sidebar 7/7; Spaces 9/9; Keyboard 4/4; Hint 2/2;
-        Drag-chip 4/4; Organize 2/2 plus drag 4/4; Hover/Semantics/Branches
-        3/3; Downloads 11/11; Persistence 5/5; Find unchanged retry 6/6.
-Performance evidence: unchanged retry green — startup 443.59 ms;
-        command_bar_first_result p95 40.59/max 43.32 ms; swipe_commit 30
-        samples p95 0.059 ms; tab_move_same_profile p95 0.687 ms;
-        tab_move_cross_profile p95 24.585 ms; regressions empty. Baseline
-        SHA-256 08847b955d66af76c3762817b8674f6ca077dbd26672ad4c3d6a198a7bf68f0f.
-Reviews: final current-tree review found one stale E2E-topology claim; bounded
-        docs remediation and attribution recheck ended directly REVIEW_PASS
-        in f2a-final-docs-attribution-recheck-msl1j280-iapnt1.
-Roadmap/documentation updates: E2E_ARCHITECTURE topology, this packet, phase
-        roll-up, UI/icon integration truth, and canonical delivery ledger.
-Open blockers and non-goals: canonical just e2e waits for Queue 20's missing
-        shutdown target; Portal minimize/owning-window failures remain separate;
-        appearance settings UI and free emoji entry stay out of scope.
-Worktree state: integration/f2a-complete clean after commit 7180128; main
-        fast-forwarded with protected foreign docs byte/status-identical.
-```
+Committed outcome, integration commits, measured evidence, and review history
+are preserved in the linked historical ledger. Current blockers, owners,
+worktrees, and next gates are recorded only in
+[Current delivery](../../delivery/current.md). This packet remains the durable
+acceptance contract and does not create a second execution authority.

@@ -563,7 +563,7 @@ using the IDs of §15. All rows use `density` geometry from §8.
   [Plus icon]` (`bbr-downloads`, `bbr-space-strip`, `bbr-plus`), separated
   from the list above by a `hairline`. The former `[Spaces]` reveal-toggle and
   its upper space-row region do not exist in the target composition. The
-  current pre-G1 shell keeps its existing trailing status-row collapse control
+  current pre-G1a shell keeps its existing trailing status-row collapse control
   while fresh F2a lands; the bounded §11.14 titlebar packet later performs one
   atomic cutover to `bbr-titlebar-sidebar-toggle` and removes the duplicate
   status-row control. F2a does not implement or anticipate that later cutover.
@@ -951,13 +951,13 @@ Canonical packets: [Tab/Favorite menus](docs/roadmap/tasks/tab-favorite-context-
 
 ### 11.14 Unified titlebar navigation controls (Planned)
 
-The post-F2a/G1 titlebar target is
+The post-F2a/G1a titlebar target is
 `[traffic lights] [sidebar collapse/expand] … [Back] [Forward] [Reload]`
 inside the actual macOS safe titlebar layout guide.
 
 - The collapse control sits immediately after the traffic lights, uses the same
   sidebar-width/collapse authority as Cmd-B, changes glyph for collapsed versus
-  expanded, and replaces rather than duplicates the pre-G1 status-row control.
+  expanded, and replaces rather than duplicates the pre-G1a status-row control.
 - Back/Forward/Reload form a compact trailing cluster and target the selected
   tab in single-pane mode or the focused split pane. Enablement derives from
   real navigation state.
@@ -1036,7 +1036,7 @@ or page snapshot and survives tab close and restart.
   closing a tab never removes its Saved Page. The §11.5 address control remains
   a display button; a later saved-state accessory is not required by B2.
 - **Library topology:** the full collection lives in one dedicated ordinary
-  GPUI Library surface after G1, never as a permanent Sidebar region and never
+  GPUI Library surface after G1a, never as a permanent Sidebar region and never
   as a WebKit page or Portal. A small chrome/settings entry point may open it.
   The first production surface supports search, deterministic sort, rename,
   remove, multi-select, and one-level flat collections through shared `bbr-ui`

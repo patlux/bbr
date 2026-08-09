@@ -6,16 +6,17 @@ Parents: [Phase 9](../phases/09-quality-release.md) ·
 [Performance track](../tracks/performance-release.md) ·
 [DESIGN.md](../../../DESIGN.md) §4/§5/§7/§8/§10/§11/§12/§15.
 
-Status: **queued as the first bounded slice after browser-MVP closeout.** It
-must not delay U1 integration, U2 performance/integration, canonical `just e2e`,
-or final `just package-verify` and delivery of the first clickable `.app`.
+Implementation state: the calibrated S/N/XL contract and production token
+application are integrated (`bf54450`; delivery/package record `b6406f2`).
+Automated unit, real-app, performance, canonical E2E, and package gates are
+recorded below. The only packet-local acceptance still open is Patrick's manual
+readability smoke of the rebuilt `.app`; this does not undo the integrated
+production and automated evidence.
 
-**Design decision settled (2026-08-08):** the complete S/N/XL scale is now
-recorded as contract in DESIGN.md §4/§5/§7/§8 (with matching §10/§11/§12
-values), calibrated from the preserved reference captures. The remaining slice
-work is mechanical: apply the settled tokens through the existing
-`Theme`/`TypeScale`/`Spacing`/`Density` seams and prove them with the
-unchanged gates below.
+**Design decision settled and applied (2026-08-08):** the complete S/N/XL scale
+is recorded in DESIGN.md §4/§5/§7/§8 (with matching §10/§11/§12 values),
+calibrated from the preserved reference captures and applied through the
+existing `Theme`/`TypeScale`/`Spacing`/`Density` seams.
 
 ## Outcome
 
@@ -146,23 +147,23 @@ Integration order:    MVP closeout → this slice → deferred P8 integrations a
 
 ### Unit and contract
 
-- [ ] Token tests prove the exact revised S/N/XL typography, leading, row,
+- [x] Token tests prove the exact revised S/N/XL typography, leading, row,
       spacing, icon, hit-target, sidebar, and palette geometry from `DESIGN.md`.
-- [ ] Static/review evidence finds no new local scale multiplier or duplicated
+- [x] Static/review evidence finds no new local scale multiplier or duplicated
       palette/sidebar/row size literals in direct token consumers.
-- [ ] Dense-list and truncation tests prove uniform row math, bounded rendering,
+- [x] Dense-list and truncation tests prove uniform row math, bounded rendering,
       and one-line title/URL behavior at all three densities.
 
 ### Real-app E2E
 
-- [ ] Affected shell suites prove the larger normal-density sidebar, command
+- [x] Affected shell suites prove the larger normal-density sidebar, command
       field, centered palette, anchored overlay, Favorites/Folders/footer,
       tab/space rows, pointer targets, focus rings, truncation, and compact-window
       behavior through the production GPUI path.
-- [ ] Portal E2E proves the revised palette/overlay bounds remain inside the
+- [x] Portal E2E proves the revised palette/overlay bounds remain inside the
       window, above native WebKit, pointer-reachable, correctly anchored/centered,
       and dismissed by the existing routes.
-- [ ] Geometry assertions use shared token-derived expectations where possible;
+- [x] Geometry assertions use shared token-derived expectations where possible;
       obsolete literals are replaced, not loosened. Stable semantic IDs and
       typed snapshots remain byte-for-byte compatible except documented numeric
       geometry values.
@@ -173,10 +174,10 @@ Integration order:    MVP closeout → this slice → deferred P8 integrations a
 
 ### Performance
 
-- [ ] Existing startup and interaction scenarios run unchanged, including
+- [x] Existing startup and interaction scenarios run unchanged, including
       command/palette, sidebar, tab/space, organize, dense, Favorites, Folders,
       plus-menu, and Portal presentation paths.
-- [ ] `just e2e-perf` passes the existing absolute budgets and sample-count
+- [x] `just e2e-perf` passes the existing absolute budgets and sample-count
       gates; no budget, timeout, or semantic-commit change is part of the slice.
 
 ## Completion gates
@@ -244,9 +245,9 @@ Outcome: S1 scale applied through the central Theme/Density seams (DESIGN.md
         §4/§5/§7/§8/§10/§11/§12, settled 2026-08-08). Normal density now
         ships the 280 pt sidebar, 36 pt rows, 14 pt title, 18 pt icons,
         inset rounded row surfaces, and the 520 pt command palette.
-Commits: docs-only authoring slice (DESIGN.md + this packet) uncommitted per
-        parallel-lane discipline; implementation slice uncommitted in the
-        writer worktree for the lane owner commit and independent review
+Commits: design contract integrated through `139d3c9`; implementation lane
+        `97bd541`; serial main integration `bf54450`; delivery/package record
+        `b6406f2`
 Functional evidence: unit/contract tests green; all token values asserted
         exactly against the §8 table (theme.rs), new accessors covered
         (hit_min_close, row_inset, section_gap, favorites_gap, state_slot,
@@ -266,6 +267,7 @@ Open blockers and non-goals: portal/command.rs result-row literals (14/140)
         icon-only anatomy deferred (recorded §11.2 rendering decision, no id
         removed); SIDEBAR_MAX raised 360 → 400 per DESIGN §5; no runtime
         scale preference added
-Worktree state: writer worktree on `parallel/s1-ui-scale` (base 473779c);
-        implementation edits uncommitted for the orchestrator
+Worktree state: integrated on `main`; the historical implementation worktree
+        is not a current execution authority. Manual packaged-app smoke remains
+        tracked in Current delivery.
 ```

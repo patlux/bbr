@@ -5,8 +5,9 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [UI design-system track](../tracks/ui-design-system.md) ·
 [Testing track](../tracks/testing.md).
 
-Status: **post-MVP; depends on the integrated L7 portable contract and native
-Portal host.**
+Implementation state: integrated through lane `dd33e3d` and serial main merge
+`c12ecbc`; Phase 8, native-integration, and testing roll-ups point here for the
+completed adapter, Portal, real-app, and performance evidence.
 
 ## Outcome
 
@@ -140,7 +141,8 @@ hidden behind WebKit.
 
 ```text
 Outcome: post-MVP packet implemented and evidenced
-Commits: planning only (all implementation left uncommitted for the orchestrator)
+Commits: lane `dd33e3d`; serial main integration `c12ecbc`; delivery record
+  `efadc43`
 Functional evidence: adapter mapping contract tests (20) green; probe find-guard
   unit tests (5) green; portal placement/state/probe unit tests green
 Real-app E2E: just e2e-shell-find 6/6 green (open over real WKWebView with
@@ -159,6 +161,6 @@ Roadmap/documentation updates: task packet evidence + ledger; ARCHITECTURE.md
 Open blockers and non-goals: none within scope; no regex/whole-word/
   case-sensitive/selection-only UI, no cross-tab/history/PDF search, no
   GPUI overlay behind WebKit, no screenshot matching
-Worktree state: implementation lane active; independent native-boundary
-  review (packet step 5) remains before closeout
+Worktree state: integrated on `main`; historical lane/worktree state is not a
+  current execution authority
 ```

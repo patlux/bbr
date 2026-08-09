@@ -4,11 +4,11 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [UI design-system track](../tracks/ui-design-system.md) ·
 [Testing track](../tracks/testing.md).
 
-Status: **post-MVP; consumes the integrated L6 portable downloads contract
-(`crates/bbr-web/src/downloads`); surface design settled in
-[DESIGN §11.12](../../../DESIGN.md#1112-downloads-panel-planned); the open
-downloads decisions §17.7–§17.12 were resolved 2026-08-08 and are now
-implementation facts (DESIGN §11.12 + §17).**
+Implementation state: the original sidebar panel is integrated (`78f3782`),
+and the settled persistence/action follow-up is integrated at `cd1bc65`. The
+surface consumes the L6 portable downloads contract
+(`crates/bbr-web/src/downloads`); DESIGN §11.12 and §17.7–§17.12 are
+implementation facts rather than queued decisions.
 
 ## Outcome
 
@@ -178,9 +178,8 @@ invariants or fabricate progress.
 Outcome: post-MVP downloads follow-up integrated as one real vertical slice
   on the post-F2c AppStore form (persistence restore at startup, durable
   Clear/Delete, cancelled Restart, active-only badge, Reveal-only).
-Commits: portable/persistence seams originated in frozen lane commit 731f668;
-  the complete F2b integration commit and serial main integration are recorded
-  in the post-MVP delivery ledger
+Commits: original panel delivery recorded at `78f3782`; durable serial
+  persistence/action integration `cd1bc65`
 Functional evidence: bbr-web 331, bbr-browser 144, bbr-persistence 22,
   bbr-app unit 256 — all green; fmt/clippy -D warnings green; just verify
   green; independent final verdict REVIEW_PASS
@@ -200,6 +199,6 @@ Open blockers and non-goals: no F2b-specific blocker. The canonical `just
   e2e` aggregate remains globally unavailable at the missing shutdown target,
   and the two separately tracked Portal base failures remain outside this
   slice; see the post-MVP delivery ledger. Product non-goals remain above
-Worktree state: independently reviewed implementation group; serial commit and
-  integration status is owned by the post-MVP delivery ledger
+Worktree state: integrated on `main`; historical lane/worktree state remains in
+  the preserved delivery ledger, not in the current execution queue
 ```

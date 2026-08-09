@@ -11,8 +11,8 @@ Workflow: [development workflow](../../development-workflow.md) ·
 [parallel delivery](../../parallel-delivery.md) ·
 Template: [task-packet template](../templates/task-packet.md)
 
-Status: **G1 packet 2.** Bases from the settled [UI library anchor](ui-library-anchor.md)
-slice (packet 1). This slice builds the dev-only **BBR Gallery** application:
+Program position: **G1b — Gallery MVP**, activated only from the settled [UI library anchor](ui-library-anchor.md) state recorded in [Current delivery](../../delivery/current.md)
+slice (G1a). This slice builds the dev-only **BBR Gallery** application:
 a separate native GPUI app, keyboard-operable component tree on the left,
 real production `bbr-ui` component on the right canvas with mode/state
 controls, covering the Foundations pages plus the smallest valuable real
@@ -39,8 +39,8 @@ never a fake engine.
 - **Catalog registry with stable `StoryId`s:** a single declaration-order
   registry assigns `StoryId(u64)` sequentially (never derived from labels);
   groups and stories appear in explicit declaration order (never sorted by
-  label); ids are **append-only across G1 packets** — packets 3–4 add
-  stories at later ids and never renumber packet-2 ids; a test pins the
+  label); ids are **append-only across Gallery packets** — G2/G3 add
+  stories at later ids and never renumber G1b ids; a test pins the
   first-N id assignment so reordering cannot silently shift ids.
 - **Tree keyboard contract:** `↑`/`↓` move selection; `←` collapses a group
   (or moves to the parent from a story); `→` expands a group (or enters a
@@ -79,8 +79,8 @@ never a fake engine.
 
 - **No browser-component or composition stories here.** Tab Row, address,
   Favorites/Folders/Footer/Space chip, Downloads, Find, Error/Crash, Auth,
-  Context Menu, Split Preview are [packet 3](component-gallery-browser-components.md)
-  and [packet 4](component-gallery-compositions.md).
+  Context Menu, Split Preview are [G2](component-gallery-browser-components.md)
+  and [G3](component-gallery-compositions.md).
 - **No product UI change.** The gallery consumes `bbr-ui`; it does not add,
   restyle, or re-architect any product surface.
 - **No `bbr-app` import, no controller, no engine.** The gallery builds
@@ -98,11 +98,11 @@ never a fake engine.
 ## Parallel-lane contract
 
 ```text
-Base commit:          the settled packet-1 (UI library anchor) slice — the
+Base condition:       the settled packet-1 (UI library anchor) slice — the
                       bbr-ui foundations + primitives cutover, verified on
                       main after F2a with `just verify` + affected suites.
-Depends on:           packet 1 (crate bbr-ui, its DTOs, ids, and the
-                      forbidden-dependency gate); F2a integrated main.
+Depends on:           G1a (crate bbr-ui, its DTOs, ids, and the
+                      dependency-boundary gate); F2a integrated main.
 Provides/API:         binary `bbr-gallery`; the gallery catalog registry
                       (StoryId assignment), tree/canvas surfaces, mode/state
                       controls, fixture builders for Foundations stories;
@@ -116,8 +116,8 @@ Shared integration points: root Cargo.toml/Cargo.lock (workspace member),
                       justfile (gallery recipes — proposed by the lane,
                       landed by the orchestrator), UI track and ROADMAP
                       roll-ups, ARCHITECTURE.md facts.
-Integration order:    packet 1 → this packet → packet 3 → packet 4 → serial
-                      post-G1 integration. Runs parallel-safe against F3 /
+Integration order:    G1a → G1b → G2 → G3 → serial
+                      post-G1a integration. Runs parallel-safe against F3 /
                       U3 / non-UI lanes (disjoint paths).
 ```
 
@@ -128,7 +128,7 @@ Integration order:    packet 1 → this packet → packet 3 → packet 4 → ser
   host, no network driver of any kind. E2E is in-process or a dedicated
   non-network dev-only test (see Evidence) — never the bbr-testkit socket.
 - **Stable `StoryId`:** assigned by the registry in declaration order,
-  never derived from labels, append-only across packets 2–4; a test pins the
+  never derived from labels, append-only across G1b/G2/G3; a test pins the
   first-N assignment so a label edit or a reorder can never silently shift
   an id. The story registry is the single declaration point.
 - **Deterministic catalog/group order:** explicit declaration order, never
@@ -140,7 +140,7 @@ Integration order:    packet 1 → this packet → packet 3 → packet 4 → ser
 - **Keyboard-operable tree:** arrows, collapse/expand, Home/End,
   Enter/Space, focus/selection semantics and stable ids per Scope; pointer
   operation may exist but never replaces keyboard completeness.
-- **`bbr-ui` tests already cover contrast/ids/models/callbacks** (packet 1);
+- **`bbr-ui` tests already cover contrast/ids/models/callbacks** (G1a);
   this packet adds gallery-side tests only for gallery-owned logic (registry,
   tree focus/selection, controls, fixture builders).
 - **Gallery perf is sanity only, never a product budget:** measured values
@@ -163,8 +163,8 @@ Integration order:    packet 1 → this packet → packet 3 → packet 4 → ser
 ### Unit and contract
 
 - [ ] Registry tests: `StoryId` assignment is sequential by declaration
-      order, stable across label edits, and append-only (packet-2 ids are a
-      pinned prefix; packets 3–4 append without renumbering).
+      order, stable across label edits, and append-only (G1b ids are a
+      pinned prefix; G2/G3 append without renumbering).
 - [ ] Tree tests: focus/selection transitions for `↑`/`↓`/`←`/`→`/`Home`/
       `End`/`Enter`/`Space` over a mixed group/story catalog, with stable
       node ids and one-focus semantics.
@@ -173,12 +173,14 @@ Integration order:    packet 1 → this packet → packet 3 → packet 4 → ser
       the canvas (asserted via the semantic canvas state).
 - [ ] Fixture-builder tests: every Foundation story's fixture model is
       valid for its `bbr-ui` component (fields non-empty, ids stable).
-- [ ] Forbidden-dependency test for the gallery crate: its manifest
-      `[dependencies]` contains `bbr-ui`, `gpui`, `gpui-component` (Root,
-      optional), `gpui_platform` — and nothing from the forbidden set
-      (bbr-app, bbr-browser, bbr-web, bbr-web-macos, bbr-testkit,
-      bbr-fixtures, bbr-persistence, objc2*, webkit, serde, network
-      crates).
+- [ ] Dependency-boundary test for the gallery crate: its direct manifest
+      `[dependencies]` contains only `bbr-ui`, `gpui`, `gpui-component`
+      (Root, optional), and `gpui_platform`; its source imports no forbidden
+      first-party/runtime authority (`bbr-app`, `bbr-browser`, `bbr-web`,
+      `bbr-web-macos`, `bbr-testkit`, `bbr-fixtures`, `bbr-persistence`) and
+      declares no direct native bridge, WebKit, persistence, or network crate.
+      Third-party transitive packages of the explicitly allowed GPUI stack are
+      audited as framework closure, not rejected by a flat package-name scan.
 
 ### Real-app E2E (dev-only, non-network)
 
@@ -208,7 +210,7 @@ CARGO_BUILD_JOBS=4 cargo check --workspace --all-targets
 CARGO_BUILD_JOBS=4 cargo test --workspace
 CARGO_BUILD_JOBS=4 cargo clippy --workspace --all-targets -- -D warnings
 cargo clippy -p bbr-gallery --all-targets -- -D warnings
-just ui-deps                    # forbidden-dependency audit gate
+just ui-deps                    # direct-dependency + approved-closure audit gate
 just e2e-gallery                # GUI-locked dev-only suite (host lock)
 just verify                     # full repo verify after the slice is stable
 python3 scripts/check_roadmap.py

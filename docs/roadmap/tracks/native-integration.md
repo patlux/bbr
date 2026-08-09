@@ -29,13 +29,14 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 - [x] Multi-WebView session registry.
 - [x] Deterministic persistent ProfileId → WKWebsiteDataStore mapping.
 - [ ] Popup/new-window policy, including transient native sessions for [Link Preview / Peek](../tasks/link-preview-peek.md). *(Phase 8)*
-- [ ] Complete the [find-in-page WebKit adapter and Portal bar](../tasks/find-in-page-portal-bar.md). *(Phase 8)*
-- [ ] Route [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md) without replacing WebKit-owned page menus. *(Phase 8)*
-- [ ] Complete the [downloads adapter and sidebar panel](../tasks/downloads-sidebar-panel.md). *(Phase 8)*
-- [ ] Map HTTP/client-certificate delegates after the portable [authentication challenges contract](../tasks/auth-challenges-contract.md). *(Phase 8)*
+- [x] Complete the [find-in-page WebKit adapter and Portal bar](../tasks/find-in-page-portal-bar.md). *(Phase 8; real-app and performance evidence in the packet.)*
+- [x] Route [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md) without replacing WebKit-owned page menus. *(Integrated at `1d35693`; richer Page-background actions remain a separate follow-up.)*
+- [x] Complete the [downloads adapter and sidebar panel](../tasks/downloads-sidebar-panel.md). *(Phase 8; terminal-history follow-up integrated at `cd1bc65`.)*
+- [x] Map HTTP origin/proxy authentication after the portable [authentication challenges contract](../tasks/auth-challenges-contract.md). *(Credential sheet/delegate integrated at `53a9590`.)*
+- [ ] Implement supported client-certificate native enumeration and selection using the same portable authentication contract.
 - [ ] Implement AppKit/WebKit upload/save orchestration after the portable [file upload/save-panel contract](../tasks/file-panels-contract.md). *(Phase 8)*
-- [ ] Apply per-site values and page zoom after the portable [per-site settings and zoom contract](../tasks/site-settings-zoom-contract.md). *(Phase 8)*
+- [x] Apply page zoom through the portable [per-site settings and zoom contract](../tasks/site-settings-zoom-contract.md). *(Command ladder/native WebKit wiring integrated at `1d35693`; settings UI remains separately open.)*
 - [ ] Implement native permission delegate mapping after the portable [permissions contract](../tasks/permissions-contract.md). *(Phase 8)*
-- [ ] Map native failures and web-process recovery after the portable [web error and recovery contract](../tasks/error-surface-contract.md). *(Phase 8)*
+- [x] Map native failures and web-process recovery through the portable [web error and recovery contract](../tasks/error-surface-contract.md). *(Visible recovery surfaces integrated at `a70e9a3`.)*
 - [ ] Complete [native Portal host hardening](../tasks/native-portal-hardening.md) for focus, multi-window/display lifecycle, and teardown. *(Phase 8/9)*
 - [ ] Per-view split geometry.
