@@ -178,9 +178,9 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
     }
     children.push(tabs_list_node(input));
     children.push(node(
-        "bbr-status",
+        bbr_ui::components::STATUS_ID,
         SemanticRole::Status,
-        Some(crate::shell::status_line(input.browser)),
+        Some(crate::shell::status_model(input.browser).text.to_string()),
         None,
         false,
         false,

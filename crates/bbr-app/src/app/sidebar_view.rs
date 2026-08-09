@@ -56,8 +56,7 @@ impl BbrApp {
         let command_results = self.command_result_surface(theme);
         let favorites = self.favorites_surface(theme, &u2.favorite_tiles, cx);
         let plus_menu = self.plus_menu_surface(theme, cx);
-        let status_text: SharedString =
-            crate::shell::status_line(&self.controller.snapshot()).into();
+        let status_model = crate::shell::status_model(&self.controller.snapshot());
         let divider_focused = self.divider_handle.is_focused(window);
         let begin_drag = cx.listener(|this, event, window, cx| {
             this.begin_sidebar_drag(event, window, cx);
@@ -125,15 +124,7 @@ impl BbrApp {
                     .child(div().h(theme.density.section_gap()).flex_shrink_0())
                     .child(tab_surface)
                     .child(div().h(theme.density.section_gap()).flex_shrink_0())
-                    .child(
-                        div()
-                            .id("bbr-status")
-                            .px(Spacing::sp4())
-                            .py(Spacing::sp2())
-                            .text_size(theme.type_.meta.size)
-                            .text_color(p.ink_faint)
-                            .child(status_text),
-                    )
+                    .child(bbr_ui::components::status_line(theme, &status_model))
                     .child(
                         div()
                             .id("bbr-sidebar-toggle")

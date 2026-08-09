@@ -26,6 +26,7 @@ pub mod menu;
 pub mod pane;
 pub mod section;
 pub mod space;
+pub mod status;
 pub mod tab_row;
 
 pub use address::{
@@ -45,4 +46,5 @@ pub use menu::{plus_menu_items, PlusMenuItem, PlusMenuState};
 pub use pane::{crash_panel, empty_space_pane};
 pub use section::section_label;
 pub use space::{profile_chip, profile_chip_id, ProfileChipSpec, SpaceRowVisuals};
+pub use status::{status_line, StatusModel, STATUS_ID};
 pub use tab_row::{drag_tick, tab_row, RowVisuals};

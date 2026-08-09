@@ -7,7 +7,8 @@
 //! separator-aware truncation, and favicon monograms moved to `bbr-ui::text`
 //! in the G1a cutover; the app imports them from there.
 //!
-//! - [`presentation`] — the status line and the empty-pane profile line.
+//! - [`presentation`] — the status-line text derivation and the empty-pane
+//!   profile line.
 //! - [`tab`] — the vertical tab row presentation (one-line budgets, row
 //!   states, the pinned/regular boundary).
 //! - [`space`] — the profile-grouped space surface (§11.3) and its budgets.
@@ -23,7 +24,7 @@ pub mod space;
 pub mod tab;
 
 pub use presentation::profile_line;
-pub use presentation::status_line;
+pub use presentation::status_model;
 #[cfg(feature = "testkit")]
 pub use snapshot::TestSnapshot;
 pub use space::space_groups;

@@ -11,11 +11,12 @@
 //! controls (Button, Input, Checkbox, Switch, Radio, Slider, Progress)
 //! initialized through the production integration pattern.
 //!
-//! Scope copy: the gallery is honestly labeled **Foundations / Primitives**
-//! (plus the Core Controls) and points to later Gallery phases — Browser
-//! Components (G2) and Compositions (G3) — it never claims to be a
-//! complete component explorer.
+//! Scope copy: the gallery ships the **Foundations / Primitives / Core
+//! Controls / Browser Components** groups and points to the later Gallery
+//! phase — Compositions (G3) — it never claims to be a complete component
+//! explorer.
 
+pub mod browser_components;
 pub mod core_controls;
 pub mod foundations;
 pub mod primitives;
@@ -25,17 +26,18 @@ use gpui::{div, prelude::*, px, AnyElement, Rgba, SharedString};
 use crate::registry::{story, CatalogRegistry};
 
 /// The catalog scope line under the title (finding 3).
-pub const GALLERY_SCOPE: &str = "Foundations / Primitives";
+pub const GALLERY_SCOPE: &str = "Foundations / Primitives / Browser Components";
 
-/// The honest continuation note: later Gallery phases bring the browser
-/// components and compositions (finding 3 — never a complete-explorer
-/// claim).
+/// The honest continuation note: later Gallery phases bring the remaining
+/// browser components and the compositions (finding 3 — never a
+/// complete-explorer claim).
 pub const GALLERY_CONTINUATION: &str =
-    "Browser Components (G2) and Compositions (G3) arrive in later Gallery phases.";
+    "More Browser Components (G2) and Compositions (G3) arrive in later Gallery phases.";
 
 /// Build the G1b catalog: Foundations pages + the smallest valuable real
-/// primitives + the Core Controls, in declaration order. Ids are
-/// append-only: G2/G3 add stories at later ids and never renumber these.
+/// primitives + the Core Controls, in declaration order. The G2
+/// browser-components group appends after the pinned G1b prefix — ids stay
+/// append-only and never renumber; later G3 rows continue at later ids.
 pub fn catalog() -> CatalogRegistry {
     let mut registry = CatalogRegistry::new();
     registry.add_group(
@@ -84,6 +86,19 @@ pub fn catalog() -> CatalogRegistry {
             story("Slider", core_controls::render_slider, &[]),
             story("Progress", core_controls::render_progress, &[]),
         ],
+    );
+    // The G2 browser-component stories (packet
+    // `component-gallery-browser-components.md`): appended after the pinned
+    // G1b prefix — ids stay stable and never renumber. The first cut is the
+    // §11.4 status line, extracted to `bbr-ui::components::status` in the
+    // same group; later G2 rows append here in their cutover order.
+    registry.add_group(
+        "Browser components",
+        vec![story(
+            "Status line",
+            browser_components::render_status_line,
+            &[],
+        )],
     );
     registry
 }
