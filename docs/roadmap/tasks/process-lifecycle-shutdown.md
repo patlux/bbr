@@ -80,27 +80,27 @@ canonical E2E recipe, or browser/portal window lifecycle.
 
 ### Unit and contract
 
-- [ ] Lifecycle/helper tests distinguish the owning browser window from portal
+- [x] Lifecycle/helper tests distinguish the owning browser window from portal
       or unrelated window ids where a pure seam is introduced.
-- [ ] Testkit server coverage proves a close-window response is flushed before
+- [x] Testkit server coverage proves a close-window response is flushed before
       the shutdown handler runs, matching the existing graceful-`Quit`
       guarantee.
-- [ ] Default and testkit builds compile and Clippy remains warning-free.
+- [x] Default and testkit builds compile and Clippy remains warning-free.
 
 ### Real-app E2E
 
-- [ ] `Ctrl-C` regression: spawn the real BBR binary, wait for typed readiness,
+- [x] `Ctrl-C` regression: spawn the real BBR binary, wait for typed readiness,
       deliver real `SIGINT`, and assert successful full process exit within 10
       seconds.
-- [ ] Window-close regression: close the real owning browser window through
+- [x] Window-close regression: close the real owning browser window through
       the production GPUI/AppKit path and assert successful full process exit
       within 10 seconds, with no portal child keeping the process resident.
-- [ ] Existing gateway `Quit`, portal teardown/close, smoke, and packaging
+- [x] Existing gateway `Quit`, portal teardown/close, smoke, and packaging
       launch behavior remain green.
 
 ### Performance
 
-- [ ] Not applicable: this terminal lifecycle slice introduces no presented
+- [x] Not applicable: this terminal lifecycle slice introduces no presented
       interaction and no reusable latency class. Bounded successful process
       exit is the acceptance criterion; existing startup and interaction
       budgets remain unchanged.
@@ -162,12 +162,66 @@ If no defensible graceful path remains, stop with:
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
+Outcome: Deterministic process shutdown proven through both user paths by
+        real process exit. BBR fully terminates on terminal Ctrl-C (real
+        SIGINT delivered to the spawned binary) and on owning-browser-window
+        close (testkit `CloseWindow` -> production GPUI `window.remove_window()`
+        observer path; real AppKit `performClose:` covered by the portal
+        hardening parent-close scenario). An implementation-owned portal child
+        window never keeps the process resident. The gateway flushes the
+        `Quit`/`CloseWindow` response through the connection's sole writer
+        before the shutdown handler runs (no response/socket EOF race).
+
+Commits: none; settlement candidate is uncommitted for serial integration by
+        the Orchestrator (base e9f5d30214e7efc46586cb3ae11c6472e0b1801c).
+
 Functional evidence:
+- `is_owning_window` pure predicate + 3 unit tests (portal/unrelated ids never
+  match; owning id matches): `cargo test` green (window_seam tests ok).
+- Testkit flush ordering test `close_window_response_is_flushed_before_
+  shutdown_handler_runs`: `cargo test -p bbr-testkit` 27 passed.
+- Real SIGINT: `kill -INT` to the spawned process; graceful exit success
+  within 10 s (a default-disposition signal death would fail `success()`).
+- Owning-window close: `window.remove_window()` -> window-closed observer ->
+  `flush_browser_state()` + `cx.quit()`; process exits within 10 s.
+- Portal-child isolation: close with the native portal probe presented and
+  attached still exits the complete process.
+
 Real-app E2E:
-Performance evidence: not applicable; terminal bounded-exit contract
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+- `just e2e-shutdown`: 3/3 green (sigint, close_window, close_with_portal).
+- `just e2e-smoke`: 1/1 green. Portal parent-close scenario
+  (`host_tears_down_when_parent_closes_with_open_presentation`) green.
+- Canonical `just e2e`: NOT green. Green through portal position, then
+  BLOCKED by `hardening::host_hides_on_minimize_and_restores` (AppKit
+  hit-test at the probe point does not converge: foreign window 42993 sits
+  below the probe, owns true) -- the documented PORTAL-MINIMIZE host
+  blocker (see docs/delivery/current.md). Identical failure pre-exists this
+  lane (8 Aug suite-e2e-shell-portal.log) and reproduced identically in the
+  stopped run and one settlement diagnostic retry. Do not infer a green
+  canonical gate from individually green remainder suites (find, dense,
+  downloads, errors, external-url, zoom, context-menu, auth all green).
+
+Performance evidence: not applicable; terminal bounded-exit contract. The two
+        unchanged `startup` p95 failures (563.908209 ms and 517.736041 ms vs
+        the 500 ms ceiling, no budget changes) remain explicit F2-closeout
+        evidence and are not erased by this slice.
+
+Roadmap/documentation updates: ARCHITECTURE.md and E2E_ARCHITECTURE.md
+        document the lifecycle seam, response-flush guarantee, and
+        e2e_shutdown suite; stale portal parent-close expectation corrected
+        to the owning-window process-exit contract.
+
+Open blockers and non-goals: PORTAL-MINIMIZE host/window-server state blocks
+        one portal hardening test (pre-existing, not lane-caused); two
+        startup p95 budget failures block the canonical perf gate (unchanged
+        budgets, preserved as evidence). Non-goals per packet: persistence
+        flush, warm restore, multi-window policy, SIGTERM/SIGHUP, Cmd-Q/menu,
+        packaging automation, performance work.
+
+Worktree state: /Users/patwoz/dev/Personal/macos/bbr-shutdown-lifecycle on
+        branch parallel/shutdown-lifecycle, base e9f5d30214e7efc46586cb3ae11c6472e0b1801c;
+        seven paths
+        (ARCHITECTURE.md, E2E_ARCHITECTURE.md, window_seam.rs, hardening.rs,
+        new e2e_shutdown.rs, server.rs, this packet); uncommitted candidate
+        preserved for independent read-only review.
 ```

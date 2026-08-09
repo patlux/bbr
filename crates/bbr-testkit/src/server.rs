@@ -432,6 +432,55 @@ mod tests {
     }
 
     #[test]
+    fn close_window_response_is_flushed_before_shutdown_handler_runs() {
+        // The owning-window-close path shares the graceful-`Quit` guarantee:
+        // the `Response::Ok` for `CloseWindow` must reach the client before
+        // the shutdown handler removes the window and tears the process down,
+        // so a successful response can never race the socket close.
+        let dir = tmp_profile();
+        let (handler_started_tx, handler_started_rx) = mpsc::channel();
+        let (allow_shutdown_tx, allow_shutdown_rx) = mpsc::channel();
+        let allow_shutdown_rx = Mutex::new(allow_shutdown_rx);
+        let server = GatewayServer::start(&dir, "tok-1", "0.1.0", move |req| match req {
+            Request::CloseWindow => {
+                handler_started_tx.send(()).expect("report handler start");
+                allow_shutdown_rx
+                    .lock()
+                    .unwrap()
+                    .recv_timeout(Duration::from_secs(5))
+                    .expect("test releases shutdown handler");
+                Response::Ok
+            }
+            _ => Response::Error(Error::new("unexpected", "only CloseWindow expected")),
+        })
+        .expect("start server");
+        let path = server.socket_path().to_path_buf();
+        let (client_done_tx, client_done_rx) = mpsc::channel();
+        let client = std::thread::spawn(move || {
+            let mut client = crate::client::Client::connect(&path).expect("connect");
+            client.hello("tok-1").expect("hello");
+            client
+                .send_ok(&Request::CloseWindow)
+                .expect("CloseWindow response must arrive before shutdown");
+            client_done_tx.send(()).expect("report client response");
+        });
+
+        handler_started_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("close-window handler started");
+        client_done_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("client received the flushed response while handler waited");
+        allow_shutdown_tx
+            .send(())
+            .expect("release shutdown handler");
+        client.join().unwrap();
+        server.stop();
+        drop(server);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
     fn hello_round_trip_and_bad_token_rejected() {
         let dir = tmp_profile();
         let server = GatewayServer::start(&dir, "tok-1", "0.1.0", |req| match req {

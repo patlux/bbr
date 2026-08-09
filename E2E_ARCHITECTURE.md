@@ -326,18 +326,33 @@ lifecycle and typed resize snapshots):
 
 ## 7 — Process shutdown addendum (`bbr-app/tests/e2e_shutdown.rs`)
 
-One `#[ignore]`d macOS-only suite proves both user process-lifecycle paths:
+One `#[ignore]`d macOS-only suite (shared harness in `tests/e2e_common/`;
+`just e2e-shutdown`, canonical `just e2e` position 2) proves both user
+process-lifecycle paths through real process exit, not hidden windows or
+internal shutdown state:
 
-1. `CloseWindow` removes the real GPUI browser window through the production
-   window path; BBR's browser-window observer calls `cx.quit()` even if an
-   implementation-owned portal child window still exists, and the process
-   exits successfully within 10 seconds.
-2. A real `SIGINT` (the terminal Ctrl-C signal) reaches the async signal
-   listener, which schedules `cx.quit()` on GPUI's foreground/main thread; the
-   complete process exits successfully within 10 seconds.
+1. **Owning-window close** (`Request::CloseWindow` → the production GPUI
+   `window.remove_window()` path): BBR's browser-window observer runs
+   `flush_browser_state()` and calls `cx.quit()`, and the complete process
+   exits successfully within 10 seconds. The gateway flushes the successful
+   `CloseWindow` response to the client before the shutdown handler runs (no
+   response/socket EOF race), matching the graceful-`Quit` guarantee.
+2. **Owning-window close with an open portal child**: the one
+   implementation-owned native portal host is presented and attached while
+   the owning browser window closes; the complete process still exits
+   successfully within 10 seconds — a portal child never owns process
+   lifetime.
+3. **Real `SIGINT`** (the terminal Ctrl-C signal): a real `SIGINT` is
+   delivered to the spawned BBR process; the async signal listener schedules
+   `cx.quit()` on GPUI's foreground/main thread and the complete process
+   exits successfully within 10 seconds (a default-disposition signal death
+   would fail the success assertion).
 
 The suite waits on process state under explicit deadlines and uses the same
-failure artifacts as the other real-app E2E harnesses.
+failure artifacts as the other real-app E2E harnesses. The native portal
+hardening suite's parent-close scenario asserts the same owning-window
+contract through the real AppKit `performClose:` path: zero BBR windows on
+screen after the close and the process exit within the standard deadline.
 
 ## 7a. The tabs test (`bbr-app/tests/e2e_tabs.rs`)
 
@@ -859,8 +874,9 @@ milestones, samples, budgets, testkit transport, or product assertions.
 ## 9. Commands (implemented)
 
 ```bash
-just e2e           # canonical sequential GUI gate: smoke, tabs, profiles, shell-tabs, shell-spaces, shell-sidebar, shell-split-geometry, shell-organize, shell-hover, shell-dense, performance
+just e2e           # canonical sequential GUI gate: smoke, shutdown, tabs, profiles, shell-tabs, shell-spaces, shell-sidebar, shell-split-geometry, shell-organize, shell-hover, shell-dense, performance
 just e2e-smoke     # baseline navigation/focus/resize
+just e2e-shutdown  # deterministic process shutdown: SIGINT + owning-window close (incl. portal-child isolation)
 just e2e-tabs      # multi-tab/session behavior
 just e2e-profiles  # native profile isolation, moves, and suspension
 just e2e-shell-tabs    # visible vertical-tab surface (pointer/keyboard/empty)
