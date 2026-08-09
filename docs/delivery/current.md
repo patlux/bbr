@@ -17,6 +17,7 @@ packets. Full chronology and detailed evidence remain in the preserved
 | Cutover commit | `781e862ca4547cee16be23e251767f6b2fa938fb` (tree `8e87a7931bab248faa707dbb131f7df6e341db80`, parent `0dc22fee16d737a077aa1b097e359e2f1d08a764`) |
 | Atomic handoff | acknowledged after committed-HEAD audit and independent `COMMITTED_READBACK_PASS` |
 | Verified product base | `main@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
+| Current integrated control checkpoint | `6ff70eab66432655e184ff3e09147650ef6bf39f` (tree `55f6f10e05d14a08c6b34bf47e69106725688fcb`); includes SHUTDOWN, deterministic error-fixture recovery, and deferred native Portal visibility ordering |
 | First-wave branch base | `e9f5d30214e7efc46586cb3ae11c6472e0b1801c`; SHUTDOWN, B1, and G1a were all created clean from this exact commit |
 | Previous canonical pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md` |
 | Rollback pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
@@ -48,10 +49,11 @@ as additional status words.
 
 ## Active product wave
 
-F2a and its documentary closeout are integrated. The first post-cutover queue
-audit must activate every defensible ready lane below from the exact same
-verified base; until the atomic cutover and fresh-operator acknowledgement
-complete, none has product authority.
+F2a and its documentary closeout are integrated. The atomic cutover and
+fresh-operator acknowledgement are complete. SHUTDOWN and the two bounded F2
+recoveries are integrated on the current control checkpoint. B1 and G1a are
+reviewed and frozen, but remain intentionally unintegrated until the complete
+F2 closeout passes.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
@@ -69,8 +71,8 @@ product authority and every bundle is stale until refreshed after F2a.
 
 | ID | Status before F2a close | Worktree / owner | Exclusive territory | Start condition | Integration priority |
 |---|---|---|---|---|---|
-| SHUTDOWN | `integrated` | `/Users/patwoz/dev/Personal/macos/bbr-shutdown-lifecycle`; branch `parallel/shutdown-lifecycle`; no writer; exact reviewed lane commit `48f2841b9db46f19ebbd8f8b9b3637496f07e37d` | app lifecycle, real SIGINT and owning-window close, portal-child isolation, testkit response flush, fresh `e2e_shutdown`, required E2E registry | merged as `12431c95…`; reviewed error-fixture follow-up merged as `1e42d835…`. Verify, SHUTDOWN 3/3, every non-portal E2E including errors 10/10, performance, and package are green; F2 remains open only at loginwindow-blocked portal minimize | **1 — product integrated; closeout blocked** |
-| B1 | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-saved-pages-b1`; branch `parallel/saved-pages-b1`; no writer; focused recheck returned direct `REVIEW_PASS`; exact reviewed lane commit `a23d9335240ff4c6cbc0d5d8b80744339f4a335e` | focused portable domain/persistence Saved Pages modules, canonical URL equality, CRUD/search/list, schema v3 bump+discard, fixtures/benchmarks | commit tree exactly `0c728df48ecf495375b6b4ad096dce35d41cfbbf`; worktree clean; F1–F5 and unchanged B1 contracts passed independent recheck; still waits for an actually successful F2 closeout, now blocked only by portal minimize | after F2 closeout, normally before G1a |
+| SHUTDOWN | `integrated` | `/Users/patwoz/dev/Personal/macos/bbr-shutdown-lifecycle`; branch `parallel/shutdown-lifecycle`; no writer; exact reviewed lane commit `48f2841b9db46f19ebbd8f8b9b3637496f07e37d` | app lifecycle, real SIGINT and owning-window close, portal-child isolation, testkit response flush, fresh `e2e_shutdown`, required E2E registry | merged as `12431c95…`; deterministic error-fixture recovery merged as `1e42d835…`; deferred Portal visibility recovery merged at control checkpoint `6ff70eab…`. `just verify` and all 27 functional E2E suites are green, including Portal 7/7 and errors 10/10; no `RefCell already borrowed`. F2 remains open only because canonical performance/package closeout evidence is not yet complete | **1 — product integrated; closeout blocked** |
+| B1 | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-saved-pages-b1`; branch `parallel/saved-pages-b1`; no writer; focused recheck returned direct `REVIEW_PASS`; exact reviewed lane commit `a23d9335240ff4c6cbc0d5d8b80744339f4a335e` | focused portable domain/persistence Saved Pages modules, canonical URL equality, CRUD/search/list, schema v3 bump+discard, fixtures/benchmarks | commit tree exactly `0c728df48ecf495375b6b4ad096dce35d41cfbbf`; worktree clean; F1–F5 and unchanged B1 contracts passed independent recheck; still waits for an actually successful F2 closeout, currently blocked by missing idle-host performance/package evidence | after F2 closeout, normally before G1a |
 | G1a | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-ui-g1a-foundations`; branch `parallel/ui-g1a-foundations`; no writer; focused recheck returned direct `REVIEW_PASS`; exact reviewed commit `e6d3ab85a49b8754764553b31d0eac996015ce25` | extraction of integrated production Foundations/Primitives authority into `bbr-ui`; no copies; exact direct dependencies `gpui` + `bbr-domain`; approved transitivity only `bbr-domain → bbr-web`, never direct `bbr-ui → bbr-web` | commit tree exactly `8c441f2ccee86792b4475a314b472299717d11fb`; F1–F3, workspace membership, `ui-deps`, 46 script tests, dependency closure, affected E2E, module budgets, and architecture truth passed; worktree clean. Integration waits for successful F2 closeout and B1 | after F2 closeout and B1 |
 | G1b | `planned` | no worktree or writer until G1a settles | dev-only Gallery MVP consuming G1a's exact production symbols; no WebKit/network/testkit listener | G1a settled; Gallery territory writer-free | after G1a |
 
@@ -93,9 +95,13 @@ forbidden.
    base. Start G1b immediately when G1a settles. All substantive work uses
    isolated background workflows with explicit DeepSeek-v4-flash high.
 4. Integrate SHUTDOWN first.
-5. Run the canonical F2 closeout: `just verify` → `just e2e` →
+5. Complete the canonical F2 closeout. First prove an idle host with no Tart,
+   Tart-runner SSH, or competing BBR build/test/package process and two
+   observations at least 30 seconds apart. Then run the single controlled
+   repository-default-Xcode performance reproduction. Only if it is green,
+   restart the complete sequence from `just verify` → `just e2e` →
    `just e2e-perf` → `package-verify`; record Bundle/Binary SHA and clean up
-   process/GUI locks.
+   process/GUI locks. No blind retry or acceptance change.
 6. Integrate B1, G1a, and G1b serially according to the actual reviewed trees;
    default order B1 → G1a → G1b unless concrete dependency evidence requires
    another semantic integration order.
@@ -124,7 +130,8 @@ forbidden.
 |---|---|---|
 | MANUAL-SMOKE | `blocked` | Patrick runs the packaged-app smoke checklist after the next stable bundle |
 | UI-2B | `blocked` | Patrick provides a screenshot or concrete problematic UI location |
-| PORTAL-MINIMIZE | `blocked` | canonical integrated-head rerun remains 6/7: fullscreen `loginwindow` window `42993` still owns the probe point. Rerun the real WindowServer hit-test only after that host condition is cleared; no test or deadline change. |
+| PORTAL-MINIMIZE | `closed` | deferred `NativePortal::show/hide` ordering is integrated at `6ff70eab…`; the real integrated-head Portal suite is 7/7 including `host_hides_on_minimize_and_restores`, with no `RefCell already borrowed`. Portal is no longer the F2 blocker. |
+| F2-CLOSEOUT | `blocked` | The first canonical run after Portal recovery had all 27 functional E2E suites green but invalid performance evidence: startup p95 `597.81 ms > 500 ms`, command first-result max `185.56 ms > 100 ms`, `canonical: false`, concurrent Tart verification, and an Xcode 26.6 override instead of the repository default 26.2. Recovery V2 waited from `2026-08-09T09:24:51Z` through `09:54:51Z`, but Tart/native then Tart/functional runner plus SSH remained active; no idle pair was proven and **no controlled reproduction or later gate was executed**. The single reproduction remains unused. Retry only after the external verification fully ends, then record two idle observations ≥30 seconds apart and run exactly one `CARGO_BUILD_JOBS=4 nix develop -c just e2e-perf` with no Xcode override. |
 | PERF-500-50 | `blocked` | stable measured 500-tab/50-session frame-time evidence on a dedicated canonical runner; functional 500/50 and measured 230/20 are not substitutes |
 | PERF-RUNNER | `blocked` | name/provision the canonical runner and accepted baseline publication surface |
 | PERF-RESOURCES | `planned` | CPU, wakeups, energy, memory pressure, and suspend/resume evidence |
@@ -181,10 +188,14 @@ forbidden.
 | SHUTDOWN review/remediation | independent review found the lifecycle, response-flush, E2E, package, and lane-specific contracts satisfied, but returned `REVIEW_FINDINGS` for one false packet path count plus optional related window-model wording precision | one bounded writer may edit only the packet, `window_seam.rs` docs, and ARCHITECTURE implemented-fact wording; no behavior/test/budget change. Focused roadmap/unit recheck follows before freeze/integration. |
 | SHUTDOWN docs remediation/recheck | writer corrected the seven-path ledger count and portal-versus-find/auth window-model wording with no behavior mutation, then released ownership | final tree `d2b206c6…`; three-file delta only; fmt, roadmap, and seam unit tests green. Fresh focused reviewer returned direct `REVIEW_PASS`; Orchestrator committed the exact tree as `48f2841b…`. |
 | SHUTDOWN serial integration | exact reviewed lane merged on the clean control trunk; main worktree remained protected and foreign-dirty | integration merge `12431c95…`; corrected-CWD `just verify` green, canonical E2E proves all suites through persistence plus SHUTDOWN before the known portal blocker, serial perf green, serial package green. |
-| F2 error-fixture review/integration | independent reviewer returned direct `REVIEW_PASS` on exact tree `8314793d…`; Orchestrator froze it unchanged as `e1f9e523…` and merged it as `1e42d835…` | integrated `just verify` green; all post-portal suites green including errors 10/10; canonical E2E reaches only portal minimize 6/7; performance green with startup 484.532 ms and `regressions: []`; deterministic package green. F2 remains open solely for `PORTAL-MINIMIZE`. |
+| F2 error-fixture review/integration | independent reviewer returned direct `REVIEW_PASS` on exact tree `8314793d…`; Orchestrator froze it unchanged as `e1f9e523…` and merged it as `1e42d835…` | at this checkpoint `just verify`, all post-portal suites including errors 10/10, performance startup 484.532 ms with `regressions: []`, and deterministic package were green; canonical E2E still stopped at the then-open Portal minimize condition. This is preserved checkpoint evidence, not the current blocker. |
+| F2 Portal visibility recovery | independent review returned direct `REVIEW_PASS` on tree `55f6f10e…`; freeze readback returned `FREEZE_PASS`; Orchestrator committed `6a54cc9…` and integrated it at `6ff70eab…` without changing the reviewed tree | `NativePortal::show/hide` now defer `orderFront:`/`orderOut:` to a bare main-runloop turn while logical visibility changes immediately. Portal 7/7 including minimize, Find 6/6, Command 25/25, Auth 4/4, Context Menu 9/9, all 27 functional canonical E2E suites, and no `RefCell already borrowed`. Portal blocker closed. |
+| F2 canonical closeout after Portal recovery | exact integrated control checkpoint `6ff70eab…`; no product mutation | first run proved all functional E2E green, then failed performance with startup p95 597.81 ms and command first-result max 185.56 ms under concurrent Tart verification and an operator Xcode-26.6 override; artifact `canonical: false`. Evidence is invalid for closeout and not a Portal finding. |
+| F2 idle-host recovery V2 | exact clean HEAD/tree `6ff70eab…` / `55f6f10e…`; bounded read-only operator | external Tart native/functional runs and runner SSH occupied the full 30-minute window. GUI lock stayed free and no competing BBR process remained, but no idle pair was possible. No performance, E2E, package, build, or GUI gate ran; the single controlled reproduction remains unused. F2 is blocked on a future genuinely idle host, not on product Portal behavior. |
 | G1a recovery settlement/review | recovery candidate `49bee8bf…` survived independent gates unchanged | first reviewer found only F1 duplicate `SpaceChipVisuals`, F2 crate-local lock, and F3 stale architecture wording; dependency closure, behavior cutover, module budgets, non-GUI gates, affected E2E, and repeated perf passes were accepted. |
 | G1a remediation and serial completion | bounded writer resolved F1–F3, then Orchestrator added only the required root workspace and Justfile serial points | one canonical `bbr-ui::state::SpaceChipVisuals`; no crate-local lock; implemented architecture truth; root `Cargo.toml` includes `crates/bbr-ui`; `just verify` includes `ui-deps`; 46 script tests registered. Complete tree `8c441f2c…`, status `5c7f058f…`, mixed real index unchanged. |
 | G1a focused pass/freeze | fresh reviewer returned direct `REVIEW_PASS` with every fingerprint stable and all focused gates green | Orchestrator committed the exact reviewed tree as `e6d3ab85…`; commit tree `8c441f2c…`; worktree clean. No control-trunk integration occurred because successful F2 closeout and then B1 remain serial predecessors. G1b remains blocked until G1a is integrated. |
+| Downstream read-only readiness | B1/G1a/G1b integration preflights plus B2/B3, G2/G3, Z1–Z5, and evidence-lane maps completed without mutation | durable packet-grounded dependencies are prepared, but findings derived from the unrelated dirty `bbr@0dc22fe` worktree were rejected. No readiness workflow authorizes a writer; only this committed snapshot and fresh identity/ownership audits may unlock work. |
 | Deliberate deferrals | G1b, B1 integration, G1a integration, B2, B3, G2, G3, Z1–Z5, ENGINE-SPIKE, blocked evidence rows | B1 and G1a are technically frozen but deliberately remain dependency-gated by the explicit successful-F2-closeout and B1→G1a order; no item is deferred merely for conflict probability |
 
 ## Cutover and rollback protocol
