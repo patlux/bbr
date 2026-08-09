@@ -137,6 +137,55 @@ pub(super) fn assert_probe_open(snapshot: &Snapshot) {
     assert!(!p.portal_is_main, "showing never makes the portal main");
 }
 
+/// Poll until both the logical presentation and deferred AppKit ordering are
+/// visible in the same typed snapshot. The native bridge deliberately applies
+/// `orderFront:` on a bare run-loop turn to avoid GPUI App re-entrancy, so a
+/// response/frame flush can precede the native visibility transition.
+pub(super) fn wait_probe_open(client: &mut Client, deadline: Instant) -> Snapshot {
+    loop {
+        let snapshot = client.snapshot().expect("probe open snapshot");
+        let p = &snapshot.portal;
+        if p.presentation == Some(PROBE_PRESENTATION_ID)
+            && p.visible
+            && p.native_visible
+            && p.frame_synced
+        {
+            assert_probe_open(&snapshot);
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "portal probe did not become natively visible; presentation {:?}, logical {}, native {}, frame_synced {}",
+            p.presentation,
+            p.visible,
+            p.native_visible,
+            p.frame_synced
+        );
+        std::thread::yield_now();
+    }
+}
+
+/// Poll until dismissal and deferred `orderOut:` have both converged. The
+/// existing closed-host assertion remains the acceptance surface.
+pub(super) fn wait_host_closed(client: &mut Client, deadline: Instant) -> Snapshot {
+    loop {
+        let snapshot = client.snapshot().expect("portal closed snapshot");
+        let p = &snapshot.portal;
+        if p.presentation.is_none() && !p.visible && !p.native_visible {
+            assert_host_closed(&snapshot);
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "portal host did not become natively hidden; presentation {:?}, logical {}, native {}",
+            p.presentation,
+            p.visible,
+            p.native_visible
+        );
+        std::thread::yield_now();
+    }
+}
+
 /// Assert native hit-test ownership at the probe card's point over the parent
 /// content and therefore over its WKWebViews.
 ///

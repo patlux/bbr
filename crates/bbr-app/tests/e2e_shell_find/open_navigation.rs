@@ -89,7 +89,7 @@ fn find_navigation_wraps_and_zero_matches_report_deterministically() {
 
         client.send_ok(&dsl::find_open()).expect("find open");
         flush_frame(&mut client);
-        let open = client.snapshot().expect("open snapshot");
+        let open = wait_find_open(&mut client, deadline());
         assert_find_open(&open);
 
         client

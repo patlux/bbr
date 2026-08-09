@@ -2,7 +2,7 @@
 //! `native-portal-host`).
 //!
 //! AppKit window mutations (`setFrame:`, `setStyleMask:`, `addChildWindow:`,
-//! `close:`) synchronously post window notifications into GPUI, whose
+//! `orderFront:`, `orderOut:`, `close:`) synchronously post window notifications into GPUI, whose
 //! platform callbacks re-borrow the `App` RefCell — panicking when the
 //! composition root or any update already holds it. GPUI's own mac platform
 //! defers such work to the next run-loop iteration for the same reason
@@ -39,6 +39,14 @@ pub(crate) enum DeferredWindowOp {
         parent: Retained<NSWindow>,
         portal: Retained<NSWindow>,
     },
+    /// Order the portal window front after the presentation state and render
+    /// tree are ready. Ordering can synchronously post AppKit window
+    /// notifications into GPUI, so it follows the same bare-turn rule as
+    /// frame and attachment mutations.
+    Show,
+    /// Order the portal window out after dismissal or while the parent is
+    /// minimized. Deferred for the same GPUI re-entrancy boundary as Show.
+    Hide,
     /// Close the portal window. Deferred because `close:` synchronously
     /// posts `NSWindowWillCloseNotification`, which GPUI handles by removing
     /// the window from its arena — a mutation that panics while any `App`
@@ -79,7 +87,7 @@ define_class!(
     /// Applies one window mutation on a later main run-loop turn.
     ///
     /// AppKit window mutations (`setFrame:`, `setStyleMask:`,
-    /// `addChildWindow:`) synchronously post window notifications into GPUI,
+    /// `addChildWindow:`, `orderFront:`, `orderOut:`) synchronously post window notifications into GPUI,
     /// whose platform callbacks re-borrow the `App` RefCell — panicking when
     /// the composition root or any update already holds it. GPUI's own mac
     /// platform defers such work to the next run-loop iteration for the
@@ -99,6 +107,8 @@ define_class!(
             match &ivars.op {
                 DeferredWindowOp::StyleMask(mask) => ivars.window.setStyleMask(*mask),
                 DeferredWindowOp::Frame(frame) => ivars.window.setFrame_display(*frame, false),
+                DeferredWindowOp::Show => ivars.window.orderFront(None),
+                DeferredWindowOp::Hide => ivars.window.orderOut(None),
                 DeferredWindowOp::Close => ivars.window.close(),
                 DeferredWindowOp::ToggleFullscreen => {
                     // Deterministic fullscreen capability: titled windows are

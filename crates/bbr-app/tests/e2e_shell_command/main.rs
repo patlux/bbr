@@ -76,7 +76,11 @@ pub fn type_char(client: &mut Client, ch: char) {
 pub fn cmd_l(client: &mut Client, since: &mut u64) -> bbr_testkit::protocol::Snapshot {
     key(client, "cmd-l");
     *since = wait_chrome_focus(client, true, *since);
-    let snapshot = client.snapshot().expect("cmd-l snapshot");
+    let snapshot = command_portal::wait_command_portal_open(
+        client,
+        bbr_testkit::protocol::CommandSurface::Overlay,
+        deadline(),
+    );
     assert_eq!(snapshot.command_bar_mode, CommandBarMode::Location);
     assert!(snapshot.chrome_focused);
     snapshot
