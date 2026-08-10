@@ -16,11 +16,12 @@ use bbr_testkit::protocol::{BenchmarkKind, BrowserChange, Request};
 use bbr_testkit::Client;
 
 use super::benchmarks::{
-    benchmark_click, benchmark_dense_scroll, benchmark_dense_select, benchmark_hover,
-    benchmark_keystroke, benchmark_move_tab, benchmark_pin_tab, benchmark_press, benchmark_reopen,
-    benchmark_reorder_tab, benchmark_resize_sidebar, benchmark_restore_sidebar, benchmark_select,
-    benchmark_sidebar, benchmark_space_switch, benchmark_space_switch_cross_profile,
-    benchmark_swipe_commit, wait_browser_change, wait_title,
+    benchmark_child_tab_swipe_return, benchmark_click, benchmark_dense_scroll,
+    benchmark_dense_select, benchmark_hover, benchmark_keystroke, benchmark_move_tab,
+    benchmark_pin_tab, benchmark_press, benchmark_reopen, benchmark_reorder_tab,
+    benchmark_resize_sidebar, benchmark_restore_sidebar, benchmark_select, benchmark_sidebar,
+    benchmark_space_switch, benchmark_space_switch_cross_profile, benchmark_swipe_commit,
+    benchmark_web_history_swipe_back, wait_browser_change, wait_history_events, wait_title,
 };
 use super::drive::u2::{drive_u2_sidebar, strip_presence};
 use super::find_drive::drive_find_scenarios;
@@ -404,6 +405,112 @@ fn drive_matrix_inner(
             tab1_view,
             &mut operation,
         );
+
+        // N1 web-content gesture scenarios (task packet
+        // `web-content-navigation-gestures`): the committed logical Back
+        // gesture runs through the exact production commit method the native
+        // content-gesture bridge pump calls. `web_history_swipe_back`
+        // measures a deterministic already-loaded two-entry history on tab 0
+        // (page1 → page2); every sample starts from the page2 entry (real
+        // `Navigate`, committed title + `can_go_back` waited) and accepts
+        // only when the bound view presents the page1 root again (title +
+        // real history availability, fast-but-wrong guard: the same view
+        // stays presented, tabs/sessions never change). `child_tab_swipe_return`
+        // measures the Back-at-settled-root opener return: a regular child
+        // is opened from the warm opener (tab 1) through the productive
+        // new-window seam, and every sample accepts only when the exact
+        // warm opener is presented with the child session gone (typed
+        // tabs/sessions/opener-relation guard). Both scenarios end restoring
+        // the two original warm tabs (row 0 fixture-ready page1, row 1
+        // page2, 2 sessions) the following pointer-state block requires.
+        let gesture_setup = client.snapshot().expect("gesture setup snapshot");
+        let history_view = gesture_setup.tabs[0]
+            .web_view
+            .expect("history gesture target (tab 0)");
+        let opener_view = gesture_setup.tabs[1]
+            .web_view
+            .expect("opener gesture tab (tab 1)");
+        let opener_profile = gesture_setup.active_profile;
+
+        let mut history_swipe_samples = Vec::with_capacity(config.interaction_samples);
+        for _ in 0..config.interaction_samples {
+            // Deterministic already-loaded two-entry history on the exact
+            // pane: select tab 0 (page1 root) and navigate to page2, waiting
+            // for the committed title and real `can_go_back == true` before
+            // the sample (fixture/network time is never inside the sample).
+            client
+                .send_ok(&Request::SelectTab { index: 0 })
+                .expect("select history pane before swipe-back sample");
+            client
+                .send_ok(&Request::Navigate {
+                    url: page_two.to_string(),
+                })
+                .expect("navigate to page two before swipe-back sample");
+            since = wait_title(client, history_view, PAGE_TWO_TITLE, since);
+            since = wait_history_events(client, history_view, true, false, since);
+            let measured = benchmark_web_history_swipe_back(
+                client,
+                &mut since,
+                operation,
+                history_view,
+                PAGE_ONE_TITLE,
+            );
+            operation += 1;
+            history_swipe_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("web_history_swipe_back".into())
+                .or_default()
+                .push(measured.duration_ns);
+        }
+
+        let mut child_return_samples = Vec::with_capacity(config.interaction_samples);
+        for _ in 0..config.interaction_samples {
+            // The opener (tab 1, warm page2 session) is the gesture parent:
+            // open a regular child from it through the productive
+            // new-window seam and wait for the child's committed title (a
+            // provisional child is never a settled root; the child must be
+            // the active pane with no history before the sample).
+            client
+                .send_ok(&Request::SelectTab { index: 1 })
+                .expect("select opener before child-tab sample");
+            client
+                .send_ok(&Request::NewWindow {
+                    source: opener_view,
+                    source_profile: opener_profile,
+                    url: page_two.to_string(),
+                    user_initiated: true,
+                })
+                .expect("open regular child before child-tab sample");
+            let (seq, change) = wait_browser_change(
+                client,
+                |c| matches!(c, BrowserChange::NewWindowOpened { .. }),
+                since,
+            );
+            since = seq;
+            let child_view = match change {
+                BrowserChange::NewWindowOpened { view, .. } => view,
+                _ => unreachable!(),
+            };
+            since = wait_title(client, child_view, PAGE_TWO_TITLE, since);
+            let measured = benchmark_child_tab_swipe_return(
+                client,
+                &mut since,
+                operation,
+                child_view,
+                opener_view,
+                1,
+            );
+            operation += 1;
+            child_return_samples.push(measured.duration_ns);
+            harness
+                .raw_log
+                .interactions
+                .entry("child_tab_swipe_return".into())
+                .or_default()
+                .push(measured.duration_ns);
+        }
 
         // Pointer-state transitions through the production hover/press
         // listener methods (§10.2 hover wash + close reveal, §10.3 active
@@ -1253,6 +1360,8 @@ fn drive_matrix_inner(
             cross_space_samples,
         );
         raw.insert("swipe_commit".to_string(), swipe_commit_samples);
+        raw.insert("web_history_swipe_back".to_string(), history_swipe_samples);
+        raw.insert("child_tab_swipe_return".to_string(), child_return_samples);
         raw.insert("tab_pin".to_string(), pin_samples);
         raw.insert("tab_reorder".to_string(), reorder_samples);
         raw.insert("tab_hover".to_string(), hover_samples);

@@ -407,6 +407,20 @@ impl BbrApp {
                     blocked_reported: state.blocked_reported,
                 }
             },
+            content_gesture: {
+                let state = self.content_gesture_state();
+                let relations = self.controller.opener_pairs();
+                bbr_testkit::protocol::ContentGestureSnapshot {
+                    commits: state.commits,
+                    history_routed: state.history_routed,
+                    opener_returns: state.opener_returns,
+                    no_ops: state.no_ops,
+                    opener_relations: relations
+                        .into_iter()
+                        .map(|(child, opener)| (child.0, opener.0))
+                        .collect(),
+                }
+            },
         }
     }
 

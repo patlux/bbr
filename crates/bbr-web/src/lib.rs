@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 pub mod auth_challenges;
+pub mod content_gesture;
 pub mod external_urls;
 pub mod file_panels;
 pub mod find_in_page;
@@ -31,6 +32,7 @@ pub mod new_window;
 pub mod permissions;
 pub mod site_settings;
 pub mod web_errors;
+pub use content_gesture::{ContentGestureCommit, ContentGestureDirection, ContentGesturePhase};
 pub use external_urls::{
     classify, decide_routing, ExternalUrlCoordinator, ExternalUrlError, ExternalUrlOutcome,
     ExternalUrlRequest, ExternalUrlRequestId, RoutingDecision, UrlClass,
@@ -132,6 +134,12 @@ pub enum WebEvent {
     LoadingChanged(WebViewId, bool),
     CanGoBackChanged(WebViewId, bool),
     CanGoForwardChanged(WebViewId, bool),
+    /// The initial document of this session committed in WebKit (the
+    /// `didCommitNavigation:` delegate callback). The controller uses it to
+    /// decide whether a Back-at-root gesture may return to a child tab's
+    /// opener: only a committed initial document (or a settled failure/
+    /// crash state) is a settled root, never an ambiguous provisional load.
+    DidCommitNavigation(WebViewId),
     PageCrashed(WebViewId),
     NavigationFailed(WebViewId, String),
     /// A right-click over a web view was classified BBR-owned (page

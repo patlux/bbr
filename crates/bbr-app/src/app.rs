@@ -46,6 +46,7 @@ pub(crate) mod command_rank;
 mod command_result;
 mod command_surface;
 mod command_text;
+pub(crate) mod content_gesture;
 pub(crate) mod context_menu;
 #[cfg(feature = "testkit")]
 mod context_menu_benchmarks;
@@ -72,6 +73,8 @@ pub(crate) mod external_urls;
 pub(crate) mod find;
 #[cfg(feature = "testkit")]
 mod find_benchmarks;
+#[cfg(feature = "testkit")]
+mod gesture_benchmarks;
 mod interaction;
 mod new_window;
 pub(crate) mod palette;
@@ -387,6 +390,11 @@ pub struct BbrApp {
     /// Productive new-window seam diagnostics (requests, created regular tabs,
     /// reported blocks). Updated only by `on_new_window_request`.
     new_window: new_window::NewWindowState,
+    /// Web-content gesture diagnostics (task packet
+    /// `web-content-navigation-gestures`): how each committed logical
+    /// gesture was classified (history dispatch / opener return / no-op).
+    /// Updated only by `on_content_gesture_commit`.
+    content_gesture: content_gesture::ContentGestureState,
     #[cfg(feature = "testkit")]
     performance: PerformanceProbe,
 }
@@ -510,6 +518,7 @@ impl BbrApp {
             focus_sink: Rc::new(RefCell::new(None)),
             browser_sink: Rc::new(RefCell::new(None)),
             new_window: new_window::NewWindowState::default(),
+            content_gesture: content_gesture::ContentGestureState::default(),
             #[cfg(feature = "testkit")]
             performance,
         }

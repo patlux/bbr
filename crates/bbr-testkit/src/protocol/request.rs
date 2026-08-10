@@ -174,6 +174,17 @@ pub enum Request {
         url: String,
         user_initiated: bool,
     },
+    /// Drive the exact productive app content-gesture execution method used
+    /// by the native content-gesture bridge reporter pump (N1): pushes one
+    /// typed logical `ContentGestureCommit` through the exact transport the
+    /// native bridge uses, so E2E can drive real gesture phases and assert
+    /// the bound pane, history availability, provenance, target identity,
+    /// session lifecycle, and focus deterministically. It never calls the
+    /// controller operation directly.
+    ContentGestureCommit {
+        view: WebViewId,
+        direction: bbr_web::ContentGestureDirection,
+    },
     /// Deterministic engine-event injection (testkit-only): pushes a native
     /// `WebEvent` through the exact event transport the real engine uses, so
     /// E2E can exercise the production crash/error path without killing a
@@ -327,6 +338,28 @@ pub enum Request {
     BenchmarkSwipeCommit {
         operation_id: BenchmarkOperationId,
         destination: TestSpaceId,
+    },
+    /// Measure one committed logical Back content gesture (N1 packet
+    /// `web-content-navigation-gestures`): the app dispatches the commit
+    /// through the exact production method the native gesture-bridge pump
+    /// calls (`BbrApp::on_content_gesture_commit`), and the sample commits
+    /// only when the correct URL/history state is presented on the bound
+    /// `view` (a deterministic already-loaded two-entry history). The
+    /// driver re-verifies the real WebKit state afterwards; external
+    /// page/network latency stays outside BBR timings.
+    BenchmarkWebHistorySwipeBack {
+        operation_id: BenchmarkOperationId,
+        view: WebViewId,
+    },
+    /// Measure one committed Back-at-settled-root opener return (N1 packet
+    /// `web-content-navigation-gestures`): the app dispatches the commit
+    /// through the exact production method the native gesture-bridge pump
+    /// calls, and the sample commits only when the child session is gone
+    /// and the exact warm opener is visible/focused. The driver re-verifies
+    /// the typed snapshot (tabs/sessions/opener identity) afterwards.
+    BenchmarkChildTabSwipeReturn {
+        operation_id: BenchmarkOperationId,
+        child_view: WebViewId,
     },
     /// Activate a visible tab row through the pointer path and measure until
     /// the correct native view is presented with chrome focus preserved.

@@ -38,6 +38,9 @@ impl BrowserController {
         }
 
         let tab = self.browser.open_tab(source_space, "", session.url())?;
+        // The productive new-window regular-tab path is the **only** creator
+        // of opener provenance: identity-based child → exact opener relation.
+        self.provenance.record(tab, source_tab);
         self.sync_views();
         let index = self
             .browser

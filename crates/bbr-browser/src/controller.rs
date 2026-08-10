@@ -18,17 +18,19 @@
 
 use std::collections::HashMap;
 
-use bbr_domain::{
-    AppearanceError, Browser, SpaceAppearance, SpaceAppearanceStore, SpaceIdentity, SpaceTheme,
-    TabId, TabLifecycle,
-};
-use bbr_web::{ProfileId, WebAction, WebEvent, WebViewId};
+use bbr_domain::{Browser, SpaceAppearanceStore, TabId, TabLifecycle};
+use bbr_web::{ProfileId, WebAction, WebViewId};
 
+mod appearance;
+mod events;
+mod gesture;
 mod new_window;
+mod setup;
+mod snapshot;
 
 use crate::nav::NavState;
 use crate::outcome::ControllerEvent;
-use crate::pane::PaneLayout;
+use crate::provenance::OpenerProvenance;
 use crate::session::SessionRegistry;
 use crate::{ControllerError, EngineRef, ViewIdAllocator};
 
@@ -57,6 +59,11 @@ pub struct BrowserController {
     /// appearance derives deterministic defaults from the owning profile's
     /// identity hue when no explicit record exists.
     pub(crate) appearances: SpaceAppearanceStore,
+    /// Session-local regular child-tab opener provenance (identity-based;
+    /// recorded only by the productive new-window regular-tab path and
+    /// invalidated when either tab closes). Drives the Back-at-root
+    /// opener return decision matrix.
+    pub(crate) provenance: OpenerProvenance,
 }
 
 impl std::fmt::Debug for BrowserController {
@@ -88,116 +95,8 @@ impl BrowserController {
             nav: HashMap::new(),
             crashed_tabs: std::collections::HashSet::new(),
             appearances: SpaceAppearanceStore::new(),
+            provenance: OpenerProvenance::new(),
         }
-    }
-
-    // ---- Space appearance (portable appearance contract) ------------------
-
-    /// The effective appearance of `space`: the explicit record when one was
-    /// set, otherwise the deterministic default derived from the owning
-    /// profile's identity hue (theme = the profile's hue family, identity =
-    /// the default curated glyph). `None` when the space does not exist.
-    pub fn space_appearance(&self, space: bbr_domain::SpaceId) -> Option<SpaceAppearance> {
-        self.appearances.effective(&self.browser, space)
-    }
-
-    /// Set the curated theme token and validated identity of `space`
-    /// atomically (both validated against the same space; unknown spaces
-    /// reject whole before any mutation).
-    pub fn set_space_appearance(
-        &mut self,
-        space: bbr_domain::SpaceId,
-        theme: SpaceTheme,
-        identity: SpaceIdentity,
-    ) -> Result<(), AppearanceError> {
-        self.appearances
-            .set_appearance(&self.browser, space, theme, identity)?;
-        self.check_invariants();
-        Ok(())
-    }
-
-    /// Set only the curated theme token of `space` (the identity stays the
-    /// derived default or the existing explicit record's).
-    pub fn set_space_theme(
-        &mut self,
-        space: bbr_domain::SpaceId,
-        theme: SpaceTheme,
-    ) -> Result<(), AppearanceError> {
-        self.appearances.set_theme(&self.browser, space, theme)?;
-        self.check_invariants();
-        Ok(())
-    }
-
-    /// Set only the validated identity of `space` (the theme stays the
-    /// derived default or the existing explicit record's).
-    pub fn set_space_identity(
-        &mut self,
-        space: bbr_domain::SpaceId,
-        identity: SpaceIdentity,
-    ) -> Result<(), AppearanceError> {
-        self.appearances
-            .set_identity(&self.browser, space, identity)?;
-        self.check_invariants();
-        Ok(())
-    }
-
-    // ---- Setup helpers (profile/space creation for multi-profile tests) ----
-
-    pub fn create_profile(&mut self, title: impl Into<String>) -> ProfileId {
-        self.browser.create_profile(title)
-    }
-
-    /// Create a profile with one initial empty space, ready for activation.
-    pub fn create_profile_space(
-        &mut self,
-        profile_title: impl Into<String>,
-        space_title: impl Into<String>,
-    ) -> Result<ControllerEvent, ControllerError> {
-        let profile = self.browser.create_profile(profile_title);
-        let space = self.browser.create_space(profile, space_title)?;
-        self.check_invariants();
-        Ok(ControllerEvent::ProfileCreated { profile, space })
-    }
-
-    pub fn create_space(
-        &mut self,
-        profile: ProfileId,
-        title: impl Into<String>,
-    ) -> Result<bbr_domain::SpaceId, ControllerError> {
-        Ok(self.browser.create_space(profile, title)?)
-    }
-
-    /// Create another space in an existing profile with a typed outcome.
-    pub fn create_space_event(
-        &mut self,
-        profile: ProfileId,
-        title: impl Into<String>,
-    ) -> Result<ControllerEvent, ControllerError> {
-        let space = self.browser.create_space(profile, title)?;
-        self.check_invariants();
-        Ok(ControllerEvent::SpaceCreated { profile, space })
-    }
-
-    /// Switch the workspace whose tabs are visible and receive commands.
-    pub fn activate_space(
-        &mut self,
-        space: bbr_domain::SpaceId,
-    ) -> Result<ControllerEvent, ControllerError> {
-        if self.browser.space(space).is_none() {
-            return Err(ControllerError::UnknownSpace(space));
-        }
-        self.active_space = space;
-        self.sync_views();
-        self.check_invariants();
-        Ok(ControllerEvent::SpaceActivated { space })
-    }
-
-    /// The profile backing the active space.
-    pub fn active_profile(&self) -> ProfileId {
-        self.browser
-            .space(self.active_space)
-            .expect("active space exists")
-            .profile
     }
 
     // ---- First vertical slice ---------------------------------------------
@@ -232,6 +131,9 @@ impl BrowserController {
     pub fn close_tab(&mut self, index: usize) -> Result<ControllerEvent, ControllerError> {
         let tab = self.tab_at(index)?;
         self.destroy_session_of(tab);
+        // Closing either member of a provenance pair invalidates the
+        // relation (reopen restores the identity with no opener record).
+        self.provenance.invalidate_for(tab);
         self.browser.close_tab(self.active_space, tab)?;
         self.sync_views();
         self.check_invariants();
@@ -418,182 +320,6 @@ impl BrowserController {
         Ok(ControllerEvent::SplitClosed)
     }
 
-    // ---- Event application ------------------------------------------------
-
-    /// Apply one engine event to its owning tab. Events for unknown/stale
-    /// `WebViewId`s are reported without corrupting any state.
-    pub fn apply_event(&mut self, event: WebEvent) -> ControllerEvent {
-        let view = event_view(&event);
-        let Some(tab) = self.registry.tab_for_view(view) else {
-            return ControllerEvent::UnknownWebView { view };
-        };
-        match &event {
-            WebEvent::PageCrashed(_) => return self.on_page_crash(view),
-            WebEvent::UrlChanged(_, url) => {
-                let _ = self.browser.apply_navigation(tab, url, "");
-            }
-            WebEvent::TitleChanged(_, title) => {
-                let _ = self.browser.apply_navigation(tab, "", title);
-            }
-            _ => {}
-        }
-        // Loading/history/crashed live only in the session's nav state.
-        self.nav.entry(view).or_default().apply(&event);
-        self.check_invariants();
-        ControllerEvent::WebEvent { event }
-    }
-
-    /// The authoritative pane layout of the active space: the native views
-    /// the shell must frame and the focused pane (the browser command
-    /// target). Derived only from the domain split, the active tab, and the
-    /// session registry — the app owns no independent focus value.
-    ///
-    /// - No active tab or no live session → `None`.
-    /// - Single pane → `primary` is the active tab's view, no `secondary`.
-    /// - Split → `primary`/`secondary` follow the domain split order and
-    ///   `focused` is the active tab's view (a split member by domain
-    ///   invariant).
-    pub fn pane_layout(&self) -> Option<PaneLayout> {
-        let space = self.browser.space(self.active_space)?;
-        let focused = space
-            .active_tab
-            .and_then(|tab| self.registry.view_for_tab(tab))?;
-        match space.split {
-            Some(split) => Some(PaneLayout {
-                primary: self.registry.view_for_tab(split.primary)?,
-                // A split must own **both** live sessions: a missing
-                // secondary never degrades the split into a false single
-                // pane — the honest answer is no pane layout at all.
-                secondary: Some(self.registry.view_for_tab(split.secondary)?),
-                focused,
-            }),
-            None => Some(PaneLayout {
-                primary: focused,
-                secondary: None,
-                focused,
-            }),
-        }
-    }
-
-    // ---- Snapshots --------------------------------------------------------
-
-    /// Read-only snapshot of the controller's observable state.
-    pub fn snapshot(&self) -> crate::snapshot::ControllerSnapshot {
-        let tabs: Vec<bbr_domain::TabId> = self
-            .browser
-            .space(self.active_space)
-            .map(|s| s.tabs.clone())
-            .unwrap_or_default();
-        let active_tab = self
-            .browser
-            .space(self.active_space)
-            .and_then(|s| s.active_tab);
-        let tab_snapshots: Vec<crate::snapshot::TabSnapshot> = tabs
-            .iter()
-            .enumerate()
-            .filter_map(|(index, &tab)| {
-                let state = self.browser.tab(tab)?;
-                let view = self.registry.view_for_tab(tab);
-                let session = view.and_then(|v| self.nav.get(&v));
-                Some(crate::snapshot::TabSnapshot {
-                    index,
-                    url: state.url.clone(),
-                    title: state.title.clone(),
-                    pinned: state.pinned,
-                    loading: session.is_some_and(|n| n.loading),
-                    crashed: self.crashed_tabs.contains(&tab),
-                    active: active_tab == Some(tab),
-                    web_view: view,
-                    lifecycle: state.lifecycle,
-                    last_used: state.last_used,
-                })
-            })
-            .collect();
-        let all_tab_snapshots: Vec<crate::snapshot::GlobalTabSnapshot> = self
-            .browser
-            .spaces()
-            .flat_map(|space| {
-                space
-                    .tabs
-                    .iter()
-                    .copied()
-                    .enumerate()
-                    .filter_map(|(index, tab)| {
-                        let state = self.browser.tab(tab)?;
-                        Some(crate::snapshot::GlobalTabSnapshot {
-                            id: tab,
-                            space: space.id,
-                            profile: space.profile,
-                            index,
-                            url: state.url.clone(),
-                            title: state.title.clone(),
-                            pinned: state.pinned,
-                            web_view: self.registry.view_for_tab(tab),
-                            lifecycle: state.lifecycle,
-                            last_used: state.last_used,
-                        })
-                    })
-            })
-            .collect();
-        let active_index = active_tab.and_then(|t| tabs.iter().position(|x| *x == t));
-        let active_view = active_tab.and_then(|t| self.registry.view_for_tab(t));
-        let nav = active_view
-            .and_then(|v| self.nav.get(&v).cloned())
-            .unwrap_or_default();
-        let profiles = self
-            .browser
-            .profiles()
-            .enumerate()
-            .map(|(index, p)| crate::snapshot::ProfileSnapshot {
-                index,
-                id: p.id,
-                title: p.title.clone(),
-                hue: p.hue,
-            })
-            .collect();
-        let spaces = self
-            .browser
-            .spaces()
-            .enumerate()
-            .map(|(index, s)| {
-                let active_tab = s
-                    .active_tab
-                    .and_then(|t| s.tabs.iter().position(|x| *x == t));
-                crate::snapshot::SpaceSnapshot {
-                    index,
-                    id: s.id,
-                    profile: s.profile,
-                    title: s.title.clone(),
-                    active_tab,
-                    active_view: s.active_tab.and_then(|t| self.registry.view_for_tab(t)),
-                    active: s.id == self.active_space,
-                    tab_count: s.tabs.len(),
-                }
-            })
-            .collect();
-        let active_profile = self.active_profile();
-        let lifecycle_counts = crate::snapshot::LifecycleCounts::tally(&tab_snapshots);
-        crate::snapshot::ControllerSnapshot {
-            active_profile,
-            active_profile_title: self
-                .browser
-                .profile(active_profile)
-                .map(|p| p.title.clone()),
-            active_profile_hue: self.browser.profile(active_profile).map(|p| p.hue),
-            active_space: self.active_space,
-            tabs: tab_snapshots,
-            all_tabs: all_tab_snapshots,
-            profiles,
-            spaces,
-            active_index,
-            nav,
-            web_view_hosted: active_view.is_some(),
-            engine_sessions: self.engine.borrow().live_session_count(),
-            active_view,
-            lifecycle_counts,
-        }
-    }
-
     // ---- Internal session policy -------------------------------------------
 
     /// Reconcile engine state with the domain: live sessions for every
@@ -737,22 +463,5 @@ impl BrowserController {
         self.appearances
             .check_invariants(&self.browser)
             .expect("space-appearance invariants");
-    }
-}
-
-/// The [`WebViewId`] an event names.
-fn event_view(event: &WebEvent) -> WebViewId {
-    match event {
-        WebEvent::UrlChanged(v, _) => *v,
-        WebEvent::TitleChanged(v, _) => *v,
-        WebEvent::LoadingChanged(v, _) => *v,
-        WebEvent::CanGoBackChanged(v, _) => *v,
-        WebEvent::CanGoForwardChanged(v, _) => *v,
-        WebEvent::PageCrashed(v) => *v,
-        WebEvent::NavigationFailed(v, _) => *v,
-        // A context-menu request names the view it was requested on (the
-        // menu is BBR chrome over that view; the request carries no
-        // navigation state).
-        WebEvent::ContextMenuRequested(v, _) => *v,
     }
 }

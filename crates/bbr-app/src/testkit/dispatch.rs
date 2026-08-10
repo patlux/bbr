@@ -20,6 +20,7 @@ use crate::testkit::dispatch_auth::dispatch_auth;
 use crate::testkit::dispatch_benchmark::dispatch_benchmark;
 use crate::testkit::dispatch_benchmark_context_menu::dispatch_benchmark_context_menu;
 use crate::testkit::dispatch_benchmark_downloads::dispatch_benchmark_downloads;
+use crate::testkit::dispatch_benchmark_gestures::dispatch_benchmark_gestures;
 use crate::testkit::dispatch_benchmark_swipe::dispatch_benchmark_swipe;
 use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
 use crate::testkit::dispatch_context_menu::dispatch_context_menu;
@@ -51,6 +52,12 @@ pub(crate) fn dispatch(
     // The §11.3 swipe-commit performance arm routes through its focused
     // module (same split reason; the gesture runs entirely in the app).
     if let Some(response) = dispatch_benchmark_swipe(&req, window, app, cx) {
+        return response;
+    }
+    // The N1 web-content gesture performance arms route through their
+    // focused module (same split reason; the gesture runs entirely in the
+    // app through the exact production commit method).
+    if let Some(response) = dispatch_benchmark_gestures(&req, window, app, cx) {
         return response;
     }
     // The downloads performance arms (benchmark + deterministic seed) route
@@ -660,6 +667,14 @@ pub(crate) fn dispatch(
         Request::BenchmarkSwipeCommit { .. } => {
             unreachable!("swipe-commit benchmark requests route through dispatch_benchmark_swipe")
         }
+        // Routed by `dispatch_benchmark_gestures` before this match (N1
+        // web-content gesture arms); reaching one here is a routing bug.
+        Request::BenchmarkWebHistorySwipeBack { .. }
+        | Request::BenchmarkChildTabSwipeReturn { .. } => {
+            unreachable!(
+                "content-gesture benchmark requests route through dispatch_benchmark_gestures"
+            )
+        }
 
         // Routed by `dispatch_benchmark` before this match; reaching one here
         // is a routing bug.
@@ -724,6 +739,17 @@ pub(crate) fn dispatch(
             "unsupported",
             "external url delivery is macOS-only",
         )),
+        // Content-gesture commits (N1) are macOS-only: the pump intercepts
+        // `ContentGestureCommit` before dispatch on macOS and pushes through
+        // the exact channel the native gesture bridge uses, so reaching
+        // here means the platform cannot deliver a committed gesture.
+        #[cfg(not(target_os = "macos"))]
+        Request::ContentGestureCommit { .. } => Response::Error(Error::new(
+            "unsupported",
+            "content gesture commits are macOS-only",
+        )),
+        #[cfg(target_os = "macos")]
+        Request::ContentGestureCommit { .. } => Response::Ok,
         #[cfg(not(target_os = "macos"))]
         Request::InjectErrorIncident { .. }
         | Request::ClickErrorAction

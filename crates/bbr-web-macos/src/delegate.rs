@@ -147,6 +147,10 @@ define_class!(
 
         #[unsafe(method(webView:didCommitNavigation:))]
         fn did_commit_navigation(&self, web_view: &WKWebView, _navigation: Option<&WKNavigation>) {
+            // The initial document of a session committed: the controller
+            // marks the session's root settled, so a later Back-at-root
+            // content gesture may run the opener-return fallback (N1).
+            self.emit(WebEvent::DidCommitNavigation(self.id()));
             self.emit_state(web_view);
         }
 

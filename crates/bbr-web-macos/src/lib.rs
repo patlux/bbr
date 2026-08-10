@@ -17,6 +17,12 @@
 //! workspace still resolves and evaluates.
 
 #[cfg(target_os = "macos")]
+pub mod content_gesture;
+
+#[cfg(target_os = "macos")]
+mod gesture_machine;
+
+#[cfg(target_os = "macos")]
 pub mod content_probe;
 
 #[cfg(target_os = "macos")]
@@ -76,6 +82,8 @@ pub mod menu_adapter;
 #[cfg(target_os = "macos")]
 mod navigation_cover;
 
+mod native_session;
+
 #[cfg(target_os = "macos")]
 pub mod new_window;
 
@@ -133,6 +141,9 @@ pub use find_web_kit::WebKitFindStrategy;
 pub use menu_adapter::{
     classify_menu, ContextMenuNativeDiagnostics, MenuOwnership, NativeContextMenuBridge,
 };
+
+#[cfg(target_os = "macos")]
+pub use content_gesture::{ContentGestureNativeDiagnostics, NativeContentGestureBridge};
 
 #[cfg(target_os = "macos")]
 pub use new_window::{NewWindowContext, NewWindowCoordinator};

@@ -107,6 +107,8 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let plus_menu = report.results["sidebar_plus_menu"].samples;
         let favorites = report.results["sidebar_favorites"].samples;
         let folder_toggle = report.results["sidebar_folder_toggle"].samples;
+        let history_swipe = report.results["web_history_swipe_back"].samples;
+        let child_return = report.results["child_tab_swipe_return"].samples;
         assert!(
             warm >= INTERACTION_SAMPLES,
             "warm-tab samples {warm} < {INTERACTION_SAMPLES}"
@@ -226,6 +228,18 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             auth_sheet_open >= INTERACTION_SAMPLES,
             "credential-sheet open samples {auth_sheet_open} < {INTERACTION_SAMPLES}"
+        );
+        // N1 web-content gesture scenarios: at least 30 accepted optimized
+        // samples each (the `web_history_swipe_back` / `child_tab_swipe_return`
+        // contract guards). A driver that skipped, cancelled, or rejected
+        // samples below the contract floor fails the gate loudly.
+        assert!(
+            history_swipe >= INTERACTION_SAMPLES,
+            "history swipe-back samples {history_swipe} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            child_return >= INTERACTION_SAMPLES,
+            "child-tab return samples {child_return} < {INTERACTION_SAMPLES}"
         );
         // Contract-required persisted warm-startup repetition count (the
         // warm page-ready distribution needs >=10 accepted samples too).

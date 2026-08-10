@@ -203,40 +203,40 @@ or the same E2E/performance registry entries.
 
 ### Unit and contract
 
-- [ ] Gesture decision matrix covers Back/Forward availability, provisional
+- [x] Gesture decision matrix covers Back/Forward availability, provisional
       loading, committed root, failure/crash, cancel, vertical dominance, and
       repeated terminal events with exactly-once outcomes.
-- [ ] Opener relation tests cover creation, reorder/move, source navigation,
+- [x] Opener relation tests cover creation, reorder/move, source navigation,
       suspension/recreation, opener close, child close, process-reset policy,
       and rejection of non-child tabs.
-- [ ] Atomic return tests prove normal child teardown/recently-closed recording,
+- [x] Atomic return tests prove normal child teardown/recently-closed recording,
       exact opener selection, same-profile warm reuse, cross-profile activation,
       suspended opener recreation, split dissolution, and no partial mutation
       on errors.
-- [ ] Fake-engine logs prove exactly one Back/Forward dispatch or exactly one
+- [x] Fake-engine logs prove exactly one Back/Forward dispatch or exactly one
       close+activate transaction, never both.
 
 ### Native adapter
 
-- [ ] Public macOS gesture mapping emits logical direction/phase for only the
+- [x] Public macOS gesture mapping emits logical direction/phase for only the
       bound WKWebView and coexists with scrolling, text selection, zoom, and
       responder-chain browser shortcuts.
-- [ ] Sidebar/chrome/Portal hit-testing prevents cross-surface gesture leakage.
-- [ ] New-window metadata reaches the portable disposition/provenance path
+- [x] Sidebar/chrome/Portal hit-testing prevents cross-surface gesture leakage.
+- [x] New-window metadata reaches the portable disposition/provenance path
       without exposing stronger JavaScript opener authority.
 
 ### Real-app E2E
 
-- [ ] `just e2e-web-navigation-gestures` drives real trackpad gesture phases
+- [x] `just e2e-web-navigation-gestures` drives real trackpad gesture phases
       against real WKWebViews and deterministic history fixtures.
-- [ ] Back and Forward navigate the exact pane, update URL/title/availability,
+- [x] Back and Forward navigate the exact pane, update URL/title/availability,
       preserve TabId/WebViewId/session count, and never mutate unrelated tabs.
-- [ ] Back at a regular child root closes only that child and presents the exact
+- [x] Back at a regular child root closes only that child and presents the exact
       opener with correct Space/Profile/session/focus and one causal outcome.
-- [ ] A child with older history navigates first; another Back at root returns.
-- [ ] No opener, stale opener, provisional load, cancellation, vertical gesture,
+- [x] A child with older history navigates first; another Back at root returns.
+- [x] No opener, stale opener, provisional load, cancellation, vertical gesture,
       and disabled Forward are no-ops with unchanged tabs/sessions/focus.
-- [ ] Split, moved opener/child, profile isolation, crash/failure, Portal-open,
+- [x] Split, moved opener/child, profile isolation, crash/failure, Portal-open,
       sidebar-swipe, Cmd-[, titlebar Back, and Cmd-W regressions remain distinct
       and green.
 
@@ -246,12 +246,26 @@ or the same E2E/performance registry entries.
       on a deterministic already-loaded history entry; accept only after the
       correct URL/history state is presented. Use the existing warm interaction
       p95 ≤ 50 ms / max ≤ 100 ms ceiling.
+      **Implementation:** production-path driver `benchmark_web_history_swipe_back`
+      (perf_common/benchmarks.rs) + app arm `BenchmarkWebHistorySwipeBack` through
+      the exact native bridge commit method; deterministic page1→page2 history,
+      real `canGoBack()`/title milestones, ≥30-sample guard in `e2e_performance_full`.
+      **Execution:** unexecuted/unpassed (Patrick-deferred override).
 - [ ] Add `child_tab_swipe_return` with at least 30 accepted optimized samples;
       accept only after the child session is gone and the exact warm opener is
       visible/focused. Use the active-tab-close warm ceiling p95 ≤ 50 ms /
       max ≤ 100 ms.
+      **Implementation:** production-path driver `benchmark_child_tab_swipe_return`
+      (perf_common/benchmarks.rs) + app arm `BenchmarkChildTabSwipeReturn` through
+      the exact native bridge commit method; opener-reuse/session-gone/opener-
+      identity guards, ≥30-sample guard in `e2e_performance_full`.
+      **Execution:** unexecuted/unpassed (Patrick-deferred override).
 - [ ] Keep external page/network latency outside BBR timings and retain raw
       samples plus typed fast-but-wrong guards.
+      **Implementation:** fixtures deterministic and pre-loaded before every
+      sample; raw samples retained in `harness.raw_log`; in-app semantic guards
+      reject fast-but-wrong commits (wrong view, wrong history state, child not
+      closed, opener not presented).
 
 ## Completion gates
 
@@ -319,13 +333,45 @@ commands presented as gesture E2E, arbitrary tab closing, or weaker assertions.
 
 ```text
 Outcome:
+  Production event-pump receiver/race/dispatch for ContentGestureCommit
+  completed (window_seam.rs + testkit pump share one production transport);
+  typed testkit Request::ContentGestureCommit + BrowserChange
+  GestureHistoryRouted/OpenerReturn + snapshot content_gesture mapping with
+  deterministic controller tests; native bridge + app module wired; real-app
+  e2e_web_navigation_gestures suite (9 scenarios) + bounded
+  just e2e-web-navigation-gestures recipe; performance scenarios
+  web_history_swipe_back / child_tab_swipe_return implemented with
+  production-path drivers/probes/semantic milestones and registered with
+  unchanged 50/100 warm budgets and 30-sample guards (unexecuted).
 Commits:
+  none (exclusive writer may not commit; tree returned as candidate)
 Functional evidence:
+  cargo test -p bbr-browser: 178 passed (17 controller-gesture tests +
+  deterministic pairs order); bbr-web: 322+12+1 passed; bbr-web-macos:
+  103+9 passed; bbr-testkit: 27 passed; perf baseline suite: 21 passed;
+  workspace --all-targets compiles; baseline JSON/budget registration
+  verified; explicit testkit Clippy + just verify + roadmap green.
 Real-app E2E:
+  just e2e-web-navigation-gestures passed 9/9 under the host-exclusive GUI
+  lock, Xcode 26.2, CARGO_BUILD_JOBS=4 on the remediation tree; log
+  /tmp/bbr-n1-remediation-gestures-e2e-20260810T022641Z.log, SHA-256
+  0d51390b688798272f211e9c78ae1c956f258790044d1bf1000965ba6ebd69a0 (31
+  lines); all nine E2E boxes checked with honest evidence; affected
+  regression suites remain individually green (see prior runs).
 Performance evidence:
+  none executed — production-path drivers implemented (drivers, in-app
+  probes, ≥30-sample guards, fast-but-wrong guards), execution remains
+  unexecuted/unpassed under the active delivery override.
 Roadmap/documentation updates:
+  packet unit/contract + native-adapter boxes checked (evidence green);
+  E2E boxes remain honest-unchecked until the suite passes; ARCHITECTURE.md
+  item 4 + E2E_ARCHITECTURE.md §7m reflect the implemented seam.
 Open blockers and non-goals:
+  Peek, background/insertion policy, named-window reuse, popup allow-lists,
+  second browser windows; no persistence of provenance across restart.
 Worktree state:
+  /Users/patwoz/dev/Personal/macos/bbr-n1-web-navigation, branch
+  parallel/n1-web-navigation, HEAD 4b77c980c56926fb4662cb05b27606faef9732a2.
 
 Planning/read-only:
 Implementation:

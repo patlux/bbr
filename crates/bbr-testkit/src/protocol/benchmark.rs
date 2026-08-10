@@ -238,6 +238,24 @@ pub enum BenchmarkKind {
     /// `tab_reopen`. The sample commits only when the fresh tab/session is
     /// presented and focused with the surface closed.
     SavedPageOpen,
+    /// A committed logical Back content gesture dispatched exactly one real
+    /// history action against a deterministic already-loaded two-entry
+    /// history (N1 packet `web-content-navigation-gestures`): the sample
+    /// commits only when the correct URL/history state is presented after
+    /// the dispatch — the warm interaction class with the unchanged warm
+    /// ceiling (p95 ≤ 50 ms / max ≤ 100 ms), same as `active_tab_close`.
+    /// At least 30 accepted optimized samples; external page/network
+    /// latency stays outside BBR timings (the fixture is deterministic and
+    /// already loaded before the sample).
+    WebHistorySwipeBack,
+    /// A committed logical Back content gesture at a settled regular
+    /// child-tab root closed the child through the normal close path and
+    /// presented the exact warm opener (N1 packet
+    /// `web-content-navigation-gestures`): the sample commits only when
+    /// the child session is gone and the exact warm opener is
+    /// visible/focused — the active-tab-close warm ceiling (p95 ≤ 50 ms /
+    /// max ≤ 100 ms), at least 30 accepted optimized samples.
+    ChildTabSwipeReturn,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

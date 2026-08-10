@@ -1014,11 +1014,17 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
    Direct user activations open one regular tab in the exact source
    Space/Profile through `BbrApp` and `BrowserController`; script-created
    `window.open` requests are blocked and reported. The native delegate still
-   returns `None`. Peek, opener provenance, background/insertion policy,
-   named-window reuse, popup allow-lists, and second browser windows remain
-   later bounded work. Functional real-app evidence is green; the required
-   optimized performance scenario remains explicitly unexecuted and unpassed
-   under the active delivery override.
+   returns `None`. The seam also records session-local identity-based
+   child→opener provenance for regular child tabs, and the N1 web-content
+   gesture path (native `scrollWheel:` bridge → logical commit → controller
+   decision matrix) dispatches exactly one real Back/Forward per committed
+   gesture or runs the atomic Back-at-settled-root close-child/activate-
+   opener transaction. Peek, background/insertion policy, named-window
+   reuse, popup allow-lists, and second browser windows remain later bounded
+   work. Functional real-app evidence is green for the new-window seam; the
+   gesture suite is added and the required optimized performance scenarios
+   remain explicitly unexecuted and unpassed under the active delivery
+   override.
 5. **No find-in-page, zoom, downloads, permission prompts, WebAuthn, or
    process-termination recovery UI yet** (Phase 8). `PageCrashed` is
    observable in the status line and snapshot, but there is no recovery

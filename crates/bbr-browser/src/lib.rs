@@ -49,6 +49,7 @@ mod nav;
 mod organization;
 mod outcome;
 mod pane;
+mod provenance;
 mod restore;
 #[cfg(test)]
 mod restore_tests;
@@ -61,6 +62,8 @@ mod testing;
 mod controller_dense_tests;
 #[cfg(test)]
 mod controller_event_tests;
+#[cfg(test)]
+mod controller_gesture_tests;
 #[cfg(test)]
 mod controller_pane_tests;
 #[cfg(test)]
