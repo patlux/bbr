@@ -9,8 +9,9 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [performance contract](../../product/performance-contract.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
-Status: **Slice 2 is independently accepted; Slice 3 is ready for exactly one
-same-worktree writer.** PEEK and B3 are integrated through control checkpoint
+Status: **Slice 2 is independently accepted; Slice 3 has a bound forward state
+and remains running only for safe settlement work.** PEEK and B3 are integrated
+through control checkpoint
 `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
 `4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The Orchestrator created branch
 `parallel/renderer-isolation` and worktree
@@ -223,14 +224,45 @@ warning-denied Clippy, fmt and diff-check, and confirmed empty staged state,
 zero lane processes/Git locks and an available GUI lock. The receiver-PID /
 ownership gap is closed; Slice 2 is accepted.
 
-Exactly one same-worktree Slice-3 writer may now complete the remaining packet:
-real-app `e2e_shell_responsiveness`, required affected functional regressions,
-performance scenario/budget/baseline code with zero measured samples and no
-performance execution, canonical documentation/roadmap truth, all allowed
-non-performance gates, and exact whole-candidate settlement. No commit,
-integration, G2/G3/Z work, performance recipe, or canonical `just e2e` is
-authorized. Only the Orchestrator transfers ownership or commits/integrates
-after a final independent whole-candidate pass.
+The first Slice-3 writer timed out after 30 minutes without a settlement
+verdict, commit, integration, or surviving process. Independent Orchestrator
+rebind preserves its coherent forward state: temporary-index tree
+`8b0dc11cf571da804f153047561691db36d5230d`; HEAD-to-tree binary diff SHA-256
+`aeeb3020bd438a8cdf044ce266895a46006212a1e11ae3af7b3006ea4546c194`;
+porcelain-v1 `-z` SHA-256
+`eb5539f3b0ea958f940a6fd5b661dc152549c5e88adcbbe35d95b510adbee679`;
+sorted 95-path SHA-256
+`bcdd573c66fe9af7272643e2c73a3d3acf16bd86bf93e1aea60ca9df32d5105b`.
+The exact Slice-2-to-forward delta is 30 paths, binary SHA-256
+`be054897e8e651fed1abc5acf188f83c19a093442f87b4604e8ef57c1876440e`
+and sorted path SHA-256
+`cddacf3dff6c8d7f54d95b9cd343c4fc3c9754ff41b605f98576ec05e3732737`.
+It contains only the modular real-app suite, recovery testkit actions,
+performance code/baselines, canonical docs/roadmap and recipe registration.
+Core app/testkit compilation, app 273 tests, roadmap and diff-check passed;
+dialogs and real busy/heavy detection passed in the first full suite; focused
+recovery now passes 1/1. The remaining hang/chrome case is red at its final
+focused-list Backspace close assertion after Cmd-W, row close, neighbor,
+split, sidebar and space paths already execute. It must be fixed causally or
+remain red, never weakened.
+
+The same run produced an actual public-process observation that blocks the
+required termination scenario under the accepted safety contract: every
+observed `com.apple.WebKit.WebContent` XPC helper on this target had public
+parent PID `1`. Therefore the approved `parent_pid == current BBR app PID`
+filter returns zero eligible helpers and performs zero termination operations.
+No launchd-owned/foreign helper may be touched, and no alternative ownership
+contract may be invented. The required real helper termination/reconciliation
+checkbox stays open. The minimal unblocker is an independently reviewed and
+committed alternative public ownership proof, or an explicitly approved safe
+environment where app-owned helpers can be proven.
+
+Exactly one continuation of the same Slice-3 writer session may finish every
+other defensible functional/non-performance gate, correct documentation and
+settlement fingerprints, preserve performance as unexecuted/unpassed, and end
+directly `RENDERER_SLICE3_BLOCKED`. No commit, integration, G2/G3/Z work,
+performance recipe, canonical `just e2e`, ownership-contract change, or second
+product writer is authorized.
 
 ---
 
