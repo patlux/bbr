@@ -9,8 +9,8 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [performance contract](../../product/performance-contract.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
-Status: **Slice 2 settled ready and is under independent read-only review.**
-PEEK and B3 are integrated through control checkpoint
+Status: **Slice 2 is in bounded remediation after one independent HIGH safety
+finding.** PEEK and B3 are integrated through control checkpoint
 `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
 `4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The Orchestrator created branch
 `parallel/renderer-isolation` and worktree
@@ -177,10 +177,28 @@ remains; GUI lock is free. `webview.rs` remains 519 lines, fixture `lib.rs` is
 652, and all new modules remain below 500. No real-app E2E, performance code,
 broad documentation, commit, merge, or integration entered Slice 2.
 
-Exactly one independent read-only Slice-2 reviewer now owns review of the
-immutable candidate. It must verify public-API and parent-PID safety,
-fail-closed exactly-one semantics, release/testkit gating, typed wire and
-fixture behavior, Slice-1 preservation, module budgets, scope and evidence.
+Independent reviewer `renderer-slice2-readonly-review-msnlwliz-s8szmf`
+reproduced every immutable binding and returned direct
+`TESTKIT_FIXTURES_SLICE_REVIEW_FINDINGS`. It accepted protocol-v7 and real
+probe dispatch, public NSRunningApplication/libproc-only APIs, FFI layout and
+return validation, structured process observations, all four fixtures, exact
+scope, Slice-1 preservation, release/testkit gating, module budgets and the
+full fresh non-GUI evidence set. One HIGH safety finding remains in
+`crates/bbr-web-macos/src/web_process_observation.rs`: the final parent-PID
+check proves ownership of the recorded selected PID, but the subsequent normal
+termination targets the retained `NSRunningApplication` without re-reading
+that receiver's current `processIdentifier`. Because the public receiver PID
+may change, the proof and mutation target can diverge.
+
+Exactly one bounded remediation writer may change only the process-observation
+module. It must select the application object, immediately re-read its current
+PID before mutation, require equality with the deterministic selected PID,
+re-run `parent_pid(current_pid) == Some(app_pid)`, and only then issue normal
+`terminate()`. An injectable pure-operation seam must prove zero termination
+for receiver-PID drift, ownership-read failure, foreign ownership and zero
+candidates, plus exactly one termination for one eligible stable receiver.
+No other product, fixture, protocol, app, docs, E2E, performance, commit, merge
+or integration change is authorized. Focused independent recheck follows.
 Only a direct Slice-2 pass authorizes Slice 3. Only the Orchestrator transfers
 ownership or commits/integrates after the final whole-candidate pass.
 
