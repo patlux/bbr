@@ -95,16 +95,19 @@ pub(crate) struct SavedPagesProvider {
     /// never blocks the main thread. Never queried from SQLite during
     /// ranking or render.
     pages: Arc<Mutex<Vec<SavedPageRecord>>>,
-    /// The flat collections loaded once at startup (B2 never mutates them;
-    /// the strict collection foreign key stays satisfied by the untouched
-    /// collections table).
+    /// The flat collections loaded once at startup and mutated only by the
+    /// B3 Library; shared with the background writer so a persist never
+    /// blocks the main thread.
     collections: Arc<Mutex<Vec<CollectionRecord>>>,
     /// The next stable Saved Page id (above the persisted maximum, so
     /// identities never collide across restarts).
     next_bookmark_id: u64,
+    /// The next stable flat-collection id (above the persisted maximum, so
+    /// collection identities never collide across restarts).
+    next_collection_id: u64,
     /// Bounded nonblocking persist: one poke per accepted mutation; the
-    /// background writer coalesces and replaces the page collection in one
-    /// transaction.
+    /// background writer coalesces and replaces the Saved Page collection
+    /// in one transaction.
     tx: smol::channel::Sender<()>,
     /// The writer's channel receiver, taken by [`SavedPagesProvider::spawn_writer`].
     rx: Option<smol::channel::Receiver<()>>,
@@ -124,11 +127,13 @@ impl SavedPagesProvider {
         collections: Vec<CollectionRecord>,
         next_bookmark_id: u64,
     ) -> Self {
+        let next_collection_id = collections.iter().map(|collection| collection.id).max().unwrap_or(0) + 1;
         let (tx, rx) = smol::channel::bounded::<()>(1);
         Self {
             pages: Arc::new(Mutex::new(pages)),
             collections: Arc::new(Mutex::new(collections)),
             next_bookmark_id,
+            next_collection_id,
             tx,
             rx: Some(rx),
             repository,
@@ -207,12 +212,186 @@ impl SavedPagesProvider {
         let _ = self.tx.try_send(());
     }
 
+    /// Removes many records from the in-memory provider in one poke (the
+    /// B3 Library multi-select destructive remove; idempotent per id — an
+    /// unknown identity is a no-op). Never runs from render.
+    fn remove_many(&mut self, ids: &[u64]) {
+        let mut changed = false;
+        {
+            let mut pages = self.pages.lock().expect("saved pages provider lock");
+            for id in ids {
+                changed |= remove_saved_page_into(&mut pages, *id);
+            }
+        }
+        if changed {
+            let _ = self.tx.try_send(());
+        }
+    }
+
+    /// Sets (or clears) the user label of one record in the in-memory
+    /// provider (the B3 Library rename) and pokes the bounded nonblocking
+    /// writer. The label follows the B1 bounds (non-empty, ≤256 bytes, no
+    /// control bytes); an unknown identity is a no-op. `updated_at` is
+    /// clamped up to the stored `created_at` so the monotonic invariant can
+    /// never regress in memory, exactly like the repository write. Never
+    /// runs from render.
+    fn set_label(&mut self, id: u64, label: Option<&str>) {
+        let Some(label) = label.map(str::to_owned) else {
+            return;
+        };
+        if label.is_empty()
+            || label.len() > bbr_domain::MAX_USER_LABEL_LEN
+            || label
+                .bytes()
+                .any(|byte| byte == 0 || byte.is_ascii_control())
+        {
+            return;
+        }
+        let mut changed = false;
+        let now = now_secs();
+        {
+            let mut pages = self.pages.lock().expect("saved pages provider lock");
+            if let Some(page) = pages.iter_mut().find(|page| page.id == id) {
+                if page.user_label.as_deref() != Some(label.as_str()) {
+                    page.user_label = Some(label);
+                    page.updated_at = page.updated_at.max(now).max(page.created_at);
+                    changed = true;
+                }
+            }
+            if changed {
+                // The deterministic presentation order: a rename may bump
+                // `updated_at`, so the collection is re-presented
+                // most-recently-updated first.
+                provider_order(&mut pages);
+            }
+        }
+        if changed {
+            let _ = self.tx.try_send(());
+        }
+    }
+
+    /// Creates one flat collection in the in-memory provider (the B3
+    /// Library new-collection flow) and pokes the bounded nonblocking
+    /// writer. Returns the new stable [`CollectionId`]. A bounded, non-empty
+    /// title is required; an invalid title creates nothing and returns
+    /// `None`. Never runs from render.
+    fn create_collection(&mut self, title: &str) -> Option<u64> {
+        if title.is_empty()
+            || title.len() > bbr_domain::MAX_COLLECTION_TITLE_LEN
+            || title
+                .bytes()
+                .any(|byte| byte == 0 || byte.is_ascii_control())
+        {
+            return None;
+        }
+        let id = self.next_collection_id;
+        self.next_collection_id += 1;
+        self.collections
+            .lock()
+            .expect("saved pages collections lock")
+            .push(CollectionRecord {
+                id,
+                title: title.to_string(),
+            });
+        let _ = self.tx.try_send(());
+        Some(id)
+    }
+
+    /// Renames one flat collection in the in-memory provider (the B3
+    /// Library rename-collection flow) and pokes the bounded nonblocking
+    /// writer. An unknown identity or an invalid title is a no-op. Never
+    /// runs from render.
+    fn rename_collection(&mut self, id: u64, title: &str) {
+        if title.is_empty()
+            || title.len() > bbr_domain::MAX_COLLECTION_TITLE_LEN
+            || title
+                .bytes()
+                .any(|byte| byte == 0 || byte.is_ascii_control())
+        {
+            return;
+        }
+        let mut changed = false;
+        {
+            let mut collections = self.collections.lock().expect("saved pages collections lock");
+            if let Some(collection) = collections.iter_mut().find(|collection| collection.id == id) {
+                if collection.title != title {
+                    collection.title = title.to_string();
+                    changed = true;
+                }
+            }
+        }
+        if changed {
+            let _ = self.tx.try_send(());
+        }
+    }
+
+    /// Removes one flat collection from the in-memory provider (the B3
+    /// Library remove-collection flow). Strict membership: every member
+    /// record is moved out **first** (its `collection_id` is cleared) and
+    /// then the collection row is removed, so the in-memory state stays
+    /// internally consistent and the combined persisted write can never
+    /// dangle. An unknown identity is a no-op. Never runs from render.
+    fn remove_collection(&mut self, id: u64) {
+        {
+            let mut collections = self.collections.lock().expect("saved pages collections lock");
+            if !collections.iter().any(|collection| collection.id == id) {
+                return;
+            }
+            collections.retain(|collection| collection.id != id);
+        }
+        {
+            let mut pages = self.pages.lock().expect("saved pages provider lock");
+            let mut any_member = false;
+            for page in pages.iter_mut() {
+                if page.collection_id == Some(id) {
+                    page.collection_id = None;
+                    any_member = true;
+                }
+            }
+            if any_member {
+                provider_order(&mut pages);
+            }
+            drop(pages);
+            let _ = self.tx.try_send(());
+        }
+    }
+
+    /// Moves many records into (or out of) one flat collection in one poke
+    /// (the B3 Library multi-select collection move). Unknown record ids
+    /// are skipped; `None` clears the membership. Never runs from render.
+    fn move_to_collection(&mut self, ids: &[u64], collection: Option<u64>) {
+        if let Some(collection) = collection {
+            let known = self
+                .collections
+                .lock()
+                .expect("saved pages collections lock")
+                .iter()
+                .any(|existing| existing.id == collection);
+            if !known {
+                return;
+            }
+        }
+        let mut changed = false;
+        {
+            let mut pages = self.pages.lock().expect("saved pages provider lock");
+            for page in pages.iter_mut() {
+                if ids.contains(&page.id) && page.collection_id != collection {
+                    page.collection_id = collection;
+                    changed = true;
+                }
+            }
+        }
+        if changed {
+            let _ = self.tx.try_send(());
+        }
+    }
+
     /// Spawns the bounded nonblocking Saved Pages writer on the background
     /// executor: each poke coalesces (only the latest provider state is ever
-    /// written) and replaces the persisted Saved Page collection in one
-    /// transaction. No-op on the ephemeral store. Called exactly once by the
-    /// composition root after `open`, alongside the history and
-    /// browser-state writers.
+    /// written) and replaces the persisted Saved Page state — the records
+    /// **and** the flat collections — in one transaction. No-op on the
+    /// ephemeral store. Called exactly once by the composition root after
+    /// `open`, alongside the history and browser-state writers.
     pub(crate) fn spawn_writer(&mut self, background: &BackgroundExecutor) {
         let Some(repository) = self.repository.clone() else {
             log::warn!("ephemeral store: background saved-pages writer not spawned");
@@ -222,15 +401,20 @@ impl SavedPagesProvider {
             return;
         };
         let pages = self.pages.clone();
+        let collections = self.collections.clone();
         background
             .spawn(async move {
                 while rx.recv().await.is_ok() {
                     // Coalesce: drain any redundant pokes already queued
-                    // (capacity 1, so at most one); the collection is
+                    // (capacity 1, so at most one); the combined state is
                     // replaced whole, so only the latest state matters.
                     while rx.try_recv().is_ok() {}
                     let records = pages.lock().expect("saved pages provider lock").clone();
-                    if let Err(error) = repository.replace_saved_pages(&records) {
+                    let set = collections
+                        .lock()
+                        .expect("saved pages collections lock")
+                        .clone();
+                    if let Err(error) = repository.replace_saved_snapshot(&records, &set) {
                         log::warn!("saved-pages persist failed: {error:?}");
                     }
                 }
@@ -251,7 +435,12 @@ impl SavedPagesProvider {
             .lock()
             .expect("saved pages provider lock")
             .clone();
-        if let Err(error) = repository.replace_saved_pages(&records) {
+        let set = self
+            .collections
+            .lock()
+            .expect("saved pages collections lock")
+            .clone();
+        if let Err(error) = repository.replace_saved_snapshot(&records, &set) {
             log::warn!("saved-pages flush failed: {error:?}");
         }
     }
@@ -289,6 +478,17 @@ impl AppStore {
         self.saved_pages.count()
     }
 
+    /// The number of flat collection records (the typed snapshot evidence
+    /// for the B3 Library).
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
+    pub fn saved_collections_count(&self) -> usize {
+        self.saved_pages
+            .collections
+            .lock()
+            .expect("saved pages collections lock")
+            .len()
+    }
+
     /// Saves one canonical URL into the in-memory provider (idempotent,
     /// B1 duplicate semantics) and pokes the bounded nonblocking writer.
     /// The canonical key must already be validated by the caller through
@@ -301,6 +501,49 @@ impl AppStore {
     /// pokes the bounded nonblocking writer. Never runs from render.
     pub fn remove_saved_page(&mut self, id: u64) {
         self.saved_pages.remove(id);
+    }
+
+    /// Removes many records in one poke (the B3 Library multi-select
+    /// destructive remove; idempotent per id). Never runs from render.
+    pub fn remove_saved_pages(&mut self, ids: &[u64]) {
+        self.saved_pages.remove_many(ids);
+    }
+
+    /// Sets (or clears) the user label of one record — the B3 Library
+    /// rename — and pokes the bounded nonblocking writer. Never runs from
+    /// render.
+    pub fn rename_saved_page(&mut self, id: u64, label: &str) {
+        self.saved_pages.set_label(id, Some(label));
+    }
+
+    /// Creates one flat collection in the in-memory provider (the B3
+    /// Library new-collection flow) and pokes the bounded nonblocking
+    /// writer. Returns the new stable [`CollectionId`] or `None` for an
+    /// invalid title. Never runs from render.
+    pub fn create_saved_collection(&mut self, title: &str) -> Option<u64> {
+        self.saved_pages.create_collection(title)
+    }
+
+    /// Renames one flat collection (the B3 Library rename-collection flow)
+    /// and pokes the bounded nonblocking writer. An unknown identity or an
+    /// invalid title is a no-op. Never runs from render.
+    pub fn rename_saved_collection(&mut self, id: u64, title: &str) {
+        self.saved_pages.rename_collection(id, title);
+    }
+
+    /// Removes one flat collection (the B3 Library remove-collection flow):
+    /// member records are moved out first, then the collection row is
+    /// removed, so the in-memory state stays internally consistent. Never
+    /// runs from render.
+    pub fn remove_saved_collection(&mut self, id: u64) {
+        self.saved_pages.remove_collection(id);
+    }
+
+    /// Moves many records into (or out of) one flat collection in one poke
+    /// (the B3 Library multi-select collection move). Unknown record ids
+    /// are skipped; `None` clears the membership. Never runs from render.
+    pub fn move_saved_pages_to_collection(&mut self, ids: &[u64], collection: Option<u64>) {
+        self.saved_pages.move_to_collection(ids, collection);
     }
 
     /// Spawns the bounded nonblocking Saved Pages writer on the background
