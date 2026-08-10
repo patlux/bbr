@@ -39,5 +39,6 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 - [x] Apply page zoom through the portable [per-site settings and zoom contract](../tasks/site-settings-zoom-contract.md). *(Command ladder/native WebKit wiring integrated at `1d35693`; settings UI remains separately open.)*
 - [ ] Implement native permission delegate mapping after the portable [permissions contract](../tasks/permissions-contract.md). *(Phase 8)*
 - [x] Map native failures and web-process recovery through the portable [web error and recovery contract](../tasks/error-surface-contract.md). *(Visible recovery surfaces integrated at `a70e9a3`.)*
+- [ ] Detect and recover from unresponsive WebContent sessions without blocking browser chrome through the public-API-only [renderer isolation and unresponsive tabs packet](../tasks/renderer-isolation-unresponsive-tabs.md). Process sharing is observed and reconciled; no per-tab WebContent-process guarantee or private SPI.
 - [ ] Complete [native Portal host hardening](../tasks/native-portal-hardening.md) for focus, multi-window/display lifecycle, and teardown. *(Phase 8/9)*
 - [ ] Per-view split geometry.

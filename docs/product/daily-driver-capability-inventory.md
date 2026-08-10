@@ -42,7 +42,7 @@ splits, Portal hit-testing, deterministic E2E, and performance acceptance.
 | Split-view daily use | planned | [Phase 6](../roadmap/phases/06-split-view.md): creation, focus, navigation targeting, resize, close, persistence, gesture routing |
 | External URLs/default browser | planned | Phase 8 external-URL/default-browser packets |
 | Per-site zoom/settings | planned | Phase 8 site-settings/zoom contract and adapter |
-| Session restore and crash recovery | partially implemented | Phase 7 plus error/recovery packets; manual force-quit/site matrix before alpha |
+| Session restore and crash recovery | partially implemented / planned stability lane | Phase 7 plus error/recovery packets and the first-MVP [renderer isolation and unresponsive tabs](../roadmap/tasks/renderer-isolation-unresponsive-tabs.md) lane; a hung WebContent page must not block chrome close/switch/command behavior, and process sharing must be handled without a false one-process-per-tab guarantee |
 
 ## Navigation and tab lifecycle audit
 
@@ -95,8 +95,8 @@ after verification.
   and gesture state does not resurrect accidentally.
 - Profile isolation is re-proven for every capability that creates or transfers
   a native session.
-- Stale `WebViewId`, tab, media, download, permission, popup, and Portal events
-  reject without mutating newer state.
+- Stale `WebViewId`, tab, media, download, permission, popup, Portal, and renderer-liveness events reject without mutating newer state.
+- A hung WebContent renderer cannot block Sidebar, tab/space/split switching, command chrome, Cmd-W, pointer close, or keyboard close; deterministic recovery and public-API process-sharing evidence are owned by the [renderer-isolation packet](../roadmap/tasks/renderer-isolation-unresponsive-tabs.md).
 
 ## Evidence rules
 

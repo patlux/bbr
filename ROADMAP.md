@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slices:** [Web-content navigation gestures and opener return](docs/roadmap/tasks/web-content-navigation-gestures.md) + [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md), released by the integrated [productive new-window seam](docs/roadmap/tasks/new-window-production-seam.md)
+- **Active product slices:** [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md) serial integration, followed by the reviewed [renderer isolation and unresponsive tabs](docs/roadmap/tasks/renderer-isolation-unresponsive-tabs.md) first-MVP stability lane; both build on the integrated [productive new-window seam](docs/roadmap/tasks/new-window-production-seam.md) and [web-content navigation gestures](docs/roadmap/tasks/web-content-navigation-gestures.md)
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:
@@ -82,6 +82,7 @@ into a duplicate execution queue:
 - **Daily-driver browser essentials:** [capability inventory](docs/product/daily-driver-capability-inventory.md)
   → [web-content navigation gestures](docs/roadmap/tasks/web-content-navigation-gestures.md)
   → [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md)
+  → [renderer isolation and unresponsive tabs](docs/roadmap/tasks/renderer-isolation-unresponsive-tabs.md)
 - **Release:** [deterministic app packaging](docs/roadmap/tasks/macos-app-packaging.md)
   and [deterministic process shutdown](docs/roadmap/tasks/process-lifecycle-shutdown.md)
 
