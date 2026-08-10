@@ -210,6 +210,16 @@ pub struct TestSnapshot {
     /// Web-content navigation gesture diagnostics (N1): commit
     /// classification counters and live opener-provenance pairs.
     pub content_gesture: bbr_testkit::protocol::ContentGestureSnapshot,
+    /// The transient Peek preview (Link Preview / Peek packet): `None` at
+    /// rest. Mirrors the controller snapshot's preview state.
+    pub preview: Option<bbr_testkit::protocol::PreviewSnapshot>,
+    /// Whether the Peek bar is currently presented in the one native portal
+    /// window.
+    pub peek_presented: bool,
+    /// Native z-order evidence: while a preview is open the preview
+    /// WKWebView's subview index must exceed its covered origin's (the
+    /// preview is raised above the warm origin). `None` at rest.
+    pub preview_z_order: Option<bbr_testkit::protocol::PreviewZOrder>,
 }
 
 #[cfg(feature = "testkit")]

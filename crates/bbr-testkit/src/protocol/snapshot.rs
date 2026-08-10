@@ -849,6 +849,37 @@ pub struct ContentGestureSnapshot {
     pub opener_relations: Vec<(u64, u64)>,
 }
 
+/// The transient Peek preview snapshot (Link Preview / Peek packet).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PreviewSnapshot {
+    /// The typed transient preview identity (distinct from `TabId`/`WebViewId`).
+    pub id: u64,
+    /// The disposable source-profile preview session.
+    pub view: WebViewId,
+    /// The covered warm origin session (same `WebViewId`, URL, and page
+    /// state before/after the preview).
+    pub source: WebViewId,
+    /// The source profile whose website data store backs the preview.
+    pub profile: ProfileId,
+    pub url: String,
+    pub title: Option<String>,
+    pub loading: bool,
+    pub can_go_back: bool,
+    pub can_go_forward: bool,
+    /// The preview's web process terminated; only a live session can be
+    /// promoted without recreation.
+    pub crashed: bool,
+}
+
+/// Truthful native z-order evidence (Link Preview / Peek packet): the
+/// AppKit subview indices of the preview and its covered origin (a higher
+/// index draws above a lower one).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PreviewZOrder {
+    pub preview_index: usize,
+    pub source_index: usize,
+}
+
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
 /// Deliberately typed (no free-form JSON) so the harness can assert on
@@ -1126,6 +1157,25 @@ pub struct Snapshot {
     /// classification counters and live opener-provenance pairs.
     #[serde(default)]
     pub content_gesture: ContentGestureSnapshot,
+    /// The transient Peek preview (Link Preview / Peek packet): `None` at
+    /// rest. The preview is transient controller state — never a persisted
+    /// `Tab`, recently-closed row, sidebar row, or history item. The
+    /// snapshot exposes the disposable preview session id, its warm origin,
+    /// the source profile, and the live navigation state so E2E can prove
+    /// warmth (same origin `WebViewId`), dismissal (state returns to
+    /// `None`), promotion (the same `WebViewId` becomes a regular tab), and
+    /// replacement without texture composition.
+    #[serde(default)]
+    pub preview: Option<PreviewSnapshot>,
+    /// Whether the Peek bar is currently presented in the one native portal
+    /// window (the transient preview surface above the web content area).
+    #[serde(default)]
+    pub peek_presented: bool,
+    /// Truthful native z-order evidence (Link Preview / Peek packet): while
+    /// a preview is open the preview WKWebView's subview index must exceed
+    /// its covered origin's. `None` at rest.
+    #[serde(default)]
+    pub preview_z_order: Option<PreviewZOrder>,
 }
 
 /// The Phase-7 startup restore outcome, surfaced truthfully in the testkit

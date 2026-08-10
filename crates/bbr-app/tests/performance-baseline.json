@@ -235,6 +235,33 @@
       "samples": 0,
       "source": "contract-budget"
     },
+    "peek_dismiss_to_origin": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "peek_promote_to_tab": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "peek_request_to_present": {
+      "budget_max_ms": 150.0,
+      "budget_p95_ms": 100.0,
+      "max_ms": 150.0,
+      "p50_ms": 0.0,
+      "p95_ms": 100.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
     "persisted_warm_page_ready": {
       "budget_max_ms": null,
       "budget_p95_ms": 1000.0,

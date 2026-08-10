@@ -14,6 +14,9 @@ impl BrowserController {
     /// `WebViewId`s are reported without corrupting any state.
     pub fn apply_event(&mut self, event: WebEvent) -> ControllerEvent {
         let view = event_view(&event);
+        if self.apply_preview_event(&event) {
+            return ControllerEvent::WebEvent { event };
+        }
         let Some(tab) = self.registry.tab_for_view(view) else {
             return ControllerEvent::UnknownWebView { view };
         };

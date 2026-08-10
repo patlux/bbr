@@ -928,6 +928,54 @@ unchanged warm ceiling (50/100, 30 samples); execution remains
 unexecuted/unpassed under the active delivery override. The nine E2E
 scenarios passed 9/9 under the host-exclusive GUI lock on the remediation
 tree (log SHA-256 `0d51390b…`).
+## 7n. The Peek suite (`bbr-app/tests/e2e_shell_peek.rs`)
+
+`just e2e-peek` runs 6 real-app scenarios for the Link Preview / Peek packet
+(`link-preview-peek.md`). One honest seam: the hidden real-app harness cannot
+synthesize a trustworthy native `WKNavigationType::LinkActivated` click (the
+settled NW-SEAM evidence split), so the user-initiated Peek path enters through
+the exact `BbrApp::on_new_window_request` production method the native
+coordinator delivery pump calls, with the default intent; the script-created
+`window.open` block path stays fully native (the real `popup.html` fixture
+executes `window.open`, WebKit invokes the real WKUI delegate, portable policy
+blocks).
+
+1. **Eligible request → Peek above the warm origin, no tab:** the preview
+   appears with the origin's exact `WebViewId`/URL, no regular tab
+   (`tabs.len()` unchanged, `created_tabs == 0`), the bar's stable ids
+   presented, and truthful native z-order (`preview_index > source_index` in
+   the AppKit subview order).
+2. **Dismissal restores the exact warm origin:** the production Escape path
+   destroys the preview session and leaves the origin with the same
+   `WebViewId`, URL, engine-session count, and tab set; while open the origin
+   never becomes the focus target and the preview is raised above it, so
+   pointer/keyboard/scroll input lands on the preview.
+3. **Navigation + same-session promotion:** the preview page loads its real
+   fixture target, Reload routes to the preview session, and “Open as Tab”
+   promotes the SAME `WebViewId` into a regular tab with its live
+   navigation state (title) preserved and `engine_sessions == 2` — no reload,
+   no recreated session.
+4. **One preview per pane:** a new eligible request replaces the existing
+   preview (the old session is destroyed; no stacking).
+5. **Exclusions:** an ineligible direct activation (non-web scheme) with the
+   default intent falls back to the ordinary regular-tab path (the user's
+   action is never silently lost or forced into a preview); script requests
+   stay blocked.
+6. **Crash teardown:** a deterministic `PageCrashed` drives the production
+   crash path — the crashed preview refuses promotion and dismissal still
+   destroys the session cleanly with the warm origin untouched.
+
+No sleeps: every step synchronizes on typed snapshot state or semantic events
+under an explicit deadline, and the suite takes the serial GUI lock. Evidence:
+PEEK 6/6 (`/tmp/bbr-peek-closeout-e2e-peek.log`, SHA-256
+`85d3b8c49b2d1230a84f9ea7ff8780df3174d01b3e21a4114e74024c0dc83b94`); the portal
+hardening suite re-ran 7/7 on the exact unchanged source with Peek in the tree
+(`/tmp/bbr-peek-unlocked-portal-20260810T111056Z.log`, SHA-256
+`766da3b1838414dc1c659612a17c1125e4a8813aa64f81e12b0a0e8fe8936d35`), confirming
+the shared `NativeAboveWeb` portal host stays green. The suite is not yet part
+of canonical sequential `just e2e`; the optimized Peek milestones
+(`peek_request_to_present`, `peek_dismiss_to_origin`, `peek_promote_to_tab`)
+are coded with budgets and 0 accepted samples — unexecuted and unpassed.
 
 ## 8. Security & release exclusion
 
@@ -978,6 +1026,7 @@ just e2e-shell-sidebar # adjustable/collapsible sidebar surface (drag, keys, col
 just e2e-shell-split-geometry # keyed per-WebViewId split panes, focus, resize, close (split anchor)
 just e2e-shell-command  # command engine + U1 NativeAboveWeb palette/overlay + AppKit boundary evidence
 just e2e-shell-saved-pages # Saved Pages command authority: Cmd-D toggle, restart survival, exactly-one-fresh-tab, production quit durability (B2)
+just e2e-peek         # transient Link Preview / Peek: eligible request, dismissal/focus, same-session promotion, one-per-pane, exclusions, crash teardown (PEEK)
 just e2e-shell-hover    # pointer hover/press states + the internal §15 semantic tree
 just e2e-perf      # optimized startup and interaction latency budgets
 just e2e-perf-full # bounded repeated canonical gate (COLD_STARTUP_SAMPLES launches + 30-sample interactions)

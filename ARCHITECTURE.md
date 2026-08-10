@@ -1010,21 +1010,22 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
    evidence measures the real timer and commits only after the result palette is
    rendered. A product-wide `TimeSource` remains deferred until persistence and
    broader scheduling need one.
-4. **The MVP new-window seam is wired; richer disposition remains deferred.**
-   Direct user activations open one regular tab in the exact source
-   Space/Profile through `BbrApp` and `BrowserController`; script-created
-   `window.open` requests are blocked and reported. The native delegate still
-   returns `None`. The seam also records session-local identity-based
-   child→opener provenance for regular child tabs, and the N1 web-content
-   gesture path (native `scrollWheel:` bridge → logical commit → controller
-   decision matrix) dispatches exactly one real Back/Forward per committed
-   gesture or runs the atomic Back-at-settled-root close-child/activate-
-   opener transaction. Peek, background/insertion policy, named-window
-   reuse, popup allow-lists, and second browser windows remain later bounded
-   work. Functional real-app evidence is green for the new-window seam; the
-   gesture suite is added and the required optimized performance scenarios
-   remain explicitly unexecuted and unpassed under the active delivery
-   override.
+4. **The MVP new-window seam and transient Peek preview are wired; richer
+   disposition remains deferred.** Direct user activations open one regular
+   tab in the exact source Space/Profile, or one eligible transient
+   source-profile Peek preview, through `BbrApp` and `BrowserController`;
+   script-created `window.open` requests are blocked and reported. The native
+   delegate still returns `None`. Only the regular-tab path records
+   session-local identity-based child→opener provenance. The N1 web-content
+   gesture path dispatches exactly one real Back/Forward per committed gesture
+   or runs the atomic Back-at-settled-root close-child/activate-opener
+   transaction; Preview never records that provenance. Peek owns one transient
+   session per pane and promotes that same live WebView session without reload.
+   Modifier/background insertion policy, named-window reuse, popup allow-lists,
+   and second browser windows remain later bounded work. Functional evidence is
+   green for gestures 9/9, Peek 6/6, NW-SEAM 4/4, and Portal 7/7. Required
+   optimized gesture and Peek scenarios remain explicitly unexecuted and
+   unpassed under the active delivery override.
 5. **No find-in-page, zoom, downloads, permission prompts, WebAuthn, or
    process-termination recovery UI yet** (Phase 8). `PageCrashed` is
    observable in the status line and snapshot, but there is no recovery

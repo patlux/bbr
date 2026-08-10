@@ -94,6 +94,28 @@ pub struct NewWindowRequest {
     pub features: NewWindowFeatures,
 }
 
+/// Explicit user intent for a reported request (Link Preview / Peek packet).
+///
+/// The Peek policy exposes an explicit ordinary-tab action and an explicit
+/// Peek action beside the default. WebKit's new-window metadata cannot carry
+/// modifier information, so v1 supplies the intent through typed seams (the
+/// testkit production-seam injection) and the preview UI itself ("Open as
+/// Tab" promotes the same session); the native delegate always uses
+/// [`NewWindowIntent::Default`]. An explicit intent never forces an unsafe
+/// request into the preview: eligibility exclusions remain authoritative
+/// (see [`peek_eligible`] and [`decision_for_intent`]).
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum NewWindowIntent {
+    /// Follow the default policy: an eligible direct activation opens Peek.
+    #[default]
+    Default,
+    /// The user explicitly asked for an ordinary regular tab.
+    OpenTab,
+    /// The user explicitly asked for Peek on a normal link.
+    Peek,
+}
+
 /// Host decision for a reported request.
 ///
 /// Only portable orchestration produces a decision; platform adapters execute
@@ -194,17 +216,116 @@ pub struct NewWindowDelivery {
     pub outcome: NewWindowOutcome,
 }
 
-/// MVP default policy for the productive new-window seam.
+/// Peek eligibility for a reported request (the safe preview set).
 ///
-/// A direct user activation opens one regular tab. Script-created requests are
-/// blocked and reported. Peek, external handling, background selection,
-/// insertion policy, and opener provenance remain later bounded decisions.
+/// The Peek packet routes only *safe* requests into the transient preview:
+///
+/// - **Direct user activation** (`user_initiated`) — script-created
+///   `window.open` requests are never previewed.
+/// - **Previewable web scheme** — only `http`/`https` (and the deterministic
+///   `about:blank` blank page) can back a preview; non-web schemes
+///   (`mailto:`, `data:`, `file:`, …) follow the ordinary path instead of
+///   being forced into a web session.
+/// - **No explicitly sized / tool-style popup features** — a page that
+///   requested an explicit window size or toolbar/menu/status chrome is an
+///   application-style popup, not a link peek; it stays on the ordinary
+///   path unless a later documented policy marks it safe.
+///
+/// Exclusions are never silent: an ineligible request still resolves through
+/// [`decision_for_intent`] to the ordinary tab / block path, so the user's
+/// action is preserved and reported (the adapter's blocked channel) rather
+/// than dropped.
+pub fn peek_eligible(request: &NewWindowRequest) -> bool {
+    request.user_initiated
+        && is_previewable_scheme(&request.url)
+        && !explicitly_sized(request.features)
+        && !tool_style(request.features)
+}
+
+/// The default policy for the productive new-window seam, now Peek-aware
+/// (Link Preview / Peek packet).
+///
+/// An **eligible direct activation** opens a transient Peek instead of
+/// immediately creating a regular tab; script-created requests are blocked
+/// and reported; ineligible direct activations (non-web schemes, explicitly
+/// sized/tool-style popups) open one ordinary regular tab so the user's
+/// action is never lost. This is the single policy the native coordinator
+/// installs; explicit ordinary-tab / explicit-Peek actions route through
+/// [`decision_for_intent`].
 pub fn default_decision(request: &NewWindowRequest) -> NewWindowDecision {
-    if request.user_initiated {
-        NewWindowDecision::OpenTab
-    } else {
-        NewWindowDecision::Block
+    decision_for_intent(request, NewWindowIntent::Default)
+}
+
+/// The intent-aware policy authority (Link Preview / Peek packet).
+///
+/// - [`NewWindowIntent::Default`]: eligible direct activation → Preview;
+///   ineligible direct activation → `OpenTab`; script request → `Block`.
+/// - [`NewWindowIntent::OpenTab`]: a direct activation always opens a
+///   regular tab (eligibility is bypassed by the explicit action); a script
+///   request still blocks.
+/// - [`NewWindowIntent::Peek`]: the explicit Peek action, applied only to
+///   the safe set — an ineligible request falls back to the ordinary path
+///   (direct → `OpenTab`, script → `Block`) rather than forcing an unsafe
+///   preview.
+pub fn decision_for_intent(
+    request: &NewWindowRequest,
+    intent: NewWindowIntent,
+) -> NewWindowDecision {
+    match intent {
+        NewWindowIntent::Default => {
+            if peek_eligible(request) {
+                NewWindowDecision::Preview
+            } else if request.user_initiated {
+                NewWindowDecision::OpenTab
+            } else {
+                NewWindowDecision::Block
+            }
+        }
+        NewWindowIntent::OpenTab => {
+            if request.user_initiated {
+                NewWindowDecision::OpenTab
+            } else {
+                NewWindowDecision::Block
+            }
+        }
+        NewWindowIntent::Peek => {
+            if peek_eligible(request) {
+                NewWindowDecision::Preview
+            } else if request.user_initiated {
+                NewWindowDecision::OpenTab
+            } else {
+                NewWindowDecision::Block
+            }
+        }
     }
+}
+
+/// Whether `url` can back a transient preview session: the preview is a web
+/// surface, so only the deterministic navigable web schemes qualify. This is
+/// deliberately conservative — unknown/unsupported schemes follow the
+/// ordinary open-tab path and never produce a raw session.
+fn is_previewable_scheme(url: &str) -> bool {
+    let scheme = url.split(':').next().unwrap_or("").to_ascii_lowercase();
+    matches!(scheme.as_str(), "http" | "https" | "about")
+}
+
+/// Whether the page requested an explicit window size (an application-style
+/// popup rather than a link peek). WebKit reports each attribute as `None`
+/// when unspecified; any explicit non-zero width/height marks the request
+/// sized.
+fn explicitly_sized(features: NewWindowFeatures) -> bool {
+    let sized = |value: Option<f64>| value.is_some_and(|v| v.is_finite() && v > 0.0);
+    sized(features.width) || sized(features.height)
+}
+
+/// Whether the page requested tool-style window chrome (menu/status/toolbar
+/// visibility or an explicit resizable flag) — an application-style popup,
+/// not a link peek.
+fn tool_style(features: NewWindowFeatures) -> bool {
+    features.menu_bar_visible == Some(true)
+        || features.status_bar_visible == Some(true)
+        || features.toolbar_visible == Some(true)
+        || features.resizable == Some(true)
 }
 
 /// Translate a host decision into the native outcome for `request`.

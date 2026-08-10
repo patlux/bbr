@@ -120,6 +120,7 @@ impl BrowserController {
             engine_sessions: self.engine.borrow().live_session_count(),
             active_view,
             lifecycle_counts,
+            preview: self.preview_snapshot(),
         }
     }
 }

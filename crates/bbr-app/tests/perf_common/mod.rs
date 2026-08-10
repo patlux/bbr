@@ -21,6 +21,8 @@ mod find;
 mod find_drive;
 pub mod harness;
 pub mod machine;
+mod peek;
+mod peek_drive;
 mod report;
 mod saved_pages_drive;
 pub mod scenarios;

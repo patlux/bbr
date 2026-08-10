@@ -121,6 +121,33 @@ impl WebEngineWk {
             .is_some_and(|session| !session.navigation_cover.isHidden())
     }
 
+    /// The index of `id`'s WKWebView among the host root view's subviews
+    /// (AppKit draws subviews front-to-back, so a higher index is above a
+    /// lower one). This is the truthful native z-order evidence for the Peek
+    /// preview: while a preview is open its index must exceed its covered
+    /// origin's index. `None` for an unknown id or a detached root.
+    pub fn subview_index(&self, id: WebViewId) -> Option<usize> {
+        self.assert_main_thread();
+        let session = self.sessions.get(&id)?;
+        let root = self.host.root_view()?;
+        let target = objc2::rc::Retained::as_ptr(&session.web_view) as *const std::ffi::c_void;
+        // `subviews()` returns the live children of the retained root view,
+        // which includes `session.web_view`, and the array is not mutated
+        // while we read it. The `NSEnumerator` feature is not enabled in
+        // this workspace, so the array is read by index.
+        let subviews = root.subviews();
+        let count = subviews.count();
+        for index in 0..count {
+            // SAFETY: `index < count` on the live, unmutated array.
+            let item = unsafe { subviews.objectAtIndex_unchecked(index) };
+            let item_ptr = item as *const _ as *const std::ffi::c_void;
+            if item_ptr == target {
+                return Some(index);
+            }
+        }
+        None
+    }
+
     /// A retained clone of the live `WKWebView` for `id` — the find
     /// adapter's bind point. Never creates, moves, or reselects a session:
     /// the caller binds one adapter per active view and the adapter only
@@ -401,6 +428,26 @@ impl WebEngine for WebEngineWk {
             let mtm = MainThreadMarker::new().expect("main thread");
             self.host.focus_chrome(mtm);
         }
+    }
+
+    fn raise_web_view(&mut self, id: WebViewId) {
+        self.assert_main_thread();
+        let Some(session) = self.session(id) else {
+            return;
+        };
+        let Some(root) = self.host.root_view() else {
+            return;
+        };
+        // AppKit subviews draw front-to-back: re-adding the view moves it to
+        // the end of the subview list, i.e. above every other web view. The
+        // dark navigation cover is re-added after the view so it stays above
+        // the view itself. Removing and re-adding within one main-thread
+        // turn is deterministic and keeps the same retained objects. The
+        // objc2 APIs are main-thread-safe on the retained views.
+        session.web_view.removeFromSuperview();
+        root.addSubview(&session.web_view);
+        session.navigation_cover.removeFromSuperview();
+        root.addSubview(&session.navigation_cover);
     }
 
     fn action(&mut self, id: WebViewId, action: WebAction) {

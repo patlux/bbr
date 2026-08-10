@@ -30,6 +30,7 @@ mod dispatch_benchmark_context_menu;
 mod dispatch_benchmark_downloads;
 mod dispatch_benchmark_find;
 mod dispatch_benchmark_gestures;
+mod dispatch_benchmark_peek;
 mod dispatch_benchmark_swipe;
 mod dispatch_benchmark_u2;
 mod dispatch_benchmark_zoom;
@@ -312,8 +313,8 @@ pub fn spawn_pump(
             #[cfg(target_os = "macos")]
             Incoming::NewWindow(Ok(delivery)) => {
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
-                        view.on_new_window_request(delivery, cx)
+                    let _ = with_app(&window, &app, cx, |view, window, cx| {
+                        view.on_new_window_request(delivery, window, cx)
                     });
                 });
             }

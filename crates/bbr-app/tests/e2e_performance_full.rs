@@ -104,6 +104,9 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let zoom_step = report.results["zoom_step"].samples;
         let context_menu_open = report.results["context_menu_open"].samples;
         let auth_sheet_open = report.results["auth_sheet_open"].samples;
+        let peek_request_to_present = report.results["peek_request_to_present"].samples;
+        let peek_dismiss_to_origin = report.results["peek_dismiss_to_origin"].samples;
+        let peek_promote_to_tab = report.results["peek_promote_to_tab"].samples;
         let plus_menu = report.results["sidebar_plus_menu"].samples;
         let favorites = report.results["sidebar_favorites"].samples;
         let folder_toggle = report.results["sidebar_folder_toggle"].samples;
@@ -240,6 +243,20 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             child_return >= INTERACTION_SAMPLES,
             "child-tab return samples {child_return} < {INTERACTION_SAMPLES}"
+        );
+        // PEEK scenarios likewise require at least 30 accepted optimized
+        // samples once performance execution is resumed.
+        assert!(
+            peek_request_to_present >= INTERACTION_SAMPLES,
+            "peek request-to-present samples {peek_request_to_present} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            peek_dismiss_to_origin >= INTERACTION_SAMPLES,
+            "peek dismiss-to-origin samples {peek_dismiss_to_origin} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            peek_promote_to_tab >= INTERACTION_SAMPLES,
+            "peek promote-to-tab samples {peek_promote_to_tab} < {INTERACTION_SAMPLES}"
         );
         // Contract-required persisted warm-startup repetition count (the
         // warm page-ready distribution needs >=10 accepted samples too).

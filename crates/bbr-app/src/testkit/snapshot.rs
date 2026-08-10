@@ -35,6 +35,23 @@ pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange>
             profile: *profile,
             view: *view,
         }),
+        // A promoted preview materializes one regular tab in the source
+        // space/profile with the SAME session: from the browser model's
+        // perspective this is the same typed causal event as the regular
+        // new-window open (a regular tab exists at `index` in `space`, backed
+        // by `view`), so E2E can assert promotion with the same event.
+        ControllerEvent::PreviewPromoted {
+            index,
+            space,
+            profile,
+            view,
+            ..
+        } => Some(BrowserChange::NewWindowOpened {
+            index: *index,
+            space: bbr_testkit::protocol::TestSpaceId(space.0),
+            profile: *profile,
+            view: *view,
+        }),
         ControllerEvent::TabSelected { index } => {
             Some(BrowserChange::TabSelected { index: *index })
         }
@@ -252,6 +269,9 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             restore: self.restore,
             new_window: self.new_window,
             content_gesture: self.content_gesture.clone(),
+            preview: self.preview.clone(),
+            peek_presented: self.peek_presented,
+            preview_z_order: self.preview_z_order,
         }
     }
 }

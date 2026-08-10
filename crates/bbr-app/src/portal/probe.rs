@@ -97,6 +97,10 @@ pub enum PortalContent {
     /// render derives the redacted surface from the app entity each frame;
     /// the raw credential never exists in any serializable shape.
     Auth,
+    /// The transient Peek preview bar (Link Preview / Peek packet). The
+    /// portal render derives the live surface from the app entity each
+    /// frame, so the bar carries no data of its own.
+    Peek,
 }
 
 /// The portal window's render state, shared between the app (present/dismiss)
@@ -182,6 +186,16 @@ impl PortalProbeState {
                 crate::app::auth::AUTH_SUBMIT_ID.into(),
                 crate::app::auth::AUTH_CANCEL_ID.into(),
             ],
+            Some(PortalContent::Peek) => vec![
+                crate::app::peek::PEEK_BAR_ID.into(),
+                crate::app::peek::PEEK_URL_ID.into(),
+                crate::app::peek::PEEK_STATE_ID.into(),
+                crate::app::peek::PEEK_BACK_ID.into(),
+                crate::app::peek::PEEK_FORWARD_ID.into(),
+                crate::app::peek::PEEK_RELOAD_ID.into(),
+                crate::app::peek::PEEK_OPEN_AS_TAB_ID.into(),
+                crate::app::peek::PEEK_CLOSE_ID.into(),
+            ],
             Some(PortalContent::Command(surface)) => vec![match surface {
                 crate::app::palette::CommandSurface::Palette => {
                     crate::app::palette::PALETTE_ID.into()
@@ -250,6 +264,23 @@ impl PortalProbeState {
         self.request = Some(request);
         self.content = Some(PortalContent::Auth);
         self.viewport = viewport;
+    }
+
+    /// Present the transient Peek preview bar (the render derives the live
+    /// surface from the app entity, so no surface data is stored here).
+    pub fn present_peek(&mut self, request: PortalRequest, viewport: Sz) {
+        self.request = Some(request);
+        self.content = Some(PortalContent::Peek);
+        self.viewport = viewport;
+    }
+
+    /// Clear only when the active presentation is the Peek bar (a later
+    /// surface owns the portal otherwise — never wipe another surface).
+    pub fn clear_peek(&mut self) {
+        if matches!(self.content, Some(PortalContent::Peek)) {
+            self.request = None;
+            self.content = None;
+        }
     }
 
     /// Dismiss the active surface: the portal window renders nothing until
@@ -405,6 +436,74 @@ impl PortalRoot {
             });
         });
     }
+
+    /// The Peek bar's close-control pointer path (the production dismissal
+    /// seam: destroy the preview session and restore focus to the warm
+    /// origin).
+    pub(super) fn peek_close_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.peek_close(window, cx)
+            });
+        });
+    }
+
+    /// The Peek bar's "Open as Tab" pointer path (the production promotion
+    /// seam: adopt the SAME preview session as a regular tab without reload).
+    pub(super) fn peek_promote_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.peek_promote(window, cx)
+            });
+        });
+    }
+
+    /// The Peek bar's Back pointer path (routes to the preview session).
+    pub(super) fn peek_back_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, _w, _cx| {
+                view.peek_action(bbr_web::WebAction::Back)
+            });
+        });
+    }
+
+    /// The Peek bar's Forward pointer path (routes to the preview session).
+    pub(super) fn peek_forward_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, _w, _cx| {
+                view.peek_action(bbr_web::WebAction::Forward)
+            });
+        });
+    }
+
+    /// The Peek bar's Reload pointer path (routes to the preview session).
+    pub(super) fn peek_reload_clicked(&self, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, _w, _cx| {
+                view.peek_action(bbr_web::WebAction::Reload)
+            });
+        });
+    }
 }
 
 impl Render for PortalRoot {
@@ -523,6 +622,38 @@ impl Render for PortalRoot {
                 let card = crate::portal::auth_sheet::auth_sheet(&surface, rect, cx);
                 div()
                     .id("bbr-auth-portal-surface")
+                    .size_full()
+                    .bg(transparent_black())
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
+                            cx.stop_propagation();
+                        }),
+                    )
+                    .child(card)
+                    .into_any()
+            }
+            PortalContent::Peek => {
+                drop(probe);
+                let Some(app) = self.app.as_ref() else {
+                    return div().size_full().bg(transparent_black()).into_any();
+                };
+                let Some(surface) = app.read(cx).peek_surface() else {
+                    // The controller no longer holds a preview (teardown or
+                    // staleness): render nothing; the app's teardown path
+                    // dismisses the presentation deterministically.
+                    return div().size_full().bg(transparent_black()).into_any();
+                };
+                // The Peek-bar render milestone: record the Peek state this
+                // render actually drew into the probe, so a pending
+                // `peek_request_to_present` benchmark can commit only from a
+                // frame that presented the armed preview identity above its
+                // warm origin (fast-but-wrong guard).
+                #[cfg(feature = "testkit")]
+                app.read(cx).observe_portal_peek_render();
+                let card = crate::portal::peek::peek_bar(&surface, rect, cx);
+                div()
+                    .id("bbr-peek-portal-surface")
                     .size_full()
                     .bg(transparent_black())
                     .on_mouse_down(

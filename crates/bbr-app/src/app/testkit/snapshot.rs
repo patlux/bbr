@@ -421,6 +421,51 @@ impl BbrApp {
                         .collect(),
                 }
             },
+            preview: self.controller.snapshot().preview.map(|preview| {
+                bbr_testkit::protocol::PreviewSnapshot {
+                    id: preview.id,
+                    view: preview.view,
+                    source: preview.source,
+                    profile: preview.profile,
+                    url: preview.url,
+                    title: preview.title.clone(),
+                    loading: preview.loading,
+                    can_go_back: preview.can_go_back,
+                    can_go_forward: preview.can_go_forward,
+                    crashed: preview.crashed,
+                }
+            }),
+            peek_presented: self.peek_presented(),
+            #[cfg(target_os = "macos")]
+            preview_z_order: {
+                // Truthful native z-order evidence (Link Preview / Peek
+                // packet): while a preview is open the preview WKWebView's
+                // subview index must exceed its covered origin's — the
+                // preview is raised above the warm origin by
+                // `raise_web_view`. `None` at rest or when the native
+                // engine is unavailable.
+                let snapshot = self.controller.snapshot();
+                match (snapshot.preview, self.find_engine.as_ref()) {
+                    (Some(preview), Some(engine)) => {
+                        let engine = engine.borrow();
+                        match (
+                            engine.subview_index(preview.view),
+                            engine.subview_index(preview.source),
+                        ) {
+                            (Some(preview_index), Some(source_index)) => {
+                                Some(bbr_testkit::protocol::PreviewZOrder {
+                                    preview_index,
+                                    source_index,
+                                })
+                            }
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                }
+            },
+            #[cfg(not(target_os = "macos"))]
+            preview_z_order: None,
         }
     }
 

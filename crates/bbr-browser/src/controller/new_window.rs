@@ -42,6 +42,12 @@ impl BrowserController {
         // of opener provenance: identity-based child → exact opener relation.
         self.provenance.record(tab, source_tab);
         self.sync_views();
+        // A new regular tab in the active source space becomes active, which
+        // moves the selection away from the preview's origin: the transient
+        // preview closes (deterministic origin-removal policy). When the
+        // source space is inactive the active space/selection is unchanged
+        // and the preview stays.
+        self.close_preview_if_stale();
         let index = self
             .browser
             .space(source_space)

@@ -78,6 +78,9 @@ mod gesture_benchmarks;
 mod interaction;
 mod new_window;
 pub(crate) mod palette;
+pub(crate) mod peek;
+#[cfg(feature = "testkit")]
+mod peek_benchmarks;
 mod portal_host;
 mod render;
 mod saved_pages;
@@ -395,6 +398,10 @@ pub struct BbrApp {
     /// gesture was classified (history dispatch / opener return / no-op).
     /// Updated only by `on_content_gesture_commit`.
     content_gesture: content_gesture::ContentGestureState,
+    /// Transient Peek presentation state (Link Preview / Peek packet): the
+    /// bar presentation and the captured warm-origin focus target. The
+    /// preview *session* state lives in the controller snapshot.
+    peek: peek::PeekState,
     #[cfg(feature = "testkit")]
     performance: PerformanceProbe,
 }
@@ -519,6 +526,7 @@ impl BbrApp {
             browser_sink: Rc::new(RefCell::new(None)),
             new_window: new_window::NewWindowState::default(),
             content_gesture: content_gesture::ContentGestureState::default(),
+            peek: peek::PeekState::default(),
             #[cfg(feature = "testkit")]
             performance,
         }
@@ -779,6 +787,7 @@ impl BbrApp {
             self.sync_error_surface_visibility();
             self.zoom_after_activation();
             self.persist_structure();
+            self.sync_peek_surface(cx);
             cx.notify();
         }
         result
@@ -805,6 +814,7 @@ impl BbrApp {
             self.sync_error_surface_visibility();
             self.zoom_after_activation();
             self.persist_structure();
+            self.sync_peek_surface(cx);
             cx.notify();
         }
         result
@@ -841,6 +851,7 @@ impl BbrApp {
             }
             self.ensure_active_visible();
             self.persist_structure();
+            self.sync_peek_surface(cx);
             cx.notify();
         }
         result

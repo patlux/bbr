@@ -119,6 +119,7 @@ fn open_child(
             source: opener_view,
             source_profile: profile,
             url: target_url.into(),
+            intent: bbr_web::new_window::NewWindowIntent::OpenTab,
             user_initiated: true,
         })
         .expect("inject productive new-window delivery");
@@ -520,6 +521,7 @@ fn provisional_child_load_is_a_no_op_then_returns_once_settled() {
                 source: opener_view,
                 source_profile: opener_profile,
                 url: slow.clone(),
+                intent: bbr_web::new_window::NewWindowIntent::OpenTab,
                 user_initiated: true,
             })
             .expect("open child on the slow route");

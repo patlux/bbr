@@ -170,6 +170,9 @@ impl BrowserController {
     ///   `focused` is the active tab's view (a split member by domain
     ///   invariant).
     pub fn pane_layout(&self) -> Option<PaneLayout> {
+        if let Some(layout) = self.preview_pane_layout() {
+            return Some(layout);
+        }
         let space = self.browser.space(self.active_space)?;
         let focused = space
             .active_tab

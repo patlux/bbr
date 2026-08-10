@@ -52,6 +52,7 @@ impl BbrApp {
             // presentation bound to the previous space's view ends.
             self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
+            self.sync_peek_surface(cx);
             self.focus_space_strip(window, cx);
             self.ensure_active_visible();
             // DESIGN.md §11.3: the selected chip is scrolled fully into view

@@ -167,12 +167,60 @@ pub enum Request {
     /// the native coordinator delivery pump. The hidden harness cannot
     /// synthesize a trustworthy LinkActivated click, so direct-activation
     /// E2E injects the already-extracted typed request here; it never calls
-    /// the controller operation directly.
+    /// the controller operation directly. `intent` selects the policy
+    /// authority: [`bbr_web::NewWindowIntent::Default`] opens an eligible
+    /// request as a transient Peek preview; the explicit `OpenTab` intent
+    /// keeps the NW-SEAM regular-tab path executable for E2E (the preview
+    /// never records regular-tab opener provenance).
     NewWindow {
         source: WebViewId,
         source_profile: ProfileId,
         url: String,
         user_initiated: bool,
+        #[serde(default)]
+        intent: bbr_web::new_window::NewWindowIntent,
+    },
+    /// Dismiss the transient Peek preview through the production close path
+    /// (the Escape key, the close control, and this seam all call the same
+    /// `BbrApp::peek_close` method): the preview session is destroyed and
+    /// focus returns to the exact warm origin. No-op when no preview is
+    /// open.
+    PeekClose,
+    /// Promote the transient Peek preview through the production "Open as
+    /// Tab" path (`BbrApp::peek_promote`): the SAME preview session is
+    /// adopted as a regular tab in the source space/profile without reload
+    /// or state loss. A crashed preview refuses promotion.
+    PeekPromote,
+    /// Route one browser navigation action to the open preview session
+    /// (the production preview-command path; Back/Forward/Reload/Stop).
+    PeekNavigate {
+        action: WebAction,
+    },
+    /// Measure the production eligible new-window → Peek presentation path
+    /// (`peek_request_to_present`): the sample starts inside the app when
+    /// the request enters `BbrApp::on_new_window_request` and commits only
+    /// from a portal render that drew the Peek bar over the preview session
+    /// with the warm origin still active and the preview raised above it
+    /// (the in-app probe owns the fast-but-wrong guard). `url` is the
+    /// deterministic local preview target fixture; fixture/network time is
+    /// excluded by construction.
+    BenchmarkPeekRequestToPresent {
+        operation_id: BenchmarkOperationId,
+        url: String,
+    },
+    /// Measure the production Peek dismissal path
+    /// (`peek_dismiss_to_origin`): the sample starts when `peek_close`
+    /// destroys the preview session and commits only when the exact warm
+    /// origin is again the active, focused view with the Peek bar gone.
+    BenchmarkPeekDismissToOrigin {
+        operation_id: BenchmarkOperationId,
+    },
+    /// Measure the production Peek promotion path
+    /// (`peek_promote_to_tab`): the sample starts when `peek_promote`
+    /// adopts the preview session and commits only when the SAME preview
+    /// `WebViewId` is a regular tab, active and focused, with no reload.
+    BenchmarkPeekPromoteToTab {
+        operation_id: BenchmarkOperationId,
     },
     /// Drive the exact productive app content-gesture execution method used
     /// by the native content-gesture bridge reporter pump (N1): pushes one

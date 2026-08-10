@@ -30,6 +30,7 @@ mod snapshot;
 
 use crate::nav::NavState;
 use crate::outcome::ControllerEvent;
+use crate::peek::PeekPreview;
 use crate::provenance::OpenerProvenance;
 use crate::session::SessionRegistry;
 use crate::{ControllerError, EngineRef, ViewIdAllocator};
@@ -64,6 +65,10 @@ pub struct BrowserController {
     /// invalidated when either tab closes). Drives the Back-at-root
     /// opener return decision matrix.
     pub(crate) provenance: OpenerProvenance,
+    /// The one transient Peek preview; never a persisted tab or provenance row.
+    pub(crate) preview: Option<PeekPreview>,
+    /// Fresh deterministic transient preview identity allocation.
+    pub(crate) next_preview_id: u64,
 }
 
 impl std::fmt::Debug for BrowserController {
@@ -96,6 +101,8 @@ impl BrowserController {
             crashed_tabs: std::collections::HashSet::new(),
             appearances: SpaceAppearanceStore::new(),
             provenance: OpenerProvenance::new(),
+            preview: None,
+            next_preview_id: 0,
         }
     }
 
@@ -105,6 +112,7 @@ impl BrowserController {
     pub fn open_tab(&mut self, url: impl Into<String>) -> Result<ControllerEvent, ControllerError> {
         let url = url.into();
         let tab = self.browser.open_tab(self.active_space, "", url)?;
+        self.close_preview_if_stale();
         self.sync_views();
         let index = self.index_of(tab).expect("tab was just opened");
         let url = self
@@ -121,6 +129,7 @@ impl BrowserController {
     pub fn select_tab(&mut self, index: usize) -> Result<ControllerEvent, ControllerError> {
         let tab = self.tab_at(index)?;
         self.browser.select_tab(self.active_space, tab)?;
+        self.close_preview_if_stale();
         self.sync_views();
         self.check_invariants();
         Ok(ControllerEvent::TabSelected { index })
@@ -135,6 +144,7 @@ impl BrowserController {
         // relation (reopen restores the identity with no opener record).
         self.provenance.invalidate_for(tab);
         self.browser.close_tab(self.active_space, tab)?;
+        self.close_preview_if_stale();
         self.sync_views();
         self.check_invariants();
         Ok(ControllerEvent::TabClosed { index })
@@ -144,6 +154,7 @@ impl BrowserController {
     /// identity; a new session is created and shown.
     pub fn reopen_tab(&mut self) -> Result<ControllerEvent, ControllerError> {
         let tab = self.browser.reopen_tab(self.active_space)?;
+        self.close_preview_if_stale();
         self.sync_views();
         self.check_invariants();
         let index = self.index_of(tab).expect("tab was just reopened");
@@ -195,6 +206,9 @@ impl BrowserController {
     /// focused split pane). A suspended/discarded focused tab is reactivated
     /// first, recreating its session.
     pub fn navigate(&mut self, action: WebAction) -> Result<ControllerEvent, ControllerError> {
+        if self.preview.is_some() {
+            return self.preview_action(action);
+        }
         let tab = self.focused_tab().ok_or(ControllerError::NoActiveTab)?;
         let needs_reactivate = match self.browser.tab(tab) {
             Some(state) => matches!(
@@ -267,6 +281,7 @@ impl BrowserController {
             .ok_or(ControllerError::UnknownSpace(to_space))?
             .profile;
         self.browser.move_tab(tab, to_space)?;
+        self.close_preview_if_stale();
         self.sync_views();
         self.check_invariants();
         Ok(ControllerEvent::TabMoved {
@@ -303,6 +318,11 @@ impl BrowserController {
         let secondary = self.tab_at(secondary_index)?;
         self.browser
             .set_split(self.active_space, primary, secondary)?;
+        // Any split composition change invalidates the preview's covered
+        // single-layout geometry, even when the origin tab stays active.
+        if self.preview.is_some() {
+            let _ = self.close_preview();
+        }
         self.sync_views();
         self.check_invariants();
         Ok(ControllerEvent::SplitOpened {
@@ -315,6 +335,11 @@ impl BrowserController {
     /// warmed without closing its tab; the focused pane keeps its session.
     pub fn close_split(&mut self) -> Result<ControllerEvent, ControllerError> {
         self.browser.close_split(self.active_space)?;
+        // Closing the split changes the covered pane composition too; do not
+        // leave a preview raised over geometry it no longer belongs to.
+        if self.preview.is_some() {
+            let _ = self.close_preview();
+        }
         self.sync_views();
         self.check_invariants();
         Ok(ControllerEvent::SplitClosed)
@@ -328,7 +353,7 @@ impl BrowserController {
     ///
     /// Domain order is used everywhere so the recorded engine op log stays
     /// deterministic (map iteration order is not).
-    fn sync_views(&mut self) {
+    pub(crate) fn sync_views(&mut self) {
         let tabs: Vec<TabId> = self.browser.tabs().map(|t| t.id).collect();
         for tab in tabs.iter().copied() {
             let _ = self.ensure_session(tab);
@@ -452,10 +477,13 @@ impl BrowserController {
         self.registry
             .check_invariants()
             .expect("registry bijection");
+        // The transient preview is deliberately registry-free because it
+        // backs no domain tab; still account for its live engine session.
+        let preview_extra = usize::from(self.preview.is_some());
         assert_eq!(
-            self.registry.live_sessions(),
+            self.registry.live_sessions() + preview_extra,
             self.engine.borrow().live_session_count(),
-            "registry and engine must agree on live sessions"
+            "registry + transient preview must agree with engine live sessions"
         );
         // The companion appearance store stays structurally consistent with
         // the live browser: every record references an existing space and

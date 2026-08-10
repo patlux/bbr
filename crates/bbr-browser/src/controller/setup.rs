@@ -53,6 +53,8 @@ impl BrowserController {
             return Err(ControllerError::UnknownSpace(space));
         }
         self.active_space = space;
+        // A preview belongs to its source space; switching away ends it.
+        self.close_preview_if_stale();
         self.sync_views();
         self.check_invariants();
         Ok(ControllerEvent::SpaceActivated { space })

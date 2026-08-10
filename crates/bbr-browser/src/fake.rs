@@ -32,6 +32,9 @@ pub enum EngineOp {
         view: WebViewId,
         visible: bool,
     },
+    Raise {
+        view: WebViewId,
+    },
     Action {
         view: WebViewId,
         action: WebAction,
@@ -235,6 +238,13 @@ impl WebEngine for FakeEngine {
         self.ops
             .borrow_mut()
             .push(EngineOp::Show { view: id, visible });
+    }
+
+    fn raise_web_view(&mut self, id: WebViewId) {
+        if !self.sessions.contains_key(&id) {
+            panic!("fake engine: raise of unknown session {id:?}");
+        }
+        self.ops.borrow_mut().push(EngineOp::Raise { view: id });
     }
 
     fn action(&mut self, id: WebViewId, action: WebAction) {

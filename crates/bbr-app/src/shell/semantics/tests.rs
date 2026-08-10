@@ -42,6 +42,7 @@ fn browser() -> ControllerSnapshot {
         engine_sessions: 1,
         active_view: Some(bbr_web::WebViewId(1)),
         lifecycle_counts: bbr_browser::LifecycleCounts::default(),
+        preview: None,
     }
 }
 

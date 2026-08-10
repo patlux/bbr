@@ -6,7 +6,7 @@
 //! browser controller session authority and records typed diagnostics.
 
 use bbr_web::new_window::{NewWindowDelivery, NewWindowOutcome};
-use gpui::Context;
+use gpui::{Context, Window};
 
 use super::BbrApp;
 
@@ -23,32 +23,58 @@ impl BbrApp {
     pub fn on_new_window_request(
         &mut self,
         delivery: NewWindowDelivery,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<bbr_browser::ControllerEvent> {
         self.new_window.requests += 1;
         match delivery.outcome {
             NewWindowOutcome::CreateSession { session } => {
-                let result = self
-                    .controller
-                    .open_tab_from_new_window(delivery.request.source, &session)
-                    .map_err(|error| {
-                        log::warn!("new-window request rejected: {error}");
-                        error
-                    })
-                    .ok();
-                if let Some(outcome) = &result {
-                    self.new_window.created_tabs += 1;
-                    self.clear_command_profile_hint();
-                    self.sync_command_bar();
-                    self.find_discard_if_unbound(cx);
-                    self.emit_browser(outcome);
-                    self.ensure_active_visible();
-                    self.sync_error_surface_visibility();
-                    self.zoom_after_activation();
-                    self.persist_structure();
-                    cx.notify();
+                match session.disposition() {
+                    bbr_web::new_window::NewWindowDisposition::Preview => {
+                        // Transient Peek (Link Preview / Peek packet): the
+                        // controller opens a source-profile preview session
+                        // above the warm origin; no regular tab is created.
+                        // The preview owns browser-command focus while open.
+                        let result = self
+                            .controller
+                            .open_preview_from_new_window(delivery.request.source, &session)
+                            .map_err(|error| {
+                                log::warn!("peek request rejected: {error}");
+                                error
+                            })
+                            .ok();
+                        if let Some(outcome) = &result {
+                            self.clear_command_profile_hint();
+                            self.find_discard_if_unbound(cx);
+                            self.handle_peek_outcome(outcome, window, cx);
+                            cx.notify();
+                        }
+                        result
+                    }
+                    bbr_web::new_window::NewWindowDisposition::OpenTab => {
+                        let result = self
+                            .controller
+                            .open_tab_from_new_window(delivery.request.source, &session)
+                            .map_err(|error| {
+                                log::warn!("new-window request rejected: {error}");
+                                error
+                            })
+                            .ok();
+                        if let Some(outcome) = &result {
+                            self.new_window.created_tabs += 1;
+                            self.clear_command_profile_hint();
+                            self.sync_command_bar();
+                            self.find_discard_if_unbound(cx);
+                            self.emit_browser(outcome);
+                            self.ensure_active_visible();
+                            self.sync_error_surface_visibility();
+                            self.zoom_after_activation();
+                            self.persist_structure();
+                            cx.notify();
+                        }
+                        result
+                    }
                 }
-                result
             }
             NewWindowOutcome::Blocked => {
                 self.new_window.blocked_reported += 1;

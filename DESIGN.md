@@ -1065,6 +1065,45 @@ Canonical packets: [B1 contract/persistence](docs/roadmap/tasks/saved-pages-port
 [B2 actions/command provider](docs/roadmap/tasks/saved-pages-actions-command.md),
 and [B3 Library](docs/roadmap/tasks/saved-pages-library.md).
 
+### 11.17 Peek preview bar (Link Preview / Peek)
+
+A **transient** source-profile preview surface, not a modal, a tab, or a
+persisted row. An eligible direct activation (user-initiated `target="_blank"`
+/ `window.open`, previewable scheme, no explicit size or tool-style chrome)
+opens the preview in the source profile's data store, raised above the warm
+origin in the native z-order; the origin stays selected and warm underneath and
+never becomes the pointer/keyboard/accessibility-focus target while Peek is
+open. Exactly one preview per pane: a new eligible request from inside the
+preview navigates it, any other source replaces it (the old session is
+destroyed first).
+
+- **Surface:** a full web-content-area-width bar anchored to the top of the web
+  content area (right of the sidebar), `density:row`-tall, in the §11.4
+  command-surface family — `material:overlay`, `radius:lg`, `elev:2`.
+- **Anatomy:** label (preview title, mid-ellipsized, with URL fallback), a
+  state token (`Peek` / `Loading` / `Crashed`), and the controls
+  Back / Forward / Reload / Open as Tab / Close. Controls route through the
+  production app methods via the portal root's deferred update (the same
+  `NativeAboveWeb` mechanism as the find bar); Escape and the close control
+  dismiss, Open as Tab promotes the same session.
+- **States:** loading (`LoadingArc`) and crash (`Lifering`) are surfaced
+  honestly through `bbr-peek-state`; a crashed preview cannot promote and still
+  dismisses cleanly. The preview WKWebView renders the page natively — never a
+  screenshot or texture-composed copy in GPUI.
+- **Focus:** while open, the preview owns browser-command focus; Back /
+  Forward / Reload / Stop / Navigate route to the preview session. Dismissal
+  restores focus to the exact warm origin control/web view.
+- **Motion:** present and dismiss bound to the portal frame with no
+  intermediate chrome geometry (reduced-motion safe by construction); an
+  entrance/exit transition remains later polish.
+- **Theme:** the bar currently renders with the dark palette; the
+  light/contrast/compact/reduced-motion matrix stays open (§16).
+- **Assert ids:** `bbr-peek-bar`, `bbr-peek-url`, `bbr-peek-state`,
+  `bbr-peek-back`, `bbr-peek-forward`, `bbr-peek-reload`,
+  `bbr-peek-open-as-tab`, `bbr-peek-close`.
+
+Canonical packet: [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md).
+
 ## 12. Profile identity
 
 - **Chip:** 24 pt square (20 at S, 28 at XL), `radius:sm`, filled with the profile's
@@ -1143,7 +1182,11 @@ semantically — never by pixel comparison.
   The S1 scale table (§8) changes geometry tokens only — it
   does not change ids, the §10 state
   vocabulary, interaction behavior, dense-500 bounded-window rendering,
-  scroll math, or any performance budget/sample count.
+  scroll math, or any performance budget/sample count. The integrated Peek
+  preview bar registers `bbr-peek-bar`, `bbr-peek-url`, `bbr-peek-state`,
+  `bbr-peek-back`, `bbr-peek-forward`, `bbr-peek-reload`,
+  `bbr-peek-open-as-tab`, and `bbr-peek-close` (§11.17) only while a preview is
+  presented; an absent preview registers none.
 - **State vocabulary:** snapshot field `tab_states: Vec<VisualState>` with
   `VisualState ∈ {default, hover, active, selected, loading, attention,
   error, disabled, dragging, drag-target, focused}` — exactly the §10 names.
@@ -1179,8 +1222,10 @@ custom fonts; arbitrary emoji iconography outside the curated SpaceIdentity
 catalog; page thumbnails/previews; spring physics unrelated to direct gesture
 cancellation; auto-reload of crashed tabs; sidebar auto-collapse; density
 auto-switch; palette result grouping polish; Saved Page cloud/mobile sync,
-offline copies, tags, nested collections, or page snapshots; peek choreography
-(its own task).
+offline copies, tags, nested collections, or page snapshots; peek entrance/exit
+animation and the peek light/contrast/reduced-motion presentation matrix (the
+production Peek surface itself is integrated, §11.17; Gallery stories follow
+production integration).
 
 ## 17. Open decisions
 

@@ -6,8 +6,9 @@
 //! depends on (profile preservation, no invented navigation, no silent block).
 
 use bbr_web::new_window::{
-    decide, default_decision, NewWindowDecision, NewWindowDisposition, NewWindowFeatures,
-    NewWindowOutcome, NewWindowRequest, NewWindowTarget,
+    decide, decision_for_intent, default_decision, peek_eligible, NewWindowDecision,
+    NewWindowDisposition, NewWindowFeatures, NewWindowIntent, NewWindowOutcome, NewWindowRequest,
+    NewWindowTarget,
 };
 use bbr_web::{ProfileId, WebViewId};
 
@@ -39,13 +40,117 @@ fn request_carries_user_gesture_state() {
 }
 
 #[test]
-fn default_policy_opens_direct_activations_and_blocks_scripts() {
+fn default_policy_opens_peek_for_eligible_direct_activations_and_blocks_scripts() {
     let direct = request("https://example.com/direct");
-    assert_eq!(default_decision(&direct), NewWindowDecision::OpenTab);
+    assert_eq!(default_decision(&direct), NewWindowDecision::Preview);
 
     let mut script = request("https://example.com/script");
     script.user_initiated = false;
     assert_eq!(default_decision(&script), NewWindowDecision::Block);
+}
+
+#[test]
+fn peek_eligibility_requires_direct_activation() {
+    let mut script = request("https://example.com");
+    script.user_initiated = false;
+    assert!(!peek_eligible(&script));
+    assert!(peek_eligible(&request("https://example.com")));
+}
+
+#[test]
+fn peek_eligibility_requires_a_previewable_scheme() {
+    for (url, eligible) in [
+        ("https://example.com/a", true),
+        ("http://example.com/a", true),
+        ("about:blank", true),
+        ("mailto:hello@example.com", false),
+        ("data:text/html,hi", false),
+        ("file:///tmp/x.html", false),
+        ("ftp://example.com/x", false),
+        ("example.com/no-scheme", false),
+    ] {
+        assert_eq!(peek_eligible(&request(url)), eligible, "for {url}");
+    }
+}
+
+#[test]
+fn peek_eligibility_excludes_sized_and_tool_style_popups() {
+    let mut sized = request("https://example.com");
+    sized.features.width = Some(600.0);
+    sized.features.height = Some(400.0);
+    assert!(!peek_eligible(&sized), "explicitly sized popup");
+
+    let mut tool = request("https://example.com");
+    tool.features.toolbar_visible = Some(true);
+    assert!(!peek_eligible(&tool), "tool-style popup");
+
+    // Zero/unspecified sizes and explicitly-false chrome stay eligible:
+    // only an explicit positive size or requested chrome marks a popup.
+    let mut safe = request("https://example.com");
+    safe.features.width = Some(0.0);
+    safe.features.toolbar_visible = Some(false);
+    assert!(peek_eligible(&safe));
+}
+
+#[test]
+fn explicit_open_tab_intent_opens_a_regular_tab() {
+    let direct = request("https://example.com/direct");
+    assert_eq!(
+        decision_for_intent(&direct, NewWindowIntent::OpenTab),
+        NewWindowDecision::OpenTab
+    );
+    // An explicit OpenTab intent still never promotes a script request.
+    let mut script = request("https://example.com/script");
+    script.user_initiated = false;
+    assert_eq!(
+        decision_for_intent(&script, NewWindowIntent::OpenTab),
+        NewWindowDecision::Block
+    );
+}
+
+#[test]
+fn explicit_peek_intent_never_forces_an_unsafe_preview() {
+    // Eligible normal link + explicit Peek → Preview.
+    assert_eq!(
+        decision_for_intent(&request("https://example.com"), NewWindowIntent::Peek),
+        NewWindowDecision::Preview
+    );
+    // Ineligible (non-web scheme) + explicit Peek → ordinary OpenTab, never
+    // a forced preview and never a silent drop.
+    assert_eq!(
+        decision_for_intent(&request("mailto:hello@example.com"), NewWindowIntent::Peek),
+        NewWindowDecision::OpenTab
+    );
+    // Ineligible (sized popup) + explicit Peek → ordinary OpenTab.
+    let mut sized = request("https://example.com");
+    sized.features.width = Some(600.0);
+    assert_eq!(
+        decision_for_intent(&sized, NewWindowIntent::Peek),
+        NewWindowDecision::OpenTab
+    );
+    // Script + explicit Peek → reported Block.
+    let mut script = request("https://example.com");
+    script.user_initiated = false;
+    assert_eq!(
+        decision_for_intent(&script, NewWindowIntent::Peek),
+        NewWindowDecision::Block
+    );
+}
+
+#[test]
+fn default_policy_falls_back_to_ordinary_open_tab_for_ineligible_direct_activation() {
+    // A non-web scheme direct activation must never vanish: it opens a
+    // regular tab rather than a preview.
+    assert_eq!(
+        default_decision(&request("mailto:hello@example.com")),
+        NewWindowDecision::OpenTab
+    );
+    let mut sized = request("https://example.com");
+    sized.features.width = Some(600.0);
+    assert_eq!(default_decision(&sized), NewWindowDecision::OpenTab);
+    let mut tool = request("https://example.com");
+    tool.features.toolbar_visible = Some(true);
+    assert_eq!(default_decision(&tool), NewWindowDecision::OpenTab);
 }
 
 #[test]
