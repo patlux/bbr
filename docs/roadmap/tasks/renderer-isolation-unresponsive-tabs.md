@@ -9,8 +9,8 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [performance contract](../../product/performance-contract.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
-Status: **Slice 2 remediation is settled and awaits one focused independent
-safety recheck.** PEEK and B3 are integrated through control checkpoint
+Status: **Slice 2 is independently accepted; Slice 3 is ready for exactly one
+same-worktree writer.** PEEK and B3 are integrated through control checkpoint
 `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
 `4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The Orchestrator created branch
 `parallel/renderer-isolation` and worktree
@@ -215,11 +215,22 @@ warning-denied Clippy, app default/testkit checks and app warning-denied Clippy;
 fmt and diff-check are clean. Real index/staged state remain base/empty; no
 process or Git lock remains; GUI lock is free.
 
-Exactly one fresh read-only focused reviewer may now verify closure of this
-safety finding, the causal zero/exactly-one operation tests, the one-file scope,
-and immutable candidate bindings. No mutation is authorized. Only a direct
-Slice-2 recheck pass authorizes Slice 3. Only the Orchestrator transfers
-ownership or commits/integrates after the final whole-candidate pass.
+A fresh independent focused reviewer returned direct
+`TESTKIT_FIXTURES_SLICE_RECHECK_PASS` with no findings. It independently
+reproduced all immutable bindings before and after review, verified the actual
+one-file delta and causal operation tests, reran fresh macOS testkit 116+9 plus
+warning-denied Clippy, fmt and diff-check, and confirmed empty staged state,
+zero lane processes/Git locks and an available GUI lock. The receiver-PID /
+ownership gap is closed; Slice 2 is accepted.
+
+Exactly one same-worktree Slice-3 writer may now complete the remaining packet:
+real-app `e2e_shell_responsiveness`, required affected functional regressions,
+performance scenario/budget/baseline code with zero measured samples and no
+performance execution, canonical documentation/roadmap truth, all allowed
+non-performance gates, and exact whole-candidate settlement. No commit,
+integration, G2/G3/Z work, performance recipe, or canonical `just e2e` is
+authorized. Only the Orchestrator transfers ownership or commits/integrates
+after a final independent whole-candidate pass.
 
 ---
 
