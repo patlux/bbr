@@ -9,7 +9,7 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [performance contract](../../product/performance-contract.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
-Status: **running in bounded forward continuation under one exclusive
+Status: **running in bounded Slice-2 continuation under one exclusive
 writer.** PEEK and B3 are integrated through control checkpoint
 `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
 `4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The Orchestrator created branch
@@ -143,17 +143,31 @@ three affected crates, release checks, fmt and diff-check. Evidence log
 
 The first independent read-only recheck was started before Patrick's subagent
 model override and later failed with `Subagent produced no assistant output`.
-It emitted no verdict, finding, mutation, or authority and is not changed or
-repeated merely to switch models. After the override is committed and the exact
-56-path candidate is rebound unchanged, exclusive ownership may transfer to
-one replacement independent read-only reviewer. That reviewer must use
-`homelab-llm/gpt-5.6-sol-fast:high`, reproduce the candidate, inspect the
-complete six-file remediation delta, prove all three findings closed without
-behavior/API/assertion/visual drift, verify module budgets and focused evidence,
-and return direct `PRODUCT_SLICE_RECHECK_PASS` or
-`PRODUCT_SLICE_RECHECK_FINDINGS`. It must not mutate any worktree. Slice 2
-remains blocked until direct pass. Only the Orchestrator may commit, merge,
-integrate, or transfer ownership after settlement.
+It emitted no verdict, finding, mutation, or authority. After the override was
+committed, replacement reviewer
+`renderer-product-budget-recheck-replacem-msnkcwtv-n3ogmj` used
+`homelab-llm/gpt-5.6-sol-fast:high`, independently reproduced the exact
+56-path candidate, six-file extraction delta, module budgets, focused evidence,
+empty staged/diff-check state, zero processes and free GUI lock, and returned
+direct `PRODUCT_SLICE_RECHECK_PASS` with no mutation. Slice 1 is therefore
+accepted.
+
+Exactly one Slice-2 writer `renderer_testkit_fixtures_writer` now owns the same
+worktree. Its bounded scope is additive testkit-gated process observation and
+termination plus deterministic `/__fx/hang/busy`, `/heavy`, `/dialog`, and
+`/beforeunload` fixtures. It must preserve Slice 1 byte-for-byte except where
+additive testkit integration requires shared composition, enumerate only
+app-owned WebContent helpers, filter every candidate through public parent-PID
+inspection, terminate at most one matching child per observation, never claim
+per-view PID targeting, and never touch foreign processes. Fixture routing
+must stay modular without growing `crates/bbr-fixtures/src/lib.rs` above its
+audited 839-line no-grow bound; every new file stays below 500 lines. This
+slice may add focused unit/contract tests and run non-GUI checks, but it may
+not add real-app E2E, performance code, broad documentation, commit, merge, or
+integrate. It returns an exact immutable fingerprint and direct
+`TESTKIT_FIXTURES_SLICE_READY` or `TESTKIT_FIXTURES_SLICE_BLOCKED`. Independent
+read-only review follows before Slice 3. Only the Orchestrator transfers
+ownership or commits/integrates after the final whole-candidate pass.
 
 ---
 
