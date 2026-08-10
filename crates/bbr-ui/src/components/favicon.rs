@@ -14,6 +14,10 @@ use crate::state::TabVisualState;
 use crate::text::{host_of, scheme_of};
 use crate::theme::{Radius, Theme, ThemeMode};
 
+/// §15 stable id of the tab row's favicon slot (DESIGN.md §11.1 assert
+/// ids) — rendered by this component and pinned by the tab-row tests.
+pub const TAB_FAVICON_ID: &str = "bbr-tab-favicon";
+
 /// The favicon tile: the deterministic monogram (§7.2) until a real favicon
 /// exists; while loading the slot shows the accent spinner.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,7 +77,8 @@ pub fn favicon_tile(
     };
     let letter = spec.map(|s| s.letter).unwrap_or('?');
     div()
-        .id(("bbr-tab-favicon", index))
+        .id((TAB_FAVICON_ID, index))
+        .debug_selector(move || format!("{TAB_FAVICON_ID}-{index}"))
         .size(size)
         .rounded(Radius.small())
         .bg(bg)

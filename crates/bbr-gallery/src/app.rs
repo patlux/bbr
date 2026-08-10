@@ -21,6 +21,7 @@ use crate::controls::{controls_surface, ControlAction, ControlsModel};
 use crate::recorder::{ControlObservation, ControlObserver, ControlRecorder, CoreControlsEntities};
 use crate::registry::{CatalogRegistry, ControlsStory, GroupId, NodeId, StoryId};
 use crate::stories::{catalog, GALLERY_CONTINUATION, GALLERY_SCOPE};
+use crate::tab_row_app::TabRowAppState;
 use crate::tree::{NodeKind, TreeState};
 use crate::tree_surface::tree_surface;
 
@@ -74,6 +75,12 @@ pub struct GallerySnapshot {
     pub checkbox_checked: bool,
     pub switch_checked: bool,
     pub radio_index: usize,
+    /// The observed Tab Row state (recorder path, packet
+    /// `component-gallery-browser-components.md`).
+    pub tab_selects: u32,
+    pub tab_closes: u32,
+    pub tab_pins: u32,
+    pub tab_drag_begins: u32,
     /// The real `InputState::value()` (typed text) when the Core Controls
     /// input exists.
     pub input_text: String,
@@ -92,6 +99,8 @@ pub struct GalleryApp {
     story_states: Vec<StoryState>,
     /// The Core Controls group id, found by label at construction.
     core_controls_group: GroupId,
+    /// The Tab Row app wiring (module `tab_row_app`).
+    pub(crate) tab_row: TabRowAppState,
     /// The shared recorder: what real gpui-component control events report
     /// back through the production `observe_control` path.
     recorder: ControlRecorder,
@@ -121,6 +130,8 @@ impl GalleryApp {
             })
             .collect();
         GalleryApp {
+            // Built before `registry` moves (story discovery borrows it).
+            tab_row: TabRowAppState::new(&registry),
             registry,
             tree,
             mode: ThemeMode::Dark,
@@ -309,6 +320,10 @@ impl GalleryApp {
             radio_index: self.recorder.radio_index,
             input_text,
             slider_value,
+            tab_selects: self.tab_row.counts().0,
+            tab_closes: self.tab_row.counts().1,
+            tab_pins: self.tab_row.counts().2,
+            tab_drag_begins: self.tab_row.counts().3,
         }
     }
 
@@ -410,6 +425,8 @@ impl Render for GalleryApp {
             on_switch,
             on_radio,
         };
+        // The Tab Row observer + story context (module `tab_row_app`).
+        let tab_row = self.tab_row.render_context(selected, cx);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {
@@ -447,6 +464,7 @@ impl Render for GalleryApp {
             reduced_motion: self.reduced_motion,
             story_state,
             controls,
+            tab_row,
         });
         div()
             .id("bbr-gallery-root")
