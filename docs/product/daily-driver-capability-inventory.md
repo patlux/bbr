@@ -30,8 +30,8 @@ splits, Portal hit-testing, deterministic E2E, and performance acceptance.
 
 | Capability family | Status | Canonical owner / required decision |
 |---|---|---|
-| Trackpad Back/Forward over web content | planned | [Web-content navigation gestures](../roadmap/tasks/web-content-navigation-gestures.md): gesture targets the exact native pane and routes through one WebKit/controller history authority |
-| Child-tab Back-at-root returns to opener | planned | [Web-content navigation gestures](../roadmap/tasks/web-content-navigation-gestures.md): session-local `TabId` provenance and atomic close-child/activate-opener; never close unrelated root tabs |
+| Trackpad Back/Forward over web content | implemented functionally; performance acceptance deferred | [Web-content navigation gestures](../roadmap/tasks/web-content-navigation-gestures.md): exact-pane WebKit/controller history authority integrated at `542af1a`; real-app gestures 9/9 and affected functional regressions pass, while production performance scenarios remain unexecuted/unpassed under the active override |
+| Child-tab Back-at-root returns to opener | implemented functionally; performance acceptance deferred | [Web-content navigation gestures](../roadmap/tasks/web-content-navigation-gestures.md): session-local `TabId` provenance and atomic close-child/activate-opener integrated at `542af1a`; functional lifecycle/split/profile evidence passes and performance acceptance remains unexecuted/unpassed |
 | Link-created regular tab vs Peek vs external vs blocked | decision needed / planned seam | [Link Preview / Peek](../roadmap/tasks/link-preview-peek.md) owns typed request/disposition and Peek policy; regular child tabs provide provenance to the gesture packet |
 | Foreground/background link opening | decision needed | Resolve modifier-click, middle-click, focus/selection, insertion, and opener retention before implementation; update [browser interactions](browser-interactions.md) |
 | Titlebar and shortcut Back/Forward/Reload | planned | [Unified titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md); same controller/navigation state as gestures and shortcuts |

@@ -8,10 +8,12 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [daily-driver capability inventory](../../product/daily-driver-capability-inventory.md) ·
 [performance contract](../../product/performance-contract.md).
 
-Status: **planned for the first feature-complete MVP.** This packet is the
-canonical owner for trackpad navigation over native web content and the
-opener-return fallback of regular child tabs. It does not replace the existing
-sidebar space swipe or decide Peek eligibility/background-tab policy.
+Status: **integrated functionally; performance acceptance deferred/unpassed.**
+This packet is the canonical owner for trackpad navigation over native web
+content and the opener-return fallback of regular child tabs. Exact reviewed
+lane `ab98f429…` / tree `852f10a0…` is integrated as `542af1a…` / tree
+`2668bace…`. It does not replace the existing sidebar space swipe or decide
+Peek eligibility/background-tab policy.
 
 ## Outcome
 
@@ -344,34 +346,38 @@ Outcome:
   production-path drivers/probes/semantic milestones and registered with
   unchanged 50/100 warm budgets and 30-sample guards (unexecuted).
 Commits:
-  none (exclusive writer may not commit; tree returned as candidate)
+  lane ab98f429a2352360c0a8e93378725851879f3be5 / tree
+  852f10a0ba87db6567b6fed024cf8aa2bbf725ec; semantic integration
+  542af1a5dcb06d09ee6f29c7c89470fa791aa299 / tree
+  2668bace5c851b5092631495efc80d78afe0a4de
 Functional evidence:
-  cargo test -p bbr-browser: 178 passed (17 controller-gesture tests +
-  deterministic pairs order); bbr-web: 322+12+1 passed; bbr-web-macos:
-  103+9 passed; bbr-testkit: 27 passed; perf baseline suite: 21 passed;
-  workspace --all-targets compiles; baseline JSON/budget registration
-  verified; explicit testkit Clippy + just verify + roadmap green.
+  candidate and integrated-head unit/contract suites passed; final candidate
+  bbr-browser 178, bbr-web 364+12+1, bbr-web-macos 103+9, bbr-testkit 27,
+  perf baseline 21. Post-merge `just verify`, explicit testkit Clippy, roadmap,
+  and diff-check passed; log `/tmp/bbr-n1-merge-nonperf-20260810T0255Z.log`,
+  SHA-256 `adcbc1a2ab9ea8f6574d661962d294e39a991fbd04a3d11c22d6dcb3c7c11fc0`. 
 Real-app E2E:
-  just e2e-web-navigation-gestures passed 9/9 under the host-exclusive GUI
-  lock, Xcode 26.2, CARGO_BUILD_JOBS=4 on the remediation tree; log
-  /tmp/bbr-n1-remediation-gestures-e2e-20260810T022641Z.log, SHA-256
-  0d51390b688798272f211e9c78ae1c956f258790044d1bf1000965ba6ebd69a0 (31
-  lines); all nine E2E boxes checked with honest evidence; affected
-  regression suites remain individually green (see prior runs).
+  On integrated head `542af1a…`, gestures 9/9, Smoke 1/1, Tabs 1/1,
+  Profiles 1/1, New Window 4/4, Spaces 15/15, Split Geometry 1/1, and Context
+  Menu 9/9 passed under Xcode 26.2 and the repository GUI lock. Log
+  `/tmp/bbr-n1-merge-functional-20260810T0300Z.log`, SHA-256
+  `95d3baef6edbf3d5afa5b01520df6043eca13cd9fd5b665ccbfbe594a79b0b1b`.
 Performance evidence:
   none executed — production-path drivers implemented (drivers, in-app
   probes, ≥30-sample guards, fast-but-wrong guards), execution remains
   unexecuted/unpassed under the active delivery override.
 Roadmap/documentation updates:
-  packet unit/contract + native-adapter boxes checked (evidence green);
-  E2E boxes remain honest-unchecked until the suite passes; ARCHITECTURE.md
-  item 4 + E2E_ARCHITECTURE.md §7m reflect the implemented seam.
+  packet unit/contract, native-adapter, and real-app E2E boxes are checked with
+  preserved evidence; ARCHITECTURE.md item 4, E2E_ARCHITECTURE.md §7m, DDA,
+  and current delivery reflect the integrated seam. Performance boxes remain
+  unchecked because execution is Patrick-deferred and unpassed.
 Open blockers and non-goals:
   Peek, background/insertion policy, named-window reuse, popup allow-lists,
   second browser windows; no persistence of provenance across restart.
 Worktree state:
   /Users/patwoz/dev/Personal/macos/bbr-n1-web-navigation, branch
-  parallel/n1-web-navigation, HEAD 4b77c980c56926fb4662cb05b27606faef9732a2.
+  parallel/n1-web-navigation, clean at `ab98f429a2352360c0a8e93378725851879f3be5`
+  / tree `852f10a0ba87db6567b6fed024cf8aa2bbf725ec`.
 
 Planning/read-only:
 Implementation:
