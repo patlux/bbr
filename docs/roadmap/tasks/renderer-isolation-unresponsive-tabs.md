@@ -9,13 +9,16 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [performance contract](../../product/performance-contract.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
-Status: **proposed packet, not yet promoted through the serial roadmap
-integration surface.** No writer, branch, or worktree exists. Base commit is
-supplied at launch after the integrated PEEK dependency and the current
-integration checkpoint on `main` settle. Planning-time reference: the current
-integration checkpoint on `main`; the foreign uncommitted Phase-09 research
-file remains preserved in the working tree (untracked, read-only) per
-`docs/delivery/2026-08-08-post-mvp-delivery.md`.
+Status: **ready after committed serial integration and fresh ownership audit.**
+PEEK and B3 are integrated through control checkpoint
+`492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
+`4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The reserved launch branch is
+`parallel/renderer-isolation` and the reserved worktree is
+`/Users/patwoz/dev/Personal/macos/bbr-renderer-isolation`; both were confirmed
+free before this authority update. No product writer owns them yet. The
+Orchestrator creates the clean worktree from the committed authority commit
+that promotes this row to `running`, then binds its exact base/tree/status and
+exclusive writer in `docs/delivery/current.md` before implementation begins.
 
 ---
 
@@ -166,13 +169,13 @@ Provides/API:             WebEvent::UnresponsiveChanged(WebViewId, bool);
                           deterministic hang fixtures + e2e-shell-responsiveness
 Exclusive paths:          crates/bbr-browser/src/responsiveness.rs (+ tests);
                           crates/bbr-web-macos/src/responsiveness.rs (new
-                          probe file; `webview.rs` at 514 lines is never
+                          probe file; `webview.rs` at 530 lines is never
                           grown by this lane — existing split obligation);
                           crates/bbr-web-macos/src/webview.rs and
                           crates/bbr-web-macos/src/delegate.rs (lane-owned
                           edits only where the probe/dialog seam demands);
                           crates/bbr-fixtures hang routes (new hang module,
-                          never growing the 774-line `src/lib.rs`);
+                          never growing the 839-line `src/lib.rs` overall);
                           crates/bbr-app/tests/e2e_shell_responsiveness/**;
                           this task packet + DESIGN §10.11/§11.8a +
                           interaction-contract rows; docs updates listed in
@@ -235,11 +238,13 @@ or `browser-interactions.md`.
   run and never touches foreign helpers.
 - **Module budget**: each new file stays below ~500 lines; split by
   responsibility (portable policy vs. macOS probe vs. presentation vs. E2E
-  scenarios). Existing files already at or over the budget are not grown by
-  this lane: `crates/bbr-web-macos/src/webview.rs` is at 514 lines (existing
-  split obligation — the macOS probe lands in a new `responsiveness.rs`,
-  never inside `webview.rs`) and `crates/bbr-fixtures/src/lib.rs` is at 774
-  lines (hang routes land in a new fixture module, never inside `lib.rs`).
+  scenarios). Existing files already over the budget are explicit no-grow
+  surfaces at the audited base: `crates/bbr-web-macos/src/webview.rs` is 530
+  lines (the macOS probe lands in a new `responsiveness.rs`; any necessary
+  lifecycle extraction must reduce or preserve, never grow, `webview.rs`) and
+  `crates/bbr-fixtures/src/lib.rs` is 839 lines (hang routes land in a new
+  fixture module; `lib.rs` may only receive the smallest module/route wiring
+  and must not increase in line count overall).
 
 ## Evidence
 
@@ -338,14 +343,10 @@ just e2e-shell-responsiveness
 just e2e-shell-errors
 just e2e-shell-tabs
 just e2e-smoke
-just e2e               # canonical sequential gate, only once the current
-                       # recipe-state override is lifted (the canonical list
-                       # currently stops at position 2: the `e2e-shutdown`
-                       # recipe has no `e2e_shutdown.rs` test target yet —
-                       # that target is supplied by the separate
-                       # process-lifecycle-shutdown lane; canonical source:
-                       # docs/delivery/2026-08-08-l0-rest-closeout-evidence.md)
-                       # and once this suite is stable
+just e2e               # canonical sequential gate only after Patrick lifts
+                       # the active performance-execution override; the recipe
+                       # currently includes e2e-perf, so this lane runs the
+                       # required functional recipes individually until then
 just roadmap
 ```
 
@@ -406,7 +407,7 @@ If no defensible path remains, stop with:
 | Shared surface | Current owner / state | Conflict with this lane | Resolution |
 |---|---|---|---|
 | `crates/bbr-web` trait + `WebEvent` | serial kernel; find/downloads/new-window/auth extensions integrated | `UnresponsiveChanged` + `probe_responsiveness` are additive trait/event changes | Land as one small serial slice first; dependent lanes rebase |
-| `crates/bbr-web-macos/webview.rs` + `delegate.rs` | lane-owned webview lifecycle + `WKNavigationDelegate`+`WKUIDelegate` incl. `webViewWebContentProcessDidTerminate` | probe adapter and dialog auto-dismiss touch the same delegate; `webview.rs` is already at 514 lines (existing split obligation) | Probe lands in the new `responsiveness.rs`; extend the existing delegate ivars/sink pattern, no new delegate authority; `webview.rs` is never grown by this lane |
+| `crates/bbr-web-macos/webview.rs` + `delegate.rs` | lane-owned webview lifecycle + `WKNavigationDelegate`+`WKUIDelegate` incl. `webViewWebContentProcessDidTerminate` | probe adapter and dialog auto-dismiss touch the same delegate; `webview.rs` is already at 530 lines (existing split obligation) | Probe lands in the new `responsiveness.rs`; extend the existing delegate ivars/sink pattern, no new delegate authority; `webview.rs` is reduced or held flat, never grown by this lane |
 | `crates/bbr-browser/controller.rs` `on_page_crash` / `crashed_tabs` / snapshot | merged; crash-panel E2E green | `Unresponsive` reuses the destroy→recreate seam but must not alter crash semantics | Sibling state, shared seam, distinct event path; crash tests stay untouched |
 | `crates/bbr-app` composition root, `render.rs`, shell snapshot/semantics | MVP shell integrated | new pane + row state + snapshot fields | App composition is a serial kernel point; presentational files stay lane-owned |
 | testkit protocol/wire (`request.rs`, dispatch, snapshot) | protocol v7 (`PROTOCOL_VERSION = 7`); existing synthetic `InjectWebEvent` (testkit-only engine-event injection — pushes a `WebEvent` through the real transport, kills no process) | new `ProbeResponsiveness` request + new real-process termination seam (`TerminateWebProcess`-class; real process kill is new for this lane, distinct from synthetic `InjectWebEvent`) | Additive, feature-gated; top-level wire envelope is serial |
@@ -414,10 +415,10 @@ If no defensible path remains, stop with:
 | `performance-baseline.json` + perf matrix | gate-enforced; current baseline settled | `unresponsive_chrome`/`probe_tick` registration | Registered with budgets unchanged; execution deferred |
 | `docs/product/browser-interactions.md` | canonical close/focus rows | new beforeunload/dialog/unresponsive rows | Lane edits explicitly and only its rows; reviewed as part of the slice |
 | `DESIGN.md` §10/§11.8/§15 | canonical states/ids | new §10.11 + §11.8a ids/states | Additive; `just roadmap`/verify guard links |
-| PEEK (link-preview-peek) | Phase-8 packet, unintegrated | dependency (must land first) | Not parallelized with this lane |
+| PEEK (link-preview-peek) | integrated at `bccac7ed…`; preview/session visibility authority settled | dependency satisfied; responsiveness must preserve Preview teardown, covered-page input isolation, and same-session promotion | Regress PEEK 6/6 after implementation; do not reopen disposition policy |
 | P8b error surfaces / crash panel | merged (`a70e9a3`) | crash class owns §11.8; unresponsive is distinct | No overlap in classification; `e2e-shell-errors` regression gate |
-| Current integration checkpoint | serial kernel + GUI lock | shared `justfile`/E2E registry/app composition | Queue order: this lane starts only after the checkpoint settles |
-| Foreign uncommitted Phase-09 research file | preserved in the working tree (untracked) | never touched | Read-only; excluded from all lane commits |
+| Current integration checkpoint | B3 semantic union committed as `492615b5…` / tree `4bc6a6ed…`; GUI lock available at audit | shared `justfile`/E2E registry/app composition are now writer-free | Start only from the committed authority commit that records branch/worktree/base/owner; all later shared conflicts serialize through the Orchestrator |
+| Foreign uncommitted Phase-09 documentation/research state | preserved in the separate main worktree; dormant and writer-free at audit | never touched or used as authority by this lane | Read-only; excluded from the renderer branch/worktree and every lane commit |
 
 ## Canonical filename / link locations / rollups
 
