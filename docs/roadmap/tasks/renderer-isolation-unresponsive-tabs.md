@@ -9,16 +9,19 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [performance contract](../../product/performance-contract.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
-Status: **ready after committed serial integration and fresh ownership audit.**
-PEEK and B3 are integrated through control checkpoint
+Status: **running under one exclusive writer after committed ownership
+binding.** PEEK and B3 are integrated through control checkpoint
 `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
-`4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The reserved launch branch is
-`parallel/renderer-isolation` and the reserved worktree is
-`/Users/patwoz/dev/Personal/macos/bbr-renderer-isolation`; both were confirmed
-free before this authority update. No product writer owns them yet. The
-Orchestrator creates the clean worktree from the committed authority commit
-that promotes this row to `running`, then binds its exact base/tree/status and
-exclusive writer in `docs/delivery/current.md` before implementation begins.
+`4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The Orchestrator created branch
+`parallel/renderer-isolation` and worktree
+`/Users/patwoz/dev/Personal/macos/bbr-renderer-isolation` from exact committed
+readiness authority `a264cd4575e2f2cbe85907f14b8f65abb168bf18` / tree
+`0b0f49386e18589262ae8e5580bce18f5633f554`; initial index/tree matched and
+porcelain-v1 status SHA-256 was empty
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+Exclusive owner `renderer_isolation_writer` may implement this packet without
+committing or broadening scope. Only the Orchestrator may commit, merge,
+integrate, or transfer ownership after explicit settlement.
 
 ---
 
