@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slices:** integrated [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md), then serial integration of the frozen Tab Row cut and [Saved Pages Library](docs/roadmap/tasks/saved-pages-library.md), followed by the reviewed [renderer isolation and unresponsive tabs](docs/roadmap/tasks/renderer-isolation-unresponsive-tabs.md) first-MVP stability lane; all build on the integrated [productive new-window seam](docs/roadmap/tasks/new-window-production-seam.md) and [web-content navigation gestures](docs/roadmap/tasks/web-content-navigation-gestures.md)
+- **Active product slices:** integrated [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md) and Tab Row cut, then serial integration of the frozen [Saved Pages Library](docs/roadmap/tasks/saved-pages-library.md), followed by the reviewed [renderer isolation and unresponsive tabs](docs/roadmap/tasks/renderer-isolation-unresponsive-tabs.md) first-MVP stability lane; all build on the integrated [productive new-window seam](docs/roadmap/tasks/new-window-production-seam.md) and [web-content navigation gestures](docs/roadmap/tasks/web-content-navigation-gestures.md)
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:
