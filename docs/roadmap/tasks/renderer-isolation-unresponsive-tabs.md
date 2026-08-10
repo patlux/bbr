@@ -9,8 +9,8 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [performance contract](../../product/performance-contract.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
-Status: **Slice 2 is in bounded remediation after one independent HIGH safety
-finding.** PEEK and B3 are integrated through control checkpoint
+Status: **Slice 2 remediation is settled and awaits one focused independent
+safety recheck.** PEEK and B3 are integrated through control checkpoint
 `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
 `4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The Orchestrator created branch
 `parallel/renderer-isolation` and worktree
@@ -190,16 +190,35 @@ termination targets the retained `NSRunningApplication` without re-reading
 that receiver's current `processIdentifier`. Because the public receiver PID
 may change, the proof and mutation target can diverge.
 
-Exactly one bounded remediation writer may change only the process-observation
-module. It must select the application object, immediately re-read its current
-PID before mutation, require equality with the deterministic selected PID,
-re-run `parent_pid(current_pid) == Some(app_pid)`, and only then issue normal
-`terminate()`. An injectable pure-operation seam must prove zero termination
-for receiver-PID drift, ownership-read failure, foreign ownership and zero
-candidates, plus exactly one termination for one eligible stable receiver.
-No other product, fixture, protocol, app, docs, E2E, performance, commit, merge
-or integration change is authorized. Focused independent recheck follows.
-Only a direct Slice-2 pass authorizes Slice 3. Only the Orchestrator transfers
+The bounded one-file remediation writer returned direct
+`TESTKIT_FIXTURES_SLICE_REMEDIATED`. Independent Orchestrator rebind proves
+exact new temporary-index tree
+`8b5d93ccc1c9e6195d9903f2eea1fb1f2536a592`; HEAD-to-tree binary diff SHA-256
+`7bafaf05c7e17bb4912dc3026ea9cbf92f4e4aa5dae015e5d8d3514dd86a5f47`;
+unchanged porcelain-v1 `-z` SHA-256
+`700f4f20865149a23a40e27a582c0f2d37c93be3827282d5666112d9e5354853`;
+unchanged sorted 70-path SHA-256
+`c474afccce09d81e646c868723380ceddc1256fc0fda1eb6725a454cd2aea7f2`.
+The delta from reviewed tree `9b6624fa…` is exactly
+`crates/bbr-web-macos/src/web_process_observation.rs`, with binary-diff SHA-256
+`21e06ebe5713f784f8eef22c9740fe42ff76cc5073568796148408f44b211878`
+and one-path SHA-256
+`7e9eff47a4906971b2896eff618a4bc8255282271f6ab94d3798cfd4065db14d`;
+the module is 423 lines. The implementation now re-reads the retained
+receiver's `processIdentifier` immediately before mutation, requires exact PID
+equality with the deterministic selection, re-proves current parent ownership,
+and only then performs one normal `terminate()`. Injectable operation tests
+prove zero termination for no candidate, PID drift, ownership-read failure and
+foreign ownership, plus exactly one truthful termination for a stable eligible
+receiver. Fresh Xcode-26.2/Nix gates passed macOS testkit 116+9, macOS
+warning-denied Clippy, app default/testkit checks and app warning-denied Clippy;
+fmt and diff-check are clean. Real index/staged state remain base/empty; no
+process or Git lock remains; GUI lock is free.
+
+Exactly one fresh read-only focused reviewer may now verify closure of this
+safety finding, the causal zero/exactly-one operation tests, the one-file scope,
+and immutable candidate bindings. No mutation is authorized. Only a direct
+Slice-2 recheck pass authorizes Slice 3. Only the Orchestrator transfers
 ownership or commits/integrates after the final whole-candidate pass.
 
 ---
