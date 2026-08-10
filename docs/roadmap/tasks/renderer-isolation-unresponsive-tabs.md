@@ -34,11 +34,31 @@ sorted 18-path SHA-256
 diff-check clean, no worktree process, GUI lock free. The 648-line new
 `bbr-browser/src/responsiveness.rs` is an explicit unresolved module-budget
 violation and must be split below ~500 lines without weakening its tests.
-Exclusive owner `renderer_isolation_continuation_writer` must preserve this
-forward state, audit the two command-ranking support edits, complete the full
-unchanged packet and all allowed gates, and return an exact fingerprint plus a
-direct verdict. Only the Orchestrator may commit, merge, integrate, or transfer
-ownership after settlement.
+The first continuation split the 648-line portable monitor into 386-line
+implementation plus 287-line tests and advanced a focused 270-line macOS probe
+adapter, then returned direct `BLOCKED` before compilation or any later packet
+layer. Exact latest process-free state: temporary-index tree
+`f8d520d5aaa58b00c51ba673e80b56da0ee61c2b`; binary diff SHA-256
+`63dab1fea7445a24e283a185e0c0dac456c332a7aab11a9a06ccc09b2a19617a`;
+porcelain-v1 status SHA-256
+`a1fd4f201897bbbd4c144edec3a40b05ff9b760a311c2fb3c41b64d3500f94e0`;
+sorted 24-path SHA-256
+`b8de2ebe125a5007f1fda38ce97a1c64f1b7c8126eed8e2afbda4b5905d90a1e`;
+real index remains the base tree, no process survives, and the GUI lock is
+free. Four known compile repairs remain: merge the probe method into the one
+existing `WebEngine` impl; import `AnyThread` for `NSUUID::alloc`; enable or
+replace the unavailable public `NSTimer` block API; clone the shared sink.
+`webview.rs` is 532 lines and must return to at most its audited 530-line
+no-grow bound. The full temporary-tree diff check also flags one trailing blank
+line in the new portable module. UI, testkit/process observation, fixtures,
+real-app E2E, performance code, docs, and all final gates remain absent.
+
+Exclusive owner `renderer_isolation_recovery_writer` must preserve this
+forward state, audit the two command-ranking support edits, repair the exact
+compiler/budget/diff findings, complete the full unchanged packet and all
+allowed gates, and return an exact fingerprint plus a direct verdict. Only the
+Orchestrator may commit, merge, integrate, or transfer ownership after
+settlement.
 
 ---
 
