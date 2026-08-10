@@ -257,11 +257,14 @@ checkbox stays open. The minimal unblocker is an independently reviewed and
 committed alternative public ownership proof, or an explicitly approved safe
 environment where app-owned helpers can be proven.
 
-Exactly one continuation of the same Slice-3 writer session may finish every
-other defensible functional/non-performance gate, correct documentation and
-settlement fingerprints, preserve performance as unexecuted/unpassed, and end
-directly `RENDERER_SLICE3_BLOCKED`. No commit, integration, G2/G3/Z work,
-performance recipe, canonical `just e2e`, ownership-contract change, or second
+One exact same-session continuation was attempted after the forward-state
+binding but failed before child start with `async runner did not produce a
+pid`; it created no authority or mutation. Exactly one replacement Slice-3
+continuation writer may therefore finish every other defensible functional /
+non-performance gate, correct documentation and settlement fingerprints,
+preserve performance as unexecuted/unpassed, and end directly
+`RENDERER_SLICE3_BLOCKED`. No commit, integration, G2/G3/Z work, performance
+recipe, canonical `just e2e`, ownership-contract change, or second concurrent
 product writer is authorized.
 
 ---
