@@ -20,6 +20,7 @@ mod errors_drive;
 mod find;
 mod find_drive;
 pub mod harness;
+mod library_drive;
 pub mod machine;
 mod report;
 mod saved_pages_drive;

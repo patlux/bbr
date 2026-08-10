@@ -20,6 +20,7 @@ use crate::testkit::dispatch_auth::dispatch_auth;
 use crate::testkit::dispatch_benchmark::dispatch_benchmark;
 use crate::testkit::dispatch_benchmark_context_menu::dispatch_benchmark_context_menu;
 use crate::testkit::dispatch_benchmark_downloads::dispatch_benchmark_downloads;
+use crate::testkit::dispatch_benchmark_library::dispatch_benchmark_library;
 use crate::testkit::dispatch_benchmark_swipe::dispatch_benchmark_swipe;
 use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
 use crate::testkit::dispatch_context_menu::dispatch_context_menu;
@@ -28,6 +29,7 @@ use crate::testkit::dispatch_drag::dispatch_drag;
 #[cfg(target_os = "macos")]
 use crate::testkit::dispatch_errors::dispatch_errors;
 use crate::testkit::dispatch_find::dispatch_find;
+use crate::testkit::dispatch_library::dispatch_library;
 use crate::testkit::dispatch_portal::dispatch_portal;
 use crate::testkit::dispatch_probe::dispatch_probe;
 use crate::testkit::dispatch_saved_pages::dispatch_saved_pages;
@@ -60,6 +62,11 @@ pub(crate) fn dispatch(
         return response;
     }
     if let Some(response) = dispatch_benchmark_u2(&req, window, app, cx) {
+        return response;
+    }
+    // The B3 Saved Pages Library benchmark arms route through their focused
+    // module (same split reason); the render-inclusive commit happens there.
+    if let Some(response) = dispatch_benchmark_library(&req, window, app, cx) {
         return response;
     }
     // The tab-drag pointer arms live in `dispatch_drag` (same split reason).
@@ -121,6 +128,12 @@ pub(crate) fn dispatch(
     // Saved Page save/remove/open/flush + benchmark arms route separately
     // (B2 packet `saved-pages-actions-command`; same bounded-router reason).
     if let Some(response) = dispatch_saved_pages(&req, window, app, cx) {
+        return response;
+    }
+    // Saved Pages Library open/close/search/sort/selection/remove/collection
+    // arms route separately (B3 packet `saved-pages-library`; same
+    // bounded-router reason).
+    if let Some(response) = dispatch_library(&req, window, app, cx) {
         return response;
     }
     let broadcast = |server: &Option<Arc<GatewayServer>>, ev: Event| {
@@ -716,6 +729,41 @@ pub(crate) fn dispatch(
         | Request::BenchmarkSavedPageSearchFirstResult { .. }
         | Request::BenchmarkSavedPageOpen { .. } => {
             unreachable!("saved-page requests route through dispatch_saved_pages")
+        }
+        // Saved Pages Library arms route through `dispatch_library` (and
+        // the B3 benchmark arms through `dispatch_benchmark_library`) before
+        // this fall-through (B3 packet `saved-pages-library`).
+        Request::OpenSavedPagesLibrary
+        | Request::CloseSavedPagesLibrary
+        | Request::SetSavedPagesLibrarySearch { .. }
+        | Request::CycleSavedPagesLibrarySort
+        | Request::ToggleSavedPagesLibrarySelect { .. }
+        | Request::ClearSavedPagesLibrarySelection
+        | Request::SetSavedPagesLibraryScroll { .. }
+        | Request::BeginSavedPagesLibraryRemove { .. }
+        | Request::ConfirmSavedPagesLibraryRemove
+        | Request::CancelSavedPagesLibraryRemove
+        | Request::RenameSavedPagesLibraryRow { .. }
+        | Request::BeginSavedPagesLibraryRowRename { .. }
+        | Request::SetSavedPagesLibraryRenameDraft { .. }
+        | Request::ConfirmSavedPagesLibraryRename
+        | Request::CancelSavedPagesLibraryRename
+        | Request::SavedPagesLibraryCollection { .. }
+        | Request::MoveSavedPagesLibrarySelection { .. }
+        | Request::ClickSavedPagesLibrarySelectionRemove
+        | Request::ClickSavedPagesLibrarySelectionMove
+        | Request::ClickSavedPagesLibrarySelectionClear
+        | Request::ClickSavedPagesLibraryMoveOption { .. }
+        | Request::ClickSavedPagesLibraryCollectionRow { .. }
+        | Request::ClickSavedPagesLibraryCollectionCreate
+        | Request::ConfirmSavedPagesLibraryCollection
+        | Request::CancelSavedPagesLibraryCollection
+        | Request::SetSavedPagesLibraryCollectionDraft { .. }
+        | Request::ScrollSavedPagesLibraryWheel { .. }
+        | Request::ActivateSavedPagesLibraryRow { .. }
+        | Request::BenchmarkSavedPagesLibrarySearch { .. }
+        | Request::BenchmarkSavedPagesLibraryScroll { .. } => {
+            unreachable!("library requests route through the library dispatchers")
         }
         // External-URL delivery is macOS-only; the pump intercepts
         // `DeliverExternalUrl` before dispatch on macOS, so reaching here

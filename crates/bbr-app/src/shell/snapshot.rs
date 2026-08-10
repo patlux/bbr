@@ -207,6 +207,12 @@ pub struct TestSnapshot {
     pub restore: bbr_testkit::protocol::RestoreDisposition,
     /// Productive new-window request/open/block counters.
     pub new_window: bbr_testkit::protocol::NewWindowSnapshot,
+    /// DESIGN.md §11.16 Saved Pages Library presentation state (B3 packet
+    /// `saved-pages-library`): open flag, search/sort, the bounded row
+    /// window, the flat collections, the multi-select set, the destructive
+    /// remove confirmation, and the native-view hide evidence. The empty
+    /// default means the Library is closed.
+    pub library: bbr_testkit::protocol::SavedPagesLibrarySnapshot,
 }
 
 #[cfg(feature = "testkit")]
@@ -350,7 +356,14 @@ pub fn visible_ids_u2(
     // The §11.8-style error surface (task packet `error-surface-contract`)
     // replaces the active view's native slot in the content area: the
     // render draws `bbr-error-*` ids and never the slot it replaced.
-    if u2.error_surface_visible {
+    // The §11.16 Saved Pages Library (B3 packet `saved-pages-library`)
+    // wins over the error surface: while open the internal chrome surface
+    // covers the content area (the active view's native slot is hidden,
+    // never destroyed), so its ids render and neither the slot nor the
+    // error surface ids are advertised.
+    if u2.library_open {
+        ids.extend(u2.library_ids.iter().cloned());
+    } else if u2.error_surface_visible {
         ids.push("bbr-error-panel".into());
         ids.push("bbr-error-title".into());
         ids.push("bbr-error-copy".into());

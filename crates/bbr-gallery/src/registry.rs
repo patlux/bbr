@@ -6,16 +6,21 @@
 //! declaration order (never sorted by label). Ids are **append-only across
 //! Gallery packets**: G2/G3 append stories at later ids and never renumber
 //! G1b ids. A test pins the first-N id assignment so a label edit or a
-//! reorder can never silently shift an id.
+//! reorder can never silently shift an id. A sibling lane may **reserve**
+//! an id (the G2-TAB Tab Row at id 22): the registry assigns the id and
+//! advances the sequence without registering a story, so later ids stay
+//! stable across lane merges.
 //!
 //! The tree surface consumes the same flattened declaration order, so the
 //! tree order, the canvas default, and the E2E expectations all derive from
 //! this one declaration.
 
+use gpui::prelude::*;
 use gpui::{AnyElement, Entity};
 use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 
+use crate::library_recorder::{LibraryObserver, LibraryRecorder};
 use crate::recorder::{ControlObserver, ControlRecorder};
 
 /// A stable story identity, assigned by the registry in declaration order.
@@ -37,13 +42,31 @@ pub struct NodeId(pub u64);
 /// with no options renders without a state control.
 pub type StateOptions = &'static [&'static str];
 
+/// A story's render family: plain stories render with the theme/state only;
+/// the Saved Pages Library stories additionally receive the recorder/
+/// observer bundle through [`StoryContext::library`]; a reserved slot
+/// occupies a `StoryId` without registering a story (a sibling lane owns
+/// the story that will land at this id).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StoryKind {
+    Plain,
+    /// A Saved Pages Library story: renders the exact production `bbr-ui`
+    /// Library rows/controls/surface with fixture models and the
+    /// recorder/observer callbacks.
+    Library,
+    /// A reserved `StoryId` slot: the registry assigns the id and advances
+    /// the sequence but registers no story — the owning lane (e.g. the
+    /// G2-TAB Tab Row at id 22) declares the story at this id on merge.
+    Reserved,
+}
+
 /// The render context a story receives: the resolved theme (mode/contrast/
 /// density), the reduced-motion flag (§15 mode field), and the story's own
 /// selected state. G1b stories are render-only (the G1b `bbr-ui` primitives
 /// take no callbacks); the Core Controls stories additionally receive the
 /// real gpui-component state entities and the recorder/observer bundle
-/// through [`StoryContext::controls`]; G2/G3 extend this context further
-/// when their components take callbacks.
+/// through [`StoryContext::controls`]; the Saved Pages Library stories
+/// receive the recorder/observer bundle through [`StoryContext::library`].
 pub struct StoryContext<'a> {
     pub theme: &'a bbr_ui::theme::Theme,
     pub reduced_motion: bool,
@@ -53,6 +76,19 @@ pub struct StoryContext<'a> {
     /// callbacks real control events route through. `None` for every other
     /// story.
     pub controls: Option<ControlsStory<'a>>,
+    /// `Some` only for the Saved Pages Library stories: the current
+    /// recorder snapshot and the observer callbacks real Library events
+    /// route through. `None` for every other story.
+    pub library: Option<LibraryStory<'a>>,
+}
+
+/// Everything a Saved Pages Library story needs to render the **exact**
+/// production `bbr-ui` Library rows/controls/surface with fixture models:
+/// the current recorder snapshot and the observer callbacks that re-enter
+/// the app on real Library events.
+pub struct LibraryStory<'a> {
+    pub recorder: &'a LibraryRecorder,
+    pub observer: &'a LibraryObserver,
 }
 
 /// Everything a Core Controls story needs to render the **exact** vendored
@@ -87,6 +123,8 @@ pub struct Story {
     pub label: &'static str,
     pub render: StoryRender,
     pub state_options: StateOptions,
+    /// The story's render family (plain vs Saved Pages Library).
+    pub kind: StoryKind,
 }
 
 /// One catalog group in explicit declaration order.
@@ -116,6 +154,41 @@ pub fn story(label: &'static str, render: StoryRender, state_options: StateOptio
         label,
         render,
         state_options,
+        kind: StoryKind::Plain,
+    }
+}
+
+/// Declaration helper: a Saved Pages Library story whose ids are assigned
+/// by `add_group` (renders the exact production `bbr-ui` Library
+/// rows/controls/surface with the recorder/observer bundle).
+pub fn library_story(
+    label: &'static str,
+    render: StoryRender,
+    state_options: StateOptions,
+) -> Story {
+    Story {
+        id: StoryId(0),
+        group: GroupId(0),
+        label,
+        render,
+        state_options,
+        kind: StoryKind::Library,
+    }
+}
+
+/// Declaration helper: a reserved `StoryId` slot. The registry assigns the
+/// next sequential id and advances the sequence without registering a
+/// story, so later ids stay stable across lane merges. The story that will
+/// occupy this id is owned by a sibling lane — the G2-TAB Tab Row at
+/// id 22 (lane `a085232f`).
+pub fn reserved_story() -> Story {
+    Story {
+        id: StoryId(0),
+        group: GroupId(0),
+        label: "Tab Row (reserved)",
+        render: |_| gpui::div().into_any(),
+        state_options: &[],
+        kind: StoryKind::Reserved,
     }
 }
 
@@ -137,7 +210,10 @@ impl CatalogRegistry {
 
     /// Append a group and its stories in declaration order, assigning the
     /// next sequential `GroupId`/`StoryId`s. Append-only: later packets add
-    /// groups/stories at later ids and never renumber earlier ones.
+    /// groups/stories at later ids and never renumber earlier ones. A
+    /// `Reserved` marker occupies its id in the group's declaration order
+    /// but registers no story, so the flattened catalog keeps the reserved
+    /// gap and later ids stay stable across lane merges.
     pub fn add_group(&mut self, label: &'static str, stories: Vec<Story>) {
         let group_id = GroupId(self.next_group_id);
         self.next_group_id += 1;
@@ -159,6 +235,7 @@ impl CatalogRegistry {
                 .expect("just pushed")
                 .stories
                 .iter()
+                .filter(|s| s.kind != StoryKind::Reserved)
                 .cloned(),
         );
     }
@@ -187,14 +264,15 @@ impl CatalogRegistry {
 mod tests {
     use super::*;
     use crate::stories::catalog;
-    use gpui::prelude::*;
 
     #[test]
     fn ids_are_sequential_in_declaration_order() {
         let registry = catalog();
         let ids: Vec<u64> = registry.stories.iter().map(|s| s.id.0).collect();
-        // Sequential from 0 with no gaps or duplicates.
-        let expected: Vec<u64> = (0..ids.len() as u64).collect();
+        // Sequential from 0 with exactly one reserved gap: id 22 is
+        // reserved for the G2-TAB Tab Row story (lane a085232f) and
+        // carries no registered story.
+        let expected: Vec<u64> = (0..=ids.len() as u64).filter(|&i| i != 22).collect();
         assert_eq!(ids, expected);
         // Group ids are sequential too.
         let group_ids: Vec<u64> = registry.groups.iter().map(|g| g.id.0).collect();
@@ -238,14 +316,36 @@ mod tests {
     fn first_n_ids_are_pinned() {
         // The pinned first-N assignment: reordering or inserting a story
         // before the current head would shift these ids and fail here.
+        // Id 22 is reserved for the G2-TAB Tab Row story (lane a085232f),
+        // so stories after the reservation carry id = index + 1.
         let registry = catalog();
         let labels: Vec<&str> = registry.stories.iter().map(|s| s.label).collect();
         for (index, label) in labels.iter().enumerate() {
+            let expected = if index >= 22 { index + 1 } else { index };
             assert_eq!(
-                registry.stories[index].id.0 as usize, index,
-                "story {label} must keep its pinned id {index}"
+                registry.stories[index].id.0 as usize, expected,
+                "story {label} must keep its pinned id {expected}"
             );
         }
+    }
+
+    #[test]
+    fn id_22_is_reserved_for_the_tab_row_story() {
+        // The G2-TAB Tab Row story (lane a085232f) owns id 22: no
+        // registered story occupies it, and the B3 Library stories land
+        // at 23+ so the two lanes merge without renumbering.
+        let registry = catalog();
+        assert!(
+            registry.stories.iter().all(|s| s.id.0 != 22),
+            "id 22 is reserved for the G2-TAB Tab Row story"
+        );
+        let library_ids: Vec<u64> = registry
+            .stories
+            .iter()
+            .filter(|s| s.label.starts_with("Library"))
+            .map(|s| s.id.0)
+            .collect();
+        assert_eq!(library_ids, vec![23, 24, 25, 26, 27, 28, 29, 30]);
     }
 
     #[test]

@@ -34,6 +34,7 @@ use super::context_menu_drive::drive_context_menu_scenarios;
 use super::downloads_drive::drive_downloads_scenarios;
 use super::errors_drive::drive_error_surface_scenarios;
 use super::harness::AppHarness;
+use super::library_drive::drive_library_scenarios;
 use super::saved_pages_drive::drive_saved_pages_scenarios;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
 use super::zoom_drive::drive_zoom_scenarios;
@@ -1489,6 +1490,25 @@ fn drive_matrix_inner(
             &mut since,
             config,
             page_one,
+            &mut operation,
+        ));
+
+        // B3 Saved Pages Library scenarios (packet `saved-pages-library`):
+        // the production Library search (`saved_pages_library_search`, warm
+        // next-frame class 50/100) and the production Library scroll
+        // (`saved_pages_library_scroll`, same warm class) measured against
+        // the same seeded ≥1,000-record provider — opened through the
+        // production entry, with the exact query result count/window and the
+        // exact scroll anchor/window/selection asserted before any sample is
+        // accepted. The provider was seeded through the production
+        // repository before the app started (never fixture setup inside a
+        // sample). The block runs last — the corpus state after it does not
+        // matter.
+        raw.extend(drive_library_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
             &mut operation,
         ));
         raw

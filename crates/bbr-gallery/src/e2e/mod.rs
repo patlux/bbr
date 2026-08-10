@@ -16,6 +16,7 @@
 #![cfg(target_os = "macos")]
 
 mod controls;
+mod library;
 mod pointer;
 mod startup;
 mod sweep;

@@ -86,6 +86,18 @@ e2e-shell-command:
 e2e-shell-saved-pages:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_saved_pages -- --ignored --nocapture
 
+# Saved Pages Library (B3 packet `saved-pages-library`): the integrated
+# Cmd-Shift-L entry and Escape dismissal, deterministic search/sort,
+# multi-select, inline pointer rename draft confirm/cancel, the destructive
+# remove confirmation, the flat collection lifecycle, the selection toolbar
+# and collection action surface through their pointer paths, the production
+# scroll-wheel path, restart persistence, tab/record independence,
+# exactly-one-fresh-tab row activation, and the 1k bounded
+# window/scroll/selection/long/missing fallbacks over real
+# WKWebViews.
+e2e-shell-saved-pages-library:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_saved_pages_library -- --ignored --nocapture
+
 # Productive new-window request seam (NW-SEAM): a real script-created
 # window.open reaches the production WKUI delegate and is blocked/reported;
 # typed user-activation injection enters the exact app method the native pump
@@ -184,7 +196,7 @@ e2e-gallery:
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-new-window e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-auth e2e-perf
+e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-auth e2e-perf
 
 verify: fmt check test clippy roadmap ui-deps script-tests
 

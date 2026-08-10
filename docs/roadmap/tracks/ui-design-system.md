@@ -73,7 +73,7 @@ menu follow-up, which may start after F2 closeout when that territory is free.
 - [ ] Split divider and pane focus are clear but quiet.
 - [ ] [Link Preview / Peek](../tasks/link-preview-peek.md) communicates its temporary state, fully covers the current page without looking like a generic modal, and makes dismissal versus promotion unmistakable.
 - [ ] Persistence/recovery states communicate trust and reversibility.
-- [ ] Downloads, permissions, errors, history, settings, Saved Pages, and onboarding use the same components and language. Bounded follow-ups: [downloads sidebar panel](../tasks/downloads-sidebar-panel.md), [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md), and the post-G1a [B3 Saved Pages Library](../tasks/saved-pages-library.md) after B1+B2.
+- [ ] Downloads, permissions, errors, history, settings, Saved Pages, and onboarding use the same components and language. Bounded follow-ups: [downloads sidebar panel](../tasks/downloads-sidebar-panel.md), [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md), and [B3 Saved Pages Library](../tasks/saved-pages-library.md). *(B3's production Library and exact G2/G3 stories are candidate-ready in their isolated lane, with real-app 11/11 and Gallery 20/20 evidence; serial integration and performance acceptance remain open, so this broader cross-feature polish row stays unchecked.)*
 - [ ] Every new surface ships light/dark, empty/loading/error, keyboard-focus, and reduced-motion variants.
 
 ## Product-wide polish — Phase 9

@@ -238,6 +238,27 @@ pub enum BenchmarkKind {
     /// `tab_reopen`. The sample commits only when the fresh tab/session is
     /// presented and focused with the surface closed.
     SavedPageOpen,
+    /// The production Saved Pages Library search (B3 packet
+    /// `saved-pages-library`, `saved_pages_library_search`): the typed
+    /// search entry filters the loaded ≥1,000-record provider through the
+    /// production `library_set_search` path and the bounded window
+    /// re-renders; the sample commits only when the rendered model presents
+    /// the exact armed query result count and window (fast-but-wrong
+    /// guard: a missing/wrong filter, a stale window, or a wrong anchor
+    /// rejects the measurement in the app). The warm command-text/next-frame
+    /// presentation class (50/100) — the same budget as the other warm
+    /// Library/interaction scenarios, no new class.
+    SavedPagesLibrarySearch,
+    /// The production Saved Pages Library scroll (B3 packet
+    /// `saved-pages-library`, `saved_pages_library_scroll`): the tracked
+    /// scroll offset windows the bounded render over the same loaded
+    /// ≥1,000-record provider through the production `library_set_scroll`
+    /// path; the sample commits only when the rendered model presents the
+    /// exact armed window/anchor and preserves the exact selection set
+    /// (fast-but-wrong guard: a no-op scroll, a wrong window/anchor, or a
+    /// corrupted selection rejects the measurement in the app). Same warm
+    /// next-frame presentation class (50/100).
+    SavedPagesLibraryScroll,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

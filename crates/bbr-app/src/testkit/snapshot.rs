@@ -227,6 +227,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             store: self.store.clone(),
             restore: self.restore,
             new_window: self.new_window,
+            library: self.library.clone(),
         }
     }
 }

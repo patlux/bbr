@@ -197,7 +197,10 @@ fn replace_saved_snapshot_atomically_replaces_both_tables_in_one_transaction() {
         .unwrap();
     assert_eq!(stats.committed_transactions, 1);
     assert_eq!(stats.deleted_rows, 3, "one collection + two pages replaced");
-    assert_eq!(stats.inserted_rows, 3, "one collection + two pages inserted");
+    assert_eq!(
+        stats.inserted_rows, 3,
+        "one collection + two pages inserted"
+    );
 
     // Both tables round-trip the combined write exactly.
     assert_eq!(
@@ -247,7 +250,11 @@ fn replace_saved_snapshot_atomically_replaces_both_tables_in_one_transaction() {
             .unwrap_err(),
         PersistenceError::InvalidSnapshot(InvalidSnapshotIssue::UnknownCollection { id: 1 })
     );
-    assert_eq!(inventory(&db.0), before, "rejected write leaves the store untouched");
+    assert_eq!(
+        inventory(&db.0),
+        before,
+        "rejected write leaves the store untouched"
+    );
 
     // An empty combined write clears both tables.
     repository.replace_saved_snapshot(&[], &[]).unwrap();

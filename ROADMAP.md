@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slices:** [Web-content navigation gestures and opener return](docs/roadmap/tasks/web-content-navigation-gestures.md) + [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md), released by the integrated [productive new-window seam](docs/roadmap/tasks/new-window-production-seam.md)
+- **Active product slices:** [Web-content navigation gestures and opener return](docs/roadmap/tasks/web-content-navigation-gestures.md) + [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md), released by the integrated [productive new-window seam](docs/roadmap/tasks/new-window-production-seam.md), plus the bounded [B3 Saved Pages Library](docs/roadmap/tasks/saved-pages-library.md) product/Gallery candidate; exact status, ownership, blockers, and serial order remain solely in Current delivery
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:

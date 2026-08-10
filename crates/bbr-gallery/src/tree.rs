@@ -60,6 +60,12 @@ impl TreeState {
             node_id += 1;
             expanded.push(true);
             for story in &group.stories {
+                // A reserved `StoryId` slot (e.g. the G2-TAB Tab Row at
+                // id 22) registers no story and renders no tree node; the
+                // owning lane declares the story at this id on merge.
+                if story.kind == crate::registry::StoryKind::Reserved {
+                    continue;
+                }
                 nodes.push(TreeNode {
                     id: NodeId(node_id),
                     kind: NodeKind::Story(story.id),

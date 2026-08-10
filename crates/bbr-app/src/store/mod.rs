@@ -64,6 +64,8 @@ use self::saved_pages::{provider_order, SavedPagesProvider};
 pub(crate) mod browser;
 pub(crate) mod browser_writer;
 pub(crate) mod saved_pages;
+pub(crate) mod saved_pages_policy;
+pub(crate) mod saved_pages_store;
 
 /// The persistence store file name inside the profile directory. The E2E
 /// harness seeds stores at exactly this path before spawning the app.

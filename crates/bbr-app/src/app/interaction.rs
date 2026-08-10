@@ -376,6 +376,13 @@ impl BbrApp {
     /// actions first and actions stop propagation, so this route is the
     /// panel's primary Escape dismissal).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Escape while the Saved Pages Library is open closes it and
+        // restores the exact native view the Library hid (DESIGN.md §11.16;
+        // the global `escape → FocusWeb` binding routes here).
+        if self.library.open {
+            self.close_saved_pages_library(window, cx);
+            return;
+        }
         // Escape while a credential sheet is open cancels the challenge
         // through the auth contract: the request fails and never retries
         // (the global `escape → FocusWeb` binding routes here).
@@ -550,6 +557,13 @@ impl BbrApp {
         // chars edit the query, Enter/Shift-Enter step, Escape closes.
         if self.find.state.open {
             self.on_find_key_down(event, window, cx);
+            return;
+        }
+        // The Saved Pages Library owns the keyboard while it is open:
+        // printable chars edit the search query, backspace deletes, Escape
+        // closes (handled by the bound action before this handler).
+        if self.library.open {
+            self.on_library_key_down(event, window, cx);
             return;
         }
         if !self.command_bar_mode.is_active() {

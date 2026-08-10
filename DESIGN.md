@@ -1011,7 +1011,7 @@ HTML heuristics alone.
 
 Canonical UI packet: [Sidebar media control](docs/roadmap/tasks/sidebar-media-control.md).
 
-### 11.16 Saved Pages result and Library (Planned)
+### 11.16 Saved Pages result and Library (Implemented)
 
 Saved Pages are durable global URL records, not live-tab presentations. Pin
 keeps one concrete Space-owned tab prominent; Favorite presents one concrete
@@ -1036,11 +1036,12 @@ or page snapshot and survives tab close and restart.
   closing a tab never removes its Saved Page. The §11.5 address control remains
   a display button; a later saved-state accessory is not required by B2.
 - **Library topology:** the full collection lives in one dedicated ordinary
-  GPUI Library surface after G1a, never as a permanent Sidebar region and never
-  as a WebKit page or Portal. A small chrome/settings entry point may open it.
-  The first production surface supports search, deterministic sort, rename,
-  remove, multi-select, and one-level flat collections through shared `bbr-ui`
-  primitives.
+  GPUI Library surface, never as a permanent Sidebar region and never
+  as a WebKit page or Portal. The integrated entry point is Cmd-Shift-L; the
+  internal chrome surface covers the native view while open and Escape
+  dismisses it. The production surface supports search, deterministic sort,
+  rename, remove, multi-select, and one-level flat collections through shared
+  `bbr-ui` primitives.
 - **Library row:** bookmark/fallback glyph or normal favicon presentation,
   user label or captured-title fallback, mid-ellipsized URL, optional
   collection label, and selection state.
@@ -1058,8 +1059,12 @@ or page snapshot and survives tab close and restart.
   `bbr-saved-pages-row-<bookmark-id>`, and
   `bbr-saved-pages-remove-confirm`.
 - **Gallery:** G2/G3 append only the exact integrated B2/B3 production
-  components and models. Gallery renderability never proves persistence,
-  restart, command activation, or bounded product performance.
+  components and models (Library rows/controls/surface and the Library
+  composition registered at story ids 23–30 through the recorder/observer
+  seam; gallery registry id 22 is reserved for the frozen G2-TAB Tab Row
+  story and is released during the semantic union). Gallery renderability
+  never proves persistence, restart, command activation, or bounded product
+  performance.
 
 Canonical packets: [B1 contract/persistence](docs/roadmap/tasks/saved-pages-portable-persistence.md),
 [B2 actions/command provider](docs/roadmap/tasks/saved-pages-actions-command.md),

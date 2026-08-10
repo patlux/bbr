@@ -19,20 +19,25 @@
 pub mod browser_components;
 pub mod core_controls;
 pub mod foundations;
+pub mod library_composition;
 pub mod primitives;
+pub mod saved_pages_library;
 
 use gpui::{div, prelude::*, px, AnyElement, Rgba, SharedString};
 
-use crate::registry::{story, CatalogRegistry};
+use crate::library_fixtures::{
+    LIBRARY_REMOVE_STATES, LIBRARY_ROW_STATES, LIBRARY_SEARCH_STATES, LIBRARY_STATES,
+};
+use crate::registry::{library_story, reserved_story, story, CatalogRegistry};
 
 /// The catalog scope line under the title (finding 3).
-pub const GALLERY_SCOPE: &str = "Foundations / Primitives / Browser Components";
+pub const GALLERY_SCOPE: &str = "Foundations / Primitives / Browser Components / Compositions";
 
 /// The honest continuation note: later Gallery phases bring the remaining
-/// browser components and the compositions (finding 3 — never a
+/// browser components and compositions (finding 3 — never a
 /// complete-explorer claim).
 pub const GALLERY_CONTINUATION: &str =
-    "More Browser Components (G2) and Compositions (G3) arrive in later Gallery phases.";
+    "More Browser Components (G2) and Compositions (G3) — Sidebar, Command, Downloads, Find, Error, Auth, Menu, Split — arrive in later Gallery phases.";
 
 /// Build the G1b catalog: Foundations pages + the smallest valuable real
 /// primitives + the Core Controls, in declaration order. The G2
@@ -91,13 +96,68 @@ pub fn catalog() -> CatalogRegistry {
     // `component-gallery-browser-components.md`): appended after the pinned
     // G1b prefix — ids stay stable and never renumber. The first cut is the
     // §11.4 status line, extracted to `bbr-ui::components::status` in the
-    // same group; later G2 rows append here in their cutover order.
+    // same group; the Saved Pages Library rows/controls (B3 packet
+    // `saved-pages-library`) append here after the integrated production
+    // surface — the exact production `bbr-ui` rows/controls with fixture
+    // models and recorder callbacks, never a gallery copy.
     registry.add_group(
         "Browser components",
-        vec![story(
-            "Status line",
-            browser_components::render_status_line,
-            &[],
+        vec![
+            story("Status line", browser_components::render_status_line, &[]),
+            // Id 22 is reserved for the G2-TAB Tab Row story (lane
+            // a085232f): the registry assigns the id and advances the
+            // sequence without registering a story, so the B3 Library
+            // stories land at 23+ and stay stable when the Tab Row lane
+            // merges.
+            reserved_story(),
+            library_story(
+                "Library row",
+                saved_pages_library::render_library_row,
+                &LIBRARY_ROW_STATES,
+            ),
+            library_story(
+                "Library collection row",
+                saved_pages_library::render_library_collection_row,
+                &[],
+            ),
+            library_story(
+                "Library search",
+                saved_pages_library::render_library_search,
+                &LIBRARY_SEARCH_STATES,
+            ),
+            library_story(
+                "Library sort",
+                saved_pages_library::render_library_sort,
+                &[],
+            ),
+            library_story(
+                "Library count",
+                saved_pages_library::render_library_count,
+                &[],
+            ),
+            library_story(
+                "Library remove confirm",
+                saved_pages_library::render_library_remove_confirm,
+                &LIBRARY_REMOVE_STATES,
+            ),
+            library_story(
+                "Library state rows",
+                saved_pages_library::render_library_state_rows,
+                &[],
+            ),
+        ],
+    );
+    // The G3 composition stories (packet
+    // `component-gallery-compositions.md`): the first composition is the
+    // Saved Pages Library surface (B3 packet `saved-pages-library`),
+    // appended after the pinned G1b/G2 prefix — ids stay stable and never
+    // renumber. Later G3 compositions append here in their cutover order.
+    registry.add_group(
+        "Compositions",
+        vec![library_story(
+            "Library",
+            library_composition::render_library,
+            &LIBRARY_STATES,
         )],
     );
     registry

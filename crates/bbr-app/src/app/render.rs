@@ -131,7 +131,13 @@ impl Render for BbrApp {
                 surface.as_ref().map(|spec| spec.incident.reason.category()),
             );
         }
-        let content: gpui::AnyElement = if let Some(spec) = self.active_error_surface_spec() {
+        let content: gpui::AnyElement = if self.library.open {
+            // The Saved Pages Library is an internal chrome surface: it
+            // replaces the active view's native slot (the view was hidden
+            // by `sync_library_visibility`; never destroyed — identity is
+            // untouched) and wins over the error surface while open.
+            self.library_surface(&theme, window, cx).into_any()
+        } else if let Some(spec) = self.active_error_surface_spec() {
             // The surface replaces the active view's native slot (the view
             // was hidden by `sync_error_surface_visibility`; never
             // destroyed — identity is untouched).
@@ -230,11 +236,15 @@ impl Render for BbrApp {
             // keystrokes remain handled by the main window); otherwise the
             // chrome handle owns the root focus.
             .when(
-                !self.find.state.open
+                !self.library.open
+                    && !self.find.state.open
                     && !self.auth_sheet_is_presented()
                     && !self.context_menu.state.open,
                 |root| root.track_focus(&self.chrome_handle),
             )
+            .when(self.library.open, |root| {
+                root.track_focus(&self.library_handle)
+            })
             .when(self.find.state.open, |root| {
                 root.track_focus(&self.find_handle)
             })

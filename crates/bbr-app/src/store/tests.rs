@@ -284,17 +284,35 @@ fn b3_library_mutations_round_trip_through_the_combined_writer() {
     // Rename one record's user label (the display ladder head).
     store.rename_saved_page(1, "Alpha Renamed");
     store.with_saved_pages(|pages, _| {
-        assert_eq!(pages.iter().find(|p| p.id == 1).unwrap().user_label.as_deref(), Some("Alpha Renamed"));
+        assert_eq!(
+            pages
+                .iter()
+                .find(|p| p.id == 1)
+                .unwrap()
+                .user_label
+                .as_deref(),
+            Some("Alpha Renamed")
+        );
     });
     // An invalid label is a no-op (bounds, control bytes, empty).
     store.rename_saved_page(1, "");
     store.rename_saved_page(1, "a\x00b");
     store.with_saved_pages(|pages, _| {
-        assert_eq!(pages.iter().find(|p| p.id == 1).unwrap().user_label.as_deref(), Some("Alpha Renamed"));
+        assert_eq!(
+            pages
+                .iter()
+                .find(|p| p.id == 1)
+                .unwrap()
+                .user_label
+                .as_deref(),
+            Some("Alpha Renamed")
+        );
     });
 
     // Create a flat collection and move both records into it.
-    let collection = store.create_saved_collection("Work").expect("created collection");
+    let collection = store
+        .create_saved_collection("Work")
+        .expect("created collection");
     assert!(collection > 0);
     store.move_saved_pages_to_collection(&[1, 2], Some(collection));
     store.with_saved_pages(|pages, collections| {
@@ -312,8 +330,14 @@ fn b3_library_mutations_round_trip_through_the_combined_writer() {
     store.move_saved_pages_to_collection(&[2], None);
     store.with_saved_pages(|pages, collections| {
         assert_eq!(collections[0].title, "Renamed Work");
-        assert_eq!(pages.iter().find(|p| p.id == 1).unwrap().collection_id, Some(collection));
-        assert_eq!(pages.iter().find(|p| p.id == 2).unwrap().collection_id, None);
+        assert_eq!(
+            pages.iter().find(|p| p.id == 1).unwrap().collection_id,
+            Some(collection)
+        );
+        assert_eq!(
+            pages.iter().find(|p| p.id == 2).unwrap().collection_id,
+            None
+        );
     });
 
     // Multi-select batch remove (one poke), then remove the collection.

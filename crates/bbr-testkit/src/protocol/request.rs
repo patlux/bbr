@@ -1024,6 +1024,163 @@ pub enum Request {
         operation_id: BenchmarkOperationId,
         bookmark_id: u64,
     },
+    /// Measure the production Saved Pages Library search (B3 packet
+    /// `saved-pages-library`, `saved_pages_library_search`): the typed
+    /// search entry (`library_set_search`, shared with the keyboard path)
+    /// filters the loaded ≥1,000-record provider and the bounded window
+    /// re-renders. The sample commits only when the rendered model
+    /// presents the exact armed query result count and window — a
+    /// missing/wrong filter or a stale window rejects the measurement
+    /// (fast-but-wrong guard). Warm next-frame presentation class (50/100).
+    BenchmarkSavedPagesLibrarySearch {
+        operation_id: BenchmarkOperationId,
+        text: String,
+        expected_total: usize,
+        expected_first: usize,
+        expected_last: usize,
+    },
+    /// Measure the production Saved Pages Library scroll (B3 packet
+    /// `saved-pages-library`, `saved_pages_library_scroll`): the tracked
+    /// scroll offset (`library_set_scroll`, the seam the wheel listener
+    /// drives) re-anchors the bounded window over the loaded ≥1,000-record
+    /// provider. The sample commits only when the rendered model presents
+    /// the exact armed window/anchor and preserves the exact selection set
+    /// — a no-op scroll, a wrong window/anchor, or a corrupted selection
+    /// rejects the measurement (fast-but-wrong guard). Same warm
+    /// next-frame presentation class (50/100).
+    BenchmarkSavedPagesLibraryScroll {
+        operation_id: BenchmarkOperationId,
+        offset: usize,
+        expected_first: usize,
+        expected_last: usize,
+        expected_anchor: u64,
+    },
+    /// Open the Saved Pages Library through its integrated production entry
+    /// (B3 packet `saved-pages-library`): the internal chrome surface
+    /// covers the content area, the active view's native slot is hidden
+    /// (never destroyed), and the Library owns keyboard focus.
+    OpenSavedPagesLibrary,
+    /// Close the Saved Pages Library (Escape / the close control / this
+    /// request): the exact native view the Library hid is restored and
+    /// focus returns to the page.
+    CloseSavedPagesLibrary,
+    /// Set the Library search query through the production search entry
+    /// (resets the scroll offset; the deterministic in-memory filter).
+    SetSavedPagesLibrarySearch {
+        text: String,
+    },
+    /// Cycle the deterministic Library sort order.
+    CycleSavedPagesLibrarySort,
+    /// Toggle one row's multi-select membership.
+    ToggleSavedPagesLibrarySelect {
+        id: u64,
+    },
+    /// Clear the Library multi-select set.
+    ClearSavedPagesLibrarySelection,
+    /// Set the tracked production scroll offset (rows scrolled past); the
+    /// bounded render window derives from it.
+    SetSavedPagesLibraryScroll {
+        offset: usize,
+    },
+    /// Stage the destructive remove confirmation for the target ids (the
+    /// multi-select removal contract: a clear confirmation before any
+    /// record is removed; never touches an open tab).
+    BeginSavedPagesLibraryRemove {
+        ids: Vec<u64>,
+    },
+    /// Commit the staged destructive remove through the one AppStore
+    /// authority.
+    ConfirmSavedPagesLibraryRemove,
+    /// Cancel the staged destructive remove.
+    CancelSavedPagesLibraryRemove,
+    /// Rename one record's user label through the one AppStore authority
+    /// (the B3 Library rename; invalid labels are a no-op at the store).
+    RenameSavedPagesLibraryRow {
+        id: u64,
+        label: String,
+    },
+    /// Enter the pointer rename entry for one row: stage the inline rename
+    /// input seeded with the record's current user label (the B3 pointer
+    /// rename flow; the production row rename control routes here).
+    BeginSavedPagesLibraryRowRename {
+        id: u64,
+    },
+    /// Type into the staged rename draft (the inline input's text model;
+    /// the production key handler routes printable input here).
+    SetSavedPagesLibraryRenameDraft {
+        text: String,
+    },
+    /// Confirm the staged rename: commit the non-empty draft through the
+    /// one existing `RenameSavedPagesLibraryRow` authority and leave the
+    /// inline input.
+    ConfirmSavedPagesLibraryRename,
+    /// Cancel the staged rename: leave the inline input without committing
+    /// (the record's label is untouched).
+    CancelSavedPagesLibraryRename,
+    /// One flat-collection mutation through the one AppStore authority
+    /// (create / rename / remove; removal moves members out first).
+    SavedPagesLibraryCollection {
+        op: SavedPagesLibraryCollectionOp,
+    },
+    /// Move the current multi-select into (or out of) one flat collection
+    /// through the one AppStore authority (`None` clears the membership).
+    MoveSavedPagesLibrarySelection {
+        collection: Option<u64>,
+    },
+    /// The selection toolbar Remove control (the pointer path the
+    /// `bbr-saved-pages-selection-remove` control calls): stage the
+    /// destructive remove confirmation for exactly the current selection.
+    ClickSavedPagesLibrarySelectionRemove,
+    /// The selection toolbar Move control (the pointer path the
+    /// `bbr-saved-pages-selection-move` control calls): toggle the move-to
+    /// sheet.
+    ClickSavedPagesLibrarySelectionMove,
+    /// The selection toolbar Clear control (the pointer path the
+    /// `bbr-saved-pages-selection-clear` control calls): clear the whole
+    /// multi-select set.
+    ClickSavedPagesLibrarySelectionClear,
+    /// A move-to sheet option (the pointer path the per-collection and
+    /// "No collection" sheet rows call): move the current multi-select
+    /// into (or out of) one flat collection (`None` clears the
+    /// membership) through the one AppStore authority.
+    ClickSavedPagesLibraryMoveOption {
+        collection: Option<u64>,
+    },
+    /// A flat collection row click (the pointer path the
+    /// `bbr-saved-pages-collection-<id>` row calls): stage the
+    /// deterministic rename → remove → none cycle for the collection.
+    ClickSavedPagesLibraryCollectionRow {
+        id: u64,
+    },
+    /// The collection create entry (the pointer path the
+    /// `bbr-saved-pages-collection-create` control calls): stage the
+    /// inline create input.
+    ClickSavedPagesLibraryCollectionCreate,
+    /// Commit whatever collection action is staged (create / rename /
+    /// remove) through the one AppStore authority (the staged Confirm
+    /// controls' path).
+    ConfirmSavedPagesLibraryCollection,
+    /// Leave the staged collection action without committing (the staged
+    /// Cancel controls' path).
+    CancelSavedPagesLibraryCollection,
+    /// Set the staged collection rename/create draft directly (the typed
+    /// seam of the staged inline input; the production keyboard routes
+    /// printable input into the draft through the same app state).
+    SetSavedPagesLibraryCollectionDraft {
+        text: String,
+    },
+    /// Scroll the bounded Library list by `delta_rows` (row units) through
+    /// the exact wheel clamp math the production list wheel listener runs
+    /// and the one production scroll entry (`library_set_scroll`).
+    ScrollSavedPagesLibraryWheel {
+        delta_rows: i64,
+    },
+    /// Open one Library row through the B2 Saved Page command authority:
+    /// exactly one fresh regular tab in the currently active Space/Profile
+    /// — never a silent selection of an existing matching tab.
+    ActivateSavedPagesLibraryRow {
+        id: u64,
+    },
     /// Full app snapshot.
     GetSnapshot,
     /// Liveness probe.
@@ -1034,4 +1191,13 @@ pub enum Request {
     CloseWindow,
     /// Graceful app shutdown (`quit()`, window closes, process exits clean).
     Quit,
+}
+
+/// One flat-collection mutation the Library composes through the one
+/// AppStore authority (B3 packet `saved-pages-library`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SavedPagesLibraryCollectionOp {
+    Create { title: String },
+    Rename { id: u64, title: String },
+    Remove { id: u64 },
 }

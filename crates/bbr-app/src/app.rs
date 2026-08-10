@@ -73,6 +73,7 @@ pub(crate) mod find;
 #[cfg(feature = "testkit")]
 mod find_benchmarks;
 mod interaction;
+pub(crate) mod library;
 mod new_window;
 pub(crate) mod palette;
 mod portal_host;
@@ -365,6 +366,16 @@ pub struct BbrApp {
     /// rows. Stateless: all state lives in the store provider and the
     /// controller.
     saved_pages: saved_pages::SavedPageCommand,
+    /// App-owned Saved Pages Library composition (B3 packet
+    /// `saved-pages-library`): the open/close entry, the local search/sort/
+    /// selection/remove-confirm/scroll state, the B1/B2 binding for every
+    /// Library operation, and the native-view hide/restore bookkeeping
+    /// (the Library is the single visibility authority while open, exactly
+    /// like the error surface).
+    library: crate::app::library::LibraryState,
+    /// GPUI focus handle of the Library surface (DESIGN.md §11.16 chrome
+    /// focus domain while open).
+    library_handle: FocusHandle,
     pub sidebar_visible: bool,
     /// The L5 session-local favorites/folders organization read model
     /// (DESIGN.md §11.10/§11.11): the source the U2 regions render and the
@@ -499,6 +510,8 @@ impl BbrApp {
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
             saved_pages: saved_pages::SavedPageCommand,
+            library: crate::app::library::LibraryState::default(),
+            library_handle: cx.focus_handle(),
             command_profile_hint: None,
             store,
             restore_evidence: RestoreEvidence::Fresh,
@@ -553,9 +566,9 @@ impl BbrApp {
     }
 
     /// The one app-owned Saved Page command authority (B2 packet
-    /// `saved-pages-actions-command`): the testkit dispatch routes
-    /// save/remove/open through the same seam Cmd-D and the menu rows share.
-    #[cfg(feature = "testkit")]
+    /// `saved-pages-actions-command`): Cmd-D, the testkit dispatch, and the
+    /// B3 Library route save/remove/open through the same seam the menu
+    /// rows share.
     pub(crate) fn saved_pages_command(&self) -> saved_pages::SavedPageCommand {
         self.saved_pages
     }
@@ -768,6 +781,9 @@ impl BbrApp {
             // switched away from while its surface was shown): re-assert
             // native visibility against the surface.
             self.sync_error_surface_visibility();
+            // While the Library is open it is the single visibility
+            // authority: the fresh active view is hidden (never destroyed).
+            self.sync_library_visibility();
             self.zoom_after_activation();
             self.persist_structure();
             cx.notify();
@@ -794,6 +810,10 @@ impl BbrApp {
             // surface shows for the active view only): re-assert native
             // visibility against the surface.
             self.sync_error_surface_visibility();
+            // While the Library is open it is the single visibility
+            // authority: the newly selected view is hidden (never
+            // destroyed).
+            self.sync_library_visibility();
             self.zoom_after_activation();
             self.persist_structure();
             cx.notify();
@@ -829,6 +849,9 @@ impl BbrApp {
             // view id is released with the tab).
             if let Some(view) = closed_view {
                 self.error_surface.forget_view(view);
+                // The closed view's session is gone: drop the Library's
+                // hide bookkeeping too (no native restore is needed).
+                self.library.forget_view(view);
             }
             self.ensure_active_visible();
             self.persist_structure();
@@ -902,6 +925,7 @@ impl BbrApp {
             || self.u2.folders_handle.is_focused(window)
             || self.downloads_panel_handle.is_focused(window)
             || self.downloads_control_handle.is_focused(window)
+            || self.library_handle.is_focused(window)
     }
 
     fn emit_browser(&mut self, event: &ControllerEvent) {
