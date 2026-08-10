@@ -120,18 +120,36 @@ evidence, scope or authority finding exists. Candidate fingerprints remain
 exact `e7c8ab85…` / `f1ceb6fe…` / `d109949b…` / 54 paths
 `357209b2…`, real index base, diff clean, no process, GUI lock free.
 
-Exclusive owner transfers to
-`renderer_isolation_product_surface_budget_remediation_writer`. It may only
-perform behavior-preserving extractions that return those three files below
-~500 lines, preferentially moving controller code into the existing focused
-responsiveness module, the clock glyph into a focused icon module, and the
-unresponsive visible-id tests into a focused sibling test module. It must not
-change behavior, assertions, public contracts, other slice layers, testkit
-process observation, fixtures, E2E, performance code or broad docs. It runs
-focused compile/tests/fmt/Clippy/diff gates and returns exact fingerprints plus
-direct `PRODUCT_SLICE_REMEDIATED` or `BLOCKED`. Focused independent recheck
-follows before Slice 2. Only the Orchestrator may commit, merge, integrate, or
-transfer ownership after settlement.
+The sole bounded remediation writer returned direct
+`PRODUCT_SLICE_REMEDIATED`. Independent Orchestrator rebind proves exact new
+temporary-index tree `6abd88e049262254d10c6fe75957f21d74a099ae`;
+binary diff SHA-256
+`2c89eb2154249a55c59b655dd32ab56597df573387f9feb3416e66eb78d65549`;
+porcelain-v1 `-z` SHA-256
+`06b34a39a3a4b1f1096328915e4f3dc5553c0af70c47e9c3bcd32b01a253ff21`;
+sorted 56-path SHA-256
+`69353ec4489749120cd21d969818929f823d9d544ce6843267049fab2a1ba7b5`.
+The delta from reviewed tree `e7c8ab85…` is exactly six files: controller
+crash handling moved into its existing responsiveness module, five private
+icon paint primitives moved into `icons/paint.rs`, and the unresponsive
+visible-id test moved into `tests/unresponsive.rs`. Resulting module counts are
+498/160, 424/104 and 393/135 lines. Real index remains exact base
+`0b0f4938…`; worktree equals the temp tree; staged diff and diff-check are
+empty; no process remains and the exact GUI lock is free. Focused gates pass:
+Browser 214, UI 75, snapshot 10, testkit app 273, warning-denied Clippy for all
+three affected crates, release checks, fmt and diff-check. Evidence log
+`/tmp/remediation-evidence.log` has SHA-256
+`af47ee7f5dbb260fb67b0fff95a93dbdf75a5f893fec9c01c153c5a23b6d1781`.
+
+Exclusive ownership now transfers to independent read-only reviewer
+`renderer_isolation_product_surface_budget_reviewer`. It must reproduce the
+exact 56-path candidate, inspect the complete six-file remediation delta, prove
+all three findings closed without behavior/API/assertion/visual drift, verify
+module budgets and focused evidence, and return direct
+`PRODUCT_SLICE_RECHECK_PASS` or `PRODUCT_SLICE_RECHECK_FINDINGS`. It must not
+mutate any worktree. Slice 2 remains blocked until direct pass. Only the
+Orchestrator may commit, merge, integrate, or transfer ownership after
+settlement.
 
 ---
 
