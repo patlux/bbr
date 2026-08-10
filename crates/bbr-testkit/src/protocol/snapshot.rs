@@ -831,6 +831,24 @@ pub struct NewWindowSnapshot {
     pub blocked_reported: u64,
 }
 
+/// Web-content navigation gesture diagnostics (N1): how the app classified
+/// each committed logical gesture, plus the live child→opener provenance
+/// pairs (`(child TabId, opener TabId)`, stable identities, never indices).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct ContentGestureSnapshot {
+    /// Commits received from the native bridge or testkit injection.
+    pub commits: u64,
+    /// Commits that dispatched exactly one real history action.
+    pub history_routed: u64,
+    /// Commits that ran the atomic Back-at-root opener return.
+    pub opener_returns: u64,
+    /// Commits that were deterministic no-ops (disabled direction, stale
+    /// view, missing/stale opener, provisional load, hidden target).
+    pub no_ops: u64,
+    /// Live session-local `(child, opener)` identity pairs.
+    pub opener_relations: Vec<(u64, u64)>,
+}
+
 /// A snapshot of the whole app, returned on demand by `GetSnapshot`.
 ///
 /// Deliberately typed (no free-form JSON) so the harness can assert on
@@ -1104,6 +1122,10 @@ pub struct Snapshot {
     /// Productive new-window request/open/block counters.
     #[serde(default)]
     pub new_window: NewWindowSnapshot,
+    /// Web-content navigation gesture diagnostics (N1): commit
+    /// classification counters and live opener-provenance pairs.
+    #[serde(default)]
+    pub content_gesture: ContentGestureSnapshot,
 }
 
 /// The Phase-7 startup restore outcome, surfaced truthfully in the testkit

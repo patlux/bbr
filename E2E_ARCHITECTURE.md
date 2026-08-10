@@ -880,6 +880,55 @@ samples over the pre-spawned ≥1,000-record provider with fast-but-wrong
 identity/one-tab guards; raw artifacts land in
 `target/bbr-perf-artifacts/short`.
 
+## 7m. The web-content navigation-gestures suite (`bbr-app/tests/e2e_web_navigation_gestures.rs`)
+
+One `#[ignore]`d macOS-only suite (`just e2e-web-navigation-gestures`)
+driving the real `bbr` process over real WKWebViews and deterministic
+history fixtures (N1 packet `web-content-navigation-gestures`). Committed
+logical gestures enter through the exact production transport: the typed
+`ContentGestureCommit` request pushes into the same channel the native
+content-gesture bridge reporter uses, and the pump drains it into
+`BbrApp::on_content_gesture_commit` — the identical method a real committed
+horizontal trackpad swipe reaches. The hidden harness cannot synthesize a
+trustworthy NSEvent scroll gesture, so committed commits are injected typed
+(the accepted seam pattern; native phase/direction/cancel mapping stays
+unit-proven in `bbr-web-macos`).
+
+Scenarios, all real-history and sleep-free:
+
+1. Back/Forward navigate the exact pane by `WebViewId` through real
+   `canGoBack()`/`canGoForward()` state while an unrelated active tab stays
+   untouched (one dispatch per committed gesture, sessions preserved).
+2. Back at a settled regular child-tab root closes only that child through
+   the normal close path and presents the exact opener (warm session reused,
+   one causal `OpenerReturn`, relation invalidated, native web focus).
+3. A child with older history navigates first (history dispatch, child
+   stays open); the second committed Back at its root returns to the opener.
+4. The no-op matrix: disabled Forward, root Back without provenance, stale
+   view, and a child whose opener was closed — all preserve tabs, sessions,
+   and focus (an arbitrary tab is never closed).
+5. A provisional child load (the deterministic slow fixture) is a whole
+   no-op; once the document commits the same child returns at its root.
+6. Return from a split child pane dissolves the split and presents the
+   opener in single-pane mode.
+7. Return activates an opener that moved across a Space/Profile boundary at
+   its current isolated profile/session (move-time recreation reported by
+   `TabMoved`; the warm destination session is reused at return).
+8. `Cmd-W` stays the ordinary close seam — it closes the active child via
+   `TabClosed` and never runs the gesture opener-return transaction.
+9. A settled navigation-failure root still returns to the opener.
+
+The suite takes the serial GUI lock; the optimized scenarios
+`web_history_swipe_back` and `child_tab_swipe_return` are implemented with
+production-path drivers (perf_common/benchmarks.rs + app arms through the
+exact native bridge commit method, deterministic pre-loaded history, real
+`canGoBack()`/title semantic milestones, ≥30-sample guards, and in-app
+fast-but-wrong rejection) and registered in the contract baseline with the
+unchanged warm ceiling (50/100, 30 samples); execution remains
+unexecuted/unpassed under the active delivery override. The nine E2E
+scenarios passed 9/9 under the host-exclusive GUI lock on the remediation
+tree (log SHA-256 `0d51390b…`).
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature

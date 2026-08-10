@@ -207,6 +207,9 @@ pub struct TestSnapshot {
     pub restore: bbr_testkit::protocol::RestoreDisposition,
     /// Productive new-window request/open/block counters.
     pub new_window: bbr_testkit::protocol::NewWindowSnapshot,
+    /// Web-content navigation gesture diagnostics (N1): commit
+    /// classification counters and live opener-provenance pairs.
+    pub content_gesture: bbr_testkit::protocol::ContentGestureSnapshot,
 }
 
 #[cfg(feature = "testkit")]

@@ -138,6 +138,8 @@ fn loading_and_history_are_tracked_in_nav_state_not_domain_data() {
             can_go_back: true,
             can_go_forward: false,
             crashed: false,
+            failed: false,
+            initial_committed: false,
         }
     );
     // The persistent tab identity is untouched by transient state.

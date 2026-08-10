@@ -29,6 +29,7 @@ mod dispatch_benchmark;
 mod dispatch_benchmark_context_menu;
 mod dispatch_benchmark_downloads;
 mod dispatch_benchmark_find;
+mod dispatch_benchmark_gestures;
 mod dispatch_benchmark_swipe;
 mod dispatch_benchmark_u2;
 mod dispatch_benchmark_zoom;
@@ -138,6 +139,12 @@ pub fn spawn_pump(
         bbr_web_macos::error_mapping::ClassifiedIncident,
     >,
     #[cfg(target_os = "macos")] new_windows_rx: smol::channel::Receiver<bbr_web::NewWindowDelivery>,
+    #[cfg(target_os = "macos")] gestures_rx: smol::channel::Receiver<bbr_web::ContentGestureCommit>,
+    // The content-gesture delivery queue's sender: the testkit
+    // `ContentGestureCommit` request pushes into the exact channel the
+    // native content-gesture bridge reporter uses, so the seam and the
+    // production path share one transport (N1).
+    #[cfg(target_os = "macos")] gestures_tx: smol::channel::Sender<bbr_web::ContentGestureCommit>,
     cmd_rx: smol::channel::Receiver<GatewayCommand>,
     server: Option<Arc<GatewayServer>>,
 ) {
@@ -160,6 +167,8 @@ pub fn spawn_pump(
             ),
             #[cfg(target_os = "macos")]
             NewWindow(Result<bbr_web::NewWindowDelivery, smol::channel::RecvError>),
+            #[cfg(target_os = "macos")]
+            ContentGesture(Result<bbr_web::ContentGestureCommit, smol::channel::RecvError>),
         }
 
         let incoming = smol::future::race(
@@ -186,10 +195,16 @@ pub fn spawn_pump(
                                 async {
                                     Incoming::Incident(incidents_rx.recv().await)
                                 },
-                                #[cfg(target_os = "macos")]
-                                async {
-                                    Incoming::NewWindow(new_windows_rx.recv().await)
-                                },
+                                smol::future::race(
+                                    #[cfg(target_os = "macos")]
+                                    async {
+                                        Incoming::NewWindow(new_windows_rx.recv().await)
+                                    },
+                                    #[cfg(target_os = "macos")]
+                                    async {
+                                        Incoming::ContentGesture(gestures_rx.recv().await)
+                                    },
+                                ),
                             ),
                         ),
                     ),
@@ -216,6 +231,19 @@ pub fn spawn_pump(
                     #[cfg(target_os = "macos")]
                     Request::DeliverExternalUrl { url } => {
                         let _ = external_url_tx.try_send(url.clone());
+                        Response::Ok
+                    }
+                    // The content-gesture seam pushes into the exact queue
+                    // the native content-gesture bridge reporter uses; the
+                    // pump's own `ContentGesture` arm drains it into the app
+                    // through `on_content_gesture_commit` — one production
+                    // transport, exactly like the new-window deliveries.
+                    #[cfg(target_os = "macos")]
+                    Request::ContentGestureCommit { view, direction } => {
+                        let _ = gestures_tx.try_send(bbr_web::ContentGestureCommit {
+                            view: *view,
+                            direction: *direction,
+                        });
                         Response::Ok
                     }
                     _ => handle_command(msg.req, &window, &app, &server, async_cx).await,
@@ -289,13 +317,22 @@ pub fn spawn_pump(
                     });
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::ContentGesture(Ok(commit)) => {
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_content_gesture_commit(commit, cx)
+                    });
+                });
+            }
             Incoming::Command(Err(_)) | Incoming::Event(Err(_)) => break,
             #[cfg(target_os = "macos")]
             Incoming::Find(Err(_))
             | Incoming::Download(Err(_))
             | Incoming::ExternalUrl(Err(_))
             | Incoming::Incident(Err(_))
-            | Incoming::NewWindow(Err(_)) => break,
+            | Incoming::NewWindow(Err(_))
+            | Incoming::ContentGesture(Err(_)) => break,
         }
     })
     .detach();

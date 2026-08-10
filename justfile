@@ -10,6 +10,12 @@ e2e_full_timeout := env_var_or_default("BBR_E2E_FULL_TIMEOUT", "15m")
 # the next open), so it legitimately needs more than the 2-minute interaction
 # budget; the per-wait deadlines inside the suite stay bounded.
 e2e_dense_timeout := env_var_or_default("BBR_E2E_DENSE_TIMEOUT", "8m")
+# The web-content navigation-gestures suite drives nine real-app scenarios
+# (each spawns the real app, settles the window, and runs real WKWebView
+# history navigations), so it needs a larger bounded budget than the
+# 2-minute interaction default; the per-wait deadlines inside the suite stay
+# bounded.
+e2e_gestures_timeout := env_var_or_default("BBR_E2E_GESTURES_TIMEOUT", "8m")
 run_timeout := env_var_or_default("BBR_RUN_TIMEOUT", "8h")
 xcode_developer_dir := env_var_or_default("BBR_XCODE_DEVELOPER_DIR", "/Applications/Xcode-26.2.0.app/Contents/Developer")
 gui_gate := "python3 scripts/with_gui_lock.py --"
@@ -92,6 +98,16 @@ e2e-shell-saved-pages:
 # calls and opens one regular tab in the source Space/Profile.
 e2e-shell-new-window:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_new_window -- --ignored --nocapture
+
+# Web-content navigation gestures (N1 packet
+# `web-content-navigation-gestures`): committed logical Back/Forward gestures
+# over real WKWebView history navigate the exact pane; Back at a settled
+# regular child-tab root closes only that child and presents the exact opener
+# (warm reuse, child-history-first, split dissolution, cross-profile
+# activation, failure states); the no-op matrix (disabled direction, no/stale
+# opener, provisional load, stale view) and the Cmd-W normal-close regression.
+e2e-web-navigation-gestures:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_gestures_timeout}} cargo test -p bbr --features testkit --test e2e_web_navigation_gestures -- --ignored --nocapture
 
 # Persistence + warm-restore (Phase 7, warm-restore slice): chrome-first
 # restore of repository-written browser state (identities before sessions,
@@ -184,7 +200,7 @@ e2e-gallery:
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-new-window e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-auth e2e-perf
+e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-new-window e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-web-navigation-gestures e2e-auth e2e-perf
 
 verify: fmt check test clippy roadmap ui-deps script-tests
 

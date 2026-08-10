@@ -63,6 +63,29 @@ pub enum ControllerEvent {
     SplitClosed,
     /// A navigation action was issued against the focused session.
     NavigationRouted { view: WebViewId },
+    /// One committed logical content gesture dispatched exactly one real
+    /// history action (Back/Forward) against the exact bound view — never a
+    /// tab mutation. The gesture targets the pane under the pointer, which
+    /// may differ from the focused command target in split mode.
+    GestureHistoryRouted { view: WebViewId },
+    /// A committed logical Back gesture at a settled child-tab root closed
+    /// the child through the normal close path and activated the exact
+    /// opener: `child`/`opener` are the persistent `TabId`s, source is the
+    /// child's Space/Profile, destination the opener's current Space/Profile,
+    /// `closed_view` the destroyed child session, `presented_view` the
+    /// opener session presented/focused, and `recreated` whether the opener's
+    /// session had to be rebuilt (suspended/discarded lifecycle).
+    OpenerReturn {
+        child: bbr_domain::TabId,
+        opener: bbr_domain::TabId,
+        from_space: SpaceId,
+        from_profile: ProfileId,
+        to_space: SpaceId,
+        to_profile: ProfileId,
+        closed_view: WebViewId,
+        presented_view: WebViewId,
+        recreated: bool,
+    },
     /// A raw engine event was applied to its owning tab's state.
     WebEvent { event: WebEvent },
     /// An engine event named a view with no owning tab (stale/unknown).

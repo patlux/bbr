@@ -335,6 +335,14 @@ fn main() {
         #[cfg(target_os = "macos")]
         let (new_windows_tx, new_windows_rx) =
             smol::channel::unbounded::<bbr_web::NewWindowDelivery>();
+        // Committed logical content gestures (N1): the native content-
+        // gesture bridge reports at most one `ContentGestureCommit` per
+        // committed horizontal trackpad swipe over a web view; the pump
+        // drains it into `BbrApp::on_content_gesture_commit` on the main
+        // thread — the same pattern as the new-window deliveries.
+        #[cfg(target_os = "macos")]
+        let (gestures_tx, gestures_rx) =
+            smol::channel::unbounded::<bbr_web::ContentGestureCommit>();
         #[cfg(feature = "testkit")]
         let performance = performance::PerformanceProbe::new(
             process_started,
@@ -462,6 +470,10 @@ fn main() {
                     "native coordinator blocked new-window request from {:?}",
                     request.source
                 );
+            }));
+            let gestures_tx = gestures_tx.clone();
+            engine.set_content_gesture_reporter(Box::new(move |commit| {
+                let _ = gestures_tx.try_send(commit);
             }));
         }
 
@@ -636,6 +648,8 @@ fn main() {
                 external_url_tx,
                 incidents_rx,
                 new_windows_rx,
+                gestures_rx,
+                gestures_tx,
                 cmd_rx,
                 server.clone(),
             );
@@ -685,6 +699,7 @@ fn main() {
                     external_urls: external_url_rx,
                     incidents: incidents_rx,
                     new_windows: new_windows_rx,
+                    gestures: gestures_rx,
                 },
             );
         }

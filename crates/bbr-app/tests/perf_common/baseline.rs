@@ -137,6 +137,25 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // N1 packet `web-content-navigation-gestures`: a committed logical
+        // Back gesture over a deterministic already-loaded two-entry
+        // history dispatches exactly one real history action and the sample
+        // commits only when the correct URL/history state is presented —
+        // the warm interaction class with the unchanged warm ceiling
+        // (p95 ≤ 50 ms / max ≤ 100 ms), same as `active_tab_close`. At
+        // least 30 accepted optimized samples.
+        "web_history_swipe_back" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        // The committed Back at a settled regular child-tab root closes the
+        // child through the normal close path and presents the exact warm
+        // opener — the active-tab-close warm ceiling (p95 ≤ 50 ms /
+        // max ≤ 100 ms), at least 30 accepted optimized samples.
+        "child_tab_swipe_return" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         // Contract covers presentation commits; default to the interaction
         // ceiling for any operation without an explicit separate budget.
         // Dense-list scrolling and dense selection are warm-interaction
@@ -512,6 +531,8 @@ impl Baseline {
             "new_tab_command_bar",
             "new_tab_open",
             "active_tab_close",
+            "web_history_swipe_back",
+            "child_tab_swipe_return",
             "dense_scroll",
             "dense_select",
             "tab_hover",

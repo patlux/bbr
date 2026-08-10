@@ -13,22 +13,18 @@ use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2::{AnyThread, ClassType, MainThreadMarker, MainThreadOnly};
 use objc2_app_kit::{NSColor, NSView};
-use objc2_foundation::{NSString, NSURLRequest, NSURL, NSUUID};
+use objc2_foundation::{NSString, NSUUID};
 use objc2_web_kit::{WKWebView, WKWebViewConfiguration, WKWebsiteDataStore};
 
 use bbr_web::{ProfileId, WebAction, WebEngine, WebEvent, WebRect, WebViewId};
 
+use crate::content_gesture::{ContentGestureHost, ContentGestureSink};
 use crate::delegate::{self, WebViewDelegate};
 use crate::error_mapping::ClassifiedIncident;
 use crate::host::HostBridge;
+use crate::native_session::{self, NativeWebSession};
 use crate::navigation_cover::NavigationCover;
 use crate::new_window::NewWindowCoordinator;
-
-const DARK_BLANK_PAGE: &str = r#"<!doctype html>
-<html style="color-scheme: dark; background: #151719">
-<head><meta charset="utf-8"></head>
-<body style="margin: 0; background: #151719; color: #eceef1"></body>
-</html>"#;
 
 /// Options that change engine behaviour; populated by the composition root.
 #[derive(Debug, Clone, Default)]
@@ -36,28 +32,6 @@ pub struct EngineOptions {
     /// Use a non-persistent `WKWebsiteDataStore` per profile (E2E hermeticity).
     /// When false, each profile maps to a deterministic persistent store id.
     pub non_persistent: bool,
-}
-
-/// All native objects and state belonging to one live web session.
-struct NativeWebSession {
-    profile: ProfileId,
-    web_view: Retained<WKWebView>,
-    /// Dark sibling view masking WebKit's white provisional-navigation plane.
-    navigation_cover: Retained<NSView>,
-    /// WebKit does not retain navigation/UI delegates.
-    delegate: Retained<WebViewDelegate>,
-    visible: bool,
-}
-
-impl NativeWebSession {
-    /// Remove KVO before releasing the observed view, then detach it from AppKit.
-    fn teardown(self) {
-        unsafe {
-            delegate::unobserve_title(&self.web_view, self.delegate.as_super());
-        }
-        self.navigation_cover.removeFromSuperview();
-        self.web_view.removeFromSuperview();
-    }
 }
 
 /// The macOS WebKit engine.
@@ -84,6 +58,12 @@ pub struct WebEngineWk {
     /// web views, classifies WebKit's own menu (page vs element), and
     /// requests the BBR menu through the portal for page-owned clicks.
     menu_bridge: Option<Box<crate::menu_adapter::NativeContextMenuBridge>>,
+    /// The one native content-gesture bridge (task packet
+    /// `web-content-navigation-gestures`): observes scroll-wheel events over
+    /// the live web views and reports at most one logical
+    /// `ContentGestureCommit` per committed horizontal gesture. A pure
+    /// observer — native scrolling/selection/zoom are never disabled.
+    content_gesture: ContentGestureHost,
 }
 
 impl WebEngineWk {
@@ -104,6 +84,8 @@ impl WebEngineWk {
         let menu_bridge = unsafe {
             crate::menu_adapter::NativeContextMenuBridge::attach(mtm, ns_view, sink.clone())
         };
+        let content_gesture_reporter: ContentGestureSink = Rc::new(RefCell::new(None));
+        let content_gesture = ContentGestureHost::attach(mtm, ns_view, content_gesture_reporter);
         Self {
             host,
             options,
@@ -116,6 +98,7 @@ impl WebEngineWk {
             stores: HashMap::new(),
             geometry: HashMap::new(),
             menu_bridge,
+            content_gesture,
         }
     }
 
@@ -203,6 +186,28 @@ impl WebEngineWk {
         self.new_window.set_delivery_reporter(reporter);
     }
 
+    /// Install the app sink for every committed logical content gesture
+    /// (exactly one per committed horizontal trackpad swipe over a web
+    /// view). Replaces any previous reporter.
+    pub fn set_content_gesture_reporter(
+        &mut self,
+        reporter: Box<dyn FnMut(bbr_web::ContentGestureCommit)>,
+    ) {
+        self.assert_main_thread();
+        self.content_gesture.set_reporter(reporter);
+    }
+
+    /// Narrow diagnostics of the native content-gesture bridge (task
+    /// packet `web-content-navigation-gestures`): monitor installation,
+    /// gestures over web views, commits reported, cancels, and vertical-
+    /// dominant abandonments. `None` when no bridge is attached.
+    pub fn content_gesture_diagnostics(
+        &self,
+    ) -> Option<crate::content_gesture::ContentGestureNativeDiagnostics> {
+        self.assert_main_thread();
+        self.content_gesture.diagnostics()
+    }
+
     /// Install the blocked-request diagnostic sink.
     pub fn set_new_window_blocked_reporter(
         &mut self,
@@ -241,7 +246,7 @@ impl WebEngineWk {
         let store = if self.options.non_persistent {
             unsafe { WKWebsiteDataStore::nonPersistentDataStore(mtm) }
         } else {
-            let uuid_string = NSString::from_str(&profile_store_uuid(profile));
+            let uuid_string = NSString::from_str(&native_session::profile_store_uuid(profile));
             let uuid = NSUUID::initWithUUIDString(NSUUID::alloc(), &uuid_string)
                 .expect("generated profile UUID is valid");
             unsafe { WKWebsiteDataStore::dataStoreForIdentifier(&uuid, mtm) }
@@ -271,49 +276,6 @@ impl WebEngineWk {
             log::warn!("unknown web view {id:?}");
         }
         session
-    }
-
-    fn load_url(web_view: &WKWebView, url: &str) {
-        if url == "about:blank" {
-            let html = NSString::from_str(DARK_BLANK_PAGE);
-            unsafe {
-                web_view.loadHTMLString_baseURL(&html, None);
-            }
-            return;
-        }
-        let ns_url = NSString::from_str(url);
-        let Some(url_obj) = NSURL::URLWithString(&ns_url) else {
-            log::warn!("cannot parse URL: {url}");
-            return;
-        };
-        let request = NSURLRequest::requestWithURL(&url_obj);
-        unsafe {
-            web_view.loadRequest(&request);
-        }
-    }
-
-    fn emit_state(&self, id: WebViewId) {
-        let Some(session) = self.session(id) else {
-            return;
-        };
-        let web_view = &session.web_view;
-        let url = unsafe { web_view.URL() }
-            .and_then(|u| u.absoluteString())
-            .map(|s| s.to_string());
-        let title = unsafe { web_view.title() }.map(|s| s.to_string());
-        let can_back = unsafe { web_view.canGoBack() };
-        let can_forward = unsafe { web_view.canGoForward() };
-        if let Some(sink) = self.sink.borrow_mut().as_mut() {
-            if let Some(url) = url {
-                sink(WebEvent::UrlChanged(id, url));
-            }
-            if let Some(title) = title {
-                sink(WebEvent::TitleChanged(id, title));
-            }
-            sink(WebEvent::CanGoBackChanged(id, can_back));
-            sink(WebEvent::CanGoForwardChanged(id, can_forward));
-            sink(WebEvent::LoadingChanged(id, false));
-        }
     }
 }
 
@@ -391,7 +353,7 @@ impl WebEngine for WebEngineWk {
             root.addSubview(&navigation_cover);
         }
         if !initial_url.is_empty() {
-            Self::load_url(&web_view, initial_url);
+            native_session::load_url(&web_view, initial_url);
         }
         self.sessions.insert(
             id,
@@ -406,6 +368,7 @@ impl WebEngine for WebEngineWk {
         if let Some(bridge) = self.menu_bridge.as_ref() {
             bridge.register_web_view(mtm, id, &web_view);
         }
+        self.content_gesture.register_web_view(mtm, id, &web_view);
     }
 
     fn destroy_web_view(&mut self, id: WebViewId) {
@@ -420,6 +383,7 @@ impl WebEngine for WebEngineWk {
             if let Some(bridge) = self.menu_bridge.as_ref() {
                 bridge.unregister_web_view(mtm, id);
             }
+            self.content_gesture.unregister_web_view(mtm, id);
         }
     }
 
@@ -446,7 +410,7 @@ impl WebEngine for WebEngineWk {
         };
         let web_view = &session.web_view;
         match action {
-            WebAction::Load { url } => Self::load_url(web_view, &url),
+            WebAction::Load { url } => native_session::load_url(web_view, &url),
             WebAction::Back => unsafe {
                 if web_view.canGoBack() {
                     web_view.goBack();
@@ -465,7 +429,9 @@ impl WebEngine for WebEngineWk {
                 if let Some(session) = self.sessions.get(&id) {
                     session.navigation_cover.setHidden(true);
                 }
-                self.emit_state(id);
+                if let Some(session) = self.sessions.get(&id) {
+                    native_session::emit_state(&self.sink, session, id);
+                }
             },
             // The BBR context menu's Copy Link entry: the engine owns the
             // platform pasteboard, so the portable action is implemented
@@ -513,33 +479,5 @@ impl Drop for WebEngineWk {
         for (_, session) in self.sessions.drain() {
             session.teardown();
         }
-    }
-}
-
-/// Stable UUID namespace for a persistent WebKit data store.
-fn profile_store_uuid(profile: ProfileId) -> String {
-    let upper = (profile.0 >> 48) as u16;
-    let lower = profile.0 & 0x0000_ffff_ffff_ffff;
-    format!("42425200-0000-4000-{upper:04x}-{lower:012x}")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn profile_store_uuid_is_stable_and_unique() {
-        assert_eq!(
-            profile_store_uuid(ProfileId(1)),
-            "42425200-0000-4000-0000-000000000001"
-        );
-        assert_eq!(
-            profile_store_uuid(ProfileId(u64::MAX)),
-            "42425200-0000-4000-ffff-ffffffffffff"
-        );
-        assert_ne!(
-            profile_store_uuid(ProfileId(1)),
-            profile_store_uuid(ProfileId(2))
-        );
     }
 }

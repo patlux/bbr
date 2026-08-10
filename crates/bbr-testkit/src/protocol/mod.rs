@@ -32,14 +32,15 @@ pub use event::{BrowserChange, Event};
 pub use request::Request;
 pub use snapshot::{
     AuthSnapshot, ChipCompanionSnapshot, CommandResultSnapshot, CommandResultState, CommandSurface,
-    ContextMenuItemSnapshot, ContextMenuNativeSnapshot, ContextMenuSnapshot, DenseListSnapshot,
-    DownloadGroup, DownloadMachineState, DownloadRowAction, DownloadRowSnapshot,
-    DownloadsPanelSnapshot, ErrorSurfaceCategory, ErrorSurfaceSnapshot, FavoriteTileSnapshot,
-    FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts, NewWindowSnapshot,
-    PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, RestoreDisposition,
-    SemanticNode, SemanticRole, Snapshot, SpaceAppearanceSnapshot, SpaceChipSnapshot,
-    SpaceSnapshot, SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
-    StoreSnapshot, SwipeSnapshot, TabSnapshot, TabVisualState, WebContentProbe, ZoomSnapshot,
+    ContentGestureSnapshot, ContextMenuItemSnapshot, ContextMenuNativeSnapshot,
+    ContextMenuSnapshot, DenseListSnapshot, DownloadGroup, DownloadMachineState, DownloadRowAction,
+    DownloadRowSnapshot, DownloadsPanelSnapshot, ErrorSurfaceCategory, ErrorSurfaceSnapshot,
+    FavoriteTileSnapshot, FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts,
+    NewWindowSnapshot, PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, ProfileSnapshot,
+    RestoreDisposition, SemanticNode, SemanticRole, Snapshot, SpaceAppearanceSnapshot,
+    SpaceChipSnapshot, SpaceSnapshot, SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot,
+    StoreLoadSnapshot, StoreSnapshot, SwipeSnapshot, TabSnapshot, TabVisualState, WebContentProbe,
+    ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.

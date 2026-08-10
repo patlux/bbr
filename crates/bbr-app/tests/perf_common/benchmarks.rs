@@ -584,6 +584,167 @@ pub(crate) fn benchmark_swipe_commit(
     measured
 }
 
+/// Wait until the bound view's real WebKit history availability matches
+/// `(can_back, can_forward)` (the `CanGoBackChanged`/`CanGoForwardChanged`
+/// engine events). The definitive "correct history state presented"
+/// milestone for the N1 gesture scenarios: a gesture that never navigated
+/// produces no state change and this wait fails loudly instead of accepting
+/// a fast-but-wrong sample.
+pub(crate) fn wait_history_events(
+    client: &mut Client,
+    view: WebViewId,
+    can_back: bool,
+    can_forward: bool,
+    since: u64,
+) -> u64 {
+    let mut cursor = since;
+    if can_back {
+        cursor = client
+            .wait_for_event_since(
+                |event| {
+                    matches!(event, Event::Web(WebEvent::CanGoBackChanged(id, true)) if *id == view)
+                },
+                cursor,
+                deadline(),
+            )
+            .expect("can_go_back event")
+            .0;
+    }
+    if can_forward {
+        cursor = client
+            .wait_for_event_since(
+                |event| {
+                    matches!(event, Event::Web(WebEvent::CanGoForwardChanged(id, true)) if *id == view)
+                },
+                cursor,
+                deadline(),
+            )
+            .expect("can_go_forward event")
+            .0;
+    }
+    if !can_back {
+        cursor = client
+            .wait_for_event_since(
+                |event| {
+                    matches!(event, Event::Web(WebEvent::CanGoBackChanged(id, false)) if *id == view)
+                },
+                cursor,
+                deadline(),
+            )
+            .expect("can_go_back false event")
+            .0;
+    }
+    if !can_forward {
+        cursor = client
+            .wait_for_event_since(
+                |event| {
+                    matches!(event, Event::Web(WebEvent::CanGoForwardChanged(id, false)) if *id == view)
+                },
+                cursor,
+                deadline(),
+            )
+            .expect("can_go_forward false event")
+            .0;
+    }
+    cursor
+}
+
+/// A committed logical Back content gesture (N1 packet
+/// `web-content-navigation-gestures`, `web_history_swipe_back` scenario):
+/// the app dispatches one Back through the exact production gesture method
+/// against the bound `view` of a deterministic already-loaded two-entry
+/// history. The sample is accepted only after the correct URL/history state
+/// is presented: the bound view's title returns to `previous_title` and the
+/// real WebKit availability reports `can_go_back == false` /
+/// `can_go_forward == true` (the two-entry history is at its root, forward
+/// history intact). The same view stays presented; tabs and sessions never
+/// change (fast-but-wrong guard).
+pub(crate) fn benchmark_web_history_swipe_back(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    view: WebViewId,
+    previous_title: &str,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkWebHistorySwipeBack { operation_id, view })
+        .expect("benchmark web history swipe back");
+    let (seq, measured) = wait_measurement(
+        client,
+        BenchmarkKind::WebHistorySwipeBack,
+        operation_id,
+        *since,
+    );
+    *since = seq;
+    assert_eq!(
+        measured.active_web_view,
+        Some(view),
+        "history swipe keeps the exact bound view presented"
+    );
+    // The real WebKit state milestone: title of the previous entry, then the
+    // history availability flip (the same event order the E2E suite waits).
+    *since = wait_title(client, view, previous_title, *since);
+    *since = wait_history_events(client, view, false, true, *since);
+    let snapshot = client.snapshot().expect("swipe-back snapshot");
+    assert_eq!(snapshot.active_web_view, Some(view));
+    assert_eq!(snapshot.title.as_deref(), Some(previous_title));
+    assert!(!snapshot.can_go_back, "two-entry history is at its root");
+    assert!(snapshot.can_go_forward, "forward history remains");
+    measured
+}
+
+/// A committed Back-at-settled-child-root opener return (N1 packet
+/// `web-content-navigation-gestures`, `child_tab_swipe_return` scenario):
+/// the app dispatches one Back through the exact production gesture method
+/// against the settled child root. The sample is accepted only after the
+/// correct state is presented: the exact warm opener's view is the active
+/// presented view, the child session is gone (sessions drop by exactly
+/// `sessions_after`), the child tab closed, and no opener relation remains.
+pub(crate) fn benchmark_child_tab_swipe_return(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    child_view: WebViewId,
+    opener_view: WebViewId,
+    sessions_after: usize,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkChildTabSwipeReturn {
+            operation_id,
+            child_view,
+        })
+        .expect("benchmark child tab swipe return");
+    let (seq, measured) = wait_measurement(
+        client,
+        BenchmarkKind::ChildTabSwipeReturn,
+        operation_id,
+        *since,
+    );
+    *since = seq;
+    assert_eq!(
+        measured.active_web_view,
+        Some(opener_view),
+        "the exact warm opener view is presented after the return"
+    );
+    let snapshot = client.snapshot().expect("child-tab return snapshot");
+    assert_eq!(
+        snapshot.active_web_view,
+        Some(opener_view),
+        "opener presented by identity"
+    );
+    assert_eq!(
+        snapshot.engine_sessions, sessions_after,
+        "child session destroyed, opener session reused warm"
+    );
+    assert!(
+        snapshot.content_gesture.opener_relations.is_empty(),
+        "the closed child's relation is invalidated"
+    );
+    measured
+}
+
 /// The production pin toggle of the active tab (`Cmd-Shift-P` path): the
 /// pinned/regular boundary moves while the selected tab and its live session
 /// stay. The sample must show the same active native view and the expected

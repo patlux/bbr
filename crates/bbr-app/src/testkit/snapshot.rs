@@ -66,6 +66,30 @@ pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange>
             secondary: *secondary,
         }),
         ControllerEvent::SplitClosed => Some(BrowserChange::SplitClosed),
+        ControllerEvent::GestureHistoryRouted { view } => {
+            Some(BrowserChange::GestureHistoryRouted { view: *view })
+        }
+        ControllerEvent::OpenerReturn {
+            child,
+            opener,
+            from_space,
+            from_profile,
+            to_space,
+            to_profile,
+            closed_view,
+            presented_view,
+            recreated,
+        } => Some(BrowserChange::OpenerReturn {
+            child: child.0,
+            opener: opener.0,
+            from_space: bbr_testkit::protocol::TestSpaceId(from_space.0),
+            from_profile: *from_profile,
+            to_space: bbr_testkit::protocol::TestSpaceId(to_space.0),
+            to_profile: *to_profile,
+            closed_view: *closed_view,
+            presented_view: *presented_view,
+            recreated: *recreated,
+        }),
         _ => None,
     }
 }
@@ -227,6 +251,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             store: self.store.clone(),
             restore: self.restore,
             new_window: self.new_window,
+            content_gesture: self.content_gesture.clone(),
         }
     }
 }

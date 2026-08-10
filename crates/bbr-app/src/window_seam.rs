@@ -432,6 +432,10 @@ pub(crate) struct EventPumpChannels {
     /// Fully decided new-window deliveries from the WKUI delegate.
     #[cfg(target_os = "macos")]
     pub(crate) new_windows: Receiver<bbr_web::NewWindowDelivery>,
+    /// Committed logical content gestures from the native content-gesture
+    /// bridge (N1), drained into `BbrApp::on_content_gesture_commit`.
+    #[cfg(target_os = "macos")]
+    pub(crate) gestures: Receiver<bbr_web::ContentGestureCommit>,
 }
 
 /// Non-testkit builds still need the event pump to keep the shell live.
@@ -453,6 +457,8 @@ pub(crate) fn spawn_event_pump(
     let incidents_rx = channels.incidents;
     #[cfg(target_os = "macos")]
     let new_windows_rx = channels.new_windows;
+    #[cfg(target_os = "macos")]
+    let gestures_rx = channels.gestures;
     let window = *window;
     let app = app.clone();
     cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
@@ -470,6 +476,8 @@ pub(crate) fn spawn_event_pump(
             ),
             #[cfg(target_os = "macos")]
             NewWindow(Result<bbr_web::NewWindowDelivery, smol::channel::RecvError>),
+            #[cfg(target_os = "macos")]
+            ContentGesture(Result<bbr_web::ContentGestureCommit, smol::channel::RecvError>),
         }
         let incoming = smol::future::race(
             async { Incoming::Event(evt_rx.recv().await) },
@@ -494,10 +502,16 @@ pub(crate) fn spawn_event_pump(
                         async {
                             Incoming::Incident(incidents_rx.recv().await)
                         },
-                        #[cfg(target_os = "macos")]
-                        async {
-                            Incoming::NewWindow(new_windows_rx.recv().await)
-                        },
+                        smol::future::race(
+                            #[cfg(target_os = "macos")]
+                            async {
+                                Incoming::NewWindow(new_windows_rx.recv().await)
+                            },
+                            #[cfg(target_os = "macos")]
+                            async {
+                                Incoming::ContentGesture(gestures_rx.recv().await)
+                            },
+                        ),
                     ),
                 ),
             ),
@@ -560,13 +574,22 @@ pub(crate) fn spawn_event_pump(
                     });
                 });
             }
+            #[cfg(target_os = "macos")]
+            Incoming::ContentGesture(Ok(commit)) => {
+                async_cx.update(|cx| {
+                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        view.on_content_gesture_commit(commit, cx)
+                    });
+                });
+            }
             Incoming::Event(Err(_)) => break,
             #[cfg(target_os = "macos")]
             Incoming::Find(Err(_))
             | Incoming::Download(Err(_))
             | Incoming::ExternalUrl(Err(_))
             | Incoming::Incident(Err(_))
-            | Incoming::NewWindow(Err(_)) => break,
+            | Incoming::NewWindow(Err(_))
+            | Incoming::ContentGesture(Err(_)) => break,
         }
     })
     .detach();
