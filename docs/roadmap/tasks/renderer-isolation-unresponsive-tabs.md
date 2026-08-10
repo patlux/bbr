@@ -53,12 +53,34 @@ no-grow bound. The full temporary-tree diff check also flags one trailing blank
 line in the new portable module. UI, testkit/process observation, fixtures,
 real-app E2E, performance code, docs, and all final gates remain absent.
 
-Exclusive owner `renderer_isolation_recovery_writer` must preserve this
-forward state, audit the two command-ranking support edits, repair the exact
-compiler/budget/diff findings, complete the full unchanged packet and all
-allowed gates, and return an exact fingerprint plus a direct verdict. Only the
-Orchestrator may commit, merge, integrate, or transfer ownership after
-settlement.
+The next recovery repaired all four macOS compiler findings, returned
+`webview.rs` to 519 lines, kept the split portable modules bounded, and began
+the product UI/snapshot/semantics wiring. It returned direct `BLOCKED` only
+because its shell tool disappeared; no product/platform blocker exists.
+Independently rebound latest state: temporary-index tree
+`6065c57360a5da7c1e0be420f79588977e684a55`; binary diff SHA-256
+`bf2e686b3250d5ab922aa4efaf160b343713e5bcee8a9314a13d135b83d8776f`;
+porcelain-v1 status SHA-256
+`1752208170bbe311691e5c32dd5a0891519d0797095cc3429e24f03fd2bc44c6`;
+sorted 41-path SHA-256
+`d7ede995795a735e6481482cd657d8bd09595620a197464a0ffbc5badcd77f34`;
+real index remains base, no process survives, GUI lock free. Full temporary
+-tree diff-check still flags only the trailing blank line in the portable
+module. Product app render/actions/cadence/event handling and dialog boundary,
+testkit/process observation, fixtures, E2E, performance code, docs, and final
+gates remain.
+
+To avoid repeating transport failures on one oversized writer, remaining
+forward recovery is serial and reviewable in the same worktree, never
+concurrent: (1) macOS + complete product surface/actions/cadence/dialog slice;
+(2) testkit process observation + deterministic fixtures; (3) regression E2E
++ performance code + docs + complete gates. Each slice preserves all prior
+work and receives independent read-only review before ownership advances.
+Exclusive owner `renderer_isolation_product_surface_writer` owns slice 1 only,
+must audit command-ranking edits, clear the diff finding, complete product-live
+behavior and focused tests, and return exact fingerprints plus direct
+`PRODUCT_SLICE_READY` or `BLOCKED`. Only the Orchestrator may commit, merge,
+integrate, or transfer ownership after settlement.
 
 ---
 
