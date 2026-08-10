@@ -76,11 +76,32 @@ concurrent: (1) macOS + complete product surface/actions/cadence/dialog slice;
 (2) testkit process observation + deterministic fixtures; (3) regression E2E
 + performance code + docs + complete gates. Each slice preserves all prior
 work and receives independent read-only review before ownership advances.
-Exclusive owner `renderer_isolation_product_surface_writer` owns slice 1 only,
-must audit command-ranking edits, clear the diff finding, complete product-live
-behavior and focused tests, and return exact fingerprints plus direct
-`PRODUCT_SLICE_READY` or `BLOCKED`. Only the Orchestrator may commit, merge,
-integrate, or transfer ownership after settlement.
+The first product-surface writer reproduced its exact authority, cleared the
+diff finding, completed compiling macOS dialog auto-dismiss plus most
+production app rendering/actions/cadence/event/visibility wiring, and passed
+both testkit and release `bbr` checks. Its turn ended before snapshot mirror,
+focused tests, and final slice gates, and it explicitly returned neither
+`PRODUCT_SLICE_READY` nor `BLOCKED`; therefore review is not authorized.
+Independent process-free rebind: temporary-index tree
+`54f89f2cd01a39968879564648f93ef558671b59`; binary diff SHA-256
+`5d45cee85287e95ae4172d6273622ccd68a55c850e2f71c68678ed4ce14326d8`;
+porcelain-v1 SHA-256
+`deabdd374f1d7d97a26b6521fb1a3c5d47968d6c07c18456ac77876030024b79`;
+sorted 53-path SHA-256
+`fa6c4dfd071b527f560cca38c576266955e3cfae5c6532066c7f03b09819d987`;
+real index remains base, temp-tree diff-check clean, no process, GUI lock free.
+`webview.rs` is 519 lines, fixtures `lib.rs` remains 839, and all new listed
+modules remain below 500.
+
+Exclusive owner transfers to
+`renderer_isolation_product_surface_continuation_writer` for the same Slice 1
+only. It must preserve all compiling production work, complete exact snapshot /
+visible-id / semantics / accessibility mirroring, focused product/controller /
+dialog tests, and every bounded non-GUI slice gate; then return exact
+fingerprints plus direct `PRODUCT_SLICE_READY` or `BLOCKED`. Testkit process
+observation, fixtures, real-app E2E, performance code, and broad docs remain
+outside this slice. Only the Orchestrator may commit, merge, integrate, or
+transfer ownership after settlement.
 
 ---
 
