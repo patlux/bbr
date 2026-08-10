@@ -9,8 +9,8 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [performance contract](../../product/performance-contract.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
-Status: **running in bounded Slice-2 continuation under one exclusive
-writer.** PEEK and B3 are integrated through control checkpoint
+Status: **Slice 2 settled ready and is under independent read-only review.**
+PEEK and B3 are integrated through control checkpoint
 `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
 `4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The Orchestrator created branch
 `parallel/renderer-isolation` and worktree
@@ -152,21 +152,36 @@ empty staged/diff-check state, zero processes and free GUI lock, and returned
 direct `PRODUCT_SLICE_RECHECK_PASS` with no mutation. Slice 1 is therefore
 accepted.
 
-Exactly one Slice-2 writer `renderer_testkit_fixtures_writer` now owns the same
-worktree. Its bounded scope is additive testkit-gated process observation and
-termination plus deterministic `/__fx/hang/busy`, `/heavy`, `/dialog`, and
-`/beforeunload` fixtures. It must preserve Slice 1 byte-for-byte except where
-additive testkit integration requires shared composition, enumerate only
-app-owned WebContent helpers, filter every candidate through public parent-PID
-inspection, terminate at most one matching child per observation, never claim
-per-view PID targeting, and never touch foreign processes. Fixture routing
-must stay modular without growing `crates/bbr-fixtures/src/lib.rs` above its
-audited 839-line no-grow bound; every new file stays below 500 lines. This
-slice may add focused unit/contract tests and run non-GUI checks, but it may
-not add real-app E2E, performance code, broad documentation, commit, merge, or
-integrate. It returns an exact immutable fingerprint and direct
-`TESTKIT_FIXTURES_SLICE_READY` or `TESTKIT_FIXTURES_SLICE_BLOCKED`. Independent
-read-only review follows before Slice 3. Only the Orchestrator transfers
+Slice-2 writer `renderer_testkit_fixtures_writer` returned direct
+`TESTKIT_FIXTURES_SLICE_READY`. The Orchestrator independently reproduced the
+unchanged temporary-index tree
+`9b6624faed76ab7ec1da9df81533172e3662faad`; HEAD-to-tree binary diff SHA-256
+`3f5d2b4c6566c6b4a4eb2106078e7c5dec45bbd86a024c2c1fb15f85b1c4e0cf`;
+porcelain-v1 `-z` SHA-256
+`700f4f20865149a23a40e27a582c0f2d37c93be3827282d5666112d9e5354853`;
+sorted 70-path SHA-256
+`c474afccce09d81e646c868723380ceddc1256fc0fda1eb6725a454cd2aea7f2`;
+and exact Slice-1-to-Slice-2 binary-diff SHA-256
+`bea06769a99c4f6d1ece6081de32505bf213e971ac15ce0c7aa344f67d1331ac`.
+The delta is exactly 17 additive testkit, fixture, and manifest paths. It adds
+typed protocol-v7 responsiveness/helper requests, structured observation,
+public `NSRunningApplication` enumeration, public libproc parent-PID proof,
+deterministic lowest-PID selection with immediate ownership recheck and at
+most one normal termination request, plus modular busy/heavy/dialog/
+beforeunload fixtures. Release builds exclude the observation module through
+the new macOS `testkit` feature. Writer evidence reports fixtures 11, testkit
+29, default/testkit macOS 107+9 and 111+9, default/testkit app checks,
+warning-denied app Clippy, Web 322+18+1 and Browser 214 green. Real index and
+staged state remain base/empty; diff-check passes; no process or Git lock
+remains; GUI lock is free. `webview.rs` remains 519 lines, fixture `lib.rs` is
+652, and all new modules remain below 500. No real-app E2E, performance code,
+broad documentation, commit, merge, or integration entered Slice 2.
+
+Exactly one independent read-only Slice-2 reviewer now owns review of the
+immutable candidate. It must verify public-API and parent-PID safety,
+fail-closed exactly-one semantics, release/testkit gating, typed wire and
+fixture behavior, Slice-1 preservation, module budgets, scope and evidence.
+Only a direct Slice-2 pass authorizes Slice 3. Only the Orchestrator transfers
 ownership or commits/integrates after the final whole-candidate pass.
 
 ---
