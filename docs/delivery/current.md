@@ -153,8 +153,9 @@ forbidden.
 2. Re-read this complete document and audit every open queue item, active
    workflow, writer, worktree, authority dependency, and shared kernel point.
 3. Start SHUTDOWN, B1, and G1a maximally safely from the exact same verified
-   base. Start G1b immediately when G1a settles. All substantive work uses
-   isolated background workflows with explicit DeepSeek-v4-flash high.
+   base. Start G1b immediately when G1a settles. Historical workflows used
+   explicit DeepSeek-v4-flash high. Patrick's later model override below is the
+   sole authority for every newly started substantive subagent.
 4. Integrate SHUTDOWN first.
 5. Accept the integrated F2 functional checkpoint for continued MVP feature
    delivery: `just verify` and all 27 functional E2E suites are green. Preserve
@@ -279,6 +280,15 @@ bounded packet and current clean base.
   budget p95/max `100/150 ms`. No new budget class is introduced.
 - One writer per worktree; one product authority per concern; only the
   Orchestrator commits, merges, and integrates.
+- Effective immediately from Patrick's explicit current-delivery override,
+  every newly started implementation, review, remediation, research, and
+  planning subagent must specify
+  `homelab-llm/gpt-5.6-sol-fast:high`. This replaces the former
+  `homelab-llm/deepseek-v4-flash:high` requirement for future starts only.
+  Completed and already-started runs remain historical evidence and are not
+  changed, resumed merely to switch models, or repeated solely for this
+  override. Ownership, worktree, review, verification, and acceptance rules
+  remain unchanged.
 - Never weaken tests, validators, budgets, sample counts, deadlines, or
   acceptance criteria.
 - Dedicated startup optimization and the full release closeout are deliberately
@@ -375,7 +385,7 @@ re-enables them.
 | N1 serial integration | exact reviewed lane `ab98f429…` / tree `852f10a0…` merged as `542af1a…` / tree `2668bace…` | Conflict-free union; post-merge verify/Clippy/roadmap/diff green (`adcbc1a2…`), affected functional suites all green (`95d3baef…`). Performance remains unexecuted/unpassed. DDA now marks functional implementation; Z4 is technically ready but not started before the finite MVP decision. |
 | B3 serial integration complete | exact lane `28811284…` / tree `0d285195…` merged as `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree `4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`; focused staged recheck `REVIEW_PASS` | Semantic union preserved N1/PEEK and G2-TAB, removed StoryId-22 reservation machinery, retained Status Line 21 / Tab Row 22 / Library 23–30, and closed symmetric Library↔command-surface exclusion. Final non-performance evidence: `just verify`; Library 12/12; Saved Pages 4/4; Command 25/25; Gallery 22/22; PEEK 6/6; Gestures 9/9; Tabs 1/1. Performance and canonical `just e2e` remain unexecuted/unpassed. |
 | PEEK serial integration complete | exact lane commit `9e674a8a…`, integrated merge `bccac7ed…`, tree `e5d683ee…`; direct staged-union `REVIEW_PASS` after bounded lifecycle remediation | N1 provenance/gesture authority and Preview-only disposition both preserved. Browser 198/198, fresh non-performance verify, PEEK 6/6, New Window 4/4, Gestures 9/9, Tabs/Profiles/Smoke 1/1, Portal 7/7. Performance unexecuted/unpassed. G2-TAB is now the sole serial integration point. |
-| Renderer-isolation activation and forward recoveries | canonical reviewed packet `docs/roadmap/tasks/renderer-isolation-unresponsive-tabs.md`, source SHA `a3c5e5bd…`, direct `PACKET_REVIEW_PASS`; dependencies integrated at `492615b5…` | Readiness committed as `a264cd45…` / tree `0b0f4938…`; worktree/branch created clean. Product Slice 1 passed full behavioral/evidence review. Its three LOW module-budget findings were mechanically remediated at exact 56-path tree `6abd88e0…` / diff `2c89eb21…` / status `06b34a39…` / paths `69353ec4…`; one independent focused recheck now owns this immutable candidate. Later serial slices remain testkit/fixtures then E2E/performance/docs/gates. No product commit/integration before final whole-candidate pass. |
+| Renderer-isolation activation and forward recoveries | canonical reviewed packet `docs/roadmap/tasks/renderer-isolation-unresponsive-tabs.md`, source SHA `a3c5e5bd…`, direct `PACKET_REVIEW_PASS`; dependencies integrated at `492615b5…` | Readiness committed as `a264cd45…` / tree `0b0f4938…`; worktree/branch created clean. Product Slice 1 passed full behavioral/evidence review. Its three LOW module-budget findings were mechanically remediated at exact 56-path tree `6abd88e0…` / diff `2c89eb21…` / status `06b34a39…` / paths `69353ec4…`. The first independent focused recheck was already started under the historical model before Patrick's override and later failed with `Subagent produced no assistant output`; it issued no verdict, finding, mutation, or authority. It is not changed or repeated merely for the model switch. After this override is committed and the unchanged candidate is rebound, one replacement focused reviewer may start using the new mandatory model. Later serial slices remain testkit/fixtures then E2E/performance/docs/gates. No product commit/integration before final whole-candidate pass. |
 | Post-renderer queue reconciliation | independent read-only audit on committed control `ebefacec98e71fc6cecb5041f621891f1f77ed49`; Renderer worktree not inspected | Direct `QUEUE_FINDINGS`: no second product lane was runnable while Renderer owned the serial kernel. G3 cannot start because only G2 groups 1–2 are integrated and its mandated Sidebar-first cut overlaps Renderer. First post-Renderer bounded cut is G2 group 3 Address/input, followed by remaining G2 groups before G3. Z1/Z3 wait for the real G2 menu cut; Z4 and MVP boundary are user-owned; Phase-8 adapters need bounded packets/audits; explicit WKEXT/ENGINE/TART/SPLIT/startup/performance deferrals remain. Packet/current stale G3 and menu wording identified for later bounded docs correction. |
 | First-MVP completion-audit scaffold | independent read-only prompt-to-artifact audit covered PRODUCT, ROADMAP, all phases/tracks, interaction/DDA/performance contracts, current delivery, and relevant packets at committed authority `5dd1ffaf…`; no product worktree was inspected or mutated | Direct verdict `MVP_BOUNDARY_AMBIGUOUS`. N1/PEEK can satisfy their named gesture/opener/preview rows; B3 can complete the committed Saved Pages chain; G2-TAB advances UI catalog authority. They cannot close unresolved foreground/background opening or decide whether titlebar navigation, full split daily use, per-site settings/history UI, native permission/client-cert/file-panel adapters, context-menu remainder, site matrix, and related open rows are required before the first-MVP claim. Phase-9 startup/performance/package/accessibility debt remains separately deferred/unpassed rather than silently moved into or out of MVP. Patrick has been asked to confirm semantic policy and finite boundary; until answered, no completion claim or Z4 activation. |
 

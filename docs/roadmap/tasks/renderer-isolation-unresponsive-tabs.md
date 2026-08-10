@@ -141,15 +141,19 @@ three affected crates, release checks, fmt and diff-check. Evidence log
 `/tmp/remediation-evidence.log` has SHA-256
 `af47ee7f5dbb260fb67b0fff95a93dbdf75a5f893fec9c01c153c5a23b6d1781`.
 
-Exclusive ownership now transfers to independent read-only reviewer
-`renderer_isolation_product_surface_budget_reviewer`. It must reproduce the
-exact 56-path candidate, inspect the complete six-file remediation delta, prove
-all three findings closed without behavior/API/assertion/visual drift, verify
-module budgets and focused evidence, and return direct
-`PRODUCT_SLICE_RECHECK_PASS` or `PRODUCT_SLICE_RECHECK_FINDINGS`. It must not
-mutate any worktree. Slice 2 remains blocked until direct pass. Only the
-Orchestrator may commit, merge, integrate, or transfer ownership after
-settlement.
+The first independent read-only recheck was started before Patrick's subagent
+model override and later failed with `Subagent produced no assistant output`.
+It emitted no verdict, finding, mutation, or authority and is not changed or
+repeated merely to switch models. After the override is committed and the exact
+56-path candidate is rebound unchanged, exclusive ownership may transfer to
+one replacement independent read-only reviewer. That reviewer must use
+`homelab-llm/gpt-5.6-sol-fast:high`, reproduce the candidate, inspect the
+complete six-file remediation delta, prove all three findings closed without
+behavior/API/assertion/visual drift, verify module budgets and focused evidence,
+and return direct `PRODUCT_SLICE_RECHECK_PASS` or
+`PRODUCT_SLICE_RECHECK_FINDINGS`. It must not mutate any worktree. Slice 2
+remains blocked until direct pass. Only the Orchestrator may commit, merge,
+integrate, or transfer ownership after settlement.
 
 ---
 
