@@ -93,15 +93,30 @@ real index remains base, temp-tree diff-check clean, no process, GUI lock free.
 `webview.rs` is 519 lines, fixtures `lib.rs` remains 839, and all new listed
 modules remain below 500.
 
-Exclusive owner transfers to
-`renderer_isolation_product_surface_continuation_writer` for the same Slice 1
-only. It must preserve all compiling production work, complete exact snapshot /
-visible-id / semantics / accessibility mirroring, focused product/controller /
-dialog tests, and every bounded non-GUI slice gate; then return exact
-fingerprints plus direct `PRODUCT_SLICE_READY` or `BLOCKED`. Testkit process
+The product-surface continuation returned direct `PRODUCT_SLICE_READY` after
+completing snapshot/visible-id/semantic/accessibility mirrors, fixing exact
+native-view hide/restore precedence, auditing recovery/cadence/dialog/stale
+behavior, and adding focused tests. It reports green fmt/diff, Web 322, Browser
+214, macOS 107, UI 75, testkit app 273, release app 215, release/testkit checks,
+and warning-denied Clippy. Independent rebind confirms exact temporary-index
+tree `e7c8ab85f5f62a5822e3291ecf9b03ec9f1ee130`; binary diff SHA-256
+`f1ceb6fecf0a3543f019873e3a5986b896f7a894fff52dd6d52f35073015a07c`;
+porcelain-v1 SHA-256
+`d109949bbea4847ece4db80f5fc3b84b1b9b1d3623c98acb9a155008d5e54fc2`;
+sorted 54-path SHA-256
+`357209b2ee28797e58268954211fd5d36a01217ef7cfa83c4078f35200c5f9c6`;
+real index remains base, temp-tree diff-check clean, no process, GUI lock free.
+No-grow surfaces remain 519/839 lines and all new files are below 500.
+
+Slice 1 is now under exclusive independent read-only review by
+`renderer_isolation_product_surface_reviewer` on that exact 54-path tree. The
+reviewer must inspect full diff bodies, map every Slice-1 product/architecture /
+focus/stale/dialog/cadence/test/gate requirement to evidence, rerun a bounded
+critical subset when needed, and return direct `PRODUCT_SLICE_PASS` or
+`PRODUCT_SLICE_FINDINGS`. It must not mutate any worktree. Testkit process
 observation, fixtures, real-app E2E, performance code, and broad docs remain
-outside this slice. Only the Orchestrator may commit, merge, integrate, or
-transfer ownership after settlement.
+outside this slice and start only after direct pass. Only the Orchestrator may
+commit, merge, integrate, or transfer ownership after settlement.
 
 ---
 
