@@ -355,7 +355,7 @@ Functional evidence:
   bbr-browser 178, bbr-web 364+12+1, bbr-web-macos 103+9, bbr-testkit 27,
   perf baseline 21. Post-merge `just verify`, explicit testkit Clippy, roadmap,
   and diff-check passed; log `/tmp/bbr-n1-merge-nonperf-20260810T0255Z.log`,
-  SHA-256 `adcbc1a2ab9ea8f6574d661962d294e39a991fbd04a3d11c22d6dcb3c7c11fc0`. 
+  SHA-256 `adcbc1a2ab9ea8f6574d661962d294e39a991fbd04a3d11c22d6dcb3c7c11fc0`.
 Real-app E2E:
   On integrated head `542af1a…`, gestures 9/9, Smoke 1/1, Tabs 1/1,
   Profiles 1/1, New Window 4/4, Spaces 15/15, Split Geometry 1/1, and Context
