@@ -24,6 +24,7 @@ pub mod folders;
 pub mod footer;
 pub mod menu;
 pub mod pane;
+pub mod saved_pages_library;
 pub mod section;
 pub mod space;
 pub mod status;
@@ -44,6 +45,16 @@ pub use folders::{
 pub use footer::{footer_control, footer_surface, FooterControl};
 pub use menu::{plus_menu_items, PlusMenuItem, PlusMenuState};
 pub use pane::{crash_panel, empty_space_pane};
+pub use saved_pages_library::{
+    library_collection_id, library_collection_row, library_count_line, library_display_title,
+    library_monogram, library_remove_confirm, library_row, library_row_id, library_row_spec,
+    library_search_field, library_sort_control, library_state_row, library_surface, LIBRARY_CLOSE_ID,
+    LIBRARY_COLLECTIONS_ID, LIBRARY_COUNT_ID, LIBRARY_EMPTY_ID, LIBRARY_ID, LIBRARY_LOADING_ID,
+    LIBRARY_NO_RESULTS_ID, LIBRARY_REMOVE_CONFIRM_ID, LIBRARY_SEARCH_ID, LIBRARY_SORT_ID,
+    LibraryAction, LibraryCollectionSpec, LibraryItemAction, LibraryRowSpec, LibrarySort,
+    LibraryStage, LibraryWindow, SavedPagesLibraryModel, saved_page_result_id,
+    saved_page_result_title_id, saved_page_result_url_id, visible_window,
+};
 pub use section::section_label;
 pub use space::{profile_chip, profile_chip_id, ProfileChipSpec, SpaceRowVisuals};
 pub use status::{status_line, StatusModel, STATUS_ID};
