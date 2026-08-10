@@ -977,6 +977,85 @@ of canonical sequential `just e2e`; the optimized Peek milestones
 (`peek_request_to_present`, `peek_dismiss_to_origin`, `peek_promote_to_tab`)
 are coded with budgets and 0 accepted samples — unexecuted and unpassed.
 
+## 7o. The Saved Pages Library suite (`bbr-app/tests/e2e_shell_saved_pages_library.rs`)
+
+`just e2e-shell-saved-pages-library` contains 12 real-app scenarios for the B3
+packet (`saved-pages-library`) — the integrated production Library surface,
+split across focused modules under `e2e_shell_saved_pages_library/` so no file
+outgrows the ~500-line budget:
+
+1. **Production entry and dismissal:** Cmd-Shift-L opens the internal chrome
+   surface, which covers the native view while open; Escape dismisses and
+   restores the native view exactly (hidden-view bookkeeping).
+2. **Symmetric command-surface exclusion:** Cmd-T and Cmd-L replace an open
+   Library, restore the exact hidden native view, and present only the selected
+   command surface; no invisible Library authority or trapped focus survives.
+3. **Deterministic search and sort:** keyboard and pointer search plus all
+   deterministic sort orders expose typed semantics from the typed
+   `SavedPagesLibrarySnapshot`.
+4. **Inline pointer rename:** the draft is confirmed or cancelled through the
+   production control, and the rename persists.
+5. **Multi-select and destructive remove:** one or many records are selected;
+   the remove confirmation is explicit; every open tab/session stays
+   untouched and closing tabs leaves Library records untouched.
+6. **Flat collection lifecycle:** create, rename, move selected records in and
+   out, and remove a one-level collection; every mutation persists.
+7. **Pointer selection toolbar:** the Clear / Remove / Move controls through
+   their production pointer paths — Clear empties the set, Move opens the
+   move-to sheet whose options move the selection in/out of a collection,
+   and Remove stages the destructive confirmation for exactly the selection;
+   the one AppStore authority's counts stay exact and tabs stay untouched.
+8. **Pointer collection surface:** the create entry, the staged create/rename
+   input with Confirm/Cancel, the collection-row rename→remove→none cycle,
+   and the destructive collection remove confirmation (members move out
+   first, records never lost) — all through the pointer paths.
+9. **Production scroll-wheel path:** the bounded list's wheel clamp math
+   feeding the one production scroll entry over the seeded 1,000-record
+   provider; windows/anchors are exact and the wheel path is never a typed
+   `SetSavedPagesLibraryScroll` substitute.
+10. **Restart persistence:** rows, labels, and collections restore after a real
+   app restart on the same profile.
+11. **Exactly-one-fresh-tab activation:** opening a Library row routes through
+    the B2 command authority — exactly one fresh regular tab in the currently
+    active Space/Profile, never a silent selection of a matching tab.
+12. **1k bounded window:** the seeded ≥1,000-record fixture proves bounded
+    rows, deterministic scroll/selection with stable anchors, and the long
+    title/URL + missing title/favicon fallbacks.
+
+Every mutation routes through the one app-owned Library composition and the
+one AppStore/B2 authority the typed snapshot exposes — never a second
+persistence or identity policy. No sleeps: every step synchronizes on typed
+snapshot state or semantic events under an explicit deadline, and the suite
+takes the serial GUI lock.
+
+Protocol (additive, still version 6): the `SavedPagesLibrarySnapshot` carries
+the open flag, search/sort state, the bounded row window, selection/collection
+membership, and the remove-confirm state; `library_set_search` (shared with
+the keyboard path) and `library_set_scroll` (the tracked offset the wheel
+listener drives) are the production seams; the benchmark kinds
+`SavedPagesLibrarySearch` and `SavedPagesLibraryScroll` join the interaction
+matrix in the B2 warm command-text / interaction classes — no new budget
+class. The B3 optimized scenarios (`just e2e-perf`) exist with drivers,
+fast-but-wrong guards, and budgets but have **zero executions**: no optimized
+sample has been accepted, the boxes stay unchecked, and performance remains
+unpassed under the active delivery override.
+
+**Final semantic-union evidence (exact runtime tree
+`b4ab98113c6582caad2150764815d3885589dfa7`):** the full 12/12 suite above —
+log `/tmp/bbr-b3-review-remediation-e2e-shell-saved-pages-library-20260810T144111Z.log`,
+SHA-256 `06838f3556a34bb46d7dfe20f8b5f6f3bdd3b6d7ce91a19a59b633dfffa11673`;
+`just e2e-shell-saved-pages` 4/4 — log
+`/tmp/bbr-b3-review-remediation-e2e-shell-saved-pages-20260810T144301Z.log`,
+SHA-256 `440317455fbf499fada4515d404c1f460d0a5854a817490314e5ac65763273cc`;
+Gallery 22/22 — log
+`/tmp/bbr-b3-review-remediation-e2e-gallery-20260810T144301Z.log`, SHA-256
+`bc41dd1df11d887dea03a10fa30949a33be05edb916462c59fd9cbd25a2ff7e9`;
+and the command regression suite 25/25 — log
+`/tmp/bbr-b3-review-remediation-e2e-shell-command-20260810T144111Z.log`, SHA-256
+`953138116c7ad011402cba6a8269c75c9fed690cb4545df52d940a132bcc7b6f`.
+All runs used Xcode 26.2 and the serial repository GUI lock. The final staged
+tree differs from this runtime tree only in evidence/documentation wording.
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature
@@ -1027,6 +1106,7 @@ just e2e-shell-split-geometry # keyed per-WebViewId split panes, focus, resize, 
 just e2e-shell-command  # command engine + U1 NativeAboveWeb palette/overlay + AppKit boundary evidence
 just e2e-shell-saved-pages # Saved Pages command authority: Cmd-D toggle, restart survival, exactly-one-fresh-tab, production quit durability (B2)
 just e2e-peek         # transient Link Preview / Peek: eligible request, dismissal/focus, same-session promotion, one-per-pane, exclusions, crash teardown (PEEK)
+just e2e-shell-saved-pages-library # Saved Pages Library: entry/Escape, search/sort, rename, remove, multi-select, collections, pointer toolbar/collection surface, scroll-wheel path, restart, exactly-one-fresh-tab activation, 1k bounded window (B3)
 just e2e-shell-hover    # pointer hover/press states + the internal §15 semantic tree
 just e2e-perf      # optimized startup and interaction latency budgets
 just e2e-perf-full # bounded repeated canonical gate (COLD_STARTUP_SAMPLES launches + 30-sample interactions)

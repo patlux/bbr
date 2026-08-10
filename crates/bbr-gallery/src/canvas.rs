@@ -7,7 +7,9 @@
 use bbr_ui::theme::Theme;
 use gpui::{div, prelude::*, AnyElement, SharedString};
 
-use crate::registry::{CatalogRegistry, ControlsStory, StoryContext, StoryId, TabRowStory};
+use crate::registry::{
+    CatalogRegistry, ControlsStory, LibraryStory, StoryContext, StoryId, TabRowStory,
+};
 
 /// Everything the canvas needs to render the selected story.
 pub struct CanvasModel<'a> {
@@ -22,6 +24,9 @@ pub struct CanvasModel<'a> {
     /// The Tab Row context (`Some` only when the Tab Row story is
     /// selected) — see [`TabRowStory`].
     pub tab_row: Option<TabRowStory<'a>>,
+    /// The Saved Pages Library context (`Some` only when a Library story is
+    /// selected) — see [`LibraryStory`].
+    pub library: Option<LibraryStory<'a>>,
 }
 
 /// The canvas surface: a header (story label + state) above the story.
@@ -36,6 +41,7 @@ pub fn canvas_surface(model: CanvasModel) -> AnyElement {
         state: model.story_state,
         controls: model.controls,
         tab_row: model.tab_row,
+        library: model.library,
     };
     let content = (story.render)(&context);
     div()

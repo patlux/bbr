@@ -20,7 +20,7 @@ use crate::repository_saved_pages_rows::{load_collections, load_saved_pages};
 use crate::validation_saved_pages::{validate_collections, validate_saved_pages};
 use crate::{
     schema, setup, validation, CollectionRecord, InvalidSnapshotIssue, PersistenceError,
-    Repository, WriteStats,
+    Repository, SavedPageRecord, WriteStats,
 };
 
 impl Repository {
@@ -80,6 +80,92 @@ impl Repository {
             committed_transactions: 1,
             sql_statements: 1 + inserted_rows,
             deleted_rows,
+            inserted_rows,
+        })
+    }
+
+    /// Validates and atomically replaces **both** persisted Saved Page
+    /// tables (the records and the flat collections they may reference) in
+    /// one transaction.
+    ///
+    /// This is the whole-Saved-Pages write path the B3 Library attaches to
+    /// the bounded nonblocking writer: the in-memory provider is the single
+    /// runtime authority, and each accepted mutation replaces the complete
+    /// persisted Saved Page state in one transaction, so a removed record
+    /// or collection can never return from the store and a collection
+    /// membership can never dangle. The combined validation runs before any
+    /// write — a duplicate canonical URL, duplicate identity, dangling
+    /// collection reference, or invalid collection set rejects whole and
+    /// leaves the store byte-identical. The records arrive in the
+    /// provider's deterministic presentation order and the collections in
+    /// their declaration order (`position` = index for both tables).
+    ///
+    /// The B3 writer needs this combined write because collection and page
+    /// mutations are batched together: two separate `replace_*` calls would
+    /// have to run in opposite orders depending on whether a page references
+    /// a newly created collection (collections first) or a persisted page
+    /// still references a removed collection (pages first) — an unresolvable
+    /// ordering constraint. One transaction with the combined contract is
+    /// the only order-independent answer, and it mirrors the existing
+    /// `replace_snapshot` whole-store write for the Saved Pages tables.
+    pub fn replace_saved_snapshot(
+        &self,
+        pages: &[SavedPageRecord],
+        collections: &[CollectionRecord],
+    ) -> Result<WriteStats, PersistenceError> {
+        validate_collections(collections).map_err(PersistenceError::InvalidSnapshot)?;
+        validate_saved_pages(pages, collections).map_err(PersistenceError::InvalidSnapshot)?;
+        let mut connection = Connection::open(self.path()).map_err(schema::storage)?;
+        setup::prepare_store(&mut connection)?;
+        connection
+            .pragma_update(None, "foreign_keys", true)
+            .map_err(schema::storage)?;
+        let transaction = connection.transaction().map_err(schema::storage)?;
+        // Delete the referencing rows first: `saved_pages` rows carry the
+        // strict `collection_id` foreign key, so the collections table must
+        // be emptied only after every referencing row is gone (the same
+        // order `replace_snapshot` uses).
+        let deleted_pages = transaction
+            .execute("DELETE FROM saved_pages", [])
+            .map_err(schema::storage)? as u64;
+        let deleted_collections = transaction
+            .execute("DELETE FROM collections", [])
+            .map_err(schema::storage)? as u64;
+        let mut inserted_rows = 0_u64;
+        for (position, collection) in collections.iter().enumerate() {
+            transaction
+                .execute(
+                    "INSERT INTO collections(id, title, position) VALUES (?, ?, ?)",
+                    params![to_i64(collection.id), collection.title, position as i64],
+                )
+                .map_err(schema::storage)?;
+            inserted_rows += 1;
+        }
+        for (position, page) in pages.iter().enumerate() {
+            transaction
+                .execute(
+                    "INSERT INTO saved_pages(id, canonical_url, captured_title, user_label, \
+                     created_at, updated_at, collection_id, position) VALUES (?, ?, ?, ?, ?, ?, \
+                     ?, ?)",
+                    params![
+                        to_i64(page.id),
+                        page.canonical_url,
+                        page.captured_title,
+                        page.user_label,
+                        to_i64(page.created_at),
+                        to_i64(page.updated_at),
+                        page.collection_id.map(to_i64),
+                        position as i64
+                    ],
+                )
+                .map_err(schema::storage)?;
+            inserted_rows += 1;
+        }
+        transaction.commit().map_err(schema::storage)?;
+        Ok(WriteStats {
+            committed_transactions: 1,
+            sql_statements: 1 + inserted_rows,
+            deleted_rows: deleted_collections + deleted_pages,
             inserted_rows,
         })
     }

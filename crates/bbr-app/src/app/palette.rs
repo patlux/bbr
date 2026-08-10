@@ -205,6 +205,12 @@ impl BbrApp {
     /// surface presentation (single-state field → mutual exclusion) and
     /// clears the §11.3 profile hint through the shared command-bar entry.
     pub fn open_palette(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Command surfaces and the Library are mutually exclusive in both
+        // directions: Cmd-T replaces the open internal chrome surface before
+        // staging New Tab mode and presenting the native command portal.
+        if self.library.open {
+            self.close_saved_pages_library(window, cx);
+        }
         // Opening a command surface replaces any open find or context-menu
         // presentation (exactly one active portal surface per window).
         self.find_discard(cx);
@@ -221,6 +227,12 @@ impl BbrApp {
     /// activation as the in-rail command bar. `Cmd-L` and the field
     /// pointer-click route here.
     pub fn open_overlay(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Cmd-L/pointer entry has the same symmetric Library replacement
+        // contract as Cmd-T; no hidden native view or trapped Library focus
+        // may survive under the command portal.
+        if self.library.open {
+            self.close_saved_pages_library(window, cx);
+        }
         self.find_discard(cx);
         self.menu_discard(cx);
         self.dismiss_command_portal(cx);

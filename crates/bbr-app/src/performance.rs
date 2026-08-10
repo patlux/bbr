@@ -23,6 +23,7 @@ mod context_menu;
 pub(crate) mod downloads;
 mod error_surface;
 mod find;
+mod library;
 pub mod pane_geometry;
 mod peek;
 pub mod slot;
@@ -78,6 +79,9 @@ struct State {
     /// `peek_request_to_present` benchmark commits only against it
     /// (render-gated, see `peek`).
     latest_peek: Option<peek::PeekObservation>,
+    /// The Saved Pages Library presentation the B3 benchmarks observed at
+    /// the mutation site (search/scroll; see `library`).
+    library: library::LibraryObserved,
     latest_active_web_view: Option<WebViewId>,
     latest_active_space: TestSpaceId,
     latest_sidebar_visible: bool,
@@ -157,6 +161,10 @@ struct Pending {
     /// must commit from (the preview session raised above its warm origin
     /// with the Peek bar drawn).
     peek: Option<peek::PeekExpectation>,
+    /// The exact Saved Pages Library presentation identity the pending
+    /// sample must commit from (search result count/window, or scroll
+    /// window/anchor/selection).
+    library: Option<library::LibraryExpected>,
 }
 
 impl PerformanceProbe {
@@ -173,6 +181,7 @@ impl PerformanceProbe {
                 latest_context_menu: None,
                 latest_auth: None,
                 latest_peek: None,
+                library: library::LibraryObserved::default(),
                 latest_active_web_view: None,
                 latest_active_space: TestSpaceId(0),
                 latest_sidebar_visible: true,
@@ -204,6 +213,7 @@ impl PerformanceProbe {
                     context_menu: None,
                     auth: None,
                     peek: None,
+                    library: None,
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
@@ -253,6 +263,7 @@ impl PerformanceProbe {
             context_menu: None,
             auth: None,
             peek: None,
+            library: None,
         });
         Ok(())
     }
@@ -530,6 +541,7 @@ impl PerformanceProbe {
             || !context_menu::context_menu_matches(pending, &state)
             || !auth::auth_matches(pending, &state)
             || !peek::peek_matches(pending, &state)
+            || !library::library_matches(pending, &state)
         {
             #[cfg(feature = "testkit")]
             if let Some(_d) = pending.downloads.as_ref() {

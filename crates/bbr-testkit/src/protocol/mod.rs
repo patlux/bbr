@@ -29,7 +29,7 @@ mod snapshot;
 
 pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
-pub use request::Request;
+pub use request::{Request, SavedPagesLibraryCollectionOp};
 pub use snapshot::{
     AuthSnapshot, ChipCompanionSnapshot, CommandResultSnapshot, CommandResultState, CommandSurface,
     ContentGestureSnapshot, ContextMenuItemSnapshot, ContextMenuNativeSnapshot,
@@ -37,7 +37,8 @@ pub use snapshot::{
     DownloadRowSnapshot, DownloadsPanelSnapshot, ErrorSurfaceCategory, ErrorSurfaceSnapshot,
     FavoriteTileSnapshot, FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts,
     NewWindowSnapshot, PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, PreviewSnapshot,
-    PreviewZOrder, ProfileSnapshot, RestoreDisposition, SemanticNode, SemanticRole, Snapshot,
+    PreviewZOrder, ProfileSnapshot, RestoreDisposition, SavedPagesCollectionSnapshot,
+    SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot, SemanticNode, SemanticRole, Snapshot,
     SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceSnapshot, SpaceStripScrollSnapshot,
     StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, SwipeSnapshot, TabSnapshot,
     TabVisualState, WebContentProbe, ZoomSnapshot,
@@ -184,6 +185,48 @@ mod tests {
         assert_eq!(
             serde_json::from_str::<Request>("\"CloseSplit\"").unwrap(),
             Request::CloseSplit
+        );
+    }
+
+    /// The Saved Pages Library pointer-rename requests keep their exact
+    /// externally-tagged JSON shape on the wire (the B3 pointer rename
+    /// flow: begin → draft → confirm/cancel), and the fixed literals
+    /// deserialize back into the same typed values.
+    #[test]
+    fn library_rename_requests_have_exact_wire_shape() {
+        let begin = Request::BeginSavedPagesLibraryRowRename { id: 7 };
+        assert_eq!(
+            serde_json::to_value(&begin).unwrap(),
+            json!({ "BeginSavedPagesLibraryRowRename": { "id": 7 } })
+        );
+        assert_eq!(
+            serde_json::from_str::<Request>(r#"{"BeginSavedPagesLibraryRowRename":{"id":7}}"#)
+                .unwrap(),
+            begin
+        );
+        let draft = Request::SetSavedPagesLibraryRenameDraft {
+            text: "Work".into(),
+        };
+        assert_eq!(
+            serde_json::to_value(&draft).unwrap(),
+            json!({ "SetSavedPagesLibraryRenameDraft": { "text": "Work" } })
+        );
+        // The unit variants serialize as the bare variant name.
+        assert_eq!(
+            serde_json::to_value(Request::ConfirmSavedPagesLibraryRename).unwrap(),
+            json!("ConfirmSavedPagesLibraryRename")
+        );
+        assert_eq!(
+            serde_json::from_str::<Request>("\"ConfirmSavedPagesLibraryRename\"").unwrap(),
+            Request::ConfirmSavedPagesLibraryRename
+        );
+        assert_eq!(
+            serde_json::to_value(Request::CancelSavedPagesLibraryRename).unwrap(),
+            json!("CancelSavedPagesLibraryRename")
+        );
+        assert_eq!(
+            serde_json::from_str::<Request>("\"CancelSavedPagesLibraryRename\"").unwrap(),
+            Request::CancelSavedPagesLibraryRename
         );
     }
 

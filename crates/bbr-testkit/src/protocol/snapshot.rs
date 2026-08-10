@@ -1176,6 +1176,13 @@ pub struct Snapshot {
     /// its covered origin's. `None` at rest.
     #[serde(default)]
     pub preview_z_order: Option<PreviewZOrder>,
+    /// Saved Pages Library presentation state (B3 packet
+    /// `saved-pages-library`): open flag, search/sort, the bounded row
+    /// window, the flat collections, the multi-select set, the destructive
+    /// remove confirmation, and the native-view hide evidence. The empty
+    /// default means the Library is closed.
+    #[serde(default)]
+    pub library: SavedPagesLibrarySnapshot,
 }
 
 /// The Phase-7 startup restore outcome, surfaced truthfully in the testkit
@@ -1248,4 +1255,89 @@ pub struct StoreSnapshot {
     /// save/remove mutations — never queried from SQLite during ranking or
     /// render.
     pub saved_pages_count: usize,
+}
+
+/// Typed Saved Pages Library presentation state (B3 packet
+/// `saved-pages-library`; DESIGN.md §11.16/§15). The empty default means
+/// the Library is closed.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct SavedPagesLibrarySnapshot {
+    /// The Library surface is open (the internal chrome surface covers the
+    /// content area and the active view's native slot is hidden).
+    pub open: bool,
+    /// The presentation stage (`loading` while a snapshot is attached;
+    /// production opens `ready`).
+    pub stage: String,
+    /// The active search query (empty = unfiltered).
+    pub search: String,
+    /// The deterministic sort machine name (`updated_newest` |
+    /// `updated_oldest` | `title_ascending` | `title_descending`).
+    pub sort: String,
+    /// The total number of matching records behind the window.
+    pub total: usize,
+    /// The bounded row window the surface renders — never the full
+    /// collection (the 1k bounded-render evidence).
+    pub rows: Vec<SavedPagesLibraryRowSnapshot>,
+    /// The windowed render bounds `[first, last)` plus the stable scroll
+    /// anchor (the `BookmarkId` of the first visible row).
+    pub window_first: usize,
+    pub window_last: usize,
+    pub window_anchor: Option<u64>,
+    /// The flat collections, one level only.
+    pub collections: Vec<SavedPagesCollectionSnapshot>,
+    /// The multi-select set (stable `BookmarkId`s).
+    pub selected: Vec<u64>,
+    /// True while the destructive remove confirmation is presented.
+    pub remove_confirm: bool,
+    /// The ids targeted by the pending destructive remove.
+    pub remove_targets: Vec<u64>,
+    /// The collection row whose pointer action is staged
+    /// (`rename` | `remove`), when any.
+    pub collection_action: Option<(u64, String)>,
+    /// The staged collection rename/create draft label (empty at rest).
+    pub collection_draft: String,
+    /// True while the collection create input is staged (the action
+    /// surface's create operation).
+    pub collection_create_staged: bool,
+    /// True while the selection move-to sheet is open.
+    pub move_sheet_open: bool,
+    /// The tracked production scroll offset (rows scrolled past) the wheel
+    /// listener updates/clamps and the bounded window derives from.
+    pub scroll_offset: usize,
+    /// The row whose inline/staged rename input is presented (the pointer
+    /// rename entry, B3); `None` at rest.
+    pub editing_row: Option<u64>,
+    /// The staged rename draft label (empty at rest).
+    pub rename_draft: String,
+    /// The active native view is hidden by the open Library (never
+    /// destroyed; restored exactly on close).
+    pub native_view_hidden: bool,
+    /// The in-memory provider record count (the row evidence behind the
+    /// window; the store snapshot's `saved_pages_count` mirror).
+    pub saved_pages_count: usize,
+}
+
+/// One bounded Library row (§11.16 row contract, typed for E2E).
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct SavedPagesLibraryRowSnapshot {
+    /// The stable `BookmarkId` (the §15 id suffix).
+    pub bookmark: u64,
+    /// Display title (user label → captured title → hostname/URL fallback).
+    pub title: String,
+    /// Mid-ellipsized canonical URL.
+    pub url: String,
+    /// Optional one-level collection label.
+    pub collection: Option<String>,
+    /// The §10 `selected` state.
+    pub selected: bool,
+    /// The §7.2 monogram fallback letter.
+    pub favicon_letter: String,
+}
+
+/// One flat collection row (§11.16 flat collections, one level only).
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct SavedPagesCollectionSnapshot {
+    pub id: u64,
+    pub title: String,
+    pub member_count: usize,
 }

@@ -16,8 +16,8 @@ use smol::prelude::*;
 
 use crate::actions::{
     AuthSheetFieldTab, Back, CloseTab, FindInPage, FocusCommandBar, FocusWeb, Forward, MoveTab,
-    NewSpace, NewTab, OpenOverlay, OpenPalette, PinTab, Reload, ReopenTab, ReorderTabDown,
-    ReorderTabUp, ToggleBookmark, ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
+    NewSpace, NewTab, OpenOverlay, OpenPalette, OpenSavedPagesLibrary, PinTab, Reload, ReopenTab,
+    ReorderTabDown, ReorderTabUp, ToggleBookmark, ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
 };
 use crate::app::BbrApp;
 /// Root-window + app-entity seam: run an update against the separately
@@ -282,6 +282,17 @@ pub(crate) fn install_actions(
     });
     cx.on_action({
         let app = app.clone();
+        move |_: &OpenSavedPagesLibrary, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.open_saved_pages_library(window, cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
         move |_: &NewTab, cx| {
             let app = app.clone();
             cx.defer(move |cx| {
@@ -397,6 +408,9 @@ pub(crate) fn install_actions(
         // `saved-pages-actions-command`; conventional macOS bookmark
         // shortcut).
         KeyBinding::new("cmd-d", ToggleBookmark, None),
+        // Cmd-Shift-L opens the Saved Pages Library (B3 packet
+        // `saved-pages-library`; DESIGN.md §11.16).
+        KeyBinding::new("cmd-shift-l", OpenSavedPagesLibrary, None),
         // App-wide (context-less) bindings resolve at the deepest depth, so
         // they outrank gpui-component `Root`'s element-scoped `tab`/`shift-tab`
         // focus-traversal bindings: Tab moves the credential sheet's field

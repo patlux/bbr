@@ -109,6 +109,10 @@ impl BbrApp {
         let download_rows = self.download_rows_snapshot();
         let downloads = self.downloads_panel_snapshot();
         let error_surface = self.error_surface_snapshot();
+        // The §11.16 Library presentation model — one model source shared
+        // by the typed snapshot, the visible-id mirror, and the semantic
+        // tree (the same model the render draws).
+        let library_model = self.library_model();
         let semantics = self.semantic_snapshot(
             &browser,
             &rows,
@@ -117,6 +121,7 @@ impl BbrApp {
             &favorite_tiles,
             &folder_rows,
             &folder_members,
+            &library_model,
         );
         let command_result_state = self.command_ranking.state;
         let command_results = self
@@ -290,6 +295,8 @@ impl BbrApp {
                     downloads_delete_rows: self.downloads_delete_rows_in_window(),
                     error_surface_visible,
                     error_surface_origin,
+                    library_open: self.library.open,
+                    library_ids: crate::app::library::model::library_visible_ids(&library_model),
                 },
             ),
             semantics,
@@ -466,6 +473,7 @@ impl BbrApp {
             },
             #[cfg(not(target_os = "macos"))]
             preview_z_order: None,
+            library: self.library_snapshot(&library_model),
         }
     }
 
@@ -502,6 +510,77 @@ impl BbrApp {
             search_engine: self.store.effective_settings().engine().id().to_string(),
             history_count,
             saved_pages_count,
+        }
+    }
+
+    /// The §11.16 Saved Pages Library presentation snapshot (B3 packet
+    /// `saved-pages-library`): the typed state the E2E suites assert,
+    /// derived from the same presentation model the render draws plus the
+    /// app-local state and the store's provider count — the empty default
+    /// when the Library is closed (the surface is not drawn).
+    fn library_snapshot(
+        &self,
+        model: &bbr_ui::components::SavedPagesLibraryModel,
+    ) -> bbr_testkit::protocol::SavedPagesLibrarySnapshot {
+        use bbr_testkit::protocol::{
+            SavedPagesCollectionSnapshot, SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot,
+        };
+        if !self.library.open {
+            return SavedPagesLibrarySnapshot::default();
+        }
+        let native_view_hidden = self
+            .controller
+            .snapshot()
+            .active_view
+            .is_some_and(|view| self.library.is_hidden(view));
+        SavedPagesLibrarySnapshot {
+            open: true,
+            stage: match model.stage {
+                bbr_ui::components::LibraryStage::Loading => "loading".into(),
+                bbr_ui::components::LibraryStage::Ready => "ready".into(),
+            },
+            search: model.search.clone(),
+            sort: model.sort.as_str().to_string(),
+            total: model.total,
+            rows: model
+                .rows
+                .iter()
+                .map(|row| SavedPagesLibraryRowSnapshot {
+                    bookmark: row.bookmark,
+                    title: row.title.clone(),
+                    url: row.url.clone(),
+                    collection: row.collection.clone(),
+                    selected: row.selected,
+                    favicon_letter: row.favicon.letter.to_string(),
+                })
+                .collect(),
+            window_first: model.window.first,
+            window_last: model.window.last,
+            window_anchor: model.window.anchor,
+            collections: model
+                .collections
+                .iter()
+                .map(|collection| SavedPagesCollectionSnapshot {
+                    id: collection.id,
+                    title: collection.title.clone(),
+                    member_count: collection.member_count,
+                })
+                .collect(),
+            selected: self.library.selected.clone(),
+            remove_confirm: self.library.remove_confirm,
+            remove_targets: self.library.remove_targets.clone(),
+            collection_action: self
+                .library
+                .collection_action
+                .map(|(id, action)| (id, action.as_str().to_string())),
+            collection_draft: self.library.collection_draft.clone(),
+            collection_create_staged: self.library.collection_create_staged,
+            move_sheet_open: self.library.move_sheet_open,
+            scroll_offset: self.library.scroll_offset,
+            editing_row: self.library.editing_row,
+            rename_draft: self.library.rename_draft.clone(),
+            native_view_hidden,
+            saved_pages_count: self.store.saved_pages_count(),
         }
     }
 
@@ -758,6 +837,7 @@ impl BbrApp {
         favorite_tiles: &[bbr_ui::components::FavoriteTileSpec],
         folder_rows: &[bbr_ui::components::FolderRowSpec],
         folder_members: &[bbr_ui::components::FolderMemberVisual],
+        library: &bbr_ui::components::SavedPagesLibraryModel,
     ) -> Vec<bbr_testkit::protocol::SemanticNode> {
         // Intersect the row visuals with the render's bounded window, like
         // `visible_ids`: a dense collection never exposes rows it did not
@@ -774,10 +854,19 @@ impl BbrApp {
             .into_iter()
             .filter_map(|index| rows.get(index).cloned())
             .collect();
-        // The content branch mirrors the render exactly: the §11.8-style
-        // error surface (task packet `error-surface-contract`) wins over
-        // the native slot, the crash panel wins over the empty pane.
-        let content = if let Some(spec) = self.active_error_surface_spec() {
+        // The content branch mirrors the render exactly: the §11.16 Saved
+        // Pages Library (B3 packet `saved-pages-library`) wins while open
+        // (the internal chrome surface covers the content area and the
+        // active view's native slot is hidden, never destroyed), then the
+        // §11.8-style error surface (task packet
+        // `error-surface-contract`) wins over the native slot, and the
+        // crash panel wins over the empty pane.
+        let content = if self.library.open {
+            crate::shell::semantics::SemanticContent::Library {
+                model: library.clone(),
+                focused: self.library_handle.is_focused(window),
+            }
+        } else if let Some(spec) = self.active_error_surface_spec() {
             crate::shell::semantics::SemanticContent::Error {
                 title: spec.title.to_string(),
                 origin: spec.origin.clone(),

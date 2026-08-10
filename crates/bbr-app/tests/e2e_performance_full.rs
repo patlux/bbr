@@ -96,6 +96,8 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let command_new_tab = report.results["command_activate_new_tab"].samples;
         let saved_page_search = report.results["saved_page_search_first_result"].samples;
         let saved_page_open = report.results["saved_page_open"].samples;
+        let library_search = report.results["saved_pages_library_search"].samples;
+        let library_scroll = report.results["saved_pages_library_scroll"].samples;
         let palette_open = report.results["palette_open"].samples;
         let overlay_open = report.results["overlay_open"].samples;
         let find_open = report.results["find_open"].samples;
@@ -187,6 +189,14 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             saved_page_open >= INTERACTION_SAMPLES,
             "saved-page open samples {saved_page_open} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            library_search >= INTERACTION_SAMPLES,
+            "library-search samples {library_search} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            library_scroll >= INTERACTION_SAMPLES,
+            "library-scroll samples {library_scroll} < {INTERACTION_SAMPLES}"
         );
         assert!(
             palette_open >= INTERACTION_SAMPLES,

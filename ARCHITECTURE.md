@@ -913,6 +913,75 @@ with `just e2e-perf` green (`regressions: []`); the shared ranking contract
 suite in `bbr-command`. Z1/Z3 own their menu placement/source/focus/Portal
 behavior; B3 owns the Library.
 
+## 9d. App-owned Saved Pages Library surface (B3 packet)
+
+B3 composes the settled chrome into one ordinary BBR-owned GPUI Library
+surface for the global Saved Page collection — hundreds or thousands of cold
+URL records, never a permanent Sidebar region and never a web page, Portal,
+WebKit view, or copied Gallery UI. `bbr-ui` owns only presentation
+(`crates/bbr-ui/src/components/saved_pages_library/`: `model.rs` =
+`SavedPagesLibraryModel` presentation data plus callbacks, `rows.rs`,
+`header.rs`, `toolbar.rs`, `collection_surface.rs`, `surface.rs`, `ids.rs`);
+it sees no repository connection, BrowserController,
+WebEngine, native session, or network client. `bbr-app` owns snapshot building
+and command binding (`crates/bbr-app/src/app/library/`, the AppStore
+`store/saved_pages_store.rs` + `store/saved_pages_policy.rs`), so there stays
+exactly one Saved Page identity/persistence authority (B1) and one command
+authority (B2 `SavedPageCommand`) — the Library adds no second authority.
+
+**Production surface.** The integrated entry point is Cmd-Shift-L; Escape
+dismisses the internal chrome surface, which covers the native view while
+open and restores it exactly on close (hidden-view bookkeeping). Search,
+deterministic sort (fixed title/comparison orders), inline pointer rename with
+draft confirm/cancel, multi-select, a clear destructive remove confirmation
+(for single and multi-select, never closing open tabs), and one-level flat
+collections with move-in/move-out ride the in-memory snapshot and persist
+through the one AppStore/repository writer (`replace_collections` and
+`move_saved_page_collection`, B1 contracts). Opening any row routes through B2
+and creates exactly one fresh regular tab in the currently active
+Space/Profile; it never silently selects a matching tab.
+
+**Bounded rendering and semantics.** At least 1,000 records use bounded/
+windowed rendering: `visible_window(total, viewport_rows, scroll_offset)`
+clamps a typed window, `library_visible_ids` (the test/testkit mirror, in
+`crates/bbr-app/src/app/library/model/visible_ids.rs`) publishes the
+visible-id set, and
+no full-list layout, synchronous repository scan, or favicon network work
+happens in render. Favicons resolve through the production favicon path with
+the deterministic monogram fallback; no favicon blob is stored in records.
+Typed shell semantics (`crates/bbr-app/src/shell/semantics/library.rs`,
+row-level nodes in `library/row.rs`) and
+the testkit `SavedPagesLibrarySnapshot` expose open flag, search/sort, the
+bounded row window, selection/collection membership, and the remove-confirm
+state for UI and E2E. Accessibility follows DESIGN §11.16: keyboard
+focus/order, semantic names, contrast, reduced motion, and the stable
+`bbr-saved-pages-*` ids.
+
+Evidence: the final semantic-union runtime tree
+`b4ab98113c6582caad2150764815d3885589dfa7` passed
+`just e2e-shell-saved-pages-library` 12/12 real-app scenarios: entry/Escape,
+Cmd-T/Cmd-L replacing an open Library, deterministic search/sort, inline
+rename confirm/cancel, multi-select + destructive remove with tabs untouched,
+flat collection lifecycle, pointer selection-toolbar clear/remove/move,
+pointer collection create/rename/remove surface, production scroll-wheel
+path, restart persistence, exactly-one-fresh-tab activation, and the 1k bounded
+window/scroll/selection with long/missing fallbacks (log
+`/tmp/bbr-b3-review-remediation-e2e-shell-saved-pages-library-20260810T144111Z.log`,
+SHA-256 `06838f3556a34bb46d7dfe20f8b5f6f3bdd3b6d7ce91a19a59b633dfffa11673`).
+The same tree passed `just e2e-shell-saved-pages` 4/4 (log
+`/tmp/bbr-b3-review-remediation-e2e-shell-saved-pages-20260810T144301Z.log`,
+SHA-256 `440317455fbf499fada4515d404c1f460d0a5854a817490314e5ac65763273cc`)
+and the integrated Gallery 22/22 with real Tab Row id 22 plus Library ids
+23–30 (log `/tmp/bbr-b3-review-remediation-e2e-gallery-20260810T144301Z.log`,
+SHA-256 `bc41dd1df11d887dea03a10fa30949a33be05edb916462c59fd9cbd25a2ff7e9`).
+The command surface regression suite also passed 25/25 (log
+`/tmp/bbr-b3-review-remediation-e2e-shell-command-20260810T144111Z.log`,
+SHA-256 `953138116c7ad011402cba6a8269c75c9fed690cb4545df52d940a132bcc7b6f`). The
+`saved_pages_library_search`/`saved_pages_library_scroll` scenario drivers,
+fast-but-wrong guards, and budget classes exist but have **zero executions** —
+no optimized sample accepted, performance unpassed under the active delivery
+override.
+
 ---
 
 ## 10. Build & verification (bounded recipes, `justfile`)
@@ -1033,3 +1102,10 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
 6. **The release-exclusion failsafe is not implemented**: under a non-testkit
    build the `--bbr-*` test flags are silently ignored rather than rejected at
    startup (E2E §12's exit-64 gate is future work).
+7. **The Saved Pages Library production surface is in with unit/E2E/Gallery
+   evidence; its optimized performance remains unexecuted and unpassed.**
+   `saved_pages_library_search` and `saved_pages_library_scroll` drivers,
+   fast-but-wrong guards, and budget classes exist, but no sample has ever
+   been accepted under the active delivery override (Patrick deferred
+   current-MVP performance execution); the canonical `just e2e`/`just
+   e2e-perf` gates were not run for the B3 slice.

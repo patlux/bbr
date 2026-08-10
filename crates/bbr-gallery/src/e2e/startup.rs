@@ -61,10 +61,13 @@ fn gallery_copy_is_honest_scope_with_g3_continuation() {
     run_scenario(|window, app| {
         let snap = snapshot(window, app);
         // Finding 3: the visible catalog copy names the shipped groups
-        // (Foundations / Primitives / Browser Components) and points
-        // honestly to the later Gallery phase — no complete-explorer
-        // claim.
-        assert_eq!(snap.scope, "Foundations / Primitives / Browser Components");
+        // (Foundations / Primitives / Browser Components / Compositions)
+        // and points honestly to the later Gallery phase — no
+        // complete-explorer claim.
+        assert_eq!(
+            snap.scope,
+            "Foundations / Primitives / Browser Components / Compositions"
+        );
         assert!(snap.continuation.contains("G2"));
         assert!(snap.continuation.contains("G3"));
         // The stable copy ids render.
@@ -83,7 +86,7 @@ fn gallery_copy_is_honest_scope_with_g3_continuation() {
         let title = window.window_title();
         assert_eq!(
             title.as_deref(),
-            Some("BBR Gallery — Foundations / Primitives / Browser Components")
+            Some("BBR Gallery — Foundations / Primitives / Browser Components / Compositions")
         );
         let _ = app;
     });

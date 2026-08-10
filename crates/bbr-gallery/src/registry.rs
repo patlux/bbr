@@ -6,7 +6,8 @@
 //! declaration order (never sorted by label). Ids are **append-only across
 //! Gallery packets**: G2/G3 append stories at later ids and never renumber
 //! G1b ids. A test pins the first-N id assignment so a label edit or a
-//! reorder can never silently shift an id.
+//! reorder can never silently shift an id. The integrated Tab Row owns id
+//! 22; B3 Library stories append at ids 23–30 without reservation machinery.
 //!
 //! The tree surface consumes the same flattened declaration order, so the
 //! tree order, the canvas default, and the E2E expectations all derive from
@@ -16,6 +17,7 @@ use gpui::{AnyElement, Entity};
 use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 
+use crate::library_recorder::{LibraryObserver, LibraryRecorder};
 use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRecorder};
 
 /// A stable story identity, assigned by the registry in declaration order.
@@ -37,13 +39,25 @@ pub struct NodeId(pub u64);
 /// with no options renders without a state control.
 pub type StateOptions = &'static [&'static str];
 
+/// A story's render family: plain stories render with the theme/state only;
+/// the Saved Pages Library stories additionally receive the recorder/
+/// observer bundle through [`StoryContext::library`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StoryKind {
+    Plain,
+    /// A Saved Pages Library story: renders the exact production `bbr-ui`
+    /// Library rows/controls/surface with fixture models and the
+    /// recorder/observer callbacks.
+    Library,
+}
+
 /// The render context a story receives: the resolved theme (mode/contrast/
 /// density), the reduced-motion flag (§15 mode field), and the story's own
 /// selected state. G1b stories are render-only (the G1b `bbr-ui` primitives
 /// take no callbacks); the Core Controls stories additionally receive the
 /// real gpui-component state entities and the recorder/observer bundle
-/// through [`StoryContext::controls`]; G2/G3 extend this context further
-/// when their components take callbacks.
+/// through [`StoryContext::controls`]; the Saved Pages Library stories
+/// receive the recorder/observer bundle through [`StoryContext::library`].
 pub struct StoryContext<'a> {
     pub theme: &'a bbr_ui::theme::Theme,
     pub reduced_motion: bool,
@@ -58,6 +72,19 @@ pub struct StoryContext<'a> {
     /// through (packet `component-gallery-browser-components.md`). `None`
     /// for every other story.
     pub tab_row: Option<TabRowStory<'a>>,
+    /// `Some` only for the Saved Pages Library stories: the current
+    /// recorder snapshot and the observer callbacks real Library events
+    /// route through. `None` for every other story.
+    pub library: Option<LibraryStory<'a>>,
+}
+
+/// Everything a Saved Pages Library story needs to render the **exact**
+/// production `bbr-ui` Library rows/controls/surface with fixture models:
+/// the current recorder snapshot and the observer callbacks that re-enter
+/// the app on real Library events.
+pub struct LibraryStory<'a> {
+    pub recorder: &'a LibraryRecorder,
+    pub observer: &'a LibraryObserver,
 }
 
 /// Everything a Core Controls story needs to render the **exact** vendored
@@ -103,6 +130,8 @@ pub struct Story {
     pub label: &'static str,
     pub render: StoryRender,
     pub state_options: StateOptions,
+    /// The story's render family (plain vs Saved Pages Library).
+    pub kind: StoryKind,
 }
 
 /// One catalog group in explicit declaration order.
@@ -132,6 +161,25 @@ pub fn story(label: &'static str, render: StoryRender, state_options: StateOptio
         label,
         render,
         state_options,
+        kind: StoryKind::Plain,
+    }
+}
+
+/// Declaration helper: a Saved Pages Library story whose ids are assigned
+/// by `add_group` (renders the exact production `bbr-ui` Library
+/// rows/controls/surface with the recorder/observer bundle).
+pub fn library_story(
+    label: &'static str,
+    render: StoryRender,
+    state_options: StateOptions,
+) -> Story {
+    Story {
+        id: StoryId(0),
+        group: GroupId(0),
+        label,
+        render,
+        state_options,
+        kind: StoryKind::Library,
     }
 }
 
@@ -203,7 +251,7 @@ impl CatalogRegistry {
 mod tests {
     use super::*;
     use crate::stories::catalog;
-    use gpui::prelude::*;
+    use gpui::Element;
 
     #[test]
     fn ids_are_sequential_in_declaration_order() {
@@ -262,6 +310,19 @@ mod tests {
                 "story {label} must keep its pinned id {index}"
             );
         }
+    }
+
+    #[test]
+    fn tab_row_and_library_ids_are_integrated_without_a_reservation() {
+        let registry = catalog();
+        assert_eq!(registry.story(StoryId(22)).unwrap().label, "Tab Row");
+        let library_ids: Vec<u64> = registry
+            .stories
+            .iter()
+            .filter(|s| s.label.starts_with("Library"))
+            .map(|s| s.id.0)
+            .collect();
+        assert_eq!(library_ids, vec![23, 24, 25, 26, 27, 28, 29, 30]);
     }
 
     #[test]

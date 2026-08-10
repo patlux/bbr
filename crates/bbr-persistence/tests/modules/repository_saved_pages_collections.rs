@@ -159,3 +159,105 @@ fn duplicate_canonical_url_and_dangling_collection_cannot_enter_the_committed_st
     );
     assert_eq!(inventory(&db.0), before);
 }
+
+#[test]
+fn replace_saved_snapshot_atomically_replaces_both_tables_in_one_transaction() {
+    let db = TempDb::new("saved-snapshot");
+    let repository = db.repository();
+    seeded_saved_pages(&db);
+
+    // One combined write: rename the collection, move a record in, move the
+    // other out, and drop one record — the delta the B3 Library batches
+    // into a single poke. The order-independent combined contract must
+    // accept the new set even though a page now references a freshly
+    // renamed collection and the persisted store still references the old
+    // one.
+    let pages = vec![
+        saved_page_record(
+            1000,
+            "https://example.test/alpha",
+            "Alpha",
+            None,
+            100,
+            100,
+            None,
+        ),
+        saved_page_record(
+            1001,
+            "https://example.test/beta",
+            "Beta",
+            Some("work label"),
+            200,
+            300,
+            Some(1),
+        ),
+    ];
+    let stats = repository
+        .replace_saved_snapshot(&pages, &[collection_record(1, "Renamed Work")])
+        .unwrap();
+    assert_eq!(stats.committed_transactions, 1);
+    assert_eq!(stats.deleted_rows, 3, "one collection + two pages replaced");
+    assert_eq!(
+        stats.inserted_rows, 3,
+        "one collection + two pages inserted"
+    );
+
+    // Both tables round-trip the combined write exactly.
+    assert_eq!(
+        repository.load_saved_pages().unwrap(),
+        vec![
+            saved_page_record(
+                1000,
+                "https://example.test/alpha",
+                "Alpha",
+                None,
+                100,
+                100,
+                None,
+            ),
+            saved_page_record(
+                1001,
+                "https://example.test/beta",
+                "Beta",
+                Some("work label"),
+                200,
+                300,
+                Some(1),
+            ),
+        ]
+    );
+    assert_eq!(
+        repository.load_collections().unwrap(),
+        vec![collection_record(1, "Renamed Work")]
+    );
+
+    // A dangling membership in the combined write rejects whole and leaves
+    // the store byte-identical (the page references a collection absent
+    // from the new set).
+    let before = inventory(&db.0);
+    let dangling = vec![saved_page_record(
+        1000,
+        "https://example.test/alpha",
+        "Alpha",
+        None,
+        100,
+        100,
+        Some(1),
+    )];
+    assert_eq!(
+        repository
+            .replace_saved_snapshot(&dangling, &[])
+            .unwrap_err(),
+        PersistenceError::InvalidSnapshot(InvalidSnapshotIssue::UnknownCollection { id: 1 })
+    );
+    assert_eq!(
+        inventory(&db.0),
+        before,
+        "rejected write leaves the store untouched"
+    );
+
+    // An empty combined write clears both tables.
+    repository.replace_saved_snapshot(&[], &[]).unwrap();
+    assert!(repository.load_saved_pages().unwrap().is_empty());
+    assert!(repository.load_collections().unwrap().is_empty());
+}

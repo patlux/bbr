@@ -18,75 +18,25 @@ use gpui_component::WindowExt as _;
 
 use crate::canvas::{canvas_surface, CanvasModel};
 use crate::controls::{controls_surface, ControlAction, ControlsModel};
+use crate::library_recorder::{LibraryObservation, LibraryRecorder};
 use crate::recorder::{ControlObservation, ControlObserver, ControlRecorder, CoreControlsEntities};
-use crate::registry::{CatalogRegistry, ControlsStory, GroupId, NodeId, StoryId};
+use crate::registry::{
+    CatalogRegistry, ControlsStory, GroupId, LibraryStory, NodeId, StoryId, StoryKind,
+};
 use crate::stories::{catalog, GALLERY_CONTINUATION, GALLERY_SCOPE};
 use crate::tab_row_app::TabRowAppState;
 use crate::tree::{NodeKind, TreeState};
 use crate::tree_surface::tree_surface;
+
+/// The semantic snapshot types, re-exported for the E2E (the app owns the
+/// snapshot construction; the types live in the focused `snapshot` module).
+pub use crate::snapshot::{GallerySnapshot, TreeNodeSnapshot};
 
 /// One story's own State/Variant selector state.
 #[derive(Debug, Clone)]
 pub struct StoryState {
     pub options: &'static [&'static str],
     pub selected: usize,
-}
-
-/// The semantic snapshot the E2E asserts (§15 mode fields + stable ids).
-#[derive(Debug, Clone, PartialEq)]
-pub struct TreeNodeSnapshot {
-    pub id: u64,
-    pub kind: &'static str,
-    pub label: String,
-    pub visible: bool,
-    /// Group nodes: whether the group is expanded (drives the disclosure
-    /// chevron and child visibility); always `false` for story nodes.
-    pub expanded: bool,
-    /// The story's stable `StoryId` for story nodes (`None` for groups) —
-    /// the E2E asserts the declaration-order prefix on this, never on the
-    /// tree node id (which also counts group nodes).
-    pub story_id: Option<u64>,
-}
-
-/// The semantic snapshot the E2E asserts (§15 mode fields + stable ids).
-#[derive(Debug, Clone, PartialEq)]
-pub struct GallerySnapshot {
-    pub tree_id: String,
-    pub canvas_id: String,
-    pub tree_nodes: Vec<TreeNodeSnapshot>,
-    pub focus_node: u64,
-    pub selected_story: u64,
-    pub selected_story_label: String,
-    pub canvas_story_id: String,
-    pub theme: ThemeMode,
-    pub contrast: ContrastMode,
-    pub density: Density,
-    pub reduced_motion: bool,
-    pub story_state: String,
-    pub story_state_index: usize,
-    /// The honest scope copy (finding 3): "Foundations / Primitives /
-    /// Browser Components".
-    pub scope: String,
-    /// The honest continuation note pointing to G2/G3 (finding 3).
-    pub continuation: String,
-    /// The observed Core Controls state: what the real gpui-component
-    /// controls reported through the production recorder path.
-    pub button_clicks: u32,
-    pub checkbox_checked: bool,
-    pub switch_checked: bool,
-    pub radio_index: usize,
-    /// The observed Tab Row state (recorder path, packet
-    /// `component-gallery-browser-components.md`).
-    pub tab_selects: u32,
-    pub tab_closes: u32,
-    pub tab_pins: u32,
-    pub tab_drag_begins: u32,
-    /// The real `InputState::value()` (typed text) when the Core Controls
-    /// input exists.
-    pub input_text: String,
-    /// The real `SliderState::value().start()` when the Core Controls
-    /// slider exists.
-    pub slider_value: f32,
 }
 
 pub struct GalleryApp {
@@ -104,6 +54,9 @@ pub struct GalleryApp {
     /// The shared recorder: what real gpui-component control events report
     /// back through the production `observe_control` path.
     recorder: ControlRecorder,
+    /// The shared Library recorder: what real Saved Pages Library events
+    /// report back through the production `observe_library` path.
+    library_recorder: LibraryRecorder,
     /// The real gpui-component state entities, created on the first render
     /// of a Core Controls story (both need the window at creation time —
     /// the same production integration pattern the controls require).
@@ -121,14 +74,22 @@ impl GalleryApp {
             .expect("core controls group registered")
             .id;
         let tree = TreeState::from_catalog(&registry);
-        let story_states = registry
-            .stories
-            .iter()
-            .map(|story| StoryState {
+        // `story_states` is indexed by `StoryId` value, so it must span
+        // every assigned id. The integrated catalog is contiguous through
+        // the real G2-TAB Tab Row at id 22 and B3 Library stories 23–30.
+        let mut story_states = vec![
+            StoryState {
+                options: &[],
+                selected: 0,
+            };
+            registry.story_count() as usize
+        ];
+        for story in &registry.stories {
+            story_states[story.id.0 as usize] = StoryState {
                 options: story.state_options,
                 selected: 0,
-            })
-            .collect();
+            };
+        }
         GalleryApp {
             // Built before `registry` moves (story discovery borrows it).
             tab_row: TabRowAppState::new(&registry),
@@ -141,6 +102,7 @@ impl GalleryApp {
             story_states,
             core_controls_group,
             recorder: ControlRecorder::default(),
+            library_recorder: LibraryRecorder::default(),
             core_controls: None,
             focus_handle: cx.focus_handle(),
         }
@@ -168,6 +130,15 @@ impl GalleryApp {
             .is_some_and(|story| story.group == self.core_controls_group)
     }
 
+    /// Whether the story is a Saved Pages Library story (renders the
+    /// production `bbr-ui` Library rows/controls/surface with the
+    /// recorder/observer bundle).
+    fn is_library_story(&self, id: StoryId) -> bool {
+        self.registry
+            .story(id)
+            .is_some_and(|story| story.kind == StoryKind::Library)
+    }
+
     /// The production control path: every pointer click and the E2E route
     /// through here. Mode/state changes re-render the canvas.
     pub fn apply_control(&mut self, action: ControlAction, cx: &mut Context<Self>) {
@@ -191,6 +162,14 @@ impl GalleryApp {
     /// re-render the canvas.
     pub fn observe_control(&mut self, event: ControlObservation, cx: &mut Context<Self>) {
         self.recorder.observe(event);
+        cx.notify();
+    }
+
+    /// The production Library recorder path: real Saved Pages Library
+    /// events (close, sort, select, rename, remove, collection, open)
+    /// report back here and re-render the canvas.
+    pub fn observe_library(&mut self, event: LibraryObservation, cx: &mut Context<Self>) {
+        self.library_recorder.observe(event);
         cx.notify();
     }
 
@@ -324,6 +303,7 @@ impl GalleryApp {
             tab_closes: self.tab_row.counts().1,
             tab_pins: self.tab_row.counts().2,
             tab_drag_begins: self.tab_row.counts().3,
+            library: self.library_recorder.clone(),
         }
     }
 
@@ -425,6 +405,7 @@ impl Render for GalleryApp {
             on_switch,
             on_radio,
         };
+        let library_selected = self.is_library_story(selected);
         // The Tab Row observer + story context (module `tab_row_app`).
         let tab_row = self.tab_row.render_context(selected, cx);
         // The Core Controls story context: the real entities, the current
@@ -440,6 +421,24 @@ impl Render for GalleryApp {
                 observer: &observer,
                 input_value,
                 slider_value,
+            })
+        } else {
+            None
+        };
+        // The Library observer: real Saved Pages Library events report
+        // back into the app's production `observe_library` path.
+        let observer = if library_selected {
+            Some(crate::library_observer::build_library_observer(
+                cx.entity().downgrade(),
+            ))
+        } else {
+            None
+        };
+        let library = if library_selected {
+            let observer = observer.as_ref().expect("built above");
+            Some(LibraryStory {
+                recorder: &self.library_recorder,
+                observer,
             })
         } else {
             None
@@ -465,6 +464,7 @@ impl Render for GalleryApp {
             story_state,
             controls,
             tab_row,
+            library,
         });
         div()
             .id("bbr-gallery-root")

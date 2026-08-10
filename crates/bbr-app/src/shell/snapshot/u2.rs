@@ -38,6 +38,16 @@ pub struct U2IdsInput<'a> {
     /// The surface's URL line is rendered (the contract knows the failing
     /// origin).
     pub error_surface_origin: bool,
+    /// §11.16 Saved Pages Library gating (B3 packet
+    /// `saved-pages-library`): while open the internal chrome surface
+    /// replaces the active view's native slot in the content area (the
+    /// slot ids are not advertised, mirroring the render — the Library
+    /// wins over the error surface).
+    pub library_open: bool,
+    /// The rendered Library §15 ids, derived from the same presentation
+    /// model the typed snapshot exposes (empty while closed — the surface
+    /// is not drawn).
+    pub library_ids: Vec<String>,
 }
 
 impl<'a> Default for U2IdsInput<'a> {
@@ -59,6 +69,8 @@ impl<'a> Default for U2IdsInput<'a> {
             downloads_delete_rows: Vec::new(),
             error_surface_visible: false,
             error_surface_origin: false,
+            library_open: false,
+            library_ids: Vec::new(),
         }
     }
 }

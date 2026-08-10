@@ -28,6 +28,18 @@ pub enum SemanticContent {
         action: String,
         dismiss: String,
     },
+    /// The §11.16 Saved Pages Library surface (B3 packet
+    /// `saved-pages-library`): the internal chrome surface covers the
+    /// content area while open — the active view's native slot is hidden
+    /// (never destroyed) and the Library wins over the error surface. The
+    /// node mirrors the `bbr-ui` surface anatomy from the same model the
+    /// render draws; `focused` is the Library surface's real GPUI focus
+    /// (the `library_handle`), so the search field (or the staged rename
+    /// input) mirrors the true focus state.
+    Library {
+        model: bbr_ui::components::SavedPagesLibraryModel,
+        focused: bool,
+    },
 }
 
 /// The typed content-pane node.
@@ -92,6 +104,9 @@ pub fn content_node(content: &SemanticContent) -> SemanticNode {
                 ),
             ],
         ),
+        SemanticContent::Library { model, focused } => {
+            super::library::library_node(model, *focused)
+        }
         SemanticContent::Error {
             title,
             origin,

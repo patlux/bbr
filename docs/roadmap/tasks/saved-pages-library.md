@@ -116,37 +116,89 @@ their Gallery stories.
 
 ### Unit and component contract
 
-- [ ] Model/row tests cover empty/populated/no-result, selected/multi-selected,
+- [x] Model/row tests cover empty/populated/no-result, selected/multi-selected,
       long/missing title, mid-ellipsized URL, collection label, missing favicon,
-      and destructive states with stable ids and semantic names.
-- [ ] Search and all deterministic sort orders cover 0, 1, 1,000, equal-key,
-      unicode, and collection-filter cases without repository access.
-- [ ] Callback recorder tests prove rename/remove/open/collection operations
-      dispatch exactly once against the intended `BookmarkId` set.
-- [ ] Bounded-render tests prove the Library does not lay out all 1,000 rows and
-      keeps selection/scroll anchors stable across mutation.
+      and destructive states with stable ids and semantic names. *(The
+      `bbr-ui` Library row/model suites plus the app-owned Library model tests
+      prove `decided_states_are_derived_from_the_model`, the
+      `display_title_ladder`, `row_spec_uses_mid_ellipsis_and_the_monogram`,
+      `state_transitions_are_deterministic`, `hidden_view_bookkeeping_restores_exactly`,
+      and `collection_action_machine_names_are_stable` with the DESIGN §11.16
+      stable ids and semantic names.)*
+- [x] Search and all deterministic sort orders cover 0, 1, 1,000, equal-key,
+      unicode, and collection-filter cases without repository access. *(The
+      model tests cover `search_matches_title_label_and_url_case_insensitively`,
+      `build_filters_sorts_and_windows_deterministically`, and
+      `sort_orders_apply_the_deterministic_key` over in-memory fixtures; no
+      repository or render path is touched.)*
+- [x] Callback recorder tests prove rename/remove/open/collection operations
+      dispatch exactly once against the intended `BookmarkId` set. *(The
+      `bbr-ui` recorder-driven tests assert one dispatch per operation against
+      the exact `BookmarkId` set; Gallery row/control E2E independently proves
+      `library_row_controls_dispatch_exactly_once`,
+      `library_collection_row_dispatches_exactly_once`, and
+      `library_remove_confirm_dispatches_exactly_once` through the same
+      recorder/observer seam.)*
+- [x] Bounded-render tests prove the Library does not lay out all 1,000 rows and
+      keeps selection/scroll anchors stable across mutation. *(`visible_window`
+      is bounded/clamped, `one_thousand_records_stay_bounded_with_a_stable_anchor`
+      proves the windowed row set and stable anchor, and
+      `library_visible_ids` keeps the typed visible-id window stable across
+      mutation.)*
 
 ### Real-app E2E
 
-- [ ] Open the Library through its integrated production entry point; keyboard
+- [x] Open the Library through its integrated production entry point; keyboard
       and pointer search, sort, selection, rename, remove, and flat collection
-      operations expose typed semantics and persist across restart.
-- [ ] Removing one or many Saved Pages leaves every open tab/session untouched;
-      closing tabs leaves Library records untouched.
-- [ ] Opening a Library row creates exactly one fresh regular tab in the
+      operations expose typed semantics and persist across restart. *(`just
+      e2e-shell-saved-pages-library` 12/12 on the exact semantic-union runtime
+      tree `b4ab98113c6582caad2150764815d3885589dfa7`: Cmd-Shift-L entry + Escape
+      dismissal, Cmd-T/Cmd-L replacing an open Library, deterministic
+      search/sort, inline pointer rename draft confirm/cancel, destructive
+      remove confirmation, flat collection create/rename/move/remove, the
+      pointer selection-toolbar clear/remove/move, the pointer collection
+      create/rename/remove surface, the production scroll-wheel path, and
+      restart persistence — log
+      `/tmp/bbr-b3-review-remediation-e2e-shell-saved-pages-library-20260810T144111Z.log`,
+      SHA-256
+      `06838f3556a34bb46d7dfe20f8b5f6f3bdd3b6d7ce91a19a59b633dfffa11673`.)*
+- [x] Removing one or many Saved Pages leaves every open tab/session untouched;
+      closing tabs leaves Library records untouched. *(`just
+      e2e-shell-saved-pages` 4/4 re-run on the same tree confirms the tab/record
+      independence contract on the same runtime tree — log
+      `/tmp/bbr-b3-review-remediation-e2e-shell-saved-pages-20260810T144301Z.log`,
+      SHA-256
+      `440317455fbf499fada4515d404c1f460d0a5854a817490314e5ac65763273cc`.)*
+- [x] Opening a Library row creates exactly one fresh regular tab in the
       current active Space/Profile through B2 and never selects a matching tab.
-- [ ] The 1k fixture proves bounded rows, deterministic scroll/selection, long
-      data/fallback states, and no second Saved Page authority.
+      *(Scenario `library_activation_opens_exactly_one_fresh_tab` in the 12/12
+      run above routes through the B2 command authority and asserts one fresh
+      regular tab + one live session in the active Space/Profile.)*
+- [x] The 1k fixture proves bounded rows, deterministic scroll/selection, long
+      data/fallback states, and no second Saved Page authority. *(Scenario
+      `library_one_thousand_records_stay_bounded` drives the seeded
+      ≥1,000-record provider and asserts the bounded window, deterministic
+      scroll/selection, and long/missing fallbacks from the typed snapshot.)*
 
 ### Performance
 
 - [ ] Seed/enforce `saved_pages_library_search` and
       `saved_pages_library_scroll` over 1,000 loaded records, at least 30
       optimized accepted samples each, production semantic presentation
-      commits, raw artifacts, and predeclared budgets.
+      commits, raw artifacts, and predeclared budgets. *(The scenario drivers,
+      fast-but-wrong guards, budget classes, and raw-artifact plumbing exist in
+      `crates/bbr-app/tests/perf_common/library_drive.rs` and the
+      `saved_pages_library_search`/`saved_pages_library_scroll` benchmark kinds,
+      but they have **zero executions**: no sample has ever been accepted, no
+      budget class has run against them, and this box stays unchecked and
+      unpassed. Patrick deferred current-MVP performance execution; the
+      canonical `just e2e`/`just e2e-perf` gates were not run for this slice.)*
 - [ ] Repository/fixture setup and favicon network latency are outside app
       timing. Fast-but-wrong guards verify exact result window/count and scroll
-      anchor.
+      anchor. *(Guards assert the exact `LIBRARY_SEARCH_NARROW_TOTAL`=11 result
+      window anchored on `BookmarkId` 1000 and the exact scroll window/anchor
+      from the typed snapshot before a sample may be accepted; still never
+      executed — unchecked.)*
 
 ### Gallery roll-up
 
@@ -154,7 +206,16 @@ After B3 production integration, append the exact production row/control and
 Library composition stories to [G2](component-gallery-browser-components.md)
 and [G3](component-gallery-compositions.md). Those Gallery packets remain the
 canonical story/checklist owners; they must not claim persistence, browser
-activation, restart, or product-performance evidence.
+activation, restart, or product-performance evidence. *(Done: the exact
+production `bbr-ui` Library rows/controls/surface and the Library composition
+are registered through the recorder/observer seam as Gallery stories at ids
+23–30; the integrated G2-TAB Tab Row occupies id 22, with its temporary B3-lane
+reservation machinery removed by the orchestrator's semantic union. Gallery
+final `just e2e-gallery` 22/22 on the exact semantic-union runtime tree — log
+`/tmp/bbr-b3-review-remediation-e2e-gallery-20260810T144301Z.log`, SHA-256
+`bc41dd1df11d887dea03a10fa30949a33be05edb916462c59fd9cbd25a2ff7e9`. The
+Gallery stories prove renderability/recorder dispatch only; they claim no
+persistence, browser activation, restart, or product-performance evidence.)*
 
 ## Completion gates
 
@@ -209,21 +270,95 @@ Sidebar region, or copied Gallery UI.
 
 ```text
 Outcome:
+  The dedicated production Saved Pages Library is implemented and proven over
+  the real app: search, deterministic sort, rename, remove, multi-select,
+  one-level flat collections and moves, 1k bounded rendering, and the DESIGN
+  §11.16 decided states with stable ids/semantics — all through one app-owned
+  Library composition and the one AppStore/B2 authority. No commit,
+  integration, or MVP claim is made by this packet; this is lane evidence only.
 Commits:
+  None — sole bounded writer branch parallel/saved-pages-b3-library; changes
+  stay uncommitted for the orchestrator's serial integration.
 Functional evidence:
+  Unit/contract: bbr-ui Library row/model suites, app-owned Library model
+  tests (visible-window bounding, display-title ladder, mid-ellipsis +
+  monogram, deterministic sort keys, decided states, staged rename,
+  hidden-view bookkeeping, collection action-machine names) — all green.
 Real-app E2E:
+  just e2e-shell-saved-pages-library 12/12 on the exact semantic-union runtime
+  tree b4ab98113c6582caad2150764815d3885589dfa7 (entry/Escape, symmetric
+  Cmd-T/Cmd-L replacement, search/sort,
+  rename draft, select+destructive remove, flat collections, pointer
+  selection-toolbar clear/remove/move, pointer collection
+  create/rename/remove surface, production scroll-wheel path, restart
+  persistence, exactly-one-fresh-tab activation, 1k bounded window) — log
+  /tmp/bbr-b3-review-remediation-e2e-shell-saved-pages-library-20260810T144111Z.log,
+  SHA-256 06838f3556a34bb46d7dfe20f8b5f6f3bdd3b6d7ce91a19a59b633dfffa11673;
+  just e2e-shell-saved-pages 4/4 re-run on the same tree — log
+  /tmp/bbr-b3-review-remediation-e2e-shell-saved-pages-20260810T144301Z.log,
+  SHA-256 440317455fbf499fada4515d404c1f460d0a5854a817490314e5ac65763273cc;
+  just e2e-shell-command 25/25 — log
+  /tmp/bbr-b3-review-remediation-e2e-shell-command-20260810T144111Z.log,
+  SHA-256 953138116c7ad011402cba6a8269c75c9fed690cb4545df52d940a132bcc7b6f.
 Performance evidence:
+  Scenario drivers/guards/budgets for saved_pages_library_search and
+  saved_pages_library_scroll exist but have zero executions: no optimized
+  sample accepted, boxes unchecked and unpassed. Patrick deferred
+  current-MVP performance execution; the canonical just e2e / just e2e-perf
+  gates were not run for this slice.
 Gallery evidence:
+  just e2e-gallery final 22/22 on the exact semantic-union runtime tree — log
+  /tmp/bbr-b3-review-remediation-e2e-gallery-20260810T144301Z.log, SHA-256
+  bc41dd1df11d887dea03a10fa30949a33be05edb916462c59fd9cbd25a2ff7e9;
+  Library stories registered at ids 23-30 through the recorder/observer seam;
+  the integrated G2-TAB Tab Row occupies id 22 and the temporary B3-lane
+  reservation machinery is absent from the semantic union.
 Roadmap/documentation updates:
+  This packet's evidence checkboxes (unit/E2E) and Gallery roll-up with the
+  actual final logs/tree (evidence remediation lane); the ARCHITECTURE.md
+  §9d follow-up and E2E_ARCHITECTURE.md §7m suite facts corrected to the
+  final tree/log evidence; DESIGN.md §11.16 production status from the
+  earlier lane stage. ROADMAP.md, phase, and track roll-ups are the
+  orchestrator's serial-integration product and were not touched by this
+  remediation lane.
 Open blockers and non-goals:
+  Performance execution remains unpassed (deferred). No commit/integration
+  claim. Non-goals unchanged: no Sidebar region, no nested folders/tags/
+  sync/profile-scoped records, no import/export, no dedup/switch behavior.
 Worktree state:
+  /Users/patwoz/dev/Personal/macos/bbr-saved-pages-b3-library; exact source
+  tree the final semantic-union evidence runs happened on:
+  b4ab98113c6582caad2150764815d3885589dfa7 (temporary-index full-worktree
+  snapshot, verified); the final worktree tree
+  including these doc corrections is recorded in the orchestrator's external
+  fingerprint — any tree value embedded in this self-referential delivery
+  ledger is intentionally non-binding documentary prose. Source remediation
+  (no behavior change): split app/library/model.rs (568→181 lines),
+  shell/semantics/library.rs (521→384), and bbr-ui saved_pages_library/model.rs
+  (513→308) below the ~500-line budget by extracting the visible-id mirror,
+  the row-level semantic nodes, and the test blocks into sibling modules.
+  No commit or reset.
 
 Planning/read-only:
 Implementation:
+  Evidence remediation lane (authority 0c25cbb7): the three file splits
+  above, cargo fmt, and the doc corrections in this packet plus
+  ARCHITECTURE.md §9d and E2E_ARCHITECTURE.md §7m.
 Test execution:
+  Fresh isolated-target Xcode26.2 just verify (fmt/check/test/clippy/
+  roadmap/ui-deps/script-tests) passed; cargo clippy -p bbr --features
+  testkit --all-targets -- -D warnings passed; the semantic-union runtime tree
+  passed Library 12/12, Saved Pages 4/4, Command 25/25, and Gallery 22/22 under
+  the serial GUI lock. Final `just verify` log:
+  `/tmp/bbr-b3-review-remediation-verify-20260810T143909Z.log`, SHA-256
+  `8de8c1fe61ce1a5eb1088bdabd88decddb0557f5212679c6df9ff35b433339e2`.
 Review:
+  None in this remediation lane (bounded evidence writer).
 Remediation:
+  This lane is the B3 evidence remediation (source splits + doc evidence).
 Waiting/retries:
+  None.
 Total elapsed:
 Human intervention:
+  None.
 ```

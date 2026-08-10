@@ -32,6 +32,11 @@ mod content;
 use content::content_node;
 pub use content::SemanticContent;
 
+// The §11.16 Library surface node lives in [`library`] (mirroring the
+// `bbr-ui` surface anatomy), so no semantics module outgrows the size
+// budget.
+pub mod library;
+
 /// Which GPUI chrome surface owns keyboard focus (§9: the focused control
 /// renders the ring; the model exposes the same fact typed).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

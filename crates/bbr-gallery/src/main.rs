@@ -21,9 +21,17 @@ mod controls;
 #[cfg(target_os = "macos")]
 mod fixtures;
 #[cfg(target_os = "macos")]
+mod library_fixtures;
+#[cfg(target_os = "macos")]
+mod library_observer;
+#[cfg(target_os = "macos")]
+mod library_recorder;
+#[cfg(target_os = "macos")]
 mod recorder;
 #[cfg(target_os = "macos")]
 mod registry;
+#[cfg(target_os = "macos")]
+mod snapshot;
 #[cfg(target_os = "macos")]
 mod stories;
 #[cfg(target_os = "macos")]
@@ -48,7 +56,7 @@ use gpui::{px, size, App, AppContext, Bounds, Entity, WindowBounds, WindowOption
 /// The gallery window title — the visible app copy (finding 3).
 #[cfg(target_os = "macos")]
 pub const GALLERY_WINDOW_TITLE: &str =
-    "BBR Gallery — Foundations / Primitives / Browser Components";
+    "BBR Gallery — Foundations / Primitives / Browser Components / Compositions";
 
 /// The gallery window options — shared by the production app and the
 /// in-process test harness so both open the same window (bounds, focus,

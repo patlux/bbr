@@ -115,6 +115,12 @@ impl BbrApp {
     /// every incident presentation, recovery, dismissal, and controller
     /// mutation that re-syncs view visibility.
     pub(super) fn sync_error_surface_visibility(&mut self) {
+        // While the Library is open it is the single visibility authority
+        // (the Library surface covers the content area; the error surface
+        // is not drawn). On Library close the error sync resumes.
+        if self.library.open {
+            return;
+        }
         let Some(view) = self.controller.snapshot().active_view else {
             return;
         };

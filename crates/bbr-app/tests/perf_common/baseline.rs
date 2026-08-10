@@ -229,6 +229,22 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 100.0,
             max_ms: Some(150.0),
         },
+        // B3 Saved Pages Library scenarios (packet `saved-pages-library`):
+        // `saved_pages_library_search` filters the loaded ≥1,000-record
+        // provider through the production Library search entry and the
+        // bounded window re-renders; `saved_pages_library_scroll` re-anchors
+        // the bounded window over the same provider through the production
+        // scroll entry. Both are warm next-frame presentation class — the
+        // same 50/100 ms warm interaction budget as the other Library/
+        // surface scenarios, no new budget class invented.
+        "saved_pages_library_search" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "saved_pages_library_scroll" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         // Cmd-Enter opens the destination in exactly one fresh tab/session
         // and focuses it — the session-recreation class with its own budget,
         // like reopen and cross-profile moves.
@@ -589,6 +605,10 @@ impl Baseline {
             "peek_request_to_present",
             "peek_dismiss_to_origin",
             "peek_promote_to_tab",
+            "saved_page_search_first_result",
+            "saved_page_open",
+            "saved_pages_library_search",
+            "saved_pages_library_scroll",
         ]
         .into_iter()
         .chain(u2::seed_kinds())
@@ -786,6 +806,43 @@ mod tests {
             assert!(
                 r.iter().any(|x| x.rule == "abs_max"),
                 "{kind} absolute max ceiling enforced"
+            );
+        }
+    }
+
+    #[test]
+    fn library_budgets_are_seeded_and_enforced() {
+        // Regression guard (B3 packet `saved-pages-library`): the Library
+        // search/scroll scenarios must carry their contract budgets in the
+        // seed so a future Library-window/filter regression trips the gate
+        // instead of being silently unreported dead code. Both reuse the
+        // existing warm next-frame presentation class (50/100) — the same
+        // budget as the other warm Library/interaction scenarios, no new
+        // class invented.
+        let b = Baseline::seed();
+        for kind in ["saved_pages_library_search", "saved_pages_library_scroll"] {
+            let entry = b
+                .entries
+                .get(kind)
+                .unwrap_or_else(|| panic!("seed baseline must carry the {kind} contract budget"));
+            assert_eq!(entry.budget_p95_ms, 50.0, "{kind} warm p95 ceiling");
+            assert_eq!(entry.budget_max_ms, Some(100.0), "{kind} warm max ceiling");
+            let mut slow = BTreeMap::new();
+            slow.insert(kind.into(), measured(120.0, 160.0));
+            let r = evaluate(&slow, &b, false);
+            assert!(
+                r.iter().any(|x| x.rule == "abs_p95"),
+                "{kind} absolute p95 ceiling enforced"
+            );
+            assert!(
+                r.iter().any(|x| x.rule == "abs_max"),
+                "{kind} absolute max ceiling enforced"
+            );
+            let mut good = BTreeMap::new();
+            good.insert(kind.into(), measured(45.0, 90.0));
+            assert!(
+                evaluate(&good, &b, false).is_empty(),
+                "{kind} warm samples within budget stay green"
             );
         }
     }

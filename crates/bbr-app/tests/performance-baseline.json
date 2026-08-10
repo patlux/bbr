@@ -10,7 +10,7 @@
       "samples": 0,
       "source": "contract-budget"
     },
-    "child_tab_swipe_return": {
+    "auth_sheet_open": {
       "budget_max_ms": 100.0,
       "budget_p95_ms": 50.0,
       "max_ms": 100.0,
@@ -19,7 +19,7 @@
       "samples": 0,
       "source": "contract-budget"
     },
-    "auth_sheet_open": {
+    "child_tab_swipe_return": {
       "budget_max_ms": 100.0,
       "budget_p95_ms": 50.0,
       "max_ms": 100.0,
@@ -55,7 +55,7 @@
       "samples": 0,
       "source": "contract-budget"
     },
-    "command_type": {
+    "command_bar_full_search": {
       "budget_max_ms": 100.0,
       "budget_p95_ms": 50.0,
       "max_ms": 100.0,
@@ -64,13 +64,13 @@
       "samples": 0,
       "source": "contract-budget"
     },
-    "command_bar_full_search": {
-      "samples": 0,
+    "command_type": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
       "p50_ms": 0.0,
       "p95_ms": 50.0,
-      "max_ms": 100.0,
-      "budget_p95_ms": 50.0,
-      "budget_max_ms": 100.0,
+      "samples": 0,
       "source": "contract-budget"
     },
     "context_menu_open": {
@@ -280,6 +280,42 @@
       "samples": 0,
       "source": "contract-budget"
     },
+    "saved_page_open": {
+      "budget_max_ms": 150.0,
+      "budget_p95_ms": 100.0,
+      "max_ms": 150.0,
+      "p50_ms": 0.0,
+      "p95_ms": 100.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "saved_page_search_first_result": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "saved_pages_library_scroll": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "saved_pages_library_search": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
     "sidebar_favorites": {
       "budget_max_ms": 100.0,
       "budget_p95_ms": 50.0,
@@ -460,34 +496,16 @@
       "samples": 0,
       "source": "contract-budget"
     },
-    "zoom_step": {
-      "budget_max_ms": 100.0,
-      "budget_p95_ms": 50.0,
-      "max_ms": 100.0,
-      "p50_ms": 0.0,
-      "p95_ms": 50.0,
-      "samples": 0,
-      "source": "contract-budget"
-    },
-    "saved_page_search_first_result": {
-      "budget_max_ms": 100.0,
-      "budget_p95_ms": 50.0,
-      "max_ms": 100.0,
-      "p50_ms": 0.0,
-      "p95_ms": 50.0,
-      "samples": 0,
-      "source": "contract-budget"
-    },
-    "saved_page_open": {
-      "budget_max_ms": 150.0,
-      "budget_p95_ms": 100.0,
-      "max_ms": 150.0,
-      "p50_ms": 0.0,
-      "p95_ms": 100.0,
-      "samples": 0,
-      "source": "contract-budget"
-    },
     "web_history_swipe_back": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "zoom_step": {
       "budget_max_ms": 100.0,
       "budget_p95_ms": 50.0,
       "max_ms": 100.0,

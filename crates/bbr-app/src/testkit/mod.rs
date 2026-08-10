@@ -30,6 +30,7 @@ mod dispatch_benchmark_context_menu;
 mod dispatch_benchmark_downloads;
 mod dispatch_benchmark_find;
 mod dispatch_benchmark_gestures;
+mod dispatch_benchmark_library;
 mod dispatch_benchmark_peek;
 mod dispatch_benchmark_swipe;
 mod dispatch_benchmark_u2;
@@ -40,6 +41,7 @@ mod dispatch_drag;
 #[cfg(target_os = "macos")]
 mod dispatch_errors;
 mod dispatch_find;
+mod dispatch_library;
 mod dispatch_portal;
 mod dispatch_probe;
 mod dispatch_saved_pages;

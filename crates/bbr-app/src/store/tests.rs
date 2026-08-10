@@ -269,3 +269,116 @@ fn ranking_consumes_only_in_memory_provider_data() {
     let ranked = bbr_command::rank(&corpus, &registry, &query, &context, 16);
     assert!(!ranked.results.is_empty());
 }
+
+#[test]
+fn b3_library_mutations_round_trip_through_the_combined_writer() {
+    logger();
+    let dir = temp_dir("b3-library-mutations");
+    let mut store = AppStore::open(&dir).expect("open store");
+
+    // Seed two records through the B2 save seam.
+    store.save_saved_page("https://example.test/alpha", "Alpha");
+    store.save_saved_page("https://example.test/beta", "Beta");
+    assert_eq!(store.saved_pages_count(), 2);
+
+    // Rename one record's user label (the display ladder head).
+    store.rename_saved_page(1, "Alpha Renamed");
+    store.with_saved_pages(|pages, _| {
+        assert_eq!(
+            pages
+                .iter()
+                .find(|p| p.id == 1)
+                .unwrap()
+                .user_label
+                .as_deref(),
+            Some("Alpha Renamed")
+        );
+    });
+    // An invalid label is a no-op (bounds, control bytes, empty).
+    store.rename_saved_page(1, "");
+    store.rename_saved_page(1, "a\x00b");
+    store.with_saved_pages(|pages, _| {
+        assert_eq!(
+            pages
+                .iter()
+                .find(|p| p.id == 1)
+                .unwrap()
+                .user_label
+                .as_deref(),
+            Some("Alpha Renamed")
+        );
+    });
+
+    // Create a flat collection and move both records into it.
+    let collection = store
+        .create_saved_collection("Work")
+        .expect("created collection");
+    assert!(collection > 0);
+    store.move_saved_pages_to_collection(&[1, 2], Some(collection));
+    store.with_saved_pages(|pages, collections| {
+        assert_eq!(collections.len(), 1);
+        assert!(pages.iter().all(|p| p.collection_id == Some(collection)));
+    });
+    // Moving to an unknown collection is a no-op.
+    store.move_saved_pages_to_collection(&[1], Some(999));
+    store.with_saved_pages(|pages, _| {
+        assert!(pages.iter().all(|p| p.collection_id == Some(collection)));
+    });
+
+    // Rename the collection; move one record out.
+    store.rename_saved_collection(collection, "Renamed Work");
+    store.move_saved_pages_to_collection(&[2], None);
+    store.with_saved_pages(|pages, collections| {
+        assert_eq!(collections[0].title, "Renamed Work");
+        assert_eq!(
+            pages.iter().find(|p| p.id == 1).unwrap().collection_id,
+            Some(collection)
+        );
+        assert_eq!(
+            pages.iter().find(|p| p.id == 2).unwrap().collection_id,
+            None
+        );
+    });
+
+    // Multi-select batch remove (one poke), then remove the collection.
+    store.remove_saved_pages(&[1, 2]);
+    assert_eq!(store.saved_pages_count(), 0);
+    store.remove_saved_collection(collection);
+    assert_eq!(store.saved_collections_count(), 0);
+
+    // The combined writer persists the whole state in one transaction: a
+    // reopen restores exactly the in-memory result (records + collections).
+    store.flush_saved_pages();
+    drop(store);
+    let reopened = AppStore::open(&dir).expect("reopen store");
+    assert_eq!(reopened.saved_pages_count(), 0);
+    assert_eq!(reopened.saved_collections_count(), 0);
+}
+
+#[test]
+fn b3_library_collection_remove_moves_members_out_first() {
+    logger();
+    let dir = temp_dir("b3-collection-remove");
+    let mut store = AppStore::open(&dir).expect("open store");
+    store.save_saved_page("https://example.test/alpha", "Alpha");
+    store.save_saved_page("https://example.test/beta", "Beta");
+    let collection = store.create_saved_collection("Work").expect("created");
+    store.move_saved_pages_to_collection(&[1, 2], Some(collection));
+
+    // Removing the collection clears membership in the same poke, so the
+    // combined persisted write can never dangle (the strict collection
+    // foreign key stays satisfied).
+    store.remove_saved_collection(collection);
+    store.with_saved_pages(|pages, collections| {
+        assert!(collections.is_empty());
+        assert!(pages.iter().all(|p| p.collection_id.is_none()));
+    });
+    store.flush_saved_pages();
+    drop(store);
+    let reopened = AppStore::open(&dir).expect("reopen store");
+    assert_eq!(reopened.saved_collections_count(), 0);
+    assert_eq!(reopened.saved_pages_count(), 2);
+    reopened.with_saved_pages(|pages, _| {
+        assert!(pages.iter().all(|p| p.collection_id.is_none()));
+    });
+}
