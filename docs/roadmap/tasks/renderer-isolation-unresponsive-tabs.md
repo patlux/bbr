@@ -10,7 +10,9 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
 Status: **Slice 2 is independently accepted; Slice 3 is safely settled and
-blocked on the real helper-termination proof.** PEEK and B3 are integrated
+ready for the smallest bounded finalization under the independently reviewed
+split lifecycle acceptance contract once this Control authority is committed.**
+PEEK and B3 are integrated
 through control checkpoint
 `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
 `4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The Orchestrator created branch
@@ -281,17 +283,37 @@ safe non-process responsiveness groups pass 4/4, including dialog, real
 busy/heavy detection, recovery, close/neighbor/split/sidebar/space chrome
 interactions, and stale-state handling. Performance scenarios and sample-count
 guards are implemented, but performance was not executed and baseline samples
-remain `0`. The process case stays open: every observed WebContent helper was
-launchd-owned (`ppid=1`), so the accepted app-child proof found zero eligible
-helpers and performed zero terminations. Operational settlement is clean:
+remain `0`. The original process case stayed open at settlement: every
+observed WebContent helper was launchd-owned (`ppid=1`), so the then-accepted
+app-child proof found zero eligible helpers and performed zero terminations.
+Operational settlement is clean:
 zero staged paths, zero worktree processes, zero Git locks, clean diff-check,
 available GUI flock; module bounds include `webview.rs` 519,
 `bbr-fixtures/src/lib.rs` 652, and process observation 423 lines. No product
-commit or integration exists. No further renderer writer, G2/G3/Z work,
-performance recipe, canonical `just e2e`, or ownership-contract change is
-authorized until an independently reviewed and committed public ownership
-proof exists, or an explicitly approved safe environment exposes provably
-app-owned helpers.
+commit or integration exists. Patrick subsequently authorized read-only Path-A
+research only. The resulting
+[public ownership proof research](../../research/renderer-webcontent-public-ownership-proof.md)
+found no supported ordinary-app proof on this target: public WKWebView exposes
+no helper PID/audit token; public process metadata is ambiguous; coalition and
+originator queries are private and two simultaneous same-client instances
+shared both observed coalitions; EndpointSecurity requires a restricted
+entitlement, root and Full Disk Access; BBR-owned resource markers did not bind
+the WebContent helper.
+
+The independently reviewed
+[renderer lifecycle acceptance decision](../../research/renderer-lifecycle-acceptance-decision.md)
+replaces only the invalid deterministic helper-kill gate with a
+public-API split evidence chain. Real busy/heavy WKWebView E2E, direct tests of
+BBR's own public delegate and `WKErrorWebContentProcessTerminated` mapping,
+portable multi-session crash-burst reconciliation, and real-app recovery over
+the productive typed event pump are mandatory. Only the external WebKit →
+public callback/error hop remains an explicitly unpassed Apple platform
+contract. The obsolete helper observation/termination seam must be removed,
+not retained as compatibility. Exactly one bounded Renderer finalization writer may continue the preserved
+tree `4dc4deb042e0bc818c70ac1aae7ac81bd938bdd7` after this Control authority is
+committed; G2/G3/Z work, performance recipes and canonical `just e2e` remain
+blocked until the reviewed Renderer candidate is integrated. A privileged EndpointSecurity helper remains a separate explicit
+security/product decision and is not part of this finalization.
 
 ---
 
@@ -359,27 +381,19 @@ does not make.
   `objc2-web-kit 0.3.2`); JS dialogs (`alert`/`confirm`/`prompt` in
   `WKUIDelegate`) remain auto-dismissed in v1 with the boundary documented in
   the interaction contract, and no dialog state survives close/recreate.
-- **WebKit process-sharing observations** (no one-process-per-tab guarantee):
-  a testkit-gated observation seam enumerates the running
-  `com.apple.WebKit.WebContent` helper processes via public
-  `NSRunningApplication`, filters to child helpers only — those whose public
-  parent PID equals this app's PID, read via public libproc `proc_pidinfo` —
-  and terminates exactly one app-owned helper per observation run after a
-  deterministic real renderer termination. The seam never claims per-view
-  targeting (public API exposes no per-view WebContent PID) and explicitly
-  never touches foreign helpers (any helper whose parent PID is not this
-  app). The run records whether the affected sessions' probes fail
-  (shared-process evidence); the E2E asserts at least one affected session
-  and independently reconciles siblings. The policy never assumes per-tab
-  processes: after any `PageCrashed` or unresponsive timeout, a bounded
-  reconciliation sweep re-probes the other live sessions and independently
-  marks each. Observations land in the delivery ledger and
-  ARCHITECTURE.md; WKProcessPool is explicitly documented as deprecated and
-  behavior-neutral (`objc2-web-kit 0.3.2` header: "Creating and using multiple
-  instances of WKProcessPool no longer has any effect"; "each web view is
-  given its own web content process until an implementation-defined process
-  limit is reached, after which web views with the same process pool end up
-  sharing web content processes").
+- **Public lifecycle and process-sharing contract** (no one-process-per-tab
+  guarantee): the public SDK documents
+  `webViewWebContentProcessDidTerminate:`,
+  `WKErrorWebContentProcessTerminated`, and implementation-defined WebContent
+  sharing, but exposes no safe deterministic helper-termination trigger. The
+  adapter is tested by direct invocation of BBR's own retained public delegate
+  plus native error mapping; the portable controller is tested with sequential
+  multi-view `PageCrashed` bursts and independently re-probes every still-live
+  sibling; real-app recovery enters through the same productive typed event
+  pump as native events. The external WebKit → callback/error hop remains an
+  explicit Apple platform contract, never an automated BBR pass. No helper
+  enumeration, ownership inference, termination, per-view PID, or process-count
+  assertion is retained in product or testkit.
 - **Deterministic hang fixtures** in `bbr-fixtures`:
   `/__fx/hang/busy` (synchronous renderer main-thread busy loop — never
   finishes, never answers probes), `/__fx/hang/heavy` (interruptible heavy
@@ -401,10 +415,12 @@ does not make.
   deterministically. The permissions (`webView_requestMediaCapturePermission…`)
   and file-panel (`webView_runOpenPanel…`) delegate families keep their
   existing owners (permissions/file-panels packets).
-- **One-process-per-tab enforcement**: impossible through public API
-  (WKProcessPool deprecated/no effect; no public per-view WebContent PID).
-  The lane observes and designs around sharing; it does not attempt process
-  pinning or private SPI.
+- **Helper discovery or termination and one-process-per-tab enforcement**:
+  impossible to make a safe deterministic ordinary-app acceptance gate through
+  public API (WKProcessPool deprecated/no effect; no public per-view WebContent
+  PID or exact helper ownership). The lane designs around sharing through typed
+  lifecycle events; it does not enumerate or terminate helpers, attempt process
+  pinning, or use private SPI.
 - **Automatic reload / terminate after a timeout**: no auto-reload, no
   automatic process kill; recovery stays user-initiated and closed (Wait /
   Reload / Close tab), matching the crash panel's "no auto-reload in v1".
@@ -439,6 +455,7 @@ Provides/API:             WebEvent::UnresponsiveChanged(WebViewId, bool);
                           WebEngine::probe_responsiveness(id);
                           portable RendererAvailability + monitor policy;
                           §10.11/§11.8a unresponsive surface + stable ids;
+                          public delegate/error lifecycle mapping;
                           deterministic hang fixtures + e2e-shell-responsiveness
 Exclusive paths:          crates/bbr-browser/src/responsiveness.rs (+ tests);
                           crates/bbr-web-macos/src/responsiveness.rs (new
@@ -449,7 +466,8 @@ Exclusive paths:          crates/bbr-browser/src/responsiveness.rs (+ tests);
                           edits only where the probe/dialog seam demands);
                           crates/bbr-fixtures hang routes (new hang module,
                           never growing the 839-line `src/lib.rs` overall);
-                          crates/bbr-app/tests/e2e_shell_responsiveness/**;
+                          crates/bbr-app/tests/e2e_shell_responsiveness/**
+                          except the removed process case;
                           this task packet + DESIGN §10.11/§11.8a +
                           interaction-contract rows; docs updates listed in
                           Documentation
@@ -475,16 +493,13 @@ or `browser-interactions.md`.
 
 - **Public API only**: `WKProcessPool` is deprecated/no-effect and never
   relied upon; no private WebKit SPI, no per-view PID assumptions, no
-  `_close`/`_webProcessIdentifier` KVC. Probe, recovery, and observation use
-  only `objc2-web-kit 0.3.2` types already depended on (`WKWebView`,
-  `WKWebViewConfiguration`, `WKUIDelegate` dialog methods,
-  `evaluateJavaScript…inContentWorld…`) plus public macOS process APIs.
-  The observation seam is testkit-gated and macOS-only: enumeration via
-  public `NSRunningApplication`; the parent-PID filter via public libproc
-  `proc_pidinfo` (public, but low-level C FFI — `unsafe` to call from Rust
-  and nonportable, which is why the entire seam is testkit-gated and absent
-  from release builds). The observation never terminates or otherwise
-  touches foreign helpers (helpers whose parent PID is not this app).
+  `_close`/`_webProcessIdentifier` KVC. Probe and recovery use only
+  `objc2-web-kit 0.3.2` types already depended on (`WKWebView`,
+  `WKWebViewConfiguration`, `WKNavigationDelegate`, `WKUIDelegate` dialog
+  methods, `WKErrorDomain`, `WKErrorWebContentProcessTerminated`, and
+  `evaluateJavaScript…inContentWorld…`). Tests may directly call BBR's own
+  public delegate implementation and construct public `NSError` values; they
+  never enumerate, identify, select, or terminate a WebContent helper.
 - **Main thread, never blocking**: every probe, destroy, show, and focus call
   stays on the AppKit main thread with `MainThreadMarker`; deadlines are
   timers (run-loop/queue timer), never blocking waits; the gateway's existing
@@ -503,12 +518,11 @@ or `browser-interactions.md`.
   must hold under hang; tests never use sleeps or pixel assertions.
 - **No weakened tests, budgets, validators, or acceptance criteria**; no
   migration or backward-compatibility layer.
-- **Security/release**: probe and observation code is `testkit`-feature-gated
-  where it exposes test-only seams; release builds exclude them (existing
-  `--bbr-*` exclusion posture); the probe evaluates only the trivial
-  `1+1`-class expression in the client content world and never reads page
-  data; the observation terminates at most exactly one app-owned helper per
-  run and never touches foreign helpers.
+- **Security/release**: test-only injection/adapter seams are
+  `testkit`-feature-gated where needed and release builds exclude them
+  (existing `--bbr-*` exclusion posture); the probe evaluates only the
+  trivial `1+1`-class expression in the client content world and never reads
+  page data. No process observation or termination capability remains.
 - **Module budget**: each new file stays below ~500 lines; split by
   responsibility (portable policy vs. macOS probe vs. presentation vs. E2E
   scenarios). Existing files already over the budget are explicit no-grow
@@ -570,19 +584,25 @@ or `browser-interactions.md`.
       hook in the pinned SDK); a `dialog` fixture page's alert/confirm/prompt
       is auto-dismissed deterministically, the chrome stays interactive, and
       closing/recreating leaves no dialog state.
-- [ ] **Process-sharing observation** (testkit-gated, real renderer): the
-      `TerminateWebProcess`-class seam enumerates
-      `com.apple.WebKit.WebContent` helpers via `NSRunningApplication`,
-      filters to child helpers whose public parent PID equals this app
-      (public libproc `proc_pidinfo`), and terminates exactly one app-owned
-      helper — never claiming per-view targeting (no public per-view
-      WebContent PID) and never touching foreign helpers. The E2E asserts
-      at least one affected session (`PageCrashed`/unresponsive reported
-      for ≥1 session), then the reconciliation sweep re-probes every other
-      live session and marks each sibling independently; the observation
-      (shared vs. independent, with host model/OS) is recorded in the
-      ledger — the E2E asserts BBR's policy response, not a specific
-      process topology.
+- [ ] **Public lifecycle adapter contract**: directly invoke BBR's own
+      retained public `webViewWebContentProcessDidTerminate:` delegate and
+      assert exactly one `PageCrashed(WebViewId)` plus the process-crash
+      incident for the bound session. Map an `NSError` carrying
+      `WKErrorDomain` / `WKErrorWebContentProcessTerminated` to the same
+      portable termination authority. Callback+error duplicates, unknown ids,
+      destroyed ids and old incarnations destroy no session twice and cannot
+      mutate a recreated view. No helper PID, KVC, private selector, process
+      enumeration or termination is involved.
+- [ ] **Shared-process reconciliation without topology assumptions**:
+      portable FakeEngine tests apply sequential `PageCrashed` bursts to
+      multiple live views in varying orders, check invariants after each
+      event, destroy each affected session exactly once, preserve persistent
+      tab/profile identity, publish no false split pane, and independently
+      re-probe every still-live sibling. Real-app typed-event tests exercise
+      the same productive app/controller pump, crash panel/status semantics,
+      exact-one-session Restore, split/member handling, multi-view burst and
+      stale-event rejection. The external WebKit→callback/error hop is cited
+      as an unpassed Apple platform contract, not an automated BBR pass.
 - [ ] Existing crash-panel, error-surface, smoke, tabs, profiles, and shell
       suites stay green.
 
@@ -641,11 +661,14 @@ pressure.
 3. Land the additive `bbr-web` slice (event + trait method) as its own
    reviewable commit; then the portable `bbr-browser` monitor; then the macOS
    probe; then the surface; then fixtures/E2E; then docs/roadmap.
-4. One independent read-only reviewer maps requirements to evidence
-   (including the shared-process observation and stale-event cases).
-5. One bounded remediation writer for concrete findings, then a focused
-   recheck.
-6. Integrate serially; run the full gates from the integrated commit.
+4. Under the committed lifecycle-acceptance decision, remove the obsolete
+   helper process seam and complete the public delegate/error, multi-view
+   burst, productive event-transport, and stale-event evidence.
+5. One independent read-only reviewer maps every split-evidence requirement to
+   the exact candidate. One bounded remediation writer handles concrete
+   findings, then a focused recheck.
+6. Integrate serially; run the allowed non-performance and individual
+   functional gates from the integrated commit.
 
 ## Iteration policy
 
@@ -671,9 +694,9 @@ If no defensible path remains, stop with:
   unpublishable detection deadline, or a shared-process topology that makes
   the reconciliation sweep unsafe;
 - smallest contract decision, environment input, or user decision required
-  next (e.g., accept an explicit detection-latency budget, choose
-  auto-dismiss vs. portal dialogs, or record the observation and defer the
-  policy).
+  next (e.g., accept an explicit detection-latency budget or choose
+  auto-dismiss vs. portal dialogs). Never revive helper targeting without a
+  newly reviewed supported ownership boundary.
 
 ## Source / ownership conflict map
 
@@ -683,7 +706,7 @@ If no defensible path remains, stop with:
 | `crates/bbr-web-macos/webview.rs` + `delegate.rs` | lane-owned webview lifecycle + `WKNavigationDelegate`+`WKUIDelegate` incl. `webViewWebContentProcessDidTerminate` | probe adapter and dialog auto-dismiss touch the same delegate; `webview.rs` is already at 530 lines (existing split obligation) | Probe lands in the new `responsiveness.rs`; extend the existing delegate ivars/sink pattern, no new delegate authority; `webview.rs` is reduced or held flat, never grown by this lane |
 | `crates/bbr-browser/controller.rs` `on_page_crash` / `crashed_tabs` / snapshot | merged; crash-panel E2E green | `Unresponsive` reuses the destroy→recreate seam but must not alter crash semantics | Sibling state, shared seam, distinct event path; crash tests stay untouched |
 | `crates/bbr-app` composition root, `render.rs`, shell snapshot/semantics | MVP shell integrated | new pane + row state + snapshot fields | App composition is a serial kernel point; presentational files stay lane-owned |
-| testkit protocol/wire (`request.rs`, dispatch, snapshot) | protocol v7 (`PROTOCOL_VERSION = 7`); existing synthetic `InjectWebEvent` (testkit-only engine-event injection — pushes a `WebEvent` through the real transport, kills no process) | new `ProbeResponsiveness` request + new real-process termination seam (`TerminateWebProcess`-class; real process kill is new for this lane, distinct from synthetic `InjectWebEvent`) | Additive, feature-gated; top-level wire envelope is serial |
+| testkit protocol/wire (`request.rs`, dispatch, snapshot) | protocol v7 (`PROTOCOL_VERSION = 7`); existing synthetic `InjectWebEvent` pushes a typed event through the productive app/controller transport and kills no process | retain `ProbeRendererResponsiveness`; remove the obsolete `ObserveWebContentHelpers` request/response/dispatch surface; add no replacement process API | Top-level wire envelope is serial; typed crash injection is evidence for BBR-owned transport only and never claimed as the external WebKit callback hop |
 | `justfile` canonical E2E list | current canonical recipe list | new `e2e-shell-responsiveness` recipe + canonical registration | Registered at integration, not by the lane; canonical `just e2e` is not runnable end-to-end until the current recipe-state override lifts (see Completion gates) |
 | `performance-baseline.json` + perf matrix | gate-enforced; current baseline settled | `unresponsive_chrome`/`probe_tick` registration | Registered with budgets unchanged; execution deferred |
 | `docs/product/browser-interactions.md` | canonical close/focus rows | new beforeunload/dialog/unresponsive rows | Lane edits explicitly and only its rows; reviewed as part of the slice |
@@ -723,15 +746,22 @@ If no defensible path remains, stop with:
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
+Outcome: split lifecycle acceptance committed; bounded Renderer finalization
+        removes the obsolete process seam and closes all BBR-owned evidence.
+Commits: control authority only until finalization candidate review.
+Functional evidence: preserved non-process responsiveness 4/4; delegate/error,
+        burst and productive crash-transport evidence required before pass.
+Real-app E2E: real busy/heavy/chrome/recovery/dialog plus typed crash/recovery;
+        no helper termination test.
 Performance evidence: obligations registered; execution deferred to the
         canonical runner (no dev-host measured claim)
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Roadmap/documentation updates: public ownership research + lifecycle acceptance
+        decision + current delivery authority.
+Open blockers and non-goals: external WebKit→callback/error hop is a cited
+        Apple platform contract, not an automated BBR pass; performance,
+        startup, package and first-MVP boundary remain open.
+Worktree state: preserved uncommitted candidate tree `4dc4deb0…`; one bounded
+        finalization writer only after committed authority.
 
 Planning/read-only:      independent planning run (read-only, /tmp only;
                          repository unmodified)
