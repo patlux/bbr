@@ -104,3 +104,58 @@ fn collect_rs(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
         }
     }
 }
+
+/// The post-cutover `rg` guard (packet
+/// `component-gallery-browser-components.md`): `bbr-app` defines **no**
+/// duplicate of the G2 Tab Row production symbols and **no** `pub use
+/// bbr_ui` compatibility alias for them. The one `tab_row`/`RowVisuals`/
+/// `drag_tick` authority is `bbr-ui`; the app imports it and keeps only
+/// its controller-snapshot composition (`row_state`, `row_visuals`).
+/// Implemented with a pure-std source scan (hermetic — no external `rg`
+/// binary required in the evaluation shell) over `crates/bbr-app/src`.
+#[test]
+fn bbr_app_defines_no_tab_row_duplicate_or_reexport_alias() {
+    let app_src = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("bbr-app")
+        .join("src");
+    let mut files = Vec::new();
+    collect_rs(&app_src, &mut files);
+    assert!(!files.is_empty(), "bbr-app source exists");
+    // The migrated tab-row symbols must exist exactly once in the
+    // workspace: in `bbr-ui`. The app may not redefine any of them (the
+    // paren keeps `fn tab_row(` from matching the app-owned
+    // `fn tab_row_h` geometry helper).
+    let migrated = [
+        "fn tab_row(",
+        "struct RowVisuals",
+        "fn drag_tick(",
+        "fn row_title(",
+        "fn row_state_slot(",
+        "fn close_control(",
+        "fn pin_control(",
+        "fn row_wash(",
+    ];
+    for file in &files {
+        let text = std::fs::read_to_string(file).expect("read app source");
+        assert!(
+            !text.contains("pub use bbr_ui::"),
+            "{} re-exports bbr_ui (no compatibility alias)",
+            file.display()
+        );
+        for symbol in migrated {
+            assert!(
+                !text.contains(symbol),
+                "{} defines a duplicate {symbol}",
+                file.display()
+            );
+        }
+    }
+    // The app still consumes the production symbols through the one path.
+    let sidebar = std::fs::read_to_string(app_src.join("app").join("sidebar_view.rs"))
+        .expect("read sidebar_view.rs");
+    assert!(
+        sidebar.contains("components::tab_row"),
+        "sidebar renders through bbr_ui::components::tab_row"
+    );
+}

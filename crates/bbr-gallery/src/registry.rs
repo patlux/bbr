@@ -16,7 +16,7 @@ use gpui::{AnyElement, Entity};
 use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 
-use crate::recorder::{ControlObserver, ControlRecorder};
+use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRecorder};
 
 /// A stable story identity, assigned by the registry in declaration order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -53,6 +53,11 @@ pub struct StoryContext<'a> {
     /// callbacks real control events route through. `None` for every other
     /// story.
     pub controls: Option<ControlsStory<'a>>,
+    /// `Some` only for the Tab Row story: the Tab Row recorder snapshot
+    /// and the observer callbacks the production `tab_row` callbacks route
+    /// through (packet `component-gallery-browser-components.md`). `None`
+    /// for every other story.
+    pub tab_row: Option<TabRowStory<'a>>,
 }
 
 /// Everything a Core Controls story needs to render the **exact** vendored
@@ -72,6 +77,17 @@ pub struct ControlsStory<'a> {
     /// The real `SliderState::value().start()` snapshot (read by the app
     /// each render) — the story's value row and the Progress mirror.
     pub slider_value: f32,
+}
+
+/// Everything a Tab Row story needs to render the **exact** production
+/// `bbr_ui::components::tab_row` with recorder callbacks: the current
+/// recorder snapshot (select/close/pin/drag counts) and the observer
+/// callbacks that re-enter the app on real pointer interactions (packet
+/// `component-gallery-browser-components.md`). `Some` only while the Tab
+/// Row story is selected.
+pub struct TabRowStory<'a> {
+    pub recorder: &'a TabRowRecorder,
+    pub observer: &'a TabRowObserver,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,

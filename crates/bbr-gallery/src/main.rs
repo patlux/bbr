@@ -27,6 +27,10 @@ mod registry;
 #[cfg(target_os = "macos")]
 mod stories;
 #[cfg(target_os = "macos")]
+mod tab_row_app;
+#[cfg(target_os = "macos")]
+mod tab_row_matrix;
+#[cfg(target_os = "macos")]
 mod tree;
 #[cfg(target_os = "macos")]
 mod tree_surface;

@@ -91,14 +91,15 @@ pub fn catalog() -> CatalogRegistry {
     // `component-gallery-browser-components.md`): appended after the pinned
     // G1b prefix — ids stay stable and never renumber. The first cut is the
     // §11.4 status line, extracted to `bbr-ui::components::status` in the
-    // same group; later G2 rows append here in their cutover order.
+    // same group; the Tab Row cut renders the production `tab_row` matrix
+    // with recorder callbacks. Later G2 rows append here in their cutover
+    // order.
     registry.add_group(
         "Browser components",
-        vec![story(
-            "Status line",
-            browser_components::render_status_line,
-            &[],
-        )],
+        vec![
+            story("Status line", browser_components::render_status_line, &[]),
+            story("Tab Row", browser_components::render_tab_row, &[]),
+        ],
     );
     registry
 }

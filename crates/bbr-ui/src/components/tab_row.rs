@@ -3,18 +3,29 @@
 //! and the §10.9 drag insertion tick.
 
 use gpui::{
-    div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, SharedString, Stateful, Styled,
-    Window,
+    div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, Rgba, SharedString, Stateful,
+    Styled, Window,
 };
 
 use crate::icons::Icon;
+use crate::palette::Palette;
 use crate::state::TabVisualState;
 use crate::theme::{Radius, Spacing, Theme, ThemeMode};
 
 use super::favicon::{favicon_tile, FaviconSpec};
 
+/// §15 stable ids of the §11.1/§11.2 vertical tab row (DESIGN.md §11.1/
+/// §11.2 assert ids). The components render these exact strings; the tests
+/// pin them so a label edit can never shift an id.
+pub const TAB_ROW_ID: &str = "bbr-tab-row";
+pub const TAB_TITLE_ID: &str = "bbr-tab-title";
+pub const TAB_CLOSE_ID: &str = "bbr-tab-close";
+pub const TAB_STATE_ID: &str = "bbr-tab-state";
+pub const TAB_PIN_ID: &str = "bbr-tab-pin";
+pub const DRAG_TICK_ID: &str = "bbr-drag-tick";
+
 /// One row's rendered identity, derived from the controller snapshot.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RowVisuals {
     pub index: usize,
     pub title: SharedString,
@@ -41,7 +52,10 @@ pub fn row_title(theme: &Theme, index: usize, text: &str, state: TabVisualState)
         theme.palette.ink
     };
     div()
-        .id(("bbr-tab-title", index))
+        .id((TAB_TITLE_ID, index))
+        // Test-support only (a release no-op): the stable §15 id as a
+        // gallery debug target, the same addressing the app's testkit uses.
+        .debug_selector(move || format!("{TAB_TITLE_ID}-{index}"))
         .flex_1()
         .overflow_hidden()
         .text_ellipsis()
@@ -55,15 +69,40 @@ pub fn row_title(theme: &Theme, index: usize, text: &str, state: TabVisualState)
 /// N 10 / XL 10) that later holds the `attention` dot (§10.6). Present on
 /// every row so the `bbr-tab-state-<n>` assert id (§15) exists; empty
 /// until an attention surface ships.
-pub fn row_state_slot(theme: &Theme, index: usize) -> Stateful<Div> {
+pub fn row_state_slot(theme: &Theme, index: usize, state: TabVisualState) -> Stateful<Div> {
     div()
-        .id(("bbr-tab-state", index))
+        .id((TAB_STATE_ID, index))
+        .debug_selector(move || format!("{TAB_STATE_ID}-{index}"))
         .size(theme.density.state_slot())
         .flex()
         .items_center()
         .justify_center()
         .text_size(theme.type_.meta.size)
         .text_color(theme.palette.ink_faint)
+        .when(attention_visible(state), |el| {
+            el.child(attention_dot(theme))
+        })
+}
+
+/// §10.6: whether the attention dot shows in the trailing state slot. The
+/// dot appears only while the composed §10 winner is `Attention` (the
+/// caller already resolved error > loading > pressed > selected > hover >
+/// default, so attention never rides another state's row).
+pub fn attention_visible(state: TabVisualState) -> bool {
+    state == TabVisualState::Attention
+}
+
+/// §10.6 attention dot: an 8 pt `status.attention` dot in the row's
+/// trailing state slot. Static — the two-beat opacity pulse and the
+/// one-frame amber surface flash stay later polish (the same honesty as
+/// the static loading arc); the dot itself is the attention visual
+/// contract, and the §10.6 badge always comes with its reason line in the
+/// status area (app-owned).
+fn attention_dot(theme: &Theme) -> Div {
+    div()
+        .size(px(8.0))
+        .rounded(Radius.full())
+        .bg(theme.palette.status_attention)
 }
 
 /// §11.1 close control: the §7 drawn close glyph (two 1.5 pt diagonal
@@ -74,7 +113,8 @@ pub fn row_state_slot(theme: &Theme, index: usize) -> Stateful<Div> {
 /// hover slice.
 pub fn close_control(theme: &Theme, index: usize) -> Stateful<Div> {
     div()
-        .id(("bbr-tab-close", index))
+        .id((TAB_CLOSE_ID, index))
+        .debug_selector(move || format!("{TAB_CLOSE_ID}-{index}"))
         .size(theme.density.hit_min_close())
         .rounded(Radius.small())
         .flex()
@@ -97,7 +137,8 @@ pub fn pin_control(theme: &Theme, index: usize, pinned: bool, disabled: bool) ->
         theme.palette.ink_secondary
     };
     div()
-        .id(("bbr-tab-pin", index))
+        .id((TAB_PIN_ID, index))
+        .debug_selector(move || format!("{TAB_PIN_ID}-{index}"))
         .size(theme.density.icon())
         .rounded(Radius.small())
         .flex()
@@ -117,7 +158,8 @@ pub fn pin_control(theme: &Theme, index: usize, pinned: bool, disabled: bool) ->
 /// target. The stable §15 id lets E2E assert the tick's presence and state.
 pub fn drag_tick(theme: &Theme, index: usize, invalid: bool) -> Stateful<Div> {
     div()
-        .id(("bbr-drag-tick", index))
+        .id((DRAG_TICK_ID, index))
+        .debug_selector(move || format!("{DRAG_TICK_ID}-{index}"))
         .h(px(2.0))
         .w_full()
         .flex_shrink_0()
@@ -158,18 +200,7 @@ pub fn tab_row(
     on_begin_drag: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
-    let bg = match visuals.state {
-        TabVisualState::Selected => p.tint_selected,
-        TabVisualState::Error => p.status_error_surface,
-        TabVisualState::DragTarget => p.tint_selected,
-        // §10.2/§10.3: the pointer-state washes blend over the sidebar
-        // material exactly as DESIGN.md defines (token `wash_hover` /
-        // `wash_active`); the more specific composed state already won in
-        // the caller, so these arms never fight selection/error/loading.
-        TabVisualState::Hover => p.wash_hover,
-        TabVisualState::Active => p.wash_active,
-        _ => p.surface_sidebar,
-    };
+    let bg = row_wash(&p, visuals.state);
     let dragging = visuals.state == TabVisualState::Dragging;
     let controls_disabled = visuals.state == TabVisualState::Disabled || dragging;
     let close = close_control(theme, visuals.index)
@@ -184,7 +215,8 @@ pub fn tab_row(
     let pin = pin_control(theme, visuals.index, visuals.pinned, controls_disabled)
         .on_mouse_down(MouseButton::Left, on_pin);
     div()
-        .id(("bbr-tab-row", visuals.index))
+        .id((TAB_ROW_ID, visuals.index))
+        .debug_selector(move || format!("{TAB_ROW_ID}-{}", visuals.index))
         .h(theme.density.row())
         .relative()
         .px(theme.density.row_padding_x())
@@ -249,10 +281,31 @@ pub fn tab_row(
             visuals.state,
         ))
         .child(pin)
-        .child(row_state_slot(theme, visuals.index))
+        .child(row_state_slot(theme, visuals.index, visuals.state))
         .child(close)
         .on_mouse_down(MouseButton::Left, on_select)
         .on_mouse_down(MouseButton::Left, on_begin_drag)
+}
+
+/// §10.2–§10.4/§10.7/§10.9: the row's inset-surface wash per §10 state.
+/// The more specific composed state already won in the caller (the app's
+/// `row_state` composition — error > loading > active > selected > hover >
+/// default — and the drag state machine replacing the composition with
+/// `Dragging`/`DragTarget`); this function resolves the winner's visuals
+/// so the render and the tests share one resolution.
+pub fn row_wash(p: &Palette, state: TabVisualState) -> Rgba {
+    match state {
+        TabVisualState::Selected => p.tint_selected,
+        TabVisualState::Error => p.status_error_surface,
+        TabVisualState::DragTarget => p.tint_selected,
+        // §10.2/§10.3: the pointer-state washes blend over the sidebar
+        // material exactly as DESIGN.md defines (token `wash_hover` /
+        // `wash_active`); these arms never fight selection/error/loading
+        // because the caller already composed a single winning state.
+        TabVisualState::Hover => p.wash_hover,
+        TabVisualState::Active => p.wash_active,
+        _ => p.surface_sidebar,
+    }
 }
 
 /// §10.9 the dragged row's elev:2 shadow (the distinct single-shadow
@@ -273,4 +326,136 @@ fn drag_shadow(theme: &Theme) -> Vec<gpui::BoxShadow> {
         // GPUI-CE added the `inset` field to `BoxShadow`.
         inset: false,
     }]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::favicon::TAB_FAVICON_ID;
+    use super::*;
+
+    #[test]
+    fn ids_are_the_stable_section_15_ids() {
+        // DESIGN.md §11.1/§11.2/§10.9 assert ids — unchangeable contract.
+        assert_eq!(TAB_ROW_ID, "bbr-tab-row");
+        assert_eq!(TAB_TITLE_ID, "bbr-tab-title");
+        assert_eq!(TAB_FAVICON_ID, "bbr-tab-favicon");
+        assert_eq!(TAB_CLOSE_ID, "bbr-tab-close");
+        assert_eq!(TAB_STATE_ID, "bbr-tab-state");
+        assert_eq!(TAB_PIN_ID, "bbr-tab-pin");
+        assert_eq!(DRAG_TICK_ID, "bbr-drag-tick");
+    }
+
+    #[test]
+    fn row_visuals_round_trip_their_fields() {
+        let visuals = RowVisuals {
+            index: 3,
+            title: "Example".into(),
+            state: TabVisualState::Selected,
+            favicon: Some(FaviconSpec {
+                letter: 'E',
+                hue: 2,
+            }),
+            pinned: true,
+            show_close: true,
+            reveal_close: true,
+        };
+        assert_eq!(visuals.index, 3);
+        assert_eq!(visuals.title, "Example");
+        assert_eq!(visuals.state, TabVisualState::Selected);
+        assert_eq!(
+            visuals.favicon,
+            Some(FaviconSpec {
+                letter: 'E',
+                hue: 2
+            })
+        );
+        assert!(visuals.pinned);
+        assert!(visuals.show_close);
+        assert!(visuals.reveal_close);
+        // Clone/equality: the model is plain data (anchor model contract).
+        assert_eq!(visuals, visuals.clone());
+        assert_ne!(
+            visuals,
+            RowVisuals {
+                index: 3,
+                title: "Example".into(),
+                state: TabVisualState::Default,
+                favicon: Some(FaviconSpec {
+                    letter: 'E',
+                    hue: 2
+                }),
+                pinned: true,
+                show_close: true,
+                reveal_close: true,
+            }
+        );
+    }
+
+    #[test]
+    fn state_composition_wash_resolution_matches_section_10() {
+        // The §10 winner resolution: the more specific state already won in
+        // the caller (error > loading > active > selected > hover > default,
+        // with the drag machine replacing the composition). The component
+        // resolves the winner's inset-surface wash:
+        let theme = Theme::new(
+            ThemeMode::Dark,
+            crate::theme::ContrastMode::Standard,
+            crate::theme::Density::Normal,
+        );
+        let p = &theme.palette;
+        // §10.7 error surface wins over every other surface.
+        assert_eq!(row_wash(p, TabVisualState::Error), p.status_error_surface);
+        // §10.4 selected and §10.9 drag-target share the selection tint.
+        assert_eq!(row_wash(p, TabVisualState::Selected), p.tint_selected);
+        assert_eq!(row_wash(p, TabVisualState::DragTarget), p.tint_selected);
+        // §10.3 active wash beats §10.2 hover wash.
+        assert_eq!(row_wash(p, TabVisualState::Active), p.wash_active);
+        assert_eq!(row_wash(p, TabVisualState::Hover), p.wash_hover);
+        // Loading keeps the sidebar material (its visual is the arc +
+        // dimmed title); default/dragging/disabled/attention/focused stay
+        // on the sidebar material.
+        for state in [
+            TabVisualState::Default,
+            TabVisualState::Loading,
+            TabVisualState::Attention,
+            TabVisualState::Disabled,
+            TabVisualState::Dragging,
+            TabVisualState::Focused,
+        ] {
+            assert_eq!(row_wash(p, state), p.surface_sidebar, "{state:?}");
+        }
+        assert_ne!(p.wash_active, p.surface_sidebar);
+        assert_ne!(p.wash_hover, p.surface_sidebar);
+    }
+
+    #[test]
+    fn attention_dot_renders_only_for_the_attention_state() {
+        // §10.6: the amber dot lives in the trailing state slot and only
+        // while the row is in the attention state (the §10 composition
+        // winner — attention never rides error/loading/selected).
+        let theme = Theme::new(
+            ThemeMode::Dark,
+            crate::theme::ContrastMode::Standard,
+            crate::theme::Density::Normal,
+        );
+        assert!(attention_visible(TabVisualState::Attention));
+        for state in [
+            TabVisualState::Default,
+            TabVisualState::Hover,
+            TabVisualState::Active,
+            TabVisualState::Selected,
+            TabVisualState::Loading,
+            TabVisualState::Error,
+            TabVisualState::Disabled,
+            TabVisualState::Dragging,
+            TabVisualState::DragTarget,
+            TabVisualState::Focused,
+        ] {
+            assert!(!attention_visible(state), "{state:?}");
+        }
+        // The slot is always present (the stable §15 id) with the dot only
+        // for attention; the slot size is the fixed density state slot.
+        let _slot = row_state_slot(&theme, 0, TabVisualState::Attention);
+        let _quiet = row_state_slot(&theme, 0, TabVisualState::Default);
+    }
 }
