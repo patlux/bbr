@@ -108,15 +108,30 @@ sorted 54-path SHA-256
 real index remains base, temp-tree diff-check clean, no process, GUI lock free.
 No-grow surfaces remain 519/839 lines and all new files are below 500.
 
-Slice 1 is now under exclusive independent read-only review by
-`renderer_isolation_product_surface_reviewer` on that exact 54-path tree. The
-reviewer must inspect full diff bodies, map every Slice-1 product/architecture /
-focus/stale/dialog/cadence/test/gate requirement to evidence, rerun a bounded
-critical subset when needed, and return direct `PRODUCT_SLICE_PASS` or
-`PRODUCT_SLICE_FINDINGS`. It must not mutate any worktree. Testkit process
-observation, fixtures, real-app E2E, performance code, and broad docs remain
-outside this slice and start only after direct pass. Only the Orchestrator may
-commit, merge, integrate, or transfer ownership after settlement.
+Independent read-only review reproduced the exact 54-path candidate before and
+after review, accepted all Slice-1 product, architecture, authority, stale /
+crash / probe / dialog / pane / focus / cadence, scope, test and evidence
+requirements, and reran a broad critical non-GUI set green. It returned direct
+`PRODUCT_SLICE_FINDINGS` for exactly three LOW mechanical module-budget
+crossings introduced by this lane: `bbr-browser/src/controller.rs` 516 lines,
+`bbr-ui/src/icons.rs` 510 lines, and
+`bbr-app/src/shell/snapshot/tests.rs` 519 lines. No behavior, assertion, test,
+evidence, scope or authority finding exists. Candidate fingerprints remain
+exact `e7c8ab85…` / `f1ceb6fe…` / `d109949b…` / 54 paths
+`357209b2…`, real index base, diff clean, no process, GUI lock free.
+
+Exclusive owner transfers to
+`renderer_isolation_product_surface_budget_remediation_writer`. It may only
+perform behavior-preserving extractions that return those three files below
+~500 lines, preferentially moving controller code into the existing focused
+responsiveness module, the clock glyph into a focused icon module, and the
+unresponsive visible-id tests into a focused sibling test module. It must not
+change behavior, assertions, public contracts, other slice layers, testkit
+process observation, fixtures, E2E, performance code or broad docs. It runs
+focused compile/tests/fmt/Clippy/diff gates and returns exact fingerprints plus
+direct `PRODUCT_SLICE_REMEDIATED` or `BLOCKED`. Focused independent recheck
+follows before Slice 2. Only the Orchestrator may commit, merge, integrate, or
+transfer ownership after settlement.
 
 ---
 
