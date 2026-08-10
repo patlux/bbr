@@ -383,6 +383,14 @@ impl BbrApp {
             self.auth_cancel(window, cx);
             return;
         }
+        // Escape while a transient Peek preview is open dismisses it: the
+        // preview session is destroyed and focus returns to the exact warm
+        // origin (the global `escape → FocusWeb` binding routes here; the
+        // preview owns browser-command focus while open).
+        if self.controller.preview_open() {
+            self.peek_close(window, cx);
+            return;
+        }
         // Escape while a context menu is open closes it and restores the
         // origin focus domain (queue item 12, part B; the global
         // `escape → FocusWeb` binding routes here).
@@ -461,14 +469,21 @@ impl BbrApp {
     }
 
     /// Move GPUI focus + AppKit first responder back to the web view and
-    /// close the ranking surface (a command-surface exit path).
+    /// close the ranking surface (a command-surface exit path). While a
+    /// transient preview is open the preview session owns web focus.
     pub fn focus_web(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
         self.dismiss_command_portal(cx);
         self.command_ranking.close();
         window.blur();
-        if let Some(view) = self.controller.snapshot().active_view {
+        let target = self
+            .controller
+            .snapshot()
+            .preview
+            .map(|preview| preview.view)
+            .or_else(|| self.controller.snapshot().active_view);
+        if let Some(view) = target {
             self.engine.borrow_mut().focus_native_web(view);
         }
         cx.notify();

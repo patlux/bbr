@@ -34,6 +34,7 @@ use super::context_menu_drive::drive_context_menu_scenarios;
 use super::downloads_drive::drive_downloads_scenarios;
 use super::errors_drive::drive_error_surface_scenarios;
 use super::harness::AppHarness;
+use super::peek_drive::drive_peek_scenarios;
 use super::saved_pages_drive::drive_saved_pages_scenarios;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
 use super::zoom_drive::drive_zoom_scenarios;
@@ -1124,6 +1125,30 @@ fn drive_matrix_inner(
         let auth_samples =
             drive_auth_scenarios(client, harness, &mut since, config, &mut operation);
 
+        // Transient Peek (Link Preview / Peek packet): the three required
+        // production-path scenarios — `peek_request_to_present` (fresh
+        // source-profile preview session presented above its warm origin;
+        // the fresh native-session class, 100/150), `peek_dismiss_to_origin`
+        // (the warm origin active/focused again; warm class 50/100), and
+        // `peek_promote_to_tab` (the SAME preview session adopted as a
+        // regular tab without reload; warm class 50/100) — each through the
+        // typed benchmark request on the exact `on_new_window_request` /
+        // `peek_close` / `peek_promote` production seams, committing only
+        // from the armed presentation identity (fast-but-wrong guard in the
+        // app). Fixture time is excluded by construction (the deterministic
+        // local preview target is loaded after presentation, never inside a
+        // sample). The block restores the matrix state exactly (preview
+        // closed, the same tabs and sessions) before the dense seeding
+        // below.
+        let peek_samples = drive_peek_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            page_two,
+            &mut operation,
+        );
+
         // Dense-list scroll + selection through the bounded-window render
         // (Phase-4 dense slice, performance contract "dense-list scrolling"):
         // seed an S-density collection (230 identities, 10 pinned, 20 live)
@@ -1269,6 +1294,7 @@ fn drive_matrix_inner(
         raw.extend(zoom_samples);
         raw.extend(context_menu_samples);
         raw.extend(auth_samples);
+        raw.extend(peek_samples);
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);
         raw.insert("dense_select".to_string(), dense_select_samples);
 

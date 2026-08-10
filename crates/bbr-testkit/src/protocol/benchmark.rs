@@ -238,6 +238,35 @@ pub enum BenchmarkKind {
     /// `tab_reopen`. The sample commits only when the fresh tab/session is
     /// presented and focused with the surface closed.
     SavedPageOpen,
+    /// An eligible user-initiated new-window request presented a transient
+    /// Peek preview above its warm origin (Link Preview / Peek packet,
+    /// `peek_request_to_present`): the sample starts at the production
+    /// `BbrApp::on_new_window_request` seam and commits only from a render
+    /// of the one `NativeAboveWeb` portal window that drew the Peek bar
+    /// over the preview session with the covered origin still the active
+    /// view and the preview's native subview above the origin's (truthful
+    /// z-order, fast-but-wrong guard). The preview session is the fresh
+    /// native-session class with its own budget (p95 ≤ 100 ms; max ≤
+    /// 150 ms) — fixture/network page-load time is excluded by
+    /// construction (the target fixture is deterministic and local, and
+    /// the sample commits at presentation, not at page ready).
+    PeekRequestToPresent,
+    /// Dismissal of the transient Peek preview back to the exact warm
+    /// origin (Link Preview / Peek packet, `peek_dismiss_to_origin`): the
+    /// sample starts at the production `peek_close` path and commits only
+    /// when the preview session is destroyed, the Peek bar is gone, and
+    /// the warm origin is again the active, focused view — the warm
+    /// interaction class (p95 ≤ 50 ms; max ≤ 100 ms), no session
+    /// recreation.
+    PeekDismissToOrigin,
+    /// Promotion of the transient Peek preview to a regular tab without
+    /// reload (Link Preview / Peek packet, `peek_promote_to_tab`): the
+    /// sample starts at the production `peek_promote` path and commits
+    /// only when the SAME preview `WebViewId` is a regular tab in the
+    /// source space/profile, active and focused, with the preview state
+    /// gone — the warm interaction class (p95 ≤ 50 ms; max ≤ 100 ms),
+    /// the existing session adopted without recreation or page load.
+    PeekPromoteToTab,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

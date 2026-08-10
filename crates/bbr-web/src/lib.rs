@@ -36,8 +36,9 @@ pub use external_urls::{
     ExternalUrlRequest, ExternalUrlRequestId, RoutingDecision, UrlClass,
 };
 pub use new_window::{
-    decide, default_decision, NewWindowDecision, NewWindowDelivery, NewWindowDisposition,
-    NewWindowFeatures, NewWindowOutcome, NewWindowRequest, NewWindowSession, NewWindowTarget,
+    decide, decision_for_intent, default_decision, peek_eligible, NewWindowDecision,
+    NewWindowDelivery, NewWindowDisposition, NewWindowFeatures, NewWindowIntent, NewWindowOutcome,
+    NewWindowRequest, NewWindowSession, NewWindowTarget,
 };
 
 /// Stable identifier of a browsing profile. Maps 1:1 to a persistent
@@ -171,6 +172,12 @@ pub trait WebEngine {
     /// Show or hide a web view (`visible == false` must also drop keyboard
     /// focus held by the view).
     fn show(&mut self, id: WebViewId, visible: bool);
+
+    /// Raise `id` to the top of the native z-order above every other web
+    /// view (the transient Peek preview above its warm covered origin).
+    /// Unknown ids are no-ops; the implementation must keep the view's
+    /// navigation cover (if any) above the view itself.
+    fn raise_web_view(&mut self, id: WebViewId);
 
     /// Execute a navigation/user action on a web view.
     fn action(&mut self, id: WebViewId, action: WebAction);
@@ -357,6 +364,10 @@ mod tests {
 
         fn show(&mut self, id: WebViewId, visible: bool) {
             self.logs.push(format!("show {id:?} = {visible}"));
+        }
+
+        fn raise_web_view(&mut self, id: WebViewId) {
+            self.logs.push(format!("raise {id:?}"));
         }
 
         fn action(&mut self, id: WebViewId, action: WebAction) {

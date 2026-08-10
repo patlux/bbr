@@ -555,8 +555,8 @@ pub(crate) fn spawn_event_pump(
             #[cfg(target_os = "macos")]
             Incoming::NewWindow(Ok(delivery)) => {
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
-                        view.on_new_window_request(delivery, cx)
+                    let _ = with_app(&window, &app, cx, |view, window, cx| {
+                        view.on_new_window_request(delivery, window, cx)
                     });
                 });
             }

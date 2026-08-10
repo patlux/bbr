@@ -244,6 +244,7 @@ impl BbrApp {
             // presentation bound to the previous active view.
             self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
+            self.sync_peek_surface(cx);
             if chrome_focused {
                 self.focus_tab_list(window, cx);
             } else {
@@ -446,6 +447,7 @@ impl BbrApp {
             // presentation bound elsewhere.
             self.find_discard_if_unbound(cx);
             self.emit_browser(outcome);
+            self.sync_peek_surface(cx);
             self.focus_tab_list(window, cx);
             self.ensure_active_visible();
             // The tab changed space: a structural mutation (space membership

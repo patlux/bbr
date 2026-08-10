@@ -33,6 +33,11 @@ pub enum ControllerError {
         source: ProfileId,
         requested: ProfileId,
     },
+    /// A preview operation (action/promote) named no open transient preview.
+    NoPreviewOpen,
+    /// Promotion was refused because the preview session is crashed (only a
+    /// live session can be adopted without recreation).
+    PreviewCrashed,
 }
 
 impl std::fmt::Display for ControllerError {
@@ -52,6 +57,10 @@ impl std::fmt::Display for ControllerError {
                 f,
                 "new-window source profile {source:?} does not match requested {requested:?}"
             ),
+            Self::NoPreviewOpen => write!(f, "no transient preview is open"),
+            Self::PreviewCrashed => {
+                write!(f, "the preview session crashed; reload before promotion")
+            }
         }
     }
 }

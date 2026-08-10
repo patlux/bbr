@@ -173,6 +173,7 @@ mod tests {
             engine_sessions: 0,
             active_view: None,
             lifecycle_counts: bbr_browser::LifecycleCounts::default(),
+            preview: None,
         }
     }
 

@@ -36,10 +36,11 @@ pub use snapshot::{
     DownloadGroup, DownloadMachineState, DownloadRowAction, DownloadRowSnapshot,
     DownloadsPanelSnapshot, ErrorSurfaceCategory, ErrorSurfaceSnapshot, FavoriteTileSnapshot,
     FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts, NewWindowSnapshot,
-    PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, ProfileSnapshot, RestoreDisposition,
-    SemanticNode, SemanticRole, Snapshot, SpaceAppearanceSnapshot, SpaceChipSnapshot,
-    SpaceSnapshot, SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
-    StoreSnapshot, SwipeSnapshot, TabSnapshot, TabVisualState, WebContentProbe, ZoomSnapshot,
+    PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, PreviewSnapshot, PreviewZOrder,
+    ProfileSnapshot, RestoreDisposition, SemanticNode, SemanticRole, Snapshot,
+    SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceSnapshot, SpaceStripScrollSnapshot,
+    StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, SwipeSnapshot, TabSnapshot,
+    TabVisualState, WebContentProbe, ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.

@@ -31,5 +31,6 @@ pub mod context_menu;
 pub mod find;
 pub mod geometry;
 pub mod native;
+pub mod peek;
 pub mod probe;
 pub mod state;

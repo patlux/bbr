@@ -180,6 +180,7 @@ mod tests {
             engine_sessions: 3,
             active_view: Some(bbr_web::WebViewId(1)),
             lifecycle_counts: bbr_browser::LifecycleCounts::default(),
+            preview: None,
         }
     }
 

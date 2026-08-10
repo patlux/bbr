@@ -517,7 +517,15 @@ src/
    `BbrApp::on_new_window_request` method used by typed testkit injection. That
    method records request/open/block counters and delegates all tab/session
    creation to `BrowserController`; native and test paths therefore cannot
-   acquire separate execution authorities.
+   acquire separate execution authorities. The installed policy is now
+   Peek-aware (`decision_for_intent`): an eligible direct activation carries
+   `NewWindowDisposition::Preview` and `BbrApp::on_new_window_request` routes it
+   to `BrowserController::open_preview_from_new_window` (no regular tab),
+   presenting the §11.17 Peek bar in the one `NativeAboveWeb` portal window and
+   routing browser-command focus to the preview session; `OpenTab` keeps the
+   ordinary one-tab path; Escape/close and “Open as Tab” run the production
+   `peek_close`/`peek_promote` app methods; any controller mutation that ends
+   the preview reconciles the portal presentation via `sync_peek_surface`.
 9. Under testkit: start the gateway, pump engine events into the controller,
    and broadcast AppReady, focus, WebEvents, and semantic BrowserChanged events.
 ```
@@ -781,6 +789,34 @@ before domain or engine mutation. Every successful mutation returns exactly one
 typed `ControllerEvent`, and a read-only `snapshot()` publishes the tab list,
 active view, and live-session count for UI and E2E.
 
+**Transient Peek preview (Link Preview / Peek packet).** The controller also
+owns a *transient preview* lifecycle that is deliberately distinct from tabs: a
+`PeekPreview` (`crate::peek`) names a typed `PreviewId` plus a disposable
+source-profile `WebViewId` that exists only while the preview is open — never a
+persisted `Tab`, recently-closed row, sidebar row, or history item.
+`open_preview_from_new_window` resolves and validates the source exactly like
+`open_tab_from_new_window` (profile mismatch fails before mutation), creates the
+preview session in the **source profile's** data store, and raises it above the
+warm origin in the native z-order (`WebEngine::raise_web_view`). One preview per
+pane: a request whose source is the live preview *navigates* that same session
+(URL passes verbatim, history preserved); any other source *replaces* it after
+destroying the old session first — previews never stack.
+`preview_action` routes browser commands (back/forward/reload/stop/navigate) to
+the preview while it owns focus, and `apply_preview_event` mirrors
+URL/title/loading/history/crash into a `PreviewSnapshot` (the preview has no
+tab, so its navigation state lives only in the transient mirror).
+`close_preview` destroys the temporary session and leaves the warm origin
+untouched; `close_preview_if_stale` runs after every mutation that can move the
+active tab/space away from the source (select, close, move, space switch, split
+change, reopen, new tab) and closes the preview when the origin is no longer
+the active tab of the active space. `promote_preview` adopts the SAME session
+as a regular tab in the source space/profile without reload: the `WebViewId`
+moves atomically into the `TabId` bijection seeded with the preview's live
+URL/title, so the session is neither recreated nor temporarily orphaned and no
+profile boundary is crossed; a crashed preview refuses promotion.
+`preview_pane_layout()` makes the preview the sole pane while it is open, so it
+covers the complete web-content area with the covered origin warm underneath.
+
 Testability: the deterministic `FakeEngine` (in `crate::fake`,
 `#[cfg(test)]`-only) records every engine call into an op log — including
 keyed geometry ops (`SetRect { view, rect }`) — owns fake sessions, rejects
@@ -1010,15 +1046,17 @@ cargo run -p bbr -- --bbr-initial-url https://example.com
    evidence measures the real timer and commits only after the result palette is
    rendered. A product-wide `TimeSource` remains deferred until persistence and
    broader scheduling need one.
-4. **The MVP new-window seam is wired; richer disposition remains deferred.**
-   Direct user activations open one regular tab in the exact source
-   Space/Profile through `BbrApp` and `BrowserController`; script-created
+4. **The MVP new-window seam and the transient Peek preview are wired; richer
+   disposition remains deferred.** Direct user activations open one regular tab
+   in the exact source Space/Profile, or a transient source-profile Peek preview
+   when eligible, through `BbrApp` and `BrowserController`; script-created
    `window.open` requests are blocked and reported. The native delegate still
-   returns `None`. Peek, opener provenance, background/insertion policy,
+   returns `None`. Opener provenance, modifier/background insertion policy,
+   explicit production keyboard/pointer intent actions (ordinary-tab vs Peek),
    named-window reuse, popup allow-lists, and second browser windows remain
-   later bounded work. Functional real-app evidence is green; the required
-   optimized performance scenario remains explicitly unexecuted and unpassed
-   under the active delivery override.
+   later bounded work. Functional real-app evidence is green (PEEK 6/6,
+   NW-SEAM 4/4, Tabs/Profiles/Smoke 1/1, Portal 7/7); the required optimized
+   Peek performance scenarios remain explicitly unexecuted and unpassed.
 5. **No find-in-page, zoom, downloads, permission prompts, WebAuthn, or
    process-termination recovery UI yet** (Phase 8). `PageCrashed` is
    observable in the status line and snapshot, but there is no recovery

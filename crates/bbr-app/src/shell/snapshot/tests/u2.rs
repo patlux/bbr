@@ -78,6 +78,7 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
         engine_sessions: 0,
         active_view: None,
         lifecycle_counts: bbr_browser::LifecycleCounts::default(),
+        preview: None,
     };
 
     // Empty U2 state: the footer is always part of the rail; the

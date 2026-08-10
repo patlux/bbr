@@ -93,6 +93,16 @@ e2e-shell-saved-pages:
 e2e-shell-new-window:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_new_window -- --ignored --nocapture
 
+# Link Preview / Peek (PEEK): an eligible user-initiated target=_blank
+# request opens a transient source-profile preview above the warm origin
+# (same WebViewId/URL/page state) without creating a regular tab; Escape /
+# close restores the exact warm origin; navigation routes to the preview;
+# Open as Tab adopts the SAME preview session without reload; one preview
+# per pane replaces; exclusions fall back to ordinary tab; script requests
+# stay blocked; crash teardown cleans up.
+e2e-peek:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_peek -- --ignored --nocapture
+
 # Persistence + warm-restore (Phase 7, warm-restore slice): chrome-first
 # restore of repository-written browser state (identities before sessions,
 # visible-set-only hydration, deferred session-less tabs), truthful restore

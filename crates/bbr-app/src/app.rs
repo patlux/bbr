@@ -75,6 +75,9 @@ mod find_benchmarks;
 mod interaction;
 mod new_window;
 pub(crate) mod palette;
+pub(crate) mod peek;
+#[cfg(feature = "testkit")]
+mod peek_benchmarks;
 mod portal_host;
 mod render;
 mod saved_pages;
@@ -387,6 +390,10 @@ pub struct BbrApp {
     /// Productive new-window seam diagnostics (requests, created regular tabs,
     /// reported blocks). Updated only by `on_new_window_request`.
     new_window: new_window::NewWindowState,
+    /// Transient Peek presentation state (Link Preview / Peek packet): the
+    /// bar presentation and the captured warm-origin focus target. The
+    /// preview *session* state lives in the controller snapshot.
+    peek: peek::PeekState,
     #[cfg(feature = "testkit")]
     performance: PerformanceProbe,
 }
@@ -510,6 +517,7 @@ impl BbrApp {
             focus_sink: Rc::new(RefCell::new(None)),
             browser_sink: Rc::new(RefCell::new(None)),
             new_window: new_window::NewWindowState::default(),
+            peek: peek::PeekState::default(),
             #[cfg(feature = "testkit")]
             performance,
         }
@@ -770,6 +778,7 @@ impl BbrApp {
             self.sync_error_surface_visibility();
             self.zoom_after_activation();
             self.persist_structure();
+            self.sync_peek_surface(cx);
             cx.notify();
         }
         result
@@ -796,6 +805,7 @@ impl BbrApp {
             self.sync_error_surface_visibility();
             self.zoom_after_activation();
             self.persist_structure();
+            self.sync_peek_surface(cx);
             cx.notify();
         }
         result
@@ -832,6 +842,7 @@ impl BbrApp {
             }
             self.ensure_active_visible();
             self.persist_structure();
+            self.sync_peek_surface(cx);
             cx.notify();
         }
         result

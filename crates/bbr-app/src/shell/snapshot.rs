@@ -207,6 +207,16 @@ pub struct TestSnapshot {
     pub restore: bbr_testkit::protocol::RestoreDisposition,
     /// Productive new-window request/open/block counters.
     pub new_window: bbr_testkit::protocol::NewWindowSnapshot,
+    /// The transient Peek preview (Link Preview / Peek packet): `None` at
+    /// rest. Mirrors the controller snapshot's preview state.
+    pub preview: Option<bbr_testkit::protocol::PreviewSnapshot>,
+    /// Whether the Peek bar is currently presented in the one native portal
+    /// window.
+    pub peek_presented: bool,
+    /// Native z-order evidence: while a preview is open the preview
+    /// WKWebView's subview index must exceed its covered origin's (the
+    /// preview is raised above the warm origin). `None` at rest.
+    pub preview_z_order: Option<bbr_testkit::protocol::PreviewZOrder>,
 }
 
 #[cfg(feature = "testkit")]

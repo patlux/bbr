@@ -340,6 +340,35 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Link Preview / Peek (task packet `link-preview-peek.md`):
+        // `peek_request_to_present` opens a FRESH source-profile preview
+        // session above its warm origin — the fresh native-session class,
+        // same 100/150 ceiling as `tab_reopen`/`tab_move_cross_profile`
+        // (packet: "Request-to-present is a fresh native-session class
+        // (p95 ≤ 100 ms; max ≤ 150 ms)"). The preview session is created
+        // in the source profile's store and raised above the warm origin;
+        // the covered origin stays the active view.
+        "peek_request_to_present" => Budget {
+            p95_ms: 100.0,
+            max_ms: Some(150.0),
+        },
+        // `peek_dismiss_to_origin` restores the exact warm origin,
+        // active/focused again (the preview session is destroyed, never
+        // recreated) — the warm interaction class (packet: "dismissal back
+        // to the warm origin … use the warm interaction ceiling
+        // (p95 ≤ 50 ms; max ≤ 100 ms)").
+        "peek_dismiss_to_origin" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        // `peek_promote_to_tab` adopts the SAME preview session as a
+        // regular tab without reload or recreation — the warm interaction
+        // class (packet: "no-reload promotion use the warm interaction
+        // ceiling (p95 ≤ 50 ms; max ≤ 100 ms)").
+        "peek_promote_to_tab" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -536,6 +565,9 @@ impl Baseline {
             "zoom_step",
             "context_menu_open",
             "auth_sheet_open",
+            "peek_request_to_present",
+            "peek_dismiss_to_origin",
+            "peek_promote_to_tab",
         ]
         .into_iter()
         .chain(u2::seed_kinds())
@@ -989,6 +1021,56 @@ mod tests {
             assert!(
                 r.iter().any(|x| x.rule == "abs_p95"),
                 "{kind} absolute p95 ceiling enforced"
+            );
+        }
+    }
+
+    #[test]
+    fn peek_budgets_are_seeded_and_enforced() {
+        // Regression guard (task packet `link-preview-peek.md`): the three
+        // required Peek scenarios must carry their contract budgets in the
+        // seed so a future preview-presentation/dismissal/promotion
+        // regression trips the gate instead of being silently unreported
+        // dead code (an unseeded kind is skipped by `evaluate` with no
+        // signal). `peek_request_to_present` opens a FRESH source-profile
+        // preview session — the session-recreation class (100/150);
+        // `peek_dismiss_to_origin` and `peek_promote_to_tab` are the warm
+        // interaction class (50/100) — no new budget class invented.
+        let b = Baseline::seed();
+        for (kind, p95, max) in [
+            ("peek_request_to_present", 100.0, 150.0),
+            ("peek_dismiss_to_origin", 50.0, 100.0),
+            ("peek_promote_to_tab", 50.0, 100.0),
+        ] {
+            let entry = b
+                .entries
+                .get(kind)
+                .unwrap_or_else(|| panic!("seed baseline must carry the {kind} contract budget"));
+            assert_eq!(entry.budget_p95_ms, p95, "{kind} contract p95 ceiling");
+            assert_eq!(
+                entry.budget_max_ms,
+                Some(max),
+                "{kind} contract max ceiling"
+            );
+            let mut slow = BTreeMap::new();
+            slow.insert(kind.into(), measured(p95 + 20.0, max + 20.0));
+            let r = evaluate(&slow, &b, false);
+            assert!(
+                r.iter().any(|x| x.rule == "abs_p95"),
+                "{kind} absolute p95 ceiling enforced"
+            );
+            assert!(
+                r.iter().any(|x| x.rule == "abs_max"),
+                "{kind} absolute max ceiling enforced"
+            );
+            let mut good = BTreeMap::new();
+            good.insert(
+                kind.into(),
+                measured(if p95 == 100.0 { 60.0 } else { 45.0 }, 90.0),
+            );
+            assert!(
+                evaluate(&good, &b, false).is_empty(),
+                "{kind} within-budget samples stay green"
             );
         }
     }

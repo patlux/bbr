@@ -49,6 +49,7 @@ fn space_snapshot() -> ControllerSnapshot {
         engine_sessions: 0,
         active_view: None,
         lifecycle_counts: bbr_browser::LifecycleCounts::default(),
+        preview: None,
     }
 }
 
@@ -97,6 +98,7 @@ fn visible_ids_mirror_the_render_for_each_pane_branch() {
         engine_sessions: 0,
         active_view: None,
         lifecycle_counts: bbr_browser::LifecycleCounts::default(),
+        preview: None,
     };
     let ids = visible_ids(
         &browser,
@@ -151,6 +153,7 @@ fn visible_ids_mirror_the_render_for_each_pane_branch() {
         engine_sessions: 0,
         active_view: None,
         lifecycle_counts: bbr_browser::LifecycleCounts::default(),
+        preview: None,
     };
     let ids = visible_ids(
         &browser,

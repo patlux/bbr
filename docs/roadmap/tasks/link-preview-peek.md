@@ -33,25 +33,25 @@ losing the preview's navigation state.
 
 ## Product behavior
 
-- [ ] A user-initiated eligible `target="_blank"` or `window.open` request opens
+- [x] A user-initiated eligible `target="_blank"` or `window.open` request opens
       Peek by default instead of creating a regular tab immediately.
 - [ ] Provide an explicit keyboard/pointer action to open an ordinary new tab
       directly and an explicit action to request Peek for a normal link.
-- [ ] Cover the complete current web-content area with the preview while keeping
+- [x] Cover the complete current web-content area with the preview while keeping
       browser chrome and preview controls operable.
-- [ ] Keep the originating tab selected and its WKWebView warm underneath; it
+- [x] Keep the originating tab selected and its WKWebView warm underneath; it
       must not receive pointer, keyboard, scroll, drag, or Accessibility focus
       while Peek is open.
-- [ ] Give the preview its own back/forward/reload/navigation state and route
+- [x] Give the preview its own back/forward/reload/navigation state and route
       browser commands to it while it owns focus.
-- [ ] Escape and the close control dismiss Peek, destroy its temporary native
+- [x] Escape and the close control dismiss Peek, destroy its temporary native
       session, and restore focus to the exact originating control or web view.
-- [ ] “Open as Tab” adopts the existing preview session into the originating
+- [x] “Open as Tab” adopts the existing preview session into the originating
       space and profile without reload, preserving URL, history, form state,
       scroll position, and same-document state.
-- [ ] If the origin tab/space/window disappears, apply a deterministic policy:
+- [x] If the origin tab/space/window disappears, apply a deterministic policy:
       close the preview unless the user has already promoted it.
-- [ ] Support at most one Peek per pane initially; a new eligible request from
+- [x] Support at most one Peek per pane initially; a new eligible request from
       inside Peek replaces or navigates the existing preview according to the
       documented policy rather than stacking unbounded previews.
 
@@ -89,19 +89,19 @@ Peek owns transient preview policy/lifecycle.
       establishes the session-local child→opener provenance consumed by the
       [web-content Back-at-root contract](web-content-navigation-gestures.md);
       the gesture layer never independently interprets WebKit popup metadata.
-- [ ] Keep policy decisions outside the macOS delegate: the adapter reports the
+- [x] Keep policy decisions outside the macOS delegate: the adapter reports the
       request, while portable orchestration chooses Peek, regular tab, external
       handling, or rejection.
-- [ ] Create Peek in the source profile's `WKWebsiteDataStore`; never copy
+- [x] Create Peek in the source profile's `WKWebsiteDataStore`; never copy
       cookies, credentials, or session state across profile boundaries.
-- [ ] Do not route downloads, non-web schemes, authentication/challenge windows,
+- [x] Do not route downloads, non-web schemes, authentication/challenge windows,
       permission flows, or explicitly sized/tool-style popups into Peek unless a
       later documented policy marks them safe.
 - [ ] Preserve WebKit opener/security semantics deliberately; do not expose a
       stronger JavaScript opener relationship than an ordinary browser-created
       tab would. BBR's internal `TabId` provenance is browser orchestration data
       for deterministic focus/close behavior, not page-script access.
-- [ ] Surface blocked or unsupported popup requests without silently losing the
+- [x] Surface blocked or unsupported popup requests without silently losing the
       user's action.
 
 ## Constraints
@@ -119,26 +119,26 @@ Peek owns transient preview policy/lifecycle.
 
 ## Architecture and lifecycle
 
-- [ ] Model Peek as transient browser state, not as a persisted `Tab`, recently
+- [x] Model Peek as transient browser state, not as a persisted `Tab`, recently
       closed entry, sidebar row, or history item merely because it was opened.
-- [ ] Give each preview a typed identity and disposable `WebViewId` owned by the
+- [x] Give each preview a typed identity and disposable `WebViewId` owned by the
       controller/session registry until dismissal or promotion.
-- [ ] Extend `WebEngine` with the minimal create/show/hide/focus/destroy/adopt
+- [x] Extend `WebEngine` with the minimal create/show/hide/focus/destroy/adopt
       operations or outcomes needed for transient sessions without leaking
       AppKit/WebKit types into portable crates.
-- [ ] Stack the preview WKWebView as a native child view above the originating
+- [x] Stack the preview WKWebView as a native child view above the originating
       WKWebView; never screenshot or texture-compose page content into GPUI.
-- [ ] Define explicit z-order and clipping between GPUI chrome, Peek controls,
+- [x] Define explicit z-order and clipping between GPUI chrome, Peek controls,
       the preview WKWebView, and the covered originating WKWebView.
-- [ ] Destroy delegates, KVO observations, native views, and registry mappings on
+- [x] Destroy delegates, KVO observations, native views, and registry mappings on
       every dismissal, failed creation, window close, and process-termination
       path.
-- [ ] Promotion transfers ownership atomically so the existing native session is
+- [x] Promotion transfers ownership atomically so the existing native session is
       neither recreated nor temporarily orphaned.
 
 ## UI, input, and accessibility
 
-- [ ] Design Peek as an intentional BBR surface with clear temporary status,
+- [x] Design Peek as an intentional BBR surface with clear temporary status,
       close, “Open as Tab”, URL/origin context, loading, failure, and crash states.
 - [ ] Support light/dark, increased contrast, reduced motion, compact windows,
       and safe-area/titlebar geometry.
@@ -153,16 +153,16 @@ Peek owns transient preview policy/lifecycle.
 
 ## Evidence
 
-- [ ] Portable controller tests cover request policy, transient identity,
+- [x] Portable controller tests cover request policy, transient identity,
       command routing, replacement, dismissal, promotion, origin removal, and
       profile isolation.
 - [ ] macOS adapter tests prove new-window metadata reaches the portable policy
       and that preview sessions use the correct website data store.
-- [ ] Real-app E2E opens a fixture `target="_blank"` link and proves Peek appears
+- [x] Real-app E2E opens a fixture `target="_blank"` link and proves Peek appears
       above the current native view without creating a regular tab.
-- [ ] E2E proves the covered page receives no input and retains the same
+- [x] E2E proves the covered page receives no input and retains the same
       `WebViewId`, URL, and page state after Peek closes.
-- [ ] E2E navigates inside Peek, promotes it, and proves the same preview
+- [x] E2E navigates inside Peek, promotes it, and proves the same preview
       `WebViewId` becomes a regular tab without another page load.
 - [ ] E2E covers Escape/focus restoration, replacement policy, popup exclusions,
       failure/crash cleanup, and cross-profile isolation.
@@ -250,14 +250,14 @@ GUI/performance suites run sequentially under the repository GUI lock.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: Transient Peek preview lifecycle integrated with the productive new-window seam. An eligible direct activation opens a source-profile preview above the warm origin (no regular tab, same WebViewId/URL/page state underneath); one preview per pane (a request from inside Peek navigates it, any other source replaces it); Escape/close destroys the temporary session and restores the exact warm origin; browser commands route to the preview while it owns focus; "Open as Tab" promotes the SAME session without reload; non-web/sized/tool-style exclusions fall back to the ordinary tab path; script requests stay blocked; origin-removal/staleness and crash teardown clean up. Closeout writer made a doc-only delta — no commit, reset, Rust edit, or functional rerun.
+Commits: none by the closeout writer (task forbids commit). Lane sits uncommitted on base `4b77c980c56926fb4662cb05b27606faef9732a2` in the `bbr-peek` worktree (branch `parallel/peek`).
+Functional evidence: non-GUI `just verify` green on the candidate tree (fmt, workspace check/test, workspace clippy `-D warnings`, roadmap, ui-deps, script-tests) — `/tmp/peek-verify3.log`, SHA-256 `6d648609eacce474ab2ee134dc2cf6565769dab42298f34066a9d996386d84c8`. No `cargo clippy -p bbr --features testkit` re-run exists in the closeout evidence.
+Real-app E2E: PEEK 6/6 `/tmp/bbr-peek-closeout-e2e-peek.log` `85d3b8c4…`; NW-SEAM 4/4 `362a5775…`; Tabs 1/1 `c1b2e2b9…`; Profiles 1/1 `547b4d19…`; Smoke 1/1 `9d713a40…`; Portal 7/7 on the exact unchanged source under the Xcode 26.2 GUI lock with the host unlocked afterwards — `/tmp/bbr-peek-unlocked-portal-20260810T111056Z.log`, SHA-256 `766da3b1838414dc1c659612a17c1125e4a8813aa64f81e12b0a0e8fe8936d35`.
+Performance evidence: unexecuted and unpassed. Scenario contracts, baseline entries (`peek_request_to_present` p95 ≤ 100 / max ≤ 150 ms; `peek_dismiss_to_origin` and `peek_promote_to_tab` p95 ≤ 50 / max ≤ 100 ms, `samples: 0`), typed drivers and fast-but-wrong guards exist; no accepted samples exist, so every performance checkbox stays unchecked.
+Roadmap/documentation updates: this packet's evidence checkboxes (functional/unit/E2E facts only, with exact evidence); `ARCHITECTURE.md` implemented facts (§8 composition, §9a controller, §11 known-limitations item 4); `DESIGN.md` §11.17 Peek bar spec + §15 stable ids + §16 non-goal revision; `E2E_ARCHITECTURE.md` §7m suite section + §9 command list. Doc-only delta; `just roadmap` and `git diff --check` green.
+Open blockers and non-goals: performance acceptance debt; `just e2e-peek` not yet included in canonical `just e2e`; no dedicated macOS-adapter peek unit test (store/z-order proven at controller + real-app level); no real-app cross-profile peek scenario (controller non-default-profile store test covers it); explicit production keyboard/pointer intent actions (ordinary-tab vs Peek) not wired — typed `NewWindowIntent` seams and the preview UI only; VoiceOver announcements, focus-trap, light/dark + reduced-motion peek evidence absent (the bar currently renders the dark theme); opener provenance, modifier/background insertion, named-window reuse, popup allow-lists, and second-window behavior remain outside this slice; no MVP-complete/modifier/insertion claim.
+Worktree state: `bbr-peek` @ `4b77c980…`; implementation uncommitted; closeout adds only the four PEEK-owned doc files.
 
 Planning/read-only:
 Implementation:

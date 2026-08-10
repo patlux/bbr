@@ -233,6 +233,10 @@ impl BbrApp {
             // convergence) leave it open.
             self.find_discard_if_unbound(cx);
             self.emit_browser(event);
+            // A split change moves the pane composition away from the
+            // preview's single-pane coverage: the transient preview ends
+            // (deterministic policy) and its bar presentation is dismissed.
+            self.sync_peek_surface(cx);
             cx.notify();
         }
         outcome

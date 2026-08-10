@@ -175,6 +175,7 @@ pub(crate) fn dispatch(
             source_profile,
             url,
             user_initiated,
+            intent,
         } => {
             let request = bbr_web::NewWindowRequest {
                 source,
@@ -184,13 +185,13 @@ pub(crate) fn dispatch(
                 target: bbr_web::NewWindowTarget::NewWindow,
                 features: bbr_web::NewWindowFeatures::default(),
             };
-            let decision = bbr_web::default_decision(&request);
+            let decision = bbr_web::decision_for_intent(&request, intent);
             let delivery = bbr_web::NewWindowDelivery {
                 outcome: bbr_web::decide(&request, decision),
                 request,
             };
-            browser_mutation(with_app(window, app, cx, |view, _window, cx| {
-                view.on_new_window_request(delivery, cx)
+            browser_mutation(with_app(window, app, cx, |view, window, cx| {
+                view.on_new_window_request(delivery, window, cx)
             }))
         }
 
@@ -415,6 +416,25 @@ pub(crate) fn dispatch(
 
         Request::FocusWeb => with_app(window, app, cx, |view, window, cx| {
             view.focus_web(window, cx)
+        })
+        .map(|_| Response::Ok)
+        .unwrap_or_else(err_response),
+
+        // Transient Peek drivers (Link Preview / Peek packet): each routes
+        // through the exact production app method the Escape key, the
+        // preview controls, and browser-command routing call.
+        Request::PeekClose => with_app(window, app, cx, |view, window, cx| {
+            view.peek_close(window, cx)
+        })
+        .map(|_| Response::Ok)
+        .unwrap_or_else(err_response),
+        Request::PeekPromote => with_app(window, app, cx, |view, window, cx| {
+            view.peek_promote(window, cx)
+        })
+        .map(|_| Response::Ok)
+        .unwrap_or_else(err_response),
+        Request::PeekNavigate { action } => with_app(window, app, cx, |view, _window, _cx| {
+            view.peek_action(action)
         })
         .map(|_| Response::Ok)
         .unwrap_or_else(err_response),
@@ -693,6 +713,9 @@ pub(crate) fn dispatch(
         | Request::BenchmarkFindOpen { .. }
         | Request::BenchmarkFindQueryResult { .. }
         | Request::BenchmarkFindStep { .. }
+        | Request::BenchmarkPeekRequestToPresent { .. }
+        | Request::BenchmarkPeekDismissToOrigin { .. }
+        | Request::BenchmarkPeekPromoteToTab { .. }
         | Request::BenchmarkZoomStep { .. }
         | Request::BenchmarkContextMenuOpen { .. }
         | Request::BenchmarkDownloadsPanelOpen { .. }

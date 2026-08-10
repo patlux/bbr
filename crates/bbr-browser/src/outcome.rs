@@ -29,6 +29,34 @@ pub enum ControllerEvent {
         profile: ProfileId,
         view: WebViewId,
     },
+    /// A transient preview session opened over its warm origin (Link
+    /// Preview / Peek packet): the source view stays warm underneath, the
+    /// preview owns the pane and browser-command focus, and no regular tab
+    /// was created.
+    PreviewOpened {
+        id: crate::peek::PreviewId,
+        view: WebViewId,
+        source: WebViewId,
+        profile: ProfileId,
+        url: String,
+    },
+    /// The transient preview session was destroyed (dismissal, origin
+    /// removal, or teardown).
+    PreviewClosed { view: WebViewId },
+    /// A new eligible request from inside the preview navigated the existing
+    /// preview session (the deterministic one-preview-per-pane policy).
+    PreviewNavigated { view: WebViewId },
+    /// The preview session was adopted as a regular tab in the source
+    /// space/profile without recreating the native session: the same
+    /// `WebViewId` now backs a real tab and the active selection changed to
+    /// it.
+    PreviewPromoted {
+        tab: bbr_domain::TabId,
+        index: usize,
+        space: SpaceId,
+        profile: ProfileId,
+        view: WebViewId,
+    },
     /// The tab at `index` became the active tab.
     TabSelected { index: usize },
     /// The tab at `index` was closed (session destroyed).

@@ -148,6 +148,10 @@ pub struct ControllerSnapshot {
     /// Lifecycle population counts of the active space (the dense-list
     /// session-budget evidence).
     pub lifecycle_counts: LifecycleCounts,
+    /// The transient Peek preview (Link Preview / Peek packet): `None` at
+    /// rest. The preview is transient controller state, never a persisted
+    /// `Tab`/recently-closed/history row.
+    pub preview: Option<crate::peek::PreviewSnapshot>,
 }
 
 #[cfg(test)]
@@ -171,6 +175,7 @@ mod tests {
             engine_sessions: 0,
             active_view: None,
             lifecycle_counts: LifecycleCounts::default(),
+            preview: None,
         };
         assert_eq!(s.clone(), s);
     }

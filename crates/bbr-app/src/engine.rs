@@ -158,6 +158,10 @@ impl WebEngine for NullEngine {
         self.actions.push(format!("show {id:?} visible={visible}"));
     }
 
+    fn raise_web_view(&mut self, id: WebViewId) {
+        self.actions.push(format!("raise {id:?}"));
+    }
+
     fn action(&mut self, _id: WebViewId, action: WebAction) {
         match action {
             WebAction::Load { url } => self.actions.push(format!("load {url}")),

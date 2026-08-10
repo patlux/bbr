@@ -24,6 +24,7 @@ pub(crate) mod downloads;
 mod error_surface;
 mod find;
 pub mod pane_geometry;
+mod peek;
 pub mod slot;
 mod u2;
 mod zoom;
@@ -73,6 +74,10 @@ struct State {
     /// the auth benchmarks commit only against it (render-gated, redacted —
     /// see `auth`).
     latest_auth: Option<auth::AuthObservation>,
+    /// The Peek-bar presentation the portal render actually drew; the
+    /// `peek_request_to_present` benchmark commits only against it
+    /// (render-gated, see `peek`).
+    latest_peek: Option<peek::PeekObservation>,
     latest_active_web_view: Option<WebViewId>,
     latest_active_space: TestSpaceId,
     latest_sidebar_visible: bool,
@@ -148,6 +153,10 @@ struct Pending {
     /// The exact credential-sheet presentation identity the pending sample
     /// must commit from (open with the armed challenge id).
     auth: Option<auth::AuthExpectation>,
+    /// The exact transient Peek presentation identity the pending sample
+    /// must commit from (the preview session raised above its warm origin
+    /// with the Peek bar drawn).
+    peek: Option<peek::PeekExpectation>,
 }
 
 impl PerformanceProbe {
@@ -163,6 +172,7 @@ impl PerformanceProbe {
                 latest_zoom: None,
                 latest_context_menu: None,
                 latest_auth: None,
+                latest_peek: None,
                 latest_active_web_view: None,
                 latest_active_space: TestSpaceId(0),
                 latest_sidebar_visible: true,
@@ -193,6 +203,7 @@ impl PerformanceProbe {
                     zoom: None,
                     context_menu: None,
                     auth: None,
+                    peek: None,
                 }),
                 page_ready: None,
                 seen_titles: BTreeMap::new(),
@@ -241,6 +252,7 @@ impl PerformanceProbe {
             zoom: None,
             context_menu: None,
             auth: None,
+            peek: None,
         });
         Ok(())
     }
@@ -517,6 +529,7 @@ impl PerformanceProbe {
             || !zoom::zoom_matches(pending, &state)
             || !context_menu::context_menu_matches(pending, &state)
             || !auth::auth_matches(pending, &state)
+            || !peek::peek_matches(pending, &state)
         {
             #[cfg(feature = "testkit")]
             if let Some(_d) = pending.downloads.as_ref() {

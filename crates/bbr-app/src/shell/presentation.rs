@@ -84,6 +84,7 @@ mod tests {
             engine_sessions: 1,
             active_view: Some(bbr_web::WebViewId(1)),
             lifecycle_counts: Default::default(),
+            preview: None,
         }
     }
 
