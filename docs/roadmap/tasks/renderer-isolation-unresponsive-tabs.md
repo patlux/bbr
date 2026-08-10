@@ -9,19 +9,36 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [performance contract](../../product/performance-contract.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
-Status: **running under one exclusive writer after committed ownership
-binding.** PEEK and B3 are integrated through control checkpoint
+Status: **running in bounded forward continuation under one exclusive
+writer.** PEEK and B3 are integrated through control checkpoint
 `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
 `4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The Orchestrator created branch
 `parallel/renderer-isolation` and worktree
-`/Users/patwoz/dev/Personal/macos/bbr-renderer-isolation` from exact committed
+`/Users/patwoz/dev/Personal/macos/bbr-renderer-isolation` from committed
 readiness authority `a264cd4575e2f2cbe85907f14b8f65abb168bf18` / tree
-`0b0f49386e18589262ae8e5580bce18f5633f554`; initial index/tree matched and
-porcelain-v1 status SHA-256 was empty
-`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
-Exclusive owner `renderer_isolation_writer` may implement this packet without
-committing or broadening scope. Only the Orchestrator may commit, merge,
-integrate, or transfer ownership after explicit settlement.
+`0b0f49386e18589262ae8e5580bce18f5633f554`. The first writer settled with a
+contradictory `CANDIDATE_READY`: its report explicitly completed only the
+portable/controller slice and named the macOS adapter, product UI, testkit,
+fixtures, real-app E2E, performance code, and documentation as still absent.
+That token therefore authorizes no review, commit, or integration.
+
+The Orchestrator rebound the preserved process-free 18-path forward state:
+HEAD and real index remain `a264cd4575e2f2cbe85907f14b8f65abb168bf18` /
+`0b0f49386e18589262ae8e5580bce18f5633f554`; temporary-index tree
+`6f7d2dc930b6fa0b3580b222afd7972a2c58557d`; binary diff SHA-256
+`fbd1a53879b89bc10c904482cf7ad2044237e70379d004b0fd0754be955c2dcf`;
+porcelain-v1 status SHA-256
+`12cddf5f528223f96d8e38f0fc0d15f1cab512eab4c94ab8aa751f881beb0731`;
+sorted 18-path SHA-256
+`7ac8ffbe20360e82f1a72ffc2a49d332fb13c8961773156fe2219cbb904a5b12`;
+diff-check clean, no worktree process, GUI lock free. The 648-line new
+`bbr-browser/src/responsiveness.rs` is an explicit unresolved module-budget
+violation and must be split below ~500 lines without weakening its tests.
+Exclusive owner `renderer_isolation_continuation_writer` must preserve this
+forward state, audit the two command-ranking support edits, complete the full
+unchanged packet and all allowed gates, and return an exact fingerprint plus a
+direct verdict. Only the Orchestrator may commit, merge, integrate, or transfer
+ownership after settlement.
 
 ---
 
