@@ -9,8 +9,8 @@ Parents: [Phase 8 — Daily-driver essentials](../../../ROADMAP.md) ·
 [performance contract](../../product/performance-contract.md) ·
 [interaction contract](../../product/browser-interactions.md)
 
-Status: **Slice 2 is independently accepted; Slice 3 has a bound forward state
-and remains running only for safe settlement work.** PEEK and B3 are integrated
+Status: **Slice 2 is independently accepted; Slice 3 is safely settled and
+blocked on the real helper-termination proof.** PEEK and B3 are integrated
 through control checkpoint
 `492615b571c98a14f9132a6bfd6f4c53395cdc3b` / tree
 `4bc6a6ed6906ce01fe96d620ef1220c92eb94a63`. The Orchestrator created branch
@@ -259,13 +259,39 @@ environment where app-owned helpers can be proven.
 
 One exact same-session continuation was attempted after the forward-state
 binding but failed before child start with `async runner did not produce a
-pid`; it created no authority or mutation. Exactly one replacement Slice-3
-continuation writer may therefore finish every other defensible functional /
-non-performance gate, correct documentation and settlement fingerprints,
-preserve performance as unexecuted/unpassed, and end directly
-`RENDERER_SLICE3_BLOCKED`. No commit, integration, G2/G3/Z work, performance
-recipe, canonical `just e2e`, ownership-contract change, or second concurrent
-product writer is authorized.
+pid`; it created no authority or mutation. The sole replacement Slice-3
+continuation then returned direct `RENDERER_SLICE3_BLOCKED` after completing
+every safe deliverable. Independent final rebind: temporary-index tree
+`4dc4deb042e0bc818c70ac1aae7ac81bd938bdd7`; HEAD-to-tree binary SHA-256
+`572be7933d7e6e6ac624e9ddbcafe2a9f8f2e72fe6c7d9eec888a703c721ffae`;
+porcelain-v1 `-z` SHA-256
+`fa031f0d454a988b760d3a7982ad9fc3e4791284928a04ea49f8604d1d00123c`;
+sorted 96-path SHA-256
+`bb91851dee4bb704cbcbcf281e631e6e7dd2d73be1ff639324a868bda32ab95d`.
+The exact accepted-Slice-2 delta is 31 paths with binary SHA-256
+`40227146a7c2759821eb4bed39858f9f0c11e2df7f2a45601e34f07cd865133a`.
+The settlement-only delta from the first recovered forward tree is nine paths,
+binary SHA-256
+`fe372bb4adee6cd481214280b104c39b18e0f91cbf166146bf26dd34f228bdaf`,
+and path SHA-256
+`9d92d5c6e64e66fcc625397bfd8622b6566d8b6bf50b3c6ab47a9c5f019bea4b`.
+
+Backspace now closes through the real focused tab-list input path. All four
+safe non-process responsiveness groups pass 4/4, including dialog, real
+busy/heavy detection, recovery, close/neighbor/split/sidebar/space chrome
+interactions, and stale-state handling. Performance scenarios and sample-count
+guards are implemented, but performance was not executed and baseline samples
+remain `0`. The process case stays open: every observed WebContent helper was
+launchd-owned (`ppid=1`), so the accepted app-child proof found zero eligible
+helpers and performed zero terminations. Operational settlement is clean:
+zero staged paths, zero worktree processes, zero Git locks, clean diff-check,
+available GUI flock; module bounds include `webview.rs` 519,
+`bbr-fixtures/src/lib.rs` 652, and process observation 423 lines. No product
+commit or integration exists. No further renderer writer, G2/G3/Z work,
+performance recipe, canonical `just e2e`, or ownership-contract change is
+authorized until an independently reviewed and committed public ownership
+proof exists, or an explicitly approved safe environment exposes provably
+app-owned helpers.
 
 ---
 
