@@ -8,18 +8,17 @@
 //! `activate_node`) and real pointer/keyboard events, and reads the
 //! semantic snapshot — never pixels.
 
-use std::rc::Rc;
-
 use bbr_ui::theme::{ContrastMode, Density, Theme, ThemeMode};
 use gpui::{div, prelude::*, App, Context, FocusHandle, Focusable, KeyDownEvent, Window};
 use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 use gpui_component::WindowExt as _;
 
+use crate::address_app::AddressAppState;
 use crate::canvas::{canvas_surface, CanvasModel};
 use crate::controls::{controls_surface, ControlAction, ControlsModel};
 use crate::library_recorder::{LibraryObservation, LibraryRecorder};
-use crate::recorder::{ControlObservation, ControlObserver, ControlRecorder, CoreControlsEntities};
+use crate::recorder::{ControlObservation, ControlRecorder, CoreControlsEntities};
 use crate::registry::{
     CatalogRegistry, ControlsStory, GroupId, LibraryStory, NodeId, StoryId, StoryKind,
 };
@@ -51,6 +50,8 @@ pub struct GalleryApp {
     core_controls_group: GroupId,
     /// The Tab Row app wiring (module `tab_row_app`).
     pub(crate) tab_row: TabRowAppState,
+    /// The Address/Input app wiring (module `address_app`).
+    pub(crate) address: AddressAppState,
     /// The shared recorder: what real gpui-component control events report
     /// back through the production `observe_control` path.
     recorder: ControlRecorder,
@@ -93,6 +94,7 @@ impl GalleryApp {
         GalleryApp {
             // Built before `registry` moves (story discovery borrows it).
             tab_row: TabRowAppState::new(&registry),
+            address: AddressAppState::new(&registry),
             registry,
             tree,
             mode: ThemeMode::Dark,
@@ -304,6 +306,7 @@ impl GalleryApp {
             tab_pins: self.tab_row.counts().2,
             tab_drag_begins: self.tab_row.counts().3,
             library: self.library_recorder.clone(),
+            address: self.address.recorder().clone(),
         }
     }
 
@@ -357,57 +360,14 @@ impl Render for GalleryApp {
             }
         };
         // The Core Controls observer: real control events report back into
-        // the app's production `observe_control` path.
-        let entity = cx.entity().downgrade();
-        let on_button = {
-            let entity = entity.clone();
-            Rc::new(move |_window: &mut Window, cx: &mut App| {
-                if let Some(entity) = entity.upgrade() {
-                    entity.update(cx, |app, cx| {
-                        app.observe_control(ControlObservation::Button, cx)
-                    });
-                }
-            })
-        };
-        let on_checkbox = {
-            let entity = entity.clone();
-            Rc::new(move |checked: bool, _window: &mut Window, cx: &mut App| {
-                if let Some(entity) = entity.upgrade() {
-                    entity.update(cx, |app, cx| {
-                        app.observe_control(ControlObservation::Checkbox(checked), cx)
-                    });
-                }
-            })
-        };
-        let on_switch = {
-            let entity = entity.clone();
-            Rc::new(move |checked: bool, _window: &mut Window, cx: &mut App| {
-                if let Some(entity) = entity.upgrade() {
-                    entity.update(cx, |app, cx| {
-                        app.observe_control(ControlObservation::Switch(checked), cx)
-                    });
-                }
-            })
-        };
-        let on_radio = {
-            let entity = entity.clone();
-            Rc::new(move |index: usize, _window: &mut Window, cx: &mut App| {
-                if let Some(entity) = entity.upgrade() {
-                    entity.update(cx, |app, cx| {
-                        app.observe_control(ControlObservation::Radio(index), cx)
-                    });
-                }
-            })
-        };
-        let observer = ControlObserver {
-            on_button,
-            on_checkbox,
-            on_switch,
-            on_radio,
-        };
+        // the app's production `observe_control` path (module
+        // `control_observer`).
+        let observer = crate::control_observer::build_control_observer(cx.entity().downgrade());
         let library_selected = self.is_library_story(selected);
         // The Tab Row observer + story context (module `tab_row_app`).
         let tab_row = self.tab_row.render_context(selected, cx);
+        // The Address/Input observer + story context (module `address_app`).
+        let address = self.address.render_context(selected, cx);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {
@@ -465,6 +425,7 @@ impl Render for GalleryApp {
             controls,
             tab_row,
             library,
+            address,
         });
         div()
             .id("bbr-gallery-root")

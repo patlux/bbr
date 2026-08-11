@@ -17,6 +17,7 @@ use gpui::{AnyElement, Entity};
 use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 
+use crate::address_recorder::{AddressObserver, AddressRecorder};
 use crate::library_recorder::{LibraryObserver, LibraryRecorder};
 use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRecorder};
 
@@ -76,6 +77,12 @@ pub struct StoryContext<'a> {
     /// recorder snapshot and the observer callbacks real Library events
     /// route through. `None` for every other story.
     pub library: Option<LibraryStory<'a>>,
+    /// `Some` only for the Address control / Command staging stories: the
+    /// current recorder snapshot and the observer callbacks the production
+    /// `address_control`/`staging_surface` callbacks route through (packet
+    /// `component-gallery-browser-components.md`, Group 3). `None` for
+    /// every other story.
+    pub address: Option<AddressStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -115,6 +122,18 @@ pub struct ControlsStory<'a> {
 pub struct TabRowStory<'a> {
     pub recorder: &'a TabRowRecorder,
     pub observer: &'a TabRowObserver,
+}
+
+/// Everything an Address control / Command staging story needs to render
+/// the **exact** production `bbr_ui::components::address` symbols
+/// (`address_control`, `staging_surface`) with recorder callbacks: the
+/// current recorder snapshot (hover states, open count) and the observer
+/// callbacks that re-enter the app on real pointer interactions (packet
+/// `component-gallery-browser-components.md`, Group 3). `Some` only while
+/// one of the two Address stories is selected.
+pub struct AddressStory<'a> {
+    pub recorder: &'a AddressRecorder,
+    pub observer: &'a AddressObserver,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,

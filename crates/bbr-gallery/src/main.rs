@@ -13,9 +13,17 @@
 //! `allow(dead_code)`. `bbr-ui` itself remains portable.
 
 #[cfg(target_os = "macos")]
+mod address_app;
+#[cfg(target_os = "macos")]
+mod address_matrix;
+#[cfg(target_os = "macos")]
+mod address_recorder;
+#[cfg(target_os = "macos")]
 mod app;
 #[cfg(target_os = "macos")]
 mod canvas;
+#[cfg(target_os = "macos")]
+mod control_observer;
 #[cfg(target_os = "macos")]
 mod controls;
 #[cfg(target_os = "macos")]

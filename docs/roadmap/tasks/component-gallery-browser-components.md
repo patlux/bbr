@@ -166,7 +166,7 @@ gallery fixture builder refuses to build them.
 | Tab Row (`bbr-ui::components::tab_row`) | states: default/hover/active/selected/loading/attention/error/disabled/dragging/drag-target/focused (§10); pinned + regular; S (icon-only pinned) / N / XL; long-title truncation; favicon slot: monogram tile / missing-favicon host-scheme fallback / loading-arc replacement (the embedded G1b `bbr-ui::components::favicon` component — its variants are consumed inline, not re-storied); reveal-close on hover/selected; drag-tick legal vs clamped-invalid | attention on a crashed row (error wins, §10 composition order); selected+dragging without the drag state machine; S-density pinned with a title (icon-only, §8/§11.2); a real favicon bitmap (the tile is monogram-or-arc today, §7.2) |
 | Status line (`bbr-ui::components::status`, extracted from the current app-owned `shell::presentation::status_line`) | healthy/empty, active loading, navigation error, crashed tab, and relevant active-space count/selection states derived through the migrated production presentation model; stable semantic root and append-only Gallery StoryIds | a Gallery-local formatter or copied status anatomy; direct `bbr-app` imports; raw controller ownership in `bbr-ui`; a story registered before production extraction and app migration are complete |
 | Profile chip / Space-strip pieces (`bbr-ui::components::space::profile_chip` + the app-owned permanent space strip pending G3 extraction; DESIGN §11.3–§11.4) | profile chip S/N/XL density, 1–2 character monogram, hue tile, profile-keyed id `bbr-profile-chip-<profile_index>`; Group 4 Footer story may show the already integrated strip in context without claiming a standalone `space_row`; G3 owns extraction/storying of the full permanent strip composition | removed legacy `space_row`/`space_new_row` list anatomy; any chip keyed to a space index; any wrapped/second-line strip; any Group-4 fixture that creates a second strip or navigation authority |
-| Address / input pieces (`bbr-ui::components::address`) | domain pill (with/without www, IDN, port); accessory slot reserved-empty vs Copy-Link (future); hover fill step; profile-hint chip presence; staging field (New Space / Move Tab / empty New Tab) with block cursor | pill-as-text-field (no editing state, no cursor, no selection — §11.5); a focus ring on the pill (never, any state) |
+| Address / input pieces (`bbr-ui::components::address`) | domain pill (with/without www, IDN, port); accessory slot reserved-empty vs Copy-Link (future); hover fill step; profile-hint chip presence; staging field (New Space / Move Tab / empty New Tab) with block cursor true/false, hint present/absent (incl. the unfocused Move Tab), and profile-hint chip presence proven independent of cursor and hint | pill-as-text-field (no editing state, no cursor, no selection — §11.5); a focus ring on the pill (never, any state) |
 | Favorites grid (`bbr-ui::components::favorites`) | S 5-col / N 4-col / XL 3-col; tile default/hover/active/focused; drag-target wash; empty region (label hidden) | reorder during selection (tiles never reorder, §11.10); a tile without a resolved TabId+SpaceId+ProfileId semantic name |
 | Folders (`bbr-ui::components::folders`) | collapsed/expanded; nested rows with full §10 vocabulary; empty collapsible folder; count `tnum`; hairlines between groups | nested rows in a collapsed folder (they render only when expanded); persisted folders (session-local only, §11.11) |
 | Footer + Space strip (`bbr-ui::components::footer` + post-F2a strip) | downloads control with/without running count; space strip: one chip, many chips, overflow clip (single line, horizontal scroll); active chip selected surface + outline; inactive chips quiet; plus control | a wrapped/second-line strip (single-line clip, §11.4); a chip without its accessible name containing space+profile names (§11.3) |
@@ -192,12 +192,26 @@ reserves no ids and reintroduces no marker machinery.
       callbacks tests (per the anchor's Evidence contract) — DTO round-trips,
       id constants, recorder-callback firing, and state composition order
       (§10: error > loading > pressed > selected > hover > default).
-- [ ] Matrix test in the gallery: every "valid" row builds and renders
+- [x] Matrix test in the gallery: every "valid" row builds and renders
       without panic; every "rejected" row fails fixture construction; the
       matrix table and the fixture builders cannot drift (one declaration
-      source).
-- [ ] Post-cutover `rg` guard: no duplicate symbol and no `pub use bbr_ui`
-      alias in `bbr-app` for the migrated modules.
+      source). Group 3: `address_matrix.rs` is the one Address/Staging
+      declaration source — every `ADDRESS_VALID`/`STAGING_VALID` family
+      builds, every `ADDRESS_REJECTED` combination (pill-as-text-field, a
+      focus ring, Copy-Link) refuses fixture construction, and the pinned
+      label tests keep the table and the builders from drifting. The
+      staging matrix explicitly asserts its dimension coverage so it
+      cannot regress: cursor true/false, hint present/absent (incl. the
+      unfocused Move Tab — cursor=false + hint present), and profile-hint
+      present/absent through the production
+      `StagingModel.profile_hint`/`AddressProfileHint`, with the
+      profile-hint-present families covering both cursor values and both
+      hint values (presence independent of cursor and hint).
+- [x] Post-cutover `rg` guard: no duplicate symbol and no `pub use bbr_ui`
+      alias in `bbr-app` for the migrated modules. Group 3: the guard now
+      also pins the `address_control`/`staging_surface`/`AddressModel`/
+      `StagingModel`/`AddressProfileHint` production symbols (the app keeps
+      only its DTO-building composition methods).
 
 ### Real-app E2E
 
@@ -207,18 +221,35 @@ reserves no ids and reintroduces no marker machinery.
       `just e2e-shell-downloads`, `just e2e-shell-find`,
       `just e2e-shell-errors`, `just e2e-auth`, `just e2e-shell-context-menu`
       (and the F2a-integrated footer/spaces suites) — ids, §15 fields, focus
-      domains, and typed semantic trees unchanged.
-- [ ] `just e2e-gallery` extended: the new story matrix renders through the
+      domains, and typed semantic trees unchanged. Group 3 re-ran its
+      affected suite unchanged: `just e2e-shell-command`
+      (address/overlay/palette) is green 25/25 on the same byte-identical
+      ids/§15 fields/focus domains/semantic trees (the existing suite is the
+      migration guard and was not modified).
+- [x] `just e2e-gallery` extended: the new story matrix renders through the
       production components with stable StoryIds appended (G1b ids
-      unrenumbered).
+      unrenumbered). Group 3 appended the Address control (StoryId 31) and
+      Command staging (StoryId 32) stories after the pinned 0–30 prefix; the
+      GUI-locked Xcode-26.2 suite is green 24/24, the every-story-renders
+      sweep covers the two new stories automatically, and the focused
+      `e2e/address.rs` scenarios prove real pointer hover/press fires the
+      production `on_hover`/`on_open` recorder callbacks. The focused
+      staging assertions also pin the stable 7-family staging count and
+      assert the staging story includes the production
+      `bbr-command-profile-hint` semantic id (the profile-hint families
+      render the production `staging_surface` with
+      `StagingModel.profile_hint: Some(...)`).
 
 ### Performance
 
-- [ ] Existing product performance code, budgets, baselines, sample guards,
+- [x] Existing product performance code, budgets, baselines, sample guards,
       and semantic-commit contracts stay unchanged after each user-visible
       presentation migration. Execution remains deferred/unpassed under the
       active delivery override; no `just e2e-perf` run or pass is claimed.
-- [ ] Gallery perf remains sanity-only (G1b), never a product budget.
+      Group 3 is Gallery-only (no production migration): no performance
+      code/budget/sample/baseline changed, and no performance run or pass is
+      claimed — the missing execution stays explicit debt.
+- [x] Gallery perf remains sanity-only (G1b), never a product budget.
 
 ## Completion gates
 
@@ -281,22 +312,89 @@ contracts or use them as a reason to widen a G2 lane.
 
 ```text
 Outcome:
+  Group 3 Address/Input (Gallery-only) implemented and settled as an exact
+  writer candidate. One Address/Staging matrix+fixture authority
+  (address_matrix.rs) declares every valid pill/staging family and refuses
+  the rejected no-edit/no-focus-ring/no-Copy-Link combinations; the gallery
+  appends the exact production address_control/staging_surface stories at
+  StoryIds 31–32 (0–30 unrenumbered) with recorder/observer wiring; a
+  focused real-pointer E2E proves on_hover and on_open fire; the
+  every-story-renders sweep covers the new stories; app.rs stays at 459
+  lines (≤498). No production bbr-ui/bbr-app change, no manifest/lock/
+  justfile/perf change, no new ids or product policy. Remediation closed
+  the review finding: the staging matrix now covers cursor=false +
+  hint-present (unfocused Move Tab) and profile-hint presence through the
+  production StagingModel.profile_hint/AddressProfileHint, with an
+  explicit dimension-coverage test (cursor true/false, hint
+  present/absent, profile-hint present/absent, profile-hint presence
+  independent of cursor and hint); the staging story renders all 7
+  families and the focused E2E asserts the production
+  bbr-command-profile-hint semantic id and the stable 7-family count.
 Commits:
+  None — writer may not commit or integrate (exact candidate only).
 Functional evidence:
+  Gallery unit tests 48/48 (matrix valid/rejected incl. the staging
+  dimension-coverage test, recorder, registry pinned-prefix incl. 23–30,
+  rg guard incl. address symbols). Gallery Clippy --all-targets -D
+  warnings clean. GUI-locked Xcode-26.2 `just e2e-gallery` 24/24 incl.
+  e2e::address::real_hover_and_press_report_through_the_recorder, the
+  staging profile-hint semantic-id assertion, and the every-story sweep.
 Real-app E2E:
+  `just e2e-shell-command` (address/overlay/palette) re-run unchanged and
+  green 25/25 — ids, §15 fields, focus domains, typed semantic trees
+  byte-identical (the existing suite is the migration guard, unmodified).
 Performance evidence:
+  None executed; performance remains Patrick-deferred/unpassed. No
+  budget/sample/baseline/semantic-commit change (Gallery-only cut); missing
+  execution recorded as explicit debt.
 Roadmap/documentation updates:
+  G2 packet evidence/ledger only (this file). ROADMAP.md / ARCHITECTURE.md /
+  UI track roll-ups are Orchestrator-owned serial points.
 Open blockers and non-goals:
+  Copy-Link accessory (§17.14), internal-page naming (§17.13), pill editing/
+  cursor/selection/focus ring, foreground/background modifier and opener
+  policy — all remain open decisions, none invented. Performance execution
+  and canonical `just e2e` remain unexecuted/unpassed.
 Worktree state:
+  Branch parallel/g2-address-input at base 81822d1d13571e63e443ae7e8c3dc32
+  daf1257e2 (tree 5ed8442e0d175d66199f1a2c262231d7f05cee8e); real index
+  unchanged at the base tree; working-tree candidate only, diff-clean,
+  no staged paths, no commit, no process/lock.
 
 Planning/read-only:
+  Read ROADMAP/current delivery/DESIGN §11.5/packet/production address +
+  gallery Tab Row & Library patterns; advisory refreshed post-activation.
 Implementation:
+  address_matrix.rs, address_recorder.rs, address_app.rs, control_observer
+  .rs (behavior-preserving app.rs extraction), stories/address.rs, e2e/
+  address.rs, registry/canvas/snapshot/stories/main wiring, rg-guard
+  extension, packet evidence/ledger.
 Test execution:
+  cargo check + focused gallery tests (48/48), Gallery Clippy, GUI-locked
+  just e2e-gallery 24/24, unchanged just e2e-shell-command 25/25, just
+  ui-deps, just roadmap, fmt, just verify, diff-check.
 Review:
+  Not yet run — writer candidate awaiting the independent read-only review.
 Remediation:
+  One remediation writer closed the review finding in the authorized
+  files only: address_matrix.rs (StagingCase.profile_hint + 3 new staging
+  families: unfocused Move Tab — hint, no cursor; Move Tab — cursor + hint
+  + profile hint; unfocused New Space — profile hint, no cursor; the
+  dimension-coverage test; build_staging_fixture maps the production
+  StagingModel.profile_hint/AddressProfileHint), stories/address.rs (all 7
+  families render; the profile-hint families register the production
+  bbr-command-profile-hint semantic id as a test-target key; meta line
+  and ids/profile-hint value rows updated), e2e/address.rs (stable
+  7-family staging count, profile-hint families render, production
+  bbr-command-profile-hint semantic id asserted), and this packet's
+  evidence/ledger. No production change, no new product modes/ids/
+  Copy-Link, StoryIds stay 31/32.
 Waiting/retries:
+  None.
 Total elapsed:
+  Estimate (single writer session).
 Human intervention:
+  None.
 ```
 
 Use measured timing only when runtime/command timestamps support it;

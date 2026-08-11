@@ -16,6 +16,7 @@
 //! phase — Compositions (G3) — it never claims to be a complete component
 //! explorer.
 
+pub mod address;
 pub mod browser_components;
 pub mod core_controls;
 pub mod foundations;
@@ -149,6 +150,18 @@ pub fn catalog() -> CatalogRegistry {
             library_composition::render_library,
             &LIBRARY_STATES,
         )],
+    );
+    // The G2 Group 3 Address/Input stories (packet
+    // `component-gallery-browser-components.md`): the exact production
+    // `address_control` pill and `staging_surface` staging families append
+    // at ids 31–32 after the pinned 0–30 prefix — no renumbering, no
+    // reservation.
+    registry.add_group(
+        "Address / Input",
+        vec![
+            story("Address control", address::render_address_control, &[]),
+            story("Command staging", address::render_command_staging, &[]),
+        ],
     );
     registry
 }
