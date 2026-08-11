@@ -22,6 +22,11 @@ impl BrowserController {
         };
         match &event {
             WebEvent::PageCrashed(_) => return self.on_page_crash(view),
+            // The renderer-availability monitor owns unresponsive events
+            // (sibling of the crash authority; the session stays alive).
+            WebEvent::UnresponsiveChanged(_, unresponsive) => {
+                return self.on_unresponsive_changed(view, *unresponsive)
+            }
             WebEvent::UrlChanged(_, url) => {
                 let _ = self.browser.apply_navigation(tab, url, "");
             }
@@ -48,6 +53,7 @@ fn event_view(event: &WebEvent) -> WebViewId {
         WebEvent::DidCommitNavigation(v) => *v,
         WebEvent::PageCrashed(v) => *v,
         WebEvent::NavigationFailed(v, _) => *v,
+        WebEvent::UnresponsiveChanged(v, _) => *v,
         // A context-menu request names the view it was requested on (the
         // menu is BBR chrome over that view; the request carries no
         // navigation state).

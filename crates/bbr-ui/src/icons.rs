@@ -18,20 +18,19 @@
 //! The pure path geometry lives in [`glyphs`].
 
 pub mod glyphs;
+mod paint;
 
-use gpui::{
-    canvas, point, px, quad, size, transparent_black, BorderStyle, Bounds, Canvas, PathBuilder,
-    Pixels, Rgba, Styled, Window,
-};
+use gpui::{canvas, point, px, Bounds, Canvas, PathBuilder, Pixels, Rgba, Styled, Window};
 
 use crate::palette::Palette;
 use crate::theme::Theme;
 
 use glyphs::{
-    arc_radius, chassis_radii, check_geometry, chevron_arm, close_arm, disclosure_arm,
-    downloads_geometry, folder_geometry, icon_stroke, lifering_radii, pin_radius, plus_arm,
-    stopped_half,
+    arc_radius, chassis_radii, check_geometry, chevron_arm, clock_geometry, close_arm,
+    disclosure_arm, downloads_geometry, folder_geometry, icon_stroke, lifering_radii, pin_radius,
+    plus_arm, stopped_half,
 };
+use paint::{paint_filled_circle, paint_path, paint_ring, paint_rounded_square_ring, paint_stroke};
 
 /// §7 icon catalog: the bounded set of BBR-drawn chrome glyphs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -42,6 +41,9 @@ pub enum Icon {
     Pin { pinned: bool },
     /// §10.7/§11.8 lifering: the crash/error ring (outer + inner ring).
     Lifering,
+    /// §10.11 unresponsive clock companion: a static ring with hour and
+    /// minute hands next to the lifering on an unresponsive row.
+    Clock,
     /// §11.8 empty-pane chassis mark: machined frame + glass aperture.
     ChassisMark,
     /// §11.3 New Space affordance: two crossing strokes.
@@ -83,6 +85,7 @@ impl Icon {
                 }
             }
             Icon::Lifering => "lifering",
+            Icon::Clock => "clock",
             Icon::ChassisMark => "chassis-mark",
             Icon::Plus => "plus",
             Icon::Downloads => "downloads",
@@ -118,6 +121,7 @@ impl Icon {
             | Icon::Pin { pinned: false } => palette.ink_secondary,
             Icon::Pin { pinned: true } | Icon::LoadingArc => palette.accent,
             Icon::Lifering => palette.status_error,
+            Icon::Clock => palette.ink_secondary,
             Icon::ChevronLeft | Icon::ChevronRight => palette.ink_secondary,
         }
     }
@@ -174,6 +178,18 @@ impl Icon {
                 let (outer, inner) = lifering_radii(size);
                 paint_ring(window, cx, cy, outer, stroke, color);
                 paint_ring(window, cx, cy, inner, stroke, color);
+            }
+            Icon::Clock => {
+                let (ring, hour, minute) = clock_geometry(size);
+                paint_ring(window, cx, cy, ring, stroke, color);
+                // A static 10:00 reading: the hour hand points up, the
+                // minute hand points right — never an animated hand.
+                let mut path = PathBuilder::stroke(stroke);
+                path.move_to(point(px(cx), px(cy - hour)));
+                path.line_to(point(px(cx), px(cy + hour)));
+                path.move_to(point(px(cx - minute), px(cy)));
+                path.line_to(point(px(cx + minute), px(cy)));
+                paint_path(window, path, color);
             }
             Icon::ChassisMark => {
                 let (frame_corner, aperture) = chassis_radii(size);
@@ -289,91 +305,6 @@ impl Icon {
         }
     }
 }
-
-/// One rotated diagonal stroke (close × half). The line is built in local
-/// coordinates, rotated about the glyph center, then translated there.
-fn paint_stroke(
-    window: &mut Window,
-    stroke: Pixels,
-    color: Rgba,
-    cx: f32,
-    cy: f32,
-    arm: f32,
-    angle: f32,
-) {
-    let mut path = PathBuilder::stroke(stroke);
-    path.move_to(point(px(-arm), px(0.0)));
-    path.line_to(point(px(arm), px(0.0)));
-    path.rotate(angle);
-    path.translate(point(px(cx), px(cy)));
-    paint_path(window, path, color);
-}
-
-fn paint_path(window: &mut Window, path: PathBuilder, color: Rgba) {
-    // The static geometries tessellate unconditionally; on an unexpected
-    // failure the glyph degrades away instead of panicking the paint phase.
-    if let Ok(path) = path.build() {
-        window.paint_path(path, color);
-    }
-}
-
-/// A 1.5 pt ring at `radius` around the given center (border stroke centered
-/// on the circle outline, transparent hole).
-fn paint_ring(window: &mut Window, cx: f32, cy: f32, radius: f32, stroke: Pixels, color: Rgba) {
-    let diameter = radius * 2.0;
-    window.paint_quad(quad(
-        Bounds::new(
-            point(px(cx - radius), px(cy - radius)),
-            size(px(diameter), px(diameter)),
-        ),
-        px(radius),
-        transparent_black(),
-        stroke,
-        color,
-        BorderStyle::default(),
-    ));
-}
-
-/// A filled circle at `radius` around the given center.
-fn paint_filled_circle(window: &mut Window, cx: f32, cy: f32, radius: f32, color: Rgba) {
-    let diameter = radius * 2.0;
-    window.paint_quad(quad(
-        Bounds::new(
-            point(px(cx - radius), px(cy - radius)),
-            size(px(diameter), px(diameter)),
-        ),
-        px(radius),
-        color,
-        px(0.0),
-        transparent_black(),
-        BorderStyle::default(),
-    ));
-}
-
-/// A rounded-square ring (the chassis frame): `half` is half the side, the
-/// border stroke is centered on the outline.
-fn paint_rounded_square_ring(
-    window: &mut Window,
-    cx: f32,
-    cy: f32,
-    half: f32,
-    corner_radius: f32,
-    stroke: Pixels,
-    color: Rgba,
-) {
-    window.paint_quad(quad(
-        Bounds::new(
-            point(px(cx - half), px(cy - half)),
-            size(px(half * 2.0), px(half * 2.0)),
-        ),
-        px(corner_radius),
-        transparent_black(),
-        stroke,
-        color,
-        BorderStyle::default(),
-    ));
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -100,6 +100,9 @@ mod portal_lifecycle;
 pub mod portal_frame;
 
 #[cfg(target_os = "macos")]
+pub mod responsiveness;
+
+#[cfg(target_os = "macos")]
 pub mod window_server;
 
 #[cfg(target_os = "macos")]

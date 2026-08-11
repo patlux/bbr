@@ -191,6 +191,10 @@ pub enum TabVisualState {
     Loading,
     Attention,
     Error,
+    /// §10.11: the session's renderer stopped answering liveness probes
+    /// (fail-closed; the session and tab stay alive under the §11.8a
+    /// recovery surface).
+    Unresponsive,
     Disabled,
     /// §10.9: the dragged row (92% opacity, elev:2 shadow, strong outline).
     Dragging,
@@ -242,6 +246,10 @@ pub struct TabSnapshot {
     pub loading: bool,
     /// The tab's web process terminated (DESIGN.md §10.7 error state).
     pub crashed: bool,
+    /// The tab's renderer stopped answering liveness probes (DESIGN.md
+    /// §10.11/§11.8a): a sibling of `crashed` — the session and tab stay
+    /// alive under the bounded recovery surface.
+    pub unresponsive: bool,
     pub active: bool,
     pub web_view: Option<WebViewId>,
     /// Resource policy state of the tab's disposable session (the dense-list

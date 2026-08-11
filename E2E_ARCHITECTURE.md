@@ -1,10 +1,11 @@
 # BBR — E2E Architecture (current implementation)
 
-Status: **describes what is implemented and verified** — the testkit gateway
-protocol, the fixture server, and executable smoke + multi-tab tests that drive
-the real `bbr` binary with real WKWebViews. Planned-but-unbuilt parts are
-explicitly marked **FUTURE**; nothing here claims green checks without the
-evidence in §9.
+Status: **describes implemented facts and bounded evidence** — the testkit
+gateway protocol, fixture server, and real `bbr`/WKWebView suites. The
+obsolete public-process termination seam is removed; Renderer-Isolation A1–A4
+evidence exists and A5 (the external WebKit → callback/error hop) remains an
+unpassed Apple platform contract. Performance remains unexecuted/unpassed; no
+complete current-candidate or canonical E2E pass is claimed.
 
 Inputs studied (still the design basis): Zen Browser's custom test stack at
 `thirdparty/zen-browser-desktop/src/zen/tests` and the actual `gpui 0.2.2`
@@ -62,6 +63,39 @@ responder).
   paint path), and the `wait_for_window_settled` contract still waits for 4
   consecutive unchanged window-bounds + native-content observations so any
   remaining late AppKit geometry settles before absolute assertions.
+
+### Renderer-isolation suite
+
+`just e2e-shell-responsiveness` launches the real optimized-capable `bbr`
+product path with real WKWebViews and the deterministic `/__fx/hang/busy`,
+`heavy`, `dialog`, and `beforeunload` routes. Modular scenarios cover the real
+client-world probe/deadline, typed `unresponsive` row and §11.8a semantic ids,
+Cmd-W/row-close/focused-Backspace, warm selection, Cmd-L-capable chrome,
+sidebar/spaces/split actions, Wait/Reload/Close, stale old-view events,
+dialog auto-dismiss, beforeunload close, and the productive typed
+crash/recovery transport.
+
+The crash/recovery scenarios inject `PageCrashed` through the existing typed
+`InjectWebEvent` seam, which feeds the same app event pump/controller path as
+the native delegate sink (`on_web_event`). They prove the complete BBR-owned
+path: active-tab crash panel/status semantics, exactly one disposable session
+destroyed with tab identity preserved, Restore/Reload recreating exactly one
+fresh session in the same profile store, split/member and multi-view burst
+layout/session invariants, sibling consistency, and stale-event rejection
+after recreation. Injection proves only BBR-owned transport — it does not
+claim to emulate the external WebKit → callback/error hop, which remains an
+explicitly unpassed Apple platform contract (A5). No helper enumeration,
+ownership inference, termination, per-view PID, or process-count assertion
+remains in product or testkit.
+
+Functional waits use typed events/snapshots and explicit deadlines; no pixels
+or unbounded sleeps.
+
+Performance code registers `unresponsive_chrome` (30 warm-neighbor selections
+plus 30 Cmd-W closes) and `probe_tick` (30 idle cadence ticks), production-path
+render commits, semantic fast-wrong guards, unchanged 50/100 ms budgets, and
+`samples: 0` baseline seeds. Under the active delivery override these
+performance recipes are not executed and no pass is claimed.
 
 ---
 
@@ -222,10 +256,14 @@ performance benchmark kinds belong to the later split-core slice and are not
 part of this anchor.
 
 FUTURE (planned protocol growth, not yet implemented): `WebEvaluate`
-(whitelisted DOM helpers), `AdvanceClock`/
-`ResetIds`, `TerminateWebProcess`, `Screenshot`, and the richer event set
-(`TabAdded/TabClosed/…`, `PersistenceFlushed`, …). `--bbr-clock` is parsed but
-a no-op until the `TimeSource` seam lands.
+(whitelisted DOM helpers), `AdvanceClock`/`ResetIds`, `Screenshot`, and the
+richer event set (`TabAdded/TabClosed/…`, `PersistenceFlushed`, …).
+Renderer-Isolation provides the additive `ProbeRendererResponsiveness`
+request and the typed `InjectWebEvent` crash/recovery transport; the obsolete
+`ObserveWebContentHelpers` process seam was removed with the lifecycle
+acceptance decision (no helper enumeration, ownership inference, or
+termination remains). `--bbr-clock` is parsed but a no-op until the
+`TimeSource` seam lands.
 
 ---
 
@@ -1116,8 +1154,16 @@ BBR_SKIP_GUI_TESTS=1 just e2e   # skip GUI suites on headless CI
 ```
 
 ```text
+Historical evidence — 2026-08-06 released-testkit build on this host (an
+older committed build, NOT current Renderer-Isolation candidate evidence;
+numbers preserved verbatim):
 just e2e-perf  → exit 0 — startup p50 ≈ 393 ms (< 750 max ceiling); page-ready p50 ≈ 520 ms; warm-tab p95 0.07 ms; space-switch p95 ≈ 0.07 ms; sidebar-toggle p95 0.82 ms; sidebar-resize p95 ≈ 0.002 ms; sidebar-restore p95 ≈ 0.002 ms (both against the 50 ms next-frame budget); Cmd-T p95 ≈ 1.0 ms; new-tab open p95 ≈ 48 ms; active-close p95 ≈ 1.3 ms (2026-08-06, released-testkit build on this host)
 just verify    → exit 0 — fmt/check/test/clippy/roadmap all green, 2026-08-06
+
+Current Renderer-Isolation candidate: performance remains unexecuted and
+unpassed under the active delivery override — no current-candidate
+`just e2e-perf`/`just verify` pass is claimed; startup remains
+`535.866375 ms > 500 ms`.
 ```
 
 FUTURE: `just e2e [suite [::case]]`, `cargo nextest run -p bbr-e2e`, and

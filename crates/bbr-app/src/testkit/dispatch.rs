@@ -22,6 +22,7 @@ use crate::testkit::dispatch_benchmark_context_menu::dispatch_benchmark_context_
 use crate::testkit::dispatch_benchmark_downloads::dispatch_benchmark_downloads;
 use crate::testkit::dispatch_benchmark_gestures::dispatch_benchmark_gestures;
 use crate::testkit::dispatch_benchmark_library::dispatch_benchmark_library;
+use crate::testkit::dispatch_benchmark_responsiveness::dispatch_benchmark_responsiveness;
 use crate::testkit::dispatch_benchmark_swipe::dispatch_benchmark_swipe;
 use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
 use crate::testkit::dispatch_context_menu::dispatch_context_menu;
@@ -49,6 +50,11 @@ pub(crate) fn dispatch(
     // The performance arms live in `dispatch_benchmark` so this router stays
     // under the ~500-line budget; every other request falls through here.
     if let Some(response) = dispatch_benchmark(&req, window, app, cx) {
+        return response;
+    }
+    // Renderer hang/recovery performance arms stay in a focused router;
+    // code is compiled and guarded even while execution is deferred.
+    if let Some(response) = dispatch_benchmark_responsiveness(&req, window, app, cx) {
         return response;
     }
     // The §11.3 swipe-commit performance arm routes through its focused
@@ -121,8 +127,8 @@ pub(crate) fn dispatch(
     if let Some(response) = dispatch_downloads(&req, window, app, cx) {
         return response;
     }
-    // The real WebKit content probe routes separately (same bounded-router
-    // reason); non-probe requests fall through.
+    // The real WebKit content/liveness probes route separately (same
+    // bounded-router reason); non-probe requests fall through.
     if let Some(response) = dispatch_probe(&req, window, app, cx) {
         return response;
     }
@@ -671,7 +677,11 @@ pub(crate) fn dispatch(
 
         // Routed by `dispatch_probe` before this match; reaching one here
         // is a routing bug.
-        Request::ProbeWebContent { .. } => {
+        Request::ProbeRendererResponsiveness { .. }
+        | Request::ClickUnresponsiveWait
+        | Request::ClickUnresponsiveReload
+        | Request::ClickUnresponsiveClose
+        | Request::ProbeWebContent { .. } => {
             unreachable!("probe requests route through dispatch_probe")
         }
         // Routed by `dispatch_auth` before this match (queue item 10);
@@ -720,6 +730,8 @@ pub(crate) fn dispatch(
         | Request::BenchmarkActivateSpace { .. }
         | Request::BenchmarkPageReady { .. }
         | Request::BenchmarkToggleSidebar { .. }
+        | Request::BenchmarkUnresponsiveChrome { .. }
+        | Request::BenchmarkProbeTick { .. }
         | Request::BenchmarkDispatchKeystroke { .. }
         | Request::BenchmarkResizeSidebar { .. }
         | Request::BenchmarkRestoreSidebar { .. }

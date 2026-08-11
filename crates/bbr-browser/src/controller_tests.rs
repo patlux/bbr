@@ -86,6 +86,7 @@ fn profile_setup_and_space_activation_are_typed() {
             view: WebViewId(2),
             visible: true,
         },
+        EngineOp::Probe { view: WebViewId(2) },
     ]));
 }
 
@@ -147,6 +148,7 @@ fn new_window_opens_exactly_once_in_the_source_space_and_profile() {
             view: WebViewId(2),
             visible: true,
         },
+        EngineOp::Probe { view: WebViewId(2) },
     ]));
 }
 
@@ -240,6 +242,7 @@ fn injected_allocator_yields_deterministic_sequential_ids() {
             view: WebViewId(1),
             visible: true
         },
+        EngineOp::Probe { view: WebViewId(1) },
         EngineOp::Create {
             view: WebViewId(2),
             profile: ProfileId(1),
@@ -253,6 +256,7 @@ fn injected_allocator_yields_deterministic_sequential_ids() {
             view: WebViewId(2),
             visible: true
         },
+        EngineOp::Probe { view: WebViewId(2) },
     ]));
 }
 
@@ -313,6 +317,7 @@ fn open_tab_creates_a_session_and_shows_it() {
             view: WebViewId(1),
             visible: true
         },
+        EngineOp::Probe { view: WebViewId(1) },
     ]));
 }
 
@@ -418,6 +423,7 @@ fn reopen_tab_restores_identity_with_a_fresh_session() {
             view: WebViewId(2),
             visible: true
         },
+        EngineOp::Probe { view: WebViewId(2) },
     ]));
     let snap = c.snapshot();
     assert_eq!(snap.tabs[0].url, "https://b");
@@ -543,6 +549,7 @@ fn selecting_a_suspended_tab_recreates_and_shows_its_session() {
             view: WebViewId(2),
             visible: false
         },
+        EngineOp::Probe { view: WebViewId(3) },
     ]));
     let snap = c.snapshot();
     assert_eq!(snap.active_index, Some(0));
@@ -613,10 +620,13 @@ fn moving_across_profiles_recreates_the_session_in_the_destination_store() {
     assert_eq!(c.snapshot().engine_sessions, 1);
     h.reset_ops();
     c.activate_space(space_p2).unwrap();
-    assert!(h.recorded(&[EngineOp::Show {
-        view: WebViewId(2),
-        visible: true,
-    }]));
+    assert!(h.recorded(&[
+        EngineOp::Show {
+            view: WebViewId(2),
+            visible: true,
+        },
+        EngineOp::Probe { view: WebViewId(2) },
+    ]));
     assert_eq!(c.snapshot().active_view, Some(WebViewId(2)));
 }
 
@@ -668,6 +678,7 @@ fn discarding_via_crash_reuses_the_tab_id_for_recreation() {
             view: WebViewId(2),
             visible: true
         },
+        EngineOp::Probe { view: WebViewId(2) },
     ]));
     // The new session's events target the same tab again.
     h.emit(WebEvent::UrlChanged(WebViewId(2), "https://new".into()));
@@ -821,6 +832,7 @@ fn reopen_restores_identity_with_a_fresh_session() {
             view: WebViewId(2),
             visible: true
         },
+        EngineOp::Probe { view: WebViewId(2) },
     ]));
 }
 

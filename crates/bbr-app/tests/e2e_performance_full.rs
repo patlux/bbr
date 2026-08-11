@@ -114,6 +114,8 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let folder_toggle = report.results["sidebar_folder_toggle"].samples;
         let history_swipe = report.results["web_history_swipe_back"].samples;
         let child_return = report.results["child_tab_swipe_return"].samples;
+        let unresponsive_chrome = report.results["unresponsive_chrome"].samples;
+        let probe_tick = report.results["probe_tick"].samples;
         assert!(
             warm >= INTERACTION_SAMPLES,
             "warm-tab samples {warm} < {INTERACTION_SAMPLES}"
@@ -253,6 +255,18 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             child_return >= INTERACTION_SAMPLES,
             "child-tab return samples {child_return} < {INTERACTION_SAMPLES}"
+        );
+        // Renderer-Isolation records two production chrome paths under one
+        // key: >=30 neighbor selections plus >=30 Cmd-W closes. The idle
+        // cadence scenario independently requires >=30 accepted samples.
+        assert!(
+            unresponsive_chrome >= INTERACTION_SAMPLES * 2,
+            "unresponsive-chrome samples {unresponsive_chrome} < {}",
+            INTERACTION_SAMPLES * 2
+        );
+        assert!(
+            probe_tick >= INTERACTION_SAMPLES,
+            "probe-tick samples {probe_tick} < {INTERACTION_SAMPLES}"
         );
         // PEEK scenarios likewise require at least 30 accepted optimized
         // samples once performance execution is resumed.

@@ -8,6 +8,7 @@ fn browser() -> ControllerSnapshot {
         pinned: false,
         loading: false,
         crashed: false,
+        unresponsive: false,
         active,
         web_view: Some(bbr_web::WebViewId(1)),
         lifecycle: bbr_browser::TabLifecycle::Warm,
@@ -306,6 +307,39 @@ fn content_branch_mirrors_the_render() {
     let tree = semantic_tree(&input);
     assert!(find(&tree, "bbr-crash-reload").is_some());
     assert!(find(&tree, "bbr-crash-close").is_some());
+
+    // §11.8a unresponsive pane: the panel node plus the closed recovery set
+    // Wait → Reload → Close tab in tree (focus) order, with the exact §15
+    // names.
+    input.content = SemanticContent::Unresponsive;
+    let tree = semantic_tree(&input);
+    let panel = find(&tree, "bbr-unresponsive-panel").expect("unresponsive pane");
+    assert_eq!(panel.role, SemanticRole::Content);
+    assert_eq!(panel.name.as_deref(), Some("This page is not responding"));
+    let wait = find(&tree, "bbr-unresponsive-wait").expect("wait button");
+    assert_eq!(wait.role, SemanticRole::Button);
+    assert_eq!(wait.name.as_deref(), Some("Wait"));
+    let reload = find(&tree, "bbr-unresponsive-reload").expect("reload button");
+    assert_eq!(reload.role, SemanticRole::Button);
+    assert_eq!(reload.name.as_deref(), Some("Reload"));
+    let close = find(&tree, "bbr-unresponsive-close").expect("close button");
+    assert_eq!(close.role, SemanticRole::Button);
+    assert_eq!(close.name.as_deref(), Some("Close tab"));
+    let buttons: Vec<&str> = panel
+        .children
+        .iter()
+        .filter(|node| node.role == SemanticRole::Button)
+        .map(|node| node.id.as_str())
+        .collect();
+    assert_eq!(
+        buttons,
+        [
+            "bbr-unresponsive-wait",
+            "bbr-unresponsive-reload",
+            "bbr-unresponsive-close"
+        ],
+        "recovery buttons in focus order"
+    );
 }
 
 #[test]

@@ -140,6 +140,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
                     pinned: tab.pinned,
                     loading: tab.loading,
                     crashed: tab.crashed,
+                    unresponsive: tab.unresponsive,
                     active: tab.active,
                     web_view: tab.web_view,
                     lifecycle: match tab.lifecycle {

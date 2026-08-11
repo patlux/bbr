@@ -51,6 +51,7 @@ mod outcome;
 mod pane;
 mod peek;
 mod provenance;
+mod responsiveness;
 mod restore;
 #[cfg(test)]
 mod restore_tests;
@@ -72,11 +73,15 @@ mod controller_peek_stale_tests;
 #[cfg(test)]
 mod controller_peek_tests;
 #[cfg(test)]
+mod controller_responsiveness_tests;
+#[cfg(test)]
 mod controller_tests;
 #[cfg(test)]
 mod hydration_tests;
 #[cfg(test)]
 mod organization_tests;
+#[cfg(test)]
+mod responsiveness_tests;
 
 pub use bbr_domain::{FolderId, ProfileHue, SpaceAppearance, SpaceId, SpaceTheme, TabLifecycle};
 pub use controller::BrowserController;
@@ -97,6 +102,9 @@ pub use organization::{
 };
 pub use outcome::ControllerEvent;
 pub use pane::PaneLayout;
+pub use responsiveness::{
+    Clock, RendererAvailability, ResponsivenessConfig, ResponsivenessMonitor,
+};
 pub use session::{SessionError, SessionRegistry};
 pub use snapshot::{
     ControllerSnapshot, GlobalTabSnapshot, LifecycleCounts, ProfileSnapshot, SpaceSnapshot,

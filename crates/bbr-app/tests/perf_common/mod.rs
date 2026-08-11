@@ -25,6 +25,7 @@ pub mod machine;
 mod peek;
 mod peek_drive;
 mod report;
+mod responsiveness;
 mod saved_pages_drive;
 pub mod scenarios;
 pub mod stats;

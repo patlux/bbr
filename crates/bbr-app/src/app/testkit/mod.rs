@@ -194,6 +194,12 @@ impl BbrApp {
         self.apply_mutation(result, cx)
     }
 
+    /// Explicitly refresh one live view's renderer-liveness probe through
+    /// the same controller/adapter seam the production cadence uses.
+    pub fn probe_renderer_responsiveness(&mut self, view: bbr_web::WebViewId) -> bool {
+        self.controller.probe_view(view)
+    }
+
     /// Route a generic [`WebAction`] through the focused controller session.
     pub fn web_action(&mut self, action: WebAction) -> Option<ControllerEvent> {
         self.controller

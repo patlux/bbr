@@ -366,6 +366,7 @@ impl BrowserController {
             | WebEvent::DidCommitNavigation(v)
             | WebEvent::PageCrashed(v)
             | WebEvent::NavigationFailed(v, _)
+            | WebEvent::UnresponsiveChanged(v, _)
             | WebEvent::ContextMenuRequested(v, _) => *v,
         };
         let is_preview = self

@@ -59,6 +59,10 @@ impl NavState {
                 self.failed = true;
                 self.loading = false;
             }
+            // Renderer availability is not navigation state: the liveness
+            // monitor owns it (Unresponsive is a sibling of Crashed, never
+            // a url/title/loading/history fact).
+            bbr_web::WebEvent::UnresponsiveChanged(_, _) => {}
             // A context-menu request carries no navigation state (the menu
             // is BBR chrome over the page; opening/closing it never changes
             // url/title/loading/history).

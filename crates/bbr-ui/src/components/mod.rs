@@ -44,7 +44,7 @@ pub use folders::{
 };
 pub use footer::{footer_control, footer_surface, FooterControl};
 pub use menu::{plus_menu_items, PlusMenuItem, PlusMenuState};
-pub use pane::{crash_panel, empty_space_pane};
+pub use pane::{crash_panel, empty_space_pane, unresponsive_panel};
 pub use saved_pages_library::{
     library_collection_id, library_collection_remove_cancel_id,
     library_collection_remove_confirm_id, library_collection_remove_ok_id,

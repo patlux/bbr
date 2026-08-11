@@ -18,6 +18,10 @@ pub enum SemanticContent {
         profile_line: String,
     },
     Crash,
+    /// The §11.8a unresponsive pane: the active tab's renderer stopped
+    /// answering liveness probes (the session and tab stay alive under the
+    /// closed recovery set Wait / Reload / Close tab).
+    Unresponsive,
     /// The classified incident surface (TLS, navigation, offline): the
     /// calm title, the failing origin (when the contract knows one), the
     /// copy, and the contract-legal primary action plus Dismiss.
@@ -95,6 +99,43 @@ pub fn content_node(content: &SemanticContent) -> SemanticNode {
                 ),
                 node(
                     "bbr-crash-close",
+                    SemanticRole::Button,
+                    Some("Close tab".into()),
+                    None,
+                    false,
+                    false,
+                    vec![],
+                ),
+            ],
+        ),
+        SemanticContent::Unresponsive => node(
+            "bbr-unresponsive-panel",
+            SemanticRole::Content,
+            Some("This page is not responding".into()),
+            None,
+            false,
+            false,
+            vec![
+                node(
+                    "bbr-unresponsive-wait",
+                    SemanticRole::Button,
+                    Some("Wait".into()),
+                    None,
+                    false,
+                    false,
+                    vec![],
+                ),
+                node(
+                    "bbr-unresponsive-reload",
+                    SemanticRole::Button,
+                    Some("Reload".into()),
+                    None,
+                    false,
+                    false,
+                    vec![],
+                ),
+                node(
+                    "bbr-unresponsive-close",
                     SemanticRole::Button,
                     Some("Close tab".into()),
                     None,

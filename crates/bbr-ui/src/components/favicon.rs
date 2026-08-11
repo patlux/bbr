@@ -6,7 +6,7 @@
 //! rotation is a later polish pass). Monograms are static — no spin, no
 //! pulse, no animation (§7.2).
 
-use gpui::{div, prelude::*, Div, SharedString, Stateful};
+use gpui::{div, prelude::*, px, Div, SharedString, Stateful};
 
 use crate::icons::Icon;
 use crate::palette::FaviconSlate;
@@ -91,9 +91,25 @@ pub fn favicon_tile(
         .when(state == TabVisualState::Loading, |el| {
             el.child(Icon::LoadingArc.canvas(theme, size))
         })
-        .when(state != TabVisualState::Loading, |el| {
-            el.child(SharedString::from(letter.to_string()))
+        .when(state == TabVisualState::Error, |el| {
+            // §10.7: the lifering replaces the favicon on an error row.
+            el.child(Icon::Lifering.canvas(theme, size))
         })
+        .when(state == TabVisualState::Unresponsive, |el| {
+            // §10.11: the lifering plus the static clock companion replace
+            // the favicon on an unresponsive row (the renderer stopped
+            // answering liveness probes; the session stays alive).
+            el.flex_row()
+                .gap(px(2.0))
+                .child(Icon::Lifering.canvas(theme, size))
+                .child(Icon::Clock.canvas(theme, size))
+        })
+        .when(
+            state != TabVisualState::Loading
+                && state != TabVisualState::Error
+                && state != TabVisualState::Unresponsive,
+            |el| el.child(SharedString::from(letter.to_string())),
+        )
 }
 
 #[cfg(test)]

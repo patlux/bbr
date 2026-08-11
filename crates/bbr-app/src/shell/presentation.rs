@@ -31,6 +31,14 @@ pub fn status_model(snapshot: &ControllerSnapshot) -> StatusModel {
         .is_some_and(|tab| tab.crashed)
     {
         "Web content process terminated".into()
+    } else if snapshot
+        .active_index
+        .and_then(|index| snapshot.tabs.get(index))
+        .is_some_and(|tab| tab.unresponsive)
+    {
+        // §10.11: the renderer stopped answering liveness probes; the
+        // session and tab stay alive under the §11.8a recovery surface.
+        "Page is not responding".into()
     } else if snapshot.nav.loading {
         "Loading…".into()
     } else {
@@ -70,6 +78,7 @@ mod tests {
                 pinned: false,
                 loading: false,
                 crashed,
+                unresponsive: false,
                 active: true,
                 web_view: Some(bbr_web::WebViewId(1)),
                 lifecycle: bbr_browser::TabLifecycle::Warm,

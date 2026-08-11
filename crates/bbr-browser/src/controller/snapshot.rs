@@ -31,6 +31,8 @@ impl BrowserController {
                     pinned: state.pinned,
                     loading: session.is_some_and(|n| n.loading),
                     crashed: self.crashed_tabs.contains(&tab),
+                    unresponsive: view
+                        .is_some_and(|view| self.responsiveness.is_unresponsive(view)),
                     active: active_tab == Some(tab),
                     web_view: view,
                     lifecycle: state.lifecycle,

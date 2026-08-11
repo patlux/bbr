@@ -105,6 +105,10 @@ impl BbrApp {
             return;
         }
         self.sync_error_surface_visibility();
+        // The surface cleared: the active view may now be reported
+        // unresponsive, so the §11.8a pane (and its native-view hiding)
+        // re-evaluates.
+        self.sync_unresponsive_visibility();
         cx.notify();
     }
 

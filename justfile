@@ -185,6 +185,12 @@ e2e-external-url:
 # Reload — identity preserved throughout.
 e2e-shell-errors:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_errors -- --ignored --nocapture
+
+# Renderer isolation / unresponsive tabs: real busy/heavy WebKit probes,
+# chrome actions while hung, Wait/Reload/Close recovery, stale events,
+# dialog/beforeunload boundaries, and productive typed crash recovery.
+e2e-shell-responsiveness:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_dense_timeout}} cargo test -p bbr --features testkit --test e2e_shell_responsiveness -- --ignored --nocapture
 # Credential sheet (queue item 10): the conventional macOS credential sheet
 # in the one `NativeAboveWeb` portal window over a real WKWebView — realm/
 # host presentation, typed masked editing, submit/cancel through the merged
@@ -221,7 +227,7 @@ e2e-gallery:
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-web-navigation-gestures e2e-auth e2e-perf
+e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-shell-responsiveness e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-web-navigation-gestures e2e-auth e2e-perf
 
 verify: fmt check test clippy roadmap ui-deps script-tests
 

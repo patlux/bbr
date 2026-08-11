@@ -77,6 +77,7 @@ fn visible_ids_mirror_the_render_for_each_pane_branch() {
         pinned: false,
         loading: false,
         crashed,
+        unresponsive: false,
         active: index == 0,
         web_view: None,
         lifecycle: bbr_browser::TabLifecycle::Warm,
@@ -389,3 +390,4 @@ fn stale_dense_window_never_exposes_rows_the_model_removed() {
 
 mod u1;
 mod u2;
+mod unresponsive;

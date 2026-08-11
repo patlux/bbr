@@ -173,6 +173,12 @@ impl WebEngine for NullEngine {
         }
     }
 
+    fn probe_responsiveness(&mut self, id: WebViewId) {
+        // No renderer exists on non-native engines: record the arm as a
+        // no-op diagnostic and never emit a result.
+        self.actions.push(format!("probe {id:?}"));
+    }
+
     fn set_events(&mut self, sink: Box<dyn FnMut(WebEvent)>) {
         *self.events.borrow_mut() = Some(sink);
     }

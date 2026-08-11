@@ -195,6 +195,9 @@ impl BbrApp {
                 self.peek.source_view = self.controller.snapshot().preview.map(|p| p.source);
                 self.present_peek(*view, window, cx);
                 self.emit_browser(outcome);
+                // The preview covers the origin view: the §11.8a pane is no
+                // longer drawn over it, so a hidden origin is restored.
+                self.sync_unresponsive_visibility();
                 true
             }
             bbr_browser::ControllerEvent::PreviewNavigated { .. } => {
@@ -220,6 +223,9 @@ impl BbrApp {
                     }
                 }
                 self.emit_browser(outcome);
+                // The preview closed: the origin view is the pane again — a
+                // still-unresponsive origin re-hides under the §11.8a pane.
+                self.sync_unresponsive_visibility();
                 true
             }
             bbr_browser::ControllerEvent::PreviewPromoted { view, .. } => {
@@ -232,6 +238,9 @@ impl BbrApp {
                 self.persist_structure();
                 self.focus_web_view(*view, window, cx);
                 self.emit_browser(outcome);
+                // The promoted session is the active view now: re-assert the
+                // §11.8a pane visibility.
+                self.sync_unresponsive_visibility();
                 true
             }
             _ => false,

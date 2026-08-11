@@ -164,6 +164,31 @@ impl Render for BbrApp {
                 self.performance.prune_pane_rects(&keep);
             }
             let build_slot = |this: &BbrApp, id: WebViewId, _focused: bool| {
+                // §11.8a: the unresponsive pane replaces the exact active
+                // view's native slot while its renderer is reported
+                // unresponsive (the session and tab stay alive); every
+                // other pane keeps its native slot and the slot machinery
+                // is untouched. The predicate is shared with the visibility
+                // sync, so the drawn surface and the hidden native view can
+                // never disagree.
+                if this.unresponsive_pane_over(id) {
+                    return components::unresponsive_panel(
+                        &theme,
+                        &this.unresponsive_wait_handle,
+                        &this.unresponsive_reload_handle,
+                        &this.unresponsive_close_handle,
+                        cx.listener(|this, _e, window, cx| {
+                            this.wait_unresponsive_active(window, cx)
+                        }),
+                        cx.listener(|this, _e, window, cx| {
+                            this.reload_unresponsive_active(window, cx)
+                        }),
+                        cx.listener(|this, _e, window, cx| {
+                            let _ = this.close_active_tab(window, cx);
+                        }),
+                    )
+                    .into_any();
+                }
                 let slot = NativeWebViewSlot::new(this.engine.clone(), id);
                 #[cfg(feature = "testkit")]
                 let slot = slot.on_keyed_geometry(this.performance.keyed_geometry_callback());

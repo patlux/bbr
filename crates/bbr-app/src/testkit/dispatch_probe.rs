@@ -22,6 +22,43 @@ pub(crate) fn dispatch_probe(
     cx: &mut App,
 ) -> Option<Response> {
     match req {
+        Request::ProbeRendererResponsiveness { view } => Some(
+            with_app(window, app, cx, |view_app, _window, _cx| {
+                view_app.probe_renderer_responsiveness(*view)
+            })
+            .map(|issued| {
+                if issued {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "probe_error",
+                        "responsiveness probe rejected: unknown or destroyed view",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response),
+        ),
+        Request::ClickUnresponsiveWait => Some(
+            with_app(window, app, cx, |view_app, window, cx| {
+                view_app.wait_unresponsive_active(window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+        ),
+        Request::ClickUnresponsiveReload => Some(
+            with_app(window, app, cx, |view_app, window, cx| {
+                view_app.reload_unresponsive_active(window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+        ),
+        Request::ClickUnresponsiveClose => Some(
+            with_app(window, app, cx, |view_app, window, cx| {
+                let _ = view_app.close_active_tab(window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+        ),
         #[cfg(all(target_os = "macos", feature = "testkit"))]
         Request::ProbeWebContent { view } => Some(
             with_app(window, app, cx, |view_app, _window, _cx| {

@@ -30,19 +30,24 @@ pub fn title_budget_chars(theme: &Theme) -> usize {
 
 /// DESIGN.md §10 row state for the E2E snapshot's `tab_states` field.
 /// Composition (the more specific state wins, §10) is: error (crash), then
-/// loading, then pressed (`active`), then selected, then hover, then
-/// default. The `active` press wash wins over `selected` so the pointer-down
-/// wash is visible on the row being pressed, and `hover` never overrides an
-/// already-selected or pressed row.
+/// unresponsive (§10.11 — a sibling of the crash authority; the session
+/// stays alive), then loading, then pressed (`active`), then selected,
+/// then hover, then default. The `active` press wash wins over `selected`
+/// so the pointer-down wash is visible on the row being pressed, and
+/// `hover` never overrides an already-selected or pressed row.
 pub fn row_state(
     active: bool,
     loading: bool,
     crashed: bool,
+    unresponsive: bool,
     pressed: bool,
     hovered: bool,
 ) -> bbr_ui::state::TabVisualState {
     if crashed {
         return bbr_ui::state::TabVisualState::Error;
+    }
+    if unresponsive {
+        return bbr_ui::state::TabVisualState::Unresponsive;
     }
     if loading {
         return bbr_ui::state::TabVisualState::Loading;
@@ -70,39 +75,47 @@ mod tests {
     use super::*;
 
     #[test]
-    fn row_state_ordering_is_error_then_loading_then_pressed_then_selected() {
+    fn row_state_ordering_is_error_then_unresponsive_then_loading_then_pressed() {
         assert_eq!(
-            row_state(true, false, true, false, false),
+            row_state(true, false, true, false, false, false),
             bbr_ui::state::TabVisualState::Error
         );
+        // Unresponsive is a sibling of the crash authority: a crashed tab
+        // never renders unresponsive (the crash destroyed the session), and
+        // an unresponsive tab beats loading (a hung renderer shows the
+        // lifering + clock, not the spinner).
         assert_eq!(
-            row_state(true, true, false, false, false),
+            row_state(true, true, false, true, false, false),
+            bbr_ui::state::TabVisualState::Unresponsive
+        );
+        assert_eq!(
+            row_state(true, true, false, false, false, false),
             bbr_ui::state::TabVisualState::Loading
         );
         // A pressed row shows the §10.3 active wash even when it is (or
         // just became) selected; hover never overrides press or selection.
         assert_eq!(
-            row_state(true, false, false, true, true),
+            row_state(true, false, false, false, true, true),
             bbr_ui::state::TabVisualState::Active
         );
         assert_eq!(
-            row_state(true, false, false, false, true),
+            row_state(true, false, false, false, false, true),
             bbr_ui::state::TabVisualState::Selected
         );
         assert_eq!(
-            row_state(false, false, false, true, false),
+            row_state(false, false, false, false, true, false),
             bbr_ui::state::TabVisualState::Active
         );
         assert_eq!(
-            row_state(false, false, false, false, true),
+            row_state(false, false, false, false, false, true),
             bbr_ui::state::TabVisualState::Hover
         );
         assert_eq!(
-            row_state(false, false, false, false, false),
+            row_state(false, false, false, false, false, false),
             bbr_ui::state::TabVisualState::Default
         );
         assert_eq!(
-            row_state(false, true, true, false, false),
+            row_state(false, true, true, false, false, false),
             bbr_ui::state::TabVisualState::Error
         );
     }
@@ -116,6 +129,7 @@ mod tests {
             pinned,
             loading: false,
             crashed: false,
+            unresponsive: false,
             active: index == 0,
             web_view: None,
             lifecycle: bbr_browser::TabLifecycle::Warm,

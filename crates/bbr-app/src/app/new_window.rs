@@ -68,6 +68,10 @@ impl BbrApp {
                             self.emit_browser(outcome);
                             self.ensure_active_visible();
                             self.sync_error_surface_visibility();
+                            // The new regular tab may be reported
+                            // unresponsive: re-assert the §11.8a pane
+                            // visibility.
+                            self.sync_unresponsive_visibility();
                             self.zoom_after_activation();
                             self.persist_structure();
                             cx.notify();

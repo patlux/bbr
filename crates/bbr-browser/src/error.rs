@@ -38,6 +38,10 @@ pub enum ControllerError {
     /// Promotion was refused because the preview session is crashed (only a
     /// live session can be adopted without recreation).
     PreviewCrashed,
+    /// The unresponsive-recovery Reload named a session that is not
+    /// currently reported unresponsive (recovery is closed to the
+    /// Wait/Reload/Close set).
+    NotUnresponsive(WebViewId),
 }
 
 impl std::fmt::Display for ControllerError {
@@ -60,6 +64,9 @@ impl std::fmt::Display for ControllerError {
             Self::NoPreviewOpen => write!(f, "no transient preview is open"),
             Self::PreviewCrashed => {
                 write!(f, "the preview session crashed; reload before promotion")
+            }
+            Self::NotUnresponsive(view) => {
+                write!(f, "session {view:?} is not reported unresponsive")
             }
         }
     }

@@ -118,6 +118,10 @@ impl BbrApp {
             if let Some(action) = self.error_surface.recovery_in_flight(*view) {
                 if self.error_surface.recovered(*view, action) {
                     self.sync_error_surface_visibility();
+                    // The incident cleared: the active view may now be
+                    // reported unresponsive, so the §11.8a pane
+                    // re-evaluates.
+                    self.sync_unresponsive_visibility();
                 }
             }
         }
@@ -138,6 +142,20 @@ impl BbrApp {
         if !self.command_bar_mode.is_active() {
             self.sync_command_bar();
         }
+        // An engine event can change the renderer availability (a probe
+        // answer, a fail-closed timeout, a termination): re-assert the
+        // §11.8a pane visibility for the active view. A freshly unresponsive
+        // active view hands focus to the pane's Wait control only when the
+        // user is not operating chrome (the sidebar / command bar stay
+        // usable while the page hangs).
+        let active_view = self.controller.snapshot().active_view;
+        if let WebEvent::UnresponsiveChanged(view, true) = &event {
+            if active_view == Some(*view) && !self.chrome_focused(window) {
+                window.focus(&self.unresponsive_wait_handle, cx);
+                self.emit_focus(window);
+            }
+        }
+        self.sync_unresponsive_visibility();
         #[cfg(feature = "testkit")]
         self.performance.note_web_event(&event);
         cx.notify();
