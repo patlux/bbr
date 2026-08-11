@@ -12,6 +12,7 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Verified product base | `main@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
 | Integrated product checkpoint | `8355dcd59e0d4b8da1c0387a349a76a5c427ca02` / tree `75a2b23fbda9598529694c4a47f72de7674790bb`; G3 Sidebar and Command integrated |
 | Daily-driver preparation base | `568cdae0008d3cc9008209007ae32442ee0ff80e` / tree `90114c65cc068a744b43aeeec710b47fff5cbf4a` |
+| Daily-driver activation base | `4d5be3116ec090aebb7eefa4861970710dba7a5b` / tree `9c8cae5cd5bca883fadc3ec198e232be4f436839`; all seven lane worktrees created clean from this exact commit |
 | Daily-driver contract | [2026-08-12 Daily-driver delivery](2026-08-12-daily-driver-delivery.md) |
 | Previous canonical pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md` |
 | Rollback pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
@@ -40,14 +41,14 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| DD-CONTROL | Daily-driver contract and lane activation | `running` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Commit the durable contract, verify roadmap, create clean lane worktrees, then record exact activation state |
-| DD-LINK | Cmd-click/middle-click grouped background tabs | `planned` | planned `/Users/patwoz/dev/Personal/macos/bbr-dd-background-links` | no writer before committed activation | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Clean common-base worktree and exclusive writer |
-| DD-GESTURE | Current-base real-app gesture revalidation | `planned` | planned `/Users/patwoz/dev/Personal/macos/bbr-dd-gesture-revalidation` | no writer before committed activation | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | One exact-base GUI-locked 9-scenario run; mutate only after reproduced regression |
-| DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `planned` | planned `/Users/patwoz/dev/Personal/macos/bbr-dd-titlebar` | no writer before committed activation | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Clean common-base worktree and native safe-area preflight |
-| DD-SPACE | Create/activate/configure Space and icon-only footer | `planned` | planned `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance` | no writer before committed activation | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Clean common-base worktree and persistence/appearance seam preflight |
-| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `planned` | planned `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main` | no writer before committed activation | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Starts implementation independently; serial integration waits for Titlebar and Space |
-| DD-TAB-MENU | Production Tab/Favorite context menus | `planned` | planned `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu` | no writer before committed activation | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Refresh availability/source-binding preflight against current menu extraction |
-| DD-PAGE-MENU | Enriched conservative page-background menu | `planned` | planned `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu` | no writer before committed activation | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | Refresh owned-action and Portal-boundary preflight |
+| DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
+| DD-LINK | Cmd-click/middle-click grouped background tabs | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-background-links`; branch `parallel/dd-background-links` | exclusive workflow writer `dd-link-writer` | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Return exact candidate or bounded blocker; no commit/integration |
+| DD-GESTURE | Current-base real-app gesture revalidation | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-gesture-revalidation`; branch `parallel/dd-gesture-revalidation` | exclusive workflow writer `dd-gesture-writer` | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | One exact-base GUI-locked 9-scenario run; mutate only after reproduced regression |
+| DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-titlebar`; branch `parallel/dd-titlebar` | exclusive workflow writer `dd-titlebar-writer` | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Implement/review-ready candidate against native safe-area contract; no commit/integration |
+| DD-SPACE | Create/activate/configure Space and icon-only footer | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance`; branch `parallel/dd-space-appearance` | exclusive workflow writer `dd-space-writer` | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Implement/review-ready candidate or exact persistence blocker; no commit/integration |
+| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main` | exclusive workflow writer `dd-sidebar-writer` | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Implement independently; integration remains after Titlebar and Space |
+| DD-TAB-MENU | Production Tab/Favorite context menus | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu` | exclusive workflow writer `dd-tab-menu-writer` | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Implement currently owned rows/source binding; omit unsupported actions; no commit/integration |
+| DD-PAGE-MENU | Enriched conservative page-background menu | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu` | exclusive workflow writer `dd-page-menu-writer` | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | Implement currently owned actions while preserving WebKit-native element menus; no commit/integration |
 
 ## Post-F2a parallel wave
 
@@ -68,6 +69,15 @@ The former post-F2a implementation wave is closed and preserved in Git history. 
 7. Activate DD-FOLDER-MENU only after the shared menu seam and folder command/delete truth are settled by committed authority.
 8. After every writer/review/remediation/integration/gate event, reread `ROADMAP.md → this file`, audit every queue row, and keep runnable lanes occupied.
 9. Do not start Split or inspect its stale worktree.
+
+Parallelism audit at activation: runnable candidates `DD-LINK`, `DD-GESTURE`,
+`DD-TITLEBAR`, `DD-SPACE`, `DD-SIDEBAR`, `DD-TAB-MENU`, and `DD-PAGE-MENU`;
+all seven received isolated clean worktrees from exact base `4d5be311…` and
+exclusive workflow-writer labels. Deliberately deferred: `DD-FOLDER-MENU`
+(shared menu seam plus delete/command truth), `DD-SHIFT-LINK` (product
+semantics), Split (Patrick override), and Phase 9. Expected conflicts are the
+app composition root, controller/testkit envelopes, Gallery registry, Justfile,
+and roadmap roll-ups; semantic integration order is fixed above.
 
 ## Downstream dependency queue
 
