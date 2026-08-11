@@ -21,6 +21,7 @@ pub mod browser_components;
 pub mod core_controls;
 pub mod downloads;
 pub mod favorites;
+pub mod find;
 pub mod folders;
 pub mod footer;
 pub mod foundations;
@@ -202,6 +203,8 @@ pub fn catalog() -> CatalogRegistry {
             &[],
         )],
     );
+    // The G2 Group 6 Find story appends at id 39 after Downloads.
+    registry.add_group("Find", vec![story("Find bar", find::render_find_bar, &[])]);
     registry
 }
 

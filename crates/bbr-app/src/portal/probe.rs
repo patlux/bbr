@@ -170,13 +170,13 @@ impl PortalProbeState {
                 PROBE_CARD_ID.into(),
             ],
             Some(PortalContent::Find) => vec![
-                crate::app::find::FIND_BAR_ID.into(),
-                crate::app::find::FIND_FIELD_ID.into(),
-                crate::app::find::FIND_TEXT_ID.into(),
-                crate::app::find::FIND_COUNT_ID.into(),
-                crate::app::find::FIND_PREVIOUS_ID.into(),
-                crate::app::find::FIND_NEXT_ID.into(),
-                crate::app::find::FIND_CLOSE_ID.into(),
+                bbr_ui::surfaces::find::FIND_BAR_ID.into(),
+                bbr_ui::surfaces::find::FIND_FIELD_ID.into(),
+                bbr_ui::surfaces::find::FIND_TEXT_ID.into(),
+                bbr_ui::surfaces::find::FIND_COUNT_ID.into(),
+                bbr_ui::surfaces::find::FIND_PREVIOUS_ID.into(),
+                bbr_ui::surfaces::find::FIND_NEXT_ID.into(),
+                bbr_ui::surfaces::find::FIND_CLOSE_ID.into(),
             ],
             Some(PortalContent::Auth) => vec![
                 crate::app::auth::AUTH_SHEET_ID.into(),
@@ -552,6 +552,7 @@ impl Render for PortalRoot {
                 let Some(app) = self.app.as_ref() else {
                     return div().size_full().bg(transparent_black()).into_any();
                 };
+                let theme = app.read(cx).theme();
                 let surface = app.read(cx).find_surface();
                 // The find-bar render milestone: record the find state this
                 // render actually drew into the probe, so a pending find
@@ -559,7 +560,30 @@ impl Render for PortalRoot {
                 // armed open/report identity (fast-but-wrong guard).
                 #[cfg(feature = "testkit")]
                 app.read(cx).observe_portal_find_render();
-                let card = crate::portal::find::find_bar(&surface, rect, cx).on_mouse_down(
+                // The production `bbr-ui` find bar: the portal root passes
+                // the resolved rect and the `cx.listener` closures routing
+                // the controls through the production app methods, exactly
+                // like the pre-cutover portal render.
+                let card = bbr_ui::surfaces::find::find_bar(
+                    &theme,
+                    &surface,
+                    bbr_ui::surfaces::find::FindBarRect {
+                        x: rect.x,
+                        y: rect.y,
+                        width: rect.width,
+                        height: rect.height,
+                    },
+                    cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                        this.find_previous_clicked(cx);
+                    }),
+                    cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                        this.find_next_clicked(cx);
+                    }),
+                    cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                        this.find_close_clicked(cx);
+                    }),
+                )
+                .on_mouse_down(
                     MouseButton::Left,
                     cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
                         cx.stop_propagation();

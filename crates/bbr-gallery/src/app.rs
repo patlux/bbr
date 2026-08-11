@@ -18,6 +18,7 @@ use crate::address_app::AddressAppState;
 use crate::canvas::{canvas_surface, CanvasModel};
 use crate::controls::{controls_surface, ControlAction, ControlsModel};
 use crate::downloads_app::DownloadsAppState;
+use crate::find_app::FindAppState;
 use crate::group4_app::Group4AppState;
 use crate::library_recorder::{LibraryObservation, LibraryRecorder};
 use crate::recorder::{ControlObservation, ControlRecorder, CoreControlsEntities};
@@ -58,6 +59,8 @@ pub struct GalleryApp {
     pub(crate) group4: Group4AppState,
     /// The Downloads panel app wiring (module `downloads_app`).
     pub(crate) downloads: DownloadsAppState,
+    /// The Find app wiring (module `find_app`).
+    pub(crate) find: FindAppState,
     /// The shared recorder: what real gpui-component control events report
     /// back through the production `observe_control` path.
     recorder: ControlRecorder,
@@ -103,6 +106,7 @@ impl GalleryApp {
             address: AddressAppState::new(&registry),
             group4: Group4AppState::new(&registry, cx),
             downloads: DownloadsAppState::new(&registry, cx),
+            find: FindAppState::new(&registry),
             registry,
             tree,
             mode: ThemeMode::Dark,
@@ -317,6 +321,7 @@ impl GalleryApp {
             address: self.address.recorder().clone(),
             group4: self.group4.recorder().clone(),
             downloads: self.downloads.recorder().clone(),
+            find: self.find.recorder().clone(),
         }
     }
 
@@ -382,6 +387,8 @@ impl Render for GalleryApp {
         let group4 = self.group4.render_context(selected, cx);
         // The Downloads observer + story context (module `downloads_app`).
         let downloads = self.downloads.render_context(selected, cx);
+        // The Find observer + story context (module `find_app`).
+        let find = self.find.render_context(selected, cx);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {
@@ -442,6 +449,7 @@ impl Render for GalleryApp {
             address,
             group4,
             downloads,
+            find,
         });
         div()
             .id("bbr-gallery-root")

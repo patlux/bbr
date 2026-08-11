@@ -19,6 +19,7 @@ use gpui_component::slider::SliderState;
 
 use crate::address_recorder::{AddressObserver, AddressRecorder};
 use crate::downloads_recorder::{DownloadsObserver, DownloadsRecorder};
+use crate::find_recorder::{FindObserver, FindRecorder};
 use crate::group4_recorder::{Group4Observer, Group4Recorder};
 use crate::library_recorder::{LibraryObserver, LibraryRecorder};
 use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRecorder};
@@ -100,6 +101,11 @@ pub struct StoryContext<'a> {
     /// `component-gallery-browser-components.md`, Group 5). `None` for
     /// every other story.
     pub downloads: Option<DownloadsStory<'a>>,
+    /// `Some` only for the Find bar story: the current recorder snapshot
+    /// and the observer callbacks the production `find_bar` callbacks
+    /// route through (packet `component-gallery-browser-components.md`,
+    /// Group 6). `None` for every other story.
+    pub find: Option<FindStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -184,6 +190,18 @@ pub struct DownloadsStory<'a> {
     pub scroll: &'a gpui::ScrollHandle,
     /// The §11.12 panel focus handle (the surface tracks focus on it).
     pub focus: &'a gpui::FocusHandle,
+}
+
+/// Everything the Find bar story needs to render the **exact** production
+/// `bbr_ui::surfaces::find` symbols (`find_bar`, `FindSurface`,
+/// `FindBarRect`) with recorder callbacks: the current recorder snapshot
+/// (control press counts) and the observer callbacks that re-enter the
+/// app on real pointer interactions (packet
+/// `component-gallery-browser-components.md`, Group 6). `Some` only while
+/// the Find bar story is selected.
+pub struct FindStory<'a> {
+    pub recorder: &'a FindRecorder,
+    pub observer: &'a FindObserver,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,
@@ -424,7 +442,7 @@ mod tests {
                 "Plus menu",
             ]
         );
-        assert_eq!(registry.story_count(), 39);
+        assert_eq!(registry.story_count(), 40);
     }
 
     #[test]
@@ -434,7 +452,14 @@ mod tests {
             registry.story(StoryId(38)).unwrap().label,
             "Downloads panel"
         );
-        assert_eq!(registry.story_count(), 39);
+        assert_eq!(registry.story_count(), 40);
+    }
+
+    #[test]
+    fn find_story_appends_after_downloads() {
+        let registry = catalog();
+        assert_eq!(registry.story(StoryId(39)).unwrap().label, "Find bar");
+        assert_eq!(registry.story_count(), 40);
     }
 
     #[test]

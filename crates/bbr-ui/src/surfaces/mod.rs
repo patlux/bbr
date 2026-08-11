@@ -1,8 +1,10 @@
-//! Browser surfaces (DESIGN.md §11/§15) — the higher-level `bbr-ui`
-//! presentation surfaces that take a plain model DTO plus a typed callback
-//! bundle (per the anchor's model/callback contract in
-//! `docs/roadmap/tasks/ui-library-anchor.md`). Each surface owns the
-//! anatomy only: the controller, lifecycle, DTO building, and native
-//! adapters stay in `bbr-app`.
+//! Browser surfaces (DESIGN.md §11/§15) — higher-level `bbr-ui`
+//! presentation surfaces that take plain model DTOs plus typed callback
+//! bundles. Each surface owns anatomy only: controller, lifecycle, DTO
+//! building, native Portal hosting, and browser/session policy stay in
+//! `bbr-app`.
 
 pub mod downloads;
+pub mod find;
+
+pub use find::{count_label, find_bar, FindBarRect, FindSurface};

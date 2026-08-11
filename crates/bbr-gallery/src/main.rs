@@ -37,6 +37,12 @@ mod downloads_recorder;
 #[cfg(target_os = "macos")]
 mod favorites_matrix;
 #[cfg(target_os = "macos")]
+mod find_app;
+#[cfg(target_os = "macos")]
+mod find_matrix;
+#[cfg(target_os = "macos")]
+mod find_recorder;
+#[cfg(target_os = "macos")]
 mod fixtures;
 #[cfg(target_os = "macos")]
 mod folders_matrix;

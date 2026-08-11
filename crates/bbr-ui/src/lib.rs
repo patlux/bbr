@@ -74,3 +74,6 @@ mod dependency_contract;
 //   DESIGN.md §11.12) that take a plain model DTO plus a typed callback
 //   bundle.
 // - `components` owns the honest repeated primitives (§11).
+// - `surfaces` owns the larger browser surfaces (§11.4 family): the
+//   find-in-page bar first; Downloads / Error / Auth / Context menu follow
+//   in their G2 groups.

@@ -8,8 +8,8 @@ use bbr_ui::theme::Theme;
 use gpui::{div, prelude::*, AnyElement, SharedString};
 
 use crate::registry::{
-    AddressStory, CatalogRegistry, ControlsStory, DownloadsStory, Group4Story, LibraryStory,
-    StoryContext, StoryId, TabRowStory,
+    AddressStory, CatalogRegistry, ControlsStory, DownloadsStory, FindStory, Group4Story,
+    LibraryStory, StoryContext, StoryId, TabRowStory,
 };
 
 /// Everything the canvas needs to render the selected story.
@@ -37,6 +37,9 @@ pub struct CanvasModel<'a> {
     /// The Downloads context (`Some` only when the Downloads panel story
     /// is selected) — see [`DownloadsStory`].
     pub downloads: Option<DownloadsStory<'a>>,
+    /// The Find context (`Some` only when the Find bar story is selected)
+    /// — see [`FindStory`].
+    pub find: Option<FindStory<'a>>,
 }
 
 /// The canvas surface: a header (story label + state) above the story.
@@ -55,6 +58,7 @@ pub fn canvas_surface(model: CanvasModel) -> AnyElement {
         address: model.address,
         group4: model.group4,
         downloads: model.downloads,
+        find: model.find,
     };
     let content = (story.render)(&context);
     div()

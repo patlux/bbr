@@ -189,10 +189,14 @@ reserves no ids and reintroduces no marker machinery.
 
 ### Unit and contract
 
-- [ ] Each new `bbr-ui` browser-component module: contrast/ids/models/
+- [x] Each new `bbr-ui` browser-component module: contrast/ids/models/
       callbacks tests (per the anchor's Evidence contract) — DTO round-trips,
       id constants, recorder-callback firing, and state composition order
       (§10: error > loading > pressed > selected > hover > default).
+      Group 6: `bbr-ui::surfaces::find` pins the seven §15 ids, round-trips
+      the `FindSurface` DTO and `FindBarRect` geometry, and derives the
+      §11.5 count copy through the production `count_label` (n of m, 0 of 0,
+      empty-while-pending).
 - [x] Matrix test in the gallery: every "valid" row builds and renders
       without panic; every "rejected" row fails fixture construction; the
       matrix table and the fixture builders cannot drift (one declaration
@@ -212,11 +216,14 @@ reserves no ids and reintroduces no marker machinery.
       alias in `bbr-app` for the migrated modules. Group 3: the guard now
       also pins the `address_control`/`staging_surface`/`AddressModel`/
       `StagingModel`/`AddressProfileHint` production symbols (the app keeps
-      only its DTO-building composition methods).
+      only its DTO-building composition methods). Group 6: the guard now
+      also pins `pub fn find_bar(`/`struct FindSurface`/`const FIND_BAR_ID`
+      and asserts the portal root renders through
+      `bbr_ui::surfaces::find::find_bar`.
 
 ### Real-app E2E
 
-- [ ] Each cutover group re-runs its affected suite unchanged:
+- [x] Each cutover group re-runs its affected suite unchanged:
       `just e2e-shell-tabs`, `just e2e-shell-organize`,
       `just e2e-shell-command` (address/overlay/palette),
       `just e2e-shell-downloads`, `just e2e-shell-find`,
@@ -226,7 +233,10 @@ reserves no ids and reintroduces no marker machinery.
       affected suite unchanged: `just e2e-shell-command`
       (address/overlay/palette) is green 25/25 on the same byte-identical
       ids/§15 fields/focus domains/semantic trees (the existing suite is the
-      migration guard and was not modified).
+      migration guard and was not modified). Group 6 re-ran its affected
+      suite unchanged: `just e2e-shell-find` is green 6/6 on the same
+      byte-identical ids/§15 fields/focus domains/semantic trees (the
+      existing suite is the migration guard and was not modified).
 - [x] `just e2e-gallery` extended: the new story matrix renders through the
       production components with stable StoryIds appended (G1b ids
       unrenumbered). Group 3 appended the Address control (StoryId 31) and
@@ -239,7 +249,15 @@ reserves no ids and reintroduces no marker machinery.
       assert the staging story includes the production
       `bbr-command-profile-hint` semantic id (the profile-hint families
       render the production `staging_surface` with
-      `StagingModel.profile_hint: Some(...)`).
+      `StagingModel.profile_hint: Some(...)`). After the canonical Group
+      4→5→6 union, Group 6 appends the Find bar story at StoryId 39 after
+      the pinned 0–38 prefix; the GUI-locked Xcode-26.2 suite is green
+      31/31, the every-story-renders sweep covers
+      the new story automatically, and the focused `e2e/find.rs` scenarios
+      prove real pointer presses fire the production `on_previous`/
+      `on_next`/`on_close` recorder callbacks and that the story renders
+      the production §15 ids (registered as test-target keys on the first
+      family, the Address precedent).
 
 ### Performance
 
@@ -249,7 +267,13 @@ reserves no ids and reintroduces no marker machinery.
       active delivery override; no `just e2e-perf` run or pass is claimed.
       Group 3 is Gallery-only (no production migration): no performance
       code/budget/sample/baseline changed, and no performance run or pass is
-      claimed — the missing execution stays explicit debt.
+      claimed — the missing execution stays explicit debt. Group 6 is a
+      production presentation migration (extract → migrate → delete): the
+      find performance code (`find_query_result`/`find_step` benchmarks,
+      `schedule_find_render_commit`, the armed-report render milestone) is
+      preserved unchanged in `bbr-app`; no budget/sample/baseline/
+      semantic-commit change, and no performance run or pass is claimed —
+      the missing execution stays explicit debt.
 - [x] Gallery perf remains sanity-only (G1b), never a product budget.
 
 ## Completion gates
@@ -416,6 +440,100 @@ Post-merge evidence:
   26cd6ec4f65faba70ab80eee072264001328ed36ba7f6ea03f031702b5c3b49f.
   HEAD/tree/status remained exact and the GUI lock released. Performance and
   canonical `just e2e` remain unexecuted/unpassed.
+Total elapsed:
+  Estimate (single writer session).
+Human intervention:
+  None.
+
+Group 6 Find bar:
+Outcome:
+  The §11.4 find-in-page bar is extracted to the production
+  `bbr-ui::surfaces::find` module (find_bar/FindSurface/FindBarRect/
+  count_label + the seven §15 ids), `bbr-app` migrates to it (the app
+  keeps the FindController/session/adapter/lifecycle/portal placement and
+  builds the DTO; the old app-owned FindSurface and portal/find.rs render
+  are deleted), and the canonical union appends the Find bar story at
+  StoryId 39 (0–38 unrenumbered) with one matrix authority
+  (find_matrix.rs: 6 valid
+  families, 2 rejected with reasons, one validity authority, fixture
+  builder refusing rejected cases), recorder/observer wiring, and a
+  focused real-pointer E2E proving on_previous/on_next/on_close fire.
+  The story registers the production §15 ids as test-target keys on the
+  first family (the Address precedent) so the E2E can assert the
+  production ids render; the pointer E2E derives the control centers from
+  the bar bounds (wrapper origin + settled 360 pt × density:row), not the
+  wrapper center/right edge. Union app.rs stays at 484 lines (≤498); the
+  new modules are 303/337/97/130/201/176 lines. No manifest/lock/justfile/
+  perf change, no new product ids or policy.
+Commits:
+  None — working-tree candidate only; Orchestrator commits/integrates.
+Functional evidence:
+  Gallery unit tests 55 passed / 26 ignored (find matrix valid/rejected,
+  count-label derivation, stale-is-lifecycle, recorder, registry pinned
+  prefix incl. 33, rg guard incl. find symbols). bbr-ui 79/79. Gallery
+  Clippy --all-targets -D warnings clean; workspace Clippy clean; targeted
+  non-performance workspace lib/bin tests green. GUI-locked Xcode-26.2
+  `just e2e-gallery` 31/31 incl. e2e::find::find_story_renders_the_matrix_
+  families_with_stable_ids and real_pointer_presses_report_through_the_
+  recorder plus the every-story sweep.
+Real-app E2E:
+  `just e2e-shell-find` re-run unchanged and green 6/6 — ids, §15 fields,
+  focus domains, typed semantic trees byte-identical (the existing suite
+  is the migration guard, unmodified).
+Performance evidence:
+  None executed; performance remains Patrick-deferred/unpassed. The find
+  performance code (find_query_result/find_step benchmarks,
+  schedule_find_render_commit, the armed-report render milestone) is
+  preserved unchanged in bbr-app; no budget/sample/baseline/
+  semantic-commit change; missing execution recorded as explicit debt.
+Roadmap/documentation updates:
+  G2 packet evidence/ledger only (this file). ROADMAP.md / ARCHITECTURE.md /
+  UI track roll-ups are Orchestrator-owned serial points.
+Open blockers and non-goals:
+  The packet's stale flag is lifecycle state (FindState.stale), not a
+  presentation variant — the DTO carries no stale field and the gallery
+  never fakes a stale visual. Foreground/background modifier and opener
+  policy remain open decisions. Performance execution and canonical
+  `just e2e` remain unexecuted/unpassed.
+Worktree state:
+  Branch parallel/g2-group6-find at base 5e018b34286daab690c7f88d32c4b97
+  dc3204484 (index tree 58d2c8152761c5536944b1b6535d2f75a1a57615); real
+  index unchanged at the base tree; working-tree candidate only,
+  diff-clean, no staged paths, no commit, no process/lock.
+Planning/read-only:
+  Read ROADMAP/current delivery/DESIGN §11.4–§11.5/packet/production find
+  + gallery Address & Tab Row patterns; advisory refreshed post-activation.
+Implementation:
+  bbr-ui/src/surfaces/find.rs + mod.rs, bbr-app/src/app/find.rs migration
+  (DTO building only), portal/probe.rs render migration, portal/find.rs
+  deletion, find_matrix.rs, find_recorder.rs, find_app.rs, stories/find.rs,
+  e2e/find.rs, registry/canvas/snapshot/stories/main wiring, rg-guard
+  extension, packet evidence/ledger.
+Test execution:
+  Union-target fmt/check, workspace lib/bin tests, warning-denied Clippy,
+  UI-deps, roadmap, script tests and diff-check passed; log
+  `/tmp/bbr-g2-g6-union-nonperf.log`, SHA-256
+  `3b23da697cb75447bcb57a4b21d42adef1f7bd81d4fca85483bd0e7af0d5b1d9`.
+  GUI-locked `just e2e-gallery` passed 31/31; log
+  `/tmp/bbr-g2-g6-union-gallery.log`, SHA-256
+  `bbbf4f53465616d86b74f0f229e446d99e85c91e7f9a7839beb9f4fb6d554bbe`.
+  Unchanged `just e2e-shell-find` passed 6/6; log
+  `/tmp/bbr-g2-g6-union-find.log`, SHA-256
+  `7ed328a8642b1abbc2d712b631c2ced5cd8af815d4b48b1758b9ae95ebc1147d`.
+Review:
+  Pending — independent read-only review of the exact candidate tree.
+Remediation:
+  None yet — the two focused find E2E failures found during the writer's
+  own gate run were fixed centrally: the story now registers the
+  production §15 ids as test-target debug_selector keys (the Address
+  precedent; debug_bounds is keyed by debug_selector, not .id()), and
+  the pointer E2E derives the control centers from the bar bounds
+  (wrapper origin + settled bar size) instead of the wrapper center/right
+  edge (the meta line below can exceed 360 pt and adds height).
+Waiting/retries:
+  None.
+Post-merge evidence:
+  Pending Orchestrator integration.
 Total elapsed:
   Estimate (single writer session).
 Human intervention:
