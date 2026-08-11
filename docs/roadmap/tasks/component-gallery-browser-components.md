@@ -422,5 +422,186 @@ Human intervention:
   None.
 ```
 
+### Group 4 (G2 sidebar components) — packet-only remediation record
+
+```text
+Outcome:
+  Group 4 of the G2 browser-components packet: the five sidebar-component
+  stories (Favorites grid, Folders, Footer, Profile chip S/N/XL, Plus menu)
+  render every valid matrix family through the exact production `bbr-ui`
+  symbols with plain fixture models and recorder callbacks, and the two
+  Group-4 E2E scenarios pass. Gallery-only packet: the production
+  extractions are already integrated (Groups 3–4 are Gallery-only), so this
+  group adds matrix, fixtures, stories, recorders, and E2E only — no product
+  behavior change, no native Portal/AppKit/WebKit z-order claim, no fake
+  engine/portal/network. The `bbr-ui` delta is test-support selector-only
+  (10 `.debug_selector` additions, no behavior change).
+
+Commits:
+  None. Packet-only remediation record; the worktree stays uncommitted
+  (0 staged paths) for the orchestrator's serial integration kernel.
+
+Functional evidence:
+  - StoryIds 33–37 appended after the pinned 0–32 prefix (Group 3 owns
+    31–32): 33 Favorites grid, 34 Folders, 35 Footer, 36 Profile chip
+    (S/N/XL), 37 Plus menu — no renumbering, no reservation, no gaps,
+    proven by the registry test
+    `group4_sidebar_stories_append_after_the_address_prefix`.
+  - Matrix contract: `favorites_matrix.rs`, `folders_matrix.rs`,
+    `footer_matrix.rs`, `profile_chip_matrix.rs`, `menu_matrix.rs` declare
+    VALID/REJECTED families; the E2E walks them and the fixture builders
+    refuse rejected combinations.
+  - Recorder path: `group4_recorder.rs` (app-owned plain state) reports
+    production callback firings (favorite activate, folder toggle/select/
+    close, footer downloads/plus, plus-menu item commit) through the same
+    seam the mode/state controls use; `snapshot.rs` exposes `group4`.
+  - Layout shrink/overflow mechanism: `story_page` gained `.min_w_0()` +
+    `.overflow_x_hidden()` (vertical scroll retained), the app root and
+    canvas flex-1 content columns gained `.min_w_0()`, and `value_row`
+    values are shrinkable (`min_w_0` + `overflow_hidden` + `text_ellipsis`)
+    so long values never force the story page wider than the window and the
+    real-pointer E2E targets stay within the clickable viewport.
+  - Test-support selector-only `bbr-ui` delta: 10 new `.debug_selector`
+    additions — `favorites.rs` 3 (FAVORITES_ID, favorite_tile_icon_id,
+    favorite_tile_id), `folders.rs` 4 (folder_row_id, folder_toggle_id,
+    folder_item_id, folder_item_close_id), `footer.rs` 2 (FOOTER_ID,
+    control.id()), `space.rs` 1 (profile_chip_id). No other `bbr-ui`
+    change; ids, §15 fields, and focus domains stay byte-identical.
+  - Module/dependency constraints: `bbr-ui` keeps
+    `#![forbid(unsafe_code)]` and its direct set = pinned GPUI-CE
+    (rev 568271c0, default-features=false + font-kit) + `bbr-domain` only;
+    `bbr-gallery` adds `bbr-domain` (ProfileHue identity only), gpui,
+    gpui_platform, and the vendored gpui-component 0.5.1 production control
+    stack; the forbidden set stays browser/engine/persistence/testkit/
+    fixtures/app. `just ui-deps` → UI-DEPS PASS (direct set, first-party
+    closure, bbr-web paths, and source imports all match the approved
+    boundary).
+
+Real-app E2E:
+  - `just e2e-gallery` (real gallery app, GUI lock): 26/26 passed in 9.55s,
+    including `e2e::group4::group4_stories_render_the_matrix_families_with_stable_ids`
+    and `e2e::group4::real_pointer_presses_report_through_the_group4_recorders`.
+  - Affected shell suites re-run unchanged (ids/§15/focus unchanged):
+    `just e2e-shell-organize` 2/2 + `e2e_shell_drag_chip` 4/4 (log total
+    6/6), `just e2e-shell-sidebar` 7/7, `just e2e-shell-spaces` 9/9 +
+    `e2e_shell_spaces_keyboard` 4/4 + `e2e_shell_spaces_hint` 2/2 (log
+    total 15/15).
+
+Performance evidence:
+  - None executed in this packet. `just e2e-perf` and the canonical
+    sequential `just e2e` were not run (packet-only remediation scope);
+    gallery perf remains sanity-only (report-only artifacts, never a
+    product budget). Performance/canonical e2e unexecuted.
+
+Roadmap/documentation updates:
+  - This Group-4 delivery ledger/evidence block only. No ROADMAP.md,
+    phase, track, or delivery-document edits (docs/delivery/current.md is
+    Orchestrator authority and was not touched).
+
+Open blockers and non-goals:
+  - No blockers. Non-goals honored: no compositions (packet 4), no product
+    behavior change, no native evidence, no fake engine/authority, no new
+    variants beyond DESIGN.md/source.
+
+Worktree state:
+  - Worktree: /Users/patwoz/dev/Personal/macos/bbr-g2-group4-components
+    (branch parallel/g2-group4-components).
+  - HEAD: 5e018b34286daab690c7f88d32c4b97dc3204484.
+  - HEAD tree = index tree (git write-tree):
+    58d2c8152761c5536944b1b6535d2f75a1a57615 — the base commit's tree;
+    nothing is staged, so `git write-tree` reports the base tree, not the
+    candidate worktree.
+  - All-files candidate tree before this packet edit (the 24 Group-4 code
+    files over the base, packet file still at the base blob):
+    a9df3d98b38cc874b375dba9a8921916b0b2c476.
+  - All-files candidate tree after this correction (the 24 Group-4 code
+    files + the corrected packet): recorded by the orchestrator at
+    integration — the packet cannot truthfully embed its own tree hash.
+  - Status hash (git status --porcelain -z | shasum -a 256):
+    1817781e8760a97879ea757e91b7cb9f4e60bb6989b934242e58d3af232186e1.
+  - 25 paths, 0 staged (12 modified, 13 untracked).
+  - Restored Favorites backup evidence: `crates/bbr-gallery/src/stories/
+    favorites.rs` and the pre-remediation backup `/tmp/favorites.rs.bak`
+    are byte-identical — both SHA-256
+    c26a31dbb43d370ab02265f324064035d92dbc09b448d123101f32433e68a435 —
+    proving the story file was restored from the backup before this
+    ledger edit.
+  - Packet base blob equality (separate from backup evidence): the packet
+    file blob 5f27f9e8bfb3aec7bc1af7726d04ae7e06ae5124 is the base
+    (HEAD/index) version, byte-identical in the independent review
+    worktree /tmp/bbr-g2-group4-review (HEAD
+    f4447a308d9751680172fd738b4850a9e47b1d22, clean status); the
+    pre-remediation packet was preserved untouched before this ledger
+    edit.
+
+Planning/read-only:
+  - Read ROADMAP.md (current focus: Phase 4 vertical-tab shell; the
+    component-gallery packet is the active G2 lane) and this packet
+    completely before writing. No code/test was edited.
+
+Implementation:
+  - Gallery-only: 11 modified files (bbr-gallery app/canvas/e2e-mod/main/
+    registry/snapshot/stories + bbr-ui favorites/folders/footer/space) and
+    13 new files (e2e/group4.rs, five *_matrix.rs, group4_app.rs,
+    group4_recorder.rs, five stories/*.rs).
+
+Test execution:
+  - /tmp/g4-verify.log
+    a8579d809df7cd234eb97bdddeb8aa9fdf56534f5bd94cef16762425da33eece:
+    full `just verify` sequence — cargo fmt --all -- --check; cargo check
+    --workspace --all-targets (7.29s); cargo test --workspace (215 unit
+    tests passed, e2e harness tests 1-passed-each); cargo clippy
+    --workspace --all-targets -- -D warnings (8.25s, zero diagnostics);
+    scripts/check_roadmap.py → "Roadmap control graph valid (95 tracked
+    first-party Markdown files checked from worktree)";
+    scripts/check_ui_dependencies.py → UI-DEPS PASS; 46 script tests OK
+    (15.031s); py_compile OK. Zero `error[` occurrences; only
+    informational warnings (block v0.1.6 future-incompat note, expected
+    "Git tree is dirty", grandfathered roadmap warnings).
+  - /tmp/gallery-e2e.log
+    851bb9808ee6da4416392ccc7552f32578d2819ab5b29b58c2f2a1de3a3d40dc:
+    `cargo test -p bbr-gallery --bin bbr-gallery -- --ignored --nocapture`
+    under the GUI lock — 26/26 passed (9.55s).
+  - /tmp/organize.log
+    af337f3f03435f037446d1d6af3dfee3e4286c77852d3b89eee18bcd3b974917:
+    e2e_shell_organize 2/2 (2.93s) + e2e_shell_drag_chip 4/4 (3.57s) —
+    log total 6/6 (the orchestrator's "4/4" names the drag_chip suite).
+  - /tmp/sidebar.log
+    2a4f71c1d2114e278f6494d82efc16a981e3e7041d29d8491b2fd1cf529d4479:
+    e2e_shell_sidebar 7/7 (4.82s).
+  - /tmp/spaces.log
+    c74ffa83ffdda7e3b68a2927c386343bc2fa1172d88b767cc38fda9afaf8c361:
+    e2e_shell_spaces 9/9 (6.11s) + e2e_shell_spaces_keyboard 4/4 (3.73s)
+    + e2e_shell_spaces_hint 2/2 (2.29s) — log total 15/15 (the
+    orchestrator's "2/2" names the spaces_hint suite).
+
+Review:
+  - Independent read-only review worktree /tmp/bbr-g2-group4-review at
+    HEAD f4447a308d9751680172fd738b4850a9e47b1d22 (clean status); packet
+    blob identical to the base (HEAD/index) packet blob (packet base blob
+    equality above).
+
+Remediation:
+  - Earlier gallery runs failed before the final pass:
+    /tmp/g4-e2e-gallery.log 24 passed / 2 failed and
+    /tmp/g4-e2e-gallery2.log 25 passed / 1 failed; the remediation
+    resolved the failures and the final run is 26/26
+    (/tmp/gallery-e2e.log).
+
+Waiting/retries:
+  - GUI-lock serialization only (each suite acquired the host GUI gate
+    sequentially); no retries in the final evidence set.
+
+Total elapsed:
+  - Estimate (no wall-clock start/end recorded for the whole packet):
+    measured command durations sum to ≈ 1.5 min of test execution
+    (verify 15.0s script tests + 7.3s/8.3s builds, gallery 9.55s,
+    organize 6.5s, sidebar 4.82s, spaces 12.1s); full packet wall time
+    including planning/review is not measured.
+
+Human intervention:
+  - None recorded.
+```
+
 Use measured timing only when runtime/command timestamps support it;
 otherwise label values as estimates.

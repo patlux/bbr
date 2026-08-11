@@ -160,6 +160,7 @@ pub fn folder_row(
     let p = theme.palette;
     div()
         .id(folder_row_id(spec.index))
+        .debug_selector(move || folder_row_id(spec.index).to_string())
         .h(theme.density.row())
         .px(theme.density.row_padding_x())
         .gap(Spacing::sp2())
@@ -172,6 +173,7 @@ pub fn folder_row(
         .child(
             div()
                 .id(folder_toggle_id(spec.index))
+                .debug_selector(move || folder_toggle_id(spec.index).to_string())
                 .size(theme.density.icon())
                 .flex()
                 .items_center()
@@ -262,6 +264,7 @@ pub fn folder_item_row(
         .child(SharedString::from(visual.letter.to_string()));
     div()
         .id(folder_item_id(visual.folder_index, visual.member))
+        .debug_selector(move || folder_item_id(visual.folder_index, visual.member).to_string())
         .h(theme.density.row())
         .pl(Spacing::sp3())
         .pr(theme.density.row_padding_x())
@@ -287,6 +290,9 @@ pub fn folder_item_row(
         .child(
             div()
                 .id(folder_item_close_id(visual.folder_index, visual.member))
+                .debug_selector(move || {
+                    folder_item_close_id(visual.folder_index, visual.member).to_string()
+                })
                 .size(theme.density.hit_min_close())
                 .flex()
                 .items_center()

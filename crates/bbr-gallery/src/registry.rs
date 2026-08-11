@@ -13,11 +13,12 @@
 //! tree order, the canvas default, and the E2E expectations all derive from
 //! this one declaration.
 
-use gpui::{AnyElement, Entity};
+use gpui::{AnyElement, Entity, FocusHandle};
 use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 
 use crate::address_recorder::{AddressObserver, AddressRecorder};
+use crate::group4_recorder::{Group4Observer, Group4Recorder};
 use crate::library_recorder::{LibraryObserver, LibraryRecorder};
 use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRecorder};
 
@@ -83,6 +84,14 @@ pub struct StoryContext<'a> {
     /// `component-gallery-browser-components.md`, Group 3). `None` for
     /// every other story.
     pub address: Option<AddressStory<'a>>,
+    /// `Some` only for the five Group 4 sidebar-component stories
+    /// (Favorites grid, Folders, Footer, Profile chip (S/N/XL), Plus
+    /// menu): the current recorder snapshot, the observer callbacks the
+    /// production `bbr-ui` favorites/folders/footer/menu callbacks route
+    /// through, and the footer `[Downloads]` focus handle (packet
+    /// `component-gallery-browser-components.md`, Group 4). `None` for
+    /// every other story.
+    pub group4: Option<Group4Story<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -134,6 +143,21 @@ pub struct TabRowStory<'a> {
 pub struct AddressStory<'a> {
     pub recorder: &'a AddressRecorder,
     pub observer: &'a AddressObserver,
+}
+
+/// Everything a Group 4 sidebar-component story needs to render the
+/// **exact** production `bbr-ui` favorites/folders/footer/menu symbols
+/// with recorder callbacks: the current recorder snapshot (favorite
+/// activations, folder toggles/selects/closes, downloads/plus presses,
+/// menu commits), the observer callbacks that re-enter the app on real
+/// pointer interactions, and the footer `[Downloads]` keyboard-focus
+/// handle the production `footer_surface` takes (packet
+/// `component-gallery-browser-components.md`, Group 4). `Some` only while
+/// one of the five Group 4 stories is selected.
+pub struct Group4Story<'a> {
+    pub recorder: &'a Group4Recorder,
+    pub observer: &'a Group4Observer,
+    pub downloads_focus: FocusHandle,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,
@@ -342,6 +366,39 @@ mod tests {
             .map(|s| s.id.0)
             .collect();
         assert_eq!(library_ids, vec![23, 24, 25, 26, 27, 28, 29, 30]);
+    }
+
+    #[test]
+    fn group4_sidebar_stories_append_after_the_address_prefix() {
+        // Group 3 owns ids 31–32 (Address control, Command staging);
+        // Group 4 appends the five sidebar-component stories at ids
+        // 33–37 — no renumbering, no reservation, no gaps.
+        let registry = catalog();
+        assert_eq!(
+            registry.story(StoryId(31)).unwrap().label,
+            "Address control"
+        );
+        assert_eq!(
+            registry.story(StoryId(32)).unwrap().label,
+            "Command staging"
+        );
+        let group4: Vec<&str> = registry
+            .stories
+            .iter()
+            .filter(|s| (33..=37).contains(&s.id.0))
+            .map(|s| s.label)
+            .collect();
+        assert_eq!(
+            group4,
+            vec![
+                "Favorites grid",
+                "Folders",
+                "Footer",
+                "Profile chip (S/N/XL)",
+                "Plus menu",
+            ]
+        );
+        assert_eq!(registry.story_count(), 38);
     }
 
     #[test]

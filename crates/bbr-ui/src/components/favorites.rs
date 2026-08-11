@@ -89,6 +89,7 @@ pub struct FavoriteTileSpec {
 pub fn favorites_grid(theme: &Theme, children: Vec<gpui::AnyElement>) -> Stateful<Div> {
     div()
         .id(FAVORITES_ID)
+        .debug_selector(|| FAVORITES_ID.to_string())
         .flex()
         .flex_wrap()
         .gap(theme.density.favorites_gap())
@@ -113,6 +114,7 @@ pub fn favorite_tile(
     };
     let monogram = div()
         .id(favorite_tile_icon_id(tile.index))
+        .debug_selector(move || favorite_tile_icon_id(tile.index).to_string())
         .size(theme.density.icon())
         .rounded(Radius.small())
         .bg(slate)
@@ -125,6 +127,7 @@ pub fn favorite_tile(
         .child(SharedString::from(tile.letter.to_string()));
     div()
         .id(favorite_tile_id(tile.index))
+        .debug_selector(move || favorite_tile_id(tile.index).to_string())
         .size(size)
         .rounded(Radius.small())
         .flex()

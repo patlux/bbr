@@ -19,9 +19,14 @@
 pub mod address;
 pub mod browser_components;
 pub mod core_controls;
+pub mod favorites;
+pub mod folders;
+pub mod footer;
 pub mod foundations;
 pub mod library_composition;
+pub mod menu;
 pub mod primitives;
+pub mod profile_chip;
 pub mod saved_pages_library;
 
 use gpui::{div, prelude::*, px, AnyElement, Rgba, SharedString};
@@ -163,6 +168,27 @@ pub fn catalog() -> CatalogRegistry {
             story("Command staging", address::render_command_staging, &[]),
         ],
     );
+    // The G2 Group 4 sidebar-component stories (packet
+    // `component-gallery-browser-components.md`): the exact production
+    // `bbr-ui` favorites/folders/footer/profile-chip/plus-menu symbols
+    // append at ids 33–37 after the pinned 0–32 prefix — no renumbering,
+    // no reservation. The production extractions are already integrated
+    // (Groups 3–4 are Gallery-only), so these rows only add matrix,
+    // fixtures, stories, recorders, and E2E.
+    registry.add_group(
+        "Sidebar components",
+        vec![
+            story("Favorites grid", favorites::render_favorites, &[]),
+            story("Folders", folders::render_folders, &[]),
+            story("Footer", footer::render_footer, &[]),
+            story(
+                "Profile chip (S/N/XL)",
+                profile_chip::render_profile_chip,
+                &[],
+            ),
+            story("Plus menu", menu::render_plus_menu, &[]),
+        ],
+    );
     registry
 }
 
@@ -175,9 +201,12 @@ pub fn story_page(
 ) -> AnyElement {
     div()
         .id("bbr-gallery-story-page")
+        .debug_selector(|| "bbr-gallery-story-page".to_string())
         .flex()
         .flex_col()
         .size_full()
+        .min_w_0()
+        .overflow_x_hidden()
         .overflow_y_scroll()
         .p_4()
         .gap_2()
@@ -229,13 +258,17 @@ pub fn swatch(theme: &bbr_ui::theme::Theme, label: &str, color: Rgba) -> AnyElem
         .into_any()
 }
 
-/// A labeled value row: a name and a `type:mono` value.
+/// A labeled value row: a name and a `type:mono` value. The value is
+/// shrinkable (`min_w_0` + ellipsis) so a long value never forces the
+/// story page wider than the window — the real-pointer E2E targets stay
+/// within the clickable viewport.
 pub fn value_row(theme: &bbr_ui::theme::Theme, name: &str, value: &str) -> AnyElement {
     div()
         .flex()
         .flex_row()
         .justify_between()
         .items_center()
+        .gap_2()
         .child(
             div()
                 .text_size(theme.type_.label.size)
@@ -244,6 +277,9 @@ pub fn value_row(theme: &bbr_ui::theme::Theme, name: &str, value: &str) -> AnyEl
         )
         .child(
             div()
+                .min_w_0()
+                .overflow_hidden()
+                .text_ellipsis()
                 .text_size(theme.type_.mono.size)
                 .text_color(theme.palette.ink_secondary)
                 .child(SharedString::from(value)),
