@@ -10,16 +10,17 @@ Predecessors: [Gallery MVP](component-gallery-mvp.md) ·
 Workflow: [development workflow](../../development-workflow.md) ·
 Template: [task-packet template](../templates/task-packet.md)
 
-Program position: **G3**, activated immediately from the settled and
-integrated G2 browser-components state recorded in [Current delivery](../../delivery/current.md).
-Its required first wave is Sidebar, Command Palette/Overlay, Downloads, Find,
-Error/Crash, Auth, Menu, and Split compositions. This packet delivers the
-composition surfaces — `SidebarModel` plus
-Callbacks, `CommandPortalModel` palette/overlay, and the Downloads/Find/
-Error/Auth/Menu/Split groups — into `bbr-ui` and their gallery stories,
-including the compact/wide, empty/dense, long-title/missing-icon,
-cross-profile, reduced-motion, and contrast variants. The gallery owns plain
-fixture builders only; it never makes anatomy or visual decisions.
+Program position: **G3**, activated from the settled and integrated G2
+browser-components state recorded in [Current delivery](../../delivery/current.md).
+G2 already delivered the Downloads, Find, Error/Crash, Auth, and Context Menu
+surfaces and their component stories. G3's remaining first wave is strictly
+Sidebar-first, followed by Command Palette/Overlay and Split compositions.
+This packet moves `SidebarModel` plus Callbacks, the `CommandPortalModel`
+palette/overlay, and split chrome into `bbr-ui` and appends their production
+Gallery stories after the canonical 44-story G2 catalog. Required variants
+remain compact/wide, empty/dense, long-title/missing-icon, cross-profile,
+reduced-motion, and contrast. The gallery owns plain fixture builders only; it
+never makes anatomy or visual decisions.
 
 ## Outcome
 
@@ -47,17 +48,17 @@ anywhere in the gallery.
   and the field-anchored Cmd-L/click overlay driven by one `CommandPortalModel`
   (surface, theme, chrome_focused, text, state, results, selected) — the
   existing render-only composition, extracted whole.
-- **Group stories:** Downloads panel, Find bar, Error/Crash panes, Auth
-  sheet, Context menu, Split preview — as compositions in context (not
-  isolated rows), with the variant families below. After their independently
-  accepted production packets integrate, append composition stories for
-  Tab/Favorite menus with submenus, Folder menu, enriched Page-background
-  menu, the safe-titlebar navigation cluster, and the conditional Sidebar
-  media card. Integrated B2/B3 later append Saved Page command/menu and Library
-  compositions; no StoryId or matrix row is reserved before those production
-  surfaces exist. Existing StoryIds remain stable; these are append-only
-  stories of the same production components, never implementation
-  authorization.
+- **Group stories:** Downloads, Find, Error/Crash, Auth, and Context Menu
+  component stories are already integrated by G2 and are not reimplemented.
+  G3 appends only their composition-in-context coverage where the Sidebar,
+  Command, or Split cut needs it, beginning with the Split preview. After their
+  independently accepted production packets integrate, append composition
+  stories for Tab/Favorite menus with submenus, Folder menu, enriched
+  Page-background menu, the safe-titlebar navigation cluster, and the
+  conditional Sidebar media card. B2/B3 and the Library stories at StoryIds
+  23–30 are already integrated; Saved Page command/menu compositions are now
+  eligible but remain append-only and may not reserve an id before their
+  production composition exists. Existing StoryIds 0–43 remain stable.
 - **`bbr-ui::split`:** split chrome frames (pane frame hairline, focused
   pane outline, shared-edge divider, split-zone frames per DESIGN §11.7)
   rendered by `bbr-app`'s split branch around the existing
@@ -92,25 +93,27 @@ anywhere in the gallery.
 ## Parallel-lane contract
 
 ```text
-Base condition:       the settled browser-components slice (bbr-ui
-                      browser-component modules + gallery story matrix).
-Depends on:           G1a + G1b + G2; F2a (footer/space strip) and F2b
-                      (downloads) integrated onto main; the F2c app-persistence
-                      bootstrap does not affect this packet (no persistence).
+Base condition:       committed authority after G2 closeout; 44 stories,
+                      StoryIds 0–43, and all G2 surface exports integrated.
+Depends on:           G1a + G1b + G2 + F2a + F2b integrated in the control
+                      ancestry; F2c does not affect this presentation packet.
 Provides/API:         bbr-ui::sidebar (SidebarModel + Callbacks + geometry),
                       bbr-ui::surfaces::command composition, bbr-ui::split,
-                      the group story matrices and fixture builders; no wire
-                      or behavior API change.
-Exclusive paths:      crates/bbr-ui/** (composition modules), crates/
-                      bbr-gallery/** (composition stories, fixtures),
-                      bbr-app's sidebar_view.rs / render.rs / u2_surface.rs
-                      (assembler refactor only, per cutover).
+                      and their composition story matrices/fixture builders;
+                      no wire or behavior API change.
+Exclusive paths:      focused crates/bbr-ui sidebar/command/split modules;
+                      focused crates/bbr-gallery composition modules; crates/
+                      bbr-app/src/sidebar.rs; app/sidebar_view.rs and its
+                      command_bar module; app/render.rs; app/u2_surface.rs;
+                      portal/command.rs. portal/probe.rs remains the app-owned
+                      builder and is a shared integration point only.
 Shared integration points: root Cargo.toml/Cargo.lock, justfile (no new
                       recipe expected), E2E registries, bbr-app composition,
-                      UI track and ROADMAP roll-ups, ARCHITECTURE.md facts.
-Integration order:    G2 → G3 → post-G1a serial integration.
-                      Parallel-safe against F3 / U3 / non-UI lanes as long
-                      as no lane touches the migrating render modules.
+                      Gallery registry, UI track/ROADMAP roll-ups, and
+                      ARCHITECTURE.md implemented facts.
+Integration order:    committed G2 closeout → G3 Sidebar → Command → Split.
+                      Z-dependent menu stories remain after their production
+                      packets and serialize on bbr-ui menu/Gallery registries.
 ```
 
 ## Constraints
@@ -165,11 +168,11 @@ Integration order:    G2 → G3 → post-G1a serial integration.
 | Sidebar + media group (after media contract/UI packets) | no-session rail with zero reserved gap; playing/paused card; seekable known duration; unknown/live duration; capability subsets; multiple-session count/switch; dismissed identity; cross-profile source; compact/wide; reduced-motion; contrast | a card without actual session identity; a vertical card stack; unsupported decorative controls; fake total/scrubber; any story claiming real media command evidence |
 | Split preview (`bbr-ui::split`) | single pane (focused frame hairline); two panes (shared-edge divider, focused pane inset outline); split-zone frames (top/right/bottom/left) with accent frame + fill + corner glyph; reduced-motion; contrast | a zone frame without the accent language (zone fill is accent-only); a split with zero live panes (the `pane_layout()` split branch requires both live sessions — no false single-pane degradation — per [split-shared-contract](split-shared-contract.md#unit-and-contract); visuals per DESIGN §11.7) |
 
-Saved Page command/menu compositions remain strictly append-only and start
-only after integrated [B2](saved-pages-actions-command.md); the Saved Pages Library composition
-appends only after integrated [B3](saved-pages-library.md). This packet remains
-the canonical owner of their eventual StoryIds, matrix rows, variant families,
-and Gallery renderability checks. Nothing is predeclared as a story today.
+B2 and B3 are integrated, including the Library stories at StoryIds 23–30.
+Saved Page command/menu compositions are therefore dependency-eligible but
+remain strictly append-only: this packet owns their eventual composition
+matrix and renderability checks, but no StoryId is reserved before the real
+production composition exists.
 
 ## Evidence
 
@@ -192,21 +195,22 @@ and Gallery renderability checks. Nothing is predeclared as a story today.
 
 ### Real-app E2E
 
-- [ ] Each composition cutover re-runs its affected product suite unchanged:
-      `just e2e-shell-sidebar`, `just e2e-shell-command`, `just e2e-shell-`
-      `downloads`, `just e2e-shell-find`, `just e2e-shell-errors`,
-      `just e2e-auth`, `just e2e-shell-context-menu`,
-      `just e2e-shell-split-geometry` (and the F2a-integrated footer/spaces
-      suites) — ids, §15 fields, focus domains, and typed semantic trees
-      unchanged.
+- [ ] Each remaining composition cutover re-runs its affected product suite
+      unchanged: `just e2e-shell-sidebar`, `just e2e-shell-command`,
+      `just e2e-shell-split-geometry`, and the affected footer/spaces suites.
+      Downloads/Find/Error/Auth/Context Menu functional evidence belongs to
+      completed G2 and is not rerun merely to restate that extraction. Ids,
+      §15 fields, focus domains, and typed semantic trees stay unchanged.
 - [ ] `just e2e-gallery` extended: composition stories render through the
       production compositions with stable StoryIds appended (G1b/G2
       ids unrenumbered) and the variant families asserted.
 
 ### Performance
 
-- [ ] `just e2e-perf` passes unchanged after each composition migration
-      (no budget, sample-count, or semantic-commit change).
+- [ ] Performance code, budgets, sample counts, baselines, and semantic-commit
+      guards remain byte-unchanged because G3 is a presentation extraction.
+      Under Patrick's active override, no performance recipe is executed and
+      no performance pass is claimed; execution remains explicit debt.
 - [ ] Gallery perf remains sanity-only (G1b), never a product budget.
 
 ## Completion gates
@@ -214,16 +218,18 @@ and Gallery renderability checks. Nothing is predeclared as a story today.
 ```bash
 cargo fmt --all -- --check
 CARGO_BUILD_JOBS=4 cargo check --workspace --all-targets
-CARGO_BUILD_JOBS=4 cargo test --workspace
+CARGO_BUILD_JOBS=4 cargo test --workspace --lib --bins
 CARGO_BUILD_JOBS=4 cargo clippy --workspace --all-targets -- -D warnings
-cargo clippy -p bbr-ui --all-targets -- -D warnings
-cargo clippy -p bbr-gallery --all-targets -- -D warnings
+CARGO_BUILD_JOBS=4 cargo clippy -p bbr-ui --all-targets -- -D warnings
+CARGO_BUILD_JOBS=4 cargo clippy -p bbr-gallery --all-targets -- -D warnings
 just ui-deps
+just script-tests
 just e2e-shell-<affected-suite>   # per cutover group, unchanged suites
-just e2e-perf
 just e2e-gallery
-just verify                       # after the stable slice
 python3 scripts/check_roadmap.py
+git diff --check
+# Performance and canonical `just e2e` are intentionally not executed while
+# Patrick's delivery override remains active; preserve all code and debt.
 ```
 
 Every cargo invocation states `CARGO_BUILD_JOBS=4`. GUI recipes run
@@ -231,14 +237,14 @@ sequentially under `python3 scripts/with_gui_lock.py --`.
 
 ## Delivery sequence
 
-1. Confirm packet-3 base is settled and the browser-component modules are
-   green.
-2. One exclusive writer performs the composition cutovers in Scope order
-   (sidebar assembler first, then command composition, then the groups, then
-   split chrome); each is a complete extract → migrate → delete → re-run
-   cycle.
-3. Add the composition stories + fixture builders and the mandatory variant
-   families in the same groups.
+1. Confirm committed G2 closeout, the 44-story registry, and the
+   browser-component modules are green.
+2. One exclusive writer performs three bounded cutovers in order: Sidebar
+   assembler first, then Command composition, then Split chrome. Each is a
+   complete extract → migrate → delete → re-run cycle; completed G2 surfaces
+   are consumed, not re-extracted.
+3. Add each composition story + fixture builder and mandatory variant families
+   in the same bounded cut.
 4. One independent read-only reviewer maps every story back to DESIGN.md
    §11–§13 and the anchor table, checks the rejected-combination logic and
    the "fixture-only" rule, and verifies no authority entered `bbr-ui` or
@@ -257,11 +263,11 @@ variant family to shorten the slice.
 ## Blocked stop condition
 
 If a composition cannot be extracted without changing ids, semantics, focus
-domains, or perf evidence, stop with the composition, the conflicting
-symbol, the failing suite/budget, the preserved worktree state, and the
-smallest product/architecture decision required. If F2a/F2b has not
-integrated, the sidebar-footer/downloads composition rows wait; do not
-extract from an unintegrated state.
+domains, or performance code/evidence contracts, stop with the composition,
+the conflicting symbol, the failing suite/budget, the preserved worktree
+state, and the smallest product/architecture decision required. F2a/F2b and
+G2 are integrated; never reopen or copy their completed surfaces to clear a
+G3 blocker.
 
 ## Delivery ledger
 
