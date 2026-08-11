@@ -15,19 +15,22 @@ browser-components state recorded in [Current delivery](../../delivery/current.m
 G2 already delivered the Downloads, Find, Error/Crash, Auth, and Context Menu
 surfaces and their component stories. G3's remaining first wave is strictly
 Sidebar-first, followed by Command Palette/Overlay and Split compositions.
-This packet moves `SidebarModel` plus Callbacks, the `CommandPortalModel`
-palette/overlay, and split chrome into `bbr-ui` and appends their production
-Gallery stories after the canonical 44-story G2 catalog. Required variants
-remain compact/wide, empty/dense, long-title/missing-icon, cross-profile,
-reduced-motion, and contrast. The gallery owns plain fixture builders only; it
-never makes anatomy or visual decisions.
+This packet moves `SidebarModel` plus Callbacks, a plain command-presentation
+DTO and renderer, and split chrome into `bbr-ui` and appends their production
+Gallery stories after the canonical 44-story G2 catalog. The command cut does
+not move the app-owned `CommandSurface`, ranking state machine, activation
+payloads, portal host, placement, focus, performance, testkit, or DTO-building
+authority. Required variants remain compact/wide, empty/dense, long-title/
+missing-icon, cross-profile, reduced-motion, and contrast where the production
+composition actually supports them. The gallery owns plain fixture builders
+only; it never makes anatomy or visual decisions.
 
 ## Outcome
 
 `bbr-app` composes the full sidebar rail and every floating chrome surface
 from `bbr-ui` compositions (`SidebarModel` + `Callbacks`, the command
-palette/overlay from `CommandPortalModel`, and the Downloads/Find/Error/Auth/
-Menu/Split surfaces), with no local duplicate anatomy. `bbr-gallery` renders
+palette/overlay from a plain presentation DTO, and the Downloads/Find/Error/
+Auth/Menu/Split surfaces), with no local duplicate anatomy. `bbr-gallery` renders
 each composition as a real production story with fixture-built models and
 recorder callbacks, covering the required variant families. No fake
 `BrowserController`, WebKit, portal host, network, or persistence appears
@@ -45,9 +48,15 @@ anywhere in the gallery.
   `bbr-ui::sidebar::geometry` unchanged (pure math; the app keeps the input
   wiring).
 - **`bbr-ui::surfaces::command` composition:** the centered Cmd-T palette
-  and the field-anchored Cmd-L/click overlay driven by one `CommandPortalModel`
-  (surface, theme, chrome_focused, text, state, results, selected) — the
-  existing render-only composition, extracted whole.
+  and field-anchored Cmd-L/click overlay are rendered from one plain UI model:
+  a UI-local presentation discriminant (`None`/centered palette/anchored
+  overlay), theme, chrome-focus flag, text, UI-local result-state enum,
+  selected index, and plain rows containing only the rendered key/group/title/
+  subtitle/destructive fields. Stable presentation ids and the render-only
+  card anatomy move with this module. `bbr-app` maps its app-owned
+  `CommandSurface`, `CommandResultState`, and `CommandResultRow` to the plain
+  model for each portal render; `Activation`, collection/ranking internals,
+  placement, dismissal, portal identity, and focus never enter `bbr-ui`.
 - **Group stories:** Downloads, Find, Error/Crash, Auth, and Context Menu
   component stories are already integrated by G2 and are not reimplemented.
   G3 appends only their composition-in-context coverage where the Sidebar,
@@ -98,15 +107,19 @@ Base condition:       committed authority after G2 closeout; 44 stories,
 Depends on:           G1a + G1b + G2 + F2a + F2b integrated in the control
                       ancestry; F2c does not affect this presentation packet.
 Provides/API:         bbr-ui::sidebar (SidebarModel + Callbacks + geometry),
-                      bbr-ui::surfaces::command composition, bbr-ui::split,
-                      and their composition story matrices/fixture builders;
-                      no wire or behavior API change.
+                      bbr-ui::surfaces::command plain model/ids/geometry/
+                      renderer, bbr-ui::split, and their composition story
+                      matrices/fixture builders; no wire or behavior API
+                      change.
 Exclusive paths:      focused crates/bbr-ui sidebar/command/split modules;
                       focused crates/bbr-gallery composition modules; crates/
                       bbr-app/src/sidebar.rs; app/sidebar_view.rs and its
                       command_bar module; app/render.rs; app/u2_surface.rs;
-                      portal/command.rs. portal/probe.rs remains the app-owned
-                      builder and is a shared integration point only.
+                      portal/command.rs. For the Command cut, portal/command.rs
+                      is deleted after the production renderer moves;
+                      app/palette.rs remains the app-owned model adapter and
+                      portal/probe.rs remains the app-owned portal builder,
+                      placement/dismissal owner and shared integration point.
 Shared integration points: root Cargo.toml/Cargo.lock, justfile (no new
                       recipe expected), E2E registries, bbr-app composition,
                       Gallery registry, UI track/ROADMAP roll-ups, and
@@ -127,10 +140,16 @@ Integration order:    committed G2 closeout → G3 Sidebar → Command → Split
   favorites, folders, tab rows, spaces, status, toggle, divider, footer,
   space strip); the `Callbacks` struct is one set of handler closures
   `bbr-app` fills. The gallery fills recorder callbacks.
-- **`CommandPortalModel`** is the existing presentation-oriented model
-  (`crates/bbr-app/src/portal/command.rs`) moved to `bbr-ui` unchanged in
-  shape; `bbr-app`'s `portal/probe.rs` builds it from the app's ranking
-  state.
+- **Command authority boundary:** the existing app-local
+  `CommandPortalModel` cannot move unchanged because it contains app-owned
+  `CommandSurface`/`CommandResultState` and rows carrying
+  `bbr_command::rank::Activation`. `bbr-ui` instead owns the smallest plain
+  presentation model described above plus the stable ids and render-only
+  anatomy. `bbr-app` retains the command state machine, ranking, activation,
+  focus, native Portal host/placement/dismissal, performance/testkit semantics,
+  and the one mapping from app rows to UI rows. The app-local
+  `portal/command.rs` renderer is removed rather than retained as an alias or
+  second authority.
 - **Derive similarly narrow models for other surfaces from source:** the
   Downloads/Find/Error/Auth/Menu/Split models are the existing
   app-side DTO shapes (from `downloads_render.rs`, `app/find.rs`,
@@ -158,7 +177,7 @@ Integration order:    committed G2 closeout → G3 Sidebar → Command → Split
 | Composition | Valid variant families (at least one story each) | Rejected (why) |
 |---|---|---|
 | Sidebar (`SidebarModel` + `Callbacks`) | compact (narrow-window clamp → 64 pt content floor) / wide (full rail 280–400 pt); empty (no tabs) / dense (500 tabs, S density, windowed render); long-title/missing-icon (truncation + monogram); cross-profile (profile chips, command-profile-hint, space strip identity); reduced-motion; contrast standard/increased | a sidebar with zero native-content floor (content stays strictly positive, §5/§11.4); a collapsed rail showing chrome content; two space strips |
-| Command palette / overlay (`CommandPortalModel`) | centered Cmd-T palette (New Tab mode, mode chip, results, loading/empty/error state rows); field-anchored Cmd-L/click overlay (Location mode, full-URL-preselected field, §11.5 result ids); reduced-motion (opacity fade `dur:fine` only); contrast | palette + overlay simultaneously (one surface, mutual exclusion); a result row without its stable key id |
+| Command palette / overlay (plain `bbr-ui::surfaces::command` model) | inactive/closed; centered Cmd-T palette (New Tab mode chip, loading/empty/results/activation-error rows); field-anchored Cmd-L/click overlay (Location mode, full-URL-preselected text, §11.5 result ids); selected and destructive rows; long-title truncation; reduced-motion (opacity fade `dur:fine` only); standard/increased contrast | palette + overlay simultaneously (one presentation discriminant, mutual exclusion); a result row without its stable key id. Missing-icon and cross-profile-hint families are inapplicable: production uses a group glyph and the current portal model has no profile-hint field |
 | Downloads group | Active (Waiting unknown/known, Running) / History (Succeeded + Reveal eligible/disabled, Failed + Retry, Cancelled + Restart/Delete post-F2b); empty hint; 6-row scroll window; reduced-motion; contrast | a non-terminal group order (Active above History, §11.12); optimistic terminal states (first terminal event wins) |
 | Find group | open/focused; query empty/typed; n of m; 0 of 0; stale; reduced-motion; contrast | ordinal without count; step enabled at zero matches |
 | Error/Crash group | each TLS/Navigation/Offline category with calm copy + contract-legal action; origin shown/omitted; crash panel; empty pane; reduced-motion; contrast | a non-category-legal recovery action (validated against the category-legal matrix — TLS/Navigation/Offline → Retry only, no bypass, per `crates/bbr-app/src/app/error_surface.rs` `ErrorSurfaceSpec`/`IncidentCategory` and the [error-surface-contract](error-surface-contract.md) packet); raw platform codes |
@@ -187,8 +206,12 @@ production composition exists.
       real-app composition E2E (the rail renders the exact regions/ids/
       semantics the snapshot derives). Command and Split model tests remain
       open with their cutovers.
-- [ ] `CommandPortalModel` and group-model tests move with their modules
-      (ids, states, callbacks) unchanged.
+- [ ] Command presentation model/render tests move the stable ids, typed UI
+      states, row rendering, mutual-exclusion validation, and rejected missing-
+      key construction into `bbr-ui`; the app-owned mapping strips every
+      activation payload and preserves all command authority. No activation
+      callbacks are invented because production keyboard/pointer activation
+      remains app/Portal-owned.
 - [ ] Split geometry/chrome tests: `bbr-ui::split` frame/divider/zone
       rendering matches DESIGN §11.7 tokens; `bbr-split` geometry is
       untouched.
@@ -300,8 +323,10 @@ Outcome: G3 Sidebar composition slice complete: the full §11.4 rail renders
   set + pure geometry + sidebar_surface) with bbr-app as the thin
   assembler; Gallery StoryId 44 + matrix/recorder evidence integrated;
   real-app composition E2E added to just e2e-shell-sidebar; three stale
-  module-path comments corrected; implemented-fact docs updated. Command
-  palette/overlay and Split compositions remain open and serially next.
+  module-path comments corrected; implemented-fact docs updated. Command is
+  next as a behavior-preserving plain-DTO/render extraction that keeps all
+  state/ranking/activation/Portal/performance/testkit authority in bbr-app;
+  Split remains serially after Command.
 Commits: none (lane worktree; Orchestrator integrates after independent
   whole-Sidebar review).
 Functional evidence: Gallery 40/40 including all three Sidebar scenarios;

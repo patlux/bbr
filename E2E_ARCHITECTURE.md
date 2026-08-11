@@ -824,12 +824,17 @@ regressions, and two complete sequential `just e2e` runs.
 
 ## 7j. U1 command surfaces over native WebKit
 
-`just e2e-shell-command` contains 17 real-app scenarios after U1 portal
-migration. The existing palette/overlay behavior tests now assert from the
-same snapshots that the active command surface is hosted by
-`native-above-web`: logical/native visibility, child attachment, parent-frame
-synchronization, non-activating/non-key/non-main policy, stable portal-window
-reuse after dismissal, and unchanged `WebViewId`/session ownership.
+`just e2e-shell-command` contains 25 real-app scenarios on the current
+integrated tree. The palette/overlay behavior tests assert from the same
+snapshots that the active command surface is hosted by `native-above-web`:
+logical/native visibility, child attachment, parent-frame synchronization,
+non-activating/non-key/non-main policy, stable portal-window reuse after
+dismissal, and unchanged `WebViewId`/session ownership. The wider suite also
+proves text/focus restoration, typed states, deterministic ranking,
+activation, truthful unavailable actions, cross-space/profile identity,
+history/Saved Pages providers, current-owner moved-tab activation, and the
+address-control coexistence contract. G3 Command presentation extraction must
+rerun these 25 scenarios unchanged; it does not add a second command authority.
 
 One focused shown-window scenario adds the required native-boundary evidence.
 It opens Cmd-T over a real `native-wkwebview`, flushes the separate portal
