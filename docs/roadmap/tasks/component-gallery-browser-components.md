@@ -181,18 +181,27 @@ gallery fixture builder refuses to build them.
 | Sidebar media card (`bbr-ui::components::media_card`, only after media contract + production UI) | absent; playing/paused; seekable known-duration; live/unknown duration; capability subsets for previous/next/mute; one/multiple sessions; dismissed identity; stale/ended disabled/removal state; cross-profile source identity; reduced motion/contrast | decorative unsupported controls; fake duration/scrubber; a model without opaque session + TabId/SpaceId/ProfileId identity; any fixture that claims WebKit control |
 
 B2/B3 are integrated. Saved Pages Library rows/controls are registered at
-StoryIds 23–29 and the Library composition at 30. Later Saved Page menu/result
-families may append only after their production component exists; this packet
-reserves no ids and reintroduces no marker machinery.
+StoryIds 23–29 and the Library composition at 30. Group 3 Address/Input is
+integrated; Group 9 Context menu is the first Groups 5–9 **extraction**
+cut (the page-menu card moved to `bbr-ui::surfaces::menu`). Groups 4–9
+may proceed in isolated lanes from the same recorded base with canonical
+semantic integration order 4 → 5 → 6 → 7 → 8 → 9 (portal cluster
+6 → 8 → 9). Group 4 already consumes production `bbr-ui` components
+extracted by G1a, so its remaining work is Gallery matrix, fixtures,
+stories, recorder E2E, and documentation. Groups 5–9 still perform the real
+`bbr-ui` extraction/app migration before adding Gallery stories.
 
 ## Evidence
 
 ### Unit and contract
 
-- [ ] Each new `bbr-ui` browser-component module: contrast/ids/models/
+- [x] Each new `bbr-ui` browser-component module: contrast/ids/models/
       callbacks tests (per the anchor's Evidence contract) — DTO round-trips,
       id constants, recorder-callback firing, and state composition order
       (§10: error > loading > pressed > selected > hover > default).
+      Group 9: `bbr_ui::surfaces::menu` carries the `ContextMenuModel`/
+      `ContextMenuRow`/`ContextMenuRect` DTO round-trips and the stable
+      `CONTEXT_MENU_ID`/`CONTEXT_MENU_ROW_PREFIX` id-constant tests.
 - [x] Matrix test in the gallery: every "valid" row builds and renders
       without panic; every "rejected" row fails fixture construction; the
       matrix table and the fixture builders cannot drift (one declaration
@@ -212,7 +221,10 @@ reserves no ids and reintroduces no marker machinery.
       alias in `bbr-app` for the migrated modules. Group 3: the guard now
       also pins the `address_control`/`staging_surface`/`AddressModel`/
       `StagingModel`/`AddressProfileHint` production symbols (the app keeps
-      only its DTO-building composition methods).
+      only its DTO-building composition methods). Group 9: the guard now
+      also pins `context_menu_card`/`ContextMenuModel`/`ContextMenuRow`
+      (the app keeps only its controller row model `ContextMenuItem` and
+      the surface that carries the `bbr-ui` presentation model).
 
 ### Real-app E2E
 
@@ -226,7 +238,10 @@ reserves no ids and reintroduces no marker machinery.
       affected suite unchanged: `just e2e-shell-command`
       (address/overlay/palette) is green 25/25 on the same byte-identical
       ids/§15 fields/focus domains/semantic trees (the existing suite is the
-      migration guard and was not modified).
+      migration guard and was not modified). Group 9 re-ran its affected
+      suite unchanged: `just e2e-shell-context-menu` is green on the same
+      byte-identical ids/§15 fields/focus domains/semantic trees (the
+      existing suite is the migration guard and was not modified).
 - [x] `just e2e-gallery` extended: the new story matrix renders through the
       production components with stable StoryIds appended (G1b ids
       unrenumbered). Group 3 appended the Address control (StoryId 31) and
@@ -313,109 +328,99 @@ contracts or use them as a reason to widen a G2 lane.
 
 ```text
 Outcome:
-  Group 3 Address/Input (Gallery-only) implemented and settled as an exact
-  writer candidate. One Address/Staging matrix+fixture authority
-  (address_matrix.rs) declares every valid pill/staging family and refuses
-  the rejected no-edit/no-focus-ring/no-Copy-Link combinations; the gallery
-  appends the exact production address_control/staging_surface stories at
-  StoryIds 31–32 (0–30 unrenumbered) with recorder/observer wiring; a
-  focused real-pointer E2E proves on_hover and on_open fire; the
-  every-story-renders sweep covers the new stories; app.rs stays at 459
-  lines (≤498). No production bbr-ui/bbr-app change, no manifest/lock/
-  justfile/perf change, no new ids or product policy. Remediation closed
-  the review finding: the staging matrix now covers cursor=false +
-  hint-present (unfocused Move Tab) and profile-hint presence through the
-  production StagingModel.profile_hint/AddressProfileHint, with an
-  explicit dimension-coverage test (cursor true/false, hint
-  present/absent, profile-hint present/absent, profile-hint presence
-  independent of cursor and hint); the staging story renders all 7
-  families and the focused E2E asserts the production
-  bbr-command-profile-hint semantic id and the stable 7-family count.
+  Group 9 Context menu (the first Groups 5–9 extraction cut) implemented and
+  settled as an exact writer candidate. The BBR-owned page-menu card render
+  moved from `crates/bbr-app/src/portal/context_menu.rs` into the new
+  `bbr_ui::surfaces::menu` module (context_menu_card + ContextMenuModel /
+  ContextMenuRow / ContextMenuRect + the CONTEXT_MENU_ID /
+  CONTEXT_MENU_ROW_PREFIX id constants), the app migrated to build the
+  presentation DTO from its controller state (ContextMenuSurface now
+  carries theme + the bbr-ui model), `portal/context_menu.rs` was deleted
+  and its two PortalRoot row listeners moved into `portal/probe.rs`, and
+  the probe render routes the production row listeners through the bbr-ui
+  card. Source/provenance/controller/policy/WebKit delegation unchanged:
+  the app keeps ContextMenuController/ContextMenuItem/ContextMenuState,
+  the MENU_* action keys, the testkit snapshot, the placement geometry,
+  the benchmark driver, and the native bridge diagnostics; ids (§15), the
+  focus domain, and the typed semantic tree stay byte-identical. The
+  gallery appends one Context-menu story at the next sequential StoryId
+  (33 — provisional until the canonical integration order 4 → 5 → 6 → 7 →
+  8 → 9 lands the remaining groups; the Orchestrator renumbers at
+  integration, no reservation machinery) rendering every valid page-menu
+  family through the production card with recorder callbacks; the matrix
+  authority (context_menu_matrix.rs) declares the 7 valid families and
+  refuses the 4 rejected combinations (zero items, a selection on a
+  disabled row, source-less Tab/Favorite/Folder menus, Gallery-owned
+  WebKit element menus). No Z semantics (Tab/Favorite/Folder/page-background
+  families), no user policy, no fake engine/authority; module budgets kept
+  (bbr-app surface 224 → 227 lines, app/context_menu/app.rs 319 → 331,
+  probe.rs 847 → 910 with the moved row listeners and the bbr-ui card
+  render branch; every new module < 500).
 Commits:
-  Exact reviewed lane ed5931175cfc121fbbc146dce28df4f41cf8df77 / tree
-  e448da5b35c87444f76c1b016d84eca5424f1b74; semantic Orchestrator merge
-  d6cd4353434ed8b31319e2fd12c9e9d991071cbc / tree
-  7b9e9ee4c1a408d961cbb892bb1594a1fc5d4655, parents Control
-  25a4ef0a7c2746faa6e148ebf29e187bc3fe7fc7 + exact lane commit.
+  None — writer returns an exact candidate only; the Orchestrator owns
+  commit/merge/integration (per delivery/current.md).
 Functional evidence:
-  Gallery unit tests 48/48 (matrix valid/rejected incl. the staging
-  dimension-coverage test, recorder, registry pinned-prefix incl. 23–30,
-  rg guard incl. address symbols). Gallery Clippy --all-targets -D
-  warnings clean. GUI-locked Xcode-26.2 `just e2e-gallery` 24/24 incl.
-  e2e::address::real_hover_and_press_report_through_the_recorder, the
-  staging profile-hint semantic-id assertion, and the every-story sweep.
+  bbr-ui tests 80/80 incl. the menu surface id/DTO tests; gallery unit
+  tests 55/55 incl. the matrix/recorder tests and the rg guard pinned for
+  context_menu_card/ContextMenuModel/ContextMenuRow; bbr controller tests
+  215/215 incl. the context-menu suite 5/5. GUI-locked Xcode-26.2
+  `just e2e-gallery` green incl. the Context-menu story scenarios and the
+  every-story sweep; unchanged `just e2e-shell-context-menu` green 9/9 —
+  ids, §15 fields, focus domains, typed semantic trees byte-identical
+  (the existing suite is the migration guard, unmodified).
 Real-app E2E:
-  `just e2e-shell-command` (address/overlay/palette) re-run unchanged and
-  green 25/25 — ids, §15 fields, focus domains, typed semantic trees
-  byte-identical (the existing suite is the migration guard, unmodified).
+  `just e2e-shell-context-menu` (page-background BBR menu over real
+  WKWebViews) re-run unchanged and green — the existing suite is the
+  migration guard and was not modified.
 Performance evidence:
   None executed; performance remains Patrick-deferred/unpassed. No
-  budget/sample/baseline/semantic-commit change (Gallery-only cut); missing
-  execution recorded as explicit debt.
+  budget/sample/baseline/semantic-commit change (presentation-only
+  extraction with an unchanged production tree); missing execution
+  recorded as explicit debt.
 Roadmap/documentation updates:
   G2 packet evidence/ledger only (this file). ROADMAP.md / ARCHITECTURE.md /
   UI track roll-ups are Orchestrator-owned serial points.
 Open blockers and non-goals:
-  Copy-Link accessory (§17.14), internal-page naming (§17.13), pill editing/
-  cursor/selection/focus ring, foreground/background modifier and opener
-  policy — all remain open decisions, none invented. Performance execution
-  and canonical `just e2e` remain unexecuted/unpassed.
+  Z1/Z3 Tab/Favorite/Folder/page-background menu families stay packet-open
+  and never enter this model; WebKit element menus stay native; foreground/
+  background modifier and opener policy remain open decisions, none
+  invented. Performance execution and canonical `just e2e` remain
+  unexecuted/unpassed.
 Worktree state:
-  Branch parallel/g2-address-input at base 81822d1d13571e63e443ae7e8c3dc32
-  daf1257e2 (tree 5ed8442e0d175d66199f1a2c262231d7f05cee8e); real index
-  unchanged at the base tree; working-tree candidate only, diff-clean,
+  Branch parallel/g2-group9-context-menu at base 5e018b34286daab690c7f88
+  d32c4b97dc3204484 (tree 58d2c8152761c5536944b1b6535d2f75a1a57615); real
+  index unchanged at the base tree; working-tree candidate only, diff-clean,
   no staged paths, no commit, no process/lock.
 
 Planning/read-only:
-  Read ROADMAP/current delivery/DESIGN §11.5/packet/production address +
-  gallery Tab Row & Library patterns; advisory refreshed post-activation.
+  Read ROADMAP/current delivery/DESIGN §11.4/§11.13/§13/§15/packet/production
+  portal context_menu + probe + gallery Address patterns; advisory refreshed
+  post-activation.
 Implementation:
-  address_matrix.rs, address_recorder.rs, address_app.rs, control_observer
-  .rs (behavior-preserving app.rs extraction), stories/address.rs, e2e/
-  address.rs, registry/canvas/snapshot/stories/main wiring, rg-guard
-  extension, packet evidence/ledger.
+  crates/bbr-ui/src/surfaces/{mod.rs,menu.rs} (new), crates/bbr-ui/src/
+  lib.rs (surfaces module), crates/bbr-app/src/app/context_menu.rs
+  (ContextMenuSurface carries the bbr-ui model; moved id constants),
+  crates/bbr-app/src/app/context_menu/app.rs (DTO build), crates/bbr-app/
+  src/portal/probe.rs (render branch + moved row listeners + id paths),
+  crates/bbr-app/src/portal/mod.rs (deleted context_menu module),
+  context_menu_matrix.rs / context_menu_recorder.rs / context_menu_app.rs /
+  stories/context_menu.rs / e2e/context_menu.rs (new), registry.rs /
+  canvas.rs / snapshot.rs / app.rs / stories.rs / main.rs / e2e/mod.rs
+  wiring, rg-guard extension (dependency_contract.rs), packet
+  evidence/ledger.
 Test execution:
-  cargo check + focused gallery tests (48/48), Gallery Clippy, GUI-locked
-  just e2e-gallery 24/24, unchanged just e2e-shell-command 25/25, just
+  cargo check (bbr-ui + bbr + bbr-gallery --all-targets), focused unit
+  suites (bbr-ui 80/80, gallery 55/55, bbr 215/215), Gallery Clippy, GUI-
+  locked just e2e-gallery, unchanged just e2e-shell-context-menu, just
   ui-deps, just roadmap, fmt, just verify, diff-check.
 Review:
-  Two broad read-only attempts timed out without authority after identifying
-  the same concrete staging-matrix gap. The ultra-focused exact-candidate
-  recheck returned G2_ADDRESS_RECHECK_PASS. The staged semantic union then
-  returned G2_ADDRESS_STAGED_UNION_PASS: all 15 lane paths were staged, every
-  product/packet blob matched the reviewed lane, and Control's sole current
-  delivery authority remained the only lane-to-union tree difference.
+  Independent read-only review of the exact candidate tree; one remediation
+  writer only for concrete findings; focused recheck. (Pending after this
+  writer settlement.)
 Remediation:
-  One remediation writer closed the review finding in the authorized
-  files only: address_matrix.rs (StagingCase.profile_hint + 3 new staging
-  families: unfocused Move Tab — hint, no cursor; Move Tab — cursor + hint
-  + profile hint; unfocused New Space — profile hint, no cursor; the
-  dimension-coverage test; build_staging_fixture maps the production
-  StagingModel.profile_hint/AddressProfileHint), stories/address.rs (all 7
-  families render; the profile-hint families register the production
-  bbr-command-profile-hint semantic id as a test-target key; meta line
-  and ids/profile-hint value rows updated), e2e/address.rs (stable
-  7-family staging count, profile-hint families render, production
-  bbr-command-profile-hint semantic id asserted), and this packet's
-  evidence/ledger. No production change, no new product modes/ids/
-  Copy-Link, StoryIds stay 31/32.
+  (Pending — none yet; only concrete reviewer findings.)
 Waiting/retries:
-  The first post-merge repository-target `just verify` reached Clippy after all
-  tests passed but failed on read-only derived metadata. A fresh `/tmp` target
-  with repository Xcode 26.2 passed unchanged; this was cache recovery, not a
-  source or acceptance relaxation.
-Post-merge evidence:
-  Fresh-target `just verify` passed on exact merge tree 7b9e9ee4...; log
-  `/tmp/bbr-g2-address-postmerge-verify-fresh.log`, SHA-256
-  fbb20f2a48a111f3f45f97285410c8d82708010014dcfd6f36eb6445999ea352.
-  GUI-locked Xcode-26.2 Gallery passed 24/24; log
-  `/tmp/bbr-g2-address-postmerge-gallery.log`, SHA-256
-  ae7479915cc702e556174b48e76248b8bbaa7f9ffad58be20d8e01d780f937e5.
-  Unchanged Command passed 25/25; log
-  `/tmp/bbr-g2-address-postmerge-command.log`, SHA-256
-  26cd6ec4f65faba70ab80eee072264001328ed36ba7f6ea03f031702b5c3b49f.
-  HEAD/tree/status remained exact and the GUI lock released. Performance and
-  canonical `just e2e` remain unexecuted/unpassed.
+  None — first candidate; no retries or gate relaxations.
 Total elapsed:
   Estimate (single writer session).
 Human intervention:

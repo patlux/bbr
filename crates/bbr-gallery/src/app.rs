@@ -16,6 +16,7 @@ use gpui_component::WindowExt as _;
 
 use crate::address_app::AddressAppState;
 use crate::canvas::{canvas_surface, CanvasModel};
+use crate::context_menu_app::ContextMenuAppState;
 use crate::controls::{controls_surface, ControlAction, ControlsModel};
 use crate::library_recorder::{LibraryObservation, LibraryRecorder};
 use crate::recorder::{ControlObservation, ControlRecorder, CoreControlsEntities};
@@ -52,6 +53,8 @@ pub struct GalleryApp {
     pub(crate) tab_row: TabRowAppState,
     /// The Address/Input app wiring (module `address_app`).
     pub(crate) address: AddressAppState,
+    /// The Context-menu app wiring (module `context_menu_app`).
+    pub(crate) context_menu: ContextMenuAppState,
     /// The shared recorder: what real gpui-component control events report
     /// back through the production `observe_control` path.
     recorder: ControlRecorder,
@@ -95,6 +98,7 @@ impl GalleryApp {
             // Built before `registry` moves (story discovery borrows it).
             tab_row: TabRowAppState::new(&registry),
             address: AddressAppState::new(&registry),
+            context_menu: ContextMenuAppState::new(&registry),
             registry,
             tree,
             mode: ThemeMode::Dark,
@@ -307,6 +311,7 @@ impl GalleryApp {
             tab_drag_begins: self.tab_row.counts().3,
             library: self.library_recorder.clone(),
             address: self.address.recorder().clone(),
+            context_menu: self.context_menu.recorder().clone(),
         }
     }
 
@@ -368,6 +373,8 @@ impl Render for GalleryApp {
         let tab_row = self.tab_row.render_context(selected, cx);
         // The Address/Input observer + story context (module `address_app`).
         let address = self.address.render_context(selected, cx);
+        // The Context-menu observer + story context (module `context_menu_app`).
+        let context_menu = self.context_menu.render_context(selected, cx);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {
@@ -426,6 +433,7 @@ impl Render for GalleryApp {
             tab_row,
             library,
             address,
+            context_menu,
         });
         div()
             .id("bbr-gallery-root")

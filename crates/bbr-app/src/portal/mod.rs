@@ -27,7 +27,6 @@
 
 pub mod auth_sheet;
 pub mod command;
-pub mod context_menu;
 pub mod find;
 pub mod geometry;
 pub mod native;

@@ -18,6 +18,7 @@
 
 pub mod address;
 pub mod browser_components;
+pub mod context_menu;
 pub mod core_controls;
 pub mod foundations;
 pub mod library_composition;
@@ -162,6 +163,22 @@ pub fn catalog() -> CatalogRegistry {
             story("Address control", address::render_address_control, &[]),
             story("Command staging", address::render_command_staging, &[]),
         ],
+    );
+    // The G2 Group 9 Context-menu story (packet
+    // `component-gallery-browser-components.md`): the exact production
+    // `bbr_ui::surfaces::menu::context_menu_card` renders every valid page-
+    // menu family with recorder callbacks. Appended at the next sequential
+    // StoryId after the pinned 0–32 prefix; the id is provisional until the
+    // canonical G2 integration order 4 → 5 → 6 → 7 → 8 → 9 lands the
+    // remaining groups (the Orchestrator renumbers append-only at
+    // integration).
+    registry.add_group(
+        "Context menu",
+        vec![story(
+            "Context menu",
+            context_menu::render_context_menu,
+            &[],
+        )],
     );
     registry
 }

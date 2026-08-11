@@ -63,12 +63,13 @@ pub const CONTEXT_MENU_WIDTH: f32 = 220.0;
 /// The portal placement margin (DESIGN §5 spacing / §11.4 compact clamp).
 pub const CONTEXT_MENU_MARGIN: Edges = Edges::all(8.0);
 
-/// Stable §15 ids of the context menu (DESIGN.md §15; exposed through the
-/// portal snapshot's typed `ids` field, registered in
-/// [`crate::portal::probe::PortalProbeState::ids`]).
-pub const CONTEXT_MENU_ID: &str = "bbr-context-menu";
+/// Stable §15 id of the portal backdrop (the full-window surface that
+/// owns the §13 one-pointer-action dismissal; exposed through the portal
+/// snapshot's typed `ids` field, registered in
+/// [`crate::portal::probe::PortalProbeState::ids`]). The card id
+/// (`bbr-context-menu`) and the row prefix (`bbr-context-menu-row`)
+/// moved to `bbr_ui::surfaces::menu` with the card render.
 pub const CONTEXT_MENU_BACKDROP_ID: &str = "bbr-context-menu-backdrop";
-pub const CONTEXT_MENU_ROW_PREFIX: &str = "bbr-context-menu-row";
 
 /// Stable item keys (the row id suffix and the snapshot's `key` field).
 pub const MENU_BACK: &str = "back";
@@ -186,13 +187,15 @@ impl ContextMenuController {
     }
 }
 
-/// The immutable menu data one portal-window render consumes.
+/// The immutable menu data one portal-window render consumes: the resolved
+/// theme plus the `bbr-ui` presentation model the card renders. The app
+/// builds the model from the controller state (the anchor's DTO-building
+/// role); the portal render reads the same live surface per render, so
+/// selection and enablement can never drift from the app.
 #[derive(Clone, Debug)]
 pub struct ContextMenuSurface {
     pub theme: Theme,
-    pub focused: bool,
-    pub selected: Option<usize>,
-    pub items: Vec<ContextMenuItem>,
+    pub model: bbr_ui::surfaces::menu::ContextMenuModel,
 }
 
 /// The menu's anchored placement: the pointer anchor with the top-left

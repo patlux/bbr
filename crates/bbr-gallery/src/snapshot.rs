@@ -5,6 +5,7 @@
 use bbr_ui::theme::{ContrastMode, Density, ThemeMode};
 
 use crate::address_recorder::AddressRecorder;
+use crate::context_menu_recorder::ContextMenuRecorder;
 use crate::library_recorder::LibraryRecorder;
 
 /// The semantic snapshot the E2E asserts (§15 mode fields + stable ids).
@@ -69,4 +70,8 @@ pub struct GallerySnapshot {
     /// path: the hover states the production `on_hover` reported and the
     /// number of presses that fired the production `on_open`.
     pub address: AddressRecorder,
+    /// The observed Context-menu state through the production recorder
+    /// path: the row indexes the production `on_row_hover`/`on_row_press`
+    /// reported (enabled rows only).
+    pub context_menu: ContextMenuRecorder,
 }

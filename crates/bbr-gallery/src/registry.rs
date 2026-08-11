@@ -18,6 +18,7 @@ use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 
 use crate::address_recorder::{AddressObserver, AddressRecorder};
+use crate::context_menu_recorder::{ContextMenuObserver, ContextMenuRecorder};
 use crate::library_recorder::{LibraryObserver, LibraryRecorder};
 use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRecorder};
 
@@ -83,6 +84,12 @@ pub struct StoryContext<'a> {
     /// `component-gallery-browser-components.md`, Group 3). `None` for
     /// every other story.
     pub address: Option<AddressStory<'a>>,
+    /// `Some` only for the Context-menu story: the current recorder
+    /// snapshot and the observer callbacks the production
+    /// `bbr_ui::surfaces::menu::context_menu_card` row callbacks route
+    /// through (packet `component-gallery-browser-components.md`, Group
+    /// 9). `None` for every other story.
+    pub context_menu: Option<ContextMenuStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -134,6 +141,17 @@ pub struct TabRowStory<'a> {
 pub struct AddressStory<'a> {
     pub recorder: &'a AddressRecorder,
     pub observer: &'a AddressObserver,
+}
+
+/// Everything the Context-menu story needs to render the **exact**
+/// production `bbr_ui::surfaces::menu::context_menu_card` with recorder
+/// callbacks: the current recorder snapshot (hovered/pressed row indexes)
+/// and the observer callbacks that re-enter the app on real pointer
+/// interactions (packet `component-gallery-browser-components.md`, Group
+/// 9). `Some` only while the Context-menu story is selected.
+pub struct ContextMenuStory<'a> {
+    pub recorder: &'a ContextMenuRecorder,
+    pub observer: &'a ContextMenuObserver,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,

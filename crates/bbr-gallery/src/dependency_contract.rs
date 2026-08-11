@@ -107,16 +107,17 @@ fn collect_rs(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
 
 /// The post-cutover `rg` guard (packet
 /// `component-gallery-browser-components.md`): `bbr-app` defines **no**
-/// duplicate of the G2 Tab Row / Address/Input production symbols and
-/// **no** `pub use bbr_ui` compatibility alias for them. The one
-/// `tab_row`/`RowVisuals`/`drag_tick` and `address_control`/`staging_surface`/
-/// `AddressModel`/`StagingModel`/`AddressProfileHint` authority is
+/// duplicate of the G2 Tab Row / Address/Input / Context-menu production
+/// symbols and **no** `pub use bbr_ui` compatibility alias for them. The
+/// one `tab_row`/`RowVisuals`/`drag_tick`, `address_control`/
+/// `staging_surface`/`AddressModel`/`StagingModel`/`AddressProfileHint`,
+/// and `context_menu_card`/`ContextMenuModel`/`ContextMenuRow` authority is
 /// `bbr-ui`; the app imports them and keeps only its controller-snapshot
 /// composition. Implemented with a pure-std source scan (hermetic — no
 /// external `rg` binary required in the evaluation shell) over
 /// `crates/bbr-app/src`.
 #[test]
-fn bbr_app_defines_no_tab_row_or_address_duplicate_or_reexport_alias() {
+fn bbr_app_defines_no_tab_row_address_or_context_menu_duplicate() {
     let app_src = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("..")
         .join("bbr-app")
@@ -146,6 +147,13 @@ fn bbr_app_defines_no_tab_row_or_address_duplicate_or_reexport_alias() {
         "struct AddressModel",
         "struct StagingModel",
         "struct AddressProfileHint",
+        // Group 9: the page-menu card render moved to
+        // `bbr_ui::surfaces::menu`; the app keeps only its controller row
+        // model (`ContextMenuItem`) and the surface that carries the
+        // `bbr-ui` presentation model.
+        "fn context_menu_card(",
+        "struct ContextMenuModel",
+        "struct ContextMenuRow",
     ];
     for file in &files {
         let text = std::fs::read_to_string(file).expect("read app source");

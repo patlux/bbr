@@ -29,7 +29,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use gpui::{
-    div, prelude::*, px, transparent_black, Context, Div, Entity, MouseButton, MouseDownEvent,
+    div, prelude::*, px, transparent_black, App, Context, Div, Entity, MouseButton, MouseDownEvent,
     Render, Window,
 };
 
@@ -37,6 +37,7 @@ use super::geometry::{Edges, Rect, Sz};
 use super::state::{
     DismissalPolicy, PortalHost, PortalPlacement, PortalPresentation, PortalRequest,
 };
+use bbr_ui::surfaces::menu::{context_menu_card, ContextMenuRect};
 use bbr_ui::theme::{Spacing, Theme};
 
 /// The one portal host per BBR browser window (allocated once at window
@@ -206,16 +207,18 @@ impl PortalProbeState {
                 crate::app::palette::CommandSurface::None => return Vec::new(),
             }],
             Some(PortalContent::ContextMenu) => {
-                // The menu's stable surface ids: the backdrop, the card, and
-                // the deterministic row ids (the five fixed entries).
+                // The menu's stable surface ids: the backdrop (app-owned)
+                // and the card + deterministic row ids (the five fixed
+                // entries; the card ids moved to `bbr_ui::surfaces::menu`
+                // with the card render).
                 let mut ids = vec![
                     crate::app::context_menu::CONTEXT_MENU_BACKDROP_ID.into(),
-                    crate::app::context_menu::CONTEXT_MENU_ID.into(),
+                    bbr_ui::surfaces::menu::CONTEXT_MENU_ID.into(),
                 ];
                 for index in 0..5 {
                     ids.push(format!(
                         "{}-{index}",
-                        crate::app::context_menu::CONTEXT_MENU_ROW_PREFIX
+                        bbr_ui::surfaces::menu::CONTEXT_MENU_ROW_PREFIX
                     ));
                 }
                 ids
@@ -407,6 +410,38 @@ impl PortalRoot {
         });
     }
 
+    /// Row hover: the production `on_hover` listener path into the shared
+    /// menu cursor (the exact app method a real pointer hover calls — the
+    /// `bbr_ui::surfaces::menu` card routes its enabled-row hover
+    /// listeners here).
+    pub(crate) fn context_menu_row_hovered(&self, index: usize, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, _w, cx| {
+                view.menu_select(index, cx)
+            });
+        });
+    }
+
+    /// Row press: the production mouse-down listener path (select +
+    /// activate + dismiss; the exact app method a real pointer press calls
+    /// — the `bbr_ui::surfaces::menu` card routes its enabled-row press
+    /// listeners here).
+    pub(crate) fn context_menu_row_pressed(&self, index: usize, cx: &mut Context<Self>) {
+        let Some(app) = self.app.clone() else {
+            return;
+        };
+        let browser_window = self.browser_window;
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser_window, &app, cx, |view, window, cx| {
+                view.menu_activate(index, window, cx)
+            });
+        });
+    }
+
     /// The credential sheet's Log In button path (the production submit
     /// seam the keyboard Enter routes to): the decision is applied through
     /// the merged auth contract by `BbrApp::auth_submit`.
@@ -589,13 +624,41 @@ impl Render for PortalRoot {
                 let surface = app.read(cx).context_menu_surface();
                 #[cfg(feature = "testkit")]
                 app.read(cx).observe_portal_context_menu_render();
-                let card = crate::portal::context_menu::context_menu_card(&surface, rect, cx)
-                    .on_mouse_down(
-                        MouseButton::Left,
-                        cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
-                            cx.stop_propagation();
-                        }),
-                    );
+                // The production card render lives in `bbr_ui::surfaces::menu`
+                // (G2 Group 9 extraction); this branch builds the DTO from
+                // the app's live surface and routes the row listeners to the
+                // exact `PortalRoot` methods a real pointer hover/press
+                // calls (the same downgraded-handle seam `cx.listener`
+                // uses).
+                let portal_root = cx.entity().downgrade();
+                let on_row_hover = {
+                    let portal_root = portal_root.clone();
+                    move |index: usize, _hovered: &bool, _window: &mut Window, cx: &mut App| {
+                        if let Some(root) = portal_root.upgrade() {
+                            root.update(cx, |this, cx| this.context_menu_row_hovered(index, cx));
+                        }
+                    }
+                };
+                let on_row_press = {
+                    move |index: usize, _e: &MouseDownEvent, _window: &mut Window, cx: &mut App| {
+                        if let Some(root) = portal_root.upgrade() {
+                            root.update(cx, |this, cx| this.context_menu_row_pressed(index, cx));
+                        }
+                    }
+                };
+                let card = context_menu_card(
+                    &surface.theme,
+                    &surface.model,
+                    ContextMenuRect::new(rect.x, rect.y, rect.width, rect.height),
+                    on_row_hover,
+                    on_row_press,
+                )
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|_this, _e: &MouseDownEvent, _window, cx| {
+                        cx.stop_propagation();
+                    }),
+                );
                 div()
                     .id(crate::app::context_menu::CONTEXT_MENU_BACKDROP_ID)
                     .size_full()
