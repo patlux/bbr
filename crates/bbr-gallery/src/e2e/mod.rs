@@ -20,6 +20,7 @@
 mod address;
 mod controls;
 mod downloads;
+mod error;
 mod find;
 mod group4;
 mod library;

@@ -35,6 +35,14 @@ mod downloads_panels;
 #[cfg(target_os = "macos")]
 mod downloads_recorder;
 #[cfg(target_os = "macos")]
+mod error_app;
+#[cfg(target_os = "macos")]
+mod error_matrix;
+#[cfg(target_os = "macos")]
+mod error_panel_matrix;
+#[cfg(target_os = "macos")]
+mod error_recorder;
+#[cfg(target_os = "macos")]
 mod favorites_matrix;
 #[cfg(target_os = "macos")]
 mod find_app;

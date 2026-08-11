@@ -20,6 +20,7 @@ pub mod address;
 pub mod browser_components;
 pub mod core_controls;
 pub mod downloads;
+pub mod error;
 pub mod favorites;
 pub mod find;
 pub mod folders;
@@ -170,13 +171,7 @@ pub fn catalog() -> CatalogRegistry {
             story("Command staging", address::render_command_staging, &[]),
         ],
     );
-    // The G2 Group 4 sidebar-component stories (packet
-    // `component-gallery-browser-components.md`): the exact production
-    // `bbr-ui` favorites/folders/footer/profile-chip/plus-menu symbols
-    // append at ids 33–37 after the pinned 0–32 prefix — no renumbering,
-    // no reservation. The production extractions are already integrated
-    // (Groups 3–4 are Gallery-only), so these rows only add matrix,
-    // fixtures, stories, recorders, and E2E.
+    // Group 4 sidebar components append at ids 33–37.
     registry.add_group(
         "Sidebar components",
         vec![
@@ -191,10 +186,7 @@ pub fn catalog() -> CatalogRegistry {
             story("Plus menu", menu::render_plus_menu, &[]),
         ],
     );
-    // The G2 Group 5 Downloads panel story (packet
-    // `component-gallery-browser-components.md`): the exact production
-    // `bbr_ui::surfaces::downloads` surface appends at id 38 after the
-    // pinned 0–37 prefix — no renumbering, no reservation.
+    // Group 5 Downloads appends at id 38.
     registry.add_group(
         "Downloads",
         vec![story(
@@ -203,8 +195,16 @@ pub fn catalog() -> CatalogRegistry {
             &[],
         )],
     );
-    // The G2 Group 6 Find story appends at id 39 after Downloads.
+    // Group 6 Find appends at id 39.
     registry.add_group("Find", vec![story("Find bar", find::render_find_bar, &[])]);
+    // Group 7 Error/Crash appends at ids 40–41.
+    registry.add_group(
+        "Error / Crash",
+        vec![
+            story("Error surface", error::render_error_surface, &[]),
+            story("Crash / Empty panes", error::render_crash_empty_panes, &[]),
+        ],
+    );
     registry
 }
 

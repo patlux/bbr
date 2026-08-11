@@ -1,13 +1,14 @@
-//! The web-error surface (task packet `error-surface-contract`).
+//! The web-error presentation state (task packet `error-surface-contract`).
 //!
 //! Composition: the native adapter (`bbr-web-macos::error_mapping`)
 //! classifies WebKit failures into the merged contract's closed taxonomy
-//! (`bbr-web::web_errors`); this module owns the **presentation** — the
-//! ordinary GPUI chrome surface drawn in the content area, the calm copy,
-//! the contract-derived recovery action, the readable failing origin, and
-//! the per-web-view incident lifecycle the contract defines. The app wiring
-//! (`on_incident`, recovery/dismiss routing, native-view hide/restore)
-//! lives in `super::error_surface_behavior`.
+//! (`bbr-web::web_errors`); the app owns the **incident lifecycle, the
+//! contract-derived recovery action policy, the calm copy derivation, and
+//! the DTO building** (the anchor keeps DTO building app-owned); the
+//! ordinary GPUI chrome surface drawn in the content area is the extracted
+//! `bbr_ui::surfaces::error` component (`ErrorSurfaceModel` +
+//! `error_surface`). The app wiring (`on_incident`, recovery/dismiss
+//! routing, native-view hide/restore) lives in `super::error_surface_behavior`.
 //!
 //! ## Contract invariants the surface upholds
 //!
@@ -40,10 +41,9 @@ use bbr_web::web_errors::{
     LifecycleState, RecoveryAction,
 };
 use bbr_web::{ProfileId, WebViewId};
-use gpui::{div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window};
 
-use bbr_ui::icons::Icon;
-use bbr_ui::theme::{Spacing, Theme};
+use bbr_ui::surfaces::error::ErrorSurfaceModel;
+use gpui::SharedString;
 
 /// The readable failing URL the surface presents: the contract's
 /// privacy-safe reduced origin (scheme://host[:port]). `None` when the
@@ -77,6 +77,23 @@ pub struct ErrorSurfaceSpec {
     /// The secondary action's button label (Dismiss — a lifecycle event,
     /// never a tab mutation).
     pub dismiss_label: &'static str,
+}
+
+impl ErrorSurfaceSpec {
+    /// The presentation model the extracted `bbr-ui` surface renders (the
+    /// anchor keeps DTO building app-owned): the calm title/copy, the
+    /// readable failing origin, and the action/dismiss labels. The ids and
+    /// anatomy live in `bbr_ui::surfaces::error`; this projection is the
+    /// only bridge from the contract-derived spec to the surface.
+    pub fn to_model(&self) -> ErrorSurfaceModel {
+        ErrorSurfaceModel {
+            title: self.title.into(),
+            copy: self.copy.into(),
+            origin: self.origin.clone().map(SharedString::from),
+            action_label: self.action_label.into(),
+            dismiss_label: self.dismiss_label.into(),
+        }
+    }
 }
 
 /// App-local presentation state: per-web-view incident lifecycles (the
@@ -342,97 +359,6 @@ fn action_label(action: RecoveryAction) -> &'static str {
         RecoveryAction::Restore => "Reload",
         RecoveryAction::Dismiss => "Dismiss",
     }
-}
-
-/// The §11.8-style error surface: a flat GPUI pane (`material:field`,
-/// `elev:1`) drawn in the content area with the 32 pt lifering glyph in
-/// `status.error`, the calm title/copy, the readable failing origin, and the
-/// contract-derived primary action plus Dismiss. Never a portal host, never
-/// composited web content.
-pub fn error_surface(
-    theme: &Theme,
-    spec: &ErrorSurfaceSpec,
-    on_action: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
-    on_dismiss: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
-) -> Stateful<Div> {
-    div()
-        .id("bbr-error-panel")
-        .flex_1()
-        .size_full()
-        .flex()
-        .flex_col()
-        .items_center()
-        .justify_center()
-        .gap(Spacing::sp3())
-        .bg(theme.palette.surface_field)
-        .child(
-            div()
-                .size(px(32.0))
-                .flex()
-                .items_center()
-                .justify_center()
-                .child(Icon::Lifering.canvas(theme, px(32.0))),
-        )
-        .child(
-            div()
-                .id("bbr-error-title")
-                .text_size(theme.type_.title.size)
-                .font_weight(theme.type_.title.weight)
-                .text_color(theme.palette.ink)
-                .child(spec.title.to_string()),
-        )
-        .child(
-            div()
-                .id("bbr-error-copy")
-                .max_w(px(460.0))
-                .text_size(theme.type_.meta.size)
-                .text_color(theme.palette.ink_secondary)
-                .child(spec.copy.to_string()),
-        )
-        .when(spec.origin.is_some(), |surface| {
-            surface.child(
-                div()
-                    .id("bbr-error-url")
-                    .max_w(px(460.0))
-                    .overflow_hidden()
-                    .text_ellipsis()
-                    .text_size(theme.type_.mono.size)
-                    .text_color(theme.palette.ink_secondary)
-                    .child(spec.origin.clone().expect("guarded by when")),
-            )
-        })
-        .child(
-            div()
-                .flex()
-                .flex_row()
-                .gap(Spacing::sp3())
-                .mt(Spacing::sp2())
-                .child(
-                    div()
-                        .id("bbr-error-action")
-                        .px(Spacing::sp4())
-                        .py(Spacing::sp1())
-                        .rounded(theme.radius.medium())
-                        .bg(theme.palette.accent)
-                        .text_size(theme.type_.label.size)
-                        .text_color(theme.palette.surface_glass)
-                        .on_mouse_down(MouseButton::Left, on_action)
-                        .child(spec.action_label.to_string()),
-                )
-                .child(
-                    div()
-                        .id("bbr-error-dismiss")
-                        .px(Spacing::sp4())
-                        .py(Spacing::sp1())
-                        .rounded(theme.radius.medium())
-                        .border_1()
-                        .border_color(theme.palette.border_strong)
-                        .text_size(theme.type_.label.size)
-                        .text_color(theme.palette.ink)
-                        .on_mouse_down(MouseButton::Left, on_dismiss)
-                        .child(spec.dismiss_label.to_string()),
-                ),
-        )
 }
 
 /// Test-only helper: the recovery action must always pass the contract's

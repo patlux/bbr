@@ -6,6 +6,7 @@ use bbr_ui::theme::{ContrastMode, Density, ThemeMode};
 
 use crate::address_recorder::AddressRecorder;
 use crate::downloads_recorder::DownloadsRecorder;
+use crate::error_recorder::ErrorRecorder;
 use crate::find_recorder::FindRecorder;
 use crate::group4_recorder::Group4Recorder;
 use crate::library_recorder::LibraryRecorder;
@@ -84,4 +85,8 @@ pub struct GallerySnapshot {
     /// the number of presses that fired the production `on_previous` /
     /// `on_next` / `on_close` callbacks.
     pub find: FindRecorder,
+    /// The observed Error/Crash state through the production recorder
+    /// path: the number of presses that fired the production
+    /// action/dismiss/reload/close/new-tab callbacks.
+    pub error: ErrorRecorder,
 }

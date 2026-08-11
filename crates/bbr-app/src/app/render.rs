@@ -140,10 +140,13 @@ impl Render for BbrApp {
         } else if let Some(spec) = self.active_error_surface_spec() {
             // The surface replaces the active view's native slot (the view
             // was hidden by `sync_error_surface_visibility`; never
-            // destroyed — identity is untouched).
-            crate::app::error_surface::error_surface(
+            // destroyed — identity is untouched). The panel is the
+            // extracted `bbr-ui` surface (G2 Error/Crash cut); the app
+            // keeps the incident lifecycle and builds the DTO.
+            let model = spec.to_model();
+            bbr_ui::surfaces::error::error_surface(
                 &theme,
-                &spec,
+                &model,
                 cx.listener(|this, _e, window, cx| this.error_recover(window, cx)),
                 cx.listener(|this, _e, window, cx| this.error_dismiss(window, cx)),
             )

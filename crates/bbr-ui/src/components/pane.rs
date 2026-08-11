@@ -18,6 +18,7 @@ pub fn empty_space_pane(
 ) -> Stateful<Div> {
     div()
         .id("bbr-empty-new-tab")
+        .debug_selector(|| "bbr-empty-new-tab".to_string())
         .flex_1()
         .size_full()
         .flex()
@@ -43,6 +44,7 @@ pub fn empty_space_pane(
         .child(
             div()
                 .id("bbr-empty-new-tab-button")
+                .debug_selector(|| "bbr-empty-new-tab-button".to_string())
                 .mt(Spacing::sp3())
                 .px(Spacing::sp4())
                 .py(Spacing::sp2())
@@ -67,6 +69,7 @@ pub fn crash_panel(
 ) -> Stateful<Div> {
     div()
         .id("bbr-crash-panel")
+        .debug_selector(|| "bbr-crash-panel".to_string())
         .flex_1()
         .size_full()
         .flex()
@@ -105,6 +108,7 @@ pub fn crash_panel(
                 .child(
                     div()
                         .id("bbr-crash-reload")
+                        .debug_selector(|| "bbr-crash-reload".to_string())
                         .px(Spacing::sp4())
                         .py(Spacing::sp1())
                         .rounded(theme.radius.medium())
@@ -117,6 +121,7 @@ pub fn crash_panel(
                 .child(
                     div()
                         .id("bbr-crash-close")
+                        .debug_selector(|| "bbr-crash-close".to_string())
                         .px(Spacing::sp4())
                         .py(Spacing::sp1())
                         .rounded(theme.radius.medium())

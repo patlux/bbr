@@ -19,6 +19,7 @@ use gpui_component::slider::SliderState;
 
 use crate::address_recorder::{AddressObserver, AddressRecorder};
 use crate::downloads_recorder::{DownloadsObserver, DownloadsRecorder};
+use crate::error_recorder::{ErrorObserver, ErrorRecorder};
 use crate::find_recorder::{FindObserver, FindRecorder};
 use crate::group4_recorder::{Group4Observer, Group4Recorder};
 use crate::library_recorder::{LibraryObserver, LibraryRecorder};
@@ -86,26 +87,14 @@ pub struct StoryContext<'a> {
     /// `component-gallery-browser-components.md`, Group 3). `None` for
     /// every other story.
     pub address: Option<AddressStory<'a>>,
-    /// `Some` only for the five Group 4 sidebar-component stories
-    /// (Favorites grid, Folders, Footer, Profile chip (S/N/XL), Plus
-    /// menu): the current recorder snapshot, the observer callbacks the
-    /// production `bbr-ui` favorites/folders/footer/menu callbacks route
-    /// through, and the footer `[Downloads]` focus handle (packet
-    /// `component-gallery-browser-components.md`, Group 4). `None` for
-    /// every other story.
+    /// `Some` only for the five Group 4 sidebar-component stories.
     pub group4: Option<Group4Story<'a>>,
-    /// `Some` only for the Downloads panel story: the current recorder
-    /// snapshot, the observer callbacks the production
-    /// `downloads_panel_surface` callbacks route through, and the plain
-    /// scroll/focus handles the surface model borrows (packet
-    /// `component-gallery-browser-components.md`, Group 5). `None` for
-    /// every other story.
+    /// `Some` only for the Downloads panel story.
     pub downloads: Option<DownloadsStory<'a>>,
-    /// `Some` only for the Find bar story: the current recorder snapshot
-    /// and the observer callbacks the production `find_bar` callbacks
-    /// route through (packet `component-gallery-browser-components.md`,
-    /// Group 6). `None` for every other story.
+    /// `Some` only for the Find bar story.
     pub find: Option<FindStory<'a>>,
+    /// `Some` only for the Error surface / Crash & Empty panes stories.
+    pub error: Option<ErrorStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -159,49 +148,31 @@ pub struct AddressStory<'a> {
     pub observer: &'a AddressObserver,
 }
 
-/// Everything a Group 4 sidebar-component story needs to render the
-/// **exact** production `bbr-ui` favorites/folders/footer/menu symbols
-/// with recorder callbacks: the current recorder snapshot (favorite
-/// activations, folder toggles/selects/closes, downloads/plus presses,
-/// menu commits), the observer callbacks that re-enter the app on real
-/// pointer interactions, and the footer `[Downloads]` keyboard-focus
-/// handle the production `footer_surface` takes (packet
-/// `component-gallery-browser-components.md`, Group 4). `Some` only while
-/// one of the five Group 4 stories is selected.
+/// Group 4 sidebar-component story context.
 pub struct Group4Story<'a> {
     pub recorder: &'a Group4Recorder,
     pub observer: &'a Group4Observer,
     pub downloads_focus: FocusHandle,
 }
 
-/// Everything the Downloads panel story needs to render the **exact**
-/// production `bbr_ui::surfaces::downloads` surface with recorder
-/// callbacks: the current recorder snapshot, the observer callbacks that
-/// re-enter the app on real pointer interactions, and the plain
-/// `ScrollHandle`/`FocusHandle` the surface model borrows (packet
-/// `component-gallery-browser-components.md`, Group 5). `Some` only while
-/// the Downloads panel story is selected.
+/// Downloads panel story context.
 pub struct DownloadsStory<'a> {
     pub recorder: &'a DownloadsRecorder,
     pub observer: &'a DownloadsObserver,
-    /// The production scroll handle the §11.12 scroll families track (the
-    /// story applies the fixture's scroll offset, so the bounded window
-    /// and the wheel never disagree).
     pub scroll: &'a gpui::ScrollHandle,
-    /// The §11.12 panel focus handle (the surface tracks focus on it).
     pub focus: &'a gpui::FocusHandle,
 }
 
-/// Everything the Find bar story needs to render the **exact** production
-/// `bbr_ui::surfaces::find` symbols (`find_bar`, `FindSurface`,
-/// `FindBarRect`) with recorder callbacks: the current recorder snapshot
-/// (control press counts) and the observer callbacks that re-enter the
-/// app on real pointer interactions (packet
-/// `component-gallery-browser-components.md`, Group 6). `Some` only while
-/// the Find bar story is selected.
+/// Find bar story context.
 pub struct FindStory<'a> {
     pub recorder: &'a FindRecorder,
     pub observer: &'a FindObserver,
+}
+
+/// Error surface / Crash & Empty panes story context.
+pub struct ErrorStory<'a> {
+    pub recorder: &'a ErrorRecorder,
+    pub observer: &'a ErrorObserver,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,
@@ -442,7 +413,7 @@ mod tests {
                 "Plus menu",
             ]
         );
-        assert_eq!(registry.story_count(), 40);
+        assert_eq!(registry.story_count(), 42);
     }
 
     #[test]
@@ -452,14 +423,25 @@ mod tests {
             registry.story(StoryId(38)).unwrap().label,
             "Downloads panel"
         );
-        assert_eq!(registry.story_count(), 40);
+        assert_eq!(registry.story_count(), 42);
     }
 
     #[test]
     fn find_story_appends_after_downloads() {
         let registry = catalog();
         assert_eq!(registry.story(StoryId(39)).unwrap().label, "Find bar");
-        assert_eq!(registry.story_count(), 40);
+        assert_eq!(registry.story_count(), 42);
+    }
+
+    #[test]
+    fn error_stories_append_after_find() {
+        let registry = catalog();
+        assert_eq!(registry.story(StoryId(40)).unwrap().label, "Error surface");
+        assert_eq!(
+            registry.story(StoryId(41)).unwrap().label,
+            "Crash / Empty panes"
+        );
+        assert_eq!(registry.story_count(), 42);
     }
 
     #[test]

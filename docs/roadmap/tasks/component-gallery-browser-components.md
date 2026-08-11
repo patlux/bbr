@@ -540,6 +540,115 @@ Human intervention:
   None.
 ```
 
+### Group 7 — Error/Crash surfaces (canonical union ids 40–41)
+
+```text
+Outcome:
+  The §11.8 error presentation is extracted from bbr-app into the new
+  bbr-ui::surfaces::error module (ErrorSurfaceModel DTO + error_surface
+  render, byte-identical ids/anatomy/copy); bbr-app keeps ErrorSurfaceState
+  (incident lifecycle), ErrorSurfaceSpec + spec_for (contract mapping and
+  the Retry-only action policy), copy_for/action_label, the behavior
+  wiring, and the presentation performance probe, and builds the DTO
+  through ErrorSurfaceSpec::to_model. The Gallery appends two stories —
+  Error surface and Crash / Empty panes — at canonical StoryIds 40–41
+  after the pinned 0–39 prefix; no earlier id is renumbered. One matrix
+  authority (error_matrix.rs + error_panel_matrix.rs) declares 16 valid
+  error families (6 TLS + 5
+  navigation + 3 offline + 2 explicit origin-omitted variants), the crash
+  panel + empty pane, and the rejected combinations (TLS bypass action,
+  crash panel on a healthy tab, raw platform error code in copy) that
+  refuse fixture construction; the recorder (error_recorder.rs) proves the
+  production error_surface/crash_panel/empty_space_pane callbacks fire
+  (action/dismiss/reload/close/new-tab) through real-pointer E2E.
+Commits:
+  None — writer candidate only, uncommitted in this worktree.
+Functional evidence:
+  Gallery unit tests 59/59 (11 new: 5 error_matrix + 4
+  error_panel_matrix + 2 error_recorder)
+  incl. the no-drift/dimension/Raw-code tests and the extended rg guard;
+  Gallery Clippy --all-targets -D warnings clean; bbr-ui Clippy clean;
+  workspace clippy and testkit-feature clippy clean; cargo fmt clean;
+  cargo check/test --workspace green; just ui-deps green; just roadmap
+  green. GUI-locked Xcode-26.2 suites: just e2e-gallery (canonical ids
+  40–41 included in the every-story sweep) and just e2e-shell-errors
+  (unchanged migration guard) green.
+Real-app E2E:
+  just e2e-shell-errors re-run unchanged and green — ids, §15 fields,
+  focus domains, typed semantic trees byte-identical (the existing suite
+  is the migration guard, unmodified).
+Performance evidence:
+  None executed; performance remains Patrick-deferred/unpassed. The
+  production error-surface performance probe (performance/error_surface.rs
+  and error_surface_benchmarks.rs) and its budgets/sample guards are
+  unchanged by the render-only migration; missing execution recorded as
+  explicit debt.
+Roadmap/documentation updates:
+  G2 packet evidence/ledger only (this file). ROADMAP.md / ARCHITECTURE.md /
+  UI track roll-ups are Orchestrator-owned serial points.
+Open blockers and non-goals:
+  The incident lifecycle, taxonomy mapping, and action policy stay
+  app-owned (presentation-model-only extraction). Canonical StoryIds
+  40–41 follow Groups 4–6. Performance execution and canonical `just e2e`
+  remain unexecuted/unpassed.
+Worktree state:
+  Branch parallel/g2-group7-errors at base/HEAD 5e018b34286daab690c7f88d
+  32c4b97dc3204484 (tree 58d2c8152761c5536944b1b6535d2f75a1a57615); real
+  index unchanged at the base tree; working-tree candidate only,
+  diff-clean, no staged paths, no commit, no process/lock.
+
+Planning/read-only:
+  Read ROADMAP/current delivery/DESIGN §11.8 + §15/packet/anchor
+  extraction table row 346/production error surface + Gallery Address &
+  Library patterns; advisory refreshed post-activation.
+Implementation:
+  crates/bbr-ui/src/surfaces/mod.rs + surfaces/error.rs (extraction),
+  crates/bbr-ui/src/lib.rs; crates/bbr-ui/src/components/pane.rs
+  (test-support-gated debug selectors on the existing
+  empty_space_pane/crash_panel for the real-pointer E2E);
+  crates/bbr-app/src/app/error_surface.rs
+  (render removed, to_model added), render.rs (bbr_ui surface call);
+  crates/bbr-gallery/src/error_matrix.rs, error_panel_matrix.rs,
+  error_recorder.rs, error_app.rs,
+  stories/error.rs, e2e/error.rs, stories.rs, registry.rs, canvas.rs,
+  snapshot.rs, app.rs, main.rs, e2e/mod.rs, dependency_contract.rs
+  (rg-guard extension); packet evidence/ledger.
+Test execution:
+  cargo fmt; cargo check/test --workspace; bbr-gallery/bbr-ui/workspace/
+  testkit Clippy --all-targets -D warnings; just ui-deps; just roadmap;
+  GUI-locked just e2e-gallery and just e2e-shell-errors.
+Review:
+  Pending independent read-only review.
+Remediation:
+  The real-pointer E2E initially failed because the production §15 ids
+  repeat per matrix family and `debug_bounds` resolves a repeated id to
+  the last (off-viewport) instance, so the click on `bbr-error-action`
+  landed below the visible story page. The story now registers a
+  test-target frame selector per family (`error-family-<n>-frame`), and
+  the E2E computes the first family's action/dismiss button centers from
+  that frame (the same pattern the Address story uses for its pill
+  center); the pane buttons stay unique and use `click_selector`.
+  Verified: `just e2e-gallery` 26/26 including
+  `real_presses_report_through_the_recorder`.
+Waiting/retries:
+  One transient gpui_macos Metal-shader build-script failure during a
+  first clippy attempt reproduced the known derived-cache artifact and
+  passed unchanged on the retry with no source change; not an acceptance
+  relaxation. Forward continuation: the temporary diagnostic
+  `e2e/zz_diag_error_geometry.rs` (and its `e2e/mod.rs` registration) was
+  removed before handoff, and the Error/Crash matrix was split by
+  responsibility into `error_matrix.rs` (error-surface families, 494
+  lines) + `error_panel_matrix.rs` (crash/empty panes, 205 lines) to stay
+  within the ~500-line module budget; the one-declaration-source contract
+  and all matrix tests are preserved (59/59 gallery unit tests).
+Post-merge evidence:
+  Not applicable (no merge in this lane).
+Total elapsed:
+  Estimate (single writer session).
+Human intervention:
+  None.
+```
+
 ### Group 4 (G2 sidebar components) — packet-only remediation record
 
 ```text
