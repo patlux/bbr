@@ -11,14 +11,15 @@ Template: [task-packet template](../templates/task-packet.md)
 
 Program position: **G2**, continuing from the integrated Gallery MVP, Status
 Line (StoryId 21), Tab Row (22), Saved Pages Library component rows/controls
-(23–29), Library composition (30), and Renderer-Isolation checkpoint recorded
-in [Current delivery](../../delivery/current.md). The next bounded cut is Group
-3 Address/Input; Group 4 follows it, then Groups 5–9 may proceed in isolated
-lanes with canonical semantic integration order 4 → 5 → 6 → 7 → 8 → 9
-(portal cluster 6 → 8 → 9). Groups 3–4 already consume production `bbr-ui`
-components extracted by G1a, so their remaining work is Gallery matrix,
-fixtures, stories, recorder E2E, and documentation. Groups 5–9 still perform
-the real `bbr-ui` extraction/app migration before adding Gallery stories.
+(23–29), Library composition (30), Address control (31), Command staging (32),
+and Renderer-Isolation checkpoint recorded in
+[Current delivery](../../delivery/current.md). Group 3 Address/Input is
+integrated. Groups 4–9 may now proceed in isolated lanes from the same recorded
+base with canonical semantic integration order 4 → 5 → 6 → 7 → 8 → 9
+(portal cluster 6 → 8 → 9). Group 4 already consumes production `bbr-ui`
+components extracted by G1a, so its remaining work is Gallery matrix, fixtures,
+stories, recorder E2E, and documentation. Groups 5–9 still perform the real
+`bbr-ui` extraction/app migration before adding Gallery stories.
 Stories construct **production presentation models and callback recorders** —
 gallery renderability is explicitly not native Portal/AppKit/WebKit z-order
 evidence.
@@ -331,7 +332,11 @@ Outcome:
   families and the focused E2E asserts the production
   bbr-command-profile-hint semantic id and the stable 7-family count.
 Commits:
-  None — writer may not commit or integrate (exact candidate only).
+  Exact reviewed lane ed5931175cfc121fbbc146dce28df4f41cf8df77 / tree
+  e448da5b35c87444f76c1b016d84eca5424f1b74; semantic Orchestrator merge
+  d6cd4353434ed8b31319e2fd12c9e9d991071cbc / tree
+  7b9e9ee4c1a408d961cbb892bb1594a1fc5d4655, parents Control
+  25a4ef0a7c2746faa6e148ebf29e187bc3fe7fc7 + exact lane commit.
 Functional evidence:
   Gallery unit tests 48/48 (matrix valid/rejected incl. the staging
   dimension-coverage test, recorder, registry pinned-prefix incl. 23–30,
@@ -374,7 +379,12 @@ Test execution:
   just e2e-gallery 24/24, unchanged just e2e-shell-command 25/25, just
   ui-deps, just roadmap, fmt, just verify, diff-check.
 Review:
-  Not yet run — writer candidate awaiting the independent read-only review.
+  Two broad read-only attempts timed out without authority after identifying
+  the same concrete staging-matrix gap. The ultra-focused exact-candidate
+  recheck returned G2_ADDRESS_RECHECK_PASS. The staged semantic union then
+  returned G2_ADDRESS_STAGED_UNION_PASS: all 15 lane paths were staged, every
+  product/packet blob matched the reviewed lane, and Control's sole current
+  delivery authority remained the only lane-to-union tree difference.
 Remediation:
   One remediation writer closed the review finding in the authorized
   files only: address_matrix.rs (StagingCase.profile_hint + 3 new staging
@@ -390,7 +400,22 @@ Remediation:
   evidence/ledger. No production change, no new product modes/ids/
   Copy-Link, StoryIds stay 31/32.
 Waiting/retries:
-  None.
+  The first post-merge repository-target `just verify` reached Clippy after all
+  tests passed but failed on read-only derived metadata. A fresh `/tmp` target
+  with repository Xcode 26.2 passed unchanged; this was cache recovery, not a
+  source or acceptance relaxation.
+Post-merge evidence:
+  Fresh-target `just verify` passed on exact merge tree 7b9e9ee4...; log
+  `/tmp/bbr-g2-address-postmerge-verify-fresh.log`, SHA-256
+  fbb20f2a48a111f3f45f97285410c8d82708010014dcfd6f36eb6445999ea352.
+  GUI-locked Xcode-26.2 Gallery passed 24/24; log
+  `/tmp/bbr-g2-address-postmerge-gallery.log`, SHA-256
+  ae7479915cc702e556174b48e76248b8bbaa7f9ffad58be20d8e01d780f937e5.
+  Unchanged Command passed 25/25; log
+  `/tmp/bbr-g2-address-postmerge-command.log`, SHA-256
+  26cd6ec4f65faba70ab80eee072264001328ed36ba7f6ea03f031702b5c3b49f.
+  HEAD/tree/status remained exact and the GUI lock released. Performance and
+  canonical `just e2e` remain unexecuted/unpassed.
 Total elapsed:
   Estimate (single writer session).
 Human intervention:
