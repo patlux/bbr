@@ -17,16 +17,19 @@ Stable composition reference, not a visual copy:
 
 ## Outcome
 
-BBR's unified macOS titlebar presents a traffic-light-safe sidebar
-collapse/expand control and compact Back/Forward/Reload cluster. Controls route
-through the same authorities as Cmd-B and browser navigation shortcuts, target
-the selected tab or focused split pane, preserve native titlebar dragging, and
-never duplicate address entry or invent a second navigation state.
+BBR's expanded full-height Sidebar presents a traffic-light-safe
+collapse/expand control and compact Back/Forward/Reload cluster at the top of
+its rail. Controls route through the same authorities as Cmd-B and browser
+navigation shortcuts, target the selected tab or focused split pane, preserve
+native titlebar dragging, and never duplicate address entry or invent a second
+navigation state. Collapsing the Sidebar removes the complete BBR-owned header
+and navigation cluster; no replacement content toolbar remains over the page.
 
 ## Scope
 
-- Compose `[traffic lights] [sidebar toggle] … [Back] [Forward] [Reload]`
-  inside the actual safe titlebar layout guide.
+- Extend the Sidebar rail to the top window edge and compose
+  `[traffic lights] [sidebar toggle] … [Back] [Forward] [Reload]` inside the
+  actual safe titlebar layout guide.
 - The sidebar toggle sits immediately after the traffic lights and uses the
   identical sidebar geometry authority as Cmd-B. Its glyph reflects collapsed
   versus expanded state.
@@ -39,7 +42,10 @@ never duplicate address entry or invent a second navigation state.
   least 32 pt, transparent rest state, DESIGN hover/pressed/disabled/focus
   tokens, and no bordered toolbar capsule.
 - Preserve draggable empty titlebar space, traffic-light clearance,
-  fullscreen, multi-display, narrow-window, and sidebar-collapsed behavior.
+  fullscreen, multi-display, and narrow-window behavior.
+- On Sidebar collapse, hide `bbr-titlebar`, `bbr-titlebar-sidebar-toggle`, and
+  all three navigation controls with the rail. Native traffic lights remain;
+  Cmd-B restores the Sidebar. Do not render a content-side replacement bar.
 - Stable ids: `bbr-titlebar`, `bbr-titlebar-sidebar-toggle`, `bbr-nav-back`,
   `bbr-nav-forward`, `bbr-nav-reload`.
 - Add typed geometry/availability/semantic state, click and keyboard parity
@@ -55,6 +61,8 @@ never duplicate address entry or invent a second navigation state.
   opener-return policy, or sidebar width state in `bbr-ui`.
 - No stop button or additional toolbar actions without a separate contract.
 - No window-management redesign or multi-window work.
+- No collapsed-state content toolbar, floating navigation cluster, or duplicate
+  Sidebar toggle over the native webpage.
 
 ## Parallel-lane contract
 
@@ -82,7 +90,8 @@ presentation, navigation-control components, or their Gallery stories.
 - Empty titlebar background remains draggable and controls do not intercept
   drag outside their hit targets.
 - Sidebar toggle and Cmd-B mutate the same requested/remembered width; no
-  duplicate state.
+  duplicate state. The BBR-owned header exists only while the Sidebar is
+  expanded.
 - Back/Forward enablement derives from real session navigation state; disabled
   controls cannot dispatch. Reload targets only the focused command pane.
 - Portable UI receives plain presentation data/callbacks; AppKit details stay
@@ -111,8 +120,10 @@ presentation, navigation-control components, or their Gallery stories.
       results over real WKWebViews.
 - [ ] Disabled controls are visible, semantically explained, and no-op.
 - [ ] Empty titlebar dragging moves the window; control presses do not.
-- [ ] Collapse/expand restores width; fullscreen, multiple displays, and
-      narrow windows avoid overlap with traffic lights/sidebar/address/content.
+- [ ] Collapse removes the complete BBR header/navigation cluster and expand
+      restores both the remembered width and header; fullscreen, multiple
+      displays, and narrow windows avoid overlap with traffic lights/sidebar/
+      address/content.
 - [ ] Split navigation targets only the focused pane.
 
 ### Performance

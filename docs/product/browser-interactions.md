@@ -53,7 +53,7 @@ These concepts must not be conflated:
 - The new tab belongs to the active space and therefore uses that space's
   profile.
 
-### Link-created regular child tabs — Planned contract
+### Link-created regular child tabs — Contract
 
 - The canonical popup/new-window policy first decides whether a user-originated
   request becomes Peek, a regular tab, external handling, or rejection.
@@ -64,11 +64,23 @@ These concepts must not be conflated:
   either tab or ending the process invalidates it; v1 does not persist it.
 - Cmd-T, Saved Page activation, reopen, external URLs, and tabs without a
   concrete source tab do not invent opener provenance.
-- Insertion position, background versus foreground opening, and modifier/middle-
-  click behavior remain explicit decisions below. The opener relation does not
-  settle them.
 
-Canonical implementation packet:
+### Background link-created tabs — Contract
+
+- `Cmd` + primary click and middle click on a web link resolve to one regular
+  child tab opened in the background. The opener remains selected, visible,
+  and web-focused; no temporary foreground activation or focus bounce occurs.
+- The first background child inserts immediately after its opener. Further
+  background children from the same opener form one contiguous group after it
+  in click order. Unrelated tabs retain their relative order.
+- Manual reorder or move remains authoritative afterward. The child-to-opener
+  relation stays identity-based and is never reconstructed from adjacency.
+- Plain primary click keeps normal page navigation. Shift-modified link
+  behavior remains a separate decision and is not inferred here.
+- Canonical implementation packet:
+  [background link tabs](../roadmap/tasks/background-link-tabs.md).
+
+The opener lifecycle and Back-at-root implementation remain owned by
 [web-content navigation gestures and opener return](../roadmap/tasks/web-content-navigation-gestures.md).
 The request/disposition authority remains owned by
 [Link Preview / Peek](../roadmap/tasks/link-preview-peek.md).
@@ -276,6 +288,20 @@ Canonical packet:
   needless recreation of warm sessions.
 - The UI always communicates the destination profile when switching spaces or
   moving tabs across profile boundaries.
+
+### Create and configure a space — Contract
+
+- Creating a Space immediately creates and activates one real Space through the
+  controller's single creation authority.
+- The Space receives deterministic valid default name, theme, and curated
+  identity so it is usable before configuration completes.
+- A production configuration surface then permits changing the exact Space's
+  name and one curated emoji or BBR glyph identity. Escape or cancellation
+  keeps the created Space and its valid defaults; it never rolls creation back.
+- The footer presents icon-only Space identities. Accessible names include the
+  Space and Profile names, so icon and color never carry identity alone.
+- Canonical implementation packet:
+  [Space creation and appearance UI](../roadmap/tasks/space-creation-appearance-ui.md).
 
 ### Switch a space — Contract
 
@@ -566,14 +592,15 @@ shortcut must expose an understandable menu, tooltip, or help representation.
 
 These items require explicit product decisions before their affected UI ships:
 
-1. **New-tab insertion:** always append to regular tabs, insert after the
-   current tab, or use opener-aware placement. Current controller behavior
-   appends.
+1. **Non-link new-tab insertion:** Cmd-T and other source-less regular tabs
+   currently append. Background link children are separately resolved above as
+   opener-relative grouped insertion and do not silently change Cmd-T.
 2. **Close selection history:** retain the current visual-neighbor contract or
    introduce most-recently-used/opener-aware selection. Current contract uses
    the visual neighbor and must not change accidentally.
-3. **Background opening:** modifier/middle-click semantics, selection behavior,
-   and insertion location.
+3. ~~**Background opening**~~ **Resolved:** Cmd-primary and middle click open
+   one grouped background child immediately after the opener while preserving
+   opener selection and web focus. Shift-modified behavior remains open.
 4. **Last-tab window behavior:** an empty space is currently valid; decide
    separately whether closing the last tab of the last window ever closes the
    window.

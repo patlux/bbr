@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slice:** [G3 composition stories](docs/roadmap/tasks/component-gallery-compositions.md): Sidebar and Command are integrated. Split remains the next serial G3 composition, but Patrick's active scheduling override defers every Split/SPLIT-COMPOSITION preflight, reconciliation, review, port, and writer until he explicitly re-enables it. No product writer is currently authorized. Integrated Link Preview / Peek, Tab Row, Saved Pages Library, renderer isolation/unresponsive tabs, productive new-window handling, and web-content navigation gestures remain preserved foundations.
+- **Active product slice:** [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md): close ordinary browser-muscle-memory and Sidebar-chrome gaps through bounded parallel lanes — grouped background link tabs, current-base gesture revalidation, full-height titlebar/navigation, Space creation/identity configuration, daily-driver Tab/Pinned/Favorites composition, and production context menus. Split remains fully scheduling-deferred and its stale worktree stays untouched.
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:
@@ -80,9 +80,16 @@ into a duplicate execution queue:
   → [browser components](docs/roadmap/tasks/component-gallery-browser-components.md)
   → [compositions](docs/roadmap/tasks/component-gallery-compositions.md)
 - **Daily-driver browser essentials:** [capability inventory](docs/product/daily-driver-capability-inventory.md)
+  → [background link tabs](docs/roadmap/tasks/background-link-tabs.md)
   → [web-content navigation gestures](docs/roadmap/tasks/web-content-navigation-gestures.md)
+  → [current-base gesture revalidation](docs/roadmap/tasks/web-gesture-revalidation.md)
   → [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md)
   → [renderer isolation and unresponsive tabs](docs/roadmap/tasks/renderer-isolation-unresponsive-tabs.md)
+- **Daily-driver Sidebar:** [full-height titlebar navigation](docs/roadmap/tasks/titlebar-navigation-controls.md)
+  → [Space creation and appearance UI](docs/roadmap/tasks/space-creation-appearance-ui.md)
+  → [daily-driver Sidebar main](docs/roadmap/tasks/daily-driver-sidebar-main.md)
+  → [Tab/Favorite menus](docs/roadmap/tasks/tab-favorite-context-menus.md)
+  → [Page-background menu](docs/roadmap/tasks/page-background-context-menu.md)
 - **Release:** [deterministic app packaging](docs/roadmap/tasks/macos-app-packaging.md)
   and [deterministic process shutdown](docs/roadmap/tasks/process-lifecycle-shutdown.md)
 

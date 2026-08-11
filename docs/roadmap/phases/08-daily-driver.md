@@ -10,10 +10,13 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 
 - [ ] Close the ordinary-browser behavior gaps tracked in the
   [daily-driver capability inventory](../../product/daily-driver-capability-inventory.md)
-  through bounded packets rather than a phase-wide implementation. First
-  canonical slice: [web-content Back/Forward gestures and child-tab opener
-  return](../tasks/web-content-navigation-gestures.md). New-window disposition,
-  background opening, and insertion policy remain separate explicit decisions.
+  through bounded packets rather than a phase-wide implementation. The
+  integrated [web-content Back/Forward gestures and child-tab opener return](../tasks/web-content-navigation-gestures.md)
+  receive a current-base [real-app revalidation](../tasks/web-gesture-revalidation.md).
+  Patrick resolved the first remaining link-disposition slice: [Cmd-primary and
+  middle-click background tabs](../tasks/background-link-tabs.md) insert a
+  grouped child immediately after the opener while preserving opener selection
+  and web focus. Shift-modified behavior remains separate.
 - [x] Deliver downloads destination, progress, history, reveal, retry, and failure UI through the bounded [downloads sidebar panel](../tasks/downloads-sidebar-panel.md) — including the settled post-MVP follow-up (terminal-history persistence, durable Clear/Delete, cancelled Restart, active-only badge).
 - [x] Deliver find in page with keyboard navigation and result count through the completed [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), including real WKWebView E2E and `find_open`/query/step performance evidence.
 - [x] Define the portable request/decision authority through the completed [permissions contract](../tasks/permissions-contract.md).
@@ -26,7 +29,7 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 - [ ] History UI and clear-data controls per profile.
 - [ ] Deliver durable global **Saved Pages** through the bounded sequence: [B1 portable contract + persistence](../tasks/saved-pages-portable-persistence.md) → [B2 Cmd-D, shared save/remove/open command, Palette provider, and menu consumers](../tasks/saved-pages-actions-command.md) → [B3 Saved Pages Library](../tasks/saved-pages-library.md). Pin and Favorite remain concrete live-tab presentations; Saved Pages are profile-free URL records that survive tab close and restart. *(B1, B2, and B3 are integrated through semantic-union merge `492615b5`: production Library real-app 12/12 plus B2 4/4 and Command 25/25, bounded 1k rendering, and integrated Gallery 22/22. B2/B3 performance code, budgets, baselines, and guards are preserved, but current performance acceptance is Patrick-deferred, unexecuted, and not passed; therefore the phase roll-up stays open.)*
 - [x] Default-browser registration and external URL opening through the completed [external-URL open contract](../tasks/external-url-open-contract.md) and native integration `e5dab25`.
-- [ ] Native menus, Services, broader window lifecycle, and app updates. The BBR-owned/WebKit-owned context-menu boundary is integrated and its bounded [Page-background menu follow-up](../tasks/page-background-context-menu.md) remains dependency-gated; WebKit-native element menus remain untouched.
+- [ ] Native menus, Services, broader window lifecycle, and app updates. The current Daily-driver wave activates bounded [Tab/Favorite menus](../tasks/tab-favorite-context-menus.md) and the conservative [Page-background menu follow-up](../tasks/page-background-context-menu.md); [Folder menus](../tasks/folder-context-menu.md) remain behind the shared menu/folder-command seam. WebKit-native element menus remain untouched.
 - [ ] Define a public-API-only [portable media-session capability contract](../tasks/media-session-capability-contract.md), then deliver the capability-driven [sidebar media control](../tasks/sidebar-media-control.md); no SPI, inferred transport controls, or fake duration.
 - [ ] Define profile-isolated site keys, settings overrides, and zoom lifecycle through the bounded [per-site settings and zoom contract](../tasks/site-settings-zoom-contract.md), then integrate persistence, native zoom, and UI.
 - [ ] Implement popup/new-window policy and target-blank flows. First land the bounded [productive new-window request seam](../tasks/new-window-production-seam.md): direct activations open one regular tab in the source Space/Profile and script-created requests are blocked/reported through the real delegate path. Then add the dedicated [Link Preview / Peek](../tasks/link-preview-peek.md) lifecycle for eligible user-created links. Requests resolved to a regular tab establish the session-local opener provenance consumed by [web-content gesture Back-at-root return](../tasks/web-content-navigation-gestures.md); Peek/external/block/background policy remains owned here, not by the gesture layer.

@@ -32,8 +32,8 @@ splits, Portal hit-testing, deterministic E2E, and performance acceptance.
 |---|---|---|
 | Trackpad Back/Forward over web content | implemented functionally; performance acceptance deferred | [Web-content navigation gestures](../roadmap/tasks/web-content-navigation-gestures.md): exact-pane WebKit/controller history authority integrated at `542af1a`; real-app gestures 9/9 and affected functional regressions pass, while production performance scenarios remain unexecuted/unpassed under the active override |
 | Child-tab Back-at-root returns to opener | implemented functionally; performance acceptance deferred | [Web-content navigation gestures](../roadmap/tasks/web-content-navigation-gestures.md): session-local `TabId` provenance and atomic close-child/activate-opener integrated at `542af1a`; functional lifecycle/split/profile evidence passes and performance acceptance remains unexecuted/unpassed |
-| Link-created regular tab vs Peek vs external vs blocked | implemented for the committed direct-user/script/Peek dispositions; explicit modifier/middle-click policy still decision needed | Integrated [Link Preview / Peek](../roadmap/tasks/link-preview-peek.md) owns typed request/disposition and Peek policy; regular child tabs provide provenance to the gesture packet; foreground/background modifier and insertion policy remains the separate unresolved row below |
-| Foreground/background link opening | decision needed | Resolve modifier-click, middle-click, focus/selection, insertion, and opener retention before implementation; update [browser interactions](browser-interactions.md) |
+| Link-created regular tab vs Peek vs external vs blocked | implemented for the committed direct-user/script/Peek dispositions; background modifier path planned | Integrated [Link Preview / Peek](../roadmap/tasks/link-preview-peek.md) owns typed request/disposition and Peek policy; regular child tabs provide provenance to the gesture packet; the resolved background path is owned by the packet below |
+| Foreground/background link opening | planned; product behavior resolved | [Background link tabs](../roadmap/tasks/background-link-tabs.md): Cmd-primary and middle click open grouped background children immediately after the opener in click order while preserving opener selection and web focus; Shift-modified behavior remains unclassified |
 | Titlebar and shortcut Back/Forward/Reload | planned | [Unified titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md); same controller/navigation state as gestures and shortcuts |
 | Reopen recently closed tabs | implemented baseline | [Browser interaction contract](browser-interactions.md); future cross-space/window history scope remains an explicit decision |
 | Downloads, Find, errors, authentication, permissions, file panels | planned/partially implemented | [Phase 8](../roadmap/phases/08-daily-driver.md) linked bounded packets; every surface needs cancellation/failure/restart evidence |
@@ -50,10 +50,11 @@ The following product questions must each have one canonical answer and tests:
 
 - Links opened by page content: regular tab, Peek, external, blocked, or a
   user-selected disposition.
-- Foreground versus background opening for plain click, Cmd-click,
-  Shift-click, middle-click, keyboard activation, and context-menu actions.
-- Insertion position for a child tab and whether several children cluster after
-  their opener.
+- Foreground versus background opening for plain click, Shift-click, keyboard
+  activation, and context-menu actions. Cmd-click and middle-click are resolved
+  to grouped background children.
+- Insertion position for non-link/source-less tabs. Background link children
+  cluster immediately after their opener in click order.
 - Exact opener provenance lifetime across navigation, reorder, move, suspend,
   crash, profile change, opener close, child close, and process restart.
 - Closing/return behavior: ordinary Cmd-W neighbor selection remains distinct

@@ -13,7 +13,8 @@ Own the portable boundary between persistent browser objects (`bbr-domain`) and 
 
 ## Planned task packets
 
-- [ ] [Web-content navigation gestures and opener return](../tasks/web-content-navigation-gestures.md) — one real history authority plus session-local child→opener provenance and atomic Back-at-root return.
+- [ ] [Background link tabs](../tasks/background-link-tabs.md) — Cmd-primary and middle click create grouped background children directly after the opener without selection/focus mutation.
+- [ ] [Web-content gesture real-app revalidation](../tasks/web-gesture-revalidation.md) — re-prove the integrated gesture path on the current product base and remediate only a reproduced regression.
 
 ## Durable checklist
 
@@ -25,11 +26,15 @@ Own the portable boundary between persistent browser objects (`bbr-domain`) and 
 - [x] Same-profile moves preserve sessions.
 - [x] Cross-profile moves destroy and recreate sessions in the destination store.
 - [x] Commands target the active tab or focused pane explicitly.
-- [ ] A web-content Back/Forward gesture targets the exact native pane without
-      colliding with sidebar space swipe or chrome/Portal hit testing.
-- [ ] A regular link-created child records exact session-local opener `TabId`
+- [x] A web-content Back/Forward gesture targets the exact native pane without
+      colliding with sidebar space swipe or chrome/Portal hit testing. *(Functionally
+      integrated at `542af1a`; current-base revalidation is separately scheduled.)*
+- [x] A regular link-created child records exact session-local opener `TabId`
       provenance; Back at settled history root closes only that child and
-      activates the surviving opener atomically.
+      activates the surviving opener atomically. *(Integrated at `542af1a`.)*
+- [ ] Cmd-primary and middle-click link activations create one grouped
+      background child immediately after the opener while preserving opener
+      selection, web focus, profile, and session identity.
 - [x] WebEvents update the owning tab and navigation state deterministically.
 - [x] Unknown/stale WebEvents are reported without corrupting state.
 - [x] Controller operations expose typed outcomes suitable for UI and E2E events.

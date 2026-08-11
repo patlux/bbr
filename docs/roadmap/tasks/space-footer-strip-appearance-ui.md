@@ -20,9 +20,9 @@ Patrick reviewed the delivered U2 sidebar and revised the product target: the
 footer `[Spaces]` toggle that reveals space rows above Favorites **is not the
 intended interaction and is removed**. The footer becomes
 `[Downloads icon] [Spaces strip, all remaining width, horizontally scrollable]
-[Plus icon]`, where every space is an identity chip from the curated appearance
-contract, the active space is highlighted, and clicking a chip performs the
-existing warm space switch.
+[Plus icon]`, where every space is an **icon-only** identity chip from the
+curated appearance contract, the active space is highlighted, and clicking a
+chip performs the existing warm space switch.
 
 U2 itself is *correct as delivered* against the specification in force at the
 time. This packet is a product revision, not a U2 defect, and the U2 assertions
@@ -49,11 +49,12 @@ is in progress.
   single line, horizontally scrollable, never wraps or shrinks the fixed
   controls), `bbr-plus` (fixed). Remove the `[Spaces]` toggle control, the
   revealable space-row region, and its reveal state.
-- **Identity chips:** one `bbr-space-chip-<n>` per space in canonical order
-  with `bbr-space-identity-<n>` rendering the validated emoji/glyph identity
-  from the portable appearance contract. Stable accessible names carry space
-  and profile names; identity is never color-only. Selected chip is scrolled
-  fully into view without reordering.
+- **Identity chips:** one icon-only `bbr-space-chip-<n>` per space in canonical
+  order with `bbr-space-identity-<n>` rendering the validated emoji/glyph
+  identity from the portable appearance contract. Space title text is absent
+  from the footer at rest. Stable accessible names carry space and profile
+  names; identity is never color-only. Selected chip is scrolled fully into
+  view without reordering.
 - **Activation:** pointer click and keyboard activation route through the
   existing space-switch command path — no second switching authority, no
   session recreation, no change to per-space active-tab restoration.
@@ -81,8 +82,9 @@ is in progress.
 
 - No new persistence: appearance values are consumed from the integrated
   portable contract. Schema v1→v2 migration remains its own serial decision.
-- No space settings page, no color picker, no emoji picker UI (separate queue
-  items); this slice consumes already-chosen values and their defaults.
+- No space settings page, no color picker, no emoji picker UI in this completed
+  slice; the later [Space creation and appearance UI](space-creation-appearance-ui.md)
+  owns naming and curated identity selection without replacing this strip.
 - No change to profile isolation, tab↔space ownership, favorites semantics,
   command surfaces, Portal hosting, or dense-list rendering.
 - No page zoom, no web-content tinting, no screenshot/texture composition.

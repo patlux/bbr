@@ -528,12 +528,13 @@ using the IDs of §15. All rows use `density` geometry from §8.
 
 - **Placement:** spaces are always available in the §11.4 footer strip. There
   is no revealable space-row region above Favorites and no `[Spaces]` toggle.
-- **Anatomy:** each space is one keyboard-focusable identity chip containing
-  exactly one validated `SpaceIdentity` value from the curated appearance
-  contract: either a selected emoji or a BBR icon glyph. The chip has a stable
-  accessible name containing the space and profile names; color or emoji alone
-  never carries that meaning. Normal S1 geometry is calibrated with the same
-  generous hit-target family as the rest of the footer.
+- **Anatomy:** each space is one keyboard-focusable **icon-only** identity chip
+  containing exactly one validated `SpaceIdentity` value from the curated
+  appearance contract: either a selected emoji or a BBR icon glyph. No Space
+  title text appears in the footer at rest. The chip has a stable accessible
+  name containing the space and profile names; color or emoji alone never
+  carries that meaning. Normal S1 geometry is calibrated with the same generous
+  hit-target family as the rest of the footer.
 - **Behavior:** pointer click or keyboard activation performs the existing warm
   space switch. The active space is unmistakable through a persistent selected
   surface plus focus-independent outline/rail; inactive chips remain quiet.
@@ -979,9 +980,11 @@ The post-F2a/G1a titlebar target is
 `[traffic lights] [sidebar collapse/expand] … [Back] [Forward] [Reload]`
 inside the actual macOS safe titlebar layout guide.
 
-- The collapse control sits immediately after the traffic lights, uses the same
-  sidebar-width/collapse authority as Cmd-B, changes glyph for collapsed versus
-  expanded, and replaces rather than duplicates the pre-G1a status-row control.
+- The expanded Sidebar owns the complete left rail from the top window edge to
+  the footer. Its collapse control sits immediately after the traffic lights,
+  uses the same sidebar-width/collapse authority as Cmd-B, changes glyph for
+  collapsed versus expanded, and replaces rather than duplicates the pre-G1a
+  status-row control.
 - Back/Forward/Reload form a compact trailing cluster and target the selected
   tab in single-pane mode or the focused split pane. Enablement derives from
   real navigation state.
@@ -991,8 +994,12 @@ inside the actual macOS safe titlebar layout guide.
   address display.
 - Layout uses the native safe area; traffic-light x/y values are never
   hardcoded. Empty titlebar space remains draggable. Fullscreen,
-  multi-display, narrow-window, and collapsed-sidebar states must preserve
-  reachability without overlap.
+  multi-display, and narrow-window states must preserve reachability without
+  overlap.
+- Collapsing the Sidebar removes the complete BBR-owned titlebar/navigation
+  row together with the Sidebar. No compact content toolbar or floating
+  Back/Forward/Reload replacement remains over the webpage; native traffic
+  lights remain available and Cmd-B restores the Sidebar.
 - Stable ids: `bbr-titlebar`, `bbr-titlebar-sidebar-toggle`, `bbr-nav-back`,
   `bbr-nav-forward`, `bbr-nav-reload`.
 
