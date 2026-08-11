@@ -9,22 +9,19 @@ Predecessor: [Gallery MVP](component-gallery-mvp.md) ·
 Workflow: [development workflow](../../development-workflow.md) ·
 Template: [task-packet template](../templates/task-packet.md)
 
-Program position: **G2**, activated immediately after the settled and
-integrated Gallery MVP state recorded in [Current delivery](../../delivery/current.md).
-The required first cutover wave is Status line, Tab Row, Address/Input pieces,
-Favorites/Folders/Footer/Space chip, Downloads, Find, Error/Crash, Auth, and
-Context Menu; do not leave these rows idle once G1b releases the Gallery
-registry and the corresponding product territories are ownership-free. This
-packet stages real `bbr-ui` adoption of the surfaces the anchor's extraction
-table assigns to G2 — the G2-owned browser-component rows
-(Downloads, Find, Error/Crash, Auth, Context Menu) and G2-owned
-browser primitives (Tab Row, Space row, Empty/Crash pane, Favorites,
-Folders, Footer, Plus menu, Address pieces) — and adds their story matrix to
-the gallery: Tab Row, Space row, address/input pieces,
-Favorites/Folders/Footer/Space chip, Downloads, Find, Error/Crash, Auth,
-Context Menu. Stories construct **production presentation models and callback
-recorders** — gallery renderability is explicitly not native
-Portal/AppKit/WebKit z-order evidence.
+Program position: **G2**, continuing from the integrated Gallery MVP, Status
+Line (StoryId 21), Tab Row (22), Saved Pages Library component rows/controls
+(23–29), Library composition (30), and Renderer-Isolation checkpoint recorded
+in [Current delivery](../../delivery/current.md). The next bounded cut is Group
+3 Address/Input; Group 4 follows it, then Groups 5–9 may proceed in isolated
+lanes with canonical semantic integration order 4 → 5 → 6 → 7 → 8 → 9
+(portal cluster 6 → 8 → 9). Groups 3–4 already consume production `bbr-ui`
+components extracted by G1a, so their remaining work is Gallery matrix,
+fixtures, stories, recorder E2E, and documentation. Groups 5–9 still perform
+the real `bbr-ui` extraction/app migration before adding Gallery stories.
+Stories construct **production presentation models and callback recorders** —
+gallery renderability is explicitly not native Portal/AppKit/WebKit z-order
+evidence.
 
 ## Outcome
 
@@ -59,13 +56,16 @@ model and a recorder callback proving which interaction fired. No fake
   After their separately scheduled production packets integrate, append —
   without renumbering any existing StoryId — Tab/Favorite menu, Folder menu,
   enriched Page-background menu, Titlebar navigation controls, and Sidebar
-  media-card components. Integrated B2/B3 later append Saved Page result/menu
-  and Library rows/controls in the same way; no Saved Pages StoryId or matrix
-  row is reserved before the production component exists. These rows register
-  the same production symbols; this Gallery packet does not authorize their
-  behavior implementation.
-  Each group: extract to `bbr-ui` → migrate `bbr-app` → delete old
-  definition → re-run the affected `just e2e-shell-<suite>` + `just e2e-perf`.
+  media-card components. B2/B3 are integrated: Library component stories own
+  ids 23–29 and the Library composition owns id 30; no reservation machinery
+  remains. These rows register the same production symbols; this Gallery
+  packet does not authorize their behavior implementation.
+  Groups 3–4: production extraction/app migration is already complete; add
+  only Gallery matrix/fixtures/stories/recorder E2E and re-run the unchanged
+  affected real-app suite. Groups 5–9: extract to `bbr-ui` → migrate
+  `bbr-app` → delete old definition → re-run the affected
+  `just e2e-shell-<suite>`. Performance code/budgets remain mandatory, but
+  performance execution is deferred/unpassed under the active delivery override.
 - **Story matrix** for each component in `bbr-gallery`, per the matrix
   below. Stories use the `bbr-ui` presentation-model DTOs from the anchor
   table and recorder callbacks; the gallery owns plain fixture builders only.
@@ -165,7 +165,7 @@ gallery fixture builder refuses to build them.
 |---|---|---|
 | Tab Row (`bbr-ui::components::tab_row`) | states: default/hover/active/selected/loading/attention/error/disabled/dragging/drag-target/focused (§10); pinned + regular; S (icon-only pinned) / N / XL; long-title truncation; favicon slot: monogram tile / missing-favicon host-scheme fallback / loading-arc replacement (the embedded G1b `bbr-ui::components::favicon` component — its variants are consumed inline, not re-storied); reveal-close on hover/selected; drag-tick legal vs clamped-invalid | attention on a crashed row (error wins, §10 composition order); selected+dragging without the drag state machine; S-density pinned with a title (icon-only, §8/§11.2); a real favicon bitmap (the tile is monogram-or-arc today, §7.2) |
 | Status line (`bbr-ui::components::status`, extracted from the current app-owned `shell::presentation::status_line`) | healthy/empty, active loading, navigation error, crashed tab, and relevant active-space count/selection states derived through the migrated production presentation model; stable semantic root and append-only Gallery StoryIds | a Gallery-local formatter or copied status anatomy; direct `bbr-app` imports; raw controller ownership in `bbr-ui`; a story registered before production extraction and app migration are complete |
-| Space row (`bbr-ui::components::space` — `space_row`/`space_new_row`/`ProfileChipSpec`; source `components/space.rs`, `shell/space.rs`; chip/identity contract DESIGN §11.3) | per-profile groups (hairline between groups); row states: default / selected (accent rail + tint, §10.4) / drag-target (§10.9 accent outline + tint); S / N / XL density (profile chip 20/24/28); long-title truncation at `space_title_budget_chars`; count column `type:meta` tnum (live tab count); profile chip per row (1–2 char monogram, hue tile, id `bbr-profile-chip-<profile_index>` — profile-keyed, repeats per profile, §12); row/title/count ids `bbr-space-row-<n>` / `bbr-space-title-<n>` / `bbr-space-count-<n>`; new-space affordance row at the foot (`bbr-space-new`, NewSpace mode §11.3/§11.5, the pointer half of Cmd-Shift-N); focused space list (`bbr-space-list`, §9 focus ring) | a row without its profile chip (mandatory anatomy — `space_row` always renders the chip); `selected` + `drag-target` combined (mutually exclusive; drag-target replaces selected, §10 composition order); a title not truncated at the §11.3 budget (`space_title_budget_chars` is the single truncation authority — ellipsis, never wrap); a profile chip keyed to the space index (the id contract is profile-keyed, §12, never the space index); a count other than the live tab count (rows derive from the controller snapshot); an active space without the accent rail (selected rows always render the 3 pt rail) |
+| Profile chip / Space-strip pieces (`bbr-ui::components::space::profile_chip` + the app-owned permanent space strip pending G3 extraction; DESIGN §11.3–§11.4) | profile chip S/N/XL density, 1–2 character monogram, hue tile, profile-keyed id `bbr-profile-chip-<profile_index>`; Group 4 Footer story may show the already integrated strip in context without claiming a standalone `space_row`; G3 owns extraction/storying of the full permanent strip composition | removed legacy `space_row`/`space_new_row` list anatomy; any chip keyed to a space index; any wrapped/second-line strip; any Group-4 fixture that creates a second strip or navigation authority |
 | Address / input pieces (`bbr-ui::components::address`) | domain pill (with/without www, IDN, port); accessory slot reserved-empty vs Copy-Link (future); hover fill step; profile-hint chip presence; staging field (New Space / Move Tab / empty New Tab) with block cursor | pill-as-text-field (no editing state, no cursor, no selection — §11.5); a focus ring on the pill (never, any state) |
 | Favorites grid (`bbr-ui::components::favorites`) | S 5-col / N 4-col / XL 3-col; tile default/hover/active/focused; drag-target wash; empty region (label hidden) | reorder during selection (tiles never reorder, §11.10); a tile without a resolved TabId+SpaceId+ProfileId semantic name |
 | Folders (`bbr-ui::components::folders`) | collapsed/expanded; nested rows with full §10 vocabulary; empty collapsible folder; count `tnum`; hairlines between groups | nested rows in a collapsed folder (they render only when expanded); persisted folders (session-local only, §11.11) |
@@ -179,11 +179,10 @@ gallery fixture builder refuses to build them.
 | Titlebar navigation (`bbr-ui::components::titlebar_navigation`, after its production packet) | sidebar toggle collapsed/expanded; Back/Forward all enablement combinations; Reload/loading; S/N/XL; standard/increased contrast; focused/hover/disabled | hardcoded traffic-light geometry; a second sidebar-collapse or navigation authority; titlebar controls inside the address component |
 | Sidebar media card (`bbr-ui::components::media_card`, only after media contract + production UI) | absent; playing/paused; seekable known-duration; live/unknown duration; capability subsets for previous/next/mute; one/multiple sessions; dismissed identity; stale/ended disabled/removal state; cross-profile source identity; reduced motion/contrast | decorative unsupported controls; fake duration/scrubber; a model without opaque session + TabId/SpaceId/ProfileId identity; any fixture that claims WebKit control |
 
-Saved Page result/menu rows append here only after integrated
-[B2](saved-pages-actions-command.md); Saved Pages Library rows/controls append
-only after integrated [B3](saved-pages-library.md). Their production packets
-provide the source models, but this Gallery packet owns the eventual StoryIds,
-matrix rows, and renderability checks. Nothing is predeclared as a story today.
+B2/B3 are integrated. Saved Pages Library rows/controls are registered at
+StoryIds 23–29 and the Library composition at 30. Later Saved Page menu/result
+families may append only after their production component exists; this packet
+reserves no ids and reintroduces no marker machinery.
 
 ## Evidence
 
@@ -215,8 +214,10 @@ matrix rows, and renderability checks. Nothing is predeclared as a story today.
 
 ### Performance
 
-- [ ] `just e2e-perf` passes unchanged after each user-visible presentation
-      migration (no budget, sample-count, or semantic-commit change).
+- [ ] Existing product performance code, budgets, baselines, sample guards,
+      and semantic-commit contracts stay unchanged after each user-visible
+      presentation migration. Execution remains deferred/unpassed under the
+      active delivery override; no `just e2e-perf` run or pass is claimed.
 - [ ] Gallery perf remains sanity-only (G1b), never a product budget.
 
 ## Completion gates
@@ -230,7 +231,7 @@ cargo clippy -p bbr-ui --all-targets -- -D warnings
 cargo clippy -p bbr-gallery --all-targets -- -D warnings
 just ui-deps
 just e2e-shell-<affected-suite>   # per cutover group, unchanged suites
-just e2e-perf
+# Do not run just e2e-perf while the active delivery override applies.
 just e2e-gallery
 just verify                       # after the stable slice
 python3 scripts/check_roadmap.py
@@ -243,10 +244,15 @@ sequentially under `python3 scripts/with_gui_lock.py --`.
 
 1. Confirm packet-2 base is settled and the anchor's browser-component DTOs
    are defined.
-2. One exclusive writer performs the staged adoption in Scope order; each
-   group is a complete extract → migrate → delete → re-run cycle before the
-   next begins.
-3. Extend the gallery story matrix and fixture builders in the same groups.
+2. Group 3 runs first as one isolated Gallery-only lane. After its reviewed
+   integration, Groups 4–9 may run in isolated sibling worktrees with one
+   writer each and predeclared shared registry/composition points. The
+   Orchestrator integrates semantically in order 4 → 5 → 6 → 7 → 8 → 9;
+   portal groups integrate 6 → 8 → 9. Groups 3–4 skip extraction because the
+   production components are already consumed; Groups 5–9 retain the complete
+   extract → migrate → delete → re-run cycle.
+3. Extend the gallery story matrix and fixture builders in the same groups;
+   StoryIds append sequentially from 31 with no gaps, renumbering, or reservations.
 4. One independent read-only reviewer maps each story back to DESIGN.md and
    the anchor table, checks the rejected-combination logic, and verifies no
    fake engine/portal/network entered the gallery.
@@ -254,21 +260,22 @@ sequentially under `python3 scripts/with_gui_lock.py --`.
 
 ## Iteration policy
 
-Adopt in the Scope order because each surface depends on the previous one
-(Tab Row depends on the G1b favicon component — already extracted, not
-re-extracted here; footer after F2a). For each failure, classify it as
-cutover (migration/import), DTO shape, matrix validity, or native-boundary
-confusion; change the smallest central cause and re-run the focused suite.
+Preserve the canonical semantic integration order because Gallery StoryIds
+and shared registries are append-only; this is an integration-order contract,
+not a false compile-time dependency between Groups 4–9. For each failure,
+classify it as cutover (migration/import), DTO shape, matrix validity, or
+native-boundary confusion; change the smallest central cause and re-run the
+focused suite.
 Never render a native-boundary claim in the gallery, and never relax the
 "rejected" matrix to make a fixture build.
 
 ## Blocked stop condition
 
-If a surface cannot be extracted without changing ids, semantics, focus
-domains, or perf evidence, stop with the surface, the conflicting symbol,
-the failing suite/budget, the preserved worktree state, and the smallest
-decision required. If F2a/F2b has not integrated, the Footer/Downloads rows
-wait; do not extract from an unintegrated state.
+If a surface cannot be storied or extracted without changing ids, semantics,
+focus domains, or performance evidence, stop with the surface, conflicting
+symbol, failing suite/budget, preserved worktree state, and smallest decision
+required. F2a/F2b and Renderer are integrated; do not reopen their settled
+contracts or use them as a reason to widen a G2 lane.
 
 ## Delivery ledger
 
