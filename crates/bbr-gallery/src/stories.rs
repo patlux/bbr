@@ -33,6 +33,7 @@ pub mod menu;
 pub mod primitives;
 pub mod profile_chip;
 pub mod saved_pages_library;
+pub mod sidebar;
 
 use gpui::{div, prelude::*, px, AnyElement, Rgba, SharedString};
 
@@ -227,6 +228,21 @@ pub fn catalog() -> CatalogRegistry {
             "Context menu",
             context_menu::render_context_menu,
             &[],
+        )],
+    );
+    // The G3 Sidebar composition story (packet
+    // `component-gallery-compositions.md`): the exact production
+    // `bbr_ui::sidebar::sidebar_surface` renders the selected matrix family
+    // with the one production `Callbacks` set filled by recorder callbacks.
+    // Appended at canonical StoryId 44 after the pinned 0–43 prefix — no
+    // renumbering or reservation. The remaining G3 compositions (Command,
+    // Split) append at later ids in their own bounded cuts.
+    registry.add_group(
+        "Sidebar composition",
+        vec![story(
+            "Sidebar",
+            sidebar::render_sidebar,
+            sidebar::SIDEBAR_STATE_OPTIONS,
         )],
     );
     registry

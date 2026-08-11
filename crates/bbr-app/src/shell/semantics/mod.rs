@@ -212,7 +212,7 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
     }
     children.push(u2::footer_node(input));
     children.push(SemanticNode {
-        id: crate::sidebar::SIDEBAR_DIVIDER_ID.into(),
+        id: bbr_ui::sidebar::geometry::SIDEBAR_DIVIDER_ID.into(),
         role: SemanticRole::Divider,
         name: Some(input.divider_label.clone()),
         value: Some(format!("{:.0} pt", input.sidebar_width)),

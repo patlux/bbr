@@ -166,7 +166,12 @@ fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
 
     let sidebar = std::fs::read_to_string(app_src.join("app").join("sidebar_view.rs"))
         .expect("read sidebar_view.rs");
-    assert!(sidebar.contains("components::tab_row"));
+    // G3 Sidebar cutover: the rail composition moved to
+    // `bbr_ui::sidebar::sidebar_surface`; the app is the assembler (it
+    // builds the plain `SidebarModel` and fills the one `Callbacks` set)
+    // and no longer defines any row anatomy.
+    assert!(sidebar.contains("bbr_ui::sidebar::sidebar_surface"));
+    assert!(sidebar.contains("SidebarModel"));
 
     let probe =
         std::fs::read_to_string(app_src.join("portal").join("probe.rs")).expect("read probe.rs");

@@ -29,6 +29,8 @@ mod auth_recorder;
 #[cfg(target_os = "macos")]
 mod canvas;
 #[cfg(target_os = "macos")]
+mod context;
+#[cfg(target_os = "macos")]
 mod context_menu_app;
 #[cfg(target_os = "macos")]
 mod context_menu_matrix;
@@ -86,6 +88,16 @@ mod profile_chip_matrix;
 mod recorder;
 #[cfg(target_os = "macos")]
 mod registry;
+#[cfg(target_os = "macos")]
+mod sidebar_app;
+#[cfg(target_os = "macos")]
+mod sidebar_fixture;
+#[cfg(target_os = "macos")]
+mod sidebar_matrix;
+#[cfg(target_os = "macos")]
+mod sidebar_observer;
+#[cfg(target_os = "macos")]
+mod sidebar_recorder;
 #[cfg(target_os = "macos")]
 mod snapshot;
 #[cfg(target_os = "macos")]

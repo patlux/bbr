@@ -12,6 +12,7 @@ use crate::error_recorder::ErrorRecorder;
 use crate::find_recorder::FindRecorder;
 use crate::group4_recorder::Group4Recorder;
 use crate::library_recorder::LibraryRecorder;
+use crate::sidebar_recorder::SidebarRecorder;
 
 /// The semantic snapshot the E2E asserts (§15 mode fields + stable ids).
 #[derive(Debug, Clone, PartialEq)]
@@ -99,4 +100,9 @@ pub struct GallerySnapshot {
     /// path: the row indexes the production `on_row_hover`/`on_row_press`
     /// reported (enabled rows only).
     pub context_menu: ContextMenuRecorder,
+    /// The observed G3 Sidebar composition state through the production
+    /// recorder path: what the production `bbr_ui::sidebar::sidebar_surface`
+    /// `Callbacks` slots reported (row select/close/pin/drag, favorites,
+    /// folders, spaces, footer, plus menu, divider, keyboard paths).
+    pub sidebar: SidebarRecorder,
 }

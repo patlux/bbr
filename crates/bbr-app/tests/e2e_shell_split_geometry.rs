@@ -18,7 +18,8 @@ mod e2e_common;
 use bbr_testkit::protocol::{dsl, PaneLayoutSnapshot, Snapshot};
 use e2e_common::*;
 
-/// The DESIGN §5 default rail width (mirrors `crate::sidebar`).
+/// The DESIGN §5 default rail width (mirrors
+/// `bbr_ui::sidebar::geometry::SIDEBAR_DEFAULT`).
 const SIDEBAR_DEFAULT: f32 = 280.0;
 
 fn flush_frame(client: &mut Client) {

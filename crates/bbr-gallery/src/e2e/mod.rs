@@ -27,6 +27,7 @@ mod find;
 mod group4;
 mod library;
 mod pointer;
+mod sidebar;
 mod startup;
 mod sweep;
 mod tab_row;

@@ -168,8 +168,10 @@ pub struct BbrApp {
     /// benchmark and the app testkit snapshot mirrors the full state.
     pub(crate) dense_window: std::cell::Cell<crate::dense::DenseRenderState>,
     /// Adjustable sidebar geometry (DESIGN.md §5/§11.4): min/default/max
-    /// widths, narrow-window clamping, collapse memory, drag state.
-    pub sidebar: crate::sidebar::SidebarGeometry,
+    /// widths, narrow-window clamping, collapse memory, drag state. The
+    /// pure geometry model lives in `bbr-ui::sidebar::geometry` (the G3
+    /// composition authority); the app keeps the input wiring.
+    pub sidebar: bbr_ui::sidebar::SidebarGeometry,
     /// In-flight tab drag state (DESIGN.md §10.9/§11.2): the pointer drag
     /// for reorder and move-between-spaces. Idle when no drag is active.
     tab_drag: drag::TabDrag,
@@ -489,7 +491,7 @@ impl BbrApp {
             dense_scroll: ScrollHandle::new(),
             space_strip_scroll: ScrollHandle::new(),
             dense_window: std::cell::Cell::new(crate::dense::DenseRenderState::default()),
-            sidebar: crate::sidebar::SidebarGeometry::new(),
+            sidebar: bbr_ui::sidebar::SidebarGeometry::new(),
             tab_drag: drag::TabDrag::default(),
             native_portal: None,
             portal: PortalState::new(crate::portal::probe::PORTAL_ID),

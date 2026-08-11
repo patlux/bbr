@@ -29,11 +29,6 @@ mod performance;
 #[allow(dead_code)]
 mod portal;
 mod shell;
-// `SidebarGeometry::{decrease,increase,reset,last_expanded}` and the divider
-// label are consumed by the unit tests and the testkit-only snapshot/keyboard
-// seams; non-testkit builds need the module allowance to stay clean.
-#[allow(dead_code)]
-mod sidebar;
 mod slot;
 mod store;
 #[cfg(feature = "testkit")]

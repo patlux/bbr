@@ -1,6 +1,6 @@
 //! Sidebar resize interaction (DESIGN.md §5/§11.4, §9).
 //!
-//! The divider surface lives in `crate::sidebar`; this module owns the
+//! The divider surface lives in `bbr-ui::sidebar::geometry`; this module owns the
 //! production input wiring: pointer drag through the GPUI listener path
 //! (mouse-down on the divider starts the drag, mouse-move on the root
 //! follows it even outside the 4 pt hairline, mouse-up commits), the
@@ -15,7 +15,7 @@ use gpui::{
 };
 
 use crate::command_bar::CommandBarMode;
-use crate::sidebar::{RESIZE_STEP, SIDEBAR_DEFAULT};
+use bbr_ui::sidebar::geometry::{RESIZE_STEP, SIDEBAR_DEFAULT};
 
 use super::BbrApp;
 
@@ -147,7 +147,7 @@ impl BbrApp {
     /// the listeners call, never a direct controller mutation.
     #[cfg(feature = "testkit")]
     pub fn drag_sidebar_divider(&mut self, dx: f32, window: &mut Window, cx: &mut Context<Self>) {
-        use crate::sidebar::RESIZE_HANDLE_WIDTH;
+        use bbr_ui::sidebar::geometry::RESIZE_HANDLE_WIDTH;
         use gpui::{point, px, Modifiers, MouseDownEvent, MouseMoveEvent, MouseUpEvent};
         let width = self
             .sidebar

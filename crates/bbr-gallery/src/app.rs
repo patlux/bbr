@@ -28,14 +28,19 @@ use crate::recorder::{ControlObservation, ControlRecorder, CoreControlsEntities}
 use crate::registry::{
     CatalogRegistry, ControlsStory, GroupId, LibraryStory, NodeId, StoryId, StoryKind,
 };
-use crate::stories::{catalog, GALLERY_CONTINUATION, GALLERY_SCOPE};
+use crate::sidebar_app::SidebarAppState;
+use crate::stories::catalog;
 use crate::tab_row_app::TabRowAppState;
-use crate::tree::{NodeKind, TreeState};
+use crate::tree::TreeState;
 use crate::tree_surface::tree_surface;
 
 /// The semantic snapshot types, re-exported for the E2E (the app owns the
 /// snapshot construction; the types live in the focused `snapshot` module).
 pub use crate::snapshot::{GallerySnapshot, TreeNodeSnapshot};
+
+/// The app-owned snapshot construction (a bounded split of this file so
+/// the app entity stays under the ~500-line module budget).
+mod snapshot;
 
 /// One story's own State/Variant selector state.
 #[derive(Debug, Clone)]
@@ -64,6 +69,8 @@ pub struct GalleryApp {
     pub(crate) error: ErrorAppState,
     pub(crate) auth: AuthAppState,
     pub(crate) context_menu: ContextMenuAppState,
+    /// The G3 Sidebar composition app wiring (module `sidebar_app`).
+    pub(crate) sidebar: SidebarAppState,
     /// The shared recorder: what real gpui-component control events report
     /// back through the production `observe_control` path.
     recorder: ControlRecorder,
@@ -113,6 +120,7 @@ impl GalleryApp {
             error: ErrorAppState::new(&registry),
             auth: AuthAppState::new(&registry),
             context_menu: ContextMenuAppState::new(&registry),
+            sidebar: SidebarAppState::new(&registry, cx),
             registry,
             tree,
             mode: ThemeMode::Dark,
@@ -256,84 +264,6 @@ impl GalleryApp {
         }
     }
 
-    /// The semantic snapshot the E2E asserts.
-    pub fn snapshot(&self, cx: &App) -> GallerySnapshot {
-        let selected = self.tree.selected_story;
-        let story = self
-            .registry
-            .story(selected)
-            .expect("selected story registered");
-        let input_text = self
-            .core_controls
-            .as_ref()
-            .map(|entities| entities.input.read(cx).value().to_string())
-            .unwrap_or_default();
-        let slider_value = self
-            .core_controls
-            .as_ref()
-            .map(|entities| entities.slider.read(cx).value().start())
-            .unwrap_or(0.0);
-        GallerySnapshot {
-            tree_id: "bbr-gallery-tree".into(),
-            canvas_id: "bbr-gallery-canvas".into(),
-            tree_nodes: self
-                .tree
-                .nodes
-                .iter()
-                .map(|node| TreeNodeSnapshot {
-                    id: node.id.0,
-                    kind: match node.kind {
-                        NodeKind::Group(_) => "group",
-                        NodeKind::Story(_) => "story",
-                    },
-                    label: node.label.to_string(),
-                    visible: match node.kind {
-                        NodeKind::Group(_) => true,
-                        NodeKind::Story(_) => self.tree.expanded[node.group.0 as usize],
-                    },
-                    expanded: match node.kind {
-                        NodeKind::Group(group) => self.tree.expanded[group.0 as usize],
-                        NodeKind::Story(_) => false,
-                    },
-                    story_id: match node.kind {
-                        NodeKind::Story(id) => Some(id.0),
-                        NodeKind::Group(_) => None,
-                    },
-                })
-                .collect(),
-            focus_node: self.tree.nodes[self.tree.focused_index()].id.0,
-            selected_story: selected.0,
-            selected_story_label: story.label.to_string(),
-            canvas_story_id: format!("bbr-gallery-canvas-story-{}", selected.0),
-            theme: self.mode,
-            contrast: self.contrast,
-            density: self.density,
-            reduced_motion: self.reduced_motion,
-            story_state: self.story_state_label(selected).to_string(),
-            story_state_index: self.story_states[selected.0 as usize].selected,
-            scope: GALLERY_SCOPE.to_string(),
-            continuation: GALLERY_CONTINUATION.to_string(),
-            button_clicks: self.recorder.button_clicks,
-            checkbox_checked: self.recorder.checkbox_checked,
-            switch_checked: self.recorder.switch_checked,
-            radio_index: self.recorder.radio_index,
-            input_text,
-            slider_value,
-            tab_selects: self.tab_row.counts().0,
-            tab_closes: self.tab_row.counts().1,
-            tab_pins: self.tab_row.counts().2,
-            tab_drag_begins: self.tab_row.counts().3,
-            library: self.library_recorder.clone(),
-            address: self.address.recorder().clone(),
-            group4: self.group4.recorder().clone(),
-            downloads: self.downloads.recorder().clone(),
-            find: self.find.recorder().clone(),
-            error: self.error.recorder().clone(),
-            auth: self.auth.recorder().clone(),
-            context_menu: self.context_menu.recorder().clone(),
-        }
-    }
-
     /// The registry (read-only access for the E2E story iteration).
     pub fn registry(&self) -> &CatalogRegistry {
         &self.registry
@@ -402,6 +332,9 @@ impl Render for GalleryApp {
         let error = self.error.render_context(selected, cx);
         let auth = self.auth.render_context(selected, cx);
         let context_menu = self.context_menu.render_context(selected, cx);
+        // The Sidebar composition observer + story context (module
+        // `sidebar_app`).
+        let sidebar = self.sidebar.render_context(selected, cx);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {
@@ -466,6 +399,7 @@ impl Render for GalleryApp {
             error,
             auth,
             context_menu,
+            sidebar,
         });
         div()
             .id("bbr-gallery-root")
