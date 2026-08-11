@@ -29,6 +29,12 @@ mod auth_recorder;
 #[cfg(target_os = "macos")]
 mod canvas;
 #[cfg(target_os = "macos")]
+mod context_menu_app;
+#[cfg(target_os = "macos")]
+mod context_menu_matrix;
+#[cfg(target_os = "macos")]
+mod context_menu_recorder;
+#[cfg(target_os = "macos")]
 mod control_observer;
 #[cfg(target_os = "macos")]
 mod controls;

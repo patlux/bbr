@@ -29,7 +29,6 @@
 //! `portal_outside_dismiss`) is the first production caller.
 
 pub mod command;
-pub mod context_menu;
 pub mod geometry;
 pub mod native;
 pub mod peek;

@@ -19,6 +19,7 @@ use gpui_component::slider::SliderState;
 
 use crate::address_recorder::{AddressObserver, AddressRecorder};
 use crate::auth_recorder::{AuthObserver, AuthRecorder};
+use crate::context_menu_recorder::{ContextMenuObserver, ContextMenuRecorder};
 use crate::downloads_recorder::{DownloadsObserver, DownloadsRecorder};
 use crate::error_recorder::{ErrorObserver, ErrorRecorder};
 use crate::find_recorder::{FindObserver, FindRecorder};
@@ -102,6 +103,12 @@ pub struct StoryContext<'a> {
     /// `component-gallery-browser-components.md`, Group 8). `None` for
     /// every other story.
     pub auth: Option<AuthStory<'a>>,
+    /// `Some` only for the Context-menu story: the current recorder
+    /// snapshot and the observer callbacks the production
+    /// `bbr_ui::surfaces::menu::context_menu_card` row callbacks route
+    /// through (packet `component-gallery-browser-components.md`, Group
+    /// 9). `None` for every other story.
+    pub context_menu: Option<ContextMenuStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -191,6 +198,17 @@ pub struct ErrorStory<'a> {
 pub struct AuthStory<'a> {
     pub recorder: &'a AuthRecorder,
     pub observer: &'a AuthObserver,
+}
+
+/// Everything the Context-menu story needs to render the **exact**
+/// production `bbr_ui::surfaces::menu::context_menu_card` with recorder
+/// callbacks: the current recorder snapshot (hovered/pressed row indexes)
+/// and the observer callbacks that re-enter the app on real pointer
+/// interactions (packet `component-gallery-browser-components.md`, Group
+/// 9). `Some` only while the Context-menu story is selected.
+pub struct ContextMenuStory<'a> {
+    pub recorder: &'a ContextMenuRecorder,
+    pub observer: &'a ContextMenuObserver,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,
@@ -431,7 +449,7 @@ mod tests {
                 "Plus menu",
             ]
         );
-        assert_eq!(registry.story_count(), 43);
+        assert_eq!(registry.story_count(), 44);
     }
 
     #[test]
@@ -441,14 +459,14 @@ mod tests {
             registry.story(StoryId(38)).unwrap().label,
             "Downloads panel"
         );
-        assert_eq!(registry.story_count(), 43);
+        assert_eq!(registry.story_count(), 44);
     }
 
     #[test]
     fn find_story_appends_after_downloads() {
         let registry = catalog();
         assert_eq!(registry.story(StoryId(39)).unwrap().label, "Find bar");
-        assert_eq!(registry.story_count(), 43);
+        assert_eq!(registry.story_count(), 44);
     }
 
     #[test]
@@ -459,14 +477,21 @@ mod tests {
             registry.story(StoryId(41)).unwrap().label,
             "Crash / Empty panes"
         );
-        assert_eq!(registry.story_count(), 43);
+        assert_eq!(registry.story_count(), 44);
     }
 
     #[test]
     fn auth_story_appends_after_error_and_crash() {
         let registry = catalog();
         assert_eq!(registry.story(StoryId(42)).unwrap().label, "Auth sheet");
-        assert_eq!(registry.story_count(), 43);
+        assert_eq!(registry.story_count(), 44);
+    }
+
+    #[test]
+    fn context_menu_appends_after_auth() {
+        let registry = catalog();
+        assert_eq!(registry.story(StoryId(43)).unwrap().label, "Context menu");
+        assert_eq!(registry.story_count(), 44);
     }
 
     #[test]

@@ -14,7 +14,7 @@
 //! budget.
 
 use bbr_web::{WebAction, WebRect, WebViewId};
-use gpui::{Context, Window};
+use gpui::{Context, SharedString, Window};
 
 use crate::app::BbrApp;
 use crate::portal::geometry::Sz;
@@ -29,13 +29,25 @@ impl BbrApp {
     /// The immutable menu data one portal-window render consumes (mirrors
     /// the find-surface pattern: the portal reads the app's live state per
     /// render, so selection and enablement can never drift from the app).
+    /// The app builds the `bbr-ui` presentation model from the controller
+    /// state (the anchor's DTO-building role); the card render lives in
+    /// `bbr_ui::surfaces::menu`.
     pub fn context_menu_surface(&self) -> ContextMenuSurface {
         let state = &self.context_menu.state;
         ContextMenuSurface {
             theme: self.theme(),
-            focused: state.open && state.focused,
-            selected: state.selected,
-            items: state.items.clone(),
+            model: bbr_ui::surfaces::menu::ContextMenuModel {
+                focused: state.open && state.focused,
+                selected: state.selected,
+                items: state
+                    .items
+                    .iter()
+                    .map(|item| bbr_ui::surfaces::menu::ContextMenuRow {
+                        title: SharedString::from(item.title),
+                        enabled: item.enabled,
+                    })
+                    .collect(),
+            },
         }
     }
 

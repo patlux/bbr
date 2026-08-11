@@ -19,6 +19,7 @@
 pub mod address;
 pub mod auth;
 pub mod browser_components;
+pub mod context_menu;
 pub mod core_controls;
 pub mod downloads;
 pub mod error;
@@ -214,6 +215,19 @@ pub fn catalog() -> CatalogRegistry {
     registry.add_group(
         "Auth",
         vec![story("Auth sheet", auth::render_auth_sheet, &[])],
+    );
+    // The G2 Group 9 Context-menu story (packet
+    // `component-gallery-browser-components.md`): the exact production
+    // `bbr_ui::surfaces::menu::context_menu_card` renders every valid page-
+    // menu family with recorder callbacks. Appended at canonical StoryId
+    // 43 after the pinned 0–42 prefix — no renumbering or reservation.
+    registry.add_group(
+        "Context menu",
+        vec![story(
+            "Context menu",
+            context_menu::render_context_menu,
+            &[],
+        )],
     );
     registry
 }

@@ -140,6 +140,13 @@ fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
         "struct AuthSheetModel",
         "enum AuthField",
         "pub const AUTH_SHEET_ID",
+        // Group 9: the page-menu card render moved to
+        // `bbr_ui::surfaces::menu`; the app keeps only its controller row
+        // model (`ContextMenuItem`) and the surface that carries the
+        // `bbr-ui` presentation model.
+        "fn context_menu_card(",
+        "struct ContextMenuModel",
+        "struct ContextMenuRow",
     ];
     for file in &files {
         let text = std::fs::read_to_string(file).expect("read app source");
@@ -182,4 +189,9 @@ fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
     let records = std::fs::read_to_string(app_src.join("app").join("auth").join("records.rs"))
         .expect("read records.rs");
     assert!(records.contains("surfaces::auth::AuthSheetModel"));
+
+    let context_menu = std::fs::read_to_string(app_src.join("app").join("context_menu.rs"))
+        .expect("read app context_menu.rs");
+    assert!(context_menu.contains("surfaces::menu::ContextMenuModel"));
+    assert!(probe.contains("surfaces::menu::{context_menu_card, ContextMenuRect}"));
 }

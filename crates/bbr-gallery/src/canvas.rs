@@ -8,8 +8,8 @@ use bbr_ui::theme::Theme;
 use gpui::{div, prelude::*, AnyElement, SharedString};
 
 use crate::registry::{
-    AddressStory, AuthStory, CatalogRegistry, ControlsStory, DownloadsStory, ErrorStory, FindStory,
-    Group4Story, LibraryStory, StoryContext, StoryId, TabRowStory,
+    AddressStory, AuthStory, CatalogRegistry, ContextMenuStory, ControlsStory, DownloadsStory,
+    ErrorStory, FindStory, Group4Story, LibraryStory, StoryContext, StoryId, TabRowStory,
 };
 
 /// Everything the canvas needs to render the selected story.
@@ -46,6 +46,9 @@ pub struct CanvasModel<'a> {
     /// The Auth sheet context (`Some` only when the Auth sheet story is
     /// selected) — see [`AuthStory`].
     pub auth: Option<AuthStory<'a>>,
+    /// The Context-menu context (`Some` only when the Context-menu story
+    /// is selected) — see [`ContextMenuStory`].
+    pub context_menu: Option<ContextMenuStory<'a>>,
 }
 
 /// The canvas surface: a header (story label + state) above the story.
@@ -67,6 +70,7 @@ pub fn canvas_surface(model: CanvasModel) -> AnyElement {
         find: model.find,
         error: model.error,
         auth: model.auth,
+        context_menu: model.context_menu,
     };
     let content = (story.render)(&context);
     div()

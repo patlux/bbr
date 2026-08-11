@@ -17,6 +17,7 @@ use gpui_component::WindowExt as _;
 use crate::address_app::AddressAppState;
 use crate::auth_app::AuthAppState;
 use crate::canvas::{canvas_surface, CanvasModel};
+use crate::context_menu_app::ContextMenuAppState;
 use crate::controls::{controls_surface, ControlAction, ControlsModel};
 use crate::downloads_app::DownloadsAppState;
 use crate::error_app::ErrorAppState;
@@ -57,16 +58,12 @@ pub struct GalleryApp {
     pub(crate) tab_row: TabRowAppState,
     /// The Address/Input app wiring (module `address_app`).
     pub(crate) address: AddressAppState,
-    /// The Group 4 sidebar-component app wiring (module `group4_app`).
     pub(crate) group4: Group4AppState,
-    /// The Downloads panel app wiring (module `downloads_app`).
     pub(crate) downloads: DownloadsAppState,
-    /// The Find app wiring (module `find_app`).
     pub(crate) find: FindAppState,
-    /// The Error/Crash app wiring (module `error_app`).
     pub(crate) error: ErrorAppState,
-    /// The Auth sheet app wiring (module `auth_app`).
     pub(crate) auth: AuthAppState,
+    pub(crate) context_menu: ContextMenuAppState,
     /// The shared recorder: what real gpui-component control events report
     /// back through the production `observe_control` path.
     recorder: ControlRecorder,
@@ -92,8 +89,7 @@ impl GalleryApp {
         let tree = TreeState::from_catalog(&registry);
         // `story_states` is indexed by `StoryId` value, so it must span
         // every assigned id. The integrated catalog is contiguous through
-        // Tab Row 22, Library 23–30, Address/Input 31–32, Group 4 at
-        // 33–37, Downloads 38, Find 39, Error/Crash 40–41, and Auth 42.
+        // StoryId 43 (Context Menu).
         let mut story_states = vec![
             StoryState {
                 options: &[],
@@ -116,6 +112,7 @@ impl GalleryApp {
             find: FindAppState::new(&registry),
             error: ErrorAppState::new(&registry),
             auth: AuthAppState::new(&registry),
+            context_menu: ContextMenuAppState::new(&registry),
             registry,
             tree,
             mode: ThemeMode::Dark,
@@ -333,6 +330,7 @@ impl GalleryApp {
             find: self.find.recorder().clone(),
             error: self.error.recorder().clone(),
             auth: self.auth.recorder().clone(),
+            context_menu: self.context_menu.recorder().clone(),
         }
     }
 
@@ -403,6 +401,7 @@ impl Render for GalleryApp {
         // The Error/Crash observer + story context (module `error_app`).
         let error = self.error.render_context(selected, cx);
         let auth = self.auth.render_context(selected, cx);
+        let context_menu = self.context_menu.render_context(selected, cx);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {
@@ -466,6 +465,7 @@ impl Render for GalleryApp {
             find,
             error,
             auth,
+            context_menu,
         });
         div()
             .id("bbr-gallery-root")
