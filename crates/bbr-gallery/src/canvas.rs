@@ -8,7 +8,8 @@ use bbr_ui::theme::Theme;
 use gpui::{div, prelude::*, AnyElement, SharedString};
 
 use crate::registry::{
-    AddressStory, CatalogRegistry, ControlsStory, LibraryStory, StoryContext, StoryId, TabRowStory,
+    AddressStory, CatalogRegistry, ControlsStory, ErrorStory, LibraryStory, StoryContext, StoryId,
+    TabRowStory,
 };
 
 /// Everything the canvas needs to render the selected story.
@@ -30,6 +31,9 @@ pub struct CanvasModel<'a> {
     /// The Address/Input context (`Some` only when the Address control or
     /// Command staging story is selected) — see [`AddressStory`].
     pub address: Option<AddressStory<'a>>,
+    /// The Error/Crash context (`Some` only when the Error surface or
+    /// Crash / Empty panes story is selected) — see [`ErrorStory`].
+    pub error: Option<ErrorStory<'a>>,
 }
 
 /// The canvas surface: a header (story label + state) above the story.
@@ -46,6 +50,7 @@ pub fn canvas_surface(model: CanvasModel) -> AnyElement {
         tab_row: model.tab_row,
         library: model.library,
         address: model.address,
+        error: model.error,
     };
     let content = (story.render)(&context);
     div()

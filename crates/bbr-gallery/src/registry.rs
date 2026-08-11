@@ -18,6 +18,7 @@ use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 
 use crate::address_recorder::{AddressObserver, AddressRecorder};
+use crate::error_recorder::{ErrorObserver, ErrorRecorder};
 use crate::library_recorder::{LibraryObserver, LibraryRecorder};
 use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRecorder};
 
@@ -83,6 +84,13 @@ pub struct StoryContext<'a> {
     /// `component-gallery-browser-components.md`, Group 3). `None` for
     /// every other story.
     pub address: Option<AddressStory<'a>>,
+    /// `Some` only for the Error surface / Crash & Empty panes stories:
+    /// the current recorder snapshot and the observer callbacks the
+    /// production `error_surface`/`crash_panel`/`empty_space_pane`
+    /// callbacks route through (packet
+    /// `component-gallery-browser-components.md`, Group 7). `None` for
+    /// every other story.
+    pub error: Option<ErrorStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -134,6 +142,19 @@ pub struct TabRowStory<'a> {
 pub struct AddressStory<'a> {
     pub recorder: &'a AddressRecorder,
     pub observer: &'a AddressObserver,
+}
+
+/// Everything an Error surface / Crash & Empty panes story needs to render
+/// the **exact** production `bbr_ui::surfaces::error` surface and the
+/// production `bbr_ui::components::pane` panels (`crash_panel`,
+/// `empty_space_pane`) with recorder callbacks: the current recorder
+/// snapshot (action/dismiss/reload/close/new-tab counts) and the observer
+/// callbacks that re-enter the app on real pointer presses (packet
+/// `component-gallery-browser-components.md`, Group 7). `Some` only while
+/// one of the two Error stories is selected.
+pub struct ErrorStory<'a> {
+    pub recorder: &'a ErrorRecorder,
+    pub observer: &'a ErrorObserver,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,
