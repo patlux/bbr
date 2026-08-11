@@ -53,6 +53,10 @@ pub struct TabSnapshot {
     pub crashed: bool,
     /// Whether this tab is the active one.
     pub active: bool,
+    /// The session's renderer is reported unresponsive (renderer-isolation
+    /// lane; DESIGN.md §10.11/§11.8a): a sibling of `crashed` — the session
+    /// and tab stay alive under the bounded recovery surface.
+    pub unresponsive: bool,
     /// Current disposable session identity, absent when suspended/discarded.
     pub web_view: Option<WebViewId>,
     /// Resource policy state of the tab's disposable session (the dense-list

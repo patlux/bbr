@@ -386,9 +386,48 @@ pub fn visible_ids_u2(
         ids.push("bbr-error-action".into());
         ids.push("bbr-error-dismiss".into());
     } else if let Some(layout) = pane_layout {
-        ids.push(format!("bbr-native-web-slot-{}", layout.primary.0));
+        // The §11.8a unresponsive pane (renderer-isolation lane) replaces
+        // the exact active view's native slot while its renderer is
+        // reported unresponsive (a sibling of the crash authority: the
+        // session and tab stay alive under the Wait / Reload / Close
+        // surface). Mirrors `render.rs` per slot: the pane is drawn only
+        // over the active view's slot (never a Peek preview slot — the
+        // preview view is not the active tab's view — and never the
+        // non-active split member), so the slot it replaced is not
+        // advertised.
+        let active_view = browser.active_view;
+        let active_unresponsive = browser
+            .active_index
+            .and_then(|index| browser.tabs.get(index))
+            .is_some_and(|tab| tab.unresponsive);
+        let pane_over = |id: bbr_web::WebViewId| active_view == Some(id) && active_unresponsive;
+        if pane_over(layout.primary) {
+            ids.extend(
+                [
+                    "bbr-unresponsive-panel",
+                    "bbr-unresponsive-wait",
+                    "bbr-unresponsive-reload",
+                    "bbr-unresponsive-close",
+                ]
+                .map(String::from),
+            );
+        } else {
+            ids.push(format!("bbr-native-web-slot-{}", layout.primary.0));
+        }
         if let Some(secondary) = layout.secondary {
-            ids.push(format!("bbr-native-web-slot-{}", secondary.0));
+            if pane_over(secondary) {
+                ids.extend(
+                    [
+                        "bbr-unresponsive-panel",
+                        "bbr-unresponsive-wait",
+                        "bbr-unresponsive-reload",
+                        "bbr-unresponsive-close",
+                    ]
+                    .map(String::from),
+                );
+            } else {
+                ids.push(format!("bbr-native-web-slot-{}", secondary.0));
+            }
         }
     }
     // Rendered rows only: every pinned row (the fixed block) plus the

@@ -19,7 +19,14 @@ pub enum TabVisualState {
     Selected,
     Loading,
     Attention,
+    /// §10.7: the tab's web process terminated (crash authority; the
+    /// session is destroyed and the row shows the lifering in `status.error`).
     Error,
+    /// §10.11: the session's renderer stopped answering liveness probes
+    /// (fail-closed; the session and tab stay alive under the §11.8a
+    /// recovery surface). A sibling of `Error` — the row shows the lifering
+    /// plus the static clock companion.
+    Unresponsive,
     Disabled,
     /// §10.9: the dragged row (92% opacity, elev:2 shadow, strong outline).
     Dragging,

@@ -16,7 +16,11 @@ default = []
 # generation, and CLI flags that seed them. NEVER enabled in release
 # profiles — the gateway binds a local unix socket authenticated with a
 # per-spawn token (see crates/bbr-testkit).
-testkit = ["dep:bbr-testkit", "dep:mach2", "dep:serde_json"]
+testkit = [
+    "dep:bbr-testkit",
+    "dep:mach2",
+    "dep:serde_json",
+]
 
 [dependencies]
 anyhow = "1"

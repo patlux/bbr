@@ -434,6 +434,28 @@ pub enum Request {
     BenchmarkToggleSidebar {
         operation_id: BenchmarkOperationId,
     },
+    /// Measure renderer-hang chrome recovery through production actions.
+    /// `close=true` dispatches the normal active-tab close and requires the
+    /// exact warm neighbor to be presented with one fewer live session;
+    /// `close=false` selects `neighbor_index` and requires the session count
+    /// to remain unchanged. The source must already be reported
+    /// unresponsive, otherwise the app rejects the sample fast-closed.
+    BenchmarkUnresponsiveChrome {
+        operation_id: BenchmarkOperationId,
+        source: WebViewId,
+        neighbor_index: usize,
+        expected_neighbor: WebViewId,
+        expected_sessions: usize,
+        close: bool,
+    },
+    /// Measure one production responsiveness cadence tick in a proven idle
+    /// window (no probe due, no state/session/focus change). Performance code
+    /// only until the execution override is lifted.
+    BenchmarkProbeTick {
+        operation_id: BenchmarkOperationId,
+        view: WebViewId,
+        expected_sessions: usize,
+    },
     /// Dispatch a real GPUI keystroke while measuring its presentation commit.
     BenchmarkDispatchKeystroke {
         operation_id: BenchmarkOperationId,
@@ -512,6 +534,20 @@ pub enum Request {
     /// app, so a clean quit flush cannot be observed; the production
     /// background writer uses the identical repository write).
     FlushBrowserState,
+    /// Explicitly arm one real renderer-liveness probe for `view` through
+    /// the same nonblocking controller/adapter path the production cadence
+    /// uses. The result arrives asynchronously as
+    /// `WebEvent::UnresponsiveChanged`.
+    ProbeRendererResponsiveness {
+        view: WebViewId,
+    },
+    /// Activate the §11.8a Wait/Reload/Close controls through the exact app
+    /// methods their production pointer listeners call. These are product
+    /// actions, not controller mutations, and exist so real-app E2E can drive
+    /// recovery without depending on synthetic platform Tab traversal.
+    ClickUnresponsiveWait,
+    ClickUnresponsiveReload,
+    ClickUnresponsiveClose,
     /// Issue a real WebKit content probe for `view` (testkit-only): reads
     /// the committed document in BBR's own client content world
     /// (`readyState`/`URL`/`title`/body) plus the native `WKWebView`

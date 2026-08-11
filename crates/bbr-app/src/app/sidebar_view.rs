@@ -351,6 +351,7 @@ impl BbrApp {
                         tab.active,
                         tab.loading,
                         tab.crashed,
+                        tab.unresponsive,
                         self.pressed_row == Some(tab.index),
                         self.hovered_row == Some(tab.index),
                     )

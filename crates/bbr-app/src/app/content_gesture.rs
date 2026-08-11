@@ -67,6 +67,9 @@ impl BbrApp {
                 self.find_discard_if_unbound(cx);
                 self.ensure_active_visible();
                 self.sync_error_surface_visibility();
+                // The opener return may land on an unresponsive view:
+                // re-assert the §11.8a pane visibility.
+                self.sync_unresponsive_visibility();
                 self.zoom_after_activation();
                 self.persist_structure();
             }

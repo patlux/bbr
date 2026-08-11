@@ -25,6 +25,7 @@ mod appearance;
 mod events;
 mod gesture;
 mod new_window;
+mod responsiveness;
 mod setup;
 mod snapshot;
 
@@ -32,6 +33,7 @@ use crate::nav::NavState;
 use crate::outcome::ControllerEvent;
 use crate::peek::PeekPreview;
 use crate::provenance::OpenerProvenance;
+use crate::responsiveness::ResponsivenessMonitor;
 use crate::session::SessionRegistry;
 use crate::{ControllerError, EngineRef, ViewIdAllocator};
 
@@ -69,6 +71,10 @@ pub struct BrowserController {
     pub(crate) preview: Option<PeekPreview>,
     /// Fresh deterministic transient preview identity allocation.
     pub(crate) next_preview_id: u64,
+    /// The portable renderer-availability monitor (renderer-isolation lane):
+    /// per-session availability, the bounded liveness-probe lifecycle, and
+    /// the fail-closed deadline/backoff policy.
+    pub(crate) responsiveness: ResponsivenessMonitor,
 }
 
 impl std::fmt::Debug for BrowserController {
@@ -103,6 +109,7 @@ impl BrowserController {
             provenance: OpenerProvenance::new(),
             preview: None,
             next_preview_id: 0,
+            responsiveness: ResponsivenessMonitor::new(),
         }
     }
 
@@ -291,20 +298,6 @@ impl BrowserController {
         })
     }
 
-    /// Handle a WebKit process termination: mark the owning tab discarded and
-    /// destroy its session; the next activation recreates it. The tab's crash
-    /// flag survives so the shell can render the §10.7 error state.
-    fn on_page_crash(&mut self, view: WebViewId) -> ControllerEvent {
-        let Some(tab) = self.registry.tab_for_view(view) else {
-            return ControllerEvent::UnknownWebView { view };
-        };
-        let _ = self.browser.discard_tab(tab);
-        self.destroy_session_of(tab);
-        self.crashed_tabs.insert(tab);
-        self.check_invariants();
-        ControllerEvent::TabDiscarded { tab }
-    }
-
     // ---- Split behavior ---------------------------------------------------
 
     /// Open a two-pane split over the two given tab indices: both pane
@@ -372,6 +365,11 @@ impl BrowserController {
                 self.visibility.insert(view, want);
             }
         }
+        // Arm the bounded liveness probes for the visible sessions (a
+        // freshly shown session is probed immediately; the transitions are
+        // observable through the snapshot — the app's cadence tick and the
+        // `UnresponsiveChanged` event path report them as observations).
+        let _ = self.pump_responsiveness();
     }
 
     /// Create or destroy a tab's session to match its domain lifecycle and
@@ -414,7 +412,8 @@ impl BrowserController {
 
     /// Allocate a fresh session for `tab`: engine create + registry mapping.
     /// A fresh session clears the tab's crash flag (the recovered page is no
-    /// longer in the §10.7 error state).
+    /// longer in the §10.7 error state) and registers a fresh availability
+    /// record (a stale completion for the previous incarnation is dropped).
     pub(crate) fn create_session(
         &mut self,
         tab: TabId,
@@ -429,6 +428,7 @@ impl BrowserController {
         self.registry
             .insert(tab, view)
             .expect("freshly allocated web view id cannot collide");
+        self.responsiveness.register(view);
         view
     }
 
@@ -439,6 +439,9 @@ impl BrowserController {
             self.visibility.remove(&view);
             self.session_profiles.remove(&view);
             self.nav.remove(&view);
+            // The session's availability record (and any in-flight probe or
+            // pending deadline) is dropped with the session.
+            self.responsiveness.forget(view);
         }
     }
 

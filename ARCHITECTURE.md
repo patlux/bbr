@@ -9,11 +9,15 @@ keyboard-complete real-app command result surface, and the per-`WebViewId`
 native geometry contract with the authoritative pane layout plus the typed
 `SetSplit`/`CloseSplit` testkit seam. Verified against the actual
 GPUI crate (`gpui 0.2.2`), the `objc2-web-kit 0.3.2` bindings, the Swift
-reference at `PWBrowser`, and green `just verify` runs. The real-app
-split-geometry suite, single-pane sidebar regression, canonical sequential
-`just e2e`, and optimized report-only performance gate are green on this host.
-The host is not a canonical performance runner, so no canonical benchmark
-baseline claim is made.
+reference at `PWBrowser`, and green bounded verification runs. Historical
+real-app split-geometry and single-pane sidebar evidence remains green. The
+current Renderer-Isolation candidate has automated A1–A4 evidence and passed
+whole-candidate review plus focused remediation recheck; Orchestrator commit
+and serial integration remain. A5 (the external WebKit → callback/error hop)
+remains an unpassed Apple platform contract.
+Performance was not executed for this slice, and the latest controlled startup
+observation remains red at `535.866375 ms > 500 ms`; no current canonical E2E
+or performance pass is claimed.
 
 ---
 
@@ -459,6 +463,51 @@ src/
   `canGoForward`), `reload`, `stopLoading` + explicit state re-emit (`Stop`).
 - **Main thread:** all entry points re-assert with `MainThreadMarker`; the
   `MainThreadOnly` thread-kind is enforced at bind time.
+
+### Renderer availability and public process boundary
+
+`bbr-browser::ResponsivenessMonitor` is the single portable availability
+policy. Every live session owns `Unknown | Responsive | Unresponsive |
+Crashed`, a monotonic probe generation, bounded deadline, cadence, and timeout
+backoff. Only visible sessions are probed. Adapter completions and deadlines
+arrive as `WebEvent::UnresponsiveChanged`; unknown, destroyed, recreated, or
+stale-generation observations are dropped. `PageCrashed` remains the existing
+crash authority and triggers a bounded sibling reconciliation sweep because
+WebKit may share renderer processes.
+
+`bbr-web-macos::responsiveness` evaluates only `1 + 1` in
+`WKContentWorld::defaultClientWorld` and arms a 2 s app-process `NSTimer`; both
+paths are main-thread and nonblocking. A timeout hides the exact active native
+slot under the GPUI §11.8a pane without destroying it. Wait retains the
+session, Reload uses the sole controller destroy→recreate path, and Close uses
+ordinary tab close. `WKUIDelegate` alert/confirm/prompt callbacks are answered
+immediately; the pinned public SDK provides no WKUIDelegate beforeunload hook,
+so chrome close destroys the WKWebView without executing page scripts.
+
+The public lifecycle boundary is a split evidence chain (renderer lifecycle
+acceptance decision). BBR's own retained `WKNavigationDelegate`
+implementation is tested by direct invocation of the documented
+`webViewWebContentProcessDidTerminate:` selector and by mapping the
+documented `WKErrorDomain`/`WKErrorWebContentProcessTerminated` `NSError`
+through both navigation-failure callbacks to the same portable termination
+authority — a `PageCrashed` event plus the classified `ProcessCrash`
+incident, never a misleading `NavigationFailed`. The portable controller is
+tested with sequential multi-view `PageCrashed` bursts in varying orders
+(no one-process-per-tab or event-count/order assumption): each affected
+session is destroyed exactly once, persistent tab/profile identity survives,
+a split never publishes a false live pane after a member crash, every
+still-live sibling is re-probed independently, and duplicate/unknown/
+destroyed/old-incarnation events fail closed. Real-app recovery enters
+through the same productive typed event pump as native events
+(`InjectWebEvent(PageCrashed)`), which proves only BBR-owned transport. The
+external WebKit → callback/error hop remains an explicitly unpassed Apple
+platform contract (A5): WebKit decides that a content process terminated and
+invokes its documented callback or returns its documented error; no
+acceptance gate enumerates, selects, terminates, or infers ownership of a
+`com.apple.WebKit.WebContent` helper, and no private selector, KVC, helper
+PID, or process operation is used. `WKProcessPool` is
+deprecated/behavior-neutral and is never used to promise one renderer per
+tab.
 
 ---
 

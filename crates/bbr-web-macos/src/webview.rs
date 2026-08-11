@@ -11,9 +11,8 @@ use std::rc::Rc;
 
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
-use objc2::{AnyThread, ClassType, MainThreadMarker, MainThreadOnly};
+use objc2::{ClassType, MainThreadMarker, MainThreadOnly};
 use objc2_app_kit::{NSColor, NSView};
-use objc2_foundation::{NSString, NSUUID};
 use objc2_web_kit::{WKWebView, WKWebViewConfiguration, WKWebsiteDataStore};
 
 use bbr_web::{ProfileId, WebAction, WebEngine, WebEvent, WebRect, WebViewId};
@@ -64,6 +63,11 @@ pub struct WebEngineWk {
     /// `ContentGestureCommit` per committed horizontal gesture. A pure
     /// observer — native scrolling/selection/zoom are never disabled.
     content_gesture: ContentGestureHost,
+    /// Per-view bounded liveness probes (renderer-isolation lane): the
+    /// client-world `evaluateJavaScript` probe plus the per-view deadline
+    /// timer. Shares the engine's event sink, so `UnresponsiveChanged`
+    /// observations flow through the same transport as every other event.
+    pub(crate) probe: crate::responsiveness::RendererProbeHost,
 }
 
 impl WebEngineWk {
@@ -86,6 +90,7 @@ impl WebEngineWk {
         };
         let content_gesture_reporter: ContentGestureSink = Rc::new(RefCell::new(None));
         let content_gesture = ContentGestureHost::attach(mtm, ns_view, content_gesture_reporter);
+        let probe = crate::responsiveness::RendererProbeHost::new(sink.clone());
         Self {
             host,
             options,
@@ -99,6 +104,7 @@ impl WebEngineWk {
             geometry: HashMap::new(),
             menu_bridge,
             content_gesture,
+            probe,
         }
     }
 
@@ -160,32 +166,12 @@ impl WebEngineWk {
     }
 
     /// The browser window's content rect in GPUI host coordinates (points,
-    /// top-left origin): `[x, y, width, height]` of the window's content
-    /// area **excluding the title bar**, flipped like GPUI's
-    /// [`gpui::Window::bounds`]. The Phase-7 warm-restore persist source:
-    /// GPUI's window options apply the requested bounds as the content
-    /// rect, so persisting the true content rect makes the window-geometry
-    /// round trip exact (a frame-based value would grow by the title-bar
-    /// height on every launch). `None` when no live session is hosted (no
-    /// window exists yet).
+    /// top-left origin) — see [`crate::native_session::window_content_rect`].
+    /// `None` when no live session is hosted (no window exists yet).
     pub fn window_content_rect(&self, id: WebViewId) -> Option<[f64; 4]> {
         self.assert_main_thread();
         let web_view = self.web_view(id)?;
-        let window = web_view.window()?;
-        let frame = window.frame();
-        let content = window.contentRectForFrameRect(frame);
-        let screen = window.screen()?;
-        let screen_frame = screen.frame();
-        // Mirror GPUI's `bounds()` coordinate flip (AppKit's y grows
-        // upwards from the screen bottom): same space the window options
-        // consume, so the persisted origin restores the same position.
-        let y = screen_frame.size.height - content.origin.y - content.size.height;
-        Some([
-            content.origin.x - screen_frame.origin.x,
-            y + screen_frame.origin.y,
-            content.size.width,
-            content.size.height,
-        ])
+        native_session::window_content_rect(&web_view)
     }
 
     /// Hand all subsequent classified web-error incidents to `sink`
@@ -265,23 +251,6 @@ impl WebEngineWk {
         );
     }
 
-    fn data_store(&mut self, profile: ProfileId) -> Retained<WKWebsiteDataStore> {
-        if let Some(store) = self.stores.get(&profile) {
-            return store.clone();
-        }
-        let mtm = MainThreadMarker::new().expect("data_store called off main thread");
-        let store = if self.options.non_persistent {
-            unsafe { WKWebsiteDataStore::nonPersistentDataStore(mtm) }
-        } else {
-            let uuid_string = NSString::from_str(&native_session::profile_store_uuid(profile));
-            let uuid = NSUUID::initWithUUIDString(NSUUID::alloc(), &uuid_string)
-                .expect("generated profile UUID is valid");
-            unsafe { WKWebsiteDataStore::dataStoreForIdentifier(&uuid, mtm) }
-        };
-        self.stores.insert(profile, store.clone());
-        store
-    }
-
     /// A frame for a newly created view: zero until its keyed slot publishes
     /// geometry (the view starts hidden, so the default frame is never
     /// visible).
@@ -334,7 +303,12 @@ impl WebEngine for WebEngineWk {
             return;
         }
         let mtm = MainThreadMarker::new().expect("create_web_view called off main thread");
-        let store = self.data_store(profile);
+        let store = native_session::data_store_for_profile(
+            mtm,
+            profile,
+            self.options.non_persistent,
+            &mut self.stores,
+        );
         let config = unsafe { WKWebViewConfiguration::new(mtm) };
         unsafe {
             config.setWebsiteDataStore(&store);
@@ -392,6 +366,10 @@ impl WebEngine for WebEngineWk {
                 visible: false,
             },
         );
+        // The renderer-liveness probe host registers the fresh view (a stale
+        // completion from a previous incarnation of the id is dropped by the
+        // generation reset).
+        self.probe.register(id);
         if let Some(bridge) = self.menu_bridge.as_ref() {
             bridge.register_web_view(mtm, id, &web_view);
         }
@@ -401,6 +379,10 @@ impl WebEngine for WebEngineWk {
     fn destroy_web_view(&mut self, id: WebViewId) {
         self.assert_main_thread();
         self.geometry.remove(&id);
+        // The liveness probe's record (and any armed deadline timer) is
+        // dropped with the session: a late answer for the id cannot mutate
+        // a newer session.
+        self.probe.forget(id);
         if let Some(session) = self.sessions.remove(&id) {
             session.teardown();
         } else {
@@ -495,6 +477,13 @@ impl WebEngine for WebEngineWk {
     fn set_events(&mut self, sink: Box<dyn FnMut(WebEvent)>) {
         self.assert_main_thread();
         *self.sink.borrow_mut() = Some(sink);
+    }
+
+    fn probe_responsiveness(&mut self, id: WebViewId) {
+        // The probe mechanics live in the focused `responsiveness` module
+        // (this file is a no-grow surface); unknown/destroyed ids are
+        // no-ops there.
+        crate::responsiveness::probe_web_view(self, id);
     }
 
     fn focus_native_web(&mut self, id: WebViewId) {

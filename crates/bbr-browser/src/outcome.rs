@@ -78,6 +78,22 @@ pub enum ControllerEvent {
     LifecycleBudgetApplied { live: usize, suspended: usize },
     /// A tab's WebKit process terminated; its session was destroyed.
     TabDiscarded { tab: bbr_domain::TabId },
+    /// The session's renderer availability changed (renderer-isolation lane):
+    /// the typed [`crate::responsiveness::RendererAvailability`] of one live
+    /// session. `Unresponsive` is a sibling of the crash authority — the
+    /// session and tab stay alive under the §11.8a recovery surface.
+    RendererStateChanged {
+        view: WebViewId,
+        state: crate::responsiveness::RendererAvailability,
+    },
+    /// The unresponsive-recovery Reload rebuilt the hung session for the
+    /// same tab: `view` is the destroyed hung session, `fresh` the recreated
+    /// session (fresh `WebViewId`, same tab identity and profile store).
+    SessionRecovered {
+        view: WebViewId,
+        fresh: WebViewId,
+        tab: bbr_domain::TabId,
+    },
     /// The tab moved into another space; `recreated` says whether the session
     /// had to be destroyed and rebuilt in the destination profile.
     TabMoved {

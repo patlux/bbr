@@ -5,11 +5,14 @@
 //! helper the engine uses. Split from `webview.rs` so the engine module
 //! stays under the ~500-line module budget.
 
+use std::collections::HashMap;
+
 use objc2::rc::Retained;
-use objc2::ClassType;
+use objc2::MainThreadMarker;
+use objc2::{AnyThread, ClassType};
 use objc2_app_kit::NSView;
-use objc2_foundation::{NSString, NSURLRequest, NSURL};
-use objc2_web_kit::WKWebView;
+use objc2_foundation::{NSString, NSURLRequest, NSURL, NSUUID};
+use objc2_web_kit::{WKWebView, WKWebsiteDataStore};
 
 use bbr_web::{ProfileId, WebEvent, WebViewId};
 
@@ -72,6 +75,61 @@ pub(crate) fn profile_store_uuid(profile: ProfileId) -> String {
     let upper = (profile.0 >> 48) as u16;
     let lower = profile.0 & 0x0000_ffff_ffff_ffff;
     format!("42425200-0000-4000-{upper:04x}-{lower:012x}")
+}
+
+/// Resolve (and cache) the website-data store for a profile: the
+/// identifier-backed persistent store in production, the non-persistent
+/// store under E2E (`--bbr-test-token`). Stores are cached per profile and
+/// outlive individual views. Extracted from `webview.rs` so the engine
+/// module stays within its audited 530-line budget (the renderer-isolation
+/// lane added the probe field and wiring without growing it).
+pub(crate) fn data_store_for_profile(
+    mtm: MainThreadMarker,
+    profile: ProfileId,
+    non_persistent: bool,
+    stores: &mut HashMap<ProfileId, Retained<WKWebsiteDataStore>>,
+) -> Retained<WKWebsiteDataStore> {
+    if let Some(store) = stores.get(&profile) {
+        return store.clone();
+    }
+    let store = if non_persistent {
+        unsafe { WKWebsiteDataStore::nonPersistentDataStore(mtm) }
+    } else {
+        let uuid_string = NSString::from_str(&profile_store_uuid(profile));
+        let uuid = NSUUID::initWithUUIDString(NSUUID::alloc(), &uuid_string)
+            .expect("generated profile UUID is valid");
+        unsafe { WKWebsiteDataStore::dataStoreForIdentifier(&uuid, mtm) }
+    };
+    stores.insert(profile, store.clone());
+    store
+}
+
+/// The browser window's content rect of the window hosting `web_view` in
+/// GPUI host coordinates (points, top-left origin): `[x, y, width, height]`
+/// of the window's content area **excluding the title bar**, flipped like
+/// GPUI's [`gpui::Window::bounds`]. The Phase-7 warm-restore persist source:
+/// GPUI's window options apply the requested bounds as the content rect, so
+/// persisting the true content rect makes the window-geometry round trip
+/// exact (a frame-based value would grow by the title-bar height on every
+/// launch). `None` when the view has no window or screen. Extracted from
+/// `webview.rs` so the engine module stays within its audited 530-line
+/// budget.
+pub(crate) fn window_content_rect(web_view: &WKWebView) -> Option<[f64; 4]> {
+    let window = web_view.window()?;
+    let frame = window.frame();
+    let content = window.contentRectForFrameRect(frame);
+    let screen = window.screen()?;
+    let screen_frame = screen.frame();
+    // Mirror GPUI's `bounds()` coordinate flip (AppKit's y grows upwards
+    // from the screen bottom): same space the window options consume, so
+    // the persisted origin restores the same position.
+    let y = screen_frame.size.height - content.origin.y - content.size.height;
+    Some([
+        content.origin.x - screen_frame.origin.x,
+        y + screen_frame.origin.y,
+        content.size.width,
+        content.size.height,
+    ])
 }
 
 /// Publish the current URL/title/history/loading state of a live session

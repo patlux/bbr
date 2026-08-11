@@ -241,6 +241,9 @@ impl BbrApp {
                     bbr_ui::state::TabVisualState::Error => {
                         bbr_testkit::protocol::TabVisualState::Error
                     }
+                    bbr_ui::state::TabVisualState::Unresponsive => {
+                        bbr_testkit::protocol::TabVisualState::Unresponsive
+                    }
                     bbr_ui::state::TabVisualState::Disabled => {
                         bbr_testkit::protocol::TabVisualState::Disabled
                     }
@@ -874,6 +877,19 @@ impl BbrApp {
                 action: spec.action_label.to_string(),
                 dismiss: spec.dismiss_label.to_string(),
             }
+        } else if browser.preview.is_none()
+            && browser
+                .active_index
+                .and_then(|index| browser.tabs.get(index))
+                .is_some_and(|tab| tab.unresponsive)
+        {
+            // §11.8a unresponsive pane (renderer-isolation lane): mirrors
+            // `render.rs` — the pane replaces the active view's native slot
+            // while the renderer is unresponsive (the session stays alive).
+            // The preview guard mirrors the pane predicate's slot check: a
+            // Peek preview covers the origin view with its own slot, so the
+            // pane is never drawn while a preview is open.
+            crate::shell::semantics::SemanticContent::Unresponsive
         } else if browser.active_view.is_some() {
             crate::shell::semantics::SemanticContent::Native
         } else if browser

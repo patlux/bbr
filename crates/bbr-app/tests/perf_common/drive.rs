@@ -37,6 +37,7 @@ use super::errors_drive::drive_error_surface_scenarios;
 use super::harness::AppHarness;
 use super::library_drive::drive_library_scenarios;
 use super::peek_drive::drive_peek_scenarios;
+use super::responsiveness::drive_responsiveness_scenarios;
 use super::saved_pages_drive::drive_saved_pages_scenarios;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
 use super::zoom_drive::drive_zoom_scenarios;
@@ -1406,6 +1407,20 @@ fn drive_matrix_inner(
         raw.extend(context_menu_samples);
         raw.extend(auth_samples);
         raw.extend(peek_samples);
+        // Renderer responsiveness scenarios are code-complete and compiled,
+        // but this matrix is not executed while the performance override is
+        // active. When un-deferred, it records 30 neighbor-selection + 30
+        // Cmd-W close samples and 30 idle probe ticks with exact app guards.
+        raw.extend(drive_responsiveness_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            page_one,
+            tab0_view,
+            tab1_view,
+            &mut operation,
+        ));
         raw.insert("dense_scroll".to_string(), dense_scroll_samples);
         raw.insert("dense_select".to_string(), dense_select_samples);
 

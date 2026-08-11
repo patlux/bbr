@@ -35,6 +35,8 @@ mod benchmarks_dense;
 #[cfg(feature = "testkit")]
 mod benchmarks_pointer;
 #[cfg(feature = "testkit")]
+mod benchmarks_responsiveness;
+#[cfg(feature = "testkit")]
 mod benchmarks_u2;
 mod command_activate;
 #[cfg(feature = "testkit")]
@@ -98,6 +100,7 @@ mod tab;
 mod testkit;
 mod u2;
 mod u2_surface;
+mod unresponsive;
 // App-owned snapshot → bbr-ui DTO adapters (Favorite/Folder/browser
 // snapshot conversions stay in bbr-app; the DTOs and rendering live in
 // bbr-ui).
@@ -382,6 +385,16 @@ pub struct BbrApp {
     /// GPUI focus handle of the Library surface (DESIGN.md §11.16 chrome
     /// focus domain while open).
     library_handle: FocusHandle,
+    /// §11.8a unresponsive-pane composition (renderer-isolation lane): the
+    /// native-view hide/restore bookkeeping for the pane over the exact
+    /// active view (the session stays alive).
+    unresponsive: unresponsive::UnresponsiveState,
+    /// GPUI focus handles of the §11.8a recovery buttons in tab order
+    /// Wait → Reload → Close tab (the sidebar follows in the global tab
+    /// order).
+    unresponsive_wait_handle: FocusHandle,
+    unresponsive_reload_handle: FocusHandle,
+    unresponsive_close_handle: FocusHandle,
     pub sidebar_visible: bool,
     /// The L5 session-local favorites/folders organization read model
     /// (DESIGN.md §11.10/§11.11): the source the U2 regions render and the
@@ -527,6 +540,10 @@ impl BbrApp {
             saved_pages: saved_pages::SavedPageCommand,
             library: crate::app::library::LibraryState::default(),
             library_handle: cx.focus_handle(),
+            unresponsive: unresponsive::UnresponsiveState::new(),
+            unresponsive_wait_handle: cx.focus_handle(),
+            unresponsive_reload_handle: cx.focus_handle(),
+            unresponsive_close_handle: cx.focus_handle(),
             command_profile_hint: None,
             store,
             restore_evidence: RestoreEvidence::Fresh,
@@ -798,6 +815,9 @@ impl BbrApp {
             // switched away from while its surface was shown): re-assert
             // native visibility against the surface.
             self.sync_error_surface_visibility();
+            // The new active view may be reported unresponsive (a hung tab
+            // the user switched to): re-assert the §11.8a pane visibility.
+            self.sync_unresponsive_visibility();
             // While the Library is open it is the single visibility
             // authority: the fresh active view is hidden (never destroyed).
             self.sync_library_visibility();
@@ -828,6 +848,10 @@ impl BbrApp {
             // surface shows for the active view only): re-assert native
             // visibility against the surface.
             self.sync_error_surface_visibility();
+            // The newly selected view may be reported unresponsive (the
+            // §11.8a pane shows for the exact active view only): re-assert
+            // its visibility.
+            self.sync_unresponsive_visibility();
             // While the Library is open it is the single visibility
             // authority: the newly selected view is hidden (never
             // destroyed).
@@ -871,8 +895,13 @@ impl BbrApp {
                 // The closed view's session is gone: drop the Library's
                 // hide bookkeeping too (no native restore is needed).
                 self.library.forget_view(view);
+                // And the §11.8a pane bookkeeping for the closed session.
+                self.unresponsive_forget_view(view);
             }
             self.ensure_active_visible();
+            // The close may have surfaced a different active view (or the
+            // empty pane): re-assert the §11.8a pane visibility.
+            self.sync_unresponsive_visibility();
             self.persist_structure();
             self.sync_peek_surface(cx);
             cx.notify();

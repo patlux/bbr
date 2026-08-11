@@ -297,6 +297,10 @@ pub fn row_wash(p: &Palette, state: TabVisualState) -> Rgba {
     match state {
         TabVisualState::Selected => p.tint_selected,
         TabVisualState::Error => p.status_error_surface,
+        // §10.11: the unresponsive row keeps the quiet sidebar surface
+        // (the lifering + clock companions carry the signal; a red wash on
+        // every hung tab would fight the chrome hierarchy).
+        TabVisualState::Unresponsive => p.surface_sidebar,
         TabVisualState::DragTarget => p.tint_selected,
         // §10.2/§10.3: the pointer-state washes blend over the sidebar
         // material exactly as DESIGN.md defines (token `wash_hover` /

@@ -421,6 +421,40 @@ pub(crate) fn install_actions(
     ]);
 }
 
+/// The bounded renderer-availability cadence (renderer-isolation lane): a
+/// main-thread periodic task that advances the portable liveness probes of
+/// the visible sessions (`BrowserController::pump_responsiveness` — arm
+/// due probes, apply the fail-closed deadline, report transitions) and
+/// re-asserts the §11.8a pane visibility. Never blocks on the renderer:
+/// the task sleeps on the platform dispatcher between ticks and the pump
+/// itself is a bounded registry sweep that arms nothing on an idle window.
+/// GPUI's platform-driven `background_executor().timer` is required (a
+/// foreground-spawned task is polled by the main-thread executor, which
+/// never drives smol's reactor — see the command-debounce precedent).
+pub(crate) fn spawn_responsiveness_cadence(
+    cx: &App,
+    window: &gpui::WindowHandle<gpui_component::Root>,
+    app: &Entity<BbrApp>,
+) {
+    // The monitor's re-arm cadence is ~1 s (probe_interval) and the
+    // fail-closed deadline 2 s; a 250 ms tick detects a due probe or an
+    // expired deadline within a quarter second while emitting nothing on an
+    // idle window.
+    const TICK: std::time::Duration = std::time::Duration::from_millis(250);
+    let window = *window;
+    let app = app.clone();
+    cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
+        async_cx.background_executor().timer(TICK).await;
+        // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).
+        async_cx.update(|cx| {
+            let _ = with_app(&window, &app, cx, |view, window, cx| {
+                view.pump_responsiveness_cadence(window, cx)
+            });
+        });
+    })
+    .detach();
+}
+
 /// The channels the production event pump drains.
 ///
 /// Grouped rather than passed individually: every capability that reaches the

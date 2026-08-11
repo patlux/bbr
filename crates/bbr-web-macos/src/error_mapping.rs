@@ -94,6 +94,15 @@ pub mod ns_url_error {
 /// The `NSURLErrorDomain` constant, as produced by `NSError.domain`.
 pub const NS_URL_ERROR_DOMAIN: &str = "NSURLErrorDomain";
 
+/// The `WKErrorDomain` constant, as produced by `NSError.domain` for
+/// WebKit-owned errors (the same domain the downloads adapter documents).
+pub const WK_ERROR_DOMAIN: &str = "WKErrorDomain";
+
+/// The public `WKErrorCode` value for a terminated Web Content process
+/// (`WKError.h`: `WKErrorWebContentProcessTerminated` is the second
+/// enumerator after `WKErrorUnknown = 1`, so its value is `2`).
+pub const WK_ERROR_WEB_CONTENT_PROCESS_TERMINATED: i64 = 2;
+
 /// The failure URL key WebKit places in `NSError.userInfo`.
 pub const FAILING_URL_KEY: &str = "NSErrorFailingURLStringKey";
 
@@ -108,6 +117,14 @@ pub const FAILING_NSURL_KEY: &str = "NSErrorFailingURLKey";
 /// cancellation, unknown codes, non-URL domains) so the surface never
 /// guesses a cause. The failing URL is carried separately by [`classify`].
 pub fn map_error(domain: &str, code: i64) -> Option<MapOutcome> {
+    // A terminated Web Content process is not a navigation failure: the
+    // documented `WKErrorDomain`/`WKErrorWebContentProcessTerminated` error
+    // routes to the same portable termination authority as the
+    // `webViewWebContentProcessDidTerminate:` callback (ProcessCrash), never
+    // to an invented navigation cause.
+    if domain == WK_ERROR_DOMAIN && code == WK_ERROR_WEB_CONTENT_PROCESS_TERMINATED {
+        return Some(map_termination());
+    }
     if domain != NS_URL_ERROR_DOMAIN {
         return None;
     }
@@ -351,6 +368,33 @@ mod tests {
             IncidentSubReason::Crash(CrashReason::WebContentCrashed)
         );
         assert_eq!(outcome.reason.category(), IncidentCategory::ProcessCrash);
+    }
+
+    #[test]
+    fn wk_error_domain_termination_maps_to_the_same_authority() {
+        // The documented `WKErrorDomain`/`WKErrorWebContentProcessTerminated`
+        // error is the error form of a dead content process: it maps to the
+        // exact same portable termination authority as the delegate callback,
+        // never to an invented navigation cause.
+        let outcome = map_error(WK_ERROR_DOMAIN, WK_ERROR_WEB_CONTENT_PROCESS_TERMINATED)
+            .expect("documented termination error maps");
+        assert_eq!(outcome, map_termination());
+        assert_eq!(
+            outcome.reason,
+            IncidentSubReason::Crash(CrashReason::WebContentCrashed)
+        );
+        assert_eq!(outcome.reason.category(), IncidentCategory::ProcessCrash);
+        // Other WKErrorDomain codes (unknown, invalidated, JS exception, …)
+        // never fabricate a navigation or crash cause.
+        for code in [
+            1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+        ] {
+            assert_eq!(
+                map_error(WK_ERROR_DOMAIN, code),
+                None,
+                "WKErrorDomain code {code}"
+            );
+        }
     }
 
     #[test]

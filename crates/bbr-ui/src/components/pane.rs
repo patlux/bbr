@@ -1,6 +1,9 @@
 //! §11.8 empty and crash glass panes.
 
-use gpui::{div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, Stateful, Styled, Window};
+use gpui::{
+    div, prelude::*, px, App, Div, FocusHandle, MouseButton, MouseDownEvent, Stateful, Styled,
+    Window,
+};
 
 use crate::icons::Icon;
 use crate::theme::{Spacing, Theme};
@@ -114,6 +117,107 @@ pub fn crash_panel(
                 .child(
                     div()
                         .id("bbr-crash-close")
+                        .px(Spacing::sp4())
+                        .py(Spacing::sp1())
+                        .rounded(theme.radius.medium())
+                        .border_1()
+                        .border_color(theme.palette.border_strong)
+                        .text_size(theme.type_.label.size)
+                        .text_color(theme.palette.ink)
+                        .on_mouse_down(MouseButton::Left, on_close)
+                        .child("Close tab"),
+                ),
+        )
+}
+
+/// §11.8a unresponsive pane: replaces the glass area of an unresponsive
+/// tab (the renderer stopped answering liveness probes; the session and
+/// tab stay alive) with the 32 pt lifering + static clock companions, copy,
+/// and the closed recovery set Wait / Reload / Close tab. Focus order:
+/// Wait → Reload → Close tab → sidebar (each button tracks its own focus
+/// handle in tree order; the sidebar follows in the global tab order). The
+/// tab row stays selected and listed; the native view is hidden while the
+/// pane is up (the hung renderer paints nothing useful).
+pub fn unresponsive_panel(
+    theme: &Theme,
+    wait_handle: &FocusHandle,
+    reload_handle: &FocusHandle,
+    close_handle: &FocusHandle,
+    on_wait: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+    on_reload: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+    on_close: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    div()
+        .id("bbr-unresponsive-panel")
+        .flex_1()
+        .size_full()
+        .flex()
+        .flex_col()
+        .items_center()
+        .justify_center()
+        .gap(Spacing::sp3())
+        .bg(theme.palette.surface_field)
+        .child(
+            div()
+                .size(px(32.0))
+                .flex()
+                .flex_row()
+                .items_center()
+                .justify_center()
+                .gap(Spacing::sp1())
+                .child(Icon::Lifering.canvas(theme, px(32.0)))
+                .child(Icon::Clock.canvas(theme, px(20.0))),
+        )
+        .child(
+            div()
+                .text_size(theme.type_.title.size)
+                .font_weight(theme.type_.title.weight)
+                .text_color(theme.palette.ink)
+                .child("This page is not responding"),
+        )
+        .child(
+            div()
+                .text_size(theme.type_.meta.size)
+                .text_color(theme.palette.ink_secondary)
+                .child("The page is busy; the tab stays open."),
+        )
+        .child(
+            div()
+                .flex()
+                .flex_row()
+                .gap(Spacing::sp3())
+                .mt(Spacing::sp2())
+                .child(
+                    div()
+                        .id("bbr-unresponsive-wait")
+                        .track_focus(wait_handle)
+                        .px(Spacing::sp4())
+                        .py(Spacing::sp1())
+                        .rounded(theme.radius.medium())
+                        .border_1()
+                        .border_color(theme.palette.border_strong)
+                        .text_size(theme.type_.label.size)
+                        .text_color(theme.palette.ink)
+                        .on_mouse_down(MouseButton::Left, on_wait)
+                        .child("Wait"),
+                )
+                .child(
+                    div()
+                        .id("bbr-unresponsive-reload")
+                        .track_focus(reload_handle)
+                        .px(Spacing::sp4())
+                        .py(Spacing::sp1())
+                        .rounded(theme.radius.medium())
+                        .bg(theme.palette.accent)
+                        .text_size(theme.type_.label.size)
+                        .text_color(theme.palette.surface_glass)
+                        .on_mouse_down(MouseButton::Left, on_reload)
+                        .child("Reload"),
+                )
+                .child(
+                    div()
+                        .id("bbr-unresponsive-close")
+                        .track_focus(close_handle)
                         .px(Spacing::sp4())
                         .py(Spacing::sp1())
                         .rounded(theme.radius.medium())

@@ -6,6 +6,18 @@ rust-version.workspace = true
 license.workspace = true
 description = "WKWebView + AppKit bridge for BBR (macOS only; empty crate on other targets)."
 
+[features]
+default = []
+
+[[test]]
+# A2 adapter contract tests (renderer lifecycle acceptance decision). The
+# delegate and WKWebView are main-thread-only public objects, and a default
+# Rust test harness runs each test on a spawned thread where the main
+# dispatch queue is never serviced (any main-queue hop would deadlock). A
+# custom harness runs the scenarios directly on the process's main thread.
+name = "termination_contract"
+harness = false
+
 [dependencies]
 bbr-web.workspace = true
 log = "0.4"
@@ -44,6 +56,16 @@ objc2-foundation = { workspace = true, features = [
     "NSPathUtilities",
     "NSURLResponse",
     "NSData",
+    # Renderer-liveness probe (renderer-isolation lane): NSTimer + NSDate
+    # drive the per-view bounded probe deadline
+    # (`scheduledTimerWithTimeInterval:repeats:block:`), a main-thread
+    # nonblocking deadline that fires even while the renderer's JS main
+    # thread is busy. `block2` (already a workspace dependency for the
+    # download/content-gesture adapters) exposes the public block-form
+    # NSTimer initializer.
+    "NSTimer",
+    "NSDate",
+    "block2",
     "objc2-core-foundation",
     "std",
 ] }

@@ -475,6 +475,15 @@ reuse the accent outline language with the strip fills of §11.7.
 Ring per §9, label brightens one step. Same presentation frame as the
 selection change (snap). **Assert:** `focused`.
 
+### 10.11 `unresponsive`
+A renderer that misses the bounded liveness deadline keeps its tab identity
+and live session but enters a state distinct from `loading` and `error`.
+The row keeps the lifering error-shape companion plus a clock glyph in the
+trailing state slot; title remains `ink`, no pulsing or movement is allowed,
+and the active slot is replaced by §11.8a. A completing probe clears the state
+immediately; a crash takes precedence and uses §10.7/§11.8. **Assert:**
+`unresponsive`.
+
 ## 11. Component behavior specifications
 
 Each spec is precise enough to implement and to assert with real-app E2E
@@ -738,6 +747,21 @@ of problem instead of styling it.
   `bbr-crash-close`; crashed tab row carries `error` state.
 - Both panes paint flat GPUI surfaces; they never render web content or
   screenshots.
+
+### 11.8a Unresponsive renderer pane
+
+- **When shown:** only over the active tab's rendered pane slot while its
+  session is `unresponsive`; never over a transient Peek, a non-focused split
+  sibling, the Library, or a classified error surface. The stale native view
+  is hidden, not destroyed.
+- **Copy:** title “This page is not responding”; calm explanatory text; no
+  automatic reload or termination.
+- **Actions/focus:** `Wait` → `Reload` → `Close tab` → sidebar. Wait keeps the
+  same session and resumes bounded monitoring. Reload uses the sole
+  destroy→recreate authority (fresh `WebViewId`, same tab/profile). Close uses
+  ordinary tab close/neighbor selection.
+- **Assert ids:** `bbr-unresponsive-panel`, `bbr-unresponsive-wait`,
+  `bbr-unresponsive-reload`, `bbr-unresponsive-close`.
 
 ### 11.9 Missing favicon and long titles
 

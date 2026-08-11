@@ -132,6 +132,28 @@ Additional rules:
   is orphaned.
 - Closing a tab does not implicitly close its space, profile, or window.
 
+### Unresponsive renderer — Contract
+
+- A missed bounded liveness deadline marks only the owning live session
+  `unresponsive`; tab identity, ordering, profile, and session remain intact.
+- Browser chrome never waits for WebContent. Cmd-W, row close, focused-list
+  Backspace, neighbor selection, Cmd-T/Cmd-L, sidebar, spaces, and split focus
+  use their normal authorities while the active renderer is hung.
+- The active hung slot shows the closed recovery set: **Wait** keeps the same
+  session under bounded monitoring; **Reload** destroys and recreates a fresh
+  session for the same tab/profile; **Close tab** uses ordinary neighbor
+  selection. There is no automatic reload or process kill.
+- A completing probe clears `unresponsive`; a process crash takes precedence.
+  Late probe/dialog/termination observations for a closed or recreated view
+  are ignored.
+- Chrome-initiated close destroys the WKWebView immediately and does not run
+  page scripts. Public WKUIDelegate in the pinned SDK exposes no beforeunload
+  callback; BBR does not use deprecated legacy WebUIDelegate or private SPI.
+- JavaScript `alert`, `confirm`, and `prompt` are auto-dismissed in v1
+  (confirm = false, prompt = null). They never block chrome and no dialog state
+  survives close or recreation. A user-facing dialog portal is explicitly
+  deferred.
+
 ### Reopen a closed tab — Contract
 
 - Recently closed tabs are stored per space.

@@ -140,6 +140,9 @@ impl BbrApp {
         self.library.editing_row = None;
         self.library.rename_draft.clear();
         self.sync_library_visibility();
+        // While the Library is open it is the single visibility authority:
+        // the §11.8a pane (and its native-view hiding) yields to it.
+        self.sync_unresponsive_visibility();
         window.focus(&self.library_handle, cx);
         cx.notify();
         self.emit_focus(window);
@@ -162,6 +165,10 @@ impl BbrApp {
         self.library.editing_row = None;
         self.library.rename_draft.clear();
         self.sync_library_visibility();
+        // The Library closed: the §11.8a pane re-evaluates for the active
+        // view (a hung renderer now shows the pane and hides its stale
+        // frame again).
+        self.sync_unresponsive_visibility();
         self.focus_web(window, cx);
     }
 

@@ -143,6 +143,15 @@ pub enum WebEvent {
     DidCommitNavigation(WebViewId),
     PageCrashed(WebViewId),
     NavigationFailed(WebViewId, String),
+    /// The session's renderer stopped answering liveness probes
+    /// (`true`) or answers again (`false`). A sibling of [`WebEvent::PageCrashed`]:
+    /// `PageCrashed` stays the crash authority (the session is destroyed and
+    /// the tab marked discarded), while `Unresponsive` keeps the session and
+    /// tab alive under the bounded recovery surface. `true` is fail-closed —
+    /// a probe that could not complete inside its bounded deadline — and
+    /// `false` is a completing probe (generation-checked by the adapter so a
+    /// late answer from a previous probe can never clear a newer timeout).
+    UnresponsiveChanged(WebViewId, bool),
     /// A right-click over a web view was classified BBR-owned (page
     /// background, not a WebKit interactive element): the context menu
     /// bridge requests the BBR menu at `point` (window content
@@ -189,6 +198,14 @@ pub trait WebEngine {
 
     /// Execute a navigation/user action on a web view.
     fn action(&mut self, id: WebViewId, action: WebAction);
+
+    /// Refresh the adapter's bounded liveness probe for one live view
+    /// (renderer-isolation lane): arms one bounded deadline probe whose
+    /// result arrives as a [`WebEvent::UnresponsiveChanged`]. Main-thread
+    /// only, never blocks, never waits on the renderer. Unknown or
+    /// destroyed ids are no-ops. The adapter generation-checks completions
+    /// so a late answer from a previous probe cannot clear a newer timeout.
+    fn probe_responsiveness(&mut self, id: WebViewId);
 
     /// Hand all subsequent [`WebEvent`]s to `sink`. Replaces any previous sink.
     fn set_events(&mut self, sink: Box<dyn FnMut(WebEvent)>);
@@ -344,6 +361,7 @@ mod tests {
         let _sink: Box<dyn FnMut(WebEvent)> = Box::new(|_| {});
         engine.set_events(_sink);
         engine.set_web_view_rect(WebViewId(7), WebRect::new(0.0, 0.0, 100.0, 80.0), 700.0);
+        engine.probe_responsiveness(WebViewId(7));
         engine.focus_native_web(WebViewId(7));
         engine.focus_host_chrome();
         assert_eq!(engine.live_session_count(), 0);
@@ -380,6 +398,10 @@ mod tests {
 
         fn action(&mut self, id: WebViewId, action: WebAction) {
             self.logs.push(format!("action {id:?} {action:?}"));
+        }
+
+        fn probe_responsiveness(&mut self, id: WebViewId) {
+            self.logs.push(format!("probe {id:?}"));
         }
 
         fn set_events(&mut self, _sink: Box<dyn FnMut(WebEvent)>) {}

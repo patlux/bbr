@@ -616,6 +616,13 @@ fn main() {
         // via the macOS performKeyEquivalent path).
         install_actions(cx, window, app.clone());
 
+        // Renderer-availability cadence (renderer-isolation lane): the
+        // bounded production pump that arms due liveness probes for the
+        // visible sessions and applies the portable fail-closed deadline.
+        // Runs in every build (testkit and release): a real hang is
+        // detected through the production monitor path in both.
+        window_seam::spawn_responsiveness_cadence(cx, &window, &app);
+
         // Test gateway (only under the `testkit` feature).
         #[cfg(feature = "testkit")]
         {

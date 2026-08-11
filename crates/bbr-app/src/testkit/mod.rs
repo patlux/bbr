@@ -32,6 +32,7 @@ mod dispatch_benchmark_find;
 mod dispatch_benchmark_gestures;
 mod dispatch_benchmark_library;
 mod dispatch_benchmark_peek;
+mod dispatch_benchmark_responsiveness;
 mod dispatch_benchmark_swipe;
 mod dispatch_benchmark_u2;
 mod dispatch_benchmark_zoom;

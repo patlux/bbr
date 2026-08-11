@@ -46,6 +46,12 @@ pub enum EngineOp {
         view: WebViewId,
     },
     FocusChrome,
+    /// One bounded liveness probe armed for a live view (renderer-isolation
+    /// lane): the fake records the arm; a test simulates the adapter's
+    /// deadline/completion emission through the sink.
+    Probe {
+        view: WebViewId,
+    },
 }
 
 /// Fake per-session web state.
@@ -254,6 +260,16 @@ impl WebEngine for FakeEngine {
         self.ops
             .borrow_mut()
             .push(EngineOp::Action { view: id, action });
+    }
+
+    fn probe_responsiveness(&mut self, id: WebViewId) {
+        // The fake owns no renderer: a probe is a no-op unless a test
+        // explicitly simulates the adapter's deadline/completion emission
+        // (via `emit(WebEvent::UnresponsiveChanged(..))`).
+        if !self.sessions.contains_key(&id) {
+            panic!("fake engine: probe of unknown session {id:?}");
+        }
+        self.ops.borrow_mut().push(EngineOp::Probe { view: id });
     }
 
     fn set_events(&mut self, sink: Box<dyn FnMut(WebEvent)>) {

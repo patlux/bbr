@@ -101,6 +101,7 @@ mod tests {
             pinned,
             loading: false,
             crashed: false,
+            unresponsive: false,
             active: index == 0,
             web_view: Some(bbr_web::WebViewId(index as u64 + 1)),
             lifecycle: bbr_browser::TabLifecycle::Warm,

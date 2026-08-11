@@ -50,6 +50,8 @@ allowed distribution before the test fails.
 | Eligible new-window request → Peek's fresh native preview presented above the origin | ≤ 100 ms | p95 ≤ 100 ms; max ≤ 150 ms |
 | Dismiss Peek → exact warm origin presented/focused | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
 | Promote Peek → same preview session presented as a regular tab without reload | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
+| Hung active renderer: Cmd-W close or warm-neighbor selection → exact neighbor presented | next display frame | p95 ≤ 50 ms; max ≤ 100 ms |
+| Idle renderer probe cadence tick → unchanged warm presentation, no due probe traffic | no visible frame cost | p95 ≤ 50 ms; max ≤ 100 ms |
 
 Budgets cover the production mutation path, render/layout work, native-view
 visibility or geometry updates, and presentation-commit observation. Testkit
@@ -109,7 +111,11 @@ group. This includes, as capabilities land:
 - window creation and restoration;
 - web-content Back/Forward gesture commit and child-tab Back-at-root opener
   return, distinct from sidebar space swipe and ordinary tab close;
-- Peek request-to-present, dismiss-to-origin, and no-reload promotion-to-tab.
+- Peek request-to-present, dismiss-to-origin, and no-reload promotion-to-tab;
+- renderer `unresponsive_chrome` close/neighbor presentation and idle
+  `probe_tick` cadence, each with at least 30 optimized samples, exact
+  unresponsive source/neighbor/session/focus guards, and the configured 2 s
+  detection deadline recorded separately from chrome interaction latency.
 
 A fast but incorrect transition fails. Benchmarks must assert the selected tab,
 visible native session, sidebar state, focus target, and final geometry before
@@ -167,6 +173,13 @@ The benchmark foundation must provide:
   once runtime is stable enough for normal development;
 - a dedicated stable macOS runner for authoritative absolute and baseline
   enforcement.
+
+Renderer-isolation performance execution is currently explicitly deferred:
+scenario code, ≥30-sample configuration guards, unchanged budgets, and
+`samples: 0` baseline entries are required and compiled, but no performance
+recipe or canonical `just e2e` result may be claimed until the override lifts.
+Detection latency is the configured 2 s fail-closed constant plus the bounded
+250 ms app cadence; canonical measurement remains unexecuted/unpassed.
 
 Until that harness exists, no feature may claim that these budgets are proven.
 The foundational task is tracked in

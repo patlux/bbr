@@ -96,6 +96,13 @@ pub fn stopped_half(size: f32) -> f32 {
     size * 0.26
 }
 
+/// §10.11 clock companion geometry: (ring radius, hour-hand half-length,
+/// minute-hand half-length) of the unresponsive row's clock glyph — a
+/// static ring with two short hands, drawn, never a Unicode substitute.
+pub fn clock_geometry(size: f32) -> (f32, f32, f32) {
+    (size * 0.34, size * 0.12, size * 0.22)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -134,6 +141,12 @@ mod tests {
                 stopped_half(size) + stroke <= size / 2.0,
                 "stopped bar fits at {size}pt"
             );
+            // Clock (§10.11): the ring plus the stroke fits; the minute
+            // hand stays inside the ring, the hour hand inside the minute.
+            let (ring, hour, minute) = clock_geometry(size);
+            assert!(ring + stroke <= size / 2.0, "clock ring fits at {size}pt");
+            assert!(minute < ring, "minute hand inside the clock ring");
+            assert!(hour < minute, "hour hand shorter than the minute hand");
         }
     }
 }

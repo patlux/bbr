@@ -306,6 +306,17 @@ pub enum BenchmarkKind {
     /// corrupted selection rejects the measurement in the app). Same warm
     /// next-frame presentation class (50/100).
     SavedPagesLibraryScroll,
+    /// Under a reported hung active renderer, a normal Cmd-W close or warm
+    /// neighbor selection reaches the exact next presentation. Samples use
+    /// the unchanged warm interaction budget (p95 ≤ 50 ms / max ≤ 100 ms)
+    /// and commit only when the armed unresponsive source, exact neighbor,
+    /// session count, and focus domain are correct.
+    UnresponsiveChrome,
+    /// One production renderer-cadence tick while no probe is due. The sample
+    /// proves the bounded idle path adds no visible frame work or state change;
+    /// it shares the unchanged warm interaction budget and requires at least
+    /// 30 optimized samples when performance execution is un-deferred.
+    ProbeTick,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after

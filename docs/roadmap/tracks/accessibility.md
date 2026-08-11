@@ -46,5 +46,5 @@ Parent phases: [Phase 4](../phases/04-ui-shell.md), [Phase 5](../phases/05-comma
 - [ ] Enter and leave WKWebView content predictably.
 - [ ] Operate split divider and focused-pane controls.
 - [ ] Understand, navigate, dismiss, and promote [Link Preview / Peek](../tasks/link-preview-peek.md), with focus returning to its exact origin.
-- [ ] Understand downloads, permissions, errors, and recovery actions, including the bounded [unresponsive renderer surface](../tasks/renderer-isolation-unresponsive-tabs.md) without losing keyboard close, neighbor activation, or chrome focus.
+- [ ] Understand downloads, permissions, errors, and recovery actions, including the bounded [unresponsive renderer surface](../tasks/renderer-isolation-unresponsive-tabs.md) without losing keyboard close, neighbor activation, or chrome focus. Slice 3 supplies the typed semantic tree and Wait → Reload → Close order; the platform Accessibility bridge/manual VoiceOver acceptance remains Phase 9.
 - [ ] Verify packaged `.app` with Appium Mac2 plus manual VoiceOver passes.

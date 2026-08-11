@@ -78,16 +78,16 @@ pub(crate) unsafe fn unobserve_title(web_view: &WKWebView, observer: &NSObject) 
 }
 
 /// How the delegate reports navigation observations back to the engine.
-pub(crate) type EventSink = Rc<RefCell<Option<Box<dyn FnMut(WebEvent)>>>>;
+pub type EventSink = Rc<RefCell<Option<Box<dyn FnMut(WebEvent)>>>>;
 
 /// How the delegate reports classified web-error incidents back to the
 /// engine (task packet `error-surface-contract`): the native adapter maps
 /// WebKit failures onto the merged contract's closed taxonomy, and the app
 /// owns the incident-id allocation on top of that classification.
-pub(crate) type IncidentSink = Rc<RefCell<Option<Box<dyn FnMut(ClassifiedIncident)>>>>;
+pub type IncidentSink = Rc<RefCell<Option<Box<dyn FnMut(ClassifiedIncident)>>>>;
 
 /// Instance variables for the navigation delegate.
-pub(crate) struct WebViewDelegateIvars {
+pub struct WebViewDelegateIvars {
     /// The web view this delegate belongs to (used to key events).
     pub(crate) web_view_id: WebViewId,
     /// The profile this web view was created in (incident scope).
@@ -107,7 +107,7 @@ define_class!(
     #[thread_kind = MainThreadOnly]
     #[ivars = WebViewDelegateIvars]
     #[name = "BBRWebViewDelegate"]
-    pub(crate) struct WebViewDelegate;
+    pub struct WebViewDelegate;
 
     unsafe impl NSObjectProtocol for WebViewDelegate {}
 
@@ -168,13 +168,7 @@ define_class!(
             _navigation: Option<&WKNavigation>,
             error: &objc2_foundation::NSError,
         ) {
-            self.ivars().navigation_cover.setHidden(true);
-            self.emit_loading(false);
-            self.emit(WebEvent::NavigationFailed(
-                self.id(),
-                self.error_message(error),
-            ));
-            self.emit_incident(error, web_view);
+            self.did_fail(web_view, error);
         }
 
         #[unsafe(method(webView:didFailNavigation:withError:))]
@@ -184,31 +178,13 @@ define_class!(
             _navigation: Option<&WKNavigation>,
             error: &objc2_foundation::NSError,
         ) {
-            self.ivars().navigation_cover.setHidden(true);
-            self.emit_loading(false);
-            self.emit(WebEvent::NavigationFailed(
-                self.id(),
-                self.error_message(error),
-            ));
-            self.emit_incident(error, web_view);
+            self.did_fail(web_view, error);
         }
 
         #[unsafe(method(webViewWebContentProcessDidTerminate:))]
         fn web_content_process_did_terminate(&self, _web_view: &WKWebView) {
             self.ivars().navigation_cover.setHidden(true);
-            self.emit(WebEvent::PageCrashed(self.id()));
-            // The renderer-termination path is classified too: the contract's
-            // only class for a dead web process is `ProcessCrash`, and the
-            // surface's recovery (Restore — recreate the session) is derived
-            // from that classification.
-            if let Some(sink) = self.ivars().incident_sink.borrow_mut().as_mut() {
-                sink(classify(
-                    self.ivars().profile,
-                    self.id(),
-                    map_termination(),
-                    None,
-                ));
-            }
+            self.emit_termination();
         }
     }
 
@@ -237,12 +213,66 @@ define_class!(
             // a detached or untracked WKWebView from this delegate.
             None
         }
+
+        // JS-dialog boundary (renderer-isolation lane; interaction contract
+        // dialog rows): alert/confirm/prompt are auto-dismissed
+        // deterministically in v1 — the chrome never blocks on a page
+        // dialog and no dialog state survives close/recreate. WebKit
+        // documents that omitting these methods behaves as if the user
+        // dismissed the panel, but implementing them makes the dismissal
+        // deterministic and explicit (a busy/hung renderer can never leave
+        // a dialog open over the BBR chrome). There is deliberately NO
+        // beforeunload hook: the pinned SDK exposes no public
+        // `WKUIDelegate` beforeunload method (the only
+        // `runBeforeUnloadConfirmPanel…` binding is the deprecated legacy
+        // `WebUIDelegate`, which this project does not use), so chrome-
+        // initiated close destroys the WKWebView immediately and never runs
+        // page scripts.
+        #[unsafe(method(webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:))]
+        fn run_javascript_alert_panel(
+            &self,
+            _web_view: &WKWebView,
+            _message: &NSString,
+            _frame: &objc2_web_kit::WKFrameInfo,
+            completion_handler: &block2::DynBlock<dyn Fn()>,
+        ) {
+            // Auto-dismiss: answer the completion immediately with no user
+            // input (never a blocking wait, never a presentation).
+            completion_handler.call(());
+        }
+
+        #[unsafe(method(webView:runJavaScriptConfirmPanelWithMessage:initiatedByFrame:completionHandler:))]
+        fn run_javascript_confirm_panel(
+            &self,
+            _web_view: &WKWebView,
+            _message: &NSString,
+            _frame: &objc2_web_kit::WKFrameInfo,
+            completion_handler: &block2::DynBlock<dyn Fn(objc2::runtime::Bool)>,
+        ) {
+            // Auto-dismiss as Cancel (`NO`): a page `confirm()` never
+            // yields a destructive surprise and never blocks the chrome.
+            completion_handler.call((objc2::runtime::Bool::NO,));
+        }
+
+        #[unsafe(method(webView:runJavaScriptTextInputPanelWithPrompt:defaultText:initiatedByFrame:completionHandler:))]
+        fn run_javascript_text_input_panel(
+            &self,
+            _web_view: &WKWebView,
+            _prompt: &NSString,
+            _default_text: Option<&NSString>,
+            _frame: &objc2_web_kit::WKFrameInfo,
+            completion_handler: &block2::DynBlock<dyn Fn(*mut NSString)>,
+        ) {
+            // Auto-dismiss as Cancel (`nil`): a page `prompt()` never
+            // blocks the chrome and never captures input.
+            completion_handler.call((std::ptr::null_mut(),));
+        }
     }
 );
 
 impl WebViewDelegate {
     /// Create a new delegate for `web_view_id` in `profile`.
-    pub(crate) fn new(
+    pub fn new(
         mtm: MainThreadMarker,
         web_view_id: WebViewId,
         profile: ProfileId,
@@ -270,6 +300,44 @@ impl WebViewDelegate {
     fn emit(&self, event: WebEvent) {
         if let Some(sink) = self.ivars().sink.borrow_mut().as_mut() {
             sink(event);
+        }
+    }
+
+    /// Shared navigation-failure handling. A `WKErrorDomain` +
+    /// `WKErrorWebContentProcessTerminated` error is the documented error
+    /// form of a dead content process: it routes to the same portable
+    /// termination authority as `webViewWebContentProcessDidTerminate:` (a
+    /// `PageCrashed` event plus the classified `ProcessCrash` incident)
+    /// instead of emitting a misleading `NavigationFailed` or inventing a
+    /// navigation cause.
+    fn did_fail(&self, web_view: &WKWebView, error: &objc2_foundation::NSError) {
+        self.ivars().navigation_cover.setHidden(true);
+        self.emit_loading(false);
+        if is_web_content_process_termination(error) {
+            self.emit_termination();
+            return;
+        }
+        self.emit(WebEvent::NavigationFailed(
+            self.id(),
+            self.error_message(error),
+        ));
+        self.emit_incident(error, web_view);
+    }
+
+    /// Emit the portable termination signal for the bound session: a
+    /// `PageCrashed` event plus the classified `ProcessCrash` incident (the
+    /// contract's only class for a dead web process; the surface's recovery
+    /// — Restore, recreate the session — is derived from that
+    /// classification).
+    fn emit_termination(&self) {
+        self.emit(WebEvent::PageCrashed(self.id()));
+        if let Some(sink) = self.ivars().incident_sink.borrow_mut().as_mut() {
+            sink(classify(
+                self.ivars().profile,
+                self.id(),
+                map_termination(),
+                None,
+            ));
         }
     }
 
@@ -365,4 +433,11 @@ impl WebViewDelegate {
             format!("{desc} ({domain} {code})")
         }
     }
+}
+
+/// Is this the documented WebKit error form of a terminated content
+/// process (`WKErrorDomain` + `WKErrorWebContentProcessTerminated`)?
+fn is_web_content_process_termination(error: &objc2_foundation::NSError) -> bool {
+    error.domain().to_string() == crate::error_mapping::WK_ERROR_DOMAIN
+        && error.code() as i64 == crate::error_mapping::WK_ERROR_WEB_CONTENT_PROCESS_TERMINATED
 }
