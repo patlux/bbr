@@ -16,8 +16,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
 
-use crate::app::downloads::DownloadMachine;
 use crate::performance::downloads::{observe_row, RowObservation};
+use bbr_ui::surfaces::downloads::DownloadMachine;
 
 fn probe_with_sink() -> (PerformanceProbe, Rc<RefCell<Vec<PresentationMeasurement>>>) {
     let probe = PerformanceProbe::new(Instant::now(), None);
@@ -306,16 +306,16 @@ fn downloads_arming_clears_the_prior_observation() {
 /// The row mapping mirrors the L6 states exactly (the render's vocabulary).
 #[test]
 fn observe_row_maps_the_l6_machine_states() {
-    fn visual(machine: DownloadMachine) -> crate::app::downloads::DownloadRowVisual {
-        crate::app::downloads::DownloadRowVisual {
+    fn visual(machine: DownloadMachine) -> bbr_ui::surfaces::downloads::DownloadRowModel {
+        bbr_ui::surfaces::downloads::DownloadRowModel {
             index: 0,
             id: 1,
             filename: "dl.bin".into(),
             machine,
-            group: crate::app::downloads::DownloadGroupKind::Active,
+            group: bbr_ui::surfaces::downloads::DownloadGroupKind::Active,
             progress_fraction: None,
             visual: bbr_ui::state::DownloadVisual::Default,
-            action: crate::app::downloads::DownloadActionKind::Cancel,
+            action: bbr_ui::surfaces::downloads::DownloadActionKind::Cancel,
             action_enabled: true,
             action_reason: None,
             meta: "0 B".into(),

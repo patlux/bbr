@@ -1,7 +1,8 @@
 //! Downloads panel behavior (DESIGN.md §11.12): the footer-control
 //! activation, the anchored-popover open/close/dismissal, the contextual row
 //! actions (Cancel / Retry / Restart / Reveal-in-Finder), and the L6 event
-//! application. The render surfaces live in `app::downloads_render`; the
+//! application. The presentation surface lives in
+//! `bbr_ui::surfaces::downloads` (extracted in the G2 Group 5 cutover); the
 //! pure state/row model in `app::downloads`; the durable history mutations
 //! (Clear / row Delete / persist) in `app::downloads_history`.
 //!
@@ -22,10 +23,9 @@ use bbr_web::downloads::DestinationDecision;
 use bbr_web::downloads::{DownloadEvent, DownloadId, DownloadState};
 use gpui::{Context, KeyDownEvent, Window};
 
-use super::downloads::{
-    row_visuals, DownloadActionKind, RevealEligibility, DOWNLOADS_MAX_VISIBLE, DOWNLOADS_PAGE_ROWS,
-};
+use super::downloads::{row_visuals, RevealEligibility};
 use super::BbrApp;
+use bbr_ui::surfaces::downloads::{DownloadActionKind, DOWNLOADS_MAX_VISIBLE, DOWNLOADS_PAGE_ROWS};
 
 /// The §11.12 footer `[Downloads]` control: toggle the anchored popover
 /// (pointer or keyboard activation; a second activation dismisses it).

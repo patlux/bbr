@@ -636,27 +636,27 @@ impl BbrApp {
                 row: row.index,
                 id: row.id,
                 machine_state: match row.machine {
-                    crate::app::downloads::DownloadMachine::Waiting => {
+                    bbr_ui::surfaces::downloads::DownloadMachine::Waiting => {
                         bbr_testkit::protocol::DownloadMachineState::Waiting
                     }
-                    crate::app::downloads::DownloadMachine::Running => {
+                    bbr_ui::surfaces::downloads::DownloadMachine::Running => {
                         bbr_testkit::protocol::DownloadMachineState::Running
                     }
-                    crate::app::downloads::DownloadMachine::Succeeded => {
+                    bbr_ui::surfaces::downloads::DownloadMachine::Succeeded => {
                         bbr_testkit::protocol::DownloadMachineState::Succeeded
                     }
-                    crate::app::downloads::DownloadMachine::Failed => {
+                    bbr_ui::surfaces::downloads::DownloadMachine::Failed => {
                         bbr_testkit::protocol::DownloadMachineState::Failed
                     }
-                    crate::app::downloads::DownloadMachine::Cancelled => {
+                    bbr_ui::surfaces::downloads::DownloadMachine::Cancelled => {
                         bbr_testkit::protocol::DownloadMachineState::Cancelled
                     }
                 },
                 group: match row.group {
-                    crate::app::downloads::DownloadGroupKind::Active => {
+                    bbr_ui::surfaces::downloads::DownloadGroupKind::Active => {
                         bbr_testkit::protocol::DownloadGroup::Active
                     }
-                    crate::app::downloads::DownloadGroupKind::History => {
+                    bbr_ui::surfaces::downloads::DownloadGroupKind::History => {
                         bbr_testkit::protocol::DownloadGroup::History
                     }
                 },
@@ -680,16 +680,16 @@ impl BbrApp {
                     }
                 },
                 action: match row.action {
-                    crate::app::downloads::DownloadActionKind::Cancel => {
+                    bbr_ui::surfaces::downloads::DownloadActionKind::Cancel => {
                         bbr_testkit::protocol::DownloadRowAction::Cancel
                     }
-                    crate::app::downloads::DownloadActionKind::Retry => {
+                    bbr_ui::surfaces::downloads::DownloadActionKind::Retry => {
                         bbr_testkit::protocol::DownloadRowAction::Retry
                     }
-                    crate::app::downloads::DownloadActionKind::Restart => {
+                    bbr_ui::surfaces::downloads::DownloadActionKind::Restart => {
                         bbr_testkit::protocol::DownloadRowAction::Restart
                     }
-                    crate::app::downloads::DownloadActionKind::Reveal => {
+                    bbr_ui::surfaces::downloads::DownloadActionKind::Reveal => {
                         bbr_testkit::protocol::DownloadRowAction::Reveal
                     }
                 },
@@ -738,7 +738,7 @@ impl BbrApp {
             rendered_rows: state.render_state.rendered_rows,
             total_rows: state.render_state.item_count,
             viewport_rows: state.render_state.viewport_rows,
-            max_visible: crate::app::downloads::DOWNLOADS_MAX_VISIBLE,
+            max_visible: bbr_ui::surfaces::downloads::DOWNLOADS_MAX_VISIBLE,
             footer_count: self.downloads_controller_active_count().unwrap_or(0),
         }
     }

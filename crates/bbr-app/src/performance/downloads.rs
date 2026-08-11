@@ -178,28 +178,34 @@ impl PerformanceProbe {
 /// (mirrors the snapshot mapping; the panel surface calls this for the
 /// bounded window it actually built, so the probe never sees the full
 /// history).
-pub(crate) fn observe_row(visual: &crate::app::downloads::DownloadRowVisual) -> RowObservation {
+pub(crate) fn observe_row(
+    visual: &bbr_ui::surfaces::downloads::DownloadRowModel,
+) -> RowObservation {
     RowObservation {
         id: visual.id,
         machine: match visual.machine {
-            crate::app::downloads::DownloadMachine::Waiting => DownloadMachineState::Waiting,
-            crate::app::downloads::DownloadMachine::Running => DownloadMachineState::Running,
-            crate::app::downloads::DownloadMachine::Succeeded => DownloadMachineState::Succeeded,
-            crate::app::downloads::DownloadMachine::Failed => DownloadMachineState::Failed,
-            crate::app::downloads::DownloadMachine::Cancelled => DownloadMachineState::Cancelled,
+            bbr_ui::surfaces::downloads::DownloadMachine::Waiting => DownloadMachineState::Waiting,
+            bbr_ui::surfaces::downloads::DownloadMachine::Running => DownloadMachineState::Running,
+            bbr_ui::surfaces::downloads::DownloadMachine::Succeeded => {
+                DownloadMachineState::Succeeded
+            }
+            bbr_ui::surfaces::downloads::DownloadMachine::Failed => DownloadMachineState::Failed,
+            bbr_ui::surfaces::downloads::DownloadMachine::Cancelled => {
+                DownloadMachineState::Cancelled
+            }
         },
         group: match visual.group {
-            crate::app::downloads::DownloadGroupKind::Active => DownloadGroup::Active,
-            crate::app::downloads::DownloadGroupKind::History => DownloadGroup::History,
+            bbr_ui::surfaces::downloads::DownloadGroupKind::Active => DownloadGroup::Active,
+            bbr_ui::surfaces::downloads::DownloadGroupKind::History => DownloadGroup::History,
         },
         // The exact fraction the render drew (`received / total`); a
         // zero-byte total reports `1.0`, `None` while unknown.
         progress_fraction: visual.progress_fraction,
         action: match visual.action {
-            crate::app::downloads::DownloadActionKind::Cancel => DownloadRowAction::Cancel,
-            crate::app::downloads::DownloadActionKind::Retry => DownloadRowAction::Retry,
-            crate::app::downloads::DownloadActionKind::Restart => DownloadRowAction::Restart,
-            crate::app::downloads::DownloadActionKind::Reveal => DownloadRowAction::Reveal,
+            bbr_ui::surfaces::downloads::DownloadActionKind::Cancel => DownloadRowAction::Cancel,
+            bbr_ui::surfaces::downloads::DownloadActionKind::Retry => DownloadRowAction::Retry,
+            bbr_ui::surfaces::downloads::DownloadActionKind::Restart => DownloadRowAction::Restart,
+            bbr_ui::surfaces::downloads::DownloadActionKind::Reveal => DownloadRowAction::Reveal,
         },
         retry_of: visual.retry_of,
     }

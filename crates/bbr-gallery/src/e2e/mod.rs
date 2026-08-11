@@ -18,6 +18,7 @@
 
 mod address;
 mod controls;
+mod downloads;
 mod library;
 mod pointer;
 mod startup;

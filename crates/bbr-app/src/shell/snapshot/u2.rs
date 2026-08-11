@@ -27,7 +27,7 @@ pub struct U2IdsInput<'a> {
     /// §17.8 Delete control (cancelled rows).
     pub downloads_open: bool,
     pub downloads_window: std::ops::Range<usize>,
-    pub downloads_layout: crate::app::downloads::PanelLayout,
+    pub downloads_layout: bbr_ui::surfaces::downloads::PanelLayout,
     pub downloads_delete_rows: Vec<usize>,
     /// §11.8-style error-surface gating (task packet
     /// `error-surface-contract`): the classified incident surface is
@@ -59,7 +59,7 @@ impl<'a> Default for U2IdsInput<'a> {
             plus_menu: bbr_ui::components::menu::PlusMenuState::default(),
             downloads_open: false,
             downloads_window: 0..0,
-            downloads_layout: crate::app::downloads::PanelLayout {
+            downloads_layout: bbr_ui::surfaces::downloads::PanelLayout {
                 label_h: 0.0,
                 row_h: 0.0,
                 active_count: 0,
@@ -122,10 +122,10 @@ pub(crate) fn extend_visible_ids(
 fn downloads_visible_ids(
     total: usize,
     window: &std::ops::Range<usize>,
-    layout: &crate::app::downloads::PanelLayout,
+    layout: &bbr_ui::surfaces::downloads::PanelLayout,
     delete_rows: &[usize],
 ) -> Vec<String> {
-    use crate::app::downloads_render::{
+    use bbr_ui::surfaces::downloads::{
         download_row_id, download_slot_id, DOWNLOADS_ACTIVE_ID, DOWNLOADS_CLEAR_ID,
         DOWNLOADS_EMPTY_ID, DOWNLOADS_HISTORY_ID, DOWNLOADS_PANEL_ID,
     };
