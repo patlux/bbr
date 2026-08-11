@@ -3,11 +3,14 @@
 //! One `Cmd-F` find presentation per browser window: the portable
 //! [`FindSession`] state machine, the native WebKit adapter bound to the
 //! **active** web view, and the typed render/snapshot state. The find bar
-//! renders inside the one `NativeAboveWeb` portal window (never a second
-//! host, never a GPUI overlay behind WebKit, never a screenshot composite);
-//! the portal window is non-activating and never key by design, so keyboard
-//! input is handled by the main window's GPUI focus (`find_handle`) and the
-//! portal renders the same live state.
+//! presentation itself lives in `bbr-ui::surfaces::find` (G2 browser
+//! components); this module keeps the session, the lifecycle, the native
+//! Portal placement, and the DTO building, and the portal root renders the
+//! production `find_bar` inside the one `NativeAboveWeb` portal window
+//! (never a second host, never a GPUI overlay behind WebKit, never a
+//! screenshot composite); the portal window is non-activating and never
+//! key by design, so keyboard input is handled by the main window's GPUI
+//! focus (`find_handle`) and the portal renders the same live state.
 //!
 //! Contract invariants (enforced by construction):
 //!
@@ -32,35 +35,23 @@
 use bbr_web::find_in_page::{FindDirection, FindError, FindOptions, FindSession};
 use gpui::{Context, Window};
 
+use crate::portal::geometry::{Edges, FitMode, PortalAnchor, Pt, Sz};
+use crate::portal::state::{DismissalPolicy, PortalPlacement, PortalRequest};
+use bbr_ui::theme::Theme;
 #[cfg(target_os = "macos")]
 use bbr_web_macos::find_adapter::NativeFindAdapter;
 #[cfg(target_os = "macos")]
 use bbr_web_macos::find_mapping::FindCompletion;
 
-use crate::portal::geometry::{Edges, FitMode, PortalAnchor, Pt, Sz};
-use crate::portal::state::{DismissalPolicy, PortalPlacement, PortalRequest};
-use bbr_ui::theme::Theme;
-
 use super::BbrApp;
 
-/// Stable §15 ids of the find bar (DESIGN.md §15; exposed through the
-/// portal snapshot's typed `ids` field, registered in
-/// [`crate::portal::probe::PortalProbeState::ids`]).
-pub const FIND_BAR_ID: &str = "bbr-find-bar";
-pub const FIND_FIELD_ID: &str = "bbr-find-field";
-pub const FIND_TEXT_ID: &str = "bbr-find-text";
-pub const FIND_COUNT_ID: &str = "bbr-find-count";
-pub const FIND_PREVIOUS_ID: &str = "bbr-find-previous";
-pub const FIND_NEXT_ID: &str = "bbr-find-next";
-pub const FIND_CLOSE_ID: &str = "bbr-find-close";
-
+/// The find bar's portal draw priority (same slot as the command surfaces).
+pub const FIND_PORTAL_PRIORITY: usize = 2;
 /// The stable presentation id of the find bar, allocated in the portal
 /// presentation-id space next to the probe (`0xB9`) and the command
 /// surfaces (`0xC1`/`0xC2`).
 pub const FIND_PRESENTATION_ID: crate::portal::state::PresentationId =
     crate::portal::state::PresentationId(0xC3);
-/// The find bar's portal draw priority (same slot as the command surfaces).
-pub const FIND_PORTAL_PRIORITY: usize = 2;
 /// The find bar's width in points: the §11.4 command-surface family's
 /// compact clamp minimum ("width = field width clamped to 360–win:palette",
 /// DESIGN.md §11.4) — settled chrome geometry, not an invented size.
@@ -136,15 +127,10 @@ impl FindController {
 
 /// The immutable find-bar data one portal-window render consumes (mirrors
 /// the command-surface model pattern: the portal reads the app's live state
-/// per render, so the count/query can never drift from the app).
-#[derive(Clone, Debug)]
-pub struct FindSurface {
-    pub theme: Theme,
-    pub focused: bool,
-    pub query: String,
-    pub match_count: Option<usize>,
-    pub current_match: Option<usize>,
-}
+/// per render, so the count/query can never drift from the app). The DTO
+/// itself lives in `bbr-ui::surfaces::find`; this method builds it from the
+/// live controller state.
+use bbr_ui::surfaces::find::FindSurface;
 
 impl BbrApp {
     /// Whether a find presentation is currently open (testkit seam).
@@ -157,7 +143,6 @@ impl BbrApp {
     pub fn find_surface(&self) -> FindSurface {
         let state = &self.find.state;
         FindSurface {
-            theme: self.theme(),
             focused: state.open && state.focused,
             query: state.query.clone(),
             match_count: state.match_count,

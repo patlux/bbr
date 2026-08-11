@@ -18,6 +18,7 @@ use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 
 use crate::address_recorder::{AddressObserver, AddressRecorder};
+use crate::find_recorder::{FindObserver, FindRecorder};
 use crate::library_recorder::{LibraryObserver, LibraryRecorder};
 use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRecorder};
 
@@ -83,6 +84,11 @@ pub struct StoryContext<'a> {
     /// `component-gallery-browser-components.md`, Group 3). `None` for
     /// every other story.
     pub address: Option<AddressStory<'a>>,
+    /// `Some` only for the Find bar story: the current recorder snapshot
+    /// and the observer callbacks the production `find_bar` callbacks
+    /// route through (packet `component-gallery-browser-components.md`,
+    /// Group 6). `None` for every other story.
+    pub find: Option<FindStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -134,6 +140,18 @@ pub struct TabRowStory<'a> {
 pub struct AddressStory<'a> {
     pub recorder: &'a AddressRecorder,
     pub observer: &'a AddressObserver,
+}
+
+/// Everything the Find bar story needs to render the **exact** production
+/// `bbr_ui::surfaces::find` symbols (`find_bar`, `FindSurface`,
+/// `FindBarRect`) with recorder callbacks: the current recorder snapshot
+/// (control press counts) and the observer callbacks that re-enter the
+/// app on real pointer interactions (packet
+/// `component-gallery-browser-components.md`, Group 6). `Some` only while
+/// the Find bar story is selected.
+pub struct FindStory<'a> {
+    pub recorder: &'a FindRecorder,
+    pub observer: &'a FindObserver,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,

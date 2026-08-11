@@ -27,6 +27,12 @@ mod control_observer;
 #[cfg(target_os = "macos")]
 mod controls;
 #[cfg(target_os = "macos")]
+mod find_app;
+#[cfg(target_os = "macos")]
+mod find_matrix;
+#[cfg(target_os = "macos")]
+mod find_recorder;
+#[cfg(target_os = "macos")]
 mod fixtures;
 #[cfg(target_os = "macos")]
 mod library_fixtures;

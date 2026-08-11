@@ -19,6 +19,7 @@
 pub mod address;
 pub mod browser_components;
 pub mod core_controls;
+pub mod find;
 pub mod foundations;
 pub mod library_composition;
 pub mod primitives;
@@ -163,6 +164,13 @@ pub fn catalog() -> CatalogRegistry {
             story("Command staging", address::render_command_staging, &[]),
         ],
     );
+    // The G2 Group 6 Find story (packet
+    // `component-gallery-browser-components.md`): the exact production
+    // `bbr-ui::surfaces::find` bar renders every valid matrix family from
+    // the one matrix authority with recorder callbacks. Appended after
+    // the pinned prefix — ids stay append-only; the Orchestrator merges
+    // groups 4–9 in canonical order.
+    registry.add_group("Find", vec![story("Find bar", find::render_find_bar, &[])]);
     registry
 }
 

@@ -54,6 +54,7 @@ pub mod components;
 pub mod icons;
 pub mod palette;
 pub mod state;
+pub mod surfaces;
 pub mod text;
 pub mod theme;
 
@@ -70,3 +71,6 @@ mod dependency_contract;
 // - `text` owns the §4/§11.5 pure string helpers (truncation, domains,
 //   mid-ellipsis).
 // - `components` owns the honest repeated primitives (§11).
+// - `surfaces` owns the larger browser surfaces (§11.4 family): the
+//   find-in-page bar first; Downloads / Error / Auth / Context menu follow
+//   in their G2 groups.
