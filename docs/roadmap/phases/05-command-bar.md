@@ -16,14 +16,14 @@ The [portable command core](../tasks/command-core.md) is implemented and
 verified, and the bounded [command app-composition packet](../tasks/command-composition.md)
 was integrated at `872d222ca91395fc6e7e60c98ff942630b74cf6d` after independent
 review and remediation. The native Portal host and browser-MVP palette UI are
-also integrated. The G3 Command candidate now moves only the floating Cmd-T
-palette / Cmd-L overlay presentation into the plain
-`bbr_ui::surfaces::command` model, stable ids, geometry, and renderer;
+also integrated. G3 Command is integrated at `8355dcd59e0d4b8da1c0387a349a76a5c427ca02`:
+only the floating Cmd-T palette / Cmd-L overlay presentation moved into the
+plain `bbr_ui::surfaces::command` model, stable ids, geometry, and renderer;
 `bbr-app` retains the DTO mapping, command state/ranking/activation, focus,
-and Portal host/placement/dismissal. The unchanged real-app Command suite is
-25/25 green, and Gallery appends the candidate composition at StoryId 45 in a
-46-story catalog. Persistence-backed history remains owned by Phase 7 rather
-than this presentation extraction.
+and Portal host/placement/dismissal. Post-merge Command is 25/25, Portal is
+7/7, and Gallery is 42/42 with Command at StoryId 45 in the 46-story catalog.
+Persistence-backed history remains owned by Phase 7 rather than this
+presentation extraction.
 
 ## Checklist
 

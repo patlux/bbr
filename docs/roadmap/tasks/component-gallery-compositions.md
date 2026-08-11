@@ -13,9 +13,10 @@ Template: [task-packet template](../templates/task-packet.md)
 Program position: **G3**, activated from the settled and integrated G2
 browser-components state recorded in [Current delivery](../../delivery/current.md).
 G2 already delivered the Downloads, Find, Error/Crash, Auth, and Context Menu
-surfaces and their component stories. G3 Sidebar is integrated; the Command
-composition candidate is code- and gate-complete pending independent review and
-integration. Split chrome composition remains serially next.
+surfaces and their component stories. G3 Sidebar and Command are integrated;
+the next authorized action is a fresh read-only Split preflight against the
+exact post-Command checkpoint. No Split writer is authorized before that
+preflight and a committed activation contract.
 This packet moves `SidebarModel` plus Callbacks, a plain command-presentation
 DTO and renderer, and split chrome into `bbr-ui` and appends their production
 Gallery stories after the canonical 44-story G2 catalog. The command cut does
@@ -69,7 +70,7 @@ anywhere in the gallery.
   23–30 are already integrated; Saved Page command/menu compositions are now
   eligible but remain append-only and may not reserve an id before their
   production composition exists. Existing StoryIds 0–44 remain stable; the
-  Command candidate appends StoryId 45 without renumbering.
+  integrated Command composition appends StoryId 45 without renumbering.
 - **`bbr-ui::split`:** split chrome frames (pane frame hairline, focused
   pane outline, shared-edge divider, split-zone frames per DESIGN §11.7)
   rendered by `bbr-app`'s split branch around the existing
@@ -224,18 +225,17 @@ production composition exists.
       untouched.
 - [x] Matrix test in the gallery: every composition story builds and
       renders without panic across its applicable variant families; rejected
-      combinations refuse to build. *(Sidebar evidence is integrated and the
-      Command candidate's matrix/recorder evidence is green — `command_matrix.rs`
+      combinations refuse to build. *(Sidebar and Command evidence is
+      integrated — `command_matrix.rs`
       `every_valid_family_builds_a_model_through_the_production_validation` /
       `every_rejected_family_refuses_construction` plus the two Command
       scenarios; Split remains open.)*
 - [x] Post-cutover `rg` guard: no duplicate composition symbol and no
       `pub use bbr_ui` alias in `bbr-app`. *(Sidebar and Command cutovers
-      are clean on the Command candidate — the gallery
-      `dependency_contract.rs` guard also asserts `portal/command.rs` is
-      deleted and the probe invokes the production
-      `bbr_ui::surfaces::command::command_card`; Split re-runs this guard
-      with its cutover.)*
+      are integrated cleanly — the gallery `dependency_contract.rs` guard
+      also asserts `portal/command.rs` is deleted and the probe invokes the
+      production `bbr_ui::surfaces::command::command_card`; Split re-runs
+      this guard with its cutover.)*
 
 ### Real-app E2E
 
@@ -267,10 +267,9 @@ production composition exists.
 - [x] `just e2e-gallery` extended (Sidebar + Command): composition stories
       render through the production compositions with stable StoryIds
       appended (G1b/G2 ids unrenumbered; Sidebar 44, Command 45, 46-story
-      catalog) and the variant families asserted. *(Sidebar is integrated;
-      the Command candidate's matrix/recorder evidence is green and its scenarios sweep
-      every matrix family with stable ids and observe the production
-      presentation model.)*
+      catalog) and the variant families asserted. *(Sidebar and Command are
+      integrated; the Command scenarios sweep every matrix family with stable
+      ids and observe the production presentation model.)*
 - [ ] `just e2e-gallery` extended (Split): the Split preview story appends
       after Command with its variant families asserted. *(Split remains
       open with its cutover.)*
@@ -310,11 +309,9 @@ sequentially under `python3 scripts/with_gui_lock.py --`.
 1. Confirm committed G2 closeout, the 44-story registry, and the
    browser-component modules are green.
 2. One exclusive writer performs three bounded cutovers in order: Sidebar
-   assembler first, then Command composition, then Split chrome. Sidebar is
-   integrated; Command has completed its extract → migrate → delete → re-run
-   cycle and awaits independent candidate review/integration. Split chrome
-   composition remains serially next. Completed G2 surfaces are consumed, not
-   re-extracted.
+   assembler first, then Command composition, then Split chrome. Sidebar and
+   Command are integrated; a fresh read-only Split preflight is serially next.
+   Completed G2 surfaces are consumed, not re-extracted.
 3. Add each composition story + fixture builder and mandatory variant families
    in the same bounded cut.
 4. One independent read-only reviewer maps every story back to DESIGN.md
@@ -344,8 +341,8 @@ G3 blocker.
 ## Delivery ledger
 
 ```text
-Outcome: G3 Command candidate complete after integrated Sidebar. The centered
-  Cmd-T palette and anchored Cmd-L/click overlay render through the one plain
+Outcome: G3 Command integrated after Sidebar. The centered Cmd-T palette and
+  anchored Cmd-L/click overlay render through the one plain
   bbr_ui::surfaces::command model/ids/geometry/command_card authority;
   app/palette.rs performs the only app-state → presentation mapping and strips
   Activation, while bbr-app retains command state, ranking, activation, focus,
@@ -353,13 +350,16 @@ Outcome: G3 Command candidate complete after integrated Sidebar. The centered
   The app-local portal/command.rs renderer is deleted. Gallery appends the
   production renderer at StoryId 45 for a 46-story catalog with valid/rejected
   matrix and stable-id observation; Split remains serially next.
-Commits: none in the lane; Orchestrator commits only after independent
-  whole-candidate review and any focused remediation/recheck. The whole review
-  accepted the product candidate and found one clean-build gate defect: two
-  unused test-only state-id imports. The bounded remediation removes only those
-  imports. Focused independent recheck reproduced the two-path delta and both
-  fresh-target gates and returned direct `G3_COMMAND_CLIPPY_RECHECK_PASS` with
-  zero findings; the exact candidate is freeze-ready.
+Commits: exact frozen lane `2d8add5a6aba63dd9ef821d4194087846d841628`
+  / tree `b53347e8e890cbb735312c19d86e450c24db28dc`; exact merge
+  `8355dcd59e0d4b8da1c0387a349a76a5c427ca02` / tree
+  `75a2b23fbda9598529694c4a47f72de7674790bb`, parents Control `fe6cd077…`
+  plus the frozen lane. The whole review accepted the product candidate and
+  found one clean-build gate defect: two unused test-only state-id imports.
+  The bounded remediation removed only those imports. Focused independent
+  recheck returned `G3_COMMAND_CLIPPY_RECHECK_PASS`; exact staged-union review
+  `g3-command-staged-union-review-msp5sr0y-ximmbb` returned direct
+  `G3_COMMAND_STAGED_UNION_PASS` with zero findings.
 Non-performance evidence: fmt and workspace all-target check green; bbr-ui
   122/122, Gallery 142/142 with 42 ignored, app binary 237/237 with 24
   performance tests filtered; warning-denied UI/Gallery Clippy, ui-deps,
@@ -372,22 +372,31 @@ Non-performance evidence: fmt and workspace all-target check green; bbr-ui
   `51888531213555b34765a0ec2391ed554294602953b8dd4c4f7f8cd9e07331cb`;
   workspace log `/tmp/g3-command-remediation-workspace-clippy.log`, SHA-256
   `41cdb524867508e52253be1ad1c0e03f0086cace97dcb783ea953118c0f2257b`.
-Real-app/Gallery E2E: Gallery 42/42, unchanged Command 25/25, unchanged Portal
-  7/7 on the final runtime tree. Sidebar was not rerun because the finalizer
-  changed no Sidebar/address composition beyond the already tested Command
-  mapping/Portal invocation seam.
+Post-merge evidence: allowed non-performance gates passed on exact merge tree
+  `75a2b23f…`; log `/tmp/bbr-g3-command-postmerge-nonperf.log`, SHA-256
+  `7567bb087854c8f667428e65f91543284b45fdea089c2b7412519d170f3922e5`.
+  Fresh-target app and workspace all-target Clippy used separate empty target
+  directories. Repository-locked Xcode-26.2 functional gates passed Gallery
+  42/42 (`/tmp/bbr-g3-command-postmerge-gallery.log`, SHA-256
+  `eb063f5af2cf7fe06e76196c310aa8ac4262f3c88d00e88fa5ef79118b2a741e`),
+  Command 25/25 (`/tmp/bbr-g3-command-postmerge-command.log`, SHA-256
+  `5733fffc3db175864127e2c9b35e68f7a1e755b978eb1183c6ef7a1ec563679d`),
+  and Portal 7/7 (`/tmp/bbr-g3-command-postmerge-portal.log`, SHA-256
+  `4b0e431ca817fe59ee1ed5e2263ba8af926084a2dc8272b08789623ce4b1ae2d`).
+  HEAD/tree/status remained exact and no process or GUI-lock holder survived.
 Performance evidence: none executed; performance code, budgets, baselines,
   sample guards, manifests, lockfile, and Justfile remain byte-unchanged;
   execution is explicit unpassed debt under Patrick's override.
 Roadmap/documentation updates: ARCHITECTURE.md, E2E_ARCHITECTURE.md, this
   packet, ROADMAP current-focus wording, Phase 4/5/6 facts, and UI/testing
   track rollups. Phase 8 required no Command-composition acceptance change.
-Open blockers and non-goals: Orchestrator freeze and serial integration remain;
-  Split, Z, startup, packaging, accessibility, canonical E2E, and all
-  performance execution remain outside this candidate.
-Worktree state: parallel/g3-command-composition at activation HEAD d998f058;
-  real index unchanged/staged 0; exact final fingerprints are recorded in
-  Current delivery before review; no lane process/Git/GUI-lock holder.
+Open blockers and non-goals: Command has no remaining blocker. Split requires
+  a fresh read-only post-Command preflight and committed activation contract;
+  Z, startup, packaging, accessibility, canonical E2E, and all performance
+  execution remain outside this integrated cut.
+Worktree state: frozen lane `parallel/g3-command-composition` is clean at
+  `2d8add5a…`; integrated Control is clean at `8355dcd5…` / tree `75a2b23f…`;
+  no lane/Control process, Git lock, or GUI-lock holder.
 
 Planning/read-only: estimate
 Implementation: estimate
