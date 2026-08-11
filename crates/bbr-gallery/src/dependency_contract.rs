@@ -147,6 +147,29 @@ fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
         "fn context_menu_card(",
         "struct ContextMenuModel",
         "struct ContextMenuRow",
+        // G3 Command: the floating command card render moved to
+        // `bbr_ui::surfaces::command`; the app keeps the state machine,
+        // ranking, activation, focus, Portal host, and the one mapping to
+        // the plain UI model.
+        "fn command_card(",
+        "fn palette_card(",
+        "fn overlay_card(",
+        "fn field_row(",
+        "fn result_rows(",
+        "fn result_row(",
+        "struct CommandPortalModel",
+        "const PALETTE_ID",
+        "const PALETTE_FIELD_ID",
+        "const PALETTE_TEXT_ID",
+        "const PALETTE_MODE_ID",
+        "const PALETTE_CURSOR_ID",
+        "const PALETTE_RESULT_PREFIX",
+        "const PALETTE_STATE_LOADING",
+        "const OVERLAY_ID",
+        "const OVERLAY_FIELD_ID",
+        "const OVERLAY_TEXT_ID",
+        "const OVERLAY_CURSOR_ID",
+        "const OVERLAY_FADE_ELEMENT_ID",
     ];
     for file in &files {
         let text = std::fs::read_to_string(file).expect("read app source");
@@ -181,6 +204,23 @@ fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
             && probe.contains("surface.model()")
             && probe.contains("auth_submit_clicked")
             && probe.contains("auth_cancel_clicked")
+    );
+    // G3 Command cutover: the portal root invokes the production
+    // `bbr_ui::surfaces::command` renderer with the app-mapped model and an
+    // app-resolved rect; the app-local portal renderer is deleted.
+    assert!(
+        probe.contains("bbr_ui::surfaces::command::command_card")
+            && probe.contains("bbr_ui::surfaces::command::CommandRect")
+    );
+    assert!(
+        !app_src.join("portal").join("command.rs").exists(),
+        "the obsolete app-local portal/command.rs renderer is deleted"
+    );
+    let portal_mod =
+        std::fs::read_to_string(app_src.join("portal").join("mod.rs")).expect("read portal mod.rs");
+    assert!(
+        !portal_mod.contains("pub mod command;"),
+        "portal/mod.rs no longer declares the deleted renderer"
     );
 
     let render =

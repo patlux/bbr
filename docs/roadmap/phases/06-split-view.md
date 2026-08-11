@@ -22,7 +22,10 @@ integrated at `9eeb6b2f7abed2451a613e3ee4e8d4624db4cfc8`; the bounded
 [split app-composition packet](../tasks/split-app-composition.md) now owns the
 serial production divider, projected layout, focused-pane presentation,
 testkit, E2E, and performance slice. Production split creation over native
-WebKit glass remains a later contract decision. See the
+WebKit glass remains a later contract decision. The G3 composition sequence has
+completed Sidebar and produced a green Command candidate; the Split Preview /
+`bbr-ui::split` extraction remains serially blocked until Command receives an
+independent candidate pass and integration. See the
 [parallel-delivery contract](../../parallel-delivery.md).
 
 ## Checklist

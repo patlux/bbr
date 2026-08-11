@@ -6,6 +6,7 @@ use bbr_ui::theme::{ContrastMode, Density, ThemeMode};
 
 use crate::address_recorder::AddressRecorder;
 use crate::auth_recorder::AuthRecorder;
+use crate::command_recorder::CommandRecorder;
 use crate::context_menu_recorder::ContextMenuRecorder;
 use crate::downloads_recorder::DownloadsRecorder;
 use crate::error_recorder::ErrorRecorder;
@@ -105,4 +106,10 @@ pub struct GallerySnapshot {
     /// `Callbacks` slots reported (row select/close/pin/drag, favorites,
     /// folders, spaces, footer, plus menu, divider, keyboard paths).
     pub sidebar: SidebarRecorder,
+    /// The observed G3 Command composition state through the production
+    /// record path: the presentation summary of the model the story
+    /// rendered (presentation discriminant, typed state, focus flag,
+    /// selection, rendered stable keys). The surface takes no callbacks,
+    /// so this is presentation observation only.
+    pub command: CommandRecorder,
 }

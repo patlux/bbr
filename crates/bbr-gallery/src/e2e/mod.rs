@@ -19,6 +19,7 @@
 
 mod address;
 mod auth;
+mod command;
 mod context_menu;
 mod controls;
 mod downloads;

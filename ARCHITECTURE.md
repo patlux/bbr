@@ -101,9 +101,14 @@ bbr-persistence──uses──▶  rusqlite (exact 0.38.0, bundled; repository 
   `bbr-app` consumes the same production symbols. The app keeps only
   composition: the space strip, the controller-snapshot DTO adapters, and
   the portal geometry/native-boundary code stay app-owned. Sidebar and
-  Command Palette remain real compositions, not copied Gallery anatomy.
-  Generic Button/Input/Badge-style primitives are not added speculatively;
-  extraction requires repeated same-intent product anatomy.
+  Command Palette are real compositions, not copied Gallery anatomy: the G3
+  Sidebar cutover moved the rail composition to `bbr_ui::sidebar` and the
+  G3 Command cutover moved the floating palette/overlay presentation to
+  `bbr_ui::surfaces::command` (plain DTO + exact renderer + stable ids),
+  each with `bbr-app` as the thin assembler/mapping owner and no local
+  duplicate renderer. Generic Button/Input/Badge-style primitives are not
+  added speculatively; extraction requires repeated same-intent product
+  anatomy.
 - `bbr-command` is fully portable and dependency-free. It owns typed command
   modes/identities/activations, strict deterministic URL-vs-search parsing, an
   owned provider-neutral corpus, the 13-action catalog, standalone tab/space/
@@ -239,13 +244,21 @@ without changing `WebViewId`, session count, profile, space, or focus.
 U1's centered palette and field-anchored command overlay are the first product
 consumers of this host. `BbrApp` remains the sole authority for command text,
 mode, ranking, selection, focus origin, and browser mutations. The one
-`PortalRoot` observes the same `Entity<BbrApp>`, clones a momentary
-`CommandPortalModel` during render, and paints only GPUI chrome inside the child
-window; it owns no tab/profile/space/session lifetime. Opening U1 presents a
-stable `NativeAboveWeb` request (`PresentationId(0xC1)` palette or `0xC2`
-overlay), and every close/commit/cancel/navigation context path dismisses the
-same host. The browser root no longer paints a duplicate floating command
-surface underneath WebKit.
+`PortalRoot` observes the same `Entity<BbrApp>`, maps the app-owned
+`CommandSurface`/state/rows onto the plain `bbr_ui::surfaces::command`
+model during render (`app/palette.rs` — the one app-owned DTO mapping that
+strips every `Activation` payload), and paints only GPUI chrome inside the
+child window; it owns no tab/profile/space/session lifetime. The G3 Command
+cutover moved the floating card renderer and the stable §11.4/§15 ids into
+`bbr-ui` (the exact render-only anatomy) and deleted the app-local
+`portal/command.rs`; `portal/probe.rs` remains the app-owned portal builder
+(placement/dismissal/backdrop) that resolves the rect and invokes the
+production `command_card`. Ranking, activation, focus, and every
+testkit/semantics/performance authority stay in `bbr-app`. Opening U1
+presents a stable `NativeAboveWeb` request (`PresentationId(0xC1)` palette
+or `0xC2` overlay), and every close/commit/cancel/navigation context path
+dismisses the same host. The browser root no longer paints a duplicate
+floating command surface underneath WebKit.
 
 The find-in-page bar (task packet `find-in-page-portal-bar`) is the next
 consumer: `Cmd-F` presents a `NativeAboveWeb` request (`PresentationId(0xC3)`)

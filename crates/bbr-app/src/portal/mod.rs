@@ -22,13 +22,14 @@
 //!   attached above the parent `NSWindow` by the bridge in `bbr-web-macos`.
 //!
 //! The auth sheet's card presentation moved to `bbr-ui::surfaces::auth`
-//! (G2 Group 8); the probe builds the DTO and owns the geometry/backdrop.
+//! (G2 Group 8) and the command palette/overlay card presentation moved to
+//! `bbr_ui::surfaces::command` (G3 Command); the probe builds the DTOs and
+//! owns the geometry/backdrop.
 //!
 //! Consumers reference the submodules directly (`crate::portal::state::*`,
 //! …); the app probe (`BbrApp::portal_present` / `portal_dismiss` /
 //! `portal_outside_dismiss`) is the first production caller.
 
-pub mod command;
 pub mod geometry;
 pub mod native;
 pub mod peek;

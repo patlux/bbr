@@ -3,10 +3,15 @@
 
 use bbr_testkit::protocol::{SemanticNode, SemanticRole};
 
-use crate::app::palette::{
-    CommandSurface, OVERLAY_CURSOR_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_TEXT_ID,
-    PALETTE_CURSOR_ID, PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID,
+// The floating-command id constants live in `bbr_ui::surfaces::command`
+// (shared by the renderer and this semantic mirror so §15 ids never
+// drift); `CommandSurface` stays app-owned.
+use bbr_ui::surfaces::command::{
+    OVERLAY_CURSOR_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_TEXT_ID, PALETTE_CURSOR_ID,
+    PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID,
 };
+
+use crate::app::palette::CommandSurface;
 
 use super::{node, SemanticInput};
 

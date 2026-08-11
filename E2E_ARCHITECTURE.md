@@ -833,8 +833,13 @@ dismissal, and unchanged `WebViewId`/session ownership. The wider suite also
 proves text/focus restoration, typed states, deterministic ranking,
 activation, truthful unavailable actions, cross-space/profile identity,
 history/Saved Pages providers, current-owner moved-tab activation, and the
-address-control coexistence contract. G3 Command presentation extraction must
-rerun these 25 scenarios unchanged; it does not add a second command authority.
+address-control coexistence contract. The G3 Command presentation
+extraction reran these 25 scenarios unchanged (25/25 green): the floating
+card renderer and its stable ids moved to `bbr_ui::surfaces::command`
+(plain DTO + exact render-only anatomy), the app-local `portal/command.rs`
+was deleted, and `app/palette.rs` now maps app state to the plain UI model
+at render time; no second command authority was added and ids/§15
+semantics/focus/placement/performance stayed byte-identical.
 
 One focused shown-window scenario adds the required native-boundary evidence.
 It opens Cmd-T over a real `native-wkwebview`, flushes the separate portal

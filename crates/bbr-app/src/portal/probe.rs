@@ -203,10 +203,10 @@ impl PortalProbeState {
             ],
             Some(PortalContent::Command(surface)) => vec![match surface {
                 crate::app::palette::CommandSurface::Palette => {
-                    crate::app::palette::PALETTE_ID.into()
+                    bbr_ui::surfaces::command::PALETTE_ID.into()
                 }
                 crate::app::palette::CommandSurface::Overlay => {
-                    crate::app::palette::OVERLAY_ID.into()
+                    bbr_ui::surfaces::command::OVERLAY_ID.into()
                 }
                 crate::app::palette::CommandSurface::None => return Vec::new(),
             }],
@@ -571,8 +571,20 @@ impl Render for PortalRoot {
                 app.read(cx).observe_portal_command_render(surface);
                 // The card carries its own §13 stop-propagation handler (it
                 // is the surface, never an outside press); the backdrop
-                // below owns the one-pointer-action dismissal.
-                let card = crate::portal::command::command_card(&model, rect);
+                // below owns the one-pointer-action dismissal. The card
+                // anatomy and stable ids live in
+                // `bbr_ui::surfaces::command` (the G3 Command cutover);
+                // this probe resolves the app-owned rect and invokes the
+                // production renderer.
+                let card = bbr_ui::surfaces::command::command_card(
+                    &model,
+                    bbr_ui::surfaces::command::CommandRect {
+                        x: rect.x,
+                        y: rect.y,
+                        width: rect.width,
+                        height: rect.height,
+                    },
+                );
                 div()
                     .id("bbr-command-portal-surface")
                     .size_full()
@@ -905,7 +917,7 @@ mod tests {
             Some(crate::app::palette::PALETTE_PRESENTATION_ID)
         );
         assert_eq!(state.host(), Some(PortalHost::NativeAboveWeb));
-        assert_eq!(state.ids(), vec![crate::app::palette::PALETTE_ID]);
+        assert_eq!(state.ids(), vec![bbr_ui::surfaces::command::PALETTE_ID]);
         assert_eq!(
             state.resolved_rect(),
             Some(Rect::new(Pt::new(300.0, 140.0), Sz::new(480.0, 420.0)))

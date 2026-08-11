@@ -89,6 +89,7 @@ impl GalleryApp {
             auth: self.auth.recorder().clone(),
             context_menu: self.context_menu.recorder().clone(),
             sidebar: self.sidebar.recorder().clone(),
+            command: self.command.recorder().clone(),
         }
     }
 }
