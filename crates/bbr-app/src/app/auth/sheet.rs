@@ -7,25 +7,15 @@
 //! read the values directly: on submit the coordinator captures them once
 //! into its in-memory credential store under an opaque handle and hands the
 //! redacted [`bbr_web::auth_challenges::CredentialHandle`] to the contract.
+//!
+//! The field-cursor vocabulary ([`bbr_ui::surfaces::auth::AuthField`]) is
+//! the extracted production surface's (Group 8): the sheet's edit state
+//! rides the same bbr-ui field enum the portal render and the gallery
+//! story use — one focus vocabulary, no duplicate.
 
 use std::fmt;
 
-/// Which field of the credential sheet owns the keyboard cursor.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AuthField {
-    Username,
-    Password,
-}
-
-impl AuthField {
-    /// Stable snapshot label (never the typed value).
-    pub fn label(self) -> &'static str {
-        match self {
-            AuthField::Username => "username",
-            AuthField::Password => "password",
-        }
-    }
-}
+use bbr_ui::surfaces::auth::AuthField;
 
 /// The editable state of one open credential sheet.
 ///

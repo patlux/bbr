@@ -17,6 +17,7 @@
 //! explorer.
 
 pub mod address;
+pub mod auth;
 pub mod browser_components;
 pub mod core_controls;
 pub mod downloads;
@@ -204,6 +205,15 @@ pub fn catalog() -> CatalogRegistry {
             story("Error surface", error::render_error_surface, &[]),
             story("Crash / Empty panes", error::render_crash_empty_panes, &[]),
         ],
+    );
+    // The G2 Group 8 Auth sheet story (packet
+    // `component-gallery-browser-components.md`): the exact production
+    // `bbr_ui::surfaces::auth` credential sheet appends at id 42 after the
+    // pinned 0–41 prefix — no renumbering, no reservation. Context Menu
+    // appends later in its own group.
+    registry.add_group(
+        "Auth",
+        vec![story("Auth sheet", auth::render_auth_sheet, &[])],
     );
     registry
 }

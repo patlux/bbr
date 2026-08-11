@@ -21,6 +21,12 @@ mod address_recorder;
 #[cfg(target_os = "macos")]
 mod app;
 #[cfg(target_os = "macos")]
+mod auth_app;
+#[cfg(target_os = "macos")]
+mod auth_matrix;
+#[cfg(target_os = "macos")]
+mod auth_recorder;
+#[cfg(target_os = "macos")]
 mod canvas;
 #[cfg(target_os = "macos")]
 mod control_observer;

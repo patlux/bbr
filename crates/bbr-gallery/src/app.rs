@@ -15,6 +15,7 @@ use gpui_component::slider::SliderState;
 use gpui_component::WindowExt as _;
 
 use crate::address_app::AddressAppState;
+use crate::auth_app::AuthAppState;
 use crate::canvas::{canvas_surface, CanvasModel};
 use crate::controls::{controls_surface, ControlAction, ControlsModel};
 use crate::downloads_app::DownloadsAppState;
@@ -64,6 +65,8 @@ pub struct GalleryApp {
     pub(crate) find: FindAppState,
     /// The Error/Crash app wiring (module `error_app`).
     pub(crate) error: ErrorAppState,
+    /// The Auth sheet app wiring (module `auth_app`).
+    pub(crate) auth: AuthAppState,
     /// The shared recorder: what real gpui-component control events report
     /// back through the production `observe_control` path.
     recorder: ControlRecorder,
@@ -90,7 +93,7 @@ impl GalleryApp {
         // `story_states` is indexed by `StoryId` value, so it must span
         // every assigned id. The integrated catalog is contiguous through
         // Tab Row 22, Library 23–30, Address/Input 31–32, Group 4 at
-        // 33–37, Downloads 38, Find 39, and Error/Crash 40–41.
+        // 33–37, Downloads 38, Find 39, Error/Crash 40–41, and Auth 42.
         let mut story_states = vec![
             StoryState {
                 options: &[],
@@ -112,6 +115,7 @@ impl GalleryApp {
             downloads: DownloadsAppState::new(&registry, cx),
             find: FindAppState::new(&registry),
             error: ErrorAppState::new(&registry),
+            auth: AuthAppState::new(&registry),
             registry,
             tree,
             mode: ThemeMode::Dark,
@@ -328,6 +332,7 @@ impl GalleryApp {
             downloads: self.downloads.recorder().clone(),
             find: self.find.recorder().clone(),
             error: self.error.recorder().clone(),
+            auth: self.auth.recorder().clone(),
         }
     }
 
@@ -397,6 +402,7 @@ impl Render for GalleryApp {
         let find = self.find.render_context(selected, cx);
         // The Error/Crash observer + story context (module `error_app`).
         let error = self.error.render_context(selected, cx);
+        let auth = self.auth.render_context(selected, cx);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {
@@ -459,6 +465,7 @@ impl Render for GalleryApp {
             downloads,
             find,
             error,
+            auth,
         });
         div()
             .id("bbr-gallery-root")

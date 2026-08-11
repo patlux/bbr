@@ -75,4 +75,4 @@ mod dependency_contract;
 //   bundle.
 // - `components` owns the honest repeated primitives (§11).
 // - `surfaces` owns the model-driven browser surfaces (§11): Downloads,
-//   Find, and Error are integrated; Auth/Menu follow in later G2 cuts.
+//   Find, Error, and Auth are integrated; Menu follows in the final G2 cut.

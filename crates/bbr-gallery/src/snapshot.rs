@@ -5,6 +5,7 @@
 use bbr_ui::theme::{ContrastMode, Density, ThemeMode};
 
 use crate::address_recorder::AddressRecorder;
+use crate::auth_recorder::AuthRecorder;
 use crate::downloads_recorder::DownloadsRecorder;
 use crate::error_recorder::ErrorRecorder;
 use crate::find_recorder::FindRecorder;
@@ -89,4 +90,8 @@ pub struct GallerySnapshot {
     /// path: the number of presses that fired the production
     /// action/dismiss/reload/close/new-tab callbacks.
     pub error: ErrorRecorder,
+    /// The observed Auth sheet state through the production recorder path:
+    /// the number of Log In / Cancel presses that fired the production
+    /// `on_submit`/`on_cancel` callbacks.
+    pub auth: AuthRecorder,
 }

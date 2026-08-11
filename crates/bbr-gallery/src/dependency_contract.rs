@@ -105,10 +105,9 @@ fn collect_rs(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
     }
 }
 
-/// The post-cutover guard: `bbr-app` defines no duplicate Tab Row,
-/// Address/Input, Find, or Error presentation symbols and no `pub use
-/// bbr_ui` compatibility aliases. App-owned controller/lifecycle/DTO
-/// composition remains permitted and required.
+/// Post-cutover guard: `bbr-app` defines no duplicate migrated presentation
+/// symbols and no `pub use bbr_ui` compatibility aliases. App-owned
+/// controller, lifecycle, policy, provenance, and DTO composition remains.
 #[test]
 fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
     let app_src = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -118,9 +117,6 @@ fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
     let mut files = Vec::new();
     collect_rs(&app_src, &mut files);
     assert!(!files.is_empty(), "bbr-app source exists");
-    // Migrated presentation symbols must exist exactly once in bbr-ui.
-    // App composition methods and ErrorSurfaceState/ErrorSurfaceSpec stay
-    // app-owned and are checked separately below.
     let migrated = [
         "fn tab_row(",
         "struct RowVisuals",
@@ -140,6 +136,10 @@ fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
         "const FIND_BAR_ID",
         "fn error_surface(",
         "struct ErrorSurfaceModel",
+        "pub fn auth_sheet(",
+        "struct AuthSheetModel",
+        "enum AuthField",
+        "pub const AUTH_SHEET_ID",
     ];
     for file in &files {
         let text = std::fs::read_to_string(file).expect("read app source");
@@ -156,35 +156,30 @@ fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
             );
         }
     }
-    // The app still consumes the production symbols through the one path.
+
     let sidebar = std::fs::read_to_string(app_src.join("app").join("sidebar_view.rs"))
         .expect("read sidebar_view.rs");
-    assert!(
-        sidebar.contains("components::tab_row"),
-        "sidebar renders through bbr_ui::components::tab_row"
-    );
-    // The Portal root renders Find through the one bbr-ui path.
+    assert!(sidebar.contains("components::tab_row"));
+
     let probe =
         std::fs::read_to_string(app_src.join("portal").join("probe.rs")).expect("read probe.rs");
+    assert!(probe.contains("bbr_ui::surfaces::find::find_bar"));
     assert!(
-        probe.contains("bbr_ui::surfaces::find::find_bar"),
-        "the portal root renders through bbr_ui::surfaces::find::find_bar"
+        probe.contains("surfaces::auth::auth_sheet")
+            && probe.contains("surface.model()")
+            && probe.contains("auth_submit_clicked")
+            && probe.contains("auth_cancel_clicked")
     );
-    // The content branch renders Error through the extracted surface.
+
     let render =
         std::fs::read_to_string(app_src.join("app").join("render.rs")).expect("read render.rs");
-    assert!(
-        render.contains("bbr_ui::surfaces::error::error_surface"),
-        "the content branch renders through bbr_ui::surfaces::error::error_surface"
-    );
+    assert!(render.contains("bbr_ui::surfaces::error::error_surface"));
     let error_surface = std::fs::read_to_string(app_src.join("app").join("error_surface.rs"))
         .expect("read app error_surface.rs");
-    assert!(
-        error_surface.contains("struct ErrorSurfaceState"),
-        "the app keeps the incident lifecycle authority"
-    );
-    assert!(
-        error_surface.contains("struct ErrorSurfaceSpec"),
-        "the app keeps the DTO-building spec"
-    );
+    assert!(error_surface.contains("struct ErrorSurfaceState"));
+    assert!(error_surface.contains("struct ErrorSurfaceSpec"));
+
+    let records = std::fs::read_to_string(app_src.join("app").join("auth").join("records.rs"))
+        .expect("read records.rs");
+    assert!(records.contains("surfaces::auth::AuthSheetModel"));
 }

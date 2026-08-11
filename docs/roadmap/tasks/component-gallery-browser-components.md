@@ -197,6 +197,11 @@ reserves no ids and reintroduces no marker machinery.
       the `FindSurface` DTO and `FindBarRect` geometry, and derives the
       §11.5 count copy through the production `count_label` (n of m, 0 of 0,
       empty-while-pending).
+      Group 8: `bbr-ui::surfaces::auth` carries the stable §15 id
+      constants, the `AuthField` label vocabulary, the redaction-shape
+      tests (Debug never renders the typed username; the model has no
+      password field — only the masked `password_entered` flag), and the
+      DTO round-trip tests.
 - [x] Matrix test in the gallery: every "valid" row builds and renders
       without panic; every "rejected" row fails fixture construction; the
       matrix table and the fixture builders cannot drift (one declaration
@@ -211,7 +216,15 @@ reserves no ids and reintroduces no marker machinery.
       present/absent through the production
       `StagingModel.profile_hint`/`AddressProfileHint`, with the
       profile-hint-present families covering both cursor values and both
-      hint values (presence independent of cursor and hint).
+      hint values (presence independent of cursor and hint). Group 8:
+      `auth_matrix.rs` is the one Auth declaration source — every
+      `AUTH_VALID` family (realm present/absent × origin/proxy × username
+      typed/empty × password masked/empty × focus username/password)
+      builds, every `AUTH_REJECTED` combination (unmasked password render,
+      outside-press dismissal, a raw/serializable credential shape)
+      refuses fixture construction, the pinned label tests keep the table
+      and the builders from drifting, and the dimension-coverage test pins
+      all five packet dimensions plus the full 2^5 cross product.
 - [x] Post-cutover `rg` guard: no duplicate symbol and no `pub use bbr_ui`
       alias in `bbr-app` for the migrated modules. Group 3: the guard now
       also pins the `address_control`/`staging_surface`/`AddressModel`/
@@ -220,6 +233,12 @@ reserves no ids and reintroduces no marker machinery.
       also pins `pub fn find_bar(`/`struct FindSurface`/`const FIND_BAR_ID`
       and asserts the portal root renders through
       `bbr_ui::surfaces::find::find_bar`.
+      only its DTO-building composition methods). Group 8: the guard now
+      also pins the `auth_sheet`/`AuthSheetModel`/`AuthField`/`AUTH_SHEET_ID`
+      production symbols and asserts the portal probe renders through
+      `bbr_ui::surfaces::auth::auth_sheet` with `surface.model()` and the
+      production `auth_submit_clicked`/`auth_cancel_clicked` seams, while
+      `records.rs` builds the DTO.
 
 ### Real-app E2E
 
@@ -235,6 +254,8 @@ reserves no ids and reintroduces no marker machinery.
       ids/§15 fields/focus domains/semantic trees (the existing suite is the
       migration guard and was not modified). Group 6 re-ran its affected
       suite unchanged: `just e2e-shell-find` is green 6/6 on the same
+      migration guard and was not modified. Group 8 re-ran its affected
+      suite unchanged: `just e2e-auth` is green 4/4 on the same
       byte-identical ids/§15 fields/focus domains/semantic trees (the
       existing suite is the migration guard and was not modified).
 - [x] `just e2e-gallery` extended: the new story matrix renders through the
@@ -258,6 +279,13 @@ reserves no ids and reintroduces no marker machinery.
       `on_next`/`on_close` recorder callbacks and that the story renders
       the production §15 ids (registered as test-target keys on the first
       family, the Address precedent).
+      After the canonical Group 4→5→6→7→8 union, Group 8 appends the Auth
+      sheet story at StoryId 42 after the pinned 0–41 prefix; the
+      GUI-locked Xcode-26.2 canonical-union suite is green 35/35, the
+      every-story-renders sweep covers the new story automatically, and the focused
+      `e2e/auth.rs` scenarios prove real pointer presses fire the
+      production `on_submit`/`on_cancel` recorder callbacks and that every
+      valid matrix family renders the stable §15 ids.
 
 ### Performance
 
@@ -274,6 +302,11 @@ reserves no ids and reintroduces no marker machinery.
       preserved unchanged in `bbr-app`; no budget/sample/baseline/
       semantic-commit change, and no performance run or pass is claimed —
       the missing execution stays explicit debt.
+      claimed — the missing execution stays explicit debt. Group 8
+      migrated the auth sheet presentation to `bbr-ui::surfaces::auth`
+      with no performance code/budget/sample/baseline change; no
+      performance run or pass is claimed — the missing execution stays
+      explicit debt.
 - [x] Gallery perf remains sanity-only (G1b), never a product budget.
 
 ## Completion gates
@@ -828,6 +861,97 @@ Total elapsed:
 
 Human intervention:
   - None recorded.
+Group 8 Auth sheet (forward continuation):
+Outcome:
+  The auth sheet presentation migrated to the production
+  `bbr-ui::surfaces::auth` module (extract → migrate → delete → re-run
+  cycle): `portal/auth_sheet.rs` deleted; the portal probe builds the DTO
+  via `AuthSheetSurface::model` (records.rs) and renders
+  `bbr_ui::surfaces::auth::auth_sheet` with the production
+  `auth_submit_clicked`/`auth_cancel_clicked` listener seams; the app
+  keeps the redacted store, the challenge lifecycle, the portal geometry
+  (absolute rect) and the no-outside-dismissal backdrop policy. The
+  surface takes the theme from the model (the pre-cutover hardcoded
+  `Theme::dark()` is never enshrined; the app resolves the settled dark
+  presentation when building the DTO, the gallery story proves theme
+  independence). One Auth matrix+fixture authority (auth_matrix.rs)
+  declares every valid credential-sheet family (realm present/absent ×
+  origin/proxy × username typed/empty × password masked/empty × focus
+  username/password) and refuses the rejected combinations (unmasked
+  password render, outside-press dismissal, a raw/serializable
+  credential shape); the gallery appends the Auth sheet story at
+  canonical StoryId 42 (0–41 unrenumbered) with recorder/observer wiring;
+  focused real-pointer E2E proves on_submit/on_cancel fire; the every-story
+  sweep covers the new story. The integrated app module is split as needed
+  to retain the packet's ~500-line budget. No
+  manifest/lock/justfile/perf change, no new ids or product policy.
+Commits:
+  None (working-tree candidate only; Orchestrator-owned integration).
+Functional evidence (historical reviewed G8 lane before serial union):
+  Gallery unit tests 56/56 (auth matrix valid/rejected incl. the
+  dimension-coverage and 2^5 cross-product tests, recorder, registry
+  pinned-prefix incl. 23–30, rg guard incl. auth symbols). Gallery
+  Clippy --all-targets -D warnings clean. GUI-locked Xcode-26.2
+  `just e2e-gallery` 26/26 incl.
+  e2e::auth::auth_sheet_story_renders_the_matrix_families_with_stable_ids
+  and e2e::auth::real_press_on_log_in_and_cancel_report_through_the_recorder.
+Real-app E2E:
+  `just e2e-auth` re-run unchanged and green 4/4 — ids, §15 fields,
+  focus domains, typed semantic trees byte-identical (the existing suite
+  is the migration guard, unmodified). One first run failed on a
+  window-manager tiling race under heavy host load (window re-tiled
+  between challenge presentation and snapshot; the app's own comment
+  documents this flake class); the unchanged re-run passed 4/4.
+Performance evidence:
+  None executed; performance remains Patrick-deferred/unpassed. No
+  budget/sample/baseline/semantic-commit change; missing execution
+  recorded as explicit debt.
+Roadmap/documentation updates:
+  G2 packet evidence/ledger only (this file). ROADMAP.md /
+  ARCHITECTURE.md / UI track roll-ups are Orchestrator-owned serial
+  points.
+Open blockers and non-goals:
+  No new product modes/ids; the auth sheet remains presentation-only
+  (the app owns the challenge lifecycle and redacted store). Performance
+  execution and canonical `just e2e` remain unexecuted/unpassed.
+Worktree state:
+  Historical reviewed lane: branch parallel/g2-group8-auth at base
+  5e018b34286daab690c7f88d32c4b97dc3204484, frozen as commit
+  ce6ea782ed5924caf65380d1afa8c8a3af43ad25 / tree
+  50a87d9c1c8df559309248b1cbfc626fa0db82f6.
+
+Canonical Group-8 staged union:
+  The Orchestrator opened the reviewed lane with `--no-commit --no-ff`
+  over integrated Groups 4–7 and resolved the Gallery registry/app/canvas/
+  snapshot/dependency-guard, `bbr-ui::surfaces`, and packet conflicts as an
+  additive union. StoryIds 0–41 remain unchanged and Auth appends at 42;
+  `story_count()` is 43. Downloads, Find, Error, and Auth are exported
+  together. Credential/challenge/sheet-lifecycle/native-Portal/provenance/
+  DTO/performance authority remains in `bbr-app`; the deleted app render
+  module is presentation only. Gallery `app.rs` is exactly 500 lines and
+  all new Auth modules remain below the packet budget.
+
+  The executed pre-ledger staged tree was
+  e56112b68db66e658cc750c158c07766bba77ee7. The final review tree is
+  rebound externally after this self-referential ledger update (the packet
+  cannot embed its own final tree hash). Status-z SHA-256 remains
+  66e90132d8dd9b540e72a14fac8d5be4ca4f0027545988097ea87966db83785c.
+  There are 23 staged paths and zero unmerged paths; the GUI lock is free
+  and no matching process survives.
+
+  Targeted non-performance gates passed from a fresh target directory:
+  `just fmt`, `just check`, `cargo test --workspace --lib --bins`,
+  `just clippy`, `just roadmap`, `just ui-deps`, `just script-tests`, and
+  `git diff --check`; log `/tmp/bbr-g2-g8-union-nonperf-fresh.log`, SHA-256
+  da6e848528dea48006e7d5b4cba0abfa8d053eaf3ca09d3ffb59af334afae351.
+  The first non-fresh attempt reached green tests but failed only on a
+  read-only derived-target metadata file and is non-evidence. Gallery passed
+  35/35, log `/tmp/bbr-g2-g8-union-gallery.log`, SHA-256
+  8fca9d333e04ea6b201da68f30f07297259ce6240092e70bb21828930e4a9bb0.
+  Unchanged Auth passed 4/4, log `/tmp/bbr-g2-g8-union-auth.log`, SHA-256
+  24c8915b81f16b53ae8379fea643299d12af2bc8bedb7f962cc17da16c163355.
+  Performance and canonical `just e2e` were not executed and remain
+  explicitly unpassed.
 ```
 
 Use measured timing only when runtime/command timestamps support it;

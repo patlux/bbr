@@ -18,6 +18,7 @@ use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 
 use crate::address_recorder::{AddressObserver, AddressRecorder};
+use crate::auth_recorder::{AuthObserver, AuthRecorder};
 use crate::downloads_recorder::{DownloadsObserver, DownloadsRecorder};
 use crate::error_recorder::{ErrorObserver, ErrorRecorder};
 use crate::find_recorder::{FindObserver, FindRecorder};
@@ -95,6 +96,12 @@ pub struct StoryContext<'a> {
     pub find: Option<FindStory<'a>>,
     /// `Some` only for the Error surface / Crash & Empty panes stories.
     pub error: Option<ErrorStory<'a>>,
+    /// `Some` only for the Auth sheet story: the current recorder snapshot
+    /// and the observer callbacks the production `bbr_ui::surfaces::auth`
+    /// `auth_sheet` callbacks route through (packet
+    /// `component-gallery-browser-components.md`, Group 8). `None` for
+    /// every other story.
+    pub auth: Option<AuthStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -173,6 +180,17 @@ pub struct FindStory<'a> {
 pub struct ErrorStory<'a> {
     pub recorder: &'a ErrorRecorder,
     pub observer: &'a ErrorObserver,
+}
+
+/// Everything the Auth sheet story needs to render the **exact** production
+/// `bbr_ui::surfaces::auth::auth_sheet` with recorder callbacks: the
+/// current recorder snapshot (submit/cancel counts) and the observer
+/// callbacks that re-enter the app on real pointer interactions (packet
+/// `component-gallery-browser-components.md`, Group 8). `Some` only while
+/// the Auth sheet story is selected.
+pub struct AuthStory<'a> {
+    pub recorder: &'a AuthRecorder,
+    pub observer: &'a AuthObserver,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,
@@ -413,7 +431,7 @@ mod tests {
                 "Plus menu",
             ]
         );
-        assert_eq!(registry.story_count(), 42);
+        assert_eq!(registry.story_count(), 43);
     }
 
     #[test]
@@ -423,14 +441,14 @@ mod tests {
             registry.story(StoryId(38)).unwrap().label,
             "Downloads panel"
         );
-        assert_eq!(registry.story_count(), 42);
+        assert_eq!(registry.story_count(), 43);
     }
 
     #[test]
     fn find_story_appends_after_downloads() {
         let registry = catalog();
         assert_eq!(registry.story(StoryId(39)).unwrap().label, "Find bar");
-        assert_eq!(registry.story_count(), 42);
+        assert_eq!(registry.story_count(), 43);
     }
 
     #[test]
@@ -441,7 +459,14 @@ mod tests {
             registry.story(StoryId(41)).unwrap().label,
             "Crash / Empty panes"
         );
-        assert_eq!(registry.story_count(), 42);
+        assert_eq!(registry.story_count(), 43);
+    }
+
+    #[test]
+    fn auth_story_appends_after_error_and_crash() {
+        let registry = catalog();
+        assert_eq!(registry.story(StoryId(42)).unwrap().label, "Auth sheet");
+        assert_eq!(registry.story_count(), 43);
     }
 
     #[test]

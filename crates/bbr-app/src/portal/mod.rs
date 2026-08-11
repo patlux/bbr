@@ -21,11 +21,13 @@
 //!   non-activating portal window per browser window, created hidden and
 //!   attached above the parent `NSWindow` by the bridge in `bbr-web-macos`.
 //!
+//! The auth sheet's card presentation moved to `bbr-ui::surfaces::auth`
+//! (G2 Group 8); the probe builds the DTO and owns the geometry/backdrop.
+//!
 //! Consumers reference the submodules directly (`crate::portal::state::*`,
 //! …); the app probe (`BbrApp::portal_present` / `portal_dismiss` /
 //! `portal_outside_dismiss`) is the first production caller.
 
-pub mod auth_sheet;
 pub mod command;
 pub mod context_menu;
 pub mod geometry;
