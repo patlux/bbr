@@ -13,8 +13,9 @@ Template: [task-packet template](../templates/task-packet.md)
 Program position: **G3**, activated from the settled and integrated G2
 browser-components state recorded in [Current delivery](../../delivery/current.md).
 G2 already delivered the Downloads, Find, Error/Crash, Auth, and Context Menu
-surfaces and their component stories. G3's remaining first wave is strictly
-Sidebar-first, followed by Command Palette/Overlay and Split compositions.
+surfaces and their component stories. G3 Sidebar is integrated; the Command
+composition candidate is code- and gate-complete pending independent review and
+integration. Split chrome composition remains serially next.
 This packet moves `SidebarModel` plus Callbacks, a plain command-presentation
 DTO and renderer, and split chrome into `bbr-ui` and appends their production
 Gallery stories after the canonical 44-story G2 catalog. The command cut does
@@ -67,7 +68,8 @@ anywhere in the gallery.
   conditional Sidebar media card. B2/B3 and the Library stories at StoryIds
   23–30 are already integrated; Saved Page command/menu compositions are now
   eligible but remain append-only and may not reserve an id before their
-  production composition exists. Existing StoryIds 0–43 remain stable.
+  production composition exists. Existing StoryIds 0–44 remain stable; the
+  Command candidate appends StoryId 45 without renumbering.
 - **`bbr-ui::split`:** split chrome frames (pane frame hairline, focused
   pane outline, shared-edge divider, split-zone frames per DESIGN §11.7)
   rendered by `bbr-app`'s split branch around the existing
@@ -204,24 +206,36 @@ production composition exists.
       and `sidebar_recorder.rs` `observe_records_the_expected_field_only`);
       the assembler's controller-snapshot derivation is proven by the
       real-app composition E2E (the rail renders the exact regions/ids/
-      semantics the snapshot derives). Command and Split model tests remain
-      open with their cutovers.
-- [ ] Command presentation model/render tests move the stable ids, typed UI
-      states, row rendering, mutual-exclusion validation, and rejected missing-
-      key construction into `bbr-ui`; the app-owned mapping strips every
+      semantics the snapshot derives). Split model tests remain open with
+      the Split cutover.
+- [x] **Command** presentation model/render tests move the stable ids,
+      typed UI states, row rendering, mutual-exclusion validation, and
+      rejected missing-key construction into `bbr-ui`
+      (`bbr-ui::surfaces::command` model/ids/geometry/render/tests:
+      presentation-discriminant round-trip and invalid-raw rejection, the
+      missing/empty-key rejection through `CommandModel::validate`, the
+      exact §11.4/§11.5/§15 state and row ids, and the render
+      construction); the app-owned mapping in `app/palette.rs` strips every
       activation payload and preserves all command authority. No activation
       callbacks are invented because production keyboard/pointer activation
       remains app/Portal-owned.
 - [ ] Split geometry/chrome tests: `bbr-ui::split` frame/divider/zone
       rendering matches DESIGN §11.7 tokens; `bbr-split` geometry is
       untouched.
-- [ ] Matrix test in the gallery: every composition story builds and
-      renders without panic across all six variant families; rejected
-      combinations refuse to build. *(Sidebar matrix/recorder evidence is
-      integrated; Command and Split matrices remain open.)*
-- [ ] Post-cutover `rg` guard: no duplicate composition symbol and no
-      `pub use bbr_ui` alias in `bbr-app`. *(Sidebar cutover is clean;
-      re-run after Command/Split.)*
+- [x] Matrix test in the gallery: every composition story builds and
+      renders without panic across its applicable variant families; rejected
+      combinations refuse to build. *(Sidebar evidence is integrated and the
+      Command candidate's matrix/recorder evidence is green — `command_matrix.rs`
+      `every_valid_family_builds_a_model_through_the_production_validation` /
+      `every_rejected_family_refuses_construction` plus the two Command
+      scenarios; Split remains open.)*
+- [x] Post-cutover `rg` guard: no duplicate composition symbol and no
+      `pub use bbr_ui` alias in `bbr-app`. *(Sidebar and Command cutovers
+      are clean on the Command candidate — the gallery
+      `dependency_contract.rs` guard also asserts `portal/command.rs` is
+      deleted and the probe invokes the production
+      `bbr_ui::surfaces::command::command_card`; Split re-runs this guard
+      with its cutover.)*
 
 ### Real-app E2E
 
@@ -239,17 +253,27 @@ production composition exists.
       session/WebView identity churn, and the bounded dense 500-tab/
       50-session window renders through the composition. Ids, §15 fields,
       focus domains, and typed semantic trees stay unchanged.
-- [ ] **Command and Split cutovers** re-run their affected product suites
-      unchanged: `just e2e-shell-command`, `just e2e-shell-split-geometry`,
-      and the affected footer/spaces suites. Downloads/Find/Error/Auth/
-      Context Menu functional evidence belongs to completed G2 and is not
-      rerun merely to restate that extraction. Ids, §15 fields, focus
-      domains, and typed semantic trees stay unchanged.
-- [ ] `just e2e-gallery` extended: composition stories render through the
-      production compositions with stable StoryIds appended (G1b/G2
-      ids unrenumbered) and the variant families asserted. *(Sidebar
-      StoryId 44 and its matrix/recorder evidence are integrated; Command
-      and Split stories remain open.)*
+- [x] **Command cutover** re-runs its affected product suite unchanged:
+      `just e2e-shell-command` passes 25/25 on the extracted tree (the
+      floating card renderer and its stable ids moved to
+      `bbr_ui::surfaces::command`; ids, §15 fields, focus domains, typed
+      semantic trees, placement, and Portal identity stay byte-identical).
+      Downloads/Find/Error/Auth/Context Menu functional evidence belongs to
+      completed G2 and is not rerun merely to restate that extraction.
+- [ ] **Split cutover** re-runs its affected product suites unchanged:
+      `just e2e-shell-split-geometry` and the affected footer/spaces suites.
+      Ids, §15 fields, focus domains, and typed semantic trees stay
+      unchanged.
+- [x] `just e2e-gallery` extended (Sidebar + Command): composition stories
+      render through the production compositions with stable StoryIds
+      appended (G1b/G2 ids unrenumbered; Sidebar 44, Command 45, 46-story
+      catalog) and the variant families asserted. *(Sidebar is integrated;
+      the Command candidate's matrix/recorder evidence is green and its scenarios sweep
+      every matrix family with stable ids and observe the production
+      presentation model.)*
+- [ ] `just e2e-gallery` extended (Split): the Split preview story appends
+      after Command with its variant families asserted. *(Split remains
+      open with its cutover.)*
 
 ### Performance
 
@@ -286,9 +310,11 @@ sequentially under `python3 scripts/with_gui_lock.py --`.
 1. Confirm committed G2 closeout, the 44-story registry, and the
    browser-component modules are green.
 2. One exclusive writer performs three bounded cutovers in order: Sidebar
-   assembler first, then Command composition, then Split chrome. Each is a
-   complete extract → migrate → delete → re-run cycle; completed G2 surfaces
-   are consumed, not re-extracted.
+   assembler first, then Command composition, then Split chrome. Sidebar is
+   integrated; Command has completed its extract → migrate → delete → re-run
+   cycle and awaits independent candidate review/integration. Split chrome
+   composition remains serially next. Completed G2 surfaces are consumed, not
+   re-extracted.
 3. Add each composition story + fixture builder and mandatory variant families
    in the same bounded cut.
 4. One independent read-only reviewer maps every story back to DESIGN.md
@@ -318,39 +344,56 @@ G3 blocker.
 ## Delivery ledger
 
 ```text
-Outcome: G3 Sidebar composition slice complete: the full §11.4 rail renders
-  through the one bbr_ui::sidebar composition (SidebarModel + one Callbacks
-  set + pure geometry + sidebar_surface) with bbr-app as the thin
-  assembler; Gallery StoryId 44 + matrix/recorder evidence integrated;
-  real-app composition E2E added to just e2e-shell-sidebar; three stale
-  module-path comments corrected; implemented-fact docs updated. Command is
-  next as a behavior-preserving plain-DTO/render extraction that keeps all
-  state/ranking/activation/Portal/performance/testkit authority in bbr-app;
-  Split remains serially after Command.
-Commits: none (lane worktree; Orchestrator integrates after independent
-  whole-Sidebar review).
-Functional evidence: Gallery 40/40 including all three Sidebar scenarios;
-  focused non-performance gates green.
-Real-app E2E: just e2e-shell-sidebar 11/11 (7 existing + 4 new composition
-  scenarios: full rail region/semantic ordering + one rail authority,
-  command/downloads child composition with focus/Escape/collapse,
-  split collapse/expand native geometry + identity, dense window through
-  the composition); affected suites re-run green.
-Performance evidence: none executed; code/budgets/baselines byte-unchanged;
-  execution remains explicit debt under Patrick's override.
-Roadmap/documentation updates: ARCHITECTURE.md + E2E_ARCHITECTURE.md
-  implemented facts; component-gallery-compositions packet (Sidebar-only
-  completion); Phase 4/5/6/8 and UI/testing track rollups.
-Open blockers and non-goals: Command and Split compositions remain open;
-  no Command/Split/Z/startup/packaging/accessibility/performance execution.
-Worktree state: parallel/g3-compositions @ 020ffb38, exact settled runtime
-  preserved; staged 0; diff-check clean; no process/Git/GUI-lock holder.
+Outcome: G3 Command candidate complete after integrated Sidebar. The centered
+  Cmd-T palette and anchored Cmd-L/click overlay render through the one plain
+  bbr_ui::surfaces::command model/ids/geometry/command_card authority;
+  app/palette.rs performs the only app-state → presentation mapping and strips
+  Activation, while bbr-app retains command state, ranking, activation, focus,
+  Portal identity/placement/dismissal, testkit, semantics, and performance.
+  The app-local portal/command.rs renderer is deleted. Gallery appends the
+  production renderer at StoryId 45 for a 46-story catalog with valid/rejected
+  matrix and stable-id observation; Split remains serially next.
+Commits: none in the lane; Orchestrator commits only after independent
+  whole-candidate review and any focused remediation/recheck. The whole review
+  accepted the product candidate and found one clean-build gate defect: two
+  unused test-only state-id imports. The bounded remediation removes only those
+  imports. Focused independent recheck reproduced the two-path delta and both
+  fresh-target gates and returned direct `G3_COMMAND_CLIPPY_RECHECK_PASS` with
+  zero findings; the exact candidate is freeze-ready.
+Non-performance evidence: fmt and workspace all-target check green; bbr-ui
+  122/122, Gallery 142/142 with 42 ignored, app binary 237/237 with 24
+  performance tests filtered; warning-denied UI/Gallery Clippy, ui-deps,
+  script-tests, roadmap, and diff-check green. Earlier app/workspace Clippy
+  claims are withdrawn because the app log compiled only `--bin bbr` and the
+  workspace log was not reproducible from a clean target. Fresh-target
+  all-target evidence after the two-import remediation is green and is the only
+  accepted replacement: app log
+  `/tmp/g3-command-remediation-app-clippy.log`, SHA-256
+  `51888531213555b34765a0ec2391ed554294602953b8dd4c4f7f8cd9e07331cb`;
+  workspace log `/tmp/g3-command-remediation-workspace-clippy.log`, SHA-256
+  `41cdb524867508e52253be1ad1c0e03f0086cace97dcb783ea953118c0f2257b`.
+Real-app/Gallery E2E: Gallery 42/42, unchanged Command 25/25, unchanged Portal
+  7/7 on the final runtime tree. Sidebar was not rerun because the finalizer
+  changed no Sidebar/address composition beyond the already tested Command
+  mapping/Portal invocation seam.
+Performance evidence: none executed; performance code, budgets, baselines,
+  sample guards, manifests, lockfile, and Justfile remain byte-unchanged;
+  execution is explicit unpassed debt under Patrick's override.
+Roadmap/documentation updates: ARCHITECTURE.md, E2E_ARCHITECTURE.md, this
+  packet, ROADMAP current-focus wording, Phase 4/5/6 facts, and UI/testing
+  track rollups. Phase 8 required no Command-composition acceptance change.
+Open blockers and non-goals: Orchestrator freeze and serial integration remain;
+  Split, Z, startup, packaging, accessibility, canonical E2E, and all
+  performance execution remain outside this candidate.
+Worktree state: parallel/g3-command-composition at activation HEAD d998f058;
+  real index unchanged/staged 0; exact final fingerprints are recorded in
+  Current delivery before review; no lane process/Git/GUI-lock holder.
 
 Planning/read-only: estimate
 Implementation: estimate
 Test execution: measured (GUI-locked runs)
-Review: pending independent whole-Sidebar review
-Remediation: none
+Review: whole-candidate findings closed by direct focused zero-finding Pass
+Remediation: measured two-import clean-build Clippy correction, independently rechecked
 Waiting/retries: none
 Total elapsed: estimate
 Human intervention: none

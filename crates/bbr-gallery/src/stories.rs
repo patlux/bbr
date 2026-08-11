@@ -19,6 +19,7 @@
 pub mod address;
 pub mod auth;
 pub mod browser_components;
+pub mod command;
 pub mod context_menu;
 pub mod core_controls;
 pub mod downloads;
@@ -45,12 +46,12 @@ use crate::registry::{library_story, story, CatalogRegistry};
 /// The catalog scope line under the title (finding 3).
 pub const GALLERY_SCOPE: &str = "Foundations / Primitives / Browser Components / Compositions";
 
-/// The honest continuation note: later Gallery phases bring the remaining
-/// browser components and compositions (finding 3 — never a
-/// complete-explorer claim).
+/// The honest continuation note: G2 browser components are complete and
+/// the G3 Sidebar + Command compositions are integrated; the remaining G3
+/// compositions (Split and the later post-packet stories) arrive in later
+/// Gallery phases (finding 3 — never a complete-explorer claim).
 pub const GALLERY_CONTINUATION: &str =
-    "More Browser Components (G2) and Compositions (G3) — Sidebar, Command, Downloads, Find, Error, Auth, Menu, Split — arrive in later Gallery phases.";
-
+    "Browser Components (G2) are complete; Compositions (G3) — Split and later composition stories — arrive in later Gallery phases.";
 /// Build the G1b catalog: Foundations pages + the smallest valuable real
 /// primitives + the Core Controls, in declaration order. The G2
 /// browser-components group appends after the pinned G1b prefix — ids stay
@@ -243,6 +244,22 @@ pub fn catalog() -> CatalogRegistry {
             "Sidebar",
             sidebar::render_sidebar,
             sidebar::SIDEBAR_STATE_OPTIONS,
+        )],
+    );
+    // The G3 Command composition story (packet
+    // `component-gallery-compositions.md`): the exact production
+    // `bbr_ui::surfaces::command::command_card` renders the selected matrix
+    // family from the plain fixture model. The surface takes no callbacks —
+    // activation stays app/Portal-owned, so the Gallery observes
+    // presentation only. Appended at canonical StoryId 45 after the pinned
+    // 0–44 prefix — no renumbering or reservation. Split composes after
+    // Command in its own bounded cut.
+    registry.add_group(
+        "Command composition",
+        vec![story(
+            "Command palette / overlay",
+            command::render_command,
+            command::COMMAND_STATE_OPTIONS,
         )],
     );
     registry

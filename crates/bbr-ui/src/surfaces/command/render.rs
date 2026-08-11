@@ -1,53 +1,45 @@
-//! U1 command surfaces rendered inside the one native portal window.
+//! The exact floating-command render anatomy (DESIGN.md §11.4/§11.5/§13).
 //!
-//! The browser app remains the sole command-state authority. The portal root
-//! reads one cloned [`CommandPortalModel`] per render and builds GPUI chrome;
-//! AppKit continues to own only the native child-window boundary.
+//! The centered Cmd-T palette and the field-anchored Cmd-L/click overlay
+//! are the same §11.5 engine and input component; this module draws both
+//! cards from the one plain [`CommandModel`] at the resolved rect — the
+//! exact render-only anatomy the app's portal root drew before the G3
+//! Command cutover, so §15 ids and the semantic tree are byte-identical.
+//! The caller owns the full-window backdrop and pointer propagation
+//! policy; the card itself stops propagation so a press on it never
+//! reaches the backdrop's one-pointer-action dismissal (DESIGN.md §13) —
+//! the same two-listener split the portal root composed before.
 
 use gpui::{
     div, prelude::*, px, Animation, AnimationExt, AnyElement, Div, MouseButton, MouseDownEvent,
     SharedString, Stateful,
 };
 
-use super::geometry::Rect;
-use crate::app::command_rank::{CommandResultRow, CommandResultState};
-use crate::app::palette::{
-    CommandSurface, OVERLAY_CURSOR_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_TEXT_ID,
-    PALETTE_CURSOR_ID, PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID, PALETTE_RESULT_PREFIX,
-    PALETTE_TEXT_ID,
+use crate::theme::elevation::elev2;
+use crate::theme::{Density, Motion, Radius, Spacing, Theme};
+
+use super::geometry::CommandRect;
+use super::ids::{
+    OVERLAY_CURSOR_ID, OVERLAY_FADE_ELEMENT_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_STATE_EMPTY,
+    OVERLAY_STATE_ERROR, OVERLAY_STATE_LOADING, OVERLAY_TEXT_ID, PALETTE_CURSOR_ID,
+    PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID, PALETTE_RESULT_PREFIX, PALETTE_STATE_EMPTY,
+    PALETTE_STATE_ERROR, PALETTE_STATE_LOADING, PALETTE_TEXT_ID,
 };
-use bbr_ui::theme::elevation::elev2;
-use bbr_ui::theme::{Density, Motion, Radius, Spacing, Theme};
-
-/// The §11.4 open-animation element id of the field-anchored overlay: its
-/// entrance opacity fade at `dur:fine` (DESIGN.md §6/§11.4) — opacity only,
-/// never translate or scale. A render-internal element id, not a §15
-/// semantic id: `visible_ids` and the portal snapshot derive from
-/// `surface_ids`, so this id can never drift into E2E assertions.
-const OVERLAY_FADE_ELEMENT_ID: &str = "bbr-command-overlay-fade";
-
-/// Immutable command data consumed by one portal-window render.
-#[derive(Clone, Debug)]
-pub struct CommandPortalModel {
-    pub surface: CommandSurface,
-    pub theme: Theme,
-    pub chrome_focused: bool,
-    pub text: String,
-    pub state: CommandResultState,
-    pub results: Vec<CommandResultRow>,
-    pub selected: usize,
-}
+use super::model::{CommandModel, CommandPresentation, CommandResultRow, CommandResultState};
 
 /// Build the U1 card at the resolved portal rect. The caller owns the
 /// full-window backdrop and pointer propagation policy; the card itself
 /// stops pointer propagation so a press on it never reaches the backdrop's
 /// one-pointer-action dismissal (DESIGN.md §13) — the same two-listener
 /// split the portal root composed before.
-pub fn command_card(model: &CommandPortalModel, rect: Rect) -> AnyElement {
-    match model.surface {
-        CommandSurface::None => div().id("bbr-command-portal-closed").into_any(),
-        CommandSurface::Palette => palette_card(model, rect).into_any(),
-        CommandSurface::Overlay => overlay_card(model, rect),
+pub fn command_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
+    match model.presentation {
+        CommandPresentation::Closed => div()
+            .id("bbr-command-portal-closed")
+            .debug_selector(|| "bbr-command-portal-closed".to_string())
+            .into_any(),
+        CommandPresentation::CenteredPalette => palette_card(model, rect).into_any(),
+        CommandPresentation::AnchoredOverlay => overlay_card(model, rect),
     }
 }
 
@@ -60,7 +52,7 @@ fn card_stop_propagation() -> impl Fn(&MouseDownEvent, &mut gpui::Window, &mut g
     }
 }
 
-fn palette_card(model: &CommandPortalModel, rect: Rect) -> Stateful<Div> {
+fn palette_card(model: &CommandModel, rect: CommandRect) -> Stateful<Div> {
     let theme = &model.theme;
     let p = theme.palette;
     let radius = match theme.density {
@@ -69,6 +61,10 @@ fn palette_card(model: &CommandPortalModel, rect: Rect) -> Stateful<Div> {
     };
     div()
         .id(PALETTE_ID)
+        // Test-support target: the production id as the gallery E2E lookup
+        // key (no-op in release builds — the same pattern `auth`/
+        // `tab_row` use so gallery scenarios can target the real surface).
+        .debug_selector(|| PALETTE_ID.to_string())
         .absolute()
         .left(px(rect.x))
         .top(px(rect.y))
@@ -90,7 +86,7 @@ fn palette_card(model: &CommandPortalModel, rect: Rect) -> Stateful<Div> {
             "+",
             Some("New Tab"),
         ))
-        .children(result_rows(model, PALETTE_RESULT_PREFIX, "bbr-palette"))
+        .children(result_rows(model, PALETTE_RESULT_PREFIX))
         .on_mouse_down(MouseButton::Left, card_stop_propagation())
 }
 
@@ -102,7 +98,7 @@ fn palette_card(model: &CommandPortalModel, rect: Rect) -> Stateful<Div> {
 /// component; the overlay opens with the full current URL selected, so one
 /// keystroke replaces it.
 fn field_row(
-    model: &CommandPortalModel,
+    model: &CommandModel,
     field_id: &'static str,
     text_id: &'static str,
     cursor_id: &'static str,
@@ -118,6 +114,7 @@ fn field_row(
     };
     div()
         .id(field_id)
+        .debug_selector(|| field_id.to_string())
         .px(Spacing::sp3())
         .py(Spacing::sp2())
         .gap(Spacing::sp2())
@@ -153,11 +150,14 @@ fn field_row(
         })
 }
 
-fn overlay_card(model: &CommandPortalModel, rect: Rect) -> AnyElement {
+fn overlay_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
     let theme = &model.theme;
     let p = theme.palette;
     let card = div()
         .id(OVERLAY_ID)
+        // Test-support target: the production id as the gallery E2E lookup
+        // key (no-op in release builds).
+        .debug_selector(|| OVERLAY_ID.to_string())
         .absolute()
         .left(px(rect.x))
         .top(px(rect.y))
@@ -182,7 +182,7 @@ fn overlay_card(model: &CommandPortalModel, rect: Rect) -> AnyElement {
             "▶",
             None,
         ))
-        .children(result_rows(model, "bbr-command-result", "bbr-command"))
+        .children(result_rows(model, "bbr-command-result"))
         .on_mouse_down(MouseButton::Left, card_stop_propagation());
     // §11.4: the overlay opens with an opacity fade `dur:fine` only — never
     // translate or scale (§6). The fade is per-open: the animation element
@@ -196,11 +196,7 @@ fn overlay_card(model: &CommandPortalModel, rect: Rect) -> AnyElement {
     .into_any()
 }
 
-fn result_rows(
-    model: &CommandPortalModel,
-    result_prefix: &str,
-    state_prefix: &str,
-) -> Vec<Stateful<Div>> {
+fn result_rows(model: &CommandModel, result_prefix: &str) -> Vec<Stateful<Div>> {
     match model.state {
         CommandResultState::Results => model
             .results
@@ -210,25 +206,41 @@ fn result_rows(
             .collect(),
         CommandResultState::Loading => vec![state_row(
             &model.theme,
-            format!("{state_prefix}-loading"),
+            state_id(model, "loading"),
             "Ranking…",
         )],
         CommandResultState::Empty => vec![state_row(
             &model.theme,
-            format!("{state_prefix}-empty"),
+            state_id(model, "empty"),
             "Type a destination",
         )],
         CommandResultState::ActivationError => vec![state_row(
             &model.theme,
-            format!("{state_prefix}-error"),
+            state_id(model, "error"),
             "Activation failed",
         )],
         CommandResultState::Inactive => Vec::new(),
     }
 }
 
+/// The typed state-row id of the open surface: the palette's own family
+/// (`bbr-palette-loading` / `-empty` / `-error`) or the overlay's §11.5
+/// state ids (`bbr-command-loading` / `-empty` / `-error`, the same
+/// strings the in-rail surface uses).
+pub(crate) fn state_id(model: &CommandModel, kind: &str) -> &'static str {
+    match (model.presentation, kind) {
+        (CommandPresentation::CenteredPalette, "loading") => PALETTE_STATE_LOADING,
+        (CommandPresentation::CenteredPalette, "empty") => PALETTE_STATE_EMPTY,
+        (CommandPresentation::CenteredPalette, "error") => PALETTE_STATE_ERROR,
+        (CommandPresentation::AnchoredOverlay, "loading") => OVERLAY_STATE_LOADING,
+        (CommandPresentation::AnchoredOverlay, "empty") => OVERLAY_STATE_EMPTY,
+        (CommandPresentation::AnchoredOverlay, "error") => OVERLAY_STATE_ERROR,
+        _ => unreachable!("state rows render only for an open presentation"),
+    }
+}
+
 fn result_row(
-    model: &CommandPortalModel,
+    model: &CommandModel,
     row: &CommandResultRow,
     selected: bool,
     id_prefix: &str,
@@ -240,8 +252,13 @@ fn result_row(
     } else {
         p.ink
     };
+    let id = format!("{id_prefix}-{}", row.key);
     div()
-        .id(SharedString::from(format!("{id_prefix}-{}", row.key)))
+        .id(SharedString::from(id.clone()))
+        // Test-support target: the production result id as the gallery E2E
+        // lookup key (no-op in release builds — the same pattern the
+        // downloads/auth rows use).
+        .debug_selector(move || id.clone())
         .flex()
         .flex_row()
         .items_center()
@@ -313,10 +330,13 @@ fn result_row(
         })
 }
 
-fn state_row(theme: &Theme, id: String, text: &str) -> Stateful<Div> {
+fn state_row(theme: &Theme, id: &str, text: &str) -> Stateful<Div> {
     let error = id.ends_with("-error");
     div()
         .id(SharedString::from(id))
+        // Test-support target: the production state-row id as the gallery
+        // E2E lookup key (no-op in release builds).
+        .debug_selector(move || id.to_string())
         .px(Spacing::sp3())
         .py(Spacing::sp1())
         .text_size(theme.type_.meta.size)

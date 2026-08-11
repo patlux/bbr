@@ -13,6 +13,7 @@ use gpui_component::slider::SliderState;
 
 use crate::address_recorder::{AddressObserver, AddressRecorder};
 use crate::auth_recorder::{AuthObserver, AuthRecorder};
+use crate::command_recorder::CommandRecorder;
 use crate::context_menu_recorder::{ContextMenuObserver, ContextMenuRecorder};
 use crate::downloads_recorder::{DownloadsObserver, DownloadsRecorder};
 use crate::error_recorder::{ErrorObserver, ErrorRecorder};
@@ -80,6 +81,13 @@ pub struct StoryContext<'a> {
     /// (packet `component-gallery-compositions.md`). `None` for every
     /// other story.
     pub sidebar: Option<SidebarStory<'a>>,
+    /// `Some` only for the G3 Command composition story: the current
+    /// recorder snapshot and the fixture model the production
+    /// `bbr_ui::surfaces::command::command_card` renders (packet
+    /// `component-gallery-compositions.md`). The surface takes no
+    /// callbacks — activation stays app/Portal-owned, so the Gallery
+    /// observes presentation only. `None` for every other story.
+    pub command: Option<CommandStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -196,4 +204,16 @@ pub struct SidebarStory<'a> {
     /// needs (GPUI handles cannot be created without a context; the app
     /// state creates them once and shares them across every family).
     pub handles: &'a crate::sidebar_fixture::SidebarFixtureHandles,
+}
+
+/// Everything the G3 Command composition story needs to render the **exact**
+/// production `bbr_ui::surfaces::command::command_card` with a fixture
+/// model: the current recorder snapshot (the presentation summary the story
+/// observed) and the model itself. The production surface takes no
+/// callbacks, so no callback/observer bundle exists — the Gallery observes
+/// presentation only (packet `component-gallery-compositions.md`). `Some`
+/// only while the Command story is selected.
+pub struct CommandStory<'a> {
+    pub recorder: &'a CommandRecorder,
+    pub model: Option<&'a bbr_ui::surfaces::command::CommandModel>,
 }

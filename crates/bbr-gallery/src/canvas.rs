@@ -8,9 +8,9 @@ use bbr_ui::theme::Theme;
 use gpui::{div, prelude::*, AnyElement, SharedString};
 
 use crate::registry::{
-    AddressStory, AuthStory, CatalogRegistry, ContextMenuStory, ControlsStory, DownloadsStory,
-    ErrorStory, FindStory, Group4Story, LibraryStory, SidebarStory, StoryContext, StoryId,
-    TabRowStory,
+    AddressStory, AuthStory, CatalogRegistry, CommandStory, ContextMenuStory, ControlsStory,
+    DownloadsStory, ErrorStory, FindStory, Group4Story, LibraryStory, SidebarStory, StoryContext,
+    StoryId, TabRowStory,
 };
 
 /// Everything the canvas needs to render the selected story.
@@ -53,6 +53,9 @@ pub struct CanvasModel<'a> {
     /// The G3 Sidebar composition context (`Some` only when the Sidebar
     /// story is selected) — see [`SidebarStory`].
     pub sidebar: Option<SidebarStory<'a>>,
+    /// The G3 Command composition context (`Some` only when the Command
+    /// palette / overlay story is selected) — see [`CommandStory`].
+    pub command: Option<CommandStory<'a>>,
 }
 
 /// The canvas surface: a header (story label + state) above the story.
@@ -76,6 +79,7 @@ pub fn canvas_surface(model: CanvasModel) -> AnyElement {
         auth: model.auth,
         context_menu: model.context_menu,
         sidebar: model.sidebar,
+        command: model.command,
     };
     let content = (story.render)(&context);
     div()

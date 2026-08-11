@@ -1,16 +1,18 @@
-//! The §11.4 command-surface presentation state and render (DESIGN.md
+//! The §11.4 command-surface presentation state and mapping (DESIGN.md
 //! §11.4/§13/§15).
 //!
 //! The sidebar command field owns two presentations of the same §11.5
 //! engine: the **centered Cmd-T palette** (`bbr-palette`) in New Tab staging
 //! mode and the **field-anchored Cmd-L / field-click overlay**
 //! (`bbr-command-overlay`) in Location mode. This module owns the
-//! presentation state — which surface is open — the stable §15 ids of both
-//! surfaces, the routing seams the production entry paths (Cmd-T, Cmd-L,
-//! field pointer-click) call, and the `elev:2` render both surfaces share.
-//! The in-rail command bar (DESIGN.md §11.5) stays the baseline surface;
-//! the palette and overlay are the only chrome allowed to overlap the glass
-//! (§13).
+//! presentation state — which surface is open — the routing seams the
+//! production entry paths (Cmd-T, Cmd-L, field pointer-click) call, the
+//! Portal placement/dismissal requests, and the **one mapping from app
+//! state to the plain `bbr_ui::surfaces::command` model** at render time.
+//! The stable §15 ids of both surfaces and the render-only card anatomy
+//! moved to `bbr-ui` with the G3 Command cutover; the in-rail command bar
+//! (DESIGN.md §11.5) stays the baseline surface; the palette and overlay
+//! are the only chrome allowed to overlap the glass (§13).
 //!
 //! Contract invariants (enforced by construction):
 //!
@@ -34,14 +36,21 @@ use bbr_web::WebRect;
 use gpui::{Context, Window};
 
 use crate::command_bar::CommandBarMode;
-use crate::portal::command::CommandPortalModel;
 use crate::portal::geometry::{Edges, FitMode, PortalAnchor, Pt, Sz};
 use crate::portal::state::{
     AnchoredPlacement, DismissalPolicy, PortalPlacement, PortalRequest, PresentationId,
 };
+use bbr_ui::surfaces::command::{
+    CommandModel, CommandPresentation, OVERLAY_STATE_EMPTY, OVERLAY_STATE_ERROR,
+    OVERLAY_STATE_LOADING, PALETTE_RESULT_PREFIX, PALETTE_STATE_EMPTY, PALETTE_STATE_ERROR,
+    PALETTE_STATE_LOADING,
+};
+use bbr_ui::surfaces::command::{
+    OVERLAY_CURSOR_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_TEXT_ID, PALETTE_CURSOR_ID,
+    PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID, PALETTE_TEXT_ID,
+};
 
 use super::command_rank::{CommandResultRow, CommandResultState};
-use super::command_surface::{STATE_ID_EMPTY, STATE_ID_ERROR, STATE_ID_LOADING};
 use super::BbrApp;
 
 /// The §11.4 field-anchor element and the command-surface unit tests live in
@@ -111,38 +120,21 @@ impl From<CommandSurface> for bbr_testkit::protocol::CommandSurface {
     }
 }
 
-/// Stable §15 ids of the centered palette (DESIGN.md §11.4/§15).
-pub const PALETTE_ID: &str = "bbr-palette";
-pub const PALETTE_FIELD_ID: &str = "bbr-palette-field";
-pub const PALETTE_TEXT_ID: &str = "bbr-palette-text";
-pub const PALETTE_MODE_ID: &str = "bbr-palette-mode";
-pub const PALETTE_CURSOR_ID: &str = "bbr-palette-cursor";
-/// Result rows of the centered palette keep the §11.5 row anatomy under
-/// `bbr-palette-result-<k>`.
-pub const PALETTE_RESULT_PREFIX: &str = "bbr-palette-result";
-/// Typed state rows of the centered palette (loading / empty / error).
-pub const PALETTE_STATE_LOADING: &str = "bbr-palette-loading";
-pub const PALETTE_STATE_EMPTY: &str = "bbr-palette-empty";
-pub const PALETTE_STATE_ERROR: &str = "bbr-palette-error";
-/// The field-anchored overlay container (DESIGN.md §11.4); its results keep
-/// the §11.5 `bbr-command-result-<k>` ids of the in-rail surface.
-pub const OVERLAY_ID: &str = "bbr-command-overlay";
-/// The overlay's own field row (DESIGN.md §11.4): the full current URL is
-/// preselected here, so one keystroke replaces it.
-pub const OVERLAY_FIELD_ID: &str = "bbr-command-overlay-field";
-pub const OVERLAY_TEXT_ID: &str = "bbr-command-overlay-text";
-pub const OVERLAY_CURSOR_ID: &str = "bbr-command-overlay-cursor";
-
+/// The native Portal presentation identity of the centered palette.
 pub const PALETTE_PRESENTATION_ID: PresentationId = PresentationId(0xC1);
+/// The native Portal presentation identity of the field-anchored overlay.
 pub const OVERLAY_PRESENTATION_ID: PresentationId = PresentationId(0xC2);
+/// The command portal's draw priority (the deferred/native host ordering
+/// slot).
 pub const COMMAND_PORTAL_PRIORITY: usize = 2;
 
 /// The stable ids the open surface exposes (DESIGN.md §15): the centered
 /// palette with its field row (`-field`/`-text`/`-mode`/`-cursor`) and its
 /// published result rows (`bbr-palette-result-<k>`, or the typed state row),
 /// or the field-anchored overlay container with its `bbr-command-result-<k>`
-/// rows. Shared by the render and the `visible_ids` derivation so E2E ids
-/// can never drift from the shell. `None` when no surface is open.
+/// rows. The id constants live in `bbr_ui::surfaces::command` (shared by
+/// the renderer and this derivation so E2E ids can never drift from the
+/// shell). `None` when no surface is open.
 #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
 pub fn surface_ids(
     surface: CommandSurface,
@@ -187,9 +179,9 @@ pub fn surface_ids(
                         .iter()
                         .map(|row| format!("bbr-command-result-{}", row.key)),
                 ),
-                CommandResultState::Loading => ids.push(STATE_ID_LOADING.into()),
-                CommandResultState::Empty => ids.push(STATE_ID_EMPTY.into()),
-                CommandResultState::ActivationError => ids.push(STATE_ID_ERROR.into()),
+                CommandResultState::Loading => ids.push(OVERLAY_STATE_LOADING.into()),
+                CommandResultState::Empty => ids.push(OVERLAY_STATE_EMPTY.into()),
+                CommandResultState::ActivationError => ids.push(OVERLAY_STATE_ERROR.into()),
                 CommandResultState::Inactive => {}
             }
             ids
@@ -317,14 +309,47 @@ impl BbrApp {
         self.command_surface = CommandSurface::None;
     }
 
-    pub(crate) fn command_portal_model(&self, surface: CommandSurface) -> CommandPortalModel {
-        CommandPortalModel {
-            surface,
+    pub(crate) fn command_portal_model(&self, surface: CommandSurface) -> CommandModel {
+        // The app-owned mapping to the plain `bbr-ui` presentation model:
+        // every activation payload, ranking internals, and the collection
+        // label (not rendered by the floating surface) stay app-owned and
+        // never enter the UI model.
+        CommandModel {
+            presentation: match surface {
+                CommandSurface::None => CommandPresentation::Closed,
+                CommandSurface::Palette => CommandPresentation::CenteredPalette,
+                CommandSurface::Overlay => CommandPresentation::AnchoredOverlay,
+            },
             theme: self.theme(),
             chrome_focused: surface.is_open(),
             text: self.command_text.text.clone(),
-            state: self.command_ranking.state,
-            results: self.command_ranking.results.clone(),
+            state: match self.command_ranking.state {
+                CommandResultState::Inactive => {
+                    bbr_ui::surfaces::command::CommandResultState::Inactive
+                }
+                CommandResultState::Empty => bbr_ui::surfaces::command::CommandResultState::Empty,
+                CommandResultState::Loading => {
+                    bbr_ui::surfaces::command::CommandResultState::Loading
+                }
+                CommandResultState::Results => {
+                    bbr_ui::surfaces::command::CommandResultState::Results
+                }
+                CommandResultState::ActivationError => {
+                    bbr_ui::surfaces::command::CommandResultState::ActivationError
+                }
+            },
+            results: self
+                .command_ranking
+                .results
+                .iter()
+                .map(|row| bbr_ui::surfaces::command::CommandResultRow {
+                    key: row.key.clone(),
+                    group: row.group.clone(),
+                    title: row.title.clone(),
+                    subtitle: row.subtitle.clone(),
+                    destructive: row.destructive,
+                })
+                .collect(),
             selected: self.command_ranking.selected,
         }
     }

@@ -2,6 +2,11 @@
 
 use super::*;
 use bbr_command::rank::Activation;
+use bbr_ui::surfaces::command::{
+    OVERLAY_CURSOR_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_STATE_ERROR, OVERLAY_STATE_LOADING,
+    OVERLAY_TEXT_ID, PALETTE_CURSOR_ID, PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID,
+    PALETTE_RESULT_PREFIX, PALETTE_STATE_ERROR, PALETTE_STATE_LOADING, PALETTE_TEXT_ID,
+};
 
 fn row(key: &str, group: &str) -> CommandResultRow {
     CommandResultRow {
@@ -128,13 +133,13 @@ fn surface_ids_expose_result_and_state_rows_when_the_engine_publishes() {
         "the overlay never advertises palette result ids"
     );
     let overlay_loading = surface_ids(CommandSurface::Overlay, CommandResultState::Loading, &[]);
-    assert!(overlay_loading.contains(&STATE_ID_LOADING.to_string()));
+    assert!(overlay_loading.contains(&OVERLAY_STATE_LOADING.to_string()));
     let overlay_error = surface_ids(
         CommandSurface::Overlay,
         CommandResultState::ActivationError,
         &[],
     );
-    assert!(overlay_error.contains(&STATE_ID_ERROR.to_string()));
+    assert!(overlay_error.contains(&OVERLAY_STATE_ERROR.to_string()));
 }
 
 #[test]

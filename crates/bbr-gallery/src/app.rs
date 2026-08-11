@@ -17,6 +17,7 @@ use gpui_component::WindowExt as _;
 use crate::address_app::AddressAppState;
 use crate::auth_app::AuthAppState;
 use crate::canvas::{canvas_surface, CanvasModel};
+use crate::command_app::CommandAppState;
 use crate::context_menu_app::ContextMenuAppState;
 use crate::controls::{controls_surface, ControlAction, ControlsModel};
 use crate::downloads_app::DownloadsAppState;
@@ -71,6 +72,8 @@ pub struct GalleryApp {
     pub(crate) context_menu: ContextMenuAppState,
     /// The G3 Sidebar composition app wiring (module `sidebar_app`).
     pub(crate) sidebar: SidebarAppState,
+    /// The G3 Command composition app wiring (module `command_app`).
+    pub(crate) command: CommandAppState,
     /// The shared recorder: what real gpui-component control events report
     /// back through the production `observe_control` path.
     recorder: ControlRecorder,
@@ -121,6 +124,7 @@ impl GalleryApp {
             auth: AuthAppState::new(&registry),
             context_menu: ContextMenuAppState::new(&registry),
             sidebar: SidebarAppState::new(&registry, cx),
+            command: CommandAppState::new(&registry),
             registry,
             tree,
             mode: ThemeMode::Dark,
@@ -335,6 +339,11 @@ impl Render for GalleryApp {
         // The Sidebar composition observer + story context (module
         // `sidebar_app`).
         let sidebar = self.sidebar.render_context(selected, cx);
+        // The Command composition context (module `command_app`): the
+        // production floating command surface takes no callbacks, so this
+        // module builds the selected family's fixture model, records its
+        // presentation summary, and hands the canvas the recorder + model.
+        let command = self.command.render_context(selected, story_state);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {
@@ -400,6 +409,7 @@ impl Render for GalleryApp {
             auth,
             context_menu,
             sidebar,
+            command,
         });
         div()
             .id("bbr-gallery-root")
