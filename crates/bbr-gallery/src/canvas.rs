@@ -8,8 +8,8 @@ use bbr_ui::theme::Theme;
 use gpui::{div, prelude::*, AnyElement, SharedString};
 
 use crate::registry::{
-    AddressStory, CatalogRegistry, ControlsStory, Group4Story, LibraryStory, StoryContext, StoryId,
-    TabRowStory,
+    AddressStory, CatalogRegistry, ControlsStory, DownloadsStory, Group4Story, LibraryStory,
+    StoryContext, StoryId, TabRowStory,
 };
 
 /// Everything the canvas needs to render the selected story.
@@ -34,6 +34,9 @@ pub struct CanvasModel<'a> {
     /// The Group 4 sidebar-component context (`Some` only when one of the
     /// five Group 4 stories is selected) — see [`Group4Story`].
     pub group4: Option<Group4Story<'a>>,
+    /// The Downloads context (`Some` only when the Downloads panel story
+    /// is selected) — see [`DownloadsStory`].
+    pub downloads: Option<DownloadsStory<'a>>,
 }
 
 /// The canvas surface: a header (story label + state) above the story.
@@ -51,6 +54,7 @@ pub fn canvas_surface(model: CanvasModel) -> AnyElement {
         library: model.library,
         address: model.address,
         group4: model.group4,
+        downloads: model.downloads,
     };
     let content = (story.render)(&context);
     div()

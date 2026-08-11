@@ -27,6 +27,14 @@ mod control_observer;
 #[cfg(target_os = "macos")]
 mod controls;
 #[cfg(target_os = "macos")]
+mod downloads_app;
+#[cfg(target_os = "macos")]
+mod downloads_matrix;
+#[cfg(target_os = "macos")]
+mod downloads_panels;
+#[cfg(target_os = "macos")]
+mod downloads_recorder;
+#[cfg(target_os = "macos")]
 mod favorites_matrix;
 #[cfg(target_os = "macos")]
 mod fixtures;

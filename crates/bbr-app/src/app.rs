@@ -57,7 +57,6 @@ pub(crate) mod downloads_behavior;
 #[cfg(feature = "testkit")]
 mod downloads_benchmarks;
 pub(crate) mod downloads_history;
-pub(crate) mod downloads_render;
 mod drag;
 #[cfg(feature = "testkit")]
 mod drag_benchmarks;

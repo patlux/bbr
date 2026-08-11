@@ -11,9 +11,10 @@ use bbr_web::downloads::{
     DestinationDecision, DownloadEvent, DownloadFailure, DownloadId, DownloadProgress,
 };
 
-use crate::app::downloads::{
-    format_bytes, row_meta, row_visuals, DownloadActionKind, DownloadGroupKind, DownloadMachine,
-    PanelLayout, DOWNLOADS_MAX_VISIBLE, DOWNLOADS_WINDOW_ROWS,
+use crate::app::downloads::{format_bytes, row_meta, row_visuals};
+use bbr_ui::surfaces::downloads::{
+    DownloadActionKind, DownloadGroupKind, DownloadMachine, PanelLayout, DOWNLOADS_MAX_VISIBLE,
+    DOWNLOADS_WINDOW_ROWS,
 };
 
 fn clock() -> impl Fn() -> u64 {

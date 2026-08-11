@@ -28,9 +28,10 @@ use bbr_testkit::protocol::{BenchmarkKind, BenchmarkOperationId};
 use bbr_web::downloads::{DestinationDecision, DownloadEvent, DownloadId, DownloadProgress};
 use gpui::{Context, Window};
 
-use super::downloads::{row_visuals, DownloadActionKind, DownloadMachine};
+use super::downloads::row_visuals;
 use super::downloads_behavior::{downloads_open, on_download_event};
 use super::BbrApp;
+use bbr_ui::surfaces::downloads::{DownloadActionKind, DownloadMachine};
 
 impl BbrApp {
     /// Benchmark the production footer `[Downloads]` open: the sample starts
@@ -207,7 +208,7 @@ impl BbrApp {
         if let Some(fresh_index) = visuals.iter().position(|row| row.id == fresh_id) {
             let total = visuals.len();
             let anchor = total
-                .saturating_sub(crate::app::downloads::DOWNLOADS_WINDOW_ROWS)
+                .saturating_sub(bbr_ui::surfaces::downloads::DOWNLOADS_WINDOW_ROWS)
                 .min(fresh_index);
             let row_h = f32::from(self.theme().density.row());
             self.downloads.scroll.set_offset(gpui::point(
@@ -273,7 +274,7 @@ impl BbrApp {
         if let Some(fresh_index) = visuals.iter().position(|row| row.id == fresh_id) {
             let total = visuals.len();
             let anchor = total
-                .saturating_sub(crate::app::downloads::DOWNLOADS_WINDOW_ROWS)
+                .saturating_sub(bbr_ui::surfaces::downloads::DOWNLOADS_WINDOW_ROWS)
                 .min(fresh_index);
             let row_h = f32::from(self.theme().density.row());
             self.downloads.scroll.set_offset(gpui::point(

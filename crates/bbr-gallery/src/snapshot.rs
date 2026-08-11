@@ -5,6 +5,7 @@
 use bbr_ui::theme::{ContrastMode, Density, ThemeMode};
 
 use crate::address_recorder::AddressRecorder;
+use crate::downloads_recorder::DownloadsRecorder;
 use crate::group4_recorder::Group4Recorder;
 use crate::library_recorder::LibraryRecorder;
 
@@ -75,4 +76,7 @@ pub struct GallerySnapshot {
     /// `on_activate` reported, the folder toggles/selects/closes, the
     /// footer downloads/plus presses, and the plus-menu item commits.
     pub group4: Group4Recorder,
+    /// The observed Downloads state through the production recorder path:
+    /// what real `downloads_panel_surface` pointer interactions reported.
+    pub downloads: DownloadsRecorder,
 }

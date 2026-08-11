@@ -19,6 +19,7 @@
 pub mod address;
 pub mod browser_components;
 pub mod core_controls;
+pub mod downloads;
 pub mod favorites;
 pub mod folders;
 pub mod footer;
@@ -188,6 +189,18 @@ pub fn catalog() -> CatalogRegistry {
             ),
             story("Plus menu", menu::render_plus_menu, &[]),
         ],
+    );
+    // The G2 Group 5 Downloads panel story (packet
+    // `component-gallery-browser-components.md`): the exact production
+    // `bbr_ui::surfaces::downloads` surface appends at id 38 after the
+    // pinned 0–37 prefix — no renumbering, no reservation.
+    registry.add_group(
+        "Downloads",
+        vec![story(
+            "Downloads panel",
+            downloads::render_downloads_panel,
+            &[],
+        )],
     );
     registry
 }

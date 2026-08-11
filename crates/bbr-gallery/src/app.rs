@@ -17,6 +17,7 @@ use gpui_component::WindowExt as _;
 use crate::address_app::AddressAppState;
 use crate::canvas::{canvas_surface, CanvasModel};
 use crate::controls::{controls_surface, ControlAction, ControlsModel};
+use crate::downloads_app::DownloadsAppState;
 use crate::group4_app::Group4AppState;
 use crate::library_recorder::{LibraryObservation, LibraryRecorder};
 use crate::recorder::{ControlObservation, ControlRecorder, CoreControlsEntities};
@@ -55,6 +56,8 @@ pub struct GalleryApp {
     pub(crate) address: AddressAppState,
     /// The Group 4 sidebar-component app wiring (module `group4_app`).
     pub(crate) group4: Group4AppState,
+    /// The Downloads panel app wiring (module `downloads_app`).
+    pub(crate) downloads: DownloadsAppState,
     /// The shared recorder: what real gpui-component control events report
     /// back through the production `observe_control` path.
     recorder: ControlRecorder,
@@ -99,6 +102,7 @@ impl GalleryApp {
             tab_row: TabRowAppState::new(&registry),
             address: AddressAppState::new(&registry),
             group4: Group4AppState::new(&registry, cx),
+            downloads: DownloadsAppState::new(&registry, cx),
             registry,
             tree,
             mode: ThemeMode::Dark,
@@ -312,6 +316,7 @@ impl GalleryApp {
             library: self.library_recorder.clone(),
             address: self.address.recorder().clone(),
             group4: self.group4.recorder().clone(),
+            downloads: self.downloads.recorder().clone(),
         }
     }
 
@@ -375,6 +380,8 @@ impl Render for GalleryApp {
         let address = self.address.render_context(selected, cx);
         // The Group 4 observer + story context (module `group4_app`).
         let group4 = self.group4.render_context(selected, cx);
+        // The Downloads observer + story context (module `downloads_app`).
+        let downloads = self.downloads.render_context(selected, cx);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {
@@ -434,6 +441,7 @@ impl Render for GalleryApp {
             library,
             address,
             group4,
+            downloads,
         });
         div()
             .id("bbr-gallery-root")
