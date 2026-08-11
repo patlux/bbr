@@ -115,6 +115,18 @@ fn split_geometry_keyed_panes_focus_resize_and_close() {
         let first_view = initial.active_web_view.expect("first native view");
         assert_eq!(first_view, WebViewId(1), "sequential ids: first view is 1");
 
+        // Synchronize with the productive renderer-readiness contract before
+        // any window/content/native-slot assertion: the initial visible
+        // session probes immediately, and the deterministic fixture title is
+        // the real readiness signal. Waiting for it proves the renderer
+        // answered the liveness probe — a hung renderer would replace the
+        // native slot with the unresponsive panel before the 2 s fail-closed
+        // deadline (see the renderer-isolation packet). Same causal pattern
+        // as the other shell suites.
+        if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {
+            since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
+        }
+
         // Geometry captured only after the window frame settles (the
         // harness window is never shown, but the settle contract outlives any
         // late AppKit adjustment; see e2e_common).
@@ -130,6 +142,15 @@ fn split_geometry_keyed_panes_focus_resize_and_close() {
         let single = wait_for_content_rect_x(&mut client, sidebar, window_w - sidebar, deadline());
         let height = single.content_rect[3];
         assert!(height > 0.0, "native content height must be positive");
+        // Regression-strength guard: the productive view must not be reported
+        // unresponsive at the moment the native slot is asserted. A real
+        // UnresponsiveChanged(true) would have replaced the slot with the
+        // unresponsive panel; this proves through the real snapshot path that
+        // the view answered its liveness probe.
+        assert!(
+            !single.tabs.iter().any(|tab| tab.unresponsive),
+            "the productive view must not be reported unresponsive before the native-slot assertion"
+        );
         assert_ids(&single, &["bbr-native-web-slot-1"]);
         assert_layout(
             &single,
