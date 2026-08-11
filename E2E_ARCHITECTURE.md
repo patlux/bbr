@@ -572,7 +572,7 @@ gesture path plus the zero-delta Ended resolving into exactly one existing
 samples against the same 50/100 ms warm budget and sessions never recreated.
 All three are part of `just e2e-perf` and the full gate.
 
-## 7e. The shell-sidebar suite (`bbr-app/tests/e2e_shell_sidebar.rs`)
+## 7e. The shell-sidebar suite (`bbr-app/tests/e2e_shell_sidebar/`)
 
 One `#[ignore]`d macOS-only suite (shared harness in `tests/e2e_common/`)
 proves the adjustable/collapsible sidebar surface over real WKWebViews. GPUI
@@ -597,6 +597,21 @@ harness (no display link, no sleeps, no pixels):
    width so the native content keeps exactly the 64 pt content floor —
    positive geometry in every state, and the full requested width returns
    when the window widens.
+4. **G3 composition** (packet `component-gallery-compositions`): the full
+   §11.4 rail renders through the one `bbr_ui::sidebar` composition with
+   stable §15 ids and the typed semantic tree in §11.4 region order (brand →
+   command field → favorites → tabs → status → toggle → footer → divider),
+   no legacy `[Spaces]` reveal surface remains (one rail authority), the
+   app-owned command and downloads children compose without breaking
+   focus/Escape/collapse or child visibility/exclusion (the overlay portal
+   and the downloads panel coexist; Escape dismisses downloads first, then
+   the command surface), the production pointer seams (tab row, favorite
+   tile, folder row, space chip, plus menu) still route through the
+   composition, the native WKWebView geometry stays exactly
+   rail-width/content-floor correct in the existing split layout with
+   collapse/expand restore and no session/WebView identity churn, and the
+   bounded dense 500-tab/50-session window renders through the composition
+   (full rail coherent, regular region windowed).
 
 The `sidebar_resize` and `sidebar_restore` interaction benchmarks (in
 `tests/perf_common/benchmarks.rs`) measure the width-commit and

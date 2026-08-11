@@ -13,7 +13,7 @@
 use bbr_testkit::protocol::{SemanticNode, SemanticRole};
 
 use super::SemanticInput;
-use crate::components::{space_chip_id, space_identity_id};
+use bbr_ui::sidebar::{space_chip_id, space_identity_id};
 use bbr_ui::state::SpaceChipVisuals;
 
 /// The §11.4 footer row node: the container, the two fixed controls

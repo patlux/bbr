@@ -582,13 +582,23 @@ because a forced draw re-borrows the Root entity during the render.
 The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs` + the split
 `app/sidebar.rs`/`app/sidebar_view.rs`/`app/spaces.rs`/`app/tab.rs`/
 `app/interaction.rs` + the `shell/` presentation modules) renders the
-Chassis-tokenized sidebar (`crates/bbr-app/src/theme.rs` tokens, `palette.rs`
-ramps, `components.rs` reusable typed components — never local magic values):
-brand block, command bar (mirrors/selects the live URL; owns a UTF-8-safe
-cursor/selection model; accepts typing/backspace/arrows/Enter/Cmd-Enter), the
-Design §11.5 local result surface, the controller-backed tab surface, a status
-line (`shell::status_line`, incl. "⚠ Web content process terminated"), and the
-sidebar toggle. `CommandBarMode` separates `Inactive`, current-tab `Location`,
+Chassis-tokenized sidebar (tokens/ramps/components from `bbr-ui` — never
+local magic values): brand block, command bar (mirrors/selects the live
+URL; owns a UTF-8-safe cursor/selection model; accepts
+typing/backspace/arrows/Enter/Cmd-Enter), the Design §11.5 local result
+surface, the controller-backed tab surface, a status line
+(`shell::status_line`, incl. "⚠ Web content process terminated"), and the
+sidebar toggle. The G3 Sidebar composition cutover made `bbr-ui::sidebar`
+the one rail authority: `SidebarModel` + the one `Callbacks` set + the
+pure `geometry` width model + the `sidebar_surface` composition live in
+`bbr-ui`, while `bbr-app`'s `app/sidebar_view.rs` is the thin assembler
+(builds the model from the controller snapshot, fills every callback slot
+with the production app methods, and passes the three app-owned child
+elements — the §11.4 command field anchor, the §11.5 in-rail command
+results, the §11.12 downloads panel — at the composition boundary).
+`app/sidebar.rs` keeps only the production input wiring (pointer drag,
+focused-divider keyboard equivalents, the shared width mutation).
+`CommandBarMode` separates `Inactive`, current-tab `Location`,
 and staged `NewTab` intent; `NewSpace`/`MoveTab` keep their existing staged
 paths. Location/NewTab ranking rebuilds a provider-neutral corpus from the
 controller's complete persistent tab/space/profile read model, waits on a
@@ -604,7 +614,7 @@ chrome/web focus domain. The content area renders one
 slots for a split — no divider/polish in this anchor), or the empty-space
 pane (§11.8) and crash panel (§10.7) when no live pane exists.
 The sidebar rail itself is the adjustable, collapsible `SidebarGeometry`
-(`crates/bbr-app/src/sidebar.rs`): DESIGN §5/§11.4 min/default/max widths
+(`bbr_ui::sidebar::geometry`): DESIGN §5/§11.4 min/default/max widths
 (200/260/360 pt) with a 64 pt native-content floor, narrow-window clamping
 that never yields zero or negative native geometry, collapse memory that
 expand restores, and a 4 pt divider surface (`bbr-sidebar-divider`) carrying

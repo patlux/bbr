@@ -1,35 +1,35 @@
-//! The GPUI sidebar surface (DESIGN.md §11.1–§11.4).
+//! The GPUI sidebar assembler (DESIGN.md §11.1–§11.4).
 //!
-//! Owns the rail composition: brand block, command bar, the controller-backed
-//! space and tab surfaces, the status line, the collapse control, and the
-//! adjustable-width resize divider. All visuals come from the Chassis tokens
-//! and components; the rail width is the effective sidebar geometry (the
-//! requested width clamped to the window), never a local magic value. The
-//! root render wires the drag-move/up listeners; this module owns the
-//! surfaces themselves.
+//! `bbr-app` is the G3 Sidebar composition's assembler: it builds the plain
+//! [`SidebarModel`] from the controller snapshot and the app presentation
+//! state, fills the one [`Callbacks`] set with the production app methods,
+//! constructs the three app-owned child elements (the §11.4 command field
+//! anchor, the §11.5 in-rail command results, the §11.12 downloads panel),
+//! and delegates the rail composition to
+//! [`bbr_ui::sidebar::sidebar_surface`]. All browser/session/profile/space/
+//! ranking/persistence authority stays in `bbr-app`; the rail renders only.
 
-use gpui::{
-    div, prelude::*, px, Context, Div, MouseButton, MouseDownEvent, ScrollWheelEvent, SharedString,
-    Stateful, Window,
-};
+use gpui::{prelude::*, Context, Div, SharedString, Stateful, Window};
 
-use crate::sidebar::sidebar_divider;
-use bbr_ui::components::favicon::{monogram_hue, monogram_letter};
-use bbr_ui::components::{self, RowVisuals};
-use bbr_ui::theme::{Radius, Spacing, Theme};
+use bbr_ui::components::RowVisuals;
+use bbr_ui::sidebar::model::SidebarModel;
+use bbr_ui::theme::Theme;
 
 use super::BbrApp;
 
+mod callbacks;
 mod command_bar;
+mod models;
 
 impl BbrApp {
     /// The sidebar rail at the given effective width: the §11 column (brand,
-    /// command field, spaces region, favorites grid, pinned rows, folders,
-    /// regular tabs, status, toggle, plus menu, footer row) plus the §5 4 pt
-    /// resize divider on the right edge. The divider is focusable and
-    /// carries the stable §15 id; the collapse control keeps the `Cmd-B`
-    /// pointer entry. The U2 surfaces (spaces region, favorites, folders,
-    /// plus menu, footer) are composed by `u2_surface` helpers.
+    /// command slot, favorites grid, pinned rows, folders, regular tabs,
+    /// status, toggle, plus menu, downloads panel, footer row) plus the §5
+    /// 4 pt resize divider on the right edge. The assembler builds the
+    /// plain [`SidebarModel`] and the one [`Callbacks`] set, constructs the
+    /// three app-owned child elements (command field anchor, command
+    /// results, downloads panel), and delegates the composition to
+    /// [`bbr_ui::sidebar::sidebar_surface`].
     pub(crate) fn sidebar_surface(
         &mut self,
         theme: &Theme,
@@ -38,7 +38,37 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
-        let p = theme.palette;
+        let model = self.sidebar_model(theme, sidebar_width, chrome_focused, window);
+        let callbacks = self.sidebar_callbacks(cx);
+        let field_anchor = self.command_field_anchor_element();
+        let command_results = self
+            .command_result_surface(theme)
+            .map(|surface| surface.into_any());
+        let downloads_panel = self
+            .downloads_panel_surface(theme, window, cx)
+            .map(|surface| surface.into_any());
+        bbr_ui::sidebar::sidebar_surface(
+            theme,
+            &model,
+            &callbacks,
+            field_anchor,
+            command_results,
+            downloads_panel,
+        )
+    }
+
+    /// Build the plain §11.4 rail model from the controller snapshot and the
+    /// app presentation state — the single input contract of the sidebar
+    /// composition. The dense window, row visuals, favorites/folders/
+    /// spaces DTOs, status, command slot, and footer all derive here; the
+    /// rail renders the model and never holds browser authority.
+    fn sidebar_model(
+        &mut self,
+        theme: &Theme,
+        sidebar_width: f32,
+        chrome_focused: bool,
+        window: &Window,
+    ) -> SidebarModel {
         // §11.3: the active space's effective appearance tints the BBR-owned
         // sidebar material through the one central resolver (the base is
         // the shell's own `surface_sidebar` token), and a tracking swipe
@@ -49,278 +79,37 @@ impl BbrApp {
         // The U2 rail inputs (favorites tiles, folder rows/members) derived
         // once per frame and shared by the tab/favorites/folders surfaces.
         let u2 = self.u2_rail_data();
-        let tab_surface = self.tab_surface(theme, window, cx, &u2.folder_rows, &u2.folder_members);
-        let command_bar = self.command_bar(theme, chrome_focused, cx);
-        // §11.5 result palette: the only chrome surface opening over the
-        // rail's own content (native web views are real child views).
-        let command_results = self.command_result_surface(theme);
-        let favorites = self.favorites_surface(theme, &u2.favorite_tiles, cx);
-        let plus_menu = self.plus_menu_surface(theme, cx);
-        let status_model = crate::shell::status_model(&self.controller.snapshot());
+        let command = self.command_slot(theme, chrome_focused);
+        let favorites = self.favorites_model(&u2.favorite_tiles);
+        let folders = self.folders_model(&u2.folder_rows, &u2.folder_members, window);
+        let tabs = self.tabs_model(theme, window);
+        let status = crate::shell::status_model(&self.controller.snapshot());
+        let plus_menu = self.plus_menu_model();
+        let footer = self.footer_model(window);
+        let strip = self.strip_model();
         let divider_focused = self.divider_handle.is_focused(window);
-        let begin_drag = cx.listener(|this, event, window, cx| {
-            this.begin_sidebar_drag(event, window, cx);
-            cx.stop_propagation();
-        });
-        let divider_keys = cx.listener(Self::on_sidebar_divider_key_down);
-
-        div()
-            .id("bbr-sidebar")
-            .w(px(sidebar_width))
-            .h_full()
-            // The rail is a physical fixed-width surface: GPUI's default
-            // flex_shrink is 1, so without this the rail would absorb part
-            // of the slot's relative(1.0) width and render narrower than its
-            // effective geometry — breaking the §13 content boundary and the
-            // §5 clamp (the content floor must stay exact).
-            .flex_shrink_0()
-            .flex()
-            .flex_row()
-            .bg(chrome_tint)
-            .border_r_1()
-            .border_color(p.hairline)
-            .on_scroll_wheel(cx.listener(|this, event: &ScrollWheelEvent, window, cx| {
-                this.on_sidebar_scroll_wheel(event, window, cx)
-            }))
-            .on_mouse_down(
-                MouseButton::Left,
-                cx.listener(|this, _e: &MouseDownEvent, window, cx| this.focus_chrome(window, cx)),
-            )
-            .child(
-                div()
-                    .id("bbr-sidebar-column")
-                    .flex_1()
-                    .flex()
-                    .flex_col()
-                    .min_w_0()
-                    // Strict height bound: the column must never grow to its
-                    // content, or the dense scroll container below would be
-                    // laid out at the full collection height (a 500-tab list
-                    // would hand the container ~16 000 pt) and the container's
-                    // prepaint would clamp the production scroll offset to 0.
-                    .min_h_0()
-                    .child(
-                        div()
-                            .id("bbr-brand")
-                            .px(Spacing::sp4())
-                            .py(Spacing::sp3())
-                            .text_size(theme.type_.title.size)
-                            .font_weight(theme.type_.title.weight)
-                            .text_color(p.ink)
-                            .child("BBR"),
-                    )
-                    .child(command_bar)
-                    .when(command_results.is_some(), |column| {
-                        column.child(command_results.expect("checked above"))
-                    })
-                    // §11.4: regions stack separated by `density:section-gap`
-                    // breathing (S `sp:3` / N `sp:4` / XL `sp:5`).
-                    .child(div().h(theme.density.section_gap()).flex_shrink_0())
-                    // §11.4 region order: favorites →
-                    // tabs → status → toggle → plus menu → footer (the
-                    // §11.3 space strip is the footer's flex region, always
-                    // part of the rail).
-                    .map(|column| self.u2_pre_tab_children(column, favorites))
-                    .child(div().h(theme.density.section_gap()).flex_shrink_0())
-                    .child(tab_surface)
-                    .child(div().h(theme.density.section_gap()).flex_shrink_0())
-                    .child(bbr_ui::components::status_line(theme, &status_model))
-                    .child(
-                        div()
-                            .id("bbr-sidebar-toggle")
-                            .px(Spacing::sp4())
-                            .py(Spacing::sp2())
-                            .text_size(theme.type_.meta.size)
-                            .text_color(p.ink_faint)
-                            .cursor_pointer()
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(|this, _e: &MouseDownEvent, window, cx| {
-                                    this.toggle_sidebar(window, cx)
-                                }),
-                            )
-                            .child("Sidebar (Cmd-B)"),
-                    )
-                    .map(|column| self.u2_post_tab_children(column, plus_menu, theme, window, cx)),
-            )
-            .child(sidebar_divider(
-                theme,
-                self.divider_handle.clone(),
-                divider_focused,
-                begin_drag,
-                divider_keys,
-            ))
-    }
-
-    /// The controller-backed tab surface: the pinned region as a fixed block
-    /// above the regular region's scroll view (DESIGN.md §11.2/§11.6), with
-    /// the §11.11 folders list between the pinned block and the Tabs
-    /// section. Rows are wired to the production
-    /// pointer path (`select_row_via_pointer` / `close_row_via_pointer` /
-    /// `toggle_row_pin` / `begin_tab_drag`), and an active drag renders the
-    /// §10.9 insertion tick at its target slot (muted when the drop would be
-    /// illegal).
-    ///
-    /// The regular region renders only the bounded window around the
-    /// production scroll anchor (`dense::window_for`, ≤ `DENSE_WINDOW_ROWS`
-    /// rows) plus spacers that keep the container's content height equal to
-    /// the full collection — the native scrollbar and wheel listener behave
-    /// as if every row were laid out, while a 500-tab list never lays out
-    /// 500 rows per frame. The pinned region renders all of its rows: it is
-    /// a small, stable block and must never shift on selection (§11.2).
-    fn tab_surface(
-        &self,
-        theme: &Theme,
-        window: &Window,
-        cx: &mut Context<Self>,
-        folder_rows: &[bbr_ui::components::FolderRowSpec],
-        folder_members: &[bbr_ui::components::FolderMemberVisual],
-    ) -> Stateful<Div> {
-        let browser = self.controller.snapshot();
-        let pinned = crate::shell::pinned_count(&browser.tabs);
-        let regular = &browser.tabs[pinned..];
-        let row_h = theme.density.row();
-        let offset_y = self.dense_scroll.offset().y;
-        let anchor = crate::dense::anchor_from_offset(offset_y, row_h, regular.len());
-        let row_window = crate::dense::window_for(anchor, regular.len());
-        let drag_source = self.tab_drag.source();
-        let pinned_rows = self.row_visuals(&browser.tabs[..pinned], drag_source);
-        let window_rows = self.row_visuals(&regular[row_window.clone()], drag_source);
-        let tick = self.tab_drag.tab_slot();
-        let tick_valid = self.tab_drag.valid();
-        let list_focused = self.tab_list_handle.is_focused(window);
-        let p = theme.palette;
-
-        // Record what this render built so the testkit snapshot reports the
-        // bounded window and the deterministic scroll anchor (the snapshot is
-        // taken on demand; the recorded state mirrors the last frame).
-        self.dense_window.set(crate::dense::DenseRenderState {
-            first_rendered: pinned + row_window.start,
-            rendered_rows: row_window.len(),
-            item_count: regular.len(),
-            scroll_anchor: anchor,
-        });
-
-        let mut children: Vec<gpui::AnyElement> = Vec::new();
-        if !pinned_rows.is_empty() {
-            children.push(components::section_label(theme, "Pinned", list_focused).into_any());
-            for row in &pinned_rows {
-                if tick == Some(row.index) {
-                    children.push(components::drag_tick(theme, row.index, !tick_valid).into_any());
-                }
-                children.push(self.render_row(theme, row, cx).into_any());
-            }
-            if tick == Some(pinned) {
-                children.push(components::drag_tick(theme, pinned, !tick_valid).into_any());
-            }
-            children.push(
-                div()
-                    .h(px(1.0))
-                    .w_full()
-                    .bg(theme.palette.hairline)
-                    .into_any(),
-            );
+        SidebarModel {
+            sidebar_width,
+            chrome_tint,
+            brand: SharedString::from("BBR"),
+            command,
+            favorites,
+            folders,
+            tabs,
+            status,
+            toggle_label: SharedString::from("Sidebar (Cmd-B)"),
+            plus_menu,
+            footer,
+            strip,
+            divider_focused,
+            tab_list_handle: self.tab_list_handle.clone(),
+            dense_scroll: self.dense_scroll.clone(),
+            folders_handle: self.u2.folders_handle.clone(),
+            plus_menu_handle: self.u2.plus_menu_handle.clone(),
+            space_strip_handle: self.space_strip_handle.clone(),
+            space_strip_scroll: self.space_strip_scroll.clone(),
+            divider_handle: self.divider_handle.clone(),
         }
-        // The §11.11 folders list sits between the pinned block and the Tabs
-        // section (hidden entirely while no folder exists).
-        let folders = self.folders_surface(theme, folder_rows, folder_members, window, cx);
-        if let Some(folders) = folders {
-            children.push(folders.into_any());
-        }
-        if !regular.is_empty() {
-            children.push(components::section_label(theme, "Tabs", list_focused).into_any());
-        }
-
-        // The scroll container: spacers keep the total content height equal
-        // to the full collection, the rendered window follows the production
-        // scroll offset, and the drag tick renders only inside the window.
-        let top = crate::dense::scroll_top_for_anchor(row_window.start, row_h);
-        let bottom = (regular.len().saturating_sub(row_window.end)) as f32 * f32::from(row_h);
-        let mut scroll_children: Vec<gpui::AnyElement> = Vec::new();
-        if top > 0.0 {
-            scroll_children.push(div().h(px(top)).into_any());
-        }
-        for row in &window_rows {
-            if tick == Some(row.index) {
-                scroll_children
-                    .push(components::drag_tick(theme, row.index, !tick_valid).into_any());
-            }
-            scroll_children.push(self.render_row(theme, row, cx).into_any());
-        }
-        if bottom > 0.0 {
-            scroll_children.push(div().h(px(bottom)).into_any());
-        }
-        children.push(
-            div()
-                .id("bbr-tab-scroll")
-                .flex_1()
-                .min_h_0()
-                .min_w_0()
-                .overflow_y_scroll()
-                .track_scroll(&self.dense_scroll)
-                .children(scroll_children)
-                .into_any(),
-        );
-
-        div()
-            .id("bbr-tab-list")
-            .track_focus(&self.tab_list_handle)
-            .flex_1()
-            .flex()
-            .flex_col()
-            .min_w_0()
-            .min_h_0()
-            // §9 keyboard-focus ring: 2 pt accent outline inside the focused
-            // list's bounds + the brightened section labels — focus is a
-            // shape and a text step, never color-only.
-            .when(list_focused, |el| {
-                el.border_2()
-                    .border_color(p.accent)
-                    .rounded(Radius.medium())
-            })
-            .on_key_down(cx.listener(Self::on_tab_list_key_down))
-            .children(children)
-    }
-
-    fn render_row(&self, theme: &Theme, row: &RowVisuals, cx: &mut Context<Self>) -> Stateful<Div> {
-        let index = row.index;
-        let select = cx.listener(move |this, _e: &MouseDownEvent, window, cx| {
-            this.select_row_via_pointer(index, window, cx)
-        });
-        let close = cx.listener(move |this, e: &MouseDownEvent, window, cx| {
-            cx.stop_propagation();
-            this.close_row_via_pointer(index, window, cx);
-            let _ = e;
-        });
-        let pin = cx.listener(move |this, e: &MouseDownEvent, window, cx| {
-            cx.stop_propagation();
-            this.toggle_row_pin(index, window, cx);
-            let _ = e;
-        });
-        // Pointer drag entry: pressing the row starts a drag of that row.
-        // The row's own controls stop propagation before this listener runs
-        // (their handlers come first in the bubble phase), so a press on the
-        // pin or close control never starts a drag.
-        let begin_drag = cx.listener(move |this, e: &MouseDownEvent, window, cx| {
-            this.begin_tab_drag(e, index, window, cx);
-        });
-        // §10.2/§10.3 production pointer-state paths: the press wash while
-        // the primary button is down, the hover wash + close reveal on
-        // enter/leave. Separate listeners from select/drag so the visual
-        // states never interfere with the mutations.
-        let press = cx.listener(move |this, _e: &MouseDownEvent, _window, cx| {
-            this.set_row_pressed(index, cx);
-        });
-        let release = cx.listener(move |this, _e: &gpui::MouseUpEvent, _window, cx| {
-            this.clear_row_pressed(cx);
-        });
-        let hover = cx.listener(move |this, hovered: &bool, _window, cx| {
-            this.set_row_hover(index, *hovered, cx);
-        });
-        components::tab_row(theme, row, select, close, pin, begin_drag)
-            .on_mouse_down(MouseButton::Left, press)
-            .on_mouse_up(MouseButton::Left, release)
-            .on_hover(hover)
     }
 
     /// Map a tab slice to per-row visuals for the current theme. The §4
@@ -356,9 +145,9 @@ impl BbrApp {
                         self.hovered_row == Some(tab.index),
                     )
                 },
-                favicon: Some(components::FaviconSpec {
-                    letter: monogram_letter(&tab.url),
-                    hue: monogram_hue(&tab.url),
+                favicon: Some(bbr_ui::components::FaviconSpec {
+                    letter: bbr_ui::components::favicon::monogram_letter(&tab.url),
+                    hue: bbr_ui::components::favicon::monogram_hue(&tab.url),
                 }),
                 pinned: tab.pinned,
                 show_close: true,

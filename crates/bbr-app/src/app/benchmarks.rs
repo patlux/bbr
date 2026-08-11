@@ -354,7 +354,7 @@ impl BbrApp {
             return false;
         }
         let window_width = f32::from(window.bounds().size.width);
-        let expected = crate::sidebar::SidebarGeometry::effective_width_for(width, window_width);
+        let expected = bbr_ui::sidebar::SidebarGeometry::effective_width_for(width, window_width);
         self.performance
             .expect_browser_state(self.controller.snapshot().active_view, true);
         self.performance.expect_sidebar_width(expected);
@@ -389,7 +389,7 @@ impl BbrApp {
             return false;
         }
         let window_width = f32::from(window.bounds().size.width);
-        let expected = crate::sidebar::SidebarGeometry::effective_width_for(
+        let expected = bbr_ui::sidebar::SidebarGeometry::effective_width_for(
             self.sidebar.last_expanded(),
             window_width,
         );

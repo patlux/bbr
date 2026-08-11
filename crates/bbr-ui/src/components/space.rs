@@ -5,7 +5,7 @@
 //! creation-order index, never the space index. The revealed `space_row` /
 //! `space_new_row` list components were removed with the legacy §11.4
 //! `[Spaces]` toggle: the permanent space strip renders identity chips
-//! instead (see the app's `components::space_strip`).
+//! instead (see `bbr_ui::sidebar::strip`).
 
 use bbr_domain::ProfileHue;
 use gpui::{div, prelude::*, Div, SharedString, Stateful, Styled};

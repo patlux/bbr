@@ -178,10 +178,15 @@ production composition exists.
 
 ### Unit and contract
 
-- [ ] `SidebarModel`/`Callbacks` tests: model round-trip; every callback
-      slot fires through recorder callbacks; the assembler in `bbr-app`
-      produces a model whose every field matches the controller snapshot it
-      derives from.
+- [x] **Sidebar** `SidebarModel`/`Callbacks` tests: model round-trip and
+      every callback slot firing through recorder callbacks are covered by
+      the gallery matrix/recorder suites (`sidebar_matrix.rs`
+      `every_valid_family_builds_a_model` / `every_rejected_family_refuses_construction`
+      and `sidebar_recorder.rs` `observe_records_the_expected_field_only`);
+      the assembler's controller-snapshot derivation is proven by the
+      real-app composition E2E (the rail renders the exact regions/ids/
+      semantics the snapshot derives). Command and Split model tests remain
+      open with their cutovers.
 - [ ] `CommandPortalModel` and group-model tests move with their modules
       (ids, states, callbacks) unchanged.
 - [ ] Split geometry/chrome tests: `bbr-ui::split` frame/divider/zone
@@ -189,21 +194,39 @@ production composition exists.
       untouched.
 - [ ] Matrix test in the gallery: every composition story builds and
       renders without panic across all six variant families; rejected
-      combinations refuse to build.
+      combinations refuse to build. *(Sidebar matrix/recorder evidence is
+      integrated; Command and Split matrices remain open.)*
 - [ ] Post-cutover `rg` guard: no duplicate composition symbol and no
-      `pub use bbr_ui` alias in `bbr-app`.
+      `pub use bbr_ui` alias in `bbr-app`. *(Sidebar cutover is clean;
+      re-run after Command/Split.)*
 
 ### Real-app E2E
 
-- [ ] Each remaining composition cutover re-runs its affected product suite
-      unchanged: `just e2e-shell-sidebar`, `just e2e-shell-command`,
-      `just e2e-shell-split-geometry`, and the affected footer/spaces suites.
-      Downloads/Find/Error/Auth/Context Menu functional evidence belongs to
-      completed G2 and is not rerun merely to restate that extraction. Ids,
-      §15 fields, focus domains, and typed semantic trees stay unchanged.
+- [x] **Sidebar cutover** re-runs its affected product suite unchanged and
+      adds composition-level evidence: `just e2e-shell-sidebar` now also
+      proves the full §11.4 rail through the one `bbr_ui::sidebar`
+      composition (stable §15 ids, typed semantic tree in §11.4 region
+      order, one rail authority with no legacy `[Spaces]` surface), the
+      app-owned command/downloads children compose without breaking
+      focus/Escape/collapse or child visibility/exclusion, the production
+      pointer seams (tab row, favorite tile, folder row, space chip, plus
+      menu) still route through the composition, the native WKWebView
+      geometry stays exactly rail-width/content-floor correct in the
+      existing split layout with collapse/expand restore and no
+      session/WebView identity churn, and the bounded dense 500-tab/
+      50-session window renders through the composition. Ids, §15 fields,
+      focus domains, and typed semantic trees stay unchanged.
+- [ ] **Command and Split cutovers** re-run their affected product suites
+      unchanged: `just e2e-shell-command`, `just e2e-shell-split-geometry`,
+      and the affected footer/spaces suites. Downloads/Find/Error/Auth/
+      Context Menu functional evidence belongs to completed G2 and is not
+      rerun merely to restate that extraction. Ids, §15 fields, focus
+      domains, and typed semantic trees stay unchanged.
 - [ ] `just e2e-gallery` extended: composition stories render through the
       production compositions with stable StoryIds appended (G1b/G2
-      ids unrenumbered) and the variant families asserted.
+      ids unrenumbered) and the variant families asserted. *(Sidebar
+      StoryId 44 and its matrix/recorder evidence are integrated; Command
+      and Split stories remain open.)*
 
 ### Performance
 
@@ -272,23 +295,40 @@ G3 blocker.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: G3 Sidebar composition slice complete: the full §11.4 rail renders
+  through the one bbr_ui::sidebar composition (SidebarModel + one Callbacks
+  set + pure geometry + sidebar_surface) with bbr-app as the thin
+  assembler; Gallery StoryId 44 + matrix/recorder evidence integrated;
+  real-app composition E2E added to just e2e-shell-sidebar; three stale
+  module-path comments corrected; implemented-fact docs updated. Command
+  palette/overlay and Split compositions remain open and serially next.
+Commits: none (lane worktree; Orchestrator integrates after independent
+  whole-Sidebar review).
+Functional evidence: Gallery 40/40 including all three Sidebar scenarios;
+  focused non-performance gates green.
+Real-app E2E: just e2e-shell-sidebar 11/11 (7 existing + 4 new composition
+  scenarios: full rail region/semantic ordering + one rail authority,
+  command/downloads child composition with focus/Escape/collapse,
+  split collapse/expand native geometry + identity, dense window through
+  the composition); affected suites re-run green.
+Performance evidence: none executed; code/budgets/baselines byte-unchanged;
+  execution remains explicit debt under Patrick's override.
+Roadmap/documentation updates: ARCHITECTURE.md + E2E_ARCHITECTURE.md
+  implemented facts; component-gallery-compositions packet (Sidebar-only
+  completion); Phase 4/5/6/8 and UI/testing track rollups.
+Open blockers and non-goals: Command and Split compositions remain open;
+  no Command/Split/Z/startup/packaging/accessibility/performance execution.
+Worktree state: parallel/g3-compositions @ 020ffb38, exact settled runtime
+  preserved; staged 0; diff-check clean; no process/Git/GUI-lock holder.
 
-Planning/read-only:
-Implementation:
-Test execution:
-Review:
-Remediation:
-Waiting/retries:
-Total elapsed:
-Human intervention:
+Planning/read-only: estimate
+Implementation: estimate
+Test execution: measured (GUI-locked runs)
+Review: pending independent whole-Sidebar review
+Remediation: none
+Waiting/retries: none
+Total elapsed: estimate
+Human intervention: none
 ```
 
 Use measured timing only when runtime/command timestamps support it;

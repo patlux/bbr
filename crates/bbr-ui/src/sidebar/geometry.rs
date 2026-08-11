@@ -1,18 +1,22 @@
-//! Sidebar geometry and resize-divider surface (DESIGN.md §5, §11.4).
+//! Sidebar geometry and resize-divider surface (DESIGN.md §5, §11.4) —
+//! the G3 Sidebar composition's pure geometry authority.
 //!
 //! The sidebar is the physical left rail: chrome is never sampled or
 //! overlaid, the content slot re-flows instantly on collapse, and the native
 //! web view always keeps strictly positive geometry. This module owns the
 //! pure geometry model — min/default/max widths, the narrow-window clamp,
 //! collapse memory, keyboard steps, reset, and the drag state — plus the
-//! divider component; the input wiring lives in `app::sidebar`.
+//! divider component. The input wiring stays in `bbr-app` (the app keeps
+//! the pointer/keyboard listeners and passes them through the sidebar
+//! `Callbacks`); this module holds no window, controller, or session
+//! authority.
 
 use gpui::{
     div, prelude::*, px, App, Div, FocusHandle, KeyDownEvent, MouseButton, MouseDownEvent,
     Stateful, Styled, Window,
 };
 
-use bbr_ui::theme::Theme;
+use crate::theme::Theme;
 
 /// DESIGN §5: the minimum adjustable sidebar width (pt).
 pub const SIDEBAR_MIN: f32 = 200.0;
@@ -183,9 +187,9 @@ impl SidebarGeometry {
 /// DESIGN §5/§11.4 resize hairline: a 4 pt full-height strip on the sidebar's
 /// right edge with the `ew-resize` cursor, focusable for the keyboard
 /// equivalents (`←`/`→` resize, `0` reset). The caller wires the production
-/// pointer begin-drag listener and the focused keyboard handler; the id and
-/// label are the stable §15 surface identity shared with the snapshot and
-/// the future Accessibility slice.
+/// pointer begin-drag listener and the focused keyboard handler through the
+/// sidebar `Callbacks`; the id and label are the stable §15 surface identity
+/// shared with the snapshot and the future Accessibility slice.
 pub fn sidebar_divider(
     theme: &Theme,
     divider_handle: FocusHandle,

@@ -90,8 +90,8 @@ pub(crate) fn extend_visible_ids(
     // the chip ids derive from the persistent space id alone.
     ids.push(bbr_ui::components::footer::FOOTER_STRIP_ID.into());
     for space in &browser.spaces {
-        ids.push(crate::components::space_strip::space_chip_id(space.id).to_string());
-        ids.push(crate::components::space_strip::space_identity_id(space.id).to_string());
+        ids.push(bbr_ui::sidebar::space_chip_id(space.id).to_string());
+        ids.push(bbr_ui::sidebar::space_identity_id(space.id).to_string());
     }
     // The §11.4 U2 surfaces: the footer row (always part of the rail), the
     // favorites grid / folders list (each hidden entirely while empty), the

@@ -53,6 +53,7 @@
 pub mod components;
 pub mod icons;
 pub mod palette;
+pub mod sidebar;
 pub mod state;
 pub mod surfaces;
 pub mod text;
