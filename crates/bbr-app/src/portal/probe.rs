@@ -37,6 +37,10 @@ use super::geometry::{Edges, Rect, Sz};
 use super::state::{
     DismissalPolicy, PortalHost, PortalPlacement, PortalPresentation, PortalRequest,
 };
+use bbr_ui::surfaces::auth::{
+    AUTH_CANCEL_ID, AUTH_HEADER_ID, AUTH_PASSWORD_ID, AUTH_SHEET_ID, AUTH_SUBMIT_ID,
+    AUTH_USERNAME_ID,
+};
 use bbr_ui::theme::{Spacing, Theme};
 
 /// The one portal host per BBR browser window (allocated once at window
@@ -179,12 +183,12 @@ impl PortalProbeState {
                 crate::app::find::FIND_CLOSE_ID.into(),
             ],
             Some(PortalContent::Auth) => vec![
-                crate::app::auth::AUTH_SHEET_ID.into(),
-                crate::app::auth::AUTH_HEADER_ID.into(),
-                crate::app::auth::AUTH_USERNAME_ID.into(),
-                crate::app::auth::AUTH_PASSWORD_ID.into(),
-                crate::app::auth::AUTH_SUBMIT_ID.into(),
-                crate::app::auth::AUTH_CANCEL_ID.into(),
+                AUTH_SHEET_ID.into(),
+                AUTH_HEADER_ID.into(),
+                AUTH_USERNAME_ID.into(),
+                AUTH_PASSWORD_ID.into(),
+                AUTH_SUBMIT_ID.into(),
+                AUTH_CANCEL_ID.into(),
             ],
             Some(PortalContent::Peek) => vec![
                 crate::app::peek::PEEK_BAR_ID.into(),
@@ -619,7 +623,28 @@ impl Render for PortalRoot {
                 };
                 #[cfg(feature = "testkit")]
                 app.read(cx).observe_portal_auth_render(&surface);
-                let card = crate::portal::auth_sheet::auth_sheet(&surface, rect, cx);
+                // The extracted `bbr_ui::surfaces::auth` presentation
+                // (Group 8): the app builds the DTO from the redacted
+                // surface (records.rs) and wires the production
+                // submit/cancel seams; the portal owns the sheet geometry
+                // (absolute rect) and the backdrop policy — no outside
+                // dismissal for credentials.
+                let model = surface.model();
+                let card = div()
+                    .absolute()
+                    .left(px(rect.x))
+                    .top(px(rect.y))
+                    .w(px(rect.width))
+                    .h(px(rect.height))
+                    .child(bbr_ui::surfaces::auth::auth_sheet(
+                        &model,
+                        cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                            this.auth_submit_clicked(cx);
+                        }),
+                        cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                            this.auth_cancel_clicked(cx);
+                        }),
+                    ));
                 div()
                     .id("bbr-auth-portal-surface")
                     .size_full()

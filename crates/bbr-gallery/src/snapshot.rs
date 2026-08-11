@@ -5,6 +5,7 @@
 use bbr_ui::theme::{ContrastMode, Density, ThemeMode};
 
 use crate::address_recorder::AddressRecorder;
+use crate::auth_recorder::AuthRecorder;
 use crate::library_recorder::LibraryRecorder;
 
 /// The semantic snapshot the E2E asserts (§15 mode fields + stable ids).
@@ -69,4 +70,8 @@ pub struct GallerySnapshot {
     /// path: the hover states the production `on_hover` reported and the
     /// number of presses that fired the production `on_open`.
     pub address: AddressRecorder,
+    /// The observed Auth sheet state through the production recorder path:
+    /// the number of Log In / Cancel presses that fired the production
+    /// `on_submit`/`on_cancel` callbacks.
+    pub auth: AuthRecorder,
 }

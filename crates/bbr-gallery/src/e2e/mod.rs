@@ -17,6 +17,7 @@
 #![cfg(target_os = "macos")]
 
 mod address;
+mod auth;
 mod controls;
 mod library;
 mod pointer;

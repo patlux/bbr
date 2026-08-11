@@ -18,6 +18,7 @@ use gpui_component::input::InputState;
 use gpui_component::slider::SliderState;
 
 use crate::address_recorder::{AddressObserver, AddressRecorder};
+use crate::auth_recorder::{AuthObserver, AuthRecorder};
 use crate::library_recorder::{LibraryObserver, LibraryRecorder};
 use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRecorder};
 
@@ -83,6 +84,12 @@ pub struct StoryContext<'a> {
     /// `component-gallery-browser-components.md`, Group 3). `None` for
     /// every other story.
     pub address: Option<AddressStory<'a>>,
+    /// `Some` only for the Auth sheet story: the current recorder snapshot
+    /// and the observer callbacks the production `bbr_ui::surfaces::auth`
+    /// `auth_sheet` callbacks route through (packet
+    /// `component-gallery-browser-components.md`, Group 8). `None` for
+    /// every other story.
+    pub auth: Option<AuthStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -134,6 +141,17 @@ pub struct TabRowStory<'a> {
 pub struct AddressStory<'a> {
     pub recorder: &'a AddressRecorder,
     pub observer: &'a AddressObserver,
+}
+
+/// Everything the Auth sheet story needs to render the **exact** production
+/// `bbr_ui::surfaces::auth::auth_sheet` with recorder callbacks: the
+/// current recorder snapshot (submit/cancel counts) and the observer
+/// callbacks that re-enter the app on real pointer interactions (packet
+/// `component-gallery-browser-components.md`, Group 8). `Some` only while
+/// the Auth sheet story is selected.
+pub struct AuthStory<'a> {
+    pub recorder: &'a AuthRecorder,
+    pub observer: &'a AuthObserver,
 }
 
 /// A story render function: plain `bbr-ui` symbols with fixture models,

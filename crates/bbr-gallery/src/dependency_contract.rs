@@ -107,16 +107,16 @@ fn collect_rs(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
 
 /// The post-cutover `rg` guard (packet
 /// `component-gallery-browser-components.md`): `bbr-app` defines **no**
-/// duplicate of the G2 Tab Row / Address/Input production symbols and
-/// **no** `pub use bbr_ui` compatibility alias for them. The one
-/// `tab_row`/`RowVisuals`/`drag_tick` and `address_control`/`staging_surface`/
-/// `AddressModel`/`StagingModel`/`AddressProfileHint` authority is
-/// `bbr-ui`; the app imports them and keeps only its controller-snapshot
-/// composition. Implemented with a pure-std source scan (hermetic — no
-/// external `rg` binary required in the evaluation shell) over
-/// `crates/bbr-app/src`.
+/// duplicate of the G2 Tab Row / Address/Input / Auth sheet production
+/// symbols and **no** `pub use bbr_ui` compatibility alias for them. The
+/// one `tab_row`/`RowVisuals`/`drag_tick`, `address_control`/
+/// `staging_surface`/`AddressModel`/`StagingModel`/`AddressProfileHint`, and
+/// `auth_sheet`/`AuthSheetModel`/`AuthField` authority is `bbr-ui`; the app
+/// imports them and keeps only its controller-snapshot composition.
+/// Implemented with a pure-std source scan (hermetic — no external `rg`
+/// binary required in the evaluation shell) over `crates/bbr-app/src`.
 #[test]
-fn bbr_app_defines_no_tab_row_or_address_duplicate_or_reexport_alias() {
+fn bbr_app_defines_no_tab_row_address_or_auth_duplicate_or_reexport_alias() {
     let app_src = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("..")
         .join("bbr-app")
@@ -124,14 +124,16 @@ fn bbr_app_defines_no_tab_row_or_address_duplicate_or_reexport_alias() {
     let mut files = Vec::new();
     collect_rs(&app_src, &mut files);
     assert!(!files.is_empty(), "bbr-app source exists");
-    // The migrated tab-row and address symbols must exist exactly once in
-    // the workspace: in `bbr-ui`. The app may not redefine any of them (the
-    // paren keeps `fn tab_row(` from matching the app-owned
-    // `fn tab_row_h` geometry helper; the address components keep their
-    // app-owned **composition methods** (`fn address_control(&self, …)`,
+    // The migrated tab-row, address, and auth-sheet symbols must exist
+    // exactly once in the workspace: in `bbr-ui`. The app may not redefine
+    // any of them (the paren keeps `fn tab_row(` from matching the
+    // app-owned `fn tab_row_h` geometry helper; the address components keep
+    // their app-owned **composition methods** (`fn address_control(&self, …)`,
     // `fn staging_surface(&self, …)` — the DTO-building dispatchers that
-    // call the production symbols) — so the guard pins the production
-    // `pub fn` definitions and the DTO structs, never those methods).
+    // call the production symbols); the auth sheet keeps the app-owned
+    // `AuthSheetSurface::model` DTO builder — so the guard pins the
+    // production `pub fn` definitions and the DTO/field enums, never those
+    // methods).
     let migrated = [
         "fn tab_row(",
         "struct RowVisuals",
@@ -146,6 +148,10 @@ fn bbr_app_defines_no_tab_row_or_address_duplicate_or_reexport_alias() {
         "struct AddressModel",
         "struct StagingModel",
         "struct AddressProfileHint",
+        "pub fn auth_sheet(",
+        "struct AuthSheetModel",
+        "enum AuthField",
+        "pub const AUTH_SHEET_ID",
     ];
     for file in &files {
         let text = std::fs::read_to_string(file).expect("read app source");
@@ -168,5 +174,26 @@ fn bbr_app_defines_no_tab_row_or_address_duplicate_or_reexport_alias() {
     assert!(
         sidebar.contains("components::tab_row"),
         "sidebar renders through bbr_ui::components::tab_row"
+    );
+    // The auth sheet renders through the extracted production surface: the
+    // portal probe builds the DTO (`surface.model()`) and calls
+    // `bbr_ui::surfaces::auth::auth_sheet` with the production
+    // submit/cancel listener closures.
+    let probe =
+        std::fs::read_to_string(app_src.join("portal").join("probe.rs")).expect("read probe.rs");
+    assert!(
+        probe.contains("surfaces::auth::auth_sheet")
+            && probe.contains("surface.model()")
+            && probe.contains("auth_submit_clicked")
+            && probe.contains("auth_cancel_clicked"),
+        "the portal renders the auth sheet through bbr_ui::surfaces::auth"
+    );
+    // The redacted surface (app-owned) builds the DTO with the settled
+    // theme: records.rs owns the DTO building per the anchor table.
+    let records = std::fs::read_to_string(app_src.join("app").join("auth").join("records.rs"))
+        .expect("read records.rs");
+    assert!(
+        records.contains("surfaces::auth::AuthSheetModel"),
+        "records.rs builds the auth DTO through bbr_ui::surfaces::auth"
     );
 }

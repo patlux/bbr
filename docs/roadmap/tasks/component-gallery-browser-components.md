@@ -189,10 +189,15 @@ reserves no ids and reintroduces no marker machinery.
 
 ### Unit and contract
 
-- [ ] Each new `bbr-ui` browser-component module: contrast/ids/models/
+- [x] Each new `bbr-ui` browser-component module: contrast/ids/models/
       callbacks tests (per the anchor's Evidence contract) — DTO round-trips,
       id constants, recorder-callback firing, and state composition order
       (§10: error > loading > pressed > selected > hover > default).
+      Group 8: `bbr-ui::surfaces::auth` carries the stable §15 id
+      constants, the `AuthField` label vocabulary, the redaction-shape
+      tests (Debug never renders the typed username; the model has no
+      password field — only the masked `password_entered` flag), and the
+      DTO round-trip tests.
 - [x] Matrix test in the gallery: every "valid" row builds and renders
       without panic; every "rejected" row fails fixture construction; the
       matrix table and the fixture builders cannot drift (one declaration
@@ -207,12 +212,25 @@ reserves no ids and reintroduces no marker machinery.
       present/absent through the production
       `StagingModel.profile_hint`/`AddressProfileHint`, with the
       profile-hint-present families covering both cursor values and both
-      hint values (presence independent of cursor and hint).
+      hint values (presence independent of cursor and hint). Group 8:
+      `auth_matrix.rs` is the one Auth declaration source — every
+      `AUTH_VALID` family (realm present/absent × origin/proxy × username
+      typed/empty × password masked/empty × focus username/password)
+      builds, every `AUTH_REJECTED` combination (unmasked password render,
+      outside-press dismissal, a raw/serializable credential shape)
+      refuses fixture construction, the pinned label tests keep the table
+      and the builders from drifting, and the dimension-coverage test pins
+      all five packet dimensions plus the full 2^5 cross product.
 - [x] Post-cutover `rg` guard: no duplicate symbol and no `pub use bbr_ui`
       alias in `bbr-app` for the migrated modules. Group 3: the guard now
       also pins the `address_control`/`staging_surface`/`AddressModel`/
       `StagingModel`/`AddressProfileHint` production symbols (the app keeps
-      only its DTO-building composition methods).
+      only its DTO-building composition methods). Group 8: the guard now
+      also pins the `auth_sheet`/`AuthSheetModel`/`AuthField`/`AUTH_SHEET_ID`
+      production symbols and asserts the portal probe renders through
+      `bbr_ui::surfaces::auth::auth_sheet` with `surface.model()` and the
+      production `auth_submit_clicked`/`auth_cancel_clicked` seams, while
+      `records.rs` builds the DTO.
 
 ### Real-app E2E
 
@@ -226,7 +244,10 @@ reserves no ids and reintroduces no marker machinery.
       affected suite unchanged: `just e2e-shell-command`
       (address/overlay/palette) is green 25/25 on the same byte-identical
       ids/§15 fields/focus domains/semantic trees (the existing suite is the
-      migration guard and was not modified).
+      migration guard and was not modified). Group 8 re-ran its affected
+      suite unchanged: `just e2e-auth` is green 4/4 on the same
+      byte-identical ids/§15 fields/focus domains/semantic trees (the
+      existing suite is the migration guard and was not modified).
 - [x] `just e2e-gallery` extended: the new story matrix renders through the
       production components with stable StoryIds appended (G1b ids
       unrenumbered). Group 3 appended the Address control (StoryId 31) and
@@ -239,7 +260,13 @@ reserves no ids and reintroduces no marker machinery.
       assert the staging story includes the production
       `bbr-command-profile-hint` semantic id (the profile-hint families
       render the production `staging_surface` with
-      `StagingModel.profile_hint: Some(...)`).
+      `StagingModel.profile_hint: Some(...)`). Group 8 appended the Auth
+      sheet story (StoryId 33) after the pinned 0–32 prefix; the
+      GUI-locked Xcode-26.2 suite is green 26/26, the every-story-renders
+      sweep covers the new story automatically, and the focused
+      `e2e/auth.rs` scenarios prove real pointer presses fire the
+      production `on_submit`/`on_cancel` recorder callbacks and that every
+      valid matrix family renders the stable §15 ids.
 
 ### Performance
 
@@ -249,7 +276,11 @@ reserves no ids and reintroduces no marker machinery.
       active delivery override; no `just e2e-perf` run or pass is claimed.
       Group 3 is Gallery-only (no production migration): no performance
       code/budget/sample/baseline changed, and no performance run or pass is
-      claimed — the missing execution stays explicit debt.
+      claimed — the missing execution stays explicit debt. Group 8
+      migrated the auth sheet presentation to `bbr-ui::surfaces::auth`
+      with no performance code/budget/sample/baseline change; no
+      performance run or pass is claimed — the missing execution stays
+      explicit debt.
 - [x] Gallery perf remains sanity-only (G1b), never a product budget.
 
 ## Completion gates
@@ -420,6 +451,64 @@ Total elapsed:
   Estimate (single writer session).
 Human intervention:
   None.
+
+Group 8 Auth sheet (forward continuation):
+Outcome:
+  The auth sheet presentation migrated to the production
+  `bbr-ui::surfaces::auth` module (extract → migrate → delete → re-run
+  cycle): `portal/auth_sheet.rs` deleted; the portal probe builds the DTO
+  via `AuthSheetSurface::model` (records.rs) and renders
+  `bbr_ui::surfaces::auth::auth_sheet` with the production
+  `auth_submit_clicked`/`auth_cancel_clicked` listener seams; the app
+  keeps the redacted store, the challenge lifecycle, the portal geometry
+  (absolute rect) and the no-outside-dismissal backdrop policy. The
+  surface takes the theme from the model (the pre-cutover hardcoded
+  `Theme::dark()` is never enshrined; the app resolves the settled dark
+  presentation when building the DTO, the gallery story proves theme
+  independence). One Auth matrix+fixture authority (auth_matrix.rs)
+  declares every valid credential-sheet family (realm present/absent ×
+  origin/proxy × username typed/empty × password masked/empty × focus
+  username/password) and refuses the rejected combinations (unmasked
+  password render, outside-press dismissal, a raw/serializable
+  credential shape); the gallery appends the Auth sheet story at
+  StoryId 33 (0–32 unrenumbered) with recorder/observer wiring; focused
+  real-pointer E2E proves on_submit/on_cancel fire; the every-story
+  sweep covers the new story; app.rs stays at 467 lines (≤500). No
+  manifest/lock/justfile/perf change, no new ids or product policy.
+Commits:
+  None (working-tree candidate only; Orchestrator-owned integration).
+Functional evidence:
+  Gallery unit tests 56/56 (auth matrix valid/rejected incl. the
+  dimension-coverage and 2^5 cross-product tests, recorder, registry
+  pinned-prefix incl. 23–30, rg guard incl. auth symbols). Gallery
+  Clippy --all-targets -D warnings clean. GUI-locked Xcode-26.2
+  `just e2e-gallery` 26/26 incl.
+  e2e::auth::auth_sheet_story_renders_the_matrix_families_with_stable_ids
+  and e2e::auth::real_press_on_log_in_and_cancel_report_through_the_recorder.
+Real-app E2E:
+  `just e2e-auth` re-run unchanged and green 4/4 — ids, §15 fields,
+  focus domains, typed semantic trees byte-identical (the existing suite
+  is the migration guard, unmodified). One first run failed on a
+  window-manager tiling race under heavy host load (window re-tiled
+  between challenge presentation and snapshot; the app's own comment
+  documents this flake class); the unchanged re-run passed 4/4.
+Performance evidence:
+  None executed; performance remains Patrick-deferred/unpassed. No
+  budget/sample/baseline/semantic-commit change; missing execution
+  recorded as explicit debt.
+Roadmap/documentation updates:
+  G2 packet evidence/ledger only (this file). ROADMAP.md /
+  ARCHITECTURE.md / UI track roll-ups are Orchestrator-owned serial
+  points.
+Open blockers and non-goals:
+  No new product modes/ids; the auth sheet remains presentation-only
+  (the app owns the challenge lifecycle and redacted store). Performance
+  execution and canonical `just e2e` remain unexecuted/unpassed.
+Worktree state:
+  Branch parallel/g2-group8-auth at base 5e018b34286daab690c7f88d32c4b9
+  7dc3204484 (tree 58d2c8152761c5536944b1b6535d2f75a1a57615); real index
+  unchanged at the base tree; working-tree candidate only, diff-clean,
+  no staged paths, no commit, no process/lock.
 ```
 
 Use measured timing only when runtime/command timestamps support it;

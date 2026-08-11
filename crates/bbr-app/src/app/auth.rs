@@ -44,7 +44,6 @@ mod records;
 mod sheet;
 
 pub use coordinator::{AuthCoordinator, AuthSheetSurface, AuthSnapshotState, ChallengeDecision};
-pub use sheet::AuthField;
 
 use bbr_web::auth_challenges::{AuthChallenge, AuthScheme, ChallengeKind};
 use gpui::{Context, KeyDownEvent, Window};
@@ -53,15 +52,6 @@ use crate::portal::geometry::{Edges, Sz};
 use crate::portal::state::{DismissalPolicy, PortalPlacement, PortalRequest};
 
 use super::BbrApp;
-
-/// Stable §15 ids of the credential sheet (DESIGN.md §15; exposed through
-/// the portal snapshot's typed `ids` field).
-pub const AUTH_SHEET_ID: &str = "bbr-auth-sheet";
-pub const AUTH_HEADER_ID: &str = "bbr-auth-header";
-pub const AUTH_USERNAME_ID: &str = "bbr-auth-username";
-pub const AUTH_PASSWORD_ID: &str = "bbr-auth-password";
-pub const AUTH_SUBMIT_ID: &str = "bbr-auth-submit";
-pub const AUTH_CANCEL_ID: &str = "bbr-auth-cancel";
 
 /// The credential sheet's stable presentation id, allocated in the portal
 /// presentation-id space next to the probe (`0xB9`), the command surfaces

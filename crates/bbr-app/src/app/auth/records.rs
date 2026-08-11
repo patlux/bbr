@@ -10,14 +10,16 @@
 //! snapshot, testkit payload, benchmark record, or error text can contain
 //! the typed values (module invariant). Split from `super::coordinator`
 //! (the orchestration core) by responsibility: the coordinator decides and
-//! routes, this module owns the redacted data layer.
+//! routes, this module owns the redacted data layer. The portal surface is
+//! the extracted `bbr_ui::surfaces::auth` presentation (Group 8): this
+//! module keeps the redacted store/surface and builds the presentation DTO
+//! ([`AuthSheetSurface::model`]) the portal consumes.
 
 use std::fmt;
 
+use bbr_ui::surfaces::auth::AuthField;
 use bbr_web::auth_challenges::{AuthChallenge, AuthState};
 use bbr_web::WebViewId;
-
-use super::sheet::AuthField;
 
 /// One recorded challenge and its contract-owned lifecycle state.
 #[derive(Debug)]
@@ -125,13 +127,27 @@ impl fmt::Debug for AuthSheetSurface {
 }
 
 impl AuthSheetSurface {
-    /// The typed username (sheet render only; never logged or serialized).
-    pub fn username(&self) -> &str {
-        &self.username
-    }
-
     /// Masked: whether the username field holds any characters.
     pub fn username_entered(&self) -> bool {
         !self.username.is_empty()
+    }
+
+    /// The `bbr-ui` presentation model the portal consumes to render the
+    /// sheet (the anchor's "records.rs builds the DTO" migration
+    /// contract, Group 8): the app derives the DTO from the redacted
+    /// surface and resolves the sheet's settled dark presentation —
+    /// byte-identical to the pre-cutover render (the portal surfaces keep
+    /// their fixed theme; the gallery story proves theme independence
+    /// through its own resolved theme).
+    pub fn model(&self) -> bbr_ui::surfaces::auth::AuthSheetModel {
+        bbr_ui::surfaces::auth::AuthSheetModel {
+            theme: bbr_ui::theme::Theme::dark(),
+            host: self.host.clone(),
+            realm: self.realm.clone(),
+            authority: self.authority.clone(),
+            focused: self.focused,
+            username: self.username.clone(),
+            password_entered: self.password_entered,
+        }
     }
 }
