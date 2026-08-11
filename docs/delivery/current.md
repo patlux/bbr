@@ -21,7 +21,7 @@ packets. Full chronology and detailed evidence remain in the preserved
 | First-wave branch base | `e9f5d30214e7efc46586cb3ae11c6472e0b1801c`; SHUTDOWN, B1, and G1a were all created clean from this exact commit |
 | Previous canonical pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md` |
 | Rollback pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
-| Target Orchestrator session | `019fdc57-7afb-7f81-8963-756586fe0a6b`; current verified pane `tws_personal_macos_bbr-orchestrator:3.0` (pane is runtime data and must be reverified immediately before handoff) |
+| Target Orchestrator session | `019fdc57-7afb-7f81-8963-756586fe0a6b`; current verified pane `tws_personal_macos_bbr-orchestrator:1.0` (pane is runtime data and must be reverified immediately before handoff) |
 
 The atomic cutover is complete. `ROADMAP.md` and this committed snapshot are
 now the sole execution authority; the old ledger is preserved evidence and the
