@@ -4,6 +4,7 @@
 
 use bbr_ui::theme::{ContrastMode, Density, ThemeMode};
 
+use crate::address_recorder::AddressRecorder;
 use crate::library_recorder::LibraryRecorder;
 
 /// The semantic snapshot the E2E asserts (§15 mode fields + stable ids).
@@ -64,4 +65,8 @@ pub struct GallerySnapshot {
     /// (close, sort, select, rename, remove, collection, open) reported
     /// through the production recorder path.
     pub library: LibraryRecorder,
+    /// The observed Address/Input state through the production recorder
+    /// path: the hover states the production `on_hover` reported and the
+    /// number of presses that fired the production `on_open`.
+    pub address: AddressRecorder,
 }

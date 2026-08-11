@@ -107,14 +107,16 @@ fn collect_rs(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
 
 /// The post-cutover `rg` guard (packet
 /// `component-gallery-browser-components.md`): `bbr-app` defines **no**
-/// duplicate of the G2 Tab Row production symbols and **no** `pub use
-/// bbr_ui` compatibility alias for them. The one `tab_row`/`RowVisuals`/
-/// `drag_tick` authority is `bbr-ui`; the app imports it and keeps only
-/// its controller-snapshot composition (`row_state`, `row_visuals`).
-/// Implemented with a pure-std source scan (hermetic — no external `rg`
-/// binary required in the evaluation shell) over `crates/bbr-app/src`.
+/// duplicate of the G2 Tab Row / Address/Input production symbols and
+/// **no** `pub use bbr_ui` compatibility alias for them. The one
+/// `tab_row`/`RowVisuals`/`drag_tick` and `address_control`/`staging_surface`/
+/// `AddressModel`/`StagingModel`/`AddressProfileHint` authority is
+/// `bbr-ui`; the app imports them and keeps only its controller-snapshot
+/// composition. Implemented with a pure-std source scan (hermetic — no
+/// external `rg` binary required in the evaluation shell) over
+/// `crates/bbr-app/src`.
 #[test]
-fn bbr_app_defines_no_tab_row_duplicate_or_reexport_alias() {
+fn bbr_app_defines_no_tab_row_or_address_duplicate_or_reexport_alias() {
     let app_src = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("..")
         .join("bbr-app")
@@ -122,10 +124,14 @@ fn bbr_app_defines_no_tab_row_duplicate_or_reexport_alias() {
     let mut files = Vec::new();
     collect_rs(&app_src, &mut files);
     assert!(!files.is_empty(), "bbr-app source exists");
-    // The migrated tab-row symbols must exist exactly once in the
-    // workspace: in `bbr-ui`. The app may not redefine any of them (the
+    // The migrated tab-row and address symbols must exist exactly once in
+    // the workspace: in `bbr-ui`. The app may not redefine any of them (the
     // paren keeps `fn tab_row(` from matching the app-owned
-    // `fn tab_row_h` geometry helper).
+    // `fn tab_row_h` geometry helper; the address components keep their
+    // app-owned **composition methods** (`fn address_control(&self, …)`,
+    // `fn staging_surface(&self, …)` — the DTO-building dispatchers that
+    // call the production symbols) — so the guard pins the production
+    // `pub fn` definitions and the DTO structs, never those methods).
     let migrated = [
         "fn tab_row(",
         "struct RowVisuals",
@@ -135,6 +141,11 @@ fn bbr_app_defines_no_tab_row_duplicate_or_reexport_alias() {
         "fn close_control(",
         "fn pin_control(",
         "fn row_wash(",
+        "pub fn address_control(",
+        "pub fn staging_surface(",
+        "struct AddressModel",
+        "struct StagingModel",
+        "struct AddressProfileHint",
     ];
     for file in &files {
         let text = std::fs::read_to_string(file).expect("read app source");
