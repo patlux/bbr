@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slice:** [G3 composition stories](docs/roadmap/tasks/component-gallery-compositions.md): Sidebar and Command are integrated; the next authorized action is a fresh read-only Split preflight before any Split writer. Integrated Link Preview / Peek, Tab Row, Saved Pages Library, renderer isolation/unresponsive tabs, productive new-window handling, and web-content navigation gestures remain preserved foundations.
+- **Active product slice:** [G3 composition stories](docs/roadmap/tasks/component-gallery-compositions.md): Sidebar and Command are integrated. Split remains the next serial G3 composition, but Patrick's active scheduling override defers every Split/SPLIT-COMPOSITION preflight, reconciliation, review, port, and writer until he explicitly re-enables it. No product writer is currently authorized. Integrated Link Preview / Peek, Tab Row, Saved Pages Library, renderer isolation/unresponsive tabs, productive new-window handling, and web-content navigation gestures remain preserved foundations.
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:

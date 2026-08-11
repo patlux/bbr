@@ -13,10 +13,13 @@ Template: [task-packet template](../templates/task-packet.md)
 Program position: **G3**, activated from the settled and integrated G2
 browser-components state recorded in [Current delivery](../../delivery/current.md).
 G2 already delivered the Downloads, Find, Error/Crash, Auth, and Context Menu
-surfaces and their component stories. G3 Sidebar and Command are integrated;
-the next authorized action is a fresh read-only Split preflight against the
-exact post-Command checkpoint. No Split writer is authorized before that
-preflight and a committed activation contract.
+surfaces and their component stories. G3 Sidebar and Command are integrated.
+Split remains the next serial G3 composition, but Patrick's active scheduling
+override defers every Split/SPLIT-COMPOSITION preflight, reconciliation,
+review, port, and writer until he explicitly re-enables it. After that explicit
+unblock, the first action is a fresh read-only preflight against the exact
+post-Command checkpoint; no Split writer is authorized before that preflight
+and a committed activation contract.
 This packet moves `SidebarModel` plus Callbacks, a plain command-presentation
 DTO and renderer, and split chrome into `bbr-ui` and appends their production
 Gallery stories after the canonical 44-story G2 catalog. The command cut does
@@ -310,8 +313,10 @@ sequentially under `python3 scripts/with_gui_lock.py --`.
    browser-component modules are green.
 2. One exclusive writer performs three bounded cutovers in order: Sidebar
    assembler first, then Command composition, then Split chrome. Sidebar and
-   Command are integrated; a fresh read-only Split preflight is serially next.
-   Completed G2 surfaces are consumed, not re-extracted.
+   Command are integrated; Split is the next serial composition but remains
+   scheduling-deferred. After Patrick explicitly re-enables Split work, a
+   fresh read-only preflight is the first gate. Completed G2 surfaces are
+   consumed, not re-extracted.
 3. Add each composition story + fixture builder and mandatory variant families
    in the same bounded cut.
 4. One independent read-only reviewer maps every story back to DESIGN.md
@@ -390,8 +395,11 @@ Performance evidence: none executed; performance code, budgets, baselines,
 Roadmap/documentation updates: ARCHITECTURE.md, E2E_ARCHITECTURE.md, this
   packet, ROADMAP current-focus wording, Phase 4/5/6 facts, and UI/testing
   track rollups. Phase 8 required no Command-composition acceptance change.
-Open blockers and non-goals: Command has no remaining blocker. Split requires
-  a fresh read-only post-Command preflight and committed activation contract;
+Open blockers and non-goals: Command has no remaining blocker. Split remains
+  the next serial composition but is scheduling-blocked until Patrick
+  explicitly re-enables all Split/SPLIT-COMPOSITION work. Only then may a
+  fresh read-only post-Command preflight and committed activation contract be
+  prepared. The preserved stale Split worktree is not inspected or reused.
   Z, startup, packaging, accessibility, canonical E2E, and all performance
   execution remain outside this integrated cut.
 Worktree state: frozen lane `parallel/g3-command-composition` is clean at

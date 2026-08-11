@@ -23,10 +23,13 @@ integrated at `9eeb6b2f7abed2451a613e3ee4e8d4624db4cfc8`; the bounded
 serial production divider, projected layout, focused-pane presentation,
 testkit, E2E, and performance slice. Production split creation over native
 WebKit glass remains a later contract decision. The G3 composition sequence has
-integrated Sidebar and Command; the next authorized action is a fresh read-only
-Split Preview / `bbr-ui::split` preflight against the exact post-Command
-checkpoint. No Split writer is authorized before that preflight and a committed
-activation contract. See the [parallel-delivery contract](../../parallel-delivery.md).
+integrated Sidebar and Command. Split Preview / `bbr-ui::split` remains the
+next serial G3 composition, but Patrick's active scheduling override defers
+every Split/SPLIT-COMPOSITION preflight, reconciliation, review, port, and
+writer until he explicitly re-enables it. After that unblock, the first gate is
+a fresh read-only preflight against the exact post-Command checkpoint; no Split
+writer is authorized before that preflight and a committed activation contract.
+See the [parallel-delivery contract](../../parallel-delivery.md).
 
 ## Checklist
 
