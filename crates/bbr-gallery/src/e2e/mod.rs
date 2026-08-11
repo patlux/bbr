@@ -2,9 +2,10 @@
 //! `component-gallery-mvp.md`): startup, tree keyboard operation, stable
 //! `StoryId`s, mode/state switching, the every-story-renders sweep, the
 //! real-pointer disclosure collapse/expand scenarios (finding 1), the
-//! real Core Controls interaction scenarios (finding 2), and the Tab Row
-//! recorder scenarios (packet `component-gallery-browser-components.md`) —
-//! all driven through the production methods and real pointer/keyboard
+//! real Core Controls interaction scenarios (finding 2), the Tab Row
+//! recorder scenarios, and the Group 4 sidebar-component recorder
+//! scenarios (packet `component-gallery-browser-components.md`) — all
+//! driven through the production methods and real pointer/keyboard
 //! events, and asserted on the semantic snapshot. The harness uses GPUI's
 //! established main-thread test support (`TestAppContext` +
 //! `VisualTestContext` on `TestPlatform`), so the suite runs on the test
@@ -18,6 +19,7 @@
 
 mod address;
 mod controls;
+mod group4;
 mod library;
 mod pointer;
 mod startup;

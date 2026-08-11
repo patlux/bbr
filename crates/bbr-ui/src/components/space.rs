@@ -50,6 +50,7 @@ pub fn profile_chip(theme: &Theme, profile_index: usize, spec: &ProfileChipSpec)
     let tile = ProfileHueRamp::tile(spec.hue, theme.mode);
     div()
         .id(profile_chip_id(profile_index))
+        .debug_selector(move || profile_chip_id(profile_index).to_string())
         .size(size)
         .rounded(Radius.small())
         .bg(tile.tile)

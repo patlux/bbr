@@ -27,13 +27,27 @@ mod control_observer;
 #[cfg(target_os = "macos")]
 mod controls;
 #[cfg(target_os = "macos")]
+mod favorites_matrix;
+#[cfg(target_os = "macos")]
 mod fixtures;
+#[cfg(target_os = "macos")]
+mod folders_matrix;
+#[cfg(target_os = "macos")]
+mod footer_matrix;
+#[cfg(target_os = "macos")]
+mod group4_app;
+#[cfg(target_os = "macos")]
+mod group4_recorder;
 #[cfg(target_os = "macos")]
 mod library_fixtures;
 #[cfg(target_os = "macos")]
 mod library_observer;
 #[cfg(target_os = "macos")]
 mod library_recorder;
+#[cfg(target_os = "macos")]
+mod menu_matrix;
+#[cfg(target_os = "macos")]
+mod profile_chip_matrix;
 #[cfg(target_os = "macos")]
 mod recorder;
 #[cfg(target_os = "macos")]

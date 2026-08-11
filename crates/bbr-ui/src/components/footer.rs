@@ -108,6 +108,7 @@ pub fn footer_surface(
     let focused = downloads_focused;
     div()
         .id(FOOTER_ID)
+        .debug_selector(|| FOOTER_ID.to_string())
         .h(theme.density.row())
         .border_t_1()
         .border_color(p.hairline)
@@ -161,6 +162,7 @@ pub fn footer_control(
         .child(control.glyph().canvas(theme, theme.density.icon()));
     div()
         .id(control.id())
+        .debug_selector(move || control.id().to_string())
         .h(theme.density.row())
         .gap(Spacing::sp1())
         .items_center()
