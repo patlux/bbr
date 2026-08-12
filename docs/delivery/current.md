@@ -7,10 +7,10 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 
 | Field | Value |
 |---|---|
-| Generation | `visual-shell-reference-2026-08-12` |
-| Cutover commit | pending in isolated writer; authority and implementation ship in one reviewed candidate |
-| Verified product base | `main@fa18ee54c781d37647560f14d004b6d11edad19b` |
-| Integrated product checkpoint | `main@fa18ee54c781d37647560f14d004b6d11edad19b`; complete reviewed Daily-driver delivery is local and clean, not pushed |
+| Generation | `reference-alignment-2026-08-13` |
+| Cutover commit | the commit introducing this generation on local `main`; the three alignment packets are committed at `806e4238` |
+| Verified product base | `main@806e423823699c17f6bcd40ffd327e27f196f091` (integrated VS-REFERENCE shell plus alignment packets; clean worktree, free GUI lock) |
+| Integrated product checkpoint | `main@806e423823699c17f6bcd40ffd327e27f196f091`; everything local, nothing pushed |
 | Daily-driver preparation base | `568cdae0008d3cc9008209007ae32442ee0ff80e` / tree `90114c65cc068a744b43aeeec710b47fff5cbf4a` |
 | Daily-driver activation base | `4d5be3116ec090aebb7eefa4861970710dba7a5b` / tree `9c8cae5cd5bca883fadc3ec198e232be4f436839`; all seven lane worktrees created clean from this exact commit |
 | Daily-driver contract | [2026-08-12 Daily-driver delivery](2026-08-12-daily-driver-delivery.md) |
@@ -37,7 +37,28 @@ The current branch is the integration/control authority. Only the Orchestrator c
 
 ## Active product wave
 
-The completed Daily-driver rows below are historical integrated evidence. One bounded visual-shell lane is active from the exact local-main checkpoint. GUI suites remain host-exclusive; the unrelated visible `bbr` process from `/Users/patwoz/dev/Personal/macos/bbr-main-integration` is not owned or terminated by this lane, and visual capture must bind the exact test-app window number.
+The reference-alignment wave is active. Patrick settled on 2026-08-13: the production theme follows the macOS system appearance (both modes), pinned/folder regions stay separate, and the media control is prioritized after the alignment slices. The completed VS-REFERENCE and Daily-driver rows below are historical integrated evidence. GUI suites remain host-exclusive through the repository lock.
+
+| ID | Slice | Status | Worktree | Owner | Contract | Next gate |
+|---|---|---|---|---|---|---|
+| RA-THEME | System-appearance production theme (light + dark) | `running` | `/Users/patwoz/dev/Personal/macos/bbr-system-appearance-theme` (`parallel/system-appearance-theme`) | one exclusive workflow writer; Orchestrator commits/integrates | [system-appearance theme](../roadmap/tasks/system-appearance-theme.md) | Writer settlement report with exact fingerprints, then independent read-only review |
+| RA-FAVICON | Real favicon pipeline | `running` | `/Users/patwoz/dev/Personal/macos/bbr-real-favicon-pipeline` (`parallel/real-favicon-pipeline`) | one exclusive workflow writer; Orchestrator commits/integrates | [real favicon pipeline](../roadmap/tasks/real-favicon-pipeline.md) | Writer settlement report with exact fingerprints, then independent read-only review |
+| RA-POLISH | Sidebar reference polish (pitch, folder anatomy, identity glyphs) | `planned` | none | none | [sidebar reference polish](../roadmap/tasks/sidebar-reference-polish.md) | Activates only after RA-THEME integrates (both-mode calibration dependency) |
+| RA-MEDIA | Media-session capability and sidebar media card | `planned` | none | none | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Activates after the alignment slices; capability contract lands first |
+
+Reference-alignment activation audit (2026-08-13): verified clean base
+`main@806e4238`; free GUI lock; no owned lane process. Runnable candidates
+RA-THEME and RA-FAVICON both started as isolated clean worktrees from that
+exact base with disjoint exclusive paths (theme-selection authority and token
+values versus web-contract/adapter/favicon-store/favicon-component).
+Deliberately deferred: RA-POLISH (needs the integrated theme authority to
+calibrate both modes) and RA-MEDIA (sequenced after the alignment slices;
+capability contract first). Expected shared integration points: testkit
+protocol/snapshot, Gallery registry, `justfile`, `DESIGN.md`. Serial
+integration order: RA-THEME → RA-FAVICON → RA-POLISH. Writers leave
+uncommitted candidates bound by exact fingerprints; only the Orchestrator
+commits and integrates. Performance execution stays forbidden under the
+active override.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
