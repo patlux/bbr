@@ -19,7 +19,7 @@ use crate::harness::{
     bounds_of, click_selector, dispatch, flush, move_to_story, run_scenario, snapshot,
 };
 use crate::sidebar_matrix::{SIDEBAR_REJECTED, SIDEBAR_VALID};
-use crate::stories::sidebar::SIDEBAR_FAMILY_SELECTOR;
+use crate::stories::sidebar::{SIDEBAR_FAMILY_SELECTOR, SIDEBAR_STATE_OPTIONS};
 
 /// Navigate to the Sidebar story by its label.
 fn open_sidebar(window: &mut VisualTestContext, app: &Entity<GalleryApp>) {
@@ -98,9 +98,20 @@ fn sidebar_story_renders_every_matrix_family_with_stable_ids() {
             );
         }
 
-        // Every matrix family renders through the state selector.
+        // Every matrix family renders through the state selector. Pin both
+        // the exact current family count and the label-by-label selector
+        // contract so an appended production family cannot silently leave
+        // stale Gallery navigation behind.
         let family_count = window.read(|_| SIDEBAR_VALID.len());
-        assert_eq!(family_count, 13);
+        assert_eq!(family_count, 15);
+        assert_eq!(SIDEBAR_STATE_OPTIONS.len(), family_count);
+        assert!(
+            SIDEBAR_VALID
+                .iter()
+                .zip(SIDEBAR_STATE_OPTIONS)
+                .all(|(case, option)| case.label == *option),
+            "the state selector remains byte-identical to the matrix labels"
+        );
         for (index, case) in SIDEBAR_VALID.iter().enumerate() {
             select_family(window, app, index);
             let snap = snapshot(window, app);
