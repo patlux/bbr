@@ -41,7 +41,7 @@ The completed Daily-driver rows below are historical integrated evidence. One bo
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VS-REFERENCE | Reference-faithful light production shell | `running` | `/Users/patwoz/dev/Personal/macos/bbr-visual-shell`, branch `parallel/visual-shell-reference`, base `fa18ee54…` | Orchestrator; sole writer | [visual-shell reference](../roadmap/tasks/visual-shell-reference.md) | All affected GUI suites are green serially under the repository lock (Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20, Organize 6/6, Hover 3/3, Dense 3/3, Gallery 44/44) and the final optimized `visual-capture` build re-produced both 2× artifacts; the independent three-lens read-only review returned sixteen non-blocking findings, all causally remediated (plus one further 280 pt persistence-recovery residue) and rechecked green including Persistence 5/5; next gate is the reviewed-candidate commit and serial local-main integration |
+| VS-REFERENCE | Reference-faithful light production shell | `integrated` | lane commit `9ae318ab`; merge `4d1a5343`, tree `5f2b8a04…` | Orchestrator; exact reviewed candidate, remediation and post-merge gates complete | [visual-shell reference](../roadmap/tasks/visual-shell-reference.md) | All affected GUI suites are green serially under the repository lock (Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20, Organize 6/6, Hover 3/3, Dense 3/3, Gallery 44/44) and the final optimized `visual-capture` build re-produced both 2× artifacts; Closed for this wave; performance execution, startup, canonical `just e2e`, packaging and accessibility remain honestly unpassed |
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
 | DD-LINK | Cmd-click/middle-click grouped background tabs | `integrated` | lane commit `abae5214c04900034da139e5148d7c79693158dc`; merge `b4b2b77c9d679dce30b48e2e302e24075956a449` | Orchestrator; focused remediation `REVIEW_PASS` and post-merge gates complete | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-GESTURE | Current-base real-app gesture revalidation | `integrated` | lane commit `f2183fdb2c3f3586c500d4c67a1bdc0257e6a06d`; merge `ebb8e137aa54077c47b5ae4c5603e47e8492d9ca` | Orchestrator; independent `REVIEW_PASS` and focused post-merge gates complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Closed for this wave; testkit-only fix, production command routing unchanged |
@@ -324,6 +324,27 @@ GUI evidence is green: Gallery 44/44, Page Context Menu 11/11, Portal 7/7,
 and existing Tab Menu 12/12. Logs and SHA-256 manifests live under
 `/tmp/bbr-page-menu-postmerge-*`. All seven Daily-driver lanes are integrated;
 performance and canonical aggregate E2E remain unexecuted/unpassed.
+
+VS-REFERENCE integration audit: the exact reviewed and remediated candidate
+tree `5f2b8a04c0c5bbf026e891058a3fabce17cfc191` was committed as lane commit
+`9ae318ab` and merged conflict-free onto local `main` as `4d1a5343`; the merge
+commit carries that identical tree, so no integration drift exists. Three
+independent read-only reviewers plus one synthesizer reproduced the candidate
+binding byte-for-byte and returned sixteen non-blocking findings (eight
+ledger/evidence truth corrections, one DESIGN §11.4 region-order contradiction,
+six stale 280 pt references, one dead binding). All were remediated causally,
+and a wider sweep for the same root cause additionally corrected the portable
+`SidebarState` recovery default from 280 pt to the shipped 300 pt rail.
+Pre-merge GUI evidence: Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20,
+Organize 6/6, Hover 3/3, Dense 3/3, Persistence 5/5, Gallery 44/44 plus both
+`visual-capture` evidence captures. Post-merge from `main`: format, roadmap,
+UI-dependency, script and diff checks; domain 123, browser 250, UI 139,
+testkit 29, app 277 unit tests; warning-denied bbr/bbr-ui/bbr-gallery Clippy;
+default-feature all-target check; and GUI Sidebar 12/12, Persistence 5/5 and
+Gallery 44/44. Logs and SHA-256 manifests live under
+`/tmp/bbr-visual-postmerge-20260812T210310/` and
+`/tmp/bbr-visual-postmerge-gui-20260812T210913/`. No performance execution
+occurred and nothing was pushed.
 
 ## Downstream dependency queue
 
