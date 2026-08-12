@@ -85,6 +85,11 @@ into a duplicate execution queue:
   → [current-base gesture revalidation](docs/roadmap/tasks/web-gesture-revalidation.md)
   → [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md)
   → [renderer isolation and unresponsive tabs](docs/roadmap/tasks/renderer-isolation-unresponsive-tabs.md)
+- **Reference-design alignment (Phase 4):** [system-appearance theme](docs/roadmap/tasks/system-appearance-theme.md)
+  → [real favicon pipeline](docs/roadmap/tasks/real-favicon-pipeline.md)
+  → [sidebar reference polish](docs/roadmap/tasks/sidebar-reference-polish.md);
+  afterwards the prioritized [media-session capability contract](docs/roadmap/tasks/media-session-capability-contract.md)
+  → [sidebar media control](docs/roadmap/tasks/sidebar-media-control.md)
 - **Daily-driver Sidebar:** [full-height titlebar navigation](docs/roadmap/tasks/titlebar-navigation-controls.md)
   → [Space creation and appearance UI](docs/roadmap/tasks/space-creation-appearance-ui.md)
   → [daily-driver Sidebar main](docs/roadmap/tasks/daily-driver-sidebar-main.md)

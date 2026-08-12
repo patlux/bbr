@@ -22,6 +22,25 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 - [x] Define density rules for small, normal, and very large tab collections.
 - [x] Define reusable states: hover, active, selected, loading, attention, error, disabled, drag target, and keyboard focus.
 
+## Reference-design alignment (2026-08-13)
+
+Patrick's dark reference capture
+(`/Users/patwoz/Library/Application Support/CleanShot/media/media_lbaS6F07Ws/Screenshot_2026-08-12_21-45-38@2x.png`)
+extends the integrated light shell: same hierarchy and geometry, system-driven
+appearance, real favicons, reference row rhythm and drawn identity glyphs.
+Settled decisions: the production theme follows the macOS system appearance
+(both modes supported); pinned tabs and folders stay separate regions — the
+reference's mixed interleaving is rejected.
+
+- [ ] Follow the macOS system appearance with the complete dark token set via the [system-appearance production theme](../tasks/system-appearance-theme.md).
+- [ ] Present real site favicons in every favicon slot via the [real favicon pipeline](../tasks/real-favicon-pipeline.md).
+- [ ] Match the reference row pitch, folder anatomy, rest states and identity-glyph catalog via the [sidebar reference polish](../tasks/sidebar-reference-polish.md).
+
+The sidebar media control is prioritized immediately after these slices; its
+canonical owner stays Phase 8 through the
+[media-session capability contract](../tasks/media-session-capability-contract.md)
+→ [sidebar media control](../tasks/sidebar-media-control.md) sequence.
+
 ## Shell and interaction
 
 - [x] Render pinned and regular tabs for the active space. *(Visible vertical tab
