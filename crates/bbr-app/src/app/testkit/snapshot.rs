@@ -414,6 +414,7 @@ impl BbrApp {
                 bbr_testkit::protocol::NewWindowSnapshot {
                     requests: state.requests,
                     created_tabs: state.created_tabs,
+                    created_background_tabs: state.created_background_tabs,
                     blocked_reported: state.blocked_reported,
                 }
             },

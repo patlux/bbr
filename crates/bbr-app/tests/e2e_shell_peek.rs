@@ -67,6 +67,7 @@ fn inject_default_new_window(
             url: url.to_string(),
             user_initiated: true,
             intent: NewWindowIntent::Default,
+            input: bbr_web::new_window::NewWindowInput::Primary,
         })
         .expect("inject default-intent new-window delivery");
 }

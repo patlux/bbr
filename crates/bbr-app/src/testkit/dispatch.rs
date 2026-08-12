@@ -202,6 +202,7 @@ pub(crate) fn dispatch(
             url,
             user_initiated,
             intent,
+            input,
         } => {
             let request = bbr_web::NewWindowRequest {
                 source,
@@ -209,6 +210,7 @@ pub(crate) fn dispatch(
                 url,
                 user_initiated,
                 target: bbr_web::NewWindowTarget::NewWindow,
+                input,
                 features: bbr_web::NewWindowFeatures::default(),
             };
             let decision = bbr_web::decision_for_intent(&request, intent);
@@ -754,6 +756,7 @@ pub(crate) fn dispatch(
         | Request::BenchmarkFindQueryResult { .. }
         | Request::BenchmarkFindStep { .. }
         | Request::BenchmarkPeekRequestToPresent { .. }
+        | Request::BenchmarkBackgroundLinkOpen { .. }
         | Request::BenchmarkPeekDismissToOrigin { .. }
         | Request::BenchmarkPeekPromoteToTab { .. }
         | Request::BenchmarkZoomStep { .. }

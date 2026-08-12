@@ -28,6 +28,7 @@ use super::find_drive::drive_find_scenarios;
 mod u2;
 
 use super::auth_drive::drive_auth_scenarios;
+use super::background_links_drive::drive_background_link_scenarios;
 use super::command::{benchmark_command_bar_first_result, wait_active_navigation_idle};
 use super::command_drive::drive_command_scenarios;
 use super::command_full_search::benchmark_command_bar_full_search;
@@ -485,6 +486,7 @@ fn drive_matrix_inner(
                     url: page_two.to_string(),
                     intent: bbr_web::new_window::NewWindowIntent::OpenTab,
                     user_initiated: true,
+                    input: bbr_web::new_window::NewWindowInput::Primary,
                 })
                 .expect("open regular child before child-tab sample");
             let (seq, change) = wait_browser_change(
@@ -1259,6 +1261,31 @@ fn drive_matrix_inner(
             &mut operation,
         );
 
+        // Background link tabs (DD-LINK packet `background-link-tabs`): the
+        // required production-path scenario `background_link_open` — a
+        // Command-primary / middle-click disposition opens a FRESH
+        // source-profile regular child immediately after the exact opener
+        // while the opener stays selected, visible, and web-focused (the
+        // fresh native-session class, 100/150, same as
+        // `peek_request_to_present` — no new budget class invented). Every
+        // sample drives the typed benchmark request on the exact
+        // `on_new_window_request` production seam, committing only from the
+        // authoritative browser state (opener still active/web-focused,
+        // child hidden at the grouped insertion index — fast-but-wrong
+        // guard in the app). Fixture page-load time is excluded by
+        // construction (the sample commits at insertion, not at page
+        // ready). The block restores the matrix state exactly (the child
+        // closed, the same tabs and sessions) before the dense seeding
+        // below.
+        let background_samples = drive_background_link_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            page_two,
+            &mut operation,
+        );
+
         // Dense-list scroll + selection through the bounded-window render
         // (Phase-4 dense slice, performance contract "dense-list scrolling"):
         // seed an S-density collection (230 identities, 10 pinned, 20 live)
@@ -1407,6 +1434,7 @@ fn drive_matrix_inner(
         raw.extend(context_menu_samples);
         raw.extend(auth_samples);
         raw.extend(peek_samples);
+        raw.extend(background_samples);
         // Renderer responsiveness scenarios are code-complete and compiled,
         // but this matrix is not executed while the performance override is
         // active. When un-deferred, it records 30 neighbor-selection + 30

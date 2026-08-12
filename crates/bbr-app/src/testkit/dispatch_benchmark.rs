@@ -12,6 +12,7 @@ use gpui::{App, Entity, Keystroke, WindowHandle};
 use crate::app::BbrApp;
 use crate::window_seam::with_app;
 
+use super::dispatch_benchmark_background_links::dispatch_benchmark_background_links;
 use super::dispatch_benchmark_find::dispatch_benchmark_find;
 use super::dispatch_benchmark_peek::dispatch_benchmark_peek;
 use super::dispatch_benchmark_zoom::dispatch_benchmark_zoom;
@@ -34,6 +35,11 @@ pub(crate) fn dispatch_benchmark(
     // Peek benchmarks route through their focused module (the
     // `BenchmarkPeek*` arms).
     if let Some(response) = dispatch_benchmark_peek(req, window, app, cx) {
+        return Some(response);
+    }
+    // Background-link benchmarks route through their focused module (the
+    // `BenchmarkBackgroundLinkOpen` arm).
+    if let Some(response) = dispatch_benchmark_background_links(req, window, app, cx) {
         return Some(response);
     }
     // Zoom benchmarks route through their focused module (the

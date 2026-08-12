@@ -836,6 +836,10 @@ pub struct ContextMenuNativeSnapshot {
 pub struct NewWindowSnapshot {
     pub requests: u64,
     pub created_tabs: u64,
+    /// Regular children created by the explicit background disposition
+    /// (Command-primary / middle click; background link tabs packet).
+    #[serde(default)]
+    pub created_background_tabs: u64,
     pub blocked_reported: u64,
 }
 

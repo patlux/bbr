@@ -12,7 +12,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use bbr_web::new_window::{
-    NewWindowDecision, NewWindowDelivery, NewWindowDisposition, NewWindowFeatures,
+    NewWindowDecision, NewWindowDelivery, NewWindowDisposition, NewWindowFeatures, NewWindowInput,
     NewWindowOutcome, NewWindowRequest,
 };
 use bbr_web::{ProfileId, WebViewId};
@@ -24,8 +24,16 @@ fn context(url: &str) -> NewWindowContext {
         source_profile: ProfileId(3),
         url: url.into(),
         user_initiated: true,
+        input: NewWindowInput::Primary,
         features: NewWindowFeatures::default(),
     }
+}
+
+/// A Command-primary / middle-click context (background link tabs packet).
+fn background_context(url: &str) -> NewWindowContext {
+    let mut c = context(url);
+    c.input = NewWindowInput::Background;
+    c
 }
 
 #[test]
@@ -196,4 +204,92 @@ fn set_handler_replaces_the_previous_handler() {
     };
     assert_eq!(session.source_profile(), ProfileId(3));
     assert_eq!(session.disposition(), NewWindowDisposition::OpenTab);
+}
+
+// ---------------------------------------------------------------------------
+// Background input classification (background link tabs packet)
+// ---------------------------------------------------------------------------
+
+const COMMAND_FLAG: usize = 1 << 20; // NSEventModifierFlagCommand
+
+#[test]
+fn classify_plain_primary_click_is_primary() {
+    assert_eq!(bbr_web_macos::classify_input(0, 0), NewWindowInput::Primary);
+    assert_eq!(bbr_web_macos::classify_input(0, 1), NewWindowInput::Primary);
+}
+
+#[test]
+fn classify_command_primary_click_is_background() {
+    assert_eq!(
+        bbr_web_macos::classify_input(COMMAND_FLAG, 1),
+        NewWindowInput::Background
+    );
+}
+
+#[test]
+fn classify_middle_click_is_background() {
+    assert_eq!(
+        bbr_web_macos::classify_input(0, 2),
+        NewWindowInput::Background
+    );
+}
+
+#[test]
+fn classify_command_middle_click_is_background() {
+    assert_eq!(
+        bbr_web_macos::classify_input(COMMAND_FLAG, 2),
+        NewWindowInput::Background
+    );
+}
+
+#[test]
+fn classify_command_with_other_modifiers_stays_background() {
+    // Cmd+Shift and Cmd+Option still carry the Command bit: the background
+    // gesture wins. Shift ALONE is deliberately NOT classified (a separate
+    // product decision) and stays Primary.
+    assert_eq!(
+        bbr_web_macos::classify_input(COMMAND_FLAG | (1 << 17), 1),
+        NewWindowInput::Background
+    );
+    assert_eq!(
+        bbr_web_macos::classify_input(1 << 17, 1),
+        NewWindowInput::Primary
+    );
+    assert_eq!(
+        bbr_web_macos::classify_input(1 << 18, 1),
+        NewWindowInput::Primary
+    );
+}
+
+#[test]
+fn context_carries_the_input_disposition_into_the_request() {
+    let c = background_context("https://example.com/child");
+    let r = c.to_request();
+    assert_eq!(r.input, NewWindowInput::Background);
+    let p = context("https://example.com/child");
+    assert_eq!(p.to_request().input, NewWindowInput::Primary);
+}
+
+#[test]
+fn background_context_decides_and_delivers_a_background_session() {
+    let mut coordinator = NewWindowCoordinator::new();
+    coordinator.set_handler(Box::new(|request| {
+        bbr_web::new_window::default_decision(&request)
+    }));
+    let deliveries: Rc<RefCell<Vec<NewWindowDelivery>>> = Rc::new(RefCell::new(Vec::new()));
+    let delivered = Rc::clone(&deliveries);
+    coordinator.set_delivery_reporter(Box::new(move |delivery| {
+        delivered.borrow_mut().push(delivery);
+    }));
+    let outcome = coordinator.handle(&background_context("https://example.com/child"));
+    let NewWindowOutcome::CreateSession { session } = outcome else {
+        panic!("expected a session");
+    };
+    assert_eq!(
+        session.disposition(),
+        NewWindowDisposition::OpenBackgroundTab
+    );
+    assert_eq!(session.source_profile(), ProfileId(3));
+    assert_eq!(session.url(), "https://example.com/child");
+    assert_eq!(deliveries.borrow().len(), 1);
 }

@@ -25,8 +25,8 @@
 //!   reload or profile crossing; a crashed preview refuses promotion.
 
 use bbr_web::{
-    decide, NewWindowDecision, NewWindowFeatures, NewWindowIntent, NewWindowOutcome,
-    NewWindowRequest, NewWindowTarget, ProfileId, WebAction, WebEvent, WebViewId,
+    decide, NewWindowDecision, NewWindowFeatures, NewWindowInput, NewWindowIntent,
+    NewWindowOutcome, NewWindowRequest, NewWindowTarget, ProfileId, WebAction, WebEvent, WebViewId,
 };
 
 use crate::fake::EngineOp;
@@ -41,6 +41,8 @@ fn preview_session(source: WebViewId, profile: ProfileId, url: &str) -> bbr_web:
         url: url.into(),
         user_initiated: true,
         target: NewWindowTarget::NewWindow,
+        input: NewWindowInput::Primary,
+
         features: NewWindowFeatures::default(),
     };
     match decide(&request, NewWindowDecision::Preview) {
@@ -57,6 +59,8 @@ fn tab_session(source: WebViewId, profile: ProfileId, url: &str) -> bbr_web::New
         url: url.into(),
         user_initiated: true,
         target: NewWindowTarget::NewWindow,
+        input: NewWindowInput::Primary,
+
         features: NewWindowFeatures::default(),
     };
     match decide(&request, NewWindowDecision::OpenTab) {
@@ -87,6 +91,8 @@ fn eligible_direct_activation_resolves_to_preview_and_script_blocks() {
         url: "https://example.com/link".into(),
         user_initiated: true,
         target: NewWindowTarget::NewWindow,
+        input: NewWindowInput::Primary,
+
         features: NewWindowFeatures::default(),
     };
     assert_eq!(
@@ -119,6 +125,8 @@ fn ineligible_direct_activation_falls_back_to_ordinary_open_tab() {
         url: "mailto:hello@example.com".into(),
         user_initiated: true,
         target: NewWindowTarget::NewWindow,
+        input: NewWindowInput::Primary,
+
         features: NewWindowFeatures::default(),
     };
     assert_eq!(

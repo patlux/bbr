@@ -20,6 +20,13 @@ pub enum DomainError {
         len: usize,
     },
     ReorderAcrossPinnedBoundary,
+    /// A new regular (unpinned) tab cannot be inserted inside the pinned
+    /// region (`index < pinned_count`); the background-link child path must
+    /// land in the regular region.
+    InsertionAcrossPinnedBoundary {
+        index: usize,
+        pinned: usize,
+    },
     SplitRequiresDistinctTabs,
     SplitAlreadyExists(SpaceId),
     NothingToReopen(SpaceId),
@@ -54,6 +61,10 @@ impl std::fmt::Display for DomainError {
             Self::ReorderAcrossPinnedBoundary => {
                 write!(f, "cannot reorder a tab across the pinned boundary")
             }
+            Self::InsertionAcrossPinnedBoundary { index, pinned } => write!(
+                f,
+                "cannot insert a regular tab at index {index}: the pinned region holds {pinned} tabs"
+            ),
             Self::SplitRequiresDistinctTabs => write!(f, "a split requires two distinct tabs"),
             Self::SplitAlreadyExists(id) => write!(f, "space {id:?} already has a split"),
             Self::NothingToReopen(id) => write!(f, "space {id:?} has no tabs to reopen"),

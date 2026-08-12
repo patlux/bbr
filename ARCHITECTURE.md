@@ -425,12 +425,15 @@ framework types.
 
 The productive new-window seam is also portable. `NewWindowRequest` carries the
 exact source `WebViewId`, source `ProfileId`, verbatim URL, user-activation
-classification, target, and window-feature metadata. `default_decision` is the
-single MVP policy: direct user activation becomes `OpenTab`; script-created
-requests become `Block`. `decide` produces a typed `NewWindowOutcome`, and
-`NewWindowDelivery` keeps the request beside that outcome so the app/controller
-can fail closed on stale source identity or profile mismatch. No adapter may
-normalize the URL or choose a second disposition policy.
+classification, explicit input disposition, target, and window-feature
+metadata. `default_decision` is the single MVP policy: a background input
+(Command-primary / middle click) becomes `OpenBackgroundTab` for a direct
+activation; an eligible direct activation becomes `OpenTab` (or `Preview` for
+the Peek policy); script-created requests become `Block`. `decide` produces a
+typed `NewWindowOutcome`, and `NewWindowDelivery` keeps the request beside that
+outcome so the app/controller can fail closed on stale source identity or
+profile mismatch. No adapter may normalize the URL or choose a second
+disposition policy.
 
 ---
 
@@ -849,16 +852,25 @@ corrupting state). `open_tab_from_new_window` resolves the exact source session,
 validates its owning profile against the decided session, and opens one regular
 tab in the source Space/Profile. An inactive source Space stays inactive and
 its fresh warm session stays hidden; stale sources and profile mismatches fail
-before domain or engine mutation. Every successful mutation returns exactly one
-typed `ControllerEvent`, and a read-only `snapshot()` publishes the tab list,
-active view, and live-session count for UI and E2E.
+before domain or engine mutation. `open_background_tab_from_new_window` is the
+background-link sibling (Command-primary / middle click, DD-LINK): it inserts
+one regular child through the domain `insert_tab` primitive (positional,
+never selection/split-mutating) at the identity-bound grouped index — the
+first child lands immediately after the exact opener and later children after
+the last surviving member of the opener's contiguous child group in click
+order, computed from `OpenerProvenance` (never from URL/title/render index or
+hidden adjacency). The opener stays selected, visible, and web-focused; the
+child is a warm hidden session in the source Space/Profile. Every successful
+mutation returns exactly one typed `ControllerEvent`, and a read-only
+`snapshot()` publishes the tab list, active view, and live-session count for
+UI and E2E.
 
 Testability: the deterministic `FakeEngine` (in `crate::fake`,
 `#[cfg(test)]`-only) records every engine call into an op log — including
 keyed geometry ops (`SetRect { view, rect }`) — owns fake sessions, rejects
 duplicate creation and missing-session actions, and emits controlled
 `WebEvent`s through the registered sink. Because the controller drives the
-engine through the same `dyn` seam the app uses, 75 crate tests prove
+engine through the same `dyn` seam the app uses, 230 crate tests prove
 registry, controller, event-routing, active-space visibility, profile move,
 split, lifecycle, snapshot policy, and the authoritative `pane_layout()`
 query without a display server.

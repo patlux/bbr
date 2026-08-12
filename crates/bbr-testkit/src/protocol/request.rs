@@ -171,7 +171,10 @@ pub enum Request {
     /// authority: [`bbr_web::NewWindowIntent::Default`] opens an eligible
     /// request as a transient Peek preview; the explicit `OpenTab` intent
     /// keeps the NW-SEAM regular-tab path executable for E2E (the preview
-    /// never records regular-tab opener provenance).
+    /// never records regular-tab opener provenance). The `input` disposition
+    /// mirrors the native modifier/button metadata: `Background` routes a
+    /// direct activation to the grouped background-child path
+    /// (background link tabs packet).
     NewWindow {
         source: WebViewId,
         source_profile: ProfileId,
@@ -179,6 +182,8 @@ pub enum Request {
         user_initiated: bool,
         #[serde(default)]
         intent: bbr_web::new_window::NewWindowIntent,
+        #[serde(default)]
+        input: bbr_web::new_window::NewWindowInput,
     },
     /// Dismiss the transient Peek preview through the production close path
     /// (the Escape key, the close control, and this seam all call the same
@@ -205,6 +210,16 @@ pub enum Request {
     /// deterministic local preview target fixture; fixture/network time is
     /// excluded by construction.
     BenchmarkPeekRequestToPresent {
+        operation_id: BenchmarkOperationId,
+        url: String,
+    },
+    /// Measure the production background-link open (DD-LINK packet
+    /// `background-link-tabs`, `background_link_open`): the sample starts
+    /// when the request enters `on_new_window_request` and commits only
+    /// when the exact opener is still the active, web-focused view and the
+    /// new child is a live hidden session at the grouped insertion index
+    /// directly after the opener (fast-but-wrong guard in the app).
+    BenchmarkBackgroundLinkOpen {
         operation_id: BenchmarkOperationId,
         url: String,
     },

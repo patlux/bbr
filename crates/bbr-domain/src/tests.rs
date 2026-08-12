@@ -555,3 +555,77 @@ fn profiles_get_round_robin_hues_stable_for_lifetime() {
         "profile identity survives unrelated mutations"
     );
 }
+
+// ---- Background-child insertion (background link tabs packet) --------------
+
+#[test]
+fn insert_tab_at_position_without_changing_selection() {
+    let mut b = populated();
+    let s = b.spaces().next().unwrap().id;
+    let before = ids(&b, s);
+    let active = b.space(s).unwrap().active_tab;
+    // Insert immediately after the opener (index 1) as a regular child.
+    let child = b
+        .insert_tab(s, 1, "Child", "https://child.example")
+        .unwrap();
+    assert_eq!(
+        ids(&b, s),
+        vec![before[0], child, before[1], before[2]],
+        "child lands exactly at the requested index"
+    );
+    assert_eq!(
+        b.space(s).unwrap().active_tab,
+        active,
+        "insertion never changes the selection"
+    );
+    assert_eq!(b.space(s).unwrap().split, None, "no split invented");
+    assert!(b.space(s).unwrap().pinned_count == 0);
+    b.check_invariants().unwrap();
+}
+
+#[test]
+fn insert_tab_appends_at_the_end_when_index_is_len() {
+    let mut b = populated();
+    let s = b.spaces().next().unwrap().id;
+    let len = ids(&b, s).len();
+    let child = b
+        .insert_tab(s, len, "Child", "https://child.example")
+        .unwrap();
+    assert_eq!(ids(&b, s).last().copied(), Some(child));
+    b.check_invariants().unwrap();
+}
+
+#[test]
+fn insert_tab_rejects_regular_insertion_into_the_pinned_region() {
+    let mut b = populated();
+    let s = b.spaces().next().unwrap().id;
+    b.pin_tab(s, ids(&b, s)[0]).unwrap();
+    assert!(matches!(
+        b.insert_tab(s, 0, "Child", "https://child.example"),
+        Err(DomainError::InsertionAcrossPinnedBoundary {
+            index: 0,
+            pinned: 1
+        })
+    ));
+    assert!(
+        b.insert_tab(s, 1, "Child", "https://child.example").is_ok(),
+        "the first regular position is legal"
+    );
+    assert!(
+        matches!(
+            b.insert_tab(s, 99, "Child", "https://child.example"),
+            Err(DomainError::InsertionAcrossPinnedBoundary { .. })
+        ),
+        "out-of-range index is rejected"
+    );
+    b.check_invariants().unwrap();
+}
+
+#[test]
+fn insert_tab_unknown_space_rejected() {
+    let mut b = Browser::new();
+    assert!(matches!(
+        b.insert_tab(SpaceId(4242), 0, "Child", "https://child.example"),
+        Err(DomainError::UnknownSpace(SpaceId(4242)))
+    ));
+}

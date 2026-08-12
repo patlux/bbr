@@ -26,6 +26,7 @@ use crate::window_seam::with_app;
 mod dispatch;
 mod dispatch_auth;
 mod dispatch_benchmark;
+mod dispatch_benchmark_background_links;
 mod dispatch_benchmark_context_menu;
 mod dispatch_benchmark_downloads;
 mod dispatch_benchmark_find;

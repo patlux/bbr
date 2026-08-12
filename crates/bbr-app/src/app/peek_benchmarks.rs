@@ -65,6 +65,7 @@ impl BbrApp {
             url,
             user_initiated: true,
             target: bbr_web::NewWindowTarget::NewWindow,
+            input: bbr_web::NewWindowInput::Primary,
             features: bbr_web::NewWindowFeatures::default(),
         };
         let decision = bbr_web::decision_for_intent(&request, bbr_web::NewWindowIntent::Default);

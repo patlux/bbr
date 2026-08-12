@@ -29,6 +29,8 @@ pub(crate) mod auth;
 #[cfg(feature = "testkit")]
 mod auth_benchmarks;
 #[cfg(feature = "testkit")]
+mod background_link_benchmarks;
+#[cfg(feature = "testkit")]
 mod benchmarks;
 #[cfg(feature = "testkit")]
 mod benchmarks_dense;

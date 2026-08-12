@@ -25,8 +25,8 @@ use std::fmt;
 use std::rc::Rc;
 
 use bbr_web::new_window::{
-    decide, NewWindowDecision, NewWindowDelivery, NewWindowFeatures, NewWindowOutcome,
-    NewWindowRequest, NewWindowTarget,
+    decide, NewWindowDecision, NewWindowDelivery, NewWindowFeatures, NewWindowInput,
+    NewWindowOutcome, NewWindowRequest, NewWindowTarget,
 };
 use bbr_web::{ProfileId, WebViewId};
 
@@ -48,6 +48,10 @@ pub struct NewWindowContext {
     pub url: String,
     /// WebKit's user-gesture report.
     pub user_initiated: bool,
+    /// The explicit input disposition of the activation: Command-primary /
+    /// middle click classify to [`NewWindowInput::Background`]; everything
+    /// else stays [`NewWindowInput::Primary`].
+    pub input: NewWindowInput,
     /// WebKit window-features metadata (sizes/toolbars).
     pub features: NewWindowFeatures,
 }
@@ -64,6 +68,7 @@ impl NewWindowContext {
             url: self.url.clone(),
             user_initiated: self.user_initiated,
             target: NewWindowTarget::NewWindow,
+            input: self.input,
             features: self.features,
         }
     }
@@ -181,12 +186,40 @@ pub unsafe fn extract_context(
         .and_then(|u| u.absoluteString())
         .map(|s| s.to_string())
         .unwrap_or_default();
+    // SAFETY: main thread, live action (accessors declared by WebKit).
+    let modifier_flags = unsafe { action.modifierFlags() };
+    // SAFETY: main thread, live action (accessor declared by WebKit).
+    let button_number = unsafe { action.buttonNumber() };
     NewWindowContext {
         source,
         source_profile,
         url,
         user_initiated: extract_user_initiated(action),
+        input: classify_input(modifier_flags.0, button_number),
         features: extract_features(features),
+    }
+}
+
+/// Classify the native modifier/button metadata of a link activation into
+/// the portable input disposition.
+///
+/// Pure integer classification (no AppKit objects, no main thread): the
+/// Command bit of the event modifier flags (`1 << 20`, the AppKit
+/// `NSEventModifierFlagCommand` constant) and the middle mouse button
+/// (`buttonNumber == 2`) both mean the user asked for a background child;
+/// everything else is a plain primary activation. Command-middle and
+/// Command-plus-other modifiers stay `Background` because the Command bit is
+/// present; Shift alone (no Command, primary button) is deliberately NOT
+/// classified here — Shift-modified link behavior is a separate product
+/// decision. The integer widths mirror the AppKit metadata types
+/// (`NSUInteger`/`NSInteger`).
+pub fn classify_input(modifier_flags: usize, button_number: isize) -> NewWindowInput {
+    let command = modifier_flags & (1 << 20) != 0;
+    let middle = button_number == 2;
+    if command || middle {
+        NewWindowInput::Background
+    } else {
+        NewWindowInput::Primary
     }
 }
 
