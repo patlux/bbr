@@ -145,5 +145,12 @@ fn render_row(theme: &Theme, row: &RowVisuals, callbacks: &Callbacks) -> Statefu
         MouseButton::Left,
         callbacks::row_up(&callbacks.on_release_row, index),
     )
+    // §11.13: a secondary-click on the row opens the Tab/Favorite context
+    // menu bound to this exact row's `TabId` (the app resolves the index
+    // at open; opening never selects or mutates the source).
+    .on_mouse_down(
+        MouseButton::Right,
+        callbacks::row(&callbacks.on_context_menu_row, index),
+    )
     .on_hover(callbacks::hover(&callbacks.on_hover_row, index))
 }

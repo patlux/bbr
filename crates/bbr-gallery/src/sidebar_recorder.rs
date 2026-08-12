@@ -70,6 +70,14 @@ pub enum SidebarObservation {
     TabListKeyDown(String),
     /// §11.10: a favorites tile activation (`on_activate_favorite`).
     FavoriteActivate(usize),
+    /// §11.13: a secondary-click on a tab row (`on_context_menu_row`),
+    /// payload = the row index — opens the Tab/Favorite context menu bound
+    /// to that exact row's `TabId`.
+    RowContextMenu(usize),
+    /// §11.13: a secondary-click on a favorite tile
+    /// (`on_context_menu_favorite`), payload = the tile index — opens the
+    /// same menu bound to that tile's concrete `TabId`.
+    FavoriteContextMenu(usize),
     /// §11.11: pointer entry into a folder row (`on_focus_folder`).
     FocusFolder(u64),
     /// §11.11: the disclosure toggle (`on_toggle_folder`).
@@ -149,6 +157,10 @@ pub struct SidebarRecorder {
     pub tab_list_keys: Vec<String>,
     /// `on_activate_favorite` tile indexes, in dispatch order.
     pub favorite_activations: Vec<usize>,
+    /// `on_context_menu_row` row indexes, in dispatch order (§11.13).
+    pub context_menu_rows: Vec<usize>,
+    /// `on_context_menu_favorite` tile indexes, in dispatch order (§11.13).
+    pub context_menu_favorites: Vec<usize>,
     /// `on_focus_folder` folder ids, in dispatch order.
     pub focus_folders: Vec<u64>,
     /// `on_toggle_folder` folder ids, in dispatch order.
@@ -206,6 +218,10 @@ impl SidebarRecorder {
             SidebarObservation::HoverRow(index, hovered) => self.hover_rows.push((index, hovered)),
             SidebarObservation::TabListKeyDown(key) => self.tab_list_keys.push(key),
             SidebarObservation::FavoriteActivate(index) => self.favorite_activations.push(index),
+            SidebarObservation::RowContextMenu(index) => self.context_menu_rows.push(index),
+            SidebarObservation::FavoriteContextMenu(index) => {
+                self.context_menu_favorites.push(index)
+            }
             SidebarObservation::FocusFolder(folder) => self.focus_folders.push(folder),
             SidebarObservation::ToggleFolder(folder) => self.toggle_folders.push(folder),
             SidebarObservation::FolderMemberSelect(folder, member) => {

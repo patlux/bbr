@@ -15,6 +15,7 @@ use crate::group4_recorder::Group4Recorder;
 use crate::library_recorder::LibraryRecorder;
 use crate::sidebar_recorder::SidebarRecorder;
 use crate::space_config_recorder::SpaceConfigRecorder;
+use crate::tab_menu_recorder::TabMenuRecorder;
 
 /// The semantic snapshot the E2E asserts (§15 mode fields + stable ids).
 #[derive(Debug, Clone, PartialEq)]
@@ -102,6 +103,12 @@ pub struct GallerySnapshot {
     /// path: the row indexes the production `on_row_hover`/`on_row_press`
     /// reported (enabled rows only).
     pub context_menu: ContextMenuRecorder,
+    /// The observed Tab/Favorite menu state through the production
+    /// recorder path: the row + submenu-row indexes the production
+    /// `on_row_hover`/`on_row_press`/`on_submenu_hover`/`on_submenu_press`
+    /// reported (enabled rows only; task packet
+    /// `tab-favorite-context-menus`).
+    pub tab_menu: TabMenuRecorder,
     /// The observed G3 Sidebar composition state through the production
     /// recorder path: what the production `bbr_ui::sidebar::sidebar_surface`
     /// `Callbacks` slots reported (row select/close/pin/drag, favorites,

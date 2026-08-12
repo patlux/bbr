@@ -121,8 +121,10 @@ impl BbrApp {
         // the ranking generation, and resets the mode and the captured
         // return point — the Library is the only internal chrome surface
         // while open, and Escape later closes it without re-presenting a
-        // trapped palette or overlay.
+        // trapped palette or overlay. The Tab/Favorite menu (task packet
+        // `tab-favorite-context-menus`) yields the same way.
         self.dismiss_command_portal(cx);
+        self.tab_menu_discard(cx);
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
         self.command_ranking.close();

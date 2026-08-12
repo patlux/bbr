@@ -424,6 +424,24 @@
       "samples": 0,
       "source": "contract-budget"
     },
+    "tab_context_menu_open": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
+    "tab_context_menu_submenu_commit": {
+      "budget_max_ms": 100.0,
+      "budget_p95_ms": 50.0,
+      "max_ms": 100.0,
+      "p50_ms": 0.0,
+      "p95_ms": 50.0,
+      "samples": 0,
+      "source": "contract-budget"
+    },
     "tab_hover": {
       "budget_max_ms": 100.0,
       "budget_p95_ms": 50.0,

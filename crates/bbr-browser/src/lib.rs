@@ -57,6 +57,7 @@ mod restore;
 mod restore_tests;
 mod session;
 mod snapshot;
+mod tab_menu;
 #[cfg(test)]
 mod testing;
 
@@ -111,4 +112,8 @@ pub use session::{SessionError, SessionRegistry};
 pub use snapshot::{
     ControllerSnapshot, GlobalTabSnapshot, LifecycleCounts, ProfileSnapshot, SpaceSnapshot,
     TabSnapshot,
+};
+pub use tab_menu::{
+    FolderDestination, SpaceDestination, TabMenuAction, TabMenuAvailability, TabMenuController,
+    TabMenuError, TabMenuSource,
 };

@@ -24,7 +24,7 @@ use gpui::AnyElement;
 pub use crate::context::{
     AddressStory, AuthStory, CommandStory, ContextMenuStory, ControlsStory, DownloadsStory,
     ErrorStory, FindStory, Group4Story, LibraryStory, SidebarStory, SpaceConfigStory, StoryContext,
-    TabRowStory,
+    TabMenuStory, TabRowStory,
 };
 
 /// A stable story identity, assigned by the registry in declaration order.
@@ -296,7 +296,7 @@ mod tests {
                 "Plus menu",
             ]
         );
-        assert_eq!(registry.story_count(), 47);
+        assert_eq!(registry.story_count(), 48);
     }
 
     #[test]
@@ -306,14 +306,14 @@ mod tests {
             registry.story(StoryId(38)).unwrap().label,
             "Downloads panel"
         );
-        assert_eq!(registry.story_count(), 47);
+        assert_eq!(registry.story_count(), 48);
     }
 
     #[test]
     fn find_story_appends_after_downloads() {
         let registry = catalog();
         assert_eq!(registry.story(StoryId(39)).unwrap().label, "Find bar");
-        assert_eq!(registry.story_count(), 47);
+        assert_eq!(registry.story_count(), 48);
     }
 
     #[test]
@@ -324,21 +324,21 @@ mod tests {
             registry.story(StoryId(41)).unwrap().label,
             "Crash / Empty panes"
         );
-        assert_eq!(registry.story_count(), 47);
+        assert_eq!(registry.story_count(), 48);
     }
 
     #[test]
     fn auth_story_appends_after_error_and_crash() {
         let registry = catalog();
         assert_eq!(registry.story(StoryId(42)).unwrap().label, "Auth sheet");
-        assert_eq!(registry.story_count(), 47);
+        assert_eq!(registry.story_count(), 48);
     }
 
     #[test]
     fn context_menu_appends_after_auth() {
         let registry = catalog();
         assert_eq!(registry.story(StoryId(43)).unwrap().label, "Context menu");
-        assert_eq!(registry.story_count(), 47);
+        assert_eq!(registry.story_count(), 48);
     }
 
     #[test]
@@ -348,7 +348,7 @@ mod tests {
         // 44 after the pinned 0–43 prefix — no renumbering, no reservation.
         let registry = catalog();
         assert_eq!(registry.story(StoryId(44)).unwrap().label, "Sidebar");
-        assert_eq!(registry.story_count(), 47);
+        assert_eq!(registry.story_count(), 48);
         // The story carries the matrix family state options.
         let story = registry.story(StoryId(44)).unwrap();
         assert_eq!(
@@ -362,13 +362,13 @@ mod tests {
         // The G3 Command composition story (packet
         // `component-gallery-compositions.md`) appends at canonical StoryId
         // 45 after the pinned 0–44 prefix — no renumbering, no reservation,
-        // no gap; the catalog now holds 47 stories.
+        // no gap; the catalog now holds 48 stories.
         let registry = catalog();
         assert_eq!(
             registry.story(StoryId(45)).unwrap().label,
             "Command palette / overlay"
         );
-        assert_eq!(registry.story_count(), 47);
+        assert_eq!(registry.story_count(), 48);
         // The story carries the matrix family state options (pinned by the
         // matrix test so the options can never drift from COMMAND_VALID).
         let story = registry.story(StoryId(45)).unwrap();
@@ -378,33 +378,25 @@ mod tests {
         );
         // The pinned prefix 0–45 stays byte-identical.
         let ids: Vec<u64> = registry.stories.iter().map(|s| s.id.0).collect();
-        let expected: Vec<u64> = (0..47).collect();
+        let expected: Vec<u64> = (0..48).collect();
         assert_eq!(ids, expected);
     }
 
     #[test]
-    fn space_configuration_story_appends_after_command() {
-        // The Space-configuration story (packet
-        // `space-creation-appearance-ui.md`) appends at canonical StoryId
-        // 46 after the pinned 0–45 prefix — no renumbering, no reservation,
-        // no gap; the catalog now holds 47 stories.
+    fn space_and_tab_menu_stories_append_without_renumbering() {
         let registry = catalog();
+        let space = registry.story(StoryId(46)).unwrap();
+        assert_eq!(space.label, "Space configuration");
         assert_eq!(
-            registry.story(StoryId(46)).unwrap().label,
-            "Space configuration"
-        );
-        assert_eq!(registry.story_count(), 47);
-        // The story carries the matrix family state options (pinned by the
-        // matrix test so the options can never drift from
-        // SPACE_CONFIG_VALID).
-        let story = registry.story(StoryId(46)).unwrap();
-        assert_eq!(
-            story.state_options,
+            space.state_options,
             crate::stories::space_config::SPACE_CONFIG_STATE_OPTIONS
         );
-        // The pinned prefix 0–46 stays byte-identical.
+        let tab_menu = registry.story(StoryId(47)).unwrap();
+        assert_eq!(tab_menu.label, "Tab / Favorite menu");
+        assert!(tab_menu.state_options.is_empty());
+        assert_eq!(registry.story_count(), 48);
         let ids: Vec<u64> = registry.stories.iter().map(|s| s.id.0).collect();
-        let expected: Vec<u64> = (0..47).collect();
+        let expected: Vec<u64> = (0..48).collect();
         assert_eq!(ids, expected);
     }
 

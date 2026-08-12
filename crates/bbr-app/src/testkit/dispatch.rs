@@ -35,6 +35,7 @@ use crate::testkit::dispatch_library::dispatch_library;
 use crate::testkit::dispatch_portal::dispatch_portal;
 use crate::testkit::dispatch_probe::dispatch_probe;
 use crate::testkit::dispatch_saved_pages::dispatch_saved_pages;
+use crate::testkit::dispatch_tab_menu::dispatch_tab_menu;
 use crate::testkit::dispatch_titlebar::dispatch_titlebar;
 use crate::testkit::dispatch_u2::dispatch_u2;
 use crate::testkit::dispatch_util::{browser_mutation, err_response};
@@ -113,6 +114,12 @@ pub(crate) fn dispatch(
     // close seams (the benchmark arm routes through
     // `dispatch_benchmark_context_menu`).
     if let Some(response) = dispatch_context_menu(&req, window, app, cx) {
+        return response;
+    }
+    // Tab/Favorite menu routing (task packet `tab-favorite-context-menus`):
+    // the production right-click row/favorite seams and the card's
+    // hover/press/close seams.
+    if let Some(response) = dispatch_tab_menu(&req, window, app, cx) {
         return response;
     }
     // The context-menu benchmark arm (render-gated, like the find arms).
@@ -655,6 +662,19 @@ pub(crate) fn dispatch(
             unreachable!("context-menu requests route through dispatch_context_menu")
         }
 
+        // Routed by `dispatch_tab_menu` before this match; reaching one
+        // here is a routing bug.
+        Request::RightClickRow { .. }
+        | Request::RightClickFavorite { .. }
+        | Request::TabMenuSelect { .. }
+        | Request::TabMenuSubmenuSelect { .. }
+        | Request::TabMenuActivate { .. }
+        | Request::TabMenuSubmenuActivate { .. }
+        | Request::TabMenuClose
+        | Request::TabMenuOutsideClick => {
+            unreachable!("tab-menu requests route through dispatch_tab_menu")
+        }
+
         // Routed by `dispatch_u2` before this match; reaching one here is
         // a routing bug.
         Request::ClickFooterDownloads
@@ -790,6 +810,8 @@ pub(crate) fn dispatch(
         | Request::BenchmarkPeekPromoteToTab { .. }
         | Request::BenchmarkZoomStep { .. }
         | Request::BenchmarkContextMenuOpen { .. }
+        | Request::BenchmarkTabMenuOpen { .. }
+        | Request::BenchmarkTabMenuSubmenuCommit { .. }
         | Request::BenchmarkDownloadsPanelOpen { .. }
         | Request::BenchmarkDownloadsProgress { .. }
         | Request::BenchmarkDownloadsRowRetry { .. }

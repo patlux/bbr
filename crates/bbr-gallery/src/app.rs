@@ -32,6 +32,7 @@ use crate::registry::{
 use crate::sidebar_app::SidebarAppState;
 use crate::space_config_app::SpaceConfigAppState;
 use crate::stories::catalog;
+use crate::tab_menu_app::TabMenuAppState;
 use crate::tab_row_app::TabRowAppState;
 use crate::tree::TreeState;
 use crate::tree_surface::tree_surface;
@@ -71,9 +72,10 @@ pub struct GalleryApp {
     pub(crate) error: ErrorAppState,
     pub(crate) auth: AuthAppState,
     pub(crate) context_menu: ContextMenuAppState,
-    /// The §11.3 Space-configuration app wiring (module
-    /// `space_config_app`).
+    /// The §11.3 Space-configuration app wiring.
     pub(crate) space_config: SpaceConfigAppState,
+    /// The Tab/Favorite context-menu app wiring.
+    pub(crate) tab_menu: TabMenuAppState,
     /// The G3 Sidebar composition app wiring (module `sidebar_app`).
     pub(crate) sidebar: SidebarAppState,
     /// The G3 Command composition app wiring (module `command_app`).
@@ -128,6 +130,7 @@ impl GalleryApp {
             auth: AuthAppState::new(&registry),
             context_menu: ContextMenuAppState::new(&registry),
             space_config: SpaceConfigAppState::new(&registry, cx),
+            tab_menu: TabMenuAppState::new(&registry),
             sidebar: SidebarAppState::new(&registry, cx),
             command: CommandAppState::new(&registry),
             registry,
@@ -341,9 +344,8 @@ impl Render for GalleryApp {
         let error = self.error.render_context(selected, cx);
         let auth = self.auth.render_context(selected, cx);
         let context_menu = self.context_menu.render_context(selected, cx);
-        // The §11.3 Space-configuration observer + story context (module
-        // `space_config_app`).
         let space_config = self.space_config.render_context(selected, cx);
+        let tab_menu = self.tab_menu.render_context(selected, cx);
         // The Sidebar composition observer + story context (module
         // `sidebar_app`).
         let sidebar = self.sidebar.render_context(selected, cx);
@@ -416,6 +418,7 @@ impl Render for GalleryApp {
             error,
             auth,
             context_menu,
+            tab_menu,
             sidebar,
             command,
             space_config,

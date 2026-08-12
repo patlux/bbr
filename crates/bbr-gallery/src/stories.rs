@@ -36,6 +36,7 @@ pub mod profile_chip;
 pub mod saved_pages_library;
 pub mod sidebar;
 pub mod space_config;
+pub mod tab_menu;
 
 use gpui::{div, prelude::*, px, AnyElement, Rgba, SharedString};
 
@@ -263,12 +264,7 @@ pub fn catalog() -> CatalogRegistry {
             command::COMMAND_STATE_OPTIONS,
         )],
     );
-    // The Space-configuration story (packet
-    // `space-creation-appearance-ui.md`): the exact production
-    // `bbr_ui::surfaces::space_config` rename/identity surface renders the
-    // selected matrix family with recorder callbacks. Appended at canonical
-    // StoryId 46 after the pinned 0–45 prefix — no renumbering or
-    // reservation.
+    // Space configuration remains canonical StoryId 46.
     registry.add_group(
         "Space configuration",
         vec![story(
@@ -276,6 +272,11 @@ pub fn catalog() -> CatalogRegistry {
             space_config::render_space_config,
             space_config::SPACE_CONFIG_STATE_OPTIONS,
         )],
+    );
+    // Tab/Favorite menu appends at StoryId 47; existing ids never move.
+    registry.add_group(
+        "Tab / Favorite menu",
+        vec![story("Tab / Favorite menu", tab_menu::render_tab_menu, &[])],
     );
     registry
 }

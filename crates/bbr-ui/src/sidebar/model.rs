@@ -245,6 +245,12 @@ pub struct Callbacks {
     pub on_tab_list_key_down: KeyCallback,
     /// §11.10: a favorites tile activation.
     pub on_activate_favorite: RowCallback,
+    /// §11.13: a secondary-click on a tab row opens the Tab/Favorite
+    /// context menu bound to that exact row's `TabId` (never selects).
+    pub on_context_menu_row: RowCallback,
+    /// §11.13: a secondary-click on a favorite tile opens the same menu
+    /// bound to that tile's exact `TabId` (never activates).
+    pub on_context_menu_favorite: RowCallback,
     /// §11.11: pointer entry into a folder row (focuses the region with
     /// that row as the keyboard anchor).
     pub on_focus_folder: FolderCallback,
@@ -306,6 +312,8 @@ impl Callbacks {
             on_hover_row: noop_hover,
             on_tab_list_key_down: noop_key.clone(),
             on_activate_favorite: noop_row.clone(),
+            on_context_menu_row: noop_row.clone(),
+            on_context_menu_favorite: noop_row.clone(),
             on_focus_folder: noop_folder.clone(),
             on_toggle_folder: noop_folder.clone(),
             on_select_folder_member: noop_member.clone(),

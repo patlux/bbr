@@ -88,6 +88,7 @@ impl GalleryApp {
             error: self.error.recorder().clone(),
             auth: self.auth.recorder().clone(),
             context_menu: self.context_menu.recorder().clone(),
+            tab_menu: self.tab_menu.recorder().clone(),
             sidebar: self.sidebar.recorder().clone(),
             command: self.command.recorder().clone(),
             space_config: self.space_config.recorder().clone(),

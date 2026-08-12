@@ -222,6 +222,23 @@ pub enum BenchmarkKind {
     /// portal window that drew the menu over the same active view — the
     /// warm-presentation class, no tab or session touched.
     ContextMenuOpen,
+    /// The production Tab/Favorite context-menu open over an inactive tab
+    /// row (task packet `tab-favorite-context-menus`): the sample starts at
+    /// the exact app method the row's right-button mouse-down listener
+    /// routes to (`open_tab_menu_from_row` at the invoking pointer) and
+    /// commits only from a main-window render that drew the menu open,
+    /// focused, and bound to the exact source `TabId` at the armed anchor —
+    /// the warm-presentation class (p95 ≤ 50 ms / max ≤ 100 ms), the source
+    /// tab/session/selection untouched.
+    TabMenuOpen,
+    /// The production Tab/Favorite menu submenu commit (task packet
+    /// `tab-favorite-context-menus`): the sample starts at the exact app
+    /// method the submenu-bearing row's hover listener routes to
+    /// (`tab_menu_select`, which opens the one-level submenu card) and
+    /// commits only from a main-window render that drew the open submenu
+    /// card bound to the same source `TabId` at the armed parent row — the
+    /// warm-presentation class, source identity preserved.
+    TabMenuSubmenuCommit,
     /// The credential sheet presented through the production path (queue
     /// item 10): the sheet renders in the one `NativeAboveWeb` portal window
     /// showing the awaiting challenge — the warm-presentation class on the

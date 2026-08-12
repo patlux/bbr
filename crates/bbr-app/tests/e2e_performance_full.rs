@@ -105,6 +105,8 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         let find_step = report.results["find_step"].samples;
         let zoom_step = report.results["zoom_step"].samples;
         let context_menu_open = report.results["context_menu_open"].samples;
+        let tab_menu_open = report.results["tab_context_menu_open"].samples;
+        let tab_menu_submenu_commit = report.results["tab_context_menu_submenu_commit"].samples;
         let auth_sheet_open = report.results["auth_sheet_open"].samples;
         let peek_request_to_present = report.results["peek_request_to_present"].samples;
         let peek_dismiss_to_origin = report.results["peek_dismiss_to_origin"].samples;
@@ -227,6 +229,14 @@ fn full_repeated_cold_benchmark_meets_budgets() {
         assert!(
             context_menu_open >= INTERACTION_SAMPLES,
             "context-menu open samples {context_menu_open} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            tab_menu_open >= INTERACTION_SAMPLES,
+            "tab-menu open samples {tab_menu_open} < {INTERACTION_SAMPLES}"
+        );
+        assert!(
+            tab_menu_submenu_commit >= INTERACTION_SAMPLES,
+            "tab-menu submenu-commit samples {tab_menu_submenu_commit} < {INTERACTION_SAMPLES}"
         );
         assert!(
             plus_menu >= INTERACTION_SAMPLES,

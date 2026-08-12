@@ -32,6 +32,8 @@ mod saved_pages_drive;
 pub mod scenarios;
 mod space_config_drive;
 pub mod stats;
+mod tab_menu;
+mod tab_menu_drive;
 mod zoom;
 mod zoom_drive;
 

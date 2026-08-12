@@ -8,7 +8,9 @@
 //! mouse-move follows an active drag anywhere over the window and mouse-up
 //! commits it, so the 4 pt divider keeps working when the cursor leaves it.
 
-use gpui::{div, prelude::*, Context, MouseButton, MouseDownEvent, Render, Window};
+use gpui::{
+    div, prelude::*, AnyElement, App, Context, MouseButton, MouseDownEvent, Render, Window,
+};
 
 use crate::slot::NativeWebViewSlot;
 use bbr_ui::components;
@@ -267,7 +269,8 @@ impl Render for BbrApp {
                 !self.library.open
                     && !self.find.state.open
                     && !self.auth_sheet_is_presented()
-                    && !self.context_menu.state.open,
+                    && !self.context_menu.state.open
+                    && !self.tab_menu.state.open,
                 |root| root.track_focus(&self.chrome_handle),
             )
             .when(self.library.open, |root| {
@@ -280,6 +283,9 @@ impl Render for BbrApp {
                 root.track_focus(&self.auth_handle)
             })
             .when(self.context_menu.state.open, |root| {
+                root.track_focus(&self.menu_handle)
+            })
+            .when(self.tab_menu.state.open, |root| {
                 root.track_focus(&self.menu_handle)
             })
             .key_context("bbr_chrome")
@@ -303,6 +309,17 @@ impl Render for BbrApp {
                     this.dismiss_plus_menu_on_outside_press(window, cx);
                     this.dismiss_downloads_on_outside_press(window, cx);
                     this.dismiss_space_config_on_outside_press(window, cx);
+                    this.dismiss_tab_menu_on_outside_press(window, cx);
+                }),
+            )
+            // §11.13: a secondary press outside the open Tab/Favorite menu
+            // dismisses it too (the menu card's row listeners mark presses
+            // inside and stop propagation; a sidebar row's right-click
+            // re-binds the menu to that row instead of dismissing).
+            .on_mouse_down(
+                MouseButton::Right,
+                cx.listener(|this, _e: &MouseDownEvent, window, cx| {
+                    this.dismiss_tab_menu_on_outside_press(window, cx);
                 }),
             )
             .on_mouse_move(cx.listener(Self::on_sidebar_drag_move))
@@ -338,6 +355,90 @@ impl Render for BbrApp {
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::end_tab_drag))
             .when(self.sidebar_visible, |root| root.child(sidebar))
             .child(content)
+            // §11.13: the open Tab/Favorite menu overlay — ordinary GPUI
+            // chrome at the resolved clamped placement, drawn above the
+            // sidebar and the web content slot (the caller owns the
+            // outside-press dismissal; the card does not stop propagation).
+            .when(self.tab_menu.state.open, |root| {
+                root.child(self.tab_menu_overlay(&theme, window, cx))
+            })
+    }
+}
+
+impl BbrApp {
+    /// The open Tab/Favorite menu overlay (task packet
+    /// `tab-favorite-context-menus`; DESIGN.md §11.13): the production
+    /// `bbr-ui` card at the resolved clamped placement with the row
+    /// callbacks re-entering the app entity (the established sidebar
+    /// wrapper pattern). `None` while the menu is closed.
+    fn tab_menu_overlay(
+        &mut self,
+        theme: &Theme,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        // Render milestone for the tab-menu presentation probe (DESIGN.md
+        // §15 motion gate): record the menu presentation this frame actually
+        // draws (open/focused, the bound source tab, the source key, the
+        // cursor, the open submenu, and the clamped anchor), so a pending
+        // tab-menu benchmark can commit only from a render that presented
+        // the armed identity. A frame that omitted the menu records nothing.
+        #[cfg(feature = "testkit")]
+        {
+            let s = &self.tab_menu.state;
+            self.performance.observe_tab_menu_state(
+                s.open,
+                s.focused,
+                s.bound_tab.map(|tab| tab.0),
+                &s.source_key,
+                s.selected,
+                s.open_submenu,
+                s.submenu_selected,
+                [s.anchor.x, s.anchor.y, s.anchor.width, s.anchor.height],
+            );
+        }
+        let model = self.tab_menu.state.model();
+        let anchor = self.tab_menu.state.anchor;
+        let submenu_rect = self.tab_menu.state.submenu_rect;
+        let entity = cx.entity();
+        let on_row_hover =
+            move |index: usize, hovered: &bool, window: &mut Window, cx: &mut App| {
+                let hovered = *hovered;
+                entity.update(cx, |view, cx| {
+                    view.tab_menu_select(index, hovered, window, cx)
+                });
+            };
+        let entity = cx.entity();
+        let on_row_press =
+            move |index: usize, _event: &MouseDownEvent, window: &mut Window, cx: &mut App| {
+                entity.update(cx, |view, cx| view.on_tab_menu_row_press(index, window, cx));
+            };
+        let entity = cx.entity();
+        let on_submenu_hover =
+            move |index: usize, hovered: &bool, window: &mut Window, cx: &mut App| {
+                let hovered = *hovered;
+                entity.update(cx, |view, cx| {
+                    view.tab_menu_submenu_select(index, hovered, window, cx)
+                });
+            };
+        let entity = cx.entity();
+        let on_submenu_press =
+            move |index: usize, _event: &MouseDownEvent, window: &mut Window, cx: &mut App| {
+                entity.update(cx, |view, cx| {
+                    view.on_tab_menu_submenu_press(index, window, cx)
+                });
+            };
+        bbr_ui::surfaces::tab_menu::tab_menu_card(
+            theme,
+            &model,
+            anchor,
+            submenu_rect,
+            on_row_hover,
+            on_row_press,
+            on_submenu_hover,
+            on_submenu_press,
+        )
+        .into_any()
     }
 }
 

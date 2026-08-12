@@ -24,6 +24,7 @@ use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRe
 use crate::sidebar_observer::SidebarObserver;
 use crate::sidebar_recorder::SidebarRecorder;
 use crate::space_config_recorder::{SpaceConfigObserver, SpaceConfigRecorder};
+use crate::tab_menu_recorder::{TabMenuObserver, TabMenuRecorder};
 
 /// The render context a story receives: the resolved theme (mode/contrast/
 /// density), the reduced-motion flag (§15 mode field), and the story's own
@@ -76,6 +77,12 @@ pub struct StoryContext<'a> {
     /// through (packet `component-gallery-browser-components.md`, Group
     /// 9). `None` for every other story.
     pub context_menu: Option<ContextMenuStory<'a>>,
+    /// `Some` only for the Tab/Favorite menu story: the current recorder
+    /// snapshot and the observer callbacks the production
+    /// `bbr_ui::surfaces::tab_menu::tab_menu_card` row + submenu callbacks
+    /// route through (task packet `tab-favorite-context-menus`). `None`
+    /// for every other story.
+    pub tab_menu: Option<TabMenuStory<'a>>,
     /// `Some` only for the G3 Sidebar composition story: the current
     /// recorder snapshot and the observer callbacks the production
     /// `bbr_ui::sidebar::sidebar_surface` `Callbacks` route through
@@ -197,19 +204,19 @@ pub struct ContextMenuStory<'a> {
     pub observer: &'a ContextMenuObserver,
 }
 
-/// Everything the Space-configuration story needs to render the **exact**
-/// production `bbr_ui::surfaces::space_config` surface with recorder
-/// callbacks: the current recorder snapshot (selected theme/identity, done/
-/// cancel/inside-press events) and the observer callbacks that re-enter
-/// the app on real pointer interactions (packet
-/// `space-creation-appearance-ui.md`). `Some` only while the
-/// Space-configuration story is selected.
+/// Everything the Space-configuration story needs to render the exact
+/// production surface with recorder callbacks.
 pub struct SpaceConfigStory<'a> {
     pub recorder: &'a SpaceConfigRecorder,
     pub observer: &'a SpaceConfigObserver,
-    /// The fixture focus handle the production surface tracks (§9 ring +
-    /// keyboard domain; the gallery never focuses it).
     pub focus: &'a gpui::FocusHandle,
+}
+
+/// Everything the Tab/Favorite menu story needs to render the exact
+/// production card with recorder callbacks.
+pub struct TabMenuStory<'a> {
+    pub recorder: &'a TabMenuRecorder,
+    pub observer: &'a TabMenuObserver,
 }
 
 /// Everything the G3 Sidebar composition story needs to render the **exact**
