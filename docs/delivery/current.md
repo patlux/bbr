@@ -10,7 +10,7 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Generation | `daily-driver-2026-08-12` |
 | Cutover commit | `781e862ca4547cee16be23e251767f6b2fa938fb` |
 | Verified product base | `main@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
-| Integrated product checkpoint | `4b3f40c5f736d3703682d001181d7c597ef317eb` / tree `874fb4d4618dee12992e5a02874ead3cd66cbd78`; grouped background links, deterministic gestures, and full-height Sidebar navigation integrated |
+| Integrated product checkpoint | `ac381f3f6b57e73155380dc5ba7f0c35451b8a84` / tree `97aad3715a953414064ff8dfabfda5b1e46c5fbe`; grouped background links, deterministic gestures, full-height navigation, and Space creation/identity configuration integrated |
 | Daily-driver preparation base | `568cdae0008d3cc9008209007ae32442ee0ff80e` / tree `90114c65cc068a744b43aeeec710b47fff5cbf4a` |
 | Daily-driver activation base | `4d5be3116ec090aebb7eefa4861970710dba7a5b` / tree `9c8cae5cd5bca883fadc3ec198e232be4f436839`; all seven lane worktrees created clean from this exact commit |
 | Daily-driver contract | [2026-08-12 Daily-driver delivery](2026-08-12-daily-driver-delivery.md) |
@@ -46,8 +46,8 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | DD-GESTURE | Current-base real-app gesture revalidation | `integrated` | lane commit `f2183fdb2c3f3586c500d4c67a1bdc0257e6a06d`; merge `ebb8e137aa54077c47b5ae4c5603e47e8492d9ca` | Orchestrator; independent `REVIEW_PASS` and focused post-merge gates complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Closed for this wave; testkit-only fix, production command routing unchanged |
 | DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `integrated` | lane `6327b6b48b84f847061e5d55b85d58843dd676f0`; merge `69616b88be823b8ab35d1f806ada911d6256d9e6`; gate fix `4b3f40c5f736d3703682d001181d7c597ef317eb` | Orchestrator; focused `REVIEW_PASS`, semantic Justfile union and post-merge gates complete | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Closed for this wave; fullscreen/multi-display/manual drag and performance evidence remain honestly open |
 
-| DD-SPACE | Create/activate/configure Space and icon-only footer | `integrating` | lane `8a15496488f27e7a1f6150b27d5374cf033c5b7e`; merge `7f658aba0a4725db67c2e0fba33fcaf5388d0db8`, tree `7d9b0040247566f92ddee6bfbd3b3944402a71c4` | Orchestrator; exact reviewed candidate merged, post-merge gates active | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Run both fresh warning-denied Clippy gates, targeted units, roadmap/UI/script/diff checks, and affected Spaces/Sidebar/Organize/Gallery GUI suites; promote Sidebar only when green |
-| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; exact tree `2bfa4c4b…`, 29 paths | Orchestrator; independent `REVIEW_PASS` complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Preserve exact reviewed tree; integrate immediately after DD-SPACE passes post-merge gates |
+| DD-SPACE | Create/activate/configure Space and icon-only footer | `integrated` | lane `8a15496488f27e7a1f6150b27d5374cf033c5b7e`; merge `7f658aba0a4725db67c2e0fba33fcaf5388d0db8`; Gallery gate fix `ac381f3f6b57e73155380dc5ba7f0c35451b8a84` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
+| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; exact tree `2bfa4c4b…`, 29 paths | Orchestrator; independent `REVIEW_PASS` complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Commit exact candidate and integrate now after DD-SPACE; resolve shared Sidebar/Gallery/Justfile seams semantically, then run bounded gates |
 | DD-TAB-MENU | Production Tab/Favorite context menus | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; exact tree `c8bcaaf00af1004e691b36776056b69a21b9fcad`, 66 paths | Orchestrator; remediation and independent focused `REVIEW_PASS` complete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Preserve exact reviewed tree; integrate after DD-SIDEBAR per serial order |
 | DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console is locked and two foreign qemu windows remain | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
 
@@ -224,6 +224,23 @@ semantic resolution retains both `TitlebarSnapshot` and the new
 `SpaceConfigSnapshot`. Pre-commit format, testkit 28/28, app testkit
 all-target compile and diff checks are green. Full post-merge gates are active;
 DD-SIDEBAR remains frozen until they pass. No performance execution occurred.
+
+DD-SPACE post-merge audit: format; domain 123, browser 233, UI 134, app 262
+and Gallery 145 unit tests; both canonical warning-denied Clippy commands on
+fresh targets; roadmap, UI dependency, script and diff checks are green.
+Spaces is 20/20, Sidebar 11/11 and Organize 6/6. The first Gallery sweep found
+one causal integration regression: its Sidebar scenario still pinned the
+pre-Titlebar count of 13 while the merged matrix truthfully contains 15
+families. Forward test fix
+`ac381f3f6b57e73155380dc5ba7f0c35451b8a84`, tree `97aad371…`, strengthens
+the contract to exact count 15 plus byte-identical matrix/selector labels;
+targeted 1/1 and full Gallery 44/44 pass. Both fresh Clippy gates and all
+non-GUI checks were rerun on the final tree. Logs and SHA-256 manifests live
+under `/tmp/bbr-dd-space-postmerge{,-gui,-final}/`. The initial non-GUI wrapper
+attempt failed before executing a product gate because `timeout` was outside
+the Nix shell; the corrected bounded invocations are the authoritative green
+runs. DD-SPACE is integrated and DD-SIDEBAR is now the exclusive serial
+integration position. No performance execution occurred.
 
 ## Downstream dependency queue
 
