@@ -103,7 +103,7 @@ fn sidebar_story_renders_every_matrix_family_with_stable_ids() {
         // contract so an appended production family cannot silently leave
         // stale Gallery navigation behind.
         let family_count = window.read(|_| SIDEBAR_VALID.len());
-        assert_eq!(family_count, 15);
+        assert_eq!(family_count, 16);
         assert_eq!(SIDEBAR_STATE_OPTIONS.len(), family_count);
         assert!(
             SIDEBAR_VALID
@@ -158,7 +158,7 @@ fn sidebar_story_renders_every_matrix_family_with_stable_ids() {
         // The rejected combinations are declared and refuse construction
         // (the matrix unit tests prove the refusal; the story shows them).
         let rejected_count = window.read(|_| SIDEBAR_REJECTED.len());
-        assert_eq!(rejected_count, 3);
+        assert_eq!(rejected_count, 4);
 
         // Mode/state fields are untouched by story selection.
         let snap = snapshot(window, app);

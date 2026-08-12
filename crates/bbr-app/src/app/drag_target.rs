@@ -86,19 +86,23 @@ impl ChipSpan {
 }
 
 /// The tab-list geometry a drag resolves against: the pinned/regular
-/// boundary (§11.2), the tab count, the §8 row height, the favorites region
-/// above the list (its deterministic height; 0 when the grid is empty), and
-/// the rendered strip chips below it. Grouped so the pure resolver stays
-/// readable; the drag state machine builds it per move from the same theme
-/// tokens, the organization read model, and the production strip layout.
+/// boundary (§11.2), the tab count, the §8 row height, the §11.10
+/// favorites region's rendered drop-band span (its absolute window-y
+/// bounds from the production band anchor; `None` when no band renders —
+/// no droppable band), and the rendered strip chips below it. Grouped so
+/// the pure resolver stays readable; the drag state machine builds it per
+/// move from the same theme tokens, the recorded band rect, and the
+/// production strip layout.
 #[derive(Debug, Clone, Copy)]
 pub struct DragGeometry<'a> {
     pub pinned: usize,
     pub len: usize,
     pub row_h: f32,
-    /// The §11.10 favorites region's deterministic height above the tab
-    /// list (0 when the grid is empty/hidden — no droppable band).
-    pub favorites_h: f32,
+    /// The §11.10 favorites region's rendered drop band in absolute window
+    /// coordinates `(y_top, y_bottom)` (recorded by the production band
+    /// anchor, never a parallel layout model). `None` when the region does
+    /// not render (no tiles and no in-flight drag — no droppable band).
+    pub favorites_band: Option<(f32, f32)>,
     /// The §11.3 strip chips' visual spans, in canonical display order
     /// (empty when the strip layout has not run yet — no chip targets).
     pub chips: &'a [ChipSpan],
@@ -118,14 +122,19 @@ pub struct DragGeometry<'a> {
 ///   chip (move). Chips win over the surrounding footer chrome, so a drop
 ///   on the `[Downloads]`/`[+]` controls or the gap between chips never
 ///   resolves to a slot.
+/// - The pointer over the favorites region's rendered drop band (its
+///   absolute window-y span, recorded from the production band anchor)
+///   targets the §11.10 grid (a drop toggles the dragged tab in/out of the
+///   window-global favorites). The band is addressed by the pointer's
+///   absolute position, independent of the press anchor — exactly like the
+///   strip chips — so it never drifts from the rendered region.
 /// - The pointer over the tab list resolves to an insertion slot inside the
 ///   source region. A slot outside the region (the pinned/regular boundary
 ///   crossing) is illegal: the target clamps to the region edge so the tick
 ///   renders there, but `valid` is false.
-/// - The pointer above the tab list resolves to the §11.10 favorites grid
-///   band (when the region is rendered — a drop toggles the dragged tab
-///   in/out of the window-global favorites). The fixed chrome above the
-///   grid is not droppable.
+/// - A pointer above the tab list that is not over the favorites band (the
+///   fixed chrome — command field, brand row, section labels, gaps) is
+///   **no target**: the drop is rejected whole.
 /// - A pointer below the tab list that is not over a chip (the footer's
 ///   fixed controls, the gaps) is **no target**: the drop is rejected whole.
 pub fn resolve_target(
@@ -143,7 +152,7 @@ pub fn resolve_target(
         pinned,
         len,
         row_h,
-        favorites_h,
+        favorites_band,
         chips,
     } = *geometry;
     // §11.3 drag-to-chip: the strip sits below the tab list in the footer;
@@ -165,6 +174,19 @@ pub fn resolve_target(
     if let Some(strip) = chips.first() {
         if pointer_y >= strip.y_top && pointer_y < strip.y_bottom {
             return (None, false);
+        }
+    }
+    // §11.10 drag-to-favorites: the favorites region's rendered drop band
+    // in absolute window-y coordinates (recorded by the production band
+    // anchor — the exact geometry the pointer enters). A pointer inside
+    // the band targets the grid; a drop toggles the dragged tab in/out of
+    // the window-global favorites. The band is hit by the pointer's
+    // absolute position, independent of the press anchor, so it lines up
+    // exactly with the rendered region (labels/gaps above the list never
+    // mis-target it).
+    if let Some((band_top, band_bottom)) = favorites_band {
+        if pointer_y >= band_top && pointer_y < band_bottom {
+            return (Some(DragTarget::Favorites), true);
         }
     }
     // Distance from the pointer up to the tab list's top edge. The press
@@ -193,14 +215,9 @@ pub fn resolve_target(
             || (hi == len && raw > len as isize);
         (Some(DragTarget::Tab { slot }), valid)
     } else {
-        // Pointer above the tab list: the favorites region occupies the
-        // `favorites_h` immediately above it (when rendered). A drop on the
-        // favorites band toggles the dragged tab in the window-global grid.
-        if favorites_h > 0.0 && above_list <= favorites_h {
-            return (Some(DragTarget::Favorites), true);
-        }
-        // Above the favorites band is the fixed chrome (the command field /
-        // brand row) — not droppable.
+        // Pointer above the tab list, not over the favorites band: the
+        // fixed chrome (command field / brand row / section labels / the
+        // gaps between the band and the list) is not droppable.
         (None, false)
     }
 }
@@ -231,23 +248,25 @@ mod tests {
             pinned,
             len,
             row_h: 32.0,
-            favorites_h: 0.0,
+            favorites_band: None,
             chips,
         }
     }
 
-    /// The same geometry with a rendered favorites band above the list.
+    /// The same geometry with a rendered favorites band above the list
+    /// (its absolute window-y span `(y_top, y_bottom)` from the production
+    /// band anchor).
     fn geometry_with_favorites<'a>(
         pinned: usize,
         len: usize,
-        favorites_h: f32,
+        favorites_band: (f32, f32),
         chips: &'a [ChipSpan],
     ) -> DragGeometry<'a> {
         DragGeometry {
             pinned,
             len,
             row_h: 32.0,
-            favorites_h,
+            favorites_band: Some(favorites_band),
             chips,
         }
     }
@@ -356,22 +375,22 @@ mod tests {
 
     #[test]
     fn pointer_over_the_favorites_band_targets_the_grid() {
-        // The favorites band occupies the region directly above the tab
-        // list; a drop there toggles the dragged tab in/out of the grid.
-        // Source row 1's center is 48 pt below the list top; the band is
-        // 60 pt tall (a wrapped two-row grid at N density).
+        // The favorites region's rendered drop band is addressed by the
+        // pointer's absolute window-y against its recorded span (independent
+        // of the press anchor, exactly like the strip chips). A pointer
+        // inside the band toggles the dragged tab in/out of the grid; a
+        // pointer above the band is the fixed chrome; with no rendered band
+        // there is no favorites target.
         let chips = [];
-        let g = geometry_with_favorites(0, 3, 60.0, &chips);
-        // 30 pt above the list top → inside the favorites band.
-        let (target, valid) = resolve_target(1, 10.0, -78.0, -(48.0 + 30.0), center_press(), &g);
+        let g = geometry_with_favorites(0, 3, (100.0, 160.0), &chips);
+        // A pointer at y 130 (inside the band) targets the grid. The dy is
+        // set so the pointer sits above the list (the press at y 200, row
+        // center 16 of source row 1).
+        let (target, valid) = resolve_target(1, 10.0, 130.0, -70.0, center_press(), &g);
         assert_eq!(target, Some(DragTarget::Favorites));
         assert!(valid);
-        // The band's top edge boundary still targets favorites.
-        let (target, _valid) = resolve_target(1, 10.0, -108.0, -(48.0 + 60.0), center_press(), &g);
-        assert_eq!(target, Some(DragTarget::Favorites));
         // One point above the band is the fixed chrome: not droppable.
-        let (target, valid) =
-            resolve_target(1, 10.0, -109.0, -(48.0 + 60.0 + 1.0), center_press(), &g);
+        let (target, valid) = resolve_target(1, 10.0, 99.0, -101.0, center_press(), &g);
         assert_eq!(target, None);
         assert!(
             !valid,
@@ -379,8 +398,31 @@ mod tests {
         );
         // Without a rendered favorites region there is no favorites target.
         let g = geometry(0, 3, &chips);
-        let (target, _valid) = resolve_target(1, 10.0, -78.0, -(48.0 + 30.0), center_press(), &g);
+        let (target, _valid) = resolve_target(1, 10.0, 130.0, -70.0, center_press(), &g);
         assert_ne!(target, Some(DragTarget::Favorites));
+    }
+
+    #[test]
+    fn the_favorites_band_is_hit_by_absolute_position_not_the_press_anchor() {
+        // The band resolution is independent of the press anchor: any press
+        // row resolves the band the same way once the pointer is inside its
+        // rendered span (the band is addressed by absolute window-y, like
+        // the chips — the anchor only feeds the tab-slot math). The band
+        // span may overlap the anchor's list-top zone (the anchor is a
+        // half-row approximation; the recorded rect is the real geometry),
+        // so the band check runs first and wins inside the span.
+        let chips = [];
+        let g = geometry_with_favorites(2, 5, (120.0, 180.0), &chips);
+        for source in [0, 2, 4] {
+            let (target, valid) = resolve_target(source, 10.0, 150.0, -90.0, center_press(), &g);
+            assert_eq!(target, Some(DragTarget::Favorites), "source {source}");
+            assert!(valid, "source {source}");
+        }
+        // A pointer well below the band (over the list) still resolves the
+        // source-region slot, not favorites.
+        let (target, valid) = resolve_target(2, 10.0, 300.0, 60.0, center_press(), &g);
+        assert_eq!(target, Some(DragTarget::Tab { slot: 4 }));
+        assert!(valid);
     }
 
     #[test]

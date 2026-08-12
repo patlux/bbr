@@ -82,7 +82,7 @@ fn plus_menu_node_mirrors_open_state_and_selection() {
 #[test]
 fn favorites_node_mirrors_the_grid_and_hides_when_empty() {
     let browser = browser();
-    assert!(super::super::u2::favorites_node(&[], &browser).is_none());
+    assert!(super::super::u2::favorites_node(&[], &browser, false).is_none());
     let tiles = crate::app::ui_adapters::favorite_tiles(&[bbr_browser::FavoriteSnapshot {
         index: 0,
         tab: bbr_domain::TabId(7),
@@ -91,7 +91,8 @@ fn favorites_node_mirrors_the_grid_and_hides_when_empty() {
         title: "Example".into(),
         url: "https://example.com".into(),
     }]);
-    let section = super::super::u2::favorites_node(&tiles, &browser).expect("favorites node");
+    let section =
+        super::super::u2::favorites_node(&tiles, &browser, false).expect("favorites node");
     assert_eq!(section.id, "bbr-section-favorites");
     assert_eq!(section.role, SemanticRole::Section);
     let grid = section
@@ -150,7 +151,7 @@ fn favorite_tile_name_includes_the_owner_context_when_it_differs() {
         title: "Workmail".into(),
         url: "https://mail.example".into(),
     }]);
-    let section = super::super::u2::favorites_node(&tiles, &cross).expect("favorites node");
+    let section = super::super::u2::favorites_node(&tiles, &cross, false).expect("favorites node");
     let grid = section
         .children
         .iter()

@@ -157,17 +157,22 @@ pub fn plus_menu_node(state: &bbr_ui::components::menu::PlusMenuState) -> Option
     ))
 }
 
-/// The §11.10 favorites grid node while tiles exist: the section label over
-/// the `bbr-favorites` grid, each tile a §7.2 destination with its monogram
-/// icon child. `None` while the region is empty (label hidden). Per
-/// DESIGN.md §11.10 the tile's semantic name includes the owning
-/// space/profile when they differ from the current context, so cross-space
-/// favorites stay distinguishable without color.
+/// The §11.10 favorites grid node: the section label over the
+/// `bbr-favorites` grid, each tile a §7.2 destination with its monogram
+/// icon child. `None` while the region is empty at rest (label hidden).
+/// While a tab drag targets the region — including an empty grid, when the
+/// region renders as the compact drop band — the section carries the
+/// §10.9 `drag_target` flag so the drop affordance is part of the semantic
+/// tree (§15: during a drag both the source row and any target are
+/// reported). Per DESIGN.md §11.10 the tile's semantic name includes the
+/// owning space/profile when they differ from the current context, so
+/// cross-space favorites stay distinguishable without color.
 pub fn favorites_node(
     tiles: &[bbr_ui::components::FavoriteTileSpec],
     browser: &bbr_browser::ControllerSnapshot,
+    band_targeted: bool,
 ) -> Option<SemanticNode> {
-    if tiles.is_empty() {
+    if tiles.is_empty() && !band_targeted {
         return None;
     }
     let children = tiles
@@ -193,6 +198,7 @@ pub fn favorites_node(
         })
         .collect();
     let mut section = section_node("Favorites", false);
+    section.drag_target = band_targeted;
     section.children.push(node(
         bbr_ui::components::favorites::FAVORITES_ID,
         SemanticRole::Grid,

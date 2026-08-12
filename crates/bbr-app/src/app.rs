@@ -73,6 +73,7 @@ mod error_surface_benchmarks;
 /// existing controller. macOS-only body; the module is compiled everywhere
 /// so the app composition stays portable.
 pub(crate) mod external_urls;
+mod favorites_band;
 pub(crate) mod find;
 #[cfg(feature = "testkit")]
 mod find_benchmarks;
@@ -372,6 +373,13 @@ pub struct BbrApp {
     /// field) without duplicating the chrome layout math. `None` until the
     /// field has rendered at least once.
     command_field_rect: std::rc::Rc<std::cell::RefCell<Option<WebRect>>>,
+    /// The last frame's favorites-region rect in window coordinates,
+    /// recorded by the band anchor element (DESIGN.md §11.10): the exact
+    /// drop-band span the tab-drag resolver and the E2E snapshot use, so
+    /// the first favorite can be created by dragging a concrete tab into
+    /// the rendered band. `None` while no band is rendered (no tiles and
+    /// no in-flight drag).
+    favorites_band_rect: std::rc::Rc<std::cell::RefCell<Option<WebRect>>>,
     /// The command-field text-edit model (DESIGN.md §11.5): UTF-8-safe
     /// cursor/selection, full selection on `Cmd-L`, replace-selection
     /// typing, backspace, and horizontal cursor movement. The text mirrors
@@ -555,6 +563,7 @@ impl BbrApp {
             #[cfg(target_os = "macos")]
             geometry_engine: None,
             command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
+            favorites_band_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
             saved_pages: saved_pages::SavedPageCommand,

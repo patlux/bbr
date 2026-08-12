@@ -46,7 +46,7 @@ fn tab_row_story_renders_the_matrix_families_with_stable_ids() {
         assert_eq!(snap.tab_drag_begins, 0);
         // Every valid family is registered — the story renders them all.
         let family_count = window.read(|_| TAB_ROW_VALID.len());
-        assert_eq!(family_count, 17);
+        assert_eq!(family_count, 18);
         // The first family (default, N) renders the stable §11.1 ids.
         flush(window);
         let row = bounds_of(window, "bbr-tab-row-0");

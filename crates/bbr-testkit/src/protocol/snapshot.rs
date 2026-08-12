@@ -1002,8 +1002,22 @@ pub struct Snapshot {
     /// is in flight; the dragged row renders the `dragging` state.
     pub drag_source: Option<usize>,
     /// The current drag target: the tab insertion slot (within the source
-    /// region) or the §11.10 favorites grid.
+    /// region). `None` when the drag targets the favorites grid, a chip, or
+    /// nothing (an invalid no-target zone).
     pub drag_slot: Option<usize>,
+    /// §10.9/§11.10: whether the in-flight drag currently targets the
+    /// favorites grid (a drop toggles the dragged tab in/out of the
+    /// window-global favorites). Typed alongside `drag_slot`/`drag_chip`
+    /// so a favorites-targeted drag is asserted by state, not by geometry
+    /// guessing.
+    #[serde(default)]
+    pub drag_favorites: bool,
+    /// The §11.10 favorites region's rendered window-relative rect
+    /// `[x, y, width, height]`, recorded by the production band anchor
+    /// (the exact drop-band span the resolver hits). `None` while no band
+    /// renders (no tiles and no in-flight drag).
+    #[serde(default)]
+    pub favorites_rect: Option<[f32; 4]>,
     /// The current drag target's persistent space chip (DESIGN.md §11.3):
     /// the exact `bbr-space-chip-<persistent-space-id>` the pointer hovers
     /// during a drag-to-chip. `None` when the drag targets a tab slot, the

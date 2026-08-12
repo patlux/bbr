@@ -16,6 +16,10 @@ use bbr_browser::ControllerSnapshot;
 /// revealable spaces region or toggle state).
 pub struct U2IdsInput<'a> {
     pub favorites: &'a [bbr_browser::FavoriteSnapshot],
+    /// §11.10: the favorites region renders as the compact drop band while
+    /// a tab drag is in flight even when the grid is empty (so the first
+    /// favorite can be created by drag). The band's ids mirror the render.
+    pub favorites_band_visible: bool,
     pub folders: &'a [bbr_browser::FolderSnapshot],
     pub expanded: bbr_ui::components::folders::FolderPresentation,
     pub plus_menu: bbr_ui::components::menu::PlusMenuState,
@@ -59,6 +63,7 @@ impl<'a> Default for U2IdsInput<'a> {
     fn default() -> Self {
         U2IdsInput {
             favorites: &[],
+            favorites_band_visible: false,
             folders: &[],
             expanded: bbr_ui::components::folders::FolderPresentation::default(),
             plus_menu: bbr_ui::components::menu::PlusMenuState::default(),
@@ -106,6 +111,7 @@ pub(crate) fn extend_visible_ids(
     ids.extend(u2_visible_ids(
         browser,
         u2.favorites,
+        u2.favorites_band_visible,
         u2.folders,
         &u2.expanded,
         &u2.plus_menu,
@@ -185,14 +191,21 @@ fn downloads_visible_ids(
 pub(crate) fn u2_visible_ids(
     browser: &ControllerSnapshot,
     favorites: &[bbr_browser::FavoriteSnapshot],
+    favorites_band_visible: bool,
     folders: &[bbr_browser::FolderSnapshot],
     expanded: &bbr_ui::components::folders::FolderPresentation,
     plus_menu: &bbr_ui::components::menu::PlusMenuState,
 ) -> Vec<String> {
     let mut ids = bbr_ui::components::footer::footer_ids();
-    ids.extend(bbr_ui::components::favorites::favorites_ids(
-        &crate::app::ui_adapters::favorite_tiles(favorites),
-    ));
+    let tile_specs = crate::app::ui_adapters::favorite_tiles(favorites);
+    ids.extend(bbr_ui::components::favorites::favorites_ids(&tile_specs));
+    // §11.10: while a tab drag is in flight with an empty grid, the region
+    // renders as the compact drop band (label + grid) — mirror the render's
+    // ids exactly (the wrapper + the empty grid; no tiles).
+    if favorites_band_visible && favorites.is_empty() {
+        ids.push(bbr_ui::components::favorites::FAVORITES_SECTION_ID.into());
+        ids.push(bbr_ui::components::favorites::FAVORITES_ID.into());
+    }
     let rows = crate::app::ui_adapters::folder_row_specs(folders, expanded);
     let members = crate::app::ui_adapters::folder_member_visuals(&rows, folders, &browser.all_tabs);
     ids.extend(bbr_ui::components::folders::folders_ids(&rows, &members));

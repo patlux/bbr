@@ -108,6 +108,7 @@ pub const TAB_ROW_VALID: &[TabRowCase] = &[
     TabRowCase::new("loading (arc replaces favicon)", TabVisualState::Loading, false, "Example", "https://example.com/", None, false, Density::Normal),
     TabRowCase::new("attention", TabVisualState::Attention, false, "Example", "https://example.com/", Some(MONOGRAM), false, Density::Normal),
     TabRowCase::new("error", TabVisualState::Error, false, "Example", "https://example.com/", Some(MONOGRAM), false, Density::Normal),
+    TabRowCase::new("unresponsive", TabVisualState::Unresponsive, false, "Example", "https://example.com/", Some(MONOGRAM), false, Density::Normal),
     TabRowCase::new("disabled", TabVisualState::Disabled, false, "Example", "https://example.com/", Some(MONOGRAM), false, Density::Normal),
     TabRowCase::new("dragging", TabVisualState::Dragging, false, "Example", "https://example.com/", Some(MONOGRAM), false, Density::Normal),
     TabRowCase::new("drag-target", TabVisualState::DragTarget, false, "Example", "https://example.com/", Some(MONOGRAM), false, Density::Normal),
@@ -264,11 +265,11 @@ pub const DRAG_TICK_INVALID_ID: &str = "bbr-drag-tick-101";
 /// The stable §15 ids of the interaction-target families the E2E clicks
 /// (the close of the selected family — visible, §10.2 — the pin of the
 /// pinned-N family, and the icon-only pinned-S row). Pinned by the matrix
-/// test at the declared positions (3/11/12) and rendered by the story's
+/// test at the declared positions (3/12/13) and rendered by the story's
 /// id contract rows, so the E2E targets never drift from the declaration.
 pub const REVEAL_CLOSE_CLOSE_ID: &str = "bbr-tab-close-3";
-pub const PINNED_N_PIN_ID: &str = "bbr-tab-pin-11";
-pub const PINNED_S_ROW_ID: &str = "bbr-tab-row-12";
+pub const PINNED_N_PIN_ID: &str = "bbr-tab-pin-12";
+pub const PINNED_S_ROW_ID: &str = "bbr-tab-row-13";
 
 #[cfg(test)]
 mod tests {
@@ -318,6 +319,7 @@ mod tests {
                 "loading (arc replaces favicon)",
                 "attention",
                 "error",
+                "unresponsive",
                 "disabled",
                 "dragging",
                 "drag-target",
@@ -347,11 +349,11 @@ mod tests {
         // The interaction-target positions point at the declared families
         // and their stable ids (the E2E clicks these targets).
         assert_eq!(TAB_ROW_VALID[3].label, "selected");
-        assert_eq!(TAB_ROW_VALID[11].label, "pinned (N anatomy)");
-        assert_eq!(TAB_ROW_VALID[12].label, "pinned icon-only (S)");
+        assert_eq!(TAB_ROW_VALID[12].label, "pinned (N anatomy)");
+        assert_eq!(TAB_ROW_VALID[13].label, "pinned icon-only (S)");
         assert_eq!(REVEAL_CLOSE_CLOSE_ID, "bbr-tab-close-3");
-        assert_eq!(PINNED_N_PIN_ID, "bbr-tab-pin-11");
-        assert_eq!(PINNED_S_ROW_ID, "bbr-tab-row-12");
+        assert_eq!(PINNED_N_PIN_ID, "bbr-tab-pin-12");
+        assert_eq!(PINNED_S_ROW_ID, "bbr-tab-row-13");
     }
 
     #[test]

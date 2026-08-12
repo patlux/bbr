@@ -118,8 +118,15 @@ pub struct SemanticInput<'a> {
     /// id, and `selected` mirrors the active space exactly).
     pub space_chips: &'a [SpaceChipVisuals],
     /// The rendered §11.10 favorite destination tiles (empty → region
-    /// hidden with its label).
+    /// hidden with its label — except while a tab drag targets the region,
+    /// when it renders as the compact drop band and `favorites_band_targeted`
+    /// carries the §10.9 drag-target state into the tree).
     pub favorites: &'a [bbr_ui::components::FavoriteTileSpec],
+    /// §10.9/§11.10: a tab drag currently targets the favorites region
+    /// (the drop toggles the dragged tab in/out of the grid). Mirrors the
+    /// render's band wash; the section node reports the target even with an
+    /// empty grid (§15 during-drag reporting).
+    pub favorites_band_targeted: bool,
     /// The rendered §11.11 folder rows (empty → region hidden).
     pub folder_rows: &'a [bbr_ui::components::FolderRowSpec],
     /// The expanded folders' nested member rows (title/letter per position).
@@ -183,7 +190,11 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
     // → regular tabs → status row → footer row (the permanent §11.3 space
     // strip is the footer's flex region — always part of the rail). Hidden
     // regions render no nodes (§15 mirrors the render).
-    if let Some(favorites) = u2::favorites_node(input.favorites, input.browser) {
+    if let Some(favorites) = u2::favorites_node(
+        input.favorites,
+        input.browser,
+        input.favorites_band_targeted,
+    ) {
         children.push(favorites);
     }
     children.push(tabs_list_node(input));

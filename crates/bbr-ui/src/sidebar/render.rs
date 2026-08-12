@@ -43,26 +43,28 @@ use super::tabs::tab_surface;
 ///
 /// `command_field_anchor` is the app-owned invisible §11.4 field anchor
 /// overlaying the command slot (the rect recorder for the field-anchored
-/// overlay); `command_results` is the app-owned §11.5 in-rail ranking
-/// surface; `downloads_panel` is the app-owned §11.12 anchored downloads
+/// overlay); `favorites_band_anchor` is the app-owned invisible §11.10
+/// favorites-band anchor overlaying the favorites region (the rect
+/// recorder the tab-drag resolver targets the real rendered drop band
+/// with); `command_results` is the app-owned §11.5 in-rail ranking
 /// surface; `space_config_panel` is the app-owned §11.3 rename/identity
-/// configuration surface. All are app-owned elements passed at the
+/// configuration surface. All five are app-owned elements passed at the
 /// composition boundary — the model itself stays plain data.
 pub fn sidebar_surface(
     theme: &Theme,
     model: &SidebarModel,
     callbacks: &Callbacks,
     command_field_anchor: AnyElement,
+    favorites_band_anchor: AnyElement,
     command_results: Option<AnyElement>,
     downloads_panel: Option<AnyElement>,
     space_config_panel: Option<AnyElement>,
 ) -> Stateful<Div> {
     let p = theme.palette;
     let command_bar = command_slot(theme, model, callbacks, command_field_anchor);
-    let favorites = model
-        .favorites
-        .as_ref()
-        .map(|favorites| favorites_surface(theme, model, favorites, callbacks));
+    let favorites = model.favorites.as_ref().map(|favorites| {
+        favorites_surface(theme, model, favorites, callbacks, favorites_band_anchor)
+    });
     let plus_menu = model
         .plus_menu
         .as_ref()

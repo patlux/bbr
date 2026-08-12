@@ -93,6 +93,12 @@ pub struct SidebarCase {
     pub drag_tick: Option<usize>,
     /// §10.9: whether the tick is legal.
     pub tick_valid: bool,
+    /// §11.10: a tab drag is in flight and the empty favorites region
+    /// renders as the compact drop band (label + §10.9 drop wash) so the
+    /// first favorite can be created by dragging a concrete tab into the
+    /// grid. With tiles the region renders normally; the band flag is only
+    /// meaningful on the empty-grid family.
+    pub favorites_band: bool,
     /// §4: long one-line titles (truncation).
     pub long_titles: bool,
     /// §7.2: rows without a favicon (monogram fallback).
@@ -164,6 +170,7 @@ impl SidebarCase {
             divider_focused: false,
             drag_tick: None,
             tick_valid: true,
+            favorites_band: false,
             long_titles: false,
             missing_icons: false,
             cross_profile: false,
@@ -307,6 +314,15 @@ pub const SIDEBAR_VALID: &[SidebarCase] = &[
         traffic_lights: [12.0, 10.0, 58.0, 18.0],
         ..SidebarCase::new("titlebar nav — no history, no live session", Density::Normal, 280.0, 900.0, 2)
     },
+    // §11.10 favorites drop band: a tab drag is in flight and the empty
+    // grid renders as the compact drop band (label + §10.9 drop wash) so
+    // the first favorite can be created by dragging a concrete tab into
+    // the grid (daily-driver Sidebar slice).
+    SidebarCase {
+        tab_count: 2,
+        favorites_band: true,
+        ..SidebarCase::new("favorites drop band — empty grid during tab drag", Density::Normal, 280.0, 900.0, 2)
+    },
 ];
 
 /// A rejected combination with the exact DESIGN/packet reason (the matrix
@@ -349,6 +365,15 @@ pub const SIDEBAR_REJECTED: &[RejectedSidebar] = &[
         },
         reason: "the §11.4 footer is exactly [Downloads] [one permanent strip] [+] — the model carries one StripModel; a second strip would duplicate the §11.3 identity authority",
     },
+    RejectedSidebar {
+        label: "favorites band flag on a non-empty grid",
+        case: SidebarCase {
+            favorite_count: 2,
+            favorites_band: true,
+            ..SidebarCase::new("favorites band flag on a non-empty grid", Density::Normal, 280.0, 900.0, 3)
+        },
+        reason: "the §11.10 drop band is the empty grid during a tab drag (the region renders its label + §10.9 wash so the first favorite can be created); with tiles the region renders the normal grid and the wash is the targeted flag — claiming the empty-band form on a non-empty grid is the rejected combination",
+    },
 ];
 
 /// The one validity authority: a case is valid only when no matrix-only
@@ -356,6 +381,11 @@ pub const SIDEBAR_REJECTED: &[RejectedSidebar] = &[
 /// builder refuses every invalid case.
 pub fn sidebar_case_valid(case: &SidebarCase) -> bool {
     if case.claims_zero_content_floor || case.claims_collapsed_chrome || case.claims_two_strips {
+        return false;
+    }
+    // §11.10: the drop band is the empty grid during a tab drag; with tiles
+    // the region renders the normal grid (the wash is the targeted flag).
+    if case.favorites_band && case.favorite_count > 0 {
         return false;
     }
     // A collapsed rail renders at width 0 — chrome content at a positive

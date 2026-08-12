@@ -46,6 +46,7 @@ pub const SIDEBAR_STATE_OPTIONS: &[&str] = &[
     "reduced-motion + increased contrast",
     "titlebar nav — full history + live session",
     "titlebar nav — no history, no live session",
+    "favorites drop band — empty grid during tab drag",
 ];
 
 /// §11.4 Sidebar: the production `bbr_ui::sidebar::sidebar_surface` renders
@@ -69,6 +70,7 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         .unwrap_or(&SIDEBAR_VALID[0]);
     let model = build_sidebar_fixture(case, handles).expect("valid matrix family builds");
     let field_anchor = field_anchor_placeholder();
+    let favorites_band_anchor = band_anchor_placeholder();
     let command_results = case
         .command_results
         .then(|| child_placeholder(theme, "command results (app-owned child)"));
@@ -80,6 +82,7 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         &model,
         &callbacks,
         field_anchor,
+        favorites_band_anchor,
         command_results,
         downloads_panel,
         // The §11.3 Space-configuration panel is an app-owned child too;
@@ -188,6 +191,18 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
 fn field_anchor_placeholder() -> AnyElement {
     div()
         .id("bbr-gallery-sidebar-field-anchor")
+        .size_0()
+        .into_any()
+}
+
+/// The Gallery-owned §11.10 favorites-band anchor placeholder: an invisible
+/// element inside the favorites region (the app's is an invisible
+/// rect-recorder element; the gallery's placeholder occupies no layout
+/// space and paints nothing — the band is proven at the same render
+/// boundary).
+fn band_anchor_placeholder() -> AnyElement {
+    div()
+        .id("bbr-gallery-sidebar-band-anchor")
         .size_0()
         .into_any()
 }

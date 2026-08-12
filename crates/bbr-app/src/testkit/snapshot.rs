@@ -192,6 +192,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             drag_source: self.drag_source,
             drag_slot: self.drag_slot,
             drag_chip: self.drag_chip,
+            drag_favorites: self.drag_favorites,
+            favorites_rect: self.favorites_rect,
             drag_valid: self.drag_valid,
             space_chips: self.space_chips.clone(),
             active_appearance: self.active_appearance.clone(),

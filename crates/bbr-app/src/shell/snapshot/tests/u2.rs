@@ -86,6 +86,7 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
     let ids = super::super::u2::u2_visible_ids(
         &browser,
         &[],
+        false,
         &[],
         &FolderPresentation::default(),
         &PlusMenuState::default(),
@@ -121,8 +122,9 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
         open: true,
         selection: 1,
     };
-    let ids =
-        super::super::u2::u2_visible_ids(&browser, &favorites, &folders, &expanded, &plus_menu);
+    let ids = super::super::u2::u2_visible_ids(
+        &browser, &favorites, false, &folders, &expanded, &plus_menu,
+    );
     for required in [
         "bbr-footer",
         "bbr-downloads",

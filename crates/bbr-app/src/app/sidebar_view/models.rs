@@ -16,16 +16,21 @@ use super::BbrApp;
 impl BbrApp {
     /// The §11.10 favorites region model: the deterministic tile grid plus
     /// the §10.9 drag-target wash while a tab drag targets the grid. `None`
-    /// while the region is empty — the label hides with it (§11.4 region
-    /// rule).
+    /// while the region is empty at rest — the label hides with it (§11.4
+    /// region rule) — except while a tab drag is in flight, when the region
+    /// renders as the compact drop band (label + wash once targeted) so the
+    /// first favorite can be created by dragging a concrete tab into the
+    /// grid (DESIGN.md §11.10 data source / daily-driver Sidebar slice).
     pub(super) fn favorites_model(&self, tiles: &[FavoriteTileSpec]) -> Option<FavoritesModel> {
-        if tiles.is_empty() {
+        let drag_active = self.tab_drag.is_active();
+        let targeted =
+            self.tab_drag.target() == Some(crate::app::drag_target::DragTarget::Favorites);
+        if tiles.is_empty() && !drag_active {
             return None;
         }
         Some(FavoritesModel {
             tiles: tiles.to_vec(),
-            targeted: self.tab_drag.target()
-                == Some(crate::app::drag_target::DragTarget::Favorites),
+            targeted,
         })
     }
 
