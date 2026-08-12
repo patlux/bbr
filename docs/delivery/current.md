@@ -46,7 +46,7 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | DD-GESTURE | Current-base real-app gesture revalidation | `integrated` | lane commit `f2183fdb2c3f3586c500d4c67a1bdc0257e6a06d`; merge `ebb8e137aa54077c47b5ae4c5603e47e8492d9ca` | Orchestrator; independent `REVIEW_PASS` and focused post-merge gates complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Closed for this wave; testkit-only fix, production command routing unchanged |
 | DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `integrated` | lane `6327b6b48b84f847061e5d55b85d58843dd676f0`; merge `69616b88be823b8ab35d1f806ada911d6256d9e6`; gate fix `4b3f40c5f736d3703682d001181d7c597ef317eb` | Orchestrator; focused `REVIEW_PASS`, semantic Justfile union and post-merge gates complete | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Closed for this wave; fullscreen/multi-display/manual drag and performance evidence remain honestly open |
 
-| DD-SPACE | Create/activate/configure Space and icon-only footer | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance`; branch `parallel/dd-space-appearance`; exact tree `c8dd884c3da20d557f1b3c767b48b6220f679d34`, 68 paths | Orchestrator; remediation and independent focused `REVIEW_PASS` complete | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Commit exact candidate and integrate now after DD-TITLEBAR; resolve shared Sidebar/Gallery/Justfile seams semantically, then run bounded non-performance gates |
+| DD-SPACE | Create/activate/configure Space and icon-only footer | `integrating` | lane `8a15496488f27e7a1f6150b27d5374cf033c5b7e`; merge `7f658aba0a4725db67c2e0fba33fcaf5388d0db8`, tree `7d9b0040247566f92ddee6bfbd3b3944402a71c4` | Orchestrator; exact reviewed candidate merged, post-merge gates active | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Run both fresh warning-denied Clippy gates, targeted units, roadmap/UI/script/diff checks, and affected Spaces/Sidebar/Organize/Gallery GUI suites; promote Sidebar only when green |
 | DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; exact tree `2bfa4c4b…`, 29 paths | Orchestrator; independent `REVIEW_PASS` complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Preserve exact reviewed tree; integrate immediately after DD-SPACE passes post-merge gates |
 | DD-TAB-MENU | Production Tab/Favorite context menus | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; exact tree `c8bcaaf00af1004e691b36776056b69a21b9fcad`, 66 paths | Orchestrator; remediation and independent focused `REVIEW_PASS` complete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Preserve exact reviewed tree; integrate after DD-SIDEBAR per serial order |
 | DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console is locked and two foreign qemu windows remain | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
@@ -215,6 +215,15 @@ are green. Both real indices remain at activation base with zero staged paths;
 no lane process, Git lock or GUI-lock holder survives. DD-SPACE is promoted to
 the exclusive integration position; DD-TAB-MENU remains frozen behind
 DD-SIDEBAR. No performance execution occurred.
+
+DD-SPACE merge audit: exact reviewed tree `c8dd884c…` was materialized as lane
+commit `8a15496488f27e7a1f6150b27d5374cf033c5b7e` and merged after Titlebar as
+`7f658aba0a4725db67c2e0fba33fcaf5388d0db8`, tree `7d9b0040…`. The sole
+merge conflict was the additive `bbr-testkit::protocol` re-export list;
+semantic resolution retains both `TitlebarSnapshot` and the new
+`SpaceConfigSnapshot`. Pre-commit format, testkit 28/28, app testkit
+all-target compile and diff checks are green. Full post-merge gates are active;
+DD-SIDEBAR remains frozen until they pass. No performance execution occurred.
 
 ## Downstream dependency queue
 
