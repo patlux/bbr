@@ -227,6 +227,7 @@ impl BbrApp {
         }
         self.find_discard(cx);
         self.menu_discard(cx);
+        self.tab_menu_discard(cx);
         self.dismiss_command_portal(cx);
         self.command_surface = CommandSurface::Overlay;
         self.activate_command_bar(window, cx);

@@ -169,6 +169,12 @@ pub struct TestSnapshot {
     /// selection, the deterministic row model with genuine enablement, the
     /// pointer anchor, and the native bridge's ownership diagnostics.
     pub context_menu: bbr_testkit::protocol::ContextMenuSnapshot,
+    /// Typed Tab/Favorite context-menu presentation state (task packet
+    /// `tab-favorite-context-menus`; DESIGN.md §11.13): the exact bound
+    /// `TabId`, the keyboard/pointer cursor, the open submenu, the
+    /// deterministic row model, and the resolved clamped placement.
+    /// Ordinary GPUI chrome — never a portal surface.
+    pub tab_menu: bbr_testkit::protocol::TabMenuSnapshot,
     /// Typed credential-sheet presentation state (queue item 10): the
     /// presented challenge's identity/metadata, lifecycle state, redacted
     /// outcome, and masked edit flags. By construction no credential can

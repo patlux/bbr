@@ -111,6 +111,12 @@ mod snapshot;
 #[cfg(target_os = "macos")]
 mod stories;
 #[cfg(target_os = "macos")]
+mod tab_menu_app;
+#[cfg(target_os = "macos")]
+mod tab_menu_matrix;
+#[cfg(target_os = "macos")]
+mod tab_menu_recorder;
+#[cfg(target_os = "macos")]
 mod tab_row_app;
 #[cfg(target_os = "macos")]
 mod tab_row_matrix;

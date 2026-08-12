@@ -495,6 +495,64 @@ pub enum Request {
     /// all call the same app method): the menu closes and focus returns to
     /// the domain captured at open. No-op when no menu is open.
     ContextMenuClose,
+    /// Secondary-click on a visible tab row through the production pointer
+    /// path (task packet `tab-favorite-context-menus`): the exact app
+    /// method the row's right-button mouse-down listener calls. Opens the
+    /// Tab/Favorite menu bound to that exact row's `TabId`, anchored at
+    /// `(x, y)` in window content coordinates; never selects or mutates the
+    /// source. A press on another row while the menu is open re-binds it.
+    RightClickRow {
+        index: usize,
+        x: f32,
+        y: f32,
+    },
+    /// Secondary-click on a favorite tile through the production pointer
+    /// path: opens the same menu bound to that tile's exact `TabId` (the
+    /// Favorite is another presentation of the same concrete tab); never
+    /// activates the tile. `(x, y)` in window content coordinates.
+    RightClickFavorite {
+        index: usize,
+        x: f32,
+        y: f32,
+    },
+    /// Pointer-hover/select path into the open Tab/Favorite menu: the exact
+    /// app method the row's `on_hover` element listener calls (the keyboard
+    /// cursor and the pointer hover share one selection). No-op when the
+    /// menu is closed.
+    TabMenuSelect {
+        index: usize,
+    },
+    /// Pointer-hover/select path into the open Tab/Favorite submenu: the
+    /// exact app method a submenu row's `on_hover` listener calls. No-op
+    /// when no submenu is open.
+    TabMenuSubmenuSelect {
+        index: usize,
+    },
+    /// Pointer-press path into the open Tab/Favorite menu: the exact app
+    /// method the row's mouse-down listener calls — selects the row and
+    /// activates it (each enabled action dispatches exactly one typed
+    /// command against the bound `TabId`), then dismisses the menu and
+    /// restores the origin focus domain. A disabled row never activates;
+    /// like a native menu it dismisses the menu.
+    TabMenuActivate {
+        index: usize,
+    },
+    /// Pointer-press path into the open Tab/Favorite submenu: commits the
+    /// submenu row through the same typed-command authority, then dismisses
+    /// the menu. No-op when no submenu is open.
+    TabMenuSubmenuActivate {
+        index: usize,
+    },
+    /// Dismiss the open Tab/Favorite menu through the production close path
+    /// (the Escape key, an outside pointer press, and this seam all call the
+    /// same app method): the menu closes and focus returns to the domain
+    /// captured at open. No-op when no menu is open.
+    TabMenuClose,
+    /// A pointer press outside the open Tab/Favorite menu (the §13
+    /// one-pointer-action dismissal): the exact app method the root
+    /// mouse-down listener calls — one outside press dismisses the menu and
+    /// restores the origin focus domain. No-op when no menu is open.
+    TabMenuOutsideClick,
     /// Focus the GPUI command bar (chrome) — the E2E reader of Cmd-L.
     ActivateCommandBar,
     /// Pointer press on the §11.5 address control through the production
@@ -860,6 +918,32 @@ pub enum Request {
         operation_id: BenchmarkOperationId,
         view: WebViewId,
         point: [f32; 2],
+    },
+    /// Measure the production Tab/Favorite context-menu open over the
+    /// inactive tab row at `row` (task packet
+    /// `tab-favorite-context-menus`): the exact app method the row's
+    /// right-button mouse-down listener routes to
+    /// (`open_tab_menu_from_row`, anchored at `point` in window content
+    /// coordinates). The sample commits only from a main-window render that
+    /// drew the menu open, focused, and bound to the exact source `TabId`
+    /// at the armed anchor — the warm-presentation class; the source
+    /// tab/session/selection is never touched.
+    BenchmarkTabMenuOpen {
+        operation_id: BenchmarkOperationId,
+        row: usize,
+        point: [f32; 2],
+    },
+    /// Measure the production Tab/Favorite menu submenu commit (task packet
+    /// `tab-favorite-context-menus`): the menu must already be open bound
+    /// to the source `TabId` (the driver opens it unmeasured between
+    /// samples); the sample starts at the exact hover seam that opens the
+    /// one-level submenu card for `parent_row` (`tab_menu_select`) and
+    /// commits only from a main-window render that drew the open submenu
+    /// card bound to the same source — the warm-presentation class, source
+    /// identity preserved.
+    BenchmarkTabMenuSubmenuCommit {
+        operation_id: BenchmarkOperationId,
+        parent_row: usize,
     },
     /// Measure the production footer `[Downloads]` open through
     /// [`Self::ClickFooterDownloads`]'s exact seam (`toggle_downloads` →

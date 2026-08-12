@@ -117,6 +117,25 @@ impl BbrApp {
             entity.update(cx, |view, cx| view.activate_favorite(index, window, cx));
         });
 
+        // §11.13: a secondary-click on a tab row opens the Tab/Favorite
+        // context menu bound to that exact row's `TabId` (never selects the
+        // source).
+        let entity = cx.entity();
+        let on_context_menu_row: RowCallback = Rc::new(move |index, event, window, cx| {
+            entity.update(cx, |view, cx| {
+                view.open_tab_menu_from_row(index, event, window, cx)
+            });
+        });
+
+        // §11.13: a secondary-click on a favorite tile opens the same menu
+        // bound to that tile's exact `TabId` (never activates it).
+        let entity = cx.entity();
+        let on_context_menu_favorite: RowCallback = Rc::new(move |index, event, window, cx| {
+            entity.update(cx, |view, cx| {
+                view.open_tab_menu_from_favorite(index, event, window, cx)
+            });
+        });
+
         // §11.11: pointer entry into a folder row (focuses the region with
         // that row as the keyboard anchor).
         let entity = cx.entity();
@@ -252,6 +271,8 @@ impl BbrApp {
             on_hover_row,
             on_tab_list_key_down,
             on_activate_favorite,
+            on_context_menu_row,
+            on_context_menu_favorite,
             on_focus_folder,
             on_toggle_folder,
             on_select_folder_member,

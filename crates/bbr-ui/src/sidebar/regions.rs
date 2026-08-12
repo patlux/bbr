@@ -36,6 +36,13 @@ pub fn favorites_surface(
                 tile,
                 callbacks::row(&callbacks.on_activate_favorite, tile.index),
             )
+            // §11.13: a secondary-click on the tile opens the Tab/Favorite
+            // context menu bound to that tile's exact `TabId` (the app
+            // resolves the favorite at open; opening never activates).
+            .on_mouse_down(
+                MouseButton::Right,
+                callbacks::row(&callbacks.on_context_menu_favorite, tile.index),
+            )
             .into_any()
         })
         .collect();

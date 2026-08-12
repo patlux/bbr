@@ -35,6 +35,7 @@ pub mod primitives;
 pub mod profile_chip;
 pub mod saved_pages_library;
 pub mod sidebar;
+pub mod tab_menu;
 
 use gpui::{div, prelude::*, px, AnyElement, Rgba, SharedString};
 
@@ -261,6 +262,15 @@ pub fn catalog() -> CatalogRegistry {
             command::render_command,
             command::COMMAND_STATE_OPTIONS,
         )],
+    );
+    // The Tab/Favorite context-menu story (task packet
+    // `tab-favorite-context-menus`): the exact production
+    // `bbr_ui::surfaces::tab_menu::tab_menu_card` renders every valid
+    // matrix family with recorder callbacks. Appended at canonical StoryId
+    // 46 after the pinned 0–45 prefix — no renumbering or reservation.
+    registry.add_group(
+        "Tab / Favorite menu",
+        vec![story("Tab / Favorite menu", tab_menu::render_tab_menu, &[])],
     );
     registry
 }

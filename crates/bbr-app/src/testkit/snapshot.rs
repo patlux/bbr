@@ -254,6 +254,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             find: self.find.clone(),
             zoom: self.zoom.clone(),
             context_menu: self.context_menu.clone(),
+            tab_menu: self.tab_menu.clone(),
             auth: self.auth.clone(),
             plus_menu_open: self.plus_menu_open,
             plus_menu_selection: self.plus_menu_selection,

@@ -260,6 +260,29 @@ impl OrganizationController {
         Ok(OrganizationEvent::TabMovedIntoFolder { tab, folder })
     }
 
+    /// `MoveTabIntoFolder` keyed by the exact persistent [`TabId`] (the
+    /// tab/favorite context-menu authority; task packet
+    /// `tab-favorite-context-menus`): group the bound tab into `folder` of
+    /// **its own space** — never the active space. The tab keeps its space
+    /// membership, ordering, selection, and live session; membership in a
+    /// previous folder is left; folders of another space and unknown tabs
+    /// are rejected whole. The active space is never switched.
+    pub fn move_tab_into_folder_id(
+        &mut self,
+        controller: &BrowserController,
+        tab: TabId,
+        folder: bbr_domain::FolderId,
+    ) -> Result<OrganizationEvent, OrganizationError> {
+        self.reconcile(controller);
+        let snapshot = controller.snapshot();
+        let tab_space_id = tab_space(&snapshot, tab)
+            .ok_or(OrganizationError::Folder(FolderError::UnknownTab(tab)))?;
+        self.store.move_membership(folder, tab, tab_space_id)?;
+        self.check_invariants(controller)
+            .expect("organization invariants hold after reconcile");
+        Ok(OrganizationEvent::TabMovedIntoFolder { tab, folder })
+    }
+
     /// `FavoriteToggle` command: toggle the active space's concrete tab at
     /// `index` in the window-global favorites grid. Toggling the same `TabId`
     /// removes it; re-adding appends it at the end.
@@ -280,6 +303,42 @@ impl OrganizationController {
             .iter()
             .find(|candidate| candidate.id == tab)
             .expect("active-space tab exists in global snapshot");
+        let outcome = self.store.favorite_toggle_tab(tab);
+        self.check_invariants(controller)
+            .expect("organization invariants hold after reconcile");
+        Ok(OrganizationEvent::FavoriteToggled {
+            added: outcome.added,
+            tab,
+            space: global.space,
+            profile: global.profile,
+        })
+    }
+
+    /// Whether `tab` is currently a favorite (the favorites-grid membership
+    /// test the tab/favorite context-menu source resolution consumes; task
+    /// packet `tab-favorite-context-menus`). Read-only.
+    pub fn is_favorite(&self, tab: TabId) -> bool {
+        self.store.favorites().any(|favorite| favorite.tab == tab)
+    }
+
+    /// Toggle a favorite by its exact persistent `TabId` from any current
+    /// space (the tab/favorite context-menu authority; task packet
+    /// `tab-favorite-context-menus`). The owning space/profile are derived
+    /// from the controller read model — the active space is never switched
+    /// and the tab's space membership, order, selection, and live session
+    /// are untouched. Unknown tabs reject whole.
+    pub fn favorite_toggle_id(
+        &mut self,
+        controller: &BrowserController,
+        tab: TabId,
+    ) -> Result<OrganizationEvent, OrganizationError> {
+        self.reconcile(controller);
+        let snapshot = controller.snapshot();
+        let global = snapshot
+            .all_tabs
+            .iter()
+            .find(|candidate| candidate.id == tab)
+            .ok_or(OrganizationError::Folder(FolderError::UnknownTab(tab)))?;
         let outcome = self.store.favorite_toggle_tab(tab);
         self.check_invariants(controller)
             .expect("organization invariants hold after reconcile");

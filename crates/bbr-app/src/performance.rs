@@ -27,6 +27,7 @@ mod library;
 pub mod pane_geometry;
 mod peek;
 pub mod slot;
+mod tab_menu;
 mod u2;
 mod zoom;
 use command::{CommandExpectation, CommandObservation};
@@ -71,6 +72,10 @@ struct State {
     /// context-menu benchmarks commit only against it (render-gated, see
     /// `context_menu`).
     latest_context_menu: Option<context_menu::ContextMenuObservation>,
+    /// The Tab/Favorite menu presentation the main-window render actually
+    /// drew; the tab-menu benchmarks commit only against it (render-gated,
+    /// see `tab_menu`).
+    latest_tab_menu: Option<tab_menu::TabMenuObservation>,
     /// The credential-sheet presentation the portal render actually drew;
     /// the auth benchmarks commit only against it (render-gated, redacted —
     /// see `auth`).
@@ -154,6 +159,10 @@ struct Pending {
     /// The exact context-menu presentation the pending sample must commit
     /// from (open/focused over the bound view at the armed anchor).
     context_menu: Option<context_menu::ContextMenuExpectation>,
+    /// The exact Tab/Favorite menu presentation the pending sample must
+    /// commit from (open/focused bound to the exact source `TabId` at the
+    /// armed anchor, or the open submenu card for the submenu-commit kind).
+    tab_menu: Option<tab_menu::TabMenuExpectation>,
     /// The exact credential-sheet presentation identity the pending sample
     /// must commit from (open with the armed challenge id).
     auth: Option<auth::AuthExpectation>,
@@ -179,6 +188,7 @@ impl PerformanceProbe {
                 latest_error_surface: error_surface::ErrorSurfaceObservation::default(),
                 latest_zoom: None,
                 latest_context_menu: None,
+                latest_tab_menu: None,
                 latest_auth: None,
                 latest_peek: None,
                 library: library::LibraryObserved::default(),
@@ -211,6 +221,7 @@ impl PerformanceProbe {
                     error_surface: None,
                     zoom: None,
                     context_menu: None,
+                    tab_menu: None,
                     auth: None,
                     peek: None,
                     library: None,
@@ -261,6 +272,7 @@ impl PerformanceProbe {
             error_surface: None,
             zoom: None,
             context_menu: None,
+            tab_menu: None,
             auth: None,
             peek: None,
             library: None,
@@ -539,6 +551,7 @@ impl PerformanceProbe {
             || !error_surface::error_surface_matches(pending, &state)
             || !zoom::zoom_matches(pending, &state)
             || !context_menu::context_menu_matches(pending, &state)
+            || !tab_menu::tab_menu_matches(pending, &state)
             || !auth::auth_matches(pending, &state)
             || !peek::peek_matches(pending, &state)
             || !library::library_matches(pending, &state)

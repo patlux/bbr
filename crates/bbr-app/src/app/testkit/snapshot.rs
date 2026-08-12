@@ -270,38 +270,47 @@ impl BbrApp {
             active_appearance,
             space_strip_scroll: self.space_strip_scroll_snapshot(),
             swipe: self.swipe_snapshot(),
-            visible_ids: crate::shell::snapshot::visible_ids_u2(
-                &browser,
-                self.chrome_focused(window),
-                self.command_bar_mode,
-                self.sidebar_visible,
-                self.command_bar_hint().as_deref(),
-                self.command_profile_hint.as_deref(),
-                self.command_surface,
-                command_result_state,
-                &self.command_ranking.results,
-                &in_rail_surface_ids,
-                drag_slot,
-                self.tab_drag.chip_target(),
-                self.dense_window.get(),
-                pane_layout,
-                &crate::shell::snapshot::U2IdsInput {
-                    favorites: &organization.favorites,
-                    folders: &organization.folders,
-                    expanded: self.u2.folder_presentation.clone(),
-                    plus_menu: self.u2.plus_menu,
-                    downloads_open: self.downloads.open,
-                    downloads_window: self
-                        .downloads
-                        .window_for(self.downloads.render_state.scroll_anchor),
-                    downloads_layout: self.downloads_layout(),
-                    downloads_delete_rows: self.downloads_delete_rows_in_window(),
-                    error_surface_visible,
-                    error_surface_origin,
-                    library_open: self.library.open,
-                    library_ids: crate::app::library::model::library_visible_ids(&library_model),
-                },
-            ),
+            visible_ids: {
+                let mut ids = crate::shell::snapshot::visible_ids_u2(
+                    &browser,
+                    self.chrome_focused(window),
+                    self.command_bar_mode,
+                    self.sidebar_visible,
+                    self.command_bar_hint().as_deref(),
+                    self.command_profile_hint.as_deref(),
+                    self.command_surface,
+                    command_result_state,
+                    &self.command_ranking.results,
+                    &in_rail_surface_ids,
+                    drag_slot,
+                    self.tab_drag.chip_target(),
+                    self.dense_window.get(),
+                    pane_layout,
+                    &crate::shell::snapshot::U2IdsInput {
+                        favorites: &organization.favorites,
+                        folders: &organization.folders,
+                        expanded: self.u2.folder_presentation.clone(),
+                        plus_menu: self.u2.plus_menu,
+                        downloads_open: self.downloads.open,
+                        downloads_window: self
+                            .downloads
+                            .window_for(self.downloads.render_state.scroll_anchor),
+                        downloads_layout: self.downloads_layout(),
+                        downloads_delete_rows: self.downloads_delete_rows_in_window(),
+                        error_surface_visible,
+                        error_surface_origin,
+                        library_open: self.library.open,
+                        library_ids: crate::app::library::model::library_visible_ids(
+                            &library_model,
+                        ),
+                    },
+                );
+                // §11.13: the open Tab/Favorite menu's ids mirror the
+                // render's gating exactly (the card, the top-level rows, and
+                // the open submenu card + its rows).
+                ids.extend(self.tab_menu_visible_ids());
+                ids
+            },
             semantics,
             command_bar_mode: self.command_bar_mode.into(),
             command_bar_text: self.command_text.text.clone(),
@@ -350,6 +359,7 @@ impl BbrApp {
                 }
             },
             context_menu: self.context_menu_snapshot(),
+            tab_menu: self.tab_menu_snapshot(),
             auth: self.auth_snapshot_protocol(),
             plus_menu_open: self.u2.plus_menu.open,
             plus_menu_selection: self.u2.plus_menu.selection,

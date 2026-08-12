@@ -82,9 +82,12 @@ impl BbrApp {
             return;
         }
         // Exactly one active portal presentation per window: a page
-        // right-click replaces an open find bar or command surface.
+        // right-click replaces an open find bar or command surface, and the
+        // Tab/Favorite menu (task packet `tab-favorite-context-menus`) is
+        // discarded the same way.
         self.find_discard(cx);
         self.dismiss_command_portal(cx);
+        self.tab_menu_discard(cx);
         let snapshot = self.controller.snapshot();
         let url = snapshot.nav.url.clone();
         let items = ContextMenuController::build_items(

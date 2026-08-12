@@ -57,6 +57,12 @@ pub struct SidebarObserver {
     pub on_tab_list_key_down: KeyCallback,
     /// §11.10 favorites tile activation.
     pub on_activate_favorite: RowCallback,
+    /// §11.13 tab-row secondary-click (the Tab/Favorite context-menu open;
+    /// the app's open method stops propagation).
+    pub on_context_menu_row: RowCallback,
+    /// §11.13 favorite-tile secondary-click (the same menu bound to the
+    /// tile's concrete `TabId`; the app's open method stops propagation).
+    pub on_context_menu_favorite: RowCallback,
     /// §11.11 folder-row focus.
     pub on_focus_folder: FolderCallback,
     /// §11.11 folder disclosure.
@@ -177,6 +183,8 @@ pub fn build_sidebar_observer(
             )
         },
         on_activate_favorite: row(SidebarObservation::FavoriteActivate, false),
+        on_context_menu_row: row(SidebarObservation::RowContextMenu, true),
+        on_context_menu_favorite: row(SidebarObservation::FavoriteContextMenu, true),
         on_focus_folder: {
             let record = Rc::clone(&record);
             Rc::new(
@@ -309,6 +317,8 @@ impl SidebarObserver {
             on_hover_row: Rc::clone(&self.on_hover_row),
             on_tab_list_key_down: Rc::clone(&self.on_tab_list_key_down),
             on_activate_favorite: Rc::clone(&self.on_activate_favorite),
+            on_context_menu_row: Rc::clone(&self.on_context_menu_row),
+            on_context_menu_favorite: Rc::clone(&self.on_context_menu_favorite),
             on_focus_folder: Rc::clone(&self.on_focus_folder),
             on_toggle_folder: Rc::clone(&self.on_toggle_folder),
             on_select_folder_member: Rc::clone(&self.on_select_folder_member),
@@ -357,6 +367,8 @@ mod tests {
         let _ = &callbacks.on_hover_row;
         let _ = &callbacks.on_tab_list_key_down;
         let _ = &callbacks.on_activate_favorite;
+        let _ = &callbacks.on_context_menu_row;
+        let _ = &callbacks.on_context_menu_favorite;
         let _ = &callbacks.on_focus_folder;
         let _ = &callbacks.on_toggle_folder;
         let _ = &callbacks.on_select_folder_member;

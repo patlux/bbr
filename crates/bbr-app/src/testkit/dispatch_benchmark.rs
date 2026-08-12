@@ -14,6 +14,7 @@ use crate::window_seam::with_app;
 
 use super::dispatch_benchmark_find::dispatch_benchmark_find;
 use super::dispatch_benchmark_peek::dispatch_benchmark_peek;
+use super::dispatch_benchmark_tab_menu::dispatch_benchmark_tab_menu;
 use super::dispatch_benchmark_zoom::dispatch_benchmark_zoom;
 use super::dispatch_util::{browser_mutation, err_response, flush_dense_frame};
 
@@ -29,6 +30,11 @@ pub(crate) fn dispatch_benchmark(
     // `BenchmarkFind*` arms), so `dispatch_benchmark` stays under the
     // ~500-line budget.
     if let Some(response) = dispatch_benchmark_find(req, window, app, cx) {
+        return Some(response);
+    }
+    // Tab/Favorite context-menu benchmarks route through their focused
+    // module (the `BenchmarkTabMenu*` arms).
+    if let Some(response) = dispatch_benchmark_tab_menu(req, window, app, cx) {
         return Some(response);
     }
     // Peek benchmarks route through their focused module (the

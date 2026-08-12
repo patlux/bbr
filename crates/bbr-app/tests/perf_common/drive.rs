@@ -40,6 +40,7 @@ use super::peek_drive::drive_peek_scenarios;
 use super::responsiveness::drive_responsiveness_scenarios;
 use super::saved_pages_drive::drive_saved_pages_scenarios;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
+use super::tab_menu_drive::drive_tab_menu_scenarios;
 use super::zoom_drive::drive_zoom_scenarios;
 
 /// Drive the full interaction matrix and return the raw samples per scenario.
@@ -1405,6 +1406,22 @@ fn drive_matrix_inner(
         raw.extend(error_surface_samples);
         raw.extend(zoom_samples);
         raw.extend(context_menu_samples);
+        // Tab/Favorite context menus (task packet
+        // `tab-favorite-context-menus`): the production right-click open
+        // over an inactive tab row (`tab_context_menu_open` — source
+        // resolution, availability matrix, row model, clamped placement,
+        // focus handoff) and the production hover path that opens the
+        // one-level `Move to Space` submenu card
+        // (`tab_context_menu_submenu_commit`) — each measured on a
+        // deterministic fixture loaded before any sample and committing
+        // only from a main-window render that drew the armed presentation
+        // identity bound to the exact source `TabId` (the in-app probe owns
+        // the fast-but-wrong guard). The block never touches
+        // tabs/sessions/views permanently and closes the menu before the
+        // auth block below.
+        let tab_menu_samples =
+            drive_tab_menu_scenarios(client, harness, &mut since, config, &mut operation);
+        raw.extend(tab_menu_samples);
         raw.extend(auth_samples);
         raw.extend(peek_samples);
         // Renderer responsiveness scenarios are code-complete and compiled,

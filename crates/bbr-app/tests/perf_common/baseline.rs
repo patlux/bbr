@@ -366,6 +366,26 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Tab/Favorite context menus (task packet
+        // `tab-favorite-context-menus`): `tab_context_menu_open` spans the
+        // production right-click open over an inactive tab row — the source
+        // resolution, the availability matrix, the deterministic row model,
+        // the clamped placement, and the focus handoff — and commits only
+        // from a main-window render that drew the menu bound to the exact
+        // source `TabId` at the armed anchor;
+        // `tab_context_menu_submenu_commit` spans the production hover path
+        // that opens the one-level submenu card against the same bound
+        // source. Both are the warm-presentation class (50/100 ms, the same
+        // budget as the other command-surface presentations), no new class
+        // invented; no tab or session is created or touched.
+        "tab_context_menu_open" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "tab_context_menu_submenu_commit" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         // Credential sheet (queue item 10): the sheet open presents the
         // awaiting challenge in the one `NativeAboveWeb` portal window — the
         // warm-presentation class (same 50/100 ms budget as the other
@@ -601,6 +621,8 @@ impl Baseline {
             "error_surface_present",
             "zoom_step",
             "context_menu_open",
+            "tab_context_menu_open",
+            "tab_context_menu_submenu_commit",
             "auth_sheet_open",
             "peek_request_to_present",
             "peek_dismiss_to_origin",
@@ -1055,6 +1077,35 @@ mod tests {
         let mut good = BTreeMap::new();
         good.insert("context_menu_open".into(), measured(45.0, 90.0));
         assert!(evaluate(&good, &b, false).is_empty());
+    }
+
+    #[test]
+    fn tab_menu_budgets_are_seeded_and_enforced() {
+        // Regression guard (task packet `tab-favorite-context-menus`): the
+        // tab-menu open and submenu-commit scenarios must carry their
+        // contract budgets in the seed so a future menu-presentation
+        // regression trips the gate instead of being silently skipped (an
+        // unseeded kind is skipped by `evaluate` with no signal). Both
+        // reuse the warm command-surface class (50/100 ms) — the source
+        // resolution, row model, clamped placement, and focus handoff,
+        // committed from the main-window render — no new budget class.
+        let b = Baseline::seed();
+        for kind in ["tab_context_menu_open", "tab_context_menu_submenu_commit"] {
+            let entry = b
+                .entries
+                .get(kind)
+                .expect("seed baseline must carry the {kind} contract budget");
+            assert_eq!(entry.budget_p95_ms, 50.0);
+            assert_eq!(entry.budget_max_ms, Some(100.0));
+            let mut slow = BTreeMap::new();
+            slow.insert(kind.into(), measured(120.0, 160.0));
+            let r = evaluate(&slow, &b, false);
+            assert!(r.iter().any(|x| x.rule == "abs_p95"));
+            assert!(r.iter().any(|x| x.rule == "abs_max"));
+            let mut good = BTreeMap::new();
+            good.insert(kind.into(), measured(45.0, 90.0));
+            assert!(evaluate(&good, &b, false).is_empty());
+        }
     }
 
     #[test]

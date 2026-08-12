@@ -73,8 +73,11 @@ impl BbrApp {
     }
 
     /// Open the plus menu: reset the keyboard selection, focus the menu
-    /// surface, and snap the open state.
+    /// surface, and snap the open state. The Tab/Favorite menu (task packet
+    /// `tab-favorite-context-menus`) is discarded — exactly one sidebar
+    /// chrome menu may own the keyboard.
     pub fn open_plus_menu(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.tab_menu_discard(cx);
         self.u2.plus_menu.open = true;
         self.u2.plus_menu.selection = 0;
         self.command_bar_mode = CommandBarMode::Inactive;

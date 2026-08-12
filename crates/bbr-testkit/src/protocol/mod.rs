@@ -40,8 +40,9 @@ pub use snapshot::{
     PreviewZOrder, ProfileSnapshot, RestoreDisposition, SavedPagesCollectionSnapshot,
     SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot, SemanticNode, SemanticRole, Snapshot,
     SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceSnapshot, SpaceStripScrollSnapshot,
-    StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, SwipeSnapshot, TabSnapshot,
-    TabVisualState, WebContentProbe, ZoomSnapshot,
+    StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, SwipeSnapshot,
+    TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState, WebContentProbe,
+    ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.

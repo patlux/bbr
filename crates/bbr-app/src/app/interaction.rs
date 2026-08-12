@@ -423,6 +423,13 @@ impl BbrApp {
             self.menu_close(window, cx);
             return;
         }
+        // Escape while the Tab/Favorite menu is open closes it and restores
+        // the origin focus domain (task packet `tab-favorite-context-menus`;
+        // the same global binding routes here).
+        if self.tab_menu.state.open {
+            self.tab_menu_close(window, cx);
+            return;
+        }
         // Escape while a find presentation is open closes it and restores
         // the origin focus domain (the global `escape → FocusWeb` binding
         // routes here).
@@ -584,6 +591,14 @@ impl BbrApp {
         // Escape dismisses (queue item 12, part B).
         if self.context_menu.state.open {
             self.on_menu_key_down(event, window, cx);
+            return;
+        }
+        // The Tab/Favorite menu owns the keyboard while it is open: Up/Down
+        // move the cursor (top-level or inside the open submenu), Right/Left
+        // enter/leave submenus, Enter commits, Escape dismisses (task packet
+        // `tab-favorite-context-menus`).
+        if self.tab_menu.state.open {
+            self.on_tab_menu_key_down(event, window, cx);
             return;
         }
         // A find presentation owns the keyboard while it is open: printable

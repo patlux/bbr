@@ -95,6 +95,9 @@ mod swipe;
 #[cfg(feature = "testkit")]
 mod swipe_benchmarks;
 mod tab;
+pub(crate) mod tab_menu;
+#[cfg(feature = "testkit")]
+mod tab_menu_benchmarks;
 #[cfg(feature = "testkit")]
 mod testkit;
 mod u2;
@@ -320,6 +323,13 @@ pub struct BbrApp {
     /// session or adapter — plus the deterministic dismissal/activation
     /// rules.
     context_menu: crate::app::context_menu::ContextMenuController,
+    /// Production Tab/Favorite context menu (task packet
+    /// `tab-favorite-context-menus`; DESIGN.md §11.13): the app-owned
+    /// authority — the exact bound `TabId`, the deterministic row model
+    /// with typed actions, the clamped placement, and the dismissal/focus
+    /// rules. Ordinary GPUI chrome over the sidebar, never a portal
+    /// surface; the presentation DTO lives in `bbr-ui::surfaces::tab_menu`.
+    tab_menu: crate::app::tab_menu::TabMenuController,
     /// GPUI focus handle of the menu. The menu renders inside the
     /// non-activating portal window (never key by design), so keyboard
     /// input is handled by the main window: while a menu presentation is
@@ -530,6 +540,7 @@ impl BbrApp {
             #[cfg(target_os = "macos")]
             zoom_engine: None,
             context_menu: crate::app::context_menu::ContextMenuController::new(),
+            tab_menu: crate::app::tab_menu::TabMenuController::new(),
             menu_handle: cx.focus_handle(),
             #[cfg(target_os = "macos")]
             menu_engine: None,

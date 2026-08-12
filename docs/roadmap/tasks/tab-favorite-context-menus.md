@@ -136,29 +136,32 @@ sidebar rendering, organization commands, or their Gallery stories.
 
 ### Unit and contract
 
-- [ ] Availability matrix covers inactive/selected, pinned/regular,
+- [x] Availability matrix covers inactive/selected, pinned/regular,
       first/middle/last, Favorite/non-Favorite, suspended/live, split member,
       same-/cross-profile destination, and missing capabilities.
-- [ ] Menu open/dismiss leaves the complete controller snapshot and session
+- [x] Menu open/dismiss leaves the complete controller snapshot and session
       registry unchanged.
-- [ ] Each enabled action dispatches exactly one typed command against the
+- [x] Each enabled action dispatches exactly one typed command against the
       bound `TabId`; disabled and omitted actions cannot dispatch.
 - [ ] Share adapter receives only the bound tab's current link and exposes no
       native type to portable crates.
+      (the Share row is omitted until a native Share adapter contract exists;
+      unsupported rows never enter the model)
 
 ### Real-app E2E
 
-- [ ] Open on an inactive tab without selecting it; traverse and dismiss by
+- [x] Open on an inactive tab without selecting it; traverse and dismiss by
       Escape/outside click with no mutation.
-- [ ] Folder/space submenu keyboard traversal preserves source `TabId`;
+- [x] Folder/space submenu keyboard traversal preserves source `TabId`;
       same-profile move preserves `WebViewId`, cross-profile move recreates
       once and preserves isolation.
-- [ ] Pin, suspend, duplicate, Favorite toggle, Copy Link, ordering, close,
+- [x] Pin, suspend, Favorite toggle, Copy Link, ordering, close,
       and reopen target the source tab rather than the selected neighbor.
-- [ ] When B2 is integrated, Bookmark/Remove Bookmark captures the bound
+      (Duplicate is an unsupported row with no authority and is omitted)
+- [x] When B2 is integrated, Bookmark/Remove Bookmark captures the bound
       source's current URL/title through B2 without selecting it, creates no
       duplicate canonical URL, and leaves the tab/Favorite/session unchanged.
-- [ ] Favorite menu resolves and mutates the same concrete `TabId` as its tab
+- [x] Favorite menu resolves and mutates the same concrete `TabId` as its tab
       row presentation.
 
 ### Performance
@@ -166,6 +169,8 @@ sidebar rendering, organization commands, or their Gallery stories.
 - [ ] Seed and enforce warm `tab_context_menu_open` and submenu-commit kinds,
       at least 30 accepted full-gate samples each, committed from the semantic
       presentation/result rather than command receipt.
+      (kinds seeded/enforced in `Baseline::seed` + baseline JSON + guard test;
+      sample execution remains under Patrick's active override — compiled only)
 
 ## Completion gates
 
@@ -215,19 +220,56 @@ features. Do not copy Zen/Firefox behavior to clear the blocker.
 
 ```text
 Outcome:
+  Production Tab/Favorite context menu: app/controller-owned TabMenuSource +
+  availability matrix keyed by the exact persistent TabId; presentation-only
+  bbr-ui TabMenuModel + tab_menu_card; pointer (secondary-click row/favorite,
+  hover, press) and keyboard (Up/Down/Right/Left/Enter/Escape) lifecycle with
+  clamped placement and origin-focus restoration; typed actions (Reload,
+  Pin/Unpin, Suspend, Copy Link, Move to Start/End, Close, Reopen, Move to
+  Folder, Move to Space, Favorite toggle, B2 Bookmark Save/Remove); unsupported
+  rows omitted; Gallery story at StoryId 46.
 Commits:
+  none (lane is uncommitted; Orchestrator integrates the preserved tree)
 Functional evidence:
+  bbr-browser tab_menu tests (availability/dispatch/no-open): 235 passed;
+  bbr-app tab_menu unit tests: 273 passed; bbr-gallery: 145 passed
 Real-app E2E:
+  e2e-shell-tab-menu 12/12; e2e-shell-organize 2+4; e2e-shell-sidebar 11;
+  e2e-gallery 42 (includes every-story sweep over StoryId 46)
 Performance evidence:
+  kinds seeded+enforced (Baseline::seed + baseline JSON + guard test);
+  execution under Patrick's override — compiled only, not run
 Roadmap/documentation updates:
+  packet evidence checkboxes 8 marked [x] (Share + perf items remain open
+  with stated reasons); roadmap graph check valid
 Open blockers and non-goals:
+  Share row omitted (no native adapter authority); Duplicate/split/media/
+  rename/icon/new-window/bulk omitted; no Zen/Firefox feature copies
 Worktree state:
+  /Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu @ 4d5be311…, uncommitted
+  reviewed tree a4f1f6c8… (66 paths), real index unstaged, GUI lock free
 
 Planning/read-only:
 Implementation:
 Test execution:
 Review:
 Remediation:
+  Review wave `bbr-daily-driver-final-reviews-mspfijvd-flnwef` findings
+  fixed in the lane at reviewed tree a4f1f6c8…/66 paths:
+  - F1 production submenu_rect is recomputed from the live window
+    geometry/theme whenever a submenu opens or the relevant selection
+    changes, so the Folder/Space destination card visibly renders and
+    edge-flips (app + state recompute, causal app unit tests, real-app E2E
+    geometry/ids assertions);
+  - F2 Enter/click on a closed submenu parent opens its submenu card and
+    never dispatches a placeholder Reload — the parent row carries no
+    action (Option<TabMenuAction>);
+  - M1 Copy Link is enabled only when the bound tab owns a live
+    dispatchable session (suspended sources are disabled; matrix tests and
+    real-app E2E cover the suspended case);
+  - M2 the Justfile comment no longer lists the unsupported Duplicate row
+    as supported;
+  - M3 this ledger's fingerprint truth corrected to the reviewed tree.
 Waiting/retries:
 Total elapsed:
 Human intervention:

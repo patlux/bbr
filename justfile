@@ -76,6 +76,18 @@ e2e-shell-organize:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_organize -- --ignored --nocapture
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_drag_chip -- --ignored --nocapture
 
+# Tab/Favorite context menus (packet `tab-favorite-context-menus`,
+# DESIGN.md §11.13): the production right-click row/favorite seams open one
+# menu bound to the exact invoking TabId; open/traverse/submenu/dismiss
+# never mutate the source; keyboard/pointer placement and focus semantics;
+# folder/space submenu traversal with same-profile WebViewId preservation
+# and cross-profile recreation; B2 bookmark parity; the Favorite menu
+# resolving the same concrete TabId; supported close/reopen/pin/suspend/
+# ordering/copy rows and the omission of unsupported rows (Duplicate Tab,
+# Share, split, media, rename/icon, new-window, bulk-close scopes).
+e2e-shell-tab-menu:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_tab_menu -- --ignored --nocapture
+
 e2e-shell-hover:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_semantics -- --ignored --nocapture
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_hover -- --ignored --nocapture
@@ -227,7 +239,7 @@ e2e-gallery:
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-shell-responsiveness e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-web-navigation-gestures e2e-auth e2e-perf
+e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-shell-responsiveness e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-shell-tab-menu e2e-web-navigation-gestures e2e-auth e2e-perf
 
 verify: fmt check test clippy roadmap ui-deps script-tests
 

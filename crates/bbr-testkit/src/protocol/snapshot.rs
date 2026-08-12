@@ -831,6 +831,62 @@ pub struct ContextMenuNativeSnapshot {
     pub element_owned: u64,
 }
 
+/// One typed Tab/Favorite context-menu row on the wire (task packet
+/// `tab-favorite-context-menus`): the stable §15 id, the display label,
+/// the genuine enablement computed at open, the danger flag, and the
+/// optional one-level submenu rows (folders / spaces). The wire carries no
+/// `TabId` — source identity lives only in the app.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TabMenuRowSnapshot {
+    /// The stable §15 id (`bbr-tab-menu-<action>`,
+    /// `bbr-tab-menu-folder-<n>`, `bbr-tab-menu-space-<n>`,
+    /// `bbr-tab-menu-bookmark`, `bbr-tab-menu-close-<scope>`).
+    pub id: String,
+    /// The display label (`Pin Tab`, `Move to Space`, …).
+    pub label: String,
+    /// Whether the entry accepts interaction right now.
+    pub enabled: bool,
+    /// The danger state (text/glyph companion required).
+    pub danger: bool,
+    /// The optional one-level submenu rows (folders / spaces).
+    #[serde(default)]
+    pub submenu: Vec<TabMenuRowSnapshot>,
+}
+
+/// Typed Tab/Favorite context-menu presentation state (task packet
+/// `tab-favorite-context-menus`; DESIGN.md §11.13/§15). The menu is
+/// ordinary GPUI chrome over the sidebar (never `NativeAboveWeb`); this
+/// mirrors the app's `TabMenuState` exactly — source identity, the
+/// keyboard/pointer cursor, the open submenu, the deterministic row model,
+/// and the resolved clamped placement.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct TabMenuSnapshot {
+    /// The menu presentation is open for this window.
+    pub open: bool,
+    /// The menu owns keyboard focus (the main-window menu focus handle).
+    pub focused: bool,
+    /// The exact persistent `TabId` the menu is bound to (identity
+    /// evidence: the source never changes on open/traverse/dismiss).
+    pub bound_tab: Option<u64>,
+    /// The stable presentation source key (`bbr-tab-menu` |
+    /// `bbr-favorite-menu`).
+    pub source_key: String,
+    /// The keyboard cursor / hovered top-level row (None while closed).
+    pub selected: Option<usize>,
+    /// The top-level row whose submenu card is currently open.
+    pub open_submenu: Option<usize>,
+    /// The keyboard cursor / hovered row inside the open submenu.
+    pub submenu_selected: Option<usize>,
+    /// The deterministic top-level row model in render order.
+    pub rows: Vec<TabMenuRowSnapshot>,
+    /// The resolved card placement in window content coordinates
+    /// `[x, y, width, height]` (points, top-left origin; clamped).
+    pub anchor: [f32; 4],
+    /// The resolved submenu card placement (same coordinate space), when a
+    /// submenu is open.
+    pub submenu_rect: Option<[f32; 4]>,
+}
+
 /// Productive new-window seam diagnostics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct NewWindowSnapshot {
@@ -1111,6 +1167,13 @@ pub struct Snapshot {
     /// anchor, and the native bridge's ownership diagnostics.
     #[serde(default)]
     pub context_menu: ContextMenuSnapshot,
+    /// Typed Tab/Favorite context-menu presentation state (task packet
+    /// `tab-favorite-context-menus`; DESIGN.md §11.13): the exact bound
+    /// `TabId`, the keyboard/pointer cursor, the open submenu, the
+    /// deterministic row model with genuine enablement, and the resolved
+    /// clamped placement. Ordinary GPUI chrome — never a portal surface.
+    #[serde(default)]
+    pub tab_menu: TabMenuSnapshot,
     /// Typed credential-sheet presentation state (queue item 10): the
     /// presented challenge's identity/metadata, lifecycle state, redacted
     /// outcome, and masked edit flags. By construction no credential can

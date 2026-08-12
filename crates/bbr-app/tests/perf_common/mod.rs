@@ -29,6 +29,8 @@ mod responsiveness;
 mod saved_pages_drive;
 pub mod scenarios;
 pub mod stats;
+mod tab_menu;
+mod tab_menu_drive;
 mod zoom;
 mod zoom_drive;
 
