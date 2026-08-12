@@ -47,7 +47,7 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `integrated` | lane `6327b6b48b84f847061e5d55b85d58843dd676f0`; merge `69616b88be823b8ab35d1f806ada911d6256d9e6`; gate fix `4b3f40c5f736d3703682d001181d7c597ef317eb` | Orchestrator; focused `REVIEW_PASS`, semantic Justfile union and post-merge gates complete | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Closed for this wave; fullscreen/multi-display/manual drag and performance evidence remain honestly open |
 
 | DD-SPACE | Create/activate/configure Space and icon-only footer | `integrated` | lane `8a15496488f27e7a1f6150b27d5374cf033c5b7e`; merge `7f658aba0a4725db67c2e0fba33fcaf5388d0db8`; Gallery gate fix `ac381f3f6b57e73155380dc5ba7f0c35451b8a84` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
-| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; exact tree `2bfa4c4b…`, 29 paths | Orchestrator; independent `REVIEW_PASS` complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Commit exact candidate and integrate now after DD-SPACE; resolve shared Sidebar/Gallery/Justfile seams semantically, then run bounded gates |
+| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `integrating` | lane `7191fc72b627bacc50ef5d4dc2ac0c325a19121b`; merge `f4c6f60e3496bcd3fe3a9e1ab022bc6329911703`, tree `0a2340ea260d29ec3669e4ce7ee94c65c66931ff` | Orchestrator; exact reviewed candidate merged, post-merge gates active | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Run both fresh warning-denied Clippy gates, targeted units, roadmap/UI/script/diff checks, and affected Sidebar/Tabs/Organize/Gallery GUI suites; promote Tab Menu only when green |
 | DD-TAB-MENU | Production Tab/Favorite context menus | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; exact tree `c8bcaaf00af1004e691b36776056b69a21b9fcad`, 66 paths | Orchestrator; remediation and independent focused `REVIEW_PASS` complete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Preserve exact reviewed tree; integrate after DD-SIDEBAR per serial order |
 | DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console is locked and two foreign qemu windows remain | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
 
@@ -241,6 +241,19 @@ attempt failed before executing a product gate because `timeout` was outside
 the Nix shell; the corrected bounded invocations are the authoritative green
 runs. DD-SPACE is integrated and DD-SIDEBAR is now the exclusive serial
 integration position. No performance execution occurred.
+
+DD-SIDEBAR merge audit: exact reviewed tree `2bfa4c4b…` was materialized as
+lane commit `7191fc72b627bacc50ef5d4dc2ac0c325a19121b` and merged after Space as
+`f4c6f60e3496bcd3fe3a9e1ab022bc6329911703`, tree `0a2340ea…`. Four shared
+conflicts were resolved semantically: Sidebar matrix/story/E2E retain the two
+Titlebar navigation families and append the Favorites drop-band family (16
+families total); the production render boundary retains both the Space
+configuration panel and Favorites-band anchor. A causal auto-merge drift in
+the Tab-row Gallery authority was corrected by advancing pinned-N/S stable
+indices to 12/13 after the integrated Unresponsive family. Pre-commit format,
+UI 134/134, Gallery 145/145, app testkit all-target compile and diff checks are
+green. Full post-merge gates are active; DD-TAB-MENU remains frozen until they
+pass. No performance execution occurred.
 
 ## Downstream dependency queue
 
