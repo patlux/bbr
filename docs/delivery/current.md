@@ -42,13 +42,13 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
-| DD-LINK | Cmd-click/middle-click grouped background tabs | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-background-links`; branch `parallel/dd-background-links`; rebound tree `4c067b3c…`, 47 paths | forward-recovery writer `dd-link-finalizer`; first report transport-truncated before verdict/evidence | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Preserve exact rebound state, finish gates/fingerprint/report, then whole-candidate review |
-| DD-GESTURE | Current-base real-app gesture revalidation | `review` | `/Users/patwoz/dev/Personal/macos/bbr-dd-gesture-revalidation`; branch `parallel/dd-gesture-revalidation`; exact tree `36dd5ab8…`, 2 paths | independent reviewer `dd-gesture-review` | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Review pump ordering fix + regression + exact red→green evidence; no mutation |
-| DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-titlebar`; branch `parallel/dd-titlebar`; rebound tree `0872e1da…`, 14 paths | forward-recovery writer `dd-titlebar-continuation`; first report ended in tool markup without verdict | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Preserve state, complete product/app/E2E/gates or return exact platform blocker |
-| DD-SPACE | Create/activate/configure Space and icon-only footer | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance`; branch `parallel/dd-space-appearance`; rebound tree `6746d676…`, 10 paths | forward-recovery writer `dd-space-continuation`; current UI render is non-compiling | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Fix preserved callback/id compile defect, then finish app/E2E/Gallery/docs/gates |
-| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; rebound tree `5b8f832b…`, 22 paths | forward-recovery writer `dd-sidebar-continuation`; prior Metal claim conflicts with known repository Xcode path | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Diagnose command environment, compile through mandated inner DEVELOPER_DIR, finish behavior/evidence/report |
-| DD-TAB-MENU | Production Tab/Favorite context menus | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; rebound tree `51ea656f…`, 9 paths | forward-recovery writer `dd-tab-menu-continuation`; only bbr-ui pointer seams and portable groundwork exist | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Finish app source binding/menu lifecycle/actions/testkit/E2E/Gallery/docs/gates |
-| DD-PAGE-MENU | Enriched conservative page-background menu | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; rebound tree `c1b4a1c7…`, 29 paths | forward-recovery writer `dd-page-menu-continuation`; 9/11 E2E with two concrete test/setup findings | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | Fix exact two findings, run context-menu+Portal/gates/docs, return candidate fingerprint |
+| DD-LINK | Cmd-click/middle-click grouped background tabs | `review` | `/Users/patwoz/dev/Personal/macos/bbr-dd-background-links`; branch `parallel/dd-background-links`; candidate tree `17325002…`, 47 paths | independent whole-candidate reviewer `dd-link-review` | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Review exact native→portable→controller→app/E2E/performance-code union and green gates; no mutation |
+| DD-GESTURE | Current-base real-app gesture revalidation | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-gesture-revalidation`; branch `parallel/dd-gesture-revalidation`; exact tree `36dd5ab8…`, 2 paths | Orchestrator; independent `REVIEW_PASS` complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Integrate after reviewed DD-LINK per fixed serial order; preserve exact two-file tree |
+| DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-dd-titlebar`; branch `parallel/dd-titlebar`; preserved forward tree `94425ba3…`, 40 paths | focused writer `dd-titlebar-finalizer` | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Fix exact unused assignment, finish full allowed gate set/evidence, return candidate |
+| DD-SPACE | Create/activate/configure Space and icon-only footer | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance`; branch `parallel/dd-space-appearance`; preserved forward tree `a4891930…`, 52 paths | continuation writer `dd-space-finalizer`; Gallery now compiles, app E2E/perf/docs/gates remain | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Complete truncated config E2E, compile-only performance path, docs and allowed gates |
+| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `review` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; candidate tree `2bfa4c4b…`, 29 paths | independent whole-candidate reviewer `dd-sidebar-review` | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Review exact-TabId drag geometry/semantics, new real-app E2E and complete green evidence; no mutation |
+| DD-TAB-MENU | Production Tab/Favorite context menus | `running` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; preserved forward tree `73cd9597…`, 33 paths | continuation writer `dd-tab-menu-finalizer`; core checks green, E2E/perf/Gallery/docs/gates incomplete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Complete truncated submenu plus remaining scenarios, performance code, Gallery, docs and gates |
+| DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console is locked and two foreign qemu windows remain | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
 
 ## Post-F2a parallel wave
 
@@ -91,6 +91,21 @@ and no lane process survives. DD-GESTURE alone supplied a complete direct
 state and one replacement owner each. The writer-reported DD-GESTURE path hash
 is superseded by the independently computed NUL-sorted path hash
 `3676bf05f9dcf7cc028c6d5ad5a756de6ffbd45caddf6f16ae626928e75f4d8a`.
+
+Settlement-wave audit: workflow `bbr-daily-driver-settlement-wave-mspar0h3-4kvy80`
+completed all seven agents with no wrapper error. Direct independent rebinding
+accepts DD-GESTURE `REVIEW_PASS` at exact tree `36dd5ab8…`; DD-LINK is a
+reviewable 47-path candidate at `17325002…`; DD-SIDEBAR is a reviewable 29-path
+candidate at `2bfa4c4b…`. DD-TITLEBAR stopped on one warning-denied test
+assignment at forward tree `94425ba3…`; DD-SPACE and DD-TAB-MENU preserve
+unfinished trees `a4891930…` and `73cd9597…`. DD-PAGE-MENU fixed both causal
+context-menu findings and passed 11/11, but Portal remains 6/7 because the
+macOS console is currently locked (`IOConsoleLocked=Yes`) above foreign Android
+qemu windows; it remains blocked rather than mislabeled ready. All seven HEADs
+remain activation base `4d5be311…`, real indices have zero staged paths, no lane
+process survives, and Git/GUI locks are free. Canonical fingerprints are the
+Orchestrator's temp-index computations; writer hashes produced from incomplete
+working diffs or alternate path serialization do not supersede them.
 
 ## Downstream dependency queue
 
