@@ -86,8 +86,10 @@ impl BbrApp {
         }
     }
 
-    /// Clear the titlebar hover state regardless of the control (the
-    /// `UnhoverTitlebarControl` seam and a pointer leaving the window).
+    /// Clear the titlebar hover state regardless of the control for the
+    /// typed `UnhoverTitlebarControl` testkit seam. Production pointer leave
+    /// is delivered through `set_titlebar_hover(control, false)`.
+    #[cfg(feature = "testkit")]
     pub fn clear_titlebar_hover(&mut self, cx: &mut Context<Self>) {
         if self.titlebar_hovered.take().is_some() {
             cx.notify();

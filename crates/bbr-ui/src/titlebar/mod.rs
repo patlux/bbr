@@ -48,7 +48,8 @@ mod tests {
 
     #[test]
     fn hit_targets_meet_the_minimum_density() {
-        assert!(TITLEBAR_HIT >= 32.0, "hit areas are at least 32 pt");
+        let hit = std::hint::black_box(TITLEBAR_HIT);
+        assert!(hit >= 32.0, "hit areas are at least 32 pt");
         assert_eq!(TITLEBAR_GLYPH, 18.0, "the §7 18 pt geometric family");
     }
 }
