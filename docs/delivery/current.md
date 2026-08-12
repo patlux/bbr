@@ -10,7 +10,7 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Generation | `daily-driver-2026-08-12` |
 | Cutover commit | `781e862ca4547cee16be23e251767f6b2fa938fb` |
 | Verified product base | `main@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
-| Integrated product checkpoint | `8355dcd59e0d4b8da1c0387a349a76a5c427ca02` / tree `75a2b23fbda9598529694c4a47f72de7674790bb`; G3 Sidebar and Command integrated |
+| Integrated product checkpoint | `b4b2b77c9d679dce30b48e2e302e24075956a449` / tree `978e6078263d5f83295760ce8f7b6d2e290a6fde`; grouped background-link tabs integrated after G3 Sidebar and Command |
 | Daily-driver preparation base | `568cdae0008d3cc9008209007ae32442ee0ff80e` / tree `90114c65cc068a744b43aeeec710b47fff5cbf4a` |
 | Daily-driver activation base | `4d5be3116ec090aebb7eefa4861970710dba7a5b` / tree `9c8cae5cd5bca883fadc3ec198e232be4f436839`; all seven lane worktrees created clean from this exact commit |
 | Daily-driver contract | [2026-08-12 Daily-driver delivery](2026-08-12-daily-driver-delivery.md) |
@@ -42,8 +42,8 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
-| DD-LINK | Cmd-click/middle-click grouped background tabs | `integrating` | `/Users/patwoz/dev/Personal/macos/bbr-dd-background-links`; branch `parallel/dd-background-links`; exact reviewed tree `0bd4e5da…`, 47 paths | Orchestrator; focused remediation `REVIEW_PASS` complete | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Commit exact candidate, merge first, run bounded non-performance integration gates and affected GUI suites |
-| DD-GESTURE | Current-base real-app gesture revalidation | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-gesture-revalidation`; branch `parallel/dd-gesture-revalidation`; exact tree `36dd5ab8…`, 2 paths | Orchestrator; independent `REVIEW_PASS` complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Integrate immediately after DD-LINK; resolve shared testkit/gesture files semantically |
+| DD-LINK | Cmd-click/middle-click grouped background tabs | `integrated` | lane commit `abae5214c04900034da139e5148d7c79693158dc`; merge `b4b2b77c9d679dce30b48e2e302e24075956a449` | Orchestrator; focused remediation `REVIEW_PASS` and post-merge gates complete | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
+| DD-GESTURE | Current-base real-app gesture revalidation | `integrating` | `/Users/patwoz/dev/Personal/macos/bbr-dd-gesture-revalidation`; branch `parallel/dd-gesture-revalidation`; exact tree `36dd5ab8…`, 2 paths | Orchestrator; independent `REVIEW_PASS` complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Commit exact candidate, semantically merge shared testkit/gesture files onto DD-LINK, run focused gates |
 | DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-dd-titlebar`; branch `parallel/dd-titlebar`; reviewed tree `cb964905…`, 47 paths | bounded docs writer `dd-titlebar-doc-remediation`, then focused recheck | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Split or reopen the bundled fullscreen/multi-display checkbox; code must remain byte-identical |
 | DD-SPACE | Create/activate/configure Space and icon-only footer | `review` | `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance`; branch `parallel/dd-space-appearance`; candidate tree `d1f0ab82…`, 66 paths | independent whole-candidate reviewer `dd-space-review` | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Review create/activate/config identity, persistence truth, Footer accessibility, Gallery/E2E/perf-code evidence |
 | DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; exact tree `2bfa4c4b…`, 29 paths | Orchestrator; independent `REVIEW_PASS` complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Preserve exact reviewed tree; integrate after frozen DD-TITLEBAR and DD-SPACE |
@@ -131,6 +131,17 @@ lane process or Git/GUI lock survives, and `IOConsoleLocked=Yes` continues to
 block the Page-menu Portal closeout. The Orchestrator-computed DD-TAB-MENU
 porcelain-z hash is `5bdd3c506aa4f87c10b183b0a1694be3ae041747e69c50453ab63cac73165156`;
 the writer's alternate status hash is non-authoritative.
+
+DD-LINK integration audit: exact candidate commit
+`abae5214c04900034da139e5148d7c79693158dc` merged as
+`b4b2b77c9d679dce30b48e2e302e24075956a449`, tree `978e6078…`.
+Post-merge format, domain/web/browser/web-macos/app tests, both fresh-target
+warning-denied Clippy gates, roadmap, UI-dependency and script gates are green.
+Affected GUI suites are green: background links 4/4, new-window 4/4, Peek 6/6,
+web gestures 9/9, tabs 1/1, profiles 1/1. Logs live under
+`/tmp/bbr-dd-link-postmerge{,-gui}/` with SHA-256 manifests in the Orchestrator
+session. Performance execution remains intentionally unrun. The clean merge
+checkpoint promotes DD-GESTURE to the next exclusive integration position.
 
 ## Downstream dependency queue
 
