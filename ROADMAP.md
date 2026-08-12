@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slice:** [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md): close ordinary browser-muscle-memory and Sidebar-chrome gaps through bounded parallel lanes — grouped background link tabs, current-base gesture revalidation, full-height titlebar/navigation, Space creation/identity configuration, daily-driver Tab/Pinned/Favorites composition, and production context menus. Split remains fully scheduling-deferred and its stale worktree stays untouched.
+- **Active product slice:** [Reference-faithful production shell](docs/roadmap/tasks/visual-shell-reference.md): replace the visually incorrect dark/anatomy-only shell interpretation with Patrick's authoritative light macOS Sidebar composition while preserving exact browser ownership, native WKWebView composition and every existing interaction/performance contract. The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:
@@ -90,6 +90,7 @@ into a duplicate execution queue:
   → [daily-driver Sidebar main](docs/roadmap/tasks/daily-driver-sidebar-main.md)
   → [Tab/Favorite menus](docs/roadmap/tasks/tab-favorite-context-menus.md)
   → [Page-background menu](docs/roadmap/tasks/page-background-context-menu.md)
+  → [reference-faithful production shell](docs/roadmap/tasks/visual-shell-reference.md)
 - **Release:** [deterministic app packaging](docs/roadmap/tasks/macos-app-packaging.md)
   and [deterministic process shutdown](docs/roadmap/tasks/process-lifecycle-shutdown.md)
 

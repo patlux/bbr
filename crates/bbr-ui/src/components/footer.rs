@@ -47,8 +47,8 @@ impl FooterControl {
         }
     }
 
-    /// The visual label: `[Downloads]` shows the label next to the §7 glyph;
-    /// `[+]` is glyph-only (its label is the glyph).
+    /// The semantic label. Both fixed footer controls render glyph-only at
+    /// rest; the typed semantic tree exposes this text alternative.
     pub fn label(self) -> &'static str {
         match self {
             FooterControl::Downloads => "Downloads",
@@ -112,6 +112,7 @@ pub fn footer_surface(
         .h(theme.density.row())
         .border_t_1()
         .border_color(p.hairline)
+        .bg(p.surface_footer)
         .px(Spacing::sp2())
         .gap(Spacing::sp3())
         .items_center()
@@ -145,10 +146,10 @@ pub fn footer_surface(
         .child(footer_control(theme, FooterControl::Plus, on_plus))
 }
 
-/// One fixed footer control: the §7 glyph at the density icon size plus the
-/// `type:meta` label (glyph-only for `[+]`, whose label is the glyph). The
-/// id sits on the control div; `on_select` is the caller's production
-/// pointer path.
+/// One fixed footer control: the §7 glyph at the density icon size. Both
+/// controls are visually glyph-only in the compact reference footer; their
+/// full labels remain semantic names. The id sits on the control div;
+/// `on_select` is the caller's production pointer path.
 pub fn footer_control(
     theme: &Theme,
     control: FooterControl,
@@ -173,9 +174,6 @@ pub fn footer_control(
         .font_weight(theme.type_.meta.weight)
         .text_color(theme.palette.ink_secondary)
         .child(glyph)
-        .when(control != FooterControl::Plus, |el| {
-            el.child(control.label())
-        })
         .on_mouse_down(MouseButton::Left, on_select)
 }
 

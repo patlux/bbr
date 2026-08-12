@@ -76,34 +76,36 @@ macro_rules! hex {
 
 // §3.1 neutral scale and text (light / dark / increased-contrast columns).
 hex! {
-    INK_LIGHT = "1A1C1F";   INK_DARK = "ECEEF1";
-    SECONDARY_LIGHT = "555B63"; SECONDARY_DARK = "A6ACB5";
+    INK_LIGHT = "111315";   INK_DARK = "ECEEF1";
+    SECONDARY_LIGHT = "4A4F55"; SECONDARY_DARK = "A6ACB5";
     FAINT_LIGHT = "949AA2"; FAINT_DARK = "6E747D";
-    HAIRLINE_LIGHT = "E2E2DF"; HAIRLINE_DARK = "2A2E34";
+    HAIRLINE_LIGHT = "C7C7C7"; HAIRLINE_DARK = "2A2E34";
     BORDER_STRONG_LIGHT = "C7C9C5"; BORDER_STRONG_DARK = "3B4149";
     INK_IC_LIGHT = "000000"; INK_IC_DARK = "FFFFFF";
-    SECONDARY_IC_LIGHT = "333A41"; SECONDARY_IC_DARK = "D6DAE0";
+    SECONDARY_IC_LIGHT = "292E34"; SECONDARY_IC_DARK = "D6DAE0";
     FAINT_IC_LIGHT = "5C626A"; FAINT_IC_DARK = "8A919B";
-    HAIRLINE_IC_LIGHT = "AFB2AC"; HAIRLINE_IC_DARK = "454C55";
+    HAIRLINE_IC_LIGHT = "9FA29E"; HAIRLINE_IC_DARK = "454C55";
     BORDER_STRONG_IC_LIGHT = "9FA29E"; BORDER_STRONG_IC_DARK = "525A63";
     // §3.2 accent — Phosphor.
-    ACCENT_LIGHT = "0E8F79"; ACCENT_DARK = "2AD4B6";
+    ACCENT_LIGHT = "0A7967"; ACCENT_DARK = "2AD4B6";
     ACCENT_INK_LIGHT = "0A5C4E"; ACCENT_INK_DARK = "3DF0CE";
     ACCENT_IC_LIGHT = "0B6B5C"; ACCENT_IC_DARK = "3DF0CE";
     ACCENT_INK_IC_LIGHT = "0A5A4C"; ACCENT_INK_IC_DARK = "3DF0CE";
     // §3.3 status hues + tint (§3.5).
-    ERROR_LIGHT = "C22E24"; ERROR_DARK = "FF6A63";
-    ATTENTION_LIGHT = "8F5C00"; ATTENTION_DARK = "FFC63F";
+    ERROR_LIGHT = "B5261E"; ERROR_DARK = "FF6A63";
+    ATTENTION_LIGHT = "805100"; ATTENTION_DARK = "FFC63F";
     OK_LIGHT = "177A55"; OK_DARK = "45C08A";
     INFO_LIGHT = "2C5CC5"; INFO_DARK = "8AA6FF";
-    TINT_SELECTED_LIGHT = "D8E5E0"; TINT_SELECTED_DARK = "1C3333";
-    TINT_SELECTED_IC_DARK = "162B2B";
+    TINT_SELECTED_LIGHT = "EEF2F9"; TINT_SELECTED_DARK = "1C3333";
+    TINT_SELECTED_IC_LIGHT = "E1E8F3"; TINT_SELECTED_IC_DARK = "162B2B";
     // §2 materials.
     SURFACE_CANVAS_LIGHT = "F6F6F4"; SURFACE_CANVAS_DARK = "121416";
-    SURFACE_SIDEBAR_LIGHT = "EFEFEC"; SURFACE_SIDEBAR_DARK = "1A1D21";
+    SURFACE_SIDEBAR_LIGHT = "E0E0E0"; SURFACE_SIDEBAR_DARK = "1A1D21";
     SURFACE_FIELD_LIGHT = "FFFFFF"; SURFACE_FIELD_DARK = "23272C";
     SURFACE_OVERLAY_LIGHT = "FFFFFF"; SURFACE_OVERLAY_DARK = "202429";
     SURFACE_GLASS_LIGHT = "FFFFFF"; SURFACE_GLASS_DARK = "151719";
+    SURFACE_FAVORITE_LIGHT = "D2D2D2"; SURFACE_FAVORITE_DARK = "23272C";
+    SURFACE_FOOTER_LIGHT = "F3F8FE"; SURFACE_FOOTER_DARK = "202429";
 }
 
 /// The mode-selectable color palette for one theme/contrast combination.
@@ -137,6 +139,10 @@ pub struct Palette {
     pub surface_field: Rgba,
     pub surface_overlay: Rgba,
     pub surface_glass: Rgba,
+    /// Reference-calibrated Favorite destination tile surface.
+    pub surface_favorite: Rgba,
+    /// Reference-calibrated footer transport/Space strip surface.
+    pub surface_footer: Rgba,
     /// Row hover wash (§10.2) blended over the sidebar material; IC deepens.
     pub wash_hover: Rgba,
     /// Pointer-down / pressed wash (§10.3).
@@ -179,7 +185,7 @@ const fn rgba_8(r: u8, g: u8, b: u8, a: u8) -> Rgba {
 }
 
 impl Palette {
-    /// The dark theme at standard contrast (the shipped shell mode).
+    /// The supported dark theme at standard contrast.
     pub fn dark_standard() -> Self {
         Self {
             ink: INK_DARK.rgba(),
@@ -201,6 +207,8 @@ impl Palette {
             surface_field: SURFACE_FIELD_DARK.rgba(),
             surface_overlay: SURFACE_OVERLAY_DARK.rgba(),
             surface_glass: SURFACE_GLASS_DARK.rgba(),
+            surface_favorite: SURFACE_FAVORITE_DARK.rgba(),
+            surface_footer: SURFACE_FOOTER_DARK.rgba(),
             wash_hover: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.05),
             wash_active: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.08),
             // §11.5: white-translucent over the dark sidebar; the hover
@@ -256,6 +264,8 @@ impl Palette {
             surface_field: SURFACE_FIELD_LIGHT.rgba(),
             surface_overlay: SURFACE_OVERLAY_LIGHT.rgba(),
             surface_glass: SURFACE_GLASS_LIGHT.rgba(),
+            surface_favorite: SURFACE_FAVORITE_LIGHT.rgba(),
+            surface_footer: SURFACE_FOOTER_LIGHT.rgba(),
             wash_hover: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.045),
             wash_active: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.08),
             // §11.5: black-translucent over the light sidebar; the hover
@@ -278,7 +288,7 @@ impl Palette {
             border_strong: BORDER_STRONG_IC_LIGHT.rgba(),
             accent: ACCENT_IC_LIGHT.rgba(),
             accent_ink: ACCENT_INK_IC_LIGHT.rgba(),
-            tint_selected: TINT_SELECTED_IC_DARK.rgba(),
+            tint_selected: TINT_SELECTED_IC_LIGHT.rgba(),
             // Increased contrast deepens the translucent address fill.
             address_fill: rgba_8(0, 0, 0, 18),
             address_fill_hover: rgba_8(0, 0, 0, 30),

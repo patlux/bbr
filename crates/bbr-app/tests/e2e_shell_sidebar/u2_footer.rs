@@ -4,9 +4,10 @@ use bbr_testkit::protocol::dsl;
 /// fourth control), the permanent space strip always part of the rail with
 /// one `bbr-space-chip-<persistent-space-id>` + `bbr-space-identity-<persistent-
 /// space-id>` per space (selected exactly on the active space), the empty
-/// favorites/folders regions hiding their labels, and the status row +
-/// collapse control ids unchanged. The legacy `[Spaces]` reveal toggle is
-/// gone: the strip never hides and there is nothing to reveal.
+/// favorites/folders regions hiding their labels, and the active Space/New
+/// Tab hierarchy plus collapse controls unchanged. The legacy `[Spaces]`
+/// reveal toggle is gone: the strip never hides and there is nothing to
+/// reveal.
 #[test]
 #[ignore]
 fn footer_row_and_permanent_strip_render_in_the_compact_rail() {
@@ -49,18 +50,24 @@ fn footer_row_and_permanent_strip_render_in_the_compact_rail() {
                 || id.starts_with("bbr-space-list")),
             "no legacy [Spaces] toggle or revealed-list ids render"
         );
-        // Status row + the §11.14 titlebar header keep their ids in the
-        // reordered rail.
+        // The reference-authoritative active Space/New Tab hierarchy and
+        // §11.14 titlebar header keep their stable ids. Settled status is
+        // intentionally conditional rather than a permanent rail region.
         assert_ids(
             &initial,
             &[
-                "bbr-status",
                 "bbr-titlebar",
                 "bbr-titlebar-sidebar-toggle",
                 "bbr-nav-back",
                 "bbr-nav-forward",
                 "bbr-nav-reload",
+                "bbr-active-space-title",
+                "bbr-new-tab",
             ],
+        );
+        assert!(
+            !initial.visible_ids.iter().any(|id| id == "bbr-brand"),
+            "the compact rail has no standalone brand block"
         );
 
         // §11.3 permanent strip: one chip (and its identity child) per

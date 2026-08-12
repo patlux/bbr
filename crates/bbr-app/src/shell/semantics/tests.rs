@@ -93,7 +93,7 @@ fn input<'a>(
             results: vec![],
         },
         sidebar_visible: true,
-        sidebar_width: 280.0,
+        sidebar_width: 300.0,
         divider_label: "bbr-sidebar-divider".into(),
         command_surface: CommandSurface::None,
         rows,
@@ -175,7 +175,7 @@ fn tree_exposes_roles_names_values_and_hierarchy() {
     // The divider exposes its width value and stable id.
     let divider = find(&tree, "bbr-sidebar-divider").expect("divider");
     assert_eq!(divider.role, SemanticRole::Divider);
-    assert_eq!(divider.value.as_deref(), Some("280 pt"));
+    assert_eq!(divider.value.as_deref(), Some("300 pt"));
 }
 
 #[test]

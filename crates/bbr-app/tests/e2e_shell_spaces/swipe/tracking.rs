@@ -47,12 +47,17 @@ fn tracking_snapshot_and_semantics_stay_truthful_until_commit() {
         activate_space_id(&mut client, &mut since, default_space);
 
         let baseline = client.snapshot().expect("baseline");
+        let (cobalt_chrome, cobalt_chip) = light_standard_tints(bbr_domain::SpaceTheme::Cobalt);
+        let (pine_chrome, pine_chip) = light_standard_tints(bbr_domain::SpaceTheme::Pine);
         assert_eq!(
             baseline.active_appearance.as_ref().unwrap().chrome_tint,
-            "#1C2028",
+            cobalt_chrome,
             "cobalt source chrome"
         );
-        let pine_chrome = "#1A2123";
+        assert_ne!(
+            cobalt_chip, pine_chip,
+            "the stronger chip tint distinguishes the two curated tokens"
+        );
 
         // Half-progress tracking: typed snapshot evidence, truthful selected
         // semantics, and a strictly-between interpolated chrome wash.
@@ -69,14 +74,24 @@ fn tracking_snapshot_and_semantics_stay_truthful_until_commit() {
         assert_eq!(half.swipe.destination, Some(reading));
         assert_eq!(half.swipe.direction.as_deref(), Some("next"));
         assert!((half.swipe.progress - 0.5).abs() < 1e-9);
-        let interpolated = half
+        assert_eq!(
+            half.swipe.interpolated_chrome_tint.as_deref(),
+            Some(cobalt_chrome.as_str()),
+            "quiet 4% rail washes may quantize equally while tracking"
+        );
+        let interpolated_chip = half
             .swipe
-            .interpolated_chrome_tint
+            .interpolated_chip_tint
             .as_deref()
-            .expect("interpolated chrome while tracking");
-        assert_ne!(interpolated, "#1C2028", "strictly away from source");
-        assert_ne!(interpolated, pine_chrome, "strictly before destination");
-        assert!(half.swipe.interpolated_chip_tint.is_some());
+            .expect("interpolated chip while tracking");
+        assert_ne!(
+            interpolated_chip, cobalt_chip,
+            "chip tint is strictly away from source"
+        );
+        assert_ne!(
+            interpolated_chip, pine_chip,
+            "chip tint is strictly before destination"
+        );
         // Truthful appearance: the active appearance never lies during the
         // gesture (no selected-space change before commit).
         assert_eq!(
@@ -86,7 +101,7 @@ fn tracking_snapshot_and_semantics_stay_truthful_until_commit() {
         );
         assert_eq!(
             half.active_appearance.as_ref().unwrap().chrome_tint,
-            "#1C2028",
+            cobalt_chrome,
             "active chrome evidence stays source"
         );
         assert!(
@@ -117,8 +132,13 @@ fn tracking_snapshot_and_semantics_stay_truthful_until_commit() {
         assert_eq!(full.swipe.progress, 1.0);
         assert_eq!(
             full.swipe.interpolated_chrome_tint.as_deref(),
-            Some(pine_chrome),
+            Some(pine_chrome.as_str()),
             "full progress lands on the exact destination chrome"
+        );
+        assert_eq!(
+            full.swipe.interpolated_chip_tint.as_deref(),
+            Some(pine_chip.as_str()),
+            "full progress lands on the exact destination chip tint"
         );
         assert!(
             chip_selected(&full, default_space),

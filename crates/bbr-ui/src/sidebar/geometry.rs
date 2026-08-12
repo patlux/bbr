@@ -21,7 +21,7 @@ use crate::theme::Theme;
 /// DESIGN §5: the minimum adjustable sidebar width (pt).
 pub const SIDEBAR_MIN: f32 = 200.0;
 /// DESIGN §5: the default width — the §8 normal-density `win:sidebar.N` token.
-pub const SIDEBAR_DEFAULT: f32 = 280.0;
+pub const SIDEBAR_DEFAULT: f32 = 300.0;
 /// DESIGN §5: the maximum adjustable sidebar width (pt).
 pub const SIDEBAR_MAX: f32 = 400.0;
 /// Narrow-window clamp floor: the native content region is never laid out

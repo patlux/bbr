@@ -173,19 +173,7 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
     // mirroring the render (the sidebar toggle + the Back/Forward/Reload
     // cluster). It disappears with the rail on collapse; no content
     // toolbar replaces it.
-    let mut children: Vec<SemanticNode> = vec![
-        titlebar_node(input),
-        node(
-            "bbr-brand",
-            SemanticRole::Brand,
-            Some("BBR".into()),
-            None,
-            false,
-            false,
-            vec![],
-        ),
-        command_field_node(input),
-    ];
+    let mut children: Vec<SemanticNode> = vec![titlebar_node(input), command_field_node(input)];
     // §11.4 region order: command field → favorites grid → pinned → folders
     // → regular tabs → status row → footer row (the permanent §11.3 space
     // strip is the footer's flex region — always part of the rail). Hidden
@@ -197,16 +185,34 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
     ) {
         children.push(favorites);
     }
-    children.push(tabs_list_node(input));
+    let active_space_title = input
+        .browser
+        .spaces
+        .iter()
+        .find(|space| space.id == input.browser.active_space)
+        .map(|space| space.title.clone())
+        .unwrap_or_else(|| "Default".to_string());
     children.push(node(
-        bbr_ui::components::STATUS_ID,
-        SemanticRole::Status,
-        Some(crate::shell::status_model(input.browser).text.to_string()),
+        "bbr-active-space-title",
+        SemanticRole::Title,
+        Some(active_space_title),
         None,
         false,
         false,
         vec![],
     ));
+    children.push(tabs_list_node(input));
+    if crate::shell::status_visible(input.browser) {
+        children.push(node(
+            bbr_ui::components::STATUS_ID,
+            SemanticRole::Status,
+            Some(crate::shell::status_model(input.browser).text.to_string()),
+            None,
+            false,
+            false,
+            vec![],
+        ));
+    }
     if let Some(menu) = u2::plus_menu_node(&input.plus_menu) {
         children.push(menu);
     }
@@ -305,17 +311,12 @@ fn titlebar_node(input: &SemanticInput<'_>) -> SemanticNode {
 }
 
 fn tabs_list_node(input: &SemanticInput<'_>) -> SemanticNode {
-    // Mirror the render's order: the Pinned section label + pinned rows,
-    // then the Folders section (when folders exist), then the Tabs section
-    // label + the bounded regular window rows (the hairline between them is
-    // presence, not content — §2, skipped here). The folders section carries
-    // the nested member rows of expanded folders.
+    // Mirror the reference-authoritative render: pinned rows and folders,
+    // then the visible New Tab action, then the bounded regular window.
+    // Technical Pinned/Tabs labels are not painted or exposed as visible
+    // semantic nodes.
     let pinned = crate::shell::pinned_count(&input.browser.tabs);
-    let regular_count = input.browser.tabs.len().saturating_sub(pinned);
     let mut children: Vec<SemanticNode> = Vec::new();
-    if pinned > 0 {
-        children.push(section_node("Pinned", input.focus.tabs));
-    }
     for row in input.rows {
         if row.index < pinned {
             children.push(tab_row_node(row, input.focus.tabs));
@@ -324,9 +325,15 @@ fn tabs_list_node(input: &SemanticInput<'_>) -> SemanticNode {
     if let Some(folders) = u2::folders_node(input.folder_rows, input.folder_members) {
         children.push(folders);
     }
-    if regular_count > 0 {
-        children.push(section_node("Tabs", input.focus.tabs));
-    }
+    children.push(node(
+        "bbr-new-tab",
+        SemanticRole::Button,
+        Some("New Tab".into()),
+        Some("Cmd-T".into()),
+        false,
+        false,
+        vec![],
+    ));
     for row in input.rows {
         if row.index >= pinned {
             children.push(tab_row_node(row, input.focus.tabs));
@@ -409,22 +416,6 @@ fn tab_row_node(row: &RowVisuals, list_focused: bool) -> SemanticNode {
         drag_target: false,
         children,
     }
-}
-
-fn section_node(text: &str, _list_focused: bool) -> SemanticNode {
-    // §9 skips section labels (and the brand) in the tab order: they never
-    // own keyboard focus, so `focused` stays false even while the owning
-    // list carries the ring. The label's text-step brightening on a focused
-    // list is a visual side effect of the list's focus, not focus itself.
-    node(
-        format!("bbr-section-{}", text.to_lowercase()),
-        SemanticRole::Section,
-        Some(text.to_uppercase()),
-        None,
-        false,
-        false,
-        vec![],
-    )
 }
 
 // U2 §15 node builders live in [`u2`] (footer row, plus menu, favorites

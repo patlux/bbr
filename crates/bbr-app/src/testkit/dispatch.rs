@@ -25,6 +25,8 @@ use crate::testkit::dispatch_benchmark_library::dispatch_benchmark_library;
 use crate::testkit::dispatch_benchmark_responsiveness::dispatch_benchmark_responsiveness;
 use crate::testkit::dispatch_benchmark_swipe::dispatch_benchmark_swipe;
 use crate::testkit::dispatch_benchmark_u2::dispatch_benchmark_u2;
+#[cfg(feature = "visual-capture")]
+use crate::testkit::dispatch_capture::dispatch_capture;
 use crate::testkit::dispatch_context_menu::dispatch_context_menu;
 use crate::testkit::dispatch_downloads::dispatch_downloads;
 use crate::testkit::dispatch_drag::dispatch_drag;
@@ -49,6 +51,13 @@ pub(crate) fn dispatch(
     server: Option<Arc<GatewayServer>>,
     cx: &mut App,
 ) -> Response {
+    // The explicit visual-capture feature isolates GPUI's test-support
+    // executor/leak-detection behavior from ordinary real-app E2E. Capture
+    // writes one `/tmp/*.png` through the running window's exact GPUI scene.
+    #[cfg(feature = "visual-capture")]
+    if let Some(response) = dispatch_capture(&req, window, app, cx) {
+        return response;
+    }
     // The performance arms live in `dispatch_benchmark` so this router stays
     // under the ~500-line budget; every other request falls through here.
     if let Some(response) = dispatch_benchmark(&req, window, app, cx) {
@@ -749,6 +758,16 @@ pub(crate) fn dispatch(
 
         // Routed by `dispatch_u2` before this match (the §11.3 sidebar swipe
         // arms); reaching one here is a routing bug.
+        #[cfg(feature = "visual-capture")]
+        Request::CaptureChrome { .. } => {
+            unreachable!("visual capture requests route through dispatch_capture")
+        }
+        #[cfg(not(feature = "visual-capture"))]
+        Request::CaptureChrome { .. } => Response::Error(Error::new(
+            "capture_unavailable",
+            "CaptureChrome requires the explicit visual-capture feature",
+        )),
+
         Request::SwipeScroll { .. } | Request::SwipeCancel => {
             unreachable!("sidebar-swipe requests route through dispatch_u2")
         }

@@ -84,7 +84,7 @@ mod tests {
             .position(|candidate| *candidate == "🌊")
             .expect("emoji in catalog");
         assert!(model.emoji_selected(index));
-        assert!(!model.emoji_selected(index.wrapping_sub(1).max(0)));
+        assert!(!model.emoji_selected(index.wrapping_sub(1)));
         assert!(!model.glyph_selected(BbrGlyph::Code));
     }
 

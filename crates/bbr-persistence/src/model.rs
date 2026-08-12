@@ -163,11 +163,15 @@ pub struct SidebarState {
 }
 
 impl Default for SidebarState {
+    /// Mirrors the shell's shipped normal-density rail default
+    /// (`bbr_ui::sidebar::geometry::SIDEBAR_DEFAULT`, 300 pt). The portable
+    /// persistence crate must not depend on the UI crate, so the value is
+    /// duplicated here and pinned by the sidebar-contract test.
     fn default() -> Self {
         Self {
-            width: 280.0,
+            width: 300.0,
             collapsed: false,
-            last_expanded_width: 280.0,
+            last_expanded_width: 300.0,
         }
     }
 }

@@ -66,7 +66,7 @@ fn pointer_drag_resizes_with_stable_native_content_and_focus() {
         assert!(!settled.divider_dragging);
         assert_ids(&settled, &["bbr-sidebar", "bbr-sidebar-divider"]);
 
-        // The native slot reports the real WKWebView frame: rail 280, content
+        // The native slot reports the real WKWebView frame: rail 300, content
         // filling the remainder — never zero or negative. The slot's own
         // height is the drift baseline for every later geometry.
         let initial_rect = wait_for_content_rect_x(

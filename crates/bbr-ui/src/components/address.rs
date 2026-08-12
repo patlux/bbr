@@ -108,7 +108,7 @@ pub fn address_control(
         // The relative box is the containing block for the absolute
         // field anchor (§11.4 overlay anchor).
         .relative()
-        .mx(Spacing::sp3())
+        .mx(Spacing::sp1())
         .my(Spacing::sp2())
         .px(Spacing::sp3())
         // §11.5: pill height = `density:row` (S 32 / N 36 / XL 44);
@@ -208,7 +208,7 @@ pub fn staging_surface(
     div()
         .id("bbr-command-bar")
         .relative()
-        .mx(Spacing::sp3())
+        .mx(Spacing::sp1())
         .my(Spacing::sp2())
         .px(Spacing::sp3())
         .h(theme.density.row())

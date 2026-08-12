@@ -40,6 +40,7 @@ fn below_threshold_and_explicit_cancel_emit_no_switch_and_restore_source() {
         activate_space_id(&mut client, &mut since, default_space);
 
         let baseline = client.snapshot().expect("baseline snapshot");
+        let (cobalt_chrome, _) = light_standard_tints(bbr_domain::SpaceTheme::Cobalt);
         assert_eq!(baseline.active_space, default_space);
         assert_eq!(baseline.active_web_view, Some(first_view));
         assert_eq!(baseline.engine_sessions, 2);
@@ -91,7 +92,7 @@ fn below_threshold_and_explicit_cancel_emit_no_switch_and_restore_source() {
         assert_eq!(selected_space(&below), default_space);
         assert_eq!(
             below.active_appearance.as_ref().unwrap().chrome_tint,
-            "#1C2028",
+            cobalt_chrome,
             "chrome stays the exact source presentation"
         );
 
@@ -124,7 +125,7 @@ fn below_threshold_and_explicit_cancel_emit_no_switch_and_restore_source() {
         assert_eq!(selected_space(&cancelled), default_space);
         assert_eq!(
             cancelled.active_appearance.as_ref().unwrap().chrome_tint,
-            "#1C2028",
+            cobalt_chrome,
             "cancel returns the exact source chrome"
         );
 

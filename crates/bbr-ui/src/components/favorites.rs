@@ -107,7 +107,8 @@ pub fn favorite_tile(
     tile: &FavoriteTileSpec,
     on_activate: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let size = theme.density.row_tile();
+    let width = theme.density.favorite_tile_width();
+    let height = theme.density.favorite_tile_height();
     let slate = match theme.mode {
         ThemeMode::Dark => FaviconSlate::dark(tile.hue),
         ThemeMode::Light => FaviconSlate::light(tile.hue),
@@ -128,8 +129,10 @@ pub fn favorite_tile(
     div()
         .id(favorite_tile_id(tile.index))
         .debug_selector(move || favorite_tile_id(tile.index).to_string())
-        .size(size)
+        .w(width)
+        .h(height)
         .rounded(Radius.small())
+        .bg(theme.palette.surface_favorite)
         .flex()
         .items_center()
         .justify_center()
@@ -148,7 +151,7 @@ pub fn favorites_region_height(theme: &Theme, tile_count: usize) -> f32 {
         return 0.0;
     }
     let columns = grid_columns(theme.density);
-    let tile = f32::from(theme.density.row_tile());
+    let tile = f32::from(theme.density.favorite_tile_height());
     let gap = f32::from(theme.density.favorites_gap());
     let rows = tile_count.div_ceil(columns);
     let grid = rows as f32 * tile + (rows.saturating_sub(1)) as f32 * gap;

@@ -156,6 +156,13 @@ impl BbrApp {
             entity.update(cx, |view, cx| view.set_row_hover(index, hovered, cx));
         });
 
+        // Reference-authoritative visible New Tab row: same staged NewTab
+        // authority as Cmd-T, no direct tab/session creation before commit.
+        let entity = cx.entity();
+        let on_new_tab: MouseCallback = Rc::new(move |_event, window, cx| {
+            entity.update(cx, |view, cx| view.activate_new_tab(window, cx));
+        });
+
         // §11.1/§11.6: the tab list's keyboard traversal (`↑`/`↓`, `⌫`).
         let entity = cx.entity();
         let on_tab_list_key_down: KeyCallback = Rc::new(move |event, window, cx| {
@@ -320,6 +327,7 @@ impl BbrApp {
             on_press_row,
             on_release_row,
             on_hover_row,
+            on_new_tab,
             on_tab_list_key_down,
             on_activate_favorite,
             on_context_menu_row,

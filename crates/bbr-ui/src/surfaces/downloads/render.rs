@@ -120,8 +120,7 @@ pub fn downloads_panel_surface(
         .shadow(elev2(theme))
         .overflow_hidden()
         // §9 ring while the panel owns chrome focus (the same structural
-        // cue as the tab/space lists; the selected-tab rail stays the
-        // only accent).
+        // cue as the tab/space lists; resting selected rows stay quiet).
         .when(model.focused, |el| {
             el.border_2()
                 .border_color(p.accent)

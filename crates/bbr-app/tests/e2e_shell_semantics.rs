@@ -63,14 +63,14 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
             false,
         );
-        // §11.4/§11.14: the sidebar keeps its 7 regions (titlebar, brand,
-        // command field, tabs, status, footer, divider) while the permanent
-        // §11.3 space strip lives inside the footer (the flex region between
-        // the fixed controls). The titlebar row is the rail's top strip.
+        // Reference-authoritative settled rail: titlebar, command field,
+        // active Space heading, tabs, footer and divider. The permanent §11.3
+        // Space strip lives inside the footer; standalone brand and redundant
+        // settled status regions are absent.
         assert_eq!(
             sidebar.children.len(),
-            7,
-            "titlebar, brand, command field, tabs, status, footer, divider"
+            6,
+            "titlebar, command field, active Space, tabs, footer, divider"
         );
         assert_eq!(
             sidebar.children.first().map(|n| n.id.as_str()),
@@ -84,16 +84,23 @@ fn shell_semantic_tree_and_fallbacks() {
                 "bbr-sidebar",
                 "bbr-titlebar",
                 "bbr-titlebar-sidebar-toggle",
-                "bbr-brand",
                 "bbr-address",
+                "bbr-active-space-title",
+                "bbr-new-tab",
                 "bbr-tab-list",
-                "bbr-status",
                 "bbr-nav-back",
                 "bbr-nav-forward",
                 "bbr-nav-reload",
                 "bbr-sidebar-divider",
                 "bbr-native-web-slot-1",
             ],
+        );
+        assert!(
+            !initial
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-brand" || id == "bbr-status"),
+            "settled rail has no standalone brand or redundant status"
         );
         assert!(
             initial.visible_ids.iter().any(|id| id == "bbr-space-strip"),
@@ -162,25 +169,30 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
             false,
         );
-        // The single regular tab renders the §11.2 "Tabs" section label and
-        // no pinned section.
+        // The active Space heading is the list hierarchy; technical
+        // Pinned/Tabs section labels are not painted or exposed. New Tab is
+        // the visible action before the regular row.
         assert_node(
             &initial.semantics,
-            "bbr-section-tabs",
-            SemanticRole::Section,
-            Some("TABS"),
+            "bbr-active-space-title",
+            SemanticRole::Title,
+            Some("Default"),
             None,
             true,
             false,
             false,
         );
         assert!(
-            find(&initial.semantics, "bbr-section-pinned").is_none(),
-            "no pinned region renders no Pinned section"
+            find(&initial.semantics, "bbr-section-tabs").is_none()
+                && find(&initial.semantics, "bbr-section-pinned").is_none(),
+            "technical Pinned/Tabs labels stay absent"
         );
         assert!(
-            tab_list.children.iter().any(|c| c.id == "bbr-section-tabs"),
-            "the section label is a child of the tab list"
+            tab_list
+                .children
+                .first()
+                .is_some_and(|c| c.id == "bbr-new-tab"),
+            "New Tab leads the regular tab region"
         );
         assert!(
             tab_list.children.iter().any(|c| c.id == "bbr-tab-row-0"),
@@ -229,9 +241,10 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
         );
 
-        // Command slot, status, divider: typed mode/value. The §11.5
-        // address pill is a display-only Button carrying the derived domain
-        // (scheme/path/query dropped); it is never a Field.
+        // Command slot and divider: typed mode/value. The §11.5 address pill
+        // is a display-only Button carrying the derived domain
+        // (scheme/path/query dropped); it is never a Field. Settled status is
+        // intentionally absent.
         assert_node(
             &initial.semantics,
             "bbr-address",
@@ -252,22 +265,16 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
             false,
         );
-        assert_node(
-            &initial.semantics,
-            "bbr-status",
-            SemanticRole::Status,
-            Some(PAGE_ONE_TITLE),
-            None,
-            true,
-            false,
-            false,
+        assert!(
+            find(&initial.semantics, "bbr-status").is_none(),
+            "settled status is hidden"
         );
         assert_node(
             &initial.semantics,
             "bbr-sidebar-divider",
             SemanticRole::Divider,
             Some("Sidebar divider"),
-            Some("280 pt"),
+            Some("300 pt"),
             true,
             false,
             false,

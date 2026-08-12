@@ -60,7 +60,11 @@ pub fn row_title(theme: &Theme, index: usize, text: &str, state: TabVisualState)
         .overflow_hidden()
         .text_ellipsis()
         .text_size(theme.type_.title.size)
-        .font_weight(theme.type_.title.weight)
+        .font_weight(if state == TabVisualState::Selected {
+            gpui::FontWeight(600.0)
+        } else {
+            theme.type_.title.weight
+        })
         .text_color(color)
         .child(SharedString::from(text.to_string()))
 }
@@ -172,8 +176,8 @@ pub fn drag_tick(theme: &Theme, index: usize, invalid: bool) -> Stateful<Div> {
 
 /// §11.1 vertical tab row anatomy:
 /// `[favicon 18] · [title flex, trunc] · [pin] · [state slot 10] ·
-/// [close hit-min.close]`, tile per §8 with the selected rail at the
-/// leading edge. The §10.2–§10.4 hover/active/selected wash paints an
+/// [close hit-min.close]`, tile per §8 with a quiet selected surface and
+/// stronger title weight. The §10.2–§10.4 hover/active/selected wash paints an
 /// inset rounded surface (`density:row-inset` from the rail edges,
 /// `density:radius`) behind the content.
 ///
@@ -213,7 +217,10 @@ pub fn tab_row(
         // square so the id and the pointer path are stable).
         .opacity(if visuals.reveal_close { 1.0 } else { 0.0 });
     let pin = pin_control(theme, visuals.index, visuals.pinned, controls_disabled)
-        .on_mouse_down(MouseButton::Left, on_pin);
+        .on_mouse_down(MouseButton::Left, on_pin)
+        // Pin is an interaction affordance, not persistent row noise. It
+        // appears with the close control on hover/selection/focus paths.
+        .opacity(if visuals.reveal_close { 1.0 } else { 0.0 });
     div()
         .id((TAB_ROW_ID, visuals.index))
         .debug_selector(move || format!("{TAB_ROW_ID}-{}", visuals.index))
@@ -244,8 +251,8 @@ pub fn tab_row(
                 .absolute()
                 .left(theme.density.row_inset())
                 .right(theme.density.row_inset())
-                .top(theme.density.row_inset())
-                .bottom(theme.density.row_inset())
+                .top(px(0.0))
+                .bottom(px(0.0))
                 .rounded(theme.density.density_radius())
                 .bg(bg)
                 // §10.3: a pressed row deepens its wash with a 1 px inner
@@ -259,15 +266,6 @@ pub fn tab_row(
                     el.border_1().border_color(p.accent)
                 }),
         )
-        .when(visuals.state == TabVisualState::Selected, |el| {
-            el.child(
-                div()
-                    .w(px(3.0))
-                    .h(theme.density.row_tile())
-                    .rounded(Radius.small())
-                    .bg(p.accent),
-            )
-        })
         .child(favicon_tile(
             theme,
             visuals.index,

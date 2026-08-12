@@ -21,6 +21,15 @@ testkit = [
     "dep:mach2",
     "dep:serde_json",
 ]
+# Visual-evidence-only extension. GPUI's test-support feature changes executor
+# and leak-detection behavior, so it must never leak into ordinary real-app
+# E2E. Capture builds opt in explicitly while retaining the authenticated
+# local testkit gateway.
+visual-capture = [
+    "testkit",
+    "gpui/test-support",
+    "gpui_platform/test-support",
+]
 
 [dependencies]
 anyhow = "1"
@@ -62,6 +71,7 @@ bbr-fixtures.workspace = true
 bbr-persistence.workspace = true
 bbr-testkit.workspace = true
 mach2 = "0.4"
+image = "0.25"
 rusqlite.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -38,6 +38,8 @@ mod dispatch_benchmark_swipe;
 mod dispatch_benchmark_tab_menu;
 mod dispatch_benchmark_u2;
 mod dispatch_benchmark_zoom;
+#[cfg(feature = "visual-capture")]
+mod dispatch_capture;
 mod dispatch_context_menu;
 mod dispatch_downloads;
 mod dispatch_drag;
@@ -222,6 +224,7 @@ pub fn spawn_pump(
         .await;
         match incoming {
             Incoming::Command(Ok(msg)) => {
+                let quitting = matches!(msg.req, Request::Quit);
                 // Ordering contract for injected content-gesture commits: a
                 // gateway command observes every commit pushed before it.
                 // The typed `ContentGestureCommit` request rides the exact
@@ -275,6 +278,15 @@ pub fn spawn_pump(
                     _ => handle_command(msg.req, &window, &app, &server, async_cx).await,
                 };
                 let _ = msg.reply_tx.send(resp).await;
+                // `Quit` has already broadcast `Quitting`, called the real
+                // `cx.quit()` path and flushed its response to the client.
+                // Stop only this testkit observation loop so a dense run does
+                // not serialize hundreds of already-buffered WebKit callbacks
+                // ahead of GPUI/native teardown. Product session destruction,
+                // persistence and process exit remain owned by the app.
+                if quitting {
+                    return;
+                }
             }
             Incoming::Event(Ok(ev)) => {
                 // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).

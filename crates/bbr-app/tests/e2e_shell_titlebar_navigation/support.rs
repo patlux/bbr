@@ -8,7 +8,7 @@ use bbr_testkit::protocol::Snapshot;
 
 /// The DESIGN §5 default rail width (mirrors
 /// `bbr_ui::sidebar::geometry::SIDEBAR_DEFAULT`).
-pub(super) const SIDEBAR_DEFAULT: f32 = 280.0;
+pub(super) const SIDEBAR_DEFAULT: f32 = 300.0;
 /// Draw one real GPUI frame synchronously so the paint-driven native
 /// geometry callbacks fire (the hidden harness has no display link).
 pub(super) fn flush_frame(client: &mut Client) {

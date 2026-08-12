@@ -161,8 +161,9 @@ pub struct SidebarModel {
     /// §11.3: the active space's resolved chrome tint (or the interpolated
     /// swipe tint while a swipe tracks).
     pub chrome_tint: gpui::Rgba,
-    /// The brand block text.
-    pub brand: SharedString,
+    /// The active Space title shown as the rail's primary list heading.
+    /// This is real controller data, not a brand label or fixture copy.
+    pub active_space_title: SharedString,
     /// The §11.5 command slot (address pill or staging surface).
     pub command: CommandSlot,
     /// The §11.10 favorites region (`None` while empty — the label hides
@@ -175,6 +176,10 @@ pub struct SidebarModel {
     pub tabs: TabsModel,
     /// The §11.4 status line model.
     pub status: StatusModel,
+    /// Whether the transient status line is visible. Ordinary settled page
+    /// title/URL text is already represented by the address and tab row and
+    /// stays hidden; loading, crash and unresponsive states remain visible.
+    pub status_visible: bool,
     /// The §11.14 titlebar row (the top strip of the expanded full-height
     /// rail): the safe-area geometry, the sidebar toggle, and the
     /// Back/Forward/Reload cluster. The row disappears with the rail on
@@ -241,6 +246,8 @@ pub struct Callbacks {
     pub on_release_row: RowUpCallback,
     /// §10.2: the pointer enters/leaves a row (hover wash + close reveal).
     pub on_hover_row: HoverCallback,
+    /// Visible New Tab row; routes to the existing staged NewTab authority.
+    pub on_new_tab: MouseCallback,
     /// §11.1/§11.6: the tab list's keyboard traversal (`↑`/`↓`, `⌫`).
     pub on_tab_list_key_down: KeyCallback,
     /// §11.10: a favorites tile activation.
@@ -310,6 +317,7 @@ impl Callbacks {
             on_press_row: noop_row.clone(),
             on_release_row: noop_row_up,
             on_hover_row: noop_hover,
+            on_new_tab: noop_mouse.clone(),
             on_tab_list_key_down: noop_key.clone(),
             on_activate_favorite: noop_row.clone(),
             on_context_menu_row: noop_row.clone(),

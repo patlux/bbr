@@ -1496,6 +1496,12 @@ pub enum Request {
     ActivateSavedPagesLibraryRow {
         id: u64,
     },
+    /// Capture the current production GPUI frame directly from its renderer
+    /// into a PNG under `/tmp`. Testkit-only visual evidence: the authenticated
+    /// local gateway exposes no arbitrary path or native-web screenshot API.
+    CaptureChrome {
+        path: String,
+    },
     /// Full app snapshot.
     GetSnapshot,
     /// Liveness probe.

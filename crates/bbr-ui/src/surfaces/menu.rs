@@ -277,7 +277,7 @@ mod tests {
         // The §11.13/§15 family id and the per-action row ids the
         // page-menu packet owns.
         assert_eq!(PAGE_MENU_ID, "bbr-page-menu");
-        let rows = vec![
+        let rows = [
             ContextMenuRow {
                 id: "bbr-page-menu-back".into(),
                 title: "Back".into(),

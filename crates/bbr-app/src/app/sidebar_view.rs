@@ -102,7 +102,15 @@ impl BbrApp {
         let favorites = self.favorites_model(&u2.favorite_tiles);
         let folders = self.folders_model(&u2.folder_rows, &u2.folder_members, window);
         let tabs = self.tabs_model(theme, window);
-        let status = crate::shell::status_model(&self.controller.snapshot());
+        let browser = self.controller.snapshot();
+        let status = crate::shell::status_model(&browser);
+        let status_visible = crate::shell::status_visible(&browser);
+        let active_space_title = browser
+            .spaces
+            .iter()
+            .find(|space| space.id == browser.active_space)
+            .map(|space| space.title.clone())
+            .unwrap_or_else(|| "Default".to_string());
         let plus_menu = self.plus_menu_model();
         let footer = self.footer_model(window);
         let strip = self.strip_model();
@@ -110,12 +118,13 @@ impl BbrApp {
         SidebarModel {
             sidebar_width,
             chrome_tint,
-            brand: SharedString::from("BBR"),
+            active_space_title: SharedString::from(active_space_title),
             command,
             favorites,
             folders,
             tabs,
             status,
+            status_visible,
             // §11.14: the titlebar row is the rail's top strip — the
             // safe-area geometry (native), the sidebar toggle, and the
             // Back/Forward/Reload cluster. The toggle uses the identical
@@ -176,8 +185,7 @@ impl BbrApp {
                 pinned: tab.pinned,
                 show_close: true,
                 reveal_close: self.hovered_row == Some(tab.index)
-                    || self.pressed_row == Some(tab.index)
-                    || tab.active,
+                    || self.pressed_row == Some(tab.index),
             })
             .collect()
     }

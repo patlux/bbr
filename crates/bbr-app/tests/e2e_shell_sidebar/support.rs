@@ -5,7 +5,7 @@ use bbr_testkit::protocol::Snapshot;
 /// `bbr_ui::sidebar::geometry` constants the snapshot exposes; the E2E
 /// asserts the same numbers the render enforces).
 pub(super) const SIDEBAR_MIN: f32 = 200.0;
-pub(super) const SIDEBAR_DEFAULT: f32 = 280.0;
+pub(super) const SIDEBAR_DEFAULT: f32 = 300.0;
 pub(super) const SIDEBAR_MAX: f32 = 400.0;
 /// The native-content floor: the WKWebView slot is never laid out narrower.
 pub(super) const CONTENT_MIN: f32 = 64.0;
