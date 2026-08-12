@@ -17,8 +17,10 @@
 //! empty-region hiding (the section label renders only while tiles exist).
 
 use gpui::{
-    div, prelude::*, App, Div, MouseButton, MouseDownEvent, SharedString, Stateful, Styled, Window,
+    div, img, prelude::*, App, Div, Image, ImageSource, MouseButton, MouseDownEvent, ObjectFit,
+    SharedString, Stateful, Styled, Window,
 };
+use std::sync::Arc;
 
 use crate::palette::FaviconSlate;
 use crate::theme::{Density, Radius, Spacing, Theme, ThemeMode};
@@ -79,6 +81,12 @@ pub struct FavoriteTileSpec {
     pub letter: char,
     /// §7.2 FNV slate-hue ramp index (0..6).
     pub hue: usize,
+    /// The resolved favicon image for the tile's host in the owning
+    /// profile's bounded store, if acquired (task packet
+    /// `real-favicon-pipeline.md`): the tile renders it instead of the
+    /// monogram — the same record the tab row derives from, one
+    /// acquisition, every presentation.
+    pub image: Option<Arc<Image>>,
 }
 
 /// The favorites grid anatomy: a `flex_wrap` grid of pre-built tiles at the
@@ -113,19 +121,52 @@ pub fn favorite_tile(
         ThemeMode::Dark => FaviconSlate::dark(tile.hue),
         ThemeMode::Light => FaviconSlate::light(tile.hue),
     };
+    let size = theme.density.icon();
+    let radius = Radius.small();
+    let badge_size = theme.type_.badge.size;
+    let badge_weight = theme.type_.badge.weight;
+    let glass = theme.palette.surface_glass;
+    let letter = tile.letter;
     let monogram = div()
         .id(favorite_tile_icon_id(tile.index))
         .debug_selector(move || favorite_tile_icon_id(tile.index).to_string())
-        .size(theme.density.icon())
-        .rounded(Radius.small())
+        .size(size)
+        .rounded(radius)
         .bg(slate)
         .flex()
         .items_center()
         .justify_center()
-        .text_size(theme.type_.badge.size)
-        .font_weight(theme.type_.badge.weight)
-        .text_color(theme.palette.surface_glass)
+        .text_size(badge_size)
+        .font_weight(badge_weight)
+        .text_color(glass)
         .child(SharedString::from(tile.letter.to_string()));
+    // The tile's inner icon slot: the §7.2 monogram, or the resolved
+    // favicon image when the owning profile's store holds one (the same
+    // record the tab row derives from). A decode failure falls back to the
+    // monogram silently (the acquisition contract's fallback rule).
+    let icon_slot: gpui::AnyElement = match tile.image.clone() {
+        Some(image) => img(ImageSource::Image(image))
+            .id(favorite_tile_icon_id(tile.index))
+            .size(size)
+            .rounded(radius)
+            .object_fit(ObjectFit::Contain)
+            .with_fallback(move || {
+                div()
+                    .size(size)
+                    .rounded(radius)
+                    .bg(slate)
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .text_size(badge_size)
+                    .font_weight(badge_weight)
+                    .text_color(glass)
+                    .child(SharedString::from(letter.to_string()))
+                    .into_any()
+            })
+            .into_any(),
+        None => monogram.into_any(),
+    };
     div()
         .id(favorite_tile_id(tile.index))
         .debug_selector(move || favorite_tile_id(tile.index).to_string())
@@ -138,7 +179,7 @@ pub fn favorite_tile(
         .justify_center()
         .cursor_pointer()
         .on_mouse_down(MouseButton::Left, on_activate)
-        .child(monogram)
+        .child(icon_slot)
 }
 
 /// The favorites region's deterministic top-down height (points): the
@@ -194,6 +235,7 @@ mod tests {
                 url: "https://example.com/a".into(),
                 letter: 'E',
                 hue: 0,
+                image: None,
             },
             FavoriteTileSpec {
                 index: 1,
@@ -204,8 +246,32 @@ mod tests {
                 url: "http://localhost:8080/x".into(),
                 letter: 'L',
                 hue: 1,
+                image: None,
             },
         ]
+    }
+
+    #[test]
+    fn tile_specs_accept_the_shared_resolved_image_record() {
+        let image = Arc::new(gpui::Image::from_bytes(
+            gpui::ImageFormat::Png,
+            b"not decoded until the asset pipeline".to_vec(),
+        ));
+        let tile = FavoriteTileSpec {
+            index: 0,
+            tab: 11,
+            space: 1,
+            profile: 1,
+            title: "Example".into(),
+            url: "https://example.com/a".into(),
+            letter: 'E',
+            hue: 0,
+            image: Some(image.clone()),
+        };
+        assert!(tile
+            .image
+            .as_ref()
+            .is_some_and(|stored| Arc::ptr_eq(stored, &image)));
     }
 
     #[test]

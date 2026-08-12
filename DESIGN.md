@@ -346,6 +346,35 @@ an empty box:
   load, the real favicon replaces the monogram. Monograms are static — no
   spin, no pulse, no animation.
 
+### Favicon acquisition contract (real-favicon-pipeline)
+
+Every favicon slot — tab rows, pinned rows, Favorites tiles, folder items —
+presents the site's real favicon once acquired, with the deterministic
+monogram above as the unchanged fallback:
+
+- **Candidates:** after a navigation commit, the engine's isolated
+  content-world collector reads the committed DOM's `<link rel~="icon">`
+  candidates in document order; `/favicon.ico` derived from the committed
+  URL is the final fallback when the page declares none. One best candidate
+  is chosen by a deterministic portable rule: among candidates with a
+  declared size, the one closest to 2× the density icon size (36 pt at
+  normal), ties in document order; unsized candidates rank after every
+  sized one.
+- **Profile-isolated fetch:** the chosen candidate downloads through a
+  session bound to the owning profile's data store (the profile's
+  `WKHTTPCookieStore` seeds a private cookie storage), so the request
+  carries exactly that profile's cookies and two profiles can never share a
+  fetch, a cache entry, or a session. The resolved bytes land in the owning
+  profile's bounded host-keyed in-memory cache (per profile, FIFO, no disk
+  persistence); every presentation of that host derives from the same
+  record — one acquisition, every presentation.
+- **Bounded fallback:** downloads are bounded (payload size, deadline,
+  concurrent count, FIFO queue). Any failure — no resolvable candidate,
+  non-2xx response, over-bound payload, timeout, destroyed or re-registered
+  view, decode failure — falls back silently to the §7.2 monogram: never a
+  broken row, never a retry storm, never a per-frame decode. Loading/error/
+  unresponsive precedence (§10.5/§10.7/§10.11) is unchanged over the tile.
+
 ## 8. Density — small / normal / very large collections
 
 Three fixed densities, chosen by the shell from tab-collection size (and

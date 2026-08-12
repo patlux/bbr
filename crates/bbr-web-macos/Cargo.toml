@@ -19,8 +19,12 @@ name = "termination_contract"
 harness = false
 
 [dependencies]
-bbr-web.workspace = true
+# serde enables the favicon-candidate contract derives (the acquisition
+# adapter parses the page script's JSON candidate payload straight into
+# `bbr_web::FaviconCandidate`).
+bbr-web = { workspace = true, features = ["serde"] }
 log = "0.4"
+serde_json.workspace = true
 
 # raw-window-handle must match gpui 0.2.2 (0.6.x) so the AppKitWindowHandle
 # we extract from the GPUI root view is the same type the bridge consumes.
@@ -65,6 +69,17 @@ objc2-foundation = { workspace = true, features = [
     # NSTimer initializer.
     "NSTimer",
     "NSDate",
+    # Favicon acquisition (task packet `real-favicon-pipeline.md`): the
+    # bounded, profile-isolated download runs through an `NSURLSession`
+    # whose private cookie storage is seeded from the owning profile's
+    # `WKHTTPCookieStore` (NSURLSession/NSURLSessionConfiguration,
+    # NSHTTPCookieStorage/NSHTTPCookie for the seeded storage, NSOperation
+    # for the main-thread delegate queue, NSHTTPURLResponse/NSURLResponse
+    # for the status/size bounds, NSData for the payload).
+    "NSURLSession",
+    "NSHTTPCookie",
+    "NSHTTPCookieStorage",
+    "NSOperation",
     "block2",
     "objc2-core-foundation",
     "std",
@@ -129,6 +144,10 @@ objc2-web-kit = { workspace = true, features = [
     "WKProcessPool",
     "WKContentWorld",
     "WKFrameInfo",
+    # Favicon acquisition: the owning profile's data store session is the
+    # download's cookie authority (`httpCookieStore` seeds the private
+    # `NSHTTPCookieStorage` of the bounded `NSURLSession`).
+    "WKHTTPCookieStore",
     # Downloads: WKDownload + WKDownloadDelegate (the modern WebKit download
     # lifecycle: destination decision, progress via NSProgress, finish,
     # fail-with-resume-data, cancel).

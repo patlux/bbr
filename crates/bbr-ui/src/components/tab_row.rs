@@ -269,7 +269,7 @@ pub fn tab_row(
         .child(favicon_tile(
             theme,
             visuals.index,
-            visuals.favicon,
+            visuals.favicon.clone(),
             visuals.state,
         ))
         .child(row_title(
@@ -356,6 +356,7 @@ mod tests {
             favicon: Some(FaviconSpec {
                 letter: 'E',
                 hue: 2,
+                image: None,
             }),
             pinned: true,
             show_close: true,
@@ -365,10 +366,11 @@ mod tests {
         assert_eq!(visuals.title, "Example");
         assert_eq!(visuals.state, TabVisualState::Selected);
         assert_eq!(
-            visuals.favicon,
+            visuals.favicon.clone(),
             Some(FaviconSpec {
                 letter: 'E',
-                hue: 2
+                hue: 2,
+                image: None,
             })
         );
         assert!(visuals.pinned);
@@ -384,7 +386,8 @@ mod tests {
                 state: TabVisualState::Default,
                 favicon: Some(FaviconSpec {
                     letter: 'E',
-                    hue: 2
+                    hue: 2,
+                    image: None
                 }),
                 pinned: true,
                 show_close: true,

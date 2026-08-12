@@ -212,3 +212,41 @@ fn download_fixtures_are_deterministic() {
     let (code5, _) = get(&server.url("/__fx/dl/fail.bin")).unwrap();
     assert_eq!(code5, 500);
 }
+
+#[test]
+fn favicon_fixture_pages_are_deterministic_and_self_contained() {
+    // The real-app favicon E2E serves the repo fixture root; prove here
+    // that the declared-icon page, the no-icon page, and the deterministic
+    // PNG are served exactly as the acquisition contract expects (one
+    // declared candidate, one valid image, one host with no icon at all).
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("html");
+    let server = FixtureServer::start(&root).unwrap();
+
+    let (code, body) = get(&server.url("/favicon.html")).unwrap();
+    assert_eq!(code, 200);
+    let html = String::from_utf8(body).unwrap();
+    assert!(
+        html.contains(r#"<link rel="icon" href="favicon.png" />"#),
+        "the declared-icon fixture keeps its single deterministic candidate"
+    );
+
+    let (code, body) = get(&server.url("/no-favicon.html")).unwrap();
+    assert_eq!(code, 200);
+    let html = String::from_utf8(body).unwrap();
+    assert!(
+        !html.contains("rel=\"icon\"") && !html.contains("rel='icon'"),
+        "the no-icon fixture declares nothing"
+    );
+
+    let (code, body) = get(&server.url("/favicon.png")).unwrap();
+    assert_eq!(code, 200);
+    assert_eq!(
+        &body[..8],
+        b"\x89PNG\r\n\x1a\n",
+        "the fixture favicon is a valid PNG the decoder accepts"
+    );
+    // The no-icon host must 404 the conventional fallback, so the tab
+    // stays on the monogram (silent fallback contract).
+    let (code, _) = get(&server.url("/favicon.ico")).unwrap();
+    assert_eq!(code, 404);
+}

@@ -42,6 +42,7 @@ mod downloads;
 mod error;
 #[cfg(test)]
 pub(crate) mod fake;
+mod favicon;
 #[cfg(test)]
 pub(crate) mod harness;
 mod hydration;
@@ -67,6 +68,8 @@ mod controller_background_link_tests;
 mod controller_dense_tests;
 #[cfg(test)]
 mod controller_event_tests;
+#[cfg(test)]
+mod controller_favicon_tests;
 #[cfg(test)]
 mod controller_gesture_tests;
 #[cfg(test)]
@@ -111,7 +114,7 @@ pub use responsiveness::{
 pub use session::{SessionError, SessionRegistry};
 pub use snapshot::{
     ControllerSnapshot, GlobalTabSnapshot, LifecycleCounts, ProfileSnapshot, SpaceSnapshot,
-    TabSnapshot,
+    TabFavicon, TabSnapshot,
 };
 pub use tab_menu::{
     FolderDestination, SpaceDestination, TabMenuAction, TabMenuAvailability, TabMenuController,

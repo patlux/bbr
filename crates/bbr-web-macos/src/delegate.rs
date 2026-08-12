@@ -86,6 +86,18 @@ pub type EventSink = Rc<RefCell<Option<Box<dyn FnMut(WebEvent)>>>>;
 /// owns the incident-id allocation on top of that classification.
 pub type IncidentSink = Rc<RefCell<Option<Box<dyn FnMut(ClassifiedIncident)>>>>;
 
+/// Shared engine-owned delegate handles, cloned into every navigation
+/// delegate (task packets `new-window` and `real-favicon-pipeline.md`).
+/// Bundled so the delegate constructor stays within the crate's argument
+/// budget.
+pub struct DelegateHandles {
+    /// Shared productive new-window request coordinator.
+    pub new_window: NewWindowCoordinator,
+    /// Real favicon acquisition host: started after each navigation commit;
+    /// emits `FaviconChanged` observations through the shared sink.
+    pub favicon_acquisition: crate::favicon_acquisition::FaviconAcquisitionHost,
+}
+
 /// Instance variables for the navigation delegate.
 pub struct WebViewDelegateIvars {
     /// The web view this delegate belongs to (used to key events).
@@ -100,6 +112,10 @@ pub struct WebViewDelegateIvars {
     pub(crate) navigation_cover: Retained<NSView>,
     /// Shared productive new-window request coordinator.
     pub(crate) new_window: NewWindowCoordinator,
+    /// Real favicon acquisition host (task packet
+    /// `real-favicon-pipeline.md`): started after each navigation commit;
+    /// emits `FaviconChanged` observations through the shared sink.
+    pub(crate) favicon_acquisition: crate::favicon_acquisition::FaviconAcquisitionHost,
 }
 
 define_class!(
@@ -159,6 +175,19 @@ define_class!(
             self.ivars().navigation_cover.setHidden(true);
             self.emit_loading(false);
             self.emit_state(web_view);
+            // Real favicon acquisition (task packet
+            // `real-favicon-pipeline.md`): the committed document's
+            // declared icon candidates are collected in the isolated client
+            // content world and the best candidate downloads through the
+            // owning profile's data store session. Any failure stays
+            // silent — the §7.2 monogram keeps rendering. The acquisition
+            // is one per view and asynchronous; a result arrives as a
+            // `FaviconChanged` event.
+            if let Some(mtm) = MainThreadMarker::new() {
+                self.ivars()
+                    .favicon_acquisition
+                    .start(mtm, self.id(), web_view);
+            }
         }
 
         #[unsafe(method(webView:didFailProvisionalNavigation:withError:))]
@@ -279,7 +308,7 @@ impl WebViewDelegate {
         sink: EventSink,
         incident_sink: IncidentSink,
         navigation_cover: Retained<NSView>,
-        new_window: NewWindowCoordinator,
+        handles: DelegateHandles,
     ) -> Retained<Self> {
         let this = Self::alloc(mtm).set_ivars(WebViewDelegateIvars {
             web_view_id,
@@ -287,7 +316,8 @@ impl WebViewDelegate {
             sink,
             incident_sink,
             navigation_cover,
-            new_window,
+            new_window: handles.new_window,
+            favicon_acquisition: handles.favicon_acquisition,
         });
         // SAFETY: `init` is the NSObject initializer; we are on the main thread.
         unsafe { msg_send![super(this), init] }

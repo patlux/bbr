@@ -23,6 +23,7 @@ pub fn favicon_spec(host: &str) -> FaviconSpec {
     FaviconSpec {
         letter,
         hue: (hash as usize) % 6,
+        image: None,
     }
 }
 

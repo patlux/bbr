@@ -77,6 +77,12 @@ mod error_surface_benchmarks;
 /// existing controller. macOS-only body; the module is compiled everywhere
 /// so the app composition stays portable.
 pub(crate) mod external_urls;
+/// App-owned favicon image mirror (task packet `real-favicon-pipeline.md`):
+/// the presentation half of the acquisition join — decodes each acquired
+/// record once, refreshes when the controller's store version changes, and
+/// feeds every rendered favicon slot (tab rows, pinned rows, Favorites
+/// tiles, folder items). Acquisition authority stays in the controller.
+pub(crate) mod favicon_presentation;
 mod favorites_band;
 pub(crate) mod find;
 #[cfg(feature = "testkit")]
@@ -483,6 +489,16 @@ pub struct BbrApp {
     /// bar presentation and the captured warm-origin focus target. The
     /// preview *session* state lives in the controller snapshot.
     peek: peek::PeekState,
+    /// The decoded favicon image mirror (task packet
+    /// `real-favicon-pipeline.md`): `(profile, host) → decoded image`,
+    /// rebuilt when the controller's bounded store version changes (bumped
+    /// on every insert/eviction), so every presentation decodes each
+    /// acquired record exactly once. Presentation-only; acquisition
+    /// authority stays in the controller's bounded store.
+    favicon_images: favicon_presentation::FaviconImageMirror,
+    /// The controller store version [`Self::favicon_images`] was last
+    /// rebuilt for.
+    favicon_mirror_version: u64,
     #[cfg(feature = "testkit")]
     performance: PerformanceProbe,
 }
@@ -627,6 +643,8 @@ impl BbrApp {
             new_window: new_window::NewWindowState::default(),
             content_gesture: content_gesture::ContentGestureState::default(),
             peek: peek::PeekState::default(),
+            favicon_images: favicon_presentation::FaviconImageMirror::default(),
+            favicon_mirror_version: 0,
             #[cfg(feature = "testkit")]
             performance,
         }

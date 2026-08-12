@@ -13,6 +13,7 @@ fn browser() -> ControllerSnapshot {
         web_view: Some(bbr_web::WebViewId(1)),
         lifecycle: bbr_browser::TabLifecycle::Warm,
         last_used: 0,
+        favicon: bbr_browser::TabFavicon::Monogram,
     };
     ControllerSnapshot {
         active_profile: bbr_web::ProfileId(1),
@@ -53,6 +54,7 @@ fn row(index: usize, state: TabVisualState) -> RowVisuals {
         title: "Example".into(),
         state,
         favicon: Some(bbr_ui::components::FaviconSpec {
+            image: None,
             letter: 'E',
             hue: 0,
         }),

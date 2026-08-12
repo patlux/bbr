@@ -67,6 +67,9 @@ impl NavState {
             // is BBR chrome over the page; opening/closing it never changes
             // url/title/loading/history).
             bbr_web::WebEvent::ContextMenuRequested(_, _) => {}
+            // A favicon acquisition carries no navigation state (the image
+            // is presentation data keyed by host in the controller's store).
+            bbr_web::WebEvent::FaviconChanged(_, _) => {}
         }
     }
 }

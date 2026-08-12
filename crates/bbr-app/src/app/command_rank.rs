@@ -341,6 +341,7 @@ mod tests {
             web_view: Some(bbr_web::WebViewId(index as u64 + 1)),
             lifecycle: bbr_browser::TabLifecycle::Warm,
             last_used: 0,
+            favicon: bbr_browser::TabFavicon::Monogram,
         };
         let global =
             |id: u64, index: usize, url: &str, title: &str| bbr_browser::GlobalTabSnapshot {

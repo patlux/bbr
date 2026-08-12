@@ -75,7 +75,12 @@ fn build_delegate(
         events,
         incidents,
         cover,
-        NewWindowCoordinator::new(),
+        bbr_web_macos::delegate::DelegateHandles {
+            new_window: NewWindowCoordinator::new(),
+            favicon_acquisition: bbr_web_macos::favicon_acquisition::FaviconAcquisitionHost::new(
+                Rc::new(RefCell::new(None)),
+            ),
+        },
     );
     (delegate, probe)
 }

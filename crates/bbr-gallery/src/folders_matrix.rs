@@ -219,6 +219,7 @@ pub fn build_folders_fixture(
             title: title.to_string(),
             letter,
             hue: member_pos % 6,
+            image: None,
         });
     }
     Some((rows, members))

@@ -134,6 +134,7 @@ mod tests {
             web_view: None,
             lifecycle: bbr_browser::TabLifecycle::Warm,
             last_used: 0,
+            favicon: bbr_browser::TabFavicon::Monogram,
         };
         let tabs = vec![snap(0, true), snap(1, true), snap(2, false)];
         assert_eq!(pinned_count(&tabs), 2);

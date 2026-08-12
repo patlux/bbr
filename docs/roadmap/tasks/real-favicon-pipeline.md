@@ -76,20 +76,20 @@ Integration order:       independent of system-appearance-theme; before sidebar-
 
 ### Unit and contract
 
-- [ ] Candidate parsing/selection rule is deterministic across declared
+- [x] Candidate parsing/selection rule is deterministic across declared
       sizes, rel variants and missing links.
-- [ ] Cache bounds, host keying and per-profile separation are proven at the
+- [x] Cache bounds, host keying and per-profile separation are proven at the
       store level.
-- [ ] Fallback precedence (loading spinner → image → monogram) is proven at
+- [x] Fallback precedence (loading spinner → image → monogram) is proven at
       the component level.
 
 ### Real-app E2E
 
-- [ ] Fixture with a declared favicon: tab row and its Favorite tile report
+- [x] Fixture with a declared favicon: tab row and its Favorite tile report
       `favicon == image` after load; a host without one stays `monogram`.
-- [ ] Same host in two profiles acquires through two isolated sessions
+- [x] Same host in two profiles acquires through two isolated sessions
       (fixture asserts separate requests) and never shares cache entries.
-- [ ] Crash/error and loading states keep their §10.5/§10.7 precedence over
+- [x] Crash/error and loading states keep their §10.5/§10.7 precedence over
       the image tile; dense-500 scrolling stays within existing bounds.
 
 ### Performance
@@ -106,6 +106,7 @@ cargo test -p bbr-web -p bbr-web-macos -p bbr-browser -p bbr-ui
 cargo test -p bbr --features testkit --bins
 cargo clippy -p bbr-ui --all-targets -- -D warnings
 cargo clippy -p bbr --features testkit --all-targets -- -D warnings
+just e2e-shell-favicons
 just e2e-shell-tabs
 just e2e-shell-sidebar
 just e2e-shell-dense
@@ -141,12 +142,30 @@ the smallest input needed.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: Real favicon bytes travel from a portable typed event through the
+profile-bound macOS acquisition adapter and bounded per-profile host cache to
+one production image presentation shared by tab, pinned, Favorite and folder
+slots; missing/failed acquisition retains the deterministic monogram.
+Commits: Uncommitted reviewed lane candidate from base 806e4238; only the
+Orchestrator commits and integrates.
+Functional evidence: bbr-web/bbr-web-macos/bbr-browser/bbr-ui unit suites green;
+app bins 278/278; warning-denied bbr-ui and bbr testkit all-target Clippy green;
+fmt, roadmap, UI dependency, script and diff checks green. Acquisition bounds:
+1 MiB, 5 s, four in-flight, queue 16; per-profile cache cap 64. Async host
+registry uses heap-stable Rc/Weak state so bounded callback clones cannot remove
+or dereference a moved/dead host.
+Real-app E2E: favicon suite 3/3 (declared image reaches tab+Favorite exactly
+once; missing icon stays monogram; same host acquires exactly once in each of
+two profiles); Tabs 3/3; Sidebar 12/12; Dense 3/3; Gallery 44/44. Typed snapshot
+reports image|monogram; fixture traffic is loopback-only.
+Performance evidence: Not executed under the active override. Existing
+performance code, budgets and sample guards compile unchanged; acquisition is
+asynchronous and outside the presentation-commit path.
+Roadmap/documentation updates: DESIGN §7.2 and §15 define acquisition,
+isolation, bounds, fallback and typed snapshot vocabulary; Phase-4 checkbox
+remains for Orchestrator integration closeout.
+Open blockers and non-goals: no known product blocker; favicon persistence,
+manifest/touch-icon heuristics and Saved-Page favicon blobs remain non-goals.
+Worktree state: exact final fingerprints recorded by the Orchestrator after
+this ledger edit and independently rebound before integration.
 ```

@@ -67,6 +67,13 @@ pub mod find_strategy;
 #[cfg(target_os = "macos")]
 pub mod find_web_kit;
 
+/// Real favicon acquisition adapter (task packet
+/// `real-favicon-pipeline.md`): the isolated content-world collector, the
+/// deterministic best-candidate selection, and the bounded profile-bound
+/// download that feeds [`WebEvent::FaviconChanged`] observations.
+#[cfg(target_os = "macos")]
+pub mod favicon_acquisition;
+
 #[cfg(target_os = "macos")]
 pub mod host;
 

@@ -19,8 +19,10 @@
 //! nested rows is already contract.
 
 use gpui::{
-    div, prelude::*, App, Div, MouseButton, MouseDownEvent, SharedString, Stateful, Styled, Window,
+    div, img, prelude::*, App, Div, Image, ImageSource, MouseButton, MouseDownEvent, ObjectFit,
+    SharedString, Stateful, Styled, Window,
 };
+use std::sync::Arc;
 
 use crate::icons::Icon;
 use crate::palette::FaviconSlate;
@@ -108,6 +110,12 @@ pub struct FolderMemberVisual {
     pub letter: char,
     /// §7.2 FNV slate-hue ramp index (0..6), from the member's URL.
     pub hue: usize,
+    /// The resolved favicon image for the member's host in its owning
+    /// profile's bounded store, if acquired (task packet
+    /// `real-favicon-pipeline.md`): the nested row renders it instead of
+    /// the monogram — the same record the member's tab row derives from,
+    /// one acquisition, every presentation.
+    pub image: Option<Arc<Image>>,
 }
 
 /// The session-local folder presentation state the app layer owns
@@ -250,18 +258,41 @@ pub fn folder_item_row(
         ThemeMode::Dark => FaviconSlate::dark(visual.hue),
         ThemeMode::Light => FaviconSlate::light(visual.hue),
     };
-    let monogram = div()
-        .id(folder_item_favicon_id(visual.folder_index, visual.member))
-        .size(theme.density.icon())
-        .rounded(Radius.small())
-        .bg(slate)
-        .flex()
-        .items_center()
-        .justify_center()
-        .text_size(theme.type_.badge.size)
-        .font_weight(theme.type_.badge.weight)
-        .text_color(p.surface_glass)
-        .child(SharedString::from(visual.letter.to_string()));
+    let size = theme.density.icon();
+    let radius = Radius.small();
+    let badge_size = theme.type_.badge.size;
+    let badge_weight = theme.type_.badge.weight;
+    let glass = p.surface_glass;
+    let monogram_style = MonogramStyle {
+        size,
+        radius,
+        badge_size,
+        badge_weight,
+        slate,
+        glass,
+    };
+    // Owned copies for the `'static` img fallback closure (the member
+    // visual is borrowed for this render only).
+    let folder_index = visual.folder_index;
+    let member = visual.member;
+    let letter = visual.letter;
+    // The nested-row favicon slot: the §7.2 monogram, or the resolved
+    // favicon image when the member's owning profile store holds one (the
+    // same record the member's tab row derives from). A decode failure
+    // falls back to the monogram silently (the acquisition contract's
+    // fallback rule).
+    let favicon_slot: gpui::AnyElement = match visual.image.clone() {
+        Some(image) => img(ImageSource::Image(image))
+            .id(folder_item_favicon_id(folder_index, member))
+            .size(size)
+            .rounded(radius)
+            .object_fit(ObjectFit::Contain)
+            .with_fallback(move || {
+                folder_item_monogram(folder_index, member, monogram_style, letter).into_any()
+            })
+            .into_any(),
+        None => folder_item_monogram(folder_index, member, monogram_style, letter).into_any(),
+    };
     div()
         .id(folder_item_id(visual.folder_index, visual.member))
         .debug_selector(move || folder_item_id(visual.folder_index, visual.member).to_string())
@@ -275,7 +306,7 @@ pub fn folder_item_row(
         .rounded(Radius.medium())
         .cursor_pointer()
         .on_mouse_down(MouseButton::Left, on_select)
-        .child(monogram)
+        .child(favicon_slot)
         .child(
             div()
                 .id(folder_item_title_id(visual.folder_index, visual.member))
@@ -302,159 +333,43 @@ pub fn folder_item_row(
         )
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn rows() -> Vec<FolderRowSpec> {
-        vec![
-            FolderRowSpec {
-                index: 0,
-                id: bbr_domain::FolderId(1),
-                title: "Work".into(),
-                count: 2,
-                expanded: false,
-            },
-            FolderRowSpec {
-                index: 1,
-                id: bbr_domain::FolderId(2),
-                title: "Reading".into(),
-                count: 0,
-                expanded: false,
-            },
-        ]
-    }
-
-    #[test]
-    fn folder_ids_are_deterministic_per_index() {
-        assert_eq!(folder_row_id(0).to_string(), "bbr-folder-row-0");
-        assert_eq!(folder_name_id(3).to_string(), "bbr-folder-name-3");
-        assert_eq!(folder_count_id(3).to_string(), "bbr-folder-count-3");
-        assert_eq!(folder_toggle_id(3).to_string(), "bbr-folder-toggle-3");
-        assert_eq!(folder_item_id(1, 2).to_string(), "bbr-folder-item-1-2");
-        assert_eq!(
-            folder_item_title_id(1, 2).to_string(),
-            "bbr-folder-item-1-2-title"
-        );
-        assert_eq!(
-            folder_item_favicon_id(1, 2).to_string(),
-            "bbr-folder-item-1-2-favicon"
-        );
-        assert_eq!(
-            folder_item_close_id(1, 2).to_string(),
-            "bbr-folder-item-1-2-close"
-        );
-    }
-
-    #[test]
-    fn presentation_defaults_to_collapsed_and_toggles_deterministically() {
-        let mut presentation = FolderPresentation::default();
-        assert!(!presentation.is_expanded(bbr_domain::FolderId(0)));
-        assert!(
-            !presentation.is_expanded(bbr_domain::FolderId(7)),
-            "unknown reads collapsed"
-        );
-        presentation.toggle(bbr_domain::FolderId(2));
-        assert!(presentation.is_expanded(bbr_domain::FolderId(2)));
-        presentation.toggle(bbr_domain::FolderId(2));
-        assert!(!presentation.is_expanded(bbr_domain::FolderId(2)));
-        assert!(
-            !presentation.is_expanded(bbr_domain::FolderId(1)),
-            "toggling 2 leaves 1 alone"
-        );
-    }
-
-    #[test]
-    fn folder_rows_carry_counts_and_expansion() {
-        let mut presentation = FolderPresentation::default();
-        presentation.toggle(bbr_domain::FolderId(1));
-        let mut rows = rows();
-        rows[0].expanded = presentation.is_expanded(bbr_domain::FolderId(1));
-        assert_eq!(rows.len(), 2);
-        assert_eq!(rows[0].index, 0);
-        assert_eq!(rows[0].title, "Work");
-        assert_eq!(rows[0].count, 2);
-        assert!(rows[0].expanded);
-        assert_eq!(rows[1].title, "Reading");
-        assert_eq!(rows[1].count, 0);
-        assert!(!rows[1].expanded);
-    }
-
-    #[test]
-    fn folders_ids_hide_the_empty_region_and_mirror_expansion() {
-        assert!(folders_ids(&[], &[]).is_empty());
-        let rows = rows();
-        let ids = folders_ids(&rows, &[]);
-        assert!(ids.contains(&"bbr-section-folders".to_string()));
-        assert!(ids.contains(&"bbr-folders".to_string()));
-        assert!(ids.contains(&"bbr-folder-row-0".to_string()));
-        assert!(
-            !ids.iter().any(|id| id.starts_with("bbr-folder-item")),
-            "collapsed folders expose no nested ids"
-        );
-        let members = [
-            FolderMemberVisual {
-                folder: bbr_domain::FolderId(1),
-                folder_index: 0,
-                member: 0,
-                title: "Example".into(),
-                letter: 'E',
-                hue: 0,
-            },
-            FolderMemberVisual {
-                folder: bbr_domain::FolderId(1),
-                folder_index: 0,
-                member: 1,
-                title: "Local".into(),
-                letter: 'L',
-                hue: 1,
-            },
-        ];
-        let ids = folders_ids(&rows, &members);
-        for required in [
-            "bbr-folder-item-0-0",
-            "bbr-folder-item-0-0-title",
-            "bbr-folder-item-0-0-favicon",
-            "bbr-folder-item-0-0-close",
-            "bbr-folder-item-0-1",
-            "bbr-folder-item-0-1-title",
-            "bbr-folder-item-0-1-favicon",
-            "bbr-folder-item-0-1-close",
-        ] {
-            assert!(ids.contains(&required.to_string()), "missing {required}");
-        }
-        assert!(
-            !ids.iter().any(|id| id.starts_with("bbr-folder-item-1")),
-            "folder 1 exposes no nested ids"
-        );
-    }
-
-    #[test]
-    fn member_visuals_carry_folder_order_identity() {
-        let members = [
-            FolderMemberVisual {
-                folder: bbr_domain::FolderId(1),
-                folder_index: 0,
-                member: 0,
-                title: "Example".into(),
-                letter: 'E',
-                hue: 0,
-            },
-            FolderMemberVisual {
-                folder: bbr_domain::FolderId(1),
-                folder_index: 0,
-                member: 1,
-                title: "Local".into(),
-                letter: 'L',
-                hue: 1,
-            },
-        ];
-        assert_eq!(members[0].folder, bbr_domain::FolderId(1));
-        assert_eq!(members[0].folder_index, 0);
-        assert_eq!(members[0].member, 0);
-        assert_eq!(members[0].letter, 'E');
-        assert_eq!(members[1].member, 1);
-        assert_eq!(members[1].letter, 'L');
-        assert!((0..6).contains(&members[0].hue));
-    }
+/// The §7.2 monogram tile geometry + palette inputs of one folder-member
+/// row (a named bundle so the monogram builder and the image fallback
+/// closure stay under the seven-argument lint budget).
+#[derive(Clone, Copy)]
+struct MonogramStyle {
+    size: gpui::Pixels,
+    radius: gpui::Pixels,
+    badge_size: gpui::Pixels,
+    badge_weight: gpui::FontWeight,
+    slate: gpui::Rgba,
+    glass: gpui::Rgba,
 }
+
+/// The §7.2 monogram tile of one nested folder-member row (also the image
+/// decode-failure fallback): the letter on the slate tile at the density
+/// icon size, `radius:sm`, with the stable `bbr-folder-item-<n>-<m>-favicon`
+/// id.
+fn folder_item_monogram(
+    folder_index: usize,
+    member: usize,
+    style: MonogramStyle,
+    letter: char,
+) -> Stateful<Div> {
+    div()
+        .id(folder_item_favicon_id(folder_index, member))
+        .size(style.size)
+        .rounded(style.radius)
+        .bg(style.slate)
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_size(style.badge_size)
+        .font_weight(style.badge_weight)
+        .text_color(style.glass)
+        .child(SharedString::from(letter.to_string()))
+}
+
+#[cfg(test)]
+#[path = "folders/tests.rs"]
+mod tests;

@@ -26,14 +26,20 @@ impl BbrApp {
     /// spaces/favorites/folders/plus-menu surfaces all consume the same
     /// source the snapshot reports.
     pub(crate) fn u2_rail_data(&mut self) -> U2Rail {
+        // Refresh the decoded favicon mirror once per frame before any
+        // presentation derives from it (the mirror is keyed by the same
+        // `(profile, host)` records the controller's bounded store holds).
+        self.refresh_favicon_mirror();
         let organization = self.organization.organization_snapshot(&self.controller);
-        let favorite_tiles = ui_adapters::favorite_tiles(&organization.favorites);
+        let favorite_tiles =
+            ui_adapters::favorite_tiles(&organization.favorites, &self.favicon_images);
         let folder_rows =
             ui_adapters::folder_row_specs(&organization.folders, &self.u2.folder_presentation);
         let folder_members = ui_adapters::folder_member_visuals(
             &folder_rows,
             &organization.folders,
             &self.controller.snapshot().all_tabs,
+            &self.favicon_images,
         );
         U2Rail {
             favorite_tiles,

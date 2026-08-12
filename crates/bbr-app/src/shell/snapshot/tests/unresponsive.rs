@@ -25,6 +25,7 @@ fn visible_ids_mirror_the_unresponsive_pane_for_the_active_slot() {
         web_view: Some(bbr_web::WebViewId(index as u64 + 7)),
         lifecycle: bbr_browser::TabLifecycle::Warm,
         last_used: 0,
+        favicon: bbr_browser::TabFavicon::Monogram,
     };
     let browser = |tabs: Vec<bbr_browser::TabSnapshot>| ControllerSnapshot {
         active_profile: bbr_web::ProfileId(1),

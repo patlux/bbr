@@ -33,6 +33,7 @@ pub const FIXTURE_TITLE_BUDGET: usize = 32;
 
 /// A deterministic monogram spec for the matrix's regular families.
 const MONOGRAM: FaviconSpec = FaviconSpec {
+    image: None,
     letter: 'E',
     hue: 2,
 };
@@ -42,7 +43,7 @@ const MONOGRAM: FaviconSpec = FaviconSpec {
 /// (`crashed`, `bitmap_favicon`, `claims_selected`) exist solely to name
 /// the rejected combinations in the same case shape; they are never mapped
 /// into `RowVisuals`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TabRowCase {
     pub label: &'static str,
     pub state: TabVisualState,
@@ -133,7 +134,7 @@ pub const TAB_ROW_VALID: &[TabRowCase] = &[
 /// A rejected combination with the exact DESIGN/packet reason (the matrix
 /// "rejected" column). Same `TabRowCase` shape as the valid rows, so one
 /// validity authority decides both sides and the table cannot drift.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct RejectedTabRow {
     pub label: &'static str,
     pub case: TabRowCase,
@@ -246,7 +247,7 @@ pub fn build_tab_row_fixture(case: &TabRowCase) -> Option<RowVisuals> {
             FIXTURE_TITLE_BUDGET,
         )),
         state: case.state,
-        favicon: case.favicon,
+        favicon: case.favicon.clone(),
         pinned: case.pinned,
         show_close: true,
         reveal_close: case.reveal_close,

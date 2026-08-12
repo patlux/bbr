@@ -82,6 +82,7 @@ fn visible_ids_mirror_the_render_for_each_pane_branch() {
         web_view: None,
         lifecycle: bbr_browser::TabLifecycle::Warm,
         last_used: 0,
+        favicon: bbr_browser::TabFavicon::Monogram,
     };
     let tabs = vec![snap(0, false), snap(1, false)];
     let browser = ControllerSnapshot {

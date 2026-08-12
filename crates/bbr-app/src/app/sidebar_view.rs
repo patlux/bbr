@@ -159,33 +159,45 @@ impl BbrApp {
         drag_source: Option<usize>,
     ) -> Vec<RowVisuals> {
         let budget = crate::shell::title_budget_chars(&self.theme());
+        // The active-space tab rows belong to the active profile (the
+        // controller's tab operations target it), so every row's favicon
+        // image resolves from that profile's bounded host-keyed store.
+        let profile = self.controller.snapshot().active_profile;
         tabs.iter()
-            .map(|tab| RowVisuals {
-                index: tab.index,
-                title: SharedString::from(bbr_ui::text::truncate_title(
-                    &bbr_ui::text::display_title(&tab.url, &tab.title),
-                    budget,
-                )),
-                state: if drag_source == Some(tab.index) {
-                    bbr_ui::state::TabVisualState::Dragging
-                } else {
-                    crate::shell::row_state(
-                        tab.active,
-                        tab.loading,
-                        tab.crashed,
-                        tab.unresponsive,
-                        self.pressed_row == Some(tab.index),
-                        self.hovered_row == Some(tab.index),
-                    )
-                },
-                favicon: Some(bbr_ui::components::FaviconSpec {
-                    letter: bbr_ui::components::favicon::monogram_letter(&tab.url),
-                    hue: bbr_ui::components::favicon::monogram_hue(&tab.url),
-                }),
-                pinned: tab.pinned,
-                show_close: true,
-                reveal_close: self.hovered_row == Some(tab.index)
-                    || self.pressed_row == Some(tab.index),
+            .map(|tab| {
+                let host = bbr_ui::text::host_of(&tab.url);
+                RowVisuals {
+                    index: tab.index,
+                    title: SharedString::from(bbr_ui::text::truncate_title(
+                        &bbr_ui::text::display_title(&tab.url, &tab.title),
+                        budget,
+                    )),
+                    state: if drag_source == Some(tab.index) {
+                        bbr_ui::state::TabVisualState::Dragging
+                    } else {
+                        crate::shell::row_state(
+                            tab.active,
+                            tab.loading,
+                            tab.crashed,
+                            tab.unresponsive,
+                            self.pressed_row == Some(tab.index),
+                            self.hovered_row == Some(tab.index),
+                        )
+                    },
+                    favicon: Some(bbr_ui::components::FaviconSpec {
+                        letter: bbr_ui::components::favicon::monogram_letter(&tab.url),
+                        hue: bbr_ui::components::favicon::monogram_hue(&tab.url),
+                        // The resolved favicon image for the tab's host in
+                        // the owning profile's bounded store, if acquired
+                        // (task packet `real-favicon-pipeline.md`); the
+                        // tile renders it instead of the monogram.
+                        image: self.favicon_image(profile, &host),
+                    }),
+                    pinned: tab.pinned,
+                    show_close: true,
+                    reveal_close: self.hovered_row == Some(tab.index)
+                        || self.pressed_row == Some(tab.index),
+                }
             })
             .collect()
     }

@@ -278,6 +278,9 @@ pub fn library_monogram(url: &str) -> FaviconSpec {
     FaviconSpec {
         letter: monogram_letter(url),
         hue: monogram_hue(url),
+        // Saved Pages store no favicon blob (§11.16): the monogram is the
+        // only Library favicon presentation.
+        image: None,
     }
 }
 

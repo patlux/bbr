@@ -78,7 +78,7 @@ pub fn library_row(
         .cursor_pointer()
         .when(row.selected, |el| el.bg(p.accent).text_color(p.accent_ink))
         .child(selection_box(theme, row.selected))
-        .child(favicon_tile(theme, row.favicon))
+        .child(favicon_tile(theme, row.favicon.clone()))
         .when(editing, |el| {
             // The staged rename input replaces the title block and the
             // rename button: the draft field plus its Confirm/Cancel

@@ -258,6 +258,12 @@ pub struct TabSnapshot {
     /// Deterministic recency stamp (the session-budget policy's "recently
     /// used" order).
     pub last_used: u64,
+    /// §7.2/§15 favicon presentation of the tab's tile (task packet
+    /// `real-favicon-pipeline.md`): `"monogram"` until the owning profile's
+    /// bounded host-keyed store holds resolved bytes for the tab's host,
+    /// then `"image"`. The typed E2E evidence that a real favicon reached
+    /// the rendered slot.
+    pub favicon: String,
 }
 
 /// Lifecycle population counts of the active space (the dense-list

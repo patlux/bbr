@@ -150,6 +150,10 @@ impl SnapshotExt for crate::shell::TestSnapshot {
                         bbr_browser::TabLifecycle::Discarded => "discarded".into(),
                     },
                     last_used: tab.last_used,
+                    favicon: match tab.favicon {
+                        bbr_browser::TabFavicon::Monogram => "monogram".into(),
+                        bbr_browser::TabFavicon::Image => "image".into(),
+                    },
                 })
                 .collect(),
             profiles: self

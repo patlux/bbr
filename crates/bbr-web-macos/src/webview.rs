@@ -68,6 +68,12 @@ pub struct WebEngineWk {
     /// timer. Shares the engine's event sink, so `UnresponsiveChanged`
     /// observations flow through the same transport as every other event.
     pub(crate) probe: crate::responsiveness::RendererProbeHost,
+    /// Real favicon acquisition (task packet `real-favicon-pipeline.md`):
+    /// after each navigation commit the isolated content-world collector
+    /// reads the page's icon candidates and the bounded profile-bound
+    /// download emits `FaviconChanged` observations through the shared
+    /// engine sink. Silent on any failure (the §7.2 monogram stays).
+    pub(crate) favicon_acquisition: crate::favicon_acquisition::FaviconAcquisitionHost,
 }
 
 impl WebEngineWk {
@@ -91,6 +97,8 @@ impl WebEngineWk {
         let content_gesture_reporter: ContentGestureSink = Rc::new(RefCell::new(None));
         let content_gesture = ContentGestureHost::attach(mtm, ns_view, content_gesture_reporter);
         let probe = crate::responsiveness::RendererProbeHost::new(sink.clone());
+        let favicon_acquisition =
+            crate::favicon_acquisition::FaviconAcquisitionHost::new(sink.clone());
         Self {
             host,
             options,
@@ -105,6 +113,7 @@ impl WebEngineWk {
             menu_bridge,
             content_gesture,
             probe,
+            favicon_acquisition,
         }
     }
 
@@ -352,7 +361,10 @@ impl WebEngine for WebEngineWk {
             self.sink.clone(),
             self.incident_sink.clone(),
             navigation_cover.clone(),
-            self.new_window.clone(),
+            delegate::DelegateHandles {
+                new_window: self.new_window.clone(),
+                favicon_acquisition: self.favicon_acquisition.clone(),
+            },
         );
         unsafe {
             web_view.setNavigationDelegate(Some(ProtocolObject::from_ref(&*delegate)));
@@ -395,6 +407,10 @@ impl WebEngine for WebEngineWk {
         // dropped with the session: a late answer for the id cannot mutate
         // a newer session.
         self.probe.forget(id);
+        // Any in-flight favicon acquisition (collector completion, queued
+        // or live download) for the id is dropped or invalidated: a late
+        // observation cannot mutate a newer session.
+        self.favicon_acquisition.forget(id);
         if let Some(session) = self.sessions.remove(&id) {
             session.teardown();
         } else {

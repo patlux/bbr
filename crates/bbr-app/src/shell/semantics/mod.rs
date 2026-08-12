@@ -378,7 +378,7 @@ fn tab_row_node(row: &RowVisuals, list_focused: bool) -> SemanticNode {
         node(
             format!("bbr-tab-favicon-{}", row.index),
             SemanticRole::Favicon,
-            row.favicon.map(|spec| spec.letter.to_string()),
+            row.favicon.as_ref().map(|spec| spec.letter.to_string()),
             None,
             false,
             false,
