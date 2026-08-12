@@ -418,6 +418,27 @@ pub enum Request {
         operation_id: BenchmarkOperationId,
         space: TestSpaceId,
     },
+    /// Measure the §11.3 create→activate→configure lifecycle (packet
+    /// `space-creation-appearance-ui.md`): create a space with `name` through
+    /// the production `commit_new_space` authority, activate it immediately,
+    /// and commit only when the configuration surface renders open bound to
+    /// the exact new persistent `SpaceId` with the created chip selected.
+    BenchmarkCreateSpace {
+        operation_id: BenchmarkOperationId,
+        name: String,
+    },
+    /// Measure the §11.3 identity/rename commit for the exact bound `space`
+    /// (packet `space-creation-appearance-ui.md`): open the configuration
+    /// surface through the production management-affordance entry, commit the
+    /// curated `identity` through `space_config_done`, and commit only when
+    /// the surface is drawn closed with the bound space still active and the
+    /// same warm session. The committed chip identity/theme is re-verified
+    /// from the typed snapshot by the driver.
+    BenchmarkSpaceConfigIdentityUpdate {
+        operation_id: BenchmarkOperationId,
+        space: TestSpaceId,
+        identity: String,
+    },
     /// Measure a §11.3 sidebar swipe commit through the production gesture
     /// path: the app drives real `Started`/`Moved` wheel updates plus a
     /// zero-delta `TouchPhase::Ended` through the exact handler the sidebar
@@ -1015,6 +1036,27 @@ pub enum Request {
     ClickPlusMenuItem {
         index: usize,
     },
+    /// §11.3 Space-configuration surface seams (packet
+    /// `space-creation-appearance-ui.md`): the management-affordance entry
+    /// opens the surface for the exact persistent space (the production
+    /// create paths also open it after creation); the draft seams select
+    /// the curated theme/identity in the open draft; Done commits the
+    /// rename + appearance for the bound SpaceId through the production
+    /// authorities; Cancel closes without applying (the created Space and
+    /// its valid defaults stay); `SpaceConfigPressOutside` drives the exact
+    /// production outside-press dismissal.
+    OpenSpaceConfig {
+        space: TestSpaceId,
+    },
+    SpaceConfigSelectTheme {
+        theme: String,
+    },
+    SpaceConfigSelectIdentity {
+        identity: String,
+    },
+    SpaceConfigDone,
+    SpaceConfigCancel,
+    SpaceConfigPressOutside,
     ToggleFavoriteTab {
         index: usize,
     },

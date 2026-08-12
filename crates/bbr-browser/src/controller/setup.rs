@@ -47,6 +47,28 @@ impl BrowserController {
         Ok(ControllerEvent::SpaceCreated { profile, space })
     }
 
+    /// Rename the existing space `space` through the one domain authority
+    /// (the Space-creation-and-configuration surface's rename seam).
+    /// Rejects unknown spaces whole before any mutation; profile ownership,
+    /// tab order, and warm sessions stay untouched. The title change is
+    /// immediately readable by the next snapshot — there is no second
+    /// title authority.
+    pub fn rename_space(
+        &mut self,
+        space: SpaceId,
+        title: impl Into<String>,
+    ) -> Result<(), ControllerError> {
+        self.browser.rename_space(space, title)?;
+        self.check_invariants();
+        Ok(())
+    }
+
+    /// The current title of `space` (the configuration surface's prefill
+    /// source; `None` for unknown spaces).
+    pub fn space_title(&self, space: SpaceId) -> Option<String> {
+        self.browser.space(space).map(|state| state.title.clone())
+    }
+
     /// Switch the workspace whose tabs are visible and receive commands.
     pub fn activate_space(&mut self, space: SpaceId) -> Result<ControllerEvent, ControllerError> {
         if self.browser.space(space).is_none() {

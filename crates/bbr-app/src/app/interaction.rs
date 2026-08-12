@@ -430,6 +430,17 @@ impl BbrApp {
             self.find_close(window, cx);
             return;
         }
+        // Escape while the §11.3 Space-configuration surface is open cancels
+        // it without applying the draft: the created Space and its valid
+        // defaults stay, and chrome focus returns to the permanent space
+        // strip (the global `escape → FocusWeb` binding routes here; the
+        // surface's own key handler can never see Escape, because GPUI
+        // dispatches bound actions first and actions stop propagation, so
+        // this route is the surface's primary Escape dismissal).
+        if self.space_config.open {
+            self.space_config_cancel(window, cx);
+            return;
+        }
         if self.tab_drag.is_active() {
             self.cancel_tab_drag(window, cx);
             return;
@@ -590,6 +601,13 @@ impl BbrApp {
         // chars edit the query, Enter/Shift-Enter step, Escape closes.
         if self.find.state.open {
             self.on_find_key_down(event, window, cx);
+            return;
+        }
+        // The §11.3 Space-configuration surface owns the keyboard while it
+        // is open: printable chars edit the rename draft, Backspace deletes,
+        // Enter commits, Escape cancels.
+        if self.space_config.open {
+            self.on_space_config_key_down(event, window, cx);
             return;
         }
         // The Saved Pages Library owns the keyboard while it is open:

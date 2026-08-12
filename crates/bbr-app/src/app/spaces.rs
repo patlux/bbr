@@ -189,11 +189,18 @@ impl BbrApp {
                     .space_appearance(space.id)
                     .expect("space exists");
                 let targeted = drag_chip == Some(space.id);
+                let profile_title = browser
+                    .profiles
+                    .iter()
+                    .find(|profile| profile.id == space.profile)
+                    .map(|profile| profile.title.clone())
+                    .unwrap_or_default();
                 bbr_ui::state::SpaceChipVisuals {
                     // The persistent id is the chip identity; the vector
                     // position is display order only.
                     space: space.id,
                     title: row.title.to_string(),
+                    profile_title,
                     identity: appearance.identity.name(),
                     theme: appearance.theme,
                     selected: space.active,
@@ -326,8 +333,16 @@ impl BbrApp {
     /// profile or space until Enter commits it (the NewTab staging pattern).
     pub fn activate_new_space(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         // A rail mode entry replaces any open palette/overlay presentation
-        // (the surface state couples to Location/NewTab only).
+        // (the surface state couples to Location/NewTab only). The §11.3
+        // configuration surface is the same exclusive chrome surface: the
+        // staging entry closes it without applying the draft (the created
+        // Space and its defaults stay).
         self.dismiss_command_portal(cx);
+        if self.space_config.open {
+            self.space_config.open = false;
+            self.space_config.space = None;
+            self.space_config.press_inside = false;
+        }
         self.clear_command_profile_hint();
         if self.command_bar_mode != CommandBarMode::NewSpace {
             self.command_bar_return = Some(crate::command_bar::CommandBarReturn {
@@ -388,6 +403,11 @@ impl BbrApp {
         // E2E and future consumers can distinguish creation from activation).
         self.emit_browser(&outcome);
         self.activate_space(space, window, cx);
+        // §11.3 create→activate→configure: the new Space is active and
+        // usable before its optional name/icon configuration surface opens
+        // (creation commits before configuration; Escape/cancel keeps the
+        // valid created Space and its deterministic defaults).
+        self.open_space_config(space, window, cx);
         // The new space is a structural mutation: poke the one browser-state
         // writer so a force quit recovers the committed model with the new
         // space.

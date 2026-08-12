@@ -180,8 +180,9 @@ fn plus_menu_pointer_and_keyboard_create_real_space_and_folder() {
         assert_eq!(dismissed.engine_sessions, 1);
 
         // Pointer New Space: the menu opens again, the item commits a real
-        // space in the active profile (visible in the permanent strip, not
-        // activated), and the menu closes.
+        // space in the active profile and activates it immediately (the
+        // standing daily-driver decision), the §11.3 configuration surface
+        // opens on top of the usable Space, and the menu closes.
         client
             .send_ok(&dsl::click_footer_plus())
             .expect("reopen plus menu");
@@ -208,7 +209,11 @@ fn plus_menu_pointer_and_keyboard_create_real_space_and_folder() {
         assert_eq!(after_space.spaces[1].space, created_space);
         assert_eq!(after_space.spaces[1].title, "New Space");
         assert_eq!(after_space.spaces[1].tab_count, 0);
-        assert!(!after_space.spaces[1].active, "creation does not switch");
+        assert_eq!(
+            after_space.active_space, created_space,
+            "creation activates immediately"
+        );
+        assert!(after_space.spaces[1].active, "created space is active");
         assert!(!after_space.plus_menu_open, "menu closed after commit");
         assert!(
             after_space
@@ -217,7 +222,10 @@ fn plus_menu_pointer_and_keyboard_create_real_space_and_folder() {
                 .any(|id| id == &format!("bbr-space-chip-{}", created_space.0)),
             "created space chip id derives from its persistent space id"
         );
-        assert_eq!(after_space.active_web_view, Some(first_view));
+        assert_eq!(
+            after_space.active_web_view, None,
+            "the empty created space has no pane"
+        );
 
         // Pointer New Folder: a session-local folder with count 0 renders its
         // §11.11 row ids; the region label appears.

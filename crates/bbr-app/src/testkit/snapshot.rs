@@ -196,6 +196,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             space_chips: self.space_chips.clone(),
             active_appearance: self.active_appearance.clone(),
             space_strip_scroll: self.space_strip_scroll.clone(),
+            space_config: self.space_config.clone(),
             swipe: self.swipe.clone(),
             visible_ids: self.visible_ids.clone(),
             semantics: self.semantics.clone(),

@@ -48,6 +48,11 @@ pub struct U2IdsInput<'a> {
     /// model the typed snapshot exposes (empty while closed — the surface
     /// is not drawn).
     pub library_ids: Vec<String>,
+    /// §11.3 Space-configuration surface gating: while open the in-rail
+    /// rename/identity panel renders its full §15 id set (container,
+    /// title, name field, group labels, every curated option, and the
+    /// Done/Cancel controls); closed, none of them render.
+    pub space_config_open: bool,
 }
 
 impl<'a> Default for U2IdsInput<'a> {
@@ -71,6 +76,7 @@ impl<'a> Default for U2IdsInput<'a> {
             error_surface_origin: false,
             library_open: false,
             library_ids: Vec::new(),
+            space_config_open: false,
         }
     }
 }
@@ -111,6 +117,11 @@ pub(crate) fn extend_visible_ids(
             &u2.downloads_layout,
             &u2.downloads_delete_rows,
         ));
+    }
+    // §11.3: the in-rail rename/identity configuration surface (only while
+    // open, mirroring the render gating).
+    if u2.space_config_open {
+        ids.extend(bbr_ui::surfaces::space_config::space_config_ids());
     }
 }
 

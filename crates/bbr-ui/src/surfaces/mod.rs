@@ -12,6 +12,7 @@ pub mod downloads;
 pub mod error;
 pub mod find;
 pub mod menu;
+pub mod space_config;
 
 pub use auth::{
     auth_sheet, AuthField, AuthSheetModel, AUTH_CANCEL_ID, AUTH_HEADER_ID, AUTH_PASSWORD_ID,

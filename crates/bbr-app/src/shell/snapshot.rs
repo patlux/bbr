@@ -76,6 +76,11 @@ pub struct TestSnapshot {
     /// `space_strip_scroll` handle): the viewport, the signed offset, the
     /// max offset, and each chip's raw layout bounds in canonical order.
     pub space_strip_scroll: bbr_testkit::protocol::SpaceStripScrollSnapshot,
+    /// §11.3 Space-configuration surface state while open: the bound exact
+    /// persistent SpaceId, the header title, the rename draft, the selected
+    /// curated theme/identity names, and the surface's chrome-focus state.
+    /// `None` while closed (the surface is not rendered).
+    pub space_config: Option<bbr_testkit::protocol::SpaceConfigSnapshot>,
     /// DESIGN.md §11.3 sidebar-swipe evidence: the truthful active space at
     /// every phase plus the gesture's source/destination persistent space
     /// ids, display-order direction, signed progress, and the interpolated

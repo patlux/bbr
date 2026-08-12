@@ -47,9 +47,15 @@ pub fn downloads_open(app: &mut BbrApp, window: &mut Window, cx: &mut Context<Bb
         return;
     }
     // At most one sidebar popover at a time: opening the downloads panel
-    // dismisses the plus menu (and vice versa).
+    // dismisses the plus menu and the §11.3 configuration surface (the
+    // config draft is not applied), and vice versa.
     if app.u2.plus_menu.open {
         app.u2.plus_menu.open = false;
+    }
+    if app.space_config.open {
+        app.space_config.open = false;
+        app.space_config.space = None;
+        app.space_config.press_inside = false;
     }
     app.command_bar_mode = crate::command_bar::CommandBarMode::Inactive;
     app.command_bar_return = None;

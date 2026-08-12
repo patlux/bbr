@@ -206,3 +206,27 @@ impl Default for SwipeSnapshot {
         }
     }
 }
+
+/// The §11.3 Space-configuration surface on the wire (DESIGN.md §11.3 /
+/// packet `space-creation-appearance-ui.md`): the bound exact persistent
+/// `SpaceId`, the header title, the rename draft, and the selected curated
+/// theme/identity names — the same plain model the production surface
+/// renders and the gallery fixtures drive. `None` while closed.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SpaceConfigSnapshot {
+    /// The exact persistent SpaceId the surface is bound to (captured at
+    /// open; never re-derived, never a render position).
+    pub space: TestSpaceId,
+    /// The header title: the bound space's title at open time.
+    pub title: String,
+    /// The rename draft (what the `bbr-space-config-name` field shows).
+    pub name: String,
+    /// The selected curated theme token name (`cobalt`…`ink`).
+    pub theme: String,
+    /// The selected validated identity in its canonical string form (the
+    /// emoji scalar or the glyph name).
+    pub identity: String,
+    /// Whether the surface owns chrome focus (the §9 ring + keyboard
+    /// domain of the rename field).
+    pub focused: bool,
+}

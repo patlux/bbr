@@ -41,6 +41,7 @@ use super::peek_drive::drive_peek_scenarios;
 use super::responsiveness::drive_responsiveness_scenarios;
 use super::saved_pages_drive::drive_saved_pages_scenarios;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE, PAGE_TWO_TITLE};
+use super::space_config_drive::drive_space_config_scenarios;
 use super::zoom_drive::drive_zoom_scenarios;
 
 /// Drive the full interaction matrix and return the raw samples per scenario.
@@ -1689,6 +1690,25 @@ fn drive_matrix_inner(
             &mut since,
             config,
             &mut operation,
+        ));
+
+        // §11.3 Space-configuration scenarios (packet
+        // `space-creation-appearance-ui.md`): the production
+        // create→activate→configure lifecycle (`space_create_present`, warm
+        // presentation class — a fresh Space is empty, no session created)
+        // and the exact-SpaceId identity commit
+        // (`space_config_identity_update`, same warm class — no tab or
+        // session is touched). Both commit only from render-gated
+        // presentations and the drivers re-verify the typed snapshots;
+        // execution stays unexecuted/unpassed under the active override.
+        // The block runs last — the corpus state after it does not matter.
+        raw.extend(drive_space_config_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            &mut operation,
+            page_two,
         ));
         raw
     };

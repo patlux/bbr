@@ -337,6 +337,28 @@ pub enum BenchmarkKind {
     /// it shares the unchanged warm interaction budget and requires at least
     /// 30 optimized samples when performance execution is un-deferred.
     ProbeTick,
+    /// The §11.3 create→activate→configure lifecycle (packet
+    /// `space-creation-appearance-ui.md`): a new Space is created through the
+    /// production `commit_new_space` authority, activated immediately, and its
+    /// optional name/icon configuration surface renders open bound to the
+    /// exact new persistent `SpaceId`. The sample commits only from a render
+    /// that actually drew the configuration surface bound to the created
+    /// SpaceId with the created chip selected (fast-but-wrong guard: a space
+    /// that never activates, a surface bound to a stale/other id, or a missing
+    /// surface rejects the measurement in the app). Warm-presentation class —
+    /// no tab or session is created or touched.
+    SpaceCreatePresent,
+    /// The §11.3 identity/rename commit (packet `space-creation-appearance-ui.md`):
+    /// the draft theme/identity/rename for the exact bound `SpaceId` is
+    /// committed through the production `space_config_done` authority and the
+    /// surface closes. The sample commits only from a render that drew the
+    /// surface closed with the bound space still active and the same warm
+    /// session (fast-but-wrong guard: a stale-bound commit, a commit that
+    /// mutated a sibling space, a surface left open, or a session recreation
+    /// rejects the measurement in the app). The committed identity/theme on
+    /// the exact chip is re-verified from the typed snapshot by the driver.
+    /// Warm-presentation class — no tab or session is created or touched.
+    SpaceConfigIdentityUpdate,
 }
 
 /// One app-internal latency sample completed at the end of GPUI paint after
@@ -366,6 +388,13 @@ pub struct PresentationMeasurement {
     pub favorites_len: usize,
     #[serde(default)]
     pub folder_expanded: bool,
+    /// The exact persistent SpaceId the §11.3 configuration surface was drawn
+    /// bound to while open (`SpaceCreatePresent`), or `None` when the surface
+    /// was drawn closed or the kind never renders it. The exact-SpaceId guard
+    /// on the wire: a sample whose surface is bound to the wrong id (or whose
+    /// post-commit presentation still renders a surface) is rejected.
+    #[serde(default)]
+    pub space_config_space: Option<TestSpaceId>,
     /// Deterministic fixture title observed for [`BenchmarkKind::PageReady`]
     /// samples; `None` for shell presentation samples.
     pub page_title: Option<String>,

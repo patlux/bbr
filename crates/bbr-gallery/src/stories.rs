@@ -35,6 +35,7 @@ pub mod primitives;
 pub mod profile_chip;
 pub mod saved_pages_library;
 pub mod sidebar;
+pub mod space_config;
 
 use gpui::{div, prelude::*, px, AnyElement, Rgba, SharedString};
 
@@ -260,6 +261,20 @@ pub fn catalog() -> CatalogRegistry {
             "Command palette / overlay",
             command::render_command,
             command::COMMAND_STATE_OPTIONS,
+        )],
+    );
+    // The Space-configuration story (packet
+    // `space-creation-appearance-ui.md`): the exact production
+    // `bbr_ui::surfaces::space_config` rename/identity surface renders the
+    // selected matrix family with recorder callbacks. Appended at canonical
+    // StoryId 46 after the pinned 0–45 prefix — no renumbering or
+    // reservation.
+    registry.add_group(
+        "Space configuration",
+        vec![story(
+            "Space configuration",
+            space_config::render_space_config,
+            space_config::SPACE_CONFIG_STATE_OPTIONS,
         )],
     );
     registry

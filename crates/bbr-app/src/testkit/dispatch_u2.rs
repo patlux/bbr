@@ -69,6 +69,81 @@ pub(crate) fn dispatch_u2(
         })
         .unwrap_or_else(err_response),
 
+        // §11.3 Space-configuration surface through the production seams:
+        // the management-affordance entry (the same `open_space_config` the
+        // create paths call after creation), the draft theme/identity
+        // selections, the Done commit, the Cancel close, and the exact
+        // outside-press dismissal. All route through the production app
+        // methods the surface listeners call — never a controller mutation.
+        Request::OpenSpaceConfig { space } => with_app(window, app, cx, |view, window, cx| {
+            if view.open_space_config(bbr_browser::SpaceId(space.0), window, cx) {
+                Response::Ok
+            } else {
+                Response::Error(bbr_testkit::protocol::Error::new(
+                    "unknown_space",
+                    format!("open-space-config: unknown space {space:?}"),
+                ))
+            }
+        })
+        .unwrap_or_else(err_response),
+        Request::SpaceConfigSelectTheme { theme } => {
+            with_app(window, app, cx, |view, _window, cx| {
+                let Some(token) = bbr_domain::SpaceTheme::ALL
+                    .iter()
+                    .find(|token| token.name() == theme)
+                    .copied()
+                else {
+                    return Response::Error(bbr_testkit::protocol::Error::new(
+                        "unknown_theme",
+                        format!("space-config-select-theme: unknown theme {theme:?}"),
+                    ));
+                };
+                view.space_config_select_theme(token, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+        Request::SpaceConfigSelectIdentity { identity } => {
+            with_app(window, app, cx, |view, _window, cx| {
+                let resolved = bbr_domain::SpaceEmoji::new(identity.clone())
+                    .map(bbr_domain::SpaceIdentity::Emoji)
+                    .or_else(|_| {
+                        bbr_domain::BbrGlyph::ALL
+                            .iter()
+                            .find(|glyph| glyph.name() == identity)
+                            .copied()
+                            .map(bbr_domain::SpaceIdentity::Glyph)
+                            .ok_or(bbr_domain::AppearanceError::InvalidEmoji(identity.clone()))
+                    });
+                match resolved {
+                    Ok(identity) => {
+                        view.space_config_select_identity(identity, cx);
+                        Response::Ok
+                    }
+                    Err(_) => Response::Error(bbr_testkit::protocol::Error::new(
+                        "unknown_identity",
+                        format!("space-config-select-identity: unknown identity {identity:?}"),
+                    )),
+                }
+            })
+            .unwrap_or_else(err_response)
+        }
+        Request::SpaceConfigDone => with_app(window, app, cx, |view, window, cx| {
+            view.space_config_done(window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::SpaceConfigCancel => with_app(window, app, cx, |view, window, cx| {
+            view.space_config_cancel(window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::SpaceConfigPressOutside => with_app(window, app, cx, |view, window, cx| {
+            view.dismiss_space_config_on_outside_press(window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
         // §11.3 sidebar swipe: drives one synthetic GPUI scroll-wheel event
         // through the exact production handler the sidebar's `on_scroll_wheel`
         // element listener calls (`BbrApp::on_sidebar_scroll_wheel`). Public

@@ -45,21 +45,21 @@ Integration order:       after DD-TITLEBAR, before DD-SIDEBAR
 
 ### Unit and contract
 
-- [ ] Deterministic defaults, exact SpaceId targeting, validation, cancel, stale-source rejection, duplicate names, and identity catalog matrix.
-- [ ] Create activates once through the controller; configuration never creates a second Space.
-- [ ] Icon-only footer model preserves canonical order, active selection, accessible Space/Profile names, and overflow geometry.
+- [x] Deterministic defaults, exact SpaceId targeting, validation, cancel, stale-source rejection, duplicate names, and identity catalog matrix.
+- [x] Create activates once through the controller; configuration never creates a second Space.
+- [x] Icon-only footer model preserves canonical order, active selection, accessible Space/Profile names, and overflow geometry.
 
 ### Real-app E2E
 
-- [ ] Plus → New Space creates and activates a Space immediately; canceling configuration leaves it usable.
-- [ ] Name and identity change only the created Space and update footer/semantics without session recreation.
-- [ ] Keyboard creation/configuration parity, Escape, outside dismissal, cross-profile hint, overflow, and restart/persistence truth are asserted according to available authority.
-- [ ] Existing Spaces, Sidebar, Organize drag-to-chip, Command, and profile-isolation suites remain green.
+- [x] Plus → New Space creates and activates a Space immediately; canceling configuration leaves it usable.
+- [x] Name and identity change only the created Space and update footer/semantics without session recreation.
+- [x] Keyboard creation/configuration parity, Escape, outside dismissal, cross-profile hint, overflow, and restart/persistence truth are asserted according to available authority.
+- [x] Existing Spaces, Sidebar, Organize drag-to-chip, Command, and profile-isolation suites remain green.
 
 ### Performance
 
-- [ ] Production-path create/present and identity-update scenarios are implemented with exact SpaceId/active-chip/presentation guards.
-- [ ] Execution remains unexecuted/unpassed under Patrick's override; budgets and baseline policy remain unchanged.
+- [x] Production-path create/present and identity-update scenarios are implemented with exact SpaceId/active-chip/presentation guards.
+- [x] Execution remains unexecuted/unpassed under Patrick's override; budgets and baseline policy remain unchanged.
 
 ## Completion gates
 
@@ -95,21 +95,62 @@ If the current persistence schema cannot truthfully retain appearance/name acros
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: create→immediate-activate→optional-config lifecycle on both creation
+paths; exact-SpaceId/stale-safe rename/theme/identity commits; icon-only
+footer with accessible Space+Profile names; truthful restart boundary
+(rename persists; curated appearance session-valid under the current schema);
+Gallery story at StoryId 46; compile-only performance scenarios.
+Commits: none (worktree preserved uncommitted at reviewed input tree
+d1f0ab82…/66 paths; sole remediation writer dd-space-review-remediation).
+Functional evidence: domain+controller rename/stale/duplicate-title tests;
+space-config model/ids/callbacks tests; gallery matrix tests; app semantics
+accessible-name tests; gated real-app suites listed below.
+Real-app E2E: e2e_shell_spaces_config (5 scenarios: plus-menu create→
+activate→config→cancel; exact-space rename/theme/identity commit; Escape +
+outside-press cancel; stale-surface never mutates another space; restart
+truth rename-persists/identity-session-valid). Registered in just
+e2e-shell-spaces.
+Performance evidence: BenchmarkKind::SpaceCreatePresent +
+SpaceConfigIdentityUpdate with render-gated surface observation and exact
+SpaceId/active-chip/presentation guards; drivers + dispatch + perf_common
+scenario block; compile-only (execution stays forbidden under the override).
+Roadmap/documentation updates: packet checkboxes; store/browser.rs truthful
+persistence boundary; DESIGN.md §11.3 config-surface + persistence note.
+Open blockers and non-goals: no schema migration, no free-form icon, no
+Split; canonical perf and just verify/just e2e remain forbidden (override).
+Worktree state: branch parallel/dd-space-appearance at base 4d5be311…;
+all changes unstaged; reviewed input tree d1f0ab82…/66 paths extended by
+the remediation below.
 
-Planning/read-only:
-Implementation:
-Test execution:
-Review:
-Remediation:
-Waiting/retries:
-Total elapsed:
-Human intervention:
+Planning/read-only: verify preserved reviewed tree d1f0ab82…/66 paths; read
+delivery control, packet, DESIGN.md §11.3/§11.4, persistence DTO, perf probe.
+Implementation: Escape-in-cancel_command_bar fix; e2e_shell_spaces_config
+suite; Justfile registration; perf kinds/drivers/dispatch/perf_common;
+performance/space_config render gate; store/browser.rs boundary; packet.
+Test execution: cargo check bbr+testkit+all-targets and gallery (green);
+bounded gates below.
+Review: independent review found Gallery StoryId 46 appended but eight
+pinned-prefix unit tests still expecting 46 stories, a stale ledger tree,
+and a soft 551-line module-budget finding.
+Remediation: extend the eight stale bbr-gallery registry/prefix tests from
+46 to 47 and pin StoryId 46='Space configuration'; correct the ledger final
+tree truth to the final candidate binding; split app/space_config.rs into
+the surface-behavior module plus sibling benchmarks/tests concern modules
+so every lane-owned production file stays under the ~500-line budget
+without behavior/API change.
+Waiting/retries: GUI gates serialized through /tmp/bbr-gui-gate-6ff732a0fdc0bb09.lock.
+Total elapsed: see orchestration ledger.
+Human intervention: none.
+
+Remediation-recheck pass (`dd-space-review-remediation`): Gallery
+non-ignored unit tests 145/145 green (the eight pinned-prefix tests now
+expect 47 stories and StoryId 46 is pinned to 'Space configuration'); fmt;
+both warning-denied Clippy gates (bbr testkit all-targets and workspace
+all-targets) in fresh separate target dirs; targeted unit/contracts
+(domain 221, browser 119, ui 127, bbr bin 262); affected Space/Sidebar/
+Organize/Gallery GUI suites; roadmap and diff. Final candidate binding
+tree 5b0d8dd4…/68 paths (worktree temp-index tree computed at
+remediation closeout; the Orchestrator's canonical temp-index computation
+of the exact handover state is authoritative and supersedes this writer
+hash, per the delivery-control convention); no red gate.
 ```

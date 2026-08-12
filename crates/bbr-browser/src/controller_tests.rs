@@ -14,7 +14,7 @@
 //! - Registry invariants after every mutation (asserted inside each op).
 //! - Split and event-application coverage live in `controller_event_tests`.
 
-use bbr_domain::{AppearanceError, BbrGlyph, SpaceEmoji, SpaceIdentity, SpaceTheme};
+use bbr_domain::{AppearanceError, BbrGlyph, DomainError, SpaceEmoji, SpaceIdentity, SpaceTheme};
 use bbr_web::{
     decide, NewWindowDecision, NewWindowFeatures, NewWindowInput, NewWindowOutcome,
     NewWindowRequest, NewWindowTarget, ProfileId, WebAction, WebEvent, WebViewId,
@@ -1187,4 +1187,81 @@ fn unknown_space_appearance_mutation_rejects_whole() {
         Err(err)
     );
     assert_eq!(c.space_appearance(unknown), None);
+}
+
+#[test]
+fn rename_space_targets_the_exact_space_through_the_domain_authority() {
+    let (mut c, _h) = plain();
+    let default = c.snapshot().active_space;
+    let reading = match c.create_space_event(ProfileId(1), "Reading") {
+        Ok(ControllerEvent::SpaceCreated { space, .. }) => space,
+        other => panic!("unexpected event: {other:?}"),
+    };
+    c.rename_space(reading, "Work notes").expect("rename");
+    assert_eq!(
+        c.space_title(reading).as_deref(),
+        Some("Work notes"),
+        "the renamed space reads its new title"
+    );
+    assert_eq!(
+        c.space_title(default).as_deref(),
+        Some("Default"),
+        "renaming one space never mutates another"
+    );
+    assert_eq!(c.space_title(crate::SpaceId(4242)), None);
+    // The read model agrees: the snapshot title is the domain title.
+    let snap = c.snapshot();
+    let renamed = snap
+        .spaces
+        .iter()
+        .find(|s| s.id == reading)
+        .expect("renamed space in snapshot");
+    assert_eq!(renamed.title, "Work notes");
+}
+
+#[test]
+fn rename_space_rejects_unknown_spaces_without_mutation() {
+    let (mut c, _h) = plain();
+    let default = c.snapshot().active_space;
+    let err = c
+        .rename_space(crate::SpaceId(4242), "Ghost")
+        .expect_err("unknown space rejects");
+    assert_eq!(
+        err,
+        ControllerError::Domain(DomainError::UnknownSpace(crate::SpaceId(4242)))
+    );
+    assert_eq!(c.space_title(default).as_deref(), Some("Default"));
+    assert_eq!(c.space_title(crate::SpaceId(4242)), None);
+}
+
+#[test]
+fn rename_space_to_an_existing_title_targets_only_the_renamed_space() {
+    let (mut c, _h) = plain();
+    let default = c.snapshot().active_space;
+    let reading = match c.create_space_event(ProfileId(1), "Reading") {
+        Ok(ControllerEvent::SpaceCreated { space, .. }) => space,
+        other => panic!("unexpected event: {other:?}"),
+    };
+    // Duplicate-title rename: identity targeting is id-based, so a title
+    // collision with an existing space never re-targets or merges — only
+    // the exact renamed SpaceId changed, and both spaces keep their ids.
+    c.rename_space(reading, "Default")
+        .expect("duplicate title rename");
+    assert_eq!(c.space_title(reading).as_deref(), Some("Default"));
+    assert_eq!(c.space_title(default).as_deref(), Some("Default"));
+    let snap = c.snapshot();
+    assert_eq!(
+        snap.spaces.iter().filter(|s| s.title == "Default").count(),
+        2,
+        "both spaces may share a title; identity is the id"
+    );
+    assert!(snap
+        .spaces
+        .iter()
+        .any(|s| s.id == reading && s.title == "Default"));
+    assert!(snap
+        .spaces
+        .iter()
+        .any(|s| s.id == default && s.title == "Default"));
+    assert_eq!(snap.spaces.len(), 2, "no space was created or merged");
 }

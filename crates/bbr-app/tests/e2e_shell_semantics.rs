@@ -209,7 +209,9 @@ fn shell_semantic_tree_and_fallbacks() {
             &present.semantics,
             &format!("bbr-space-chip-{}", launch_space.0),
             SemanticRole::Row,
-            Some("Default"),
+            // §11.3: the accessible name carries the Space and Profile
+            // names (the footer chip is icon-only at rest).
+            Some("Default · in Profile · Default"),
             None,
             true,
             true,

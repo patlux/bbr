@@ -81,6 +81,10 @@ pub struct SpaceChipVisuals {
     pub space: SpaceId,
     /// The space title after §4 truncation.
     pub title: String,
+    /// The owning profile's title — part of the chip's accessible name
+    /// (DESIGN.md §11.3: the stable accessible name carries the Space and
+    /// Profile names, so identity is never color-only).
+    pub profile_title: String,
     /// The validated curated identity in its canonical string form (the
     /// emoji scalar or the glyph name).
     pub identity: String,

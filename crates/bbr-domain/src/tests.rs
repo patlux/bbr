@@ -59,6 +59,43 @@ fn open_into_unknown_space_fails() {
 }
 
 #[test]
+fn rename_space_updates_only_the_exact_space() {
+    let mut b = Browser::new();
+    let p = b.create_profile("Work");
+    let first = b.create_space(p, "Main").unwrap();
+    let second = b.create_space(p, "Other").unwrap();
+    let t = b.open_tab(first, "T", "u").unwrap();
+
+    b.rename_space(first, "Renamed").unwrap();
+    assert_eq!(b.space(first).unwrap().title, "Renamed");
+    assert_eq!(b.space(second).unwrap().title, "Other", "sibling untouched");
+    assert_eq!(
+        b.space(first).unwrap().tabs,
+        vec![t],
+        "tab order and selection untouched"
+    );
+    assert_eq!(b.space(first).unwrap().active_tab, Some(t));
+    assert_eq!(b.space(first).unwrap().profile, p, "ownership untouched");
+    b.check_invariants().unwrap();
+}
+
+#[test]
+fn rename_space_rejects_unknown_spaces_whole() {
+    let mut b = Browser::new();
+    let p = b.create_profile("Work");
+    let s = b.create_space(p, "Main").unwrap();
+    assert!(matches!(
+        b.rename_space(SpaceId(4242), "Ghost"),
+        Err(DomainError::UnknownSpace(SpaceId(4242)))
+    ));
+    assert_eq!(
+        b.space(s).unwrap().title,
+        "Main",
+        "rejection mutates nothing"
+    );
+}
+
+#[test]
 fn ids_never_collide_across_kinds() {
     let mut b = Browser::new();
     let p = b.create_profile("P");
