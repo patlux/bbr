@@ -943,3 +943,67 @@ fn settled_failure_state_at_child_root_still_returns_to_opener() {
     }));
     finish(result, &mut harness, &socket, &token);
 }
+
+/// Regression: injected content-gesture commits are drained by the pump
+/// before a following gateway command is answered, so a snapshot taken
+/// immediately after a burst of injections observes every commit. The
+/// observed defect: the no-op matrix saw 1 of 3 committed no-ops — the
+/// snapshot command won the pump race over the pending gesture queue, so
+/// an immediate snapshot could read a partial drain.
+#[test]
+#[ignore]
+fn injected_gestures_are_drained_before_a_following_command() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+
+    let (_fixtures, page_one, _page_two) = fixtures();
+    let (mut harness, socket, token) = spawn_harness("gest-drain-order", &page_one);
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let _replay = client.attach(None).expect("attach");
+
+        let settled = wait_for_window_settled(&mut client, deadline());
+        let opener_view = settled.active_web_view.expect("opener view");
+        let since = wait_fixture_loaded(&mut client, opener_view, PAGE_ONE_TITLE, 0);
+        // Settle the history-availability events before injecting: the
+        // stale-view commits must start from a fully-settled app state.
+        let _ = wait_history(&mut client, opener_view, false, false, since);
+
+        // A burst of stale-view Back commits: every one is a deterministic
+        // no-op (unknown view, never a tab mutation), so the immediate
+        // snapshot must report all of them as processed. The pump must
+        // drain the delivery queue before answering the snapshot command
+        // rather than leaving commits pending behind a command's reply.
+        const BURST: u64 = 16;
+        for _ in 0..BURST {
+            gesture(
+                &mut client,
+                WebViewId(u64::MAX),
+                ContentGestureDirection::Back,
+            );
+        }
+        let after = client.snapshot().expect("drain-order snapshot");
+        assert_eq!(
+            after.content_gesture.commits, BURST,
+            "every injected commit is processed before the following command"
+        );
+        assert_eq!(
+            after.content_gesture.no_ops, BURST,
+            "every stale-view commit is a deterministic no-op"
+        );
+        assert_eq!(after.content_gesture.history_routed, 0);
+        assert_eq!(after.content_gesture.opener_returns, 0);
+        assert_eq!(after.tabs.len(), 1, "no tab was touched by the no-ops");
+        assert_eq!(after.engine_sessions, 1);
+        assert_eq!(after.active_web_view, Some(opener_view));
+        assert_eq!(after.title.as_deref(), Some(PAGE_ONE_TITLE));
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+    finish(result, &mut harness, &socket, &token);
+}
