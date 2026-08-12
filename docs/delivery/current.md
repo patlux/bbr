@@ -48,7 +48,7 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 
 | DD-SPACE | Create/activate/configure Space and icon-only footer | `integrated` | lane `8a15496488f27e7a1f6150b27d5374cf033c5b7e`; merge `7f658aba0a4725db67c2e0fba33fcaf5388d0db8`; Gallery gate fix `ac381f3f6b57e73155380dc5ba7f0c35451b8a84` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `integrated` | lane `7191fc72b627bacc50ef5d4dc2ac0c325a19121b`; merge `f4c6f60e3496bcd3fe3a9e1ab022bc6329911703`; gate fix `f1de38c1086c40a35589ac710881363d595bdb47` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
-| DD-TAB-MENU | Production Tab/Favorite context menus | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; exact tree `c8bcaaf00af1004e691b36776056b69a21b9fcad`, 66 paths | Orchestrator; remediation and independent focused `REVIEW_PASS` complete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Commit exact candidate and integrate now after DD-SIDEBAR; resolve shared menu/Gallery/testkit/Justfile seams semantically, then run bounded gates |
+| DD-TAB-MENU | Production Tab/Favorite context menus | `integrating` | lane `35674e5f92e06596b0851df63106d6ea77cf483e`; merge `fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd26559697d7265fcadc80ea4ca3a51eab` | Orchestrator; exact reviewed candidate merged, post-merge gates active | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Run both fresh warning-denied Clippy gates, targeted units, roadmap/UI/script/diff checks, and Tab Menu/Sidebar/Organize/Gallery GUI suites; Page Menu remains blocked until user unlock |
 | DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console is locked and two foreign qemu windows remain | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
 
 ## Post-F2a parallel wave
@@ -268,6 +268,17 @@ Tabs 3/3, Organize 6/6, Spaces 20/20, Gallery 44/44. Logs and SHA-256 manifests
 live under `/tmp/bbr-dd-sidebar-postmerge{,-final,-gui}/`. DD-SIDEBAR is
 integrated and DD-TAB-MENU is now the exclusive serial integration position.
 No performance execution occurred.
+
+DD-TAB-MENU merge audit: exact reviewed tree `c8bcaaf0…` was materialized as
+lane commit `35674e5f92e06596b0851df63106d6ea77cf483e` and merged after Sidebar as
+`fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd…`. Fifteen
+shared conflicts were resolved as additive/semantic unions. Space
+configuration retains append-only StoryId 46; Tab/Favorite menu appends at 47
+for a 48-story catalog. Titlebar, Space and Tab-menu testkit types/modules,
+performance compile paths, dismiss behavior, Gallery contexts and all prior
+E2E recipes remain present. Pre-commit format, UI 138/138, Gallery 147/147,
+app testkit all-target compile and diff checks are green. Full post-merge gates
+are active. No performance execution occurred.
 
 ## Downstream dependency queue
 
