@@ -10,7 +10,7 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Generation | `daily-driver-2026-08-12` |
 | Cutover commit | `781e862ca4547cee16be23e251767f6b2fa938fb` |
 | Verified product base | `main@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
-| Integrated product checkpoint | `f1de38c1086c40a35589ac710881363d595bdb47` / tree `798e5549a8d3ae931623d70a480446e787557be1`; grouped links, gestures, full-height navigation, Space identity, and daily-driver Tab/Pinned/Favorites Sidebar integrated |
+| Integrated product checkpoint | `fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81` / tree `deb5c9dd26559697d7265fcadc80ea4ca3a51eab`; Daily-driver Link, Gesture, Titlebar, Space, Sidebar and source-bound Tab/Favorite menu lanes integrated |
 | Daily-driver preparation base | `568cdae0008d3cc9008209007ae32442ee0ff80e` / tree `90114c65cc068a744b43aeeec710b47fff5cbf4a` |
 | Daily-driver activation base | `4d5be3116ec090aebb7eefa4861970710dba7a5b` / tree `9c8cae5cd5bca883fadc3ec198e232be4f436839`; all seven lane worktrees created clean from this exact commit |
 | Daily-driver contract | [2026-08-12 Daily-driver delivery](2026-08-12-daily-driver-delivery.md) |
@@ -48,7 +48,7 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 
 | DD-SPACE | Create/activate/configure Space and icon-only footer | `integrated` | lane `8a15496488f27e7a1f6150b27d5374cf033c5b7e`; merge `7f658aba0a4725db67c2e0fba33fcaf5388d0db8`; Gallery gate fix `ac381f3f6b57e73155380dc5ba7f0c35451b8a84` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `integrated` | lane `7191fc72b627bacc50ef5d4dc2ac0c325a19121b`; merge `f4c6f60e3496bcd3fe3a9e1ab022bc6329911703`; gate fix `f1de38c1086c40a35589ac710881363d595bdb47` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
-| DD-TAB-MENU | Production Tab/Favorite context menus | `integrating` | lane `35674e5f92e06596b0851df63106d6ea77cf483e`; merge `fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd26559697d7265fcadc80ea4ca3a51eab` | Orchestrator; exact reviewed candidate merged, post-merge gates active | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Run both fresh warning-denied Clippy gates, targeted units, roadmap/UI/script/diff checks, and Tab Menu/Sidebar/Organize/Gallery GUI suites; Page Menu remains blocked until user unlock |
+| DD-TAB-MENU | Production Tab/Favorite context menus | `integrated` | lane `35674e5f92e06596b0851df63106d6ea77cf483e`; merge `fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd26559697d7265fcadc80ea4ca3a51eab` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console is locked and two foreign qemu windows remain | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
 
 ## Post-F2a parallel wave
@@ -279,6 +279,18 @@ performance compile paths, dismiss behavior, Gallery contexts and all prior
 E2E recipes remain present. Pre-commit format, UI 138/138, Gallery 147/147,
 app testkit all-target compile and diff checks are green. Full post-merge gates
 are active. No performance execution occurred.
+
+DD-TAB-MENU post-merge audit: format; domain 123, browser 250, UI 138, app
+275 and Gallery 147 unit tests; both canonical warning-denied Clippy commands
+on fresh targets; roadmap, UI dependency, script and diff checks are green.
+GUI evidence is green: Tab Menu 12/12, Sidebar 12/12, Organize 6/6, Tabs 3/3,
+Spaces 20/20 and Gallery 44/44. Logs and SHA-256 manifests live under
+`/tmp/bbr-dd-tabmenu-postmerge{,-gui}/`. The exact reviewed implementation and
+all semantic unions are integrated at
+`fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd…`. DD-PAGE-MENU
+is now the next serial position but remains externally blocked: the user must
+unlock the macOS console, then only `just e2e-shell-portal` is rerun for 7/7
+before whole-candidate review. No performance execution occurred.
 
 ## Downstream dependency queue
 
