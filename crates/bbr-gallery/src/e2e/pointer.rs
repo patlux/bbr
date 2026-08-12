@@ -158,11 +158,7 @@ fn first_group_stories_hidden(snap: &crate::app::GallerySnapshot) -> bool {
                 }
                 in_first_group = true;
             }
-            "story" if in_first_group => {
-                if node.visible {
-                    return false;
-                }
-            }
+            "story" if in_first_group && node.visible => return false,
             _ => {}
         }
     }
