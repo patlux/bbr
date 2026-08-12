@@ -60,8 +60,6 @@ uncommitted candidates bound by exact fingerprints; only the Orchestrator
 commits and integrates. Performance execution stays forbidden under the
 active override.
 
-| ID | Slice | Status | Worktree | Owner | Contract | Next gate |
-|---|---|---|---|---|---|---|
 | VS-REFERENCE | Reference-faithful light production shell | `integrated` | lane commit `9ae318ab`; merge `4d1a5343`, tree `5f2b8a04…` | Orchestrator; exact reviewed candidate, remediation and post-merge gates complete | [visual-shell reference](../roadmap/tasks/visual-shell-reference.md) | All affected GUI suites are green serially under the repository lock (Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20, Organize 6/6, Hover 3/3, Dense 3/3, Gallery 44/44) and the final optimized `visual-capture` build re-produced both 2× artifacts; Closed for this wave; performance execution, startup, canonical `just e2e`, packaging and accessibility remain honestly unpassed |
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
 | DD-LINK | Cmd-click/middle-click grouped background tabs | `integrated` | lane commit `abae5214c04900034da139e5148d7c79693158dc`; merge `b4b2b77c9d679dce30b48e2e302e24075956a449` | Orchestrator; focused remediation `REVIEW_PASS` and post-merge gates complete | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
