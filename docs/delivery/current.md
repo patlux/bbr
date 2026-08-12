@@ -41,9 +41,9 @@ The reference-alignment wave is active. Patrick settled on 2026-08-13: the produ
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| RA-THEME | System-appearance production theme (light + dark) | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-system-appearance-theme` (`parallel/system-appearance-theme`) | exact reviewed candidate; Orchestrator commits/integrates | [system-appearance theme](../roadmap/tasks/system-appearance-theme.md) | `RECHECK_PASS` at HEAD `806e4238`, status `fdec6329…`, binary diff `9f1e0df7…`; next serial integration position |
-| RA-FAVICON | Real favicon pipeline | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-real-favicon-pipeline` (`parallel/real-favicon-pipeline`) | one exclusive continuation writer; Orchestrator commits/integrates | [real favicon pipeline](../roadmap/tasks/real-favicon-pipeline.md) | Continue from preserved HEAD `806e4238`, status `00e2d350…`, binary diff `a59d73f8…`; close six concrete recheck findings, then focused read-only recheck |
-| RA-POLISH | Sidebar reference polish (pitch, folder anatomy, identity glyphs) | `planned` | none | none | [sidebar reference polish](../roadmap/tasks/sidebar-reference-polish.md) | Activates only after RA-THEME integrates (both-mode calibration dependency) |
+| RA-THEME | System-appearance production theme (light + dark) | `integrated` | lane commit `40f114f1`; merge `f7fe3d6f` | Orchestrator; exact reviewed candidate and post-merge gates complete | [system-appearance theme](../roadmap/tasks/system-appearance-theme.md) | Closed for this wave; combined post-merge evidence remains green |
+| RA-FAVICON | Real favicon pipeline | `integrated` | lane commit `e0faaa9d`; merge `a79ff95e` | Orchestrator; exact reviewed/remediated candidate and post-merge gates complete | [real favicon pipeline](../roadmap/tasks/real-favicon-pipeline.md) | Closed for this wave; favicon 3/3 and combined regression suites green |
+| RA-POLISH | Sidebar reference polish (pitch, folder anatomy, identity glyphs) | `running` | `/Users/patwoz/dev/Personal/macos/bbr-sidebar-reference-polish` (`parallel/sidebar-reference-polish`) | one exclusive workflow writer; Orchestrator commits/integrates | [sidebar reference polish](../roadmap/tasks/sidebar-reference-polish.md) | Writer settlement from clean base `a79ff95e`, then independent read-only review |
 | RA-MEDIA | Media-session capability and sidebar media card | `planned` | none | none | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Activates after the alignment slices; capability contract lands first |
 
 Reference-alignment activation audit (2026-08-13): verified clean base
@@ -79,6 +79,23 @@ fingerprint closeout. The read-only recheck returned `RECHECK_FINDINGS`; the
 preserved continuation candidate is rebound directly above. No lane process
 or GUI-lock holder survives. Retry continues only the open findings; completed
 work is not re-run or replaced.
+
+RA integration audit: RA-THEME materialized as lane commit `40f114f1` and
+merged as `f7fe3d6f`; its focused post-merge sweep is green (app bins 279,
+Sidebar 14/14, Spaces 21/21, Gallery 45/45, warning-denied app Clippy,
+format/roadmap). RA-FAVICON underwent two continuation waves and direct
+Orchestrator remediation. The final candidate added deterministic presentation,
+two-profile E2E, state-precedence and Rc/Weak lifetime regression coverage;
+independent whole-candidate and focused rechecks closed every finding. It
+materialized as lane commit `e0faaa9d` and merged conflict-free after Theme as
+`a79ff95e`. The combined post-merge sweep is green: crate suites, app bins,
+warning-denied bbr-ui/app/WebKit Clippy, roadmap/UI-deps/scripts/diff-check;
+Favicon 3/3, Tabs 3/3, Sidebar 14/14, Hover 4/4, Spaces 21/21, Dense 3/3 and
+Gallery 45/45. Logs live under `/tmp/bbr-theme-postmerge` and
+`/tmp/bbr-alignment-postmerge`. Performance execution, `just verify` and
+canonical `just e2e` remain intentionally unexecuted under the active override.
+RA-POLISH starts from exact clean checkpoint `a79ff95e` and inherits both
+completed authorities.
 
 | VS-REFERENCE | Reference-faithful light production shell | `integrated` | lane commit `9ae318ab`; merge `4d1a5343`, tree `5f2b8a04…` | Orchestrator; exact reviewed candidate, remediation and post-merge gates complete | [visual-shell reference](../roadmap/tasks/visual-shell-reference.md) | All affected GUI suites are green serially under the repository lock (Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20, Organize 6/6, Hover 3/3, Dense 3/3, Gallery 44/44) and the final optimized `visual-capture` build re-produced both 2× artifacts; Closed for this wave; performance execution, startup, canonical `just e2e`, packaging and accessibility remain honestly unpassed |
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |

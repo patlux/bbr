@@ -33,7 +33,7 @@ Settled decisions: the production theme follows the macOS system appearance
 reference's mixed interleaving is rejected.
 
 - [x] Follow the macOS system appearance with the complete dark token set via the [system-appearance production theme](../tasks/system-appearance-theme.md).
-- [ ] Present real site favicons in every favicon slot via the [real favicon pipeline](../tasks/real-favicon-pipeline.md).
+- [x] Present real site favicons in every favicon slot via the [real favicon pipeline](../tasks/real-favicon-pipeline.md).
 - [ ] Match the reference row pitch, folder anatomy, rest states and identity-glyph catalog via the [sidebar reference polish](../tasks/sidebar-reference-polish.md).
 
 The sidebar media control is prioritized immediately after these slices; its
