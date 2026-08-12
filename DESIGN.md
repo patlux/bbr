@@ -40,8 +40,15 @@ A keyboard-first daily driver for many long-lived contexts needs a shell that
 recedes when content appears. Chrome remains matte, flat and deterministic —
 never page screenshots, sampled site tint, fake content or private WebKit
 composition. Color marks selection, status, profile identity and focus. Dark
-and increased-contrast token sets remain supported library variants, but the
-production shell's settled default is Light rather than a hardcoded dark mode.
+and increased-contrast token sets remain supported library variants. The
+production shell follows the **macOS system appearance** — a dark system
+presents the complete dark token set, a light system presents the shipped
+reference-calibrated light rail; neither mode is hardcoded and no user-facing
+theme preference exists. Light remains the calibrated reference (the
+visual authority above); Patrick's dark reference capture
+(`/Users/patwoz/Library/Application Support/CleanShot/media/media_lbaS6F07Ws/Screenshot_2026-08-12_21-45-38@2x.png`)
+is the dark composition authority — it shares the light reference's hierarchy
+and geometry and only swaps the token set.
 
 ### What makes BBR visually distinct
 
@@ -98,7 +105,7 @@ L3 floating        — command palette, peek, dialogs        elev-2
 | Token | Light | Dark | Notes |
 |---|---|---|---|
 | `material:canvas` | `#F6F6F4` | `#121416` | content backdrop, visible only before attach / empty / crash |
-| `material:sidebar` | `#E0E0E0` | `#1A1D21` | the reference-calibrated physical rail; production defaults to Light |
+| `material:sidebar` | `#E0E0E0` | `#1A1D21` | the reference-calibrated physical rail; the production mode follows the system appearance |
 | `material:field` | `#FFFFFF` | `#23272C` | command field, search, hover-raised rows |
 | `material:overlay` | `#FFFFFF` | `#202429` | floating surfaces, elevation 2 |
 | `material:glass` | `#FFFFFF` | `#151719` | what sits behind native web views; must never be textured or sampled |
@@ -191,10 +198,15 @@ tile washes deepen 7%; the crash/error and attention surfaces gain a 1 px
 
 ### 3.5 Selection tint
 
-`color:tint.selected` = the reference-calibrated quiet blue-gray light
-surface `#EEF2F9` / dark `#1C3333`; increased contrast deepens it. The exact
-row identity, type weight and inset surface remain non-color selection cues;
-the Phosphor focus/interaction accent is not used as decorative site tint.
+`color:tint.selected` = the reference-calibrated quiet blue-gray surface:
+light `#EEF2F9` / dark `#0D2020`; increased contrast deepens it
+(`#E1E8F3` / `#091818`). The dark values are **contract-calibrated** — the
+selected row renders ink title + ink.secondary meta on this surface (§10.4),
+so the dark tint is computed to hold the unchanged §3.1 text bars
+(ink ≥ 14:1, ink.secondary ≥ 5.9:1; IC ≥ 9:1 for ink.secondary) and is not
+copied from reference pixels. The exact row identity, type weight and inset
+surface remain non-color selection cues; the Phosphor focus/interaction
+accent is not used as decorative site tint.
 
 ## 4. Typography
 

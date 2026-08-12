@@ -447,6 +447,16 @@ fn main() {
         // implemented here (queue item 20).
         quit_when_browser_window_closes(cx, window, app.clone());
 
+        // Production theme-selection authority (task packet
+        // `system-appearance-theme`): the public GPUI window-appearance
+        // observer records the live macOS system appearance (the one
+        // production theme source) and re-presents the complete token set
+        // on a flip. Registered before the first presented frame so the
+        // launch theme always matches the system.
+        let _ = with_app(&window, &app, cx, |view, window, cx| {
+            view.observe_system_appearance(window, cx);
+        });
+
         // macOS-only native seams: the concrete engine handle (the find
         // adapter binds a live WKWebView without creating/moving sessions)
         // is handed to the app after construction, like the portal host.

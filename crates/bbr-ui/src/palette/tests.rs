@@ -77,6 +77,22 @@ fn dark_theme_meets_the_documented_contrast_contract() {
         assert!(token.contrast(sidebar) >= 4.5, "status {name} ≥ 4.5:1");
     }
     assert!(SECONDARY_DARK.contrast(SURFACE_FIELD_DARK) >= 4.5);
+    // Reference-calibrated dark surfaces (task packet
+    // `system-appearance-theme`): the selected row renders ink title +
+    // ink.secondary meta on `tint.selected` (§10.4), and the footer strip
+    // renders its glyphs at ink.secondary on `material:footer` (§11.4).
+    assert!(
+        INK_DARK.contrast(TINT_SELECTED_DARK) >= 14.0,
+        "selected-row ink ≥ 14:1 on the dark selection tint"
+    );
+    assert!(
+        SECONDARY_DARK.contrast(TINT_SELECTED_DARK) >= 5.9,
+        "selected-row meta ≥ 5.9:1 on the dark selection tint"
+    );
+    assert!(
+        SECONDARY_DARK.contrast(SURFACE_FOOTER_DARK) >= 5.9,
+        "footer glyphs ≥ 5.9:1 on the dark footer material"
+    );
     assert_eq!(theme.palette.surface_canvas.a, 1.0);
     assert_ne!(theme.palette.surface_sidebar, theme.palette.surface_canvas);
     assert_ne!(theme.palette.surface_field, theme.palette.surface_sidebar);
@@ -95,6 +111,25 @@ fn increased_contrast_hardens_text_and_hairlines() {
     );
     assert!(ACCENT_INK_IC_DARK.contrast(sidebar) >= 9.0, "IC accent.ink");
     assert!(INK_IC_DARK.contrast(sidebar) >= INK_DARK.contrast(sidebar));
+    // IC deepens the selection tint (§3.4): the IC dark tint is deeper
+    // than the standard dark tint and still holds the §3.1 text bars
+    // (ink ≥ 14:1, IC secondary ≥ 9:1 on the tint; footer ≥ 9:1).
+    assert!(
+        INK_IC_DARK.contrast(TINT_SELECTED_IC_DARK) >= 14.0,
+        "IC selected-row ink ≥ 14:1"
+    );
+    assert!(
+        SECONDARY_IC_DARK.contrast(TINT_SELECTED_IC_DARK) >= 9.0,
+        "IC selected-row meta ≥ 9:1"
+    );
+    assert!(
+        SECONDARY_IC_DARK.contrast(SURFACE_FOOTER_DARK) >= 9.0,
+        "IC footer glyphs ≥ 9:1"
+    );
+    assert!(
+        TINT_SELECTED_IC_DARK.luminance() < TINT_SELECTED_DARK.luminance(),
+        "increased contrast deepens the selection tint"
+    );
 }
 
 #[test]
@@ -110,6 +145,17 @@ fn light_theme_meets_the_documented_contrast_contract() {
     for (name, token) in [("error", ERROR_LIGHT), ("attention", ATTENTION_LIGHT)] {
         assert!(token.contrast(sidebar) >= 4.5, "light status {name}");
     }
+    // Reference-calibrated light surfaces (task packet
+    // `system-appearance-theme`): the same §3.1 pairs the dark side
+    // asserts — selected-row ink/meta on `tint.selected` (§10.4) and
+    // footer glyphs on `material:footer` (§11.4). Light stays the
+    // calibrated reference and must keep passing.
+    assert!(INK_LIGHT.contrast(TINT_SELECTED_LIGHT) >= 14.0);
+    assert!(SECONDARY_LIGHT.contrast(TINT_SELECTED_LIGHT) >= 5.9);
+    assert!(SECONDARY_LIGHT.contrast(SURFACE_FOOTER_LIGHT) >= 5.9);
+    assert!(INK_IC_LIGHT.contrast(TINT_SELECTED_IC_LIGHT) >= 14.0);
+    assert!(SECONDARY_IC_LIGHT.contrast(TINT_SELECTED_IC_LIGHT) >= 9.0);
+    assert!(SECONDARY_IC_LIGHT.contrast(SURFACE_FOOTER_LIGHT) >= 9.0);
 }
 
 /// §11.5 address-control fill token pair: white-translucent on dark

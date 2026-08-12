@@ -27,6 +27,20 @@ fn tracking_snapshot_and_semantics_stay_truthful_until_commit() {
         let replay = client.attach(None).expect("attach");
         let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
 
+        // Light-calibrated swipe-tint evidence (task packet
+        // `system-appearance-theme`): force the light rail regardless of
+        // the host appearance so the interpolated chrome/chip tint
+        // assertions stay byte-identical to the integrated reference
+        // evidence.
+        client
+            .send_ok(&dsl::set_appearance_override(Some(
+                bbr_testkit::protocol::ThemeModeOverride::Light,
+            )))
+            .expect("force light");
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush forced light");
+
         let initial = client.snapshot().expect("initial snapshot");
         let first_view = initial.active_web_view.expect("first native view");
         if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {

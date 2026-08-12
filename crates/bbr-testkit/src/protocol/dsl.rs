@@ -488,6 +488,13 @@ pub fn set_space_theme(space: TestSpaceId, theme: impl Into<String>) -> Request 
     }
 }
 
+/// Force the effective production `ThemeMode` regardless of the host
+/// appearance (task packet `system-appearance-theme`); `None` clears the
+/// override and returns to the observed macOS system appearance.
+pub fn set_appearance_override(mode: Option<ThemeModeOverride>) -> Request {
+    Request::SetAppearanceOverride { mode }
+}
+
 pub fn click_space_new() -> Request {
     Request::ClickSpaceNew
 }

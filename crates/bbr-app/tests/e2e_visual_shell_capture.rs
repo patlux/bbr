@@ -101,6 +101,18 @@ fn capture(kind: CaptureKind) {
             .expect("attach")
             .last()
             .map_or(0, |v| v.0);
+        // The capture is the reference-faithful **light** shell evidence
+        // (task packet `system-appearance-theme`): force the light rail
+        // regardless of the host appearance so the captured state matches
+        // the integrated VS-REFERENCE evidence exactly.
+        client
+            .send_ok(&dsl::set_appearance_override(Some(
+                bbr_testkit::protocol::ThemeModeOverride::Light,
+            )))
+            .expect("force light capture");
+        client
+            .send_ok(&Request::FlushFrame)
+            .expect("flush forced light capture");
         let initial = client.snapshot().expect("initial snapshot");
         let initial_view = initial.active_web_view.expect("initial view");
         if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {

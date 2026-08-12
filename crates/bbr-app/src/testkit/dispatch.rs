@@ -570,6 +570,29 @@ pub(crate) fn dispatch(
         .map(Response::Snapshot)
         .unwrap_or_else(err_response),
 
+        // Deterministic appearance override (task packet
+        // `system-appearance-theme`): force the effective production mode
+        // regardless of the host appearance (`None` clears the override and
+        // returns to the observed macOS system appearance). The snapshot's
+        // §15 `theme` field reports the effective mode.
+        Request::SetAppearanceOverride { mode } => {
+            with_app(window, app, cx, |view, _window, cx| {
+                view.set_appearance_override(
+                    mode.map(|m| match m {
+                        bbr_testkit::protocol::ThemeModeOverride::Light => {
+                            bbr_ui::theme::ThemeMode::Light
+                        }
+                        bbr_testkit::protocol::ThemeModeOverride::Dark => {
+                            bbr_ui::theme::ThemeMode::Dark
+                        }
+                    }),
+                    cx,
+                );
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+
         // Bring the app to the foreground (testkit-only; the shown-harness
         // portal frontmost test). Activates the browser window, never the
         // non-activating portal.

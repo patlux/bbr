@@ -82,25 +82,38 @@ Integration order:       before sidebar-reference-polish (polish calibrates both
 
 ### Unit and contract
 
-- [ ] Theme-selection authority maps both appearances and the override
-      deterministically.
-- [ ] Dark palette pairs for every changed surface pass the recomputed §3
-      contrast gate (standard + increased contrast).
+- [x] Theme-selection authority maps both appearances and the override
+      deterministically (`crates/bbr-app/src/app/appearance.rs` unit tests:
+      every `WindowAppearance` value maps; the override wins over the
+      observed system mode).
+- [x] Dark palette pairs for every changed surface pass the recomputed §3
+      contrast gate (standard + increased contrast) — the palette gate now
+      asserts ink/ink.secondary on `tint.selected` and ink.secondary on
+      `material:footer` for all four mode combos; the stale dark selection
+      tint was corrected to `#0D2020` / IC `#091818` in the `bbr-ui` token
+      module (DESIGN.md §3.5 updated in the same group).
 
 ### Real-app E2E
 
-- [ ] Forced-dark launch: snapshot reports `theme == dark`; sidebar, selected
+- [x] Forced-dark launch: snapshot reports `theme == dark`; sidebar, selected
       row, hover wash, footer and address surfaces assert their §10/§11
-      states unchanged.
-- [ ] Live flip mid-session: appearance override change re-presents the full
-      chrome; `theme` field flips; selection/session identity preserved.
-- [ ] Forced-light launch remains identical to the integrated VS-REFERENCE
-      evidence.
+      states unchanged (`e2e_shell_sidebar/appearance.rs`,
+      `e2e_shell_hover.rs`).
+- [x] Live flip mid-session: appearance override change re-presents the full
+      chrome; `theme` field flips; selection/session identity preserved
+      (`e2e_shell_sidebar/appearance.rs` flip scenario;
+      `e2e_shell_spaces/appearance.rs` dark strip + flip scenario).
+- [x] Forced-light launch remains identical to the integrated VS-REFERENCE
+      evidence (the light-calibrated suites now force Light explicitly:
+      `e2e_shell_spaces/appearance.rs`, the swipe suite, and the
+      visual-capture suite).
 
 ### Performance
 
-- [ ] Not executed: performance execution remains blocked under the active
-      override. Scenario code, budgets and sample guards compile unchanged.
+- [x] Not executed: performance execution remains blocked under the active
+      override. Scenario code, budgets and sample guards compile unchanged
+      (`cargo test -p bbr --features testkit --no-run` builds every
+      benchmark target).
 
 ## Completion gates
 
@@ -142,12 +155,28 @@ smallest input needed.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:           production ThemeMode derives from the macOS system
+                   appearance via the public GPUI window-appearance API;
+                   live flips re-present commit-first; testkit override
+                   forces light/dark deterministically; stale dark selection
+                   tint corrected to pass the unchanged §3 gate; DESIGN.md
+                   §1/§2/§3.5 updated.
+Commits:           none — candidate left UNCOMMITTED for the Orchestrator.
+Functional evidence: appearance.rs unit tests (mapping + override priority);
+                   palette gate extended to the reference-calibrated
+                   surfaces (all four mode combos) and green.
+Real-app E2E:      e2e-shell-sidebar forced-dark launch + live flip;
+                   e2e-shell-hover dark hover/press; e2e-shell-spaces dark
+                   strip + flip; light-calibrated suites force Light.
+Performance evidence: not executed (override). Scenario code, budgets and
+                   sample guards compile unchanged.
+Roadmap/documentation updates: DESIGN.md §1 (system-appearance-driven,
+                   dark reference capture recorded), §2 sidebar note, §3.5
+                   dark tint values; task packet evidence marked;
+                   phase 04 checkbox marked.
+Open blockers and non-goals: none. Non-goals honored (no vibrancy, no
+                   user theme preference, no space-tint change, no
+                   favicon/footer-glyph work).
+Worktree state:    uncommitted candidate on parallel/system-appearance-theme
+                   @ main 806e4238 (base).
 ```

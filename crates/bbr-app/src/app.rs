@@ -10,6 +10,10 @@ use std::rc::Rc;
 
 use crate::command_bar::{CommandBarMode, CommandBarReturn};
 use crate::engine::EngineRef;
+// The one production theme-selection authority (task packet
+// `system-appearance-theme`): maps the GPUI window appearance to
+// `ThemeMode` and resolves the effective mode (override-first).
+mod appearance;
 #[cfg(feature = "testkit")]
 use crate::performance::PerformanceProbe;
 use crate::portal::probe::PortalProbeState;
@@ -360,6 +364,23 @@ pub struct BbrApp {
     store: crate::store::AppStore,
     /// The Phase-7 startup restore outcome (see [`RestoreEvidence`]).
     restore_evidence: RestoreEvidence,
+    /// The last observed macOS system appearance mapped to a production
+    /// [`bbr_ui::theme::ThemeMode`] (task packet `system-appearance-theme`):
+    /// the one production theme source. Updated live by the GPUI
+    /// window-appearance observer; the render and the snapshot resolve the
+    /// effective mode from it (`ThemeMode::Light` until the composition
+    /// root observes the window before the first presented frame).
+    system_appearance: bbr_ui::theme::ThemeMode,
+    /// Testkit-only deterministic appearance override (task packet
+    /// `system-appearance-theme`): when set, the effective mode ignores the
+    /// observed system appearance so real-app E2E can force light and dark
+    /// regardless of the host. `None` follows the system.
+    #[cfg(feature = "testkit")]
+    appearance_override: Option<bbr_ui::theme::ThemeMode>,
+    /// Keeps the GPUI window-appearance observer alive (task packet
+    /// `system-appearance-theme`): a dropped subscription silently stops
+    /// live flip observation.
+    appearance_subscription: Option<gpui::Subscription>,
     /// The last rendered window content rect `[x, y, width, height]` in
     /// points (Phase 7, warm-restore slice): the persist-direction source
     /// for the optional window-geometry presentation row. The content rect
@@ -587,6 +608,14 @@ impl BbrApp {
             command_profile_hint: None,
             store,
             restore_evidence: RestoreEvidence::Fresh,
+            // The observed system appearance is corrected by
+            // `observe_system_appearance` at composition (before the first
+            // presented frame); Light is the deterministic pre-observation
+            // default.
+            system_appearance: bbr_ui::theme::ThemeMode::Light,
+            #[cfg(feature = "testkit")]
+            appearance_override: None,
+            appearance_subscription: None,
             window_geometry: std::cell::RefCell::new(None),
             sidebar_visible: true,
             organization,
