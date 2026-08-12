@@ -10,7 +10,7 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Generation | `daily-driver-2026-08-12` |
 | Cutover commit | `781e862ca4547cee16be23e251767f6b2fa938fb` |
 | Verified product base | `main@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
-| Integrated product checkpoint | `fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81` / tree `deb5c9dd26559697d7265fcadc80ea4ca3a51eab`; Daily-driver Link, Gesture, Titlebar, Space, Sidebar and source-bound Tab/Favorite menu lanes integrated |
+| Integrated product checkpoint | `14d56309b4a47aa7da9ab04eb346eeab7362b20a` / tree `779a086d620fdcabd21a7546a34bc08589097889`; all seven Daily-driver lanes integrated, including reviewed Page Menu merge `85295736…` and focused Gallery warning-denied gate fix `14d56309…` |
 | Daily-driver preparation base | `568cdae0008d3cc9008209007ae32442ee0ff80e` / tree `90114c65cc068a744b43aeeec710b47fff5cbf4a` |
 | Daily-driver activation base | `4d5be3116ec090aebb7eefa4861970710dba7a5b` / tree `9c8cae5cd5bca883fadc3ec198e232be4f436839`; all seven lane worktrees created clean from this exact commit |
 | Daily-driver contract | [2026-08-12 Daily-driver delivery](2026-08-12-daily-driver-delivery.md) |
@@ -49,7 +49,7 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | DD-SPACE | Create/activate/configure Space and icon-only footer | `integrated` | lane `8a15496488f27e7a1f6150b27d5374cf033c5b7e`; merge `7f658aba0a4725db67c2e0fba33fcaf5388d0db8`; Gallery gate fix `ac381f3f6b57e73155380dc5ba7f0c35451b8a84` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `integrated` | lane `7191fc72b627bacc50ef5d4dc2ac0c325a19121b`; merge `f4c6f60e3496bcd3fe3a9e1ab022bc6329911703`; gate fix `f1de38c1086c40a35589ac710881363d595bdb47` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-TAB-MENU | Production Tab/Favorite context menus | `integrated` | lane `35674e5f92e06596b0851df63106d6ea77cf483e`; merge `fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd26559697d7265fcadc80ea4ca3a51eab` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
-| DD-PAGE-MENU | Enriched conservative page-background menu | `frozen` | lane commit `8616f2733ae9599b6836e938cbc33db8e2907b36` / tree `9547539e5400c47d0a1e32b93cf3e975d09b7db7`; branch `parallel/dd-page-menu` clean | Orchestrator; whole-candidate review accepted product/evidence with two docs-only findings, focused recheck passed | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | Integrate after DD-TAB-MENU, independent staged-union review, then affected post-merge gates |
+| DD-PAGE-MENU | Enriched conservative page-background menu | `integrated` | lane `8616f2733ae9599b6836e938cbc33db8e2907b36`; merge `85295736185b0176d16a0cdc2c3c75b30c5fb255`; Gallery gate fix `14d56309b4a47aa7da9ab04eb346eeab7362b20a` | Orchestrator; whole-candidate, docs-focused, staged-union, and Gallery-gate-fix reviews passed; all post-merge gates complete | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 
 ## Post-F2a parallel wave
 
@@ -304,8 +304,25 @@ The bounded docs-only remediation produced tree `9547539e…`; focused recheck
 returned direct `DD_PAGE_MENU_DOCS_RECHECK_PASS` with no findings and proved
 all product/test/evidence blobs unchanged. The Orchestrator committed that
 exact reviewed tree as clean lane commit `8616f2733ae9599b6836e938cbc33db8e2907b36`.
-DD-PAGE-MENU is frozen for its exclusive serial integration position after
-DD-TAB-MENU; performance remains unexecuted/unpassed.
+DD-PAGE-MENU integration audit: the exact reviewed lane commit `8616f273…`
+was merged after DD-TAB-MENU as `85295736185b0176d16a0cdc2c3c75b30c5fb255`,
+tree `67885ac8…`. Six shared conflicts were resolved as semantic unions:
+Space remains StoryId 46, Tab/Favorite menu remains 47, Page Menu appends at
+48 for a 49-story catalog, and all Tab-menu plus Page-menu performance kinds,
+requests, dispatch, budgets and zero-sample baselines remain registered.
+Independent staged-union review returned direct
+`DD_PAGE_MENU_STAGED_UNION_PASS`. Fresh post-merge warning-denied Gallery
+Clippy exposed two inherited G1b `collapsible_match` warnings outside the
+Page-menu delta. The exact behavior-preserving two-test-file fix received
+direct `PAGE_MENU_GALLERY_CLIPPY_FIX_REVIEW_PASS` and was committed as
+`14d56309b4a47aa7da9ab04eb346eeab7362b20a`, tree `779a086d…`.
+Final non-performance checks are green: workspace all-target check and
+lib/bin tests, fresh warning-denied WebKit/App/Gallery Clippy, roadmap,
+UI-dependencies, 46 script tests and diff-check. Repository-locked Xcode-26.2
+GUI evidence is green: Gallery 44/44, Page Context Menu 11/11, Portal 7/7,
+and existing Tab Menu 12/12. Logs and SHA-256 manifests live under
+`/tmp/bbr-page-menu-postmerge-*`. All seven Daily-driver lanes are integrated;
+performance and canonical aggregate E2E remain unexecuted/unpassed.
 
 ## Downstream dependency queue
 
