@@ -1119,6 +1119,44 @@ and the command regression suite 25/25 — log
 All runs used Xcode 26.2 and the serial repository GUI lock. The final staged
 tree differs from this runtime tree only in evidence/documentation wording.
 
+## 7p. The background-link tabs suite (`bbr-app/tests/e2e_shell_background_links.rs`)
+
+`just e2e-background-links` contains four real-app scenarios for the DD-LINK
+packet (`background-link-tabs`) — Command-primary / middle-click web links
+opening one grouped regular child tab immediately after the exact opener while
+the opener stays selected, visible, and web-focused:
+
+1. **One unselected child after the opener:** the background disposition
+   (typed injection through the exact `BbrApp::on_new_window_request`
+   production seam the native coordinator delivery pump calls, the settled
+   NW-SEAM evidence split — the native `classify_input` modifier/button
+   extraction is unit-proven in `bbr-web-macos/tests/new_window.rs`)
+   opens exactly one regular child at index 1 after the real `links.html`
+   opener; the child's real fixture (`bg-x.html`) title arrives for the
+   hidden session while the opener keeps its `WebViewId`, the active view,
+   and web focus (never `chrome_focused`); typed provenance pairs and
+   `created_background_tabs` counters are asserted.
+2. **Grouped click order before an unrelated tab:** repeated X/Y/Z opens
+   stay ordered `[B, X, Y, Z]` with an unrelated C after the group; every
+   child stays hidden with a live session and the opener keeps selection
+   and focus.
+3. **Session reuse + Back-at-root:** activating the child later reuses its
+   already-created session (same `WebViewId`, no recreation); a committed
+   Back at the settled child root closes it and returns to the exact warm
+   opener (`opener_returns` increments).
+4. **Fail-closed rejection:** a stale source `WebViewId` and an invalid
+   source profile both reject through the production seam with zero tab/
+   session/focus mutation and no background fixture request.
+
+No sleeps: every step synchronizes on typed snapshot state or semantic events
+under an explicit deadline, and the suite takes the serial GUI lock. Protocol
+(additive, still version 7): `Request::NewWindow` carries the explicit
+`NewWindowInput` disposition and `NewWindowSnapshot` carries
+`created_background_tabs`; the performance scenario `background_link_open`
+joins the interaction matrix in the fresh native-session class (100/150 — no
+new budget class) with an in-app fast-but-wrong guard, but stays
+unexecuted/unpassed under the active performance override.
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature

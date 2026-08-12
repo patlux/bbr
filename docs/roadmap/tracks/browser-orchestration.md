@@ -10,10 +10,10 @@ Own the portable boundary between persistent browser objects (`bbr-domain`) and 
 
 - [x] [BrowserController](../tasks/browser-controller.md)
 - [x] [Deterministic fake WebEngine](../tasks/fake-web-engine.md)
+- [x] [Background link tabs](../tasks/background-link-tabs.md) — Cmd-primary and middle click create grouped background children directly after the opener without selection/focus mutation.
 
 ## Planned task packets
 
-- [ ] [Background link tabs](../tasks/background-link-tabs.md) — Cmd-primary and middle click create grouped background children directly after the opener without selection/focus mutation.
 - [ ] [Web-content gesture real-app revalidation](../tasks/web-gesture-revalidation.md) — re-prove the integrated gesture path on the current product base and remediate only a reproduced regression.
 
 ## Durable checklist
@@ -32,9 +32,11 @@ Own the portable boundary between persistent browser objects (`bbr-domain`) and 
 - [x] A regular link-created child records exact session-local opener `TabId`
       provenance; Back at settled history root closes only that child and
       activates the surviving opener atomically. *(Integrated at `542af1a`.)*
-- [ ] Cmd-primary and middle-click link activations create one grouped
+- [x] Cmd-primary and middle-click link activations create one grouped
       background child immediately after the opener while preserving opener
-      selection, web focus, profile, and session identity.
+      selection, web focus, profile, and session identity. *(DD-LINK; native
+      modifier/button metadata → portable background disposition →
+      identity-bound grouped insertion after the exact opener.)*
 - [x] WebEvents update the owning tab and navigation state deterministically.
 - [x] Unknown/stale WebEvents are reported without corrupting state.
 - [x] Controller operations expose typed outcomes suitable for UI and E2E events.
@@ -51,8 +53,11 @@ Own the portable boundary between persistent browser objects (`bbr-domain`) and 
 - [x] Real-app profile/space session-policy suite before visible Spaces UI.
 - [ ] Real-app visible spaces/splits E2E as each UI slice lands.
 
-Evidence: 47 `bbr-browser` tests cover portable policy; `just e2e-tabs` proves
-two real WKWebViews, stable warm-session identities, focused navigation, and
-native destruction; `just e2e-profiles` proves profile isolation,
-same-profile reuse, cross-profile recreation, and suspend cleanup. Visible
+Evidence: 230 `bbr-browser` tests cover portable policy (including the
+background-link grouped-insertion matrix and provenance lifecycle);
+`just e2e-tabs` proves two real WKWebViews, stable warm-session identities,
+focused navigation, and native destruction; `just e2e-profiles` proves
+profile isolation, same-profile reuse, cross-profile recreation, and suspend
+cleanup; `just e2e-background-links` proves grouped background children after
+real WKWebView openers. Visible
 spaces and split UI remain owned by their later phases.

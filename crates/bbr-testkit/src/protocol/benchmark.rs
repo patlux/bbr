@@ -285,6 +285,18 @@ pub enum BenchmarkKind {
     /// gone — the warm interaction class (p95 ≤ 50 ms; max ≤ 100 ms),
     /// the existing session adopted without recreation or page load.
     PeekPromoteToTab,
+    /// A Command-primary / middle-click link opened one regular child tab
+    /// in the background immediately after the exact opener (DD-LINK packet
+    /// `background-link-tabs`, `background_link_open`): the sample starts at
+    /// the production `BbrApp::on_new_window_request` seam and commits only
+    /// from the authoritative browser state — the exact opener still the
+    /// active, web-focused view and the new child a live session at the
+    /// grouped insertion index directly after the opener, never
+    /// foreground-activated (fast-but-wrong guard). The child session is
+    /// the fresh native-session class with its own budget (p95 ≤ 100 ms;
+    /// max ≤ 150 ms) — fixture/network page-load time is excluded by
+    /// construction (the sample commits at insertion, not at page ready).
+    BackgroundLinkOpen,
     /// The production Saved Pages Library search (B3 packet
     /// `saved-pages-library`, `saved_pages_library_search`): the typed
     /// search entry filters the loaded ≥1,000-record provider through the

@@ -18,6 +18,11 @@
 //!   defaulting) and the adapter never loads it into the source view.
 //! - **No silent loss.** A blocked request is reported through the adapter's
 //!   blocked-request channel instead of vanishing.
+//! - **Explicit input disposition.** The adapter reports the native modifier/
+//!   button metadata as [`NewWindowInput`]; the default policy routes
+//!   Command-primary/middle clicks to the explicit background-child
+//!   disposition (`OpenBackgroundTab`) without ever letting that metadata
+//!   fabricate a user gesture or cross a profile boundary.
 //!
 //! Opener/security semantics are preserved by construction: the only session
 //! this contract ever asks for is a fresh browsing context in the source
@@ -71,6 +76,28 @@ pub enum NewWindowTarget {
     NewWindow,
 }
 
+/// Explicit input disposition for a reported new-window/link request
+/// (background link tabs packet).
+///
+/// The macOS adapter extracts the modifier/button metadata of the native
+/// activation and reports it here; portable policy routes a Command-primary
+/// or middle click to the explicit background-child disposition instead of
+/// the plain default path. The metadata is input evidence only — it never
+/// overrides a script-created request (a background disposition still
+/// requires the adapter's user-activation report) and it never moves a
+/// request across profile boundaries.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum NewWindowInput {
+    /// A plain primary click or keyboard activation (no background modifier).
+    #[default]
+    Primary,
+    /// Command-primary click or middle click: open one regular child tab in
+    /// the background immediately after the exact opener, leaving the
+    /// opener selected, visible, and web-focused.
+    Background,
+}
+
 /// A typed new-window request, reported by the adapter, decided by portable
 /// orchestration.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -89,6 +116,12 @@ pub struct NewWindowRequest {
     pub user_initiated: bool,
     /// The requested target disposition.
     pub target: NewWindowTarget,
+    /// The explicit input disposition of the activation (Command-primary /
+    /// middle click vs. a plain primary activation). The adapter fills it
+    /// from native modifier/button metadata; a default request is always
+    /// [`NewWindowInput::Primary`].
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub input: NewWindowInput,
     /// WebKit window-features metadata (sizes/toolbars); `None` per attribute
     /// when the page did not specify it.
     pub features: NewWindowFeatures,
@@ -127,6 +160,10 @@ pub enum NewWindowDecision {
     Preview,
     /// Open the request as a regular tab in the source profile.
     OpenTab,
+    /// Open one regular child tab in the source profile in the background,
+    /// immediately after the exact opener, leaving the opener selected,
+    /// visible, and web-focused (Command-primary / middle click).
+    OpenBackgroundTab,
     /// Hand the URL to the OS default handler; never create a web session.
     External,
     /// Reject the request. The adapter must report the refusal — the user's
@@ -142,6 +179,10 @@ pub enum NewWindowDisposition {
     Preview,
     /// Present the session as a regular browser tab.
     OpenTab,
+    /// Present the session as one regular child tab opened in the background
+    /// immediately after its exact opener; the opener stays selected,
+    /// visible, and web-focused.
+    OpenBackgroundTab,
 }
 
 /// A validated session-creation request.
@@ -249,20 +290,33 @@ pub fn peek_eligible(request: &NewWindowRequest) -> bool {
 /// immediately creating a regular tab; script-created requests are blocked
 /// and reported; ineligible direct activations (non-web schemes, explicitly
 /// sized/tool-style popups) open one ordinary regular tab so the user's
-/// action is never lost. This is the single policy the native coordinator
-/// installs; explicit ordinary-tab / explicit-Peek actions route through
+/// action is never lost. A **background input** (Command-primary / middle
+/// click) is the explicit user gesture for a background child and bypasses
+/// the preview set, exactly like the explicit ordinary-tab action. This is
+/// the single policy the native coordinator installs; explicit
+/// ordinary-tab / explicit-Peek actions route through
 /// [`decision_for_intent`].
 pub fn default_decision(request: &NewWindowRequest) -> NewWindowDecision {
     decision_for_intent(request, NewWindowIntent::Default)
 }
 
-/// The intent-aware policy authority (Link Preview / Peek packet).
+/// The intent-aware policy authority (Link Preview / Peek packet;
+/// background link tabs packet).
 ///
-/// - [`NewWindowIntent::Default`]: eligible direct activation → Preview;
-///   ineligible direct activation → `OpenTab`; script request → `Block`.
+/// - [`NewWindowIntent::Default`] with [`NewWindowInput::Background`]: a
+///   direct activation always opens one background child tab
+///   (`OpenBackgroundTab`) — the explicit Command-primary/middle-click
+///   gesture takes priority over peek eligibility; a script request with a
+///   claimed background input still blocks (input metadata never
+///   fabricates a user gesture).
+/// - [`NewWindowIntent::Default`] with [`NewWindowInput::Primary`]: eligible
+///   direct activation → Preview; ineligible direct activation → `OpenTab`;
+///   script request → `Block`.
 /// - [`NewWindowIntent::OpenTab`]: a direct activation always opens a
 ///   regular tab (eligibility is bypassed by the explicit action); a script
-///   request still blocks.
+///   request still blocks. Explicit intents keep their plain-click
+///   semantics — the background disposition is selected only by the default
+///   policy from real input metadata.
 /// - [`NewWindowIntent::Peek`]: the explicit Peek action, applied only to
 ///   the safe set — an ineligible request falls back to the ordinary path
 ///   (direct → `OpenTab`, script → `Block`) rather than forcing an unsafe
@@ -272,15 +326,24 @@ pub fn decision_for_intent(
     intent: NewWindowIntent,
 ) -> NewWindowDecision {
     match intent {
-        NewWindowIntent::Default => {
-            if peek_eligible(request) {
-                NewWindowDecision::Preview
-            } else if request.user_initiated {
-                NewWindowDecision::OpenTab
-            } else {
-                NewWindowDecision::Block
+        NewWindowIntent::Default => match request.input {
+            NewWindowInput::Background => {
+                if request.user_initiated {
+                    NewWindowDecision::OpenBackgroundTab
+                } else {
+                    NewWindowDecision::Block
+                }
             }
-        }
+            NewWindowInput::Primary => {
+                if peek_eligible(request) {
+                    NewWindowDecision::Preview
+                } else if request.user_initiated {
+                    NewWindowDecision::OpenTab
+                } else {
+                    NewWindowDecision::Block
+                }
+            }
+        },
         NewWindowIntent::OpenTab => {
             if request.user_initiated {
                 NewWindowDecision::OpenTab
@@ -345,6 +408,12 @@ pub fn decide(request: &NewWindowRequest, decision: NewWindowDecision) -> NewWin
         },
         NewWindowDecision::OpenTab => NewWindowOutcome::CreateSession {
             session: NewWindowSession::from_request(request, NewWindowDisposition::OpenTab),
+        },
+        NewWindowDecision::OpenBackgroundTab => NewWindowOutcome::CreateSession {
+            session: NewWindowSession::from_request(
+                request,
+                NewWindowDisposition::OpenBackgroundTab,
+            ),
         },
         NewWindowDecision::External => NewWindowOutcome::External {
             url: request.url.clone(),

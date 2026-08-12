@@ -7,8 +7,8 @@
 
 use bbr_web::new_window::{
     decide, decision_for_intent, default_decision, peek_eligible, NewWindowDecision,
-    NewWindowDisposition, NewWindowFeatures, NewWindowIntent, NewWindowOutcome, NewWindowRequest,
-    NewWindowTarget,
+    NewWindowDisposition, NewWindowFeatures, NewWindowInput, NewWindowIntent, NewWindowOutcome,
+    NewWindowRequest, NewWindowTarget,
 };
 use bbr_web::{ProfileId, WebViewId};
 
@@ -19,6 +19,8 @@ fn request(url: &str) -> NewWindowRequest {
         url: url.into(),
         user_initiated: true,
         target: NewWindowTarget::NewWindow,
+        input: NewWindowInput::Primary,
+
         features: NewWindowFeatures::default(),
     }
 }
@@ -280,4 +282,97 @@ fn only_session_naming_outcome_is_create_session() {
             "for {decision:?}"
         );
     }
+}
+
+// ---------------------------------------------------------------------------
+// Background input disposition (background link tabs packet)
+// ---------------------------------------------------------------------------
+
+fn background_request(url: &str) -> NewWindowRequest {
+    let mut r = request(url);
+    r.input = NewWindowInput::Background;
+    r
+}
+
+#[test]
+fn background_input_routes_direct_activation_to_background_child() {
+    // Command-primary / middle click on ANY direct link (even a peek-eligible
+    // one) is the explicit user gesture for a background child: the default
+    // policy must choose the background disposition over the preview set.
+    let r = background_request("https://example.com/link");
+    assert_eq!(default_decision(&r), NewWindowDecision::OpenBackgroundTab);
+}
+
+#[test]
+fn background_input_never_fabricates_a_script_gesture() {
+    // Input metadata is evidence, not authority: a script-created request
+    // claiming a background modifier still blocks (the adapter's
+    // user-activation report gates every disposition).
+    let mut r = background_request("https://example.com/script");
+    r.user_initiated = false;
+    assert_eq!(default_decision(&r), NewWindowDecision::Block);
+}
+
+#[test]
+fn background_decision_creates_one_background_session_in_source_profile() {
+    let r = background_request("https://example.com/child");
+    let outcome = decide(&r, default_decision(&r));
+    let NewWindowOutcome::CreateSession { session } = outcome else {
+        panic!("background disposition must create a session");
+    };
+    assert_eq!(session.source_profile(), ProfileId(3));
+    assert_eq!(
+        session.disposition(),
+        NewWindowDisposition::OpenBackgroundTab
+    );
+    assert_eq!(session.url(), "https://example.com/child");
+}
+
+#[test]
+fn background_input_never_crosses_profile_boundaries() {
+    let mut r = background_request("https://example.com/child");
+    r.source_profile = ProfileId(9);
+    let NewWindowOutcome::CreateSession { session } =
+        decide(&r, NewWindowDecision::OpenBackgroundTab)
+    else {
+        panic!("expected a session");
+    };
+    assert_eq!(session.source_profile(), ProfileId(9));
+}
+
+#[test]
+fn explicit_intents_keep_their_plain_click_semantics() {
+    // Explicit UI intents are authoritative plain-click actions: even with a
+    // background modifier they must not silently change the user-visible
+    // Peek/OpenTab behavior (the preview UI and command surfaces never send
+    // a real Command-click).
+    let r = background_request("https://example.com");
+    assert_eq!(
+        decision_for_intent(&r, NewWindowIntent::OpenTab),
+        NewWindowDecision::OpenTab
+    );
+    assert_eq!(
+        decision_for_intent(&r, NewWindowIntent::Peek),
+        NewWindowDecision::Preview
+    );
+}
+
+#[test]
+fn background_input_does_not_change_plain_or_script_routing() {
+    // The presence of the input field must not disturb the settled Primary
+    // matrix: eligible direct → Preview, ineligible direct → OpenTab,
+    // script → Block.
+    let eligible = request("https://example.com");
+    assert_eq!(default_decision(&eligible), NewWindowDecision::Preview);
+    let mut ineligible = request("mailto:hello@example.com");
+    assert_eq!(default_decision(&ineligible), NewWindowDecision::OpenTab);
+    ineligible.user_initiated = false;
+    assert_eq!(default_decision(&ineligible), NewWindowDecision::Block);
+}
+
+#[test]
+fn primary_is_the_default_input() {
+    assert_eq!(NewWindowInput::default(), NewWindowInput::Primary);
+    let r = request("https://example.com");
+    assert_eq!(r.input, NewWindowInput::Primary);
 }

@@ -39,8 +39,8 @@ pub use external_urls::{
 };
 pub use new_window::{
     decide, decision_for_intent, default_decision, peek_eligible, NewWindowDecision,
-    NewWindowDelivery, NewWindowDisposition, NewWindowFeatures, NewWindowIntent, NewWindowOutcome,
-    NewWindowRequest, NewWindowSession, NewWindowTarget,
+    NewWindowDelivery, NewWindowDisposition, NewWindowFeatures, NewWindowInput, NewWindowIntent,
+    NewWindowOutcome, NewWindowRequest, NewWindowSession, NewWindowTarget,
 };
 
 /// Stable identifier of a browsing profile. Maps 1:1 to a persistent

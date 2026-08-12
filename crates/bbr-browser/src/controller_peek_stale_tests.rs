@@ -1,8 +1,8 @@
 //! Regression coverage for preview teardown after controller mutations.
 
 use bbr_web::{
-    decide, NewWindowDecision, NewWindowFeatures, NewWindowOutcome, NewWindowRequest,
-    NewWindowTarget, ProfileId, WebViewId,
+    decide, NewWindowDecision, NewWindowFeatures, NewWindowInput, NewWindowOutcome,
+    NewWindowRequest, NewWindowTarget, ProfileId, WebViewId,
 };
 
 use crate::fake::{EngineOp, FakeHarness};
@@ -15,6 +15,8 @@ fn open_preview(c: &mut crate::BrowserController, source: WebViewId, url: &str) 
         url: url.into(),
         user_initiated: true,
         target: NewWindowTarget::NewWindow,
+        input: NewWindowInput::Primary,
+
         features: NewWindowFeatures::default(),
     };
     let session = match decide(&request, NewWindowDecision::Preview) {

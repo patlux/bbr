@@ -103,6 +103,7 @@ fn user_initiated_delivery_opens_one_regular_tab_in_source_profile_and_space() {
                 url: target.clone(),
                 user_initiated: true,
                 intent: bbr_web::new_window::NewWindowIntent::OpenTab,
+                input: bbr_web::new_window::NewWindowInput::Primary,
             })
             .expect("inject productive new-window delivery");
         let (opened_seq, change) = wait_browser_change_matching(
@@ -171,6 +172,7 @@ fn stale_source_is_rejected_without_tab_or_session_mutation() {
                 url: target,
                 user_initiated: true,
                 intent: bbr_web::new_window::NewWindowIntent::OpenTab,
+                input: bbr_web::new_window::NewWindowInput::Primary,
             })
             .expect("stale-source response");
         assert!(
@@ -273,6 +275,7 @@ fn inactive_source_space_stays_inactive_and_non_default_profile_is_preserved() {
                 url: target.clone(),
                 user_initiated: true,
                 intent: bbr_web::new_window::NewWindowIntent::OpenTab,
+                input: bbr_web::new_window::NewWindowInput::Primary,
             })
             .expect("open in inactive source space");
         let (_, change) = wait_browser_change_matching(

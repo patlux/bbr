@@ -14,6 +14,7 @@ use super::BbrApp;
 pub(crate) struct NewWindowState {
     pub(crate) requests: u64,
     pub(crate) created_tabs: u64,
+    pub(crate) created_background_tabs: u64,
     pub(crate) blocked_reported: u64,
 }
 
@@ -73,6 +74,34 @@ impl BbrApp {
                             // visibility.
                             self.sync_unresponsive_visibility();
                             self.zoom_after_activation();
+                            self.persist_structure();
+                            cx.notify();
+                        }
+                        result
+                    }
+                    bbr_web::new_window::NewWindowDisposition::OpenBackgroundTab => {
+                        // Command-primary / middle-click background link
+                        // tabs: one regular child opens in the background
+                        // immediately after the exact opener. The opener
+                        // stays selected, visible, and web-focused, so this
+                        // path must NOT zoom, re-assert active visibility,
+                        // or touch the unresponsive surface of the active
+                        // pane — the hidden child is a warm session and the
+                        // selection never moved.
+                        let result = self
+                            .controller
+                            .open_background_tab_from_new_window(delivery.request.source, &session)
+                            .map_err(|error| {
+                                log::warn!("background new-window request rejected: {error}");
+                                error
+                            })
+                            .ok();
+                        if let Some(outcome) = &result {
+                            self.new_window.created_tabs += 1;
+                            self.new_window.created_background_tabs += 1;
+                            self.clear_command_profile_hint();
+                            self.find_discard_if_unbound(cx);
+                            self.emit_browser(outcome);
                             self.persist_structure();
                             cx.notify();
                         }

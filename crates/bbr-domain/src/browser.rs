@@ -262,6 +262,42 @@ impl Browser {
         Ok(id)
     }
 
+    /// Insert a new (unpinned) tab at `index` in `space` WITHOUT changing
+    /// the selection, split, or pinned region (the background-link child
+    /// path). `index` must be a valid regular-region position
+    /// (`pinned_count..=len`): a regular tab can never be inserted inside
+    /// the pinned region, so a pinned opener's first child lands at the
+    /// start of the regular region (the nearest legal position after the
+    /// opener). Lifecycles are synced exactly like [`Browser::open_tab`];
+    /// the caller owns selection/session policy.
+    pub fn insert_tab(
+        &mut self,
+        space: SpaceId,
+        index: usize,
+        title: impl Into<String>,
+        url: impl Into<String>,
+    ) -> Result<TabId, DomainError> {
+        if !self.spaces.iter().any(|s| s.id == space) {
+            return Err(DomainError::UnknownSpace(space));
+        }
+        let sp = self.space(space).expect("checked above");
+        if index < sp.pinned_count || index > sp.tabs.len() {
+            return Err(DomainError::InsertionAcrossPinnedBoundary {
+                index,
+                pinned: sp.pinned_count,
+            });
+        }
+        let id = TabId(self.alloc_id());
+        self.tabs.push(Tab::new(id, space, title, url));
+        let sp = self.space_mut(space).expect("checked above");
+        sp.tabs.insert(index, id);
+        // Deliberately no selection mutation: `active_tab` and `split` stay
+        // untouched so the opener remains selected/visible/web-focused.
+        self.touch(id);
+        self.sync_lifecycles(space);
+        Ok(id)
+    }
+
     /// Close `tab`, remembering it for [`Browser::reopen_tab`]. The active
     /// tab moves to the closed tab's next sibling (else previous, else
     /// `None`); closing the last tab leaves the space empty. If the tab was

@@ -111,6 +111,17 @@ e2e-shell-saved-pages-library:
 e2e-shell-new-window:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_new_window -- --ignored --nocapture
 
+# Background link tabs (DD-LINK packet `background-link-tabs`): the explicit
+# Command-primary / middle-click background disposition opens one regular
+# child tab immediately after the exact opener while the opener stays
+# selected, visible, and web-focused; repeated children group in click order
+# before unrelated tabs; child activation reuses its already-created session
+# and Back-at-root returns to the exact opener; stale sources and profile
+# mismatches reject without mutation. Real WKWebViews load deterministic
+# background-link fixtures.
+e2e-background-links:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_background_links -- --ignored --nocapture
+
 # Web-content navigation gestures (N1 packet
 # `web-content-navigation-gestures`): committed logical Back/Forward gestures
 # over real WKWebView history navigate the exact pane; Back at a settled
@@ -227,7 +238,7 @@ e2e-gallery:
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-shell-responsiveness e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-web-navigation-gestures e2e-auth e2e-perf
+e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-background-links e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-shell-responsiveness e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-web-navigation-gestures e2e-auth e2e-perf
 
 verify: fmt check test clippy roadmap ui-deps script-tests
 

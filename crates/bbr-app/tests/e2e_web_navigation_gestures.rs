@@ -121,6 +121,7 @@ fn open_child(
             url: target_url.into(),
             intent: bbr_web::new_window::NewWindowIntent::OpenTab,
             user_initiated: true,
+            input: bbr_web::new_window::NewWindowInput::Primary,
         })
         .expect("inject productive new-window delivery");
     let (seq, change) = wait_browser_change_matching(
@@ -523,6 +524,7 @@ fn provisional_child_load_is_a_no_op_then_returns_once_settled() {
                 url: slow.clone(),
                 intent: bbr_web::new_window::NewWindowIntent::OpenTab,
                 user_initiated: true,
+                input: bbr_web::new_window::NewWindowInput::Primary,
             })
             .expect("open child on the slow route");
         let (seq, change) = wait_browser_change_matching(

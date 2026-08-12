@@ -404,6 +404,18 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // Background link tabs (DD-LINK packet `background-link-tabs`):
+        // `background_link_open` opens a FRESH source-profile regular child
+        // immediately after the exact opener while the opener stays
+        // selected, visible, and web-focused — the fresh native-session
+        // class, same 100/150 ceiling as `peek_request_to_present`/tab
+        // creation (packet: "Production-path `background_link_open`
+        // scenario … the fresh native-session class"), no new budget class
+        // invented. The sample commits at insertion, never at page ready.
+        "background_link_open" => Budget {
+            p95_ms: 100.0,
+            max_ms: Some(150.0),
+        },
         _ => Budget {
             p95_ms: 50.0,
             max_ms: Some(100.0),
@@ -605,6 +617,7 @@ impl Baseline {
             "peek_request_to_present",
             "peek_dismiss_to_origin",
             "peek_promote_to_tab",
+            "background_link_open",
             "saved_page_search_first_result",
             "saved_page_open",
             "saved_pages_library_search",
@@ -1151,5 +1164,61 @@ mod tests {
                 "{kind} within-budget samples stay green"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod background_link_tests {
+    use super::*;
+
+    fn measured(p95: f64, max: f64) -> Measured {
+        Measured {
+            samples: 30,
+            p50_ms: p95 * 0.5,
+            p95_ms: p95,
+            max_ms: max,
+        }
+    }
+
+    #[test]
+    fn background_link_budget_is_seeded_and_enforced() {
+        // Regression guard (DD-LINK packet `background-link-tabs`): the
+        // required `background_link_open` scenario must carry its contract
+        // budget in the seed so a future background-open regression trips
+        // the gate instead of being silently unreported dead code (an
+        // unseeded kind is skipped by `evaluate` with no signal).
+        // `background_link_open` opens a FRESH source-profile regular child
+        // immediately after the exact opener — the fresh native-session
+        // class (100/150), the same as `peek_request_to_present`; no new
+        // budget class invented.
+        let b = Baseline::seed();
+        let kind = "background_link_open";
+        let entry = b
+            .entries
+            .get(kind)
+            .unwrap_or_else(|| panic!("seed baseline must carry the {kind} contract budget"));
+        assert_eq!(entry.budget_p95_ms, 100.0, "{kind} contract p95 ceiling");
+        assert_eq!(
+            entry.budget_max_ms,
+            Some(150.0),
+            "{kind} contract max ceiling"
+        );
+        let mut slow = BTreeMap::new();
+        slow.insert(kind.into(), measured(120.0, 170.0));
+        let r = evaluate(&slow, &b, false);
+        assert!(
+            r.iter().any(|x| x.rule == "abs_p95"),
+            "{kind} absolute p95 ceiling enforced"
+        );
+        assert!(
+            r.iter().any(|x| x.rule == "abs_max"),
+            "{kind} absolute max ceiling enforced"
+        );
+        let mut good = BTreeMap::new();
+        good.insert(kind.into(), measured(60.0, 90.0));
+        assert!(
+            evaluate(&good, &b, false).is_empty(),
+            "{kind} within-budget samples stay green"
+        );
     }
 }

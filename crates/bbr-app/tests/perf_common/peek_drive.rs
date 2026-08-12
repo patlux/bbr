@@ -208,6 +208,7 @@ fn open_preview(
             url: target_url.to_string(),
             user_initiated: true,
             intent: NewWindowIntent::Default,
+            input: bbr_web::new_window::NewWindowInput::Primary,
         })
         .expect("open peek preview for benchmark setup");
     let until = Instant::now() + Duration::from_secs(30);

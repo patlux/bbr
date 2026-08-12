@@ -16,8 +16,8 @@
 
 use bbr_domain::{AppearanceError, BbrGlyph, SpaceEmoji, SpaceIdentity, SpaceTheme};
 use bbr_web::{
-    decide, NewWindowDecision, NewWindowFeatures, NewWindowOutcome, NewWindowRequest,
-    NewWindowTarget, ProfileId, WebAction, WebEvent, WebViewId,
+    decide, NewWindowDecision, NewWindowFeatures, NewWindowInput, NewWindowOutcome,
+    NewWindowRequest, NewWindowTarget, ProfileId, WebAction, WebEvent, WebViewId,
 };
 
 use crate::fake::EngineOp;
@@ -101,6 +101,8 @@ fn new_window_session(
         url: url.into(),
         user_initiated: true,
         target: NewWindowTarget::NewWindow,
+        input: NewWindowInput::Primary,
+
         features: NewWindowFeatures::default(),
     };
     match decide(&request, NewWindowDecision::OpenTab) {

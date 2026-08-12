@@ -12,7 +12,8 @@
 
 use bbr_web::{
     decide, ContentGestureCommit, ContentGestureDirection, NewWindowDecision, NewWindowFeatures,
-    NewWindowOutcome, NewWindowRequest, NewWindowTarget, ProfileId, WebAction, WebEvent, WebViewId,
+    NewWindowInput, NewWindowOutcome, NewWindowRequest, NewWindowTarget, ProfileId, WebAction,
+    WebEvent, WebViewId,
 };
 
 use crate::fake::EngineOp;
@@ -30,6 +31,8 @@ fn new_window_session(
         url: url.into(),
         user_initiated: true,
         target: NewWindowTarget::NewWindow,
+        input: NewWindowInput::Primary,
+
         features: NewWindowFeatures::default(),
     };
     match decide(&request, NewWindowDecision::OpenTab) {
