@@ -49,7 +49,7 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | DD-SPACE | Create/activate/configure Space and icon-only footer | `integrated` | lane `8a15496488f27e7a1f6150b27d5374cf033c5b7e`; merge `7f658aba0a4725db67c2e0fba33fcaf5388d0db8`; Gallery gate fix `ac381f3f6b57e73155380dc5ba7f0c35451b8a84` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `integrated` | lane `7191fc72b627bacc50ef5d4dc2ac0c325a19121b`; merge `f4c6f60e3496bcd3fe3a9e1ab022bc6329911703`; gate fix `f1de38c1086c40a35589ac710881363d595bdb47` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-TAB-MENU | Production Tab/Favorite context menus | `integrated` | lane `35674e5f92e06596b0851df63106d6ea77cf483e`; merge `fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd26559697d7265fcadc80ea4ca3a51eab` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
-| DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console is locked and two foreign qemu windows remain | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
+| DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console remains locked; seven foreign emulator/QEMU processes observed at final recheck | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
 
 ## Post-F2a parallel wave
 
@@ -291,6 +291,14 @@ all semantic unions are integrated at
 is now the next serial position but remains externally blocked: the user must
 unlock the macOS console, then only `just e2e-shell-portal` is rerun for 7/7
 before whole-candidate review. No performance execution occurred.
+
+Natural-handoff audit: control HEAD is clean with no Git or GUI-lock holder.
+The final host recheck still reports `IOConsoleLocked=Yes`; seven foreign
+emulator/QEMU processes are present. DD-PAGE-MENU remains preserved and
+untouched rather than reclassified from stale evidence. Smallest unblocker:
+Patrick unlocks the macOS console; the Orchestrator then reruns only
+`just e2e-shell-portal` in the Page-menu lane and requires 7/7 before starting
+its whole-candidate review.
 
 ## Downstream dependency queue
 
