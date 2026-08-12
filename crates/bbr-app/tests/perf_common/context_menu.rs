@@ -85,3 +85,56 @@ pub(crate) fn benchmark_context_menu_open(
     );
     measured
 }
+
+/// The production bookmark-row activation through the
+/// `BenchmarkContextMenuBookmark` request (task packet
+/// `page-background-context-menu.md`): the sample commits only from a render
+/// that drew the menu closed over the same active view, with the B2 store
+/// truth verified at the mutation site. The driver asserts the measured
+/// state, the closed menu presentation, the unchanged session identity, and
+/// the flipped Saved Page record.
+pub(crate) fn benchmark_context_menu_bookmark(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    point: [f32; 2],
+    expected_view: WebViewId,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    let before = client.snapshot().expect("bookmark-commit before snapshot");
+    let saved_before = before.store.saved_pages_count;
+    client
+        .send_ok(&Request::BenchmarkContextMenuBookmark {
+            operation_id,
+            view: expected_view,
+            point,
+        })
+        .expect("benchmark context menu bookmark commit");
+    let (seq, measured) = wait_measurement(
+        client,
+        BenchmarkKind::ContextMenuBookmarkCommit,
+        operation_id,
+        *since,
+    );
+    *since = seq;
+    assert_eq!(
+        measured.active_web_view,
+        Some(expected_view),
+        "the bookmark commit keeps the active view"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::Inactive);
+    let snapshot = client.snapshot().expect("bookmark-commit snapshot");
+    assert!(
+        !snapshot.context_menu.open,
+        "the menu is dismissed after the bookmark commit"
+    );
+    assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert_eq!(snapshot.command_bar_mode, CommandBarMode::Inactive);
+    assert_eq!(
+        snapshot.store.saved_pages_count,
+        if saved_before == 0 { 1 } else { 0 },
+        "the B2 toggle flipped exactly one record"
+    );
+    assert_eq!(snapshot.engine_sessions, before.engine_sessions);
+    measured
+}

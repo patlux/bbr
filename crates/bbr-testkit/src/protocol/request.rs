@@ -1023,6 +1023,21 @@ pub enum Request {
         operation_id: BenchmarkOperationId,
         parent_row: usize,
     },
+    /// Measure the production bookmark-row activation of the enriched page
+    /// menu (task packet `page-background-context-menu.md`): the sample
+    /// starts at the exact `menu_activate` seam a pointer press on the
+    /// `Bookmark Page` / `Remove Bookmark` row dispatches — B2's one
+    /// app-owned `SavedPageCommand::toggle` against the captured
+    /// focused-page URL/title plus the menu dismissal. The menu must be
+    /// open over `view` at `point`; the sample commits only from a render
+    /// that drew the menu closed over the same active view (fast-but-wrong
+    /// guard) with the store truth verified at the mutation site. The
+    /// warm-interaction class, no tab or session is created or touched.
+    BenchmarkContextMenuBookmark {
+        operation_id: BenchmarkOperationId,
+        view: WebViewId,
+        point: [f32; 2],
+    },
     /// Measure the production footer `[Downloads]` open through
     /// [`Self::ClickFooterDownloads`]'s exact seam (`toggle_downloads` →
     /// `downloads_open`): the sample commits only from a render that drew

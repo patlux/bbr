@@ -120,6 +120,41 @@ mod tests {
     }
 
     #[test]
+    fn editable_and_media_menus_are_webkit_owned() {
+        // An editable (text-field/textarea) menu carries form/editing items;
+        // a media (video/audio) menu carries playback items — both stay
+        // WebKit-native and are never converted into the BBR portal.
+        assert_eq!(
+            classify_menu(&titles(&["Cut", "Copy", "Paste", "Spelling and Grammar"])),
+            MenuOwnership::ElementOwned
+        );
+        assert_eq!(
+            classify_menu(&titles(&["Play", "Pause", "Enter Picture in Picture"])),
+            MenuOwnership::ElementOwned
+        );
+        assert_eq!(
+            classify_menu(&titles(&["Mute", "Show Controls", "Enter Full Screen"])),
+            MenuOwnership::ElementOwned
+        );
+    }
+
+    #[test]
+    fn page_javascript_menus_are_webkit_owned() {
+        // A page that intercepts its own context menu contributes arbitrary
+        // item titles; any non-page title keeps WebKit's menu native (the
+        // conservative direction — BBR never replaces page-JavaScript
+        // context-menu behavior).
+        assert_eq!(
+            classify_menu(&titles(&["Reload", "Custom App Action"])),
+            MenuOwnership::ElementOwned
+        );
+        assert_eq!(
+            classify_menu(&titles(&["Back", "My Site's Menu", "Clear Data"])),
+            MenuOwnership::ElementOwned
+        );
+    }
+
+    #[test]
     fn unclassifiable_or_unknown_menus_stay_webkit_owned() {
         // An empty menu can never be cancelled.
         assert_eq!(classify_menu(&titles(&[])), MenuOwnership::ElementOwned);
@@ -129,5 +164,62 @@ mod tests {
             classify_menu(&titles(&["Reload", "Something New"])),
             MenuOwnership::ElementOwned
         );
+        // A fully localized page menu (every title unrecognized) stays
+        // WebKit-owned — the safe direction for non-English systems.
+        assert_eq!(
+            classify_menu(&titles(&["Zurück", "Vorwärts", "Neu laden"])),
+            MenuOwnership::ElementOwned
+        );
+    }
+
+    #[test]
+    fn typed_ownership_cases_cover_the_full_background_vs_element_matrix() {
+        // The packet's typed ownership evidence: background (page-only),
+        // link, image, selection, editable, media, page-JavaScript,
+        // localized/unrecognized, and empty menus each resolve to exactly
+        // one ownership class.
+        let cases: &[(&[&str], MenuOwnership)] = &[
+            (&["Reload", ""], MenuOwnership::PageOnly),
+            (&["Back", "Forward", "Reload"], MenuOwnership::PageOnly),
+            (
+                &[
+                    "Open Link",
+                    "Open Link in New Window",
+                    "Copy Link",
+                    "",
+                    "Share…",
+                ],
+                MenuOwnership::ElementOwned,
+            ),
+            (
+                &["Open Image in New Window", "Save Image As…", ""],
+                MenuOwnership::ElementOwned,
+            ),
+            (
+                &["Copy", "Look Up", "Search with Google"],
+                MenuOwnership::ElementOwned,
+            ),
+            (
+                &["Cut", "Copy", "Paste", "Spelling and Grammar"],
+                MenuOwnership::ElementOwned,
+            ),
+            (
+                &["Play", "Mute", "Enter Picture in Picture"],
+                MenuOwnership::ElementOwned,
+            ),
+            (
+                &["Reload", "App-Supplied Menu Item"],
+                MenuOwnership::ElementOwned,
+            ),
+            (&["Zurück", "Vorwärts"], MenuOwnership::ElementOwned),
+            (&[], MenuOwnership::ElementOwned),
+        ];
+        for (items, expected) in cases {
+            assert_eq!(
+                classify_menu(&titles(items)),
+                *expected,
+                "{items:?} must resolve to {expected:?}"
+            );
+        }
     }
 }

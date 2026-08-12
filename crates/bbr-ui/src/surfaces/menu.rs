@@ -1,19 +1,20 @@
-//! BBR-owned context-menu presentation (task packet
-//! `bbr-context-menus-over-web`; DESIGN.md §11.4/§11.13/§13/§15) — the
-//! presentation half of the app's BBR page menu (Back, Forward, Reload,
-//! Copy Link, Open in New Tab) rendered inside the one `NativeAboveWeb`
-//! portal window.
+//! BBR-owned page-background context-menu presentation (task packets
+//! `bbr-context-menus-over-web` and `page-background-context-menu`;
+//! DESIGN.md §11.4/§11.13/§13/§15) — the presentation half of the app's
+//! BBR page menu (Back, Forward, Reload, capability-gated Bookmark
+//! Page/Remove Bookmark from B2 state, Copy Page Link) rendered inside the
+//! one `NativeAboveWeb` portal window.
 //!
 //! The app remains the sole menu-state authority: the controller owns the
 //! deterministic row model (genuine Back/Forward enablement from the
-//! session's real history availability), the dismissal/activation rules,
-//! and the focus choreography; the portal root reads one live
-//! [`ContextMenuModel`] per render and builds GPUI chrome. This module owns
-//! the card anatomy only — `material:overlay`, `radius:md`, `elev:2`,
-//! `density:row`-tall entries, the §9 focus ring on the focused card, and
-//! the shared keyboard/pointer cursor (selected row) — exactly as the
-//! pre-cutover portal render drew it, so §15 ids and the semantic tree are
-//! byte-identical.
+//! session's real history availability, the B2 bookmark gating, the
+//! disabled reasons), the dismissal/activation rules, and the focus
+//! choreography; the portal root reads one live [`ContextMenuModel`] per
+//! render and builds GPUI chrome. This module owns the card anatomy only —
+//! `material:overlay`, `radius:md`, `elev:2`, `density:row`-tall entries,
+//! the §9 focus ring on the focused card, and the shared keyboard/pointer
+//! cursor (selected row) — exactly as the pre-cutover portal render drew
+//! it, so §15 ids and the semantic tree stay byte-identical.
 //!
 //! Pointer paths: each **enabled** row's `on_hover` selects it (the shared
 //! keyboard/pointer cursor) and its mouse-down activates it; disabled rows
@@ -31,24 +32,33 @@ use gpui::{
 use crate::theme::elevation::elev2;
 use crate::theme::{Spacing, Theme};
 
-/// Stable §15 id of the context-menu card (DESIGN.md §15; moved from the
-/// app's portal render, exposed unchanged through the portal snapshot's
-/// typed `ids` field).
-pub const CONTEXT_MENU_ID: &str = "bbr-context-menu";
-/// Stable §15 row-id prefix (`bbr-context-menu-row-<index>`; the row index
-/// is the deterministic render position).
-pub const CONTEXT_MENU_ROW_PREFIX: &str = "bbr-context-menu-row";
+/// Stable §15 id of the BBR page-background menu card (DESIGN.md §11.13/§15;
+/// moved from the app's portal render, exposed unchanged through the portal
+/// snapshot's typed `ids` field). The family id (`bbr-page-menu`) and the
+/// per-action row ids are owned by the `page-background-context-menu` task
+/// packet.
+pub const PAGE_MENU_ID: &str = "bbr-page-menu";
 
-/// One deterministic menu row's presentation: the display title and the
-/// genuine enablement computed by the app's controller at open (Back/
-/// Forward from the session's real history availability; Copy Link / Open
-/// in New Tab from a resolvable page URL). The app maps its controller row
-/// (key/title/enabled) onto this DTO; the card renders title + enabled
-/// only.
+/// One deterministic menu row's presentation: the stable §15 id, the
+/// display title, and the genuine enablement computed by the app's
+/// controller at open (Back/Forward from the session's real history
+/// availability; Copy Page Link from a resolvable page URL; the bookmark
+/// row from B2's saved-state). The app maps its controller row
+/// (key/id/title/enabled/disabled reason) onto this DTO; the card renders
+/// title + enabled only, and the deterministic disabled reason rides the
+/// model/semantic tree (the downloads §10.8 pattern — no invented tooltip
+/// presentation).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContextMenuRow {
+    /// The stable per-action §15 id (`bbr-page-menu-back`, …), owned by
+    /// the page-menu task packet.
+    pub id: SharedString,
     pub title: SharedString,
     pub enabled: bool,
+    /// The deterministic reason a disabled row reports (DESIGN §11.13);
+    /// `None` for enabled rows. Never a guess — the app's controller
+    /// derives it at open.
+    pub disabled_reason: Option<SharedString>,
 }
 
 /// The context-menu card's presentation model. The theme is passed
@@ -122,9 +132,7 @@ pub fn context_menu_card(
         .map(|(index, item)| {
             let is_selected = model.selected == Some(index);
             let mut row = div()
-                .id(SharedString::from(format!(
-                    "{CONTEXT_MENU_ROW_PREFIX}-{index}"
-                )))
+                .id(item.id.clone())
                 .px(Spacing::sp3())
                 .py(Spacing::sp2())
                 .flex()
@@ -165,12 +173,12 @@ pub fn context_menu_card(
         })
         .collect();
     div()
-        .id(CONTEXT_MENU_ID)
+        .id(PAGE_MENU_ID)
         // The stable §15 id is also registered as a test-support
         // `debug_selector` target (the same registration the Tab Row /
         // Favicon components use, so the Gallery E2E can resolve the card
         // through GPUI's `debug_bounds`). No-op outside test builds.
-        .debug_selector(|| CONTEXT_MENU_ID.to_string())
+        .debug_selector(|| PAGE_MENU_ID.to_string())
         .absolute()
         .left(px(rect.x))
         .top(px(rect.y))
@@ -202,15 +210,27 @@ mod tests {
     }
 
     #[test]
-    fn row_dto_round_trips_title_and_enablement() {
+    fn row_dto_round_trips_id_title_enablement_and_disabled_reason() {
         let row = ContextMenuRow {
+            id: "bbr-page-menu-reload".into(),
             title: "Reload".into(),
             enabled: true,
+            disabled_reason: None,
         };
+        assert_eq!(row.id, "bbr-page-menu-reload");
         assert_eq!(row.title, "Reload");
         assert!(row.enabled);
+        assert_eq!(row.disabled_reason, None);
         let carried = row.clone();
         assert_eq!(carried, row, "Clone keeps the DTO fields");
+        // A disabled row carries its deterministic reason.
+        let disabled = ContextMenuRow {
+            id: "bbr-page-menu-back".into(),
+            title: "Back".into(),
+            enabled: false,
+            disabled_reason: Some("No back history".into()),
+        };
+        assert_eq!(disabled.disabled_reason.as_deref(), Some("No back history"));
     }
 
     #[test]
@@ -220,12 +240,16 @@ mod tests {
             selected: Some(2),
             items: vec![
                 ContextMenuRow {
+                    id: "bbr-page-menu-back".into(),
                     title: "Back".into(),
                     enabled: false,
+                    disabled_reason: Some("No back history".into()),
                 },
                 ContextMenuRow {
+                    id: "bbr-page-menu-reload".into(),
                     title: "Reload".into(),
                     enabled: true,
+                    disabled_reason: None,
                 },
             ],
         };
@@ -234,6 +258,7 @@ mod tests {
         assert_eq!(model.items.len(), 2);
         assert!(!model.items[0].enabled);
         assert_eq!(model.items[1].title, "Reload");
+        assert_eq!(model.items[0].id, "bbr-page-menu-back");
         assert_eq!(model.clone(), model, "Clone keeps the whole model");
     }
 
@@ -249,16 +274,24 @@ mod tests {
 
     #[test]
     fn stable_ids_match_the_portal_snapshot_contract() {
-        assert_eq!(CONTEXT_MENU_ID, "bbr-context-menu");
-        assert_eq!(CONTEXT_MENU_ROW_PREFIX, "bbr-context-menu-row");
-        // The row id shape the portal snapshot registers (0..5 fixed rows).
-        assert_eq!(
-            format!("{CONTEXT_MENU_ROW_PREFIX}-0"),
-            "bbr-context-menu-row-0"
-        );
-        assert_eq!(
-            format!("{CONTEXT_MENU_ROW_PREFIX}-4"),
-            "bbr-context-menu-row-4"
-        );
+        // The §11.13/§15 family id and the per-action row ids the
+        // page-menu packet owns.
+        assert_eq!(PAGE_MENU_ID, "bbr-page-menu");
+        let rows = vec![
+            ContextMenuRow {
+                id: "bbr-page-menu-back".into(),
+                title: "Back".into(),
+                enabled: false,
+                disabled_reason: Some("No back history".into()),
+            },
+            ContextMenuRow {
+                id: "bbr-page-menu-copy-link".into(),
+                title: "Copy Page Link".into(),
+                enabled: true,
+                disabled_reason: None,
+            },
+        ];
+        assert_eq!(rows[0].id, "bbr-page-menu-back");
+        assert_eq!(rows[1].id, "bbr-page-menu-copy-link");
     }
 }

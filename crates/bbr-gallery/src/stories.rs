@@ -31,6 +31,7 @@ pub mod footer;
 pub mod foundations;
 pub mod library_composition;
 pub mod menu;
+pub mod page_menu;
 pub mod primitives;
 pub mod profile_chip;
 pub mod saved_pages_library;
@@ -277,6 +278,14 @@ pub fn catalog() -> CatalogRegistry {
     registry.add_group(
         "Tab / Favorite menu",
         vec![story("Tab / Favorite menu", tab_menu::render_tab_menu, &[])],
+    );
+    // The enriched Page-menu composition appends at StoryId 48 after the
+    // integrated Space and Tab/Favorite menu stories. It renders the exact
+    // production `context_menu_card` with the bookmark-gated matrix and
+    // recorder callbacks; no earlier id moves.
+    registry.add_group(
+        "Page menu composition",
+        vec![story("Page menu", page_menu::render_page_menu, &[])],
     );
     registry
 }

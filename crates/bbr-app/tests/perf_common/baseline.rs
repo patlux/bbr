@@ -386,6 +386,18 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // The enriched page-menu bookmark-row activation (task packet
+        // `page-background-context-menu.md`): `context_menu_bookmark_commit`
+        // spans the production `menu_activate` seam — B2's one app-owned
+        // `SavedPageCommand::toggle` against the captured focused-page
+        // URL/title plus the menu dismissal — and commits only from a
+        // render that drew the menu closed over the same active view. The
+        // same warm-interaction class as the other command commits
+        // (50/100 ms), no new budget class invented.
+        "context_menu_bookmark_commit" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         // Credential sheet (queue item 10): the sheet open presents the
         // awaiting challenge in the one `NativeAboveWeb` portal window — the
         // warm-presentation class (same 50/100 ms budget as the other
@@ -635,6 +647,7 @@ impl Baseline {
             "context_menu_open",
             "tab_context_menu_open",
             "tab_context_menu_submenu_commit",
+            "context_menu_bookmark_commit",
             "auth_sheet_open",
             "peek_request_to_present",
             "peek_dismiss_to_origin",

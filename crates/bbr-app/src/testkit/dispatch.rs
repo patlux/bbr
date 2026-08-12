@@ -812,6 +812,7 @@ pub(crate) fn dispatch(
         | Request::BenchmarkContextMenuOpen { .. }
         | Request::BenchmarkTabMenuOpen { .. }
         | Request::BenchmarkTabMenuSubmenuCommit { .. }
+        | Request::BenchmarkContextMenuBookmark { .. }
         | Request::BenchmarkDownloadsPanelOpen { .. }
         | Request::BenchmarkDownloadsProgress { .. }
         | Request::BenchmarkDownloadsRowRetry { .. }
