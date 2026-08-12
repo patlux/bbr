@@ -44,10 +44,10 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
 | DD-LINK | Cmd-click/middle-click grouped background tabs | `integrated` | lane commit `abae5214c04900034da139e5148d7c79693158dc`; merge `b4b2b77c9d679dce30b48e2e302e24075956a449` | Orchestrator; focused remediation `REVIEW_PASS` and post-merge gates complete | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-GESTURE | Current-base real-app gesture revalidation | `integrated` | lane commit `f2183fdb2c3f3586c500d4c67a1bdc0257e6a06d`; merge `ebb8e137aa54077c47b5ae4c5603e47e8492d9ca` | Orchestrator; independent `REVIEW_PASS` and focused post-merge gates complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Closed for this wave; testkit-only fix, production command routing unchanged |
-| DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-dd-titlebar`; branch `parallel/dd-titlebar`; reviewed tree `cb964905…`, 47 paths | bounded docs writer `dd-titlebar-doc-remediation`, then focused recheck | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Split or reopen the bundled fullscreen/multi-display checkbox; code must remain byte-identical |
-| DD-SPACE | Create/activate/configure Space and icon-only footer | `review` | `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance`; branch `parallel/dd-space-appearance`; candidate tree `d1f0ab82…`, 66 paths | independent whole-candidate reviewer `dd-space-review` | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Review create/activate/config identity, persistence truth, Footer accessibility, Gallery/E2E/perf-code evidence |
-| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; exact tree `2bfa4c4b…`, 29 paths | Orchestrator; independent `REVIEW_PASS` complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Preserve exact reviewed tree; integrate after frozen DD-TITLEBAR and DD-SPACE |
-| DD-TAB-MENU | Production Tab/Favorite context menus | `review` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; candidate tree `a4f1f6c8…`, 66 paths | independent whole-candidate reviewer `dd-tab-menu-review` | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Review source binding, typed actions, no-mutation lifecycle, Gallery StoryId 46, E2E/performance-code evidence |
+| DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `integrating` | `/Users/patwoz/dev/Personal/macos/bbr-dd-titlebar`; branch `parallel/dd-titlebar`; exact reviewed tree `99351773…`, 47 paths | Orchestrator; documentation remediation focused `REVIEW_PASS` complete | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Commit exact candidate, merge after DD-GESTURE, resolve shared app/Sidebar seams semantically, run bounded gates |
+| DD-SPACE | Create/activate/configure Space and icon-only footer | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance`; branch `parallel/dd-space-appearance`; reviewed tree `d1f0ab82…`, 66 paths | bounded writer `dd-space-review-remediation`, then focused recheck | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Extend Gallery pinned-prefix tests to StoryId 46/47, correct ledger tree, bring 551-line module near budget without behavior change, rerun focused gates |
+| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; exact tree `2bfa4c4b…`, 29 paths | Orchestrator; independent `REVIEW_PASS` complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Preserve exact reviewed tree; integrate after reviewed/frozen DD-SPACE |
+| DD-TAB-MENU | Production Tab/Favorite context menus | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; reviewed tree `a4f1f6c8…`, 66 paths | bounded writer `dd-tab-menu-review-remediation`, then focused recheck | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Render real submenu geometry, make parent activation open submenu not Reload, fix suspended Copy Link availability, docs/evidence, causal E2E |
 | DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console is locked and two foreign qemu windows remain | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
 
 ## Post-F2a parallel wave
@@ -153,6 +153,20 @@ including the 16-event drain-before-command regression. Logs live under
 session. No performance execution occurred. DD-TITLEBAR remains the next
 serial product integration position once its focused documentation recheck
 passes.
+
+Final-review audit: workflow `bbr-daily-driver-final-reviews-mspfijvd-flnwef`
+completed four agents. DD-TITLEBAR passed its focused documentation recheck at
+exact tree `99351773…`; the Orchestrator's canonical NUL-sorted 47-path hash is
+`5ab1350847691c8fc8bbb44849355e2368541d0f93724db008c2923018b68fcf`,
+superseding the reviewer's alternate serialization. DD-SPACE review found
+Gallery StoryId 46 correctly appended but eight pinned-prefix unit tests still
+expect 46 stories, a stale ledger tree, and a soft 551-line module-budget
+finding. DD-TAB-MENU review found two major product bugs: production submenu
+geometry is never assigned, and activating a closed submenu parent dispatches
+the placeholder Reload action; suspended Copy Link availability and docs also
+need correction. All states remain independently rebound and unstaged with no
+lane process or Git/GUI lock. `IOConsoleLocked=Yes` continues to block only the
+Page-menu Portal closeout.
 
 ## Downstream dependency queue
 
