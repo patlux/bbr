@@ -9,8 +9,8 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 |---|---|
 | Generation | `reference-alignment-2026-08-13` |
 | Cutover commit | the commit introducing this generation on local `main`; the three alignment packets are committed at `806e4238` |
-| Verified product base | `main@806e423823699c17f6bcd40ffd327e27f196f091` (integrated VS-REFERENCE shell plus alignment packets; clean worktree, free GUI lock) |
-| Integrated product checkpoint | `main@806e423823699c17f6bcd40ffd327e27f196f091`; everything local, nothing pushed |
+| Verified product base | `main@806e423823699c17f6bcd40ffd327e27f196f091` |
+| Integrated product checkpoint | `main@806e423823699c17f6bcd40ffd327e27f196f091`; integrated VS-REFERENCE shell plus alignment packets, verified from a clean worktree with a free GUI lock; everything local, nothing pushed |
 | Daily-driver preparation base | `568cdae0008d3cc9008209007ae32442ee0ff80e` / tree `90114c65cc068a744b43aeeec710b47fff5cbf4a` |
 | Daily-driver activation base | `4d5be3116ec090aebb7eefa4861970710dba7a5b` / tree `9c8cae5cd5bca883fadc3ec198e232be4f436839`; all seven lane worktrees created clean from this exact commit |
 | Daily-driver contract | [2026-08-12 Daily-driver delivery](2026-08-12-daily-driver-delivery.md) |
