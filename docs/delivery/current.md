@@ -49,7 +49,7 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | DD-SPACE | Create/activate/configure Space and icon-only footer | `integrated` | lane `8a15496488f27e7a1f6150b27d5374cf033c5b7e`; merge `7f658aba0a4725db67c2e0fba33fcaf5388d0db8`; Gallery gate fix `ac381f3f6b57e73155380dc5ba7f0c35451b8a84` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `integrated` | lane `7191fc72b627bacc50ef5d4dc2ac0c325a19121b`; merge `f4c6f60e3496bcd3fe3a9e1ab022bc6329911703`; gate fix `f1de38c1086c40a35589ac710881363d595bdb47` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-TAB-MENU | Production Tab/Favorite context menus | `integrated` | lane `35674e5f92e06596b0851df63106d6ea77cf483e`; merge `fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd26559697d7265fcadc80ea4ca3a51eab` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
-| DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console remains locked; seven foreign emulator/QEMU processes observed at final recheck | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
+| DD-PAGE-MENU | Enriched conservative page-background menu | `frozen` | lane commit `8616f2733ae9599b6836e938cbc33db8e2907b36` / tree `9547539e5400c47d0a1e32b93cf3e975d09b7db7`; branch `parallel/dd-page-menu` clean | Orchestrator; whole-candidate review accepted product/evidence with two docs-only findings, focused recheck passed | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | Integrate after DD-TAB-MENU, independent staged-union review, then affected post-merge gates |
 
 ## Post-F2a parallel wave
 
@@ -292,13 +292,20 @@ is now the next serial position but remains externally blocked: the user must
 unlock the macOS console, then only `just e2e-shell-portal` is rerun for 7/7
 before whole-candidate review. No performance execution occurred.
 
-Natural-handoff audit: control HEAD is clean with no Git or GUI-lock holder.
-The final host recheck still reports `IOConsoleLocked=Yes`; seven foreign
-emulator/QEMU processes are present. DD-PAGE-MENU remains preserved and
-untouched rather than reclassified from stale evidence. Smallest unblocker:
-Patrick unlocks the macOS console; the Orchestrator then reruns only
-`just e2e-shell-portal` in the Page-menu lane and requires 7/7 before starting
-its whole-candidate review.
+Page-menu unblock and freeze audit: a fresh host check reported
+`IOConsoleLocked=No`; foreign emulator/QEMU processes remained untouched and
+the repository GUI lock was free. The exact unchanged candidate tree
+`e3c41377…` then passed `just e2e-shell-portal` 7/7, log
+`/tmp/bbr-dd-page-menu-portal-unlocked-20260812T100841.log`, SHA-256
+`ca59154fc89e2b91708bd902c9ee38274a1e2cef54261c37b306eefab018980d`.
+Independent whole-candidate review returned only two low docs-truth findings:
+the ledger path count and contradictory Select-All/Share ownership wording.
+The bounded docs-only remediation produced tree `9547539e…`; focused recheck
+returned direct `DD_PAGE_MENU_DOCS_RECHECK_PASS` with no findings and proved
+all product/test/evidence blobs unchanged. The Orchestrator committed that
+exact reviewed tree as clean lane commit `8616f2733ae9599b6836e938cbc33db8e2907b36`.
+DD-PAGE-MENU is frozen for its exclusive serial integration position after
+DD-TAB-MENU; performance remains unexecuted/unpassed.
 
 ## Downstream dependency queue
 
