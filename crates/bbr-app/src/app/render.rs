@@ -14,7 +14,7 @@ use gpui::{
 
 use crate::slot::NativeWebViewSlot;
 use bbr_ui::components;
-use bbr_ui::theme::{ContrastMode, Theme, ThemeMode};
+use bbr_ui::theme::Theme;
 use bbr_web::WebViewId;
 
 #[cfg(feature = "testkit")]
@@ -455,17 +455,5 @@ impl BbrApp {
             on_submenu_press,
         )
         .into_any()
-    }
-}
-
-impl BbrApp {
-    /// The resolved theme tokens for the current shell mode. Density is
-    /// automatic from the regular-tab collection size (DESIGN.md §8); the
-    /// §15 mode fields are already reported by the snapshot.
-    pub fn theme(&self) -> Theme {
-        let browser = self.controller.snapshot();
-        let pinned = crate::shell::pinned_count(&browser.tabs);
-        let regular = browser.tabs.len().saturating_sub(pinned);
-        Theme::for_collection(ThemeMode::Light, ContrastMode::Standard, regular)
     }
 }

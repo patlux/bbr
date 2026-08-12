@@ -73,6 +73,17 @@ pub enum CommandBarMode {
     MoveTab,
 }
 
+/// The deterministic appearance override on the wire (task packet
+/// `system-appearance-theme`): light/dark, mapped to the production
+/// `bbr_ui::theme::ThemeMode` in `bbr-app`. The wire keeps its own
+/// vocabulary so no GPUI or bbr-ui type leaks into the protocol.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ThemeModeOverride {
+    Light,
+    Dark,
+}
+
 /// The shell's resolved §15 mode fields (theme/contrast/density).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

@@ -290,3 +290,106 @@ fn shell_hover_press_focus_and_drag_semantics() {
 
     finish(result, &mut harness, &socket, &token);
 }
+
+/// System-appearance dark shell (task packet `system-appearance-theme`):
+/// the §10.2/§10.3 hover/press wash states are mode-independent — the same
+/// state vocabulary, ids and selection rules under the forced-dark token
+/// set. The address pill and footer keep their §11.5/§11.4 surfaces.
+#[test]
+#[ignore]
+fn dark_hover_press_wash_states_are_unchanged() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+
+    let (_fixtures, page_one, _page_two) = fixtures();
+    let (mut harness, socket, token) = spawn_harness("hover-dark", &page_one);
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let replay = client.attach(None).expect("attach");
+        let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+
+        // Force dark before the first asserted frame.
+        client
+            .send_ok(&dsl::set_appearance_override(Some(
+                bbr_testkit::protocol::ThemeModeOverride::Dark,
+            )))
+            .expect("force dark");
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush forced dark");
+        let initial = client.snapshot().expect("dark initial");
+        assert_eq!(initial.shell_modes.theme, "dark");
+        let _blank = open_tab(&mut client, &mut since, "about:blank", None);
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush pointer setup");
+
+        // Hover wash on the unselected first row: `hover` state, the close
+        // control reveals, selection never moves (§10.2 in dark).
+        client.send_ok(&dsl::hover_tab_row(0)).expect("hover row 0");
+        let hovered = client.snapshot().expect("dark hover snapshot");
+        assert_eq!(hovered.shell_modes.theme, "dark");
+        assert_eq!(hovered.tab_states[0], TabVisualState::Hover);
+        assert_eq!(hovered.tab_states[1], TabVisualState::Selected);
+        assert_eq!(hovered.active_tab_index, Some(1), "hover never selects");
+        assert_node(
+            &hovered.semantics,
+            "bbr-tab-state-0",
+            SemanticRole::State,
+            Some("hover"),
+            None,
+            true,
+            false,
+            false,
+        );
+        assert_node(
+            &hovered.semantics,
+            "bbr-tab-close-0",
+            SemanticRole::Button,
+            Some("Close tab"),
+            None,
+            true,
+            false,
+            false,
+        );
+
+        // Press wash deepens (§10.3) while the pointer is down (the row is
+        // unhovered first so the release restores `default`, matching the
+        // light-suite sequence).
+        client
+            .send_ok(&dsl::unhover_tab_row())
+            .expect("unhover row 0");
+        client.send_ok(&dsl::press_tab_row(0)).expect("press row 0");
+        let pressed = client.snapshot().expect("dark pressed snapshot");
+        assert_eq!(pressed.tab_states[0], TabVisualState::Active);
+        assert_eq!(pressed.active_tab_index, Some(1), "press never selects");
+        client
+            .send_ok(&dsl::release_tab_row())
+            .expect("release row 0");
+        let released = client.snapshot().expect("dark released snapshot");
+        assert_eq!(released.tab_states[0], TabVisualState::Default);
+
+        // The address pill and the footer surfaces present in dark with the
+        // same §11.5/§11.4 ids.
+        assert_ids(
+            &released,
+            &[
+                "bbr-address",
+                "bbr-address-domain",
+                "bbr-downloads",
+                "bbr-space-strip",
+                "bbr-plus",
+            ],
+        );
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+
+    finish(result, &mut harness, &socket, &token);
+}

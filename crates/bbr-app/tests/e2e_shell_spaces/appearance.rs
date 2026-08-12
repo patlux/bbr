@@ -27,6 +27,13 @@
 
 use super::*;
 
+/// The system-appearance dark-strip scenario (task packet
+/// `system-appearance-theme`) lives in its own child module so this file
+/// stays a bounded light appearance-tint suite; the dark shell reuses the
+/// suite's helpers through `super`.
+#[path = "appearance/dark.rs"]
+mod dark;
+
 /// §11.3 appearance-tint layer: cross-space and cross-profile activation
 /// through the production chip listener changes the active appearance
 /// (explicit per-space theme and derived profile-hue theme) while the
@@ -48,6 +55,19 @@ fn activation_changes_the_active_appearance_without_touching_sessions_or_geometr
         client.hello(&token).expect("hello");
         let replay = client.attach(None).expect("attach");
         let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+
+        // Light-calibrated VS-REFERENCE evidence (task packet
+        // `system-appearance-theme`): force the light rail regardless of the
+        // host appearance so the §11.3 tint assertions stay byte-identical
+        // to the integrated reference evidence.
+        client
+            .send_ok(&dsl::set_appearance_override(Some(
+                bbr_testkit::protocol::ThemeModeOverride::Light,
+            )))
+            .expect("force light");
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush forced light");
 
         let initial = client.snapshot().expect("initial snapshot");
         let first_view = initial.active_web_view.expect("first native view");

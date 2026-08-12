@@ -473,6 +473,7 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
 // U2 §11.4/§11.10/§11.11 scenarios (footer space strip, plus menu,
 // favorites grid, folders region) live in focused child modules so this
 // suite file stays under the ~500-line budget.
+mod appearance;
 mod composition;
 mod composition_geometry;
 mod support;

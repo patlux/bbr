@@ -203,3 +203,68 @@ fn write_perf_report(suite: &str, report: &[(String, f64)]) {
     let _ = std::fs::write(&path, json);
     eprintln!("gallery perf sanity (report-only): {}", path.display());
 }
+
+/// System-appearance mode matrix (task packet `system-appearance-theme`):
+/// every changed reference-calibrated surface — the Favorites grid, the
+/// Footer strip, the Address control and the Tab Row (which owns the
+/// selection tint and the row washes) — renders through its existing
+/// gallery story in BOTH modes with the §15 mode fields truthful and the
+/// story ids stable. No new story is needed: the mode-matrix stories prove
+/// the dark counterparts of the changed light surfaces (append-only ids
+/// untouched).
+#[test]
+#[ignore]
+fn changed_surfaces_render_in_both_modes_with_stable_story_ids() {
+    run_scenario(|window, app| {
+        for label in ["Favorites grid", "Footer", "Address control", "Tab Row"] {
+            let story_id = window.read(|cx| {
+                app.read(cx)
+                    .registry()
+                    .stories
+                    .iter()
+                    .find(|s| s.label == label)
+                    .expect("story registered")
+                    .id
+                    .0
+            });
+            // Dark (the shipped gallery default) first.
+            move_to_story(window, app, story_id);
+            window.update(|_window, cx| {
+                app.update(cx, |app, cx| {
+                    app.apply_control(crate::controls::ControlAction::Mode(ThemeMode::Dark), cx)
+                });
+            });
+            flush(window);
+            let dark = snapshot(window, app);
+            assert_eq!(dark.theme, ThemeMode::Dark);
+            assert_eq!(dark.selected_story_label, label);
+            assert_eq!(
+                dark.canvas_story_id,
+                format!("bbr-gallery-canvas-story-{story_id}"),
+                "{label} keeps its stable story id in dark"
+            );
+            // Light — the same story, the same stable id.
+            window.update(|_window, cx| {
+                app.update(cx, |app, cx| {
+                    app.apply_control(crate::controls::ControlAction::Mode(ThemeMode::Light), cx)
+                });
+            });
+            flush(window);
+            let light = snapshot(window, app);
+            assert_eq!(light.theme, ThemeMode::Light);
+            assert_eq!(light.selected_story_label, label);
+            assert_eq!(
+                light.canvas_story_id,
+                format!("bbr-gallery-canvas-story-{story_id}"),
+                "{label} keeps its stable story id in light"
+            );
+        }
+        // Back to the shipped dark default.
+        window.update(|_window, cx| {
+            app.update(cx, |app, cx| {
+                app.apply_control(crate::controls::ControlAction::Mode(ThemeMode::Dark), cx)
+            });
+        });
+        flush(window);
+    });
+}

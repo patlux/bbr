@@ -6,7 +6,7 @@ use bbr_web::auth_challenges::{AuthAuthority, AuthScheme, HttpScheme};
 use bbr_web::{ProfileId, WebAction, WebViewId};
 use serde::{Deserialize, Serialize};
 
-use super::{BenchmarkKind, BenchmarkOperationId, SwipePhaseWire, TestSpaceId};
+use super::{BenchmarkKind, BenchmarkOperationId, SwipePhaseWire, TestSpaceId, ThemeModeOverride};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Request {
@@ -1504,6 +1504,15 @@ pub enum Request {
     },
     /// Full app snapshot.
     GetSnapshot,
+    /// Force the effective production `ThemeMode` regardless of the host
+    /// appearance (task packet `system-appearance-theme`): `None` clears
+    /// the override and returns to the observed macOS system appearance.
+    /// The §15 snapshot `theme` field reports the effective mode, so E2E
+    /// forces light and dark deterministically and asserts the flip
+    /// re-presented the complete token set.
+    SetAppearanceOverride {
+        mode: Option<ThemeModeOverride>,
+    },
     /// Liveness probe.
     Ping,
     /// Close the browser window through GPUI's production window-removal
