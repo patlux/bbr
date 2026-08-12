@@ -219,6 +219,24 @@ pub fn spawn_pump(
         .await;
         match incoming {
             Incoming::Command(Ok(msg)) => {
+                // Ordering contract for injected content-gesture commits: a
+                // gateway command observes every commit pushed before it.
+                // The typed `ContentGestureCommit` request rides the exact
+                // channel the native bridge reporter uses; the pump drains
+                // it here before answering the command so an immediate
+                // snapshot after an injection can never race a partial
+                // drain (the observed no-op matrix failure saw 1 of 3
+                // commits: the snapshot command won the pump race over the
+                // pending gesture queue). Testkit-only; the production
+                // event pump in `window_seam` has no command plane.
+                #[cfg(target_os = "macos")]
+                while let Ok(commit) = gestures_rx.try_recv() {
+                    async_cx.update(|cx| {
+                        let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                            view.on_content_gesture_commit(commit, cx)
+                        });
+                    });
+                }
                 // Deterministic event injection rides the same channel the
                 // real engine sink uses: the pump broadcasts it to E2E and
                 // applies it through `on_web_event`, exactly like a native
