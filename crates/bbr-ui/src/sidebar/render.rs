@@ -26,6 +26,7 @@ use gpui::{div, prelude::*, px, AnyElement, Div, MouseButton, Stateful, Styled};
 
 use crate::components;
 use crate::theme::{Spacing, Theme};
+use crate::titlebar::titlebar_surface;
 
 use super::callbacks;
 use super::geometry::sidebar_divider;
@@ -100,6 +101,16 @@ pub fn sidebar_surface(
                 // would hand the container ~16 000 pt) and the container's
                 // prepaint would clamp the production scroll offset to 0.
                 .min_h_0()
+                // §11.14: the titlebar row is the rail's top strip — the
+                // safe-area geometry, the sidebar toggle (the atomic
+                // cutover from the status-row control), and the
+                // Back/Forward/Reload cluster. It disappears with the rail
+                // on collapse; no content toolbar replaces it.
+                .child(titlebar_surface(
+                    theme,
+                    &model.titlebar,
+                    &callbacks.titlebar,
+                ))
                 .child(brand_block(theme, model))
                 .child(command_bar)
                 .when(command_results.is_some(), |column| {
@@ -119,7 +130,6 @@ pub fn sidebar_surface(
                 .child(tabs)
                 .child(div().h(theme.density.section_gap()).flex_shrink_0())
                 .child(components::status_line(theme, &model.status))
-                .child(toggle_surface(theme, model, callbacks))
                 // §11.12: the anchored downloads panel is the footer's
                 // direct predecessor in the column (its bottom edge is
                 // flush with the footer control's top edge); the plus menu
@@ -181,21 +191,4 @@ fn command_slot(
             callbacks::mouse(&callbacks.on_command_open),
         ),
     }
-}
-
-/// The §11.4 collapse control: the `Cmd-B` pointer entry. The label is the
-/// model's toggle text; the id is the stable §15 `bbr-sidebar-toggle`.
-fn toggle_surface(theme: &Theme, model: &SidebarModel, callbacks: &Callbacks) -> Stateful<Div> {
-    div()
-        .id("bbr-sidebar-toggle")
-        .px(Spacing::sp4())
-        .py(Spacing::sp2())
-        .text_size(theme.type_.meta.size)
-        .text_color(theme.palette.ink_faint)
-        .cursor_pointer()
-        .on_mouse_down(
-            MouseButton::Left,
-            callbacks::mouse(&callbacks.on_toggle_sidebar),
-        )
-        .child(model.toggle_label.clone())
 }

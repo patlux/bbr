@@ -15,15 +15,16 @@ use super::*;
 use crate::e2e_semantics_common::{assert_node, find};
 use bbr_testkit::protocol::{dsl, SemanticRole};
 
-/// The §11.4 rail region order the semantic tree mirrors (DESIGN.md §15):
-/// brand → command field → favorites → tabs → status → toggle → footer →
-/// divider. The plus menu and downloads panel render only while open.
+/// The §11.4/§11.14 rail region order the semantic tree mirrors (DESIGN.md
+/// §15): titlebar → brand → command field → favorites → tabs → status →
+/// footer → divider. The plus menu and downloads panel render only while
+/// open.
 const RAIL_ORDER_AT_REST: [&str; 7] = [
+    "bbr-titlebar",
     "bbr-brand",
     "bbr-address",
     "bbr-tab-list",
     "bbr-status",
-    "bbr-sidebar-toggle",
     "bbr-footer",
     "bbr-sidebar-divider",
 ];
@@ -79,11 +80,15 @@ fn full_rail_composition_region_and_semantic_ordering() {
             &initial,
             &[
                 "bbr-sidebar",
+                "bbr-titlebar",
+                "bbr-titlebar-sidebar-toggle",
                 "bbr-brand",
                 "bbr-address",
                 "bbr-address-domain",
                 "bbr-status",
-                "bbr-sidebar-toggle",
+                "bbr-nav-back",
+                "bbr-nav-forward",
+                "bbr-nav-reload",
                 "bbr-footer",
                 "bbr-downloads",
                 "bbr-space-strip",
@@ -131,10 +136,10 @@ fn full_rail_composition_region_and_semantic_ordering() {
         );
         assert_node(
             &initial.semantics,
-            "bbr-sidebar-toggle",
+            "bbr-titlebar-sidebar-toggle",
             SemanticRole::Button,
             Some("Sidebar (Cmd-B)"),
-            Some("visible"),
+            Some("expanded"),
             true,
             false,
             false,
@@ -172,12 +177,12 @@ fn full_rail_composition_region_and_semantic_ordering() {
         assert_rail_order(
             &composed,
             &[
+                "bbr-titlebar",
                 "bbr-brand",
                 "bbr-address",
                 "bbr-section-favorites",
                 "bbr-tab-list",
                 "bbr-status",
-                "bbr-sidebar-toggle",
                 "bbr-footer",
                 "bbr-sidebar-divider",
             ],

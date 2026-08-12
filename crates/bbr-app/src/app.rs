@@ -99,6 +99,7 @@ mod swipe_benchmarks;
 mod tab;
 #[cfg(feature = "testkit")]
 mod testkit;
+mod titlebar;
 mod u2;
 mod u2_surface;
 mod unresponsive;
@@ -202,6 +203,14 @@ pub struct BbrApp {
     /// hover moves the translucent fill one step brighter (dark chrome) /
     /// darker (light chrome) via the §11.5 token pair.
     address_hovered: bool,
+    /// §11.14 titlebar hover state: the control under the pointer (DESIGN
+    /// §10.2 wash), driven by the production `on_hover` listener. `None` at
+    /// rest.
+    titlebar_hovered: Option<bbr_ui::titlebar::TitlebarControl>,
+    /// §11.14 titlebar pressed state: the control whose primary button is
+    /// down (DESIGN §10.3 wash), driven by the production press/release
+    /// slots. `None` at rest.
+    titlebar_pressed: Option<bbr_ui::titlebar::TitlebarControl>,
     /// Current command-bar intent. `NewTab` stages navigation without creating
     /// a domain tab or native session until Enter commits it.
     pub command_bar_mode: CommandBarMode,
@@ -501,6 +510,8 @@ impl BbrApp {
             hovered_row: None,
             pressed_row: None,
             address_hovered: false,
+            titlebar_hovered: None,
+            titlebar_pressed: None,
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
             command_surface: CommandSurface::None,

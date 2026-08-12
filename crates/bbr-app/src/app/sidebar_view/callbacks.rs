@@ -8,13 +8,13 @@
 
 use std::rc::Rc;
 
+use super::BbrApp;
 use bbr_ui::sidebar::model::{
     BoolCallback, Callbacks, FolderCallback, HoverCallback, KeyCallback, MemberCallback,
     MouseCallback, RowCallback, RowUpCallback, SpaceCallback, WheelCallback,
 };
+use bbr_ui::titlebar::TitlebarCallbacks;
 use gpui::Context;
-
-use super::BbrApp;
 
 impl BbrApp {
     /// Fill the one sidebar [`Callbacks`] set with the production app
@@ -36,11 +36,62 @@ impl BbrApp {
             });
         });
 
-        // §11.4: the collapse control (`Cmd-B` pointer entry).
+        // §11.14: the titlebar row's callbacks — the sidebar toggle (the
+        // `Cmd-B` pointer entry through the same sidebar-width/collapse
+        // authority as the shortcut), Back/Forward/Reload through the
+        // existing navigation authorities (the same dispatch as
+        // Cmd-[ / Cmd-] / Cmd-R), the empty-titlebar window drag, and the
+        // §10.2/§10.3 hover/pressed presentation state.
         let entity = cx.entity();
-        let on_toggle_sidebar: MouseCallback = Rc::new(move |_e, window, cx| {
-            entity.update(cx, |view, cx| view.toggle_sidebar(window, cx));
-        });
+        let titlebar = TitlebarCallbacks {
+            on_toggle_sidebar: Rc::new(move |_e, window, cx| {
+                entity.update(cx, |view, cx| view.toggle_sidebar(window, cx));
+            }),
+            on_back: {
+                let entity = cx.entity();
+                Rc::new(move |_e, _window, cx| {
+                    entity.update(cx, |view, _cx| view.go_back());
+                })
+            },
+            on_forward: {
+                let entity = cx.entity();
+                Rc::new(move |_e, _window, cx| {
+                    entity.update(cx, |view, _cx| view.go_forward());
+                })
+            },
+            on_reload: {
+                let entity = cx.entity();
+                Rc::new(move |_e, _window, cx| {
+                    entity.update(cx, |view, _cx| view.reload());
+                })
+            },
+            on_titlebar_mouse_down: {
+                let entity = cx.entity();
+                Rc::new(move |event, window, cx| {
+                    entity.update(cx, |view, cx| {
+                        view.on_titlebar_mouse_down(event, window, cx)
+                    });
+                })
+            },
+            on_control_hover: {
+                let entity = cx.entity();
+                Rc::new(move |control, hovered, _window, cx| {
+                    entity.update(cx, |view, cx| view.set_titlebar_hover(control, hovered, cx));
+                })
+            },
+            on_control_press: {
+                let entity = cx.entity();
+                Rc::new(move |control, _window, cx| {
+                    entity.update(cx, |view, cx| view.set_titlebar_pressed(control, cx));
+                })
+            },
+            on_control_release: {
+                let entity = cx.entity();
+                Rc::new(move |_window, cx| {
+                    entity.update(cx, |view, cx| view.clear_titlebar_pressed(cx));
+                })
+            },
+        };
 
         // §11.5: the address pill's hover wash.
         let entity = cx.entity();
@@ -240,7 +291,7 @@ impl BbrApp {
         Callbacks {
             on_rail_mouse_down,
             on_rail_scroll_wheel,
-            on_toggle_sidebar,
+            titlebar,
             on_command_hover,
             on_command_open,
             on_select_row,

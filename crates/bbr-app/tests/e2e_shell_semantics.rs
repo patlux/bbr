@@ -63,25 +63,34 @@ fn shell_semantic_tree_and_fallbacks() {
             false,
             false,
         );
-        // §11.4: the sidebar keeps its 7 regions (brand, command field,
-        // tabs, status, toggle, footer, divider) while the permanent §11.3
-        // space strip lives inside the footer (the flex region between the
-        // fixed controls).
+        // §11.4/§11.14: the sidebar keeps its 7 regions (titlebar, brand,
+        // command field, tabs, status, footer, divider) while the permanent
+        // §11.3 space strip lives inside the footer (the flex region between
+        // the fixed controls). The titlebar row is the rail's top strip.
         assert_eq!(
             sidebar.children.len(),
             7,
-            "brand, command field, tabs, status, toggle, footer, divider"
+            "titlebar, brand, command field, tabs, status, footer, divider"
+        );
+        assert_eq!(
+            sidebar.children.first().map(|n| n.id.as_str()),
+            Some("bbr-titlebar"),
+            "the titlebar row is the rail's top strip"
         );
         assert_ids(
             &initial,
             &[
                 "bbr-root",
                 "bbr-sidebar",
+                "bbr-titlebar",
+                "bbr-titlebar-sidebar-toggle",
                 "bbr-brand",
                 "bbr-address",
                 "bbr-tab-list",
                 "bbr-status",
-                "bbr-sidebar-toggle",
+                "bbr-nav-back",
+                "bbr-nav-forward",
+                "bbr-nav-reload",
                 "bbr-sidebar-divider",
                 "bbr-native-web-slot-1",
             ],

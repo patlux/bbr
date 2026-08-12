@@ -79,6 +79,37 @@ impl WebRect {
     }
 }
 
+/// The native safe-titlebar layout guide (macOS; packet
+/// `titlebar-navigation-controls.md`). Plain presentation data in host
+/// layout coordinates (top-left origin, points): the titlebar strip height
+/// and the traffic-light region the BBR-owned titlebar row must clear.
+/// AppKit details stay in the macOS composition edge; the portable UI
+/// renders only what this guide reports.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SafeTitlebarGuide {
+    /// Titlebar strip height in points (window frame minus the native
+    /// content layout rect). Zero on platforms without a native titlebar
+    /// (the portable fallback renders no strip).
+    pub height: f32,
+    /// The traffic-light region in window coordinates (top-left origin,
+    /// points): the close button's frame. The sidebar toggle must start
+    /// after its right edge; never hardcoded traffic-light coordinates.
+    pub traffic_lights: WebRect,
+}
+
+impl SafeTitlebarGuide {
+    /// The portable fallback when no native titlebar exists (non-macOS or
+    /// before the window is attached): a zero-height strip with an empty
+    /// traffic-light region.
+    pub fn none() -> Self {
+        Self {
+            height: 0.0,
+            traffic_lights: WebRect::default(),
+        }
+    }
+}
+
 impl fmt::Display for WebRect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

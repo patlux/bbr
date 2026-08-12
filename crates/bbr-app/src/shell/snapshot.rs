@@ -120,6 +120,11 @@ pub struct TestSnapshot {
     /// deterministic scroll anchor, active-row visibility.
     pub dense: bbr_testkit::protocol::DenseListSnapshot,
     pub sidebar_visible: bool,
+    /// §11.14 titlebar presentation evidence (task packet
+    /// `titlebar-navigation-controls`): the native safe-area guide the row
+    /// renders from, the sidebar collapse state, and the genuine
+    /// Back/Forward/Reload availability of the focused pane.
+    pub titlebar: bbr_testkit::protocol::TitlebarSnapshot,
     /// The effective sidebar rail width: the DESIGN §5 adjustable width
     /// clamped to the window (0 when collapsed — the rail is gone).
     pub sidebar_width: f32,
@@ -299,9 +304,16 @@ pub fn visible_ids_u2(
     if sidebar_visible {
         for id in [
             "bbr-sidebar",
+            // §11.14: the titlebar row is the rail's top strip (the
+            // sidebar toggle + the Back/Forward/Reload cluster) — it
+            // disappears with the rail on collapse.
+            "bbr-titlebar",
+            "bbr-titlebar-sidebar-toggle",
+            "bbr-nav-back",
+            "bbr-nav-forward",
+            "bbr-nav-reload",
             "bbr-brand",
             bbr_ui::components::STATUS_ID,
-            "bbr-sidebar-toggle",
             "bbr-tab-list",
             "bbr-tab-scroll",
             "bbr-sidebar-divider",

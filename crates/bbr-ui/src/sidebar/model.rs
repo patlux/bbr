@@ -29,6 +29,7 @@ use crate::components::{
 };
 use crate::state::SpaceChipVisuals;
 use crate::theme::SpaceTint;
+use crate::titlebar::{TitlebarCallbacks, TitlebarModel};
 
 /// One handler closure slot of the sidebar `Callbacks` set. The app fills
 /// every slot with the production app methods (re-entering the app entity);
@@ -174,8 +175,11 @@ pub struct SidebarModel {
     pub tabs: TabsModel,
     /// The §11.4 status line model.
     pub status: StatusModel,
-    /// The §11.4 collapse-control label.
-    pub toggle_label: SharedString,
+    /// The §11.14 titlebar row (the top strip of the expanded full-height
+    /// rail): the safe-area geometry, the sidebar toggle, and the
+    /// Back/Forward/Reload cluster. The row disappears with the rail on
+    /// collapse — no content toolbar replaces it.
+    pub titlebar: TitlebarModel,
     /// The §11.4 plus menu (`None` while closed).
     pub plus_menu: Option<PlusMenuModel>,
     /// The §11.4 footer row data.
@@ -213,8 +217,9 @@ pub struct Callbacks {
     pub on_rail_mouse_down: MouseCallback,
     /// §11.3: the rail's scroll-wheel listener (the sidebar swipe entry).
     pub on_rail_scroll_wheel: WheelCallback,
-    /// §11.4: the collapse control (`Cmd-B` pointer entry).
-    pub on_toggle_sidebar: MouseCallback,
+    /// §11.14: the titlebar row's callbacks (the sidebar toggle + the
+    /// Back/Forward/Reload cluster) — the one titlebar slot set.
+    pub titlebar: TitlebarCallbacks,
     /// §11.5: the address pill's hover wash.
     pub on_command_hover: BoolCallback,
     /// §11.4: the address pill / staging surface pointer press opens the
@@ -289,7 +294,7 @@ impl Callbacks {
         Callbacks {
             on_rail_mouse_down: noop_mouse.clone(),
             on_rail_scroll_wheel: noop_wheel,
-            on_toggle_sidebar: noop_mouse.clone(),
+            titlebar: TitlebarCallbacks::noop(),
             on_command_hover: noop_bool,
             on_command_open: noop_mouse.clone(),
             on_select_row: noop_row.clone(),

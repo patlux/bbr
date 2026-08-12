@@ -51,6 +51,14 @@ pub enum BenchmarkKind {
     /// Expand restored the last expanded sidebar width through the production
     /// Cmd-B path.
     SidebarRestore,
+    /// A §11.14 titlebar navigation control (Back/Forward/Reload) committed
+    /// through the exact production dispatch the click and the keyboard
+    /// shortcut share (the same authorities as Cmd-[ / Cmd-] / Cmd-R). The
+    /// sample commits only when the genuine availability precondition held
+    /// and the production dispatch succeeded; the driver waits for the real
+    /// WebKit history state afterwards, so a dispatch that never navigated
+    /// is rejected. Warm-interaction class.
+    NavigationControl,
     NewTabCommandBar,
     NewTabOpened,
     ActiveTabClose,

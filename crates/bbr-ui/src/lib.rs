@@ -58,6 +58,7 @@ pub mod state;
 pub mod surfaces;
 pub mod text;
 pub mod theme;
+pub mod titlebar;
 
 #[cfg(test)]
 mod dependency_contract;

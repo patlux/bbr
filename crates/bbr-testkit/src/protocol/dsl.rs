@@ -73,6 +73,55 @@ pub fn click_tab_pin(index: usize) -> Request {
     Request::ClickTabPin { index }
 }
 
+/// §11.14 titlebar toggle click (the `Cmd-B` pointer entry through the
+/// production toggle path).
+pub fn click_titlebar_toggle() -> Request {
+    Request::ClickTitlebarToggle
+}
+
+/// §11.14 titlebar Back click (the same navigation authority as Cmd-[).
+pub fn click_titlebar_back() -> Request {
+    Request::ClickTitlebarBack
+}
+
+/// §11.14 titlebar Forward click (the same navigation authority as Cmd-]).
+pub fn click_titlebar_forward() -> Request {
+    Request::ClickTitlebarForward
+}
+
+/// §11.14 titlebar Reload click (the same navigation authority as Cmd-R).
+pub fn click_titlebar_reload() -> Request {
+    Request::ClickTitlebarReload
+}
+
+/// §11.14 pointer hover over a titlebar control (the production `on_hover`
+/// listener path).
+pub fn hover_titlebar_control(control: &str) -> Request {
+    Request::HoverTitlebarControl {
+        control: control.into(),
+    }
+}
+
+/// §11.14 pointer leave from a titlebar control (the production `on_hover`
+/// listener path).
+pub fn unhover_titlebar_control() -> Request {
+    Request::UnhoverTitlebarControl
+}
+
+/// §11.14 primary-button down on a titlebar control (the production press
+/// slot; paints the §10.3 pressed wash).
+pub fn press_titlebar_control(control: &str) -> Request {
+    Request::PressTitlebarControl {
+        control: control.into(),
+    }
+}
+
+/// §11.14 primary-button up on a titlebar control (the production release
+/// slot; clears the pressed wash).
+pub fn release_titlebar_control() -> Request {
+    Request::ReleaseTitlebarControl
+}
+
 pub fn click_footer_downloads() -> Request {
     Request::ClickFooterDownloads
 }
@@ -526,6 +575,15 @@ pub fn benchmark_resize_sidebar(operation_id: BenchmarkOperationId, width: f32) 
 
 pub fn benchmark_restore_sidebar(operation_id: BenchmarkOperationId) -> Request {
     Request::BenchmarkRestoreSidebar { operation_id }
+}
+
+/// §11.14 titlebar navigation-control commit benchmark (one Back/Forward/
+/// Reload dispatch through the production authority).
+pub fn benchmark_navigation_control(operation_id: BenchmarkOperationId, control: &str) -> Request {
+    Request::BenchmarkNavigationControlCommit {
+        operation_id,
+        control: control.into(),
+    }
 }
 
 pub fn benchmark_hover_tab(operation_id: BenchmarkOperationId, index: usize) -> Request {

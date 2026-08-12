@@ -214,6 +214,24 @@ pub(crate) fn dispatch_benchmark(
             .unwrap_or_else(err_response)
         }
 
+        Request::BenchmarkNavigationControlCommit {
+            operation_id,
+            control,
+        } => with_app(window, app, cx, |view, window, cx| {
+            view.benchmark_navigation_control(*operation_id, control, window, cx)
+        })
+        .map(|started| {
+            if started {
+                Response::Ok
+            } else {
+                Response::Error(Error::new(
+                    "benchmark_busy",
+                    "another presentation measurement is pending (or the control/availability precondition failed)",
+                ))
+            }
+        })
+        .unwrap_or_else(err_response),
+
         Request::BenchmarkPinTab { operation_id } => {
             with_app(window, app, cx, |view, window, cx| {
                 view.benchmark_pin_tab(*operation_id, window, cx)

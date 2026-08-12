@@ -47,6 +47,7 @@ mod dispatch_library;
 mod dispatch_portal;
 mod dispatch_probe;
 mod dispatch_saved_pages;
+mod dispatch_titlebar;
 mod dispatch_u2;
 mod dispatch_util;
 mod dispatch_zoom;

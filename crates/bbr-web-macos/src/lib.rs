@@ -103,6 +103,9 @@ pub mod portal_frame;
 pub mod responsiveness;
 
 #[cfg(target_os = "macos")]
+pub mod titlebar_geometry;
+
+#[cfg(target_os = "macos")]
 pub mod window_server;
 
 #[cfg(target_os = "macos")]

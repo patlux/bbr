@@ -97,7 +97,12 @@ impl BbrApp {
             folders,
             tabs,
             status,
-            toggle_label: SharedString::from("Sidebar (Cmd-B)"),
+            // §11.14: the titlebar row is the rail's top strip — the
+            // safe-area geometry (native), the sidebar toggle, and the
+            // Back/Forward/Reload cluster. The toggle uses the identical
+            // sidebar-width/collapse authority as Cmd-B and the row
+            // disappears with the rail on collapse.
+            titlebar: self.titlebar_model(window),
             plus_menu,
             footer,
             strip,

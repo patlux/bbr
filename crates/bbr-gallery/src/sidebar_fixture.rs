@@ -183,6 +183,23 @@ pub fn build_sidebar_fixture(
             "bbr.dev"
         }),
     };
+    // §11.14: the titlebar row (the rail's top strip) — the safe-area
+    // geometry, the sidebar collapse state, and the genuine
+    // Back/Forward/Reload availability of the focused pane. Plain
+    // presentation data; the row renders it through the production
+    // components.
+    let titlebar = bbr_ui::titlebar::TitlebarModel {
+        safe_area: bbr_ui::titlebar::SafeArea {
+            height: case.safe_area_height,
+            traffic_lights: case.traffic_lights,
+        },
+        sidebar_collapsed: case.titlebar_collapsed,
+        can_go_back: case.nav_back,
+        can_go_forward: case.nav_forward,
+        can_reload: case.nav_reload,
+        hovered: None,
+        pressed: None,
+    };
     let plus_menu = case.plus_menu.then_some(PlusMenuModel {
         selected: case.plus_menu_selected,
     });
@@ -224,7 +241,7 @@ pub fn build_sidebar_fixture(
         folders,
         tabs,
         status,
-        toggle_label: SharedString::from("Sidebar (Cmd-B)"),
+        titlebar,
         plus_menu,
         footer,
         strip,

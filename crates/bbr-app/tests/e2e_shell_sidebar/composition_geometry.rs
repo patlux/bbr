@@ -17,14 +17,15 @@ use e2e_dense_common::{flush, seed_dense, WINDOW_ROWS};
 #[path = "../e2e_dense_common/mod.rs"]
 mod e2e_dense_common;
 
-/// The §11.4 rail region order the semantic tree mirrors (DESIGN.md §15);
-/// mirrors `super::composition::RAIL_ORDER_AT_REST` for the dense branch.
+/// The §11.4/§11.14 rail region order the semantic tree mirrors (DESIGN.md
+/// §15); mirrors `super::composition::RAIL_ORDER_AT_REST` for the dense
+/// branch.
 const RAIL_ORDER_AT_REST: [&str; 7] = [
+    "bbr-titlebar",
     "bbr-brand",
     "bbr-address",
     "bbr-tab-list",
     "bbr-status",
-    "bbr-sidebar-toggle",
     "bbr-footer",
     "bbr-sidebar-divider",
 ];
@@ -235,16 +236,20 @@ fn dense_window_renders_through_the_sidebar_composition() {
         assert_eq!(snap.tabs.len(), 500);
         assert_eq!(snap.engine_sessions, 50);
         assert_eq!(snap.pinned_count, 10);
-        // The full rail composition holds at density: brand, command slot,
-        // status, toggle, footer/strip/plus, divider.
+        // The full rail composition holds at density: titlebar, brand,
+        // command slot, status, footer/strip/plus, divider.
         assert_ids(
             &snap,
             &[
                 "bbr-sidebar",
+                "bbr-titlebar",
+                "bbr-titlebar-sidebar-toggle",
                 "bbr-brand",
                 "bbr-address",
                 "bbr-status",
-                "bbr-sidebar-toggle",
+                "bbr-nav-back",
+                "bbr-nav-forward",
+                "bbr-nav-reload",
                 "bbr-footer",
                 "bbr-downloads",
                 "bbr-space-strip",

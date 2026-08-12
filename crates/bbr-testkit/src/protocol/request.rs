@@ -116,6 +116,36 @@ pub enum Request {
     /// Pointer leave through the same production hover listener path: clears
     /// the row's hover state.
     UnhoverTabRow,
+    /// §11.14 pointer-path activation of the titlebar sidebar toggle
+    /// through the exact production app method the element listener calls
+    /// (the same sidebar-width/collapse authority as Cmd-B).
+    ClickTitlebarToggle,
+    /// §11.14 pointer-path activation of the titlebar Back control through
+    /// the same navigation authority as Cmd-[.
+    ClickTitlebarBack,
+    /// §11.14 pointer-path activation of the titlebar Forward control
+    /// through the same navigation authority as Cmd-].
+    ClickTitlebarForward,
+    /// §11.14 pointer-path activation of the titlebar Reload control
+    /// through the same navigation authority as Cmd-R.
+    ClickTitlebarReload,
+    /// §11.14 pointer hover over a titlebar control through the production
+    /// `on_hover` listener path (`control` is the §15 id suffix: "toggle" /
+    /// "back" / "forward" / "reload").
+    HoverTitlebarControl {
+        control: String,
+    },
+    /// §11.14 pointer leave from a titlebar control through the production
+    /// `on_hover` listener path.
+    UnhoverTitlebarControl,
+    /// §11.14 primary-button down on a titlebar control through the
+    /// production press slot (the §10.3 pressed wash).
+    PressTitlebarControl {
+        control: String,
+    },
+    /// §11.14 primary-button up through the production release slot (clears
+    /// the pressed wash).
+    ReleaseTitlebarControl,
     /// Pointer hover over the §11.5 address pill through the production
     /// `on_hover` listener path (the exact app method the pill's element
     /// handler calls): the pill renders the §10.2/§11.5 hover wash (one
@@ -693,6 +723,18 @@ pub enum Request {
     /// restored.
     BenchmarkRestoreSidebar {
         operation_id: BenchmarkOperationId,
+    },
+    /// §11.14 titlebar navigation-control commit (packet
+    /// `titlebar-navigation-controls`): measure one Back/Forward/Reload
+    /// dispatch through the exact production authority the titlebar click
+    /// and the Cmd-[ / Cmd-] / Cmd-R shortcuts share. `control` is the §15
+    /// id suffix (`back` / `forward` / `reload`); the sample commits only
+    /// when the genuine availability precondition held and the production
+    /// dispatch succeeded (the driver waits for the real WebKit history
+    /// state afterwards).
+    BenchmarkNavigationControlCommit {
+        operation_id: BenchmarkOperationId,
+        control: String,
     },
     /// Measure the production pin toggle of the active tab until the new
     /// region order is presented (same native view, boundary moved).

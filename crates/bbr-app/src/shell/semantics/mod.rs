@@ -162,7 +162,12 @@ pub fn semantic_tree(input: &SemanticInput<'_>) -> Vec<SemanticNode> {
 }
 
 fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
+    // §11.14: the titlebar row is the rail's top strip — the first child,
+    // mirroring the render (the sidebar toggle + the Back/Forward/Reload
+    // cluster). It disappears with the rail on collapse; no content
+    // toolbar replaces it.
     let mut children: Vec<SemanticNode> = vec![
+        titlebar_node(input),
         node(
             "bbr-brand",
             SemanticRole::Brand,
@@ -187,22 +192,6 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
         SemanticRole::Status,
         Some(crate::shell::status_model(input.browser).text.to_string()),
         None,
-        false,
-        false,
-        vec![],
-    ));
-    children.push(node(
-        "bbr-sidebar-toggle",
-        SemanticRole::Button,
-        Some("Sidebar (Cmd-B)".into()),
-        Some(
-            if input.sidebar_visible {
-                "visible"
-            } else {
-                "collapsed"
-            }
-            .into(),
-        ),
         false,
         false,
         vec![],
@@ -232,6 +221,75 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
         focused: false,
         drag_target: false,
         children,
+    }
+}
+
+/// §11.14 the titlebar row node: the sidebar toggle (the `Cmd-B` pointer
+/// entry; value reflects collapsed versus expanded) plus the compact
+/// Back/Forward/Reload cluster with genuine enablement derived from the
+/// focused pane's real navigation state. Disabled controls stay visible
+/// and semantically explained; the row disappears with the rail.
+fn titlebar_node(input: &SemanticInput<'_>) -> SemanticNode {
+    let browser = input.browser;
+    let mut toggle = node(
+        "bbr-titlebar-sidebar-toggle",
+        SemanticRole::Button,
+        Some("Sidebar (Cmd-B)".into()),
+        Some(
+            if input.sidebar_visible {
+                "expanded"
+            } else {
+                "collapsed"
+            }
+            .into(),
+        ),
+        false,
+        false,
+        vec![],
+    );
+    toggle.enabled = true;
+    let mut back = node(
+        "bbr-nav-back",
+        SemanticRole::Button,
+        Some("Back".into()),
+        None,
+        false,
+        false,
+        vec![],
+    );
+    back.enabled = browser.nav.can_go_back;
+    let mut forward = node(
+        "bbr-nav-forward",
+        SemanticRole::Button,
+        Some("Forward".into()),
+        None,
+        false,
+        false,
+        vec![],
+    );
+    forward.enabled = browser.nav.can_go_forward;
+    let mut reload = node(
+        "bbr-nav-reload",
+        SemanticRole::Button,
+        Some("Reload".into()),
+        None,
+        false,
+        false,
+        vec![],
+    );
+    // Reload targets the focused command pane: enabled while it has a
+    // live session.
+    reload.enabled = browser.active_view.is_some();
+    SemanticNode {
+        id: "bbr-titlebar".into(),
+        role: SemanticRole::Sidebar,
+        name: Some("Titlebar".into()),
+        value: None,
+        enabled: true,
+        selected: false,
+        focused: false,
+        drag_target: false,
+        children: vec![toggle, back, forward, reload],
     }
 }
 

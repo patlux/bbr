@@ -44,6 +44,8 @@ pub const SIDEBAR_STATE_OPTIONS: &[&str] = &[
     "downloads panel child + running count",
     "hover/pressed/focus/drag/key paths",
     "reduced-motion + increased contrast",
+    "titlebar nav — full history + live session",
+    "titlebar nav — no history, no live session",
 ];
 
 /// §11.4 Sidebar: the production `bbr_ui::sidebar::sidebar_surface` renders
@@ -101,12 +103,12 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         value_row(
             theme,
             "ids",
-            "bbr-sidebar · bbr-brand · bbr-address · bbr-favorites · bbr-tab-row-<n> · bbr-folder-row-<n> · bbr-status · bbr-sidebar-toggle · bbr-footer · bbr-space-strip · bbr-plus · bbr-sidebar-divider",
+            "bbr-sidebar · bbr-titlebar · bbr-titlebar-sidebar-toggle · bbr-nav-back · bbr-nav-forward · bbr-nav-reload · bbr-brand · bbr-address · bbr-favorites · bbr-tab-row-<n> · bbr-folder-row-<n> · bbr-status · bbr-footer · bbr-space-strip · bbr-plus · bbr-sidebar-divider",
         ),
         value_row(
             theme,
             "callbacks",
-            "the one 28-slot Callbacks set (recorder) — every production listener",
+            "the one 28-slot Callbacks set (recorder) — every production listener, including the §11.14 titlebar row",
         ),
         value_row(
             theme,
