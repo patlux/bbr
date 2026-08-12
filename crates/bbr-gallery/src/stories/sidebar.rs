@@ -81,14 +81,15 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         theme,
         &model,
         &callbacks,
-        field_anchor,
-        favorites_band_anchor,
-        command_results,
-        downloads_panel,
-        // The §11.3 Space-configuration panel is an app-owned child too;
-        // the sidebar story does not open it (the dedicated Space
-        // configuration story owns that surface).
-        None,
+        bbr_ui::sidebar::SidebarChildren {
+            command_field_anchor: field_anchor,
+            favorites_band_anchor,
+            command_results,
+            downloads_panel,
+            // The §11.3 Space-configuration panel is an app-owned child;
+            // the dedicated Space configuration story owns that surface.
+            space_config_panel: None,
+        },
     );
 
     // The rejected combinations with their reasons — the story shows the

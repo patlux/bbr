@@ -13,10 +13,10 @@
 //! persistence authority — the app assembles the model and binds the
 //! callbacks, and the gallery fills recorder callbacks.
 //!
-//! The app-owned child elements (the §11.4 command field anchor, the §11.5
-//! in-rail command results, the §11.12 downloads panel) are passed
-//! separately at this composition boundary so the [`SidebarModel`] DTO
-//! stays plain `Clone` + `Debug` data. The dense regular region renders
+//! The app-owned child elements (field and Favorites-band anchors, command
+//! results, downloads, and Space configuration) are grouped in
+//! [`SidebarChildren`] at this composition boundary so the [`SidebarModel`]
+//! DTO stays plain `Clone` + `Debug` data. The dense regular region renders
 //! only the bounded window the app derived from the production scroll
 //! anchor ([`TabsModel`]) plus spacers that keep the container's content
 //! height equal to the full collection — a 500-tab list never lays out 500
@@ -48,18 +48,29 @@ use super::tabs::tab_surface;
 /// recorder the tab-drag resolver targets the real rendered drop band
 /// with); `command_results` is the app-owned §11.5 in-rail ranking
 /// surface; `space_config_panel` is the app-owned §11.3 rename/identity
-/// configuration surface. All five are app-owned elements passed at the
+/// configuration surface. All five are app-owned elements grouped at the
 /// composition boundary — the model itself stays plain data.
+pub struct SidebarChildren {
+    pub command_field_anchor: AnyElement,
+    pub favorites_band_anchor: AnyElement,
+    pub command_results: Option<AnyElement>,
+    pub downloads_panel: Option<AnyElement>,
+    pub space_config_panel: Option<AnyElement>,
+}
+
 pub fn sidebar_surface(
     theme: &Theme,
     model: &SidebarModel,
     callbacks: &Callbacks,
-    command_field_anchor: AnyElement,
-    favorites_band_anchor: AnyElement,
-    command_results: Option<AnyElement>,
-    downloads_panel: Option<AnyElement>,
-    space_config_panel: Option<AnyElement>,
+    children: SidebarChildren,
 ) -> Stateful<Div> {
+    let SidebarChildren {
+        command_field_anchor,
+        favorites_band_anchor,
+        command_results,
+        downloads_panel,
+        space_config_panel,
+    } = children;
     let p = theme.palette;
     let command_bar = command_slot(theme, model, callbacks, command_field_anchor);
     let favorites = model.favorites.as_ref().map(|favorites| {

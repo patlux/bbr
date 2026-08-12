@@ -55,11 +55,13 @@ impl BbrApp {
             theme,
             &model,
             &callbacks,
-            field_anchor,
-            favorites_band_anchor,
-            command_results,
-            downloads_panel,
-            space_config_panel,
+            bbr_ui::sidebar::SidebarChildren {
+                command_field_anchor: field_anchor,
+                favorites_band_anchor,
+                command_results,
+                downloads_panel,
+                space_config_panel,
+            },
         )
     }
 

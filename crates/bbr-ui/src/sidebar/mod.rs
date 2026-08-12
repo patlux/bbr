@@ -15,8 +15,8 @@
 //! - [`render`] — the rail composition [`render::sidebar_surface`] that
 //!   renders the model through the production `bbr-ui` components. The
 //!   app-owned child elements (command field anchor, favorites band
-//!   anchor, command results, downloads panel) are passed separately at
-//!   this boundary.
+//!   anchor, command results, downloads panel, Space configuration) are
+//!   grouped in [`render::SidebarChildren`] at this boundary.
 //! - [`tabs`] — the pinned block + bounded dense window of the tab region.
 //! - [`regions`] — the favorites grid, folders list, plus menu, space
 //!   strip, and footer row.
@@ -42,5 +42,5 @@ pub use model::{
     Callbacks, CommandSlot, FavoritesModel, FoldersModel, FooterModel, PlusMenuModel, SidebarModel,
     StripModel, TabsModel,
 };
-pub use render::sidebar_surface;
+pub use render::{sidebar_surface, SidebarChildren};
 pub use strip::{space_chip, space_chip_id, space_identity_id, space_strip, SPACE_STRIP_ID};
