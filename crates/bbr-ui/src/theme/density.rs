@@ -39,11 +39,11 @@ impl Density {
         })
     }
 
-    /// §8/§5 `win:sidebar` (S 232 / N 280 / XL 340 pt).
+    /// §8/§5 `win:sidebar` (S 232 / N 300 / XL 340 pt).
     pub fn sidebar_width(self) -> Pixels {
         px(match self {
             Density::Small => 232.0,
-            Density::Normal => 280.0,
+            Density::Normal => 300.0,
             Density::ExtraLarge => 340.0,
         })
     }
@@ -95,8 +95,8 @@ impl Density {
     pub fn row_inset(self) -> Pixels {
         px(match self {
             Density::Small => 4.0,
-            Density::Normal => 8.0,
-            Density::ExtraLarge => 12.0,
+            Density::Normal => 4.0,
+            Density::ExtraLarge => 8.0,
         })
     }
 
@@ -110,11 +110,30 @@ impl Density {
         })
     }
 
-    /// §11.10 favorites grid gap (S `sp:1` 4 / N `sp:2` 8 / XL `sp:2` 8).
+    /// Reference-calibrated Favorite tile width. Normal density uses four
+    /// 64 pt tiles inside the 300 pt rail.
+    pub fn favorite_tile_width(self) -> Pixels {
+        px(match self {
+            Density::Small => 40.0,
+            Density::Normal => 64.0,
+            Density::ExtraLarge => 88.0,
+        })
+    }
+
+    /// Reference-calibrated Favorite tile height (36 / 44 / 52 pt).
+    pub fn favorite_tile_height(self) -> Pixels {
+        px(match self {
+            Density::Small => 36.0,
+            Density::Normal => 44.0,
+            Density::ExtraLarge => 52.0,
+        })
+    }
+
+    /// Favorite-grid gap. The normal four-tile band uses a 4 pt gap.
     pub fn favorites_gap(self) -> Pixels {
         px(match self {
             Density::Small => 4.0,
-            Density::Normal => 8.0,
+            Density::Normal => 4.0,
             Density::ExtraLarge => 8.0,
         })
     }
@@ -170,14 +189,16 @@ mod tests {
         assert_eq!(Density::Normal.hit_min_close(), px(28.0));
         assert_eq!(Density::ExtraLarge.hit_min_close(), px(32.0));
         assert_eq!(Density::Small.row_inset(), px(4.0));
-        assert_eq!(Density::Normal.row_inset(), px(8.0));
-        assert_eq!(Density::ExtraLarge.row_inset(), px(12.0));
+        assert_eq!(Density::Normal.row_inset(), px(4.0));
+        assert_eq!(Density::ExtraLarge.row_inset(), px(8.0));
         assert_eq!(Density::Small.section_gap(), px(12.0));
         assert_eq!(Density::Normal.section_gap(), px(16.0));
         assert_eq!(Density::ExtraLarge.section_gap(), px(20.0));
         assert_eq!(Density::Small.favorites_gap(), px(4.0));
-        assert_eq!(Density::Normal.favorites_gap(), px(8.0));
+        assert_eq!(Density::Normal.favorites_gap(), px(4.0));
         assert_eq!(Density::ExtraLarge.favorites_gap(), px(8.0));
+        assert_eq!(Density::Normal.favorite_tile_width(), px(64.0));
+        assert_eq!(Density::Normal.favorite_tile_height(), px(44.0));
         assert_eq!(Density::Small.state_slot(), px(8.0));
         assert_eq!(Density::Normal.state_slot(), px(10.0));
         assert_eq!(Density::ExtraLarge.state_slot(), px(10.0));

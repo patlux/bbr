@@ -398,10 +398,17 @@ mod tests {
         );
         // The light identity hue is the §12 light cobalt tile.
         let light = Theme::new(ThemeMode::Light, ContrastMode::Standard, Density::Normal);
+        let light_tint = space_tint(SpaceTheme::Cobalt, &light);
+        assert_eq!(hex(light_tint.hue), "#4062E8", "cobalt light identity tile");
         assert_eq!(
-            hex(space_tint(SpaceTheme::Cobalt, &light).hue),
-            "#4062E8",
-            "cobalt light identity tile"
+            hex(light_tint.chrome),
+            "#E1E1E1",
+            "cobalt light standard chrome"
+        );
+        assert_eq!(
+            hex(light_tint.chip_active),
+            "#D0D3E1",
+            "cobalt light standard chip"
         );
     }
 }

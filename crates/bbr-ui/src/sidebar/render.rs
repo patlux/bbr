@@ -2,8 +2,9 @@
 //! `bbr-ui::sidebar` rendering authority.
 //!
 //! [`sidebar_surface`] renders the complete §11.4 rail from the plain
-//! [`SidebarModel`] and the one [`Callbacks`] set: brand block, command
-//! slot (address pill / staging surface), the in-rail command results, the
+//! [`SidebarModel`] and the one [`Callbacks`] set: unified titlebar,
+//! command slot (address pill / staging surface), the in-rail command results,
+//! the active Space heading, the
 //! favorites grid, the pinned block, the folders list, the bounded regular
 //! tab window, the status line, the collapse control, the plus menu, the
 //! downloads panel, the footer row with the permanent space strip, and the
@@ -126,25 +127,22 @@ pub fn sidebar_surface(
                     &model.titlebar,
                     &callbacks.titlebar,
                 ))
-                .child(brand_block(theme, model))
                 .child(command_bar)
                 .when(command_results.is_some(), |column| {
                     column.child(command_results.expect("checked above"))
                 })
-                // §11.4: regions stack separated by `density:section-gap`
-                // breathing (S `sp:3` / N `sp:4` / XL `sp:5`).
-                .child(div().h(theme.density.section_gap()).flex_shrink_0())
-                // §11.4 region order: favorites →
-                // tabs → status → toggle → plus menu → footer (the
-                // §11.3 space strip is the footer's flex region, always
-                // part of the rail).
+                // Reference-authoritative hierarchy: Favorite destinations
+                // sit directly below the address, then the active Space name
+                // introduces the tab/folder list. There is no standalone app
+                // brand block or technical FAVORITES/TABS chrome at rest.
                 .when(favorites.is_some(), |column| {
                     column.child(favorites.expect("checked above"))
                 })
-                .child(div().h(theme.density.section_gap()).flex_shrink_0())
+                .child(active_space_heading(theme, model))
                 .child(tabs)
-                .child(div().h(theme.density.section_gap()).flex_shrink_0())
-                .child(components::status_line(theme, &model.status))
+                .when(model.status_visible, |column| {
+                    column.child(components::status_line(theme, &model.status))
+                })
                 // §11.12: the anchored downloads panel is the footer's
                 // direct predecessor in the column (its bottom edge is
                 // flush with the footer control's top edge); the §11.3
@@ -173,16 +171,20 @@ pub fn sidebar_surface(
         ))
 }
 
-/// The §11.4 brand block: the app mark + name at `sp:4` padding.
-fn brand_block(theme: &Theme, model: &SidebarModel) -> Stateful<Div> {
+/// The active Space title — the primary list heading in the reference
+/// composition. It comes from the controller snapshot and remains visible
+/// even when the Space has no tabs, so the user always knows the current
+/// browsing context without a separate BBR brand block.
+fn active_space_heading(theme: &Theme, model: &SidebarModel) -> Stateful<Div> {
     div()
-        .id("bbr-brand")
-        .px(Spacing::sp4())
-        .py(Spacing::sp3())
+        .id("bbr-active-space-title")
+        .px(Spacing::sp3())
+        .pt(Spacing::sp4())
+        .pb(Spacing::sp2())
         .text_size(theme.type_.title.size)
-        .font_weight(theme.type_.title.weight)
-        .text_color(theme.palette.ink)
-        .child(model.brand.clone())
+        .font_weight(gpui::FontWeight(600.0))
+        .text_color(theme.palette.ink_secondary)
+        .child(model.active_space_title.clone())
 }
 
 /// The §11.5 command slot: the address pill while no command surface is

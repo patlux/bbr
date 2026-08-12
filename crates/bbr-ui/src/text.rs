@@ -420,7 +420,7 @@ mod tests {
             without > with_slot,
             "the reserved accessory slot consumes display width"
         );
-        let long = "verylongsubdomainname.example.com";
+        let long = "verylongsubdomainname.with-another-long-segment.example.com";
         let clipped = mid_ellipsis(long, with_slot);
         assert!(clipped.chars().count() < long.chars().count());
         assert!(

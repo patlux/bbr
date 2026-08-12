@@ -63,18 +63,11 @@ pub fn favorites_surface(
         .relative()
         .flex()
         .flex_col()
-        .pb(Spacing::sp1())
-        // The `type:badge` label text (the section id lives on the
-        // wrapper, exactly like the §15 semantic section node).
-        .child(
-            div()
-                .px(Spacing::sp3())
-                .py(Spacing::sp1())
-                .text_size(theme.type_.badge.size)
-                .font_weight(theme.type_.badge.weight)
-                .text_color(p.ink_faint)
-                .child("FAVORITES"),
-        )
+        .pt(Spacing::sp1())
+        .pb(Spacing::sp2())
+        // The reference presents Favorite tiles as an immediately
+        // recognizable destination band without a redundant section label.
+        // The stable section id remains on the wrapper for semantics/E2E.
         .child(grid)
         .child(band_anchor)
         .when(favorites.targeted, |el| {
@@ -98,8 +91,10 @@ pub fn folders_surface(
 ) -> Stateful<Div> {
     let p = theme.palette;
     let focused = folders.focused;
-    let mut children: Vec<gpui::AnyElement> =
-        vec![components::section_label(theme, "Folders", focused).into_any()];
+    // The active Space heading already owns the list hierarchy. Keep the
+    // stable folder wrappers/semantics, but do not repeat a generic visible
+    // FOLDERS label above the user's real folder names.
+    let mut children: Vec<gpui::AnyElement> = Vec::new();
     for row in &folders.rows {
         let id = row.id;
         children.push(

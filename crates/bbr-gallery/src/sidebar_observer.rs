@@ -55,6 +55,8 @@ pub struct SidebarObserver {
     pub on_release_row: RowUpCallback,
     /// §10.2 hover.
     pub on_hover_row: HoverCallback,
+    /// Visible New Tab row.
+    pub on_new_tab: MouseCallback,
     /// §11.1/§11.6 tab-list keyboard.
     pub on_tab_list_key_down: KeyCallback,
     /// §11.10 favorites tile activation.
@@ -219,6 +221,7 @@ pub fn build_sidebar_observer(
                 },
             )
         },
+        on_new_tab: mouse(SidebarObservation::NewTab, false),
         on_tab_list_key_down: {
             let record = Rc::clone(&record);
             Rc::new(
@@ -363,6 +366,7 @@ impl SidebarObserver {
             on_press_row: Rc::clone(&self.on_press_row),
             on_release_row: Rc::clone(&self.on_release_row),
             on_hover_row: Rc::clone(&self.on_hover_row),
+            on_new_tab: Rc::clone(&self.on_new_tab),
             on_tab_list_key_down: Rc::clone(&self.on_tab_list_key_down),
             on_activate_favorite: Rc::clone(&self.on_activate_favorite),
             on_context_menu_row: Rc::clone(&self.on_context_menu_row),

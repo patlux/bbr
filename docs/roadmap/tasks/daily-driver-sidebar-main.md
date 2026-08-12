@@ -4,11 +4,12 @@ Parents: [Phase 4](../phases/04-ui-shell.md) · [UI design-system track](../trac
 
 Visual interaction references supplied by Patrick:
 
+- complete production shell — current visual authority: `/Users/patwoz/Library/Application Support/CleanShot/media/media_aio6G8pltD/Screenshot_2026-08-12_12-16-59@2x.png`
 - tab rows: `/Users/patwoz/Library/Application Support/CleanShot/media/media_9pNl4Eyem3/Screenshot_2026-08-12_00-22-37@2x.png`
 - pinned/regular divider: `/Users/patwoz/Library/Application Support/CleanShot/media/media_tVbMF5ZRzR/Screenshot_2026-08-12_00-22-57@2x.png`
 - Favorites: `/Users/patwoz/Library/Application Support/CleanShot/media/media_CbmLvnxjt2/Screenshot_2026-08-12_00-23-19@2x.png`
 
-References define scale, hierarchy, and interaction anatomy, not copied brand styling. BBR retains Chassis & Glass tokens and its own icons.
+This packet remains the interaction and ownership authority for Tab/Pinned/Favorites behavior. Its former anatomy-only/dark-Chassis visual disclaimer is superseded by the bounded [reference-faithful production shell](visual-shell-reference.md): the complete-shell screenshot now defines material, hierarchy, scale and density. BBR retains its own name, icons, semantic identities and native-web boundary rather than copying another product's data or capabilities.
 
 ## Outcome
 

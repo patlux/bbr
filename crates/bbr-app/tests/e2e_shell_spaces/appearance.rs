@@ -59,9 +59,9 @@ fn activation_changes_the_active_appearance_without_touching_sessions_or_geometr
 
         // Launch appearance: the default profile's first §12 hue (Cobalt)
         // derives the active theme deterministically; the snapshot carries
-        // the resolved chrome/chip tint hex from the central presentation
-        // model (dark/standard shell), so the E2E asserts the exact rendered
-        // state — no pixel reads, no parallel render store.
+        // the resolved chrome/chip tint hex from the central light/standard
+        // presentation model, so the E2E asserts the exact rendered state —
+        // no pixel reads, copied palette literals or parallel render store.
         let launch = client.snapshot().expect("launch appearance snapshot");
         let appearance = launch
             .active_appearance
@@ -76,8 +76,15 @@ fn activation_changes_the_active_appearance_without_touching_sessions_or_geometr
             appearance.identity, "code",
             "default curated identity glyph"
         );
-        assert_eq!(appearance.chrome_tint, "#1C2028", "cobalt dark chrome wash");
-        assert_eq!(appearance.chip_tint, "#222837", "cobalt dark chip surface");
+        let (cobalt_chrome, cobalt_chip) = light_standard_tints(bbr_domain::SpaceTheme::Cobalt);
+        assert_eq!(
+            appearance.chrome_tint, cobalt_chrome,
+            "cobalt light chrome wash"
+        );
+        assert_eq!(
+            appearance.chip_tint, cobalt_chip,
+            "cobalt light chip surface"
+        );
         assert_eq!(launch.space_chips.len(), 1);
         assert_eq!(launch.space_chips[0].theme, "cobalt");
         assert!(launch.space_chips[0].selected);
@@ -147,8 +154,12 @@ fn activation_changes_the_active_appearance_without_touching_sessions_or_geometr
         assert_eq!(appearance.space, reading);
         assert_eq!(appearance.theme, "pine", "explicit theme is authoritative");
         assert_eq!(appearance.identity, "code");
-        assert_eq!(appearance.chrome_tint, "#1A2123", "pine dark chrome wash");
-        assert_eq!(appearance.chip_tint, "#1C2D2C", "pine dark chip surface");
+        let (pine_chrome, pine_chip) = light_standard_tints(bbr_domain::SpaceTheme::Pine);
+        assert_eq!(
+            appearance.chrome_tint, pine_chrome,
+            "pine light chrome wash"
+        );
+        assert_eq!(appearance.chip_tint, pine_chip, "pine light chip surface");
         let selected = reading_active
             .space_chips
             .iter()
@@ -312,8 +323,15 @@ fn activation_changes_the_active_appearance_without_touching_sessions_or_geometr
             appearance.theme, "violet",
             "the derived profile-hue theme is the production default"
         );
-        assert_eq!(appearance.chrome_tint, "#1D1F28", "violet dark chrome wash");
-        assert_eq!(appearance.chip_tint, "#252436", "violet dark chip surface");
+        let (violet_chrome, violet_chip) = light_standard_tints(bbr_domain::SpaceTheme::Violet);
+        assert_eq!(
+            appearance.chrome_tint, violet_chrome,
+            "violet light chrome wash"
+        );
+        assert_eq!(
+            appearance.chip_tint, violet_chip,
+            "violet light chip surface"
+        );
         assert_eq!(private_active.active_profile, private_profile);
         assert_eq!(
             private_active

@@ -437,6 +437,25 @@ mod tests {
         assert_eq!(with_surface.command_surface, CommandSurface::Overlay);
     }
 
+    /// The testkit-only direct-renderer capture keeps its externally tagged
+    /// path payload exact. The app separately constrains the authenticated
+    /// request to one direct `/tmp/*.png` destination.
+    #[test]
+    fn capture_chrome_request_has_exact_wire_shape() {
+        let request = Request::CaptureChrome {
+            path: "/tmp/bbr-visual.png".into(),
+        };
+        assert_eq!(
+            serde_json::to_value(&request).unwrap(),
+            json!({ "CaptureChrome": { "path": "/tmp/bbr-visual.png" } })
+        );
+        assert_eq!(
+            serde_json::from_str::<Request>(r#"{"CaptureChrome":{"path":"/tmp/bbr-visual.png"}}"#)
+                .unwrap(),
+            request
+        );
+    }
+
     /// The portal probe requests keep their exact externally-tagged JSON
     /// shape on the wire (unit variants serialize as the bare name) and the
     /// fixed literals deserialize back into the same typed values.

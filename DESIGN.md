@@ -24,38 +24,41 @@ interface: the GPUI token module must use exactly these names so tests and
 docs align. Interactive surfaces carry stable semantic ids prefixed `bbr-`
 (§15) so real-app E2E can assert rows, states, and focus without pixels.
 
-## 1. Visual direction — "Chassis & Glass"
+## 1. Visual direction — native light rail and untampered glass
 
-BBR's chrome is a **machined instrument panel** holding an **untampered glass**
-(web content). The identity is that of precision drafting equipment — avionics
-and camera bodies rather than consumer candy: a quiet, near-monochrome
-aluminum/graphite chassis, hairline rules, tabular numerals, geometric icons,
-and exactly one colored signal family (the **Phosphor** accent, a teal-green
-instrument-light hue) plus a reserved set of semantic indicator hues.
+BBR's production chrome is a **quiet light macOS rail** holding **untampered
+glass** (native web content). Patrick's complete 2× production-shell reference
+(`/Users/patwoz/Library/Application Support/CleanShot/media/media_aio6G8pltD/Screenshot_2026-08-12_12-16-59@2x.png`)
+is the visual authority for the expanded Sidebar: a softly tinted matte rail
+behind the traffic-light safe area, compact controls and address display,
+large Favorite tiles, the active Space name as the primary hierarchy, readable
+inset tab/folder rows and a compact footer strip. BBR retains its own name,
+geometric icons, Phosphor interaction accent, semantic indicator hues and real
+browser data/capabilities.
 
-Positioning paragraph: a keyboard-first daily driver for many long-lived
-contexts needs a shell that recedes the moment content appears. Chassis
-surfaces are matte, flat, layered by luminance and hairline rules — never
-glassmorphism, never site-adaptive tinting, never thumbnails composited from
-pages. Color is a scarce, meaningful resource: it marks selection, status,
-profile identity, and focus, and nothing else. Web content is the only
-animated, colorful surface on screen.
+A keyboard-first daily driver for many long-lived contexts needs a shell that
+recedes when content appears. Chrome remains matte, flat and deterministic —
+never page screenshots, sampled site tint, fake content or private WebKit
+composition. Color marks selection, status, profile identity and focus. Dark
+and increased-contrast token sets remain supported library variants, but the
+production shell's settled default is Light rather than a hardcoded dark mode.
 
 ### What makes BBR visually distinct
 
 | | Arc | Zen | Safari | Swift reference (PWBrowser) | **BBR** |
 |---|---|---|---|---|---|
-| Shell | floating pills, candy gradients, auto-hidden toolbar | adaptive per-site tint, glass blur, playful radius | uniform translucent toolbar, ambient page color | ad-hoc dark placeholder chrome | flat machined chassis, hairline rules, constant luminance across sites |
-| Color | saturated gradient accents | site-adaptive pastels | ambient translucency | single hardcoded grays | monochrome + one Phosphor accent + semantic indicator hues |
-| Tabs | large rounded chips | large rounded cards | compact tabs with favicon | none (text placeholder) | compact rule-based rows, accent rail for selection |
-| Geometry | organic, large radii | organic | respectable | none | 4 pt grid, radii 6–10 px, square chips, 3 px rails |
+| Shell | floating pills, candy gradients, auto-hidden toolbar | adaptive per-site tint, glass blur, playful radius | uniform translucent toolbar, ambient page color | ad-hoc dark placeholder chrome | full-height light matte rail, native titlebar-safe integration, constant luminance across sites |
+| Color | saturated gradient accents | site-adaptive pastels | ambient translucency | single hardcoded grays | soft neutral hierarchy + one Phosphor accent + semantic indicator hues |
+| Tabs | large rounded chips | large rounded cards | compact tabs with favicon | none (text placeholder) | readable inset rows with quiet selected surface and exact favicon/monogram identity |
+| Geometry | organic, large radii | organic | respectable | none | 4 pt rhythm, 6–10 px row radii, reference-calibrated tiles and 36–40 pt normal rows |
 | Motion | playful spring choreography | animated everywhere | subtle | none | commit-first snaps; animation only on transient indication |
 | Content relation | sidebar overlays page | sidebar overlays page | toolbar merges | separate | sidebar is a physical rail; content is never overlapped or sampled |
 
-The Swift reference is our functional ancestor (spaces, profiles, pinned tabs)
-but intentionally has no visual identity; BBR replaces its placeholder lookup
-table (currently hardcoded `rgb(0x…)` values in `crates/bbr-app/src/app/render.rs`)
-with this token system in the same commit group that introduces the shell.
+The Swift reference is a functional ancestor (spaces, profiles, pinned tabs),
+not the production visual authority. Patrick's complete-shell screenshot above
+supersedes the former dark placeholder interpretation. The implementation uses
+this token system and the one production `bbr-ui` composition rather than
+hardcoded render colors or a Gallery-local shell.
 
 ### Design principles
 
@@ -95,10 +98,12 @@ L3 floating        — command palette, peek, dialogs        elev-2
 | Token | Light | Dark | Notes |
 |---|---|---|---|
 | `material:canvas` | `#F6F6F4` | `#121416` | content backdrop, visible only before attach / empty / crash |
-| `material:sidebar` | `#EFEFEC` | `#1A1D21` | the physical rail; all chrome in v1 lives here |
+| `material:sidebar` | `#E0E0E0` | `#1A1D21` | the reference-calibrated physical rail; production defaults to Light |
 | `material:field` | `#FFFFFF` | `#23272C` | command field, search, hover-raised rows |
 | `material:overlay` | `#FFFFFF` | `#202429` | floating surfaces, elevation 2 |
 | `material:glass` | `#FFFFFF` | `#151719` | what sits behind native web views; must never be textured or sampled |
+| `material:favorite` | `#D2D2D2` | `#23272C` | reference-calibrated Favorite destination tile |
+| `material:footer` | `#F3F8FE` | `#202429` | compact Downloads/Space/Plus strip at the rail bottom |
 
 ### Elevation
 
@@ -130,10 +135,10 @@ an open decision for Phase 9 polish.
 
 | Token | Light | Dark | IC Light | IC Dark | Role |
 |---|---|---|---|---|---|
-| `color:ink` | `#1A1C1F` | `#ECEEF1` | `#000000` | `#FFFFFF` | primary text, titles |
-| `color:ink.secondary` | `#555B63` | `#A6ACB5` | `#333A41` | `#D6DAE0` | meta, icons at rest, secondary tab text |
+| `color:ink` | `#111315` | `#ECEEF1` | `#000000` | `#FFFFFF` | primary text, titles |
+| `color:ink.secondary` | `#4A4F55` | `#A6ACB5` | `#292E34` | `#D6DAE0` | meta, icons at rest, secondary tab text |
 | `color:ink.faint` | `#949AA2` | `#6E747D` | `#5C626A` | `#8A919B` | disabled, placeholders, purely decorative — never normal text |
-| `color:hairline` | `#E2E2DF` | `#2A2E34` | `#AFB2AC` | `#454C55` | structural rules |
+| `color:hairline` | `#C7C7C7` | `#2A2E34` | `#9FA29E` | `#454C55` | structural rules |
 | `color:border.strong` | `#C7C9C5` | `#3B4149` | `#9FA29E` | `#525A63` | field borders, tile outlines |
 
 Contrast contract (recomputed by tests from tokens, not copied): `ink` ≥
@@ -141,23 +146,23 @@ Contrast contract (recomputed by tests from tokens, not copied): `ink` ≥
 on their surfaces; status inks ≥ 4.5:1; `accent` rails/rings ≥ 3:1;
 increased-contrast raises `ink.secondary` ≥ 9:1 and `hairline` ≥ 1.8:1.
 
-The light tokens above were verified against the §3.1 contract when the
-`crates/bbr-app/src/palette.rs` token gate shipped and corrected where the
-authored values fell short: light `accent.ink` `#0B6B5C → #0A5C4E`,
-light `attention` `#9C6500 → #8F5C00`, light-IC `ink.secondary`
-`#3D434A → #333A41`, light-IC `hairline` `#C9CBC8 → #AFB2AC`. The token
-gate recomputes every pair from the stored hex values.
+The light tokens are verified against the unchanged §3.1 contract by
+`bbr-ui` palette tests. Reference calibration strengthened primary/secondary
+ink and hairlines on the darker `#E0E0E0` rail; status error/attention were
+darkened rather than weakening the 4.5:1 assertion. The token gate recomputes
+every pair from the stored hex values.
 
 ### 3.2 Accent — Phosphor
 
 | Token | Light | Dark | IC Light | IC Dark | Use |
 |---|---|---|---|---|---|
-| `color:accent` | `#0E8F79` | `#2AD4B6` | `#0B6B5C` | `#3DF0CE` | selected rail, focus ring, drag tick, split preview frame (UI ≥ 3:1) |
+| `color:accent` | `#0A7967` | `#2AD4B6` | `#0B6B5C` | `#3DF0CE` | selected rail, focus ring, drag tick, split preview frame (UI ≥ 3:1) |
 | `color:accent.ink` | `#0A5C4E` | `#3DF0CE` | `#0A5A4C` | `#3DF0CE` | accent-colored text (match highlight, mode chip, links) |
 
-Usage rules: the accent marks **one thing at a time** — the selected tab rail,
-a focused control, the active command result, the split target. It never
-gradients, never glows, never shifts with page content.
+Usage rules: the accent marks **one thing at a time** — a focused control,
+an active command result, drag target, progress/status or split target. Resting
+selected tab/space rows use quiet surfaces + weight rather than a decorative
+accent rail. The accent never gradients, glows or shifts with page content.
 
 ### 3.3 Status and indicator hues
 
@@ -166,8 +171,8 @@ companion** (glyph, text, or position); color never carries status alone.
 
 | Token | Light | Dark | Non-color companion |
 |---|---|---|---|
-| `color:status.error` | `#C22E24` | `#FF6A63` | ⚠/lifering glyph + error surface tint + (crash) panel copy |
-| `color:status.attention` | `#8F5C00` | `#FFC63F` | pulsing dot (§6.3) + attention reason in status line |
+| `color:status.error` | `#B5261E` | `#FF6A63` | ⚠/lifering glyph + error surface tint + (crash) panel copy |
+| `color:status.attention` | `#805100` | `#FFC63F` | pulsing dot (§6.3) + attention reason in status line |
 | `color:status.ok` | `#177A55` | `#45C08A` | check glyph where used |
 | `color:status.info` | `#2C5CC5` | `#8AA6FF` | ℹ glyph |
 
@@ -186,9 +191,10 @@ tile washes deepen 7%; the crash/error and attention surfaces gain a 1 px
 
 ### 3.5 Selection tint
 
-`color:tint.selected` = `accent` at 10% over material (light
-`#D8E5E0` / dark `#1C3333`), 20% in increased contrast. The rail, not the
-tint, is the primary selection cue; the tint is confirmation.
+`color:tint.selected` = the reference-calibrated quiet blue-gray light
+surface `#EEF2F9` / dark `#1C3333`; increased contrast deepens it. The exact
+row identity, type weight and inset surface remain non-color selection cues;
+the Phosphor focus/interaction accent is not used as decorative site tint.
 
 ## 4. Typography
 
@@ -248,13 +254,13 @@ identity chips (§11.3) are bounded rounded rectangles from this scale —
 never fully circular pills around text. The S1 calibration raised these values
 with the rest of the scale but keeps the language.
 
-- **Sidebar widths:** `win:sidebar.S` 232, `.N` 280, `.XL` 340 pt; adjustable
+- **Sidebar widths:** `win:sidebar.S` 232, `.N` 300, `.XL` 340 pt; adjustable
   between 200 and 400 pt via a 4 px drag hairline (cursor `ew-resize`),
   minimum width enforced; collapse (Cmd-B) yields 0 with the glass full-bleed
   (§11.4). **Native-content floor stays strictly positive:** the native slot
   keeps ≥ 64 pt (`CONTENT_MIN`, 2 × `sp:7`) for every window that can host
   the floor — the effective rail width is `min(requested, window_width − 64)`.
-  At the shipped 1080 pt window the 280 pt normal rail leaves 800 pt of
+  At the shipped 1080 pt window the 300 pt normal rail leaves 780 pt of
   glass; in windows too narrow to host the requested width plus the §13
   content floor, the rail yields below the minimum so the native slot stays
   strictly positive (never zero or negative).
@@ -342,13 +348,13 @@ and `arc-tab-row-hover.png`) calibrated the target feel: normal rows
 approximately 36–40 pt, effective text approximately 14–15 pt,
 favicons/glyphs approximately 18–20 pt, generous section spacing, large rounded
 Favorite tiles, and inset rounded hover/active row surfaces with a trailing
-close control. The table below is the **authoritative scale**, decided from
-that reference — not a provisional percentage and not a candidate. The
-[global UI scale and density pass](docs/roadmap/tasks/global-ui-scale-density.md)
-applies it verbatim through the central `Theme`/`TypeScale`/`Spacing`/`Density`
-seams. BBR keeps its own Chassis & Glass materials, color discipline,
-semantics, and native-web boundary; the references calibrated scale, rhythm,
-and row affordance only. Dense-500 bounded-window rendering, scroll math,
+close control. Patrick's later complete-shell reference is authoritative for
+material and hierarchy as well as scale. The table below remains the central
+density authority, with the normal rail widened to 300 pt and Favorite tiles
+split into explicit width/height tokens by the
+[reference-faithful shell packet](docs/roadmap/tasks/visual-shell-reference.md).
+BBR keeps its own semantics, icons and native-web boundary. Dense-500
+bounded-window rendering, scroll math,
 semantic ids, interaction behavior, and every performance budget/sample count
 are unchanged by this table (§15); the geometry below only raises token values.
 
@@ -360,11 +366,12 @@ are unchanged by this table (§15); the geometry below only raises token values.
 | `type:title` | 12 | 14 | 16 |
 | `icon:` | 16 | 18 | 20 |
 | `density:space-chip` | 32 | 36 | 44 |
-| `density:sidebar` | 232 | 280 | 340 |
+| `density:sidebar` | 232 | 300 | 340 |
 | `density:hit-min` | 28 (close 24) | 32 (close 28) | 40 (close 32) |
-| `density:row-inset` | `sp:1` (4) | `sp:2` (8) | `sp:3` (12) |
+| `density:row-inset` | `sp:1` (4) | `sp:1` (4) | `sp:2` (8) |
 | `density:section-gap` | `sp:3` (12) | `sp:4` (16) | `sp:5` (20) |
-| favorites grid gap | `sp:1` (4) | `sp:2` (8) | `sp:2` (8) |
+| Favorite tile width × height | 40×36 | 64×44 | 88×52 |
+| favorites grid gap | `sp:1` (4) | `sp:1` (4) | `sp:2` (8) |
 | pinned rows | icon-only 32×32, gap 4 | icon + title | icon + title |
 
 Transition rule: density changes when the collection crosses 200 regular tabs
@@ -386,7 +393,7 @@ that changes row height — row heights are stable for the whole session view.
 | Domain | Chrome visual state |
 |---|---|
 | Chrome focus | ring on the focused control; command field shows cursor; hover washes active |
-| Web-content focus | chrome renders "at ease": no ring anywhere, command cursor hidden, row hover washes active but no accent tint on the field; the selected-tab rail stays as the only accent |
+| Web-content focus | chrome renders "at ease": no ring anywhere, command cursor hidden, row hover washes active but no accent tint on the field; selected rows retain their quiet surface + weight with no decorative accent |
 
 - **Order:** command field → favorites grid (row-major) → pinned → folders
   (expanded rows, then their nested rows) → regular tabs → the planned media
@@ -426,11 +433,11 @@ tint. No translation or "press down" motion. **Assert:** `active`.
 
 ### 10.4 `selected`
 `tint.selected` paints the inset rounded row surface of §10.2
-(`density:row-inset`, `density:radius`) plus the accent rail 3 pt at the row's
-leading edge (4 pt IC); title `ink`, meta `ink.secondary`. Snap
-(`dur:instant`). In web-focus domain the rail remains the sole accent (see
-§9). **Assert:** `selected`
-(plus the domain via `chrome_focused`).
+(`density:row-inset`, `density:radius`); title becomes 600 weight in `ink`,
+meta stays `ink.secondary`. No decorative Phosphor rail appears at rest;
+keyboard focus, drag targets and active command surfaces retain the accent.
+Snap (`dur:instant`). **Assert:** `selected` (plus the domain via
+`chrome_focused`).
 
 ### 10.5 `loading`
 Favicon slot swaps to an 18 pt circular arc spinner (S 16 / XL 20, accent,
@@ -530,14 +537,17 @@ using the IDs of §15. All rows use `density` geometry from §8.
   is no revealable space-row region above Favorites and no `[Spaces]` toggle.
 - **Anatomy:** each space is one keyboard-focusable **icon-only** identity chip
   containing exactly one validated `SpaceIdentity` value from the curated
-  appearance contract: either a selected emoji or a BBR icon glyph. No Space
-  title text appears in the footer at rest. The chip has a stable accessible
+  appearance contract: a selected emoji renders directly; until the complete
+  BBR identity-glyph path catalog ships, a curated glyph name renders as its
+  canonical two-letter badge (the §7 missing-glyph fallback), never arbitrary
+  Unicode. No Space title text appears in the footer at rest. The chip has a stable accessible
   name containing the space and profile names; color or emoji alone never
   carries that meaning. Normal S1 geometry is calibrated with the same generous
   hit-target family as the rest of the footer.
 - **Behavior:** pointer click or keyboard activation performs the existing warm
   space switch. The active space is unmistakable through a persistent selected
-  surface plus focus-independent outline/rail; inactive chips remain quiet.
+  surface plus stronger identity weight; keyboard focus supplies the accent
+  outline and inactive chips remain quiet.
   Activation keeps the selected tab/session warm and preserves every existing
   50/100 ms budget and fast-but-wrong guard.
 - **Appearance:** each space owns one curated theme-color token and one identity.
@@ -593,23 +603,27 @@ using the IDs of §15. All rows use `density` geometry from §8.
 
 ### 11.4 Sidebar
 
-- **Anatomy (top → bottom):** brand block (app mark + name) `sp:4`
-  padding (`bbr-brand`); command field (§11.5) directly under; Favorites grid
-  (§11.10); Pinned region (§11.2); Folders (§11.11); Tabs region (§11.1);
-  status line (`bbr-status`, copy unchanged); footer row at the very bottom —
-  exactly `[Downloads icon] [horizontally scrollable Spaces strip, flex:1]
-  [Plus icon]` (`bbr-downloads`, `bbr-space-strip`, `bbr-plus`), separated
-  from the list above by a `hairline`. The former `[Spaces]` reveal-toggle and
-  its upper space-row region do not exist in the target composition. The
-  current pre-G1a shell keeps its existing trailing status-row collapse control
-  while fresh F2a lands; the bounded §11.14 titlebar packet later performs one
-  atomic cutover to `bbr-titlebar-sidebar-toggle` and removes the duplicate
-  status-row control. F2a does not implement or anticipate that later cutover.
-- **Regions:** section labels use `type:badge` and are hidden when their
-  region is empty (`bbr-section-favorites` / `bbr-section-pinned` /
-  `bbr-section-folders` / `bbr-section-tabs`); profile groups and regions
-  stack under hairlines separated by `density:section-gap` breathing (S
-  `sp:3` / N `sp:4` / XL `sp:5`), with no repeated headers. The Favorites grid and
+- **Anatomy (top → bottom):** the full-height light rail starts behind the
+  native traffic-light safe area; the implemented §11.14 titlebar row owns
+  Sidebar toggle + Back/Forward/Reload, followed by the compact address
+  display (§11.5). There is **no standalone BBR app-mark/name brand block**.
+  The Favorites grid (§11.10) sits directly under the address display, exactly
+  as in the reference composition. The active Space's exact title is then the
+  primary list heading for the scrolling list, followed by Pinned (§11.2),
+  Folders (§11.11), a visible New Tab row routed through the existing
+  staged-new-tab authority, and regular Tabs (§11.1). The Favorites region is
+  omitted entirely when a Space has no favorites; nothing is fabricated to keep
+  the region present. Settled redundant status copy consumes no row; loading,
+  crash/error and unresponsive status remains visible. The footer is exactly
+  `[Downloads icon] [horizontally scrollable Spaces strip, flex:1] [Plus icon]`
+  (`bbr-downloads`, `bbr-space-strip`, `bbr-plus`) on `material:footer`. The
+  former `[Spaces]` reveal-toggle and upper space-row region do not exist.
+- **Regions:** Favorites, Pinned, Tabs and Folder wrappers retain stable ids
+  and truthful empty-region behavior, but the production rail does not repeat
+  visible `Favorites`/`Pinned`/`Tabs` labels; the active Space title supplies
+  the primary hierarchy. Folder names remain visible content, not a generic
+  section heading. Profile groups and regions stack under quiet separation
+  with `density:section-gap` breathing (S `sp:3` / N `sp:4` / XL `sp:5`). The Favorites grid and
   the Pinned region are fixed-height blocks above the scroll view; Folders
   and Tabs scroll together in `bbr-scroll` (label behavior per §11.6).
 - **Spaces strip:** `bbr-space-strip` is the permanent space navigation
@@ -618,9 +632,10 @@ using the IDs of §15. All rows use `density` geometry from §8.
   It is not a disclosure control and never changes the vertical region stack.
   Pointer click, keyboard activation, and horizontal trackpad swipe route
   through the same space-switch authority and preserve warm-session budgets.
-- **Footer:** `[Downloads]` opens the downloads surface (Phase 8; the fixed
-  icon control exposes a text alternative and a `type:meta` `tnum` count when
-  content exists). The middle flex region is the permanent Spaces strip.
+- **Footer:** the glyph-only `[Downloads]` control opens the downloads surface
+  and exposes the full text alternative plus a `type:meta` `tnum` count when
+  content exists. The middle flex region is the permanent icon/badge-only
+  Spaces strip; `[+]` is likewise glyph-only.
   `[+]` opens the **plus menu** (Planned) — a real context menu
   (`bbr-plus-menu`, `elev:2`, `material:overlay`, `radius:md`) with exactly
   two items in v1: **New Space** (`bbr-plus-new-space`) and **New Folder**
@@ -651,7 +666,8 @@ using the IDs of §15. All rows use `density` geometry from §8.
     [url mono trunc] [key hint]`, `selected` visuals (accent rail inside
     the result list), and `accent.ink` match highlighting.
   - **Cmd-L / pointer click on the address control → palette over the
-    address** (Planned, `bbr-command-overlay`): `elev:2` overlay that
+    address** (Planned, `bbr-command-overlay`): the resting control uses the
+    reference-calibrated 4 pt rail inset; `elev:2` overlay that
     **covers** the §11.5 address control rather than dropping below it —
     top edge flush with the control's top edge, leading edge flush with
     the control's leading edge, width = control width clamped to
@@ -672,8 +688,9 @@ using the IDs of §15. All rows use `density` geometry from §8.
   (§11.6); sidebar open/close, space-strip scrolling/switching, direct swipe,
   and palette surfaces submit to their existing latency budgets. Larger S1
   geometry never changes bounded-window rendering or dense scroll math.
-- **Assert ids:** `bbr-sidebar`, `bbr-sidebar-column`, `bbr-brand`,
-  `bbr-scroll`, `bbr-status`, `bbr-sidebar-toggle`, `bbr-sidebar-divider`,
+- **Assert ids:** `bbr-sidebar`, `bbr-sidebar-column`, `bbr-active-space-title`,
+  `bbr-new-tab`, `bbr-scroll`, conditional `bbr-status`,
+  `bbr-titlebar-sidebar-toggle`, `bbr-sidebar-divider`,
   `bbr-section-favorites` / `bbr-section-pinned` / `bbr-section-folders` /
   `bbr-section-tabs`, `bbr-favorites`, `bbr-fav-<n>` (+ `-icon`),
   `bbr-folders`, `bbr-folder-row-<n>` (+ `-name`/`-count`/`-toggle`),
@@ -798,15 +815,13 @@ Covered by §7.2 (monogram tile) and §4 (truncation). Additional edge rules:
 empty title falls back to the hostname; empty host falls back to the URL
 scheme; a title consisting only of whitespace is treated as empty.
 
-### 11.10 Favorites grid (Planned)
+### 11.10 Favorites grid (Implemented; reference-calibrated)
 
-- **Anatomy:** a `type:badge` "Favorites" label (`bbr-section-favorites`,
-  hidden when empty) over a grid of square destination tiles
-  (`bbr-favorites`): the §7.2 favicon/monogram tile centered in a
-  `radius:sm` tile at `density:row-tile` size (S 28 / N 36 / XL 44), gap
-  `sp:1` (S) / `sp:2` (N/XL), fixed per-density column count (S 5 / N 4 /
-  XL 3) so the tile →
-  index mapping is deterministic at every sidebar width.
+- **Anatomy:** when real Favorites exist, `bbr-favorites` presents destination
+  tiles without a repeated visible section label. The §7.2 favicon/monogram is
+  centered in a softly raised `radius:sm` surface sized 40×36 (S), 64×44 (N)
+  or 88×52 (XL), gap 4/4/8 pt. Column count remains deterministic per density
+  and available rail width; empty Favorites consume no production space.
 - **Behavior:** clicking a tile activates that exact favorited tab: switch
   to its owning space in the same browser window (thereby selecting the
   space's profile/container), then focus its stable `TabId`. Never open a
@@ -942,8 +957,8 @@ draft and is **not** provisional; only the open questions named in §17 remain.
   order: Downloads precedes the space chips). Pointer: click activates the
   row's action directly; hover/press paint §10.2/§10.3. No persistent
   selection — focus is the keyboard cursor; no multi-select in v1.
-- **Focus domain:** while open the panel is chrome focus (ring per §9; the
-  selected-tab rail stays the only accent). Opening preserves the active
+- **Focus domain:** while open the panel is chrome focus (ring per §9;
+  resting selected rows keep their quiet surface + weight). Opening preserves the active
   tab/session; dismissing returns focus to the footer control per the
   interaction contract.
 - **Empty state:** when the panel has no attempts at all, a single hint line
@@ -961,8 +976,8 @@ draft and is **not** provisional; only the open questions named in §17 remain.
 The Zen references in
 `/Users/patwoz/dev/Personal/macos/bbr-design-references/zen-*-context-menu*.png`
 are information-architecture and native-macOS behavior references only. BBR
-uses its own Chassis & Glass tokens, copy, product capabilities, profile model,
-and command authorities; it does not copy Zen/Firefox features or styling.
+uses its own BBR tokens, copy, product capabilities, profile model and command
+authorities; it does not copy Zen/Firefox features or styling.
 
 - **Material and geometry:** production BBR menus use `material:overlay`,
   `elev:2`, `radius:md`, `type:label`, and hairline group separators. Native
@@ -1002,14 +1017,15 @@ Canonical packets: [Tab/Favorite menus](docs/roadmap/tasks/tab-favorite-context-
 [Folder menu](docs/roadmap/tasks/folder-context-menu.md), and
 [Page-background follow-up](docs/roadmap/tasks/page-background-context-menu.md).
 
-### 11.14 Unified titlebar navigation controls (Planned)
+### 11.14 Unified titlebar navigation controls (Implemented; reference-calibrated)
 
-The post-F2a/G1a titlebar target is
+The production titlebar is
 `[traffic lights] [sidebar collapse/expand] … [Back] [Forward] [Reload]`
 inside the actual macOS safe titlebar layout guide.
 
-- The expanded Sidebar owns the complete left rail from the top window edge to
-  the footer. Its collapse control sits immediately after the traffic lights,
+- The window uses the public transparent/full-size macOS titlebar so the
+  expanded Sidebar owns the complete left rail from the top window edge to the
+  footer behind the native traffic-light area. Its collapse control sits immediately after the traffic lights,
   uses the same sidebar-width/collapse authority as Cmd-B, changes glyph for
   collapsed versus expanded, and replaces rather than duplicates the pre-G1a
   status-row control.
@@ -1031,7 +1047,7 @@ inside the actual macOS safe titlebar layout guide.
 - Stable ids: `bbr-titlebar`, `bbr-titlebar-sidebar-toggle`, `bbr-nav-back`,
   `bbr-nav-forward`, `bbr-nav-reload`.
 
-Canonical packet: [Unified titlebar navigation controls](docs/roadmap/tasks/titlebar-navigation-controls.md).
+Canonical packets: [Unified titlebar navigation controls](docs/roadmap/tasks/titlebar-navigation-controls.md) and the superseding visual authority [reference-faithful production shell](docs/roadmap/tasks/visual-shell-reference.md).
 
 ### 11.15 Sidebar media control (Planned; capability-first)
 

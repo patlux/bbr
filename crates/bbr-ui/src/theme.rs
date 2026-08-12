@@ -250,7 +250,7 @@ impl Elevation {
 }
 
 impl Theme {
-    /// The shipped shell mode: dark, standard contrast, normal density.
+    /// Convenience constructor for the supported dark token variant.
     pub fn dark() -> Self {
         Self::new(ThemeMode::Dark, ContrastMode::Standard, Density::Normal)
     }
@@ -300,14 +300,14 @@ mod tests {
     #[test]
     fn density_geometry_is_uniform_per_density() {
         // §8: uniform row heights per density keep scroll math deterministic;
-        // normal density is the shipped 280 pt sidebar.
+        // normal density is the shipped 300 pt sidebar.
         assert_eq!(Density::Normal.row(), px(36.0));
         assert_eq!(Density::Small.row(), px(32.0));
         assert_eq!(Density::ExtraLarge.row(), px(44.0));
         assert_eq!(Density::Small.row_tile(), px(28.0));
         assert_eq!(Density::Normal.row_tile(), px(36.0));
         assert_eq!(Density::ExtraLarge.row_tile(), px(44.0));
-        assert_eq!(Density::Normal.sidebar_width(), px(280.0));
+        assert_eq!(Density::Normal.sidebar_width(), px(300.0));
         assert_eq!(Density::Small.sidebar_width(), px(232.0));
         assert_eq!(Density::ExtraLarge.sidebar_width(), px(340.0));
         // §11.4 `win:palette`: S 440 / N 520 / XL 620 pt.

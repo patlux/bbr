@@ -7,10 +7,10 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 
 | Field | Value |
 |---|---|
-| Generation | `daily-driver-2026-08-12` |
-| Cutover commit | `781e862ca4547cee16be23e251767f6b2fa938fb` |
-| Verified product base | `main@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
-| Integrated product checkpoint | `14d56309b4a47aa7da9ab04eb346eeab7362b20a` / tree `779a086d620fdcabd21a7546a34bc08589097889`; all seven Daily-driver lanes integrated, including reviewed Page Menu merge `85295736…` and focused Gallery warning-denied gate fix `14d56309…` |
+| Generation | `visual-shell-reference-2026-08-12` |
+| Cutover commit | pending in isolated writer; authority and implementation ship in one reviewed candidate |
+| Verified product base | `main@fa18ee54c781d37647560f14d004b6d11edad19b` |
+| Integrated product checkpoint | `main@fa18ee54c781d37647560f14d004b6d11edad19b`; complete reviewed Daily-driver delivery is local and clean, not pushed |
 | Daily-driver preparation base | `568cdae0008d3cc9008209007ae32442ee0ff80e` / tree `90114c65cc068a744b43aeeec710b47fff5cbf4a` |
 | Daily-driver activation base | `4d5be3116ec090aebb7eefa4861970710dba7a5b` / tree `9c8cae5cd5bca883fadc3ec198e232be4f436839`; all seven lane worktrees created clean from this exact commit |
 | Daily-driver contract | [2026-08-12 Daily-driver delivery](2026-08-12-daily-driver-delivery.md) |
@@ -37,10 +37,11 @@ The current branch is the integration/control authority. Only the Orchestrator c
 
 ## Active product wave
 
-All runnable Daily-driver lanes use the same committed authority ancestry and isolated sibling worktrees. Implementation/non-GUI checks may overlap. GUI suites remain host-exclusive. New substantive agents use `homelab-llm/deepseek-v4-flash:high`.
+The completed Daily-driver rows below are historical integrated evidence. One bounded visual-shell lane is active from the exact local-main checkpoint. GUI suites remain host-exclusive; the unrelated visible `bbr` process from `/Users/patwoz/dev/Personal/macos/bbr-main-integration` is not owned or terminated by this lane, and visual capture must bind the exact test-app window number.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
+| VS-REFERENCE | Reference-faithful light production shell | `running` | `/Users/patwoz/dev/Personal/macos/bbr-visual-shell`, branch `parallel/visual-shell-reference`, base `fa18ee54…` | Orchestrator; sole writer | [visual-shell reference](../roadmap/tasks/visual-shell-reference.md) | All affected GUI suites are green serially under the repository lock (Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20, Organize 6/6, Hover 3/3, Dense 3/3, Gallery 44/44) and the final optimized `visual-capture` build re-produced both 2× artifacts; the independent three-lens read-only review returned sixteen non-blocking findings, all causally remediated (plus one further 280 pt persistence-recovery residue) and rechecked green including Persistence 5/5; next gate is the reviewed-candidate commit and serial local-main integration |
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
 | DD-LINK | Cmd-click/middle-click grouped background tabs | `integrated` | lane commit `abae5214c04900034da139e5148d7c79693158dc`; merge `b4b2b77c9d679dce30b48e2e302e24075956a449` | Orchestrator; focused remediation `REVIEW_PASS` and post-merge gates complete | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-GESTURE | Current-base real-app gesture revalidation | `integrated` | lane commit `f2183fdb2c3f3586c500d4c67a1bdc0257e6a06d`; merge `ebb8e137aa54077c47b5ae4c5603e47e8492d9ca` | Orchestrator; independent `REVIEW_PASS` and focused post-merge gates complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Closed for this wave; testkit-only fix, production command routing unchanged |

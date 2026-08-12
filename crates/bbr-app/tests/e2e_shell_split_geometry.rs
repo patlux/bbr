@@ -20,7 +20,7 @@ use e2e_common::*;
 
 /// The DESIGN §5 default rail width (mirrors
 /// `bbr_ui::sidebar::geometry::SIDEBAR_DEFAULT`).
-const SIDEBAR_DEFAULT: f32 = 280.0;
+const SIDEBAR_DEFAULT: f32 = 300.0;
 
 fn flush_frame(client: &mut Client) {
     client

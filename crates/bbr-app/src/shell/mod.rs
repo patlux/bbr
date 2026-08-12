@@ -24,7 +24,7 @@ pub mod space;
 pub mod tab;
 
 pub use presentation::profile_line;
-pub use presentation::status_model;
+pub use presentation::{status_model, status_visible};
 #[cfg(feature = "testkit")]
 pub use snapshot::TestSnapshot;
 pub use space::space_groups;

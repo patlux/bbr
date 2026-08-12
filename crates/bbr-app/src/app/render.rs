@@ -466,6 +466,6 @@ impl BbrApp {
         let browser = self.controller.snapshot();
         let pinned = crate::shell::pinned_count(&browser.tabs);
         let regular = browser.tabs.len().saturating_sub(pinned);
-        Theme::for_collection(ThemeMode::Dark, ContrastMode::Standard, regular)
+        Theme::for_collection(ThemeMode::Light, ContrastMode::Standard, regular)
     }
 }

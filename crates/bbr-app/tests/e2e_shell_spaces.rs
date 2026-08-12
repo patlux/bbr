@@ -28,6 +28,22 @@ mod swipe;
 use bbr_testkit::protocol::{CommandBarMode, TestProfileId};
 use e2e_common::*;
 
+/// Resolve exact light/standard tint wire values through the same public
+/// presentation authority the production render and snapshot use. This keeps
+/// E2E strict without duplicating palette literals that drift with shell mode.
+fn light_standard_tints(token: bbr_domain::SpaceTheme) -> (String, String) {
+    let theme = bbr_ui::theme::Theme::new(
+        bbr_ui::theme::ThemeMode::Light,
+        bbr_ui::theme::ContrastMode::Standard,
+        bbr_ui::theme::Density::Normal,
+    );
+    let tint = bbr_ui::theme::space_tint(token, &theme);
+    (
+        bbr_ui::theme::hex(tint.chrome),
+        bbr_ui::theme::hex(tint.chip_active),
+    )
+}
+
 /// Assert the strip's typed chip evidence: one chip per space in canonical
 /// display order with exactly one selected chip (the active space).
 fn assert_chip_evidence(

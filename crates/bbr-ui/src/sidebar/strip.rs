@@ -15,7 +15,7 @@
 //! color-only. The active chip renders the space's **resolved theme tint**
 //! (the one central [`crate::theme::space_tint`] model — the active token
 //! tints the chip, never a raw consumer color) plus a persistent selected
-//! surface and a focus-independent accent rail; inactive chips stay quiet.
+//! surface and stronger type weight; inactive chips stay quiet.
 //! The strip scrolls the selected chip fully into view without changing
 //! order through the tracked [`ScrollHandle`].
 //!
@@ -74,7 +74,7 @@ pub fn space_strip(
 }
 
 /// One §11.3 identity chip: `[identity]`, `radius:sm`, with
-/// the persistent selected surface + accent rail on the active space and the
+/// the persistent selected surface on the active space and the
 /// §10.9 drag-target treatment (accent outline + selection tint + the §12
 /// destination-profile companion) while a pointer drag targets this exact
 /// chip. DESIGN.md §11.3: the footer chip is **icon-only at rest** — the
@@ -89,6 +89,19 @@ pub fn space_strip(
 /// inside the scroll viewport (`flex_shrink_0`), so the strip's content
 /// width is the sum of its chips and the selected chip can be scrolled into
 /// view deterministically.
+fn compact_identity(identity: &str) -> SharedString {
+    if identity.chars().count() == 1 {
+        return SharedString::from(identity.to_string());
+    }
+    SharedString::from(
+        identity
+            .chars()
+            .take(2)
+            .flat_map(char::to_uppercase)
+            .collect::<String>(),
+    )
+}
+
 pub fn space_chip(
     theme: &Theme,
     visuals: &SpaceChipVisuals,
@@ -109,11 +122,12 @@ pub fn space_chip(
     } else {
         p.surface_sidebar
     };
+    let identity = compact_identity(&visuals.identity);
     div()
         .id(space_chip_id(visuals.space))
         .flex_shrink_0()
-        .h(theme.density.row() - px(4.0))
-        .px(Spacing::sp2())
+        .size(theme.density.row() - px(4.0))
+        .px(Spacing::sp1())
         .gap(Spacing::sp2())
         .items_center()
         .flex()
@@ -128,16 +142,10 @@ pub fn space_chip(
             chip_surface
         })
         .when(selected && !target, |el| {
-            // The persistent selected surface plus a focus-independent
-            // accent rail — the active chip is unmistakable without color
-            // (the §9 outline rides the strip's keyboard focus).
-            el.border_1().border_color(p.accent).child(
-                div()
-                    .w(px(2.0))
-                    .h(theme.density.row() - px(10.0))
-                    .rounded(Radius.small())
-                    .bg(p.accent),
-            )
+            // Quiet selected surface; exact identity + stronger type weight
+            // are the non-color cues. The strip's keyboard focus owns the
+            // accent ring, so rest state carries no decorative rail.
+            el.border_1().border_color(p.hairline)
         })
         .when(target, |el| {
             // §10.9/§11.3: the drag-target outline plus the §12
@@ -160,9 +168,13 @@ pub fn space_chip(
             div()
                 .id(space_identity_id(visuals.space))
                 .text_size(theme.type_.badge.size)
-                .font_weight(theme.type_.badge.weight)
+                .font_weight(if selected {
+                    gpui::FontWeight(600.0)
+                } else {
+                    theme.type_.badge.weight
+                })
                 .text_color(p.ink)
-                .child(visuals.identity.clone()),
+                .child(identity),
         )
         .on_mouse_down(MouseButton::Left, on_select)
 }
@@ -185,6 +197,13 @@ mod tests {
             drag_target: false,
             companion: None,
         }
+    }
+
+    #[test]
+    fn compact_identity_keeps_emoji_and_badges_glyph_names() {
+        assert_eq!(compact_identity("🔥"), "🔥");
+        assert_eq!(compact_identity("code"), "CO");
+        assert_eq!(compact_identity("briefcase"), "BR");
     }
 
     #[test]

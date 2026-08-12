@@ -55,16 +55,16 @@ fn pointer_opens_selects_closes_reopens_visible_tabs() {
             &[
                 "bbr-root",
                 "bbr-sidebar",
-                "bbr-brand",
                 "bbr-address",
                 "bbr-address-domain",
                 "bbr-address-accessory",
-                "bbr-status",
                 "bbr-titlebar",
                 "bbr-titlebar-sidebar-toggle",
                 "bbr-nav-back",
                 "bbr-nav-forward",
                 "bbr-nav-reload",
+                "bbr-active-space-title",
+                "bbr-new-tab",
                 "bbr-tab-list",
                 "bbr-tab-row-0",
                 "bbr-tab-title-0",
@@ -72,6 +72,10 @@ fn pointer_opens_selects_closes_reopens_visible_tabs() {
                 "bbr-tab-state-0",
                 "bbr-tab-close-0",
             ],
+        );
+        assert!(
+            !initial.visible_ids.iter().any(|id| id == "bbr-brand"),
+            "the reference-authoritative shell has no standalone brand block"
         );
         assert!(
             !initial

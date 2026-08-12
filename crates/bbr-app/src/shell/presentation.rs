@@ -19,6 +19,17 @@ pub fn profile_line(profile_title: &str) -> String {
 /// The §11.4 status-line text derived from the controller snapshot (the
 /// app-owned half of the G2 status cutover; the row anatomy lives in
 /// `bbr-ui::components::status`).
+/// Whether the transient status line is useful in the current frame. The
+/// settled page title/URL already appears in the tab row and address display;
+/// only active progress or recovery states earn a separate line.
+pub fn status_visible(snapshot: &ControllerSnapshot) -> bool {
+    snapshot.nav.loading
+        || snapshot
+            .active_index
+            .and_then(|index| snapshot.tabs.get(index))
+            .is_some_and(|tab| tab.crashed || tab.unresponsive)
+}
+
 pub fn status_model(snapshot: &ControllerSnapshot) -> StatusModel {
     // A crash destroyed the session (and its nav state); the error surface
     // derives from the tab's persistent crash flag (§10.7), not `nav`. The

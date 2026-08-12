@@ -157,8 +157,9 @@ pub fn plus_menu_node(state: &bbr_ui::components::menu::PlusMenuState) -> Option
     ))
 }
 
-/// The §11.10 favorites grid node: the section label over the
-/// `bbr-favorites` grid, each tile a §7.2 destination with its monogram
+/// The §11.10 favorites band node: the stable section wrapper contains the
+/// `bbr-favorites` grid without painting redundant label text; each tile is
+/// a §7.2 destination with its monogram
 /// icon child. `None` while the region is empty at rest (label hidden).
 /// While a tab drag targets the region — including an empty grid, when the
 /// region renders as the compact drop band — the section carries the
@@ -197,7 +198,15 @@ pub fn favorites_node(
             )],
         })
         .collect();
-    let mut section = section_node("Favorites", false);
+    let mut section = node(
+        bbr_ui::components::favorites::FAVORITES_SECTION_ID,
+        SemanticRole::Section,
+        Some("Favorites".into()),
+        None,
+        false,
+        false,
+        vec![],
+    );
     section.drag_target = band_targeted;
     section.children.push(node(
         bbr_ui::components::favorites::FAVORITES_ID,

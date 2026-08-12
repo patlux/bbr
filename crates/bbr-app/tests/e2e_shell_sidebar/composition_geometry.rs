@@ -17,15 +17,13 @@ use e2e_dense_common::{flush, seed_dense, WINDOW_ROWS};
 #[path = "../e2e_dense_common/mod.rs"]
 mod e2e_dense_common;
 
-/// The §11.4/§11.14 rail region order the semantic tree mirrors (DESIGN.md
-/// §15); mirrors `super::composition::RAIL_ORDER_AT_REST` for the dense
-/// branch.
-const RAIL_ORDER_AT_REST: [&str; 7] = [
+/// The reference-authoritative settled rail order; mirrors
+/// `super::composition::RAIL_ORDER_AT_REST` for the dense branch.
+const RAIL_ORDER_AT_REST: [&str; 6] = [
     "bbr-titlebar",
-    "bbr-brand",
     "bbr-address",
+    "bbr-active-space-title",
     "bbr-tab-list",
-    "bbr-status",
     "bbr-footer",
     "bbr-sidebar-divider",
 ];
@@ -203,11 +201,11 @@ fn split_collapse_expand_keeps_native_geometry_and_identity() {
 }
 
 /// The bounded dense 500-tab/50-session production path renders through
-/// the sidebar composition: the full rail (brand, favorites, folders,
-/// status, toggle, footer/strip/plus) stays coherent at density, the
-/// regular region stays windowed (never 500 rows), and the pinned block
-/// keeps its identity. Reuses the existing dense seed path — no new
-/// unbounded seed/render path.
+/// the sidebar composition: the full rail (titlebar, active Space, New Tab,
+/// favorites, folders, conditional status, footer/strip/plus) stays coherent
+/// at density, the regular region stays windowed (never 500 rows), and the
+/// pinned block keeps its identity. Reuses the existing dense seed path — no
+/// new unbounded seed/render path.
 #[test]
 #[ignore]
 fn dense_window_renders_through_the_sidebar_composition() {
@@ -236,17 +234,17 @@ fn dense_window_renders_through_the_sidebar_composition() {
         assert_eq!(snap.tabs.len(), 500);
         assert_eq!(snap.engine_sessions, 50);
         assert_eq!(snap.pinned_count, 10);
-        // The full rail composition holds at density: titlebar, brand,
-        // command slot, status, footer/strip/plus, divider.
+        // The full rail composition holds at density: titlebar controls,
+        // command slot, active Space, New Tab, footer/strip/plus and divider.
         assert_ids(
             &snap,
             &[
                 "bbr-sidebar",
                 "bbr-titlebar",
                 "bbr-titlebar-sidebar-toggle",
-                "bbr-brand",
                 "bbr-address",
-                "bbr-status",
+                "bbr-active-space-title",
+                "bbr-new-tab",
                 "bbr-nav-back",
                 "bbr-nav-forward",
                 "bbr-nav-reload",
@@ -257,6 +255,14 @@ fn dense_window_renders_through_the_sidebar_composition() {
                 "bbr-sidebar-divider",
             ],
         );
+        assert!(
+            !snap.visible_ids.iter().any(|id| id == "bbr-brand"),
+            "the dense rail never restores the obsolete standalone brand"
+        );
+        let mut expected_order = RAIL_ORDER_AT_REST.to_vec();
+        if snap.visible_ids.iter().any(|id| id == "bbr-status") {
+            expected_order.insert(expected_order.len() - 2, "bbr-status");
+        }
         // The regular region stays windowed: the scroll container and a
         // bounded window of rows render, never 500 rows.
         assert_ids(&snap, &["bbr-tab-scroll", "bbr-tab-row-436"]);
@@ -274,7 +280,7 @@ fn dense_window_renders_through_the_sidebar_composition() {
         );
         // The semantic tree still mirrors the §11.4 region order at
         // density (favorites/folders empty → hidden).
-        assert_rail_order(&snap, &RAIL_ORDER_AT_REST);
+        assert_rail_order(&snap, &expected_order);
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

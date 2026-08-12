@@ -43,7 +43,6 @@ pub fn tab_surface(theme: &Theme, model: &SidebarModel, callbacks: &Callbacks) -
 
     let mut children: Vec<gpui::AnyElement> = Vec::new();
     if !tabs.pinned.is_empty() {
-        children.push(components::section_label(theme, "Pinned", list_focused).into_any());
         for row in &tabs.pinned {
             if tabs.tick == Some(row.index) {
                 children.push(components::drag_tick(theme, row.index, !tabs.tick_valid).into_any());
@@ -66,9 +65,27 @@ pub fn tab_surface(theme: &Theme, model: &SidebarModel, callbacks: &Callbacks) -
     if let Some(folders) = model.folders.as_ref() {
         children.push(folders_surface(theme, model, folders, callbacks).into_any());
     }
-    if !tabs.window.is_empty() {
-        children.push(components::section_label(theme, "Tabs", list_focused).into_any());
-    }
+    // The reference keeps New Tab as a visible row at the pinned/regular
+    // boundary. It stages the existing NewTab command surface; it never
+    // creates a tab or session before the user commits a destination.
+    children.push(
+        div()
+            .id("bbr-new-tab")
+            .h(theme.density.row())
+            .px(theme.density.row_padding_x())
+            .gap(crate::theme::Spacing::sp2())
+            .items_center()
+            .flex()
+            .flex_row()
+            .cursor_pointer()
+            .text_size(theme.type_.title.size)
+            .font_weight(theme.type_.title.weight)
+            .text_color(theme.palette.ink_secondary)
+            .child(crate::icons::Icon::Plus.canvas(theme, theme.density.icon()))
+            .child("New Tab")
+            .on_mouse_down(MouseButton::Left, callbacks::mouse(&callbacks.on_new_tab))
+            .into_any(),
+    );
 
     // The scroll container: spacers keep the total content height equal
     // to the full collection, the rendered window follows the production

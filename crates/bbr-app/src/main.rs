@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use bbr_browser::BrowserController;
 use gpui::prelude::*;
-use gpui::{px, size, App, Bounds, Entity, Window, WindowBounds, WindowOptions};
+use gpui::{px, size, App, Bounds, Entity, TitlebarOptions, Window, WindowBounds, WindowOptions};
 
 mod actions;
 mod app;
@@ -282,6 +282,15 @@ fn main() {
         });
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
+            // The production chrome owns the complete top rail. GPUI's
+            // public full-size-content titlebar keeps the native traffic
+            // lights but lets the light sidebar material continue behind
+            // them instead of exposing a separate white system strip.
+            titlebar: Some(TitlebarOptions {
+                title: None,
+                appears_transparent: true,
+                traffic_light_position: None,
+            }),
             focus: !cli.hidden,
             // `--bbr-hidden` (every E2E harness) must never order the window
             // front: a shown window is visible to the host's window manager

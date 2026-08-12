@@ -3,7 +3,7 @@
 //! browser tables round-trip with the global stores untouched, dense 500-tab
 //! state round-trips, invalid browser state rejects whole with no partial
 //! write, the sidebar contract matches the implemented shell range
-//! (200..=400 pt, default 280), and a mismatched store is discarded and
+//! (200..=400 pt, default 300), and a mismatched store is discarded and
 //! recreated without migration or backward compatibility.
 
 use std::{
@@ -316,10 +316,10 @@ fn invalid_browser_state_rejects_whole_without_partial_write() {
 
 #[test]
 fn sidebar_contract_matches_the_implemented_shell_range() {
-    // The app's implemented sidebar range is 200..=400 pt with a 280 pt
+    // The app's implemented sidebar range is 200..=400 pt with a 300 pt
     // default (the shell contract); persistence must restore exactly that.
-    assert_eq!(SidebarState::default().width, 280.0);
-    assert_eq!(SidebarState::default().last_expanded_width, 280.0);
+    assert_eq!(SidebarState::default().width, 300.0);
+    assert_eq!(SidebarState::default().last_expanded_width, 300.0);
 
     let db = TempDb::new("sidebar-range");
     let repository = db.repository();
@@ -343,7 +343,7 @@ fn sidebar_contract_matches_the_implemented_shell_range() {
     );
     assert!(outcome.warnings.is_empty());
 
-    // An out-of-range width recovers to the 280 pt default with the typed
+    // An out-of-range width recovers to the 300 pt default with the typed
     // warning (recovery, not corruption — the browser data is untouched).
     // The write path already rejects an out-of-range width, so the recovery
     // is exercised by corrupting the row directly.

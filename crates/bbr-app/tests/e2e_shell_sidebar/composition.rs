@@ -15,16 +15,15 @@ use super::*;
 use crate::e2e_semantics_common::{assert_node, find};
 use bbr_testkit::protocol::{dsl, SemanticRole};
 
-/// The §11.4/§11.14 rail region order the semantic tree mirrors (DESIGN.md
-/// §15): titlebar → brand → command field → favorites → tabs → status →
-/// footer → divider. The plus menu and downloads panel render only while
-/// open.
-const RAIL_ORDER_AT_REST: [&str; 7] = [
+/// The reference-authoritative settled rail order the semantic tree mirrors:
+/// titlebar → command field → active Space title → tabs → footer → divider.
+/// Favorites insert after the command field when populated; status, the plus
+/// menu and downloads panel render only while their genuine state is active.
+const RAIL_ORDER_AT_REST: [&str; 6] = [
     "bbr-titlebar",
-    "bbr-brand",
     "bbr-address",
+    "bbr-active-space-title",
     "bbr-tab-list",
-    "bbr-status",
     "bbr-footer",
     "bbr-sidebar-divider",
 ];
@@ -40,11 +39,12 @@ fn assert_rail_order(snapshot: &bbr_testkit::protocol::Snapshot, expected: &[&st
     assert_eq!(order, expected, "§11.4 rail region order");
 }
 
-/// The full §11.4 rail composition over the real app: brand, command slot
-/// (address pill), favorites grid, pinned/regular tabs, folders, status,
-/// toggle, footer with the permanent space strip and plus control, and the
-/// resize divider all render through the one `bbr_ui::sidebar` composition
-/// with stable §15 ids; the typed semantic tree mirrors the §11.4 region
+/// The full §11.4 rail composition over the real app: titlebar controls,
+/// command slot (address pill), active Space heading, favorites grid,
+/// pinned/regular tabs, folders, visible New Tab action, conditional status,
+/// footer with the permanent space strip and plus control, and the resize
+/// divider all render through the one `bbr_ui::sidebar` composition with
+/// stable §15 ids; the typed semantic tree mirrors the production region
 /// order; no legacy `[Spaces]` reveal surface remains (one rail authority);
 /// and the production pointer seams (tab row, favorite tile, folder row,
 /// space chip, plus menu) still route through the composition.
@@ -72,9 +72,10 @@ fn full_rail_composition_region_and_semantic_ordering() {
         }
         let default_profile = initial.active_profile;
 
-        // Full rail at rest: every §11.4 region id is present through the
-        // composition — brand, address pill, status, toggle, footer
-        // (downloads + strip + plus), divider — and the empty
+        // Full rail at rest: every settled reference-authoritative region
+        // id is present — titlebar controls, address pill, active Space
+        // heading, visible New Tab action, footer and divider. The obsolete
+        // standalone brand and settled status regions stay absent, and empty
         // favorites/folders regions hide their labels.
         assert_ids(
             &initial,
@@ -82,10 +83,10 @@ fn full_rail_composition_region_and_semantic_ordering() {
                 "bbr-sidebar",
                 "bbr-titlebar",
                 "bbr-titlebar-sidebar-toggle",
-                "bbr-brand",
                 "bbr-address",
                 "bbr-address-domain",
-                "bbr-status",
+                "bbr-active-space-title",
+                "bbr-new-tab",
                 "bbr-nav-back",
                 "bbr-nav-forward",
                 "bbr-nav-reload",
@@ -95,6 +96,13 @@ fn full_rail_composition_region_and_semantic_ordering() {
                 "bbr-plus",
                 "bbr-sidebar-divider",
             ],
+        );
+        assert!(
+            !initial
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-brand" || id == "bbr-status"),
+            "settled rail omits standalone brand and redundant status"
         );
         assert!(
             !initial
@@ -126,10 +134,20 @@ fn full_rail_composition_region_and_semantic_ordering() {
         );
         assert_node(
             &initial.semantics,
-            "bbr-brand",
-            SemanticRole::Brand,
-            Some("BBR"),
+            "bbr-active-space-title",
+            SemanticRole::Title,
+            Some("Default"),
             None,
+            true,
+            false,
+            false,
+        );
+        assert_node(
+            &initial.semantics,
+            "bbr-new-tab",
+            SemanticRole::Button,
+            Some("New Tab"),
+            Some("Cmd-T"),
             true,
             false,
             false,
@@ -147,8 +165,8 @@ fn full_rail_composition_region_and_semantic_ordering() {
 
         // Open a second tab, favorite the first, create a folder: the
         // regions appear in the rail and the semantic tree folds them into
-        // the §11.4 order (favorites between the command field and tabs;
-        // folders inside the tab list).
+        // the reference-authoritative order (favorites between the command
+        // field and active Space heading; folders inside the tab list).
         let _second_view = open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
         client
             .send_ok(&dsl::toggle_favorite_tab(0))
@@ -178,11 +196,10 @@ fn full_rail_composition_region_and_semantic_ordering() {
             &composed,
             &[
                 "bbr-titlebar",
-                "bbr-brand",
                 "bbr-address",
                 "bbr-section-favorites",
+                "bbr-active-space-title",
                 "bbr-tab-list",
-                "bbr-status",
                 "bbr-footer",
                 "bbr-sidebar-divider",
             ],

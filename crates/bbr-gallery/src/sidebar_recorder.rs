@@ -66,6 +66,8 @@ pub enum SidebarObservation {
     ReleaseRow(usize),
     /// §10.2: pointer enter/leave (`on_hover_row`), payload = (row, hovered).
     HoverRow(usize, bool),
+    /// Visible New Tab row (`on_new_tab`) using the same staged authority.
+    NewTab,
     /// §11.1/§11.6: the tab list's keyboard traversal (`on_tab_list_key_down`).
     TabListKeyDown(String),
     /// §11.10: a favorites tile activation (`on_activate_favorite`).
@@ -153,6 +155,8 @@ pub struct SidebarRecorder {
     pub release_rows: Vec<usize>,
     /// `on_hover_row` (row, hovered) pairs, in dispatch order.
     pub hover_rows: Vec<(usize, bool)>,
+    /// `on_new_tab` dispatches.
+    pub new_tabs: u32,
     /// `on_tab_list_key_down` keystroke keys, in dispatch order.
     pub tab_list_keys: Vec<String>,
     /// `on_activate_favorite` tile indexes, in dispatch order.
@@ -216,6 +220,7 @@ impl SidebarRecorder {
             SidebarObservation::PressRow(index) => self.press_rows.push(index),
             SidebarObservation::ReleaseRow(index) => self.release_rows.push(index),
             SidebarObservation::HoverRow(index, hovered) => self.hover_rows.push((index, hovered)),
+            SidebarObservation::NewTab => self.new_tabs += 1,
             SidebarObservation::TabListKeyDown(key) => self.tab_list_keys.push(key),
             SidebarObservation::FavoriteActivate(index) => self.favorite_activations.push(index),
             SidebarObservation::RowContextMenu(index) => self.context_menu_rows.push(index),

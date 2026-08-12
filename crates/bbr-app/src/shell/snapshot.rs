@@ -335,8 +335,8 @@ pub fn visible_ids_u2(
             "bbr-nav-back",
             "bbr-nav-forward",
             "bbr-nav-reload",
-            "bbr-brand",
-            bbr_ui::components::STATUS_ID,
+            "bbr-active-space-title",
+            "bbr-new-tab",
             "bbr-tab-list",
             "bbr-tab-scroll",
             "bbr-sidebar-divider",
@@ -368,14 +368,8 @@ pub fn visible_ids_u2(
         if command_profile_hint.is_some() {
             ids.push("bbr-command-profile-hint".into());
         }
-        // The §11.2 section labels the render shows (hidden when empty).
-        let total = browser.tabs.len();
-        let pinned = crate::shell::pinned_count(&browser.tabs);
-        if pinned > 0 {
-            ids.push("bbr-section-pinned".into());
-        }
-        if total > pinned {
-            ids.push("bbr-section-tabs".into());
+        if crate::shell::status_visible(browser) {
+            ids.push(bbr_ui::components::STATUS_ID.into());
         }
         // §11.4 spaces region plus U2 footer/favorites/folders/menu use the
         // exact same gating and identities as the render.

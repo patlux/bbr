@@ -155,7 +155,7 @@ mod tests {
             bbr_ui::theme::ContrastMode::Standard,
             bbr_ui::theme::Density::ExtraLarge,
         );
-        // Normal density ships the 280 pt sidebar: ~27 chars at 14 pt title.
+        // Normal density ships the 300 pt sidebar: ~29 chars at 14 pt title.
         assert!(title_budget_chars(&normal) >= 25);
         assert!(title_budget_chars(&normal) <= 40);
         // Wider sidebars get a larger budget than narrow ones.
