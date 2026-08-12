@@ -30,6 +30,10 @@ pub fn command_result_protocol(
 /// A snapshot for the E2E protocol (also used by unit tests).
 impl BbrApp {
     pub fn snapshot(&mut self, window: &Window) -> TestSnapshot {
+        // Refresh the decoded favicon mirror so the typed snapshot reports
+        // the same `favicon ∈ {monogram, image}` presentation the render
+        // derives (task packet `real-favicon-pipeline.md`).
+        self.refresh_favicon_mirror();
         let browser = self.controller.snapshot();
         let theme = self.theme();
         let drag_source = self.tab_drag.source();
@@ -96,7 +100,8 @@ impl BbrApp {
         // folder member rows resolve through the controller's global read
         // model (deterministic nested positions within expanded folders).
         let organization = self.organization.organization_snapshot(&self.controller);
-        let favorite_tiles = crate::app::ui_adapters::favorite_tiles(&organization.favorites);
+        let favorite_tiles =
+            crate::app::ui_adapters::favorite_tiles(&organization.favorites, &self.favicon_images);
         let folder_rows = crate::app::ui_adapters::folder_row_specs(
             &organization.folders,
             &self.u2.folder_presentation,
@@ -105,6 +110,7 @@ impl BbrApp {
             &folder_rows,
             &organization.folders,
             &browser.all_tabs,
+            &self.favicon_images,
         );
         let download_rows = self.download_rows_snapshot();
         let downloads = self.downloads_panel_snapshot();
@@ -392,6 +398,11 @@ impl BbrApp {
                     url: tile.url.clone(),
                     letter: tile.letter.to_string(),
                     hue: tile.hue,
+                    favicon: if tile.image.is_some() {
+                        "image".to_string()
+                    } else {
+                        "monogram".to_string()
+                    },
                 })
                 .collect(),
             folders: folder_rows

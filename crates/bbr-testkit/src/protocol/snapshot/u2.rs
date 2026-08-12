@@ -135,6 +135,11 @@ pub struct FavoriteTileSnapshot {
     pub letter: String,
     /// §7.2 FNV slate-hue ramp index (0..6).
     pub hue: usize,
+    /// §7.2/§15 favicon presentation of the tile's slot (task packet
+    /// `real-favicon-pipeline.md`): `"monogram"` until the owning profile's
+    /// bounded host-keyed store holds resolved bytes for the tile's host,
+    /// then `"image"` — the same record the tab row derives from.
+    pub favicon: String,
 }
 
 /// One folder row on the wire (DESIGN.md §11.11): the creation-order index

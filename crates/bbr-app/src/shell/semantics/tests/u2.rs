@@ -83,14 +83,17 @@ fn plus_menu_node_mirrors_open_state_and_selection() {
 fn favorites_node_mirrors_the_grid_and_hides_when_empty() {
     let browser = browser();
     assert!(super::super::u2::favorites_node(&[], &browser, false).is_none());
-    let tiles = crate::app::ui_adapters::favorite_tiles(&[bbr_browser::FavoriteSnapshot {
-        index: 0,
-        tab: bbr_domain::TabId(7),
-        space: bbr_browser::SpaceId(1),
-        profile: bbr_web::ProfileId(1),
-        title: "Example".into(),
-        url: "https://example.com".into(),
-    }]);
+    let tiles = crate::app::ui_adapters::favorite_tiles(
+        &[bbr_browser::FavoriteSnapshot {
+            index: 0,
+            tab: bbr_domain::TabId(7),
+            space: bbr_browser::SpaceId(1),
+            profile: bbr_web::ProfileId(1),
+            title: "Example".into(),
+            url: "https://example.com".into(),
+        }],
+        &crate::app::favicon_presentation::FaviconImageMirror::default(),
+    );
     let section =
         super::super::u2::favorites_node(&tiles, &browser, false).expect("favorites node");
     assert_eq!(section.id, "bbr-section-favorites");
@@ -143,14 +146,17 @@ fn favorite_tile_name_includes_the_owner_context_when_it_differs() {
         title: "Personal".into(),
         hue: bbr_browser::ProfileHue::Fuchsia,
     });
-    let tiles = crate::app::ui_adapters::favorite_tiles(&[bbr_browser::FavoriteSnapshot {
-        index: 0,
-        tab: bbr_domain::TabId(7),
-        space: bbr_browser::SpaceId(2),
-        profile: bbr_web::ProfileId(2),
-        title: "Workmail".into(),
-        url: "https://mail.example".into(),
-    }]);
+    let tiles = crate::app::ui_adapters::favorite_tiles(
+        &[bbr_browser::FavoriteSnapshot {
+            index: 0,
+            tab: bbr_domain::TabId(7),
+            space: bbr_browser::SpaceId(2),
+            profile: bbr_web::ProfileId(2),
+            title: "Workmail".into(),
+            url: "https://mail.example".into(),
+        }],
+        &crate::app::favicon_presentation::FaviconImageMirror::default(),
+    );
     let section = super::super::u2::favorites_node(&tiles, &cross, false).expect("favorites node");
     let grid = section
         .children
@@ -292,14 +298,17 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
     // §11.4 U2 surfaces: favorites tiles, an expanded folder with a member,
     // and an open plus menu selection. The derived specs are bound to locals
     // so the input's borrowed slices outlive the tree construction.
-    let favorites = crate::app::ui_adapters::favorite_tiles(&[bbr_browser::FavoriteSnapshot {
-        index: 0,
-        tab: bbr_domain::TabId(7),
-        space: bbr_browser::SpaceId(1),
-        profile: bbr_web::ProfileId(1),
-        title: "Example".into(),
-        url: "https://example.com".into(),
-    }]);
+    let favorites = crate::app::ui_adapters::favorite_tiles(
+        &[bbr_browser::FavoriteSnapshot {
+            index: 0,
+            tab: bbr_domain::TabId(7),
+            space: bbr_browser::SpaceId(1),
+            profile: bbr_web::ProfileId(1),
+            title: "Example".into(),
+            url: "https://example.com".into(),
+        }],
+        &crate::app::favicon_presentation::FaviconImageMirror::default(),
+    );
     input.favorites = &favorites;
     let mut presentation = bbr_ui::components::folders::FolderPresentation::default();
     presentation.toggle(bbr_domain::FolderId(1));
@@ -319,6 +328,7 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         title: "Example".into(),
         letter: 'E',
         hue: 0,
+        image: None,
     }];
     input.folder_members = &folder_members;
     input.plus_menu = bbr_ui::components::menu::PlusMenuState {

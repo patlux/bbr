@@ -26,6 +26,7 @@ use std::fmt;
 pub mod auth_challenges;
 pub mod content_gesture;
 pub mod external_urls;
+pub mod favicon;
 pub mod file_panels;
 pub mod find_in_page;
 pub mod new_window;
@@ -37,6 +38,7 @@ pub use external_urls::{
     classify, decide_routing, ExternalUrlCoordinator, ExternalUrlError, ExternalUrlOutcome,
     ExternalUrlRequest, ExternalUrlRequestId, RoutingDecision, UrlClass,
 };
+pub use favicon::{choose_best_candidate, FaviconCandidate, FaviconContent};
 pub use new_window::{
     decide, decision_for_intent, default_decision, peek_eligible, NewWindowDecision,
     NewWindowDelivery, NewWindowDisposition, NewWindowFeatures, NewWindowInput, NewWindowIntent,
@@ -190,6 +192,16 @@ pub enum WebEvent {
     /// placement math uses). The app presents the menu through the one
     /// `NativeAboveWeb` portal host.
     ContextMenuRequested(WebViewId, WebRect),
+    /// A per-page favicon acquisition observation (task packet
+    /// `real-favicon-pipeline.md`): the typed [`FaviconContent`] for the
+    /// committed page of one live view. The macOS adapter emits the
+    /// resolved [`FaviconContent::Image`] bytes after a bounded,
+    /// profile-isolated download; any failure is silent (no event), so the
+    /// §7.2 monogram stays the deterministic fallback. The
+    /// [`FaviconContent::Candidates`] shape exists on the contract so
+    /// candidate-URL observation is representable and fake-engine tests can
+    /// prove the boundary without a display server.
+    FaviconChanged(WebViewId, FaviconContent),
 }
 
 /// The seam between chrome and engine.

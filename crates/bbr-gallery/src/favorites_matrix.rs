@@ -185,6 +185,7 @@ pub fn build_favorites_fixture(case: &FavoriteCase) -> Option<Vec<FavoriteTileSp
             url: format!("https://site{}.example/", tile),
             letter,
             hue: tile % 6,
+            image: None,
         });
     }
     Some(tiles)

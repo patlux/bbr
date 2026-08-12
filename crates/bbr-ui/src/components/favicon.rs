@@ -5,8 +5,21 @@
 //! box; while loading it shows the §10.5 accent arc (drawn, static —
 //! rotation is a later polish pass). Monograms are static — no spin, no
 //! pulse, no animation (§7.2).
+//!
+//! When the owning profile's bounded host-keyed store holds resolved
+//! favicon bytes (task packet `real-favicon-pipeline.md`), the tile renders
+//! the decoded image through the existing GPUI `img` element in the §8
+//! density geometry (S 16 / N 18 / XL 20). The §10.5 loading spinner and
+//! the §10.7/§10.11 error/unresponsive glyphs keep their precedence over
+//! the image; a decode failure falls back silently to the deterministic
+//! monogram (the acquisition contract's silent-fallback rule).
 
-use gpui::{div, prelude::*, px, Div, SharedString, Stateful};
+use std::sync::Arc;
+
+use gpui::{
+    div, img, prelude::*, px, Div, Image, ImageSource, ObjectFit, Pixels, Rgba, SharedString,
+    Stateful,
+};
 
 use crate::icons::Icon;
 use crate::palette::FaviconSlate;
@@ -18,12 +31,40 @@ use crate::theme::{Radius, Theme, ThemeMode};
 /// ids) — rendered by this component and pinned by the tab-row tests.
 pub const TAB_FAVICON_ID: &str = "bbr-tab-favicon";
 
-/// The favicon tile: the deterministic monogram (§7.2) until a real favicon
-/// exists; while loading the slot shows the accent spinner.
+/// The content branch that owns a favicon slot after §10 state precedence is
+/// resolved. Kept as a pure decision so image/monogram/state precedence has
+/// deterministic component-level regression coverage without pixel tests.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FaviconContentKind {
+    Monogram,
+    Image,
+    Loading,
+    Error,
+    Unresponsive,
+}
+
+fn favicon_content_kind(has_image: bool, state: TabVisualState) -> FaviconContentKind {
+    match state {
+        TabVisualState::Loading => FaviconContentKind::Loading,
+        TabVisualState::Error => FaviconContentKind::Error,
+        TabVisualState::Unresponsive => FaviconContentKind::Unresponsive,
+        _ if has_image => FaviconContentKind::Image,
+        _ => FaviconContentKind::Monogram,
+    }
+}
+
+/// The favicon tile: the deterministic monogram (§7.2) until a real favicon
+/// exists; while loading the slot shows the accent spinner. `image` carries
+/// the resolved favicon bytes wrapped in gpui's [`Image`] asset type (the
+/// app decodes once per acquired record); when present it replaces the
+/// monogram letter while the §10 state precedence stays untouched.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FaviconSpec {
     pub letter: char,
     pub hue: usize,
+    /// The resolved favicon image for the host, if the owning profile's
+    /// bounded store holds one (task packet `real-favicon-pipeline.md`).
+    pub image: Option<Arc<Image>>,
 }
 
 /// First character of the registrable hostname, uppercased — the §7.2
@@ -55,9 +96,12 @@ pub fn monogram_hue(url: &str) -> usize {
 }
 
 /// §7.2 favicon tile: the §8 density icon size (S 16 / N 18 / XL 20)
-/// square, `radius:sm`, monogram letter on the FNV-slate ramp; while
+/// square, `radius:sm`, monogram letter on the FNV-slate ramp — or the
+/// decoded favicon image when the owning profile's store holds one; while
 /// loading the slot shows the §10.5 accent arc (drawn, static — rotation
-/// is a later polish pass).
+/// is a later polish pass). The §10.7 error lifering and the §10.11
+/// unresponsive lifering+clock replace the tile content exactly as before:
+/// the image never overrides a state glyph.
 pub fn favicon_tile(
     theme: &Theme,
     index: usize,
@@ -65,37 +109,68 @@ pub fn favicon_tile(
     state: TabVisualState,
 ) -> Stateful<Div> {
     let size = theme.density.icon();
-    let (bg, fg) = match spec {
+    let badge_size = theme.type_.badge.size;
+    let badge_weight = theme.type_.badge.weight;
+    let radius = Radius.small();
+    // The §7.2 monogram identity (letter + slate tile) and the resolved
+    // favicon image — one match, so the spec's fields move exactly once.
+    // The monogram content is also the silent fallback when a present image
+    // fails to decode (the acquisition contract's fallback rule).
+    let (bg, fg, letter, image) = match spec {
         Some(spec) => {
             let bg = match theme.mode {
                 ThemeMode::Dark => FaviconSlate::dark(spec.hue),
                 ThemeMode::Light => FaviconSlate::light(spec.hue),
             };
-            (bg, theme.palette.surface_glass)
+            (
+                bg,
+                theme.palette.surface_glass,
+                spec.letter,
+                spec.image.clone(),
+            )
         }
-        None => (theme.palette.surface_field, theme.palette.ink_faint),
+        None => (
+            theme.palette.surface_field,
+            theme.palette.ink_faint,
+            '?',
+            None,
+        ),
     };
-    let letter = spec.map(|s| s.letter).unwrap_or('?');
+    let content_kind = favicon_content_kind(image.is_some(), state);
+    // The normal-branch content: the real favicon image when the record
+    // holds one (decoded by the app once per acquisition through the GPUI
+    // asset pipeline — never per frame), else the monogram letter.
+    let content: gpui::AnyElement = match image {
+        Some(image) => img(ImageSource::Image(image))
+            .size(size)
+            .rounded(radius)
+            .object_fit(ObjectFit::Contain)
+            .with_fallback(move || {
+                monogram_content(size, radius, badge_size, badge_weight, bg, fg, letter).into_any()
+            })
+            .into_any(),
+        None => monogram_content(size, radius, badge_size, badge_weight, bg, fg, letter).into_any(),
+    };
     div()
         .id((TAB_FAVICON_ID, index))
         .debug_selector(move || format!("{TAB_FAVICON_ID}-{index}"))
         .size(size)
-        .rounded(Radius.small())
+        .rounded(radius)
         .bg(bg)
         .flex()
         .items_center()
         .justify_center()
-        .text_size(theme.type_.badge.size)
-        .font_weight(theme.type_.badge.weight)
+        .text_size(badge_size)
+        .font_weight(badge_weight)
         .text_color(fg)
-        .when(state == TabVisualState::Loading, |el| {
+        .when(content_kind == FaviconContentKind::Loading, |el| {
             el.child(Icon::LoadingArc.canvas(theme, size))
         })
-        .when(state == TabVisualState::Error, |el| {
+        .when(content_kind == FaviconContentKind::Error, |el| {
             // §10.7: the lifering replaces the favicon on an error row.
             el.child(Icon::Lifering.canvas(theme, size))
         })
-        .when(state == TabVisualState::Unresponsive, |el| {
+        .when(content_kind == FaviconContentKind::Unresponsive, |el| {
             // §10.11: the lifering plus the static clock companion replace
             // the favicon on an unresponsive row (the renderer stopped
             // answering liveness probes; the session stays alive).
@@ -105,16 +180,67 @@ pub fn favicon_tile(
                 .child(Icon::Clock.canvas(theme, size))
         })
         .when(
-            state != TabVisualState::Loading
-                && state != TabVisualState::Error
-                && state != TabVisualState::Unresponsive,
-            |el| el.child(SharedString::from(letter.to_string())),
+            matches!(
+                content_kind,
+                FaviconContentKind::Image | FaviconContentKind::Monogram
+            ),
+            |el| el.child(content),
         )
+}
+
+/// The §7.2 monogram letter tile (also the image decode-failure fallback):
+/// the letter on the slate tile at the density icon size, `radius:sm`.
+fn monogram_content(
+    size: Pixels,
+    radius: Pixels,
+    badge_size: Pixels,
+    badge_weight: gpui::FontWeight,
+    bg: Rgba,
+    fg: Rgba,
+    letter: char,
+) -> Div {
+    div()
+        .size(size)
+        .rounded(radius)
+        .bg(bg)
+        .flex()
+        .items_center()
+        .justify_center()
+        .text_size(badge_size)
+        .font_weight(badge_weight)
+        .text_color(fg)
+        .child(SharedString::from(letter.to_string()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn image_and_state_precedence_matches_sections_7_and_10() {
+        assert_eq!(
+            favicon_content_kind(true, TabVisualState::Default),
+            FaviconContentKind::Image
+        );
+        assert_eq!(
+            favicon_content_kind(false, TabVisualState::Default),
+            FaviconContentKind::Monogram
+        );
+        for has_image in [false, true] {
+            assert_eq!(
+                favicon_content_kind(has_image, TabVisualState::Loading),
+                FaviconContentKind::Loading
+            );
+            assert_eq!(
+                favicon_content_kind(has_image, TabVisualState::Error),
+                FaviconContentKind::Error
+            );
+            assert_eq!(
+                favicon_content_kind(has_image, TabVisualState::Unresponsive),
+                FaviconContentKind::Unresponsive
+            );
+        }
+    }
 
     #[test]
     fn monogram_is_deterministic_per_host() {

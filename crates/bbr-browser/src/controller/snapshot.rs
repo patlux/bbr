@@ -37,6 +37,19 @@ impl BrowserController {
                     web_view: view,
                     lifecycle: state.lifecycle,
                     last_used: state.last_used,
+                    favicon: {
+                        let host = crate::favicon::favicon_host(&state.url);
+                        if !host.is_empty()
+                            && self
+                                .favicons
+                                .image_for(self.active_profile(), &host)
+                                .is_some()
+                        {
+                            crate::snapshot::TabFavicon::Image
+                        } else {
+                            crate::snapshot::TabFavicon::Monogram
+                        }
+                    },
                 })
             })
             .collect();

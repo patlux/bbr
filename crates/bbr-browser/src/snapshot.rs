@@ -37,6 +37,20 @@ impl LifecycleCounts {
     }
 }
 
+/// §7.2/§15 favicon presentation of one tab's tile (task packet
+/// `real-favicon-pipeline.md`): `Monogram` until the owning profile's
+/// bounded host-keyed store holds resolved image bytes for the tab's host,
+/// then `Image`. Derived from the same store record Favorites and folder
+/// items present — one acquisition, every presentation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TabFavicon {
+    /// No image acquired; the deterministic §7.2 monogram renders.
+    #[default]
+    Monogram,
+    /// A real favicon image was acquired for the tab's host.
+    Image,
+}
+
 /// One tab of the active space as presented to the UI/E2E.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TabSnapshot {
@@ -65,6 +79,8 @@ pub struct TabSnapshot {
     /// Deterministic recency stamp (the session-budget policy's "recently
     /// used" order).
     pub last_used: u64,
+    /// §7.2 favicon presentation of the tab's tile.
+    pub favicon: TabFavicon,
 }
 
 /// One persistent tab identity across the complete space collection.

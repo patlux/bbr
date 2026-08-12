@@ -120,6 +120,7 @@ pub fn build_sidebar_fixture(
                     url: format!("https://fav{i}.example"),
                     letter: (b'A' + i as u8) as char,
                     hue: i % 6,
+                    image: None,
                 })
                 .collect(),
             targeted: false,
@@ -155,6 +156,7 @@ pub fn build_sidebar_fixture(
                     title: format!("Member {}", m + 1),
                     letter: (b'X' + m as u8) as char,
                     hue: m % 6,
+                    image: None,
                 })
                 .collect(),
             focused: case.folders_focused,
@@ -297,6 +299,7 @@ fn row_visual(case: &SidebarCase, index: usize) -> RowVisuals {
             None
         } else {
             Some(bbr_ui::components::FaviconSpec {
+                image: None,
                 letter: (b'a' + (index % 26) as u8) as char,
                 hue: index % 6,
             })

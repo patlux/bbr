@@ -15,22 +15,34 @@ use bbr_browser::{FavoriteSnapshot, FolderSnapshot, GlobalTabSnapshot};
 use bbr_ui::components::favicon::{monogram_hue, monogram_letter};
 use bbr_ui::components::favorites::FavoriteTileSpec;
 use bbr_ui::components::folders::{FolderMemberVisual, FolderPresentation, FolderRowSpec};
-use bbr_ui::text::display_title;
+use bbr_ui::text::{display_title, host_of};
+
+use super::favicon_presentation::FaviconImageMirror;
 
 /// Derive the rendered tile specs from the session-local favorites in
-/// deterministic insertion order (the same source the grid renders).
-pub fn favorite_tiles(favorites: &[FavoriteSnapshot]) -> Vec<FavoriteTileSpec> {
+/// deterministic insertion order (the same source the grid renders). Each
+/// tile's favicon image resolves from its exact owning profile's bounded
+/// host-keyed store through the decoded mirror — the same record the tab
+/// row derives from, one acquisition, every presentation.
+pub fn favorite_tiles(
+    favorites: &[FavoriteSnapshot],
+    mirror: &FaviconImageMirror,
+) -> Vec<FavoriteTileSpec> {
     favorites
         .iter()
-        .map(|favorite| FavoriteTileSpec {
-            index: favorite.index,
-            tab: favorite.tab.0,
-            space: favorite.space.0,
-            profile: favorite.profile.0,
-            title: favorite.title.clone(),
-            url: favorite.url.clone(),
-            letter: monogram_letter(&favorite.url),
-            hue: monogram_hue(&favorite.url),
+        .map(|favorite| {
+            let host = host_of(&favorite.url);
+            FavoriteTileSpec {
+                index: favorite.index,
+                tab: favorite.tab.0,
+                space: favorite.space.0,
+                profile: favorite.profile.0,
+                title: favorite.title.clone(),
+                url: favorite.url.clone(),
+                letter: monogram_letter(&favorite.url),
+                hue: monogram_hue(&favorite.url),
+                image: mirror.get(&(favorite.profile, host)).cloned(),
+            }
         })
         .collect()
 }
@@ -65,6 +77,7 @@ pub fn folder_member_visuals(
     rows: &[FolderRowSpec],
     folders: &[FolderSnapshot],
     tabs: &[GlobalTabSnapshot],
+    mirror: &FaviconImageMirror,
 ) -> Vec<FolderMemberVisual> {
     let mut visuals = Vec::new();
     for spec in rows {
@@ -80,6 +93,7 @@ pub fn folder_member_visuals(
                 .iter()
                 .find(|tab| tab.id == *tab_id)
                 .expect("reconciled folder member exists in the controller");
+            let host = host_of(&tab.url);
             visuals.push(FolderMemberVisual {
                 folder: folder.id,
                 folder_index: spec.index,
@@ -87,6 +101,9 @@ pub fn folder_member_visuals(
                 title: display_title(&tab.url, &tab.title),
                 letter: monogram_letter(&tab.url),
                 hue: monogram_hue(&tab.url),
+                // The member's exact owning profile's bounded store record
+                // (the same record its tab row derives from).
+                image: mirror.get(&(tab.profile, host)).cloned(),
             });
         }
     }

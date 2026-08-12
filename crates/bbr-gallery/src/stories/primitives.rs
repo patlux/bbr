@@ -28,7 +28,7 @@ pub fn render_favicon_tile(ctx: &StoryContext) -> AnyElement {
                 .flex_row()
                 .items_center()
                 .gap_2()
-                .child(favicon_tile(theme, index, Some(spec), state))
+                .child(favicon_tile(theme, index, Some(spec.clone()), state))
                 .child(
                     div()
                         .flex()

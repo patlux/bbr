@@ -197,7 +197,12 @@ pub(crate) fn u2_visible_ids(
     plus_menu: &bbr_ui::components::menu::PlusMenuState,
 ) -> Vec<String> {
     let mut ids = bbr_ui::components::footer::footer_ids();
-    let tile_specs = crate::app::ui_adapters::favorite_tiles(favorites);
+    // The tile/member id derivations read only ids, never the favicon
+    // image, so the empty mirror is the correct deterministic input here.
+    let tile_specs = crate::app::ui_adapters::favorite_tiles(
+        favorites,
+        &crate::app::favicon_presentation::FaviconImageMirror::default(),
+    );
     ids.extend(bbr_ui::components::favorites::favorites_ids(&tile_specs));
     // §11.10: while a tab drag is in flight with an empty grid, the region
     // renders as the compact drop band (label + grid) — mirror the render's
@@ -207,7 +212,12 @@ pub(crate) fn u2_visible_ids(
         ids.push(bbr_ui::components::favorites::FAVORITES_ID.into());
     }
     let rows = crate::app::ui_adapters::folder_row_specs(folders, expanded);
-    let members = crate::app::ui_adapters::folder_member_visuals(&rows, folders, &browser.all_tabs);
+    let members = crate::app::ui_adapters::folder_member_visuals(
+        &rows,
+        folders,
+        &browser.all_tabs,
+        &crate::app::favicon_presentation::FaviconImageMirror::default(),
+    );
     ids.extend(bbr_ui::components::folders::folders_ids(&rows, &members));
     ids.extend(bbr_ui::components::menu::plus_menu_ids(plus_menu));
     ids

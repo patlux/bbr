@@ -94,6 +94,7 @@ mod tests {
                 web_view: Some(bbr_web::WebViewId(1)),
                 lifecycle: bbr_browser::TabLifecycle::Warm,
                 last_used: 0,
+                favicon: bbr_browser::TabFavicon::Monogram,
             }],
             all_tabs: vec![],
             profiles: vec![],

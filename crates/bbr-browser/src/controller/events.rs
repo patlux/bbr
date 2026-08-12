@@ -33,12 +33,56 @@ impl BrowserController {
             WebEvent::TitleChanged(_, title) => {
                 let _ = self.browser.apply_navigation(tab, "", title);
             }
+            // A per-page favicon acquisition observation (task packet
+            // `real-favicon-pipeline.md`): the resolved image bytes land in
+            // the owning profile's bounded host-keyed store, keyed by the
+            // tab's current host, so every presentation of this host
+            // (tab rows, Favorites tiles, folder items) derives from the
+            // same record. Any other content shape is ignored (the macOS
+            // adapter emits only resolved bytes).
+            WebEvent::FaviconChanged(_, content) => {
+                self.apply_favicon_changed(tab, view, content);
+            }
             _ => {}
         }
         // Loading/history/crashed live only in the session's nav state.
         self.nav.entry(view).or_default().apply(&event);
         self.check_invariants();
         ControllerEvent::WebEvent { event }
+    }
+}
+
+impl BrowserController {
+    /// Store one acquired favicon observation for `tab`'s current host in
+    /// the owning profile's bounded store (task packet
+    /// `real-favicon-pipeline.md`). Only resolved image bytes are stored; a
+    /// candidates-shaped payload is ignored (the macOS adapter emits only
+    /// `Image`). Unknown/stale sessions are dropped without corruption
+    /// (the caller already resolved `tab` from the registry, so the view is
+    /// live; a missing profile mapping is still dropped defensively).
+    fn apply_favicon_changed(
+        &mut self,
+        tab: bbr_domain::TabId,
+        view: WebViewId,
+        content: &bbr_web::FaviconContent,
+    ) {
+        let bbr_web::FaviconContent::Image(bytes) = content else {
+            return;
+        };
+        let host = crate::favicon::favicon_host(
+            &self
+                .browser
+                .tab(tab)
+                .map(|state| state.url.clone())
+                .unwrap_or_default(),
+        );
+        if host.is_empty() {
+            return;
+        }
+        let Some(profile) = self.session_profiles.get(&view).copied() else {
+            return;
+        };
+        self.favicons.insert(profile, &host, bytes.clone());
     }
 }
 
@@ -58,5 +102,6 @@ fn event_view(event: &WebEvent) -> WebViewId {
         // menu is BBR chrome over that view; the request carries no
         // navigation state).
         WebEvent::ContextMenuRequested(v, _) => *v,
+        WebEvent::FaviconChanged(v, _) => *v,
     }
 }
