@@ -46,9 +46,9 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | DD-GESTURE | Current-base real-app gesture revalidation | `integrated` | lane commit `f2183fdb2c3f3586c500d4c67a1bdc0257e6a06d`; merge `ebb8e137aa54077c47b5ae4c5603e47e8492d9ca` | Orchestrator; independent `REVIEW_PASS` and focused post-merge gates complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Closed for this wave; testkit-only fix, production command routing unchanged |
 | DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `integrated` | lane `6327b6b48b84f847061e5d55b85d58843dd676f0`; merge `69616b88be823b8ab35d1f806ada911d6256d9e6`; gate fix `4b3f40c5f736d3703682d001181d7c597ef317eb` | Orchestrator; focused `REVIEW_PASS`, semantic Justfile union and post-merge gates complete | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Closed for this wave; fullscreen/multi-display/manual drag and performance evidence remain honestly open |
 
-| DD-SPACE | Create/activate/configure Space and icon-only footer | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance`; branch `parallel/dd-space-appearance`; reviewed tree `d1f0ab82…`, 66 paths | bounded writer `dd-space-review-remediation`, then focused recheck | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Extend Gallery pinned-prefix tests to StoryId 46/47, correct ledger tree, bring 551-line module near budget without behavior change, rerun focused gates |
-| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; exact tree `2bfa4c4b…`, 29 paths | Orchestrator; independent `REVIEW_PASS` complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Preserve exact reviewed tree; integrate after reviewed/frozen DD-SPACE |
-| DD-TAB-MENU | Production Tab/Favorite context menus | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; reviewed tree `a4f1f6c8…`, 66 paths | bounded writer `dd-tab-menu-review-remediation`, then focused recheck | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Render real submenu geometry, make parent activation open submenu not Reload, fix suspended Copy Link availability, docs/evidence, causal E2E |
+| DD-SPACE | Create/activate/configure Space and icon-only footer | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance`; branch `parallel/dd-space-appearance`; exact tree `c8dd884c3da20d557f1b3c767b48b6220f679d34`, 68 paths | Orchestrator; remediation and independent focused `REVIEW_PASS` complete | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Commit exact candidate and integrate now after DD-TITLEBAR; resolve shared Sidebar/Gallery/Justfile seams semantically, then run bounded non-performance gates |
+| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; exact tree `2bfa4c4b…`, 29 paths | Orchestrator; independent `REVIEW_PASS` complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Preserve exact reviewed tree; integrate immediately after DD-SPACE passes post-merge gates |
+| DD-TAB-MENU | Production Tab/Favorite context menus | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; exact tree `c8bcaaf00af1004e691b36776056b69a21b9fcad`, 66 paths | Orchestrator; remediation and independent focused `REVIEW_PASS` complete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Preserve exact reviewed tree; integrate after DD-SIDEBAR per serial order |
 | DD-PAGE-MENU | Enriched conservative page-background menu | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-dd-page-menu`; branch `parallel/dd-page-menu`; preserved tree `e3c41377…`, 30 paths | no writer; macOS console is locked and two foreign qemu windows remain | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | User unlocks screen; rerun only `just e2e-shell-portal` for required 7/7, then whole-candidate review |
 
 ## Post-F2a parallel wave
@@ -184,6 +184,37 @@ checks and GUI suites are green: Titlebar 5/5, Sidebar 11/11, split geometry
 `/tmp/bbr-dd-titlebar-postmerge-final/`. No performance execution occurred.
 DD-SPACE remains the next serial integration position after its remediation
 and focused recheck.
+
+Product-remediation audit: workflow
+`bbr-daily-driver-product-remediation-mspfxzl9-99e931` completed 4/4 with no
+terminal error. The first DD-SPACE focused-recheck attempt was idle-aborted at
+the configured 480000 ms boundary and grants no authority; configured
+`agentRetries=1` resumed the same bounded read-only call, whose second attempt
+returned a complete direct `REVIEW_PASS`. Independent Orchestrator rebinding
+accepts DD-SPACE tree `c8dd884c3da20d557f1b3c767b48b6220f679d34`, binary
+diff SHA-256 `61ac9c566e39be1bcc50843dd8febf4e98bf8410b5db388dd31ec2514b4b085f`,
+status-z SHA-256 `965f652e9b41d4a2fa4b8ca114fc1e983104fa1cf46f49290ce81f8fda3b45dd`
+and NUL-sorted 68-path SHA-256
+`0facad357c91eaf16b6c39177eb779aa37ecaee0a7876828a6e20535bc7e6ba1`.
+Gallery 145/145, both fresh warning-denied Clippy gates, targeted units, Spaces
+20/20, Sidebar 11/11, Organize 6/6, Gallery E2E 44/44, roadmap and diff checks
+are green. The soft module-budget finding is resolved by a behavior-preserving
+split; one non-blocking packet count-label inversion remains documentary only.
+
+The same workflow returned a direct independent `REVIEW_PASS` for DD-TAB-MENU.
+Orchestrator rebinding accepts tree
+`c8bcaaf00af1004e691b36776056b69a21b9fcad`, binary diff SHA-256
+`b7dc926fe3803ea8a9c1bca5dc9379f9c34b677ebaa4f7d24fb705391d68d81d`,
+status-z SHA-256
+`5bdd3c506aa4f87c10b183b0a1694be3ae041747e69c50453ab63cac73165156`
+and NUL-sorted 66-path SHA-256
+`c936061240e3a5cfacc614649fa8fa3ab6ee3e2510d8244480d73ea4bc531a40`.
+Production submenu geometry, parent activation and suspended Copy Link are
+causally covered; Tab menu 12/12, Organize 6/6, Sidebar 11/11 and Gallery 42/42
+are green. Both real indices remain at activation base with zero staged paths;
+no lane process, Git lock or GUI-lock holder survives. DD-SPACE is promoted to
+the exclusive integration position; DD-TAB-MENU remains frozen behind
+DD-SIDEBAR. No performance execution occurred.
 
 ## Downstream dependency queue
 
