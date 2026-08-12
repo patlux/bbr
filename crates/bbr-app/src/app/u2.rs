@@ -80,6 +80,15 @@ impl BbrApp {
         self.command_bar_mode = CommandBarMode::Inactive;
         self.command_bar_return = None;
         self.command_ranking.close();
+        // At most one sidebar popover at a time: opening the plus menu
+        // dismisses the §11.3 configuration surface and the §11.12
+        // downloads panel (the config draft is not applied).
+        if self.space_config.open {
+            self.space_config.open = false;
+            self.space_config.space = None;
+            self.space_config.press_inside = false;
+        }
+        crate::app::downloads_behavior::downloads_close(self, window, cx);
         window.focus(&self.u2.plus_menu_handle, cx);
         self.engine.borrow_mut().focus_host_chrome();
         cx.notify();
@@ -187,6 +196,15 @@ impl BbrApp {
                             space,
                         });
                         self.sync_command_bar();
+                        self.close_plus_menu(window, cx);
+                        // §11.3 create→activate→configure: the new Space
+                        // becomes active immediately (the standing
+                        // daily-driver decision) and its optional name/icon
+                        // configuration surface opens on top of the usable
+                        // Space; Escape/cancel keeps it usable.
+                        self.activate_space(space, window, cx);
+                        self.open_space_config(space, window, cx);
+                        self.persist_structure();
                         cx.notify();
                     }
                     Ok(_) => unreachable!("new_space only emits SpaceCreated"),

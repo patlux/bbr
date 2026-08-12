@@ -23,6 +23,7 @@ use crate::library_recorder::{LibraryObserver, LibraryRecorder};
 use crate::recorder::{ControlObserver, ControlRecorder, TabRowObserver, TabRowRecorder};
 use crate::sidebar_observer::SidebarObserver;
 use crate::sidebar_recorder::SidebarRecorder;
+use crate::space_config_recorder::{SpaceConfigObserver, SpaceConfigRecorder};
 
 /// The render context a story receives: the resolved theme (mode/contrast/
 /// density), the reduced-motion flag (§15 mode field), and the story's own
@@ -88,6 +89,12 @@ pub struct StoryContext<'a> {
     /// callbacks — activation stays app/Portal-owned, so the Gallery
     /// observes presentation only. `None` for every other story.
     pub command: Option<CommandStory<'a>>,
+    /// `Some` only for the Space-configuration story: the current recorder
+    /// snapshot and the observer callbacks the production
+    /// `bbr_ui::surfaces::space_config` surface callbacks route through
+    /// (packet `space-creation-appearance-ui.md`). `None` for every other
+    /// story.
+    pub space_config: Option<SpaceConfigStory<'a>>,
 }
 
 /// Everything a Saved Pages Library story needs to render the **exact**
@@ -188,6 +195,21 @@ pub struct AuthStory<'a> {
 pub struct ContextMenuStory<'a> {
     pub recorder: &'a ContextMenuRecorder,
     pub observer: &'a ContextMenuObserver,
+}
+
+/// Everything the Space-configuration story needs to render the **exact**
+/// production `bbr_ui::surfaces::space_config` surface with recorder
+/// callbacks: the current recorder snapshot (selected theme/identity, done/
+/// cancel/inside-press events) and the observer callbacks that re-enter
+/// the app on real pointer interactions (packet
+/// `space-creation-appearance-ui.md`). `Some` only while the
+/// Space-configuration story is selected.
+pub struct SpaceConfigStory<'a> {
+    pub recorder: &'a SpaceConfigRecorder,
+    pub observer: &'a SpaceConfigObserver,
+    /// The fixture focus handle the production surface tracks (§9 ring +
+    /// keyboard domain; the gallery never focuses it).
+    pub focus: &'a gpui::FocusHandle,
 }
 
 /// Everything the G3 Sidebar composition story needs to render the **exact**

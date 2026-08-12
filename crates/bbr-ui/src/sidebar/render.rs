@@ -44,8 +44,9 @@ use super::tabs::tab_surface;
 /// overlaying the command slot (the rect recorder for the field-anchored
 /// overlay); `command_results` is the app-owned §11.5 in-rail ranking
 /// surface; `downloads_panel` is the app-owned §11.12 anchored downloads
-/// surface. All three are app-owned elements passed at the composition
-/// boundary — the model itself stays plain data.
+/// surface; `space_config_panel` is the app-owned §11.3 rename/identity
+/// configuration surface. All are app-owned elements passed at the
+/// composition boundary — the model itself stays plain data.
 pub fn sidebar_surface(
     theme: &Theme,
     model: &SidebarModel,
@@ -53,6 +54,7 @@ pub fn sidebar_surface(
     command_field_anchor: AnyElement,
     command_results: Option<AnyElement>,
     downloads_panel: Option<AnyElement>,
+    space_config_panel: Option<AnyElement>,
 ) -> Stateful<Div> {
     let p = theme.palette;
     let command_bar = command_slot(theme, model, callbacks, command_field_anchor);
@@ -122,12 +124,17 @@ pub fn sidebar_surface(
                 .child(toggle_surface(theme, model, callbacks))
                 // §11.12: the anchored downloads panel is the footer's
                 // direct predecessor in the column (its bottom edge is
-                // flush with the footer control's top edge); the plus menu
-                // renders directly above the footer row. The two are
-                // mutually exclusive (open closes the other), so they
-                // never stack.
+                // flush with the footer control's top edge); the §11.3
+                // space-configuration surface is the same in-rail panel
+                // family directly above the footer row, and the plus menu
+                // renders directly above the footer row. At most one of
+                // the three is open at a time (the app closes the others
+                // when one opens), so they never stack.
                 .when(downloads_panel.is_some(), |column| {
                     column.child(downloads_panel.expect("checked above"))
+                })
+                .when(space_config_panel.is_some(), |column| {
+                    column.child(space_config_panel.expect("checked above"))
                 })
                 .when(plus_menu.is_some(), |column| {
                     column.child(plus_menu.expect("checked above"))

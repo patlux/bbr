@@ -651,6 +651,12 @@ pub(crate) fn dispatch(
         Request::ClickFooterDownloads
         | Request::ClickFooterPlus
         | Request::ClickPlusMenuItem { .. }
+        | Request::OpenSpaceConfig { .. }
+        | Request::SpaceConfigSelectTheme { .. }
+        | Request::SpaceConfigSelectIdentity { .. }
+        | Request::SpaceConfigDone
+        | Request::SpaceConfigCancel
+        | Request::SpaceConfigPressOutside
         | Request::ToggleFavoriteTab { .. }
         | Request::ClickFavoriteTile { .. }
         | Request::ClickFolderRow { .. }
@@ -728,6 +734,8 @@ pub(crate) fn dispatch(
         | Request::BenchmarkClickTab { .. }
         | Request::BenchmarkReopenTab { .. }
         | Request::BenchmarkActivateSpace { .. }
+        | Request::BenchmarkCreateSpace { .. }
+        | Request::BenchmarkSpaceConfigIdentityUpdate { .. }
         | Request::BenchmarkPageReady { .. }
         | Request::BenchmarkToggleSidebar { .. }
         | Request::BenchmarkUnresponsiveChrome { .. }

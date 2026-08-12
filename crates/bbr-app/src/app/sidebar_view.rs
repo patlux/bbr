@@ -47,6 +47,9 @@ impl BbrApp {
         let downloads_panel = self
             .downloads_panel_surface(theme, window, cx)
             .map(|surface| surface.into_any());
+        let space_config_panel = self
+            .space_config_surface(theme, window, cx)
+            .map(|surface| surface.into_any());
         bbr_ui::sidebar::sidebar_surface(
             theme,
             &model,
@@ -54,6 +57,7 @@ impl BbrApp {
             field_anchor,
             command_results,
             downloads_panel,
+            space_config_panel,
         )
     }
 

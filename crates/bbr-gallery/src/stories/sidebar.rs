@@ -80,6 +80,10 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         field_anchor,
         command_results,
         downloads_panel,
+        // The §11.3 Space-configuration panel is an app-owned child too;
+        // the sidebar story does not open it (the dedicated Space
+        // configuration story owns that surface).
+        None,
     );
 
     // The rejected combinations with their reasons — the story shows the

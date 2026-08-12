@@ -302,6 +302,7 @@ impl Render for BbrApp {
                 cx.listener(|this, _e: &MouseDownEvent, window, cx| {
                     this.dismiss_plus_menu_on_outside_press(window, cx);
                     this.dismiss_downloads_on_outside_press(window, cx);
+                    this.dismiss_space_config_on_outside_press(window, cx);
                 }),
             )
             .on_mouse_move(cx.listener(Self::on_sidebar_drag_move))

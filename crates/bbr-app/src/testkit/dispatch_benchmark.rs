@@ -102,6 +102,48 @@ pub(crate) fn dispatch_benchmark(
         })
         .unwrap_or_else(err_response),
 
+        Request::BenchmarkCreateSpace { operation_id, name } => {
+            with_app(window, app, cx, |view, window, cx| {
+                view.benchmark_create_space(*operation_id, name, window, cx)
+            })
+            .map(|started| {
+                if started {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new(
+                        "benchmark_busy",
+                        "another presentation measurement is pending",
+                    ))
+                }
+            })
+            .unwrap_or_else(err_response)
+        }
+
+        Request::BenchmarkSpaceConfigIdentityUpdate {
+            operation_id,
+            space,
+            identity,
+        } => with_app(window, app, cx, |view, window, cx| {
+            view.benchmark_space_config_identity_update(
+                *operation_id,
+                bbr_browser::SpaceId(space.0),
+                identity,
+                window,
+                cx,
+            )
+        })
+        .map(|started| {
+            if started {
+                Response::Ok
+            } else {
+                Response::Error(Error::new(
+                    "benchmark_busy",
+                    "another presentation measurement is pending",
+                ))
+            }
+        })
+        .unwrap_or_else(err_response),
+
         Request::BenchmarkPageReady {
             operation_id,
             expected_view,

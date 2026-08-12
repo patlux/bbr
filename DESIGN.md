@@ -563,6 +563,34 @@ using the IDs of §15. All rows use `density` geometry from §8.
   `bbr-command-profile-hint` / `bbr-profile-chip-<n>` where profile context is
   presented.
 
+#### Configuration surface
+
+- **Lifecycle:** creating a Space commits + activates it before any
+  configuration; the optional rename/identity surface then opens over the
+  usable Space (both the plus-menu New Space and the keyboard Cmd-Shift-N
+  paths share the same create→activate→configure authority). Escape/Cancel
+  closes the surface without applying the draft — the created Space and its
+  deterministic defaults stay.
+- **Surface:** one BBR-owned in-rail panel above the footer row
+  (`bbr-space-config`) with a header (`bbr-space-config-title`), a rename
+  field (`bbr-space-config-name`), the curated theme picker
+  (`bbr-space-config-theme-<name>`), the curated identity picker (emoji
+  `bbr-space-config-emoji-<index>` and BBR-glyph `bbr-space-config-glyph-<name>`),
+  and Done/Cancel (`bbr-space-config-done` / `bbr-space-config-cancel`).
+  Only curated emoji/BBR-glyph values and curated theme tokens exist — no
+  free-form icon or color. Keyboard: printable chars edit the draft,
+  Backspace deletes, Enter commits, Escape cancels.
+- **Exact-SpaceId contract:** the surface binds the exact persistent SpaceId
+  at open and never re-derives it; every commit targets that id through the
+  controller (which rejects unknown spaces whole), so a stale surface can
+  never mutate another Space after a switch.
+- **Truthful persistence boundary:** the committed rename is durable (the
+  structural model carries titles through the persistence DTO). The curated
+  theme/identity is session-valid only under the current schema — the
+  persisted rows store the canonical derived defaults and restore drops
+  tint/glyph, so a curated appearance reverts to the derived default after a
+  restart. No path claims appearance persistence.
+
 ### 11.4 Sidebar
 
 - **Anatomy (top → bottom):** brand block (app mark + name) `sp:4`

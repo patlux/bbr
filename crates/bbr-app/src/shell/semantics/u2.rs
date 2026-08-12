@@ -108,7 +108,13 @@ fn space_chip_node(chip: &SpaceChipVisuals, strip_focused: bool) -> SemanticNode
     SemanticNode {
         id: space_chip_id(chip.space).to_string(),
         role: SemanticRole::Row,
-        name: Some(chip.title.clone()),
+        // §11.3: the chip's stable accessible name carries the Space and
+        // Profile names (the footer is icon-only at rest, so the accessible
+        // name is the non-color identity companion).
+        name: Some(format!(
+            "{} · in Profile · {}",
+            chip.title, chip.profile_title
+        )),
         value: None,
         enabled: true,
         selected: chip.selected,

@@ -90,6 +90,7 @@ impl GalleryApp {
             context_menu: self.context_menu.recorder().clone(),
             sidebar: self.sidebar.recorder().clone(),
             command: self.command.recorder().clone(),
+            space_config: self.space_config.recorder().clone(),
         }
     }
 }

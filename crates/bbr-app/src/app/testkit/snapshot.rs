@@ -269,6 +269,7 @@ impl BbrApp {
             space_chips,
             active_appearance,
             space_strip_scroll: self.space_strip_scroll_snapshot(),
+            space_config: self.space_config_snapshot(window),
             swipe: self.swipe_snapshot(),
             visible_ids: crate::shell::snapshot::visible_ids_u2(
                 &browser,
@@ -300,6 +301,7 @@ impl BbrApp {
                     error_surface_origin,
                     library_open: self.library.open,
                     library_ids: crate::app::library::model::library_visible_ids(&library_model),
+                    space_config_open: self.space_config.open,
                 },
             ),
             semantics,

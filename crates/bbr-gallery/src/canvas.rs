@@ -9,8 +9,8 @@ use gpui::{div, prelude::*, AnyElement, SharedString};
 
 use crate::registry::{
     AddressStory, AuthStory, CatalogRegistry, CommandStory, ContextMenuStory, ControlsStory,
-    DownloadsStory, ErrorStory, FindStory, Group4Story, LibraryStory, SidebarStory, StoryContext,
-    StoryId, TabRowStory,
+    DownloadsStory, ErrorStory, FindStory, Group4Story, LibraryStory, SidebarStory,
+    SpaceConfigStory, StoryContext, StoryId, TabRowStory,
 };
 
 /// Everything the canvas needs to render the selected story.
@@ -56,6 +56,9 @@ pub struct CanvasModel<'a> {
     /// The G3 Command composition context (`Some` only when the Command
     /// palette / overlay story is selected) — see [`CommandStory`].
     pub command: Option<CommandStory<'a>>,
+    /// The §11.3 Space-configuration context (`Some` only when the Space
+    /// configuration story is selected) — see [`SpaceConfigStory`].
+    pub space_config: Option<SpaceConfigStory<'a>>,
 }
 
 /// The canvas surface: a header (story label + state) above the story.
@@ -80,6 +83,7 @@ pub fn canvas_surface(model: CanvasModel) -> AnyElement {
         context_menu: model.context_menu,
         sidebar: model.sidebar,
         command: model.command,
+        space_config: model.space_config,
     };
     let content = (story.render)(&context);
     div()

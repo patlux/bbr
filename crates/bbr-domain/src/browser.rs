@@ -241,6 +241,24 @@ impl Browser {
         Ok(id)
     }
 
+    /// Rename the existing space `space` (the Space-creation-and-configuration
+    /// surface's rename authority). Rejects unknown spaces whole before any
+    /// mutation; the owning profile, tab order, selection, and every other
+    /// space stay untouched.
+    pub fn rename_space(
+        &mut self,
+        space: SpaceId,
+        title: impl Into<String>,
+    ) -> Result<(), DomainError> {
+        let target = self
+            .spaces
+            .iter_mut()
+            .find(|candidate| candidate.id == space)
+            .ok_or(DomainError::UnknownSpace(space))?;
+        target.title = title.into();
+        Ok(())
+    }
+
     /// Open a new (unpinned) tab in `space`, append it, and activate it.
     pub fn open_tab(
         &mut self,

@@ -109,6 +109,12 @@ mod sidebar_recorder;
 #[cfg(target_os = "macos")]
 mod snapshot;
 #[cfg(target_os = "macos")]
+mod space_config_app;
+#[cfg(target_os = "macos")]
+mod space_config_matrix;
+#[cfg(target_os = "macos")]
+mod space_config_recorder;
+#[cfg(target_os = "macos")]
 mod stories;
 #[cfg(target_os = "macos")]
 mod tab_row_app;

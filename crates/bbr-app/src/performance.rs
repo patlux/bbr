@@ -27,6 +27,7 @@ mod library;
 pub mod pane_geometry;
 mod peek;
 pub mod slot;
+mod space_config;
 mod u2;
 mod zoom;
 use command::{CommandExpectation, CommandObservation};
@@ -79,6 +80,9 @@ struct State {
     /// `peek_request_to_present` benchmark commits only against it
     /// (render-gated, see `peek`).
     latest_peek: Option<peek::PeekObservation>,
+    /// The §11.3 Space-configuration surface presentation the sidebar render
+    /// actually drew (render-gated, see `space_config`).
+    latest_space_config: Option<space_config::SpaceConfigObservation>,
     /// The Saved Pages Library presentation the B3 benchmarks observed at
     /// the mutation site (search/scroll; see `library`).
     library: library::LibraryObserved,
@@ -161,6 +165,10 @@ struct Pending {
     /// must commit from (the preview session raised above its warm origin
     /// with the Peek bar drawn).
     peek: Option<peek::PeekExpectation>,
+    /// The exact §11.3 Space-configuration presentation identity the pending
+    /// sample must commit from (the surface drawn open bound to the exact
+    /// SpaceId, or drawn closed).
+    space_config: Option<space_config::SpaceConfigExpectation>,
     /// The exact Saved Pages Library presentation identity the pending
     /// sample must commit from (search result count/window, or scroll
     /// window/anchor/selection).
@@ -181,6 +189,7 @@ impl PerformanceProbe {
                 latest_context_menu: None,
                 latest_auth: None,
                 latest_peek: None,
+                latest_space_config: None,
                 library: library::LibraryObserved::default(),
                 latest_active_web_view: None,
                 latest_active_space: TestSpaceId(0),
@@ -213,6 +222,7 @@ impl PerformanceProbe {
                     context_menu: None,
                     auth: None,
                     peek: None,
+                    space_config: None,
                     library: None,
                 }),
                 page_ready: None,
@@ -263,6 +273,7 @@ impl PerformanceProbe {
             context_menu: None,
             auth: None,
             peek: None,
+            space_config: None,
             library: None,
         });
         Ok(())
@@ -445,6 +456,7 @@ impl PerformanceProbe {
             plus_menu_open: state.u2.plus_menu_open,
             favorites_len: state.u2.favorites_len,
             folder_expanded: state.u2.folder_expanded,
+            space_config_space: None,
             page_title: Some(ready.expected_title),
         };
         if let Some(sink) = state.sink.as_mut() {
@@ -491,13 +503,24 @@ impl PerformanceProbe {
     fn commit_presentation(&self, rect: WebRect) {
         let mut state = self.inner.borrow_mut();
         state.content_rect = Some(rect);
-        if rect.width <= 0.0 || rect.height <= 0.0 || state.latest_active_web_view.is_none() {
+        if rect.width <= 0.0 || rect.height <= 0.0 {
             return;
         }
 
         let Some(pending) = state.pending.as_ref() else {
             return;
         };
+        // The session-presentation guard: every interaction benchmark
+        // commits only when a native session is presented. The one
+        // exception is the §11.3 Space-create presentation — a fresh Space
+        // is deliberately empty (no session exists yet), and its honest
+        // presentation is the render-gated configuration surface bound to
+        // the exact created SpaceId, which is checked below.
+        if state.latest_active_web_view.is_none()
+            && !matches!(pending.kind, BenchmarkKind::SpaceCreatePresent)
+        {
+            return;
+        }
         #[cfg(feature = "testkit")]
         if !pending.armed {
             log::warn!(
@@ -541,6 +564,7 @@ impl PerformanceProbe {
             || !context_menu::context_menu_matches(pending, &state)
             || !auth::auth_matches(pending, &state)
             || !peek::peek_matches(pending, &state)
+            || !space_config::space_config_matches(pending, &state)
             || !library::library_matches(pending, &state)
         {
             #[cfg(feature = "testkit")]
@@ -602,6 +626,11 @@ impl PerformanceProbe {
             plus_menu_open: state.u2.plus_menu_open,
             favorites_len: state.u2.favorites_len,
             folder_expanded: state.u2.folder_expanded,
+            space_config_space: state
+                .latest_space_config
+                .as_ref()
+                .filter(|observed| observed.open)
+                .and_then(|observed| observed.space),
             page_title: None,
         };
         if let Some(sink) = state.sink.as_mut() {

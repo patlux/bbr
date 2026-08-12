@@ -10,7 +10,7 @@ use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewI
 mod u2;
 pub use u2::{
     ChipCompanionSnapshot, FavoriteTileSnapshot, FolderRowSnapshot, SpaceAppearanceSnapshot,
-    SpaceChipSnapshot, SpaceStripScrollSnapshot, SwipeSnapshot,
+    SpaceChipSnapshot, SpaceConfigSnapshot, SpaceStripScrollSnapshot, SwipeSnapshot,
 };
 
 /// The L6 contract state of one download attempt (DESIGN.md §15): the panel
@@ -990,6 +990,12 @@ pub struct Snapshot {
     /// selecting an offscreen chip scrolls it fully into view.
     #[serde(default)]
     pub space_strip_scroll: SpaceStripScrollSnapshot,
+    /// §11.3 Space-configuration surface state while open: the bound exact
+    /// persistent SpaceId, the header title, the rename draft, the selected
+    /// curated theme/identity names, and whether the surface owns chrome
+    /// focus. `None` while closed (the surface is not rendered).
+    #[serde(default)]
+    pub space_config: Option<SpaceConfigSnapshot>,
     /// DESIGN.md §11.3 swipe gesture evidence: the active space (truthful
     /// at every phase — a tracking gesture never changes the selected
     /// space), the source/destination persistent space ids and display-order

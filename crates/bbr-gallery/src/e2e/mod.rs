@@ -29,6 +29,7 @@ mod group4;
 mod library;
 mod pointer;
 mod sidebar;
+mod space_config;
 mod startup;
 mod sweep;
 mod tab_row;

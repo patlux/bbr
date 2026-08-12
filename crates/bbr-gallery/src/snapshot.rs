@@ -14,6 +14,7 @@ use crate::find_recorder::FindRecorder;
 use crate::group4_recorder::Group4Recorder;
 use crate::library_recorder::LibraryRecorder;
 use crate::sidebar_recorder::SidebarRecorder;
+use crate::space_config_recorder::SpaceConfigRecorder;
 
 /// The semantic snapshot the E2E asserts (§15 mode fields + stable ids).
 #[derive(Debug, Clone, PartialEq)]
@@ -112,4 +113,8 @@ pub struct GallerySnapshot {
     /// selection, rendered stable keys). The surface takes no callbacks,
     /// so this is presentation observation only.
     pub command: CommandRecorder,
+    /// The observed §11.3 Space-configuration state through the production
+    /// record path: the theme/identity selections and the Done/Cancel/
+    /// inside-press events the production surface callbacks reported.
+    pub space_config: SpaceConfigRecorder,
 }

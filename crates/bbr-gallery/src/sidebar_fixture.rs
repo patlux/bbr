@@ -200,6 +200,11 @@ pub fn build_sidebar_fixture(
                 } else {
                     "Private".into()
                 },
+                profile_title: if i == 0 {
+                    "Default".into()
+                } else {
+                    "Private".into()
+                },
                 identity: if i == 0 { "code".into() } else { "lock".into() },
                 theme: if i == 0 {
                     SpaceTheme::Cobalt

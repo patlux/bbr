@@ -413,6 +413,7 @@ fn the_permanent_strip_always_renders_chip_nodes() {
     let quiet = SpaceChipVisuals {
         space: bbr_browser::SpaceId(2),
         title: "Reading".into(),
+        profile_title: "Default".into(),
         identity: "book".into(),
         theme: bbr_browser::SpaceTheme::Pine,
         selected: false,

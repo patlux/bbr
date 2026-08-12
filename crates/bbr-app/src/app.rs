@@ -90,6 +90,7 @@ mod saved_pages;
 mod saved_pages_benchmarks;
 mod sidebar;
 mod sidebar_view;
+mod space_config;
 mod spaces;
 mod swipe;
 #[cfg(feature = "testkit")]
@@ -406,6 +407,11 @@ pub struct BbrApp {
     /// U2 sidebar presentation/focus state; organization authority stays in
     /// the controller above, while this group owns only local UI state.
     u2: u2::U2State,
+    /// §11.3 Space-configuration surface state (open flag, the bound exact
+    /// persistent SpaceId, the presentation draft, and the surface's chrome
+    /// focus handle); every rename/appearance authority stays in the
+    /// controller.
+    space_config: space_config::SpaceConfigState,
     /// DESIGN.md §11.3 sidebar swipe composition (F2a swipe kernel): the one
     /// in-app gesture state. Idle unless a horizontal trackpad gesture is in
     /// progress; commits through the existing `activate_space` authority.
@@ -552,6 +558,7 @@ impl BbrApp {
             sidebar_visible: true,
             organization,
             u2: u2::U2State::new(cx),
+            space_config: space_config::SpaceConfigState::new(cx),
             swipe: swipe::SwipeState::new(),
             focus_sink: Rc::new(RefCell::new(None)),
             browser_sink: Rc::new(RefCell::new(None)),
@@ -976,6 +983,7 @@ impl BbrApp {
             || self.downloads_panel_handle.is_focused(window)
             || self.downloads_control_handle.is_focused(window)
             || self.library_handle.is_focused(window)
+            || self.space_config.handle.is_focused(window)
     }
 
     fn emit_browser(&mut self, event: &ControllerEvent) {

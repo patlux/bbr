@@ -22,6 +22,25 @@
 //! both values are the canonical derived defaults of the integrated
 //! appearance contract.
 //!
+//! ## Truthful persistence boundary (§11.3 configuration surface)
+//!
+//! The Space-creation-and-configuration surface (packet
+//! `space-creation-appearance-ui.md`) commits a rename and a curated
+//! theme/identity for the exact bound `SpaceId`. Under the current schema:
+//!
+//! - **The rename persists truthfully.** The space title flows through this
+//!   mapping (`IntentSpace.title` → `Space.title`) on every structural
+//!   write, so a committed rename survives a graceful restart.
+//! - **The curated theme/identity is session-valid only.** The domain's
+//!   `SpaceAppearanceStore` is in-memory, and the persisted `Space` row
+//!   always stores the canonical derived defaults (`tint_for_hue` +
+//!   `DEFAULT_GLYPH`) while restore drops tint/glyph entirely. A curated
+//!   theme/identity therefore reverts to the derived default after a
+//!   restart. No code path claims otherwise: the surface's `Done` pokes the
+//!   browser-state writer (the rename is durable), and the appearance is
+//!   never mislabeled persistent. A future appearance-persistence slice
+//!   would extend the schema — never this mapping.
+//!
 //! ## Window identity
 //!
 //! The persistence identity contract is global uniqueness across every kind

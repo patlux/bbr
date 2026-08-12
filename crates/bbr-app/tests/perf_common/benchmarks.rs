@@ -649,6 +649,154 @@ pub(crate) fn wait_history_events(
     cursor
 }
 
+/// The §11.3 create→activate→configure lifecycle (packet
+/// `space-creation-appearance-ui.md`, `space_create_present` scenario): the
+/// production `commit_new_space` path creates and activates a fresh Space
+/// and opens its optional name/icon configuration surface. The sample
+/// commits only from a render that drew the surface open bound to the exact
+/// new persistent SpaceId (the in-app render-gated guard); the driver then
+/// re-verifies the typed snapshot: the created Space is active, its chip
+/// renders `selected` with the stable persistent id, the configuration
+/// surface is bound to the exact created id, and the live-session count is
+/// unchanged (a fresh Space is empty — no session is created). Returns the
+/// measurement plus the created SpaceId for the caller's bookkeeping.
+pub(crate) fn benchmark_space_create(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    name: &str,
+    expected_sessions: usize,
+) -> (PresentationMeasurement, TestSpaceId) {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkCreateSpace {
+            operation_id,
+            name: name.into(),
+        })
+        .expect("benchmark space create");
+    let (seq, measured) = wait_measurement(
+        client,
+        BenchmarkKind::SpaceCreatePresent,
+        operation_id,
+        *since,
+    );
+    *since = seq;
+    let snapshot = client.snapshot().expect("space create snapshot");
+    let created = snapshot.active_space;
+    assert_eq!(
+        measured.active_space, created,
+        "measured presentation shows the created space"
+    );
+    assert_eq!(
+        measured.space_config_space,
+        Some(created),
+        "the measured surface is bound to the exact created SpaceId"
+    );
+    assert!(
+        measured.chrome_focused,
+        "the create presentation keeps the chrome focus domain"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::Inactive);
+    // The typed snapshot agrees: the created space is active, its chip is
+    // selected with the persistent id, the config surface is bound to the
+    // exact created id, and no session was created.
+    assert_eq!(snapshot.active_space, created);
+    let surface = snapshot
+        .space_config
+        .as_ref()
+        .expect("configuration surface open");
+    assert_eq!(surface.space, created, "surface bound to the created id");
+    let chip = snapshot
+        .space_chips
+        .iter()
+        .find(|c| c.space == created)
+        .expect("created chip in the strip");
+    assert!(chip.selected, "the created space's chip renders selected");
+    assert!(
+        snapshot
+            .visible_ids
+            .iter()
+            .any(|id| id == &format!("bbr-space-chip-{}", created.0)),
+        "created chip id present"
+    );
+    assert_eq!(
+        snapshot.engine_sessions, expected_sessions,
+        "creating a space never creates a session"
+    );
+    (measured, created)
+}
+
+/// The §11.3 identity commit for the exact bound Space (packet
+/// `space-creation-appearance-ui.md`, `space_config_identity_update`
+/// scenario): the production `space_config_done` authority commits the
+/// curated identity/theme/rename for the exact bound persistent SpaceId and
+/// the surface closes. The sample commits only from a render that drew the
+/// surface closed with the bound space still active (the in-app render-gated
+/// guard); the driver then re-verifies the typed snapshot: the bound chip
+/// carries the committed identity and stays selected, no sibling chip
+/// changed, no session was created, and the surface is gone on the wire.
+pub(crate) fn benchmark_space_config_identity_update(
+    client: &mut Client,
+    since: &mut u64,
+    operation: u64,
+    space: TestSpaceId,
+    identity: &str,
+    expected_identity: &str,
+    expected_sessions: usize,
+) -> PresentationMeasurement {
+    let operation_id = BenchmarkOperationId(operation);
+    client
+        .send_ok(&Request::BenchmarkSpaceConfigIdentityUpdate {
+            operation_id,
+            space,
+            identity: identity.into(),
+        })
+        .expect("benchmark space config identity update");
+    let (seq, measured) = wait_measurement(
+        client,
+        BenchmarkKind::SpaceConfigIdentityUpdate,
+        operation_id,
+        *since,
+    );
+    *since = seq;
+    assert_eq!(
+        measured.active_space, space,
+        "the bound space stays active after the commit"
+    );
+    assert_eq!(
+        measured.space_config_space, None,
+        "the measured surface is drawn closed"
+    );
+    assert!(
+        measured.chrome_focused,
+        "the commit returns to the strip chrome domain"
+    );
+    assert_eq!(measured.command_bar_mode, CommandBarMode::Inactive);
+    let snapshot = client.snapshot().expect("space config commit snapshot");
+    assert_eq!(
+        snapshot.space_config, None,
+        "the surface is gone on the wire"
+    );
+    let chip = snapshot
+        .space_chips
+        .iter()
+        .find(|c| c.space == space)
+        .expect("bound chip in the strip");
+    assert_eq!(
+        chip.identity, expected_identity,
+        "the bound chip carries the committed identity"
+    );
+    assert!(
+        chip.selected,
+        "the bound chip stays selected (active space)"
+    );
+    assert_eq!(
+        snapshot.engine_sessions, expected_sessions,
+        "the identity commit never touches sessions"
+    );
+    measured
+}
+
 /// A committed logical Back content gesture (N1 packet
 /// `web-content-navigation-gestures`, `web_history_swipe_back` scenario):
 /// the app dispatches one Back through the exact production gesture method

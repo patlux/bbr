@@ -85,6 +85,34 @@ pub fn click_plus_menu_item(index: usize) -> Request {
     Request::ClickPlusMenuItem { index }
 }
 
+pub fn open_space_config(space: TestSpaceId) -> Request {
+    Request::OpenSpaceConfig { space }
+}
+
+pub fn space_config_select_theme(theme: impl Into<String>) -> Request {
+    Request::SpaceConfigSelectTheme {
+        theme: theme.into(),
+    }
+}
+
+pub fn space_config_select_identity(identity: impl Into<String>) -> Request {
+    Request::SpaceConfigSelectIdentity {
+        identity: identity.into(),
+    }
+}
+
+pub fn space_config_done() -> Request {
+    Request::SpaceConfigDone
+}
+
+pub fn space_config_cancel() -> Request {
+    Request::SpaceConfigCancel
+}
+
+pub fn space_config_press_outside() -> Request {
+    Request::SpaceConfigPressOutside
+}
+
 pub fn toggle_favorite_tab(index: usize) -> Request {
     Request::ToggleFavoriteTab { index }
 }
@@ -435,6 +463,35 @@ pub fn benchmark_activate_space(operation_id: BenchmarkOperationId, space: TestS
     Request::BenchmarkActivateSpace {
         operation_id,
         space,
+    }
+}
+
+/// Create a space through the production create→activate→configure path and
+/// measure until the configuration surface renders open bound to the exact
+/// new SpaceId (packet `space-creation-appearance-ui.md`).
+pub fn benchmark_create_space(
+    operation_id: BenchmarkOperationId,
+    name: impl Into<String>,
+) -> Request {
+    Request::BenchmarkCreateSpace {
+        operation_id,
+        name: name.into(),
+    }
+}
+
+/// Open the configuration surface for the exact `space` and commit the
+/// curated `identity` through the production `space_config_done` authority,
+/// measuring until the surface is drawn closed with the bound space still
+/// active (packet `space-creation-appearance-ui.md`).
+pub fn benchmark_space_config_identity_update(
+    operation_id: BenchmarkOperationId,
+    space: TestSpaceId,
+    identity: impl Into<String>,
+) -> Request {
+    Request::BenchmarkSpaceConfigIdentityUpdate {
+        operation_id,
+        space,
+        identity: identity.into(),
     }
 }
 

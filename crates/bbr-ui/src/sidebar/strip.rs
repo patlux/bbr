@@ -73,18 +73,22 @@ pub fn space_strip(
         .children(chips)
 }
 
-/// One §11.3 identity chip: `[identity] [title, trunc]`, `radius:sm`, with
+/// One §11.3 identity chip: `[identity]`, `radius:sm`, with
 /// the persistent selected surface + accent rail on the active space and the
 /// §10.9 drag-target treatment (accent outline + selection tint + the §12
 /// destination-profile companion) while a pointer drag targets this exact
-/// chip. `on_select` is the production view listener (the same app method
-/// the keyboard traversal drives). `swipe_tint` carries the chrome-only
-/// interpolated presentation while a sidebar swipe tracks (`None` at rest):
-/// the active chip's surface follows the gesture progress toward the
-/// adjacent space while `visuals.selected`/`visuals.theme` stay truthful.
-/// Chips never shrink inside the scroll viewport (`flex_shrink_0`), so the
-/// strip's content width is the sum of its chips and the selected chip can
-/// be scrolled into view deterministically.
+/// chip. DESIGN.md §11.3: the footer chip is **icon-only at rest** — the
+/// validated identity renders, no Space title text appears in the footer
+/// (the accessible/semantic name still carries the Space and Profile names,
+/// so identity is never color-only). `on_select` is the production view
+/// listener (the same app method the keyboard traversal drives).
+/// `swipe_tint` carries the chrome-only interpolated presentation while a
+/// sidebar swipe tracks (`None` at rest): the active chip's surface follows
+/// the gesture progress toward the adjacent space while
+/// `visuals.selected`/`visuals.theme` stay truthful. Chips never shrink
+/// inside the scroll viewport (`flex_shrink_0`), so the strip's content
+/// width is the sum of its chips and the selected chip can be scrolled into
+/// view deterministically.
 pub fn space_chip(
     theme: &Theme,
     visuals: &SpaceChipVisuals,
@@ -160,17 +164,6 @@ pub fn space_chip(
                 .text_color(p.ink)
                 .child(visuals.identity.clone()),
         )
-        .child(
-            div()
-                .flex_1()
-                .overflow_hidden()
-                .text_ellipsis()
-                .max_w(px(96.0))
-                .text_size(theme.type_.meta.size)
-                .font_weight(theme.type_.meta.weight)
-                .text_color(if selected { p.ink } else { p.ink_secondary })
-                .child(visuals.title.clone()),
-        )
         .on_mouse_down(MouseButton::Left, on_select)
 }
 
@@ -185,6 +178,7 @@ mod tests {
         SpaceChipVisuals {
             space,
             title: title.into(),
+            profile_title: "Default".into(),
             identity: "book".into(),
             theme: SpaceTheme::Ink,
             selected: false,
@@ -244,6 +238,7 @@ mod tests {
         let target = SpaceChipVisuals {
             space: SpaceId(4),
             title: "Private".into(),
+            profile_title: "Private".into(),
             identity: "lock".into(),
             theme: SpaceTheme::Violet,
             selected: false,
@@ -284,6 +279,7 @@ mod tests {
         let selected = SpaceChipVisuals {
             space: SpaceId(2),
             title: "Default".into(),
+            profile_title: "Default".into(),
             identity: "code".into(),
             theme: SpaceTheme::Cobalt,
             selected: true,

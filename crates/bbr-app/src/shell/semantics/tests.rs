@@ -66,6 +66,7 @@ fn space_chip() -> SpaceChipVisuals {
     SpaceChipVisuals {
         space: bbr_browser::SpaceId(1),
         title: "Default".into(),
+        profile_title: "Default".into(),
         identity: "book".into(),
         theme: bbr_browser::SpaceTheme::Cobalt,
         selected: true,
@@ -157,7 +158,11 @@ fn tree_exposes_roles_names_values_and_hierarchy() {
     assert_eq!(strip.name.as_deref(), Some("Spaces"));
     let chip = find(&tree, "bbr-space-chip-1").expect("space chip");
     assert_eq!(chip.role, SemanticRole::Row);
-    assert_eq!(chip.name.as_deref(), Some("Default"));
+    assert_eq!(
+        chip.name.as_deref(),
+        Some("Default · in Profile · Default"),
+        "the accessible name carries the Space and Profile names"
+    );
     assert!(chip.selected, "the active space's chip renders selected");
     let identity = find(&tree, "bbr-space-identity-1").expect("identity child");
     assert_eq!(identity.role, SemanticRole::Title);

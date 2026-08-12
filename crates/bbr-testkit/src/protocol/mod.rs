@@ -39,9 +39,9 @@ pub use snapshot::{
     NewWindowSnapshot, PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, PreviewSnapshot,
     PreviewZOrder, ProfileSnapshot, RestoreDisposition, SavedPagesCollectionSnapshot,
     SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot, SemanticNode, SemanticRole, Snapshot,
-    SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceSnapshot, SpaceStripScrollSnapshot,
-    StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, SwipeSnapshot, TabSnapshot,
-    TabVisualState, WebContentProbe, ZoomSnapshot,
+    SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceSnapshot,
+    SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot,
+    SwipeSnapshot, TabSnapshot, TabVisualState, WebContentProbe, ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.
