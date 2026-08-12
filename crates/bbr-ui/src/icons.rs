@@ -27,8 +27,8 @@ use crate::theme::Theme;
 
 use glyphs::{
     arc_radius, chassis_radii, check_geometry, chevron_arm, clock_geometry, close_arm,
-    disclosure_arm, downloads_geometry, folder_geometry, icon_stroke, lifering_radii, pin_radius,
-    plus_arm, stopped_half,
+    disclosure_arm, downloads_geometry, folder_geometry, icon_stroke, lifering_radii,
+    nav_arrow_geometry, pin_radius, plus_arm, reload_geometry, sidebar_geometry, stopped_half,
 };
 use paint::{paint_filled_circle, paint_path, paint_ring, paint_rounded_square_ring, paint_stroke};
 
@@ -67,6 +67,16 @@ pub enum Icon {
     ChevronLeft,
     /// §11.4 find bar: step to the next match (right chevron).
     ChevronRight,
+    /// §11.14 titlebar: the sidebar collapse/expand toggle. The glyph
+    /// reflects the rail's state — the divider sits near the left edge
+    /// when collapsed and toward the center when expanded.
+    Sidebar { expanded: bool },
+    /// §11.14 titlebar: go Back (a left-pointing §7 arrow).
+    NavBack,
+    /// §11.14 titlebar: go Forward (a right-pointing §7 arrow).
+    NavForward,
+    /// §11.14 titlebar: Reload (a drawn circular arrow).
+    Reload,
 }
 
 impl Icon {
@@ -102,6 +112,16 @@ impl Icon {
             Icon::LoadingArc => "loading-arc",
             Icon::ChevronLeft => "chevron-left",
             Icon::ChevronRight => "chevron-right",
+            Icon::Sidebar { expanded } => {
+                if expanded {
+                    "sidebar-expanded"
+                } else {
+                    "sidebar-collapsed"
+                }
+            }
+            Icon::NavBack => "nav-back",
+            Icon::NavForward => "nav-forward",
+            Icon::Reload => "reload",
         }
     }
 
@@ -123,6 +143,8 @@ impl Icon {
             Icon::Lifering => palette.status_error,
             Icon::Clock => palette.ink_secondary,
             Icon::ChevronLeft | Icon::ChevronRight => palette.ink_secondary,
+            Icon::Sidebar { .. } => palette.ink_secondary,
+            Icon::NavBack | Icon::NavForward | Icon::Reload => palette.ink_secondary,
         }
     }
 
@@ -302,6 +324,57 @@ impl Icon {
                 path.line_to(point(px(arm_x), px(cy + arm)));
                 paint_path(window, path, color);
             }
+            Icon::Sidebar { expanded } => {
+                let (half, divider) = sidebar_geometry(size, expanded);
+                // The frame: a rounded-square ring like the chassis mark.
+                paint_rounded_square_ring(window, cx, cy, half, 4.0, stroke, color);
+                // The vertical divider: near the left edge when collapsed,
+                // toward the center when expanded.
+                let mut path = PathBuilder::stroke(stroke);
+                let inset = half - f32::from(stroke);
+                path.move_to(point(px(cx + divider), px(cy - inset)));
+                path.line_to(point(px(cx + divider), px(cy + inset)));
+                paint_path(window, path, color);
+            }
+            Icon::NavBack | Icon::NavForward => {
+                let (head, stem) = nav_arrow_geometry(size);
+                let pointing_right = matches!(self, Icon::NavForward);
+                // The head apex at the pointing side, arms to the corners,
+                // and the stem running from the head base outward.
+                let apex_x = if pointing_right { cx + head } else { cx - head };
+                let stem_x = if pointing_right { cx - stem } else { cx + stem };
+                let mut path = PathBuilder::stroke(stroke);
+                path.move_to(point(px(apex_x), px(cy)));
+                path.line_to(point(px(cx), px(cy - head)));
+                path.move_to(point(px(apex_x), px(cy)));
+                path.line_to(point(px(cx), px(cy + head)));
+                path.move_to(point(px(cx), px(cy)));
+                path.line_to(point(px(stem_x), px(cy)));
+                paint_path(window, path, color);
+            }
+            Icon::Reload => {
+                let (radius, head) = reload_geometry(size);
+                // A near-full clockwise arc from the top, ending 60° past
+                // it on the right (the reload ring with the top-right gap).
+                let end_x = cx + radius * 0.866;
+                let end_y = cy - radius * 0.5;
+                let mut path = PathBuilder::stroke(stroke);
+                path.move_to(point(px(cx), px(cy - radius)));
+                path.arc_to(
+                    point(px(radius), px(radius)),
+                    px(0.0),
+                    true,
+                    true,
+                    point(px(end_x), px(end_y)),
+                );
+                // The arrowhead at the arc end, pointing in the travel
+                // direction (down-right).
+                path.move_to(point(px(end_x - head), px(end_y)));
+                path.line_to(point(px(end_x), px(end_y)));
+                path.move_to(point(px(end_x), px(end_y - head)));
+                path.line_to(point(px(end_x), px(end_y)));
+                paint_path(window, path, color);
+            }
         }
     }
 }
@@ -309,7 +382,10 @@ impl Icon {
 mod tests {
     use super::*;
     use crate::theme::{ContrastMode, ThemeMode};
-    use glyphs::{arc_radius, chassis_radii, chevron_arm, close_arm, lifering_radii, plus_arm};
+    use glyphs::{
+        arc_radius, chassis_radii, chevron_arm, close_arm, lifering_radii, nav_arrow_geometry,
+        plus_arm, reload_geometry, sidebar_geometry,
+    };
 
     #[test]
     fn catalog_names_are_stable() {
@@ -331,6 +407,14 @@ mod tests {
         assert_eq!(Icon::LoadingArc.name(), "loading-arc");
         assert_eq!(Icon::ChevronLeft.name(), "chevron-left");
         assert_eq!(Icon::ChevronRight.name(), "chevron-right");
+        assert_eq!(Icon::Sidebar { expanded: true }.name(), "sidebar-expanded");
+        assert_eq!(
+            Icon::Sidebar { expanded: false }.name(),
+            "sidebar-collapsed"
+        );
+        assert_eq!(Icon::NavBack.name(), "nav-back");
+        assert_eq!(Icon::NavForward.name(), "nav-forward");
+        assert_eq!(Icon::Reload.name(), "reload");
     }
 
     #[test]
@@ -367,6 +451,26 @@ mod tests {
                 chevron_arm(size) * 1.5 + 1.5 / 2.0 <= size / 2.0,
                 "step chevron fits at {size}pt"
             );
+            let (nav_head, nav_stem) = nav_arrow_geometry(size);
+            assert!(nav_head <= size / 2.0, "nav head fits at {size}pt");
+            assert!(
+                nav_head + nav_stem <= size / 2.0,
+                "nav stem fits at {size}pt"
+            );
+            let (reload_radius, reload_head) = reload_geometry(size);
+            assert!(reload_radius <= size / 2.0, "reload radius fits");
+            assert!(
+                reload_radius * 0.866 + reload_head <= size / 2.0,
+                "reload arrowhead fits at {size}pt"
+            );
+            for expanded in [true, false] {
+                let (half, divider) = sidebar_geometry(size, expanded);
+                assert!(half <= size / 2.0, "sidebar frame fits at {size}pt");
+                assert!(
+                    divider.abs() <= half,
+                    "sidebar divider inside the frame at {size}pt"
+                );
+            }
         }
     }
 
@@ -420,5 +524,16 @@ mod tests {
         assert_eq!(Icon::Lifering.rest_color(p), p.status_error);
         assert_eq!(Icon::ChevronLeft.rest_color(p), p.ink_secondary);
         assert_eq!(Icon::ChevronRight.rest_color(p), p.ink_secondary);
+        assert_eq!(
+            Icon::Sidebar { expanded: true }.rest_color(p),
+            p.ink_secondary
+        );
+        assert_eq!(
+            Icon::Sidebar { expanded: false }.rest_color(p),
+            p.ink_secondary
+        );
+        assert_eq!(Icon::NavBack.rest_color(p), p.ink_secondary);
+        assert_eq!(Icon::NavForward.rest_color(p), p.ink_secondary);
+        assert_eq!(Icon::Reload.rest_color(p), p.ink_secondary);
     }
 }

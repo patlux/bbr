@@ -70,12 +70,13 @@ fn sidebar_story_renders_every_matrix_family_with_stable_ids() {
         // `debug_bounds` exposes only explicit `debug_selector` values, so
         // this sweep asserts exactly the production elements that expose
         // one (the G2 precedent: tab rows, favorites, folders, footer
-        // controls). The remaining §15 ids (`bbr-sidebar`, `bbr-brand`,
-        // `bbr-address`, section labels, `bbr-status`, `bbr-sidebar-toggle`,
-        // `bbr-space-strip`, `bbr-sidebar-divider`) are plain `.id()`
-        // elements — not debug targets — and are proven by the matrix
-        // model/contract tests and the story's value rows, never claimed
-        // as pointer targets here.
+        // controls). The remaining §15 ids (`bbr-sidebar`, `bbr-titlebar`,
+        // `bbr-titlebar-sidebar-toggle`, `bbr-nav-back`, `bbr-nav-forward`,
+        // `bbr-nav-reload`, `bbr-brand`, `bbr-address`, section labels,
+        // `bbr-status`, `bbr-space-strip`, `bbr-sidebar-divider`) are plain
+        // `.id()` elements — not debug targets — and are proven by the
+        // matrix model/contract tests and the story's value rows, never
+        // claimed as pointer targets here.
         let family = bounds_of(window, SIDEBAR_FAMILY_SELECTOR);
         assert!(
             family.size.width > gpui::px(0.0) && family.size.height > gpui::px(0.0),
@@ -162,14 +163,16 @@ fn real_pointer_presses_report_through_the_sidebar_recorders() {
     run_scenario(|window, app| {
         open_sidebar(window, app);
         // The default family: 1 pinned + 3 regular rows, 3 favorites, 1
-        // folder with 2 members, 2 spaces, address command, footer, toggle,
-        // divider.
+        // folder with 2 members, 2 spaces, address command, titlebar row,
+        // footer, divider.
         //
         // Pointer targets are exactly the production elements that expose
         // an explicit `debug_selector` (the G2 precedent). The remaining
-        // §15 ids (`bbr-space-chip-<n>`, `bbr-sidebar-toggle`,
-        // `bbr-sidebar-divider`, `bbr-address`, `bbr-plus-menu` and its
-        // items) are plain `.id()` elements in `bbr-ui` — GPUI's
+        // §15 ids (`bbr-space-chip-<n>`, `bbr-titlebar`,
+        // `bbr-titlebar-sidebar-toggle`, `bbr-nav-back`, `bbr-nav-forward`,
+        // `bbr-nav-reload`, `bbr-sidebar-divider`, `bbr-address`,
+        // `bbr-plus-menu` and its items) are plain `.id()` elements in
+        // `bbr-ui` — GPUI's
         // `debug_bounds` cannot target them, and this lane must not add
         // production debug selectors or claim non-selector ids as pointer
         // targets. Their wiring stays proven by the observer contract test

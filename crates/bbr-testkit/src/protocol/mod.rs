@@ -41,7 +41,7 @@ pub use snapshot::{
     SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot, SemanticNode, SemanticRole, Snapshot,
     SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceSnapshot, SpaceStripScrollSnapshot,
     StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, SwipeSnapshot, TabSnapshot,
-    TabVisualState, WebContentProbe, ZoomSnapshot,
+    TabVisualState, TitlebarSnapshot, WebContentProbe, ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.

@@ -174,6 +174,18 @@ impl WebEngineWk {
         native_session::window_content_rect(&web_view)
     }
 
+    /// The live safe-titlebar layout guide (packet
+    /// `titlebar-navigation-controls`): the titlebar strip height and the
+    /// traffic-light region the BBR-owned titlebar row must clear, read
+    /// from the real window — never hardcoded traffic-light coordinates.
+    /// `None` before the root view has a window (non-macOS or startup).
+    pub fn safe_titlebar_guide(&self) -> Option<bbr_web::SafeTitlebarGuide> {
+        self.assert_main_thread();
+        let root = self.host.root_view()?;
+        let mtm = MainThreadMarker::new()?;
+        crate::titlebar_geometry::safe_titlebar_guide(mtm, root)
+    }
+
     /// Hand all subsequent classified web-error incidents to `sink`
     /// (task packet `error-surface-contract`). Replaces any previous sink.
     /// Inherent to the concrete engine (not part of the portable trait): the

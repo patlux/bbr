@@ -320,6 +320,17 @@ impl BbrApp {
             command_cursor: self.command_text.cursor,
             command_selection: self.command_text.selection.map(|(start, end)| [start, end]),
             sidebar_visible: self.sidebar_visible,
+            titlebar: {
+                let safe = self.safe_area(window);
+                bbr_testkit::protocol::TitlebarSnapshot {
+                    safe_area_height: safe.height,
+                    traffic_lights: safe.traffic_lights,
+                    sidebar_collapsed: !self.sidebar_visible,
+                    can_go_back: browser.nav.can_go_back,
+                    can_go_forward: browser.nav.can_go_forward,
+                    can_reload: browser.active_view.is_some(),
+                }
+            },
             sidebar_width,
             sidebar_min: bbr_ui::sidebar::geometry::SIDEBAR_MIN,
             sidebar_default: bbr_ui::sidebar::geometry::SIDEBAR_DEFAULT,

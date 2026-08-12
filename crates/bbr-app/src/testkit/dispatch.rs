@@ -35,6 +35,7 @@ use crate::testkit::dispatch_library::dispatch_library;
 use crate::testkit::dispatch_portal::dispatch_portal;
 use crate::testkit::dispatch_probe::dispatch_probe;
 use crate::testkit::dispatch_saved_pages::dispatch_saved_pages;
+use crate::testkit::dispatch_titlebar::dispatch_titlebar;
 use crate::testkit::dispatch_u2::dispatch_u2;
 use crate::testkit::dispatch_util::{browser_mutation, err_response};
 use crate::testkit::dispatch_zoom::dispatch_zoom;
@@ -141,6 +142,12 @@ pub(crate) fn dispatch(
     // Saved Page save/remove/open/flush + benchmark arms route separately
     // (B2 packet `saved-pages-actions-command`; same bounded-router reason).
     if let Some(response) = dispatch_saved_pages(&req, window, app, cx) {
+        return response;
+    }
+    // §11.14 titlebar toggle/Back/Forward/Reload pointer-path seams route
+    // separately (same bounded-router reason): the exact production app
+    // methods the element listeners call.
+    if let Some(response) = dispatch_titlebar(&req, window, app, cx) {
         return response;
     }
     // Saved Pages Library open/close/search/sort/selection/remove/collection
@@ -699,6 +706,19 @@ pub(crate) fn dispatch(
         | Request::EndTabDrag
         | Request::CancelTabDrag => unreachable!("tab-drag requests route through dispatch_drag"),
 
+        // Routed by `dispatch_titlebar` before this match; reaching one
+        // here is a routing bug (§11.14 titlebar pointer seams).
+        Request::ClickTitlebarToggle
+        | Request::ClickTitlebarBack
+        | Request::ClickTitlebarForward
+        | Request::ClickTitlebarReload
+        | Request::HoverTitlebarControl { .. }
+        | Request::UnhoverTitlebarControl
+        | Request::PressTitlebarControl { .. }
+        | Request::ReleaseTitlebarControl => {
+            unreachable!("titlebar requests route through dispatch_titlebar")
+        }
+
         // Routed by `dispatch_u2` before this match (the §11.3 sidebar swipe
         // arms); reaching one here is a routing bug.
         Request::SwipeScroll { .. } | Request::SwipeCancel => {
@@ -735,6 +755,7 @@ pub(crate) fn dispatch(
         | Request::BenchmarkDispatchKeystroke { .. }
         | Request::BenchmarkResizeSidebar { .. }
         | Request::BenchmarkRestoreSidebar { .. }
+        | Request::BenchmarkNavigationControlCommit { .. }
         | Request::BenchmarkPinTab { .. }
         | Request::BenchmarkReorderTab { .. }
         | Request::BenchmarkMoveTab { .. }

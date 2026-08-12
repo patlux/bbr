@@ -27,8 +27,26 @@ pub enum SidebarObservation {
     RailMouseDown,
     /// §11.3: the rail's scroll-wheel listener (`on_rail_scroll_wheel`).
     RailScrollWheel,
-    /// §11.4: the collapse control (`on_toggle_sidebar`).
+    /// §11.14: the titlebar sidebar toggle (`titlebar.on_toggle_sidebar`;
+    /// the §11.4 status-row control was removed in the cutover).
     ToggleSidebar,
+    /// §11.14: the titlebar Back control (`titlebar.on_back`).
+    TitlebarBack,
+    /// §11.14: the titlebar Forward control (`titlebar.on_forward`).
+    TitlebarForward,
+    /// §11.14: the titlebar Reload control (`titlebar.on_reload`).
+    TitlebarReload,
+    /// §11.14: a press on the empty titlebar space
+    /// (`titlebar.on_titlebar_mouse_down` — the native window-drag entry).
+    TitlebarDrag,
+    /// §11.14: pointer enter/leave on a titlebar control
+    /// (`titlebar.on_control_hover`), payload = (control, hovered).
+    TitlebarHover(String, bool),
+    /// §11.14: primary-button down on a titlebar control
+    /// (`titlebar.on_control_press`), payload = the control name.
+    TitlebarPress(String),
+    /// §11.14: primary-button up (`titlebar.on_control_release`).
+    TitlebarRelease,
     /// §11.5: the address pill's hover wash (`on_command_hover`).
     CommandHover(bool),
     /// §11.4: the address pill / staging surface pointer press
@@ -92,8 +110,23 @@ pub struct SidebarRecorder {
     pub rail_mouse_downs: u32,
     /// `on_rail_scroll_wheel` dispatches.
     pub rail_scroll_wheels: u32,
-    /// `on_toggle_sidebar` dispatches.
+    /// `titlebar.on_toggle_sidebar` dispatches.
     pub toggle_sidebars: u32,
+    /// `titlebar.on_back` dispatches.
+    pub titlebar_backs: u32,
+    /// `titlebar.on_forward` dispatches.
+    pub titlebar_forwards: u32,
+    /// `titlebar.on_reload` dispatches.
+    pub titlebar_reloads: u32,
+    /// `titlebar.on_titlebar_mouse_down` dispatches.
+    pub titlebar_drags: u32,
+    /// `titlebar.on_control_hover` (control, hovered) pairs, in dispatch
+    /// order.
+    pub titlebar_hovers: Vec<(String, bool)>,
+    /// `titlebar.on_control_press` control names, in dispatch order.
+    pub titlebar_presses: Vec<String>,
+    /// `titlebar.on_control_release` dispatches.
+    pub titlebar_releases: u32,
     /// `on_command_hover` values, in dispatch order.
     pub command_hovers: Vec<bool>,
     /// `on_command_open` dispatches.
@@ -153,6 +186,15 @@ impl SidebarRecorder {
             SidebarObservation::RailMouseDown => self.rail_mouse_downs += 1,
             SidebarObservation::RailScrollWheel => self.rail_scroll_wheels += 1,
             SidebarObservation::ToggleSidebar => self.toggle_sidebars += 1,
+            SidebarObservation::TitlebarBack => self.titlebar_backs += 1,
+            SidebarObservation::TitlebarForward => self.titlebar_forwards += 1,
+            SidebarObservation::TitlebarReload => self.titlebar_reloads += 1,
+            SidebarObservation::TitlebarDrag => self.titlebar_drags += 1,
+            SidebarObservation::TitlebarHover(control, hovered) => {
+                self.titlebar_hovers.push((control, hovered))
+            }
+            SidebarObservation::TitlebarPress(control) => self.titlebar_presses.push(control),
+            SidebarObservation::TitlebarRelease => self.titlebar_releases += 1,
             SidebarObservation::CommandHover(value) => self.command_hovers.push(value),
             SidebarObservation::CommandOpen => self.command_opens += 1,
             SidebarObservation::SelectRow(index) => self.select_rows.push(index),

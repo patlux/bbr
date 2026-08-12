@@ -424,6 +424,46 @@ pub struct PaneRectSnapshot {
     pub rect: [f32; 4],
 }
 
+/// §11.14 the native safe-titlebar layout guide as plain wire data (task
+/// packet `titlebar-navigation-controls`): the titlebar strip height, the
+/// traffic-light region (window coordinates, top-left origin), the sidebar
+/// collapse state, and the genuine navigation availability of the focused
+/// pane. All values are what the row actually renders (the app reads the
+/// live window; nothing is hardcoded).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct TitlebarSnapshot {
+    /// The native titlebar strip height in points (0 before the window
+    /// attaches / on non-macOS hosts).
+    pub safe_area_height: f32,
+    /// The traffic-light region `[left, top, width, height]` in window
+    /// coordinates (top-left origin): the sidebar toggle starts after its
+    /// right edge.
+    pub traffic_lights: [f32; 4],
+    /// The sidebar is collapsed: the toggle glyph and the semantic value
+    /// reflect it, and the whole titlebar disappears with the rail.
+    pub sidebar_collapsed: bool,
+    /// The focused pane's real history availability (Back).
+    pub can_go_back: bool,
+    /// The focused pane's real history availability (Forward).
+    pub can_go_forward: bool,
+    /// Reload is enabled while the focused pane has a live session.
+    pub can_reload: bool,
+}
+
+impl Default for TitlebarSnapshot {
+    fn default() -> Self {
+        Self {
+            safe_area_height: 0.0,
+            traffic_lights: [0.0; 4],
+            sidebar_collapsed: false,
+            can_go_back: false,
+            can_go_forward: false,
+            can_reload: false,
+        }
+    }
+}
+
 /// The typed state of the command result surface (DESIGN.md §11.5):
 /// `Inactive` when no ranking surface is open, `Empty`/`Loading`/
 /// `Results`/`ActivationError` while the location/new-tab command bar
@@ -1052,6 +1092,15 @@ pub struct Snapshot {
     #[serde(default)]
     pub all_tabs: Vec<GlobalTabSnapshot>,
     pub sidebar_visible: bool,
+    /// §11.14 titlebar presentation evidence (task packet
+    /// `titlebar-navigation-controls`): the native safe-area guide the row
+    /// renders from (strip height + the traffic-light region — never
+    /// hardcoded coordinates), the sidebar collapse state, and the genuine
+    /// Back/Forward/Reload availability of the focused pane. E2E asserts
+    /// the row disappears with the collapsed rail via
+    /// [`Self::sidebar_visible`].
+    #[serde(default)]
+    pub titlebar: TitlebarSnapshot,
     /// The effective sidebar rail width (DESIGN §5 range, window-clamped;
     /// 0 when collapsed).
     pub sidebar_width: f32,

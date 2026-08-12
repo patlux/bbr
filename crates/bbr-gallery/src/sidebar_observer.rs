@@ -17,6 +17,7 @@ use bbr_ui::sidebar::model::{
     BoolCallback, Callbacks, FolderCallback, HoverCallback, KeyCallback, MemberCallback,
     MouseCallback, RowCallback, RowUpCallback, SpaceCallback, WheelCallback,
 };
+use bbr_ui::titlebar::{TitlebarCallbacks, TitlebarControl};
 use gpui::{App, Window};
 
 use crate::sidebar_recorder::SidebarObservation;
@@ -33,8 +34,9 @@ pub struct SidebarObserver {
     pub on_rail_mouse_down: MouseCallback,
     /// §11.3 rail scroll wheel.
     pub on_rail_scroll_wheel: WheelCallback,
-    /// §11.4 collapse control.
-    pub on_toggle_sidebar: MouseCallback,
+    /// §11.14 the titlebar row's callbacks (the sidebar toggle + the
+    /// Back/Forward/Reload cluster + the window drag + hover/press state).
+    pub titlebar: TitlebarCallbacks,
     /// §11.5 address-pill hover.
     pub on_command_hover: BoolCallback,
     /// §11.4 address pill / staging press.
@@ -126,6 +128,52 @@ pub fn build_sidebar_observer(
             },
         )
     };
+    let titlebar_mouse = |event: SidebarObservation| {
+        let record = Rc::clone(&record);
+        Rc::new(
+            move |_e: &gpui::MouseDownEvent, _window: &mut Window, cx: &mut App| {
+                record(event.clone(), cx);
+            },
+        )
+    };
+    let titlebar = TitlebarCallbacks {
+        on_toggle_sidebar: titlebar_mouse(SidebarObservation::ToggleSidebar),
+        on_back: titlebar_mouse(SidebarObservation::TitlebarBack),
+        on_forward: titlebar_mouse(SidebarObservation::TitlebarForward),
+        on_reload: titlebar_mouse(SidebarObservation::TitlebarReload),
+        on_titlebar_mouse_down: titlebar_mouse(SidebarObservation::TitlebarDrag),
+        on_control_hover: {
+            let record = Rc::clone(&record);
+            Rc::new(
+                move |control: TitlebarControl,
+                      hovered: bool,
+                      _window: &mut Window,
+                      cx: &mut App| {
+                    record(
+                        SidebarObservation::TitlebarHover(control.id().to_string(), hovered),
+                        cx,
+                    );
+                },
+            )
+        },
+        on_control_press: {
+            let record = Rc::clone(&record);
+            Rc::new(
+                move |control: TitlebarControl, _window: &mut Window, cx: &mut App| {
+                    record(
+                        SidebarObservation::TitlebarPress(control.id().to_string()),
+                        cx,
+                    );
+                },
+            )
+        },
+        on_control_release: {
+            let record = Rc::clone(&record);
+            Rc::new(move |_window: &mut Window, cx: &mut App| {
+                record(SidebarObservation::TitlebarRelease, cx);
+            })
+        },
+    };
     SidebarObserver {
         on_rail_mouse_down: mouse(SidebarObservation::RailMouseDown, false),
         on_rail_scroll_wheel: {
@@ -136,7 +184,7 @@ pub fn build_sidebar_observer(
                 },
             )
         },
-        on_toggle_sidebar: mouse(SidebarObservation::ToggleSidebar, false),
+        titlebar,
         on_command_hover: {
             let record = Rc::clone(&record);
             Rc::new(move |value: &bool, _window: &mut Window, cx: &mut App| {
@@ -297,7 +345,7 @@ impl SidebarObserver {
         Callbacks {
             on_rail_mouse_down: Rc::clone(&self.on_rail_mouse_down),
             on_rail_scroll_wheel: Rc::clone(&self.on_rail_scroll_wheel),
-            on_toggle_sidebar: Rc::clone(&self.on_toggle_sidebar),
+            titlebar: self.titlebar.clone(),
             on_command_hover: Rc::clone(&self.on_command_hover),
             on_command_open: Rc::clone(&self.on_command_open),
             on_select_row: Rc::clone(&self.on_select_row),
@@ -345,7 +393,7 @@ mod tests {
         // The observer exposes every slot the set needs.
         let _ = &callbacks.on_rail_mouse_down;
         let _ = &callbacks.on_rail_scroll_wheel;
-        let _ = &callbacks.on_toggle_sidebar;
+        let _ = &callbacks.titlebar;
         let _ = &callbacks.on_command_hover;
         let _ = &callbacks.on_command_open;
         let _ = &callbacks.on_select_row;

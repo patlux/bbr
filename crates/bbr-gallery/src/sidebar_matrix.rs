@@ -100,6 +100,19 @@ pub struct SidebarCase {
     /// §11.3: cross-profile (the address pill carries the profile hint and
     /// the strip shows distinct space identities).
     pub cross_profile: bool,
+    /// §11.14: the focused pane's genuine history availability (Back).
+    pub nav_back: bool,
+    /// §11.14: the focused pane's genuine history availability (Forward).
+    pub nav_forward: bool,
+    /// §11.14: Reload is enabled while the focused pane has a live session.
+    pub nav_reload: bool,
+    /// §11.14: the sidebar is collapsed (the row disappears with the rail).
+    pub titlebar_collapsed: bool,
+    /// §11.14: the titlebar strip height the row renders at (points).
+    pub safe_area_height: f32,
+    /// §11.14: the traffic-light region the toggle must clear (window
+    /// coordinates, top-left origin).
+    pub traffic_lights: [f32; 4],
     /// §15: the reduced-motion mode field.
     pub reduced_motion: bool,
     // Matrix-only claims (the rejected combinations).
@@ -138,6 +151,12 @@ impl SidebarCase {
             command: CommandKind::Address,
             command_results: false,
             downloads_panel: false,
+            nav_back: false,
+            nav_forward: false,
+            nav_reload: true,
+            titlebar_collapsed: false,
+            safe_area_height: 28.0,
+            traffic_lights: [12.0, 10.0, 52.0, 14.0],
             hovered_row: None,
             pressed_row: None,
             list_focused: false,
@@ -271,6 +290,22 @@ pub const SIDEBAR_VALID: &[SidebarCase] = &[
         contrast: ContrastMode::Increased,
         reduced_motion: true,
         ..SidebarCase::new("reduced-motion + increased contrast", Density::Normal, 280.0, 900.0, 3)
+    },
+    // §11.14 titlebar navigation states: a live session with real history
+    // (Back and Forward both enabled) at the standard safe-area strip, then
+    // the historyless twin with Reload off (the disabled-cluster family).
+    SidebarCase {
+        tab_count: 2,
+        nav_back: true,
+        nav_forward: true,
+        ..SidebarCase::new("titlebar nav — full history + live session", Density::Normal, 280.0, 900.0, 2)
+    },
+    SidebarCase {
+        tab_count: 2,
+        nav_reload: false,
+        safe_area_height: 52.0,
+        traffic_lights: [12.0, 10.0, 58.0, 18.0],
+        ..SidebarCase::new("titlebar nav — no history, no live session", Density::Normal, 280.0, 900.0, 2)
     },
 ];
 

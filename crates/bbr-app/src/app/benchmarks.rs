@@ -401,4 +401,81 @@ impl BbrApp {
         self.toggle_sidebar(window, cx);
         true
     }
+
+    /// Benchmark one §11.14 titlebar navigation-control commit: Back,
+    /// Forward, or Reload dispatched through the exact production authority
+    /// the titlebar click and the Cmd-[ / Cmd-] / Cmd-R shortcuts share.
+    /// The sample commits only when the genuine availability precondition
+    /// held (`can_go_back` for Back, `can_go_forward` for Forward, a live
+    /// focused session for Reload) and the production dispatch succeeded;
+    /// the driver waits for the real WebKit history state afterwards, so a
+    /// dispatch that never navigated is rejected there. `control` is the
+    /// §15 id suffix (`back` / `forward` / `reload`); unknown names reject
+    /// whole.
+    pub fn benchmark_navigation_control(
+        &mut self,
+        operation_id: bbr_testkit::protocol::BenchmarkOperationId,
+        control: &str,
+        window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) -> bool {
+        let before = self.controller.snapshot();
+        // The genuine availability precondition: a disabled control's
+        // listener never fires and the production method is a no-op — the
+        // benchmark refuses to measure a dispatch that cannot navigate.
+        match control {
+            "back" => {
+                if !before.nav.can_go_back {
+                    return false;
+                }
+            }
+            "forward" => {
+                if !before.nav.can_go_forward {
+                    return false;
+                }
+            }
+            "reload" => {
+                if before.active_view.is_none() {
+                    return false;
+                }
+            }
+            _ => return false,
+        }
+        if self
+            .performance
+            .begin(
+                operation_id,
+                bbr_testkit::protocol::BenchmarkKind::NavigationControl,
+            )
+            .is_err()
+        {
+            return false;
+        }
+        // The exact production dispatch the titlebar click and the keyboard
+        // shortcut share (never a controller call and never a benchmark-only
+        // path).
+        match control {
+            "back" => self.go_back(),
+            "forward" => self.go_forward(),
+            "reload" => self.reload(),
+            _ => unreachable!("precondition match already rejected unknown controls"),
+        }
+        let active_view = self.controller.snapshot().active_view;
+        let chrome_focused = self.chrome_focused(window);
+        let mode = self.command_bar_mode.into();
+        self.performance.observe_render_state(
+            active_view,
+            self.sidebar_visible,
+            chrome_focused,
+            mode,
+        );
+        self.performance
+            .expect_state(active_view, self.sidebar_visible, chrome_focused, mode);
+        self.performance.commit_current_presentation();
+        if self.performance.presentation_pending()() {
+            self.performance.cancel();
+            return false;
+        }
+        true
+    }
 }

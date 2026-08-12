@@ -49,8 +49,19 @@ fn footer_row_and_permanent_strip_render_in_the_compact_rail() {
                 || id.starts_with("bbr-space-list")),
             "no legacy [Spaces] toggle or revealed-list ids render"
         );
-        // Status row + collapse control keep their ids in the reordered rail.
-        assert_ids(&initial, &["bbr-status", "bbr-sidebar-toggle"]);
+        // Status row + the §11.14 titlebar header keep their ids in the
+        // reordered rail.
+        assert_ids(
+            &initial,
+            &[
+                "bbr-status",
+                "bbr-titlebar",
+                "bbr-titlebar-sidebar-toggle",
+                "bbr-nav-back",
+                "bbr-nav-forward",
+                "bbr-nav-reload",
+            ],
+        );
 
         // §11.3 permanent strip: one chip (and its identity child) per
         // space in canonical display order, ids from the persistent space

@@ -75,7 +75,9 @@ objc2-foundation = { workspace = true, features = [
 # workspace's objc2-foundation enables `NSGeometry` + `objc2-core-foundation`).
 objc2-app-kit = { workspace = true, features = [
     "NSApplication",
+    "NSButton",
     "NSColor",
+    "NSControl",
     "NSGraphics",
     "NSResponder",
     "objc2-core-foundation",
