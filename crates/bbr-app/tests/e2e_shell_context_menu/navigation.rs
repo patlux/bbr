@@ -145,11 +145,29 @@ fn keyboard_traverses_and_activates_skipping_disabled_rows() {
         assert_eq!(
             after_down2.context_menu.selected,
             Some(3),
-            "Down to Copy Link"
+            "Down to Bookmark Page"
+        );
+        key(&mut client, "down");
+        let after_down3 = client.snapshot().expect("down again snapshot");
+        assert_eq!(
+            after_down3.context_menu.selected,
+            Some(4),
+            "Down to Copy Page Link"
         );
         key(&mut client, "up");
         let after_up = client.snapshot().expect("up snapshot");
-        assert_eq!(after_up.context_menu.selected, Some(2), "Up back to Reload");
+        assert_eq!(
+            after_up.context_menu.selected,
+            Some(3),
+            "Up from Copy Page Link lands on Bookmark Page (the enriched row above)"
+        );
+        key(&mut client, "up");
+        let after_up2 = client.snapshot().expect("up again snapshot");
+        assert_eq!(
+            after_up2.context_menu.selected,
+            Some(2),
+            "Up again back to Reload"
+        );
 
         // Enter activates the selected row (Reload) through the production
         // seam and dismisses the menu; the session identity is untouched.

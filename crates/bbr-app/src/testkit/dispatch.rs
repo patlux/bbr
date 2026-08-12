@@ -758,6 +758,7 @@ pub(crate) fn dispatch(
         | Request::BenchmarkPeekPromoteToTab { .. }
         | Request::BenchmarkZoomStep { .. }
         | Request::BenchmarkContextMenuOpen { .. }
+        | Request::BenchmarkContextMenuBookmark { .. }
         | Request::BenchmarkDownloadsPanelOpen { .. }
         | Request::BenchmarkDownloadsProgress { .. }
         | Request::BenchmarkDownloadsRowRetry { .. }

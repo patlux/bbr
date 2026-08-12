@@ -1,19 +1,21 @@
 //! The G2 Group 9 Context-menu story (packet
-//! `component-gallery-browser-components.md`): the exact production
+//! `component-gallery-browser-components.md`, Group 9; enriched by
+//! `page-background-context-menu.md`): the exact production
 //! `bbr_ui::surfaces::menu::context_menu_card` — the BBR-owned page menu
-//! (Back, Forward, Reload, Copy Link, Open in New Tab, DESIGN.md
-//! §11.4/§11.13/§13/§15) — renders every valid matrix family from the one
-//! matrix authority [`crate::context_menu_matrix`] with recorder
-//! callbacks proving which production callback fired (`on_row_hover`,
-//! `on_row_press`). Rejected combinations (a zero-item menu, a selection
-//! on a disabled row, source-less Tab/Favorite/Folder menus, Gallery-owned
-//! WebKit element menus) refuse fixture construction and are shown with
-//! their DESIGN reasons. No gallery-local reimplementation of anatomy, no
-//! copied tokens, no fake engine/controller/portal.
+//! (Back, Forward, Reload, the B2-gated Bookmark Page / Remove Bookmark
+//! row, Copy Page Link, DESIGN.md §11.4/§11.13/§13/§15) — renders every
+//! valid matrix family from the one matrix authority
+//! [`crate::context_menu_matrix`] with recorder callbacks proving which
+//! production callback fired (`on_row_hover`, `on_row_press`). Rejected
+//! combinations (a zero-item menu, a selection on a disabled row,
+//! source-less Tab/Favorite/Folder menus, Gallery-owned WebKit element
+//! menus) refuse fixture construction and are shown with their DESIGN
+//! reasons. No gallery-local reimplementation of anatomy, no copied
+//! tokens, no fake engine/controller/portal.
 //!
-//! The production card carries **fixed §15 ids** (`bbr-context-menu`,
-//! `bbr-context-menu-row-<n>`) that repeat per matrix family, so the
-//! gallery wraps each family in a `debug_selector` container — test
+//! The production card carries **fixed §15 ids** (`bbr-page-menu` and the
+//! per-action row ids `bbr-page-menu-*`) that repeat per matrix family, so
+//! the gallery wraps each family in a `debug_selector` container — test
 //! targets only, never product ids — for the real-pointer E2E (the same
 //! pattern the Address stories use).
 
@@ -118,7 +120,7 @@ pub fn render_context_menu(ctx: &StoryContext) -> AnyElement {
         value_row(
             theme,
             "ids",
-            "bbr-context-menu · bbr-context-menu-row-<n> (the five fixed rows)",
+            "bbr-page-menu · bbr-page-menu-back/-forward/-reload/-bookmark/-copy-link",
         ),
         value_row(
             theme,
@@ -128,7 +130,7 @@ pub fn render_context_menu(ctx: &StoryContext) -> AnyElement {
         value_row(
             theme,
             "rows",
-            "Back · Forward · Reload · Copy Link · Open in New Tab (genuine enablement)",
+            "Back · Forward · Reload · Bookmark Page/Remove Bookmark (B2) · Copy Page Link — unowned capabilities never render",
         ),
         value_row(
             theme,

@@ -1,5 +1,5 @@
-//! Context-menu scenario driving (task packet `bbr-context-menus-over-web`)
-//! for the warm interaction matrix.
+//! Context-menu scenario driving (task packets `bbr-context-menus-over-web`
+//! and `page-background-context-menu.md`) for the warm interaction matrix.
 //!
 //! Owns the context-menu matrix block: `context_menu_open` measures the
 //! production event-driven open path — the row-model build, the anchored
@@ -8,9 +8,14 @@
 //! excluded). The sample commits only from a render of the one
 //! `NativeAboveWeb` portal window that drew the menu over the same active
 //! view at the armed pointer anchor (fast-but-wrong guard in the app; the
-//! driver asserts the measured state and the typed snapshot). The block
-//! restores the matrix state exactly — menu closed, the transient menu tab
-//! closed — before the dense seeding that follows.
+//! driver asserts the measured state and the typed snapshot).
+//! `context_menu_bookmark_commit` measures the production bookmark-row
+//! activation (B2's one app-owned `SavedPageCommand::toggle` plus the menu
+//! dismissal): the sample commits only from a render that drew the menu
+//! closed over the same active view, with the B2 store truth verified at
+//! the mutation site. The block restores the matrix state exactly — menu
+//! closed, the transient menu tab closed — before the dense seeding that
+//! follows.
 //!
 //! Split from `drive.rs` so the context-menu additions live in a focused
 //! module under the ~500-line budget while the pre-existing matrix content
@@ -20,9 +25,10 @@ use std::collections::BTreeMap;
 
 use bbr_testkit::protocol::{BrowserChange, Request};
 use bbr_testkit::Client;
+use bbr_web::WebViewId;
 
 use super::benchmarks::{wait_browser_change, wait_title};
-use super::context_menu::benchmark_context_menu_open;
+use super::context_menu::{benchmark_context_menu_bookmark, benchmark_context_menu_open};
 use super::harness::AppHarness;
 use super::scenarios::{TrialConfig, PAGE_ONE_TITLE};
 
@@ -83,6 +89,41 @@ pub(super) fn drive_context_menu_scenarios(
         wait_menu_closed(client);
     }
 
+    // context_menu_bookmark_commit × N: each sample is one production
+    // bookmark-row activation through the exact `menu_activate` seam — B2's
+    // one app-owned toggle plus the menu dismissal. The menu is reopened
+    // (unmeasured) before every sample so the row re-arms from the B2 state
+    // the previous sample produced (Bookmark Page ↔ Remove Bookmark
+    // alternate truthfully across samples — a fixed direction could mask a
+    // toggle that never flips the store).
+    let mut bookmark_samples = Vec::with_capacity(config.interaction_samples);
+    for sample in 0..config.interaction_samples {
+        let point = anchors[sample % anchors.len()];
+        let open = client.snapshot().expect("pre-open snapshot");
+        if !open.context_menu.open {
+            client
+                .send_ok(&Request::InjectWebEvent {
+                    event: bbr_web::WebEvent::ContextMenuRequested(
+                        menu_view,
+                        bbr_web::WebRect::new(point[0], point[1], 0.0, 0.0),
+                    ),
+                })
+                .expect("reopen the context menu for the bookmark sample");
+            wait_menu_open(client, menu_view, point);
+        }
+        let measured = benchmark_context_menu_bookmark(client, since, *operation, point, menu_view);
+        bookmark_samples.push(measured.duration_ns);
+        harness
+            .raw_log
+            .interactions
+            .entry("context_menu_bookmark_commit".into())
+            .or_default()
+            .push(measured.duration_ns);
+        *operation += 1;
+        // The activation dismissed the menu; the next sample reopens it.
+        wait_menu_closed(client);
+    }
+
     // Restoration: Cmd-W closes the transient menu tab so the matrix state
     // (tab population, sessions) is exactly what the dense seeding expected.
     client
@@ -114,6 +155,7 @@ pub(super) fn drive_context_menu_scenarios(
 
     let mut raw = BTreeMap::new();
     raw.insert("context_menu_open".to_string(), menu_samples);
+    raw.insert("context_menu_bookmark_commit".to_string(), bookmark_samples);
     raw
 }
 
@@ -130,6 +172,26 @@ fn wait_menu_closed(client: &mut Client) {
             std::time::Instant::now() < until,
             "context menu did not close: {:?}",
             snapshot.context_menu
+        );
+        std::thread::yield_now();
+    }
+}
+
+/// Poll until the context-menu presentation is open over `view` at `point`
+/// (bounded by the harness deadline).
+fn wait_menu_open(client: &mut Client, view: WebViewId, point: [f32; 2]) {
+    let until = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    loop {
+        let snapshot = client.snapshot().expect("menu open snapshot");
+        if snapshot.context_menu.open
+            && snapshot.context_menu.bound_view == Some(view)
+            && snapshot.context_menu.point == point
+        {
+            return;
+        }
+        assert!(
+            std::time::Instant::now() < until,
+            "context menu did not open over {view:?} at {point:?}"
         );
         std::thread::yield_now();
     }

@@ -755,7 +755,7 @@ impl BbrApp {
             host: probe.host().map(|host| host.label().to_string()),
             visible: probe.is_visible(),
             rect: probe.resolved_rect().map(|r| [r.x, r.y, r.width, r.height]),
-            ids: probe.ids(),
+            ids: probe.ids(&self.context_menu.state.items),
             ..Default::default()
         };
         #[cfg(target_os = "macos")]

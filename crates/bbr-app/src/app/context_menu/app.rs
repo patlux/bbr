@@ -21,8 +21,9 @@ use crate::portal::geometry::Sz;
 use crate::portal::state::{DismissalPolicy, PortalRequest};
 
 use super::{
-    context_menu_placement, ContextMenuController, ContextMenuState, ContextMenuSurface,
-    CONTEXT_MENU_PRIORITY, MENU_BACK, MENU_COPY_LINK, MENU_FORWARD, MENU_OPEN_NEW_TAB, MENU_RELOAD,
+    context_menu_placement, BookmarkRow, ContextMenuController, ContextMenuState,
+    ContextMenuSurface, CONTEXT_MENU_PRIORITY, MENU_BACK, MENU_BOOKMARK, MENU_COPY_LINK,
+    MENU_FORWARD, MENU_RELOAD,
 };
 
 impl BbrApp {
@@ -43,8 +44,10 @@ impl BbrApp {
                     .items
                     .iter()
                     .map(|item| bbr_ui::surfaces::menu::ContextMenuRow {
+                        id: SharedString::from(item.id),
                         title: SharedString::from(item.title),
                         enabled: item.enabled,
+                        disabled_reason: item.disabled_reason.map(SharedString::from),
                     })
                     .collect(),
             },
@@ -77,7 +80,7 @@ impl BbrApp {
         if self.context_menu.state.open {
             // Re-presenting the same presentation id refreshes it in place;
             // the origin was captured at the first open.
-            self.present_context_menu(point, window, cx);
+            self.present_context_menu(point, self.context_menu.state.items.len(), window, cx);
             cx.notify();
             return;
         }
@@ -87,12 +90,24 @@ impl BbrApp {
         self.dismiss_command_portal(cx);
         let snapshot = self.controller.snapshot();
         let url = snapshot.nav.url.clone();
+        let title = snapshot.nav.title.clone();
+        // The B2 bookmark gate (the one app-owned Saved Page authority):
+        // Bookmark Page when the canonical URL has no active record,
+        // Remove Bookmark when it has one, omitted when the URL is missing
+        // or not navigable. The row never invents behavior.
+        let bookmark = match url.as_deref() {
+            Some(page_url) if self.saved_pages.can_save(self, page_url) => BookmarkRow::Save,
+            Some(page_url) if self.saved_pages.can_remove(self, page_url) => BookmarkRow::Remove,
+            _ => BookmarkRow::Unavailable,
+        };
         let items = ContextMenuController::build_items(
             snapshot.nav.can_go_back,
             snapshot.nav.can_go_forward,
             url.as_deref(),
+            bookmark,
         );
         let selected = ContextMenuController::first_enabled(&items);
+        let item_count = items.len();
         self.context_menu.state = ContextMenuState {
             open: true,
             focused: false,
@@ -101,9 +116,10 @@ impl BbrApp {
             bound_view: Some(view),
             point: [point.x, point.y],
             url,
+            title,
             origin_chrome_focused: self.chrome_focused(window),
         };
-        self.present_context_menu(point, window, cx);
+        self.present_context_menu(point, item_count, window, cx);
         self.menu_focus_field(window, cx);
         cx.notify();
     }
@@ -232,6 +248,7 @@ impl BbrApp {
         }
         let bound_view = self.context_menu.state.bound_view;
         let url = self.context_menu.state.url.clone();
+        let title = self.context_menu.state.title.clone();
         match item.key {
             MENU_BACK => self.go_back(),
             MENU_FORWARD => self.go_forward(),
@@ -241,12 +258,19 @@ impl BbrApp {
                     self.engine.borrow_mut().action(view, WebAction::CopyLink);
                 }
             }
-            MENU_OPEN_NEW_TAB => {
-                if let Some(url) = url {
-                    // Open exactly one new tab/session with the menu's page
-                    // URL; the new tab becomes active (the canonical
-                    // production open path).
-                    let _ = self.open_tab(&url, cx);
+            MENU_BOOKMARK => {
+                // B2's one app-owned command against the captured focused-
+                // page URL/title: the exact same authority Cmd-D and the
+                // Tab/Favorite menus dispatch. The row's title already
+                // states the direction (Bookmark Page / Remove Bookmark),
+                // so the toggle can never act against it. The command is a
+                // `Copy` value, so it is copied out of `self` first (the
+                // same pattern `toggle_bookmark` uses) — no reentrant
+                // borrow.
+                if let Some(page_url) = url.as_deref() {
+                    let command = self.saved_pages;
+                    let page_title = title.as_deref().unwrap_or_default();
+                    let _ = command.toggle(self, page_url, page_title);
                 }
             }
             _ => {}
@@ -255,10 +279,12 @@ impl BbrApp {
     }
 
     /// Present the menu through the one native portal host, anchored at the
-    /// pointer and snapped fully on screen (the pure geometry clamp).
+    /// pointer and snapped fully on screen (the pure geometry clamp). The
+    /// card height derives from the actual row count.
     fn present_context_menu(
         &mut self,
         point: WebRect,
+        item_count: usize,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -269,7 +295,7 @@ impl BbrApp {
         let theme = self.theme();
         let request = PortalRequest::native(
             super::CONTEXT_MENU_PRESENTATION_ID,
-            context_menu_placement(point, &theme),
+            context_menu_placement(point, item_count, &theme),
             CONTEXT_MENU_PRIORITY,
             DismissalPolicy::any(),
         );
@@ -292,13 +318,16 @@ impl BbrApp {
                 .iter()
                 .map(|item| bbr_testkit::protocol::ContextMenuItemSnapshot {
                     key: item.key.to_string(),
+                    id: item.id.to_string(),
                     title: item.title.to_string(),
                     enabled: item.enabled,
+                    disabled_reason: item.disabled_reason.map(|r| r.to_string()),
                 })
                 .collect(),
             bound_view: state.bound_view,
             point: state.point,
             url: state.url.clone(),
+            title: state.title.clone(),
             origin_chrome_focused: state.origin_chrome_focused,
             native: self.native_context_menu_diagnostics(),
         }

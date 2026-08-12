@@ -145,4 +145,84 @@ impl BbrApp {
         self.performance
             .observe_context_menu_state(s.open, s.focused, s.bound_view, s.point);
     }
+
+    /// Benchmark the production bookmark-row activation (task packet
+    /// `page-background-context-menu.md`): the sample starts at the exact
+    /// `menu_activate` seam a pointer press on the `Bookmark Page` /
+    /// `Remove Bookmark` row dispatches — B2's one app-owned
+    /// `SavedPageCommand::toggle` against the captured focused-page
+    /// URL/title plus the menu dismissal — and commits only from a render
+    /// that drew the menu closed (the main-window render observes the
+    /// post-activation state; the portal never draws the closed menu
+    /// again). The menu must be open over `view` at `point` with the
+    /// bookmark row enabled (the mutation-site guard); the B2 store truth
+    /// (the record flipped exactly as the row title stated) is verified
+    /// right after the toggle. Same warm-interaction class as the other
+    /// command commits; no tab or session is created or touched.
+    pub fn benchmark_context_menu_bookmark(
+        &mut self,
+        operation_id: BenchmarkOperationId,
+        view: bbr_web::WebViewId,
+        point: [f32; 2],
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if self
+            .performance
+            .begin(operation_id, BenchmarkKind::ContextMenuBookmarkCommit)
+            .is_err()
+        {
+            return false;
+        }
+        // Mutation-site guard: the menu is open over the armed view at the
+        // armed anchor with the bookmark row present and enabled — the only
+        // state from which the activation can be measured truthfully.
+        let open = self.context_menu.state.open
+            && self.context_menu.state.bound_view == Some(view)
+            && self.context_menu.state.point == point;
+        let bookmark_index =
+            self.context_menu.state.items.iter().position(|item| {
+                item.key == crate::app::context_menu::MENU_BOOKMARK && item.enabled
+            });
+        let (Some(index), true) = (bookmark_index, open) else {
+            self.performance.cancel();
+            return false;
+        };
+        let url = self.context_menu.state.url.clone();
+        // The B2 truth before the toggle (the direction the row title
+        // states: Bookmark Page → unsaved, Remove Bookmark → saved).
+        let saved_before = url
+            .as_deref()
+            .is_some_and(|u| self.saved_pages.can_remove(self, u));
+        // Arm the post-activation render gate: a render that drew the menu
+        // CLOSED. Arming clears the open observation, so the pre-activation
+        // open state can never commit the sample.
+        self.performance.expect_context_menu_bookmark_commit();
+        let active_view = self.controller.snapshot().active_view;
+        let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
+        // Production activation: the exact seam the row's mouse-down
+        // listener calls — toggle through B2, dismiss the menu, restore the
+        // origin focus domain.
+        self.menu_activate(index, window, cx);
+        let chrome_focused = self.chrome_focused(window);
+        self.performance.observe_render_state(
+            active_view,
+            self.sidebar_visible,
+            chrome_focused,
+            mode,
+        );
+        self.performance
+            .expect_state(active_view, self.sidebar_visible, chrome_focused, mode);
+        // The store truth at the mutation site: the record flipped exactly
+        // as the row title stated (unsaved → saved, or saved → removed). A
+        // toggle that did not flip the store rejects truthfully.
+        let saved_after = url
+            .as_deref()
+            .is_some_and(|u| self.saved_pages.can_remove(self, u));
+        if saved_after == saved_before {
+            self.performance.cancel();
+            return false;
+        }
+        true
+    }
 }

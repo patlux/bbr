@@ -31,6 +31,7 @@ pub mod footer;
 pub mod foundations;
 pub mod library_composition;
 pub mod menu;
+pub mod page_menu;
 pub mod primitives;
 pub mod profile_chip;
 pub mod saved_pages_library;
@@ -261,6 +262,18 @@ pub fn catalog() -> CatalogRegistry {
             command::render_command,
             command::COMMAND_STATE_OPTIONS,
         )],
+    );
+    // The G3 enriched Page-menu composition story (packets
+    // `component-gallery-compositions.md` and
+    // `page-background-context-menu.md`): the exact production
+    // `bbr_ui::surfaces::menu::context_menu_card` renders the curated
+    // bookmark-gated families (Bookmark Page / Remove Bookmark / omitted)
+    // from the one matrix authority with recorder callbacks. Appended at
+    // canonical StoryId 46 after the pinned 0–45 prefix — no renumbering or
+    // reservation.
+    registry.add_group(
+        "Page menu composition",
+        vec![story("Page menu", page_menu::render_page_menu, &[])],
     );
     registry
 }

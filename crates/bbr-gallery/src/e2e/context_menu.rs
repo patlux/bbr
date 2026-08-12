@@ -1,6 +1,7 @@
-//! Context-menu interaction scenarios (packet
-//! `component-gallery-browser-components.md`, Group 9): the story renders
-//! every valid §11.4/§11.13 page-menu family through the production
+//! Context-menu interaction scenarios (packets
+//! `component-gallery-browser-components.md` Group 9 and
+//! `page-background-context-menu.md`): the story renders every valid
+//! §11.4/§11.13 page-menu family through the production
 //! `bbr_ui::surfaces::menu::context_menu_card` with recorder callbacks. A
 //! real pointer hover on an enabled row proves the production
 //! `on_row_hover` fires, and a real pointer press proves `on_row_press`
@@ -12,18 +13,20 @@
 //!
 //! Row targeting uses the DESIGN §8/§11.4 row pitch (`theme.density.row()`,
 //! the same formula the Address pill E2E uses) rather than the production
-//! row ids, because the card's fixed `bbr-context-menu-row-<n>` ids repeat
-//! per matrix family (GPUI's `debug_bounds` map keeps the last painted
-//! family, so a row id is not family-deterministic). The production card
-//! registers its card id (`bbr-context-menu`) as a `debug_selector`
-//! target, so the semantic-id assertion resolves through `debug_bounds`.
+//! row ids, because the card's fixed per-action `bbr-page-menu-*` ids
+//! repeat per matrix family (GPUI's `debug_bounds` map keeps the last
+//! painted family, so a row id is not family-deterministic). The
+//! production card registers its card id (`bbr-page-menu`) as a
+//! `debug_selector` target, so the semantic-id assertion resolves through
+//! `debug_bounds`.
 
 use bbr_ui::theme::{ContrastMode, Density, ThemeMode};
 use gpui::{point, px, Entity, Modifiers, VisualTestContext};
 
 use crate::app::GalleryApp;
 use crate::context_menu_matrix::{
-    menu_rows, CONTEXT_MENU_FIXTURE_RECT, CONTEXT_MENU_REJECTED, CONTEXT_MENU_VALID,
+    menu_rows, BookmarkFixture, CONTEXT_MENU_FIXTURE_RECT, CONTEXT_MENU_REJECTED,
+    CONTEXT_MENU_VALID,
 };
 use crate::harness::{bounds_of, flush, move_to_story, run_scenario, snapshot};
 use crate::stories::context_menu::CONTEXT_MENU_FAMILY_SELECTOR;
@@ -93,7 +96,7 @@ fn context_menu_story_renders_the_matrix_families_with_stable_ids() {
         // Every valid page-menu family is registered and renders through
         // the production card (each family wrapper has non-empty bounds).
         let family_count = window.read(|_| CONTEXT_MENU_VALID.len());
-        assert_eq!(family_count, 7);
+        assert_eq!(family_count, 8);
         for index in 0..family_count {
             let bounds = bounds_of(
                 window,
@@ -105,14 +108,14 @@ fn context_menu_story_renders_the_matrix_families_with_stable_ids() {
             );
         }
         // The production card semantic id renders in the story: the card
-        // registers `bbr-context-menu` as a `debug_selector` target, so
+        // registers `bbr-page-menu` as a `debug_selector` target, so
         // GPUI's `debug_bounds` resolves it (the semantic `.id()` alone
         // never enters `debug_bounds`).
         assert!(
             window
-                .debug_bounds(bbr_ui::surfaces::menu::CONTEXT_MENU_ID)
+                .debug_bounds(bbr_ui::surfaces::menu::PAGE_MENU_ID)
                 .is_some(),
-            "the story includes the production bbr-context-menu semantic id"
+            "the story includes the production bbr-page-menu semantic id"
         );
         // The rejected combinations are declared and refused.
         let rejected_count = window.read(|_| CONTEXT_MENU_REJECTED.len());
@@ -131,12 +134,14 @@ fn real_hover_and_press_report_through_the_recorder() {
         open_story(window, app, "Context menu");
         flush(window);
         // Family 0 is the fresh presentation: Back (0) / Forward (1)
-        // disabled, Reload (2) enabled, Copy Link (3) / Open in New Tab
-        // (4) disabled — the production row model.
-        let rows = window.read(|_| menu_rows(false, false, None));
+        // disabled, Reload (2) enabled, and the bookmark row is omitted
+        // (no URL) so Copy Page Link (3) is the last disabled row — the
+        // production row model.
+        let rows = window.read(|_| menu_rows(false, false, None, BookmarkFixture::Unavailable));
         assert!(rows[2].enabled, "Reload is the first enabled row");
         assert!(!rows[0].enabled && !rows[1].enabled);
-        assert!(!rows[3].enabled && !rows[4].enabled);
+        assert!(!rows[3].enabled);
+        assert!(!rows.iter().any(|r| r.id == "bbr-page-menu-bookmark"));
 
         // A real pointer move onto the enabled Reload row: the production
         // `on_row_hover` callback fires with `(index, hovered: true)` —

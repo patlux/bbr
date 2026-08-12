@@ -214,6 +214,17 @@ pub enum BenchmarkKind {
     /// portal window that drew the menu over the same active view — the
     /// warm-presentation class, no tab or session touched.
     ContextMenuOpen,
+    /// The production bookmark-row activation through the enriched page
+    /// menu (task packet `page-background-context-menu.md`): the sample
+    /// starts at the exact `menu_activate` seam a pointer press on the
+    /// `Bookmark Page` / `Remove Bookmark` row dispatches — B2's one
+    /// app-owned `SavedPageCommand::toggle` against the captured
+    /// focused-page URL/title plus the menu dismissal — and commits only
+    /// from a render that drew the menu closed over the same active view
+    /// with the store truth verified at the mutation site (fast-but-wrong
+    /// guard). The warm-interaction class (no tab or session is created or
+    /// touched), same budget as the other command commits.
+    ContextMenuBookmarkCommit,
     /// The credential sheet presented through the production path (queue
     /// item 10): the sheet renders in the one `NativeAboveWeb` portal window
     /// showing the awaiting challenge — the warm-presentation class on the

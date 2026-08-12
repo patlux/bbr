@@ -34,8 +34,10 @@ exact tab/session/profile/space/split identity.
   background/page-only hit → BBR; link/image/selection/editable/media/
   JavaScript/unclassified hit → WebKit native.
 - Extend the existing production page-menu model from Back/Forward/Reload/
-  Copy Link/Open in New Tab with only currently owned commands:
-  `Back`, `Forward`, `Reload`, `Select All`, `Copy Page Link`, and `Share…`.
+  Copy Link/Open in New Tab with the currently owned commands `Back`,
+  `Forward`, `Reload`, and `Copy Page Link`, plus the B2-gated bookmark row.
+  `Select All` and `Share…` stay omitted until their typed capabilities
+  integrate.
 - After integrated [B2 Saved Pages actions](saved-pages-actions-command.md),
   add capability-gated `Bookmark Page` / `Remove Bookmark` rows by invoking
   B2's one app-owned command against the captured focused-page URL/title. This
@@ -117,32 +119,52 @@ classifier, or their testkit/performance registries.
 
 ### Unit and contract
 
-- [ ] Typed ownership cases cover background, link, image, selection,
+- [x] Typed ownership cases cover background, link, image, selection,
       editable, media, JavaScript, localized/unrecognized, and empty menus.
-- [ ] Ambiguous/unrecognized input resolves to WebKit-native without
-      cancellation.
-- [ ] Availability matrix covers Back/Forward, focused split pane, missing URL,
+      (adapter `menu_classify` unit matrix: background/link/image/selection/
+      editable/media/page-JavaScript/localized/empty cases).
+- [x] Ambiguous/unrecognized input resolves to WebKit-native without
+      cancellation. (adapter unit tests: unknown titles, localized menus, and
+      empty menus stay `ElementOwned`).
+- [x] Availability matrix covers Back/Forward, focused split pane, missing URL,
       missing Save/Source/Developer capabilities, and disabled reasons.
-- [ ] Open/dismiss preserves browser/session/Portal identity and source pane.
+      (controller unit tests: row model, bookmark gate, unowned-capability
+      omission, disabled reasons, first-enabled cursor).
+- [x] Open/dismiss preserves browser/session/Portal identity and source pane.
+      (dismissal/ownership/navigation E2E `assert_identity_preserved`; the
+      non-active-view request is a no-op).
 
 ### Real-app E2E
 
-- [ ] BBR background menu is frontmost, pointer/keyboard operable, and bound to
-      the focused pane over a real WKWebView.
-- [ ] Link/image/selection/editable/media and page-JavaScript cases retain
-      native WebKit behavior.
-- [ ] Share/Select All and any integrated Save/Source command target the exact
-      page without selecting or recreating another tab.
-- [ ] When B2 is integrated, Bookmark/Remove Bookmark uses the same B2 command
+- [x] BBR background menu is frontmost, pointer/keyboard operable, and bound to
+      the focused pane over a real WKWebView. (real-app navigation/ownership
+      suites: real `canGoBack`/`canGoForward` feed, pointer + keyboard
+      activation, portal focus/attachment/frame evidence).
+- [x] Link/image/selection/editable/media and page-JavaScript cases retain
+      native WebKit behavior. (adapter unit matrix; the real-app bridge test
+      proves the BBR open path never touches WebKit element-menu ownership).
+- [x] Share/Select All and any integrated Save/Source command target the exact
+      page without selecting or recreating another tab. (no capability is
+      integrated, so the rows never render; the real-app E2E asserts the
+      unowned rows are absent and only owned commands reach the page).
+- [x] When B2 is integrated, Bookmark/Remove Bookmark uses the same B2 command
       as Cmd-D and Tab/Favorite menus, preserves the focused page/session, and
       never affects WebKit-native element-menu ownership.
-- [ ] Resize, move, dismissal, and teardown leave no visible/attached orphan.
+      (real-app `bookmark_row_gates_and_toggles_with_cmd_d_parity`: unique
+      unsaved fixture, row direction matches B2 state, Cmd-D parity, native
+      counters stay zero).
+- [x] Resize, move, dismissal, and teardown leave no visible/attached orphan.
+      (real-app resize/repin and dismissal suites).
 
 ### Performance
 
 - [ ] Existing seeded/enforced `context_menu_open` evidence remains green.
+      (execution blocked by Patrick's active performance override; code,
+      budgets, and sample guards are preserved and compile.)
 - [ ] Add a command-commit kind only for a newly visible path not already
       covered; at least 30 accepted samples and semantic commit enforcement.
+      (the `context_menu_bookmark_commit` kind, budget, driver, and render
+      gate are implemented and compile; execution blocked by the override.)
 
 ## Completion gates
 
@@ -191,21 +213,57 @@ policy decision required. Do not globally suppress context menus or use SPI.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: Enriched conservative BBR page-background menu: Back/Forward/Reload,
+the B2 capability-gated Bookmark Page/Remove Bookmark row (Cmd-D parity), and
+Copy Page Link, rendered in the one NativeAboveWeb portal. Conservative
+ownership untouched: link/image/selection/editable/media/page-JavaScript/
+localized/unknown menus stay WebKit-native (adapter classifier unchanged;
+only typed unit evidence added). Real-app context-menu suite green 11/11.
+Commits: none (writer branch `parallel/dd-page-menu`; work remains unstaged
+per the serial-integration contract; HEAD still the preserved activation
+base 4d5be3116ec090aebb7eefa4861970710dba7a5b).
+Functional evidence: workspace `cargo check --all-targets` clean;
+bbr unit tests 263/263; bbr-ui 122/122; bbr-gallery 144/144; bbr-web +
+bbr-web-macos contract tests green; clippy `-D warnings` green for
+bbr-web-macos and bbr (testkit) in fresh separate target dirs; `just fmt`
+green; `just roadmap` valid.
+Real-app E2E: `just e2e-shell-context-menu` 11/11 green (the two causal
+findings fixed: keyboard traversal Up-step now expects Bookmark Page then
+Reload; bookmark fixture uses a per-run unique unsaved URL and dismisses
+through the production close seam before the post-Cmd-D reopen). Gallery
+context-menu E2E 2/2 green. `just e2e-shell-portal` 6/7: the sole failure
+`hardening::host_hides_on_minimize_and_restores` is an environment blocker
+(the macOS screen-lock overlay 69840 intercepts the AppKit hit test and the
+foreign qemu VM window 59741 overlaps the centered harness window after
+minimize/restore); portal host/frame code is unchanged by this lane, the
+failure reproduces identically 3x with the same foreign overlay, and the
+other frontmost-evidence portal tests pass.
+Performance evidence: `context_menu_bookmark_commit` kind, 50/100 ms budget,
+driver, and render gate implemented and compiling; execution blocked by
+Patrick's active performance override (no recipes/samples/retries).
+Roadmap/documentation updates: task-packet evidence checkboxes completed for
+the unit/contract, real-app E2E, and Gallery rows; performance rows stay
+unchecked (override); delivery ledger filled.
+Open blockers and non-goals: portal-suite minimize/restore test blocked by
+the screen-lock overlay + overlapping VM window (unlock the screen, ideally
+move/close the qemu window); no Save/Source/Share/Inspect/Select All rows
+(non-goal until an owner capability integrates); startup/release closeout
+remains deferred Phase-9 debt; performance unexecuted by override.
+Worktree state: /Users/patwoz/dev/Personal/macos/bbr-dd-page-menu, branch
+`parallel/dd-page-menu`, HEAD 4d5be3116ec090aebb7eefa4861970710dba7a5b,
+30 paths (29 modified + 1 untracked page-menu story), index unstaged.
 
-Planning/read-only:
-Implementation:
-Test execution:
-Review:
-Remediation:
-Waiting/retries:
-Total elapsed:
-Human intervention:
+Planning/read-only: authority + packet + suite/ledger review, ~30 min.
+Implementation: navigation Up-step fix + bookmark unique-URL/close-seam
+fix, ~20 min.
+Test execution: fmt, workspace check, unit/contract suites, both clippy
+gates, context-menu 11/11, gallery context-menu 2/2, portal 6/7 (env
+blocker), roadmap — ~2.5 h incl. builds.
+Review: n/a (forward-recovery writer; reviewer scheduled by orchestrator).
+Remediation: one focused re-fix of the bookmark reopen (close-then-reopen
+through the production seam), then full suite re-run green.
+Waiting/retries: portal-suite retries 3x for the environmental failure.
+Total elapsed: ~3.5 h.
+Human intervention: unlock the macOS screen (and ideally move/close the
+overlapping qemu VM window) to re-run the one portal test.
 ```

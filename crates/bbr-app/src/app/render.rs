@@ -38,6 +38,22 @@ impl Render for BbrApp {
             self.chrome_focused(window),
             self.command_bar_mode.into(),
         );
+        // The bookmark-commit benchmark's render gate: the menu closes on
+        // activation (the portal never draws it again), so the main-window
+        // render records the post-activation closed state while such a
+        // sample is pending. A render that still shows the menu open (the
+        // pre-activation state) can never commit the sample; the
+        // `context_menu_open` benchmark's observation stays exclusively the
+        // portal render's, so this gate never changes its semantics.
+        #[cfg(feature = "testkit")]
+        if matches!(
+            self.performance.pending_kind(),
+            Some(bbr_testkit::protocol::BenchmarkKind::ContextMenuBookmarkCommit)
+        ) {
+            let s = &self.context_menu.state;
+            self.performance
+                .observe_context_menu_state(s.open, s.focused, s.bound_view, s.point);
+        }
 
         let window_width = f32::from(window.bounds().size.width);
         // Phase-7 warm-restore persist source: record the last rendered

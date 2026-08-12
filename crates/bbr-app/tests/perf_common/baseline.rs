@@ -366,6 +366,18 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // The enriched page-menu bookmark-row activation (task packet
+        // `page-background-context-menu.md`): `context_menu_bookmark_commit`
+        // spans the production `menu_activate` seam — B2's one app-owned
+        // `SavedPageCommand::toggle` against the captured focused-page
+        // URL/title plus the menu dismissal — and commits only from a
+        // render that drew the menu closed over the same active view. The
+        // same warm-interaction class as the other command commits
+        // (50/100 ms), no new budget class invented.
+        "context_menu_bookmark_commit" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
         // Credential sheet (queue item 10): the sheet open presents the
         // awaiting challenge in the one `NativeAboveWeb` portal window — the
         // warm-presentation class (same 50/100 ms budget as the other
@@ -601,6 +613,7 @@ impl Baseline {
             "error_surface_present",
             "zoom_step",
             "context_menu_open",
+            "context_menu_bookmark_commit",
             "auth_sheet_open",
             "peek_request_to_present",
             "peek_dismiss_to_origin",
@@ -1054,6 +1067,28 @@ mod tests {
         assert!(r.iter().any(|x| x.rule == "abs_max"));
         let mut good = BTreeMap::new();
         good.insert("context_menu_open".into(), measured(45.0, 90.0));
+        assert!(evaluate(&good, &b, false).is_empty());
+
+        // The enriched bookmark-row activation (task packet
+        // `page-background-context-menu.md`) carries the same warm
+        // command-commit class (50/100 ms): a future activation regression
+        // trips the gate instead of being silently skipped.
+        let entry = b
+            .entries
+            .get("context_menu_bookmark_commit")
+            .expect("seed baseline must carry the context_menu_bookmark_commit contract budget");
+        assert_eq!(entry.budget_p95_ms, 50.0);
+        assert_eq!(entry.budget_max_ms, Some(100.0));
+        let mut slow = BTreeMap::new();
+        slow.insert(
+            "context_menu_bookmark_commit".into(),
+            measured(120.0, 160.0),
+        );
+        let r = evaluate(&slow, &b, false);
+        assert!(r.iter().any(|x| x.rule == "abs_p95"));
+        assert!(r.iter().any(|x| x.rule == "abs_max"));
+        let mut good = BTreeMap::new();
+        good.insert("context_menu_bookmark_commit".into(), measured(45.0, 90.0));
         assert!(evaluate(&good, &b, false).is_empty());
     }
 

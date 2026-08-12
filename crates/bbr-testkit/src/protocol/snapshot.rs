@@ -763,28 +763,35 @@ pub struct ZoomSnapshot {
     pub pending: bool,
 }
 
-/// One BBR context-menu entry on the wire (task packet
-/// `bbr-context-menus-over-web`): the stable key, the display title, and
-/// the genuine enablement (Back/Forward reflect the real session history
-/// availability from `CanGoBackChanged`/`CanGoForwardChanged`; Copy Link /
-/// Open in New Tab reflect a resolvable page URL).
+/// One BBR page-background menu entry on the wire (task packets
+/// `bbr-context-menus-over-web` and `page-background-context-menu`): the
+/// stable key, the stable per-action §15 id, the display title, the
+/// genuine enablement (Back/Forward reflect the real session history
+/// availability from `CanGoBackChanged`/`CanGoForwardChanged`; Copy Page
+/// Link reflects a resolvable page URL; the bookmark row reflects B2's
+/// saved state), and the deterministic disabled reason (DESIGN §11.13).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ContextMenuItemSnapshot {
-    /// Stable key: `back` | `forward` | `reload` | `copy-link` |
-    /// `open-new-tab`.
+    /// Stable key: `back` | `forward` | `reload` | `bookmark` |
+    /// `copy-link`.
     pub key: String,
-    /// The display title (Back / Forward / Reload / Copy Link /
-    /// Open in New Tab).
+    /// The stable per-action §15 id (`bbr-page-menu-back`, …).
+    pub id: String,
+    /// The display title (Back / Forward / Reload / Bookmark Page or
+    /// Remove Bookmark / Copy Page Link).
     pub title: String,
     /// Whether the entry accepts interaction right now.
     pub enabled: bool,
+    /// The deterministic reason a disabled row reports (`None` for enabled
+    /// rows).
+    pub disabled_reason: Option<String>,
 }
 
-/// Typed BBR context-menu presentation state (task packet
-/// `bbr-context-menus-over-web`; DESIGN.md §13/§15). The menu renders
-/// inside the one `NativeAboveWeb` portal window; this mirrors the app's
-/// `ContextMenuState` exactly plus the native bridge's ownership
-/// diagnostics.
+/// Typed BBR page-background menu presentation state (task packets
+/// `bbr-context-menus-over-web` and `page-background-context-menu`;
+/// DESIGN.md §13/§15). The menu renders inside the one `NativeAboveWeb`
+/// portal window; this mirrors the app's `ContextMenuState` exactly plus
+/// the native bridge's ownership diagnostics.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct ContextMenuSnapshot {
     /// The menu presentation is open for this window.
@@ -802,9 +809,13 @@ pub struct ContextMenuSnapshot {
     /// The pointer anchor in window content coordinates (top-left origin,
     /// points) the menu placement resolved from.
     pub point: [f32; 2],
-    /// The page URL the menu acts on (Copy Link / Open in New Tab); `None`
-    /// when no URL is resolvable (both entries then report disabled).
+    /// The page URL the menu acts on (Copy Page Link / the bookmark row);
+    /// `None` when no URL is resolvable (Copy Page Link then reports
+    /// disabled and the bookmark row is omitted).
     pub url: Option<String>,
+    /// The captured page title at open (the bookmark row invokes B2's one
+    /// app-owned command against the focused page's URL/title).
+    pub title: Option<String>,
     /// The focus domain captured at open; dismissal restores it exactly
     /// (focus-return evidence).
     pub origin_chrome_focused: bool,

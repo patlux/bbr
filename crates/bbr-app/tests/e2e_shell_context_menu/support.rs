@@ -1,12 +1,13 @@
-//! Shared harness support and typed assertions for the BBR context-menu E2E
-//! (task packet `bbr-context-menus-over-web`).
+//! Shared harness support and typed assertions for the BBR page-background
+//! context-menu E2E (task packets `bbr-context-menus-over-web` and
+//! `page-background-context-menu`).
 //!
 //! The menu renders inside the one `NativeAboveWeb` portal window, so the
 //! merged native-portal evidence contract applies verbatim: the `0xC4`
-//! presentation id, the stable §15 ids (backdrop, card, five rows), child
-//! attachment, parent-content frame sync, and the non-key/non-main policy.
-//! The menu's open path is driven through the exact engine event transport
-//! the native bridge uses (`Request::InjectWebEvent` with
+//! presentation id, the stable §15 ids (backdrop, card, per-action rows),
+//! child attachment, parent-content frame sync, and the non-key/non-main
+//! policy. The menu's open path is driven through the exact engine event
+//! transport the native bridge uses (`Request::InjectWebEvent` with
 //! `WebEvent::ContextMenuRequested`), so the suites exercise the production
 //! event-driven open seam.
 //!
@@ -28,20 +29,28 @@ pub(super) const MENU_PRESENTATION_ID: u64 = 0xC4;
 pub(super) const MENU_WIDTH: f32 = 220.0;
 /// The portal placement margin (`sp:2`, settled token).
 pub(super) const MENU_MARGIN: f32 = 8.0;
-/// The five deterministic row keys of the menu (render order).
-pub(super) const MENU_ROW_KEYS: [&str; 5] =
-    ["back", "forward", "reload", "copy-link", "open-new-tab"];
-/// The stable §15 ids the menu renders (DESIGN.md §15; registered in
-/// `crate::portal::probe::PortalProbeState::ids`).
-pub(super) const MENU_IDS: [&str; 7] = [
-    "bbr-context-menu-backdrop",
-    "bbr-context-menu",
-    "bbr-context-menu-row-0",
-    "bbr-context-menu-row-1",
-    "bbr-context-menu-row-2",
-    "bbr-context-menu-row-3",
-    "bbr-context-menu-row-4",
-];
+/// The deterministic row keys of the enriched page menu (render order).
+/// Select All / Share / Save Page As / View Page Source / Inspect carry no
+/// owned capability and never render; the bookmark row is capability-gated
+/// by B2's saved state (present for any navigable page URL).
+pub(super) const MENU_ROW_KEYS: [&str; 5] = ["back", "forward", "reload", "bookmark", "copy-link"];
+/// The per-action row id suffix (the stable §15 id is
+/// `bbr-page-menu-<key>`; the page-menu packet owns the family).
+pub(super) const MENU_ROW_ID_PREFIX: &str = "bbr-page-menu-";
+/// The stable §15 ids the menu renders while open with the full row set
+/// (DESIGN §11.13/§15; registered in
+/// `crate::portal::probe::PortalProbeState::ids`). The portal snapshot's
+/// `ids` field derives the row ids from the app's live row model, so the
+/// E2E computes the expected list from the open snapshot's items rather
+/// than pinning a fixed count.
+pub(super) fn expected_menu_ids(m: &bbr_testkit::protocol::ContextMenuSnapshot) -> Vec<String> {
+    let mut ids = vec![
+        "bbr-page-menu-backdrop".to_string(),
+        "bbr-page-menu".to_string(),
+    ];
+    ids.extend(m.items.iter().map(|item| item.id.clone()));
+    ids
+}
 
 /// Dispatch one keystroke through GPUI's real input path (the same seam the
 /// command/find suites use): `up`/`down`/`enter` reach the menu's key
@@ -150,13 +159,34 @@ pub(super) fn assert_menu_open(snapshot: &Snapshot, view: WebViewId, point: [f32
         MENU_ROW_KEYS.to_vec(),
         "deterministic row model in render order"
     );
+    assert_eq!(
+        m.items.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(),
+        MENU_ROW_KEYS
+            .iter()
+            .map(|key| format!("{MENU_ROW_ID_PREFIX}{key}"))
+            .collect::<Vec<_>>(),
+        "per-action §15 ids follow the bbr-page-menu family"
+    );
+    // Disabled rows carry deterministic reasons; enabled rows none.
+    for item in &m.items {
+        if item.enabled {
+            assert_eq!(
+                item.disabled_reason, None,
+                "enabled row {} has no disabled reason",
+                item.key
+            );
+        } else {
+            assert!(
+                item.disabled_reason.is_some(),
+                "disabled row {} exposes a deterministic reason",
+                item.key
+            );
+        }
+    }
     assert_eq!(p.presentation, Some(MENU_PRESENTATION_ID));
     assert_eq!(p.host.as_deref(), Some("native-above-web"));
     assert!(p.visible);
-    assert_eq!(
-        p.ids,
-        MENU_IDS.iter().map(|s| s.to_string()).collect::<Vec<_>>()
-    );
+    assert_eq!(p.ids, expected_menu_ids(m));
     assert!(p.child_attached);
     assert!(p.native_visible, "AppKit window is ordered in");
     assert!(
@@ -194,7 +224,7 @@ pub(super) fn assert_menu_closed(snapshot: &Snapshot) {
     assert_eq!(p.rect, None, "no resolved rect while closed");
     assert!(
         p.ids.is_empty(),
-        "no bbr-context-menu-* ids while closed: {:?}",
+        "no bbr-page-menu-* ids while closed: {:?}",
         p.ids
     );
     assert!(

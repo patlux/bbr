@@ -165,8 +165,14 @@ impl PortalProbeState {
     }
 
     /// The stable `bbr-portal-*` ids the portal window renders while the
-    /// probe is visible (DESIGN §15); empty while hidden.
-    pub fn ids(&self) -> Vec<String> {
+    /// probe is visible (DESIGN §15); empty while hidden. The context-menu
+    /// branch derives the per-action row ids from the app's live row model
+    /// (the exact rows the card renders), so the reported ids can never
+    /// drift from what is actually drawn.
+    pub fn ids(
+        &self,
+        context_menu_rows: &[crate::app::context_menu::ContextMenuItem],
+    ) -> Vec<String> {
         match self.content.as_ref() {
             None => Vec::new(),
             Some(PortalContent::Probe) => vec![
@@ -212,19 +218,13 @@ impl PortalProbeState {
             }],
             Some(PortalContent::ContextMenu) => {
                 // The menu's stable surface ids: the backdrop (app-owned)
-                // and the card + deterministic row ids (the five fixed
-                // entries; the card ids moved to `bbr_ui::surfaces::menu`
-                // with the card render).
+                // and the card + the per-action row ids from the app's
+                // live row model (the exact ids the card renders).
                 let mut ids = vec![
                     crate::app::context_menu::CONTEXT_MENU_BACKDROP_ID.into(),
-                    bbr_ui::surfaces::menu::CONTEXT_MENU_ID.into(),
+                    bbr_ui::surfaces::menu::PAGE_MENU_ID.into(),
                 ];
-                for index in 0..5 {
-                    ids.push(format!(
-                        "{}-{index}",
-                        bbr_ui::surfaces::menu::CONTEXT_MENU_ROW_PREFIX
-                    ));
-                }
+                ids.extend(context_menu_rows.iter().map(|item| item.id.to_string()));
                 ids
             }
         }
@@ -877,21 +877,21 @@ mod tests {
         assert_eq!(state.presentation(), None);
         assert_eq!(state.host(), None);
         assert_eq!(state.resolved_rect(), None);
-        assert!(state.ids().is_empty());
+        assert!(state.ids(&[]).is_empty());
 
         state.present(probe_request(), Sz::new(1080.0, 700.0));
         assert!(state.is_visible());
         assert_eq!(state.presentation(), Some(PROBE_PRESENTATION_ID));
         assert_eq!(state.host(), Some(PortalHost::NativeAboveWeb));
         assert_eq!(
-            state.ids(),
+            state.ids(&[]),
             vec!["bbr-portal-probe", "bbr-portal-backdrop", "bbr-portal-card"]
         );
 
         state.clear();
         assert!(!state.is_visible());
         assert_eq!(state.resolved_rect(), None);
-        assert!(state.ids().is_empty());
+        assert!(state.ids(&[]).is_empty());
     }
 
     #[test]
@@ -917,7 +917,7 @@ mod tests {
             Some(crate::app::palette::PALETTE_PRESENTATION_ID)
         );
         assert_eq!(state.host(), Some(PortalHost::NativeAboveWeb));
-        assert_eq!(state.ids(), vec![bbr_ui::surfaces::command::PALETTE_ID]);
+        assert_eq!(state.ids(&[]), vec![bbr_ui::surfaces::command::PALETTE_ID]);
         assert_eq!(
             state.resolved_rect(),
             Some(Rect::new(Pt::new(300.0, 140.0), Sz::new(480.0, 420.0)))
@@ -926,7 +926,7 @@ mod tests {
         state.clear();
         assert!(!state.is_visible());
         assert!(state.content().is_none());
-        assert!(state.ids().is_empty());
+        assert!(state.ids(&[]).is_empty());
     }
 
     #[test]

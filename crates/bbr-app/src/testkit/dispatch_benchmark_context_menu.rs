@@ -42,6 +42,24 @@ pub(crate) fn dispatch_benchmark_context_menu(
             }
         })
         .unwrap_or_else(err_response),
+        Request::BenchmarkContextMenuBookmark {
+            operation_id,
+            view,
+            point,
+        } => with_app(window, app, cx, |view_app, window, cx| {
+            view_app.benchmark_context_menu_bookmark(*operation_id, *view, *point, window, cx)
+        })
+        .map(|committed| {
+            if committed {
+                Response::Ok
+            } else {
+                Response::Error(Error::new(
+                    "benchmark_noop",
+                    "context menu bookmark commit did not activate the bookmark row",
+                ))
+            }
+        })
+        .unwrap_or_else(err_response),
         _ => return None,
     };
     Some(response)
