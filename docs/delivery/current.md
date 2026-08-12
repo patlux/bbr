@@ -10,7 +10,7 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Generation | `daily-driver-2026-08-12` |
 | Cutover commit | `781e862ca4547cee16be23e251767f6b2fa938fb` |
 | Verified product base | `main@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
-| Integrated product checkpoint | `ebb8e137aa54077c47b5ae4c5603e47e8492d9ca` / tree `b82b7f443af6d316eda9418a120b1c8ef1fdb03a`; grouped background-link tabs plus deterministic gesture draining integrated after G3 Sidebar and Command |
+| Integrated product checkpoint | `4b3f40c5f736d3703682d001181d7c597ef317eb` / tree `874fb4d4618dee12992e5a02874ead3cd66cbd78`; grouped background links, deterministic gestures, and full-height Sidebar navigation integrated |
 | Daily-driver preparation base | `568cdae0008d3cc9008209007ae32442ee0ff80e` / tree `90114c65cc068a744b43aeeec710b47fff5cbf4a` |
 | Daily-driver activation base | `4d5be3116ec090aebb7eefa4861970710dba7a5b` / tree `9c8cae5cd5bca883fadc3ec198e232be4f436839`; all seven lane worktrees created clean from this exact commit |
 | Daily-driver contract | [2026-08-12 Daily-driver delivery](2026-08-12-daily-driver-delivery.md) |
@@ -44,7 +44,8 @@ All runnable Daily-driver lanes use the same committed authority ancestry and is
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
 | DD-LINK | Cmd-click/middle-click grouped background tabs | `integrated` | lane commit `abae5214c04900034da139e5148d7c79693158dc`; merge `b4b2b77c9d679dce30b48e2e302e24075956a449` | Orchestrator; focused remediation `REVIEW_PASS` and post-merge gates complete | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
 | DD-GESTURE | Current-base real-app gesture revalidation | `integrated` | lane commit `f2183fdb2c3f3586c500d4c67a1bdc0257e6a06d`; merge `ebb8e137aa54077c47b5ae4c5603e47e8492d9ca` | Orchestrator; independent `REVIEW_PASS` and focused post-merge gates complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Closed for this wave; testkit-only fix, production command routing unchanged |
-| DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `integrating` | `/Users/patwoz/dev/Personal/macos/bbr-dd-titlebar`; branch `parallel/dd-titlebar`; exact reviewed tree `99351773…`, 47 paths | Orchestrator; documentation remediation focused `REVIEW_PASS` complete | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Commit exact candidate, merge after DD-GESTURE, resolve shared app/Sidebar seams semantically, run bounded gates |
+| DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `integrated` | lane `6327b6b48b84f847061e5d55b85d58843dd676f0`; merge `69616b88be823b8ab35d1f806ada911d6256d9e6`; gate fix `4b3f40c5f736d3703682d001181d7c597ef317eb` | Orchestrator; focused `REVIEW_PASS`, semantic Justfile union and post-merge gates complete | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Closed for this wave; fullscreen/multi-display/manual drag and performance evidence remain honestly open |
+
 | DD-SPACE | Create/activate/configure Space and icon-only footer | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-dd-space-appearance`; branch `parallel/dd-space-appearance`; reviewed tree `d1f0ab82…`, 66 paths | bounded writer `dd-space-review-remediation`, then focused recheck | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Extend Gallery pinned-prefix tests to StoryId 46/47, correct ledger tree, bring 551-line module near budget without behavior change, rerun focused gates |
 | DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-dd-sidebar-main`; branch `parallel/dd-sidebar-main`; exact tree `2bfa4c4b…`, 29 paths | Orchestrator; independent `REVIEW_PASS` complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Preserve exact reviewed tree; integrate after reviewed/frozen DD-SPACE |
 | DD-TAB-MENU | Production Tab/Favorite context menus | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-dd-tab-menu`; branch `parallel/dd-tab-menu`; reviewed tree `a4f1f6c8…`, 66 paths | bounded writer `dd-tab-menu-review-remediation`, then focused recheck | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Render real submenu geometry, make parent activation open submenu not Reload, fix suspended Copy Link availability, docs/evidence, causal E2E |
@@ -167,6 +168,22 @@ the placeholder Reload action; suspended Copy Link availability and docs also
 need correction. All states remain independently rebound and unstaged with no
 lane process or Git/GUI lock. `IOConsoleLocked=Yes` continues to block only the
 Page-menu Portal closeout.
+
+DD-TITLEBAR integration audit: exact candidate commit
+`6327b6b48b84f847061e5d55b85d58843dd676f0` merged as
+`69616b88be823b8ab35d1f806ada911d6256d9e6`; the sole conflict was the
+canonical `justfile` E2E aggregate and was resolved as a semantic union that
+keeps both Titlebar and background-link recipes. Fresh canonical Clippy found
+two integration-only warning failures: a constant test assertion and a
+release-visible testkit Unhover helper. Forward fix
+`4b3f40c5f736d3703682d001181d7c597ef317eb`, tree `874fb4d4…`, makes the
+density invariant runtime-evaluated and correctly feature-gates the helper.
+Both canonical warning-denied Clippy gates, targeted units, roadmap/UI/script
+checks and GUI suites are green: Titlebar 5/5, Sidebar 11/11, split geometry
+1/1, hover/semantics 3/3 and tabs 3/3. Logs live under
+`/tmp/bbr-dd-titlebar-postmerge-final/`. No performance execution occurred.
+DD-SPACE remains the next serial integration position after its remediation
+and focused recheck.
 
 ## Downstream dependency queue
 
