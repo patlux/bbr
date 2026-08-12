@@ -477,5 +477,6 @@ mod composition;
 mod composition_geometry;
 mod support;
 mod u2_favorites;
+mod u2_favorites_drag;
 mod u2_folders;
 mod u2_footer;

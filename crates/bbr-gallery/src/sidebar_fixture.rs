@@ -124,6 +124,15 @@ pub fn build_sidebar_fixture(
                 .collect(),
             targeted: false,
         })
+    } else if case.favorites_band {
+        // §11.10: a tab drag is in flight and the empty grid renders as
+        // the compact drop band (label + §10.9 drop wash) so the first
+        // favorite can be created by dragging a concrete tab into the
+        // grid (daily-driver Sidebar slice).
+        Some(FavoritesModel {
+            tiles: Vec::new(),
+            targeted: true,
+        })
     } else {
         None
     };

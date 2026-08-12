@@ -98,6 +98,7 @@ fn input<'a>(
         rows,
         space_chips,
         favorites: &[],
+        favorites_band_targeted: false,
         folder_rows: &[],
         folder_members: &[],
         plus_menu: bbr_ui::components::menu::PlusMenuState::default(),

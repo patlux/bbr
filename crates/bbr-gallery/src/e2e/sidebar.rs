@@ -99,7 +99,7 @@ fn sidebar_story_renders_every_matrix_family_with_stable_ids() {
 
         // Every matrix family renders through the state selector.
         let family_count = window.read(|_| SIDEBAR_VALID.len());
-        assert_eq!(family_count, 13);
+        assert_eq!(family_count, 14);
         for (index, case) in SIDEBAR_VALID.iter().enumerate() {
             select_family(window, app, index);
             let snap = snapshot(window, app);
@@ -146,7 +146,7 @@ fn sidebar_story_renders_every_matrix_family_with_stable_ids() {
         // The rejected combinations are declared and refuse construction
         // (the matrix unit tests prove the refusal; the story shows them).
         let rejected_count = window.read(|_| SIDEBAR_REJECTED.len());
-        assert_eq!(rejected_count, 3);
+        assert_eq!(rejected_count, 4);
 
         // Mode/state fields are untouched by story selection.
         let snap = snapshot(window, app);

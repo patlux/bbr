@@ -17,14 +17,25 @@ use super::model::{
 
 /// The §11.10 favorites region: the `type:badge` "Favorites" label over
 /// the deterministic tile grid. The label hides with the region (the caller
-/// passes `None` while empty). While a tab drag targets the grid (a drop
-/// toggles the dragged tab as a favorite), the region renders the §10.9
-/// drop wash so the add/remove affordance is visible.
+/// passes `None` while empty) — except while a tab drag is in flight, when
+/// the region renders as the compact drop band (label + wash) so the first
+/// favorite can be created by dragging a concrete tab into the grid
+/// (DESIGN.md §11.10 data source / the daily-driver Sidebar slice). While
+/// a tab drag targets the grid (a drop toggles the dragged tab as a
+/// favorite), the region renders the §10.9 drop wash so the add/remove
+/// affordance is visible.
+///
+/// `band_anchor` is the app-owned invisible rect recorder that overlays
+/// the region (absolute inset-0 within the `relative` wrapper): it
+/// publishes the region's window-relative bounds every frame, so the app's
+/// tab-drag resolver hits the real rendered band and the E2E snapshot
+/// exposes its typed geometry — never a parallel layout model.
 pub fn favorites_surface(
     theme: &Theme,
     _model: &SidebarModel,
     favorites: &FavoritesModel,
     callbacks: &Callbacks,
+    band_anchor: gpui::AnyElement,
 ) -> Stateful<Div> {
     let p = theme.palette;
     let children: Vec<gpui::AnyElement> = favorites
@@ -42,6 +53,7 @@ pub fn favorites_surface(
     let grid = components::favorites_grid(theme, children);
     div()
         .id(components::favorites::FAVORITES_SECTION_ID)
+        .relative()
         .flex()
         .flex_col()
         .pb(Spacing::sp1())
@@ -57,6 +69,7 @@ pub fn favorites_surface(
                 .child("FAVORITES"),
         )
         .child(grid)
+        .child(band_anchor)
         .when(favorites.targeted, |el| {
             el.rounded(Radius.medium())
                 .border_2()

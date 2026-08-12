@@ -54,23 +54,23 @@ Integration order:       after DD-SPACE, before context-menu cuts
 
 ### Unit and contract
 
-- [ ] Tab row visual/state matrix covers default/hover/pressed/selected/loading/error/unresponsive, long title, missing favicon, close visibility, and compact/dense geometry.
-- [ ] Pinned/regular separator and ordering preserve domain state and deterministic row identity.
-- [ ] Favorite tile model resolves exact TabId/SpaceId/ProfileId and drag toggle is exactly-once/no-copy/no-session-mutation.
-- [ ] Rejected drag targets and Escape leave state unchanged.
+- [x] Tab row visual/state matrix covers default/hover/pressed/selected/loading/error/unresponsive, long title, missing favicon, close visibility, and compact/dense geometry.
+- [x] Pinned/regular separator and ordering preserve domain state and deterministic row identity.
+- [x] Favorite tile model resolves exact TabId/SpaceId/ProfileId and drag toggle is exactly-once/no-copy/no-session-mutation.
+- [x] Rejected drag targets and Escape leave state unchanged.
 
 ### Real-app E2E
 
-- [ ] Tab row pointer/keyboard selection and hover close target exact rows with focus-domain preservation.
-- [ ] Pinned/regular boundary remains clear and pin/unpin/reorder behavior unchanged.
-- [ ] Drag regular or pinned tab into Favorites creates one tile for the exact tab; repeated drop removes/toggles according to the canonical Favorite command without closing it.
-- [ ] Activating the tile returns to its owning Space/Profile and exact warm tab.
-- [ ] Dense 500-tab, compact window, missing icon, long title, Sidebar collapse/restore, Space footer, and native content geometry regressions pass.
+- [x] Tab row pointer/keyboard selection and hover close target exact rows with focus-domain preservation.
+- [x] Pinned/regular boundary remains clear and pin/unpin/reorder behavior unchanged.
+- [x] Drag regular or pinned tab into Favorites creates one tile for the exact tab; repeated drop removes/toggles according to the canonical Favorite command without closing it.
+- [x] Activating the tile returns to its owning Space/Profile and exact warm tab.
+- [x] Dense 500-tab, compact window, missing icon, long title, Sidebar collapse/restore, Space footer, and native content geometry regressions pass.
 
 ### Performance
 
-- [ ] Existing tab hover/press/select and Sidebar scenarios retain their code/guards; tab-to-Favorite drag gains a production semantic commit scenario if no existing Favorite toggle kind covers it.
-- [ ] Execution remains unexecuted/unpassed under Patrick's override.
+- [x] Existing tab hover/press/select and Sidebar scenarios retain their code/guards; tab-to-Favorite drag gains a production semantic commit scenario if no existing Favorite toggle kind covers it.
+- [x] Execution remains unexecuted/unpassed under Patrick's override.
 
 ## Completion gates
 
@@ -108,18 +108,18 @@ If the existing Favorite authority cannot toggle an arbitrary dragged concrete T
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: production tab-row/pinned-divider/Favorites composition and exact-Tab drag-to-Favorites toggle, preserved from the daily-driver rebound; completed with the missing test-call-site compile fixes, the real-app drag E2E, the Gallery count/label pin fixes, and the mandated gate evidence.
+Commits: none (writer preserves state; Orchestrator commits)
+Functional evidence: cargo test -p bbr-ui -p bbr-browser (340 passed); cargo test -p bbr --features testkit (38 suites green); drag_target unit tests (favorites band hit by absolute window-y, band wins inside the span, chrome above the band is no target)
+Real-app E2E: just e2e-shell-sidebar (12 passed incl. new drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session); just e2e-shell-hover (3); just e2e-shell-organize (6); just e2e-shell-dense (3); just e2e-gallery (42)
+Performance evidence: benchmark_favorite_toggle already covers the §11.10 toggle kind through the exact drag-drop commit method (favorite_toggle_tab); code/guards preserved and compiling; execution unexecuted/unpassed under Patrick's override
+Roadmap/documentation updates: packet evidence checkboxes marked [x]; SIDEBAR_STATE_OPTIONS + gallery E2E family/rejected counts pinned to the new matrix cases
+Open blockers and non-goals: none in scope; performance execution and canonical just e2e remain forbidden by override
+Worktree state: branch parallel/dd-sidebar-main @ 4d5be311, 24 changed paths (23 tracked modified + 1 untracked favorites_band.rs), index untouched, no locks
 
 Planning/read-only:
 Implementation:
-Test execution:
+Test execution: ~40 min of mandated gates (fmt, unit/contract, clippy x2, ui-deps, e2e-shell-sidebar/hover/organize/dense, e2e-gallery, roadmap, diff --check)
 Review:
 Remediation:
 Waiting/retries:

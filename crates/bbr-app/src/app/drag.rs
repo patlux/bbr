@@ -142,10 +142,11 @@ impl TabDrag {
     /// state.
     ///
     /// `pinned` is the pinned/regular boundary (§11.2), `len` the tab count,
-    /// `row_h` the §8 row height, `favorites_h` the rendered §11.10
-    /// favorites region's height (0 when the grid is empty), and `chips`
-    /// the rendered strip chips' visual spans (§11.3). Pure geometry: the
-    /// pointer position itself is never stored beyond the target.
+    /// `row_h` the §8 row height, `favorites_band` the §11.10 favorites
+    /// region's rendered drop-band span in absolute window-y coordinates
+    /// (`None` when no band renders), and `chips` the rendered strip chips'
+    /// visual spans (§11.3). Pure geometry: the pointer position itself is
+    /// never stored beyond the target.
     #[allow(clippy::too_many_arguments)] // mirrors `DragGeometry` field-for-field
     pub fn move_to(
         &mut self,
@@ -154,7 +155,7 @@ impl TabDrag {
         pinned: usize,
         len: usize,
         row_h: f32,
-        favorites_h: f32,
+        favorites_band: Option<(f32, f32)>,
         chips: &[ChipSpan],
     ) {
         let dy = position_y - self.start_y;
@@ -162,7 +163,7 @@ impl TabDrag {
             pinned,
             len,
             row_h,
-            favorites_h,
+            favorites_band,
             chips,
         };
         let (target, valid) = resolve_target(
@@ -259,11 +260,13 @@ impl BbrApp {
 
     /// Recompute the drag target for a pointer position. Shared by the
     /// production mouse-move listener and the E2E seam, so both paths
-    /// resolve targets through the exact same geometry. The favorites band
-    /// (when the grid is rendered) sits above the tab list; the fixed
-    /// chrome above it (the command field / brand row) is not droppable,
-    /// and the §11.3 strip chips below the list are hit through their
-    /// rendered spans (the same canonical chip visuals the render uses).
+    /// resolve targets through the exact same geometry. The favorites
+    /// region's rendered drop band (when it renders — tiles, or an
+    /// in-flight drag) is hit through its recorded window-rect span from
+    /// the production band anchor; the fixed chrome above it (the command
+    /// field / brand row) is not droppable, and the §11.3 strip chips
+    /// below the list are hit through their rendered spans (the same
+    /// canonical chip visuals the render uses).
     pub(crate) fn resolve_tab_drag(&mut self, position_x: f32, position_y: f32) {
         let browser = self.controller.snapshot();
         let theme = self.theme();
@@ -271,13 +274,14 @@ impl BbrApp {
             return;
         }
         let pinned = crate::shell::pinned_count(&browser.tabs);
-        let organization = self.organization.organization_snapshot(&self.controller);
-        // The favorites band is rendered whenever tiles exist, in the same
-        // column position the render uses (above the tab list).
-        let favorites_h = bbr_ui::components::favorites::favorites_region_height(
-            &theme,
-            organization.favorites.len(),
-        );
+        // §11.10: the favorites drop band's absolute window-y span, recorded
+        // by the production band anchor during the last render (the exact
+        // geometry the pointer enters — never a parallel layout model).
+        // `None` while no band renders (no tiles and no in-flight drag).
+        let favorites_band = self
+            .favorites_band_rect
+            .borrow()
+            .map(|rect| (rect.y, rect.y + rect.height));
         // §11.3: the rendered strip chips' visual spans, derived from the
         // production strip layout (the same `space_chip_visuals` order the
         // render, the snapshot, and the semantic tree consume).
@@ -288,7 +292,7 @@ impl BbrApp {
             pinned,
             browser.tabs.len(),
             tab_row_h(&theme),
-            favorites_h,
+            favorites_band,
             &chips,
         );
     }
@@ -418,24 +422,26 @@ mod tests {
         let mut drag = TabDrag::default();
         // Row-center press anchor (offset 16 in a 32 pt row).
         drag.begin(1, 10.0, 200.0, 16.0);
-        // 32 pt down from the press → slot 2 (valid regular slot).
-        drag.move_to(10.0, 232.0, 0, 3, 32.0, 0.0, &chips);
+        // 32 pt down from the press → slot 2 (valid regular slot). No
+        // favorites band renders (no tiles, no in-flight drag).
+        drag.move_to(10.0, 232.0, 0, 3, 32.0, None, &chips);
         assert_eq!(drag.tab_slot(), Some(2));
         assert!(drag.valid());
         // Back to the press position → the source slot.
-        drag.move_to(10.0, 200.0, 0, 3, 32.0, 0.0, &chips);
+        drag.move_to(10.0, 200.0, 0, 3, 32.0, None, &chips);
         assert_eq!(drag.tab_slot(), Some(1));
         assert!(drag.valid());
-        // A pointer over the rendered favorites band targets the grid.
-        drag.move_to(10.0, 200.0 - 48.0 - 30.0, 0, 3, 32.0, 60.0, &chips);
+        // A pointer over the rendered favorites band targets the grid (the
+        // band is hit by its absolute window-y span, e.g. y 100..160).
+        drag.move_to(10.0, 130.0, 0, 3, 32.0, Some((100.0, 160.0)), &chips);
         assert_eq!(drag.target(), Some(DragTarget::Favorites));
         assert!(drag.valid());
         // A pointer entering the rendered chip targets that exact space.
-        drag.move_to(100.0, 658.0, 0, 3, 32.0, 60.0, &chips);
+        drag.move_to(100.0, 658.0, 0, 3, 32.0, None, &chips);
         assert_eq!(drag.target(), Some(DragTarget::Chip { space: SpaceId(9) }));
         assert!(drag.valid());
         // A pointer below the list outside every chip is a no-target zone.
-        drag.move_to(20.0, 658.0, 0, 3, 32.0, 60.0, &chips);
+        drag.move_to(20.0, 658.0, 0, 3, 32.0, None, &chips);
         assert_eq!(drag.target(), None);
         assert!(!drag.valid());
     }

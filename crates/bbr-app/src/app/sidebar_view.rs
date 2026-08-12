@@ -41,6 +41,7 @@ impl BbrApp {
         let model = self.sidebar_model(theme, sidebar_width, chrome_focused, window);
         let callbacks = self.sidebar_callbacks(cx);
         let field_anchor = self.command_field_anchor_element();
+        let favorites_band_anchor = self.favorites_band_anchor_element();
         let command_results = self
             .command_result_surface(theme)
             .map(|surface| surface.into_any());
@@ -52,9 +53,21 @@ impl BbrApp {
             &model,
             &callbacks,
             field_anchor,
+            favorites_band_anchor,
             command_results,
             downloads_panel,
         )
+    }
+
+    /// The §11.10 favorites-band anchor element: the invisible rect
+    /// recorder overlaying the favorites region (the app-owned child the
+    /// rail places absolutely over the region). It publishes the region's
+    /// window-relative bounds into `favorites_band_rect` every frame, so
+    /// the tab-drag resolver targets the real rendered drop band and the
+    /// E2E snapshot exposes its typed geometry.
+    fn favorites_band_anchor_element(&self) -> gpui::AnyElement {
+        crate::app::favorites_band::favorites_band_anchor(self.favorites_band_rect.clone())
+            .into_any()
     }
 
     /// Build the plain §11.4 rail model from the controller snapshot and the

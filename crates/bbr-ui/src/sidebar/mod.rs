@@ -14,8 +14,9 @@
 //!   `Rc<dyn Fn>` slots to GPUI's concrete `Fn` listener seams.
 //! - [`render`] — the rail composition [`render::sidebar_surface`] that
 //!   renders the model through the production `bbr-ui` components. The
-//!   app-owned child elements (command field anchor, command results,
-//!   downloads panel) are passed separately at this boundary.
+//!   app-owned child elements (command field anchor, favorites band
+//!   anchor, command results, downloads panel) are passed separately at
+//!   this boundary.
 //! - [`tabs`] — the pinned block + bounded dense window of the tab region.
 //! - [`regions`] — the favorites grid, folders list, plus menu, space
 //!   strip, and footer row.

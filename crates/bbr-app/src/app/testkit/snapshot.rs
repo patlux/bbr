@@ -265,6 +265,12 @@ impl BbrApp {
             drag_source,
             drag_slot,
             drag_chip: drag_chip.map(|space| bbr_testkit::protocol::TestSpaceId(space.0)),
+            drag_favorites: self.tab_drag.target()
+                == Some(crate::app::drag_target::DragTarget::Favorites),
+            favorites_rect: self
+                .favorites_band_rect
+                .borrow()
+                .map(|rect| [rect.x, rect.y, rect.width, rect.height]),
             drag_valid: self.tab_drag.valid(),
             space_chips,
             active_appearance,
@@ -287,6 +293,8 @@ impl BbrApp {
                 pane_layout,
                 &crate::shell::snapshot::U2IdsInput {
                     favorites: &organization.favorites,
+                    favorites_band_visible: self.tab_drag.is_active()
+                        && organization.favorites.is_empty(),
                     folders: &organization.folders,
                     expanded: self.u2.folder_presentation.clone(),
                     plus_menu: self.u2.plus_menu,
@@ -956,6 +964,8 @@ impl BbrApp {
             rows: &rendered_rows,
             space_chips: &self.space_chip_visuals(),
             favorites: favorite_tiles,
+            favorites_band_targeted: self.tab_drag.target()
+                == Some(crate::app::drag_target::DragTarget::Favorites),
             folder_rows,
             folder_members,
             plus_menu: self.u2.plus_menu,
