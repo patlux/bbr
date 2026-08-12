@@ -41,8 +41,8 @@ The reference-alignment wave is active. Patrick settled on 2026-08-13: the produ
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| RA-THEME | System-appearance production theme (light + dark) | `running` | `/Users/patwoz/dev/Personal/macos/bbr-system-appearance-theme` (`parallel/system-appearance-theme`) | one exclusive workflow writer; Orchestrator commits/integrates | [system-appearance theme](../roadmap/tasks/system-appearance-theme.md) | Writer settlement report with exact fingerprints, then independent read-only review |
-| RA-FAVICON | Real favicon pipeline | `running` | `/Users/patwoz/dev/Personal/macos/bbr-real-favicon-pipeline` (`parallel/real-favicon-pipeline`) | one exclusive workflow writer; Orchestrator commits/integrates | [real favicon pipeline](../roadmap/tasks/real-favicon-pipeline.md) | Writer settlement report with exact fingerprints, then independent read-only review |
+| RA-THEME | System-appearance production theme (light + dark) | `frozen` | `/Users/patwoz/dev/Personal/macos/bbr-system-appearance-theme` (`parallel/system-appearance-theme`) | exact reviewed candidate; Orchestrator commits/integrates | [system-appearance theme](../roadmap/tasks/system-appearance-theme.md) | `RECHECK_PASS` at HEAD `806e4238`, status `fdec6329…`, binary diff `9f1e0df7…`; next serial integration position |
+| RA-FAVICON | Real favicon pipeline | `remediation` | `/Users/patwoz/dev/Personal/macos/bbr-real-favicon-pipeline` (`parallel/real-favicon-pipeline`) | one exclusive continuation writer; Orchestrator commits/integrates | [real favicon pipeline](../roadmap/tasks/real-favicon-pipeline.md) | Continue from preserved HEAD `806e4238`, status `00e2d350…`, binary diff `a59d73f8…`; close six concrete recheck findings, then focused read-only recheck |
 | RA-POLISH | Sidebar reference polish (pitch, folder anatomy, identity glyphs) | `planned` | none | none | [sidebar reference polish](../roadmap/tasks/sidebar-reference-polish.md) | Activates only after RA-THEME integrates (both-mode calibration dependency) |
 | RA-MEDIA | Media-session capability and sidebar media card | `planned` | none | none | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Activates after the alignment slices; capability contract lands first |
 
@@ -59,6 +59,26 @@ integration order: RA-THEME → RA-FAVICON → RA-POLISH. Writers leave
 uncommitted candidates bound by exact fingerprints; only the Orchestrator
 commits and integrates. Performance execution stays forbidden under the
 active override.
+
+First-wave settlement audit: workflow
+`bbr-reference-alignment-wave-msqip269-9obn13` completed 8/8 agent calls with
+no wrapper error. RA-THEME received two concrete findings (one final-tree
+Clippy failure and two lane-introduced >500-line files); the bounded
+remediation split the modules and removed the dead binding, reran every
+affected gate, and received `RECHECK_PASS`. Exact frozen fingerprints: HEAD
+`806e423823699c17f6bcd40ffd327e27f196f091`, status-z
+`fdec6329d1fa1b07c38e5ba68627e2bede63336ce916cd8512949c4fcdfb4011`,
+binary diff `9f1e0df765a41a927dc4daf197bfaa369e53a4e727629934054403a9efc17cec`,
+sorted status
+`a5d1219480e3d765639fec9d7883466dcbb88119ebef265bdf080c4daaa4da44`.
+RA-FAVICON's first writer terminated before a settlement report; review found
+ten findings and its initial remediation causally closed the portable/native
+contract, profile test, original Clippy issues and snapshot literals, but
+stopped before presentation, E2E, DESIGN, formatting, module-budget and final
+fingerprint closeout. The read-only recheck returned `RECHECK_FINDINGS`; the
+preserved continuation candidate is rebound directly above. No lane process
+or GUI-lock holder survives. Retry continues only the open findings; completed
+work is not re-run or replaced.
 
 | VS-REFERENCE | Reference-faithful light production shell | `integrated` | lane commit `9ae318ab`; merge `4d1a5343`, tree `5f2b8a04…` | Orchestrator; exact reviewed candidate, remediation and post-merge gates complete | [visual-shell reference](../roadmap/tasks/visual-shell-reference.md) | All affected GUI suites are green serially under the repository lock (Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20, Organize 6/6, Hover 3/3, Dense 3/3, Gallery 44/44) and the final optimized `visual-capture` build re-produced both 2× artifacts; Closed for this wave; performance execution, startup, canonical `just e2e`, packaging and accessibility remain honestly unpassed |
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
