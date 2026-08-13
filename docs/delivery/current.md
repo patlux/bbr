@@ -43,7 +43,7 @@ The reference-alignment wave is active. Patrick settled on 2026-08-13: the produ
 |---|---|---|---|---|---|---|
 | RA-THEME | System-appearance production theme (light + dark) | `integrated` | lane commit `40f114f1`; merge `f7fe3d6f` | Orchestrator; exact reviewed candidate and post-merge gates complete | [system-appearance theme](../roadmap/tasks/system-appearance-theme.md) | Closed for this wave; combined post-merge evidence remains green |
 | RA-FAVICON | Real favicon pipeline | `integrated` | lane commit `e0faaa9d`; merge `a79ff95e` | Orchestrator; exact reviewed/remediated candidate and post-merge gates complete | [real favicon pipeline](../roadmap/tasks/real-favicon-pipeline.md) | Closed for this wave; favicon 3/3 and combined regression suites green |
-| RA-POLISH | Sidebar reference polish (pitch, folder anatomy, identity glyphs) | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-sidebar-reference-polish` (`parallel/sidebar-reference-polish`); exact candidate remains uncommitted at base `a79ff95e` | Orchestrator; no writer active; independent code/docs review passed | [sidebar reference polish](../roadmap/tasks/sidebar-reference-polish.md) | Unlock the macOS console, then run Sidebar → Dense → Organize → Spaces → Gallery serially; rebind, commit and integrate only after all five pass |
+| RA-POLISH | Sidebar reference polish (pitch, folder anatomy, identity glyphs) | `ready` | clean lane `891c720a00d938c86b1884074c4a8f057a862137` on `parallel/sidebar-reference-polish` | Orchestrator; grouped lane commits and final-tree gates complete | [sidebar reference polish](../roadmap/tasks/sidebar-reference-polish.md) | Integrate the three-commit lane serially after `a79ff95e`, then run focused post-merge checks |
 | RA-MEDIA | Media-session capability and sidebar media card | `planned` | none | none | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Activates after the alignment slices; capability contract lands first |
 
 Reference-alignment activation audit (2026-08-13): verified clean base
@@ -127,17 +127,32 @@ binary diff
 `7cb9ebfd3650174ee693602873a402e3aef5417ebde02589bad786bcb6cce623`;
 HEAD and untracked-path hash are unchanged. This bounded compile remediation
 requires focused review/recheck before GUI materialization.
-Non-GUI evidence is otherwise green: UI 147, Browser 261, app bins 281, testkit 30,
-Gallery 148 passed / 45 ignored; fresh warning-denied UI/app Clippy; format,
-roadmap, UI-dependencies, 46 script tests and diff-check; all three performance
-targets compile with `--no-run`. Performance execution remains forbidden. The
-only blocker is external: `IOConsoleLocked=true` remained stable during a
-bounded ten-minute poll, so the final-tree Sidebar, Dense, Organize, Spaces and
-Gallery GUI recipes are honestly unexecuted. A pre-final Sidebar run reached
-14/15 and exposed only the now-corrected single-tab fixture assumption; the
-corrected scenario compiles and awaits the unlock. No writer, Git lock or GUI
-lock holder survives. Do not materialize or integrate before the five serial
-GUI recipes pass and the exact candidate is rebound.
+At that checkpoint the non-GUI evidence was green while
+`IOConsoleLocked=true` blocked materialization. After the console unlocked,
+the Orchestrator ran the complete final tree serially through the host GUI
+lock. One initial Sidebar attempt was invalidated by a concurrently restarted
+manual `just run`; the uncontended rerun passed 15/15. Dense passed 3/3.
+Organize then exposed a test-coordinate error: moving a first-row center by a
+whole pitch correctly enters fixed chrome and is no target, whereas slot 0 is
+at the exact list edge. The test now preserves that contract and adds pure
+regressions for both edge and above-list behavior; Organize passed 2/2 and
+Drag-Chip 4/4. Gallery exposed that the new zero-height tick container lacked
+its own width authority; `w_full` on the container preserves zero flow height
+while giving the absolute rule truthful bounds, after which Gallery passed
+45/45. Spaces passed 21/21.
+
+RA-POLISH materialized in three coherent lane commits:
+`e1081aeb1dd63ba36883740dd295232aa619e249` fixes the non-testkit theme seam,
+`2ffc27fa8ba68d4322a4e20f7ee38eb676124eb9` implements the reference anatomy
+and regression evidence, and
+`891c720a00d938c86b1884074c4a8f057a862137` settles DESIGN and the task packet.
+The lane worktree is clean. Final non-GUI evidence is UI 147, Browser 261, app
+bins 282, testkit 30, Gallery 148 passed / 45 ignored; warning-denied UI/app
+Clippy; format, roadmap, UI-dependencies, 46 script tests and diff-check. All
+three performance targets compile with `--no-run`; performance execution,
+`just verify` and canonical `just e2e` remain forbidden under the active
+override. No lane process, Git lock or GUI-lock holder survives. The next
+serial action is integration followed by focused post-merge verification.
 
 | VS-REFERENCE | Reference-faithful light production shell | `integrated` | lane commit `9ae318ab`; merge `4d1a5343`, tree `5f2b8a04…` | Orchestrator; exact reviewed candidate, remediation and post-merge gates complete | [visual-shell reference](../roadmap/tasks/visual-shell-reference.md) | All affected GUI suites are green serially under the repository lock (Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20, Organize 6/6, Hover 3/3, Dense 3/3, Gallery 44/44) and the final optimized `visual-capture` build re-produced both 2× artifacts; Closed for this wave; performance execution, startup, canonical `just e2e`, packaging and accessibility remain honestly unpassed |
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
