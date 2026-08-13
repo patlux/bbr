@@ -12,8 +12,8 @@ use bbr_domain::{FolderId, SpaceId};
 use gpui::{App, KeyDownEvent, MouseDownEvent, MouseUpEvent, ScrollWheelEvent, Window};
 
 use super::model::{
-    BoolCallback, FolderCallback, HoverCallback, KeyCallback, MemberCallback, MouseCallback,
-    MouseUpCallback, RowCallback, RowUpCallback, SpaceCallback, WheelCallback,
+    BoolCallback, FolderCallback, FolderHoverCallback, HoverCallback, KeyCallback, MemberCallback,
+    MouseCallback, MouseUpCallback, RowCallback, RowUpCallback, SpaceCallback, WheelCallback,
 };
 
 /// Forward a `MouseDownEvent` slot as a concrete `Fn` closure.
@@ -81,6 +81,16 @@ pub fn folder(
 ) -> impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static {
     let cb = cb.clone();
     move |event: &MouseDownEvent, window: &mut Window, cx: &mut App| cb(folder, event, window, cx)
+}
+
+/// Forward a folder-id hover slot as a concrete `Fn` closure bound to
+/// `folder` (§11.11 count reveal).
+pub fn folder_hover(
+    cb: &FolderHoverCallback,
+    folder: FolderId,
+) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
+    let cb = cb.clone();
+    move |hovered: &bool, window: &mut Window, cx: &mut App| cb(folder, *hovered, window, cx)
 }
 
 /// Forward a folder-id + member `MouseDownEvent` slot as a concrete `Fn`

@@ -343,6 +343,13 @@ pub fn visible_ids_u2(
         ] {
             ids.push(id.into());
         }
+        // §11.4 polish: the organized-regions hairline renders exactly
+        // while the organized area has content (pinned rows or a folders
+        // list) — truthful absence when both are empty (mirrors the
+        // render's gating in `sidebar::tabs`).
+        if crate::shell::pinned_count(&browser.tabs) > 0 || !u2.folders.is_empty() {
+            ids.push(bbr_ui::sidebar::tabs::ORGANIZED_HAIRLINE_ID.into());
+        }
         // §11.5: the sidebar command slot renders the display-only address
         // pill (`bbr-address` + domain + accessory) unless a non-address
         // staging mode is active without a floating presentation (New

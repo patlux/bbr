@@ -211,7 +211,10 @@ pub(crate) fn u2_visible_ids(
         ids.push(bbr_ui::components::favorites::FAVORITES_SECTION_ID.into());
         ids.push(bbr_ui::components::favorites::FAVORITES_ID.into());
     }
-    let rows = crate::app::ui_adapters::folder_row_specs(folders, expanded);
+    // The ids derivation is hover-independent: the `bbr-folder-count-<n>`
+    // id stays in the tree at rest (zero-opacity count), so no reveal state
+    // is needed here.
+    let rows = crate::app::ui_adapters::folder_row_specs(folders, expanded, None);
     let members = crate::app::ui_adapters::folder_member_visuals(
         &rows,
         folders,

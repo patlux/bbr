@@ -7,9 +7,10 @@
 //! - the **titlebar strip height** (`frame` − `contentLayoutRect`), so the
 //!   sidebar rail's top strip and the content inset match the native
 //!   titlebar; and
-//! - the **traffic-light region** (the close button's frame), so the
-//!   sidebar toggle starts immediately after the real traffic lights —
-//!   never a hardcoded x/y offset.
+//! - the **traffic-light region** (the union of the close, miniaturize
+//!   and zoom button frames — all three lights), so the sidebar toggle
+//!   starts immediately after the real traffic lights — never a hardcoded
+//!   x/y offset.
 //!
 //! Everything here is plain geometry read from the live window on the main
 //! thread; no layout decision lives in this module and no traffic-light
@@ -36,6 +37,17 @@ fn flip_window_frame(frame: NSRect, window_height: f64) -> WebRect {
     )
 }
 
+/// The bounding union of two top-left-origin rects. Pure math so the
+/// traffic-light region (close ∪ miniaturize ∪ zoom) is unit-testable
+/// without macOS.
+fn union_rect(a: WebRect, b: WebRect) -> WebRect {
+    let left = a.x.min(b.x);
+    let top = a.y.min(b.y);
+    let right = (a.x + a.width).max(b.x + b.width);
+    let bottom = (a.y + a.height).max(b.y + b.height);
+    WebRect::new(left, top, right - left, bottom - top)
+}
+
 /// The live safe-titlebar guide of the window hosting `root`, or `None`
 /// when the root has no window yet. Main thread only (AppKit).
 pub fn safe_titlebar_guide(_mtm: MainThreadMarker, root: &NSView) -> Option<SafeTitlebarGuide> {
@@ -50,16 +62,27 @@ pub fn safe_titlebar_guide(_mtm: MainThreadMarker, root: &NSView) -> Option<Safe
     let frame = window.frame();
     let content_layout = window.contentLayoutRect();
     let height = (frame.size.height - content_layout.size.height).max(0.0) as f32;
-    // The close button is the leading traffic light; its frame is the
-    // region the sidebar toggle must clear. Standard traffic lights keep
-    // their default placement (GPUI moves them only when a custom
-    // `traffic_light_position` is set, which BBR never does).
-    let close_button: Option<Retained<NSButton>> =
-        window.standardWindowButton(NSWindowButton::CloseButton);
-    let traffic_lights = close_button
-        .as_deref()
-        .map(|button| flip_window_frame(button.frame(), frame.size.height))
-        .unwrap_or_default();
+    // The traffic-light region is the union of all three standard window
+    // buttons (close, miniaturize, zoom) — the sidebar toggle must clear
+    // the complete row, not just the leading light. Standard traffic
+    // lights keep their default placement (GPUI moves them only when a
+    // custom `traffic_light_position` is set, which BBR never does).
+    let mut traffic_lights: Option<WebRect> = None;
+    for kind in [
+        NSWindowButton::CloseButton,
+        NSWindowButton::MiniaturizeButton,
+        NSWindowButton::ZoomButton,
+    ] {
+        let button: Option<Retained<NSButton>> = window.standardWindowButton(kind);
+        if let Some(button) = button.as_deref() {
+            let rect = flip_window_frame(button.frame(), frame.size.height);
+            traffic_lights = Some(match traffic_lights {
+                Some(region) => union_rect(region, rect),
+                None => rect,
+            });
+        }
+    }
+    let traffic_lights = traffic_lights.unwrap_or_default();
     Some(SafeTitlebarGuide {
         height,
         traffic_lights,
@@ -81,6 +104,25 @@ mod tests {
         assert_eq!(guide.y, 960.0);
         assert_eq!(guide.width, 20.0);
         assert_eq!(guide.height, 14.0);
+    }
+
+    #[test]
+    fn union_spans_all_three_traffic_lights() {
+        // Close at x 12, zoom ending at x 66 (the default 20 pt spacing):
+        // the region spans the complete light row, so the sidebar toggle
+        // clears the zoom button's right edge — never just the close
+        // button.
+        let close = WebRect::new(12.0, 10.0, 14.0, 16.0);
+        let miniaturize = WebRect::new(32.0, 10.0, 14.0, 16.0);
+        let zoom = WebRect::new(52.0, 10.0, 14.0, 16.0);
+        let region = union_rect(union_rect(close, miniaturize), zoom);
+        assert_eq!(region.x, 12.0);
+        assert_eq!(region.y, 10.0);
+        assert_eq!(region.width, 54.0);
+        assert_eq!(region.height, 16.0);
+        // The UI's control_left (x + width) is the zoom button's right
+        // edge.
+        assert_eq!(region.x + region.width, 66.0);
     }
 
     #[test]

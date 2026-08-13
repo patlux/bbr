@@ -168,14 +168,17 @@ impl BbrApp {
         }
         let regular = active - pinned;
         let total = browser.tabs.len() - pinned;
-        let row_h = self.theme().density.row();
+        // §8 pitch: rows render at surface + gap (`density:pitch`), so
+        // scroll-into-view offsets the dense window in exact pitch units
+        // (§11.6).
+        let pitch = self.theme().density.pitch();
         let anchor = self.dense_scroll.offset().y;
-        let current = crate::dense::anchor_from_offset(anchor, row_h, total);
+        let current = crate::dense::anchor_from_offset(anchor, pitch, total);
         if !crate::dense::window_contains(&crate::dense::window_for(current, total), regular) {
             let target = crate::dense::clamp_anchor(regular, total);
             self.dense_scroll.set_offset(gpui::point(
                 px(0.0),
-                crate::dense::offset_for_anchor(target, row_h),
+                crate::dense::offset_for_anchor(target, pitch),
             ));
         }
     }

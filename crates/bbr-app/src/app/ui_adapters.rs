@@ -11,6 +11,7 @@
 //! (the derivation semantics are unchanged — only the home moved).
 
 use bbr_browser::{FavoriteSnapshot, FolderSnapshot, GlobalTabSnapshot};
+use bbr_domain::FolderId;
 
 use bbr_ui::components::favicon::{monogram_hue, monogram_letter};
 use bbr_ui::components::favorites::FavoriteTileSpec;
@@ -50,10 +51,13 @@ pub fn favorite_tiles(
 /// Derive the rendered folder rows in creation order (the same source the
 /// folders list renders). Member counts come from the L5 snapshot; the
 /// expanded/collapsed value from the app-local presentation state, keyed by
-/// the stable domain folder id.
+/// the stable domain folder id. `revealed` is the folder whose `type:meta`
+/// count the hover/focus state reveals (`None` at rest — every count stays
+/// quiet).
 pub fn folder_row_specs(
     folders: &[FolderSnapshot],
     presentation: &FolderPresentation,
+    revealed: Option<FolderId>,
 ) -> Vec<FolderRowSpec> {
     folders
         .iter()
@@ -63,6 +67,7 @@ pub fn folder_row_specs(
             title: folder.title.clone(),
             count: folder.members.len(),
             expanded: presentation.is_expanded(folder.id),
+            reveal_count: revealed == Some(folder.id),
         })
         .collect()
 }

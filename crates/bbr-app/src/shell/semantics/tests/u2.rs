@@ -189,6 +189,7 @@ fn folders_node_mirrors_expansion_values_and_nested_items() {
             members: vec![bbr_domain::TabId(1), bbr_domain::TabId(2)],
         }],
         &presentation,
+        None,
     );
     let section = super::super::u2::folders_node(&rows, &[]).expect("folders node");
     assert_eq!(section.id, "bbr-section-folders");
@@ -231,6 +232,7 @@ fn folders_node_mirrors_expansion_values_and_nested_items() {
             members: vec![],
         }],
         &bbr_ui::components::folders::FolderPresentation::default(),
+        None,
     );
     let section = super::super::u2::folders_node(&collapsed, &[]).expect("folders node");
     let list = section
@@ -319,7 +321,8 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         title: "Work".into(),
         members: vec![bbr_domain::TabId(1)],
     }];
-    let folder_rows = crate::app::ui_adapters::folder_row_specs(&folder_snapshots, &presentation);
+    let folder_rows =
+        crate::app::ui_adapters::folder_row_specs(&folder_snapshots, &presentation, None);
     input.folder_rows = &folder_rows;
     let folder_members = [bbr_ui::components::FolderMemberVisual {
         folder: bbr_domain::FolderId(1),
@@ -364,7 +367,10 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         .children
         .iter()
         .any(|node| node.id == "bbr-favorites"));
-    // The folders list sits inside the tab list between Pinned and Tabs.
+    // The folders list sits inside the tab list between Pinned and Tabs,
+    // and the §11.4 organized-regions hairline separates the organized
+    // Pinned/Folders area from the New Tab row (present because folders
+    // exist — the typed Separator node sits between Folders and New Tab).
     let tab_list = find(&tree, "bbr-tab-list").expect("tab list");
     let folders = tab_list
         .children
@@ -372,6 +378,27 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         .find(|node| node.id == "bbr-section-folders")
         .expect("folders section inside the tab list");
     assert!(folders.children.iter().any(|node| node.id == "bbr-folders"));
+    let tab_list_order: Vec<&str> = tab_list
+        .children
+        .iter()
+        .map(|node| node.id.as_str())
+        .collect();
+    let hairline_at = tab_list_order
+        .iter()
+        .position(|id| *id == "bbr-organized-hairline")
+        .expect("hairline inside the tab list");
+    assert_eq!(
+        tab_list_order[hairline_at - 1],
+        "bbr-section-folders",
+        "hairline follows the organized area; order: {tab_list_order:?}"
+    );
+    assert_eq!(
+        tab_list_order[hairline_at + 1],
+        "bbr-new-tab",
+        "hairline precedes New Tab (§11.4); order: {tab_list_order:?}"
+    );
+    let hairline = &tab_list.children[hairline_at];
+    assert_eq!(hairline.role, SemanticRole::Separator);
     // The expanded folder's nested row exposes the member anatomy.
     let item = find(&tree, "bbr-folder-item-0-0").expect("nested member row");
     assert_eq!(item.role, SemanticRole::Row);
@@ -455,3 +482,5 @@ fn the_permanent_strip_always_renders_chip_nodes() {
         "identity id derives from the persistent space id"
     );
 }
+
+mod reference_polish;

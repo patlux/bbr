@@ -123,6 +123,12 @@ fn dense_500_keeps_exactly_50_sessions_with_bounded_render_and_recreation() {
         scroll_dense(&mut client, -2500.0);
         let scrolled = client.snapshot().expect("scrolled snapshot");
         let scrolled_dense = scrolled.dense;
+        assert_eq!(
+            scrolled_dense.scroll_anchor, 69,
+            "the wheel scroll lands on the exact S-pitch anchor \
+             (2500 px / 36 pt pitch = 69 rows) — proof the dense scroll \
+             math steps on the §8 density:pitch, not the old row surface"
+        );
         assert!(
             scrolled_dense.scroll_anchor > 0 && scrolled_dense.scroll_anchor < top.dense.item_count,
             "wheel scroll moves the deterministic anchor"

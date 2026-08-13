@@ -122,6 +122,16 @@ impl BbrGlyph {
         }
     }
 
+    /// Resolve a canonical catalog name back to its glyph, or `None` for
+    /// a value that is not a curated identity glyph (a non-curated string
+    /// falls back to the §7 two-letter badge).
+    pub fn from_name(name: &str) -> Option<Self> {
+        BbrGlyph::ALL
+            .iter()
+            .copied()
+            .find(|glyph| glyph.name() == name)
+    }
+
     /// A short human-readable display label for pickers and settings.
     pub fn label(self) -> &'static str {
         match self {

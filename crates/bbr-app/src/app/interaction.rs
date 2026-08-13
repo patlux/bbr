@@ -364,6 +364,38 @@ impl BbrApp {
         }
     }
 
+    /// DESIGN.md §10.2/§11.11 production hover path: the pointer entered
+    /// folder row `id` (`hovered == true`) or left it (`false`). The exact
+    /// app method the folder row's `on_hover` element listener calls, so
+    /// the hover/focus-revealed count follows the same production pointer
+    /// path as the row hover wash.
+    pub fn set_folder_hover(
+        &mut self,
+        id: bbr_domain::FolderId,
+        hovered: bool,
+        cx: &mut Context<Self>,
+    ) {
+        let changed = if hovered {
+            self.hovered_folder != Some(id)
+        } else {
+            self.hovered_folder == Some(id)
+        };
+        self.hovered_folder = if hovered { Some(id) } else { None };
+        if changed {
+            cx.notify();
+        }
+    }
+
+    /// Testkit pointer-leave seam: clear the folder hover so the revealed
+    /// count returns quiet. Production leave events use
+    /// `set_folder_hover(id, false)` through the folder callback.
+    #[cfg(feature = "testkit")]
+    pub fn clear_folder_hover(&mut self, cx: &mut Context<Self>) {
+        if self.hovered_folder.take().is_some() {
+            cx.notify();
+        }
+    }
+
     /// DESIGN.md §10.3 production press path: the row's primary button went
     /// down. The exact app method the row's mouse-down listener calls.
     pub fn set_row_pressed(&mut self, index: usize, cx: &mut Context<Self>) {

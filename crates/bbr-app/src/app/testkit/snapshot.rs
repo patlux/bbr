@@ -43,20 +43,29 @@ impl BbrApp {
         let space_chips: Vec<bbr_testkit::protocol::SpaceChipSnapshot> = self
             .space_chip_visuals()
             .into_iter()
-            .map(|chip| bbr_testkit::protocol::SpaceChipSnapshot {
-                space: bbr_testkit::protocol::TestSpaceId(chip.space.0),
-                title: chip.title,
-                identity: chip.identity,
-                theme: chip.theme.name().to_string(),
-                selected: chip.selected,
-                drag_target: chip.drag_target,
-                companion: chip.companion.map(|companion| {
-                    bbr_testkit::protocol::ChipCompanionSnapshot {
-                        profile: companion.profile_index,
-                        monogram: companion.letter,
-                        hue: companion.hue.name().to_string(),
-                    }
-                }),
+            .map(|chip| {
+                let identity_kind = bbr_ui::icons::classify_identity(&chip.identity)
+                    .kind()
+                    .to_string();
+                bbr_testkit::protocol::SpaceChipSnapshot {
+                    space: bbr_testkit::protocol::TestSpaceId(chip.space.0),
+                    title: chip.title,
+                    identity: chip.identity,
+                    // §11.3/§7: the rendered identity form (emoji scalar /
+                    // drawn glyph path / two-letter badge fallback), the same
+                    // classifier the footer chip renders with.
+                    identity_kind,
+                    theme: chip.theme.name().to_string(),
+                    selected: chip.selected,
+                    drag_target: chip.drag_target,
+                    companion: chip.companion.map(|companion| {
+                        bbr_testkit::protocol::ChipCompanionSnapshot {
+                            profile: companion.profile_index,
+                            monogram: companion.letter,
+                            hue: companion.hue.name().to_string(),
+                        }
+                    }),
+                }
             })
             .collect();
         let window_width = f32::from(window.bounds().size.width);
@@ -102,9 +111,21 @@ impl BbrApp {
         let organization = self.organization.organization_snapshot(&self.controller);
         let favorite_tiles =
             crate::app::ui_adapters::favorite_tiles(&organization.favorites, &self.favicon_images);
+        // §11.11 hover/focus-reveal: the count paints while the pointer
+        // hovers the row, or while the folders region genuinely owns chrome
+        // focus and the row is the keyboard anchor; at rest every count
+        // stays quiet (mirrors the render's `folders_model` boost).
+        let revealed_folder = self.hovered_folder.or_else(|| {
+            self.u2
+                .folders_handle
+                .is_focused(window)
+                .then_some(self.u2.folder_focus)
+                .flatten()
+        });
         let folder_rows = crate::app::ui_adapters::folder_row_specs(
             &organization.folders,
             &self.u2.folder_presentation,
+            revealed_folder,
         );
         let folder_members = crate::app::ui_adapters::folder_member_visuals(
             &folder_rows,
@@ -351,6 +372,26 @@ impl BbrApp {
                     can_go_back: browser.nav.can_go_back,
                     can_go_forward: browser.nav.can_go_forward,
                     can_reload: browser.active_view.is_some(),
+                    // §11.5 rest evidence: the address pill's translucent
+                    // borderless token pair follows the effective chrome
+                    // polarity (white-translucent on dark, black-
+                    // translucent on light) — asserted in both appearance
+                    // modes semantically, never via pixels.
+                    address_rest_fill: match theme.mode {
+                        bbr_ui::theme::ThemeMode::Dark => {
+                            bbr_testkit::protocol::AddressRestFill::TranslucentOnDark
+                        }
+                        bbr_ui::theme::ThemeMode::Light => {
+                            bbr_testkit::protocol::AddressRestFill::TranslucentOnLight
+                        }
+                    },
+                    // §11.14 rest evidence: Reload rests with no surface;
+                    // the §10.2/§10.3 washes are the only deltas.
+                    reload_rest: bbr_testkit::protocol::ReloadRestSurface::Transparent,
+                    reload_hovered: self.titlebar_hovered
+                        == Some(bbr_ui::titlebar::TitlebarControl::Reload),
+                    reload_pressed: self.titlebar_pressed
+                        == Some(bbr_ui::titlebar::TitlebarControl::Reload),
                 }
             },
             sidebar_width,
@@ -413,6 +454,7 @@ impl BbrApp {
                     title: row.title.clone(),
                     tab_count: row.count,
                     expanded: row.expanded,
+                    count_revealed: row.reveal_count,
                 })
                 .collect(),
             download_rows,

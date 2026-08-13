@@ -331,6 +331,19 @@ pub(crate) fn dispatch(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // §11.11 folder-hover reveal: the same production `on_hover` path
+        // the folder row's element listener calls — the count reveals while
+        // the pointer is over the row and returns quiet on leave.
+        Request::HoverFolderRow { folder_id } => with_app(window, app, cx, |view, _window, cx| {
+            view.set_folder_hover(bbr_domain::FolderId(folder_id), true, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::UnhoverFolderRow => with_app(window, app, cx, |view, _window, cx| {
+            view.clear_folder_hover(cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
         // §11.5 address-pill hover: the same production `on_hover` path the
         // pill's element listener calls — the wash follows the pointer.
         Request::HoverAddress => with_app(window, app, cx, |view, _window, cx| {

@@ -116,6 +116,17 @@ pub enum Request {
     /// Pointer leave through the same production hover listener path: clears
     /// the row's hover state.
     UnhoverTabRow,
+    /// Pointer hover over a folder row through the production `on_hover`
+    /// listener path (the exact app method the element handler calls): the
+    /// §11.11 `type:meta` count reveals while the pointer is over the row
+    /// (the hover half of the hover/focus-reveal contract; the keyboard
+    /// half follows the folders region's genuine chrome focus).
+    HoverFolderRow {
+        folder_id: u64,
+    },
+    /// Pointer leave through the same production folder-hover path: the
+    /// revealed count returns quiet.
+    UnhoverFolderRow,
     /// §11.14 pointer-path activation of the titlebar sidebar toggle
     /// through the exact production app method the element listener calls
     /// (the same sidebar-width/collapse authority as Cmd-B).

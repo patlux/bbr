@@ -100,6 +100,12 @@ impl BbrApp {
         let u2 = self.u2_rail_data();
         let command = self.command_slot(theme, chrome_focused);
         let favorites = self.favorites_model(&u2.favorite_tiles);
+        if favorites.is_none() {
+            // The favorites region does not render this frame: drop the
+            // recorded band rect so the snapshot and the drag resolver
+            // never consume stale geometry from an earlier drag's band.
+            *self.favorites_band_rect.borrow_mut() = None;
+        }
         let folders = self.folders_model(&u2.folder_rows, &u2.folder_members, window);
         let tabs = self.tabs_model(theme, window);
         let browser = self.controller.snapshot();

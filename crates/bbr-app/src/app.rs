@@ -210,6 +210,11 @@ pub struct BbrApp {
     /// DESIGN.md §10.2 hover state: the row the pointer currently hovers
     /// (driven by the production `on_hover` listeners). `None` at rest.
     hovered_row: Option<usize>,
+    /// DESIGN.md §10.2/§11.11 hover state: the folder row the pointer
+    /// currently hovers (driven by the production `on_hover_folder`
+    /// listener). Hover/focus reveals the folder's `type:meta` count;
+    /// `None` at rest.
+    hovered_folder: Option<bbr_domain::FolderId>,
     /// DESIGN.md §10.3 pressed state: the row whose primary button is
     /// currently down (driven by the production mouse-down/up listeners).
     pressed_row: Option<usize>,
@@ -569,6 +574,7 @@ impl BbrApp {
             portal: PortalState::new(crate::portal::probe::PORTAL_ID),
             portal_probe: Rc::new(RefCell::new(PortalProbeState::new())),
             hovered_row: None,
+            hovered_folder: None,
             pressed_row: None,
             address_hovered: false,
             titlebar_hovered: None,

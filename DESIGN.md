@@ -402,6 +402,8 @@ are unchanged by this table (§15); the geometry below only raises token values.
 | Token | S (small) | N (normal) | X (very large) |
 |---|---|---|---|
 | `density:row` | 32 | 36 | 44 |
+| `density:gap` | 4 | 4 | 4 |
+| `density:pitch` (row + gap) | 36 | 40 | 48 |
 | `density:row-tile` | 28 | 36 | 44 |
 | `density:radius` | `radius:sm` (6) | `radius:md` (8) | `radius:lg` (10) |
 | `type:title` | 12 | 14 | 16 |
@@ -419,6 +421,15 @@ Transition rule: density changes when the collection crosses 200 regular tabs
 (S) or 600 (X) only after user confirm at first occurrence or a follow-up
 preference (open decision); the shell never flips density mid-scroll in a way
 that changes row height — row heights are stable for the whole session view.
+
+**Row pitch (reference polish, settled 2026-08-13):** the normal rail ships
+the reference's ~40 pt pitch — 36 pt row surfaces separated by 4 pt
+inter-row gaps. `density:gap` is the fixed 4 pt inter-row gap at every
+density and `density:pitch` = `density:row` + `density:gap` is the exact
+step every regular/pinned/folder/nested/New Tab row renders on and the
+single unit the dense scroll math, the drag-slot geometry, and the testkit
+snapshot use (§11.6). Hit minima, row surfaces, and the state vocabulary are
+unchanged; only the inter-row pitch grew.
 
 ## 9. Focus
 
@@ -510,6 +521,10 @@ disabled UI is exempt from AA but must remain perceivable at IC.
 **Assert:** `disabled`.
 
 ### 10.9 `dragging` / `drag-target`
+A row press **arms** a drag; the dragging presentation (dragged-row state,
+insertion tick, favorites drop band, chip targets) begins only after the
+pointer travels the 4 pt activation distance. Below it the press is a
+click — nothing shifts the rail layout on a plain click.
 `dragging`: the dragged row renders at 92% opacity with `elev:2` shadow and
 a 1 pt `border.strong` outline (`dur:micro` opacity, allowed).
 `drag-target`: insertion tick = 2 pt vertical accent rule at the target
@@ -578,10 +593,10 @@ using the IDs of §15. All rows use `density` geometry from §8.
   is no revealable space-row region above Favorites and no `[Spaces]` toggle.
 - **Anatomy:** each space is one keyboard-focusable **icon-only** identity chip
   containing exactly one validated `SpaceIdentity` value from the curated
-  appearance contract: a selected emoji renders directly; until the complete
-  BBR identity-glyph path catalog ships, a curated glyph name renders as its
-  canonical two-letter badge (the §7 missing-glyph fallback), never arbitrary
-  Unicode. No Space title text appears in the footer at rest. The chip has a stable accessible
+  appearance contract: a selected emoji renders directly; a curated glyph
+  name renders its drawn §7 geometric path (the catalog ships; a non-curated
+  value — nothing in the curated catalog — falls back to the §7 two-letter
+  badge, never arbitrary Unicode). No Space title text appears in the footer at rest. The chip has a stable accessible
   name containing the space and profile names; color or emoji alone never
   carries that meaning. Normal S1 geometry is calibrated with the same generous
   hit-target family as the rest of the footer.
@@ -666,7 +681,11 @@ using the IDs of §15. All rows use `density` geometry from §8.
   section heading. Profile groups and regions stack under quiet separation
   with `density:section-gap` breathing (S `sp:3` / N `sp:4` / XL `sp:5`). The Favorites grid and
   the Pinned region are fixed-height blocks above the scroll view; Folders
-  and Tabs scroll together in `bbr-scroll` (label behavior per §11.6).
+  and Tabs scroll together in `bbr-scroll` (label behavior per §11.6). One
+  1 px hairline (`bbr-organized-hairline`) separates the organized
+  Pinned/Folders area from the visible New Tab row (reference composition):
+  it renders exactly while the organized area has content (pinned rows or a
+  folders list) and is truthfully absent when both are empty.
 - **Spaces strip:** `bbr-space-strip` is the permanent space navigation
   surface defined by §11.3. It takes all remaining footer width, clips to one
   line, scrolls horizontally, and exposes one `bbr-space-chip-<n>` per space.
@@ -731,7 +750,7 @@ using the IDs of §15. All rows use `density` geometry from §8.
   geometry never changes bounded-window rendering or dense scroll math.
 - **Assert ids:** `bbr-sidebar`, `bbr-sidebar-column`, `bbr-active-space-title`,
   `bbr-new-tab`, `bbr-scroll`, conditional `bbr-status`,
-  `bbr-titlebar-sidebar-toggle`, `bbr-sidebar-divider`,
+  `bbr-titlebar-sidebar-toggle`, `bbr-sidebar-divider`, `bbr-organized-hairline`,
   `bbr-section-favorites` / `bbr-section-pinned` / `bbr-section-folders` /
   `bbr-section-tabs`, `bbr-favorites`, `bbr-fav-<n>` (+ `-icon`),
   `bbr-folders`, `bbr-folder-row-<n>` (+ `-name`/`-count`/`-toggle`),
@@ -882,21 +901,28 @@ scheme; a title consisting only of whitespace is treated as empty.
 - **Assert ids:** `bbr-section-favorites`, `bbr-favorites`,
   `bbr-fav-<n>`, `bbr-fav-icon-<n>`.
 
-### 11.11 Folders (Planned)
+### 11.11 Folders (Implemented; reference-calibrated)
 
 - **Anatomy:** a `type:badge` "Folders" label (`bbr-section-folders`,
-  hidden when empty) over folder rows (`bbr-folders`): `[disclosure glyph
-  `icon:m` (18; S `icon:s` 16) §7] [name, trunc] [count, `type:meta`
-  `tnum`]` at `density:row` tall,
-  hairlines between folder groups; nested rows indent one `sp:3` step.
-- **Behavior:** a folder is a session-local container of tab identities
-  (in-memory in v1, never persisted; Phase 7 owns restoration). Toggling
-  (`bbr-folder-toggle-<n>`, pointer or keyboard Enter/Space)
+  hidden when empty) over folder rows (`bbr-folders`): `[folder glyph §7,
+  open/closed variant carrying the disclosure state, `icon:m` 18; S
+  `icon:s` 16] [name, trunc] [count, `type:meta` `tnum`,
+  hover/focus-revealed]` at `density:row` tall, stepping on the §8 pitch
+  (surface + gap) like every row; nested rows indent one `sp:3` step and
+  the expanded folder's extent stays an exact pitch multiple.
+- **Disclosure:** the leading glyph is the §7 folder with the open variant
+  for the expanded state (never a separate chevron, never color-only).
+  Toggling (`bbr-folder-toggle-<n>`, pointer or keyboard Enter/Space)
   expands/collapses the nested row list and snaps (`dur:instant`). Nested
   rows reuse the §11.1 row anatomy and the full §10 vocabulary; index
   `<m>` is the nested position within folder `<n>` (0-based,
   deterministic). A folder whose tabs were all closed remains as an empty
   collapsible row.
+- **Count reveal:** the `type:meta` count paints only while the pointer
+  hovers the row or the row is the keyboard focus anchor while the folders
+  region owns chrome focus; at rest every count stays quiet (zero-opacity,
+  the `bbr-folder-count-<n>` id stays in the tree). The typed snapshot
+  reports `count_revealed` so E2E proves the reveal semantically.
 - **Drag:** dragging a tab over a folder row renders the folder as a
   `drag-target` (§10.9); a drop routes through the move-into-folder
   command of the favorites/folders domain slice, and keyboard staging

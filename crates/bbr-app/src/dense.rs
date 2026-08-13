@@ -44,11 +44,13 @@ pub struct DenseRenderState {
 
 /// The first regular row at the viewport top, derived from the production
 /// scroll offset (negative as the user scrolls down). Clamped so a stale or
-/// extreme offset never renders outside the collection.
-pub fn anchor_from_offset(offset_y: Pixels, row_h: Pixels, total_rows: usize) -> usize {
-    let row_h = f32::from(row_h).max(1.0);
+/// extreme offset never renders outside the collection. `step` is the §8
+/// row pitch (`density:pitch` = surface + gap) — the exact unit every
+/// dense/scroll math steps in (§11.6).
+pub fn anchor_from_offset(offset_y: Pixels, step: Pixels, total_rows: usize) -> usize {
+    let step = f32::from(step).max(1.0);
     let scrolled = (-f32::from(offset_y)).max(0.0);
-    let anchor = (scrolled / row_h).floor() as usize;
+    let anchor = (scrolled / step).floor() as usize;
     clamp_anchor(anchor, total_rows)
 }
 
@@ -71,14 +73,18 @@ pub fn window_for(anchor: usize, total_rows: usize) -> std::ops::Range<usize> {
 }
 
 /// The scroll offset (negative) that puts `anchor` at the viewport top.
-pub fn offset_for_anchor(anchor: usize, row_h: Pixels) -> Pixels {
-    px(-(anchor as f32 * f32::from(row_h)))
+/// `step` is the §8 row pitch (`density:pitch` = surface + gap) — the
+/// exact unit every dense/scroll math steps in (§11.6).
+pub fn offset_for_anchor(anchor: usize, step: Pixels) -> Pixels {
+    px(-(anchor as f32 * f32::from(step)))
 }
 
 /// The absolute scroll offset for `scroll_top_px` (clamped to the collection
-/// extent by the container's own layout clamp).
-pub fn scroll_top_for_anchor(anchor: usize, row_h: Pixels) -> f32 {
-    anchor as f32 * f32::from(row_h)
+/// extent by the container's own layout clamp). `step` is the §8 row pitch
+/// (`density:pitch` = surface + gap) — the exact unit every dense/scroll
+/// math steps in (§11.6).
+pub fn scroll_top_for_anchor(anchor: usize, step: Pixels) -> f32 {
+    anchor as f32 * f32::from(step)
 }
 
 /// Whether `row` (a regular-region index) lies inside the rendered window.
@@ -92,12 +98,12 @@ mod tests {
 
     #[test]
     fn anchor_derives_from_the_negative_scroll_offset() {
-        let row_h = px(28.0);
-        assert_eq!(anchor_from_offset(px(0.0), row_h, 500), 0);
-        assert_eq!(anchor_from_offset(px(-28.0), row_h, 500), 1);
-        assert_eq!(anchor_from_offset(px(-84.0), row_h, 500), 3);
+        let step = px(40.0);
+        assert_eq!(anchor_from_offset(px(0.0), step, 500), 0);
+        assert_eq!(anchor_from_offset(px(-40.0), step, 500), 1);
+        assert_eq!(anchor_from_offset(px(-120.0), step, 500), 3);
         // A sub-row offset floors, never rounds up.
-        assert_eq!(anchor_from_offset(px(-85.0), row_h, 500), 3);
+        assert_eq!(anchor_from_offset(px(-121.0), step, 500), 3);
     }
 
     #[test]
@@ -121,8 +127,8 @@ mod tests {
 
     #[test]
     fn offsets_are_exact_and_negative() {
-        assert_eq!(offset_for_anchor(3, px(28.0)), px(-84.0));
-        assert_eq!(scroll_top_for_anchor(3, px(28.0)), 84.0);
+        assert_eq!(offset_for_anchor(3, px(40.0)), px(-120.0));
+        assert_eq!(scroll_top_for_anchor(3, px(40.0)), 120.0);
     }
 
     #[test]

@@ -29,9 +29,15 @@ use bbr_testkit::protocol::Request;
 use e2e_common::*;
 use e2e_dense_common::*;
 
-/// §8 normal-density tab row height (theme.density::Normal.row()); the edge
-/// collection is 120 identities (< 200 regular → N density).
+/// §8 normal-density row surface (theme.density::Normal.row()) — the
+/// press-anchored drag geometry anchors within the row surface
+/// (`row() / 2`); the edge collection is 120 identities (< 200 regular →
+/// N density).
 const ROW_H: f32 = 36.0;
+/// §8 normal-density row pitch (theme.density::Normal.pitch() = surface +
+/// gap): rows render on this step, so pointer moves between slots use the
+/// pitch the render lays out in (36 pt surfaces, 4 pt gaps).
+const PITCH: f32 = 40.0;
 
 /// Edge states inside dense collections: long/separator titles stay on one
 /// truncated line, monogram favicon tiles cover missing icons, a crashed
@@ -163,7 +169,7 @@ fn dense_edge_states_stay_usable() {
             .send_ok(&dsl::begin_tab_drag(10, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin dense drag");
         client
-            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * ROW_H))
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
             .expect("move dense drag");
         let during = client.snapshot().expect("during dense drag snapshot");
         assert_eq!(during.drag_source, Some(10));

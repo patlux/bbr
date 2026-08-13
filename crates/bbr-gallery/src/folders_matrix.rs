@@ -195,6 +195,7 @@ pub fn build_folders_fixture(
             title: title.to_string(),
             count: *count,
             expanded: case.expanded.contains(&pos),
+            reveal_count: false,
         })
         .collect();
     let mut members = Vec::new();

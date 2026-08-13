@@ -357,10 +357,14 @@ impl Render for BbrApp {
             )
             .on_hover(cx.listener(|this, hovered: &bool, _window, cx| {
                 // The pointer left the whole GPUI chrome (e.g. into the
-                // native web view): clear the row hover. Entering the root
-                // never clears a row the pointer is already over.
+                // native web view): clear the row and folder hover.
+                // Entering the root never clears a row the pointer is
+                // already over.
                 if !*hovered {
                     this.clear_row_hover(cx);
+                    if this.hovered_folder.take().is_some() {
+                        cx.notify();
+                    }
                 }
             }))
             // The tab-drag listeners run alongside the sidebar-drag ones on

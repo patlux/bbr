@@ -37,11 +37,11 @@ pub fn theme_mode_for_appearance(appearance: WindowAppearance) -> ThemeMode {
 /// the priority is unit-testable without a display server.
 pub(crate) fn effective_theme_mode(
     system: ThemeMode,
-    #[cfg(feature = "testkit")] override_mode: Option<ThemeMode>,
+    _override_mode: Option<ThemeMode>,
 ) -> ThemeMode {
     #[cfg(feature = "testkit")]
     {
-        override_mode.unwrap_or(system)
+        _override_mode.unwrap_or(system)
     }
     #[cfg(not(feature = "testkit"))]
     {

@@ -69,6 +69,8 @@ pub struct SidebarObserver {
     pub on_context_menu_favorite: RowCallback,
     /// §11.11 folder-row focus.
     pub on_focus_folder: FolderCallback,
+    /// §11.11 folder-row hover used by the count-reveal presentation.
+    pub on_hover_folder: Rc<dyn Fn(FolderId, bool, &mut Window, &mut App)>,
     /// §11.11 folder disclosure.
     pub on_toggle_folder: FolderCallback,
     /// §11.11 nested member select.
@@ -236,6 +238,16 @@ pub fn build_sidebar_observer(
         on_activate_favorite: row(SidebarObservation::FavoriteActivate, false),
         on_context_menu_row: row(SidebarObservation::RowContextMenu, true),
         on_context_menu_favorite: row(SidebarObservation::FavoriteContextMenu, true),
+        on_hover_folder: {
+            let record = Rc::clone(&record);
+            Rc::new(
+                move |folder: FolderId, hovered: bool, _window: &mut Window, cx: &mut App| {
+                    if hovered {
+                        record(SidebarObservation::FocusFolder(folder.0), cx);
+                    }
+                },
+            )
+        },
         on_focus_folder: {
             let record = Rc::clone(&record);
             Rc::new(
@@ -371,6 +383,7 @@ impl SidebarObserver {
             on_activate_favorite: Rc::clone(&self.on_activate_favorite),
             on_context_menu_row: Rc::clone(&self.on_context_menu_row),
             on_context_menu_favorite: Rc::clone(&self.on_context_menu_favorite),
+            on_hover_folder: Rc::clone(&self.on_hover_folder),
             on_focus_folder: Rc::clone(&self.on_focus_folder),
             on_toggle_folder: Rc::clone(&self.on_toggle_folder),
             on_select_folder_member: Rc::clone(&self.on_select_folder_member),
@@ -407,6 +420,7 @@ mod tests {
         // The observer exposes every slot the set needs.
         let _ = &callbacks.on_rail_mouse_down;
         let _ = &callbacks.on_rail_scroll_wheel;
+        let _ = &callbacks.on_hover_folder;
         let _ = &callbacks.titlebar;
         let _ = &callbacks.on_command_hover;
         let _ = &callbacks.on_command_open;

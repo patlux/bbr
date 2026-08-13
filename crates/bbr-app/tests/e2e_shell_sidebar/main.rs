@@ -476,6 +476,7 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
 mod appearance;
 mod composition;
 mod composition_geometry;
+mod reference_polish;
 mod support;
 mod u2_favorites;
 mod u2_favorites_drag;

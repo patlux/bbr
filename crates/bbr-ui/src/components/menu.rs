@@ -48,7 +48,9 @@ pub fn plus_menu_items() -> [PlusMenuItem; PLUS_MENU_ITEM_COUNT] {
         PlusMenuItem {
             id: PLUS_NEW_FOLDER_ID,
             label: "New Folder",
-            glyph: Icon::Folder,
+            // The plus-menu item shows the closed folder glyph (a folder
+            // to be created, never one carrying an open disclosure state).
+            glyph: Icon::Folder { open: false },
         },
     ]
 }

@@ -119,7 +119,7 @@ pub fn library_move_sheet(
                                 cx.stop_propagation();
                             },
                         )
-                        .child(Icon::Folder.canvas(theme, theme.density.icon()))
+                        .child(Icon::Folder { open: false }.canvas(theme, theme.density.icon()))
                         .child(
                             div()
                                 .flex_1()

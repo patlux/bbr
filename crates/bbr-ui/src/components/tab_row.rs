@@ -22,7 +22,6 @@ pub const TAB_TITLE_ID: &str = "bbr-tab-title";
 pub const TAB_CLOSE_ID: &str = "bbr-tab-close";
 pub const TAB_STATE_ID: &str = "bbr-tab-state";
 pub const TAB_PIN_ID: &str = "bbr-tab-pin";
-pub const DRAG_TICK_ID: &str = "bbr-drag-tick";
 
 /// One row's rendered identity, derived from the controller snapshot.
 #[derive(Debug, Clone, PartialEq)]
@@ -156,25 +155,9 @@ pub fn pin_control(theme: &Theme, index: usize, pinned: bool, disabled: bool) ->
         .child(Icon::Pin { pinned }.canvas_with(theme, theme.density.icon(), color))
 }
 
-/// §10.9 drag insertion tick: a 2 pt vertical accent rule at the target slot
-/// spanning the row tile. `invalid` renders the muted hairline variant so an
-/// illegal boundary drop is clearly signaled without asserting a committed
-/// target. The stable §15 id lets E2E assert the tick's presence and state.
-pub fn drag_tick(theme: &Theme, index: usize, invalid: bool) -> Stateful<Div> {
-    div()
-        .id((DRAG_TICK_ID, index))
-        .debug_selector(move || format!("{DRAG_TICK_ID}-{index}"))
-        .h(px(2.0))
-        .w_full()
-        .flex_shrink_0()
-        .bg(if invalid {
-            theme.palette.ink_faint
-        } else {
-            theme.palette.accent
-        })
-}
-
-/// §11.1 vertical tab row anatomy:
+/// §11.1 vertical tab row anatomy (the §10.9 drag insertion tick lives in
+/// its own component module [`crate::components::drag_tick`] so this row
+/// anatomy stays under the ~500-line budget):
 /// `[favicon 18] · [title flex, trunc] · [pin] · [state slot 10] ·
 /// [close hit-min.close]`, tile per §8 with a quiet selected surface and
 /// stronger title weight. The §10.2–§10.4 hover/active/selected wash paints an
@@ -344,7 +327,6 @@ mod tests {
         assert_eq!(TAB_CLOSE_ID, "bbr-tab-close");
         assert_eq!(TAB_STATE_ID, "bbr-tab-state");
         assert_eq!(TAB_PIN_ID, "bbr-tab-pin");
-        assert_eq!(DRAG_TICK_ID, "bbr-drag-tick");
     }
 
     #[test]
