@@ -156,16 +156,17 @@ impl BbrApp {
             entity.update(cx, |view, cx| view.set_row_hover(index, hovered, cx));
         });
 
-        // Reference-authoritative visible New Tab row: same staged NewTab
-        // authority as Cmd-T, no direct tab/session creation before commit.
-        // The press stops propagating: the rail's own mouse-down handler
-        // (`focus_chrome`) would otherwise run later in the same bubble and
-        // immediately reset the freshly staged NewTab mode to Inactive —
-        // the row would visibly do nothing.
+        // Reference-authoritative visible New Tab row: the exact Cmd-T
+        // path — the centered palette in staged NewTab mode, no direct
+        // tab/session creation before commit. The press stops propagating:
+        // the rail's own mouse-down handler (`focus_chrome`) would
+        // otherwise run later in the same bubble and immediately reset the
+        // freshly staged NewTab mode to Inactive — the row would visibly
+        // do nothing.
         let entity = cx.entity();
         let on_new_tab: MouseCallback = Rc::new(move |_event, window, cx| {
             cx.stop_propagation();
-            entity.update(cx, |view, cx| view.activate_new_tab(window, cx));
+            entity.update(cx, |view, cx| view.open_palette(window, cx));
         });
 
         // §11.1/§11.6: the tab list's keyboard traversal (`↑`/`↓`, `⌫`).
