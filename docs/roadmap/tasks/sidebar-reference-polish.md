@@ -74,26 +74,32 @@ Integration order:       after system-appearance-theme; favicon pipeline indepen
 
 ### Unit and contract
 
-- [ ] Density table exposes the new pitch tokens; row/pitch math is proven
-      for S/N/XL.
-- [ ] Folder row renders glyph-led anatomy with disclosure variants and
-      hover-revealed count.
-- [ ] Every curated `BbrGlyph` resolves to a drawn path; non-curated values
-      still fall back to the two-letter badge.
+- [x] Density table exposes the new pitch tokens; row/pitch math is proven
+      for S/N/XL. The row surface remains 32/36/44 pt and the exact pitch is
+      36/40/48 pt through the shared 4 pt gap authority.
+- [x] Folder row renders glyph-led anatomy with distinct closed/open variants
+      and a typed hover/focus-driven `count_revealed` state; nested rows and
+      dense extents step on the same pitch.
+- [x] Every curated `BbrGlyph` resolves to a drawn path; footer chips and the
+      space-config picker share the classifier, while only non-curated values
+      retain the two-letter badge fallback.
 
 ### Real-app E2E
 
-- [ ] Sidebar suite asserts the hairline before New Tab, quiet address/Reload
-      rest states and glyph-rendered Space chips.
-- [ ] Dense suite passes with the updated pitch constants for 500 identities,
-      including scroll-into-view exactness.
-- [ ] Organize/Spaces suites stay green: regions, drag, reorder and space
-      switching are behaviorally unchanged.
+- [x] Sidebar suite asserts the hairline before New Tab, quiet address/Reload
+      rest states and glyph-rendered Space chips: 15/15 on the final tree.
+- [x] Dense suite passes with the updated pitch constants for 500 identities,
+      including scroll-into-view exactness: 3/3 across the main and edge
+      suites on the final tree.
+- [x] Organize/Spaces suites stay green: regions, drag, reorder and space
+      switching are behaviorally unchanged. Organize passed 2/2 plus
+      Drag-Chip 4/4, Spaces passed 21/21, and Gallery passed 45/45.
 
 ### Performance
 
 - [ ] Not executed: performance execution remains blocked under the active
-      override. Scenario code, budgets and sample guards compile unchanged.
+      override. All three performance test targets compile with `--no-run`;
+      budgets, scenarios and sample guards are unchanged.
 
 ## Completion gates
 
@@ -134,12 +140,33 @@ fingerprints, findings and the smallest input needed.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: Reference-calibrated Sidebar implementation and final-tree evidence
+         complete; lane ready for serial integration.
+Commits: e1081aeb1dd63ba36883740dd295232aa619e249 fixes the normal-build
+         theme seam; 2ffc27fa8ba68d4322a4e20f7ee38eb676124eb9 implements the
+         reference anatomy and regression coverage; this documentation commit
+         records the settled contract and evidence.
+Functional evidence: cargo fmt --all -- --check; bbr-ui 147/147; bbr-browser
+         261/261; bbr app bins 282/282; bbr-testkit 30/30; bbr-gallery unit
+         catalog 148 passed / 45 ignored; fresh warning-denied bbr-ui and bbr
+         all-target Clippy; roadmap, UI-dependency, 46 script tests and
+         diff-check. Logs: /tmp/bbr-polish-commit-gates/.
+Real-app E2E: final tree passed Sidebar 15/15, Dense 3/3, Organize 2/2,
+         Drag-Chip 4/4, Spaces 21/21 and Gallery 45/45 through the host GUI
+         lock. The first Sidebar attempt was invalidated by a concurrently
+         restarted manual app; the uncontended full rerun passed. Focused
+         remediation preserved the no-target contract above the list and gave
+         the zero-height Gallery tick an explicit width authority.
+Performance evidence: execution intentionally forbidden by the active override;
+         e2e_performance, e2e_performance_full and e2e_performance_inject all
+         compile with --no-run.
+Roadmap/documentation updates: DESIGN.md §8/§11.3/§11.4/§11.11 records the
+         implemented pitch, glyph catalog, organized hairline and folder anatomy;
+         this packet records only passed evidence.
+Open blockers and non-goals: no lane blocker remains. Theme behavior, favicon,
+         media controls and mixed pinned/folder ordering remain out of scope;
+         integration and post-merge verification remain the Orchestrator's
+         serial kernel.
+Worktree state: clean committed lane on parallel/sidebar-reference-polish,
+         descended from a79ff95e8607e40b3297dca501e56a79651e28dc.
 ```
