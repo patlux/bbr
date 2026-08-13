@@ -43,7 +43,7 @@ The reference-alignment wave is active. Patrick settled on 2026-08-13: the produ
 |---|---|---|---|---|---|---|
 | RA-THEME | System-appearance production theme (light + dark) | `integrated` | lane commit `40f114f1`; merge `f7fe3d6f` | Orchestrator; exact reviewed candidate and post-merge gates complete | [system-appearance theme](../roadmap/tasks/system-appearance-theme.md) | Closed for this wave; combined post-merge evidence remains green |
 | RA-FAVICON | Real favicon pipeline | `integrated` | lane commit `e0faaa9d`; merge `a79ff95e` | Orchestrator; exact reviewed/remediated candidate and post-merge gates complete | [real favicon pipeline](../roadmap/tasks/real-favicon-pipeline.md) | Closed for this wave; favicon 3/3 and combined regression suites green |
-| RA-POLISH | Sidebar reference polish (pitch, folder anatomy, identity glyphs) | `running` | `/Users/patwoz/dev/Personal/macos/bbr-sidebar-reference-polish` (`parallel/sidebar-reference-polish`) | one exclusive workflow writer; Orchestrator commits/integrates | [sidebar reference polish](../roadmap/tasks/sidebar-reference-polish.md) | Writer settlement from clean base `a79ff95e`, then independent read-only review |
+| RA-POLISH | Sidebar reference polish (pitch, folder anatomy, identity glyphs) | `blocked` | `/Users/patwoz/dev/Personal/macos/bbr-sidebar-reference-polish` (`parallel/sidebar-reference-polish`); exact candidate remains uncommitted at base `a79ff95e` | Orchestrator; no writer active; independent code/docs review passed | [sidebar reference polish](../roadmap/tasks/sidebar-reference-polish.md) | Unlock the macOS console, then run Sidebar → Dense → Organize → Spaces → Gallery serially; rebind, commit and integrate only after all five pass |
 | RA-MEDIA | Media-session capability and sidebar media card | `planned` | none | none | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Activates after the alignment slices; capability contract lands first |
 
 Reference-alignment activation audit (2026-08-13): verified clean base
@@ -96,6 +96,35 @@ Gallery 45/45. Logs live under `/tmp/bbr-theme-postmerge` and
 canonical `just e2e` remain intentionally unexecuted under the active override.
 RA-POLISH starts from exact clean checkpoint `a79ff95e` and inherits both
 completed authorities.
+
+RA-POLISH blocked-candidate audit: two continuation writers preserved and
+completed the original uncommitted candidate without reset or restart. The
+final implementation routes row rendering, dense windows, selection visibility
+and drag slots through the shared 36/40/48 pt pitch authority; adds authored
+open/closed folder glyphs with hover/focus count reveal; adds the truthful
+organized-regions separator; exposes address/Reload rest-state evidence in both
+appearance modes; and ships the complete 14-path BBR identity catalog in the
+footer and picker. Lane-grown modules were split below the ~500-line budget.
+Independent whole-candidate review `bbr-polish-blocked-candidate-review-msqv95qn-hczmy6`
+returned `REVIEW_PASS_BLOCKED_GUI`: no code or documentation finding remains.
+Exact reviewed binding: HEAD
+`a79ff95e8607e40b3297dca501e56a79651e28dc`, status-z and sorted-status
+`b69ab6176683d9d7521db63bfd95d4b3264b7da411c3958a79172c10fdf5b27a`,
+binary diff
+`1f28aee66285eaf9160fe10eb2a3f5224ee2881ee9023da321ec88c4def04a4a`,
+untracked-path hash
+`308d1c1f714fce8e7c1593e98b3f15e78b8e6a88d8688c9e36537b070f7f2bda`.
+Non-GUI evidence is green: UI 147, Browser 261, app bins 281, testkit 30,
+Gallery 148 passed / 45 ignored; fresh warning-denied UI/app Clippy; format,
+roadmap, UI-dependencies, 46 script tests and diff-check; all three performance
+targets compile with `--no-run`. Performance execution remains forbidden. The
+only blocker is external: `IOConsoleLocked=true` remained stable during a
+bounded ten-minute poll, so the final-tree Sidebar, Dense, Organize, Spaces and
+Gallery GUI recipes are honestly unexecuted. A pre-final Sidebar run reached
+14/15 and exposed only the now-corrected single-tab fixture assumption; the
+corrected scenario compiles and awaits the unlock. No writer, Git lock or GUI
+lock holder survives. Do not materialize or integrate before the five serial
+GUI recipes pass and the exact candidate is rebound.
 
 | VS-REFERENCE | Reference-faithful light production shell | `integrated` | lane commit `9ae318ab`; merge `4d1a5343`, tree `5f2b8a04…` | Orchestrator; exact reviewed candidate, remediation and post-merge gates complete | [visual-shell reference](../roadmap/tasks/visual-shell-reference.md) | All affected GUI suites are green serially under the repository lock (Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20, Organize 6/6, Hover 3/3, Dense 3/3, Gallery 44/44) and the final optimized `visual-capture` build re-produced both 2× artifacts; Closed for this wave; performance execution, startup, canonical `just e2e`, packaging and accessibility remain honestly unpassed |
 | DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
