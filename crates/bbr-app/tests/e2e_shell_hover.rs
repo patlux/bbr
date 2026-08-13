@@ -258,6 +258,14 @@ fn shell_hover_press_focus_and_drag_semantics() {
         client
             .send_ok(&dsl::begin_tab_drag(0, 130.0, 400.0, 16.0))
             .expect("begin drag");
+        // A plain press only arms the drag (§10.9): the row stays in its
+        // selected presentation until the pointer travels the 4 pt
+        // activation distance.
+        let armed = client.snapshot().expect("armed snapshot");
+        assert_eq!(armed.tab_states[0], TabVisualState::Selected);
+        client
+            .send_ok(&dsl::move_tab_drag(0.0, 6.0))
+            .expect("activation move");
         let dragging = client.snapshot().expect("dragging snapshot");
         assert_eq!(dragging.tab_states[0], TabVisualState::Dragging);
         assert!(
