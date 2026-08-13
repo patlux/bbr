@@ -107,14 +107,27 @@ appearance modes; and ships the complete 14-path BBR identity catalog in the
 footer and picker. Lane-grown modules were split below the ~500-line budget.
 Independent whole-candidate review `bbr-polish-blocked-candidate-review-msqv95qn-hczmy6`
 returned `REVIEW_PASS_BLOCKED_GUI`: no code or documentation finding remains.
-Exact reviewed binding: HEAD
+The review originally bound HEAD
 `a79ff95e8607e40b3297dca501e56a79651e28dc`, status-z and sorted-status
 `b69ab6176683d9d7521db63bfd95d4b3264b7da411c3958a79172c10fdf5b27a`,
 binary diff
 `1f28aee66285eaf9160fe10eb2a3f5224ee2881ee9023da321ec88c4def04a4a`,
-untracked-path hash
+and untracked-path hash
 `308d1c1f714fce8e7c1593e98b3f15e78b8e6a88d8688c9e36537b070f7f2bda`.
-Non-GUI evidence is green: UI 147, Browser 261, app bins 281, testkit 30,
+A subsequent ordinary non-testkit `just run` exposed one compile-only cfg bug:
+`effective_theme_mode` lost its second parameter when the `testkit` feature was
+disabled, while its production caller still passed `None`. The lane now keeps
+the stable two-argument pure seam in both feature modes and gates only override
+use; its testkit-only hover-clear seam is likewise cfg-gated so the normal
+binary is warning-free. `cargo build -p bbr`, focused appearance tests, and
+warning-denied all-target testkit Clippy pass. Updated candidate binding:
+status-z and sorted-status
+`64a7560ebb9d464b0fe3096997c252a4a6ddba8fd9937a56c405fb1bec80a733`,
+binary diff
+`7cb9ebfd3650174ee693602873a402e3aef5417ebde02589bad786bcb6cce623`;
+HEAD and untracked-path hash are unchanged. This bounded compile remediation
+requires focused review/recheck before GUI materialization.
+Non-GUI evidence is otherwise green: UI 147, Browser 261, app bins 281, testkit 30,
 Gallery 148 passed / 45 ignored; fresh warning-denied UI/app Clippy; format,
 roadmap, UI-dependencies, 46 script tests and diff-check; all three performance
 targets compile with `--no-run`. Performance execution remains forbidden. The
