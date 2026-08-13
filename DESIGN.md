@@ -521,6 +521,10 @@ disabled UI is exempt from AA but must remain perceivable at IC.
 **Assert:** `disabled`.
 
 ### 10.9 `dragging` / `drag-target`
+A row press **arms** a drag; the dragging presentation (dragged-row state,
+insertion tick, favorites drop band, chip targets) begins only after the
+pointer travels the 4 pt activation distance. Below it the press is a
+click — nothing shifts the rail layout on a plain click.
 `dragging`: the dragged row renders at 92% opacity with `elev:2` shadow and
 a 1 pt `border.strong` outline (`dur:micro` opacity, allowed).
 `drag-target`: insertion tick = 2 pt vertical accent rule at the target

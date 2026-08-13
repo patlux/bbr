@@ -27,6 +27,11 @@ use gpui::{Context, Window};
 /// §10.9 dragging/tick/target visuals plus the E2E snapshot fields from it.
 #[derive(Debug, Clone)]
 pub struct TabDrag {
+    /// The press is armed but the pointer has not yet travelled the
+    /// activation distance: no drag presentation (tick, favorites band,
+    /// chip targets) renders for a plain click, so a click never shifts
+    /// the rail layout.
+    armed: bool,
     active: bool,
     /// The pressed row's active-space index — the dragged tab.
     source: usize,
@@ -55,6 +60,7 @@ pub struct TabDrag {
 impl Default for TabDrag {
     fn default() -> Self {
         Self {
+            armed: false,
             active: false,
             source: 0,
             start_x: 0.0,
@@ -66,9 +72,53 @@ impl Default for TabDrag {
     }
 }
 
+/// The pointer distance (points, per axis) a pressed row must travel
+/// before the armed press becomes an active drag with its §10.9
+/// presentation. Below it, the press is a click: no tick, no favorites
+/// band, no layout shift.
+pub const DRAG_ACTIVATION_DISTANCE: f32 = 4.0;
+
 impl TabDrag {
     pub fn is_active(&self) -> bool {
         self.active
+    }
+
+    /// The press is armed but the activation distance is not yet exceeded.
+    pub fn is_armed(&self) -> bool {
+        self.armed
+    }
+
+    /// Arm a press on row `source` at the pointer position: the drag state
+    /// records the anchor but stays inactive (no presentation) until the
+    /// pointer travels [`DRAG_ACTIVATION_DISTANCE`].
+    pub fn arm(&mut self, source: usize, position_x: f32, position_y: f32, press_in_row: f32) {
+        *self = Self {
+            armed: true,
+            active: false,
+            source,
+            start_x: position_x,
+            start_y: position_y,
+            press_in_row,
+            target: None,
+            valid: false,
+        };
+    }
+
+    /// Whether a pointer position exceeds the activation distance from the
+    /// armed press anchor.
+    pub fn activation_exceeded(&self, position_x: f32, position_y: f32) -> bool {
+        (position_x - self.start_x).abs() >= DRAG_ACTIVATION_DISTANCE
+            || (position_y - self.start_y).abs() >= DRAG_ACTIVATION_DISTANCE
+    }
+
+    /// Promote the armed press into the active drag (the §10.9
+    /// presentation begins; the target starts at the source slot).
+    pub fn activate(&mut self) {
+        debug_assert!(self.armed, "activate requires an armed press");
+        self.armed = false;
+        self.active = true;
+        self.target = Some(DragTarget::Tab { slot: self.source });
+        self.valid = true;
     }
 
     /// The dragged row's active-space index.
@@ -77,16 +127,17 @@ impl TabDrag {
     }
 
     /// The window x the drag began at (the E2E seam anchors its moves on
-    /// it).
+    /// it). Available while armed too, so the seam's first move can cross
+    /// the activation distance from the true press anchor.
     #[cfg(feature = "testkit")]
     pub fn start_x(&self) -> Option<f32> {
-        self.active.then_some(self.start_x)
+        (self.active || self.armed).then_some(self.start_x)
     }
 
     /// The window y the drag began at (the E2E seam anchors its moves on it).
     #[cfg(feature = "testkit")]
     pub fn start_y(&self) -> Option<f32> {
-        self.active.then_some(self.start_y)
+        (self.active || self.armed).then_some(self.start_y)
     }
 
     /// Replace the press anchor after `begin` (E2E seam). No resolution has
@@ -126,19 +177,15 @@ impl TabDrag {
         self.valid
     }
 
-    /// Begin a drag on row `source` at the pointer position. `press_in_row`
-    /// is the press's y within the source row surface (0 at the top edge,
-    /// `row` at the bottom), the anchor the tab/favorites geometry is
-    /// resolved from; callers pass the row surface center when the layout
-    /// does not expose the true offset.
+    /// Test-only immediate begin: arm + activate in one step (the unit
+    /// tests exercise the resolution math without the activation-distance
+    /// pointer travel; production always arms first). `press_in_row` is
+    /// the press's y within the source row surface (0 at the top edge,
+    /// `row` at the bottom).
+    #[cfg(test)]
     pub fn begin(&mut self, source: usize, position_x: f32, position_y: f32, press_in_row: f32) {
-        self.active = true;
-        self.source = source;
-        self.start_x = position_x;
-        self.start_y = position_y;
-        self.press_in_row = press_in_row;
-        self.target = Some(DragTarget::Tab { slot: source });
-        self.valid = true;
+        self.arm(source, position_x, position_y, press_in_row);
+        self.activate();
     }
 
     /// Resolve the drag target for a new pointer position and update the
@@ -211,11 +258,13 @@ impl BbrApp {
         self.tab_drag.set_press_in_row(press_in_row);
     }
 
-    /// Production pointer entry: mouse-down on a tab row starts a drag of
+    /// Production pointer entry: mouse-down on a tab row **arms** a drag of
     /// that row (the dragged tab is the row under the pointer, never the
     /// active tab unless they coincide). Chrome focus moves to the tab list
-    /// (the drag is a chrome interaction); the target starts at the source
-    /// slot and follows the pointer on move.
+    /// (the drag is a chrome interaction). The drag presentation (tick,
+    /// favorites band, chip targets) begins only once the pointer travels
+    /// [`DRAG_ACTIVATION_DISTANCE`] — a plain click never shifts the rail
+    /// layout.
     pub fn begin_tab_drag(
         &mut self,
         event: &gpui::MouseDownEvent,
@@ -231,7 +280,7 @@ impl BbrApp {
         // the §8 pitch; the anchor stays a surface measurement (`row() / 2`),
         // while the slot geometry resolves in pitch units.
         let row_surface = self.theme().density.row();
-        self.tab_drag.begin(
+        self.tab_drag.arm(
             index,
             f32::from(event.position.x),
             f32::from(event.position.y),
@@ -251,7 +300,7 @@ impl BbrApp {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if !self.tab_drag.is_active() {
+        if !self.tab_drag.is_active() && !self.tab_drag.is_armed() {
             return;
         }
         if event.pressed_button != Some(gpui::MouseButton::Left) {
@@ -259,7 +308,17 @@ impl BbrApp {
             cx.notify();
             return;
         }
-        self.resolve_tab_drag(f32::from(event.position.x), f32::from(event.position.y));
+        let x = f32::from(event.position.x);
+        let y = f32::from(event.position.y);
+        if self.tab_drag.is_armed() {
+            // Below the activation distance the press stays a click: no
+            // presentation, no layout shift.
+            if !self.tab_drag.activation_exceeded(x, y) {
+                return;
+            }
+            self.tab_drag.activate();
+        }
+        self.resolve_tab_drag(x, y);
         cx.notify();
     }
 
@@ -323,6 +382,12 @@ impl BbrApp {
     /// a mutation was committed (a no-op drop — own space, own slot,
     /// invalid zone, or no target — reports `false`).
     pub(crate) fn finish_tab_drag(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
+        if self.tab_drag.is_armed() {
+            // The press never exceeded the activation distance: a click,
+            // not a drag — nothing to commit.
+            self.tab_drag.clear();
+            return false;
+        }
         if !self.tab_drag.is_active() {
             return false;
         }
@@ -342,7 +407,7 @@ impl BbrApp {
     /// committed, and chrome focus stays in the tab list (the drag is a
     /// chrome interaction).
     pub fn cancel_tab_drag(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if self.tab_drag.is_active() {
+        if self.tab_drag.is_active() || self.tab_drag.is_armed() {
             self.tab_drag.clear();
             self.focus_tab_list(window, cx);
             cx.notify();
