@@ -120,7 +120,7 @@ fn glyph_geometry_stays_inside_its_box() {
         let (reload_radius, reload_head) = reload_geometry(size);
         assert!(reload_radius <= size / 2.0, "reload radius fits");
         assert!(
-            reload_radius * 0.866 + reload_head <= size / 2.0,
+            reload_radius + reload_head <= size / 2.0,
             "reload arrowhead fits at {size}pt"
         );
         for expanded in [true, false] {

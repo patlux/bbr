@@ -372,7 +372,11 @@ impl Icon {
             Icon::Sidebar { expanded } => {
                 let (half, divider) = sidebar_geometry(size, expanded);
                 // The frame: a rounded-square ring like the chassis mark.
-                paint_rounded_square_ring(window, cx, cy, half, 4.0, stroke, color);
+                // The corner radius scales with the glyph so the small
+                // titlebar frame keeps square §7 corners instead of
+                // ballooning at a fixed 4 px.
+                let corner = (size * 0.14).min(4.0);
+                paint_rounded_square_ring(window, cx, cy, half, corner, stroke, color);
                 // The vertical divider: near the left edge when collapsed,
                 // toward the center when expanded.
                 let mut path = PathBuilder::stroke(stroke);
@@ -399,25 +403,40 @@ impl Icon {
             }
             Icon::Reload => {
                 let (radius, head) = reload_geometry(size);
-                // A near-full clockwise arc from the top, ending 60° past
-                // it on the right (the reload ring with the top-right gap).
-                let end_x = cx + radius * 0.866;
-                let end_y = cy - radius * 0.5;
+                // The reload ring: a 300° clockwise stroke from 60° past
+                // the top back around to the top — the gap spans the
+                // top-right 60°, exactly like the reference glyph. Drawn
+                // as two ≤180° arcs so the arc flags are unambiguous.
+                let at = |clock_deg: f32| {
+                    let rad = clock_deg.to_radians();
+                    (cx + radius * rad.sin(), cy - radius * rad.cos())
+                };
+                let (start_x, start_y) = at(60.0);
+                let (mid_x, mid_y) = at(240.0);
+                let tip_x = cx;
+                let tip_y = cy - radius;
                 let mut path = PathBuilder::stroke(stroke);
-                path.move_to(point(px(cx), px(cy - radius)));
+                path.move_to(point(px(start_x), px(start_y)));
                 path.arc_to(
                     point(px(radius), px(radius)),
                     px(0.0),
+                    false,
                     true,
-                    true,
-                    point(px(end_x), px(end_y)),
+                    point(px(mid_x), px(mid_y)),
                 );
-                // The arrowhead at the arc end, pointing in the travel
-                // direction (down-right).
-                path.move_to(point(px(end_x - head), px(end_y)));
-                path.line_to(point(px(end_x), px(end_y)));
-                path.move_to(point(px(end_x), px(end_y - head)));
-                path.line_to(point(px(end_x), px(end_y)));
+                path.arc_to(
+                    point(px(radius), px(radius)),
+                    px(0.0),
+                    false,
+                    true,
+                    point(px(tip_x), px(tip_y)),
+                );
+                // The arrowhead at the top end: a V opening backward along
+                // the stroke, pointing right — the clockwise travel
+                // direction at the top of the ring.
+                path.move_to(point(px(tip_x - head), px(tip_y - head)));
+                path.line_to(point(px(tip_x), px(tip_y)));
+                path.line_to(point(px(tip_x - head), px(tip_y + head)));
                 paint_path(window, path, color);
             }
             Icon::Bbr(glyph) => {

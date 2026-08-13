@@ -77,8 +77,11 @@ pub fn paint_identity(
     let cx = f32::from(bounds.center().x);
     let cy = f32::from(bounds.center().y);
     // The glyph half-extent: every identity glyph stays inside the tile
-    // (the shared `h` convention below keeps the widest arm inside the box).
-    let h = size * 0.28;
+    // (the shared `h` convention below keeps the widest arm inside the
+    // box). 0.34 renders the identity at the reference chip weight — the
+    // widest arm (±h) plus the §7 stroke stays inside the tile at every
+    // shipped size.
+    let h = size * 0.34;
     match glyph {
         BbrGlyph::Code => paint_code(window, stroke, color, cx, cy, h),
         BbrGlyph::Terminal => paint_terminal(window, stroke, color, cx, cy, h),

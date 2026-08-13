@@ -63,10 +63,11 @@ pub fn nav_arrow_geometry(size: f32) -> (f32, f32) {
 }
 
 /// Reload glyph (the §11.14 titlebar control): (arc radius, arrowhead
-/// half-arm). A near-full clockwise arc with the arrowhead at the end
-/// pointing in the travel direction — drawn, never a Unicode substitute.
+/// half-arm). A 300° clockwise ring ending at the top (the gap spans the
+/// top-right 60°) with the arrowhead at the top end pointing in the
+/// travel direction — drawn, never a Unicode substitute.
 pub fn reload_geometry(size: f32) -> (f32, f32) {
-    (size * 0.34, size * 0.12)
+    (size * 0.32, size * 0.11)
 }
 
 /// Sidebar toggle glyph (§11.14): (frame half-side, divider x-offset from
@@ -87,14 +88,15 @@ pub fn chassis_radii(size: f32) -> (f32, f32) {
 
 /// Downloads arrow-into-tray geometry: (stem half-length, arrowhead
 /// half-arm, tray half-width, tray base offset below center, tray side
-/// length).
+/// length). Calibrated to the reference footer glyph: a clearly readable
+/// arrow dropping into an open tray with visible side walls.
 pub fn downloads_geometry(size: f32) -> (f32, f32, f32, f32, f32) {
     (
-        size * 0.26,
-        size * 0.10,
-        size * 0.28,
         size * 0.30,
-        size * 0.08,
+        size * 0.14,
+        size * 0.32,
+        size * 0.34,
+        size * 0.12,
     )
 }
 
@@ -186,13 +188,16 @@ mod tests {
             let (head, stem) = nav_arrow_geometry(size);
             assert!(head <= size / 2.0, "nav head fits at {size}pt");
             assert!(stem + head <= size / 2.0, "nav stem fits at {size}pt");
-            // Reload (§11.14): the arc radius and the arrowhead extent fit.
+            // Reload (§11.14): the arc radius fits and the arrowhead's
+            // backward arms (at the top end, ±head around the tip) stay
+            // inside the box.
             let (radius, head) = reload_geometry(size);
             assert!(radius + stroke <= size / 2.0, "reload arc fits at {size}pt");
             assert!(
-                radius * 0.866 + head + stroke <= size / 2.0,
+                radius + head + stroke <= size / 2.0,
                 "reload arrowhead fits at {size}pt"
             );
+            assert!(head < radius, "reload arrowhead shorter than the arc");
             // Sidebar toggle (§11.14): the frame and both divider offsets
             // stay inside the box.
             for expanded in [true, false] {
