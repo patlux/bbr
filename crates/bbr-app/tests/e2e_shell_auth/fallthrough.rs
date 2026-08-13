@@ -42,7 +42,9 @@ fn tab_without_sheet_falls_through_to_the_shell_contract() {
     }
 
     let (_fixtures, page_one, _page_two) = auth_fixtures();
-    let (mut harness, socket, token) = spawn_harness_shown("auth-tab-fallthrough", &page_one);
+    // Short tag: the socket path must stay below the 104-byte `SUN_LEN`
+    // macOS limit (TMPDIR + `bbr-st-<tag>-<pid>/profile/bbr-test.sock`).
+    let (mut harness, socket, token) = spawn_harness_shown("auth-fall", &page_one);
 
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
