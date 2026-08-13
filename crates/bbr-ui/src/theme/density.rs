@@ -18,13 +18,41 @@ pub enum Density {
 }
 
 impl Density {
-    /// §8 `density:row` — uniform row height per density (S 32 / N 36 /
-    /// XL 44), so scroll math stays deterministic.
+    /// §8 `density:row` — uniform row surface height per density (S 32 /
+    /// N 36 / XL 44), so scroll math stays deterministic.
     pub fn row(self) -> Pixels {
         px(match self {
             Density::Small => 32.0,
             Density::Normal => 36.0,
             Density::ExtraLarge => 44.0,
+        })
+    }
+
+    /// §8 `density:gap` — the reference-calibrated inter-row gap between
+    /// row surfaces. Normal density ships the reference's 4 pt gap; the
+    /// S/XL families keep the same 4 pt gap so the pitch follows the §8
+    /// row scale proportionally (S 36 / N 40 / XL 48). The gap is the
+    /// interstitial rhythm rows step on; hit minima and row surfaces are
+    /// unchanged (§8 constraints).
+    pub fn gap(self) -> Pixels {
+        px(match self {
+            Density::Small | Density::Normal | Density::ExtraLarge => 4.0,
+        })
+    }
+
+    /// §8 `density:pitch` — the row step = surface + gap (S 36 / N 40 /
+    /// XL 48): the layout pitch every regular/pinned/folder/nested/New Tab
+    /// row steps on, and the exact step the dense scroll math, scroll
+    /// offsets, drag-target geometry and the testkit snapshot use.
+    /// [`Density::row`] stays the painted row surface; [`Density::pitch`]
+    /// is the row pitch. The dense bounded-window rendering keeps its
+    /// exact math under the new constant pitch without weakening any
+    /// bound (§11.6).
+    pub fn pitch(self) -> Pixels {
+        px(match self {
+            Density::Small => 36.0,
+            Density::Normal => 40.0,
+            Density::ExtraLarge => 48.0,
         })
     }
 
@@ -211,5 +239,31 @@ mod tests {
         assert_eq!(Density::Small.density_radius(), Radius.small());
         assert_eq!(Density::Normal.density_radius(), Radius.medium());
         assert_eq!(Density::ExtraLarge.density_radius(), Radius.large());
+    }
+
+    #[test]
+    fn pitch_is_surface_plus_gap_for_every_density() {
+        // §8 polish: `density:pitch` = `density:row` + `density:gap` for
+        // every density — the normal rail ships the reference's ~40 pt
+        // pitch (36 pt surfaces separated by 4 pt gaps); S/XL keep the
+        // same 4 pt gap so the pitch follows the §8 row scale
+        // proportionally (S 36 / N 40 / XL 48). The row surface and the
+        // hit minima never change; only the inter-row pitch does.
+        for density in [Density::Small, Density::Normal, Density::ExtraLarge] {
+            assert_eq!(
+                density.pitch(),
+                px(f32::from(density.row()) + f32::from(density.gap())),
+                "{density:?} pitch = surface + gap"
+            );
+        }
+        assert_eq!(Density::Normal.gap(), px(4.0));
+        assert_eq!(Density::Small.gap(), px(4.0));
+        assert_eq!(Density::ExtraLarge.gap(), px(4.0));
+        assert_eq!(Density::Small.pitch(), px(36.0));
+        assert_eq!(Density::Normal.pitch(), px(40.0));
+        assert_eq!(Density::ExtraLarge.pitch(), px(48.0));
+        assert_eq!(Density::Normal.row(), px(36.0), "surface stays 36 pt");
+        assert_eq!(Density::Small.row(), px(32.0));
+        assert_eq!(Density::ExtraLarge.row(), px(44.0));
     }
 }

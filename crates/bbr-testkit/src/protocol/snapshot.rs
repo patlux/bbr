@@ -336,6 +336,10 @@ pub enum SemanticRole {
     Status,
     /// The sidebar resize divider (`bbr-sidebar-divider`).
     Divider,
+    /// The §11.4 organized-regions hairline (`bbr-organized-hairline`):
+    /// the 1 px structural rule between the organized Pinned/Folders area
+    /// and the New Tab row.
+    Separator,
     /// The glass content area: native slot, empty pane, or crash panel.
     Content,
     /// A row's favicon / monogram tile (`bbr-tab-favicon-*`).
@@ -430,12 +434,42 @@ pub struct PaneRectSnapshot {
     pub rect: [f32; 4],
 }
 
+/// §11.5 address rest fill — the pill's rest surface is the translucent
+/// borderless token pair (white-translucent on dark chrome,
+/// black-translucent on light chrome); never a bordered field, never a
+/// focus ring at any time. The variant reports the effective chrome
+/// polarity of the §11.5 token pair so E2E asserts the rest state in both
+/// appearance modes semantically (no pixel reads).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AddressRestFill {
+    /// White-translucent wash over dark chrome (`palette.address_fill`).
+    #[default]
+    TranslucentOnDark,
+    /// Black-translucent wash over light chrome (`palette.address_fill`).
+    TranslucentOnLight,
+}
+
+/// §11.14 Reload rest surface — the control rests with no surface
+/// (transparent); it gains only the §10.2 hover wash and the §10.3 pressed
+/// wash on interaction. Reported so E2E proves the transparent rest state
+/// semantically.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReloadRestSurface {
+    #[default]
+    Transparent,
+}
+
 /// §11.14 the native safe-titlebar layout guide as plain wire data (task
 /// packet `titlebar-navigation-controls`): the titlebar strip height, the
 /// traffic-light region (window coordinates, top-left origin), the sidebar
-/// collapse state, and the genuine navigation availability of the focused
-/// pane. All values are what the row actually renders (the app reads the
-/// live window; nothing is hardcoded).
+/// collapse state, the genuine navigation availability of the focused
+/// pane, and the typed §11.5/§11.14 rest-state evidence (address
+/// translucent borderless fill, Reload transparent rest, real
+/// hovered/pressed presentation state). All values are what the row
+/// actually renders (the app reads the live window; nothing is
+/// hardcoded).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct TitlebarSnapshot {
@@ -455,6 +489,20 @@ pub struct TitlebarSnapshot {
     pub can_go_forward: bool,
     /// Reload is enabled while the focused pane has a live session.
     pub can_reload: bool,
+    /// §11.5 rest evidence: the address pill's translucent borderless fill
+    /// token pair, reported by effective chrome polarity (follows the
+    /// §15 theme mode; asserted in both appearance modes).
+    pub address_rest_fill: AddressRestFill,
+    /// §11.14 rest evidence: the Reload control's rest surface is
+    /// transparent — no raised surface, §10.2/§10.3 washes only on
+    /// interaction.
+    pub reload_rest: ReloadRestSurface,
+    /// §11.14 presentation state: the pointer hovers the Reload control
+    /// (§10.2 wash active). Real titlebar-model state, not synthesized.
+    pub reload_hovered: bool,
+    /// §11.14 presentation state: the primary button is down on Reload
+    /// (§10.3 pressed wash active). Real titlebar-model state.
+    pub reload_pressed: bool,
 }
 
 impl Default for TitlebarSnapshot {
@@ -466,6 +514,10 @@ impl Default for TitlebarSnapshot {
             can_go_back: false,
             can_go_forward: false,
             can_reload: false,
+            address_rest_fill: AddressRestFill::TranslucentOnDark,
+            reload_rest: ReloadRestSurface::Transparent,
+            reload_hovered: false,
+            reload_pressed: false,
         }
     }
 }

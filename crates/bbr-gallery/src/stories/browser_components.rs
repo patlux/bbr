@@ -137,9 +137,12 @@ pub fn render_tab_row(ctx: &StoryContext) -> AnyElement {
         .collect();
 
     // §10.9 drag ticks: the legal accent tick and the clamped-invalid
-    // muted hairline tick at stable ids after the row families.
-    let legal_tick = drag_tick(theme, DRAG_TICK_LEGAL_INDEX, false);
-    let invalid_tick = drag_tick(theme, DRAG_TICK_INVALID_INDEX, true);
+    // muted hairline tick at stable ids after the row families. The
+    // standalone story renders mid-list ticks (`first: false`); the
+    // slot-0 top-of-block anchor is covered by the production tabs
+    // render and the organize E2E.
+    let legal_tick = drag_tick(theme, DRAG_TICK_LEGAL_INDEX, false, false);
+    let invalid_tick = drag_tick(theme, DRAG_TICK_INVALID_INDEX, true, false);
     let ticks = div()
         .flex()
         .flex_col()

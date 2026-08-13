@@ -154,8 +154,8 @@ impl BbrApp {
             window,
             cx,
         );
-        let row_h = super::drag_target::tab_row_h(&self.theme());
-        self.set_tab_drag_press_in_row(row_h / 2.0);
+        let row_surface = self.theme().density.row();
+        self.set_tab_drag_press_in_row(f32::from(row_surface) / 2.0);
         self.on_tab_drag_move(
             &MouseMoveEvent {
                 position: release,

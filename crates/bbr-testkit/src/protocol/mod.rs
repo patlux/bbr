@@ -31,13 +31,14 @@ pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
 pub use request::{Request, SavedPagesLibraryCollectionOp};
 pub use snapshot::{
-    AuthSnapshot, ChipCompanionSnapshot, CommandResultSnapshot, CommandResultState, CommandSurface,
-    ContentGestureSnapshot, ContextMenuItemSnapshot, ContextMenuNativeSnapshot,
-    ContextMenuSnapshot, DenseListSnapshot, DownloadGroup, DownloadMachineState, DownloadRowAction,
-    DownloadRowSnapshot, DownloadsPanelSnapshot, ErrorSurfaceCategory, ErrorSurfaceSnapshot,
-    FavoriteTileSnapshot, FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts,
-    NewWindowSnapshot, PaneLayoutSnapshot, PaneRectSnapshot, PortalSnapshot, PreviewSnapshot,
-    PreviewZOrder, ProfileSnapshot, RestoreDisposition, SavedPagesCollectionSnapshot,
+    AddressRestFill, AuthSnapshot, ChipCompanionSnapshot, CommandResultSnapshot,
+    CommandResultState, CommandSurface, ContentGestureSnapshot, ContextMenuItemSnapshot,
+    ContextMenuNativeSnapshot, ContextMenuSnapshot, DenseListSnapshot, DownloadGroup,
+    DownloadMachineState, DownloadRowAction, DownloadRowSnapshot, DownloadsPanelSnapshot,
+    ErrorSurfaceCategory, ErrorSurfaceSnapshot, FavoriteTileSnapshot, FindSnapshot,
+    FolderRowSnapshot, GlobalTabSnapshot, LifecycleCounts, NewWindowSnapshot, PaneLayoutSnapshot,
+    PaneRectSnapshot, PortalSnapshot, PreviewSnapshot, PreviewZOrder, ProfileSnapshot,
+    ReloadRestSurface, RestoreDisposition, SavedPagesCollectionSnapshot,
     SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot, SemanticNode, SemanticRole, Snapshot,
     SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceSnapshot,
     SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot,
@@ -617,6 +618,7 @@ mod tests {
                 space: TestSpaceId(2),
                 title: "Default".into(),
                 identity: "code".into(),
+                identity_kind: "glyph".into(),
                 theme: "cobalt".into(),
                 selected: true,
                 drag_target: false,
@@ -626,6 +628,7 @@ mod tests {
                 space: TestSpaceId(5),
                 title: "Reading".into(),
                 identity: "book".into(),
+                identity_kind: "glyph".into(),
                 theme: "pine".into(),
                 selected: false,
                 drag_target: false,
@@ -636,20 +639,22 @@ mod tests {
         assert_eq!(
             json,
             json!([
-                {"space":2,"title":"Default","identity":"code","theme":"cobalt","selected":true,"drag_target":false,"companion":null},
-                {"space":5,"title":"Reading","identity":"book","theme":"pine","selected":false,"drag_target":false,"companion":null}
+                {"space":2,"title":"Default","identity":"code","identity_kind":"glyph","theme":"cobalt","selected":true,"drag_target":false,"companion":null},
+                {"space":5,"title":"Reading","identity":"book","identity_kind":"glyph","theme":"pine","selected":false,"drag_target":false,"companion":null}
             ])
         );
         let decoded: Vec<SpaceChipSnapshot> = serde_json::from_value(json).unwrap();
         assert_eq!(decoded, chips);
         // Exactly one chip carries the active-space selection.
         assert_eq!(chips.iter().filter(|c| c.selected).count(), 1);
-        // An older client omitting `theme` still deserializes (empty name).
+        // An older client omitting `theme`/`identity_kind` still
+        // deserializes (empty names).
         let legacy = serde_json::from_value::<SpaceChipSnapshot>(json!(
             {"space":2,"title":"Default","identity":"code","selected":true}
         ))
         .unwrap();
         assert_eq!(legacy.theme, "");
+        assert_eq!(legacy.identity_kind, "");
     }
 
     /// The resolved appearance evidence round-trips as plain data: the
@@ -680,6 +685,58 @@ mod tests {
         );
         let decoded: SpaceAppearanceSnapshot = serde_json::from_value(json).unwrap();
         assert_eq!(decoded, appearance);
+    }
+
+    /// The §11.14/§11.5 rest-state evidence round-trips as plain data: the
+    /// native safe-area guide, navigation availability, the typed address
+    /// rest fill (translucent borderless token pair by chrome polarity)
+    /// and Reload rest surface (transparent), plus the real
+    /// hovered/pressed presentation state. An older client omitting the
+    /// new fields still deserializes (serde defaults).
+    #[test]
+    fn titlebar_snapshot_round_trips_rest_state_evidence() {
+        use crate::protocol::{AddressRestFill, ReloadRestSurface, TitlebarSnapshot};
+        let titlebar = TitlebarSnapshot {
+            safe_area_height: 28.0,
+            traffic_lights: [12.0, 8.0, 72.0, 16.0],
+            sidebar_collapsed: false,
+            can_go_back: true,
+            can_go_forward: false,
+            can_reload: true,
+            address_rest_fill: AddressRestFill::TranslucentOnDark,
+            reload_rest: ReloadRestSurface::Transparent,
+            reload_hovered: true,
+            reload_pressed: false,
+        };
+        let json = serde_json::to_value(&titlebar).unwrap();
+        assert_eq!(
+            json,
+            json!({
+                "safe_area_height":28.0,
+                "traffic_lights":[12.0,8.0,72.0,16.0],
+                "sidebar_collapsed":false,
+                "can_go_back":true,
+                "can_go_forward":false,
+                "can_reload":true,
+                "address_rest_fill":"translucent_on_dark",
+                "reload_rest":"transparent",
+                "reload_hovered":true,
+                "reload_pressed":false
+            })
+        );
+        let decoded: TitlebarSnapshot = serde_json::from_value(json).unwrap();
+        assert_eq!(decoded, titlebar);
+        // An older client omitting the rest-state fields still
+        // deserializes to the documented defaults: translucent-on-dark
+        // fill, transparent Reload rest, and no hover/press.
+        let legacy = serde_json::from_value::<TitlebarSnapshot>(json!(
+            {"safe_area_height":28.0,"sidebar_collapsed":false,"can_reload":true}
+        ))
+        .unwrap();
+        assert_eq!(legacy.address_rest_fill, AddressRestFill::TranslucentOnDark);
+        assert_eq!(legacy.reload_rest, ReloadRestSurface::Transparent);
+        assert!(!legacy.reload_hovered);
+        assert!(!legacy.reload_pressed);
     }
 
     /// The §11.3 strip scroll evidence round-trips as plain data: the raw

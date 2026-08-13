@@ -17,11 +17,12 @@
 //! 4. Identity row — `bbr-space-config-identity-label` with the two
 //!    curated families: `bbr-space-config-emoji-<index>` per [`ALLOWED_EMOJI`]
 //!    scalar and `bbr-space-config-glyph-<name>` per [`BbrGlyph`] catalog
-//!    entry. Every option renders its canonical string form (the emoji
-//!    scalar or the glyph label), exactly like the §11.3 footer chip; the
-//!    selected identity carries the accent outline + selection tint, so
-//!    identity is never communicated by selection color alone (the non-
-//!    selected options remain labeled).
+//!    entry. Emoji options render the scalar directly; glyph options render
+//!    the drawn §7 path next to their label. The two-letter badge is the
+//!    non-curated fallback and never appears in the picker — only curated
+//!    values exist here. The selected identity carries the accent outline
+//!    plus the selection tint, so identity is never communicated by
+//!    selection color alone (the non-selected options remain labeled).
 //! 5. Actions — `bbr-space-config-cancel` (Cancel: keeps the created
 //!    Space and its valid defaults) and `bbr-space-config-done` (Done:
 //!    commit the rename + appearance for the exact bound SpaceId).
@@ -34,8 +35,8 @@
 
 use bbr_domain::{BbrGlyph, SpaceIdentity, SpaceTheme};
 use gpui::{
-    div, prelude::*, px, AnyElement, App, Div, FocusHandle, MouseButton, MouseDownEvent, Stateful,
-    Styled, Window,
+    div, prelude::*, px, AnyElement, App, Div, FocusHandle, MouseButton, MouseDownEvent,
+    SharedString, Stateful, Styled, Window,
 };
 
 use crate::icons::Icon;
@@ -361,9 +362,11 @@ fn identity_row(theme: &Theme, model: &SpaceConfigModel, callbacks: &SpaceConfig
 }
 
 /// One identity option: a bounded rounded tile carrying the canonical
-/// identity string (the emoji scalar or the glyph label). The selected
-/// option carries the §9 accent outline + selection tint; the label is the
-/// non-color companion, so selection is never color-only.
+/// identity rendering — the curated emoji scalar, or the curated glyph's
+/// drawn §7 path next to its label (the badge is never used in the picker:
+/// only curated values exist here). The selected option carries the §9
+/// accent outline + selection tint; the label is the non-color companion,
+/// so selection is never color-only.
 fn identity_option(
     theme: &Theme,
     id: String,
@@ -375,6 +378,28 @@ fn identity_option(
     let p = theme.palette;
     let label = label.to_string();
     let id_capture = id.clone();
+    let content: AnyElement = match identity.clone() {
+        SpaceIdentity::Emoji(emoji) => div()
+            .text_size(theme.type_.label.size)
+            .font_weight(theme.type_.label.weight)
+            .text_color(if selected { p.ink } else { p.ink_secondary })
+            .child(SharedString::from(emoji.as_str().to_owned()))
+            .into_any(),
+        SpaceIdentity::Glyph(glyph) => div()
+            .flex()
+            .flex_row()
+            .items_center()
+            .gap(Spacing::sp1())
+            .child(crate::icons::Icon::Bbr(glyph).canvas(theme, theme.density.icon()))
+            .child(
+                div()
+                    .text_size(theme.type_.label.size)
+                    .font_weight(theme.type_.label.weight)
+                    .text_color(if selected { p.ink } else { p.ink_secondary })
+                    .child(label.clone()),
+            )
+            .into_any(),
+    };
     div()
         .id(id.clone())
         .debug_selector(move || id.clone())
@@ -396,13 +421,7 @@ fn identity_option(
                 on_select(identity.clone(), window, cx)
             },
         )
-        .child(
-            div()
-                .text_size(theme.type_.label.size)
-                .font_weight(theme.type_.label.weight)
-                .text_color(if selected { p.ink } else { p.ink_secondary })
-                .child(label),
-        )
+        .child(content)
 }
 
 /// The action row: `bbr-space-config-cancel` (keeps the created Space and

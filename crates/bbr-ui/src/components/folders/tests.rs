@@ -7,6 +7,7 @@ fn rows() -> Vec<FolderRowSpec> {
             title: "Work".into(),
             count: 2,
             expanded: false,
+            reveal_count: false,
         },
         FolderRowSpec {
             index: 1,
@@ -14,6 +15,7 @@ fn rows() -> Vec<FolderRowSpec> {
             title: "Reading".into(),
             count: 0,
             expanded: false,
+            reveal_count: false,
         },
     ]
 }
@@ -71,6 +73,19 @@ fn folder_rows_carry_counts_and_expansion() {
     assert_eq!(rows[1].title, "Reading");
     assert_eq!(rows[1].count, 0);
     assert!(!rows[1].expanded);
+}
+
+#[test]
+fn folder_count_reveal_is_hover_or_focus_driven() {
+    // §11.11: the count paints only while the pointer hovers the row or the
+    // row is the keyboard focus anchor; at rest every count stays quiet
+    // (the id remains in the tree either way).
+    let mut rows = rows();
+    assert!(!rows[0].reveal_count, "quiet at rest");
+    assert!(!rows[1].reveal_count);
+    rows[0].reveal_count = true;
+    assert!(rows[0].reveal_count, "hovered/focused row reveals");
+    assert!(!rows[1].reveal_count, "sibling stays quiet");
 }
 
 #[test]

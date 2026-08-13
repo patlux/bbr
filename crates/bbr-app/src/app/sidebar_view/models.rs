@@ -46,10 +46,29 @@ impl BbrApp {
         if rows.is_empty() {
             return None;
         }
+        let focused = self.u2.folders_handle.is_focused(window);
+        // §11.11 focus-reveal: while the folders region genuinely owns
+        // chrome focus, the keyboard anchor row's `type:meta` count stays
+        // revealed (the anchor is truthful — the exact row the region's
+        // keyboard traversal keys on). When focus leaves the region, only
+        // the pointer hover reveals. `u2_rail_data` computed the hover
+        // half; this adds the focused half with the live window.
+        let rows = if focused {
+            let anchor = self.u2.folder_focus;
+            rows.iter()
+                .map(|row| {
+                    let mut row = row.clone();
+                    row.reveal_count = row.reveal_count || anchor == Some(row.id);
+                    row
+                })
+                .collect()
+        } else {
+            rows.to_vec()
+        };
         Some(FoldersModel {
-            rows: rows.to_vec(),
+            rows,
             members: members.to_vec(),
-            focused: self.u2.folders_handle.is_focused(window),
+            focused,
         })
     }
 
@@ -63,9 +82,12 @@ impl BbrApp {
         let browser = self.controller.snapshot();
         let pinned = crate::shell::pinned_count(&browser.tabs);
         let regular = &browser.tabs[pinned..];
-        let row_h = theme.density.row();
+        // §8 pitch: the regular region's rows render at surface + gap
+        // (`density:pitch`), so the dense window, the scroll anchors and
+        // the spacer extents all step in exact pitch units (§11.6).
+        let pitch = theme.density.pitch();
         let offset_y = self.dense_scroll.offset().y;
-        let anchor = crate::dense::anchor_from_offset(offset_y, row_h, regular.len());
+        let anchor = crate::dense::anchor_from_offset(offset_y, pitch, regular.len());
         let row_window = crate::dense::window_for(anchor, regular.len());
         let drag_source = self.tab_drag.source();
         let pinned_rows = self.row_visuals(&browser.tabs[..pinned], drag_source);
@@ -84,8 +106,8 @@ impl BbrApp {
         TabsModel {
             pinned: pinned_rows,
             window: window_rows,
-            scroll_top: crate::dense::scroll_top_for_anchor(row_window.start, row_h),
-            scroll_bottom: (regular.len().saturating_sub(row_window.end)) as f32 * f32::from(row_h),
+            scroll_top: crate::dense::scroll_top_for_anchor(row_window.start, pitch),
+            scroll_bottom: (regular.len().saturating_sub(row_window.end)) as f32 * f32::from(pitch),
             tick,
             tick_valid,
             list_focused,

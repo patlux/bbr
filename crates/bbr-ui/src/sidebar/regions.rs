@@ -101,6 +101,7 @@ pub fn folders_surface(
             components::folder_row(
                 theme,
                 row,
+                callbacks::folder_hover(&callbacks.on_hover_folder, id),
                 callbacks::folder(&callbacks.on_toggle_folder, id),
             )
             .on_mouse_down(

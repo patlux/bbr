@@ -33,8 +33,15 @@ impl BbrApp {
         let organization = self.organization.organization_snapshot(&self.controller);
         let favorite_tiles =
             ui_adapters::favorite_tiles(&organization.favorites, &self.favicon_images);
-        let folder_rows =
-            ui_adapters::folder_row_specs(&organization.folders, &self.u2.folder_presentation);
+        // §11.11 hover-reveal: the pointer-hovered folder's count paints;
+        // the focused half is applied by `folders_model` with the live
+        // window (the region must genuinely own chrome focus for the
+        // keyboard anchor to reveal). At rest every count stays quiet.
+        let folder_rows = ui_adapters::folder_row_specs(
+            &organization.folders,
+            &self.u2.folder_presentation,
+            self.hovered_folder,
+        );
         let folder_members = ui_adapters::folder_member_visuals(
             &folder_rows,
             &organization.folders,

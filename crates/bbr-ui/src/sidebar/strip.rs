@@ -30,6 +30,7 @@ use gpui::{
     Stateful, Styled, Window,
 };
 
+use crate::icons::{classify_identity, IdentityForm};
 use crate::state::SpaceChipVisuals;
 use crate::theme::{Radius, Spacing, Theme};
 
@@ -89,10 +90,11 @@ pub fn space_strip(
 /// inside the scroll viewport (`flex_shrink_0`), so the strip's content
 /// width is the sum of its chips and the selected chip can be scrolled into
 /// view deterministically.
-fn compact_identity(identity: &str) -> SharedString {
-    if identity.chars().count() == 1 {
-        return SharedString::from(identity.to_string());
-    }
+/// The §7 two-letter badge fallback for a non-curated identity value
+/// (DESIGN.md §11.3: the badge is the missing-glyph fallback only — every
+/// curated glyph renders its drawn path, every curated emoji renders
+/// directly).
+fn badge_fallback(identity: &str) -> SharedString {
     SharedString::from(
         identity
             .chars()
@@ -122,7 +124,34 @@ pub fn space_chip(
     } else {
         p.surface_sidebar
     };
-    let identity = compact_identity(&visuals.identity);
+    // §11.3/§7: the identity renders its drawn §7 glyph path when the value
+    // is a curated `BbrGlyph`, the emoji scalar directly when curated, and
+    // the two-letter badge only for a non-curated value (the missing-glyph
+    // fallback). The text weight steps up on the active chip; the glyph
+    // canvas is the same ink at rest and selected (the §9 ring and the
+    // surface carry selection).
+    let text_weight = if selected {
+        gpui::FontWeight(600.0)
+    } else {
+        theme.type_.badge.weight
+    };
+    let identity_slot = match classify_identity(&visuals.identity) {
+        IdentityForm::Emoji => div()
+            .text_size(theme.type_.badge.size)
+            .font_weight(text_weight)
+            .text_color(p.ink)
+            .child(SharedString::from(visuals.identity.clone()))
+            .into_any(),
+        IdentityForm::Glyph(glyph) => crate::icons::Icon::Bbr(glyph)
+            .canvas(theme, theme.density.icon())
+            .into_any(),
+        IdentityForm::Badge => div()
+            .text_size(theme.type_.badge.size)
+            .font_weight(text_weight)
+            .text_color(p.ink)
+            .child(badge_fallback(&visuals.identity))
+            .into_any(),
+    };
     div()
         .id(space_chip_id(visuals.space))
         .flex_shrink_0()
@@ -167,14 +196,10 @@ pub fn space_chip(
         .child(
             div()
                 .id(space_identity_id(visuals.space))
-                .text_size(theme.type_.badge.size)
-                .font_weight(if selected {
-                    gpui::FontWeight(600.0)
-                } else {
-                    theme.type_.badge.weight
-                })
-                .text_color(p.ink)
-                .child(identity),
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(identity_slot),
         )
         .on_mouse_down(MouseButton::Left, on_select)
 }
@@ -200,10 +225,22 @@ mod tests {
     }
 
     #[test]
-    fn compact_identity_keeps_emoji_and_badges_glyph_names() {
-        assert_eq!(compact_identity("🔥"), "🔥");
-        assert_eq!(compact_identity("code"), "CO");
-        assert_eq!(compact_identity("briefcase"), "BR");
+    fn identity_forms_classify_curated_values_and_keep_the_badge_fallback() {
+        // DESIGN.md §11.3/§7: a curated emoji scalar renders directly, a
+        // curated glyph name renders its drawn path, and only a non-curated
+        // value falls back to the two-letter badge.
+        assert_eq!(classify_identity("🔥"), IdentityForm::Emoji);
+        assert_eq!(
+            classify_identity("code"),
+            IdentityForm::Glyph(bbr_domain::BbrGlyph::Code)
+        );
+        assert_eq!(
+            classify_identity("briefcase"),
+            IdentityForm::Glyph(bbr_domain::BbrGlyph::Briefcase)
+        );
+        assert_eq!(classify_identity("CO"), IdentityForm::Badge);
+        assert_eq!(classify_identity("not-curated"), IdentityForm::Badge);
+        assert_eq!(badge_fallback("not-curated"), "NO");
     }
 
     #[test]

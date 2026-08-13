@@ -21,6 +21,15 @@ use super::callbacks;
 use super::model::{Callbacks, SidebarModel};
 use super::regions::folders_surface;
 
+/// The §11.4 organized-regions hairline: the single 1 px structural rule
+/// between the organized Pinned/Folders area and the visible New Tab row
+/// (reference composition). The id and presence are truthful: the hairline
+/// renders only while the organized area has content (pinned rows or a
+/// folders list); with both empty, nothing is fabricated between the
+/// active-Space heading and New Tab. The region order stays
+/// Pinned → Folders → hairline → New Tab → Tabs (§11.4).
+pub const ORGANIZED_HAIRLINE_ID: &str = "bbr-organized-hairline";
+
 /// The controller-backed tab surface: the pinned region as a fixed block
 /// above the regular region's scroll view (DESIGN.md §11.2/§11.6), with
 /// the §11.11 folders list between the pinned block and the Tabs section.
@@ -43,35 +52,55 @@ pub fn tab_surface(theme: &Theme, model: &SidebarModel, callbacks: &Callbacks) -
 
     let mut children: Vec<gpui::AnyElement> = Vec::new();
     if !tabs.pinned.is_empty() {
-        for row in &tabs.pinned {
+        for (position, row) in tabs.pinned.iter().enumerate() {
             if tabs.tick == Some(row.index) {
-                children.push(components::drag_tick(theme, row.index, !tabs.tick_valid).into_any());
+                // `first`: the slot-0 tick is the block's first child —
+                // its rule anchors inside the block's top edge (§10.9
+                // containment; see [`components::drag_tick`]).
+                children.push(
+                    components::drag_tick(theme, row.index, !tabs.tick_valid, position == 0)
+                        .into_any(),
+                );
             }
             children.push(render_row(theme, row, callbacks).into_any());
         }
         if tabs.tick == Some(pinned_count) {
-            children.push(components::drag_tick(theme, pinned_count, !tabs.tick_valid).into_any());
+            children.push(
+                components::drag_tick(theme, pinned_count, !tabs.tick_valid, false).into_any(),
+            );
         }
-        children.push(
-            div()
-                .h(px(1.0))
-                .w_full()
-                .bg(theme.palette.hairline)
-                .into_any(),
-        );
     }
-    // The §11.11 folders list sits between the pinned block and the Tabs
-    // section (hidden entirely while no folder exists).
+    // The §11.11 folders list sits between the pinned block and the
+    // organized-regions hairline (hidden entirely while no folder exists).
+    let has_folders = model.folders.is_some();
     if let Some(folders) = model.folders.as_ref() {
         children.push(folders_surface(theme, model, folders, callbacks).into_any());
     }
+    // §11.4 polish: one hairline separates the organized Pinned/Folders
+    // area from the New Tab row (reference composition). It is present
+    // exactly while the organized area has content — empty regions stay
+    // truthful (no fabricated separator).
+    if !tabs.pinned.is_empty() || has_folders {
+        children.push(
+            div()
+                .id(ORGANIZED_HAIRLINE_ID)
+                .debug_selector(|| ORGANIZED_HAIRLINE_ID.to_string())
+                .h(px(1.0))
+                .w_full()
+                .flex_shrink_0()
+                .bg(p.hairline)
+                .into_any(),
+        );
+    }
     // The reference keeps New Tab as a visible row at the pinned/regular
     // boundary. It stages the existing NewTab command surface; it never
-    // creates a tab or session before the user commits a destination.
+    // creates a tab or session before the user commits a destination. The
+    // row steps on the §8 pitch like every other row.
     children.push(
         div()
             .id("bbr-new-tab")
             .h(theme.density.row())
+            .mb(theme.density.gap())
             .px(theme.density.row_padding_x())
             .gap(crate::theme::Spacing::sp2())
             .items_center()
@@ -90,16 +119,26 @@ pub fn tab_surface(theme: &Theme, model: &SidebarModel, callbacks: &Callbacks) -
     // The scroll container: spacers keep the total content height equal
     // to the full collection, the rendered window follows the production
     // scroll offset, and the drag tick renders only inside the window.
+    // Rows step on the §8 pitch (surface + gap), so the spacer heights
+    // are exact pitch multiples and the collection extent stays exactly
+    // `item_count × pitch` — the dense scroll math stays exact under the
+    // new pitch (§11.6).
     let top = tabs.scroll_top;
     let bottom = tabs.scroll_bottom;
     let mut scroll_children: Vec<gpui::AnyElement> = Vec::new();
     if top > 0.0 {
         scroll_children.push(div().h(px(top)).into_any());
     }
-    for row in &tabs.window {
+    for (position, row) in tabs.window.iter().enumerate() {
         if tabs.tick == Some(row.index) {
+            // `first`: the tick before the first window row is the scroll
+            // block's first child when the window starts at the top (no
+            // top spacer) — its rule anchors inside the block's top edge
+            // so it paints inside the scroll viewport (§10.9
+            // containment; see [`components::drag_tick`]).
+            let first = position == 0 && top <= 0.0;
             scroll_children
-                .push(components::drag_tick(theme, row.index, !tabs.tick_valid).into_any());
+                .push(components::drag_tick(theme, row.index, !tabs.tick_valid, first).into_any());
         }
         scroll_children.push(render_row(theme, row, callbacks).into_any());
     }
@@ -154,6 +193,10 @@ fn render_row(theme: &Theme, row: &RowVisuals, callbacks: &Callbacks) -> Statefu
         callbacks::row(&callbacks.on_toggle_pin, index),
         callbacks::row(&callbacks.on_begin_drag, index),
     )
+    // §8 pitch: every row surface steps on `surface + gap`, so the
+    // regular region's content height stays an exact pitch multiple and
+    // the dense scroll math stays exact.
+    .mb(theme.density.gap())
     .on_mouse_down(
         MouseButton::Left,
         callbacks::row(&callbacks.on_press_row, index),

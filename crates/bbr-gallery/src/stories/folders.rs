@@ -62,7 +62,8 @@ pub fn render_folders(ctx: &StoryContext) -> AnyElement {
                         on(row_index, window, cx)
                     }
                 };
-                children.push(folder_row(theme, row, toggle).into_any());
+                let hover = |_hovered: &bool, _window: &mut Window, _cx: &mut App| {};
+                children.push(folder_row(theme, row, hover, toggle).into_any());
                 // §11.11: nested rows render only under their expanded
                 // folder row (deterministic 0-based member positions).
                 for member in members.iter().filter(|m| m.folder_index == row_index) {

@@ -322,8 +322,25 @@ fn tabs_list_node(input: &SemanticInput<'_>) -> SemanticNode {
             children.push(tab_row_node(row, input.focus.tabs));
         }
     }
-    if let Some(folders) = u2::folders_node(input.folder_rows, input.folder_members) {
-        children.push(folders);
+    let folders = u2::folders_node(input.folder_rows, input.folder_members);
+    if let Some(folders) = folders.as_ref() {
+        children.push(folders.clone());
+    }
+    // §11.4 polish: the organized-regions hairline separates the organized
+    // Pinned/Folders area from the New Tab row — present exactly while the
+    // organized area has content (pinned rows or a folders list), so the
+    // typed tree stays truthful when both organized regions are empty
+    // (nothing fabricated between the active-Space heading and New Tab).
+    if pinned > 0 || folders.is_some() {
+        children.push(node(
+            "bbr-organized-hairline",
+            SemanticRole::Separator,
+            None,
+            None,
+            false,
+            false,
+            vec![],
+        ));
     }
     children.push(node(
         "bbr-new-tab",

@@ -32,6 +32,8 @@ mod noops;
 mod same_profile;
 mod support;
 
-/// The §8 normal-density row height the press-anchored drag geometry uses
-/// (same token the app resolves from).
+/// The §8 normal-density row surface the press-anchored drag geometry
+/// anchors within (`row() / 2` — the press sits inside the 36 pt surface;
+/// slot moves step on the §8 pitch, which the drag-chip scenarios express
+/// in absolute pointer deltas).
 const ROW_H: f32 = 36.0;

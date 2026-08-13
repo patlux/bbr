@@ -18,6 +18,7 @@
 //! migration is a pure import-path change).
 
 pub mod address;
+pub mod drag_tick;
 pub mod favicon;
 pub mod favorites;
 pub mod folders;
@@ -33,6 +34,7 @@ pub mod tab_row;
 pub use address::{
     address_control, staging_surface, AddressModel, AddressProfileHint, StagingModel,
 };
+pub use drag_tick::{drag_tick, drag_tick_bottom, DRAG_TICK_ID};
 pub use favicon::{favicon_tile, FaviconSpec};
 pub use favorites::{
     favorite_tile, favorite_tile_icon_id, favorite_tile_id, favorites_grid, FavoriteTileSpec,
@@ -69,4 +71,4 @@ pub use saved_pages_library::{
 pub use section::section_label;
 pub use space::{profile_chip, profile_chip_id, ProfileChipSpec, SpaceRowVisuals};
 pub use status::{status_line, StatusModel, STATUS_ID};
-pub use tab_row::{drag_tick, tab_row, RowVisuals};
+pub use tab_row::{tab_row, RowVisuals};

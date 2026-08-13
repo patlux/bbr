@@ -13,8 +13,10 @@
 use super::*;
 use bbr_testkit::protocol::{dsl, BrowserChange, Event};
 
-/// The §8 normal-density row height the press-anchored drag geometry uses
-/// (same token the app resolves from).
+/// The §8 normal-density row surface the press-anchored drag geometry
+/// anchors within (`row() / 2` — the press sits inside the 36 pt surface;
+/// slot moves step on the §8 pitch, which the favorites-drag scenarios
+/// express in absolute pointer deltas).
 const ROW_H: f32 = 36.0;
 /// The press anchor for every drag: window x 130 (the old seam's stable
 /// anchor), window y 400 (inside the tab list, above the footer strip).

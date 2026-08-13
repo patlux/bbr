@@ -104,6 +104,15 @@ pub fn folder_geometry(size: f32) -> (f32, f32, f32) {
     (size * 0.30, size * 0.14, size * 0.20)
 }
 
+/// Open-folder geometry: (body half-width/height, tab height above the
+/// body, tab width, mouth). `mouth` is the distance the open body's top
+/// edge sits below the closed top (`cy - mouth`): the lid flap lifts
+/// above it, so the open variant reads as the folder's lid raised off the
+/// body (the §11.11 expanded disclosure state).
+pub fn folder_open_geometry(size: f32) -> (f32, f32, f32, f32) {
+    (size * 0.30, size * 0.14, size * 0.20, size * 0.105)
+}
+
 /// Disclosure chevron: half the arm length from the apex to either corner.
 pub fn disclosure_arm(size: f32) -> f32 {
     size * 0.22

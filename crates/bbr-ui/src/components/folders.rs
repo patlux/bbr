@@ -1,14 +1,16 @@
-//! DESIGN.md §11.11 Folders: session-local folder rows with a disclosure
-//! control, name, and count, plus nested §11.1 rows for the expanded
-//! folder.
+//! DESIGN.md §11.11 Folders: session-local folder rows leading with the §7
+//! folder glyph (open/closed variant carrying the disclosure state), name,
+//! and a hover/focus-revealed `type:meta` count, plus nested §11.1 rows for
+//! the expanded folder.
 //!
 //! A folder is a session-local container of tab identities (in-memory in
 //! v1, never persisted; Phase 7 owns restoration). Rows render
-//! `[disclosure glyph icon:m 18; S icon:s 16] [name, trunc] [count,
-//! type:meta tnum]` at `density:row` tall; nested rows indent one `sp:3`
-//! step and reuse the §11.1 row anatomy. Toggling expands/collapses and
-//! snaps (`dur:instant`); the app layer holds the presentation state only
-//! ([`FolderPresentation`] — the domain model is L5-owned).
+//! `[folder glyph open/closed with the disclosure state, icon:m 18; S
+//! icon:s 16] [name, trunc] [count, type:meta tnum, hover/focus-revealed]`
+//! at `density:row` tall, stepping on the §8 pitch; nested rows indent one
+//! `sp:3` step and reuse the §11.1 row anatomy. Toggling expands/collapses
+//! and snaps (`dur:instant`); the app layer holds the presentation state
+//! only ([`FolderPresentation`] — the domain model is L5-owned).
 //!
 //! This module owns the folder identity contract (ids, the row spec types,
 //! the presentation state) and the folder-row anatomy. The snapshot→spec
@@ -87,8 +89,13 @@ pub struct FolderRowSpec {
     pub title: String,
     /// Member tab count (§11.11 count column, `type:meta` `tnum`).
     pub count: usize,
-    /// Whether the nested row list is expanded (`dur:instant` snap).
+    /// Whether the nested row list is expanded (`dur:instant` snap). The
+    /// folder row's leading glyph carries this state (open/closed variant).
     pub expanded: bool,
+    /// §11.11 hover/focus-reveal: the `type:meta` count paints only while
+    /// the pointer hovers the row or the row is the keyboard focus anchor
+    /// (`true`), and stays quiet (zero-opacity, id still present) at rest.
+    pub reveal_count: bool,
 }
 
 /// One nested §11.1 row's rendered identity inside an expanded folder:
@@ -154,22 +161,32 @@ impl FolderPresentation {
     }
 }
 
-/// One §11.11 folder row: `[disclosure glyph icon:m 18; S icon:s 16]
-/// [name, trunc] [count, type:meta tnum]` at `density:row` tall.
-/// `on_toggle` is the production disclosure listener; the rail composition
-/// wires it. Nested rows are appended below by the composition when
-/// `spec.expanded` (they reuse the §11.1 row anatomy and are not part of
-/// this module's anatomy).
+/// One §11.11 folder row at `density:row` tall, stepping on the §8 pitch
+/// (`density:pitch` = surface + gap) like every other row: the §7 folder
+/// glyph (open/closed variant carrying the disclosure state, never a
+/// separate disclosure chevron), the truncated name, and the `type:meta`
+/// `tnum` count that paints only on hover/focus (`spec.reveal_count`) —
+/// the row stays quiet at rest, the `bbr-folder-count-<n>` id stays in
+/// the tree either way. `on_hover`/`on_toggle` are the production
+/// listeners; the rail composition wires them. Nested rows are appended
+/// below by the composition when `spec.expanded` (they reuse the §11.1
+/// row anatomy and are not part of this module's anatomy).
 pub fn folder_row(
     theme: &Theme,
     spec: &FolderRowSpec,
+    on_hover: impl Fn(&bool, &mut Window, &mut App) + 'static,
     on_toggle: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
+    let reveal = spec.reveal_count;
     div()
         .id(folder_row_id(spec.index))
         .debug_selector(move || folder_row_id(spec.index).to_string())
         .h(theme.density.row())
+        // §8 pitch: the folder row steps on surface + gap like every
+        // regular/pinned/nested/New Tab row, so the region extent stays an
+        // exact pitch multiple (§11.6).
+        .mb(theme.density.gap())
         .px(theme.density.row_padding_x())
         .gap(Spacing::sp2())
         .items_center()
@@ -178,6 +195,7 @@ pub fn folder_row(
         .rounded(Radius.medium())
         .bg(p.surface_sidebar)
         .cursor_pointer()
+        .on_hover(on_hover)
         .child(
             div()
                 .id(folder_toggle_id(spec.index))
@@ -188,8 +206,8 @@ pub fn folder_row(
                 .justify_center()
                 .on_mouse_down(MouseButton::Left, on_toggle)
                 .child(
-                    Icon::Disclosure {
-                        expanded: spec.expanded,
+                    Icon::Folder {
+                        open: spec.expanded,
                     }
                     .canvas(theme, theme.density.icon()),
                 ),
@@ -210,6 +228,11 @@ pub fn folder_row(
                 .id(folder_count_id(spec.index))
                 .text_size(theme.type_.meta.size)
                 .text_color(p.ink_faint)
+                // §11.11 hover/focus-reveal: the count paints only while
+                // the row is hovered or the keyboard focus anchor; at rest
+                // the id stays in the tree at zero opacity (quiet rest,
+                // stable §15 id).
+                .opacity(if reveal { 1.0 } else { 0.0 })
                 .child(spec.count.to_string()),
         )
 }
@@ -297,6 +320,10 @@ pub fn folder_item_row(
         .id(folder_item_id(visual.folder_index, visual.member))
         .debug_selector(move || folder_item_id(visual.folder_index, visual.member).to_string())
         .h(theme.density.row())
+        // §8 pitch: nested rows step on surface + gap like every other
+        // row, so the expanded folder's extent stays an exact pitch
+        // multiple (§11.6).
+        .mb(theme.density.gap())
         .pl(Spacing::sp3())
         .pr(theme.density.row_padding_x())
         .gap(Spacing::sp2())

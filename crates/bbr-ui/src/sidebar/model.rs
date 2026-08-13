@@ -56,6 +56,8 @@ pub type HoverCallback = std::rc::Rc<dyn Fn(usize, bool, &mut Window, &mut App)>
 /// A folder-id `MouseDownEvent` callback slot.
 pub type FolderCallback =
     std::rc::Rc<dyn for<'a> Fn(FolderId, &'a MouseDownEvent, &mut Window, &mut App)>;
+/// A folder-id hover callback slot (§11.11 count reveal).
+pub type FolderHoverCallback = std::rc::Rc<dyn Fn(FolderId, bool, &mut Window, &mut App)>;
 /// A folder-id + member `MouseDownEvent` callback slot.
 pub type MemberCallback =
     std::rc::Rc<dyn for<'a> Fn(FolderId, usize, &'a MouseDownEvent, &mut Window, &mut App)>;
@@ -261,6 +263,9 @@ pub struct Callbacks {
     /// §11.11: pointer entry into a folder row (focuses the region with
     /// that row as the keyboard anchor).
     pub on_focus_folder: FolderCallback,
+    /// §11.11: the pointer enters/leaves a folder row (hover/focus-reveals
+    /// the `type:meta` count).
+    pub on_hover_folder: FolderHoverCallback,
     /// §11.11: the disclosure toggle (focuses the row and toggles it).
     pub on_toggle_folder: FolderCallback,
     /// §11.11: a nested member row activation.
@@ -302,6 +307,7 @@ impl Callbacks {
         let noop_row_up: RowUpCallback = std::rc::Rc::new(|_i, _e, _window, _cx| {});
         let noop_hover: HoverCallback = std::rc::Rc::new(|_i, _b, _window, _cx| {});
         let noop_folder: FolderCallback = std::rc::Rc::new(|_f, _e, _window, _cx| {});
+        let noop_folder_hover: FolderHoverCallback = std::rc::Rc::new(|_f, _b, _window, _cx| {});
         let noop_member: MemberCallback = std::rc::Rc::new(|_f, _m, _e, _window, _cx| {});
         let noop_space: SpaceCallback = std::rc::Rc::new(|_s, _e, _window, _cx| {});
         Callbacks {
@@ -323,6 +329,7 @@ impl Callbacks {
             on_context_menu_row: noop_row.clone(),
             on_context_menu_favorite: noop_row.clone(),
             on_focus_folder: noop_folder.clone(),
+            on_hover_folder: noop_folder_hover,
             on_toggle_folder: noop_folder.clone(),
             on_select_folder_member: noop_member.clone(),
             on_close_folder_member: noop_member.clone(),

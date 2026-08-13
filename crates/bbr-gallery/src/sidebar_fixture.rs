@@ -146,6 +146,7 @@ pub fn build_sidebar_fixture(
                     title: format!("Folder {}", i + 1),
                     count: case.folder_members,
                     expanded: case.folder_members > 0,
+                    reveal_count: case.folders_focused,
                 })
                 .collect(),
             members: (0..case.folder_members)
@@ -164,7 +165,10 @@ pub fn build_sidebar_fixture(
     } else {
         None
     };
-    let row_h = theme.density.row();
+    // §8 pitch: rows step on surface + gap (`density:pitch`), so the
+    // fixture mirrors the app's scroll extent in exact pitch units — the
+    // same unit the app's dense scroll math uses (§11.6).
+    let pitch = theme.density.pitch();
     let pinned: Vec<RowVisuals> = (0..case.pinned_count)
         .map(|i| row_visual(case, i))
         .collect();
@@ -177,7 +181,7 @@ pub fn build_sidebar_fixture(
         .map(|i| row_visual(case, case.pinned_count + i))
         .collect();
     let scroll_top = 0.0;
-    let scroll_bottom = (case.tab_count.saturating_sub(window_len)) as f32 * f32::from(row_h);
+    let scroll_bottom = (case.tab_count.saturating_sub(window_len)) as f32 * f32::from(pitch);
     let tabs = TabsModel {
         pinned,
         window,

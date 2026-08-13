@@ -320,6 +320,14 @@ pub fn unhover_tab_row() -> Request {
     Request::UnhoverTabRow
 }
 
+pub fn hover_folder_row(folder_id: u64) -> Request {
+    Request::HoverFolderRow { folder_id }
+}
+
+pub fn unhover_folder_row() -> Request {
+    Request::UnhoverFolderRow
+}
+
 pub fn press_tab_row(index: usize) -> Request {
     Request::PressTabRow { index }
 }

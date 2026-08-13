@@ -25,8 +25,14 @@ mod e2e_common;
 use bbr_testkit::protocol::CommandBarMode;
 use e2e_common::*;
 
-/// §8 normal-density tab row height (theme.density::Normal.row()).
+/// §8 normal-density row surface (theme.density::Normal.row()) — the
+/// press-anchored drag geometry anchors within the row surface
+/// (`row() / 2`).
 const ROW_H: f32 = 36.0;
+/// §8 normal-density row pitch (theme.density::Normal.pitch() = surface +
+/// gap): rows render on this step, so pointer moves between slots use the
+/// pitch the render lays out in (36 pt surfaces, 4 pt gaps).
+const PITCH: f32 = 40.0;
 
 /// Assert the full tab row order by URL plus the pinned boundary and the
 /// selected row, so a wrong order or a wrong boundary fails loudly.
@@ -464,7 +470,7 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         assert_tab_order(&four, &[&page_two, &page_one, &page_two, &page_one], 2);
         let regular_view = four.tabs[2].web_view.expect("regular row view");
 
-        // Drag the first pinned row two rows down (dy = 2 × 36): the target
+        // Drag the first pinned row two rows down (dy = 2 × 40, the §8 pitch): the target
         // resolves to slot 2, the end of the pinned region — legal. The
         // snapshot reports the typed source/target/validity and the §15 tick
         // id renders at the slot.
@@ -472,7 +478,7 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
             .send_ok(&dsl::begin_tab_drag(0, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin drag");
         client
-            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * ROW_H))
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
             .expect("move drag down");
         let during = client.snapshot().expect("during drag snapshot");
         assert_eq!(during.drag_source, Some(0));
@@ -502,7 +508,7 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
             .send_ok(&dsl::begin_tab_drag(1, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin boundary drag");
         client
-            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * ROW_H))
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
             .expect("move into the regular region");
         let illegal = client.snapshot().expect("illegal drag snapshot");
         assert_eq!(illegal.drag_source, Some(1));
@@ -535,7 +541,7 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
             .send_ok(&dsl::begin_tab_drag(2, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin regular drag");
         client
-            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * ROW_H))
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
             .expect("move regular down");
         assert!(
             client.snapshot().expect("regular drag snapshot").drag_valid,
@@ -573,7 +579,7 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
             .send_ok(&dsl::begin_tab_drag(2, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin cancel drag");
         client
-            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * ROW_H))
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
             .expect("move cancel drag");
         assert!(client
             .snapshot()
@@ -591,6 +597,40 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         assert!(
             cancelled.chrome_focused,
             "cancelling the drag keeps the chrome domain"
+        );
+
+        // §10.9 slot-0 containment: dragging the first pinned row from its
+        // center to the list's exact top edge targets slot 0 — the tick
+        // renders as the pinned block's first child (`bbr-drag-tick-0`),
+        // where the rule must stay inside the owning block (no
+        // negative-margin overdraw above the list top; the tick contributes
+        // zero outer height, so the dense scroll extent stays an exact pitch
+        // multiple even during the drag). Moving a whole pitch upward from
+        // the row center would be above the list and is intentionally no
+        // target. Dropping back on the source slot is a no-op reorder.
+        client
+            .send_ok(&dsl::begin_tab_drag(0, 130.0, 400.0, ROW_H / 2.0))
+            .expect("begin slot-0 drag");
+        client
+            .send_ok(&dsl::move_tab_drag(0.0, -(ROW_H / 2.0)))
+            .expect("move to list top");
+        let slot_zero = client.snapshot().expect("slot-0 drag snapshot");
+        assert_eq!(slot_zero.drag_source, Some(0));
+        assert_eq!(
+            slot_zero.drag_slot,
+            Some(0),
+            "the list's exact top edge targets its own first slot"
+        );
+        assert!(slot_zero.drag_valid, "the pinned region's own top is legal");
+        assert_ids(&slot_zero, &["bbr-drag-tick-0"]);
+        client
+            .send_ok(&dsl::end_tab_drag())
+            .expect("release slot-0 drag");
+        let settled = client.snapshot().expect("slot-0 settled snapshot");
+        assert_tab_order(&settled, &[&page_one, &page_two, &page_one, &page_two], 2);
+        assert_eq!(
+            settled.engine_sessions, 4,
+            "the no-op slot-0 drop never touches sessions"
         );
 
         client.quit().expect("quit");

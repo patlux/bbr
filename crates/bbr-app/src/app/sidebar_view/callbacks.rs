@@ -10,8 +10,8 @@ use std::rc::Rc;
 
 use super::BbrApp;
 use bbr_ui::sidebar::model::{
-    BoolCallback, Callbacks, FolderCallback, HoverCallback, KeyCallback, MemberCallback,
-    MouseCallback, RowCallback, RowUpCallback, SpaceCallback, WheelCallback,
+    BoolCallback, Callbacks, FolderCallback, FolderHoverCallback, HoverCallback, KeyCallback,
+    MemberCallback, MouseCallback, RowCallback, RowUpCallback, SpaceCallback, WheelCallback,
 };
 use bbr_ui::titlebar::TitlebarCallbacks;
 use gpui::Context;
@@ -201,6 +201,14 @@ impl BbrApp {
             entity.update(cx, |view, cx| view.focus_folder_row(folder, window, cx));
         });
 
+        // §11.11: the pointer enters/leaves a folder row — hover/focus
+        // reveals the `type:meta` count (the same production hover path as
+        // the row wash).
+        let entity = cx.entity();
+        let on_hover_folder: FolderHoverCallback = Rc::new(move |folder, hovered, _window, cx| {
+            entity.update(cx, |view, cx| view.set_folder_hover(folder, hovered, cx));
+        });
+
         // §11.11: the disclosure toggle (focuses the row and toggles it).
         let entity = cx.entity();
         let on_toggle_folder: FolderCallback = Rc::new(move |folder, _e, window, cx| {
@@ -333,6 +341,7 @@ impl BbrApp {
             on_context_menu_row,
             on_context_menu_favorite,
             on_focus_folder,
+            on_hover_folder,
             on_toggle_folder,
             on_select_folder_member,
             on_close_folder_member,

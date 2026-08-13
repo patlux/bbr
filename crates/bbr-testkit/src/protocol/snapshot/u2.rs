@@ -44,6 +44,13 @@ pub struct SpaceChipSnapshot {
     /// The validated curated identity in its canonical string form (the
     /// emoji scalar or the glyph name).
     pub identity: String,
+    /// §11.3/§7 the rendered identity form on the wire: `"emoji"` (the
+    /// scalar renders directly), `"glyph"` (the curated name renders its
+    /// drawn §7 path), or `"badge"` (a non-curated value renders the
+    /// two-letter §7 fallback). Typed so E2E asserts the glyph-rendered
+    /// chips without stringly-typed probing.
+    #[serde(default)]
+    pub identity_kind: String,
     /// The effective curated theme token name (`cobalt`…`ink`), from the
     /// one controller appearance authority — explicit record or derived
     /// profile-hue default.
@@ -157,6 +164,12 @@ pub struct FolderRowSnapshot {
     pub tab_count: usize,
     /// Whether the nested row list is expanded.
     pub expanded: bool,
+    /// §11.11 hover/focus-reveal: whether the count paints right now
+    /// (the pointer hovers the row, or the row is the keyboard focus
+    /// anchor while the folders region owns chrome focus). At rest
+    /// `false` — the count stays quiet while its id remains in the tree.
+    #[serde(default)]
+    pub count_revealed: bool,
 }
 
 /// DESIGN.md §11.3 sidebar-swipe evidence on the wire (F2a swipe kernel):
