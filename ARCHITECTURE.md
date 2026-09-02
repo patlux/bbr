@@ -1126,7 +1126,14 @@ while retaining each recipe's hard timeout and process-tree cleanup.
 ### Run the app
 
 ```bash
-cargo run -p bbr -- --bbr-initial-url https://example.com
+just run
+```
+
+`just run` invokes `mbx run -p bbr`, so development builds use the host's
+managed, self-pruning Rust target storage. For an explicit initial URL, use:
+
+```bash
+mbx run -p bbr -- --bbr-initial-url https://example.com
 ```
 
 ---

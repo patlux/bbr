@@ -20,9 +20,10 @@ run_timeout := env_var_or_default("BBR_RUN_TIMEOUT", "8h")
 xcode_developer_dir := env_var_or_default("BBR_XCODE_DEVELOPER_DIR", "/Applications/Xcode-26.2.0.app/Contents/Developer")
 gui_gate := "python3 scripts/with_gui_lock.py --"
 
-# Launch the development build. Override BBR_RUN_TIMEOUT for longer sessions.
+# Launch the development build through mbx-managed build storage. Override
+# BBR_RUN_TIMEOUT for longer sessions.
 run:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{run_timeout}} cargo run -p bbr
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{run_timeout}} mbx run -p bbr
 
 fmt:
     timeout --kill-after=10s {{check_timeout}} cargo fmt --all -- --check
