@@ -9,14 +9,14 @@ Folder membership and pinned-tab state express one product concept end to end: e
 ## Scope
 
 - Establish one portable invariant: `folder member => pinned` for every tab identity.
-- Route folder insertion, removal, folder deletion, explicit unpinning, drag/drop, keyboard organization, context-menu commands, reconciliation, and restore through one transition matrix. Moving a tab into a folder pins it atomically; ungrouping or deleting a folder returns surviving members to loose pinned rows; explicitly unpinning a member removes its folder membership atomically.
+- Route folder insertion, removal/ungrouping, explicit unpinning, drag/drop, keyboard organization, reconciliation, and restore through one transition matrix. Moving a tab into a folder pins it atomically; removing a member from a folder returns it to the loose pinned rows; explicitly unpinning a member removes its folder membership atomically. The separate Folder-menu packet must settle container-delete semantics before deletion may consume this transition authority.
 - Keep loose pinned rows ordered before folder rows inside the common organized area; this packet does not introduce arbitrary mixed row ordering or folder nesting.
 - Make lifecycle budgeting preserve every folder member through the same pinned authority rather than a UI-only exception.
 - Add lower-level invariant tests, production-path typed snapshots, real-app organization/dense/persistence E2E, and the matching roadmap/architecture updates.
 
 ## Non-goals
 
-- No visual redesign, new drag affordance, context-menu expansion, nested folder model, folder persistence redesign, Split work, media work, or unrelated tab-order change.
+- No visual redesign, new drag affordance, context-menu expansion, destructive folder-delete decision, nested folder model, folder persistence redesign, Split work, media work, or unrelated tab-order change.
 - No compatibility layer for states that violate the current invariant; invalid restored/session-local membership is reconciled through the one canonical transition policy.
 - The preserved Paper design branch `design/browser-shell-paper` remains design evidence, not implementation authority for this slice.
 
@@ -42,7 +42,7 @@ Integration order:       before any later Folder-menu behavior that assumes grou
 
 ### Unit and contract
 
-- [ ] Folder insertion pins atomically; ungroup/delete returns members to loose pinned rows; explicit unpin removes membership; failed transitions leave both authorities unchanged.
+- [ ] Folder insertion pins atomically; explicit ungroup returns members to loose pinned rows; explicit unpin removes membership; failed transitions leave both authorities unchanged. Folder deletion remains unavailable until its own packet settles retain/close semantics.
 - [ ] Reconciliation and restore cannot produce an unpinned folder member, including unknown/deleted tabs and cross-space rejection paths.
 - [ ] Session budgeting protects folder members because their canonical tab state is pinned, with no UI- or folder-store-only keep exception.
 

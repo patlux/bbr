@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slice:** no implementation writer is active. The reference-faithful shell and Sidebar polish are integrated; the current control task is documentation/authority reconciliation on `docs/delivery-authority-reconcile`. The next prepared product gap is the [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md), but it remains `planned` until explicitly activated. The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
+- **Active product slice:** none; no implementation or control writer is active. The reference-faithful shell and Sidebar polish are integrated. The next prepared product gap is the [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md), but it remains `planned` until explicitly activated. The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:
