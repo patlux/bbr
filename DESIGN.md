@@ -572,10 +572,14 @@ using the IDs of §15. All rows use `density` geometry from §8.
 
 ### 11.2 Pinned tab
 
-- **Anatomy:** pinned region renders above the regular region, separated by a
-  `hairline` + `type:badge` "Pinned" label (label hidden when region empty).
-  S density: icon-only 32×32 rows with 4 pt gap. N/XL: same row anatomy as
-  regular rows.
+- **Anatomy:** loose pinned rows and folder rows (§11.11) are two
+  presentations inside one *organized area*. A folder is the grouped form of
+  pinned tabs; a loose pinned row is the ungrouped form. They share one
+  uninterrupted `density:pitch` rhythm with no section gap, label, or
+  hairline between them; exactly one `bbr-organized-hairline` closes the area
+  against New Tab (§11.4). Loose pinned rows remain above folders until a
+  separate ordering-model decision says otherwise. S density: icon-only
+  32×32 loose rows with 4 pt gap. N/XL: same row anatomy as regular rows.
 - **Behavior:** pinned rows never shift order on selection; close is
   hover-reveal only; drag within the pinned region reorders; dragging to the
   regular region unpins (contract); a drag from the regular region into
@@ -665,8 +669,9 @@ using the IDs of §15. All rows use `density` geometry from §8.
   display (§11.5). There is **no standalone BBR app-mark/name brand block**.
   The Favorites grid (§11.10) sits directly under the address display, exactly
   as in the reference composition. The active Space's exact title is then the
-  primary list heading for the scrolling list, followed by Pinned (§11.2),
-  Folders (§11.11), a visible New Tab row routed through the existing
+  primary list heading for the scrolling list, followed by the organized area
+  of loose Pinned rows (§11.2) and grouped Folder rows (§11.11), then a visible
+  New Tab row routed through the existing
   staged-new-tab authority, and regular Tabs (§11.1). The Favorites region is
   omitted entirely when a Space has no favorites; nothing is fabricated to keep
   the region present. Settled redundant status copy consumes no row; loading,
@@ -679,9 +684,11 @@ using the IDs of §15. All rows use `density` geometry from §8.
   visible `Favorites`/`Pinned`/`Tabs` labels; the active Space title supplies
   the primary hierarchy. Folder names remain visible content, not a generic
   section heading. Profile groups and regions stack under quiet separation
-  with `density:section-gap` breathing (S `sp:3` / N `sp:4` / XL `sp:5`). The Favorites grid and
-  the Pinned region are fixed-height blocks above the scroll view; Folders
-  and Tabs scroll together in `bbr-scroll` (label behavior per §11.6). One
+  with `density:section-gap` breathing (S `sp:3` / N `sp:4` / XL `sp:5`), but
+  the gap never separates loose pinned rows from their grouped folder form.
+  The Favorites grid and loose pinned rows are fixed-height blocks above the
+  scroll view; Folders and Tabs scroll together in `bbr-scroll` (label
+  behavior per §11.6). One
   1 px hairline (`bbr-organized-hairline`) separates the organized
   Pinned/Folders area from the visible New Tab row (reference composition):
   it renders exactly while the organized area has content (pinned rows or a
@@ -901,7 +908,16 @@ scheme; a title consisting only of whitespace is treated as empty.
 - **Assert ids:** `bbr-section-favorites`, `bbr-favorites`,
   `bbr-fav-<n>`, `bbr-fav-icon-<n>`.
 
-### 11.11 Folders (Implemented; reference-calibrated)
+### 11.11 Folders (Implemented presentation; pin invariant planned)
+
+A folder is the grouped presentation of pinned tabs inside the common
+organized area (§11.2/§11.4), not a separate product region. The current
+runtime already presents folder rows without a gap before the single organized
+hairline, but folder membership and `Tab::pinned` are still independent
+portable authorities. The bounded
+[folder-membership invariant packet](docs/roadmap/tasks/folder-pinned-invariant.md)
+owns that implementation gap; until it lands, this paragraph is product intent,
+not a claim that every existing folder member is pinned.
 
 - **Anatomy:** a `type:badge` "Folders" label (`bbr-section-folders`,
   hidden when empty) over folder rows (`bbr-folders`): `[folder glyph §7,
@@ -1424,6 +1440,13 @@ production integration).
     its geometry. Decide what v1 actually shows — nothing, Copy Link only,
     or Copy Link plus a permissions indicator once the §P8a contract has a
     surface.
+15. ~~**Folder membership versus pinned state**~~ **Resolved as product
+    direction (2026-08-14), implementation open:** folders are grouped pinned
+    tabs in the common organized area. The current `FolderStore` does not
+    mutate `Tab::pinned`, so the portable invariant, lifecycle protection,
+    ungroup/delete behavior, restore reconciliation, and production E2E remain
+    owned by the
+    [folder-membership invariant packet](docs/roadmap/tasks/folder-pinned-invariant.md).
 
 Resolving an item means moving its decision into the relevant section above
 and updating the affected roadmap track in the same group.

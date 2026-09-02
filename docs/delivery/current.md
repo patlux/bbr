@@ -1,24 +1,22 @@
 <!-- bbr:current-delivery -->
 # Current delivery
 
-Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before choosing or scheduling work. This is the sole owner of volatile execution state. Durable acceptance lives in the linked packets. The completed Renderer/G2/G3 Sidebar+Command chronology remains reachable from Git history through control checkpoint `568cdae0008d3cc9008209007ae32442ee0ff80e`; it is evidence, not a second queue.
+Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before choosing or scheduling work. This is the sole owner of volatile execution state. Durable acceptance lives in the linked packets; detailed chronology remains in Git and the historical delivery ledgers.
 
 ## Control metadata
 
 | Field | Value |
 |---|---|
-| Generation | `reference-alignment-2026-08-13` |
-| Cutover commit | the commit introducing this generation on local `main`; the three alignment packets are committed at `806e4238` |
-| Verified product base | `main@806e423823699c17f6bcd40ffd327e27f196f091` |
-| Integrated product checkpoint | `main@806e423823699c17f6bcd40ffd327e27f196f091`; integrated VS-REFERENCE shell plus alignment packets, verified from a clean worktree with a free GUI lock; everything local, nothing pushed |
-| Daily-driver preparation base | `568cdae0008d3cc9008209007ae32442ee0ff80e` / tree `90114c65cc068a744b43aeeec710b47fff5cbf4a` |
-| Daily-driver activation base | `4d5be3116ec090aebb7eefa4861970710dba7a5b` / tree `9c8cae5cd5bca883fadc3ec198e232be4f436839`; all seven lane worktrees created clean from this exact commit |
-| Daily-driver contract | [2026-08-12 Daily-driver delivery](2026-08-12-daily-driver-delivery.md) |
+| Generation | `authority-reconcile-2026-09-02` |
+| Cutover commit | the verified local commit that introduces this generation from branch `docs/delivery-authority-reconcile` |
+| Verified product base | `main@e464ca3282e969b192a30906915445a24dd704e6` |
+| Integrated product checkpoint | `main@e464ca3282e969b192a30906915445a24dd704e6`; Reference Shell, system appearance, real favicons, Sidebar polish, interaction fixes, and centered New Tab palette are integrated locally |
 | Previous canonical pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md` |
 | Rollback pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
-| Target Orchestrator session | `019fdc57-7afb-7f81-8963-756586fe0a6b`; live pane is volatile and must be reverified at handoff |
+| Target Orchestrator session | `01a062b1-9945-7d1b-aa68-02a11d6084fd`; reverify pane/session activity before any ownership transfer |
+| Preserved design checkpoint | `design/browser-shell-paper@414c97c7a5139cf6070a54138969a3bb34403bc2`; design intent only, not runtime acceptance |
 
-The current branch is the integration/control authority. Only the Orchestrator creates worktrees, commits, integrates, or edits this file. Product writers may update their canonical packet and implemented-fact docs but never this runtime snapshot.
+The current branch/worktree is the only control writer while reconciliation is active. Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
 
 ## Status vocabulary
 
@@ -37,466 +35,67 @@ The current branch is the integration/control authority. Only the Orchestrator c
 
 ## Active product wave
 
-The reference-alignment wave is active. Patrick settled on 2026-08-13: the production theme follows the macOS system appearance (both modes), pinned/folder regions stay separate, and the media control is prioritized after the alignment slices. The completed VS-REFERENCE and Daily-driver rows below are historical integrated evidence. GUI suites remain host-exclusive through the repository lock.
+The reference-alignment implementation wave is complete on `main`: Theme merged through `f7fe3d6f`, Favicon through `a79ff95e`, Reference Shell through `4d1a5343`, and Sidebar Polish plus interaction fixes through `35c91189`; follow-up functional E2E fixes and the centered New Tab palette land through `e464ca32`. The active control work only reconciles documentation with those facts and preserves Patrick's later folder design decision without changing runtime behavior.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| RA-THEME | System-appearance production theme (light + dark) | `integrated` | lane commit `40f114f1`; merge `f7fe3d6f` | Orchestrator; exact reviewed candidate and post-merge gates complete | [system-appearance theme](../roadmap/tasks/system-appearance-theme.md) | Closed for this wave; combined post-merge evidence remains green |
-| RA-FAVICON | Real favicon pipeline | `integrated` | lane commit `e0faaa9d`; merge `a79ff95e` | Orchestrator; exact reviewed/remediated candidate and post-merge gates complete | [real favicon pipeline](../roadmap/tasks/real-favicon-pipeline.md) | Closed for this wave; favicon 3/3 and combined regression suites green |
-| RA-POLISH | Sidebar reference polish (pitch, folder anatomy, identity glyphs) | `ready` | clean lane `891c720a00d938c86b1884074c4a8f057a862137` on `parallel/sidebar-reference-polish` | Orchestrator; grouped lane commits and final-tree gates complete | [sidebar reference polish](../roadmap/tasks/sidebar-reference-polish.md) | Integrate the three-commit lane serially after `a79ff95e`, then run focused post-merge checks |
-| RA-MEDIA | Media-session capability and sidebar media card | `planned` | none | none | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Activates after the alignment slices; capability contract lands first |
+| CONTROL-RECONCILE | Product/delivery authority reconciliation | `running` | `/Users/patwoz/dev/Personal/macos/bbr` on `docs/delivery-authority-reconcile` | session `01a062b1-9945-7d1b-aa68-02a11d6084fd` | [Roadmap maintenance](../roadmap/README.md) | Validate graph/diff/tests, commit coherent groups, audit every requirement, then integrate locally to `main` |
+| FOLDER-PIN-INVARIANT | Folder membership and pinned-state invariant | `planned` | none | none | [folder membership pins tabs](../roadmap/tasks/folder-pinned-invariant.md) | Explicit activation from a fresh verified `main`; no implementation is authorized by this reconciliation |
+| RA-MEDIA | Media-session capability and Sidebar media control | `planned` | none | none | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Prioritize independently after an explicit delivery decision; capability contract first |
 
-Reference-alignment activation audit (2026-08-13): verified clean base
-`main@806e4238`; free GUI lock; no owned lane process. Runnable candidates
-RA-THEME and RA-FAVICON both started as isolated clean worktrees from that
-exact base with disjoint exclusive paths (theme-selection authority and token
-values versus web-contract/adapter/favicon-store/favicon-component).
-Deliberately deferred: RA-POLISH (needs the integrated theme authority to
-calibrate both modes) and RA-MEDIA (sequenced after the alignment slices;
-capability contract first). Expected shared integration points: testkit
-protocol/snapshot, Gallery registry, `justfile`, `DESIGN.md`. Serial
-integration order: RA-THEME → RA-FAVICON → RA-POLISH. Writers leave
-uncommitted candidates bound by exact fingerprints; only the Orchestrator
-commits and integrates. Performance execution stays forbidden under the
-active override.
-
-First-wave settlement audit: workflow
-`bbr-reference-alignment-wave-msqip269-9obn13` completed 8/8 agent calls with
-no wrapper error. RA-THEME received two concrete findings (one final-tree
-Clippy failure and two lane-introduced >500-line files); the bounded
-remediation split the modules and removed the dead binding, reran every
-affected gate, and received `RECHECK_PASS`. Exact frozen fingerprints: HEAD
-`806e423823699c17f6bcd40ffd327e27f196f091`, status-z
-`fdec6329d1fa1b07c38e5ba68627e2bede63336ce916cd8512949c4fcdfb4011`,
-binary diff `9f1e0df765a41a927dc4daf197bfaa369e53a4e727629934054403a9efc17cec`,
-sorted status
-`a5d1219480e3d765639fec9d7883466dcbb88119ebef265bdf080c4daaa4da44`.
-RA-FAVICON's first writer terminated before a settlement report; review found
-ten findings and its initial remediation causally closed the portable/native
-contract, profile test, original Clippy issues and snapshot literals, but
-stopped before presentation, E2E, DESIGN, formatting, module-budget and final
-fingerprint closeout. The read-only recheck returned `RECHECK_FINDINGS`; the
-preserved continuation candidate is rebound directly above. No lane process
-or GUI-lock holder survives. Retry continues only the open findings; completed
-work is not re-run or replaced.
-
-RA integration audit: RA-THEME materialized as lane commit `40f114f1` and
-merged as `f7fe3d6f`; its focused post-merge sweep is green (app bins 279,
-Sidebar 14/14, Spaces 21/21, Gallery 45/45, warning-denied app Clippy,
-format/roadmap). RA-FAVICON underwent two continuation waves and direct
-Orchestrator remediation. The final candidate added deterministic presentation,
-two-profile E2E, state-precedence and Rc/Weak lifetime regression coverage;
-independent whole-candidate and focused rechecks closed every finding. It
-materialized as lane commit `e0faaa9d` and merged conflict-free after Theme as
-`a79ff95e`. The combined post-merge sweep is green: crate suites, app bins,
-warning-denied bbr-ui/app/WebKit Clippy, roadmap/UI-deps/scripts/diff-check;
-Favicon 3/3, Tabs 3/3, Sidebar 14/14, Hover 4/4, Spaces 21/21, Dense 3/3 and
-Gallery 45/45. Logs live under `/tmp/bbr-theme-postmerge` and
-`/tmp/bbr-alignment-postmerge`. Performance execution, `just verify` and
-canonical `just e2e` remain intentionally unexecuted under the active override.
-RA-POLISH starts from exact clean checkpoint `a79ff95e` and inherits both
-completed authorities.
-
-RA-POLISH blocked-candidate audit: two continuation writers preserved and
-completed the original uncommitted candidate without reset or restart. The
-final implementation routes row rendering, dense windows, selection visibility
-and drag slots through the shared 36/40/48 pt pitch authority; adds authored
-open/closed folder glyphs with hover/focus count reveal; adds the truthful
-organized-regions separator; exposes address/Reload rest-state evidence in both
-appearance modes; and ships the complete 14-path BBR identity catalog in the
-footer and picker. Lane-grown modules were split below the ~500-line budget.
-Independent whole-candidate review `bbr-polish-blocked-candidate-review-msqv95qn-hczmy6`
-returned `REVIEW_PASS_BLOCKED_GUI`: no code or documentation finding remains.
-The review originally bound HEAD
-`a79ff95e8607e40b3297dca501e56a79651e28dc`, status-z and sorted-status
-`b69ab6176683d9d7521db63bfd95d4b3264b7da411c3958a79172c10fdf5b27a`,
-binary diff
-`1f28aee66285eaf9160fe10eb2a3f5224ee2881ee9023da321ec88c4def04a4a`,
-and untracked-path hash
-`308d1c1f714fce8e7c1593e98b3f15e78b8e6a88d8688c9e36537b070f7f2bda`.
-A subsequent ordinary non-testkit `just run` exposed one compile-only cfg bug:
-`effective_theme_mode` lost its second parameter when the `testkit` feature was
-disabled, while its production caller still passed `None`. The lane now keeps
-the stable two-argument pure seam in both feature modes and gates only override
-use; its testkit-only hover-clear seam is likewise cfg-gated so the normal
-binary is warning-free. `cargo build -p bbr`, focused appearance tests, and
-warning-denied all-target testkit Clippy pass. Updated candidate binding:
-status-z and sorted-status
-`64a7560ebb9d464b0fe3096997c252a4a6ddba8fd9937a56c405fb1bec80a733`,
-binary diff
-`7cb9ebfd3650174ee693602873a402e3aef5417ebde02589bad786bcb6cce623`;
-HEAD and untracked-path hash are unchanged. This bounded compile remediation
-requires focused review/recheck before GUI materialization.
-At that checkpoint the non-GUI evidence was green while
-`IOConsoleLocked=true` blocked materialization. After the console unlocked,
-the Orchestrator ran the complete final tree serially through the host GUI
-lock. One initial Sidebar attempt was invalidated by a concurrently restarted
-manual `just run`; the uncontended rerun passed 15/15. Dense passed 3/3.
-Organize then exposed a test-coordinate error: moving a first-row center by a
-whole pitch correctly enters fixed chrome and is no target, whereas slot 0 is
-at the exact list edge. The test now preserves that contract and adds pure
-regressions for both edge and above-list behavior; Organize passed 2/2 and
-Drag-Chip 4/4. Gallery exposed that the new zero-height tick container lacked
-its own width authority; `w_full` on the container preserves zero flow height
-while giving the absolute rule truthful bounds, after which Gallery passed
-45/45. Spaces passed 21/21.
-
-RA-POLISH materialized in three coherent lane commits:
-`e1081aeb1dd63ba36883740dd295232aa619e249` fixes the non-testkit theme seam,
-`2ffc27fa8ba68d4322a4e20f7ee38eb676124eb9` implements the reference anatomy
-and regression evidence, and
-`891c720a00d938c86b1884074c4a8f057a862137` settles DESIGN and the task packet.
-The lane worktree is clean. Final non-GUI evidence is UI 147, Browser 261, app
-bins 282, testkit 30, Gallery 148 passed / 45 ignored; warning-denied UI/app
-Clippy; format, roadmap, UI-dependencies, 46 script tests and diff-check. All
-three performance targets compile with `--no-run`; performance execution,
-`just verify` and canonical `just e2e` remain forbidden under the active
-override. No lane process, Git lock or GUI-lock holder survives. The next
-serial action is integration followed by focused post-merge verification.
-
-| VS-REFERENCE | Reference-faithful light production shell | `integrated` | lane commit `9ae318ab`; merge `4d1a5343`, tree `5f2b8a04…` | Orchestrator; exact reviewed candidate, remediation and post-merge gates complete | [visual-shell reference](../roadmap/tasks/visual-shell-reference.md) | All affected GUI suites are green serially under the repository lock (Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20, Organize 6/6, Hover 3/3, Dense 3/3, Gallery 44/44) and the final optimized `visual-capture` build re-produced both 2× artifacts; Closed for this wave; performance execution, startup, canonical `just e2e`, packaging and accessibility remain honestly unpassed |
-| DD-CONTROL | Daily-driver contract and lane activation | `closed` | `/Users/patwoz/dev/Personal/macos/bbr-delivery-control-reconcile` | Orchestrator | [daily-driver delivery](2026-08-12-daily-driver-delivery.md) | Contract `4d5be311…`, roadmap/index graph, clean common base, and seven isolated worktrees are proven |
-| DD-LINK | Cmd-click/middle-click grouped background tabs | `integrated` | lane commit `abae5214c04900034da139e5148d7c79693158dc`; merge `b4b2b77c9d679dce30b48e2e302e24075956a449` | Orchestrator; focused remediation `REVIEW_PASS` and post-merge gates complete | [background link tabs](../roadmap/tasks/background-link-tabs.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
-| DD-GESTURE | Current-base real-app gesture revalidation | `integrated` | lane commit `f2183fdb2c3f3586c500d4c67a1bdc0257e6a06d`; merge `ebb8e137aa54077c47b5ae4c5603e47e8492d9ca` | Orchestrator; independent `REVIEW_PASS` and focused post-merge gates complete | [gesture revalidation](../roadmap/tasks/web-gesture-revalidation.md) | Closed for this wave; testkit-only fix, production command routing unchanged |
-| DD-TITLEBAR | Full-height expanded Sidebar header/navigation | `integrated` | lane `6327b6b48b84f847061e5d55b85d58843dd676f0`; merge `69616b88be823b8ab35d1f806ada911d6256d9e6`; gate fix `4b3f40c5f736d3703682d001181d7c597ef317eb` | Orchestrator; focused `REVIEW_PASS`, semantic Justfile union and post-merge gates complete | [titlebar navigation](../roadmap/tasks/titlebar-navigation-controls.md) | Closed for this wave; fullscreen/multi-display/manual drag and performance evidence remain honestly open |
-
-| DD-SPACE | Create/activate/configure Space and icon-only footer | `integrated` | lane `8a15496488f27e7a1f6150b27d5374cf033c5b7e`; merge `7f658aba0a4725db67c2e0fba33fcaf5388d0db8`; Gallery gate fix `ac381f3f6b57e73155380dc5ba7f0c35451b8a84` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Space creation and appearance](../roadmap/tasks/space-creation-appearance-ui.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
-| DD-SIDEBAR | Daily-driver tab/pinned/Favorites composition and drag | `integrated` | lane `7191fc72b627bacc50ef5d4dc2ac0c325a19121b`; merge `f4c6f60e3496bcd3fe3a9e1ab022bc6329911703`; gate fix `f1de38c1086c40a35589ac710881363d595bdb47` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Daily-driver Sidebar main](../roadmap/tasks/daily-driver-sidebar-main.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
-| DD-TAB-MENU | Production Tab/Favorite context menus | `integrated` | lane `35674e5f92e06596b0851df63106d6ea77cf483e`; merge `fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd26559697d7265fcadc80ea4ca3a51eab` | Orchestrator; exact reviewed candidate and all post-merge gates complete | [Tab/Favorite menus](../roadmap/tasks/tab-favorite-context-menus.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
-| DD-PAGE-MENU | Enriched conservative page-background menu | `integrated` | lane `8616f2733ae9599b6836e938cbc33db8e2907b36`; merge `85295736185b0176d16a0cdc2c3c75b30c5fb255`; Gallery gate fix `14d56309b4a47aa7da9ab04eb346eeab7362b20a` | Orchestrator; whole-candidate, docs-focused, staged-union, and Gallery-gate-fix reviews passed; all post-merge gates complete | [Page-background menu](../roadmap/tasks/page-background-context-menu.md) | Closed for this wave; performance remains globally unexecuted/unpassed |
+No product writer or background workflow is active. The Paper and Ladybird sessions are read-only and idle at their prompts; all historical BBR worktrees remain preserved.
 
 ## Post-F2a parallel wave
 
-The former post-F2a implementation wave is closed and preserved in Git history. It grants dependencies to the current wave but has no active writer or queue authority.
+The former post-F2a and Daily-driver waves are closed historical evidence. Their lane details remain in Git and [the completed Daily-driver delivery](2026-08-12-daily-driver-delivery.md); they grant dependencies but schedule no work.
 
 | ID | Status before F2a close | Worktree / owner | Exclusive territory | Start condition | Integration priority |
 |---|---|---|---|---|---|
-| LEGACY-F2A | `closed` | historical worktrees; no owner | completed footer/appearance/swipe and prerequisite UI foundation | complete | none; evidence only |
+| LEGACY-F2A | `closed` | historical worktrees; no current owner | completed footer/appearance/swipe and dependent UI foundation | complete | none; evidence only |
 
 ## Serial integration order
 
-1. Commit and validate this Daily-driver control cut.
-2. Create every defensible isolated lane from one recorded clean authority base and start writers maximally in parallel.
-3. Integrate DD-LINK first because it changes the shared new-window/controller contract.
-4. DD-GESTURE closes evidence-only if green; a remediation candidate integrates after DD-LINK.
-5. Integrate DD-TITLEBAR, then DD-SPACE, then DD-SIDEBAR. These lanes may implement concurrently, but their shared Sidebar composition resolves in that order.
-6. Integrate DD-TAB-MENU, then DD-PAGE-MENU. Shared `bbr-ui::surfaces::menu`, Gallery, testkit, and roadmap conflicts are semantic unions.
-7. Activate DD-FOLDER-MENU only after the shared menu seam and folder command/delete truth are settled by committed authority.
-8. After every writer/review/remediation/integration/gate event, reread `ROADMAP.md → this file`, audit every queue row, and keep runnable lanes occupied.
-9. Do not start Split or inspect its stale worktree.
-
-Parallelism audit at activation: runnable candidates `DD-LINK`, `DD-GESTURE`,
-`DD-TITLEBAR`, `DD-SPACE`, `DD-SIDEBAR`, `DD-TAB-MENU`, and `DD-PAGE-MENU`;
-all seven received isolated clean worktrees from exact base `4d5be311…` and
-exclusive workflow-writer labels. Deliberately deferred: `DD-FOLDER-MENU`
-(shared menu seam plus delete/command truth), `DD-SHIFT-LINK` (product
-semantics), Split (Patrick override), and Phase 9. Expected conflicts are the
-app composition root, controller/testkit envelopes, Gallery registry, Justfile,
-and roadmap roll-ups; semantic integration order is fixed above.
-
-Writer settlement audit: workflow `bbr-daily-driver-parallel-writers-msp95k82-okl41r`
-completed with `running=0`, `queued=0`, `error=0`, but wrapper completion is
-non-authoritative. Independent all-files bindings from unchanged base
-`4d5be311…` are: DD-LINK `4c067b3c…`/47 paths; DD-GESTURE
-`36dd5ab8…`/2; DD-TITLEBAR `0872e1da…`/14; DD-SPACE `6746d676…`/10;
-DD-SIDEBAR `5b8f832b…`/22; DD-TAB-MENU `51ea656f…`/9; DD-PAGE-MENU
-`c1b4a1c7…`/29. Every real index is unstaged, every Git/GUI lock is free,
-and no lane process survives. DD-GESTURE alone supplied a complete direct
-`REMEDIATION_READY` report; six incomplete lanes retain their exact forward
-state and one replacement owner each. The writer-reported DD-GESTURE path hash
-is superseded by the independently computed NUL-sorted path hash
-`3676bf05f9dcf7cc028c6d5ad5a756de6ffbd45caddf6f16ae626928e75f4d8a`.
-
-Settlement-wave audit: workflow `bbr-daily-driver-settlement-wave-mspar0h3-4kvy80`
-completed all seven agents with no wrapper error. Direct independent rebinding
-accepts DD-GESTURE `REVIEW_PASS` at exact tree `36dd5ab8…`; DD-LINK is a
-reviewable 47-path candidate at `17325002…`; DD-SIDEBAR is a reviewable 29-path
-candidate at `2bfa4c4b…`. DD-TITLEBAR stopped on one warning-denied test
-assignment at forward tree `94425ba3…`; DD-SPACE and DD-TAB-MENU preserve
-unfinished trees `a4891930…` and `73cd9597…`. DD-PAGE-MENU fixed both causal
-context-menu findings and passed 11/11, but Portal remains 6/7 because the
-macOS console is currently locked (`IOConsoleLocked=Yes`) above foreign Android
-qemu windows; it remains blocked rather than mislabeled ready. All seven HEADs
-remain activation base `4d5be311…`, real indices have zero staged paths, no lane
-process survives, and Git/GUI locks are free. Canonical fingerprints are the
-Orchestrator's temp-index computations; writer hashes produced from incomplete
-working diffs or alternate path serialization do not supersede them.
-
-Review/recovery-wave audit: workflow
-`bbr-daily-driver-review-recovery-wave-mspcesf6-td6z5h` completed five agents.
-Independent rebinding accepts DD-SIDEBAR `REVIEW_PASS` at exact tree
-`2bfa4c4b…`. DD-LINK remains technically green at `17325002…`, but review
-found one actionable overclaim: its packet says Portal regressions remain green
-although the locked host only proves 6/7 and the lane does not touch Portal;
-remediation is documentation-only. DD-TITLEBAR is a reviewable 47-path
-candidate at `cb964905…`. DD-SPACE and DD-TAB-MENU preserve unfinished trees
-`de966b1e…`/65 paths and `d284788e…`/63 paths. All real indices remain
-unstaged, no lane process or Git/GUI lock survives, and the macOS console still
-reports `IOConsoleLocked=Yes`; DD-PAGE-MENU therefore remains externally
-blocked. Orchestrator NUL-sorted hashes supersede alternate writer path hashes.
-
-Findings-wave audit: workflow `bbr-daily-driver-findings-wave-mspe8dft-ws9shg`
-completed five agents. DD-LINK passed its focused documentation recheck at
-exact tree `0bd4e5da…` and enters the serial integration kernel. DD-TITLEBAR
-code/evidence remain green at `cb964905…`, with one documentation-only finding:
-a checked item bundles unproven fullscreen/multi-display claims. DD-SPACE and
-DD-TAB-MENU are reviewable 66-path candidates at `d1f0ab82…` and `a4f1f6c8…`.
-DD-GESTURE and DD-SIDEBAR remain frozen. All real indices remain unstaged, no
-lane process or Git/GUI lock survives, and `IOConsoleLocked=Yes` continues to
-block the Page-menu Portal closeout. The Orchestrator-computed DD-TAB-MENU
-porcelain-z hash is `5bdd3c506aa4f87c10b183b0a1694be3ae041747e69c50453ab63cac73165156`;
-the writer's alternate status hash is non-authoritative.
-
-DD-LINK integration audit: exact candidate commit
-`abae5214c04900034da139e5148d7c79693158dc` merged as
-`b4b2b77c9d679dce30b48e2e302e24075956a449`, tree `978e6078…`.
-Post-merge format, domain/web/browser/web-macos/app tests, both fresh-target
-warning-denied Clippy gates, roadmap, UI-dependency and script gates are green.
-Affected GUI suites are green: background links 4/4, new-window 4/4, Peek 6/6,
-web gestures 9/9, tabs 1/1, profiles 1/1. Logs live under
-`/tmp/bbr-dd-link-postmerge{,-gui}/` with SHA-256 manifests in the Orchestrator
-session. Performance execution remains intentionally unrun. The clean merge
-checkpoint promotes DD-GESTURE to the next exclusive integration position.
-
-DD-GESTURE integration audit: exact two-file candidate commit
-`f2183fdb2c3f3586c500d4c67a1bdc0257e6a06d` merged conflict-free as
-`ebb8e137aa54077c47b5ae4c5603e47e8492d9ca`, tree `b82b7f44…`, on top of
-DD-LINK. Format, app unit tests, a fresh warning-denied bbr all-target Clippy,
-roadmap and diff checks are green; the real-app gesture suite is 10/10,
-including the 16-event drain-before-command regression. Logs live under
-`/tmp/bbr-dd-gesture-postmerge/` with SHA-256 values in the Orchestrator
-session. No performance execution occurred. DD-TITLEBAR remains the next
-serial product integration position once its focused documentation recheck
-passes.
-
-Final-review audit: workflow `bbr-daily-driver-final-reviews-mspfijvd-flnwef`
-completed four agents. DD-TITLEBAR passed its focused documentation recheck at
-exact tree `99351773…`; the Orchestrator's canonical NUL-sorted 47-path hash is
-`5ab1350847691c8fc8bbb44849355e2368541d0f93724db008c2923018b68fcf`,
-superseding the reviewer's alternate serialization. DD-SPACE review found
-Gallery StoryId 46 correctly appended but eight pinned-prefix unit tests still
-expect 46 stories, a stale ledger tree, and a soft 551-line module-budget
-finding. DD-TAB-MENU review found two major product bugs: production submenu
-geometry is never assigned, and activating a closed submenu parent dispatches
-the placeholder Reload action; suspended Copy Link availability and docs also
-need correction. All states remain independently rebound and unstaged with no
-lane process or Git/GUI lock. `IOConsoleLocked=Yes` continues to block only the
-Page-menu Portal closeout.
-
-DD-TITLEBAR integration audit: exact candidate commit
-`6327b6b48b84f847061e5d55b85d58843dd676f0` merged as
-`69616b88be823b8ab35d1f806ada911d6256d9e6`; the sole conflict was the
-canonical `justfile` E2E aggregate and was resolved as a semantic union that
-keeps both Titlebar and background-link recipes. Fresh canonical Clippy found
-two integration-only warning failures: a constant test assertion and a
-release-visible testkit Unhover helper. Forward fix
-`4b3f40c5f736d3703682d001181d7c597ef317eb`, tree `874fb4d4…`, makes the
-density invariant runtime-evaluated and correctly feature-gates the helper.
-Both canonical warning-denied Clippy gates, targeted units, roadmap/UI/script
-checks and GUI suites are green: Titlebar 5/5, Sidebar 11/11, split geometry
-1/1, hover/semantics 3/3 and tabs 3/3. Logs live under
-`/tmp/bbr-dd-titlebar-postmerge-final/`. No performance execution occurred.
-DD-SPACE remains the next serial integration position after its remediation
-and focused recheck.
-
-Product-remediation audit: workflow
-`bbr-daily-driver-product-remediation-mspfxzl9-99e931` completed 4/4 with no
-terminal error. The first DD-SPACE focused-recheck attempt was idle-aborted at
-the configured 480000 ms boundary and grants no authority; configured
-`agentRetries=1` resumed the same bounded read-only call, whose second attempt
-returned a complete direct `REVIEW_PASS`. Independent Orchestrator rebinding
-accepts DD-SPACE tree `c8dd884c3da20d557f1b3c767b48b6220f679d34`, binary
-diff SHA-256 `61ac9c566e39be1bcc50843dd8febf4e98bf8410b5db388dd31ec2514b4b085f`,
-status-z SHA-256 `965f652e9b41d4a2fa4b8ca114fc1e983104fa1cf46f49290ce81f8fda3b45dd`
-and NUL-sorted 68-path SHA-256
-`0facad357c91eaf16b6c39177eb779aa37ecaee0a7876828a6e20535bc7e6ba1`.
-Gallery 145/145, both fresh warning-denied Clippy gates, targeted units, Spaces
-20/20, Sidebar 11/11, Organize 6/6, Gallery E2E 44/44, roadmap and diff checks
-are green. The soft module-budget finding is resolved by a behavior-preserving
-split; one non-blocking packet count-label inversion remains documentary only.
-
-The same workflow returned a direct independent `REVIEW_PASS` for DD-TAB-MENU.
-Orchestrator rebinding accepts tree
-`c8bcaaf00af1004e691b36776056b69a21b9fcad`, binary diff SHA-256
-`b7dc926fe3803ea8a9c1bca5dc9379f9c34b677ebaa4f7d24fb705391d68d81d`,
-status-z SHA-256
-`5bdd3c506aa4f87c10b183b0a1694be3ae041747e69c50453ab63cac73165156`
-and NUL-sorted 66-path SHA-256
-`c936061240e3a5cfacc614649fa8fa3ab6ee3e2510d8244480d73ea4bc531a40`.
-Production submenu geometry, parent activation and suspended Copy Link are
-causally covered; Tab menu 12/12, Organize 6/6, Sidebar 11/11 and Gallery 42/42
-are green. Both real indices remain at activation base with zero staged paths;
-no lane process, Git lock or GUI-lock holder survives. DD-SPACE is promoted to
-the exclusive integration position; DD-TAB-MENU remains frozen behind
-DD-SIDEBAR. No performance execution occurred.
-
-DD-SPACE merge audit: exact reviewed tree `c8dd884c…` was materialized as lane
-commit `8a15496488f27e7a1f6150b27d5374cf033c5b7e` and merged after Titlebar as
-`7f658aba0a4725db67c2e0fba33fcaf5388d0db8`, tree `7d9b0040…`. The sole
-merge conflict was the additive `bbr-testkit::protocol` re-export list;
-semantic resolution retains both `TitlebarSnapshot` and the new
-`SpaceConfigSnapshot`. Pre-commit format, testkit 28/28, app testkit
-all-target compile and diff checks are green. Full post-merge gates are active;
-DD-SIDEBAR remains frozen until they pass. No performance execution occurred.
-
-DD-SPACE post-merge audit: format; domain 123, browser 233, UI 134, app 262
-and Gallery 145 unit tests; both canonical warning-denied Clippy commands on
-fresh targets; roadmap, UI dependency, script and diff checks are green.
-Spaces is 20/20, Sidebar 11/11 and Organize 6/6. The first Gallery sweep found
-one causal integration regression: its Sidebar scenario still pinned the
-pre-Titlebar count of 13 while the merged matrix truthfully contains 15
-families. Forward test fix
-`ac381f3f6b57e73155380dc5ba7f0c35451b8a84`, tree `97aad371…`, strengthens
-the contract to exact count 15 plus byte-identical matrix/selector labels;
-targeted 1/1 and full Gallery 44/44 pass. Both fresh Clippy gates and all
-non-GUI checks were rerun on the final tree. Logs and SHA-256 manifests live
-under `/tmp/bbr-dd-space-postmerge{,-gui,-final}/`. The initial non-GUI wrapper
-attempt failed before executing a product gate because `timeout` was outside
-the Nix shell; the corrected bounded invocations are the authoritative green
-runs. DD-SPACE is integrated and DD-SIDEBAR is now the exclusive serial
-integration position. No performance execution occurred.
-
-DD-SIDEBAR merge audit: exact reviewed tree `2bfa4c4b…` was materialized as
-lane commit `7191fc72b627bacc50ef5d4dc2ac0c325a19121b` and merged after Space as
-`f4c6f60e3496bcd3fe3a9e1ab022bc6329911703`, tree `0a2340ea…`. Four shared
-conflicts were resolved semantically: Sidebar matrix/story/E2E retain the two
-Titlebar navigation families and append the Favorites drop-band family (16
-families total); the production render boundary retains both the Space
-configuration panel and Favorites-band anchor. A causal auto-merge drift in
-the Tab-row Gallery authority was corrected by advancing pinned-N/S stable
-indices to 12/13 after the integrated Unresponsive family. Pre-commit format,
-UI 134/134, Gallery 145/145, app testkit all-target compile and diff checks are
-green. Full post-merge gates are active; DD-TAB-MENU remains frozen until they
-pass. No performance execution occurred.
-
-DD-SIDEBAR post-merge audit: final format; domain 123, browser 233, UI 134,
-app 263 and Gallery 145 unit tests; both canonical warning-denied Clippy
-commands on fresh targets; roadmap, UI dependency, script and diff checks are
-green. The first fresh bbr Clippy found one integration-only architecture
-pressure: five separately passed app-owned child elements exceeded the
-function argument budget. Forward refactor
-`f1de38c1086c40a35589ac710881363d595bdb47`, tree `798e5549…`, groups only
-those render children in `SidebarChildren`; the plain model, callbacks and
-browser authority remain unchanged. GUI evidence is green: Sidebar 12/12,
-Tabs 3/3, Organize 6/6, Spaces 20/20, Gallery 44/44. Logs and SHA-256 manifests
-live under `/tmp/bbr-dd-sidebar-postmerge{,-final,-gui}/`. DD-SIDEBAR is
-integrated and DD-TAB-MENU is now the exclusive serial integration position.
-No performance execution occurred.
-
-DD-TAB-MENU merge audit: exact reviewed tree `c8bcaaf0…` was materialized as
-lane commit `35674e5f92e06596b0851df63106d6ea77cf483e` and merged after Sidebar as
-`fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd…`. Fifteen
-shared conflicts were resolved as additive/semantic unions. Space
-configuration retains append-only StoryId 46; Tab/Favorite menu appends at 47
-for a 48-story catalog. Titlebar, Space and Tab-menu testkit types/modules,
-performance compile paths, dismiss behavior, Gallery contexts and all prior
-E2E recipes remain present. Pre-commit format, UI 138/138, Gallery 147/147,
-app testkit all-target compile and diff checks are green. Full post-merge gates
-are active. No performance execution occurred.
-
-DD-TAB-MENU post-merge audit: format; domain 123, browser 250, UI 138, app
-275 and Gallery 147 unit tests; both canonical warning-denied Clippy commands
-on fresh targets; roadmap, UI dependency, script and diff checks are green.
-GUI evidence is green: Tab Menu 12/12, Sidebar 12/12, Organize 6/6, Tabs 3/3,
-Spaces 20/20 and Gallery 44/44. Logs and SHA-256 manifests live under
-`/tmp/bbr-dd-tabmenu-postmerge{,-gui}/`. The exact reviewed implementation and
-all semantic unions are integrated at
-`fa0028bd1a7fb9e460c1ca42103029ff8f7b5e81`, tree `deb5c9dd…`. DD-PAGE-MENU
-is now the next serial position but remains externally blocked: the user must
-unlock the macOS console, then only `just e2e-shell-portal` is rerun for 7/7
-before whole-candidate review. No performance execution occurred.
-
-Page-menu unblock and freeze audit: a fresh host check reported
-`IOConsoleLocked=No`; foreign emulator/QEMU processes remained untouched and
-the repository GUI lock was free. The exact unchanged candidate tree
-`e3c41377…` then passed `just e2e-shell-portal` 7/7, log
-`/tmp/bbr-dd-page-menu-portal-unlocked-20260812T100841.log`, SHA-256
-`ca59154fc89e2b91708bd902c9ee38274a1e2cef54261c37b306eefab018980d`.
-Independent whole-candidate review returned only two low docs-truth findings:
-the ledger path count and contradictory Select-All/Share ownership wording.
-The bounded docs-only remediation produced tree `9547539e…`; focused recheck
-returned direct `DD_PAGE_MENU_DOCS_RECHECK_PASS` with no findings and proved
-all product/test/evidence blobs unchanged. The Orchestrator committed that
-exact reviewed tree as clean lane commit `8616f2733ae9599b6836e938cbc33db8e2907b36`.
-DD-PAGE-MENU integration audit: the exact reviewed lane commit `8616f273…`
-was merged after DD-TAB-MENU as `85295736185b0176d16a0cdc2c3c75b30c5fb255`,
-tree `67885ac8…`. Six shared conflicts were resolved as semantic unions:
-Space remains StoryId 46, Tab/Favorite menu remains 47, Page Menu appends at
-48 for a 49-story catalog, and all Tab-menu plus Page-menu performance kinds,
-requests, dispatch, budgets and zero-sample baselines remain registered.
-Independent staged-union review returned direct
-`DD_PAGE_MENU_STAGED_UNION_PASS`. Fresh post-merge warning-denied Gallery
-Clippy exposed two inherited G1b `collapsible_match` warnings outside the
-Page-menu delta. The exact behavior-preserving two-test-file fix received
-direct `PAGE_MENU_GALLERY_CLIPPY_FIX_REVIEW_PASS` and was committed as
-`14d56309b4a47aa7da9ab04eb346eeab7362b20a`, tree `779a086d…`.
-Final non-performance checks are green: workspace all-target check and
-lib/bin tests, fresh warning-denied WebKit/App/Gallery Clippy, roadmap,
-UI-dependencies, 46 script tests and diff-check. Repository-locked Xcode-26.2
-GUI evidence is green: Gallery 44/44, Page Context Menu 11/11, Portal 7/7,
-and existing Tab Menu 12/12. Logs and SHA-256 manifests live under
-`/tmp/bbr-page-menu-postmerge-*`. All seven Daily-driver lanes are integrated;
-performance and canonical aggregate E2E remain unexecuted/unpassed.
-
-VS-REFERENCE integration audit: the exact reviewed and remediated candidate
-tree `5f2b8a04c0c5bbf026e891058a3fabce17cfc191` was committed as lane commit
-`9ae318ab` and merged conflict-free onto local `main` as `4d1a5343`; the merge
-commit carries that identical tree, so no integration drift exists. Three
-independent read-only reviewers plus one synthesizer reproduced the candidate
-binding byte-for-byte and returned sixteen non-blocking findings (eight
-ledger/evidence truth corrections, one DESIGN §11.4 region-order contradiction,
-six stale 280 pt references, one dead binding). All were remediated causally,
-and a wider sweep for the same root cause additionally corrected the portable
-`SidebarState` recovery default from 280 pt to the shipped 300 pt rail.
-Pre-merge GUI evidence: Sidebar 12/12, Titlebar 5/5, Tabs 3/3, Spaces 20/20,
-Organize 6/6, Hover 3/3, Dense 3/3, Persistence 5/5, Gallery 44/44 plus both
-`visual-capture` evidence captures. Post-merge from `main`: format, roadmap,
-UI-dependency, script and diff checks; domain 123, browser 250, UI 139,
-testkit 29, app 277 unit tests; warning-denied bbr/bbr-ui/bbr-gallery Clippy;
-default-feature all-target check; and GUI Sidebar 12/12, Persistence 5/5 and
-Gallery 44/44. Logs and SHA-256 manifests live under
-`/tmp/bbr-visual-postmerge-20260812T210310/` and
-`/tmp/bbr-visual-postmerge-gui-20260812T210913/`. No performance execution
-occurred and nothing was pushed.
+1. Finish and locally integrate `CONTROL-RECONCILE`; the final snapshot must name the exact commit and report no active writer.
+2. Do not infer a product lane from an idle historical worktree or session. Every new writer requires a fresh exact-base, status, process, lock, and ownership preflight.
+3. If activated, `FOLDER-PIN-INVARIANT` lands before any Folder-menu behavior that assumes folders contain pinned tabs.
+4. RA-MEDIA remains a separate capability-first sequence and does not depend on the folder invariant.
+5. Split stays blocked; no preflight, inspection, port, review, or mutation of `bbr-split-app-composition` is authorized.
+6. GUI suites remain host-exclusive through the repository lock. Performance execution remains deferred until Patrick removes the active override.
 
 ## Downstream dependency queue
 
 | ID | Status | Depends on / boundary |
 |---|---|---|
-| DD-FOLDER-MENU | `blocked` | Waits for integrated shared menu source/renderer shape plus explicit folder delete/command availability truth; [Folder menu packet](../roadmap/tasks/folder-context-menu.md) remains canonical |
+| DD-FOLDER-MENU | `blocked` | Requires the integrated shared menu seam plus the settled folder command/delete truth; if it presents folders as grouped pins, it also waits for `FOLDER-PIN-INVARIANT` |
 | DD-SHIFT-LINK | `planned` | Shift-modified link behavior remains intentionally unclassified; no writer may infer foreground/window semantics |
-| DD-MANUAL-SMOKE | `planned` | Fresh deterministic package required after the bounded Daily-driver wave; manual representative-site smoke supplements automation |
+| DD-MANUAL-SMOKE | `planned` | Requires a fresh deterministic package; representative-site smoke supplements rather than replaces automation |
 
 ## Open product and evidence work
 
 | ID | Status | Owner / blocker | Required evidence or decision |
 |---|---|---|---|
-| SPLIT-COMPOSITION | `blocked` | Patrick must explicitly re-enable all Split work | No preflight, reconciliation, review, port, writer, or stale-worktree inspection |
-| PERFORMANCE | `blocked` | Patrick's active execution override | Preserve code/budgets/baselines/sample guards; no recipes, samples, retries, `just verify`, or canonical `just e2e`; remains unexecuted/unpassed |
-| STARTUP | `planned` | Phase 9 | `535.866375 ms > 500 ms`; hard `≤500 ms` contract unchanged |
-| RELEASE | `planned` | Phase 9 | Packaging, Accessibility, canonical runner, energy/resource, polish, and release closeout remain open |
-| MVP-BOUNDARY | `blocked` | Patrick owns final finite In/Out classification | No feature-complete First-MVP claim before explicit decision and truthful evidence review |
+| SPLIT-COMPOSITION | `blocked` | Patrick must explicitly re-enable Split work | Fresh preflight from current `main`; stale worktree remains untouched |
+| PERFORMANCE | `blocked` | Patrick's active execution override | Preserve code/budgets/baselines/sample guards; execution and acceptance remain unpassed |
+| STARTUP | `planned` | Phase 9 | Last recorded `535.866375 ms > 500 ms`; hard budget unchanged |
+| RELEASE | `planned` | Phase 9 | Packaging, Accessibility, canonical runner, energy/resource, polish, and release closeout |
+| MVP-BOUNDARY | `blocked` | Patrick owns the final finite In/Out classification | No feature-complete First-MVP claim before explicit decision and evidence review |
 | RENDERER-A5 | `blocked` | External Apple WebKit callback/error hop | A1–A4 integrated; A5 remains explicitly unpassed |
 
 ## Standing decisions and constraints
 
-- Daily-driver product decisions are committed in the linked delivery contract and `browser-interactions.md`: Cmd-primary and middle click create grouped background children immediately after the opener; opener remains selected/web-focused; the full BBR titlebar/navigation row disappears with the collapsed Sidebar; Space creation commits+activates before optional name/icon configuration; footer Space chips are icon-only.
-- Exactly one writer per worktree. Writer → independent read-only review → concrete remediation → focused recheck → Orchestrator integration.
-- New agents use `homelab-llm/deepseek-v4-flash:high`.
-- Verdict authority requires a complete report bound to exact branch/base/tree/status/path fingerprints. Timeout, partial output, wrapper completion, preview, or stale run status grants no transition.
-- Forward recovery only: no reset, clean, stash, wholesale restore, amend, force-push, or silent ownership takeover.
-- Use porcelain-v1 `-z`, NUL-separated bytewise-sorted path lists, exact index/tree binding, free Git lock, and process/GUI-lock checks before activation/integration.
-- Cargo lanes use `CARGO_BUILD_JOBS=4`, `RUSTC_WRAPPER=`, fresh separate target directories for warning-denied all-target Clippy, and repository Xcode `/Applications/Xcode-26.2.0.app/Contents/Developer` inside `nix develop`.
-- GUI suites run sequentially through `/tmp/bbr-gui-gate-6ff732a0fdc0bb09.lock`; only a real `lsof` holder matters.
-- Performance code remains mandatory, but performance execution and canonical aggregate E2E remain forbidden/unpassed under the active override.
+- The Reference Shell packet is complete at exact reviewed tree `5f2b8a04c0c5bbf026e891058a3fabce17cfc191`, integrated as `4d1a534300344af48d28d8cb7f435b95c0548f02`. Its recorded performance/startup/packaging/Accessibility exclusions remain open; they do not reopen the visual slice.
+- Sidebar Polish is complete through `35c91189a4a895e3c7f627534acf00a56899fc7b`; its lane commits `e1081aeb`, `2ffc27fa`, and `891c720a` are all ancestors of current `main`.
+- Patrick's 2026-08-14 design decision supersedes the old “separate regions” wording: folders are grouped pinned tabs in one organized area, while loose pinned rows remain above folders. Runtime currently does not enforce `folder member => pinned`; only the dedicated open packet may change that authority.
+- `design/browser-shell-paper@414c97c7` preserves the wider Paper exploration. Content card, revised address field, Favorites affordances, and other unimplemented targets on that branch are not shipped claims and must receive bounded packets before implementation.
+- Exactly one writer per worktree. Forward recovery only: no reset, clean, stash, amend, force-push, or silent ownership takeover.
 - No second renderer or product authority in `bbr-ui`/Gallery; no private WebKit SPI; profile isolation and native WKWebView child composition remain invariant.
-- StoryIds 0–45 remain append-only; new production Gallery stories append from 46 only after the owning product surface exists.
-- Split remains scheduling-deferred even though it is the next G3 composition in its durable packet.
+- Performance code remains mandatory while performance execution and canonical aggregate acceptance remain deferred/unpassed.
+- No remote is configured and no push occurs as part of this generation.
 
 ## Cutover and rollback protocol
 
-This committed snapshot replaces the prior natural-handoff queue as the only execution authority. The old state remains recoverable through `568cdae0008d3cc9008209007ae32442ee0ff80e` and the preserved historical ledger, but neither may schedule work.
+This generation replaces stale execution text that still described Sidebar Polish as awaiting integration after it had already landed. Historical detail remains available through Git and the linked ledgers, but it cannot schedule work.
 
-Before each lane activation or integration, verify branch, exact base, status-z, index tree, processes, Git locks, GUI lock, ownership, and shared conflicts. If this document, the worktree, or runtime ownership disagree, fail closed, preserve all state, and update committed authority before proceeding.
+Before each activation or integration, verify branch, exact base, worktree status, processes, Git locks, GUI lock, ownership, and expected shared conflicts. If documentation, worktree, and runtime ownership disagree, fail closed and preserve state before changing authority.
 
-Rollback means returning to a named committed control checkpoint after preserving every lane's evidence and ownership state; it never means resetting or deleting active work. If no defensible path remains, stop with evidence, attempted paths, preserved state, blocker, and the smallest input required.
+Rollback means returning to the named committed control pointer after preserving every newer branch and dirty worktree; it never means resetting or deleting active work. If no defensible path remains, stop with exact fingerprints, evidence, attempted paths, blocker, and the smallest required user input.

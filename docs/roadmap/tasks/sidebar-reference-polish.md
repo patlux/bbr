@@ -2,10 +2,14 @@
 
 Parents: [Phase 4](../phases/04-ui-shell.md) · [UI design-system track](../tracks/ui-design-system.md) · [Reference-faithful production shell](visual-shell-reference.md) · [DESIGN.md](../../../DESIGN.md).
 
-Settled product decision (Patrick, 2026-08-13): pinned tabs and folders stay
-**separate regions** in the documented §11.4 order. The reference's mixed
-pinned/folder interleaving is explicitly rejected; no ordering-model change
-belongs to this or any later packet without a new decision.
+Historical implementation boundary (Patrick, 2026-08-13): this completed
+slice kept loose pinned rows above folder rows and made no ordering-model or
+folder-membership change. Patrick's superseding 2026-08-14 design decision
+classifies folders as grouped pinned tabs inside one organized area while still
+rejecting arbitrary mixed row interleaving. The separate
+[folder membership invariant](folder-pinned-invariant.md) owns the portable
+`folder member => pinned` transition work; this packet remains a truthful
+record of the already integrated visual polish.
 
 ## Outcome
 
@@ -42,8 +46,8 @@ instead of two-letter badges.
 
 ## Non-goals
 
-- No mixed pinned/folder ordering (settled above); no structural-model or
-  drag-semantics change.
+- No mixed pinned/folder ordering; no structural-model, membership-invariant,
+  or drag-semantics change. The later invariant packet owns grouping semantics.
 - No theme-selection, favicon or media work — owned by the sibling packets.
 - No density auto-switch, tooltips or pinned-overflow decisions (§17).
 
@@ -141,7 +145,7 @@ fingerprints, findings and the smallest input needed.
 
 ```text
 Outcome: Reference-calibrated Sidebar implementation and final-tree evidence
-         complete; lane ready for serial integration.
+         complete; integrated on main through merge 35c91189a4a895e3c7f627534acf00a56899fc7b.
 Commits: e1081aeb1dd63ba36883740dd295232aa619e249 fixes the normal-build
          theme seam; 2ffc27fa8ba68d4322a4e20f7ee38eb676124eb9 implements the
          reference anatomy and regression coverage; this documentation commit
@@ -163,10 +167,10 @@ Performance evidence: execution intentionally forbidden by the active override;
 Roadmap/documentation updates: DESIGN.md §8/§11.3/§11.4/§11.11 records the
          implemented pitch, glyph catalog, organized hairline and folder anatomy;
          this packet records only passed evidence.
-Open blockers and non-goals: no lane blocker remains. Theme behavior, favicon,
-         media controls and mixed pinned/folder ordering remain out of scope;
-         integration and post-merge verification remain the Orchestrator's
-         serial kernel.
-Worktree state: clean committed lane on parallel/sidebar-reference-polish,
-         descended from a79ff95e8607e40b3297dca501e56a79651e28dc.
+Open blockers and non-goals: no blocker remains for this completed visual
+         slice. Media controls and the later folder-member/pinned invariant
+         remain separately owned and open.
+Worktree state: the three lane commits are ancestors of main through merge
+         35c91189a4a895e3c7f627534acf00a56899fc7b; the historical lane no longer
+         owns live delivery state.
 ```

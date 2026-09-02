@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slice:** [Reference-faithful production shell](docs/roadmap/tasks/visual-shell-reference.md): replace the visually incorrect dark/anatomy-only shell interpretation with Patrick's authoritative light macOS Sidebar composition while preserving exact browser ownership, native WKWebView composition and every existing interaction/performance contract. The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
+- **Active product slice:** no implementation writer is active. The reference-faithful shell and Sidebar polish are integrated; the current control task is documentation/authority reconciliation on `docs/delivery-authority-reconcile`. The next prepared product gap is the [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md), but it remains `planned` until explicitly activated. The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:
@@ -87,8 +87,9 @@ into a duplicate execution queue:
   → [renderer isolation and unresponsive tabs](docs/roadmap/tasks/renderer-isolation-unresponsive-tabs.md)
 - **Reference-design alignment (Phase 4):** [system-appearance theme](docs/roadmap/tasks/system-appearance-theme.md)
   → [real favicon pipeline](docs/roadmap/tasks/real-favicon-pipeline.md)
-  → [sidebar reference polish](docs/roadmap/tasks/sidebar-reference-polish.md);
-  afterwards the prioritized [media-session capability contract](docs/roadmap/tasks/media-session-capability-contract.md)
+  → [sidebar reference polish](docs/roadmap/tasks/sidebar-reference-polish.md)
+  → prepared [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md);
+  separately, the prioritized [media-session capability contract](docs/roadmap/tasks/media-session-capability-contract.md)
   → [sidebar media control](docs/roadmap/tasks/sidebar-media-control.md)
 - **Daily-driver Sidebar:** [full-height titlebar navigation](docs/roadmap/tasks/titlebar-navigation-controls.md)
   → [Space creation and appearance UI](docs/roadmap/tasks/space-creation-appearance-ui.md)

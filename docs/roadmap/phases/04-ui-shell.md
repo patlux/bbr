@@ -13,7 +13,7 @@ BBR becomes a coherent browser shell with real tabs and spaces—not a styled in
 - [x] Implement the bounded [browser-MVP sidebar UI packet](../tasks/browser-mvp-sidebar-ui.md): Favorites → Pinned → Folders → Tabs, footer controls and Plus menu shipped in the U2 integration; the later product revision replacing the Spaces toggle is completed by F2a below.
 - [x] Turn the sidebar address into a display control and move all text entry into the palette through the [address control and palette packet](../tasks/url-address-control-palette.md): integrated at `963e94f`, including the domain-only pill, overlay geometry, selected full URL, no control focus/text entry, identity preservation, real-app E2E and unchanged performance budgets. The later G3 Command integration preserves that behavior while moving only the floating palette/overlay presentation to `bbr_ui::surfaces::command`; post-merge Command is 25/25, Portal is 7/7, and Gallery is 42/42 on the exact integrated tree.
 - [x] Deliver the post-U2 product revision in the [footer space strip, appearance, and swipe packet](../tasks/space-footer-strip-appearance-ui.md): remove the `[Spaces]` reveal toggle, present spaces permanently as curated identity chips in a horizontally scrollable footer strip, tint sidebar chrome from the active space, and route pointer, keyboard, and swipe through the one unchanged warm space-switch authority. *(Integrated at `7180128`: permanent strip, Appearance/Tint, zero-delta-Ended Swipe Commit/Cancel, production drag-to-chip, `swipe_commit`, icon union, latest-main navigation-cover union, affected real-app suites, and unchanged-budget performance evidence independently reviewed and green.)*
-- [ ] Complete the active [reference-faithful production shell](../tasks/visual-shell-reference.md) over the integrated Daily-driver Sidebar foundation: the authoritative light macOS rail, public full-size titlebar integration, active-Space hierarchy, reference-calibrated Favorites/tabs/folders/footer, real 2× production-path captures and independent visual review. The later bounded [Folder context menu](../tasks/folder-context-menu.md) remains deferred. These surfaces must not create a second sidebar/menu/navigation/Space/Favorite authority; the complete BBR-owned header disappears when the Sidebar is collapsed.
+- [x] Complete the [reference-faithful production shell](../tasks/visual-shell-reference.md) over the integrated Daily-driver Sidebar foundation: the authoritative light macOS rail, public full-size titlebar integration, active-Space hierarchy, reference-calibrated Favorites/tabs/folders/footer, real 2× production-path captures and independent visual review. *(Exact reviewed tree `5f2b8a04…` integrated as `4d1a5343`; the packet records the region-by-region capture ledger, affected real-app suites, and post-merge checks. Performance execution, startup, packaging, Accessibility, and Split remain explicitly outside this completed slice.)* The later bounded [Folder context menu](../tasks/folder-context-menu.md) remains deferred. These surfaces must not create a second sidebar/menu/navigation/Space/Favorite authority; the complete BBR-owned header disappears when the Sidebar is collapsed.
 - [ ] Complete the [real-app performance E2E foundation](../tasks/performance-e2e-foundation.md) before broad shell implementation.
 - [ ] Prove startup presents the complete sidebar and selected tab's visible native web view in the same first usable frame within the product budget.
 - [x] Establish and document the visual direction in [DESIGN.md](../../../DESIGN.md) before broad shell implementation.
@@ -29,12 +29,15 @@ Patrick's dark reference capture
 extends the integrated light shell: same hierarchy and geometry, system-driven
 appearance, real favicons, reference row rhythm and drawn identity glyphs.
 Settled decisions: the production theme follows the macOS system appearance
-(both modes supported); pinned tabs and folders stay separate regions — the
-reference's mixed interleaving is rejected.
+(both modes supported). Patrick's later 2026-08-14 design decision defines
+folders as grouped pinned tabs inside one organized area; loose pinned rows
+remain above folder rows, so arbitrary mixed interleaving is still rejected.
+The portable folder-member/pinned invariant is intentionally still open in the
+[folder membership packet](../tasks/folder-pinned-invariant.md).
 
 - [x] Follow the macOS system appearance with the complete dark token set via the [system-appearance production theme](../tasks/system-appearance-theme.md).
 - [x] Present real site favicons in every favicon slot via the [real favicon pipeline](../tasks/real-favicon-pipeline.md).
-- [ ] Match the reference row pitch, folder anatomy, rest states and identity-glyph catalog via the [sidebar reference polish](../tasks/sidebar-reference-polish.md).
+- [x] Match the reference row pitch, folder anatomy, rest states and identity-glyph catalog via the [sidebar reference polish](../tasks/sidebar-reference-polish.md). *(Integrated through merge `35c91189`; Sidebar 15/15, Dense 3/3, Organize 2/2 plus Drag-Chip 4/4, Spaces 21/21, Gallery 45/45, and the packet's non-GUI gates passed on the final tree. The later folder/pinned domain invariant is a separate open slice.)*
 
 The sidebar media control is prioritized immediately after these slices; its
 canonical owner stays Phase 8 through the
