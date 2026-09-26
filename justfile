@@ -17,7 +17,15 @@ e2e_dense_timeout := env_var_or_default("BBR_E2E_DENSE_TIMEOUT", "8m")
 # bounded.
 e2e_gestures_timeout := env_var_or_default("BBR_E2E_GESTURES_TIMEOUT", "8m")
 run_timeout := env_var_or_default("BBR_RUN_TIMEOUT", "8h")
-xcode_developer_dir := env_var_or_default("BBR_XCODE_DEVELOPER_DIR", "/Applications/Xcode-26.2.0.app/Contents/Developer")
+xcode_developer_dir := env_var_or_default("BBR_XCODE_DEVELOPER_DIR", "/Applications/Xcode-27.0.0-Beta.6.app/Contents/Developer")
+# Select the entire Apple toolchain, not only xcrun's developer directory:
+# Nix shells can otherwise retain an older SDKROOT and compiler/linker.
+export DEVELOPER_DIR := xcode_developer_dir
+export SDKROOT := shell('DEVELOPER_DIR="$1" /usr/bin/xcrun --sdk macosx --show-sdk-path', xcode_developer_dir)
+export CC := shell('DEVELOPER_DIR="$1" /usr/bin/xcrun --sdk macosx --find clang', xcode_developer_dir)
+export CXX := shell('DEVELOPER_DIR="$1" /usr/bin/xcrun --sdk macosx --find clang++', xcode_developer_dir)
+export CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER := CC
+export CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER := CC
 gui_gate := "python3 scripts/with_gui_lock.py --"
 
 # Launch the development build through mbx-managed build storage. Override
@@ -44,8 +52,8 @@ ui-deps:
     timeout --kill-after=10s {{check_timeout}} python3 scripts/check_ui_dependencies.py
 
 script-tests:
-    timeout --kill-after=10s {{test_timeout}} python3 -m unittest scripts/test_with_gui_lock.py scripts/test_check_roadmap.py scripts/test_check_ui_dependencies.py -v
-    timeout --kill-after=10s {{check_timeout}} python3 -m py_compile scripts/check_roadmap.py scripts/roadmap_validation_support.py scripts/test_check_roadmap.py scripts/check_ui_dependencies.py scripts/with_gui_lock.py scripts/test_with_gui_lock.py scripts/test_check_ui_dependencies.py
+    timeout --kill-after=10s {{test_timeout}} python3 -m unittest scripts/test_with_gui_lock.py scripts/test_check_roadmap.py scripts/test_check_ui_dependencies.py scripts/test_xcode_environment.py -v
+    timeout --kill-after=10s {{check_timeout}} python3 -m py_compile scripts/check_roadmap.py scripts/roadmap_validation_support.py scripts/test_check_roadmap.py scripts/check_ui_dependencies.py scripts/with_gui_lock.py scripts/test_with_gui_lock.py scripts/test_check_ui_dependencies.py scripts/test_xcode_environment.py
 
 e2e-smoke:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_smoke -- --ignored --nocapture
