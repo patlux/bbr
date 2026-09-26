@@ -2,6 +2,10 @@
 
 import json
 import os
+import pty
+import select
+import signal
+import time
 from pathlib import Path
 import subprocess
 import tempfile
@@ -17,6 +21,46 @@ KEYS = ("DEVELOPER_DIR", "SDKROOT", "CC", "CXX",
 
 @unittest.skipUnless(os.uname().sysname == "Darwin", "requires installed Xcode")
 class XcodeEnvironmentTests(unittest.TestCase):
+    def test_default_keeps_terminal_foreground(self):
+        with tempfile.TemporaryDirectory() as directory:
+            probe = Path(directory) / "mbx"
+            probe.write_text(
+                '#!/usr/bin/env python3\n'
+                'import os\n'
+                'print("BBR_FOREGROUND=" + str(os.getpgrp() == os.tcgetpgrp(0)), flush=True)\n'
+            )
+            probe.chmod(0o755)
+            pid, terminal = pty.fork()
+            if pid == 0:
+                os.chdir(ROOT)
+                os.environ["PATH"] = directory + os.pathsep + os.environ["PATH"]
+                os.execvp("just", ["just"])
+            output = bytearray()
+            exited = False
+            try:
+                deadline = time.monotonic() + 15
+                while time.monotonic() < deadline:
+                    if select.select([terminal], [], [], 0.1)[0]:
+                        try:
+                            data = os.read(terminal, 4096)
+                        except OSError:
+                            break
+                        if not data:
+                            break
+                        output.extend(data)
+                    if os.waitpid(pid, os.WNOHANG)[0]:
+                        exited = True
+                        break
+                self.assertIn(b"BBR_FOREGROUND=True", output, output.decode(errors="replace"))
+            finally:
+                os.close(terminal)
+                if not exited:
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    os.waitpid(pid, 0)
+
     def run_default(self, developer_dir=None):
         with tempfile.TemporaryDirectory() as directory:
             probe = Path(directory) / "mbx"

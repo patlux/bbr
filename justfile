@@ -29,9 +29,10 @@ export CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER := CC
 gui_gate := "python3 scripts/with_gui_lock.py --"
 
 # Launch the development build through mbx-managed build storage. Override
-# BBR_RUN_TIMEOUT for longer sessions.
+# BBR_RUN_TIMEOUT for longer sessions. Keep mbx in the terminal foreground:
+# its interactive startup otherwise receives a job-control stop from the TTY.
 run:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --kill-after=10s {{run_timeout}} mbx run -p bbr
+    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --foreground --kill-after=10s {{run_timeout}} mbx run -p bbr
 
 fmt:
     timeout --kill-after=10s {{check_timeout}} cargo fmt --all -- --check
