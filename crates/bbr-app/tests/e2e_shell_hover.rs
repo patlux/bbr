@@ -331,6 +331,12 @@ fn dark_hover_press_wash_states_are_unchanged() {
             .expect("flush forced dark");
         let initial = client.snapshot().expect("dark initial");
         assert_eq!(initial.shell_modes.theme, "dark");
+        // Row 0 must finish loading first: a still-loading row reports
+        // `Loading`, which outranks `Hover` in the §10 state order.
+        let first_view = initial.active_web_view.expect("first native view");
+        if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {
+            since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
+        }
         let _blank = open_tab(&mut client, &mut since, "about:blank", None);
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
