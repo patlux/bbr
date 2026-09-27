@@ -127,6 +127,14 @@ impl WebEngineWk {
         self.sessions.get(&id).map(|session| session.profile)
     }
 
+    /// The native content-card clip of `id`'s WKWebView (DESIGN §2): its
+    /// backing layer's corner radius, `None` without a live session.
+    pub fn web_view_corner_radius(&self, id: WebViewId) -> Option<f64> {
+        self.assert_main_thread();
+        let session = self.sessions.get(&id)?;
+        crate::card_clip::corner_radius(&session.web_view)
+    }
+
     /// Whether the dark native cover is currently masking WebKit's
     /// provisional-navigation plane for `id`.
     pub fn navigation_cover_visible(&self, id: WebViewId) -> bool {
@@ -314,6 +322,16 @@ impl WebEngine for WebEngineWk {
         if let Some(session) = self.sessions.get_mut(&id) {
             session.web_view.setFrame(frame);
             session.navigation_cover.setFrame(frame);
+        }
+    }
+
+    fn set_web_view_corner_radius(&mut self, id: WebViewId, radius: f32) {
+        self.assert_main_thread();
+        // The content card clips the slot and its navigation cover alike,
+        // so the cover never shows square corners over the chassis.
+        if let Some(session) = self.sessions.get(&id) {
+            crate::card_clip::clip_to_radius(&session.web_view, f64::from(radius));
+            crate::card_clip::clip_to_radius(&session.navigation_cover, f64::from(radius));
         }
     }
 

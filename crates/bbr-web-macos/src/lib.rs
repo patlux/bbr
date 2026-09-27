@@ -89,6 +89,9 @@ pub mod menu_adapter;
 #[cfg(target_os = "macos")]
 mod navigation_cover;
 
+#[cfg(target_os = "macos")]
+mod card_clip;
+
 mod native_session;
 
 #[cfg(target_os = "macos")]

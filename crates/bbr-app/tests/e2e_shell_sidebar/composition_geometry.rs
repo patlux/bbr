@@ -110,7 +110,7 @@ fn split_collapse_expand_keeps_native_geometry_and_identity() {
         let initial_rect = wait_for_content_rect_x(
             &mut client,
             SIDEBAR_DEFAULT,
-            window_w - SIDEBAR_DEFAULT,
+            window_w - SIDEBAR_DEFAULT - CONTENT_INSET,
             deadline(),
         );
         let height = initial_rect.content_rect[3];
@@ -128,12 +128,17 @@ fn split_collapse_expand_keeps_native_geometry_and_identity() {
             since,
         );
         flush_frame(&mut client);
-        let pane_w = (window_w - SIDEBAR_DEFAULT) / 2.0;
+        // Both panes share the one §2 card inner box (split-pane cards are
+        // owned by the Split composition).
+        let pane_w = (window_w - SIDEBAR_DEFAULT - CONTENT_INSET) / 2.0;
         let split = wait_for_pane_rects(
             &mut client,
             &[
-                (first_view, [SIDEBAR_DEFAULT, 0.0, pane_w, height]),
-                (second_view, [SIDEBAR_DEFAULT + pane_w, 0.0, pane_w, height]),
+                (first_view, [SIDEBAR_DEFAULT, CONTENT_INSET, pane_w, height]),
+                (
+                    second_view,
+                    [SIDEBAR_DEFAULT + pane_w, CONTENT_INSET, pane_w, height],
+                ),
             ],
             deadline(),
         );
@@ -149,14 +154,16 @@ fn split_collapse_expand_keeps_native_geometry_and_identity() {
         let collapsed = client.snapshot().expect("collapsed split snapshot");
         assert!(!collapsed.sidebar_visible);
         assert_eq!(collapsed.sidebar_width, 0.0);
-        let collapsed_pane_w = window_w / 2.0;
+        let [card_x, band, card_w, card_h] =
+            collapsed_rect_for(window_w, height, collapsed.titlebar.safe_area_height);
+        let collapsed_pane_w = card_w / 2.0;
         let collapsed_split = wait_for_pane_rects(
             &mut client,
             &[
-                (first_view, [0.0, 0.0, collapsed_pane_w, height]),
+                (first_view, [card_x, band, collapsed_pane_w, card_h]),
                 (
                     second_view,
-                    [collapsed_pane_w, 0.0, collapsed_pane_w, height],
+                    [card_x + collapsed_pane_w, band, collapsed_pane_w, card_h],
                 ),
             ],
             deadline(),
@@ -179,8 +186,11 @@ fn split_collapse_expand_keeps_native_geometry_and_identity() {
         let restored = wait_for_pane_rects(
             &mut client,
             &[
-                (first_view, [SIDEBAR_DEFAULT, 0.0, pane_w, height]),
-                (second_view, [SIDEBAR_DEFAULT + pane_w, 0.0, pane_w, height]),
+                (first_view, [SIDEBAR_DEFAULT, CONTENT_INSET, pane_w, height]),
+                (
+                    second_view,
+                    [SIDEBAR_DEFAULT + pane_w, CONTENT_INSET, pane_w, height],
+                ),
             ],
             deadline(),
         );

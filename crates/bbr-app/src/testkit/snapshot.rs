@@ -240,6 +240,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
                 .collect(),
             sidebar_visible: self.sidebar_visible,
             titlebar: self.titlebar,
+            content_card: self.content_card,
             sidebar_width: self.sidebar_width,
             sidebar_min: self.sidebar_min,
             sidebar_default: self.sidebar_default,

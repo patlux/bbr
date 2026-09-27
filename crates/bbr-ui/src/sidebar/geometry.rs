@@ -16,6 +16,7 @@ use gpui::{
     Stateful, Styled, Window,
 };
 
+use crate::card::CONTENT_INSET;
 use crate::theme::Theme;
 
 /// DESIGN §5: the minimum adjustable sidebar width (pt).
@@ -89,10 +90,11 @@ impl SidebarGeometry {
 
     /// The width the rail actually renders at for the given window width:
     /// the requested width clamped to the adjustable range, then further
-    /// clamped so the native content region keeps at least [`CONTENT_MIN`] pt.
-    /// The content width `window_width - effective` is therefore always
-    /// `>= CONTENT_MIN` while the window is wider than the floor, and never
-    /// negative for any window width. When the window is so narrow that even
+    /// clamped so the native content region keeps at least [`CONTENT_MIN`] pt
+    /// on the content card's inner box. The §2 `sp:content-inset` frame is
+    /// charged to the native slot, not to the rail, so the content width
+    /// `window_width - effective - CONTENT_INSET` is always `>= CONTENT_MIN`
+    /// while the window is wider than the floor, and never negative. When the window is so narrow that even
     /// [`SIDEBAR_MIN`] would starve the content, the rail yields below the
     /// minimum rather than let the native geometry go zero or negative.
     pub fn effective_width(&self, window_width: f32) -> f32 {
@@ -104,7 +106,7 @@ impl SidebarGeometry {
     /// the expected geometry before a mutation commits).
     pub fn effective_width_for(requested: f32, window_width: f32) -> f32 {
         let requested = requested.clamp(SIDEBAR_MIN, SIDEBAR_MAX);
-        let max_for_window = (window_width - CONTENT_MIN).max(0.0);
+        let max_for_window = (window_width - CONTENT_MIN - CONTENT_INSET).max(0.0);
         requested.min(max_for_window)
     }
 
@@ -203,11 +205,9 @@ pub fn sidebar_divider(
         .w(px(RESIZE_HANDLE_WIDTH))
         .h_full()
         .flex_shrink_0()
-        .bg(if focused {
-            theme.palette.accent
-        } else {
-            theme.palette.hairline
-        })
+        // Empty paint at rest (the card edge is the boundary, DESIGN §2
+        // rule 4); the §9 keyboard focus still shows the accent strip.
+        .when(focused, |divider| divider.bg(theme.palette.accent))
         .cursor_ew_resize()
         .on_mouse_down(MouseButton::Left, on_mouse_down)
         .on_key_down(on_key_down)
@@ -292,23 +292,26 @@ mod tests {
         // A normal compact window keeps the full adjustable range.
         assert_eq!(g.effective_width(700.0), SIDEBAR_MAX);
         // Once the window cannot host the requested width plus the content
-        // floor, the rail yields so the content keeps exactly CONTENT_MIN.
-        let narrow = SIDEBAR_MIN + CONTENT_MIN; // 264
+        // floor on the card's inner box (the trailing `sp:content-inset` is
+        // charged to the slot), the rail yields so the inner box keeps
+        // exactly CONTENT_MIN.
+        let frame = CONTENT_MIN + CONTENT_INSET;
+        let narrow = SIDEBAR_MIN + frame; // 274
         assert_eq!(g.effective_width(narrow), SIDEBAR_MIN);
-        assert_eq!(narrow - g.effective_width(narrow), CONTENT_MIN);
-        let tight = 220.0;
+        assert_eq!(narrow - g.effective_width(narrow), frame);
+        let tight = 230.0;
         assert!(
             g.effective_width(tight) < SIDEBAR_MIN,
             "rail yields below min"
         );
-        assert_eq!(tight - g.effective_width(tight), CONTENT_MIN);
+        assert_eq!(tight - g.effective_width(tight), frame);
         // Degenerate windows still never produce negative content.
-        for w in [120.0, 64.0, 10.0, 0.0] {
+        for w in [120.0, 74.0, 64.0, 10.0, 0.0] {
             let effective = g.effective_width(w);
             assert!(effective >= 0.0, "effective width never negative");
             assert!(w - effective >= 0.0, "content width never negative");
-            if w > CONTENT_MIN {
-                assert_eq!(w - effective, CONTENT_MIN);
+            if w > frame {
+                assert_eq!(w - effective, frame);
             } else {
                 assert_eq!(w - effective, w, "content takes everything left");
             }

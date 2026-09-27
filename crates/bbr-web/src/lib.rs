@@ -223,6 +223,13 @@ pub trait WebEngine {
     /// keyed slot publishes.
     fn set_web_view_rect(&mut self, id: WebViewId, rect: WebRect, content_height: f32);
 
+    /// Clip the native surface of one live view to the seated content
+    /// card's corner radius (DESIGN §2); `0` is full-bleed (native full
+    /// screen). Clipping belongs to the platform's hosting layer — web
+    /// content is never sampled or re-rendered — and an unknown id is a
+    /// no-op. The default suits engines without a native surface.
+    fn set_web_view_corner_radius(&mut self, _id: WebViewId, _radius: f32) {}
+
     /// Create a web view inside `profile` and kick off `initial_url`.
     fn create_web_view(&mut self, id: WebViewId, profile: ProfileId, initial_url: &str);
 

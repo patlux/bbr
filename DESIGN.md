@@ -96,7 +96,8 @@ hardcoded render colors or a Gallery-local shell.
 ### Layers (bottom → top)
 
 ```text
-L0 canvas          — window base, content backdrop (glass area, empty/crash)
+L0 chassis         — window base the rail and the content card sit in
+L0.5 content card  — the seated native slot; canvas shows through before attach
 L1 sidebar/rail    — chrome surfaces: sidebar, panels      elev-0
 L2 controls        — fields, buttons, rows inside chrome   elev-1
 L3 floating        — command palette, peek, dialogs        elev-2
@@ -104,7 +105,8 @@ L3 floating        — command palette, peek, dialogs        elev-2
 
 | Token | Light | Dark | Notes |
 |---|---|---|---|
-| `material:canvas` | `#F6F6F4` | `#121416` | content backdrop, visible only before attach / empty / crash |
+| `material:canvas` | `#F6F6F4` | `#121416` | content backdrop *inside* the content card, visible only before attach / empty / crash |
+| `material:chassis` | rail paint | rail paint | the window base the rail and the card sit in; the rail's own (space-tinted) paint, so the chassis reads as one continuous body rather than a second surface |
 | `material:sidebar` | `#E0E0E0` | `#1A1D21` | the reference-calibrated physical rail; the production mode follows the system appearance |
 | `material:field` | `#FFFFFF` | `#23272C` | command field, search, hover-raised rows |
 | `material:overlay` | `#FFFFFF` | `#202429` | floating surfaces, elevation 2 |
@@ -114,14 +116,56 @@ L3 floating        — command palette, peek, dialogs        elev-2
 
 ### Elevation
 
-- `elev:0` — base surface. No border beyond the sidebar rail's right hairline.
+- `elev:0` — base surface. The rail carries no border; the content card's
+  own edge supplies the only separation.
 - `elev:1` — raised control (field, button, hover tile). `hairline` border,
   same material family. No shadow on rows, ever (list paint budget).
+- `elev:1.content` — the seated content card. One static shadow, painted with
+  the card, never animated and never re-evaluated per scroll frame.
 - `elev:2` — floating. Shadow tokens (GPUI `box_shadow`, bounded blur):
 
 | Token | Light | Dark |
 |---|---|---|
+| `elev:1.content.shadow` | `0 1 2 rgba(23,26,29,0.06), 0 8 20 rgba(23,26,29,0.10)` | `0 0 0 1px rgba(255,255,255,0.05), 0 1 2 rgba(0,0,0,0.45), 0 10 24 rgba(0,0,0,0.38)` |
 | `elev:2.shadow` | `0 1 0 rgba(0,0,0,0.04), 0 12 24 rgba(23,26,29,0.10)` | `0 0 0 1px rgba(255,255,255,0.05), 0 16 32 rgba(0,0,0,0.45)` |
+
+### The content card
+
+Web content sits in a **content card** (`bbr-content-card`,
+`bbr_ui::card`): a rounded, clipped rectangle inset from the window by
+`sp:content-inset` on the top, trailing and bottom edges and **flush with the
+rail on its leading edge** — the rail and the card are one continuous body
+seated in the chassis.
+
+| Property | Value |
+|---|---|
+| Inset | `sp:content-inset` top / trailing / bottom; `0` leading |
+| Radius | `radius:lg` (10), all four corners |
+| Elevation | `elev:1.content` |
+| Behind it | `material:chassis` |
+| Inside it | the native WKWebView (its backing layer clips to the radius); `material:canvas` only before attach / empty / crash |
+
+1. **The card is the content, not a card over content.** The card's inner
+   box is the native slot; nothing floats above the glass because of it.
+2. **The leading edge is never inset** while the rail is visible.
+3. **The shadow seats, it does not glow:** short, dark, low-alpha layers; on
+   dark a 1 px `rgba(255,255,255,0.05)` ring.
+4. **The rail loses its right hairline**, and the resize divider is empty
+   paint at rest (accent only under keyboard focus).
+5. **The inset is chrome, so it disappears with chrome.** Native full screen
+   is full-bleed: inset `0`, radius `0`, no shadow. A collapsed sidebar adds
+   the leading inset, and the top inset becomes the native titlebar band
+   (`win:titlebar`, the safe titlebar strip height) so the traffic lights
+   never sit on web content. The band is empty, draggable chassis
+   (`bbr-chassis-band`, double click runs the system titlebar action).
+6. **The inset is not free space for chrome:** no control, badge, or
+   indicator is placed in the chassis gap.
+
+Clipping uses public AppKit/Core Animation only (`wantsLayer`, the layer's
+`cornerRadius`/`masksToBounds` on the WKWebView and its navigation cover);
+web content is never sampled or re-rendered. Split panes share the one card
+until the [Split composition](docs/roadmap/tasks/split-app-composition.md)
+defines pane cards; each pane's layer clips to the card radius meanwhile.
 
 ### Hairlines
 
@@ -273,14 +317,20 @@ identity chips (§11.3) are bounded rounded rectangles from this scale —
 never fully circular pills around text. The S1 calibration raised these values
 with the rest of the scale but keeps the language.
 
+- **`sp:content-inset` = 10** — the §2 card frame, the only value off the
+  4 pt grid; it equals `radius:lg` so the corner arc and the distance to the
+  window edge are the same number. Identical at S, N and XL.
 - **Sidebar widths:** `win:sidebar.S` 232, `.N` 300, `.XL` 340 pt; adjustable
-  between 200 and 400 pt via a 4 px drag hairline (cursor `ew-resize`),
-  minimum width enforced; collapse (Cmd-B) yields 0 with the glass full-bleed
-  (§11.4). **Native-content floor stays strictly positive:** the native slot
-  keeps ≥ 64 pt (`CONTENT_MIN`, 2 × `sp:7`) for every window that can host
-  the floor — the effective rail width is `min(requested, window_width − 64)`.
-  At the shipped 1080 pt window the 300 pt normal rail leaves 780 pt of
-  glass; in windows too narrow to host the requested width plus the §13
+  between 200 and 400 pt via a 4 px drag handle (cursor `ew-resize`, empty
+  paint at rest), minimum width enforced; collapse (Cmd-B) yields 0 and the
+  content card takes the freed width, gaining the leading inset and the
+  titlebar-band top inset (§2 rule 5, §11.4). **Native-content floor stays
+  strictly positive:** the native slot keeps ≥ 64 pt (`CONTENT_MIN`,
+  2 × `sp:7`) on the card's inner box for every window that can host the
+  floor — the `sp:content-inset` frame is charged to the slot, so the
+  effective rail width is `min(requested, window_width − 64 − 10)`.
+  At the shipped 1080 pt window the 300 pt normal rail leaves a 770 pt card;
+  in windows too narrow to host the requested width plus the §13
   content floor, the rail yields below the minimum so the native slot stays
   strictly positive (never zero or negative).
 
@@ -677,8 +727,9 @@ using the IDs of §15. All rows use `density` geometry from §8.
 
 ### 11.4 Sidebar
 
-- **Anatomy (top → bottom):** the full-height light rail starts behind the
-  native traffic-light safe area; the implemented §11.14 titlebar row owns
+- **Anatomy (top → bottom):** the full-height light rail is painted directly
+  on the chassis and carries **no right hairline** — the §2 content card's
+  edge is the boundary. It starts behind the native traffic-light safe area; the implemented §11.14 titlebar row owns
   Sidebar toggle + Back/Forward/Reload, followed by the compact address
   display (§11.5). There is **no standalone BBR app-mark/name brand block**.
   The Favorites grid (§11.10) sits directly under the address display, exactly
@@ -729,7 +780,10 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Behavior:** width per §5 (`win:sidebar.*`), draggable 4 pt hairline
   (`bbr-sidebar-divider`), collapse Cmd-B to 0 **instantly** (performance
   contract next-frame; the opening glass gets no animation), expand
-  restores the previous width. Collapse memory is **global in v1** — one
+  restores the previous width. On collapse the content card keeps its
+  trailing and bottom inset, gains the leading inset, and its top inset grows
+  to the titlebar band (§2 rule 5); inset, radius and shadow land in the same
+  frame as the width. Collapse memory is **global in v1** — one
   last-expanded width per window, restored on expand; per-space memory is
   an open decision (§17). Divider keyboard focus provides `←`/`→` resize
   and `0` reset (DESIGN §9 pointer/keyboard parity). Resize commits
@@ -1322,9 +1376,11 @@ is stable for the profile's lifetime.
 
 ## 13. Native web-content boundary ("the glass")
 
-- Chrome is a left rail; the remainder is the native WKWebView child. At
-  rest there is exactly one boundary: the sidebar's right `hairline`. No
-  chrome shadows, glows, or gradients may intrude over web content.
+- Chrome is a left rail; the remainder is the seated content card (§2) whose
+  inner box is the native WKWebView child. At rest there is exactly one
+  boundary: the card edge with its static `elev:1.content` shadow, painted
+  outside the slot. No chrome shadows, glows, or gradients may intrude over
+  web content.
 - **Never sampled:** BBR never screenshots, blurs, or textures web content
   into GPUI (product principle + ARCHITECTURE §1). Consequently: no page
   thumbnails, no live tile previews, no cross-fade "peek behind chrome".
@@ -1335,7 +1391,8 @@ is stable for the profile's lifetime.
   the glass, are `elev:2`, and must be dismissible with Escape/one pointer
   action; peek's temporary state is covered by its own roadmap task.
 - When the sidebar collapses, the slot re-flows instantly (§11.4) — no
-  intermediate chrome geometry is ever shown.
+  intermediate chrome geometry is ever shown; the card's inset, radius and
+  clip change in the same frame.
 
 ## 14. Anti-generic checklist
 
@@ -1486,7 +1543,8 @@ production integration).
     proxy. Rejected: the compact media transport bar (superseded by §11.15)
     and footer identity glyphs outside the curated catalog. The sections
     above stay the shipped contract until each packet lands its text:
-    [seated content card](docs/roadmap/tasks/seated-content-card.md),
+    [seated content card](docs/roadmap/tasks/seated-content-card.md)
+    (landed as §2 "The content card", 2026-09-27),
     [address field and space identity](docs/roadmap/tasks/address-field-space-identity.md),
     [Favorites grid and drag offers](docs/roadmap/tasks/favorites-drag-offers.md).
 

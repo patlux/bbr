@@ -345,7 +345,7 @@ pub const SIDEBAR_REJECTED: &[RejectedSidebar] = &[
             claims_zero_content_floor: true,
             ..SidebarCase::new("zero native-content floor", Density::Normal, 400.0, 900.0, 3)
         },
-        reason: "the §5/§11.4 geometry contract keeps the native content strictly positive — the effective width never exceeds window − CONTENT_MIN (64 pt); a case claiming the floor can be zero/negative refuses construction",
+        reason: "the §5/§11.4 geometry contract keeps the native content strictly positive — the effective width never exceeds window − CONTENT_MIN (64 pt) − sp:content-inset (10 pt); a case claiming the floor can be zero/negative refuses construction",
     },
     RejectedSidebar {
         label: "collapsed rail showing chrome content",
@@ -491,9 +491,10 @@ mod tests {
             .find(|c| c.window_width == 300.0)
             .expect("compact family declared");
         let model = build_sidebar_fixture(compact, &handles).expect("compact family builds");
-        // 400 requested in a 300 pt window yields 236 — the content keeps
-        // exactly the 64 pt floor.
-        assert_eq!(model.sidebar_width, 300.0 - 64.0);
-        assert_eq!(300.0 - model.sidebar_width, 64.0);
+        // 400 requested in a 300 pt window yields 226 — the §2 card's inner
+        // box keeps exactly the 64 pt floor after the 10 pt trailing
+        // `sp:content-inset`.
+        assert_eq!(model.sidebar_width, 300.0 - 64.0 - 10.0);
+        assert_eq!(300.0 - model.sidebar_width - 10.0, 64.0);
     }
 }

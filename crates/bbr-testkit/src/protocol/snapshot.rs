@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 
 use super::{CommandBarMode, ShellModes, TestProfileId, TestSpaceId, TestWebViewId};
 
+mod card;
 mod u2;
+pub use card::ContentCardSnapshot;
 pub use u2::{
     ChipCompanionSnapshot, FavoriteTileSnapshot, FolderRowSnapshot, SpaceAppearanceSnapshot,
     SpaceChipSnapshot, SpaceConfigSnapshot, SpaceStripScrollSnapshot, SwipeSnapshot,
@@ -1254,6 +1256,9 @@ pub struct Snapshot {
     /// [`Self::sidebar_visible`].
     #[serde(default)]
     pub titlebar: TitlebarSnapshot,
+    /// DESIGN §2 seated content card frame and native clip.
+    #[serde(default)]
+    pub content_card: ContentCardSnapshot,
     /// The effective sidebar rail width (DESIGN §5 range, window-clamped;
     /// 0 when collapsed).
     pub sidebar_width: f32,

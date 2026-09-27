@@ -142,6 +142,8 @@ pub struct TestSnapshot {
     /// renders from, the sidebar collapse state, and the genuine
     /// Back/Forward/Reload availability of the focused pane.
     pub titlebar: bbr_testkit::protocol::TitlebarSnapshot,
+    /// DESIGN §2 seated content card frame and native clip.
+    pub content_card: bbr_testkit::protocol::ContentCardSnapshot,
     /// The effective sidebar rail width: the DESIGN §5 adjustable width
     /// clamped to the window (0 when collapsed — the rail is gone).
     pub sidebar_width: f32,

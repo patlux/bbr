@@ -201,7 +201,7 @@ fn titlebar_toggle_parity_and_collapse_removes_the_header() {
         let initial_rect = wait_for_content_rect_x(
             &mut client,
             SIDEBAR_DEFAULT,
-            window_w - SIDEBAR_DEFAULT,
+            window_w - SIDEBAR_DEFAULT - CONTENT_INSET,
             deadline(),
         );
         let height = initial_rect.content_rect[3];
@@ -244,13 +244,22 @@ fn titlebar_toggle_parity_and_collapse_removes_the_header() {
             );
         }
         assert_view_and_sessions_preserved(&collapsed, first_view, sessions);
+        // The collapsed card keeps the native titlebar band as empty,
+        // draggable chassis: the traffic lights never sit on web content.
         let collapsed_rect = wait_for_content_rect(
             &mut client,
-            content_rect_for(0.0, window_w, height),
+            collapsed_rect_for(window_w, height, collapsed.titlebar.safe_area_height),
             deadline(),
         );
-        assert_eq!(collapsed_rect.content_rect[0], 0.0);
-        assert_eq!(collapsed_rect.content_rect[2], window_w);
+        assert_eq!(collapsed_rect.content_rect[0], CONTENT_INSET);
+        assert_eq!(
+            collapsed_rect.content_rect[2],
+            window_w - 2.0 * CONTENT_INSET
+        );
+        assert!(
+            collapsed_rect.content_rect[1] >= collapsed.titlebar.safe_area_height,
+            "no web content under the traffic lights"
+        );
 
         // Cmd-B expands: the last expanded width (320) and the complete
         // header (toggle + cluster) are restored.

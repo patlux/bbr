@@ -1530,6 +1530,14 @@ pub enum Request {
     SetAppearanceOverride {
         mode: Option<ThemeModeOverride>,
     },
+    /// Present the shell as if the window were in native full screen (or
+    /// not), regardless of the AppKit state (DESIGN §2 full-bleed card):
+    /// programmatic `toggleFullScreen:` never completes on this host's
+    /// Window Server, so E2E proves the full-screen presentation and native
+    /// clip through this seam; `None` follows the real window.
+    SetFullScreenOverride {
+        full_screen: Option<bool>,
+    },
     /// Liveness probe.
     Ping,
     /// Close the browser window through GPUI's production window-removal

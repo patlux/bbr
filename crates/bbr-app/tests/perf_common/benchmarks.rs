@@ -176,7 +176,9 @@ pub(crate) fn benchmark_resize_sidebar(
     let geometry = client.snapshot().expect("resize geometry snapshot");
     let expected = width
         .clamp(geometry.sidebar_min, geometry.sidebar_max)
-        .min((geometry.window_size[0] - geometry.content_min).max(0.0));
+        // The §2 content card's trailing `sp:content-inset` is charged to
+        // the native slot, not to the rail.
+        .min((geometry.window_size[0] - geometry.content_min - 10.0).max(0.0));
     client
         .send_ok(&Request::BenchmarkResizeSidebar {
             operation_id,

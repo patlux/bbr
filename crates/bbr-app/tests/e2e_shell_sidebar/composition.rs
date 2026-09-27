@@ -328,7 +328,7 @@ fn command_and_downloads_compose_with_sidebar_focus_and_collapse() {
         let initial_rect = wait_for_content_rect_x(
             &mut client,
             SIDEBAR_DEFAULT,
-            window_w - SIDEBAR_DEFAULT,
+            window_w - SIDEBAR_DEFAULT - CONTENT_INSET,
             deadline(),
         );
         let height = initial_rect.content_rect[3];
@@ -385,7 +385,7 @@ fn command_and_downloads_compose_with_sidebar_focus_and_collapse() {
         let rect = wait_for_content_rect_x(
             &mut client,
             SIDEBAR_DEFAULT,
-            window_w - SIDEBAR_DEFAULT,
+            window_w - SIDEBAR_DEFAULT - CONTENT_INSET,
             deadline(),
         );
         assert_eq!(rect.content_rect[3], height, "no vertical drift");
@@ -455,7 +455,7 @@ fn command_and_downloads_compose_with_sidebar_focus_and_collapse() {
         let rect = wait_for_content_rect_x(
             &mut client,
             SIDEBAR_DEFAULT,
-            window_w - SIDEBAR_DEFAULT,
+            window_w - SIDEBAR_DEFAULT - CONTENT_INSET,
             deadline(),
         );
         assert_eq!(rect.content_rect[3], height, "no vertical drift");
@@ -480,11 +480,14 @@ fn command_and_downloads_compose_with_sidebar_focus_and_collapse() {
         assert_eq!(collapsed.engine_sessions, sessions);
         let collapsed_rect = wait_for_content_rect(
             &mut client,
-            content_rect_for(0.0, window_w, height),
+            collapsed_rect_for(window_w, height, collapsed.titlebar.safe_area_height),
             deadline(),
         );
-        assert_eq!(collapsed_rect.content_rect[0], 0.0);
-        assert_eq!(collapsed_rect.content_rect[2], window_w);
+        assert_eq!(collapsed_rect.content_rect[0], CONTENT_INSET);
+        assert_eq!(
+            collapsed_rect.content_rect[2],
+            window_w - 2.0 * CONTENT_INSET
+        );
 
         keystroke(&mut client, "cmd-b");
         flush_frame(&mut client);

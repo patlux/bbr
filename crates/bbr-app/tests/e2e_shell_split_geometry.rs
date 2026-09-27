@@ -32,16 +32,25 @@ fn flush_frame(client: &mut Client) {
 /// the left, the focused WKWebView filling the remainder at the slot's own
 /// stable height.
 fn single_pane_rect(sidebar: f32, window_w: f32, height: f32) -> [f32; 4] {
-    [sidebar, 0.0, window_w - sidebar, height]
+    [
+        sidebar,
+        CONTENT_INSET,
+        window_w - sidebar - CONTENT_INSET,
+        height,
+    ]
 }
+
+/// DESIGN §2 `sp:content-inset`: the seated content card's frame (top,
+/// trailing, bottom; flush with the rail).
+const CONTENT_INSET: f32 = 10.0;
 
 /// The expected split pane rects (equal horizontal panes, primary left):
 /// both strictly positive, adjacent, full height.
 fn split_rects(sidebar: f32, window_w: f32, height: f32) -> ([f32; 4], [f32; 4]) {
-    let pane_w = (window_w - sidebar) / 2.0;
+    let pane_w = (window_w - sidebar - CONTENT_INSET) / 2.0;
     (
-        [sidebar, 0.0, pane_w, height],
-        [sidebar + pane_w, 0.0, pane_w, height],
+        [sidebar, CONTENT_INSET, pane_w, height],
+        [sidebar + pane_w, CONTENT_INSET, pane_w, height],
     )
 }
 
@@ -139,7 +148,12 @@ fn split_geometry_keyed_panes_focus_resize_and_close() {
         // Single-pane sidebar contract is exact before any split: the keyed
         // slot id is present and the native content rect is the rail + the
         // full remainder.
-        let single = wait_for_content_rect_x(&mut client, sidebar, window_w - sidebar, deadline());
+        let single = wait_for_content_rect_x(
+            &mut client,
+            sidebar,
+            window_w - sidebar - CONTENT_INSET,
+            deadline(),
+        );
         let height = single.content_rect[3];
         assert!(height > 0.0, "native content height must be positive");
         // Regression-strength guard: the productive view must not be reported
@@ -347,7 +361,7 @@ fn split_geometry_keyed_panes_focus_resize_and_close() {
         );
         // Single-pane content_rect remains the exact sidebar contract.
         assert_eq!(closed.content_rect[0], sidebar);
-        assert_eq!(closed.content_rect[2], closed_w - sidebar);
+        assert_eq!(closed.content_rect[2], closed_w - sidebar - CONTENT_INSET);
         assert_eq!(closed.content_rect[3], resized_content_height);
 
         client.quit().expect("quit");

@@ -507,6 +507,10 @@ pub fn set_appearance_override(mode: Option<ThemeModeOverride>) -> Request {
     Request::SetAppearanceOverride { mode }
 }
 
+pub fn set_full_screen_override(full_screen: Option<bool>) -> Request {
+    Request::SetFullScreenOverride { full_screen }
+}
+
 pub fn click_space_new() -> Request {
     Request::ClickSpaceNew
 }

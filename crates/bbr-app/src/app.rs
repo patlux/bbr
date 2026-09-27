@@ -54,6 +54,7 @@ pub(crate) mod command_rank;
 mod command_result;
 mod command_surface;
 mod command_text;
+mod content_card;
 pub(crate) mod content_gesture;
 pub(crate) mod context_menu;
 #[cfg(feature = "testkit")]
@@ -388,6 +389,10 @@ pub struct BbrApp {
     /// regardless of the host. `None` follows the system.
     #[cfg(feature = "testkit")]
     appearance_override: Option<bbr_ui::theme::ThemeMode>,
+    /// Testkit-only full-screen presentation override (DESIGN §2 full-bleed
+    /// card): `None` follows the real window's full-screen state.
+    #[cfg(feature = "testkit")]
+    pub(crate) full_screen_override: Option<bool>,
     /// Testkit-only render evidence: the theme mode the portal render last
     /// drew the credential sheet / the Peek bar in (both follow the shell
     /// appearance; E2E proves it from what was drawn, not from the model).
@@ -644,6 +649,8 @@ impl BbrApp {
             system_appearance: bbr_ui::theme::ThemeMode::Light,
             #[cfg(feature = "testkit")]
             appearance_override: None,
+            #[cfg(feature = "testkit")]
+            full_screen_override: None,
             #[cfg(feature = "testkit")]
             auth_presented_theme: std::cell::Cell::new(None),
             #[cfg(feature = "testkit")]

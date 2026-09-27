@@ -343,6 +343,13 @@ impl BbrApp {
                     },
                 );
                 ids.extend(self.tab_menu_visible_ids());
+                // §2: the content card always frames the content area; the
+                // draggable chassis band exists while the card has a top
+                // inset (never in full screen).
+                ids.push(bbr_ui::card::CONTENT_CARD_ID.to_string());
+                if self.content_card_frame(window).top > 0.0 {
+                    ids.push(bbr_ui::card::CHASSIS_BAND_ID.to_string());
+                }
                 ids
             },
             semantics,
@@ -363,6 +370,7 @@ impl BbrApp {
             command_cursor: self.command_text.cursor,
             command_selection: self.command_text.selection.map(|(start, end)| [start, end]),
             sidebar_visible: self.sidebar_visible,
+            content_card: self.content_card_snapshot(window),
             titlebar: {
                 let safe = self.safe_area(window);
                 bbr_testkit::protocol::TitlebarSnapshot {

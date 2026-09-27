@@ -33,7 +33,27 @@ pub(super) fn keystroke(client: &mut Client, key: &str) {
 /// filling the remainder at its own stable height — the macOS titlebar
 /// makes the window-bounds height larger than the content NSView).
 pub(super) fn content_rect_for(width: f32, window_width: f32, height: f32) -> [f32; 4] {
-    [width, 0.0, window_width - width, height]
+    [
+        width,
+        CONTENT_INSET,
+        window_width - width - CONTENT_INSET,
+        height,
+    ]
+}
+
+/// DESIGN §2 `sp:content-inset` of the seated content card.
+pub(super) const CONTENT_INSET: f32 = 10.0;
+
+/// The collapsed card inner box: the leading inset plus the native
+/// titlebar band above the card (§2 rule 5).
+pub(super) fn collapsed_rect_for(window_width: f32, height: f32, band: f32) -> [f32; 4] {
+    let band = band.max(CONTENT_INSET);
+    [
+        CONTENT_INSET,
+        band,
+        window_width - 2.0 * CONTENT_INSET,
+        height - (band - CONTENT_INSET),
+    ]
 }
 
 /// Titlebar interactions must never change the selected WebViewId or the

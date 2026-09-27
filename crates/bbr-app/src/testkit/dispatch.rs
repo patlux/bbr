@@ -588,6 +588,17 @@ pub(crate) fn dispatch(
         // regardless of the host appearance (`None` clears the override and
         // returns to the observed macOS system appearance). The snapshot's
         // §15 `theme` field reports the effective mode.
+        // §2 full-bleed card presentation seam (see the request docs for
+        // the host-side full-screen block).
+        Request::SetFullScreenOverride { full_screen } => {
+            with_app(window, app, cx, |view, _window, cx| {
+                view.full_screen_override = full_screen;
+                cx.notify();
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+
         Request::SetAppearanceOverride { mode } => {
             with_app(window, app, cx, |view, _window, cx| {
                 view.set_appearance_override(

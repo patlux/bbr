@@ -72,12 +72,15 @@ fn pointer_drag_resizes_with_stable_native_content_and_focus() {
         let initial_rect = wait_for_content_rect_x(
             &mut client,
             SIDEBAR_DEFAULT,
-            window_w - SIDEBAR_DEFAULT,
+            window_w - SIDEBAR_DEFAULT - CONTENT_INSET,
             deadline(),
         );
         let height = initial_rect.content_rect[3];
         assert!(height > 0.0, "native content height must be positive");
-        assert_eq!(initial_rect.content_rect[1], 0.0);
+        assert_eq!(
+            initial_rect.content_rect[1], CONTENT_INSET,
+            "the §2 card is inset from the top edge"
+        );
 
         // Pointer drag +40 pt: the rail grows by the exact delta and the
         // native content follows on the next frame.
@@ -99,7 +102,7 @@ fn pointer_drag_resizes_with_stable_native_content_and_focus() {
         );
         assert_eq!(
             grown_rect.content_rect[2],
-            window_w - (SIDEBAR_DEFAULT + 40.0)
+            window_w - (SIDEBAR_DEFAULT + 40.0) - CONTENT_INSET
         );
         assert_eq!(grown_rect.content_rect[3], height, "no vertical drift");
 
@@ -117,7 +120,10 @@ fn pointer_drag_resizes_with_stable_native_content_and_focus() {
             deadline(),
         );
         assert_eq!(min_rect.content_rect[0], SIDEBAR_MIN);
-        assert_eq!(min_rect.content_rect[2], window_w - SIDEBAR_MIN);
+        assert_eq!(
+            min_rect.content_rect[2],
+            window_w - SIDEBAR_MIN - CONTENT_INSET
+        );
 
         // …and to the max.
         client
@@ -190,7 +196,7 @@ fn keyboard_resize_and_reset_match_pointer_parity() {
         let initial_rect = wait_for_content_rect_x(
             &mut client,
             SIDEBAR_DEFAULT,
-            window_w - SIDEBAR_DEFAULT,
+            window_w - SIDEBAR_DEFAULT - CONTENT_INSET,
             deadline(),
         );
         let height = initial_rect.content_rect[3];
@@ -317,7 +323,7 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
         let initial_rect = wait_for_content_rect_x(
             &mut client,
             SIDEBAR_DEFAULT,
-            wide_w - SIDEBAR_DEFAULT,
+            wide_w - SIDEBAR_DEFAULT - CONTENT_INSET,
             deadline(),
         );
         let height = initial_rect.content_rect[3];
@@ -356,14 +362,21 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
             "collapsed rail renders no sidebar ids"
         );
         assert_view_and_sessions_preserved(&collapsed, first_view, sessions);
+        // §2 rule 5: the collapsed card gains the leading inset and keeps
+        // the native titlebar band as empty chassis above it.
+        let band = collapsed.titlebar.safe_area_height;
         let collapsed_rect = wait_for_content_rect(
             &mut client,
-            content_rect_for(0.0, wide_w, height),
+            collapsed_rect_for(wide_w, height, band),
             deadline(),
         );
-        assert_eq!(collapsed_rect.content_rect[0], 0.0);
-        assert_eq!(collapsed_rect.content_rect[2], wide_w);
-        assert_eq!(collapsed_rect.content_rect[3], height);
+        assert_eq!(collapsed_rect.content_rect[0], CONTENT_INSET);
+        assert_eq!(collapsed_rect.content_rect[2], wide_w - 2.0 * CONTENT_INSET);
+        assert_eq!(
+            collapsed_rect.content_card.inset_top,
+            band.max(CONTENT_INSET),
+            "the traffic lights keep a chrome ground"
+        );
 
         // Cmd-B expands: the last expanded width (320) is restored, not the
         // default.
@@ -406,7 +419,7 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
         // must never pass).
         let compact = wait_for_window_and_content(&mut client, 340.0, CONTENT_MIN, deadline());
         let compact_w = compact.window_size[0];
-        let expected_compact = SIDEBAR_MAX.min((compact_w - CONTENT_MIN).max(0.0));
+        let expected_compact = SIDEBAR_MAX.min((compact_w - CONTENT_MIN - CONTENT_INSET).max(0.0));
         assert_eq!(
             compact.sidebar_width, expected_compact,
             "rail yields to the window"
@@ -429,7 +442,7 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
         flush_frame(&mut client);
         let narrow = wait_for_window_and_content(&mut client, 300.0, CONTENT_MIN, deadline());
         let narrow_w = narrow.window_size[0];
-        let expected_narrow = SIDEBAR_MAX.min((narrow_w - CONTENT_MIN).max(0.0));
+        let expected_narrow = SIDEBAR_MAX.min((narrow_w - CONTENT_MIN - CONTENT_INSET).max(0.0));
         assert_eq!(narrow.sidebar_width, expected_narrow);
         assert_view_and_sessions_preserved(&narrow, first_view, sessions);
         assert_eq!(narrow.content_rect[2], CONTENT_MIN);
@@ -443,15 +456,17 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
             })
             .expect("restore window");
         flush_frame(&mut client);
-        let expected_restored_width = SIDEBAR_MAX.min((wide_w - CONTENT_MIN).max(0.0));
+        let expected_restored_width =
+            SIDEBAR_MAX.min((wide_w - CONTENT_MIN - CONTENT_INSET).max(0.0));
         let restored = wait_for_window_and_content(
             &mut client,
             wide_w,
-            wide_w - expected_restored_width,
+            wide_w - expected_restored_width - CONTENT_INSET,
             deadline(),
         );
         let restored_w = restored.window_size[0];
-        let expected_restored = SIDEBAR_MAX.min((restored_w - CONTENT_MIN).max(0.0));
+        let expected_restored =
+            SIDEBAR_MAX.min((restored_w - CONTENT_MIN - CONTENT_INSET).max(0.0));
         assert_eq!(restored.sidebar_width, expected_restored);
         assert_view_and_sessions_preserved(&restored, first_view, sessions);
 
@@ -476,6 +491,7 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
 mod appearance;
 mod composition;
 mod composition_geometry;
+mod content_card;
 mod reference_polish;
 mod support;
 mod u2_favorites;

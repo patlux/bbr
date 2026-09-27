@@ -50,6 +50,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod card;
 pub mod components;
 pub mod icons;
 pub mod palette;

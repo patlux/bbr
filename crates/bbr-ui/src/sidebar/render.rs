@@ -72,7 +72,6 @@ pub fn sidebar_surface(
         downloads_panel,
         space_config_panel,
     } = children;
-    let p = theme.palette;
     let command_bar = command_slot(theme, model, callbacks, command_field_anchor);
     let favorites = model.favorites.as_ref().map(|favorites| {
         favorites_surface(theme, model, favorites, callbacks, favorites_band_anchor)
@@ -96,9 +95,10 @@ pub fn sidebar_surface(
         .flex_shrink_0()
         .flex()
         .flex_row()
+        // No right hairline (DESIGN §2 rule 4): the seated content card's
+        // edge and shadow are the boundary; painting both is a double
+        // border.
         .bg(model.chrome_tint)
-        .border_r_1()
-        .border_color(p.hairline)
         .on_scroll_wheel(callbacks::wheel(&callbacks.on_rail_scroll_wheel))
         .on_mouse_down(
             MouseButton::Left,

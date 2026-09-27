@@ -32,10 +32,14 @@ pub struct NativeWebViewSlot {
     /// The live web view this slot frames. Geometry is keyed by this id so
     /// two split panes address their own WKWebView and never frame a sibling.
     view_id: WebViewId,
-    /// Receives `(rect, content_height)` on the main thread when the slot's
-    /// bounds change. Kept as a closure so the element stays framework-free
-    /// plumbing: `prepaint` runs on the main thread during GPUI's draw.
-    publish: Rc<dyn Fn(WebRect, f32)>,
+    /// Receives `(rect, content_height, corner_radius)` on the main thread
+    /// every prepaint (the engine suppresses unchanged values). Kept as a
+    /// closure so the element stays framework-free plumbing: `prepaint`
+    /// runs on the main thread during GPUI's draw.
+    publish: Rc<dyn Fn(WebRect, f32, f32)>,
+    /// The seated content card's corner radius (DESIGN §2) the native layer
+    /// clips to; `0` is full-bleed.
+    corner_radius: f32,
     #[cfg(feature = "testkit")]
     presentation_pending: Option<Rc<dyn Fn() -> bool>>,
     #[cfg(feature = "testkit")]
@@ -61,14 +65,16 @@ impl NativeWebViewSlot {
         engine: Rc<std::cell::RefCell<E>>,
         view_id: WebViewId,
     ) -> Self {
-        let publish: Rc<dyn Fn(WebRect, f32)> = Rc::new(move |rect, content_height| {
-            engine
-                .borrow_mut()
-                .set_web_view_rect(view_id, rect, content_height);
-        });
+        let publish: Rc<dyn Fn(WebRect, f32, f32)> =
+            Rc::new(move |rect, content_height, corner_radius| {
+                let mut engine = engine.borrow_mut();
+                engine.set_web_view_rect(view_id, rect, content_height);
+                engine.set_web_view_corner_radius(view_id, corner_radius);
+            });
         Self {
             view_id,
             publish,
+            corner_radius: 0.0,
             #[cfg(feature = "testkit")]
             presentation_pending: None,
             #[cfg(feature = "testkit")]
@@ -78,6 +84,12 @@ impl NativeWebViewSlot {
             #[cfg(feature = "testkit")]
             geometry: None,
         }
+    }
+
+    /// Clip the native surface to the content card's corner radius.
+    pub fn corner_radius(mut self, radius: f32) -> Self {
+        self.corner_radius = radius;
+        self
     }
 
     #[cfg(feature = "testkit")]
@@ -170,7 +182,7 @@ impl Element for NativeWebViewSlot {
             f32::from(bounds.size.height),
         );
         let content_height = f32::from(window.bounds().size.height);
-        (self.publish)(rect, content_height);
+        (self.publish)(rect, content_height, self.corner_radius);
         #[cfg(feature = "testkit")]
         if let Some(keyed_geometry) = self.keyed_geometry.clone() {
             keyed_geometry(self.view_id, rect);

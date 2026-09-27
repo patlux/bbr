@@ -61,14 +61,16 @@ Integration order:       before address-field-space-identity
 
 ### Unit and contract
 
-- [ ] Card-rect arithmetic for expanded, collapsed, narrow and full-screen
+- [x] Card-rect arithmetic for expanded, collapsed, narrow and full-screen
       windows, including `CONTENT_MIN` on the inner box.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-sidebar` asserts card geometry and radius through
+- [x] `just e2e-shell-sidebar` asserts card geometry and radius through
       resize, collapse/expand and full screen, with the native slot rect
-      matching the card's inner box and no session recreation.
+      matching the card's inner box and no session recreation. *(Full
+      screen through the typed presentation seam: programmatic AppKit
+      full screen never completes on this host's Window Server.)*
 
 ### Performance
 
@@ -100,12 +102,28 @@ sampling web content, stop with the evidence and keep the full-bleed contract.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: the native slot is the §2 card's inner box (flush with the rail,
+  10 pt elsewhere, radius:lg), the WKWebView and its navigation cover clip
+  through their backing layers, GPUI paints the chassis (rail paint) and the
+  static elev:1.content shadow, the rail lost its right hairline and the
+  divider is empty paint at rest, a collapsed sidebar keeps the native
+  titlebar band as empty draggable chassis, and full screen is full-bleed.
+Commits: this implementation commit on main.
+Functional evidence: bbr-ui card geometry/shadow tests and the updated rail
+  clamp (the inset is charged to the slot); Gallery compact-family floor.
+Real-app E2E: new content_card scenario (frame, native layer radius 10 →
+  0 → 10 read back from the WKWebView, collapse band = safe titlebar height,
+  resize, full-screen presentation, identity); existing geometry suites
+  moved to the card contract (sidebar 16/16, titlebar navigation 5/5, split
+  geometry 1/1); full `just e2e` aggregate 30/30 plus e2e-peek 7/7 and
+  e2e-gallery 45/45 in 321 s. Visual check: representative capture shows
+  the seated card, rounded corners, shadow and the chassis notch.
+Performance evidence: open (performance-execution override); the perf
+  driver's resize expectation now charges the inset like the app.
+Roadmap/documentation updates: DESIGN §2 (layers, chassis, elevation, the
+  content card), §5 (sp:content-inset, widths, floor), §11.4, §13, §17.16.
+Open blockers and non-goals: real AppKit full screen is environment-blocked
+  on this host (same as the portal hardening suite); split-pane cards stay
+  with the Split composition; performance gate blocked by the override.
+Worktree state: main, serial writer.
 ```

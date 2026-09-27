@@ -100,6 +100,9 @@ impl Render for BbrApp {
             0.0
         };
         let sidebar = self.sidebar_surface(&theme, sidebar_width, chrome_focused, window, cx);
+        // §2 seated content card: one frame for the chassis, the card and
+        // every native slot's clip.
+        let card = self.content_card_frame(window);
 
         // §11.5 presentation milestone: the result palette was constructed
         // into the sidebar above. When a `CommandType` benchmark is pending,
@@ -210,7 +213,8 @@ impl Render for BbrApp {
                     )
                     .into_any();
                 }
-                let slot = NativeWebViewSlot::new(this.engine.clone(), id);
+                let slot =
+                    NativeWebViewSlot::new(this.engine.clone(), id).corner_radius(card.radius);
                 #[cfg(feature = "testkit")]
                 let slot = slot.on_keyed_geometry(this.performance.keyed_geometry_callback());
                 #[cfg(feature = "testkit")]
@@ -374,7 +378,7 @@ impl Render for BbrApp {
             .on_mouse_up(MouseButton::Left, cx.listener(Self::end_tab_drag))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::end_tab_drag))
             .when(self.sidebar_visible, |root| root.child(sidebar))
-            .child(content)
+            .child(self.seated_content(&theme, card, content, cx))
             // §11.13: the open Tab/Favorite menu overlay — ordinary GPUI
             // chrome at the resolved clamped placement, drawn above the
             // sidebar and the web content slot (the caller owns the
