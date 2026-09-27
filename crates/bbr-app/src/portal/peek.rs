@@ -35,8 +35,13 @@ use bbr_ui::theme::{Spacing, Theme};
 
 /// Build the Peek bar at the resolved portal rect. The caller owns the
 /// full-window backdrop and pointer propagation policy.
-pub fn peek_bar(surface: &PeekSurface, rect: Rect, cx: &mut Context<PortalRoot>) -> Stateful<Div> {
-    let theme = Theme::dark();
+pub fn peek_bar(
+    surface: &PeekSurface,
+    theme: &Theme,
+    rect: Rect,
+    cx: &mut Context<PortalRoot>,
+) -> Stateful<Div> {
+    let theme = *theme;
     let p = theme.palette;
     // The bar must stay readable in compact windows: title/url truncate and
     // the controls keep their minimum sizes.
@@ -101,7 +106,7 @@ pub fn peek_bar(surface: &PeekSurface, rect: Rect, cx: &mut Context<PortalRoot>)
                 .child(label),
         )
         .child(
-            peek_control(PEEK_BACK_ID, "Back", surface.can_go_back).on_mouse_down(
+            peek_control(&theme, PEEK_BACK_ID, "Back", surface.can_go_back).on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
                     this.peek_back_clicked(cx);
@@ -109,39 +114,48 @@ pub fn peek_bar(surface: &PeekSurface, rect: Rect, cx: &mut Context<PortalRoot>)
             ),
         )
         .child(
-            peek_control(PEEK_FORWARD_ID, "Forward", surface.can_go_forward).on_mouse_down(
+            peek_control(&theme, PEEK_FORWARD_ID, "Forward", surface.can_go_forward).on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
                     this.peek_forward_clicked(cx);
                 }),
             ),
         )
-        .child(peek_control(PEEK_RELOAD_ID, "Reload", true).on_mouse_down(
-            MouseButton::Left,
-            cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
-                this.peek_reload_clicked(cx);
-            }),
-        ))
         .child(
-            peek_control(PEEK_OPEN_AS_TAB_ID, "Open as Tab", !surface.crashed).on_mouse_down(
+            peek_control(&theme, PEEK_RELOAD_ID, "Reload", true).on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
-                    this.peek_promote_clicked(cx);
+                    this.peek_reload_clicked(cx);
                 }),
             ),
         )
-        .child(peek_control(PEEK_CLOSE_ID, "Close", true).on_mouse_down(
-            MouseButton::Left,
-            cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
-                this.peek_close_clicked(cx);
-            }),
-        ))
+        .child(
+            peek_control(&theme, PEEK_OPEN_AS_TAB_ID, "Open as Tab", !surface.crashed)
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                        this.peek_promote_clicked(cx);
+                    }),
+                ),
+        )
+        .child(
+            peek_control(&theme, PEEK_CLOSE_ID, "Close", true).on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|this, _e: &MouseDownEvent, _window, cx| {
+                    this.peek_close_clicked(cx);
+                }),
+            ),
+        )
 }
 
 /// One Peek bar control: a density-row chip with the §9 ring on hover and
 /// the muted/disabled variant when unavailable.
-fn peek_control(id: &'static str, label: &'static str, enabled: bool) -> Stateful<Div> {
-    let theme = Theme::dark();
+fn peek_control(
+    theme: &Theme,
+    id: &'static str,
+    label: &'static str,
+    enabled: bool,
+) -> Stateful<Div> {
     let p = theme.palette;
     let text_color = if enabled {
         p.ink_secondary

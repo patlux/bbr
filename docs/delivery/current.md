@@ -16,7 +16,7 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Target Orchestrator session | `01a062b1-9945-7d1b-aa68-02a11d6084fd`; reverify pane/session activity before any ownership transfer |
 | Preserved design checkpoint | `design/browser-shell-paper@414c97c7a5139cf6070a54138969a3bb34403bc2`; design intent only, not runtime acceptance |
 
-The UI contract conformance slice runs serially on `main` (activated 2026-09-27). Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
+The UI contract conformance slice is integrated on `main` (2026-09-27); the folder membership/pinned invariant is the next serial slice. Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
 
 ## Status vocabulary
 
@@ -40,8 +40,8 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
 | CONTROL-RECONCILE | Product/delivery authority reconciliation | `closed` | commits `d2b507f5` and `f8e945c2`; locally integrated to `main` | none; reconciliation complete | [Roadmap maintenance](../roadmap/README.md) | Closed: worktree/index/head graph, script tests, targeted UI test/Clippy, ancestry, sessions, worktrees, and dirty-state preservation audited |
-| FOLDER-PIN-INVARIANT | Folder membership and pinned-state invariant | `ready` | none | none | [folder membership pins tabs](../roadmap/tasks/folder-pinned-invariant.md) | Activated by Patrick 2026-09-27; starts from a fresh verified `main` after UI-CONFORMANCE integrates |
-| UI-CONFORMANCE | UI contract conformance fixes | `running` | `main` (serial, no worktree) | Pi orchestrator session, 2026-09-27 | [UI contract conformance](../roadmap/tasks/ui-contract-conformance.md) | Affected real-app suites, `just verify`, testkit Clippy, then `just e2e` |
+| FOLDER-PIN-INVARIANT | Folder membership and pinned-state invariant | `ready` | none | none | [folder membership pins tabs](../roadmap/tasks/folder-pinned-invariant.md) | Activated by Patrick 2026-09-27; next serial slice on `main` now that UI-CONFORMANCE is integrated |
+| UI-CONFORMANCE | UI contract conformance fixes | `integrated` | `main` (serial, no worktree) | none; slice complete | [UI contract conformance](../roadmap/tasks/ui-contract-conformance.md) | Integrated on `main`: `just verify`, testkit Clippy, affected suites, `e2e-peek`, `e2e-gallery` and the full `just e2e` aggregate green; orchestrator self-review (no independent subagent review without Patrick's opt-in) |
 | RA-MEDIA | Media-session capability and Sidebar media control | `planned` | none | none | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Prioritize independently after an explicit delivery decision; capability contract first |
 
 No product writer or background workflow is active. The Paper and Ladybird sessions are read-only and idle at their prompts; all historical BBR worktrees remain preserved.

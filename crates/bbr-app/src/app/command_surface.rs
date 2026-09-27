@@ -8,8 +8,9 @@
 //! cannot visually overlap the glass); it is dismissible with Escape and
 //! carries the stable §15 ids.
 
-use gpui::{div, prelude::*, px, Div, SharedString, Stateful, Styled};
+use gpui::{div, prelude::*, px, AnyElement, Div, SharedString, Stateful, Styled};
 
+use bbr_ui::icons::Icon;
 use bbr_ui::theme::{Radius, Spacing, Theme};
 
 use super::command_rank::{CommandResultRow, CommandResultState};
@@ -170,7 +171,7 @@ impl BbrApp {
                     } else {
                         p.ink_faint
                     })
-                    .child(SharedString::from(group_glyph(row))),
+                    .child(group_mark(theme, row)),
             )
             .child(
                 div()
@@ -232,17 +233,28 @@ impl BbrApp {
     }
 }
 
-/// The stable leading glyph of a result row: the group's one-letter mark
-/// (`T` tab / `S` space / `★` Saved Page / `H` history / `A` action / `→`
-/// fallback). The Saved Page bookmark glyph is the §11.16 settled mark.
-fn group_glyph(row: &CommandResultRow) -> String {
+/// The leading mark of a result row: the drawn §11.16 bookmark glyph for a
+/// Saved Page (never a Unicode `★`), otherwise the group letter.
+fn group_mark(theme: &Theme, row: &CommandResultRow) -> AnyElement {
+    match group_glyph(row) {
+        Some(letter) => SharedString::from(letter).into_any_element(),
+        None => Icon::Bookmark
+            .canvas(theme, theme.density.icon() - px(4.0))
+            .into_any_element(),
+    }
+}
+
+/// The stable one-letter group mark (`T` tab / `S` space / `H` history /
+/// `A` action / `→` fallback); `None` for a Saved Page, which renders the
+/// drawn bookmark glyph instead.
+fn group_glyph(row: &CommandResultRow) -> Option<&'static str> {
     match row.group.as_str() {
-        "tab" | "exact_tab" | "current_pinned" | "current_tab" | "other_space" => "T".into(),
-        "space" => "S".into(),
-        "saved_page" => "★".into(),
-        "action" => "A".into(),
-        "history" => "H".into(),
-        _ => "→".into(),
+        "tab" | "exact_tab" | "current_pinned" | "current_tab" | "other_space" => Some("T"),
+        "space" => Some("S"),
+        "saved_page" => None,
+        "action" => Some("A"),
+        "history" => Some("H"),
+        _ => Some("→"),
     }
 }
 
@@ -330,12 +342,17 @@ mod tests {
             ("current_tab", "T"),
             ("other_space", "T"),
             ("space", "S"),
-            ("saved_page", "★"),
             ("action", "A"),
             ("history", "H"),
             ("fallback", "→"),
         ] {
-            assert_eq!(group_glyph(&row("k", group)), glyph, "glyph for {group}");
+            assert_eq!(
+                group_glyph(&row("k", group)),
+                Some(glyph),
+                "glyph for {group}"
+            );
         }
+        // A Saved Page renders the drawn bookmark glyph, never a letter or `★`.
+        assert_eq!(group_glyph(&row("k", "saved_page")), None);
     }
 }

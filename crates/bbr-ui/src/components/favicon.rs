@@ -124,7 +124,7 @@ pub fn favicon_tile(
             };
             (
                 bg,
-                theme.palette.surface_glass,
+                FaviconSlate::letter(theme.mode),
                 spec.letter,
                 spec.image.clone(),
             )

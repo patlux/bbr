@@ -67,35 +67,35 @@ Not parallelized. One serial writer on `main`.
 
 ### Unit and contract
 
-- [ ] `on_accent` text reaches ≥ 4.5:1 on `accent` in all four palettes; the
+- [x] `on_accent` text reaches ≥ 4.5:1 on `accent` in all four palettes; the
       auth submit and space-config Done colors come from it.
-- [ ] A selected Library row fills with `tint.selected`; ink on it stays ≥ 4.5:1;
+- [x] A selected Library row fills with `tint.selected`; ink on it stays ≥ 4.5:1;
       the selection-box mark reaches ≥ 3:1 on its accent fill.
-- [ ] Monogram letters reach ≥ 3:1 on every tile of both slate ramps.
-- [ ] Increased contrast deepens the hover/active washes in both modes.
-- [ ] `Icon::Bookmark` and `Icon::Pencil` are named, catalogued, and inside
+- [x] Monogram letters reach ≥ 3:1 on every tile of both slate ramps.
+- [x] Increased contrast deepens the hover/active washes in both modes.
+- [x] `Icon::Bookmark` and `Icon::Pencil` are named, catalogued, and inside
       their box; the Library row, the palette Saved Page mark, and the rename
       control use them.
-- [ ] Both `Icon::Clock` hands start at the glyph center.
-- [ ] Every curated identity glyph spans at least 80 % of the widest glyph's
+- [x] Both `Icon::Clock` hands start at the glyph center.
+- [x] Every curated identity glyph spans at least 80 % of the widest glyph's
       extent and stays inside its box.
-- [ ] The dark and dark increased-contrast selection tints separate from the
+- [x] The dark and dark increased-contrast selection tints separate from the
       dark rail by at least 4 CIE L* units while keeping ink ≥ 14:1 and the
       secondary bars; increased contrast still deepens the tint.
-- [ ] Auth sheet and Peek bar models resolve the shell theme.
+- [x] Auth sheet and Peek bar models resolve the shell theme.
 
 ### Real-app E2E
 
-- [ ] `just e2e-auth` asserts the presented sheet's theme under light and dark
+- [x] `just e2e-auth` asserts the presented sheet's theme under light and dark
       appearance overrides.
-- [ ] `just e2e-peek` asserts the presented bar's theme under a light override.
-- [ ] Affected suites stay green: `e2e-shell-saved-pages`,
+- [x] `just e2e-peek` asserts the presented bar's theme under a light override.
+- [x] Affected suites stay green: `e2e-shell-saved-pages`,
       `e2e-shell-saved-pages-library`, `e2e-shell-spaces`, `e2e-shell-sidebar`,
       `e2e-shell-responsiveness`, `e2e-gallery`.
 
 ### Performance
 
-- [ ] Not applicable: colors and glyph paths only; no interaction, timing, or
+- [x] Not applicable: colors and glyph paths only; no interaction, timing, or
       presentation-commit change. Existing scenarios are unaffected and remain
       under the active performance-execution override.
 
@@ -139,12 +139,34 @@ shell theme without a second theme authority, stop with the ownership evidence.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: every scoped deviation fixed with a regression test; no new
+  interaction, id, geometry, or state.
+Commits: ef3d8b03 chore(lint) toolchain Clippy fixes (prerequisite for the
+  gates, no behavior change); c6d8c75c docs(roadmap) packet and design-branch
+  adoption; this implementation commit on main.
+Functional evidence: bbr-ui palette/auth/space-config/rows/icons/command
+  unit tests and bbr-app group-mark test; each new regression test was run
+  against the old value or path and failed (accent.ink on accent, accent row
+  fill, white monogram letters on the light ramp, equal light IC washes,
+  crossed clock hands, half-size identity glyphs, the invisible #0D2020 dark
+  tint, fixed Theme::dark() portal surfaces).
+Real-app E2E: e2e-auth 5/5 (new appearance test, fails with a fixed dark
+  sheet); e2e-peek 7/7 (new peek_bar_follows_the_shell_appearance, fails
+  with Theme::dark() in the portal probe: "presented=true theme=dark
+  shell=light"); e2e-gallery 45/45; full `just e2e` aggregate 30/30 recipes
+  green in 298 s (e2e-perf excluded under the performance-execution
+  override).
+Performance evidence: not applicable (colors and glyph paths only); no
+  scenario run under the active performance-execution override.
+Roadmap/documentation updates: DESIGN §3.2 color:on-accent, §3.5 dark tints
+  #0F1318/#0A0D12, §7 catalog and letter rule, §10.2 wash hexes and row
+  inset, §11.12 inset, §11.16 marks, §11.17/§16 Peek theme; UI design-system
+  track item closed.
+Review: orchestrator self-review of the full diff (one doc-comment wrap
+  fixed); no independent subagent review, because subagent use needs
+  Patrick's explicit opt-in in this session.
+Open blockers and non-goals: none; Peek increased-contrast/reduced-motion
+  matrix stays open under §16.
+Worktree state: main, serial writer; unrelated worktrees and the existing
+  stash untouched.
 ```

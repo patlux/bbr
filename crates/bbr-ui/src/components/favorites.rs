@@ -125,7 +125,7 @@ pub fn favorite_tile(
     let radius = Radius.small();
     let badge_size = theme.type_.badge.size;
     let badge_weight = theme.type_.badge.weight;
-    let glass = theme.palette.surface_glass;
+    let glass = FaviconSlate::letter(theme.mode);
     let letter = tile.letter;
     let monogram = div()
         .id(favorite_tile_icon_id(tile.index))

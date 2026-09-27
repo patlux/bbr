@@ -720,15 +720,19 @@ impl Render for PortalRoot {
                 let Some(surface) = app.read(cx).auth_surface() else {
                     return div().size_full().bg(transparent_black()).into_any();
                 };
+                // The sheet follows the shell appearance (the one production
+                // theme authority), like the find bar and the page menu.
+                let theme = app.read(cx).theme();
                 #[cfg(feature = "testkit")]
-                app.read(cx).observe_portal_auth_render(&surface);
+                app.read(cx)
+                    .observe_portal_auth_render(&surface, theme.mode);
                 // The extracted `bbr_ui::surfaces::auth` presentation
                 // (Group 8): the app builds the DTO from the redacted
                 // surface (records.rs) and wires the production
                 // submit/cancel seams; the portal owns the sheet geometry
                 // (absolute rect) and the backdrop policy — no outside
                 // dismissal for credentials.
-                let model = surface.model();
+                let model = surface.model(theme);
                 let card = div()
                     .absolute()
                     .left(px(rect.x))
@@ -773,9 +777,10 @@ impl Render for PortalRoot {
                 // `peek_request_to_present` benchmark can commit only from a
                 // frame that presented the armed preview identity above its
                 // warm origin (fast-but-wrong guard).
+                let theme = app.read(cx).theme();
                 #[cfg(feature = "testkit")]
-                app.read(cx).observe_portal_peek_render();
-                let card = crate::portal::peek::peek_bar(&surface, rect, cx);
+                app.read(cx).observe_portal_peek_render(theme.mode);
+                let card = crate::portal::peek::peek_bar(&surface, &theme, rect, cx);
                 div()
                     .id("bbr-peek-portal-surface")
                     .size_full()

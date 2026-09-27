@@ -733,6 +733,10 @@ pub struct AuthSnapshot {
     pub password_entered: bool,
     /// Challenge ids recorded but not yet presented (FIFO awaits).
     pub awaiting: Vec<u64>,
+    /// The theme mode (`light`/`dark`) the portal render last drew the sheet
+    /// in — render evidence that the sheet follows the shell appearance.
+    /// `None` until the sheet has been presented.
+    pub presented_theme: Option<String>,
 }
 
 /// Typed find-in-page presentation state (task packet
@@ -1384,6 +1388,11 @@ pub struct Snapshot {
     /// window (the transient preview surface above the web content area).
     #[serde(default)]
     pub peek_presented: bool,
+    /// The theme mode (`light`/`dark`) the portal render last drew the Peek
+    /// bar in — render evidence that the bar follows the shell appearance.
+    /// `None` until the bar has been presented.
+    #[serde(default)]
+    pub peek_theme: Option<String>,
     /// Truthful native z-order evidence (Link Preview / Peek packet): while
     /// a preview is open the preview WKWebView's subview index must exceed
     /// its covered origin's. `None` at rest.

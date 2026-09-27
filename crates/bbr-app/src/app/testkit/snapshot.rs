@@ -528,6 +528,7 @@ impl BbrApp {
                 }
             }),
             peek_presented: self.peek_presented(),
+            peek_theme: self.peek_presented_theme.get().map(theme_label),
             #[cfg(target_os = "macos")]
             preview_z_order: {
                 // Truthful native z-order evidence (Link Preview / Peek
@@ -902,6 +903,7 @@ impl BbrApp {
             username_entered: snap.username_entered,
             password_entered: snap.password_entered,
             awaiting: snap.awaiting,
+            presented_theme: self.auth_presented_theme.get().map(theme_label),
         }
     }
 
@@ -1082,5 +1084,14 @@ impl BbrApp {
             active_visible,
             active_row,
         }
+    }
+}
+
+/// The §15 mode label of a theme (`light`/`dark`), shared by the portal
+/// render-evidence fields.
+fn theme_label(mode: bbr_ui::theme::ThemeMode) -> String {
+    match mode {
+        bbr_ui::theme::ThemeMode::Light => "light".into(),
+        bbr_ui::theme::ThemeMode::Dark => "dark".into(),
     }
 }

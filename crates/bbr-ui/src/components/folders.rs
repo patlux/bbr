@@ -285,7 +285,7 @@ pub fn folder_item_row(
     let radius = Radius.small();
     let badge_size = theme.type_.badge.size;
     let badge_weight = theme.type_.badge.weight;
-    let glass = p.surface_glass;
+    let glass = FaviconSlate::letter(theme.mode);
     let monogram_style = MonogramStyle {
         size,
         radius,

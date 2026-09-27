@@ -436,3 +436,57 @@ fn crash_teardown_cleans_up_the_preview_session() {
     }));
     finish(result, &mut harness, &socket, &token);
 }
+
+/// Regression (task packet `ui-contract-conformance`): the Peek bar used a
+/// fixed `Theme::dark()`. Under a light shell the portal render must draw
+/// the bar in light — proven from the theme the render actually drew.
+#[test]
+#[ignore]
+fn peek_bar_follows_the_shell_appearance() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+
+    let (fixtures, page_one, _page_two) = fixtures();
+    let target = fixtures.url("/popup-target.html");
+    let (mut harness, socket, token) = spawn_harness("peek-theme", &page_one);
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let replay = client.attach(None).expect("attach");
+        client
+            .send_ok(&dsl::set_appearance_override(Some(
+                bbr_testkit::protocol::ThemeModeOverride::Light,
+            )))
+            .expect("force light");
+        let initial = client.snapshot().expect("initial peek snapshot");
+        let source = initial.active_web_view.expect("source view");
+        if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {
+            let since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+            let _ = wait_title(&mut client, source, PAGE_ONE_TITLE, since);
+        }
+        inject_default_new_window(&mut client, source, initial.active_profile, &target);
+        let until = deadline();
+        let drawn = loop {
+            // The hidden harness draws the portal window on request only.
+            client
+                .send_ok(&Request::FlushFrame)
+                .expect("flush main and portal frames");
+            let snapshot = client.snapshot().expect("peek theme snapshot");
+            if snapshot.peek_presented && snapshot.peek_theme.as_deref() == Some("light") {
+                break snapshot;
+            }
+            assert!(
+                Instant::now() < until,
+                "Peek bar not drawn in light: presented={} theme={:?} preview={} shell={}",
+                snapshot.peek_presented,
+                snapshot.peek_theme,
+                snapshot.preview.is_some(),
+                snapshot.shell_modes.theme
+            );
+        };
+        assert_eq!(drawn.shell_modes.theme, "light");
+    }));
+    finish(result, &mut harness, &socket, &token);
+}

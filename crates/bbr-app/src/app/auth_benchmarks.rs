@@ -136,7 +136,12 @@ impl BbrApp {
     /// after consuming the app's live `AuthSheetSurface`). The probe
     /// commits auth samples only from this observation; credentials never
     /// reach the probe — only the challenge id and masked flags.
-    pub(crate) fn observe_portal_auth_render(&self, surface: &AuthSheetSurface) {
+    pub(crate) fn observe_portal_auth_render(
+        &self,
+        surface: &AuthSheetSurface,
+        mode: bbr_ui::theme::ThemeMode,
+    ) {
+        self.auth_presented_theme.set(Some(mode));
         self.performance.observe_auth_sheet(
             true,
             self.auth.presented().map(|id| id.0),

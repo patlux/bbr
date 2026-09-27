@@ -165,6 +165,7 @@ every pair from the stored hex values.
 |---|---|---|---|---|---|
 | `color:accent` | `#0A7967` | `#2AD4B6` | `#0B6B5C` | `#3DF0CE` | selected rail, focus ring, drag tick, split preview frame (UI ≥ 3:1) |
 | `color:accent.ink` | `#0A5C4E` | `#3DF0CE` | `#0A5A4C` | `#3DF0CE` | accent-colored text (match highlight, mode chip, links) |
+| `color:on-accent` | `#FFFFFF` | `#151719` | `#FFFFFF` | `#151719` | text and marks painted *on* an accent fill (primary buttons, selection-box mark); equals `material:glass`. Never `accent.ink`, which is text on a neutral surface and fails §3.1 on an accent fill |
 
 Usage rules: the accent marks **one thing at a time** — a focused control,
 an active command result, drag target, progress/status or split target. Resting
@@ -199,12 +200,18 @@ tile washes deepen 7%; the crash/error and attention surfaces gain a 1 px
 ### 3.5 Selection tint
 
 `color:tint.selected` = the reference-calibrated quiet blue-gray surface:
-light `#EEF2F9` / dark `#0D2020`; increased contrast deepens it
-(`#E1E8F3` / `#091818`). The dark values are **contract-calibrated** — the
+light `#EEF2F9` / dark `#0F1318`; increased contrast deepens it
+(`#E1E8F3` / `#0A0D12`). The dark values are **contract-calibrated** — the
 selected row renders ink title + ink.secondary meta on this surface (§10.4),
 so the dark tint is computed to hold the unchanged §3.1 text bars
 (ink ≥ 14:1, ink.secondary ≥ 5.9:1; IC ≥ 9:1 for ink.secondary) and is not
-copied from reference pixels. The exact row identity, type weight and inset
+copied from reference pixels. Because the ink bar caps the dark tint just
+above the rail's luminance, the visible dark selection sits *below* the rail:
+at least 4 CIE L* units darker (≈ 5 for standard, ≈ 7 for increased contrast),
+mirroring the hover wash above it. The former `#0D2020` sat 0.1 L* above the
+rail and was invisible as a surface (recalibrated 2026-09-27,
+[UI contract conformance](docs/roadmap/tasks/ui-contract-conformance.md)).
+The exact row identity, type weight and inset
 surface remain non-color selection cues; the Phosphor focus/interaction
 accent is not used as decorative site tint.
 
@@ -325,6 +332,12 @@ not listed there is `dur:instant`.
   close buttons: hit area ≥ `density:hit-min` (S 28 / N 32 / XL 40), close
   controls ≥ `density:hit-min.close` (S 24 / N 28 / XL 32), glyph optically
   centered in the hit square.
+- **Catalog:** close, pin, lifering, clock, chassis mark, plus, downloads,
+  check, stopped, folder (open/closed), disclosure, loading arc, chevrons,
+  sidebar toggle, back, forward, reload, **bookmark** (the §11.16 Saved Page
+  mark) and **pencil** (rename), plus the §11.3 identity glyphs. The clock
+  draws two hands from its center. Identity glyphs are normalized by their
+  own farthest point so every glyph fills the same optical box.
 - **Fallback:** every icon context has a text alternative (label, tooltip, or
   aria-label). A missing functional glyph falls back to a 2-character
   `type:badge` chip, never to an arbitrary Unicode emoji. The deliberate
@@ -339,7 +352,8 @@ an empty box:
 
 - 18 pt (S: 16, XL: 20) square, `radius:sm`, letter = first character of the
   registrable hostname (uppercase, `type:badge` size), on a desaturated
-  slate-hue ramp derived from FNV-1a(hostname) mod 6.
+  slate-hue ramp derived from FNV-1a(hostname) mod 6. The letter is `ink` on
+  the light ramp and white on the dark ramp, so every tile holds ≥ 3:1.
 - The slate ramp is separate from accent/status/profile hues so favicon tiles
   never impersonate identity or status.
 - While loading, the tile slot shows the `loading` spinner (§10.5); after
@@ -470,10 +484,10 @@ assert token used by E2E (§15). States are composable: `selected+loading`,
 Row wash transparent; text per role. **Assert:** `visual_state == default`.
 
 ### 10.2 `hover` (pointer over control)
-Wash: light `rgba(0,0,0,0.045)` (`#E4E4E1`), dark `rgba(255,255,255,0.05)`
-(`#25282C`); IC 7%. The wash paints an inset rounded row surface — inset
-`density:row-inset` from the rail edges (S `sp:1` 4 / N `sp:2` 8 / XL `sp:3`
-12), radius `density:radius` (S `radius:sm` / N `radius:md` / XL
+Wash: light ink at 4.5 % over the rail (`#D7D7D7`), dark ink at 5 %
+(`#25272B`); increased contrast 7 % in both modes. The wash paints an inset
+rounded row surface — inset `density:row-inset` from the rail edges (S `sp:1`
+4 / N `sp:1` 4 / XL `sp:2` 8, §8), radius `density:radius` (S `radius:sm` / N `radius:md` / XL
 `radius:lg`) — rather than a full-bleed band, so the trailing close
 control sits inside that surface. Close button reveals on tab rows (fade-in
 opacity `dur:micro`, allowed). Tint animates `dur:micro`. **Assert:** `hover`.
@@ -959,7 +973,7 @@ not an above-glass surface: `elev:2` over `material:overlay` with the palette's
 shadow class (§2), `radius:lg`, anchored so its bottom edge is flush with the
 footer control's top edge and its leading edge with the sidebar column's
 leading edge. Width = the sidebar column's current width − 2 ×
-`density:row-inset` (S `sp:1` 4 / N `sp:2` 8 / XL `sp:3` 12), clamped to stay
+`density:row-inset` (S `sp:1` 4 / N `sp:1` 4 / XL `sp:2` 8, §8), clamped to stay
 fully inside the window; the popover grows upward and its height clamps to the
 window. Because the popover is geometrically confined to the sidebar column it
 never overlaps the native web view, so it stays ordinary GPUI sidebar chrome
@@ -1177,7 +1191,9 @@ living `TabId` globally and disappears with it; a Saved Page carries no
 `TabId`, Space/Profile identity, WebView, native session, cookie, credential,
 or page snapshot and survives tab close and restart.
 
-- **Palette result row:** `[bookmark glyph] [title + URL] [collection label]`.
+- **Palette result row:** `[bookmark glyph] [title + URL] [collection label]`;
+  the mark is the drawn §7 bookmark in the palette, the overlay and the
+  in-rail result list alike.
   Title uses `type:title` with the user label when present, otherwise the
   captured title, then hostname/URL fallback; URL uses `type:mono` and the §4
   mid-ellipsis; the optional one-level collection label uses `type:meta`.
@@ -1200,9 +1216,10 @@ or page snapshot and survives tab close and restart.
   dismisses it. The production surface supports search, deterministic sort,
   rename, remove, multi-select, and one-level flat collections through shared
   `bbr-ui` primitives.
-- **Library row:** bookmark/fallback glyph or normal favicon presentation,
+- **Library row:** the drawn §7 bookmark glyph and the normal favicon presentation,
   user label or captured-title fallback, mid-ellipsized URL, optional
-  collection label, and selection state.
+  collection label, and selection state. A selected row paints
+  `tint.selected` (§10.4); its rename control uses the §7 pencil.
   No favicon blob is stored in the record; missing favicon uses the §7.2
   monogram. Hundreds/thousands of cold records use bounded/windowed rendering.
 - **States:** empty, loading, populated, no results, single/multi-selection,
@@ -1259,8 +1276,9 @@ destroyed first).
 - **Motion:** present and dismiss bound to the portal frame with no
   intermediate chrome geometry (reduced-motion safe by construction); an
   entrance/exit transition remains later polish.
-- **Theme:** the bar currently renders with the dark palette; the
-  light/contrast/compact/reduced-motion matrix stays open (§16).
+- **Theme:** the bar follows the shell appearance (light/dark) like every
+  other portal surface; the increased-contrast/compact/reduced-motion matrix
+  stays open (§16).
 - **Assert ids:** `bbr-peek-bar`, `bbr-peek-url`, `bbr-peek-state`,
   `bbr-peek-back`, `bbr-peek-forward`, `bbr-peek-reload`,
   `bbr-peek-open-as-tab`, `bbr-peek-close`.
@@ -1386,7 +1404,7 @@ catalog; page thumbnails/previews; spring physics unrelated to direct gesture
 cancellation; auto-reload of crashed tabs; sidebar auto-collapse; density
 auto-switch; palette result grouping polish; Saved Page cloud/mobile sync,
 offline copies, tags, nested collections, or page snapshots; peek entrance/exit
-animation and the peek light/contrast/reduced-motion presentation matrix (the
+animation and the peek increased-contrast/reduced-motion presentation matrix (the
 production Peek surface itself is integrated, §11.17; Gallery stories follow
 production integration).
 

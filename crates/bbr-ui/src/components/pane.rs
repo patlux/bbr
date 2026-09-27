@@ -52,7 +52,7 @@ pub fn empty_space_pane(
                 .bg(theme.palette.accent)
                 .text_size(theme.type_.label.size)
                 .font_weight(theme.type_.label.weight)
-                .text_color(theme.palette.surface_glass)
+                .text_color(theme.palette.on_accent)
                 .on_mouse_down(MouseButton::Left, on_new_tab)
                 .child("New Tab  ⌘T"),
         )
@@ -114,7 +114,7 @@ pub fn crash_panel(
                         .rounded(theme.radius.medium())
                         .bg(theme.palette.accent)
                         .text_size(theme.type_.label.size)
-                        .text_color(theme.palette.surface_glass)
+                        .text_color(theme.palette.on_accent)
                         .on_mouse_down(MouseButton::Left, on_reload)
                         .child("Reload"),
                 )
@@ -215,7 +215,7 @@ pub fn unresponsive_panel(
                         .rounded(theme.radius.medium())
                         .bg(theme.palette.accent)
                         .text_size(theme.type_.label.size)
-                        .text_color(theme.palette.surface_glass)
+                        .text_color(theme.palette.on_accent)
                         .on_mouse_down(MouseButton::Left, on_reload)
                         .child("Reload"),
                 )

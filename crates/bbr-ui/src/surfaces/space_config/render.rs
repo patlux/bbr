@@ -429,6 +429,7 @@ fn identity_option(
 /// appearance for the exact bound SpaceId).
 fn actions(theme: &Theme, callbacks: &SpaceConfigCallbacks) -> Stateful<Div> {
     let p = theme.palette;
+    let (done_fill, done_text) = super::model::done_colors(&p);
     let on_cancel = callbacks.on_cancel.clone();
     let on_done = callbacks.on_done.clone();
     div()
@@ -464,11 +465,11 @@ fn actions(theme: &Theme, callbacks: &SpaceConfigCallbacks) -> Stateful<Div> {
                 .px(Spacing::sp3())
                 .py(Spacing::sp1())
                 .rounded(Radius.small())
-                .bg(p.accent)
+                .bg(done_fill)
                 .cursor_pointer()
                 .text_size(theme.type_.label.size)
                 .font_weight(theme.type_.label.weight)
-                .text_color(p.accent_ink)
+                .text_color(done_text)
                 .child("Done")
                 .on_mouse_down(
                     MouseButton::Left,

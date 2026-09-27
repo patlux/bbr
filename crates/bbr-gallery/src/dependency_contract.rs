@@ -201,7 +201,7 @@ fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
     assert!(probe.contains("bbr_ui::surfaces::find::find_bar"));
     assert!(
         probe.contains("surfaces::auth::auth_sheet")
-            && probe.contains("surface.model()")
+            && probe.contains("surface.model(theme)")
             && probe.contains("auth_submit_clicked")
             && probe.contains("auth_cancel_clicked")
     );

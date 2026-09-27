@@ -133,6 +133,34 @@ fn increased_contrast_hardens_text_and_hairlines() {
 }
 
 #[test]
+fn dark_selection_tint_is_visible_on_the_rail() {
+    // Regression: #0D2020 sat 0.1 L* *above* the dark rail — the selected
+    // surface was invisible and only the 600 title weight marked selection.
+    // The §3.1 ink bar caps the tint just above the rail's luminance, so the
+    // visible surface sits below it: at least 4 CIE L* units, like the hover
+    // wash above it.
+    fn lightness(hex: Hex) -> f64 {
+        let y = hex.luminance();
+        if y > 0.008856 {
+            116.0 * y.cbrt() - 16.0
+        } else {
+            903.3 * y
+        }
+    }
+    let rail = lightness(SURFACE_SIDEBAR_DARK);
+    for (name, tint) in [
+        ("standard", TINT_SELECTED_DARK),
+        ("increased contrast", TINT_SELECTED_IC_DARK),
+    ] {
+        let delta = rail - lightness(tint);
+        assert!(
+            delta >= 4.0,
+            "{name} dark selection is {delta:.2} L* below the rail"
+        );
+    }
+}
+
+#[test]
 fn light_theme_meets_the_documented_contrast_contract() {
     let sidebar = SURFACE_SIDEBAR_LIGHT;
     assert!(INK_LIGHT.contrast(sidebar) >= 14.0);
@@ -226,5 +254,54 @@ fn monogram_ramp_letters_stay_legible() {
             ratio >= 3.0,
             "monogram tile {hue_index} letter ≥ 3:1, got {ratio:.2}"
         );
+    }
+}
+
+#[test]
+fn monogram_letters_read_on_both_ramps() {
+    // Regression: the light ramp painted white letters (≈ 1.7 : 1). The
+    // letter authority must hold the §12/§7.2 bar on every tile of both
+    // ramps — computed from the rendered tile and letter colors.
+    for hue_index in 0..6 {
+        for (mode, bg) in [
+            (ThemeMode::Light, FaviconSlate::light(hue_index)),
+            (ThemeMode::Dark, FaviconSlate::dark(hue_index)),
+        ] {
+            let ratio = super::contrast(FaviconSlate::letter(mode), bg);
+            assert!(
+                ratio >= 3.0,
+                "{mode:?} monogram tile {hue_index} letter ≥ 3:1, got {ratio:.2}"
+            );
+        }
+    }
+}
+
+#[test]
+fn increased_contrast_deepens_the_row_washes_in_both_modes() {
+    // Regression: the light increased-contrast palette kept the standard
+    // 4.5 % / 8 % washes although §3.4/§10.2 deepen them (7 % / 10 %).
+    let pairs = [
+        (
+            Palette::light_standard(),
+            Palette::light_increased(),
+            SURFACE_SIDEBAR_LIGHT,
+        ),
+        (
+            Palette::dark_standard(),
+            Palette::dark_increased(),
+            SURFACE_SIDEBAR_DARK,
+        ),
+    ];
+    for (standard, increased, rail) in pairs {
+        let rail = rail.rgba();
+        for (name, base, deep) in [
+            ("hover", standard.wash_hover, increased.wash_hover),
+            ("active", standard.wash_active, increased.wash_active),
+        ] {
+            assert!(
+                super::contrast(deep, rail) > super::contrast(base, rail),
+                "increased contrast deepens the {name} wash"
+            );
+        }
     }
 }

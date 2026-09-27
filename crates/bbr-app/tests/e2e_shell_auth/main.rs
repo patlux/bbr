@@ -35,3 +35,4 @@ mod e2e_semantics_common;
 mod fallthrough;
 mod flow;
 mod support;
+mod theme;

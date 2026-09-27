@@ -38,16 +38,16 @@ pub fn library_row_ids(bookmark: u64, editing: bool) -> Vec<SharedString> {
     ids
 }
 
-/// One §11.16 Library row: the bookmark/fallback glyph (the §11.16 settled
-/// `★` mark), the monogram favicon tile, the display title, the
-/// mid-ellipsized URL, the optional collection label, and the selection
-/// state. `on_activate` opens exactly one fresh regular tab through B2;
-/// `on_toggle_select` toggles multi-select; `on_rename` stages the inline
-/// rename input for this row (the pointer rename entry). While `editing`,
-/// the title block and the rename button are replaced by the staged rename
-/// input (`saved_page_row_rename_input_id`) with its Confirm/Cancel
-/// controls (`on_rename_confirm` / `on_rename_cancel`), so the pointer
-/// rename entry is a real inline input, never a no-op.
+/// One §11.16 Library row: the drawn §7 bookmark glyph, the monogram
+/// favicon tile, the display title, the mid-ellipsized URL, the optional
+/// collection label, and the selection state. `on_activate` opens exactly
+/// one fresh regular tab through B2; `on_toggle_select` toggles
+/// multi-select; `on_rename` stages the inline rename input for this row
+/// (the pointer rename entry). While `editing`, the title block and the
+/// rename button are replaced by the staged rename input
+/// (`saved_page_row_rename_input_id`) with its Confirm/Cancel controls
+/// (`on_rename_confirm` / `on_rename_cancel`), so the pointer rename entry
+/// is a real inline input, never a no-op.
 #[allow(clippy::too_many_arguments)]
 pub fn library_row(
     theme: &Theme,
@@ -76,7 +76,7 @@ pub fn library_row(
         .px(Spacing::sp3())
         .py(Spacing::sp1())
         .cursor_pointer()
-        .when(row.selected, |el| el.bg(p.accent).text_color(p.accent_ink))
+        .when(row.selected, |el| el.bg(selected_row_fill(&p)))
         .child(selection_box(theme, row.selected))
         .child(favicon_tile(theme, row.favicon.clone()))
         .when(editing, |el| {
@@ -106,9 +106,8 @@ pub fn library_row(
                     )
                     .child(
                         div()
-                            .text_size(theme.type_.title.size)
-                            .text_color(p.ink)
-                            .child(SharedString::from("★ ")),
+                            .flex_shrink_0()
+                            .child(Icon::Bookmark.canvas(theme, theme.density.icon())),
                     )
                     .child(
                         div()
@@ -159,7 +158,7 @@ pub fn library_row(
                             cx.stop_propagation();
                         },
                     )
-                    .child(Icon::Check.canvas(theme, theme.density.icon())),
+                    .child(Icon::Pencil.canvas(theme, theme.density.icon())),
             )
         })
         .child(
@@ -266,8 +265,15 @@ pub fn favicon_tile(theme: &Theme, spec: FaviconSpec) -> Div {
         .justify_center()
         .text_size(theme.type_.badge.size)
         .font_weight(theme.type_.badge.weight)
-        .text_color(theme.palette.surface_glass)
+        .text_color(crate::palette::FaviconSlate::letter(theme.mode))
         .child(SharedString::from(spec.letter.to_string()))
+}
+
+/// The §10.4 selection surface of a selected Library row. Children keep
+/// their own ink colors, so the fill must be the quiet `tint.selected`
+/// surface — never an accent fill, which drops ink and URL text below §3.1.
+fn selected_row_fill(p: &crate::palette::Palette) -> gpui::Rgba {
+    p.tint_selected
 }
 
 /// The §10 selection box: a filled accent square when selected, a hollow
@@ -287,7 +293,7 @@ pub fn selection_box(theme: &Theme, selected: bool) -> Div {
                 .rounded(Radius.small())
         })
         .when(selected, |el| {
-            el.child(div().size(px(6.0)).rounded_full().bg(p.accent_ink))
+            el.child(div().size(px(6.0)).rounded_full().bg(p.on_accent))
         })
 }
 
@@ -335,4 +341,42 @@ pub fn library_collection_row(
                 .text_color(p.ink_faint)
                 .child(SharedString::from(format!("{}", spec.member_count))),
         )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::palette::{contrast, Palette};
+
+    fn palettes() -> [Palette; 4] {
+        [
+            Palette::light_standard(),
+            Palette::light_increased(),
+            Palette::dark_standard(),
+            Palette::dark_increased(),
+        ]
+    }
+
+    #[test]
+    fn a_selected_row_keeps_its_text_readable() {
+        // Regression: the selected row filled with accent and kept ink/URL
+        // text (≈ 3.5 : 1 and ≈ 1.6 : 1).
+        for p in palettes() {
+            let fill = selected_row_fill(&p);
+            assert_eq!(fill, p.tint_selected, "§10.4 selection surface");
+            assert!(contrast(p.ink, fill) >= 4.5, "title on the selected row");
+            assert!(
+                contrast(p.ink_secondary, fill) >= 4.5,
+                "URL on the selected row"
+            );
+        }
+    }
+
+    #[test]
+    fn the_selection_box_mark_is_visible_on_its_accent_fill() {
+        // Regression: the selected mark painted accent.ink on accent.
+        for p in palettes() {
+            assert!(contrast(p.on_accent, p.accent) >= 3.0);
+        }
+    }
 }

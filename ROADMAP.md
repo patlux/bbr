@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slice:** [UI contract conformance](docs/roadmap/tasks/ui-contract-conformance.md) (serial on `main`), activated by Patrick on 2026-09-27 together with the adopted design-branch direction (DESIGN §17.16). The [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md) is next. The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
+- **Active product slice:** none running; [UI contract conformance](docs/roadmap/tasks/ui-contract-conformance.md) is integrated (2026-09-27) and the [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md) is the next ready serial slice, followed by the adopted design-branch direction (DESIGN §17.16). The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:

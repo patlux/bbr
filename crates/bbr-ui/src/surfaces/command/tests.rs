@@ -202,3 +202,24 @@ fn ui_local_state_enum_matches_the_typed_surface_states() {
     );
     assert_eq!(CommandResultState::default(), CommandResultState::Inactive);
 }
+
+#[test]
+fn saved_page_results_use_the_drawn_bookmark_mark() {
+    // Regression: the palette/overlay renderer had no Saved Page branch and
+    // showed the `→` fallback; the in-rail surface showed the text `★`.
+    // A Saved Page result carries no letter — it renders `Icon::Bookmark`.
+    assert_eq!(super::render::group_glyph(&row("k", "saved_page")), None);
+    for (group, letter) in [
+        ("exact_tab", "T"),
+        ("space", "S"),
+        ("action", "A"),
+        ("history", "H"),
+        ("fallback", "→"),
+    ] {
+        assert_eq!(
+            super::render::group_glyph(&row("k", group)),
+            Some(letter),
+            "letter for {group}"
+        );
+    }
+}

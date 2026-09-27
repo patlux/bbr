@@ -96,8 +96,11 @@ hex! {
     ATTENTION_LIGHT = "805100"; ATTENTION_DARK = "FFC63F";
     OK_LIGHT = "177A55"; OK_DARK = "45C08A";
     INFO_LIGHT = "2C5CC5"; INFO_DARK = "8AA6FF";
-    TINT_SELECTED_LIGHT = "EEF2F9"; TINT_SELECTED_DARK = "0D2020";
-    TINT_SELECTED_IC_LIGHT = "E1E8F3"; TINT_SELECTED_IC_DARK = "091818";
+    // Dark selection sits *below* the rail's luminance: the §3.1 ink bar
+    // (≥ 14:1) caps it just above the rail, so only a darker surface can be
+    // visible (≈ 5 L* below the rail, mirroring the hover wash above it).
+    TINT_SELECTED_LIGHT = "EEF2F9"; TINT_SELECTED_DARK = "0F1318";
+    TINT_SELECTED_IC_LIGHT = "E1E8F3"; TINT_SELECTED_IC_DARK = "0A0D12";
     // §2 materials.
     SURFACE_CANVAS_LIGHT = "F6F6F4"; SURFACE_CANVAS_DARK = "121416";
     SURFACE_SIDEBAR_LIGHT = "E0E0E0"; SURFACE_SIDEBAR_DARK = "1A1D21";
@@ -121,6 +124,10 @@ pub struct Palette {
     pub accent: Rgba,
     /// Accent-colored text (match highlight, mode chip, links).
     pub accent_ink: Rgba,
+    /// Text and glyphs painted *on* an accent fill (§3.2 `color:on-accent`):
+    /// primary buttons such as Reload, New Tab, Log In and Done. Never
+    /// `accent_ink`, which is text on a neutral surface.
+    pub on_accent: Rgba,
     // Status hues (§3.3): only on small glyph/dot surfaces with a
     // non-color companion.
     pub status_error: Rgba,
@@ -195,6 +202,7 @@ impl Palette {
             border_strong: BORDER_STRONG_DARK.rgba(),
             accent: ACCENT_DARK.rgba(),
             accent_ink: ACCENT_INK_DARK.rgba(),
+            on_accent: SURFACE_GLASS_DARK.rgba(),
             status_error: ERROR_DARK.rgba(),
             status_attention: ATTENTION_DARK.rgba(),
             status_ok: OK_DARK.rgba(),
@@ -252,6 +260,7 @@ impl Palette {
             border_strong: BORDER_STRONG_LIGHT.rgba(),
             accent: ACCENT_LIGHT.rgba(),
             accent_ink: ACCENT_INK_LIGHT.rgba(),
+            on_accent: SURFACE_GLASS_LIGHT.rgba(),
             status_error: ERROR_LIGHT.rgba(),
             status_attention: ATTENTION_LIGHT.rgba(),
             status_ok: OK_LIGHT.rgba(),
@@ -289,12 +298,38 @@ impl Palette {
             accent: ACCENT_IC_LIGHT.rgba(),
             accent_ink: ACCENT_INK_IC_LIGHT.rgba(),
             tint_selected: TINT_SELECTED_IC_LIGHT.rgba(),
+            // §3.4/§10.2: increased contrast deepens the row washes (7 % /
+            // 10 %) exactly like the dark theme.
+            wash_hover: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.07),
+            wash_active: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.10),
             // Increased contrast deepens the translucent address fill.
             address_fill: rgba_8(0, 0, 0, 18),
             address_fill_hover: rgba_8(0, 0, 0, 30),
             ..base
         }
     }
+}
+
+/// WCAG 2.x contrast ratio between two rendered colors (alpha ignored).
+///
+/// The §3.1 token gate computes on the raw hex tokens; this helper lets
+/// component tests prove that the *pair a component actually paints*
+/// (e.g. primary-button text on its fill) meets the same bars.
+pub fn contrast(a: Rgba, b: Rgba) -> f64 {
+    fn linear(channel: f32) -> f64 {
+        let value = f64::from(channel);
+        if value <= 0.04045 {
+            value / 12.92
+        } else {
+            ((value + 0.055) / 1.055).powf(2.4)
+        }
+    }
+    fn luminance(color: Rgba) -> f64 {
+        0.2126 * linear(color.r) + 0.7152 * linear(color.g) + 0.0722 * linear(color.b)
+    }
+    let (la, lb) = (luminance(a), luminance(b));
+    let (hi, lo) = if la >= lb { (la, lb) } else { (lb, la) };
+    (hi + 0.05) / (lo + 0.05)
 }
 
 /// Deterministic monogram tile ramp for missing favicons (DESIGN.md §7.2):
@@ -311,6 +346,17 @@ impl FaviconSlate {
             3 => rgb(0x606B77),
             4 => rgb(0x59606A),
             _ => rgb(0x4A5662),
+        }
+    }
+
+    /// The monogram letter color for the mode's ramp: ink on the light
+    /// ramp, white on the dark ramp. One authority for every monogram tile
+    /// (tab rows, Favorites, folders, Library) so the §12/§7.2 letter bar
+    /// holds everywhere.
+    pub fn letter(mode: ThemeMode) -> Rgba {
+        match mode {
+            ThemeMode::Light => INK_LIGHT.rgba(),
+            ThemeMode::Dark => rgb(0xFFFFFF),
         }
     }
 

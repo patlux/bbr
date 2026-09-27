@@ -119,7 +119,7 @@ pub fn error_surface(
                         .rounded(theme.radius.medium())
                         .bg(theme.palette.accent)
                         .text_size(theme.type_.label.size)
-                        .text_color(theme.palette.surface_glass)
+                        .text_color(theme.palette.on_accent)
                         .on_mouse_down(MouseButton::Left, on_action)
                         .child(model.action_label.clone()),
                 )

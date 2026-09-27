@@ -388,6 +388,13 @@ pub struct BbrApp {
     /// regardless of the host. `None` follows the system.
     #[cfg(feature = "testkit")]
     appearance_override: Option<bbr_ui::theme::ThemeMode>,
+    /// Testkit-only render evidence: the theme mode the portal render last
+    /// drew the credential sheet / the Peek bar in (both follow the shell
+    /// appearance; E2E proves it from what was drawn, not from the model).
+    #[cfg(feature = "testkit")]
+    pub(crate) auth_presented_theme: std::cell::Cell<Option<bbr_ui::theme::ThemeMode>>,
+    #[cfg(feature = "testkit")]
+    pub(crate) peek_presented_theme: std::cell::Cell<Option<bbr_ui::theme::ThemeMode>>,
     /// Keeps the GPUI window-appearance observer alive (task packet
     /// `system-appearance-theme`): a dropped subscription silently stops
     /// live flip observation.
@@ -637,6 +644,10 @@ impl BbrApp {
             system_appearance: bbr_ui::theme::ThemeMode::Light,
             #[cfg(feature = "testkit")]
             appearance_override: None,
+            #[cfg(feature = "testkit")]
+            auth_presented_theme: std::cell::Cell::new(None),
+            #[cfg(feature = "testkit")]
+            peek_presented_theme: std::cell::Cell::new(None),
             appearance_subscription: None,
             window_geometry: std::cell::RefCell::new(None),
             sidebar_visible: true,

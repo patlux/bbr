@@ -281,6 +281,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             content_gesture: self.content_gesture.clone(),
             preview: self.preview.clone(),
             peek_presented: self.peek_presented,
+            peek_theme: self.peek_theme.clone(),
             preview_z_order: self.preview_z_order,
             library: self.library.clone(),
         }

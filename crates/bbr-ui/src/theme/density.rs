@@ -119,7 +119,7 @@ impl Density {
     }
 
     /// §8 `density:row-inset` — the inset of the §10.2–§10.4 rounded row
-    /// surface from the rail edges (S `sp:1` 4 / N `sp:2` 8 / XL `sp:3` 12).
+    /// surface from the rail edges (S `sp:1` 4 / N `sp:1` 4 / XL `sp:2` 8).
     pub fn row_inset(self) -> Pixels {
         px(match self {
             Density::Small => 4.0,

@@ -244,6 +244,8 @@ pub struct TestSnapshot {
     /// Whether the Peek bar is currently presented in the one native portal
     /// window.
     pub peek_presented: bool,
+    /// Theme mode the portal render last drew the Peek bar in.
+    pub peek_theme: Option<String>,
     /// Native z-order evidence: while a preview is open the preview
     /// WKWebView's subview index must exceed its covered origin's (the
     /// preview is raised above the warm origin). `None` at rest.

@@ -135,13 +135,12 @@ impl AuthSheetSurface {
     /// The `bbr-ui` presentation model the portal consumes to render the
     /// sheet (the anchor's "records.rs builds the DTO" migration
     /// contract, Group 8): the app derives the DTO from the redacted
-    /// surface and resolves the sheet's settled dark presentation —
-    /// byte-identical to the pre-cutover render (the portal surfaces keep
-    /// their fixed theme; the gallery story proves theme independence
-    /// through its own resolved theme).
-    pub fn model(&self) -> bbr_ui::surfaces::auth::AuthSheetModel {
+    /// surface and passes the shell's resolved `theme`, so the sheet follows
+    /// the system appearance like every other portal surface (the former
+    /// fixed `Theme::dark()` rendered a dark sheet over light chrome).
+    pub fn model(&self, theme: bbr_ui::theme::Theme) -> bbr_ui::surfaces::auth::AuthSheetModel {
         bbr_ui::surfaces::auth::AuthSheetModel {
-            theme: bbr_ui::theme::Theme::dark(),
+            theme,
             host: self.host.clone(),
             realm: self.realm.clone(),
             authority: self.authority.clone(),

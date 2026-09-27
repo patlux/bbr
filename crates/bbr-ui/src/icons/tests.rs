@@ -36,6 +36,71 @@ fn catalog_names_are_stable() {
     assert_eq!(Icon::NavBack.name(), "nav-back");
     assert_eq!(Icon::NavForward.name(), "nav-forward");
     assert_eq!(Icon::Reload.name(), "reload");
+    assert_eq!(Icon::Bookmark.name(), "bookmark");
+    assert_eq!(Icon::Pencil.name(), "pencil");
+}
+
+#[test]
+fn clock_hands_start_at_the_center() {
+    // Regression: both hands spanned through the center, drawing a cross
+    // inside the ring instead of a clock face.
+    for size in [16.0, 18.0, 20.0, 32.0] {
+        let (cx, cy) = (size / 2.0, size / 2.0);
+        let (ring, _, _) = glyphs::clock_geometry(size);
+        for (from, to) in glyphs::clock_hands(size, cx, cy) {
+            assert_eq!(from, (cx, cy), "a hand starts at the center at {size}pt");
+            let length = ((to.0 - cx).powi(2) + (to.1 - cy).powi(2)).sqrt();
+            assert!(
+                length + 1.5 / 2.0 < ring,
+                "a hand stays inside the ring at {size}pt"
+            );
+        }
+    }
+}
+
+#[test]
+fn bookmark_and_pencil_stay_inside_their_box() {
+    for size in [16.0, 18.0, 20.0, 32.0] {
+        let stroke = 1.5 / 2.0;
+        let (half, top, bottom, notch) = glyphs::bookmark_geometry(size);
+        assert!(half + stroke <= size / 2.0, "ribbon width at {size}pt");
+        assert!(top + stroke <= size / 2.0, "ribbon top at {size}pt");
+        assert!(bottom + stroke <= size / 2.0, "ribbon bottom at {size}pt");
+        assert!(
+            notch > 0.0 && notch < top + bottom,
+            "notch inside the ribbon"
+        );
+        let (len, width, tip, band) = glyphs::pencil_geometry(size);
+        // The farthest corner sits at (len + width) / √2 on both axes.
+        let reach = (len + width) * std::f32::consts::FRAC_1_SQRT_2;
+        assert!(reach + stroke <= size / 2.0, "pencil corner at {size}pt");
+        assert!(tip < len && band < len, "tip and band inside the body");
+    }
+}
+
+#[test]
+fn identity_glyphs_share_one_optical_size() {
+    // Regression: every glyph used the same `h`, so compact paths such as
+    // compass or globe (farthest point 0.5 h) rendered at half the size of
+    // code and folder (1.0 h). Normalized by its own extent, every glyph's
+    // farthest point lands on the same ±(0.34 · size) box, which with the
+    // stroke stays inside the tile at every shipped size.
+    for size in [16.0_f32, 18.0, 20.0] {
+        let target = size * 0.34;
+        for glyph in bbr_domain::BbrGlyph::ALL {
+            let extent = bbr::identity_extent(glyph);
+            assert!(
+                (0.4..=1.0).contains(&extent),
+                "{glyph:?} extent is a path measurement in h units"
+            );
+            let reach = (size * 0.34 / extent) * extent;
+            assert!((reach - target).abs() < 1e-4, "{glyph:?} reaches the box");
+            assert!(
+                reach + 1.5 / 2.0 <= size / 2.0,
+                "{glyph:?} fits at {size}pt"
+            );
+        }
+    }
 }
 
 #[test]
@@ -200,4 +265,6 @@ fn rest_colors_come_from_the_palette() {
     assert_eq!(Icon::NavBack.rest_color(p), p.ink_secondary);
     assert_eq!(Icon::NavForward.rest_color(p), p.ink_secondary);
     assert_eq!(Icon::Reload.rest_color(p), p.ink_secondary);
+    assert_eq!(Icon::Bookmark.rest_color(p), p.ink_secondary);
+    assert_eq!(Icon::Pencil.rest_color(p), p.ink_secondary);
 }

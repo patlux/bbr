@@ -31,10 +31,10 @@ use crate::palette::Palette;
 use crate::theme::Theme;
 
 use glyphs::{
-    arc_radius, chassis_radii, check_geometry, chevron_arm, clock_geometry, close_arm,
-    disclosure_arm, downloads_geometry, folder_geometry, folder_open_geometry, icon_stroke,
-    lifering_radii, nav_arrow_geometry, pin_radius, plus_arm, reload_geometry, sidebar_geometry,
-    stopped_half,
+    arc_radius, bookmark_geometry, chassis_radii, check_geometry, chevron_arm, clock_geometry,
+    clock_hands, close_arm, disclosure_arm, downloads_geometry, folder_geometry,
+    folder_open_geometry, icon_stroke, lifering_radii, nav_arrow_geometry, pencil_geometry,
+    pin_radius, plus_arm, reload_geometry, sidebar_geometry, stopped_half,
 };
 use paint::{paint_filled_circle, paint_path, paint_ring, paint_rounded_square_ring, paint_stroke};
 
@@ -91,6 +91,10 @@ pub enum Icon {
     NavForward,
     /// §11.14 titlebar: Reload (a drawn circular arrow).
     Reload,
+    /// §11.16 Saved Page mark: an outlined ribbon with a V notch.
+    Bookmark,
+    /// §11.16 Library rename: a pencil on the rising diagonal.
+    Pencil,
 }
 
 impl Icon {
@@ -143,6 +147,8 @@ impl Icon {
             Icon::NavBack => "nav-back",
             Icon::NavForward => "nav-forward",
             Icon::Reload => "reload",
+            Icon::Bookmark => "bookmark",
+            Icon::Pencil => "pencil",
         }
     }
 
@@ -167,6 +173,7 @@ impl Icon {
             Icon::ChevronLeft | Icon::ChevronRight => palette.ink_secondary,
             Icon::Sidebar { .. } => palette.ink_secondary,
             Icon::NavBack | Icon::NavForward | Icon::Reload => palette.ink_secondary,
+            Icon::Bookmark | Icon::Pencil => palette.ink_secondary,
         }
     }
 
@@ -224,15 +231,15 @@ impl Icon {
                 paint_ring(window, cx, cy, inner, stroke, color);
             }
             Icon::Clock => {
-                let (ring, hour, minute) = clock_geometry(size);
+                let (ring, _hour, _minute) = clock_geometry(size);
                 paint_ring(window, cx, cy, ring, stroke, color);
-                // A static 10:00 reading: the hour hand points up, the
-                // minute hand points right — never an animated hand.
+                // Two static hands from the center — the hour hand up, the
+                // minute hand right — never a centered cross, never animated.
                 let mut path = PathBuilder::stroke(stroke);
-                path.move_to(point(px(cx), px(cy - hour)));
-                path.line_to(point(px(cx), px(cy + hour)));
-                path.move_to(point(px(cx - minute), px(cy)));
-                path.line_to(point(px(cx + minute), px(cy)));
+                for (from, to) in clock_hands(size, cx, cy) {
+                    path.move_to(point(px(from.0), px(from.1)));
+                    path.line_to(point(px(to.0), px(to.1)));
+                }
                 paint_path(window, path, color);
             }
             Icon::ChassisMark => {
@@ -441,6 +448,45 @@ impl Icon {
             }
             Icon::Bbr(glyph) => {
                 bbr::paint_identity(glyph, bounds, window, density, color);
+            }
+            Icon::Bookmark => {
+                let (half, top, bottom, notch) = bookmark_geometry(size);
+                let mut path = PathBuilder::stroke(stroke);
+                path.move_to(point(px(cx - half), px(cy - top)));
+                path.line_to(point(px(cx + half), px(cy - top)));
+                path.line_to(point(px(cx + half), px(cy + bottom)));
+                path.line_to(point(px(cx), px(cy + bottom - notch)));
+                path.line_to(point(px(cx - half), px(cy + bottom)));
+                path.close();
+                paint_path(window, path, color);
+            }
+            Icon::Pencil => {
+                let (len, width, tip, band) = pencil_geometry(size);
+                // Axis `d` rises to the upper right; `n` is its normal.
+                let d = (
+                    std::f32::consts::FRAC_1_SQRT_2,
+                    -std::f32::consts::FRAC_1_SQRT_2,
+                );
+                let n = (
+                    std::f32::consts::FRAC_1_SQRT_2,
+                    std::f32::consts::FRAC_1_SQRT_2,
+                );
+                let at = |along: f32, across: f32| {
+                    point(
+                        px(cx + d.0 * along + n.0 * across),
+                        px(cy + d.1 * along + n.1 * across),
+                    )
+                };
+                let mut path = PathBuilder::stroke(stroke);
+                path.move_to(at(-len, 0.0));
+                path.line_to(at(-len + tip, width));
+                path.line_to(at(len, width));
+                path.line_to(at(len, -width));
+                path.line_to(at(-len + tip, -width));
+                path.close();
+                path.move_to(at(len - band, width));
+                path.line_to(at(len - band, -width));
+                paint_path(window, path, color);
             }
         }
     }

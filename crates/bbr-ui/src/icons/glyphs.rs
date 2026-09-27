@@ -132,11 +132,35 @@ pub fn stopped_half(size: f32) -> f32 {
     size * 0.26
 }
 
-/// §10.11 clock companion geometry: (ring radius, hour-hand half-length,
-/// minute-hand half-length) of the unresponsive row's clock glyph — a
-/// static ring with two short hands, drawn, never a Unicode substitute.
+/// §10.11 clock companion geometry: (ring radius, hour-hand length,
+/// minute-hand length) of the unresponsive row's clock glyph — a static
+/// ring with two hands measured from the center, drawn, never a Unicode
+/// substitute.
 pub fn clock_geometry(size: f32) -> (f32, f32, f32) {
-    (size * 0.34, size * 0.12, size * 0.22)
+    (size * 0.34, size * 0.16, size * 0.22)
+}
+
+/// The two clock hands as `(from, to)` segments: both start at the glyph
+/// center; the short hour hand points up and the longer minute hand points
+/// right (the conventional clock-icon reading, never a centered cross).
+pub fn clock_hands(size: f32, cx: f32, cy: f32) -> [((f32, f32), (f32, f32)); 2] {
+    let (_ring, hour, minute) = clock_geometry(size);
+    [((cx, cy), (cx, cy - hour)), ((cx, cy), (cx + minute, cy))]
+}
+
+/// §11.16 bookmark ribbon: (half width, top offset above center, bottom
+/// offset below center, notch depth). An outlined ribbon with a V notch at
+/// the bottom — the drawn Saved Page mark, never a `★` character.
+pub fn bookmark_geometry(size: f32) -> (f32, f32, f32, f32) {
+    (size * 0.21, size * 0.32, size * 0.34, size * 0.16)
+}
+
+/// §11.16 rename pencil along the rising diagonal: (half length, half
+/// width, tip length, band offset from the top end). The outline is a
+/// narrow body ending in a pointed tip at the lower left, with one band
+/// line near the upper-right end.
+pub fn pencil_geometry(size: f32) -> (f32, f32, f32, f32) {
+    (size * 0.33, size * 0.09, size * 0.14, size * 0.12)
 }
 
 #[cfg(test)]

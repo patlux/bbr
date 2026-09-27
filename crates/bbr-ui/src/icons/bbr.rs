@@ -76,12 +76,11 @@ pub fn paint_identity(
     let size = f32::from(bounds.size.width);
     let cx = f32::from(bounds.center().x);
     let cy = f32::from(bounds.center().y);
-    // The glyph half-extent: every identity glyph stays inside the tile
-    // (the shared `h` convention below keeps the widest arm inside the
-    // box). 0.34 renders the identity at the reference chip weight — the
-    // widest arm (±h) plus the §7 stroke stays inside the tile at every
-    // shipped size.
-    let h = size * 0.34;
+    // The glyph half-extent: 0.34 renders the identity at the reference
+    // chip weight. Each path is scaled by its own farthest point
+    // ([`identity_extent`]) so every glyph reaches the same ±(0.34 · size)
+    // box — one optical size across the catalog, always inside the tile.
+    let h = size * 0.34 / identity_extent(glyph);
     match glyph {
         BbrGlyph::Code => paint_code(window, stroke, color, cx, cy, h),
         BbrGlyph::Terminal => paint_terminal(window, stroke, color, cx, cy, h),
@@ -97,6 +96,23 @@ pub fn paint_identity(
         BbrGlyph::Camera => paint_camera(window, stroke, color, cx, cy, h),
         BbrGlyph::Palette => paint_palette(window, stroke, color, cx, cy, h),
         BbrGlyph::Globe => paint_globe(window, stroke, color, cx, cy, h),
+    }
+}
+
+/// The farthest point of each identity path from the tile center, in units
+/// of its drawing half-extent `h` (arc bulges included; derived from the
+/// path geometry below). Dividing by it gives every glyph the same outer
+/// box, so compact glyphs no longer render at half the size of `code` and
+/// `folder`.
+pub fn identity_extent(glyph: BbrGlyph) -> f32 {
+    match glyph {
+        BbrGlyph::Code | BbrGlyph::Folder => 1.0,
+        BbrGlyph::Terminal | BbrGlyph::Star | BbrGlyph::Camera => 0.55,
+        BbrGlyph::Person => 0.58,
+        BbrGlyph::Briefcase | BbrGlyph::Moon => 0.60,
+        BbrGlyph::Heart | BbrGlyph::Leaf => 0.65,
+        BbrGlyph::Book => 0.69,
+        BbrGlyph::Compass | BbrGlyph::Palette | BbrGlyph::Globe => 0.50,
     }
 }
 
@@ -156,11 +172,12 @@ fn paint_person(window: &mut Window, stroke: Pixels, color: Rgba, cx: f32, cy: f
     let shoulder_r = h * 0.45;
     let mut path = PathBuilder::stroke(stroke);
     path.move_to(point(px(cx - shoulder_r), px(cy + h * 0.55)));
+    // Clockwise on screen (SVG sweep): the shoulders bulge up, not down.
     path.arc_to(
         point(px(shoulder_r), px(shoulder_r)),
         px(0.0),
         false,
-        false,
+        true,
         point(px(cx + shoulder_r), px(cy + h * 0.55)),
     );
     paint_path(window, path, color);
@@ -170,13 +187,14 @@ fn paint_person(window: &mut Window, stroke: Pixels, color: Rgba, cx: f32, cy: f
 fn paint_briefcase(window: &mut Window, stroke: Pixels, color: Rgba, cx: f32, cy: f32, h: f32) {
     paint_rounded_square_ring(window, cx, cy + h * 0.1, h * 0.5, h * 0.1, stroke, color);
     let mut path = PathBuilder::stroke(stroke);
-    // The handle: a semicircular arc from the body top, bulging up.
+    // The handle: a semicircular arc from the body top, bulging up
+    // (clockwise on screen from left to right).
     path.move_to(point(px(cx - h * 0.2), px(cy - h * 0.4)));
     path.arc_to(
         point(px(h * 0.2), px(h * 0.2)),
         px(0.0),
         false,
-        false,
+        true,
         point(px(cx + h * 0.2), px(cy - h * 0.4)),
     );
     // The center latch from the handle base into the body.
@@ -194,12 +212,13 @@ fn paint_heart(window: &mut Window, stroke: Pixels, color: Rgba, cx: f32, cy: f3
     // From the bottom tip up the left side to the left lobe.
     path.move_to(point(px(cx), px(cy + h * 0.6)));
     path.line_to(point(px(cx - lobe_x), px(cy + lobe_y)));
-    // Left lobe arc up to the top dip (counterclockwise, bulging up-left).
+    // Left lobe arc up to the top dip, bulging up-left. The outline runs
+    // clockwise on screen, so both lobes use the clockwise (SVG) sweep.
     path.arc_to(
         point(px(lobe_r), px(lobe_r)),
         px(0.0),
         false,
-        false,
+        true,
         point(px(cx), px(cy - h * 0.3)),
     );
     // Right lobe arc down to the right lobe (clockwise, mirror).
@@ -253,9 +272,12 @@ fn paint_star(window: &mut Window, stroke: Pixels, color: Rgba, cx: f32, cy: f32
 fn paint_leaf(window: &mut Window, stroke: Pixels, color: Rgba, cx: f32, cy: f32, h: f32) {
     let dx = h * 0.45;
     let dy = h * 0.35;
-    let r = h * 0.57;
+    // A radius larger than half the chord makes a pointed lens; at exactly
+    // half the chord the two arcs would form a circle.
+    let r = h * 0.85;
     let mut path = PathBuilder::stroke(stroke);
-    // Lower arc (bulging down-left) then upper arc (bulging up-right).
+    // Both arcs continue clockwise on screen, so they bulge to opposite
+    // sides of the base–tip chord instead of retracing one arc.
     path.move_to(point(px(cx - dx), px(cy + dy)));
     path.arc_to(
         point(px(r), px(r)),
@@ -268,7 +290,7 @@ fn paint_leaf(window: &mut Window, stroke: Pixels, color: Rgba, cx: f32, cy: f32
         point(px(r), px(r)),
         px(0.0),
         false,
-        false,
+        true,
         point(px(cx - dx), px(cy + dy)),
     );
     // The stem from the leaf base.
@@ -306,12 +328,13 @@ fn paint_moon(window: &mut Window, stroke: Pixels, color: Rgba, cx: f32, cy: f32
         true,
         point(px(cx - cusp_x), px(cy + cusp_y)),
     );
-    // Inner arc back to the top cusp (the inner edge of the crescent).
+    // Inner arc back to the top cusp (the inner edge of the crescent),
+    // bulging right as well: counterclockwise on screen from the bottom.
     path.arc_to(
         point(px(inner_r), px(inner_r)),
         px(0.0),
         false,
-        true,
+        false,
         point(px(cx - cusp_x), px(cy - cusp_y)),
     );
     paint_path(window, path, color);

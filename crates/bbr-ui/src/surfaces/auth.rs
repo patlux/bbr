@@ -278,12 +278,20 @@ fn button(
         .cursor_pointer()
         .text_size(theme.type_.label.size)
         .child(label);
-    if primary {
-        el = el.bg(p.accent).text_color(p.accent_ink);
-    } else {
-        el = el.bg(p.surface_field).text_color(p.ink_secondary);
-    }
+    let (fill, text) = button_colors(p, primary);
+    el = el.bg(fill).text_color(text);
     el.on_mouse_down(MouseButton::Left, on_click)
+}
+
+/// The (fill, text) pair of a sheet button. The primary Log In paints
+/// `on_accent` on the accent fill (§3.2); `accent_ink` is text on a neutral
+/// surface and fails §3.1 on an accent fill.
+fn button_colors(p: &Palette, primary: bool) -> (gpui::Rgba, gpui::Rgba) {
+    if primary {
+        (p.accent, p.on_accent)
+    } else {
+        (p.surface_field, p.ink_secondary)
+    }
 }
 
 #[cfg(test)]
@@ -364,6 +372,26 @@ mod tests {
             password_mask(&empty_model).is_empty(),
             "empty password renders nothing"
         );
+    }
+
+    #[test]
+    fn button_labels_meet_the_text_contrast_bar_in_every_palette() {
+        // Regression: Log In painted accent.ink on accent (≈ 1.5 : 1).
+        for palette in [
+            Palette::light_standard(),
+            Palette::light_increased(),
+            Palette::dark_standard(),
+            Palette::dark_increased(),
+        ] {
+            for primary in [true, false] {
+                let (fill, text) = button_colors(&palette, primary);
+                let ratio = crate::palette::contrast(text, fill);
+                assert!(
+                    ratio >= 4.5,
+                    "button label (primary={primary}) is {ratio:.2}:1 on its fill"
+                );
+            }
+        }
     }
 
     #[test]

@@ -56,10 +56,33 @@ impl SpaceConfigModel {
     }
 }
 
+/// The (fill, text) pair of the primary `bbr-space-config-done` action:
+/// `on_accent` on the accent fill (§3.2). `accent_ink` is text on a neutral
+/// surface and fails §3.1 on an accent fill.
+pub(super) fn done_colors(p: &crate::palette::Palette) -> (gpui::Rgba, gpui::Rgba) {
+    (p.accent, p.on_accent)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::palette::{contrast, Palette};
     use bbr_domain::{BbrGlyph, SpaceEmoji};
+
+    #[test]
+    fn done_label_meets_the_text_contrast_bar_in_every_palette() {
+        // Regression: Done painted accent.ink on accent (≈ 1.5 : 1).
+        for palette in [
+            Palette::light_standard(),
+            Palette::light_increased(),
+            Palette::dark_standard(),
+            Palette::dark_increased(),
+        ] {
+            let (fill, text) = done_colors(&palette);
+            let ratio = contrast(text, fill);
+            assert!(ratio >= 4.5, "Done label is {ratio:.2}:1 on its fill");
+        }
+    }
 
     #[test]
     fn fresh_model_prefills_the_title_and_curated_defaults() {

@@ -15,6 +15,7 @@ use gpui::{
     SharedString, Stateful,
 };
 
+use crate::icons::Icon;
 use crate::theme::elevation::elev2;
 use crate::theme::{Density, Motion, Radius, Spacing, Theme};
 
@@ -287,7 +288,7 @@ fn result_row(
                 } else {
                     p.ink_faint
                 })
-                .child(SharedString::from(group_glyph(row))),
+                .child(group_mark(theme, row)),
         )
         .child(
             div()
@@ -348,12 +349,24 @@ fn state_row(theme: &Theme, id: &str, text: &str) -> Stateful<Div> {
         .child(SharedString::from(text.to_string()))
 }
 
-fn group_glyph(row: &CommandResultRow) -> String {
+/// The result row's leading mark: the drawn §11.16 bookmark glyph for a
+/// Saved Page (never a Unicode `★`, never the `→` fallback), otherwise
+/// the group letter.
+fn group_mark(theme: &Theme, row: &CommandResultRow) -> AnyElement {
+    match group_glyph(row) {
+        Some(letter) => SharedString::from(letter).into_any_element(),
+        None => Icon::Bookmark.canvas(theme, px(12.0)).into_any_element(),
+    }
+}
+
+/// The group letter, or `None` for a Saved Page (drawn glyph instead).
+pub(super) fn group_glyph(row: &CommandResultRow) -> Option<&'static str> {
     match row.group.as_str() {
-        "tab" | "exact_tab" | "current_pinned" | "current_tab" | "other_space" => "T".into(),
-        "space" => "S".into(),
-        "action" => "A".into(),
-        "history" => "H".into(),
-        _ => "→".into(),
+        "tab" | "exact_tab" | "current_pinned" | "current_tab" | "other_space" => Some("T"),
+        "space" => Some("S"),
+        "saved_page" => None,
+        "action" => Some("A"),
+        "history" => Some("H"),
+        _ => Some("→"),
     }
 }

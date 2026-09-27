@@ -191,5 +191,13 @@ pub fn all_icons() -> Vec<Icon> {
         Icon::LoadingArc,
         Icon::ChevronLeft,
         Icon::ChevronRight,
+        Icon::Clock,
+        Icon::Sidebar { expanded: true },
+        Icon::Sidebar { expanded: false },
+        Icon::NavBack,
+        Icon::NavForward,
+        Icon::Reload,
+        Icon::Bookmark,
+        Icon::Pencil,
     ]
 }
