@@ -21,7 +21,7 @@
 //!    the drawn §7 path next to their label. The two-letter badge is the
 //!    non-curated fallback and never appears in the picker — only curated
 //!    values exist here. The selected identity carries the accent outline
-//!    plus the selection tint, so identity is never communicated by
+//!    plus the `tint.accent`, so identity is never communicated by
 //!    selection color alone (the non-selected options remain labeled).
 //! 5. Actions — `bbr-space-config-cancel` (Cancel: keeps the created
 //!    Space and its valid defaults) and `bbr-space-config-done` (Done:
@@ -193,7 +193,7 @@ fn name_row(theme: &Theme, model: &SpaceConfigModel) -> Div {
 /// fills with the one central [`crate::theme::space_tint`] identity hue for
 /// the shell's mode — the same resolver the footer chip consumes — so the
 /// picker can never show a color the chip cannot render. The selected
-/// swatch carries the §9 accent outline + selection tint.
+/// swatch carries the §9 accent outline + `tint.accent`.
 fn theme_row(theme: &Theme, model: &SpaceConfigModel, callbacks: &SpaceConfigCallbacks) -> Div {
     let swatches: Vec<AnyElement> = SpaceTheme::ALL
         .iter()
@@ -277,7 +277,7 @@ fn theme_swatch(
 /// [`bbr_domain::ALLOWED_EMOJI`] scalar and `bbr-space-config-glyph-<name>`
 /// per [`BbrGlyph`] entry. Every option renders its canonical string form
 /// (the same form the footer chip's `bbr-space-identity-<n>` renders) and
-/// the selected option carries the accent outline + selection tint.
+/// the selected option carries the accent outline + `tint.accent`.
 fn identity_row(theme: &Theme, model: &SpaceConfigModel, callbacks: &SpaceConfigCallbacks) -> Div {
     let emoji_options: Vec<AnyElement> = bbr_domain::ALLOWED_EMOJI
         .iter()
@@ -365,7 +365,7 @@ fn identity_row(theme: &Theme, model: &SpaceConfigModel, callbacks: &SpaceConfig
 /// identity rendering — the curated emoji scalar, or the curated glyph's
 /// drawn §7 path next to its label (the badge is never used in the picker:
 /// only curated values exist here). The selected option carries the §9
-/// accent outline + selection tint; the label is the non-color companion,
+/// accent outline + `tint.accent`; the label is the non-color companion,
 /// so selection is never color-only.
 fn identity_option(
     theme: &Theme,
@@ -408,7 +408,7 @@ fn identity_option(
         .rounded(Radius.small())
         .cursor_pointer()
         .bg(if selected {
-            p.tint_selected
+            p.tint_accent
         } else {
             p.surface_field
         })

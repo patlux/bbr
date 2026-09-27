@@ -122,7 +122,7 @@ impl BbrApp {
 
     /// One §11.5 result row: `[group glyph] [title] [mono url trunc] [key
     /// hint]`. The selected row renders the accent rail inside the list with
-    /// the selection tint; destructive rows render the error/destructive
+    /// the `tint.accent`; destructive rows render the error/destructive
     /// text language (tint only — no confirmation dialog is invented).
     /// `id_prefix` selects the surface's stable §15 id family
     /// (`bbr-command-result-<k>` for the in-rail bar and the field-anchored
@@ -149,8 +149,8 @@ impl BbrApp {
             .px(Spacing::sp3())
             .py(Spacing::sp1())
             .when(selected, |el| {
-                // §11.5 selected rail + selection tint inside the list.
-                el.bg(p.tint_selected).border_l_2().border_color(p.accent)
+                // §11.5 selected rail + `tint.accent` inside the list.
+                el.bg(p.tint_accent).border_l_2().border_color(p.accent)
             })
             .child(
                 div()

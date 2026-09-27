@@ -45,13 +45,19 @@ Integration order:       before S3
 
 ### Unit and contract
 
-- [ ] Palette gate: every documented pair per mode, composited.
-- [ ] Radius and elevation token tests.
+- [x] Palette gate: every documented pair per mode, composited over the
+      untinted and every tinted rail (`palette/tests.rs`: D1 selection,
+      footer veil, `tint.accent`, address veils, washes; `space_tint.rs`
+      at the D3 tinted-rail bars).
+- [x] Radius and elevation token tests (`theme.rs`, `density.rs`,
+      `elevation.rs`).
 
 ### Real-app E2E
 
-- [ ] Sidebar, hover and spaces suites green on the new values (colour
-      evidence updated only where DESIGN v2 changed the value).
+- [x] Sidebar, hover and spaces suites green on the new values (colour
+      evidence updated only where DESIGN v2 changed the value: the
+      swipe-tracking half-way chrome now asserts the exact computed
+      interpolation instead of v1's quantized-equal source value).
 
 ### Performance
 
@@ -82,10 +88,29 @@ computed ratios and the two candidate values.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
+Outcome:               v2 palette/radius/elevation tokens resolved for all
+                        four palettes; `tint.accent`, `elev:lift`, `over()`
+                        composite; overlay cursors and drop targets moved to
+                        `tint.accent` so no selection disappears on white.
+Commits:               see git log (feat(ui): adopt the v2 palette, radius
+                        and elevation tokens)
+Functional evidence:   just verify ok (bbr-ui 175 tests); testkit clippy ok
+Real-app E2E:          shell-sidebar 17/17, shell-hover 4/4, shell-spaces
+                        21/21 (after the tracking fix), gallery 45/45;
+                        consumer suites shell-command 25/25, shell-tab-menu
+                        12/12, shell-saved-pages-library 12/12,
+                        shell-organize 9/9
 Performance evidence:   not applicable
-Worktree state:
+Deviations:            dark footer veil 5 % (Paper 7 % gave 5.73:1 < 5.9 on
+                        the Slate rail); tinted-rail ink bar follows D3
+                        (12:1) from S2 because the lighter v2 dark rail
+                        measured 13.85:1 at the unchanged 4 % Slate tint;
+                        address IC values chosen and recorded in §3.4/§18.2.
+Review:                serial self-review (no subagents authorised): diff
+                        read against §18.2/§18.3, every `tint_selected`
+                        consumer classified (rail selection vs overlay
+                        cursor/drop target), bars unchanged except D1/D3.
+Carry-over:            S4 must retune dark chrome washes or veils at 12 %
+                        (recorded in the space-paper packet).
+Worktree state:        clean after commit
 ```

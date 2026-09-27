@@ -186,7 +186,7 @@ pub fn plus_menu_surface(
                 .flex_row()
                 .cursor_pointer()
                 .when(is_selected, |el| {
-                    el.bg(p.tint_selected).border_l_2().border_color(p.accent)
+                    el.bg(p.tint_accent).border_l_2().border_color(p.accent)
                 })
                 .child(
                     div()

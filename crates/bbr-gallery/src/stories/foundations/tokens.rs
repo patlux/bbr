@@ -115,16 +115,24 @@ fn density_value(token: &str, d: Density) -> String {
     format!("{}", f32::from(pts).round() as u32)
 }
 
-/// §2 elevation shadow pair via the one `bbr-ui` helper.
+/// §2/§18.2 `elev:2` and `elev:lift` shadows via the one `bbr-ui` helper.
 pub fn render_elevation(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
-    let shadows = bbr_ui::theme::elevation::elev2(theme);
+    let shadows = bbr_ui::theme::elevation::elev2(theme)
+        .into_iter()
+        .map(|shadow| ("elev:2 shadow", shadow))
+        .chain(
+            bbr_ui::theme::elevation::lift(theme)
+                .into_iter()
+                .map(|shadow| ("elev:lift shadow", shadow)),
+        )
+        .collect::<Vec<_>>();
     let shadow_rows: Vec<AnyElement> = shadows
         .iter()
-        .map(|shadow| {
+        .map(|(name, shadow)| {
             value_row(
                 theme,
-                "elev:2 shadow",
+                name,
                 &format!(
                     "{}px {}px blur {}px · {}",
                     f32::from(shadow.offset.x).round() as i32,
@@ -171,7 +179,13 @@ pub fn render_color(ctx: &StoryContext) -> AnyElement {
         ("color:status.attention", p.status_attention, canvas),
         ("color:status.ok", p.status_ok, canvas),
         ("color:status.info", p.status_info, canvas),
-        ("color:tint.selected", p.tint_selected, canvas),
+        // §18.2 veils are shown composited over the rail they paint on.
+        (
+            "color:tint.selected",
+            bbr_ui::palette::over(p.tint_selected, p.surface_sidebar),
+            canvas,
+        ),
+        ("color:tint.accent", p.tint_accent, canvas),
         ("color:hairline", p.hairline, canvas),
         ("color:border.strong", p.border_strong, canvas),
     ];

@@ -57,7 +57,7 @@ pub fn tree_surface(
                 .rounded(theme.radius.small())
                 .cursor_pointer()
                 .bg(if focused {
-                    theme.palette.tint_selected
+                    theme.palette.tint_accent
                 } else {
                     gpui::rgba(0x00000000)
                 })

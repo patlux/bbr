@@ -34,10 +34,9 @@ use crate::theme::{ContrastMode, Theme, ThemeMode};
 /// The blend alpha of the chrome wash into the base sidebar material:
 /// standard contrast keeps the tint quiet, increased contrast deepens it
 /// (the §3.4 "selected tint deepens" spirit) without ever threatening the
-/// text contracts — the gate proves it. Standard sits at 0.04 (not 0.05)
-/// so the documented §3.1 `ink ≥ 14:1 on sidebar` floor holds on the
-/// tinted rail for every tone in both modes (the dark-standard wash at
-/// 0.05 measured 13.91–14.01 — below the contract).
+/// text contracts — the gate proves it. The D3 rise to 0.12 / 0.14 lands
+/// with the space-paper slice (DESIGN §18.1, §18.6 S4); until then the v2
+/// rail keeps the quiet v1 alphas under the D3 tinted-rail bars.
 const TINT_ALPHA_STANDARD: f64 = 0.04;
 const TINT_ALPHA_INCREASED: f64 = 0.07;
 /// The active chip's surface is a stronger tint than the rail (the chip is
@@ -207,9 +206,10 @@ mod tests {
     /// §11.3/§3.1 contrast gate on the *tinted* chrome: for every curated
     /// token, mode, and contrast level, the rail material with the active
     /// space's tint still satisfies the text/hairline/accent contracts
-    /// (ink ≥ 14 on tinted chrome, secondary ≥ 5.9 standard / ≥ 9.0 IC,
-    /// accent ≥ 3.0, accent.ink ≥ 5.9 light / 9.0 dark), and the active
-    /// chip surface keeps the identity glyph and the rail legible.
+    /// (D3: ink ≥ 12 standard / ≥ 14 IC on tinted chrome, secondary ≥ 5.9
+    /// standard / ≥ 9.0 IC, accent ≥ 3.0, accent.ink ≥ 5.9 light / 9.0
+    /// dark), and the active chip surface keeps the identity glyph and the
+    /// rail legible.
     #[test]
     fn every_curated_tint_keeps_the_contrast_contract() {
         for mode in [ThemeMode::Dark, ThemeMode::Light] {
@@ -227,10 +227,14 @@ mod tests {
                         (1.0..1.3).contains(&tint_vs_base),
                         "{token:?} {mode:?} {contrast:?} chrome stays a quiet variant (ratio {tint_vs_base:.2})"
                     );
-                    // Text contracts on the tinted rail.
+                    // Text contracts on the tinted rail (DESIGN §18.1 D3).
+                    let ink_min = match contrast {
+                        ContrastMode::Standard => 12.0,
+                        ContrastMode::Increased => 14.0,
+                    };
                     assert!(
-                        ratio(&p.ink, &tint.chrome) >= 14.0,
-                        "{token:?} {mode:?} {contrast:?} ink ≥ 14:1 on tinted chrome"
+                        ratio(&p.ink, &tint.chrome) >= ink_min,
+                        "{token:?} {mode:?} {contrast:?} ink ≥ {ink_min}:1 on tinted chrome"
                     );
                     let secondary_min = match contrast {
                         // DESIGN §3.1: IC hardens ink.secondary to ≥ 9:1.
@@ -390,10 +394,10 @@ mod tests {
         let theme = Theme::dark();
         let tint = space_tint(SpaceTheme::Cobalt, &theme);
         assert_eq!(hex(tint.hue), "#6E8BFF", "cobalt dark identity tile");
-        assert_eq!(hex(tint.chrome), "#1C2028", "cobalt dark standard chrome");
+        assert_eq!(hex(tint.chrome), "#1E2129", "cobalt dark standard chrome");
         assert_eq!(
             hex(tint.chip_active),
-            "#222837",
+            "#242938",
             "cobalt dark standard chip"
         );
         // The light identity hue is the §12 light cobalt tile.
@@ -402,12 +406,12 @@ mod tests {
         assert_eq!(hex(light_tint.hue), "#4062E8", "cobalt light identity tile");
         assert_eq!(
             hex(light_tint.chrome),
-            "#E1E1E1",
+            "#E6E6E3",
             "cobalt light standard chrome"
         );
         assert_eq!(
             hex(light_tint.chip_active),
-            "#D0D3E1",
+            "#D5D8E3",
             "cobalt light standard chip"
         );
     }

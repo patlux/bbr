@@ -53,7 +53,8 @@ fn profile_hue_tiles_meet_the_documented_contrast_contract() {
 }
 
 /// §3.1 contrast gate — derived from the tokens, never copied ratios.
-/// Asserts the documented pairs on their real surfaces.
+/// Asserts the documented pairs on the untinted rail; the composited v2
+/// surfaces are gated per space tint below.
 #[test]
 fn dark_theme_meets_the_documented_contrast_contract() {
     let theme = Theme::dark();
@@ -77,22 +78,6 @@ fn dark_theme_meets_the_documented_contrast_contract() {
         assert!(token.contrast(sidebar) >= 4.5, "status {name} ≥ 4.5:1");
     }
     assert!(SECONDARY_DARK.contrast(SURFACE_FIELD_DARK) >= 4.5);
-    // Reference-calibrated dark surfaces (task packet
-    // `system-appearance-theme`): the selected row renders ink title +
-    // ink.secondary meta on `tint.selected` (§10.4), and the footer strip
-    // renders its glyphs at ink.secondary on `material:footer` (§11.4).
-    assert!(
-        INK_DARK.contrast(TINT_SELECTED_DARK) >= 14.0,
-        "selected-row ink ≥ 14:1 on the dark selection tint"
-    );
-    assert!(
-        SECONDARY_DARK.contrast(TINT_SELECTED_DARK) >= 5.9,
-        "selected-row meta ≥ 5.9:1 on the dark selection tint"
-    );
-    assert!(
-        SECONDARY_DARK.contrast(SURFACE_FOOTER_DARK) >= 5.9,
-        "footer glyphs ≥ 5.9:1 on the dark footer material"
-    );
     assert_eq!(theme.palette.surface_canvas.a, 1.0);
     assert_ne!(theme.palette.surface_sidebar, theme.palette.surface_canvas);
     assert_ne!(theme.palette.surface_field, theme.palette.surface_sidebar);
@@ -111,53 +96,6 @@ fn increased_contrast_hardens_text_and_hairlines() {
     );
     assert!(ACCENT_INK_IC_DARK.contrast(sidebar) >= 9.0, "IC accent.ink");
     assert!(INK_IC_DARK.contrast(sidebar) >= INK_DARK.contrast(sidebar));
-    // IC deepens the selection tint (§3.4): the IC dark tint is deeper
-    // than the standard dark tint and still holds the §3.1 text bars
-    // (ink ≥ 14:1, IC secondary ≥ 9:1 on the tint; footer ≥ 9:1).
-    assert!(
-        INK_IC_DARK.contrast(TINT_SELECTED_IC_DARK) >= 14.0,
-        "IC selected-row ink ≥ 14:1"
-    );
-    assert!(
-        SECONDARY_IC_DARK.contrast(TINT_SELECTED_IC_DARK) >= 9.0,
-        "IC selected-row meta ≥ 9:1"
-    );
-    assert!(
-        SECONDARY_IC_DARK.contrast(SURFACE_FOOTER_DARK) >= 9.0,
-        "IC footer glyphs ≥ 9:1"
-    );
-    assert!(
-        TINT_SELECTED_IC_DARK.luminance() < TINT_SELECTED_DARK.luminance(),
-        "increased contrast deepens the selection tint"
-    );
-}
-
-#[test]
-fn dark_selection_tint_is_visible_on_the_rail() {
-    // Regression: #0D2020 sat 0.1 L* *above* the dark rail — the selected
-    // surface was invisible and only the 600 title weight marked selection.
-    // The §3.1 ink bar caps the tint just above the rail's luminance, so the
-    // visible surface sits below it: at least 4 CIE L* units, like the hover
-    // wash above it.
-    fn lightness(hex: Hex) -> f64 {
-        let y = hex.luminance();
-        if y > 0.008856 {
-            116.0 * y.cbrt() - 16.0
-        } else {
-            903.3 * y
-        }
-    }
-    let rail = lightness(SURFACE_SIDEBAR_DARK);
-    for (name, tint) in [
-        ("standard", TINT_SELECTED_DARK),
-        ("increased contrast", TINT_SELECTED_IC_DARK),
-    ] {
-        let delta = rail - lightness(tint);
-        assert!(
-            delta >= 4.0,
-            "{name} dark selection is {delta:.2} L* below the rail"
-        );
-    }
 }
 
 #[test]
@@ -173,17 +111,129 @@ fn light_theme_meets_the_documented_contrast_contract() {
     for (name, token) in [("error", ERROR_LIGHT), ("attention", ATTENTION_LIGHT)] {
         assert!(token.contrast(sidebar) >= 4.5, "light status {name}");
     }
-    // Reference-calibrated light surfaces (task packet
-    // `system-appearance-theme`): the same §3.1 pairs the dark side
-    // asserts — selected-row ink/meta on `tint.selected` (§10.4) and
-    // footer glyphs on `material:footer` (§11.4). Light stays the
-    // calibrated reference and must keep passing.
-    assert!(INK_LIGHT.contrast(TINT_SELECTED_LIGHT) >= 14.0);
-    assert!(SECONDARY_LIGHT.contrast(TINT_SELECTED_LIGHT) >= 5.9);
-    assert!(SECONDARY_LIGHT.contrast(SURFACE_FOOTER_LIGHT) >= 5.9);
-    assert!(INK_IC_LIGHT.contrast(TINT_SELECTED_IC_LIGHT) >= 14.0);
-    assert!(SECONDARY_IC_LIGHT.contrast(TINT_SELECTED_IC_LIGHT) >= 9.0);
-    assert!(SECONDARY_IC_LIGHT.contrast(SURFACE_FOOTER_LIGHT) >= 9.0);
+}
+
+/// The four shell palettes with their mode/contrast, for the composited
+/// v2 gates.
+fn palettes() -> [(ThemeMode, crate::theme::ContrastMode, Palette); 4] {
+    use crate::theme::ContrastMode::{Increased, Standard};
+    [
+        (ThemeMode::Light, Standard, Palette::light_standard()),
+        (ThemeMode::Light, Increased, Palette::light_increased()),
+        (ThemeMode::Dark, Standard, Palette::dark_standard()),
+        (ThemeMode::Dark, Increased, Palette::dark_increased()),
+    ]
+}
+
+/// The untinted rail plus the rail under every curated space tint — the
+/// surfaces a §18.2 veil can actually be composited over.
+fn rails(mode: ThemeMode, contrast: crate::theme::ContrastMode) -> Vec<(String, Rgba)> {
+    let theme = Theme::new(mode, contrast, crate::theme::Density::Normal);
+    let mut rails = vec![("untinted".to_string(), theme.palette.surface_sidebar)];
+    for token in bbr_domain::SpaceTheme::ALL {
+        rails.push((
+            format!("{token:?}"),
+            crate::theme::space_tint(token, &theme).chrome,
+        ));
+    }
+    rails
+}
+
+/// CIE L* of a rendered colour (for "visibly above the rail" checks).
+fn lightness(color: Rgba) -> f64 {
+    let y = contrast(color, gpui::rgb(0x000000)) * 0.05 - 0.05;
+    if y > 0.008856 {
+        116.0 * y.cbrt() - 16.0
+    } else {
+        903.3 * y
+    }
+}
+
+/// D1 (§18.1/§18.2): the selected row lifts *above* the rail and its text
+/// holds `ink ≥ 10.5:1` (IC ≥ 11:1) and `ink.secondary ≥ 4.5:1` (IC ≥ 7:1)
+/// on the composited selection over the untinted and every tinted rail.
+#[test]
+fn selection_lifts_above_every_rail_and_keeps_the_d1_text_bars() {
+    use crate::theme::ContrastMode;
+    for (mode, contrast_mode, p) in palettes() {
+        let (ink_min, secondary_min) = match contrast_mode {
+            ContrastMode::Standard => (10.5, 4.5),
+            ContrastMode::Increased => (11.0, 7.0),
+        };
+        for (name, rail) in rails(mode, contrast_mode) {
+            let selected = over(p.tint_selected, rail);
+            let ink = contrast(p.ink, selected);
+            let secondary = contrast(p.ink_secondary, selected);
+            assert!(
+                ink >= ink_min,
+                "{mode:?} {contrast_mode:?} {name}: selected ink {ink:.2} ≥ {ink_min}"
+            );
+            assert!(
+                secondary >= secondary_min,
+                "{mode:?} {contrast_mode:?} {name}: selected meta {secondary:.2} ≥ {secondary_min}"
+            );
+            let lift = lightness(selected) - lightness(rail);
+            assert!(
+                lift >= 4.0,
+                "{mode:?} {contrast_mode:?} {name}: selection sits {lift:.2} L* above the rail"
+            );
+        }
+    }
+    // Dark IC replaces the veil with an opaque, stronger step.
+    let (standard, increased) = (Palette::dark_standard(), Palette::dark_increased());
+    assert!(standard.tint_selected.a < 1.0, "dark standard is a veil");
+    assert_eq!(increased.tint_selected.a, 1.0);
+    let rail = standard.surface_sidebar;
+    assert!(
+        lightness(increased.tint_selected) > lightness(over(standard.tint_selected, rail)),
+        "increased contrast strengthens the dark selection"
+    );
+}
+
+/// §11.4/§18.2: footer glyphs render at `ink.secondary` on the footer veil
+/// over the rail; the §3.1 bar (≥ 5.9:1, IC ≥ 9:1) holds on every rail.
+#[test]
+fn footer_veil_keeps_the_secondary_bar_on_every_rail() {
+    use crate::theme::ContrastMode;
+    for (mode, contrast_mode, p) in palettes() {
+        let min = match contrast_mode {
+            ContrastMode::Standard => 5.9,
+            ContrastMode::Increased => 9.0,
+        };
+        assert!(p.surface_footer.a < 1.0, "the footer is a veil");
+        assert!(p.surface_favorite.a < 1.0, "the Favorite tile is a veil");
+        for (name, rail) in rails(mode, contrast_mode) {
+            let footer = over(p.surface_footer, rail);
+            let ratio = contrast(p.ink_secondary, footer);
+            assert!(
+                ratio >= min,
+                "{mode:?} {contrast_mode:?} {name}: footer glyphs {ratio:.2} ≥ {min}"
+            );
+        }
+    }
+}
+
+/// §18.2 `tint.accent`: `ink ≥ 9:1` and `accent.ink ≥ 4.5:1` in every mode,
+/// and the surface stays visible on the overlay/field it marks.
+#[test]
+fn tint_accent_keeps_its_text_bars_and_reads_on_overlays() {
+    for (mode, contrast_mode, p) in palettes() {
+        assert_eq!(p.tint_accent.a, 1.0, "tint.accent is opaque");
+        let ink = contrast(p.ink, p.tint_accent);
+        let accent_ink = contrast(p.accent_ink, p.tint_accent);
+        assert!(ink >= 9.0, "{mode:?} {contrast_mode:?} ink {ink:.2} ≥ 9");
+        assert!(
+            accent_ink >= 4.5,
+            "{mode:?} {contrast_mode:?} accent.ink {accent_ink:.2} ≥ 4.5"
+        );
+        for surface in [p.surface_overlay, p.surface_field] {
+            let delta = (lightness(p.tint_accent) - lightness(surface)).abs();
+            assert!(
+                delta >= 4.0,
+                "{mode:?} {contrast_mode:?} tint.accent is {delta:.2} L* off its surface"
+            );
+        }
+    }
 }
 
 /// §11.5 bordered address field: a white veil over the (tinted) rail —
@@ -193,31 +243,22 @@ fn light_theme_meets_the_documented_contrast_contract() {
 /// composited field in every palette.
 #[test]
 fn address_field_is_a_bordered_veil_one_step_off_the_rail() {
-    let over = |veil: gpui::Rgba, base: gpui::Rgba| gpui::Rgba {
-        r: veil.a * veil.r + (1.0 - veil.a) * base.r,
-        g: veil.a * veil.g + (1.0 - veil.a) * base.g,
-        b: veil.a * veil.b + (1.0 - veil.a) * base.b,
-        a: 1.0,
-    };
-    for (mode, p) in [
-        (crate::theme::ThemeMode::Light, Palette::light_standard()),
-        (crate::theme::ThemeMode::Light, Palette::light_increased()),
-        (crate::theme::ThemeMode::Dark, Palette::dark_standard()),
-        (crate::theme::ThemeMode::Dark, Palette::dark_increased()),
-    ] {
+    for (mode, contrast_mode, p) in palettes() {
         let (fill, hover) = (p.address_fill, p.address_fill_hover);
         for veil in [fill, hover] {
             assert!(veil.a > 0.0 && veil.a < 1.0, "a veil, never an opaque hex");
             assert!(veil.r >= 0.99 && veil.g >= 0.99 && veil.b >= 0.99);
-            let field = over(veil, p.surface_sidebar);
-            assert!(
-                crate::palette::contrast(p.ink, field) >= 4.5,
-                "domain ink on the field"
-            );
+            for (name, rail) in rails(mode, contrast_mode) {
+                let field = over(veil, rail);
+                assert!(
+                    contrast(p.ink, field) >= 4.5,
+                    "{mode:?} {contrast_mode:?} {name}: domain ink on the field"
+                );
+            }
         }
         match mode {
-            crate::theme::ThemeMode::Light => assert!(hover.a < fill.a, "light hover darkens"),
-            crate::theme::ThemeMode::Dark => assert!(hover.a > fill.a, "dark hover brightens"),
+            ThemeMode::Light => assert!(hover.a < fill.a, "light hover darkens"),
+            ThemeMode::Dark => assert!(hover.a > fill.a, "dark hover brightens"),
         }
         assert!(
             p.address_border.a > 0.0 && p.address_border.a < 0.2,
@@ -272,30 +313,28 @@ fn monogram_letters_read_on_both_ramps() {
 
 #[test]
 fn increased_contrast_deepens_the_row_washes_in_both_modes() {
-    // Regression: the light increased-contrast palette kept the standard
-    // 4.5 % / 8 % washes although §3.4/§10.2 deepen them (7 % / 10 %).
+    // §3.4/§10.2/§18.2: the washes are translucent veils (ink on light,
+    // white on dark) and increased contrast deepens them (8 % / 12 %). The
+    // comparison composites each wash over the rail it paints on.
     let pairs = [
-        (
-            Palette::light_standard(),
-            Palette::light_increased(),
-            SURFACE_SIDEBAR_LIGHT,
-        ),
-        (
-            Palette::dark_standard(),
-            Palette::dark_increased(),
-            SURFACE_SIDEBAR_DARK,
-        ),
+        (Palette::light_standard(), Palette::light_increased()),
+        (Palette::dark_standard(), Palette::dark_increased()),
     ];
-    for (standard, increased, rail) in pairs {
-        let rail = rail.rgba();
+    for (standard, increased) in pairs {
+        let rail = standard.surface_sidebar;
         for (name, base, deep) in [
             ("hover", standard.wash_hover, increased.wash_hover),
             ("active", standard.wash_active, increased.wash_active),
         ] {
+            assert!(base.a < 1.0 && deep.a < 1.0, "{name} wash is a veil");
             assert!(
-                super::contrast(deep, rail) > super::contrast(base, rail),
+                super::contrast(over(deep, rail), rail) > super::contrast(over(base, rail), rail),
                 "increased contrast deepens the {name} wash"
             );
         }
+        assert!(
+            standard.wash_active.a > standard.wash_hover.a,
+            "pressed is stronger than hover"
+        );
     }
 }

@@ -85,7 +85,7 @@ pub fn render_plus_menu(ctx: &StoryContext) -> AnyElement {
                             .flex_row()
                             .cursor_pointer()
                             .when(is_selected, |el| {
-                                el.bg(theme.palette.tint_selected)
+                                el.bg(theme.palette.tint_accent)
                                     .border_l_2()
                                     .border_color(theme.palette.accent)
                             })

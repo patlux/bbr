@@ -184,13 +184,13 @@ impl Density {
     }
 
     /// §8 `density:radius` — the inset row surface's corner radius
-    /// (S `radius:sm` 6 / N `radius:md` 8 / XL `radius:lg` 10).
+    /// (S `radius:sm` 6 / N `radius:md` 10 / XL `radius:lg` 12, §18.3).
     pub fn density_radius(self) -> Pixels {
-        px(match self {
-            Density::Small => 6.0,
-            Density::Normal => 8.0,
-            Density::ExtraLarge => 10.0,
-        })
+        match self {
+            Density::Small => crate::theme::Radius.small(),
+            Density::Normal => crate::theme::Radius.medium(),
+            Density::ExtraLarge => crate::theme::Radius.large(),
+        }
     }
 }
 
@@ -228,6 +228,8 @@ mod tests {
         assert_eq!(Density::Small.density_radius(), Radius.small());
         assert_eq!(Density::Normal.density_radius(), Radius.medium());
         assert_eq!(Density::ExtraLarge.density_radius(), Radius.large());
+        assert_eq!(Density::Normal.density_radius(), px(10.0));
+        assert_eq!(Density::ExtraLarge.density_radius(), px(12.0));
     }
 
     #[test]

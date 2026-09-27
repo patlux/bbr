@@ -282,7 +282,7 @@ pub fn row_wash(p: &Palette, state: TabVisualState) -> Rgba {
         // (the lifering + clock companions carry the signal; a red wash on
         // every hung tab would fight the chrome hierarchy).
         TabVisualState::Unresponsive => p.surface_sidebar,
-        TabVisualState::DragTarget => p.tint_selected,
+        TabVisualState::DragTarget => p.tint_accent,
         // §10.2/§10.3: the pointer-state washes blend over the sidebar
         // material exactly as DESIGN.md defines (token `wash_hover` /
         // `wash_active`); these arms never fight selection/error/loading
@@ -392,9 +392,10 @@ mod tests {
         let p = &theme.palette;
         // §10.7 error surface wins over every other surface.
         assert_eq!(row_wash(p, TabVisualState::Error), p.status_error_surface);
-        // §10.4 selected and §10.9 drag-target share the selection tint.
+        // §10.4 selected lifts on `tint.selected`; the §10.9 drag target is
+        // a drop target and takes `tint.accent` (§18.2).
         assert_eq!(row_wash(p, TabVisualState::Selected), p.tint_selected);
-        assert_eq!(row_wash(p, TabVisualState::DragTarget), p.tint_selected);
+        assert_eq!(row_wash(p, TabVisualState::DragTarget), p.tint_accent);
         // §10.3 active wash beats §10.2 hover wash.
         assert_eq!(row_wash(p, TabVisualState::Active), p.wash_active);
         assert_eq!(row_wash(p, TabVisualState::Hover), p.wash_hover);

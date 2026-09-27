@@ -362,7 +362,7 @@ fn render_row(
             );
     }
     if is_selected {
-        el = el.bg(p.tint_selected).border_l_2().border_color(p.accent);
+        el = el.bg(p.tint_accent).border_l_2().border_color(p.accent);
     } else if submenu_open {
         el = el.bg(p.wash_hover);
     }

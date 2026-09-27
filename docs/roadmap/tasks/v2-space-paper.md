@@ -37,6 +37,12 @@ Integration order:       after S3, before S5
 
 - Web content is never tinted; tint stays on BBR-owned chrome.
 - D3 bars recomputed from tokens, never copied.
+- Carry-over from S2 (measured on the S2 tokens): at 12 % the brightest dark
+  chrome washes (Slate) push the composited dark selection to `ink` 9.69:1
+  (D1 bar 10.5) and the footer veil to `ink.secondary` 5.26:1 (bar 5.9).
+  The S2 palette gates already composite over every tinted rail, so they
+  fail first; correct the dark chrome-wash hues (lower luminance, same hue)
+  or the veils, never the bars.
 
 ## Evidence
 

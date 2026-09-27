@@ -19,11 +19,12 @@ pub const CONTENT_CARD_ID: &str = "bbr-content-card";
 /// The stable semantic id of the draggable chassis band above the card.
 pub const CHASSIS_BAND_ID: &str = "bbr-chassis-band";
 /// `sp:content-inset` (DESIGN §5): the frame thickness around the card —
-/// the only value off the 4 pt grid, equal to `radius:lg` so the corner arc
-/// and the distance to the window edge are the same number.
+/// the only value off the 4 pt grid, equal to the card radius so the corner
+/// arc and the distance to the window edge are the same number.
 pub const CONTENT_INSET: f32 = 10.0;
-/// The card corner radius: `radius:lg`.
-pub const CARD_RADIUS: f32 = 10.0;
+/// The card corner radius (DESIGN §2, §18.3): stays 10 = `sp:content-inset`
+/// although v2 moved `radius:lg` to 12.
+pub const CARD_RADIUS: f32 = CONTENT_INSET;
 
 /// The resolved card frame for one window state.
 #[derive(Debug, Clone, Copy, PartialEq)]

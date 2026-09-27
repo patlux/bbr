@@ -267,7 +267,7 @@ fn result_row(
         .px(Spacing::sp3())
         .py(Spacing::sp1())
         .when(selected, |el| {
-            el.bg(p.tint_selected).border_l_2().border_color(p.accent)
+            el.bg(p.tint_accent).border_l_2().border_color(p.accent)
         })
         .child(
             div()

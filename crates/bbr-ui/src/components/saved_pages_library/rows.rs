@@ -269,11 +269,11 @@ pub fn favicon_tile(theme: &Theme, spec: FaviconSpec) -> Div {
         .child(SharedString::from(spec.letter.to_string()))
 }
 
-/// The §10.4 selection surface of a selected Library row. Children keep
-/// their own ink colors, so the fill must be the quiet `tint.selected`
+/// The §10.4/§18.4 selection surface of a selected Library row. Children
+/// keep their own ink colors, so the fill is the quiet `tint.accent`
 /// surface — never an accent fill, which drops ink and URL text below §3.1.
 fn selected_row_fill(p: &crate::palette::Palette) -> gpui::Rgba {
-    p.tint_selected
+    p.tint_accent
 }
 
 /// The §10 selection box: a filled accent square when selected, a hollow
@@ -363,7 +363,7 @@ mod tests {
         // text (≈ 3.5 : 1 and ≈ 1.6 : 1).
         for p in palettes() {
             let fill = selected_row_fill(&p);
-            assert_eq!(fill, p.tint_selected, "§10.4 selection surface");
+            assert_eq!(fill, p.tint_accent, "§10.4 selection surface");
             assert!(contrast(p.ink, fill) >= 4.5, "title on the selected row");
             assert!(
                 contrast(p.ink_secondary, fill) >= 4.5,

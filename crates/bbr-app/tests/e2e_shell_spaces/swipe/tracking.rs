@@ -89,9 +89,12 @@ fn tracking_snapshot_and_semantics_stay_truthful_until_commit() {
         assert_eq!(half.swipe.direction.as_deref(), Some("next"));
         assert!((half.swipe.progress - 0.5).abs() < 1e-9);
         assert_eq!(
-            half.swipe.interpolated_chrome_tint.as_deref(),
-            Some(cobalt_chrome.as_str()),
-            "quiet 4% rail washes may quantize equally while tracking"
+            half.swipe.interpolated_chrome_tint,
+            Some(half_way_light_chrome(
+                bbr_domain::SpaceTheme::Cobalt,
+                bbr_domain::SpaceTheme::Pine
+            )),
+            "half progress paints the exact half-way chrome wash"
         );
         let interpolated_chip = half
             .swipe
@@ -211,4 +214,29 @@ fn tracking_snapshot_and_semantics_stay_truthful_until_commit() {
     }));
 
     finish(result, &mut harness, &socket, &token);
+}
+
+/// The light-standard chrome wash half-way between two curated tokens,
+/// computed from the same resolver the app paints with (per-channel linear
+/// interpolation of the unrounded washes, then the snapshot's hex form).
+fn half_way_light_chrome(
+    source: bbr_domain::SpaceTheme,
+    destination: bbr_domain::SpaceTheme,
+) -> String {
+    let theme = bbr_ui::theme::Theme::new(
+        bbr_ui::theme::ThemeMode::Light,
+        bbr_ui::theme::ContrastMode::Standard,
+        bbr_ui::theme::Density::Normal,
+    );
+    let (a, b) = (
+        bbr_ui::theme::space_tint(source, &theme).chrome,
+        bbr_ui::theme::space_tint(destination, &theme).chrome,
+    );
+    let lerp = |x: f32, y: f32| x + (y - x) * 0.5;
+    bbr_ui::theme::hex(gpui::Rgba {
+        r: lerp(a.r, b.r),
+        g: lerp(a.g, b.g),
+        b: lerp(a.b, b.b),
+        a: 1.0,
+    })
 }

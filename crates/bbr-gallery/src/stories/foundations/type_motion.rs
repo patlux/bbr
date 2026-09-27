@@ -92,13 +92,17 @@ pub fn render_spacing_radius(ctx: &StoryContext) -> AnyElement {
             theme.radius.small(),
             "small tile, profile chip",
         ),
-        ("radius:md", theme.radius.medium(), "N/XL row tiles"),
+        ("radius:md", theme.radius.medium(), "N rows, Favorite tiles"),
         (
             "radius:lg",
             theme.radius.large(),
-            "command field, crash panel",
+            "address/palette field, panels",
         ),
-        ("radius:xl", theme.radius.xlarge(), "XL palette (reserved)"),
+        (
+            "radius:xl",
+            theme.radius.xlarge(),
+            "⌘T palette sheet (reserved)",
+        ),
         ("radius:full", theme.radius.full(), "dots, avatars"),
     ]
     .into_iter()

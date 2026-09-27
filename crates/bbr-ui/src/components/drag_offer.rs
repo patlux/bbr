@@ -48,7 +48,7 @@ pub fn activation_growth(theme: &Theme, favorites: usize, unpinned_source: bool)
 /// The §11.2 ghost row: dashed `accent` outline on the §10.2 inset row
 /// surface, no fill, a leading plus glyph and `type:meta` "Pin tab here" in
 /// `accent.ink`. As the live target (pointer over it) the outline turns
-/// solid and the surface takes `tint.selected` (§10.9). `anchor` is the
+/// solid and the surface takes `tint.accent` (§10.9, §18.2). `anchor` is the
 /// app-owned rect recorder the drag resolver hit-tests against, so the
 /// resolver never keeps a parallel layout model.
 pub fn pinned_drop_row(theme: &Theme, targeted: bool, anchor: AnyElement) -> Stateful<Div> {
@@ -63,7 +63,7 @@ pub fn pinned_drop_row(theme: &Theme, targeted: bool, anchor: AnyElement) -> Sta
         .border_1()
         .border_color(p.accent);
     let surface = if targeted {
-        surface.bg(p.tint_selected)
+        surface.bg(p.tint_accent)
     } else {
         surface.border_dashed()
     };

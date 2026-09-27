@@ -168,7 +168,7 @@ pub fn context_menu_card(
                     );
             }
             row.when(is_selected, |el| {
-                el.bg(p.tint_selected).border_l_2().border_color(p.accent)
+                el.bg(p.tint_accent).border_l_2().border_color(p.accent)
             })
         })
         .collect();

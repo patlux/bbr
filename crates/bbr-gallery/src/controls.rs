@@ -142,7 +142,7 @@ fn control_group(
                 .rounded(theme.radius.small())
                 .cursor_pointer()
                 .bg(if selected {
-                    theme.palette.tint_selected
+                    theme.palette.tint_accent
                 } else {
                     theme.palette.surface_field
                 })

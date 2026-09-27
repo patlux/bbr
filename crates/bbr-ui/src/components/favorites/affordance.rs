@@ -35,7 +35,7 @@ pub fn favorites_empty_band_height(theme: &Theme) -> f32 {
 
 /// The §11.10 zero-favorites band: a dashed hairline outline naming the
 /// region and the gesture. As a drag target it takes the §10.9 language —
-/// solid accent outline, `tint.selected` fill, the label commits to "Add to
+/// solid accent outline, `tint.accent` fill, the label commits to "Add to
 /// Favorites" and the hint states the drop-time fact — without changing its
 /// geometry.
 pub fn favorites_empty_band(theme: &Theme, targeted: bool) -> Stateful<Div> {
@@ -91,7 +91,7 @@ pub fn favorites_empty_band(theme: &Theme, targeted: bool) -> Stateful<Div> {
                 ),
         );
     if targeted {
-        band.border_color(p.accent).bg(p.tint_selected)
+        band.border_color(p.accent).bg(p.tint_accent)
     } else {
         band.border_dashed().border_color(p.hairline)
     }
@@ -135,7 +135,7 @@ pub fn favorites_offer_growth(theme: &Theme, count: usize) -> f32 {
 /// with tile geometry, a dashed `accent` outline, no fill, and a centered
 /// plus glyph in `accent`. As the live target (pointer over the grid) it
 /// takes the §10.9 `drag-target` language: solid `accent` outline and
-/// `tint.selected` fill.
+/// `tint.accent` fill.
 pub fn favorites_drop_cell(theme: &Theme, width: f32, targeted: bool) -> Stateful<Div> {
     let p = theme.palette;
     let cell = div()
@@ -151,7 +151,7 @@ pub fn favorites_drop_cell(theme: &Theme, width: f32, targeted: bool) -> Statefu
         .justify_center()
         .child(crate::icons::Icon::Plus.canvas_with(theme, gpui::px(16.0), p.accent));
     if targeted {
-        cell.bg(p.tint_selected)
+        cell.bg(p.tint_accent)
     } else {
         cell.border_dashed()
     }

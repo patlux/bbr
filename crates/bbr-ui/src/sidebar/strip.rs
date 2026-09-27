@@ -76,7 +76,7 @@ pub fn space_strip(
 
 /// One §11.3 identity chip: `[identity]`, `radius:sm`, with
 /// the persistent selected surface on the active space and the
-/// §10.9 drag-target treatment (accent outline + selection tint + the §12
+/// §10.9 drag-target treatment (accent outline + `tint.accent` + the §12
 /// destination-profile companion) while a pointer drag targets this exact
 /// chip. DESIGN.md §11.3: the footer chip is **icon-only at rest** — the
 /// validated identity renders, no Space title text appears in the footer
@@ -178,9 +178,9 @@ pub fn space_chip(
         .rounded(Radius.small())
         .cursor_pointer()
         .bg(if target {
-            // §10.9 drag-target: the selection tint + accent outline — the
+            // §10.9/§18.2 drag-target: `tint.accent` + accent outline — the
             // targeted chip is unmistakable without being the active chip.
-            p.tint_selected
+            p.tint_accent
         } else {
             chip_surface
         })

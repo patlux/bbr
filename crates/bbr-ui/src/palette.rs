@@ -14,6 +14,7 @@
 //! color:ink            → Palette::ink            color:accent       → accent
 //! color:ink.secondary  → Palette::ink_secondary  color:accent.ink  → accent_ink
 //! color:ink.faint      → Palette::ink_faint      color:tint.selected → tint_selected
+//! color:tint.accent    → Palette::tint_accent
 //! color:hairline       → Palette::hairline       material:sidebar   → surface_sidebar
 //! color:border.strong  → Palette::border_strong  material:canvas    → surface_canvas
 //! material:field       → surface_field           material:glass     → surface_glass
@@ -79,7 +80,7 @@ hex! {
     INK_LIGHT = "111315";   INK_DARK = "ECEEF1";
     SECONDARY_LIGHT = "4A4F55"; SECONDARY_DARK = "A6ACB5";
     FAINT_LIGHT = "949AA2"; FAINT_DARK = "6E747D";
-    HAIRLINE_LIGHT = "C7C7C7"; HAIRLINE_DARK = "2A2E34";
+    HAIRLINE_LIGHT = "D0D0CC"; HAIRLINE_DARK = "2C2F35";
     BORDER_STRONG_LIGHT = "C7C9C5"; BORDER_STRONG_DARK = "3B4149";
     INK_IC_LIGHT = "000000"; INK_IC_DARK = "FFFFFF";
     SECONDARY_IC_LIGHT = "292E34"; SECONDARY_IC_DARK = "D6DAE0";
@@ -96,20 +97,35 @@ hex! {
     ATTENTION_LIGHT = "805100"; ATTENTION_DARK = "FFC63F";
     OK_LIGHT = "177A55"; OK_DARK = "45C08A";
     INFO_LIGHT = "2C5CC5"; INFO_DARK = "8AA6FF";
-    // Dark selection sits *below* the rail's luminance: the §3.1 ink bar
-    // (≥ 14:1) caps it just above the rail, so only a darker surface can be
-    // visible (≈ 5 L* below the rail, mirroring the hover wash above it).
-    TINT_SELECTED_LIGHT = "EEF2F9"; TINT_SELECTED_DARK = "0F1318";
-    TINT_SELECTED_IC_LIGHT = "E1E8F3"; TINT_SELECTED_IC_DARK = "0A0D12";
-    // §2 materials.
-    SURFACE_CANVAS_LIGHT = "F6F6F4"; SURFACE_CANVAS_DARK = "121416";
-    SURFACE_SIDEBAR_LIGHT = "E0E0E0"; SURFACE_SIDEBAR_DARK = "1A1D21";
-    SURFACE_FIELD_LIGHT = "FFFFFF"; SURFACE_FIELD_DARK = "23272C";
-    SURFACE_OVERLAY_LIGHT = "FFFFFF"; SURFACE_OVERLAY_DARK = "202429";
+    // §3.5/§18.2 (D1): the selection lifts *above* the rail — opaque white
+    // on light; the dark standard selection is a white veil (see
+    // `SELECTED_VEIL_DARK`), the dark IC selection this opaque step.
+    TINT_SELECTED_LIGHT = "FFFFFF"; TINT_SELECTED_IC_DARK = "35383F";
+    // §18.2 `tint.accent`: the one accent moment on white/overlay surfaces.
+    TINT_ACCENT_LIGHT = "E6F1EE"; TINT_ACCENT_DARK = "26403F";
+    TINT_ACCENT_IC_LIGHT = "D9EAE5"; TINT_ACCENT_IC_DARK = "2B4A48";
+    // §2/§18.2 materials.
+    SURFACE_CANVAS_LIGHT = "F6F6F4"; SURFACE_CANVAS_DARK = "131517";
+    SURFACE_SIDEBAR_LIGHT = "E5E5E2"; SURFACE_SIDEBAR_DARK = "1C1E22";
+    SURFACE_FIELD_LIGHT = "FFFFFF"; SURFACE_FIELD_DARK = "2A2D33";
+    SURFACE_OVERLAY_LIGHT = "FFFFFF"; SURFACE_OVERLAY_DARK = "25282D";
     SURFACE_GLASS_LIGHT = "FFFFFF"; SURFACE_GLASS_DARK = "151719";
-    SURFACE_FAVORITE_LIGHT = "D2D2D2"; SURFACE_FAVORITE_DARK = "23272C";
-    SURFACE_FOOTER_LIGHT = "F3F8FE"; SURFACE_FOOTER_DARK = "202429";
 }
+
+/// §18.2 translucent tokens are veils painted over the (possibly
+/// space-tinted) rail, so one value follows every tint. Alphas are the
+/// DESIGN percentages on the 0–255 scale.
+const fn white(alpha: u8) -> Rgba {
+    rgba_8(255, 255, 255, alpha)
+}
+
+/// `color:ink` (light) as a translucent wash/border colour.
+const fn ink_veil(alpha: u8) -> Rgba {
+    rgba_8(0x11, 0x13, 0x15, alpha)
+}
+
+/// Dark standard selection: white 9 % over the rail (D1).
+const SELECTED_VEIL_DARK: Rgba = white(23);
 
 /// The mode-selectable color palette for one theme/contrast combination.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -137,8 +153,14 @@ pub struct Palette {
     /// Status color at 10% over the owning material (12% in IC).
     pub status_error_surface: Rgba,
     pub status_attention_surface: Rgba,
-    /// Accent at 10% over the material (20% in IC): the selection confirmation.
+    /// §3.5/§18.2 (D1) selected-row surface: it lifts *above* the rail —
+    /// opaque white on light, a white veil on dark (opaque in dark IC).
+    /// Composite over the rail before computing contrast ([`over`]).
     pub tint_selected: Rgba,
+    /// §18.2 `color:tint.accent`: the single accent moment on white and
+    /// overlay surfaces — command results, menu and Library cursors, drop
+    /// targets. Text on it is `ink` / `accent.ink`.
+    pub tint_accent: Rgba,
     // Materials (§2): canvas behind glass, the sidebar rail, raised fields,
     // floating overlays, and what sits behind native web views.
     pub surface_canvas: Rgba,
@@ -146,13 +168,14 @@ pub struct Palette {
     pub surface_field: Rgba,
     pub surface_overlay: Rgba,
     pub surface_glass: Rgba,
-    /// Reference-calibrated Favorite destination tile surface.
+    /// §18.2 Favorite destination tile: a white veil over the rail.
     pub surface_favorite: Rgba,
-    /// Reference-calibrated footer transport/Space strip surface.
+    /// §18.2 footer / media-card surface: a white veil over the rail.
     pub surface_footer: Rgba,
-    /// Row hover wash (§10.2) blended over the sidebar material; IC deepens.
+    /// Row hover wash (§10.2): a translucent ink (light) / white (dark)
+    /// veil over whatever surface the row sits on; IC deepens.
     pub wash_hover: Rgba,
-    /// Pointer-down / pressed wash (§10.3).
+    /// Pointer-down / pressed wash (§10.3), translucent like the hover.
     pub wash_active: Rgba,
     /// §11.5 address field fill: a white veil over the rail material — one
     /// step lighter than the rail in both modes — so the field follows the
@@ -170,20 +193,6 @@ pub struct Palette {
     /// The two status surface washes at the IC level.
     pub surface_error_ic: Rgba,
     pub surface_attention_ic: Rgba,
-}
-
-fn blend(base: Hex, over: Hex, alpha: f64) -> Rgba {
-    let mix = |b: usize, o: usize| {
-        let base_ch = u8::from_str_radix(&base.0[b * 2..b * 2 + 2], 16).unwrap() as f32;
-        let over_ch = u8::from_str_radix(&over.0[o * 2..o * 2 + 2], 16).unwrap() as f32;
-        (base_ch * (1.0 - alpha as f32) + over_ch * alpha as f32) / 255.0
-    };
-    Rgba {
-        r: mix(0, 0),
-        g: mix(1, 1),
-        b: mix(2, 2),
-        a: 1.0,
-    }
 }
 
 const fn rgba_8(r: u8, g: u8, b: u8, a: u8) -> Rgba {
@@ -213,22 +222,25 @@ impl Palette {
             status_info: INFO_DARK.rgba(),
             status_error_surface: rgba_8(255, 106, 99, 25),
             status_attention_surface: rgba_8(255, 198, 63, 25),
-            tint_selected: TINT_SELECTED_DARK.rgba(),
+            tint_selected: SELECTED_VEIL_DARK,
+            tint_accent: TINT_ACCENT_DARK.rgba(),
             surface_canvas: SURFACE_CANVAS_DARK.rgba(),
             surface_sidebar: SURFACE_SIDEBAR_DARK.rgba(),
             surface_field: SURFACE_FIELD_DARK.rgba(),
             surface_overlay: SURFACE_OVERLAY_DARK.rgba(),
             surface_glass: SURFACE_GLASS_DARK.rgba(),
-            surface_favorite: SURFACE_FAVORITE_DARK.rgba(),
-            surface_footer: SURFACE_FOOTER_DARK.rgba(),
-            wash_hover: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.05),
-            wash_active: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.08),
-            // §11.5: white-translucent over the dark sidebar; the hover
-            // steps one fill brighter (a higher white alpha).
-            address_fill: rgba_8(255, 255, 255, 8),
-            address_fill_hover: rgba_8(255, 255, 255, 18),
-            address_border: rgba_8(255, 255, 255, 18),
-            address_accessory_fill: rgba_8(255, 255, 255, 15),
+            surface_favorite: white(15),
+            // Paper's 7 % missed `ink.secondary ≥ 5.9:1` on the Slate-tinted
+            // rail (5.73); 5 % holds it (§18.2 records the correction).
+            surface_footer: white(13),
+            wash_hover: white(13),
+            wash_active: white(20),
+            // §11.5: white veil over the dark rail; the hover steps one
+            // fill brighter (a higher white alpha).
+            address_fill: white(15),
+            address_fill_hover: white(26),
+            address_border: white(10),
+            address_accessory_fill: white(15),
             surface_error_ic: rgba_8(255, 106, 99, 30),
             surface_attention_ic: rgba_8(255, 198, 63, 30),
         }
@@ -246,14 +258,15 @@ impl Palette {
             accent: ACCENT_IC_DARK.rgba(),
             accent_ink: ACCENT_INK_IC_DARK.rgba(),
             tint_selected: TINT_SELECTED_IC_DARK.rgba(),
-            wash_hover: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.07),
-            wash_active: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.10),
-            // Increased contrast hardens the translucent address fill the
-            // same way it hardens the row washes.
-            address_fill: rgba_8(255, 255, 255, 10),
-            address_fill_hover: rgba_8(255, 255, 255, 22),
-            address_border: rgba_8(255, 255, 255, 31),
-            address_accessory_fill: rgba_8(255, 255, 255, 20),
+            tint_accent: TINT_ACCENT_IC_DARK.rgba(),
+            wash_hover: white(20),
+            wash_active: white(31),
+            // Increased contrast hardens the address veils the same way it
+            // hardens the row washes and hairlines.
+            address_fill: white(20),
+            address_fill_hover: white(31),
+            address_border: white(26),
+            address_accessory_fill: white(20),
             ..base
         }
     }
@@ -276,21 +289,22 @@ impl Palette {
             status_error_surface: rgba_8(194, 46, 36, 25),
             status_attention_surface: rgba_8(143, 92, 0, 25),
             tint_selected: TINT_SELECTED_LIGHT.rgba(),
+            tint_accent: TINT_ACCENT_LIGHT.rgba(),
             surface_canvas: SURFACE_CANVAS_LIGHT.rgba(),
             surface_sidebar: SURFACE_SIDEBAR_LIGHT.rgba(),
             surface_field: SURFACE_FIELD_LIGHT.rgba(),
             surface_overlay: SURFACE_OVERLAY_LIGHT.rgba(),
             surface_glass: SURFACE_GLASS_LIGHT.rgba(),
-            surface_favorite: SURFACE_FAVORITE_LIGHT.rgba(),
-            surface_footer: SURFACE_FOOTER_LIGHT.rgba(),
-            wash_hover: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.045),
-            wash_active: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.08),
-            // §11.5: black-translucent over the light sidebar; the hover
-            // steps one fill darker (a higher black alpha).
-            address_fill: rgba_8(255, 255, 255, 122),
-            address_fill_hover: rgba_8(255, 255, 255, 77),
-            address_border: rgba_8(23, 26, 29, 26),
-            address_accessory_fill: rgba_8(23, 26, 29, 13),
+            surface_favorite: white(128),
+            surface_footer: white(158),
+            wash_hover: ink_veil(13),
+            wash_active: ink_veil(23),
+            // §11.5: a white veil over the light rail; the hover steps one
+            // fill darker (a lower white alpha lets more rail through).
+            address_fill: white(140),
+            address_fill_hover: white(102),
+            address_border: ink_veil(10),
+            address_accessory_fill: ink_veil(15),
             surface_error_ic: rgba_8(194, 46, 36, 30),
             surface_attention_ic: rgba_8(143, 92, 0, 30),
         }
@@ -307,18 +321,30 @@ impl Palette {
             border_strong: BORDER_STRONG_IC_LIGHT.rgba(),
             accent: ACCENT_IC_LIGHT.rgba(),
             accent_ink: ACCENT_INK_IC_LIGHT.rgba(),
-            tint_selected: TINT_SELECTED_IC_LIGHT.rgba(),
-            // §3.4/§10.2: increased contrast deepens the row washes (7 % /
-            // 10 %) exactly like the dark theme.
-            wash_hover: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.07),
-            wash_active: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.10),
-            // Increased contrast deepens the translucent address fill.
-            address_fill: rgba_8(255, 255, 255, 122),
-            address_fill_hover: rgba_8(255, 255, 255, 77),
-            address_border: rgba_8(23, 26, 29, 46),
-            address_accessory_fill: rgba_8(23, 26, 29, 20),
+            // The light selection is already opaque white + lift; IC keeps it
+            // and hardens everything around it.
+            tint_accent: TINT_ACCENT_IC_LIGHT.rgba(),
+            // §3.4/§10.2: increased contrast deepens the row washes (8 % /
+            // 12 %) exactly like the dark theme.
+            wash_hover: ink_veil(20),
+            wash_active: ink_veil(31),
+            address_border: ink_veil(26),
+            address_accessory_fill: ink_veil(20),
             ..base
         }
+    }
+}
+
+/// Source-over composite of a (possibly translucent) token onto an opaque
+/// surface — the colour the user sees, and the one every contrast gate on a
+/// §18.2 veil must compute against.
+pub fn over(top: Rgba, base: Rgba) -> Rgba {
+    let mix = |t: f32, b: f32| top.a * t + (1.0 - top.a) * b;
+    Rgba {
+        r: mix(top.r, base.r),
+        g: mix(top.g, base.g),
+        b: mix(top.b, base.b),
+        a: 1.0,
     }
 }
 

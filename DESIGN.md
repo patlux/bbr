@@ -105,21 +105,27 @@ L3 floating        — command palette, peek, dialogs        elev-2
 
 | Token | Light | Dark | Notes |
 |---|---|---|---|
-| `material:canvas` | `#F6F6F4` | `#121416` | content backdrop *inside* the content card, visible only before attach / empty / crash |
+| `material:canvas` | `#F6F6F4` | `#131517` | content backdrop *inside* the content card, visible only before attach / empty / crash |
 | `material:chassis` | rail paint | rail paint | the window base the rail and the card sit in; the rail's own (space-tinted) paint, so the chassis reads as one continuous body rather than a second surface |
-| `material:sidebar` | `#E0E0E0` | `#1A1D21` | the reference-calibrated physical rail; the production mode follows the system appearance |
-| `material:field` | `#FFFFFF` | `#23272C` | command field, search, hover-raised rows |
-| `material:overlay` | `#FFFFFF` | `#202429` | floating surfaces, elevation 2 |
+| `material:sidebar` | `#E5E5E2` (limestone) | `#1C1E22` (wet slate) | the physical rail (v2 §18.2); the production mode follows the system appearance |
+| `material:field` | `#FFFFFF` | `#2A2D33` | command field, search, hover-raised rows |
+| `material:overlay` | `#FFFFFF` | `#25282D` | floating surfaces, elevation 2 |
 | `material:glass` | `#FFFFFF` | `#151719` | what sits behind native web views; must never be textured or sampled |
-| `material:favorite` | `#D2D2D2` | `#23272C` | reference-calibrated Favorite destination tile |
-| `material:footer` | `#F3F8FE` | `#202429` | compact Downloads/Space/Plus strip at the rail bottom |
+| `material:favorite` | white 50 % veil | white 6 % veil | Favorite destination tile, painted over the (tinted) rail |
+| `material:footer` | white 62 % veil | white 5 % veil | compact Downloads/Space/Plus strip and media card at the rail bottom |
+
+Veils (§18.2) are translucent tokens painted over the possibly space-tinted
+rail, so one value follows every tint; contrast gates composite them over the
+untinted and every tinted rail before computing a ratio.
 
 ### Elevation
 
 - `elev:0` — base surface. The rail carries no border; the content card's
   own edge supplies the only separation.
 - `elev:1` — raised control (field, button, hover tile). `hairline` border,
-  same material family. No shadow on rows, ever (list paint budget).
+  same material family. No shadow on rows (list paint budget), with exactly
+  one exception (D2): `elev:lift` on the one selected row and the active
+  space chip — static, painted with the surface, never animated or on hover.
 - `elev:1.content` — the seated content card. One static shadow, painted with
   the card, never animated and never re-evaluated per scroll frame.
 - `elev:2` — floating. Shadow tokens (GPUI `box_shadow`, bounded blur):
@@ -127,7 +133,8 @@ L3 floating        — command palette, peek, dialogs        elev-2
 | Token | Light | Dark |
 |---|---|---|
 | `elev:1.content.shadow` | `0 1 2 rgba(23,26,29,0.06), 0 8 20 rgba(23,26,29,0.10)` | `0 0 0 1px rgba(255,255,255,0.05), 0 1 2 rgba(0,0,0,0.45), 0 10 24 rgba(0,0,0,0.38)` |
-| `elev:2.shadow` | `0 1 0 rgba(0,0,0,0.04), 0 12 24 rgba(23,26,29,0.10)` | `0 0 0 1px rgba(255,255,255,0.05), 0 16 32 rgba(0,0,0,0.45)` |
+| `elev:2.shadow` | `0 0 0 1px ink 7 %, 0 2 4 ink 5 %, 0 16 36 −6 ink 18 %` | `0 0 0 1px white 8 %, 0 16 32 black 45 %` |
+| `elev:lift` | `0 1 3 ink 10 %, 0 0 0 1px ink 4 %` | `0 1 2 black 35 %, 0 0 0 1px white 4 %` |
 
 ### The content card
 
@@ -140,7 +147,7 @@ seated in the chassis.
 | Property | Value |
 |---|---|
 | Inset | `sp:content-inset` top / trailing / bottom; `0` leading |
-| Radius | `radius:lg` (10), all four corners |
+| Radius | 10, all four corners (= `sp:content-inset`; independent of `radius:lg`, which v2 moved to 12) |
 | Elevation | `elev:1.content` |
 | Behind it | `material:chassis` |
 | Inside it | the native WKWebView (its backing layer clips to the radius); `material:canvas` only before attach / empty / crash |
@@ -189,19 +196,23 @@ an open decision for Phase 9 polish.
 | `color:ink` | `#111315` | `#ECEEF1` | `#000000` | `#FFFFFF` | primary text, titles |
 | `color:ink.secondary` | `#4A4F55` | `#A6ACB5` | `#292E34` | `#D6DAE0` | meta, icons at rest, secondary tab text |
 | `color:ink.faint` | `#949AA2` | `#6E747D` | `#5C626A` | `#8A919B` | disabled, placeholders, purely decorative — never normal text |
-| `color:hairline` | `#C7C7C7` | `#2A2E34` | `#9FA29E` | `#454C55` | structural rules |
+| `color:hairline` | `#D0D0CC` | `#2C2F35` | `#9FA29E` | `#454C55` | structural rules |
 | `color:border.strong` | `#C7C9C5` | `#3B4149` | `#9FA29E` | `#525A63` | field borders, tile outlines |
 
 Contrast contract (recomputed by tests from tokens, not copied): `ink` ≥
 14:1, `ink.secondary` ≥ 5.9:1, `accent-ink` ≥ 5.9:1 (light) / ≥ 9:1 (dark)
 on their surfaces; status inks ≥ 4.5:1; `accent` rails/rings ≥ 3:1;
 increased-contrast raises `ink.secondary` ≥ 9:1 and `hairline` ≥ 1.8:1.
+On a **space-tinted** rail (D3) the bars are `ink` ≥ 12:1 (IC ≥ 14:1) and
+`ink.secondary` ≥ 5.9:1 (IC ≥ 9:1); the selected row has its own D1 bars
+(§3.5).
 
-The light tokens are verified against the unchanged §3.1 contract by
-`bbr-ui` palette tests. Reference calibration strengthened primary/secondary
-ink and hairlines on the darker `#E0E0E0` rail; status error/attention were
-darkened rather than weakening the 4.5:1 assertion. The token gate recomputes
-every pair from the stored hex values.
+The tokens are verified by `bbr-ui` palette tests against the untinted
+rail, and the composited veils (selection, footer, address field) against the
+untinted and every tinted rail. Status error/attention were darkened during
+reference calibration rather than weakening the 4.5:1 assertion. The v2
+rail (`#E5E5E2` / `#1C1E22`) keeps every bar; the dark rail's slightly
+lighter value is why the tinted-rail `ink` bar follows D3 from v2 S2 on.
 
 ### 3.2 Accent — Phosphor
 
@@ -237,28 +248,34 @@ are the only two colored dot states; loading uses the accent, never amber.
 Applies when macOS `Increase Contrast` is on — observed live through the
 public `NSWorkspace` accessibility-display API and its change notification
 (v2 S1) — and is assertable via the `contrast` snapshot field (§15). Changes: text steps per §3.1; hairline
-strengthened; `accent` darkened/lightened per §3.2; selected tint deepens
-20%; focus ring becomes 3 px with a 1 px material-gap double ring (§9);
-tile washes deepen 7%; the crash/error and attention surfaces gain a 1 px
-`border.strong` outline so tint is never required.
+strengthened; `accent` darkened/lightened per §3.2; the dark selection
+becomes the opaque `#35383F` step (light keeps white + lift) and
+`tint.accent` deepens (§3.5); focus ring becomes 3 px with a 1 px
+material-gap double ring (§9); row washes deepen to 8 % / 12 %; the address
+border and accessory strengthen (ink 10 % / 8 % light, white 10 % / 8 % dark,
+fill white 8 % / hover 12 % dark); the crash/error and attention surfaces
+gain a 1 px `border.strong` outline so tint is never required.
 
-### 3.5 Selection tint
+### 3.5 Selection tint and `tint.accent`
 
-`color:tint.selected` = the reference-calibrated quiet blue-gray surface:
-light `#EEF2F9` / dark `#0F1318`; increased contrast deepens it
-(`#E1E8F3` / `#0A0D12`). The dark values are **contract-calibrated** — the
-selected row renders ink title + ink.secondary meta on this surface (§10.4),
-so the dark tint is computed to hold the unchanged §3.1 text bars
-(ink ≥ 14:1, ink.secondary ≥ 5.9:1; IC ≥ 9:1 for ink.secondary) and is not
-copied from reference pixels. Because the ink bar caps the dark tint just
-above the rail's luminance, the visible dark selection sits *below* the rail:
-at least 4 CIE L* units darker (≈ 5 for standard, ≈ 7 for increased contrast),
-mirroring the hover wash above it. The former `#0D2020` sat 0.1 L* above the
-rail and was invisible as a surface (recalibrated 2026-09-27,
-[UI contract conformance](docs/roadmap/tasks/ui-contract-conformance.md)).
-The exact row identity, type weight and inset
-surface remain non-color selection cues; the Phosphor focus/interaction
-accent is not used as decorative site tint.
+`color:tint.selected` (v2, D1) lifts the selected row **above** the rail:
+light is opaque `#FFFFFF`, dark is a white 9 % veil over the (tinted) rail,
+and dark increased contrast is the opaque `#35383F` step; light IC keeps
+white. The surface carries `elev:lift` (§2) from the rail slice on. The
+selected row's text bar is computed on the composited surface over the
+untinted and every tinted rail: `ink` ≥ 10.5:1 (IC ≥ 11:1) and
+`ink.secondary` ≥ 4.5:1 (IC ≥ 7:1), and the composited selection sits at
+least 4 CIE L* above the rail in every mode. (v1's dark selection sat below
+the rail because the old 14:1 bar capped it; D1 replaced that bar.)
+
+`color:tint.accent` — light `#E6F1EE` / dark `#26403F`, IC `#D9EAE5` /
+`#2B4A48` — is the single accent moment on white and overlay surfaces:
+command, menu, Library and Space-configuration cursors and drop targets (tab
+row, Space chip, Favorites band/cell, drag offers). Text on it is `ink` /
+`accent.ink` with `ink` ≥ 9:1 and `accent.ink` ≥ 4.5:1 in every mode, and it
+stays at least 4 L* off `material:overlay` and `material:field`. The exact
+row identity, type weight and inset surface remain non-color selection cues;
+the Phosphor focus/interaction accent is not used as decorative site tint.
 
 ## 4. Typography
 
@@ -305,22 +322,22 @@ accent is not used as decorative site tint.
 
 | Token | Value | Used for |
 |---|---|---|
-| `radius:sm` | 6 | small tile, profile chip, S-density rows, S favorites tiles |
-| `radius:md` | 8 | N/XL row tiles, buttons |
-| `radius:lg` | 10 | command field, N palette, crash panel |
-| `radius:xl` | 14 | XL palette |
+| `radius:sm` | 6 | S rows, small tiles, profile chip, S favorites tiles, menu cursors |
+| `radius:md` | 10 | N rows, Favorite tiles, buttons, menus |
+| `radius:lg` | 12 | address field, palette field, panels, XL rows, crash panel |
+| `radius:xl` | 16 | the ⌘T palette sheet only |
 | `radius:full` | 50% | dots, avatars |
 
-Rule: chrome radii stay in 6–10 px; `radius:xl` (14) is reserved for the XL
-palette sheet. No giant rounded sheets over content and no `radius` on
-scrollable list backgrounds. Inset row surfaces (§10.2–§10.4) and footer
-identity chips (§11.3) are bounded rounded rectangles from this scale —
-never fully circular pills around text. The S1 calibration raised these values
-with the rest of the scale but keeps the language.
+Rule (v2 §18.3): chrome radii stay in 6–12 px; `radius:xl` (16) is reserved
+for the palette sheet. The content card keeps 10 (= `sp:content-inset`). No
+giant rounded sheets over content and no `radius` on scrollable list
+backgrounds. Inset row surfaces (§10.2–§10.4) and footer identity chips
+(§11.3) are bounded rounded rectangles from this scale — never fully circular
+pills around text; `density:radius` is S 6 / N 10 / XL 12.
 
 - **`sp:content-inset` = 10** — the §2 card frame, the only value off the
-  4 pt grid; it equals `radius:lg` so the corner arc and the distance to the
-  window edge are the same number. Identical at S, N and XL.
+  4 pt grid; it equals the card radius so the corner arc and the distance to
+  the window edge are the same number. Identical at S, N and XL.
 - **Sidebar widths:** `win:sidebar.S` 232, `.N` 300, `.XL` 340 pt; adjustable
   between 200 and 400 pt via a 4 px drag handle (cursor `ew-resize`, empty
   paint at rest), minimum width enforced; collapse (Cmd-B) yields 0 and the
@@ -598,7 +615,7 @@ the list as the placeholder while the **drag proxy** — the lifted row
 the pointer with the press point kept under it.
 `drag-target`: insertion tick = 2 pt vertical accent rule at the target
 index spanning the row tile, plus target tile outline 1 pt accent and
-`tint.selected`. Cross-profile destinations additionally show the
+`tint.accent` (§18.2 drop target). Cross-profile destinations additionally show the
 destination profile chip replacing the insertion rule (§12.3). Split zones
 reuse the accent outline language with the strip fills of §11.7.
 
@@ -682,7 +699,7 @@ using the IDs of §15. All rows use `density` geometry from §8.
   rows and folders: `density:row` surface plus the row gap (one pitch), a
   dashed `accent` outline on the §10.2 inset row surface, no fill, a leading
   plus glyph and `type:meta` “Pin tab here” in `accent.ink`. As the live
-  target the outline turns solid over `tint.selected`. A drop pins the tab
+  target the outline turns solid over `tint.accent`. A drop pins the tab
   at the end of the pinned block through the one pin authority (same
   `TabId`, same session). It is an offer, not a precision target, and it
   appears in an empty organized area too — the only way a user without
@@ -1028,7 +1045,7 @@ scheme; a title consisting only of whitespace is treated as empty.
   to the truthful-empty-region rule (§11.4): the band teaches the only gesture
   that creates a favorite and renders an affordance, never fabricated
   content. As a drag target it takes the §10.9 language (solid `accent`
-  outline, `tint.selected` fill; label “Add to Favorites” in `accent.ink`,
+  outline, `tint.accent` fill; label “Add to Favorites” in `accent.ink`,
   hint “Reachable from every space and profile”) with **unchanged geometry**,
   so nothing reflows under the pointer. Once favorites exist the band
   shrinks to a glyph-only slot in the next free cell; when the last row is
@@ -1037,7 +1054,7 @@ scheme; a title consisting only of whitespace is treated as empty.
   populated grid offers one additional cell at the end of the wrap order
   instead of the rest slot: tile geometry, dashed `accent` outline, no fill,
   centered plus glyph in `accent`; with the pointer over the region it is
-  the live target (solid `accent`, `tint.selected`). The region is never
+  the live target (solid `accent`, `tint.accent`). The region is never
   outlined as a whole — a cell names the slot, and an outline would reflow
   the region mid-drag. When the last row is full the cell opens one more row
   (`favorites_offer_growth`), committed once at activation. The whole
@@ -1367,7 +1384,7 @@ or page snapshot and survives tab close and restart.
 - **Library row:** the drawn §7 bookmark glyph and the normal favicon presentation,
   user label or captured-title fallback, mid-ellipsized URL, optional
   collection label, and selection state. A selected row paints
-  `tint.selected` (§10.4); its rename control uses the §7 pencil.
+  `tint.accent` with `ink` text (§18.4); its rename control uses the §7 pencil.
   No favicon blob is stored in the record; missing favicon uses the §7.2
   monogram. Hundreds/thousands of cold records use bounded/windowed rendering.
 - **States:** empty, loading, populated, no results, single/multi-selection,
@@ -1696,10 +1713,11 @@ every tinted rail before computing ratios.
 | `material:field` | `#FFFFFF` / `#23272C` | `#FFFFFF` | `#2A2D33` |
 | `material:overlay` | `#FFFFFF` / `#202429` | `#FFFFFF` | `#25282D` |
 | `material:favorite` | `#D2D2D2` / `#23272C` | white 50 % veil | white 6 % veil |
-| `material:footer` (media card, footer surfaces) | `#F3F8FE` / `#202429` | white 62 % veil | white 7 % veil |
+| `material:footer` (media card, footer surfaces) | `#F3F8FE` / `#202429` | white 62 % veil | white 5 % veil ¹ |
 | address fill / hover | white 48 % / 30 %; dark white 3 % / 7 % | white 55 % / 40 % | white 6 % / 10 % |
 | address border | ink 10 % / white 7 % | ink 4 % | white 4 % |
 | address accessory | ink 5 % / white 6 % | ink 6 % | white 6 % |
+| address IC | — | border ink 10 %, accessory 8 % | fill 8 % / hover 12 %, border 10 %, accessory 8 % |
 | `color:hairline` | `#C7C7C7` / `#2A2E34` | `#D0D0CC` | `#2C2F35` |
 | `color:tint.selected` | `#EEF2F9` / `#0F1318` | `#FFFFFF` + lift | white 9 % + lift |
 | `tint.selected` IC | `#E1E8F3` / `#0A0D12` | `#FFFFFF` + lift | `#35383F` + lift |
@@ -1707,6 +1725,10 @@ every tinted rail before computing ratios.
 | washes IC | 7 % / 10 % | ink 8 % / 12 % | white 8 % / 12 % |
 | `color:tint.accent` **(new)** | — (used `tint.selected`) | `#E6F1EE` | `#26403F` |
 | `tint.accent` IC | — | `#D9EAE5` | `#2B4A48` |
+
+¹ Paper proposed white 7 %; composited over the Slate-tinted dark rail it
+gave `ink.secondary` 5.73:1 against the unchanged 5.9:1 footer bar, so S2
+ships 5 % (6.08:1). Per the iteration policy the value moved, not the bar.
 
 - **`tint.accent`** is the single accent moment on white/overlay surfaces:
   command results, menu and library cursors, drop targets. It replaces the
@@ -1785,7 +1807,7 @@ second is replaced by the ring).
 |---|---|---|---|
 | S0 contract | [v2 contract](docs/roadmap/tasks/v2-contract.md) | §6 D11, §17.17, §18 | landed 2026-09-28 |
 | S1 system preferences | [system preferences](docs/roadmap/tasks/v2-system-prefs.md) | §3.4, §6, §15 | landed 2026-09-28 |
-| S2 tokens | [tokens](docs/roadmap/tasks/v2-tokens.md) | §2, §3, §5 | adopted |
+| S2 tokens | [tokens](docs/roadmap/tasks/v2-tokens.md) | §2, §3, §5 | landed 2026-09-28 |
 | S3 rail | [rail](docs/roadmap/tasks/v2-rail.md) | §4, §10.2–§10.4, §11.1, §11.4, §11.5, §11.10 | adopted |
 | S4 space paper | [space paper](docs/roadmap/tasks/v2-space-paper.md) | §11.3 | adopted |
 | S5 floating surfaces | [overlays](docs/roadmap/tasks/v2-overlays.md) | §8 palette width, §11.4, §11.12, §11.13, §11.16 | adopted |

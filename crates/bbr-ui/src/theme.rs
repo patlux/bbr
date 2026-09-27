@@ -197,27 +197,29 @@ impl Spacing {
     }
 }
 
-/// Corner radii (DESIGN.md §5): chrome stays in 6–10 px, never pill-cards;
-/// `radius:xl` (14) is reserved for the XL palette sheet.
+/// Corner radii (DESIGN.md §5, §18.3): chrome stays in 6–12 px, never
+/// pill-cards; `radius:xl` (16) is reserved for the ⌘T palette sheet. The
+/// content card keeps its own 10 pt radius (`card::CARD_RADIUS`, equal to
+/// `sp:content-inset`), independent of this scale.
 #[derive(Clone, Copy, Debug)]
 pub struct Radius;
 
 impl Radius {
-    /// §5 `radius:sm` 6 — small tile, profile chip, S-density rows.
+    /// §5 `radius:sm` 6 — S rows, small tiles, profile chip, menu cursors.
     pub const fn small(self) -> Pixels {
         px(6.0)
     }
-    /// §5 `radius:md` 8 — N/XL row tiles, buttons.
+    /// §5 `radius:md` 10 — N rows, Favorite tiles, buttons, menus.
     pub const fn medium(self) -> Pixels {
-        px(8.0)
-    }
-    /// §5 `radius:lg` 10 — command field, N palette, crash panel.
-    pub const fn large(self) -> Pixels {
         px(10.0)
     }
-    /// §5 `radius:xl` 14 — reserved for the XL palette sheet.
+    /// §5 `radius:lg` 12 — address field, palette field, panels, XL rows.
+    pub const fn large(self) -> Pixels {
+        px(12.0)
+    }
+    /// §5 `radius:xl` 16 — reserved for the ⌘T palette sheet.
     pub const fn xlarge(self) -> Pixels {
-        px(14.0)
+        px(16.0)
     }
     pub const fn full(self) -> Pixels {
         px(9999.0)
@@ -378,16 +380,22 @@ mod tests {
                 "spacing stays on the 4 pt grid"
             );
         }
-        for r in [
-            Radius.small(),
-            Radius.medium(),
-            Radius.large(),
-            Radius.xlarge(),
-        ] {
+        // §18.3 v2 scale: 6 / 10 / 12 / 16; chrome stays within 6–12 and 16
+        // is the palette sheet's alone.
+        assert_eq!(
+            [
+                Radius.small(),
+                Radius.medium(),
+                Radius.large(),
+                Radius.xlarge()
+            ],
+            [px(6.0), px(10.0), px(12.0), px(16.0)]
+        );
+        for r in [Radius.small(), Radius.medium(), Radius.large()] {
             let pts = f32::from(r);
             assert!(
-                (6.0..=14.0).contains(&pts),
-                "chrome radii stay 6–14 px, got {pts}"
+                (6.0..=12.0).contains(&pts),
+                "chrome radii stay 6–12 px, got {pts}"
             );
         }
     }
