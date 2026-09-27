@@ -52,14 +52,17 @@ pub(super) fn drive_tab_menu_scenarios(
     // `Move to Space` submenu parent row genuinely present (an empty
     // destination group is omitted whole). The tab population and the
     // sessions are untouched.
-    let profile = client.snapshot().expect("profile snapshot").active_profile;
+    // Earlier matrix blocks already created spaces, so only the delta is
+    // meaningful: exactly one more space than before this setup.
+    let before = client.snapshot().expect("profile snapshot");
+    let profile = before.active_profile;
     client
         .send_ok(&Request::CreateSpace {
             profile,
             title: "Perf Second".into(),
         })
         .expect("create perf second space");
-    wait_for_space_count(client, 2);
+    wait_for_space_count(client, before.spaces.len() + 1);
 
     // tab_context_menu_open × N: each sample is one production event-driven
     // open over the inactive tab row 0 (the deterministic fixture tab,
@@ -68,7 +71,11 @@ pub(super) fn drive_tab_menu_scenarios(
     // mask a degenerate clamp). The menu is closed between samples
     // (unmeasured) so every sample measures the open transition.
     let mut open_samples = Vec::with_capacity(config.interaction_samples);
-    let anchors = [[180.0, 220.0], [640.0, 400.0]];
+    // Both anchors must stay in-window for the full card (the probe compares
+    // the drawn anchor to the armed pointer): the 12-row menu is 344 pt tall
+    // in the 701 pt matrix window, so an anchor at y 400 would legitimately
+    // clamp to 349 and reject.
+    let anchors = [[180.0, 220.0], [640.0, 300.0]];
     for sample in 0..config.interaction_samples {
         let point = anchors[sample % anchors.len()];
         let measured = benchmark_tab_menu_open(client, since, *operation, 0, point);

@@ -130,9 +130,12 @@ pub(crate) fn benchmark_context_menu_bookmark(
     );
     assert_eq!(snapshot.active_web_view, Some(expected_view));
     assert_eq!(snapshot.command_bar_mode, CommandBarMode::Inactive);
+    // A toggle flips exactly one record; the store may already hold the
+    // seeded Saved Pages corpus of earlier scenarios, so only the delta is
+    // meaningful.
     assert_eq!(
-        snapshot.store.saved_pages_count,
-        if saved_before == 0 { 1 } else { 0 },
+        snapshot.store.saved_pages_count.abs_diff(saved_before),
+        1,
         "the B2 toggle flipped exactly one record"
     );
     assert_eq!(snapshot.engine_sessions, before.engine_sessions);

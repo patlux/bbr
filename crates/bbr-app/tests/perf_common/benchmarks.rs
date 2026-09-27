@@ -860,6 +860,10 @@ pub(crate) fn benchmark_child_tab_swipe_return(
     sessions_after: usize,
 ) -> PresentationMeasurement {
     let operation_id = BenchmarkOperationId(operation);
+    let sessions_before = client
+        .snapshot()
+        .expect("child-tab pre-return snapshot")
+        .engine_sessions;
     client
         .send_ok(&Request::BenchmarkChildTabSwipeReturn {
             operation_id,
@@ -884,8 +888,13 @@ pub(crate) fn benchmark_child_tab_swipe_return(
         Some(opener_view),
         "opener presented by identity"
     );
+    // The documented contract is a delta: exactly the child's session is
+    // destroyed and every other session (the warm opener, other warm tabs)
+    // survives. An absolute count would depend on unrelated warm tabs the
+    // matrix opened earlier.
     assert_eq!(
-        snapshot.engine_sessions, sessions_after,
+        sessions_before - snapshot.engine_sessions,
+        sessions_after,
         "child session destroyed, opener session reused warm"
     );
     assert!(
