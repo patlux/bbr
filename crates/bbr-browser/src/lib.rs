@@ -85,6 +85,8 @@ mod controller_tests;
 #[cfg(test)]
 mod hydration_tests;
 #[cfg(test)]
+mod organization_pin_tests;
+#[cfg(test)]
 mod organization_tests;
 #[cfg(test)]
 mod responsiveness_tests;

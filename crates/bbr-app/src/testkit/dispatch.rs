@@ -738,6 +738,7 @@ pub(crate) fn dispatch(
         | Request::ClickFolderMember { .. }
         | Request::ClickFolderMemberClose { .. }
         | Request::MoveTabIntoFolder { .. }
+        | Request::RemoveTabFromFolder { .. }
         | Request::SetSpaceTheme { .. } => {
             unreachable!("U2 sidebar requests route through dispatch_u2")
         }

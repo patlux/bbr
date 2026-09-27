@@ -126,6 +126,11 @@ fn folder_submenu_keyboard_traversal_preserves_source_and_commits() {
             "space membership unchanged"
         );
         assert_eq!(moved.index, 0, "order unchanged");
+        assert!(
+            moved.pinned,
+            "a folder is the grouped form of pinned tabs: grouping pins"
+        );
+        assert_eq!(committed.folders[0].members, vec![source_tab]);
         assert_eq!(
             moved.web_view,
             before

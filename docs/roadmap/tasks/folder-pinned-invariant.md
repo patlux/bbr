@@ -9,7 +9,7 @@ Folder membership and pinned-tab state express one product concept end to end: e
 ## Scope
 
 - Establish one portable invariant: `folder member => pinned` for every tab identity.
-- Route folder insertion, removal/ungrouping, explicit unpinning, drag/drop, keyboard organization, reconciliation, and restore through one transition matrix. Moving a tab into a folder pins it atomically; removing a member from a folder returns it to the loose pinned rows; explicitly unpinning a member removes its folder membership atomically. The separate Folder-menu packet must settle container-delete semantics before deletion may consume this transition authority.
+- Route folder insertion, removal/ungrouping, explicit unpinning, drag/drop, keyboard organization, reconciliation, and restore through one transition matrix. Moving a tab into a folder pins it atomically; removing a member from a folder returns it to the loose pinned rows; explicitly unpinning a member removes its folder membership atomically. Container deletion is settled as Unpack (Patrick, 2026-09-27): the [Folder-menu packet](folder-context-menu.md) adds the row and consumes the ungroup transition; no folder row closes tabs.
 - Keep loose pinned rows ordered before folder rows inside the common organized area; this packet does not introduce arbitrary mixed row ordering or folder nesting.
 - Make lifecycle budgeting preserve every folder member through the same pinned authority rather than a UI-only exception.
 - Add lower-level invariant tests, production-path typed snapshots, real-app organization/dense/persistence E2E, and the matching roadmap/architecture updates.
@@ -42,15 +42,15 @@ Integration order:       before any later Folder-menu behavior that assumes grou
 
 ### Unit and contract
 
-- [ ] Folder insertion pins atomically; explicit ungroup returns members to loose pinned rows; explicit unpin removes membership; failed transitions leave both authorities unchanged. Folder deletion remains unavailable until its own packet settles retain/close semantics.
-- [ ] Reconciliation and restore cannot produce an unpinned folder member, including unknown/deleted tabs and cross-space rejection paths.
-- [ ] Session budgeting protects folder members because their canonical tab state is pinned, with no UI- or folder-store-only keep exception.
+- [x] Folder insertion pins atomically; explicit ungroup returns members to loose pinned rows; explicit unpin removes membership; failed transitions leave both authorities unchanged. Folder deletion (Unpack) is left to the folder-menu packet, which consumes the ungroup transition.
+- [x] Reconciliation and restore cannot produce an unpinned folder member, including unknown/deleted tabs and cross-space rejection paths.
+- [x] Session budgeting protects folder members because their canonical tab state is pinned, with no UI- or folder-store-only keep exception.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-organize` proves pointer and keyboard grouping, ungrouping, unpinning, legal/illegal boundaries, focus, exact identities, and profile isolation through the production path.
-- [ ] `just e2e-shell-dense` proves folder members remain live under the bounded-session policy and exact row/window geometry remains unchanged.
-- [ ] `just e2e-shell-persistence` proves the invariant after graceful and force-quit restore without eager session creation.
+- [x] `just e2e-shell-organize` proves pointer and keyboard grouping, ungrouping, unpinning, legal/illegal boundaries, focus, exact identities, and profile isolation through the production path.
+- [x] `just e2e-shell-dense` proves folder members remain live under the bounded-session policy and exact row/window geometry remains unchanged.
+- [x] `just e2e-shell-persistence` proves the invariant after graceful and force-quit restore without eager session creation.
 
 ### Performance
 
@@ -89,21 +89,53 @@ Stop fail-closed if the transition matrix conflicts with an existing explicit pr
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: `folder member => pinned` holds end to end. FolderStore owns the one
+  grouping transition (validate, then pin in the Browser, then record the
+  membership); reconciliation drops unpinned members; the checker detects an
+  unpinned member; lifecycle budgeting keeps members through their pinned
+  state with no folder-only exception. Presentation is unchanged by design:
+  the loose pinned block still also lists grouped tabs (follow-up item in
+  the UI design-system track).
+Commits: this implementation commit on main (after 90eaf4f7).
+Functional evidence: bbr-domain 127 tests (grouping pins atomically, the
+  membership primitive rejects unpinned facts, rejected groupings leave
+  browser and store unchanged, ungroup keeps the pin, unpin ends
+  membership); bbr-browser 265 tests incl. 26 organization tests (pin
+  index reporting, id-keyed grouping in a non-active space, controller
+  unpin ends membership, budget spares the LRU member). All new tests were
+  run against a simulated pre-slice store (no pin, pinned ignored): 4
+  domain, 5 browser and 3 E2E tests failed.
+Real-app E2E: e2e-shell-organize 2/2 + drag-chip 4/4 + new folder-pins 1/1
+  (pointer and keyboard Tab-menu grouping with TabPinned evidence, focus,
+  ungroup through the testkit organization seam because no user entry
+  exists before the folder menu, keyboard and pin-control unpin, unknown
+  folder, cross-space and cross-profile rejection, exact TabId/WebViewId/
+  space/profile); e2e-shell-dense 3/3 + edge 1/1 (the LRU member stays warm,
+  the next LRU tab is suspended, window bounded); e2e-shell-persistence 6/6
+  (graceful and force-quit restore keep both grouping pins, no restored
+  membership, no eager session); sidebar 15/15 and tab-menu 12/12 assert
+  the pin; full `just e2e` aggregate 30/30 in 304 s, plus e2e-peek 7/7 and
+  e2e-gallery 45/45.
+Performance evidence: open. The performance-execution override forbids
+  running `just e2e-perf`; static check only: the U2 perf driver groups
+  tab 0, which stays at index 0 when pinned, and the following dense seed
+  pins 0..10 anyway, so the scenario state stays coherent.
+Roadmap/documentation updates: DESIGN §11.11 and §17.15, Phase 4 prose, the
+  UI design-system track (folder-menu deletion wording, loose-pinned
+  presentation follow-up), current delivery, ROADMAP.
+Open blockers and non-goals: performance gate blocked by the override;
+  loose-pinned-block deduplication and the folder menu stay separate.
+Worktree state: main, serial writer; the e2e_shell_hover dark-hover race
+  (row 0 still loading) got a title wait in a separate test commit.
 
-Planning/read-only:
-Implementation:
-Test execution:
-Review:
-Remediation:
-Waiting/retries:
-Total elapsed:
-Human intervention:
+Planning/read-only: ~25 min (estimate)
+Implementation: ~60 min (estimate)
+Test execution: unit/contract seconds; targeted E2E ~1 min; affected suites
+  ~6 min; two full aggregates 316 s and 304 s (measured)
+Review: orchestrator self-review; no independent subagent review without
+  Patrick's opt-in
+Remediation: none
+Waiting/retries: one hover-suite race diagnosed and synchronized
+Total elapsed: ~2 h (estimate)
+Human intervention: none
 ```

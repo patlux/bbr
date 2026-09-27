@@ -360,3 +360,108 @@ fn keyboard_navigation_scrolls_large_collections_without_wrapping() {
 
     finish(result, &mut harness, &socket, &token);
 }
+
+/// The folder-membership invariant under the bounded-session policy (task
+/// packet `folder-pinned-invariant`): grouping the least recently used warm
+/// regular tab pins it in the same transition, so the production budget
+/// keeps it live through its canonical pinned state (no folder-only keep
+/// exception) and suspends the next least recently used tab instead. The
+/// dense window stays bounded and the pinned block grows by exactly the
+/// grouped identity.
+#[test]
+#[ignore]
+fn dense_folder_members_stay_live_under_the_session_budget() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+    let (_fixtures, page_one, page_two) = fixtures();
+    let (mut harness, socket, token) = spawn_harness("dense-folder", &page_one);
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let _replay = client.attach(None).expect("attach");
+
+        // 120 identities, 10 pinned, 20 live: warm regular tabs 110..119.
+        seed_dense(&mut client, &page_one, 120, 10, 20, 60);
+        client
+            .send_ok(&Request::EnforceSessionBudget { cap: 20 })
+            .expect("enforce budget");
+        flush(&mut client);
+        let seeded = client.snapshot().expect("seeded snapshot");
+        assert_dense_contract(&seeded, 120, 10, 20);
+        let id_at = |snap: &bbr_testkit::protocol::Snapshot, index: usize| {
+            snap.all_tabs
+                .iter()
+                .find(|tab| tab.space == snap.active_space && tab.index == index)
+                .expect("dense identity")
+                .id
+        };
+        let state = |snap: &bbr_testkit::protocol::Snapshot, id: u64| {
+            let tab = snap
+                .all_tabs
+                .iter()
+                .find(|tab| tab.id == id)
+                .expect("identity");
+            (tab.pinned, tab.lifecycle.clone(), tab.web_view.is_some())
+        };
+        let (member, next_lru) = (id_at(&seeded, 110), id_at(&seeded, 111));
+        let member_view = seeded.tabs[110].web_view;
+
+        client
+            .send_ok(&dsl::click_footer_plus())
+            .expect("open plus menu");
+        client
+            .send_ok(&dsl::click_plus_menu_item(1))
+            .expect("commit New Folder");
+        flush(&mut client);
+        let folder = client.snapshot().expect("folder snapshot").folders[0].id;
+        client
+            .send_ok(&dsl::move_tab_into_folder(110, folder))
+            .expect("group the least recently used warm tab");
+        flush(&mut client);
+        let grouped = client.snapshot().expect("grouped snapshot");
+        assert_eq!(grouped.folders[0].members, vec![member]);
+        assert_eq!(id_at(&grouped, 10), member, "pinned at the region end");
+        assert_eq!(grouped.pinned_count, 11);
+        assert_eq!(grouped.tabs[10].web_view, member_view, "same live session");
+        assert_eq!(
+            grouped.engine_sessions, 20,
+            "grouping never churns sessions"
+        );
+        assert_eq!(grouped.dense.pinned_rows, 11);
+        assert_eq!(grouped.dense.item_count, 109);
+        assert!(grouped.dense.rendered_rows <= WINDOW_ROWS, "window bounded");
+        assert_eq!(grouped.active_tab_index, Some(0), "selection unchanged");
+
+        // One more live tab exceeds the cap; the budget must spare the
+        // pinned folder member and suspend the next least recently used.
+        let mut since = 0;
+        open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
+        client
+            .send_ok(&Request::EnforceSessionBudget { cap: 20 })
+            .expect("enforce budget again");
+        flush(&mut client);
+        let budgeted = client.snapshot().expect("budgeted snapshot");
+        assert_eq!(budgeted.engine_sessions, 20, "the cap holds");
+        assert_eq!(
+            state(&budgeted, member),
+            (true, "warm".to_string(), true),
+            "the folder member stays live through its pinned state"
+        );
+        assert_eq!(
+            state(&budgeted, next_lru),
+            (false, "suspended".to_string(), false),
+            "the next least recently used regular tab is suspended instead"
+        );
+        assert_eq!(budgeted.folders[0].members, vec![member]);
+        assert!(budgeted.dense.rendered_rows <= WINDOW_ROWS);
+
+        client.send_ok(&Request::Quit).expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success());
+    }));
+
+    finish(result, &mut harness, &socket, &token);
+}

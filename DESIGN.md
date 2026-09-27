@@ -922,16 +922,21 @@ scheme; a title consisting only of whitespace is treated as empty.
 - **Assert ids:** `bbr-section-favorites`, `bbr-favorites`,
   `bbr-fav-<n>`, `bbr-fav-icon-<n>`.
 
-### 11.11 Folders (Implemented presentation; pin invariant planned)
+### 11.11 Folders (Implemented; pin invariant enforced)
 
 A folder is the grouped presentation of pinned tabs inside the common
-organized area (§11.2/§11.4), not a separate product region. The current
-runtime already presents folder rows without a gap before the single organized
-hairline, but folder membership and `Tab::pinned` are still independent
-portable authorities. The bounded
-[folder-membership invariant packet](docs/roadmap/tasks/folder-pinned-invariant.md)
-owns that implementation gap; until it lands, this paragraph is product intent,
-not a claim that every existing folder member is pinned.
+organized area (§11.2/§11.4), not a separate product region. Folder rows
+render without a gap before the single organized hairline, and the portable
+invariant `folder member => pinned` holds
+([folder-membership invariant packet](docs/roadmap/tasks/folder-pinned-invariant.md)):
+grouping a regular tab pins it in the same transition (it moves to the end of
+the pinned region, reported as an ordinary pin); removing a member from its
+folder leaves a loose pinned tab; unpinning a member through any path ends
+its membership; a rejected grouping changes neither. Folders are
+session-local, so a restore never recreates a membership. Open presentation
+gap: the loose pinned block still also lists grouped tabs; excluding them
+(with the drag-slot and keyboard traversal geometry) is owned by the
+[UI design-system track](docs/roadmap/tracks/ui-design-system.md).
 
 - **Anatomy:** a `type:badge` "Folders" label (`bbr-section-folders`,
   hidden when empty) over folder rows (`bbr-folders`): `[folder glyph §7,
@@ -1460,13 +1465,15 @@ production integration).
     a permissions indicator remain later accessories. Owned by the
     [address field and space identity packet](docs/roadmap/tasks/address-field-space-identity.md);
     until it lands the shipped slot stays empty.
-15. ~~**Folder membership versus pinned state**~~ **Resolved as product
-    direction (2026-08-14), implementation open:** folders are grouped pinned
-    tabs in the common organized area. The current `FolderStore` does not
-    mutate `Tab::pinned`, so the portable invariant, lifecycle protection,
-    ungroup/delete behavior, restore reconciliation, and production E2E remain
-    owned by the
-    [folder-membership invariant packet](docs/roadmap/tasks/folder-pinned-invariant.md).
+15. ~~**Folder membership versus pinned state**~~ **Resolved (2026-08-14),
+    invariant implemented (2026-09-27):** folders are grouped pinned tabs in
+    the common organized area. The domain `FolderStore` pins while grouping,
+    reconciliation drops unpinned members, lifecycle budgeting protects
+    members as pinned tabs, and deleting a folder is Unpack (members stay
+    loose pinned tabs; the menu row belongs to the
+    [folder context menu](docs/roadmap/tasks/folder-context-menu.md)). The
+    [folder-membership invariant packet](docs/roadmap/tasks/folder-pinned-invariant.md)
+    keeps only its performance gate open.
 
 16. **Design-branch adoption** — **resolved as product direction
     (2026-09-27), implementation open.** The Paper exploration preserved on

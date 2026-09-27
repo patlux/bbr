@@ -89,9 +89,12 @@ fn folders_region_disclosure_and_nested_rows() {
                 .any(|id| id.starts_with("bbr-folder-item")),
             "collapsed folders expose no nested rows"
         );
-        // The member tab keeps its space membership and session.
+        // The member tab keeps its space membership and session, and is
+        // pinned by the grouping (folder member => pinned).
         assert_eq!(with_member.tabs.len(), 2);
         assert_eq!(with_member.engine_sessions, 2);
+        assert!(with_member.tabs[0].pinned, "grouping pins the member");
+        assert_eq!(with_member.pinned_count, 1);
 
         // Pointer disclosure toggle: the nested rows render with the
         // deterministic `bbr-folder-item-<n>-<m>` ids and their slots.

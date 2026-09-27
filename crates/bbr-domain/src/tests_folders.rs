@@ -3,7 +3,7 @@
 //! favorites ordering, reconciliation after browser mutations, and the
 //! public invariant checker. Portable: no macOS frameworks or display server.
 
-use crate::folders::{FolderError, FolderStore};
+use crate::folders::{FolderError, FolderStore, TabFacts};
 use crate::{Browser, FolderId, SpaceId, TabId};
 
 /// A browser with one profile, one space, and three tabs [t1, t2, t3].
@@ -55,12 +55,14 @@ fn create_folder_in_unknown_space_is_rejected_whole() {
 }
 
 #[test]
-fn folders_are_session_local_and_never_touch_the_browser() {
-    let (b, s, tabs) = populated();
+fn folders_touch_the_browser_only_by_pinning() {
+    let (mut b, s, tabs) = populated();
+    b.pin_tab(s, tabs[0]).unwrap();
     let mut store = FolderStore::new();
     let before = b.clone();
     let f = store.create_folder(&b, s, "Work").unwrap();
-    store.move_tab_into_folder(&b, f, tabs[0]).unwrap();
+    // Grouping an already pinned tab needs no browser change.
+    assert_eq!(store.move_tab_into_folder(&mut b, f, tabs[0]), Ok(false));
     store.favorite_toggle(&b, tabs[1]).unwrap();
     // The browser state is byte-for-byte untouched by folder operations.
     assert_eq!(b, before);
@@ -70,41 +72,116 @@ fn folders_are_session_local_and_never_touch_the_browser() {
 // ---- Membership -----------------------------------------------------------
 
 #[test]
-fn move_tab_into_folder_keeps_space_membership_and_order() {
+fn grouping_pins_atomically_and_keeps_space_membership() {
+    let (mut b, s, tabs) = populated();
+    let mut store = FolderStore::new();
+    let f = store.create_folder(&b, s, "Work").unwrap();
+    assert_eq!(store.move_tab_into_folder(&mut b, f, tabs[0]), Ok(true));
+    assert_eq!(store.move_tab_into_folder(&mut b, f, tabs[2]), Ok(true));
+    let folder = store.folder(f).unwrap();
+    assert_eq!(folder.tabs, vec![tabs[0], tabs[2]]);
+    // Both members are pinned: the grouped tab moved to the end of the
+    // pinned region; identity and space membership are untouched.
+    let space = b.space(s).unwrap();
+    assert_eq!(space.tabs, vec![tabs[0], tabs[2], tabs[1]]);
+    assert_eq!(space.pinned_count, 2);
+    assert!(b.tab(tabs[0]).unwrap().pinned && b.tab(tabs[2]).unwrap().pinned);
+    assert!(!b.tab(tabs[1]).unwrap().pinned, "non-members stay regular");
+    assert_eq!(b.tab(tabs[2]).unwrap().space, s);
+    store.check_invariants(&b).unwrap();
+}
+
+#[test]
+fn a_membership_primitive_never_creates_an_unpinned_member() {
     let (b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
-    store.move_tab_into_folder(&b, f, tabs[0]).unwrap();
-    store.move_tab_into_folder(&b, f, tabs[2]).unwrap();
-    let folder = store.folder(f).unwrap();
-    assert_eq!(folder.tabs, vec![tabs[0], tabs[2]]);
-    // Space membership and ordering are untouched (membership is a grouping).
-    assert_eq!(b.space(s).unwrap().tabs, tabs);
-    assert_eq!(b.tab(tabs[0]).unwrap().space, s);
+    let before = store.clone();
+    assert_eq!(
+        store.move_membership(
+            f,
+            tabs[0],
+            TabFacts {
+                space: s,
+                pinned: false
+            }
+        ),
+        Err(FolderError::TabNotPinned(tabs[0]))
+    );
+    assert_eq!(store, before, "rejected whole");
+}
+
+#[test]
+fn rejected_grouping_leaves_the_browser_and_store_unchanged() {
+    let (mut b, _s, tabs) = populated();
+    let s2 = other_space(&mut b);
+    let mut store = FolderStore::new();
+    let f = store.create_folder(&b, s2, "Other").unwrap();
+    let (browser_before, store_before) = (b.clone(), store.clone());
+    assert!(matches!(
+        store.move_tab_into_folder(&mut b, f, tabs[0]),
+        Err(FolderError::TabNotInFolderSpace { .. })
+    ));
+    assert!(matches!(
+        store.move_tab_into_folder(&mut b, FolderId(99), tabs[0]),
+        Err(FolderError::UnknownFolder(_))
+    ));
+    assert_eq!(b, browser_before, "the tab was not pinned");
+    assert_eq!(store, store_before);
+}
+
+#[test]
+fn ungrouping_leaves_a_loose_pinned_tab() {
+    let (mut b, s, tabs) = populated();
+    let mut store = FolderStore::new();
+    let f = store.create_folder(&b, s, "Work").unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[1]).unwrap();
+    store.remove_tab_from_folder(f, tabs[1]).unwrap();
+    assert!(store.folder(f).unwrap().tabs.is_empty());
+    assert!(b.tab(tabs[1]).unwrap().pinned, "ungroup keeps the pin");
+    assert_eq!(store.reconcile(&b), 0);
+    store.check_invariants(&b).unwrap();
+}
+
+#[test]
+fn unpinning_a_member_ends_its_membership() {
+    let (mut b, s, tabs) = populated();
+    let mut store = FolderStore::new();
+    let f = store.create_folder(&b, s, "Work").unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[1]).unwrap();
+    b.unpin_tab(s, tabs[0]).unwrap();
+    assert!(
+        store.check_invariants(&b).is_err(),
+        "an unpinned member is a detected violation until reconciled"
+    );
+    assert_eq!(store.reconcile(&b), 1);
+    assert_eq!(store.folder(f).unwrap().tabs, vec![tabs[1]]);
+    assert!(!b.tab(tabs[0]).unwrap().pinned, "the unpin stands");
     store.check_invariants(&b).unwrap();
 }
 
 #[test]
 fn moving_into_the_same_folder_is_a_noop() {
-    let (b, s, tabs) = populated();
+    let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
-    store.move_tab_into_folder(&b, f, tabs[0]).unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
     let before = store.clone();
-    store.move_tab_into_folder(&b, f, tabs[0]).unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
     assert_eq!(store, before, "no-op must not reorder or duplicate");
     store.check_invariants(&b).unwrap();
 }
 
 #[test]
 fn moving_between_folders_leaves_the_previous_folder() {
-    let (b, s, tabs) = populated();
+    let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let work = store.create_folder(&b, s, "Work").unwrap();
     let docs = store.create_folder(&b, s, "Docs").unwrap();
-    store.move_tab_into_folder(&b, work, tabs[0]).unwrap();
-    store.move_tab_into_folder(&b, work, tabs[1]).unwrap();
-    store.move_tab_into_folder(&b, docs, tabs[0]).unwrap();
+    store.move_tab_into_folder(&mut b, work, tabs[0]).unwrap();
+    store.move_tab_into_folder(&mut b, work, tabs[1]).unwrap();
+    store.move_tab_into_folder(&mut b, docs, tabs[0]).unwrap();
     assert_eq!(store.folder(work).unwrap().tabs, vec![tabs[1]]);
     assert_eq!(store.folder(docs).unwrap().tabs, vec![tabs[0]]);
     store.check_invariants(&b).unwrap();
@@ -120,7 +197,7 @@ fn tab_of_another_space_is_rejected_whole() {
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
     assert!(matches!(
-        store.move_tab_into_folder(&b, f, foreign),
+        store.move_tab_into_folder(&mut b, f, foreign),
         Err(FolderError::TabNotInFolderSpace { .. })
     ));
     assert!(
@@ -131,7 +208,7 @@ fn tab_of_another_space_is_rejected_whole() {
     // A folder of the other space accepts only that space's tabs.
     let f2 = store.create_folder(&b, s2, "Other").unwrap();
     assert!(matches!(
-        store.move_tab_into_folder(&b, f2, tabs[0]),
+        store.move_tab_into_folder(&mut b, f2, tabs[0]),
         Err(FolderError::TabNotInFolderSpace { .. })
     ));
     assert!(store.folder(f2).unwrap().tabs.is_empty());
@@ -140,15 +217,15 @@ fn tab_of_another_space_is_rejected_whole() {
 
 #[test]
 fn unknown_folder_or_tab_are_rejected() {
-    let (b, s, tabs) = populated();
+    let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
     assert!(matches!(
-        store.move_tab_into_folder(&b, FolderId(99), tabs[0]),
+        store.move_tab_into_folder(&mut b, FolderId(99), tabs[0]),
         Err(FolderError::UnknownFolder(FolderId(99)))
     ));
     assert!(matches!(
-        store.move_tab_into_folder(&b, f, TabId(999)),
+        store.move_tab_into_folder(&mut b, f, TabId(999)),
         Err(FolderError::UnknownTab(TabId(999)))
     ));
     assert!(matches!(
@@ -160,10 +237,10 @@ fn unknown_folder_or_tab_are_rejected() {
 
 #[test]
 fn remove_tab_from_folder_is_idempotent() {
-    let (b, s, tabs) = populated();
+    let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
-    store.move_tab_into_folder(&b, f, tabs[0]).unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
     store.remove_tab_from_folder(f, tabs[0]).unwrap();
     assert!(store.folder(f).unwrap().tabs.is_empty());
     // Removing a non-member is a no-op, not an error.
@@ -274,8 +351,8 @@ fn reconcile_drops_memberships_for_closed_tabs() {
     let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
-    store.move_tab_into_folder(&b, f, tabs[0]).unwrap();
-    store.move_tab_into_folder(&b, f, tabs[1]).unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[1]).unwrap();
     b.close_tab(s, tabs[0]).unwrap();
     assert_eq!(
         store.folder(f).unwrap().tabs.len(),
@@ -294,8 +371,8 @@ fn reconcile_drops_memberships_for_moved_tabs() {
     let s2 = other_space(&mut b);
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
-    store.move_tab_into_folder(&b, f, tabs[0]).unwrap();
-    store.move_tab_into_folder(&b, f, tabs[1]).unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[1]).unwrap();
     b.move_tab(tabs[0], s2).unwrap();
     let removed = store.reconcile(&b);
     assert_eq!(removed, 1);
@@ -305,11 +382,11 @@ fn reconcile_drops_memberships_for_moved_tabs() {
 
 #[test]
 fn reconcile_never_removes_valid_members() {
-    let (b, s, tabs) = populated();
+    let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
     for tab in &tabs {
-        store.move_tab_into_folder(&b, f, *tab).unwrap();
+        store.move_tab_into_folder(&mut b, f, *tab).unwrap();
     }
     assert_eq!(store.reconcile(&b), 0, "all members still valid");
     assert_eq!(store.folder(f).unwrap().tabs.len(), 3);
@@ -322,12 +399,17 @@ fn reconcile_never_removes_valid_members() {
 fn invariants_reject_duplicate_membership_across_folders() {
     // Mutations forbid a tab in two folders; the checker must still detect a
     // forged violation (the fields are pub(crate) exactly like Browser's).
-    let (b, s, tabs) = populated();
+    let (mut b, s, tabs) = populated();
+    b.pin_tab(s, tabs[0]).unwrap();
+    let facts = TabFacts {
+        space: s,
+        pinned: true,
+    };
     let mut store = FolderStore::new();
     let f1 = store.create_folder(&b, s, "One").unwrap();
     let f2 = store.create_folder(&b, s, "Two").unwrap();
-    store.move_membership(f1, tabs[0], s).unwrap();
-    store.move_membership(f2, tabs[0], s).unwrap();
+    store.move_membership(f1, tabs[0], facts).unwrap();
+    store.move_membership(f2, tabs[0], facts).unwrap();
     store.check_invariants(&b).unwrap();
     // Forge: push the same tab into a second folder behind the API's back.
     store.folders[0].tabs.push(tabs[0]);
@@ -353,7 +435,7 @@ fn invariants_detect_stale_membership_without_reconcile() {
     let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
-    store.move_tab_into_folder(&b, f, tabs[0]).unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
     b.close_tab(s, tabs[0]).unwrap();
     assert!(
         store.check_invariants(&b).is_err(),
@@ -368,7 +450,16 @@ fn store_is_a_plain_value() {
     let (b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
-    store.move_membership(f, tabs[0], s).unwrap();
+    store
+        .move_membership(
+            f,
+            tabs[0],
+            TabFacts {
+                space: s,
+                pinned: true,
+            },
+        )
+        .unwrap();
     store.favorite_toggle(&b, tabs[1]).unwrap();
     assert_eq!(store.clone(), store);
 }

@@ -224,11 +224,21 @@ pub(crate) fn dispatch_u2(
         }
 
         // §11.11 move-into-folder through the L5 `MoveIntoFolder` command
-        // path (the drag drop into a folder row routes through the same
-        // command). `folder` is the stable domain folder id.
+        // path (grouping pins a regular tab in the same transition).
+        // `folder` is the stable domain folder id.
         Request::MoveTabIntoFolder { index, folder } => {
             with_app(window, app, cx, |view, window, cx| {
                 view.move_tab_into_folder(*index, FolderId(*folder), window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+
+        // Ungroup through the same organization authority: the member
+        // stays a loose pinned tab.
+        Request::RemoveTabFromFolder { index, folder } => {
+            with_app(window, app, cx, |view, window, cx| {
+                view.remove_tab_from_folder(*index, FolderId(*folder), window, cx);
                 Response::Ok
             })
             .unwrap_or_else(err_response)

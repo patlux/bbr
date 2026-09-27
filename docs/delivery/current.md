@@ -16,7 +16,7 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Target Orchestrator session | `01a062b1-9945-7d1b-aa68-02a11d6084fd`; reverify pane/session activity before any ownership transfer |
 | Preserved design checkpoint | `design/browser-shell-paper@414c97c7a5139cf6070a54138969a3bb34403bc2`; design intent only, not runtime acceptance |
 
-The UI contract conformance slice is integrated on `main` (2026-09-27); the folder membership/pinned invariant is the next serial slice. Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
+The UI contract conformance slice and the folder membership/pinned invariant are integrated on `main` (2026-09-27); the invariant's performance gate waits for the override to lift. The next serial slice is the seated content card (DESIGN-CARD). Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
 
 ## Status vocabulary
 
@@ -40,7 +40,7 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
 | CONTROL-RECONCILE | Product/delivery authority reconciliation | `closed` | commits `d2b507f5` and `f8e945c2`; locally integrated to `main` | none; reconciliation complete | [Roadmap maintenance](../roadmap/README.md) | Closed: worktree/index/head graph, script tests, targeted UI test/Clippy, ancestry, sessions, worktrees, and dirty-state preservation audited |
-| FOLDER-PIN-INVARIANT | Folder membership and pinned-state invariant | `ready` | none | none | [folder membership pins tabs](../roadmap/tasks/folder-pinned-invariant.md) | Activated by Patrick 2026-09-27; next serial slice on `main` now that UI-CONFORMANCE is integrated |
+| FOLDER-PIN-INVARIANT | Folder membership and pinned-state invariant | `blocked` | `main` (serial, no worktree) | none; implementation integrated | [folder membership pins tabs](../roadmap/tasks/folder-pinned-invariant.md) | Functional gates green on `main` (`just verify`, testkit Clippy, organize/dense/persistence, full `just e2e`); only `just e2e-perf` remains, blocked by the performance-execution override |
 | UI-CONFORMANCE | UI contract conformance fixes | `integrated` | `main` (serial, no worktree) | none; slice complete | [UI contract conformance](../roadmap/tasks/ui-contract-conformance.md) | Integrated on `main`: `just verify`, testkit Clippy, affected suites, `e2e-peek`, `e2e-gallery` and the full `just e2e` aggregate green; orchestrator self-review (no independent subagent review without Patrick's opt-in) |
 | RA-MEDIA | Media-session capability and Sidebar media control | `planned` | none | none | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Prioritize independently after an explicit delivery decision; capability contract first |
 
@@ -58,7 +58,7 @@ The former post-F2a and Daily-driver waves are closed historical evidence. Their
 
 1. `CONTROL-RECONCILE` is closed; its exact durable-contract commit is `d2b507f56b9da068e7df0aa08c3f8b12cdec506c`, and no writer remains active.
 2. Do not infer a product lane from an idle historical worktree or session. Every new writer requires a fresh exact-base, status, process, lock, and ownership preflight.
-3. If activated, `FOLDER-PIN-INVARIANT` lands before any Folder-menu behavior that assumes folders contain pinned tabs.
+3. `FOLDER-PIN-INVARIANT` has landed functionally, so Folder-menu behavior may assume folders contain pinned tabs; `UI-CONFORMANCE` precedes the design-branch packets (`DESIGN-CARD` → `DESIGN-ADDRESS` → `DESIGN-FAVORITES`).
 4. RA-MEDIA remains a separate capability-first sequence and does not depend on the folder invariant.
 5. Split stays blocked; no preflight, inspection, port, review, or mutation of `bbr-split-app-composition` is authorized.
 6. GUI suites remain host-exclusive through the repository lock. Performance execution remains deferred until Patrick removes the active override.
@@ -67,10 +67,10 @@ The former post-F2a and Daily-driver waves are closed historical evidence. Their
 
 | ID | Status | Depends on / boundary |
 |---|---|---|
-| DESIGN-CARD | `planned` | [Seated content card](../roadmap/tasks/seated-content-card.md); after UI-CONFORMANCE |
+| DESIGN-CARD | `ready` | [Seated content card](../roadmap/tasks/seated-content-card.md); UI-CONFORMANCE integrated |
 | DESIGN-ADDRESS | `planned` | [Address field and space identity](../roadmap/tasks/address-field-space-identity.md); after DESIGN-CARD |
 | DESIGN-FAVORITES | `planned` | [Favorites grid and drag offers](../roadmap/tasks/favorites-drag-offers.md); after FOLDER-PIN-INVARIANT and DESIGN-ADDRESS |
-| DD-FOLDER-MENU | `blocked` | Requires the integrated shared menu seam plus the settled folder command/delete truth; if it presents folders as grouped pins, it also waits for `FOLDER-PIN-INVARIANT` |
+| DD-FOLDER-MENU | `blocked` | Requires the integrated shared menu seam; the delete truth is settled (Unpack) and `FOLDER-PIN-INVARIANT` is integrated |
 | DD-SHIFT-LINK | `planned` | Shift-modified link behavior remains intentionally unclassified; no writer may infer foreground/window semantics |
 | DD-MANUAL-SMOKE | `planned` | Requires a fresh deterministic package; representative-site smoke supplements rather than replaces automation |
 

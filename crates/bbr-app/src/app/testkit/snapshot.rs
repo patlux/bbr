@@ -455,6 +455,12 @@ impl BbrApp {
                     tab_count: row.count,
                     expanded: row.expanded,
                     count_revealed: row.reveal_count,
+                    members: organization
+                        .folders
+                        .iter()
+                        .find(|folder| folder.id == row.id)
+                        .map(|folder| folder.members.iter().map(|tab| tab.0).collect())
+                        .unwrap_or_default(),
                 })
                 .collect(),
             download_rows,

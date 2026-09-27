@@ -13,7 +13,7 @@ use crate::{
 };
 
 /// A controller with the default space and three open tabs.
-fn populated() -> (crate::BrowserController, SpaceId, Vec<TabId>) {
+pub(crate) fn populated() -> (crate::BrowserController, SpaceId, Vec<TabId>) {
     let (mut c, _h) = plain();
     let space = c.snapshot().active_space;
     let mut tabs = Vec::new();
@@ -279,36 +279,8 @@ fn favorite_toggle_never_moves_or_copies_the_tab() {
 // ---- MoveTabIntoFolder ----------------------------------------------------
 
 #[test]
-fn move_tab_into_folder_groups_without_changing_space_order() {
-    let (c, _space, tabs) = populated();
-    let mut org = OrganizationController::new();
-    let (folder, _) = match org.new_folder(&c, "Work").unwrap() {
-        OrganizationEvent::FolderCreated { id, .. } => (id, ()),
-        other => panic!("unexpected event: {other:?}"),
-    };
-    assert_eq!(
-        org.move_tab_into_folder(&c, 0, folder).unwrap(),
-        OrganizationEvent::TabMovedIntoFolder {
-            tab: tabs[0],
-            folder
-        }
-    );
-    org.move_tab_into_folder(&c, 2, folder).unwrap();
-    let snap = org.organization_snapshot(&c);
-    assert_eq!(snap.folders[0].members, vec![tabs[0], tabs[2]]);
-    // Space membership and tab order are untouched.
-    let c_snap = c.snapshot();
-    assert_eq!(c_snap.tabs.len(), 3);
-    assert_eq!(
-        c_snap.all_tabs.iter().map(|t| t.id).collect::<Vec<_>>(),
-        tabs
-    );
-    assert_eq!(c_snap.engine_sessions, 3, "no session was recreated");
-}
-
-#[test]
 fn move_tab_into_folder_moves_between_folders_and_noops_inside_one() {
-    let (c, _space, tabs) = populated();
+    let (mut c, _space, tabs) = populated();
     let mut org = OrganizationController::new();
     let work = match org.new_folder(&c, "Work").unwrap() {
         OrganizationEvent::FolderCreated { id, .. } => id,
@@ -318,8 +290,8 @@ fn move_tab_into_folder_moves_between_folders_and_noops_inside_one() {
         OrganizationEvent::FolderCreated { id, .. } => id,
         other => panic!("unexpected event: {other:?}"),
     };
-    org.move_tab_into_folder(&c, 0, work).unwrap();
-    org.move_tab_into_folder(&c, 0, docs).unwrap();
+    org.move_tab_into_folder(&mut c, 0, work).unwrap();
+    org.move_tab_into_folder(&mut c, 0, docs).unwrap();
     let snap = org.organization_snapshot(&c);
     assert!(snap
         .folders
@@ -334,34 +306,36 @@ fn move_tab_into_folder_moves_between_folders_and_noops_inside_one() {
     );
     // Moving into the folder the tab already belongs to is a no-op.
     let before = org.organization_snapshot(&c);
-    org.move_tab_into_folder(&c, 0, docs).unwrap();
+    org.move_tab_into_folder(&mut c, 0, docs).unwrap();
     assert_eq!(org.organization_snapshot(&c), before);
 }
 
 #[test]
 fn move_tab_into_folder_rejects_unknown_folder_whole() {
-    let (c, _space, _) = populated();
+    let (mut c, _space, _) = populated();
     let mut org = OrganizationController::new();
     let before = org.organization_snapshot(&c);
+    let browser_before = c.snapshot();
     assert!(matches!(
-        org.move_tab_into_folder(&c, 0, FolderId(99)),
+        org.move_tab_into_folder(&mut c, 0, FolderId(99)),
         Err(OrganizationError::Folder(FolderError::UnknownFolder(
             FolderId(99)
         )))
     ));
     assert_eq!(org.organization_snapshot(&c), before, "no partial mutation");
+    assert_eq!(c.snapshot(), browser_before, "the tab was not pinned");
 }
 
 #[test]
 fn move_tab_into_folder_rejects_out_of_bounds_indices() {
-    let (c, _space, _) = populated();
+    let (mut c, _space, _) = populated();
     let mut org = OrganizationController::new();
     let folder = match org.new_folder(&c, "Work").unwrap() {
         OrganizationEvent::FolderCreated { id, .. } => id,
         other => panic!("unexpected event: {other:?}"),
     };
     assert_eq!(
-        org.move_tab_into_folder(&c, 3, folder),
+        org.move_tab_into_folder(&mut c, 3, folder),
         Err(OrganizationError::IndexOutOfBounds { index: 3, len: 3 })
     );
     assert!(org.organization_snapshot(&c).folders[0].members.is_empty());
@@ -384,7 +358,7 @@ fn move_tab_into_folder_rejects_cross_space_tabs() {
     c.move_tab(0, second_space).unwrap();
     c.activate_space(second_space).unwrap();
     assert_eq!(
-        org.move_tab_into_folder(&c, 0, folder),
+        org.move_tab_into_folder(&mut c, 0, folder),
         Err(OrganizationError::Folder(
             FolderError::TabNotInFolderSpace {
                 tab: tabs[0],
@@ -393,8 +367,12 @@ fn move_tab_into_folder_rejects_cross_space_tabs() {
         )),
         "a tab of another space cannot join an active-space folder"
     );
-    // Rejected whole: the folder stays empty.
+    // Rejected whole: the folder stays empty and the tab stays regular.
     assert!(org.organization_snapshot(&c).folders[0].members.is_empty());
+    assert!(
+        !c.snapshot().tabs[0].pinned,
+        "a rejected grouping never pins"
+    );
 }
 
 // ---- Reconciliation -------------------------------------------------------
@@ -407,8 +385,8 @@ fn commands_reconcile_memberships_after_close_and_move() {
         OrganizationEvent::FolderCreated { id, .. } => id,
         other => panic!("unexpected event: {other:?}"),
     };
-    org.move_tab_into_folder(&c, 0, folder).unwrap();
-    org.move_tab_into_folder(&c, 1, folder).unwrap();
+    org.move_tab_into_folder(&mut c, 0, folder).unwrap();
+    org.move_tab_into_folder(&mut c, 1, folder).unwrap();
     // Close the first tab (a controller mutation the store cannot observe).
     c.close_tab(0).unwrap();
     // Another command must not observe or keep the stale membership.
@@ -437,8 +415,8 @@ fn reconcile_drops_memberships_after_a_tab_moves_spaces() {
         OrganizationEvent::FolderCreated { id, .. } => id,
         other => panic!("unexpected event: {other:?}"),
     };
-    org.move_tab_into_folder(&c, 0, folder).unwrap();
-    org.move_tab_into_folder(&c, 1, folder).unwrap();
+    org.move_tab_into_folder(&mut c, 0, folder).unwrap();
+    org.move_tab_into_folder(&mut c, 1, folder).unwrap();
     // Move the first member into the second space (a controller mutation the
     // store cannot observe): reconciliation must drop that membership.
     c.move_tab(0, second_space).unwrap();
@@ -469,8 +447,8 @@ fn reconcile_returns_the_number_of_removed_memberships() {
         OrganizationEvent::FolderCreated { id, .. } => id,
         other => panic!("unexpected event: {other:?}"),
     };
-    org.move_tab_into_folder(&c, 0, folder).unwrap();
-    org.move_tab_into_folder(&c, 1, folder).unwrap();
+    org.move_tab_into_folder(&mut c, 0, folder).unwrap();
+    org.move_tab_into_folder(&mut c, 1, folder).unwrap();
     c.close_tab(0).unwrap();
     assert_eq!(org.reconcile(&c), 1);
     assert_eq!(org.reconcile(&c), 0, "second reconcile is a no-op");
@@ -484,8 +462,8 @@ fn invariants_hold_across_command_sequences() {
     let mut org = OrganizationController::new();
     org.new_folder(&c, "Work").unwrap();
     let folder = org.organization_snapshot(&c).folders.first().unwrap().id;
-    org.move_tab_into_folder(&c, 0, folder).unwrap();
-    org.move_tab_into_folder(&c, 1, folder).unwrap();
+    org.move_tab_into_folder(&mut c, 0, folder).unwrap();
+    org.move_tab_into_folder(&mut c, 1, folder).unwrap();
     org.favorite_toggle(&c, 2).unwrap();
     org.check_invariants(&c).unwrap();
     // Closing a tab makes membership stale; a command reconciles, so the

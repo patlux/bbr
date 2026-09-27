@@ -62,6 +62,7 @@ pub use browser::Browser;
 pub use error::{DomainError, InvariantViolation};
 pub use folders::{
     Favorite, FavoriteToggle, Folder, FolderError, FolderId, FolderInvariantViolation, FolderStore,
+    TabFacts,
 };
 pub use lifecycle::{LifecycleError, TabLifecycle};
 pub use model::{ClosedTab, Profile, ProfileHue, Space, Tab};

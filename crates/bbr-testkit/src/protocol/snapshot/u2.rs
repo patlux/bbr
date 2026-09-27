@@ -170,6 +170,10 @@ pub struct FolderRowSnapshot {
     /// `false` — the count stays quiet while its id remains in the tree.
     #[serde(default)]
     pub count_revealed: bool,
+    /// The member `TabId`s in folder order (the exact grouped identities;
+    /// every member is pinned by the folder-membership invariant).
+    #[serde(default)]
+    pub members: Vec<u64>,
 }
 
 /// DESIGN.md §11.3 sidebar-swipe evidence on the wire (F2a swipe kernel):

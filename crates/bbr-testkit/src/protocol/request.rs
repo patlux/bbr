@@ -1191,6 +1191,12 @@ pub enum Request {
         index: usize,
         folder: u64,
     },
+    /// Ungroup the active space's tab at `index` from `folder` through the
+    /// organization authority: the member stays a loose pinned tab.
+    RemoveTabFromFolder {
+        index: usize,
+        folder: u64,
+    },
     /// Start a download through the production controller + native adapter
     /// path: mints an attempt id, records the optimistic `Waiting` state,
     /// and starts the transfer on the active web view. `destination` is the

@@ -190,6 +190,10 @@ pub fn move_tab_into_folder(index: usize, folder: u64) -> Request {
     Request::MoveTabIntoFolder { index, folder }
 }
 
+pub fn remove_tab_from_folder(index: usize, folder: u64) -> Request {
+    Request::RemoveTabFromFolder { index, folder }
+}
+
 pub fn download_start(url: impl Into<String>, destination: impl Into<String>) -> Request {
     Request::DownloadStart {
         url: url.into(),

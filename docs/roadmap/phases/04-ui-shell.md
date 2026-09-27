@@ -32,8 +32,9 @@ Settled decisions: the production theme follows the macOS system appearance
 (both modes supported). Patrick's later 2026-08-14 design decision defines
 folders as grouped pinned tabs inside one organized area; loose pinned rows
 remain above folder rows, so arbitrary mixed interleaving is still rejected.
-The portable folder-member/pinned invariant is intentionally still open in the
-[folder membership packet](../tasks/folder-pinned-invariant.md).
+The portable folder-member/pinned invariant is implemented on `main` through
+the [folder membership packet](../tasks/folder-pinned-invariant.md); only its
+performance gate waits for the performance-execution override to lift.
 
 - [x] Follow the macOS system appearance with the complete dark token set via the [system-appearance production theme](../tasks/system-appearance-theme.md).
 - [x] Present real site favicons in every favicon slot via the [real favicon pipeline](../tasks/real-favicon-pipeline.md).

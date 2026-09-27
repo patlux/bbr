@@ -17,9 +17,16 @@
 //! - [`OrganizationController::new_folder`] creates a session-local folder
 //!   in the **active space**.
 //! - [`OrganizationController::move_tab_into_folder`] groups the active
-//!   space's tab at `index` into `folder`; the tab keeps its space
-//!   membership, ordering, selection, and live session. A tab of another
-//!   space or an unknown folder is rejected **whole** (no partial mutation).
+//!   space's tab at `index` into `folder` through the one domain transition
+//!   ([`FolderStore::move_tab_into_folder`]): a folder is the grouped form of
+//!   pinned tabs, so a regular tab is pinned in the same step (it moves to
+//!   the end of the pinned region); it keeps its identity, space membership,
+//!   selection, and live session. A tab of another space or an unknown
+//!   folder is rejected **whole** (neither the pin nor the membership
+//!   changes).
+//! - [`OrganizationController::remove_tab_from_folder`] ungroups a member:
+//!   it stays pinned as a loose pinned tab. Unpinning a member through any
+//!   controller path ends its membership at the next reconcile.
 //! - [`OrganizationController::favorite_toggle`] toggles the active space's
 //!   concrete tab at `index` in the window-global favorites grid. A favorite
 //!   is another presentation of the same `TabId`; its owning space/profile
@@ -48,8 +55,12 @@ use bbr_domain::{Favorite, Folder, FolderError, FolderInvariantViolation, Folder
 use bbr_domain::{SpaceId, TabId};
 use bbr_web::ProfileId;
 
-use crate::snapshot::ControllerSnapshot;
 use crate::{BrowserController, ControllerError, ControllerEvent};
+
+mod read_model;
+
+use read_model::{active_space_tab, active_space_tabs, tab_facts, tab_index};
+pub use read_model::{FavoriteSnapshot, FolderSnapshot, OrganizationSnapshot};
 
 /// Typed outcomes of the organization commands.
 #[derive(Debug, Clone, PartialEq)]
@@ -62,8 +73,16 @@ pub enum OrganizationEvent {
         space: SpaceId,
         title: String,
     },
-    /// The tab joined `folder` (grouping only; space membership untouched).
+    /// The tab joined `folder` (space membership untouched). A regular tab
+    /// was pinned by the same transition: `pinned_index` is its new
+    /// space-local index then, `None` when it was already pinned.
     TabMovedIntoFolder {
+        tab: TabId,
+        folder: bbr_domain::FolderId,
+        pinned_index: Option<usize>,
+    },
+    /// The member left `folder` and stays a loose pinned tab.
+    TabRemovedFromFolder {
         tab: TabId,
         folder: bbr_domain::FolderId,
     },
@@ -122,46 +141,6 @@ impl From<FolderError> for OrganizationError {
     fn from(e: FolderError) -> Self {
         Self::Folder(e)
     }
-}
-
-/// One folder as presented to the UI/E2E.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FolderSnapshot {
-    /// Position in creation order — presentation/order metadata only (the
-    /// position-derived `bbr-folder-<n>` id source). `id` is the stable
-    /// identity; state and commands key on `id`, never on this position.
-    pub index: usize,
-    pub id: bbr_domain::FolderId,
-    pub space: SpaceId,
-    pub title: String,
-    /// Member tab ids in folder order. Resolve to space-local indices via
-    /// `ControllerSnapshot::all_tabs` (which carries both).
-    pub members: Vec<TabId>,
-}
-
-/// One global favorite tile as presented to the UI/E2E.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FavoriteSnapshot {
-    /// Position in deterministic insertion order — the fav-grid tile order.
-    pub index: usize,
-    /// The exact tab this tile additionally presents.
-    pub tab: TabId,
-    /// Current owner of `tab`; changes if that same tab is moved.
-    pub space: SpaceId,
-    /// Derived from `space`; identifies the isolated container to activate.
-    pub profile: ProfileId,
-    /// Current live tab metadata, never a copied destination identity.
-    pub title: String,
-    pub url: String,
-}
-
-/// Read-only snapshot of the session-local organization state.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OrganizationSnapshot {
-    /// Folders in creation order.
-    pub folders: Vec<FolderSnapshot>,
-    /// Favorite tiles in deterministic insertion order.
-    pub favorites: Vec<FavoriteSnapshot>,
 }
 
 /// Portable companion service for controller-level tab organization.
@@ -236,51 +215,81 @@ impl OrganizationController {
     }
 
     /// `MoveTabIntoFolder` command: group the active space's tab at `index`
-    /// into `folder`. The tab keeps its space membership, ordering,
-    /// selection, and live session; membership in a previous folder is left.
-    /// Unknown folders and tabs of another space are rejected whole.
+    /// into `folder`, pinning a regular tab in the same transition. The tab
+    /// keeps its identity, space membership, selection, and live session;
+    /// membership in a previous folder is left. Unknown folders and tabs of
+    /// another space are rejected whole.
     pub fn move_tab_into_folder(
+        &mut self,
+        controller: &mut BrowserController,
+        index: usize,
+        folder: bbr_domain::FolderId,
+    ) -> Result<OrganizationEvent, OrganizationError> {
+        self.reconcile(controller);
+        let tab = active_space_tab(&controller.snapshot(), index)?;
+        self.group(controller, tab, folder)
+    }
+
+    /// `MoveTabIntoFolder` keyed by the exact persistent [`TabId`] (the
+    /// tab/favorite context-menu authority; task packet
+    /// `tab-favorite-context-menus`): group the bound tab into `folder` of
+    /// **its own space** — never the active space — pinning a regular tab in
+    /// the same transition. Folders of another space and unknown tabs are
+    /// rejected whole. The active space is never switched.
+    pub fn move_tab_into_folder_id(
+        &mut self,
+        controller: &mut BrowserController,
+        tab: TabId,
+        folder: bbr_domain::FolderId,
+    ) -> Result<OrganizationEvent, OrganizationError> {
+        self.reconcile(controller);
+        self.group(controller, tab, folder)
+    }
+
+    /// Ungroup the active space's tab at `index` from `folder`: the member
+    /// stays pinned and becomes a loose pinned tab (the settled
+    /// folder-delete semantics unpack through this transition). Removing a
+    /// non-member is a no-op; an unknown folder is rejected.
+    pub fn remove_tab_from_folder(
         &mut self,
         controller: &BrowserController,
         index: usize,
         folder: bbr_domain::FolderId,
     ) -> Result<OrganizationEvent, OrganizationError> {
         self.reconcile(controller);
-        let snapshot = controller.snapshot();
-        let tabs = active_space_tabs(&snapshot);
-        let tab = *tabs.get(index).ok_or(OrganizationError::IndexOutOfBounds {
-            index,
-            len: tabs.len(),
-        })?;
-        let tab_space_id = tab_space(&snapshot, tab)
-            .ok_or(OrganizationError::Folder(FolderError::UnknownTab(tab)))?;
-        self.store.move_membership(folder, tab, tab_space_id)?;
+        let tab = active_space_tab(&controller.snapshot(), index)?;
+        self.store.remove_tab_from_folder(folder, tab)?;
         self.check_invariants(controller)
             .expect("organization invariants hold after reconcile");
-        Ok(OrganizationEvent::TabMovedIntoFolder { tab, folder })
+        Ok(OrganizationEvent::TabRemovedFromFolder { tab, folder })
     }
 
-    /// `MoveTabIntoFolder` keyed by the exact persistent [`TabId`] (the
-    /// tab/favorite context-menu authority; task packet
-    /// `tab-favorite-context-menus`): group the bound tab into `folder` of
-    /// **its own space** — never the active space. The tab keeps its space
-    /// membership, ordering, selection, and live session; membership in a
-    /// previous folder is left; folders of another space and unknown tabs
-    /// are rejected whole. The active space is never switched.
-    pub fn move_tab_into_folder_id(
+    /// The one grouping transition: the domain store validates the tab and
+    /// folder before any mutation, pins a regular tab in the browser, and
+    /// records the membership; the controller then re-syncs its views.
+    fn group(
         &mut self,
-        controller: &BrowserController,
+        controller: &mut BrowserController,
         tab: TabId,
         folder: bbr_domain::FolderId,
     ) -> Result<OrganizationEvent, OrganizationError> {
-        self.reconcile(controller);
-        let snapshot = controller.snapshot();
-        let tab_space_id = tab_space(&snapshot, tab)
-            .ok_or(OrganizationError::Folder(FolderError::UnknownTab(tab)))?;
-        self.store.move_membership(folder, tab, tab_space_id)?;
+        let newly_pinned = self
+            .store
+            .move_tab_into_folder(&mut controller.browser, folder, tab)?;
+        let pinned_index = if newly_pinned {
+            controller.sync_views();
+            controller.check_invariants();
+            Some(tab_index(&controller.snapshot(), tab).expect("a grouped tab stays in its space"))
+        } else {
+            None
+        };
         self.check_invariants(controller)
             .expect("organization invariants hold after reconcile");
-        Ok(OrganizationEvent::TabMovedIntoFolder { tab, folder })
+        Ok(OrganizationEvent::TabMovedIntoFolder {
+            tab,
+            folder,
+            pinned_index,
+        })
     }
 
     /// `FavoriteToggle` command: toggle the active space's concrete tab at
@@ -401,7 +410,7 @@ impl OrganizationController {
     /// cleanup right after a close/move.
     pub fn reconcile(&mut self, controller: &BrowserController) -> usize {
         let snapshot = controller.snapshot();
-        self.store.reconcile_with(|tab| tab_space(&snapshot, tab))
+        self.store.reconcile_with(|tab| tab_facts(&snapshot, tab))
     }
 
     /// Folders in creation order (reconciled against the controller).
@@ -468,28 +477,7 @@ impl OrganizationController {
     ) -> Result<(), FolderInvariantViolation> {
         let snapshot = controller.snapshot();
         let space_exists = |space: SpaceId| snapshot.spaces.iter().any(|s| s.id == space);
-        let tab_space = |tab: TabId| tab_space(&snapshot, tab);
-        self.store.check_invariants_with(space_exists, tab_space)
+        let tab_facts = |tab: TabId| tab_facts(&snapshot, tab);
+        self.store.check_invariants_with(space_exists, tab_facts)
     }
-}
-
-/// The active space's tabs in space order (resolved from the global read
-/// model, which carries both tab ids and space-local indices).
-fn active_space_tabs(snapshot: &ControllerSnapshot) -> Vec<TabId> {
-    let mut tabs: Vec<_> = snapshot
-        .all_tabs
-        .iter()
-        .filter(|tab| tab.space == snapshot.active_space)
-        .collect();
-    tabs.sort_by_key(|tab| tab.index);
-    tabs.into_iter().map(|tab| tab.id).collect()
-}
-
-/// The space a tab belongs to per the controller's read model.
-fn tab_space(snapshot: &ControllerSnapshot, tab: TabId) -> Option<SpaceId> {
-    snapshot
-        .all_tabs
-        .iter()
-        .find(|t| t.id == tab)
-        .map(|t| t.space)
 }

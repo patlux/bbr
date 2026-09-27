@@ -23,7 +23,10 @@
 //! - a force-quit/crash-style exit (SIGKILL, no flush) recovers exactly the
 //!   last committed repository state and never a partial/fast-but-wrong
 //!   model — the app presents precisely what the repository holds — for the
-//!   open **and** the tab-reorder mutation classes.
+//!   open **and** the tab-reorder mutation classes;
+//! - grouping pins durably: a graceful restart and a force quit restore the
+//!   grouped tabs pinned and never a folder membership
+//!   ([`folder_pins`](e2e_shell_persistence/folder_pins.rs)).
 //!
 //! No sleeps: every step synchronizes on typed snapshot state or semantic
 //! events under an explicit deadline. GUI suites must not run in parallel
@@ -36,6 +39,9 @@ mod e2e_common;
 
 #[path = "e2e_shell_persistence/support.rs"]
 mod support;
+
+#[path = "e2e_shell_persistence/folder_pins.rs"]
+mod folder_pins;
 
 pub use bbr_testkit::protocol::{RestoreDisposition, StoreLoadSnapshot};
 pub use e2e_common::*;

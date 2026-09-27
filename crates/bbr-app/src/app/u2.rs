@@ -410,9 +410,10 @@ impl BbrApp {
 
     /// §11.11 move-into-folder command path: route the active space's tab at
     /// `index` into the session-local folder with domain id `folder` through
-    /// the L5 `MoveIntoFolder` command (the drag drop into a folder row
-    /// routes through the same command). Grouping only — the tab's space
-    /// membership, order, selection, and live session are untouched.
+    /// the L5 `MoveIntoFolder` command. A folder is the grouped form of
+    /// pinned tabs, so a regular tab is pinned by the same transition; its
+    /// identity, space membership, selection, and live session are
+    /// untouched.
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit gateway seam
     pub fn move_tab_into_folder(
         &mut self,
@@ -423,17 +424,61 @@ impl BbrApp {
     ) {
         match self
             .organization
-            .move_tab_into_folder(&self.controller, index, folder)
+            .move_tab_into_folder(&mut self.controller, index, folder)
         {
-            Ok(OrganizationEvent::TabMovedIntoFolder { tab, folder }) => {
-                log::debug!("tab {tab:?} moved into folder {folder:?}");
+            Ok(event) => {
+                self.apply_grouping(&event, cx);
+                self.focus_tab_list(window, cx);
+            }
+            Err(error) => log::error!("could not move tab into folder: {error}"),
+        }
+    }
+
+    /// Ungroup the active space's tab at `index` from `folder`: the member
+    /// stays pinned as a loose pinned tab (the transition the settled
+    /// Unpack/delete semantics consume). No user entry exists yet; the
+    /// folder menu packet adds it.
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit gateway seam
+    pub fn remove_tab_from_folder(
+        &mut self,
+        index: usize,
+        folder: FolderId,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        match self
+            .organization
+            .remove_tab_from_folder(&self.controller, index, folder)
+        {
+            Ok(event) => {
+                log::debug!("{event:?}");
                 self.focus_tab_list(window, cx);
                 cx.notify();
             }
-            Ok(other) => {
-                unreachable!("move_tab_into_folder only emits TabMovedIntoFolder, got {other:?}")
+            Err(error) => log::error!("could not remove tab from folder: {error}"),
+        }
+    }
+
+    /// Mirror a grouping outcome. A regular tab pinned by the grouping
+    /// transition is a structural browser mutation: it is observable like
+    /// every other pin (`TabPinned`) and must survive a force quit.
+    pub(super) fn apply_grouping(&mut self, event: &OrganizationEvent, cx: &mut Context<Self>) {
+        match event {
+            OrganizationEvent::TabMovedIntoFolder {
+                tab,
+                folder,
+                pinned_index,
+            } => {
+                log::debug!("tab {tab:?} moved into folder {folder:?}");
+                if let Some(index) = pinned_index {
+                    self.clear_command_profile_hint();
+                    self.sync_command_bar();
+                    self.emit_browser(&bbr_browser::ControllerEvent::TabPinned { index: *index });
+                    self.persist_structure();
+                }
+                cx.notify();
             }
-            Err(error) => log::error!("could not move tab into folder: {error}"),
+            other => unreachable!("grouping only emits TabMovedIntoFolder, got {other:?}"),
         }
     }
 

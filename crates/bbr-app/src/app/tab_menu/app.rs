@@ -505,9 +505,9 @@ impl BbrApp {
             TabMenuAction::MoveToFolder(folder) => {
                 match self
                     .organization
-                    .move_tab_into_folder_id(&self.controller, tab, folder)
+                    .move_tab_into_folder_id(&mut self.controller, tab, folder)
                 {
-                    Ok(_) => {}
+                    Ok(event) => self.apply_grouping(&event, cx),
                     Err(error) => log::error!("tab menu folder move failed: {error}"),
                 }
             }

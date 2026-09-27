@@ -18,8 +18,14 @@
 //!   exactly one space (its profile is derived, never stored).
 //! - A [`Folder`] belongs to exactly one space, and every member tab belongs
 //!   to that same space. Moving a tab into a folder never changes the tab's
-//!   space membership or ordering — the folder is a grouping layer, not a
-//!   replacement for space ownership.
+//!   space membership — the folder is a grouping layer, not a replacement
+//!   for space ownership.
+//! - A folder is the grouped form of pinned tabs (DESIGN.md §11.2/§11.11):
+//!   `folder member => pinned`. Grouping a regular tab pins it in the same
+//!   transition ([`FolderStore::move_tab_into_folder`]); removing a member
+//!   from its folder leaves it a loose pinned tab; unpinning a member ends
+//!   its membership (reconciliation drops every unpinned member, because the
+//!   pinned flag is owned by the [`Browser`]).
 //! - Favorites are global secondary presentations of concrete [`TabId`]s.
 //!   They remain visible in every space of the browser window while the tab
 //!   itself keeps exactly one owning space and derives its profile from it.
@@ -33,15 +39,17 @@
 //! 3. Every folder member tab exists and belongs to the folder's space.
 //! 4. A tab belongs to at most one folder.
 //! 5. A folder lists a tab at most once.
-//! 6. Every favorite references an existing tab and each tab appears at most
+//! 6. Every folder member tab is pinned.
+//! 7. Every favorite references an existing tab and each tab appears at most
 //!    once in the global favorites grid.
 //!
 //! Mutations reject invalid input **whole** (before any mutation); the
 //! invariant checker is public and unit-tested so tampering is detectable.
 //! Because `FolderStore` cannot intercept `Browser` mutations (close/move),
 //! memberships can go stale; [`FolderStore::reconcile`] deterministically
-//! drops memberships for tabs that no longer exist or changed space, and
-//! every orchestration-layer command reconciles before observing state.
+//! drops memberships for tabs that no longer exist, changed space, or were
+//! unpinned, and every orchestration-layer command reconciles before
+//! observing state.
 //!
 //! # Deterministic favorites ordering
 //!
@@ -54,6 +62,25 @@
 use std::collections::HashSet;
 
 use crate::{Browser, SpaceId, TabId};
+
+/// The canonical tab facts folder membership depends on, resolved from the
+/// [`Browser`] (or an orchestration read model): the owning space and the
+/// pinned flag. `None` from a resolver means the tab no longer exists.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TabFacts {
+    pub space: SpaceId,
+    pub pinned: bool,
+}
+
+impl TabFacts {
+    /// Resolve a tab's facts from the live browser.
+    pub fn of(browser: &Browser, tab: TabId) -> Option<Self> {
+        browser.tab(tab).map(|state| Self {
+            space: state.space,
+            pinned: state.pinned,
+        })
+    }
+}
 
 /// Stable identifier of a session-local folder (a distinct id space from
 /// profile/space/tab ids; numeric equality with another kind is harmless
@@ -108,6 +135,9 @@ pub enum FolderError {
         tab: TabId,
         folder: FolderId,
     },
+    /// A validated-facts membership was requested for an unpinned tab; only
+    /// [`FolderStore::move_tab_into_folder`] may pin while grouping.
+    TabNotPinned(TabId),
 }
 
 impl std::fmt::Display for FolderError {
@@ -120,6 +150,7 @@ impl std::fmt::Display for FolderError {
                 f,
                 "tab {tab:?} does not belong to the space of folder {folder:?}"
             ),
+            Self::TabNotPinned(id) => write!(f, "tab {id:?} is not pinned"),
         }
     }
 }
@@ -205,30 +236,47 @@ impl FolderStore {
         id
     }
 
-    /// Move `tab` into `folder`, validating the tab against the live browser.
+    /// Group `tab` into `folder`: the one domain transition that joins a
+    /// folder. Validates the tab, the folder, and the shared space **before**
+    /// any mutation, then pins the tab in the live browser (a regular tab
+    /// moves to the end of the pinned region) and records the membership.
+    /// Returns whether the tab was newly pinned.
     ///
-    /// The tab keeps its space membership and ordering; membership is a
-    /// grouping layer. Moving a tab into a folder it already belongs to is a
-    /// no-op; moving it from another folder removes it there first. A tab of
-    /// a different space is rejected whole (no partial mutation).
+    /// The tab keeps its space membership, identity, and session. Moving a
+    /// tab into a folder it already belongs to is a no-op; moving it from
+    /// another folder removes it there first. Unknown tabs/folders and a tab
+    /// of a different space are rejected whole (neither the browser nor the
+    /// store changes).
     pub fn move_tab_into_folder(
         &mut self,
-        browser: &Browser,
+        browser: &mut Browser,
         folder: FolderId,
         tab: TabId,
-    ) -> Result<(), FolderError> {
-        let tab_space = browser
-            .tab(tab)
-            .map(|state| state.space)
-            .ok_or(FolderError::UnknownTab(tab))?;
-        self.move_membership(folder, tab, tab_space)
+    ) -> Result<bool, FolderError> {
+        let facts = TabFacts::of(browser, tab).ok_or(FolderError::UnknownTab(tab))?;
+        self.validate_membership(folder, tab, facts.space)?;
+        let newly_pinned = !facts.pinned;
+        if newly_pinned {
+            browser
+                .pin_tab(facts.space, tab)
+                .expect("a validated tab belongs to its own space");
+        }
+        self.move_membership(
+            folder,
+            tab,
+            TabFacts {
+                space: facts.space,
+                pinned: true,
+            },
+        )?;
+        Ok(newly_pinned)
     }
 
-    /// Validated-facts primitive: move `tab` (which the caller established
-    /// exists and lives in `tab_space`) into `folder`. Prefer
-    /// [`FolderStore::move_tab_into_folder`] where the browser is available.
-    pub fn move_membership(
-        &mut self,
+    /// Validate that `tab` (living in `tab_space`) may join `folder`: the
+    /// folder exists and belongs to the same space. Pure check; callers run
+    /// it before any browser mutation so a rejection is whole.
+    pub fn validate_membership(
+        &self,
         folder: FolderId,
         tab: TabId,
         tab_space: SpaceId,
@@ -241,6 +289,29 @@ impl FolderStore {
         if target.space != tab_space {
             return Err(FolderError::TabNotInFolderSpace { tab, folder });
         }
+        Ok(())
+    }
+
+    /// Validated-facts primitive: record `tab` (whose canonical facts the
+    /// caller established) as a member of `folder`. Never pins: an unpinned
+    /// tab is rejected with [`FolderError::TabNotPinned`], so no store
+    /// mutation can create an unpinned member. Prefer
+    /// [`FolderStore::move_tab_into_folder`], which pins atomically.
+    pub fn move_membership(
+        &mut self,
+        folder: FolderId,
+        tab: TabId,
+        facts: TabFacts,
+    ) -> Result<(), FolderError> {
+        self.validate_membership(folder, tab, facts.space)?;
+        if !facts.pinned {
+            return Err(FolderError::TabNotPinned(tab));
+        }
+        let target = self
+            .folders
+            .iter()
+            .find(|f| f.id == folder)
+            .expect("folder validated above");
         if target.tabs.contains(&tab) {
             return Ok(()); // already a member: no-op, like pinning a pinned tab
         }
@@ -259,7 +330,8 @@ impl FolderStore {
         Ok(())
     }
 
-    /// Remove `tab` from `folder`. Removing a non-member is a no-op (like
+    /// Remove `tab` from `folder` (ungroup): the tab stays pinned and
+    /// becomes a loose pinned tab. Removing a non-member is a no-op (like
     /// unpinning an unpinned tab); the folder itself must exist.
     pub fn remove_tab_from_folder(
         &mut self,
@@ -305,30 +377,33 @@ impl FolderStore {
     // ---- Reconciliation ---------------------------------------------------
 
     /// Deterministically drop folder memberships for tabs that no longer
-    /// exist or changed space, and favorites whose concrete tab was closed.
-    /// The browser owns these mutations and cannot notify this store. Returns
-    /// the total number of stale memberships/favorites removed.
+    /// exist, changed space, or were unpinned, and favorites whose concrete
+    /// tab was closed. The browser owns these mutations and cannot notify
+    /// this store. Returns the total number of stale memberships/favorites
+    /// removed.
     pub fn reconcile(&mut self, browser: &Browser) -> usize {
-        self.reconcile_with(|tab| browser.tab(tab).map(|state| state.space))
+        self.reconcile_with(|tab| TabFacts::of(browser, tab))
     }
 
     /// Validated-facts variant of [`FolderStore::reconcile`] for callers
-    /// that resolve tab→space facts without the browser (the orchestration
-    /// layer uses its public read model). `tab_space` returns `None` for
-    /// tabs that no longer exist. Iteration stays in folder creation order,
-    /// then member order, so reconciliation is fully deterministic.
-    pub fn reconcile_with(&mut self, tab_space: impl Fn(TabId) -> Option<SpaceId>) -> usize {
+    /// that resolve tab facts without the browser (the orchestration layer
+    /// uses its public read model). `tab_facts` returns `None` for tabs that
+    /// no longer exist. An unpinned member leaves its folder: unpinning is
+    /// the explicit exit from the grouped form. Iteration stays in folder
+    /// creation order, then member order, so reconciliation is fully
+    /// deterministic.
+    pub fn reconcile_with(&mut self, tab_facts: impl Fn(TabId) -> Option<TabFacts>) -> usize {
         let mut removed = 0;
         for folder in &mut self.folders {
             let before = folder.tabs.len();
-            folder
-                .tabs
-                .retain(|tab| tab_space(*tab) == Some(folder.space));
+            folder.tabs.retain(|tab| {
+                tab_facts(*tab).is_some_and(|facts| facts.space == folder.space && facts.pinned)
+            });
             removed += before - folder.tabs.len();
         }
         let before = self.favorites.len();
         self.favorites
-            .retain(|favorite| tab_space(favorite.tab).is_some());
+            .retain(|favorite| tab_facts(favorite.tab).is_some());
         removed + before - self.favorites.len()
     }
 
@@ -352,7 +427,7 @@ impl FolderStore {
     pub fn check_invariants(&self, browser: &Browser) -> Result<(), FolderInvariantViolation> {
         self.check_invariants_with(
             |space| browser.space(space).is_some(),
-            |tab| browser.tab(tab).map(|state| state.space),
+            |tab| TabFacts::of(browser, tab),
         )
     }
 
@@ -363,7 +438,7 @@ impl FolderStore {
     pub fn check_invariants_with(
         &self,
         space_exists: impl Fn(SpaceId) -> bool,
-        tab_space: impl Fn(TabId) -> Option<SpaceId>,
+        tab_facts: impl Fn(TabId) -> Option<TabFacts>,
     ) -> Result<(), FolderInvariantViolation> {
         let fail = |msg: String| FolderInvariantViolation(msg);
 
@@ -387,14 +462,20 @@ impl FolderStore {
                         folder.id, tab
                     )));
                 }
-                match tab_space(*tab) {
-                    Some(space) if space == folder.space => {}
-                    Some(space) => {
+                match tab_facts(*tab) {
+                    Some(facts) if facts.space != folder.space => {
                         return Err(fail(format!(
                             "folder {:?} member tab {:?} belongs to space {:?}, not {:?}",
-                            folder.id, tab, space, folder.space
+                            folder.id, tab, facts.space, folder.space
                         )))
                     }
+                    Some(facts) if !facts.pinned => {
+                        return Err(fail(format!(
+                            "folder {:?} member tab {:?} is not pinned",
+                            folder.id, tab
+                        )))
+                    }
+                    Some(_) => {}
                     None => {
                         return Err(fail(format!(
                             "folder {:?} member tab {:?} does not exist",
@@ -415,7 +496,7 @@ impl FolderStore {
 
         let mut favorite_tabs: HashSet<TabId> = HashSet::new();
         for favorite in &self.favorites {
-            if tab_space(favorite.tab).is_none() {
+            if tab_facts(favorite.tab).is_none() {
                 return Err(fail(format!(
                     "favorite references missing tab {:?}",
                     favorite.tab
