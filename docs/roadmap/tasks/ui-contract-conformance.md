@@ -163,8 +163,15 @@ Roadmap/documentation updates: DESIGN §3.2 color:on-accent, §3.5 dark tints
   inset, §11.12 inset, §11.16 marks, §11.17/§16 Peek theme; UI design-system
   track item closed.
 Review: orchestrator self-review of the full diff (one doc-comment wrap
-  fixed); no independent subagent review, because subagent use needs
-  Patrick's explicit opt-in in this session.
+  fixed); independent read-only review on 2026-09-27 after Patrick's
+  opt-in (deepseek-v4-flash via the homelab opencode-go route): two minor
+  findings. (1) The identity-glyph optical-size test was tautological; it
+  now checks the extent table against independently measured path extents
+  and failed on a deliberately wrong entry. (2) The changed tokens and
+  glyphs have no real-app E2E: they are pure presentation values without
+  browser behavior, proven by bbr-ui contrast/geometry unit tests and the
+  gallery story renders; the auth and Peek theme changes, which do cross the
+  app, carry real-app E2E. Recorded as the slice's E2E scope.
 Open blockers and non-goals: none; Peek increased-contrast/reduced-motion
   matrix stays open under §16.
 Worktree state: main, serial writer; unrelated worktrees and the existing

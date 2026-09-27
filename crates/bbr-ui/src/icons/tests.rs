@@ -82,19 +82,49 @@ fn bookmark_and_pencil_stay_inside_their_box() {
 fn identity_glyphs_share_one_optical_size() {
     // Regression: every glyph used the same `h`, so compact paths such as
     // compass or globe (farthest point 0.5 h) rendered at half the size of
-    // code and folder (1.0 h). Normalized by its own extent, every glyph's
-    // farthest point lands on the same ±(0.34 · size) box, which with the
-    // stroke stays inside the tile at every shipped size.
+    // code and folder (1.0 h). The painters divide `h` by `identity_extent`,
+    // so the table must equal each path's real farthest per-axis point.
+    // These values are measured independently from the path coordinates in
+    // `icons/bbr.rs` (arc bulges included), so a wrong table entry fails
+    // here instead of silently re-shrinking a glyph:
+    // - code/folder reach the full h;
+    // - terminal/star 0.55; camera: body 0.05 ± 0.5 → 0.55;
+    // - person: head ring top 0.38 + 0.2 = 0.58;
+    // - briefcase: body 0.1 ± 0.5 and the 0.2 handle semicircle at -0.4 → 0.60;
+    // - moon ≈ 0.597; heart: 0.347 lobe semicircles centred at ±0.3 → 0.647;
+    // - leaf: the stem end at (-0.65, 0.55) → 0.65; book ≈ 0.692;
+    // - compass/palette/globe: rings of radius 0.5.
+    let measured = |glyph: bbr_domain::BbrGlyph| -> f32 {
+        use bbr_domain::BbrGlyph::*;
+        match glyph {
+            Code | Folder => 1.0,
+            Terminal | Star | Camera => 0.55,
+            Person => 0.58,
+            Briefcase => 0.60,
+            Moon => 0.597,
+            Heart => 0.647,
+            Leaf => 0.65,
+            Book => 0.692,
+            Compass | Palette | Globe => 0.50,
+        }
+    };
+    for glyph in bbr_domain::BbrGlyph::ALL {
+        let extent = bbr::identity_extent(glyph);
+        assert!(
+            (extent - measured(glyph)).abs() <= 0.01,
+            "{glyph:?}: table {extent} vs measured path extent {}",
+            measured(glyph)
+        );
+    }
     for size in [16.0_f32, 18.0, 20.0] {
         let target = size * 0.34;
         for glyph in bbr_domain::BbrGlyph::ALL {
-            let extent = bbr::identity_extent(glyph);
+            // The drawn farthest point after normalization.
+            let reach = (target / bbr::identity_extent(glyph)) * measured(glyph);
             assert!(
-                (0.4..=1.0).contains(&extent),
-                "{glyph:?} extent is a path measurement in h units"
+                (reach / target - 1.0).abs() <= 0.02,
+                "{glyph:?} reaches the shared box at {size}pt"
             );
-            let reach = (size * 0.34 / extent) * extent;
-            assert!((reach - target).abs() < 1e-4, "{glyph:?} reaches the box");
             assert!(
                 reach + 1.5 / 2.0 <= size / 2.0,
                 "{glyph:?} fits at {size}pt"
