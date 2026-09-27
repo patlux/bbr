@@ -243,6 +243,7 @@ impl BbrApp {
                     bbr_ui::theme::Density::Normal => "normal".into(),
                     bbr_ui::theme::Density::ExtraLarge => "extralarge".into(),
                 },
+                reduced_motion: theme.motion_mode.is_reduced(),
             },
             tab_states: rows
                 .iter()

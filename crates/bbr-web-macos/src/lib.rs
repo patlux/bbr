@@ -16,6 +16,12 @@
 //! On non-macOS targets this crate compiles to an empty library so the
 //! workspace still resolves and evaluates.
 
+/// Live Increase Contrast / Reduce Motion options (task packet
+/// `v2-system-prefs`): public `NSWorkspace` reads plus the change
+/// notification; the app's appearance authority owns the theme decision.
+#[cfg(target_os = "macos")]
+pub mod accessibility_display;
+
 #[cfg(target_os = "macos")]
 pub mod content_gesture;
 

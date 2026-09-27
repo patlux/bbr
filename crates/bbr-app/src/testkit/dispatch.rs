@@ -632,6 +632,18 @@ pub(crate) fn dispatch(
             .unwrap_or_else(err_response)
         }
 
+        // Deterministic accessibility override (task packet
+        // `v2-system-prefs`): force Increase Contrast / Reduce Motion
+        // regardless of the host; each `None` follows the system again.
+        Request::SetAccessibilityOverride {
+            increase_contrast,
+            reduce_motion,
+        } => with_app(window, app, cx, |view, _window, cx| {
+            view.set_accessibility_override(increase_contrast, reduce_motion, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
         // Bring the app to the foreground (testkit-only; the shown-harness
         // portal frontmost test). Activates the browser window, never the
         // non-activating portal.

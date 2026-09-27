@@ -455,6 +455,10 @@ fn main() {
         // launch theme always matches the system.
         let _ = with_app(&window, &app, cx, |view, window, cx| {
             view.observe_system_appearance(window, cx);
+            // v2 S1: Increase Contrast / Reduce Motion follow the system
+            // live through the same authority (task packet
+            // `v2-system-prefs`).
+            view.observe_system_accessibility(cx);
         });
 
         // macOS-only native seams: the concrete engine handle (the find

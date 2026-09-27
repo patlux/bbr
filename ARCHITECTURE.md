@@ -479,6 +479,16 @@ src/
   `canGoForward`), `reload`, `stopLoading` + explicit state re-emit (`Stop`).
 - **Main thread:** all entry points re-assert with `MainThreadMarker`; the
   `MainThreadOnly` thread-kind is enforced at bind time.
+- **Accessibility display options** (`accessibility_display.rs`, v2 S1):
+  `current_options()` reads `NSWorkspace`'s public Increase Contrast and
+  Reduce Motion values; `AccessibilityDisplayObserver` registers one
+  receiver for `NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification`
+  on the workspace notification center and removes it on drop. The app's
+  appearance authority (`bbr-app/src/app/appearance.rs`) drains the change
+  signal through a smol channel into a foreground task, re-reads the options
+  and composes `Theme.contrast` and `Theme.motion_mode`; nothing polls. The
+  testkit `SetAccessibilityOverride` request forces either option, and the
+  snapshot's `shell_modes` reports `contrast` and `reduced_motion`.
 
 ### Renderer availability and public process boundary
 

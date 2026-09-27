@@ -507,6 +507,16 @@ pub fn set_appearance_override(mode: Option<ThemeModeOverride>) -> Request {
     Request::SetAppearanceOverride { mode }
 }
 
+pub fn set_accessibility_override(
+    increase_contrast: Option<bool>,
+    reduce_motion: Option<bool>,
+) -> Request {
+    Request::SetAccessibilityOverride {
+        increase_contrast,
+        reduce_motion,
+    }
+}
+
 pub fn set_full_screen_override(full_screen: Option<bool>) -> Request {
     Request::SetFullScreenOverride { full_screen }
 }

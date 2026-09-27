@@ -79,6 +79,10 @@ pub struct Theme {
     pub contrast: ContrastMode,
     /// §15 mode field: row/sidebar density for the tab collection.
     pub density: Density,
+    /// §15 mode field `reduced_motion`: the macOS Reduce Motion setting
+    /// (DESIGN.md §6 principle 4, §18.5). Motion consumers pick their
+    /// reduced variant from it; state changes stay 0 ms in both modes.
+    pub motion_mode: MotionMode,
     pub palette: Palette,
     pub type_: TypeScale,
     pub spacing: Spacing,
@@ -99,6 +103,21 @@ pub enum ThemeMode {
 pub enum ContrastMode {
     Standard,
     Increased,
+}
+
+/// §15 `reduced_motion` field (DESIGN.md §6, §18.5): `Reduced` removes
+/// every rotation, scale and travel; only opacity cues remain.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MotionMode {
+    Standard,
+    Reduced,
+}
+
+impl MotionMode {
+    /// Whether the reduced variants apply.
+    pub const fn is_reduced(self) -> bool {
+        matches!(self, MotionMode::Reduced)
+    }
 }
 
 /// Typography steps resolved for a density (DESIGN.md §4 table).
@@ -283,6 +302,7 @@ impl Theme {
             mode,
             contrast,
             density,
+            motion_mode: MotionMode::Standard,
             palette,
             type_: type_scale(density),
             spacing: Spacing,
@@ -293,9 +313,31 @@ impl Theme {
     }
 }
 
+impl Theme {
+    /// The same theme with the given motion mode (the app composes it from
+    /// the observed macOS Reduce Motion setting; the default is `Standard`).
+    pub const fn with_motion_mode(mut self, motion_mode: MotionMode) -> Self {
+        self.motion_mode = motion_mode;
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn motion_mode_defaults_to_standard_and_composes() {
+        let theme = Theme::new(ThemeMode::Light, ContrastMode::Standard, Density::Normal);
+        assert_eq!(theme.motion_mode, MotionMode::Standard);
+        assert!(!theme.motion_mode.is_reduced());
+        let reduced = theme.with_motion_mode(MotionMode::Reduced);
+        assert!(reduced.motion_mode.is_reduced());
+        // Motion never changes the colour or geometry tokens.
+        assert_eq!(reduced.palette, theme.palette);
+        assert_eq!(reduced.density, theme.density);
+        assert_eq!(reduced.contrast, theme.contrast);
+    }
 
     #[test]
     fn density_geometry_is_uniform_per_density() {

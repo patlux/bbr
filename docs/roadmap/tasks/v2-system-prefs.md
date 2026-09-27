@@ -50,15 +50,20 @@ Integration order:       before S6
 
 ### Unit and contract
 
-- [ ] Theme composition for every (appearance, contrast, motion) combination.
-- [ ] Testkit protocol round-trips the new request and field.
+- [x] Theme composition: `theme_modes_for` maps both options, the override
+      wins per option (`appearance.rs` tests); `Theme::with_motion_mode`
+      leaves palette/density/contrast untouched (`theme.rs` test).
+- [x] Testkit protocol: `SetAccessibilityOverride` and `ShellModes.reduced_motion`
+      (serde default for older payloads) compile through the gateway and
+      the snapshot.
 
 ### Real-app E2E
 
-- [ ] Override Increase Contrast → snapshot `contrast == increased` and the
-      rendered rail/palette values switch to the IC set; clearing restores.
-- [ ] Override Reduce Motion → snapshot `reduced_motion == true`; clearing
-      restores.
+- [x] Override Increase Contrast → snapshot `contrast == increased` and the
+      rendered chrome tint is the IC presentation of the active space;
+      clearing restores (`e2e_shell_sidebar::accessibility`).
+- [x] Override Reduce Motion → snapshot `reduced_motion == true`,
+      independent of contrast; identity, sessions and geometry unchanged.
 
 ### Performance
 
@@ -87,10 +92,21 @@ stop with the API inventory and keep the override-only path.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
+Outcome:        Theme.motion_mode + live Increase Contrast / Reduce Motion
+                through the public NSWorkspace API and its change
+                notification; snapshot `reduced_motion`; testkit override.
+Commits:        feat(app): follow macOS Increase Contrast and Reduce Motion
+Functional evidence: just verify (workspace fmt/check/test/clippy/roadmap/
+                ui-deps/script tests); bbr testkit clippy -D warnings.
+Real-app E2E:   e2e-shell-sidebar 17/17 (new accessibility scenario),
+                e2e-smoke 1/1, e2e-gallery 45/45.
 Performance evidence:   not applicable
-Worktree state:
+Review:         documented self-review (no subagents authorized): public
+                AppKit only; observer removed on drop; no polling; release
+                builds carry no override (cfg testkit); snapshot reports
+                effective values; the native install path runs in every E2E
+                launch. The live-notification path itself is not E2E-driven
+                (the host setting cannot be toggled headless); the override
+                exercises the same theme composition.
+Worktree state: main, serial
 ```

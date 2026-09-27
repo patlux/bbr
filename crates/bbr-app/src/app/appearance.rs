@@ -17,10 +17,65 @@
 //! other token set — `dur:instant`, no cross-fade, no intermediate
 //! mixed-token frame (DESIGN.md §6 commit-first).
 
-use bbr_ui::theme::{ContrastMode, Theme, ThemeMode};
+use bbr_ui::theme::{ContrastMode, MotionMode, Theme, ThemeMode};
 use gpui::{Context, Window, WindowAppearance};
 
 use super::BbrApp;
+
+/// The observed macOS accessibility display options the shell honours
+/// (task packet `v2-system-prefs`): Increase Contrast selects the §3.4
+/// token set, Reduce Motion the §6 reduced variants. Portable plain value;
+/// the macOS adapter reads and observes it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) struct AccessibilityPrefs {
+    pub(crate) increase_contrast: bool,
+    pub(crate) reduce_motion: bool,
+}
+
+/// Testkit-only per-option override: `None` follows the system value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) struct AccessibilityOverride {
+    pub(crate) increase_contrast: Option<bool>,
+    pub(crate) reduce_motion: Option<bool>,
+}
+
+/// The effective accessibility options: each overridden option wins over
+/// the observed system value (overrides exist only under `testkit`). Pure
+/// so the priority is unit-testable without a display server.
+pub(crate) fn effective_accessibility(
+    system: AccessibilityPrefs,
+    _override: AccessibilityOverride,
+) -> AccessibilityPrefs {
+    #[cfg(feature = "testkit")]
+    {
+        AccessibilityPrefs {
+            increase_contrast: _override
+                .increase_contrast
+                .unwrap_or(system.increase_contrast),
+            reduce_motion: _override.reduce_motion.unwrap_or(system.reduce_motion),
+        }
+    }
+    #[cfg(not(feature = "testkit"))]
+    {
+        system
+    }
+}
+
+/// Map the effective accessibility options to the theme's contrast and
+/// motion modes (the one mapping; DESIGN.md §3.4, §6).
+pub(crate) fn theme_modes_for(prefs: AccessibilityPrefs) -> (ContrastMode, MotionMode) {
+    let contrast = if prefs.increase_contrast {
+        ContrastMode::Increased
+    } else {
+        ContrastMode::Standard
+    };
+    let motion = if prefs.reduce_motion {
+        MotionMode::Reduced
+    } else {
+        MotionMode::Standard
+    };
+    (contrast, motion)
+}
 
 /// Map a GPUI window appearance to the production theme mode (DESIGN.md
 /// §1): a dark system appearance presents the complete dark token set,
@@ -60,7 +115,92 @@ impl BbrApp {
         let browser = self.controller.snapshot();
         let pinned = crate::shell::pinned_count(&browser.tabs);
         let regular = browser.tabs.len().saturating_sub(pinned);
-        Theme::for_collection(self.effective_theme_mode(), ContrastMode::Standard, regular)
+        let (contrast, motion) = theme_modes_for(self.effective_accessibility());
+        Theme::for_collection(self.effective_theme_mode(), contrast, regular)
+            .with_motion_mode(motion)
+    }
+
+    /// The effective accessibility display options: a testkit override
+    /// per option wins over the observed macOS value (task packet
+    /// `v2-system-prefs`).
+    pub(crate) fn effective_accessibility(&self) -> AccessibilityPrefs {
+        #[cfg(feature = "testkit")]
+        {
+            effective_accessibility(self.system_accessibility, self.accessibility_override)
+        }
+        #[cfg(not(feature = "testkit"))]
+        {
+            effective_accessibility(self.system_accessibility, AccessibilityOverride::default())
+        }
+    }
+
+    /// Register the macOS accessibility display observer (composition root,
+    /// before the first presented frame): records Increase Contrast and
+    /// Reduce Motion, then keeps them live through the workspace change
+    /// notification — no polling, so an idle shell never wakes for them. A
+    /// change is a state change: the next presentation commit renders the
+    /// complete other token set (`dur:instant`, DESIGN.md §6).
+    pub fn observe_system_accessibility(&mut self, cx: &mut Context<Self>) {
+        #[cfg(target_os = "macos")]
+        {
+            use bbr_web_macos::accessibility_display as display;
+            let Some(mtm) = objc2::MainThreadMarker::new() else {
+                return;
+            };
+            self.system_accessibility = prefs_from(display::current_options());
+            let (tx, rx) = smol::channel::unbounded::<()>();
+            self.accessibility_observer = Some(display::AccessibilityDisplayObserver::install(
+                mtm,
+                Box::new(move || {
+                    let _ = tx.try_send(());
+                }),
+            ));
+            self.accessibility_task = Some(cx.spawn(async move |this, cx| {
+                while rx.recv().await.is_ok() {
+                    let prefs = prefs_from(display::current_options());
+                    let updated = this.update(cx, |view, cx| {
+                        view.set_system_accessibility(prefs, cx);
+                    });
+                    if updated.is_err() {
+                        break;
+                    }
+                }
+            }));
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            let _ = cx;
+        }
+    }
+
+    /// Live accessibility-change sink: store the new options and re-present.
+    pub(crate) fn set_system_accessibility(
+        &mut self,
+        prefs: AccessibilityPrefs,
+        cx: &mut Context<Self>,
+    ) {
+        if self.system_accessibility != prefs {
+            self.system_accessibility = prefs;
+            cx.notify();
+        }
+    }
+
+    /// Testkit seam: force Increase Contrast and/or Reduce Motion regardless
+    /// of the host (`None` returns that option to the observed system value).
+    /// The §15 `contrast` and `reduced_motion` snapshot fields report the
+    /// effective values.
+    #[cfg(feature = "testkit")]
+    pub fn set_accessibility_override(
+        &mut self,
+        increase_contrast: Option<bool>,
+        reduce_motion: Option<bool>,
+        cx: &mut Context<Self>,
+    ) {
+        self.accessibility_override = AccessibilityOverride {
+            increase_contrast,
+            reduce_motion,
+        };
+        cx.notify();
     }
 
     /// The effective production `ThemeMode`: a testkit appearance override
@@ -112,9 +252,85 @@ impl BbrApp {
     }
 }
 
+#[cfg(target_os = "macos")]
+fn prefs_from(
+    options: bbr_web_macos::accessibility_display::AccessibilityDisplayOptions,
+) -> AccessibilityPrefs {
+    AccessibilityPrefs {
+        increase_contrast: options.increase_contrast,
+        reduce_motion: options.reduce_motion,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn accessibility_prefs_map_to_theme_modes() {
+        let both_off = AccessibilityPrefs::default();
+        assert_eq!(
+            theme_modes_for(both_off),
+            (ContrastMode::Standard, MotionMode::Standard)
+        );
+        let contrast = AccessibilityPrefs {
+            increase_contrast: true,
+            reduce_motion: false,
+        };
+        assert_eq!(
+            theme_modes_for(contrast),
+            (ContrastMode::Increased, MotionMode::Standard)
+        );
+        let motion = AccessibilityPrefs {
+            increase_contrast: false,
+            reduce_motion: true,
+        };
+        assert_eq!(
+            theme_modes_for(motion),
+            (ContrastMode::Standard, MotionMode::Reduced)
+        );
+    }
+
+    #[test]
+    fn accessibility_override_wins_per_option() {
+        let system = AccessibilityPrefs {
+            increase_contrast: true,
+            reduce_motion: false,
+        };
+        // No override: the system decides.
+        assert_eq!(
+            effective_accessibility(system, AccessibilityOverride::default()),
+            system
+        );
+        #[cfg(feature = "testkit")]
+        {
+            // Each option is overridden independently; `None` keeps the
+            // system value for that option.
+            let forced = effective_accessibility(
+                system,
+                AccessibilityOverride {
+                    increase_contrast: None,
+                    reduce_motion: Some(true),
+                },
+            );
+            assert_eq!(
+                forced,
+                AccessibilityPrefs {
+                    increase_contrast: true,
+                    reduce_motion: true,
+                }
+            );
+            let cleared = effective_accessibility(
+                system,
+                AccessibilityOverride {
+                    increase_contrast: Some(false),
+                    reduce_motion: None,
+                },
+            );
+            assert!(!cleared.increase_contrast);
+            assert!(!cleared.reduce_motion);
+        }
+    }
 
     #[test]
     fn appearance_maps_deterministically_to_theme_mode() {

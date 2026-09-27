@@ -1530,6 +1530,14 @@ pub enum Request {
     SetAppearanceOverride {
         mode: Option<ThemeModeOverride>,
     },
+    /// Force macOS Increase Contrast and/or Reduce Motion regardless of the
+    /// host (task packet `v2-system-prefs`): each `None` returns that option
+    /// to the observed system value. The §15 snapshot `contrast` and
+    /// `reduced_motion` fields report the effective values.
+    SetAccessibilityOverride {
+        increase_contrast: Option<bool>,
+        reduce_motion: Option<bool>,
+    },
     /// Present the shell as if the window were in native full screen (or
     /// not), regardless of the AppKit state (DESIGN §2 full-bleed card):
     /// programmatic `toggleFullScreen:` never completes on this host's

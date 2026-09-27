@@ -85,13 +85,18 @@ pub enum ThemeModeOverride {
     Dark,
 }
 
-/// The shell's resolved §15 mode fields (theme/contrast/density).
+/// The shell's resolved §15 mode fields (theme/contrast/density/motion).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct ShellModes {
     pub theme: String,
     pub contrast: String,
     pub density: String,
+    /// §15 `reduced_motion`: the effective macOS Reduce Motion setting
+    /// (task packet `v2-system-prefs`). An older payload without the field
+    /// deserializes to `false`.
+    #[serde(default)]
+    pub reduced_motion: bool,
 }
 
 /// Stable space identity on the portable test wire.

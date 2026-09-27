@@ -390,6 +390,22 @@ pub struct BbrApp {
     /// regardless of the host. `None` follows the system.
     #[cfg(feature = "testkit")]
     appearance_override: Option<bbr_ui::theme::ThemeMode>,
+    /// The observed macOS Increase Contrast / Reduce Motion options (task
+    /// packet `v2-system-prefs`); corrected by `observe_system_accessibility`
+    /// before the first presented frame and kept live by the native
+    /// workspace notification.
+    system_accessibility: appearance::AccessibilityPrefs,
+    /// Testkit-only per-option accessibility override (`None` follows the
+    /// system).
+    #[cfg(feature = "testkit")]
+    accessibility_override: appearance::AccessibilityOverride,
+    /// Keeps the native accessibility-display registration alive; dropping
+    /// it removes the observer.
+    #[cfg(target_os = "macos")]
+    accessibility_observer:
+        Option<bbr_web_macos::accessibility_display::AccessibilityDisplayObserver>,
+    /// The foreground task draining accessibility-change signals.
+    accessibility_task: Option<gpui::Task<()>>,
     /// Testkit-only full-screen presentation override (DESIGN §2 full-bleed
     /// card): `None` follows the real window's full-screen state.
     #[cfg(feature = "testkit")]
@@ -654,6 +670,12 @@ impl BbrApp {
             system_appearance: bbr_ui::theme::ThemeMode::Light,
             #[cfg(feature = "testkit")]
             appearance_override: None,
+            system_accessibility: appearance::AccessibilityPrefs::default(),
+            #[cfg(feature = "testkit")]
+            accessibility_override: appearance::AccessibilityOverride::default(),
+            #[cfg(target_os = "macos")]
+            accessibility_observer: None,
+            accessibility_task: None,
             #[cfg(feature = "testkit")]
             full_screen_override: None,
             #[cfg(feature = "testkit")]

@@ -106,6 +106,9 @@ objc2-app-kit = { workspace = true, features = [
     # Downloads: NSWorkspace for Reveal-in-Finder
     # (activateFileViewerSelectingURLs:).
     "NSWorkspace",
+    # v2 system preferences: the NSWorkspace accessibility-display category
+    # (Increase Contrast / Reduce Motion) and its change notification.
+    "NSAccessibility",
     # Context menu: NSPasteboard for the Copy Link entry (the BBR-owned
     # context menu's copy writes the page URL to the general pasteboard),
     # NSMenu/NSMenuItem for the WebKit page-menu classification (the

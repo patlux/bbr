@@ -234,8 +234,9 @@ are the only two colored dot states; loading uses the accent, never amber.
 
 ### 3.4 Increase-contrast mode
 
-Applies when macOS `Increase Contrast` is on (and is assertable via a
-`contrast` snapshot field, §15). Changes: text steps per §3.1; hairline
+Applies when macOS `Increase Contrast` is on — observed live through the
+public `NSWorkspace` accessibility-display API and its change notification
+(v2 S1) — and is assertable via the `contrast` snapshot field (§15). Changes: text steps per §3.1; hairline
 strengthened; `accent` darkened/lightened per §3.2; selected tint deepens
 20%; focus ring becomes 3 px with a 1 px material-gap double ring (§9);
 tile washes deepen 7%; the crash/error and attention surfaces gain a 1 px
@@ -347,7 +348,8 @@ with the rest of the scale but keeps the language.
    fact they indicate is already true.
 3. **Direction is meaningful.** Attention and loading never translate chrome;
    they pulse/luminesce in place so nothing scrolls or jumps.
-4. **Reduced Motion** (macOS system setting, assertable) removes all
+4. **Reduced Motion** (macOS system setting, observed live since v2 S1 and
+   reported as `reduced_motion`) removes all
    translation and scale; only opacity at `dur:fine` remains for attention.
    State changes stay 0 ms everywhere. No state requires motion to be
    understood — every animated cue has a static counterpart.
@@ -1782,7 +1784,7 @@ second is replaced by the ring).
 | Slice | Packet | Lands in | Status |
 |---|---|---|---|
 | S0 contract | [v2 contract](docs/roadmap/tasks/v2-contract.md) | §6 D11, §17.17, §18 | landed 2026-09-28 |
-| S1 system preferences | [system preferences](docs/roadmap/tasks/v2-system-prefs.md) | §3.4, §6, §15 | adopted |
+| S1 system preferences | [system preferences](docs/roadmap/tasks/v2-system-prefs.md) | §3.4, §6, §15 | landed 2026-09-28 |
 | S2 tokens | [tokens](docs/roadmap/tasks/v2-tokens.md) | §2, §3, §5 | adopted |
 | S3 rail | [rail](docs/roadmap/tasks/v2-rail.md) | §4, §10.2–§10.4, §11.1, §11.4, §11.5, §11.10 | adopted |
 | S4 space paper | [space paper](docs/roadmap/tasks/v2-space-paper.md) | §11.3 | adopted |
