@@ -70,7 +70,7 @@ pub struct SidebarObserver {
     /// §11.11 folder-row focus.
     pub on_focus_folder: FolderCallback,
     /// §11.11 folder-row hover used by the count-reveal presentation.
-    pub on_hover_folder: Rc<dyn Fn(FolderId, bool, &mut Window, &mut App)>,
+    pub on_hover_folder: FolderHoverCallback,
     /// §11.11 folder disclosure.
     pub on_toggle_folder: FolderCallback,
     /// §11.11 nested member select.
@@ -102,6 +102,8 @@ pub struct SidebarObserver {
 /// The shared record action: one observation plus whether the slot stops
 /// propagation (the production contract the constructor owns).
 type RecordObservation = Rc<dyn Fn(SidebarObservation, bool, &mut App)>;
+/// §11.11 folder-row hover callback (folder id, hovered).
+pub type FolderHoverCallback = Rc<dyn Fn(FolderId, bool, &mut Window, &mut App)>;
 
 /// Build the production sidebar observer callbacks from one record action.
 /// `record` re-enters the app's production record path (the app-owned

@@ -708,7 +708,7 @@ mod tests {
             reload_hovered: true,
             reload_pressed: false,
         };
-        let json = serde_json::to_value(&titlebar).unwrap();
+        let json = serde_json::to_value(titlebar).unwrap();
         assert_eq!(
             json,
             json!({
