@@ -29,6 +29,7 @@ pub mod external_urls;
 pub mod favicon;
 pub mod file_panels;
 pub mod find_in_page;
+pub mod media;
 pub mod new_window;
 pub mod permissions;
 pub mod site_settings;

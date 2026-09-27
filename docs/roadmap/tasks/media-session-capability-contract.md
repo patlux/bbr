@@ -105,13 +105,19 @@ No concurrent writer may own the same `bbr-web` event/action envelope,
 
 ### Unit and contract
 
-- [ ] Capability matrix covers every subset relevant to play/pause/seek/
+- [x] Capability matrix covers every subset relevant to play/pause/seek/
       previous/next/mute and ensures unsupported commands return typed refusal.
-- [ ] Stale generation, navigation/reload, ended session, crash, close, and
+      *(`bbr_web::media` registry: all 64 subsets × 7 commands.)*
+- [x] Stale generation, navigation/reload, ended session, crash, close, and
       WebView replacement reject without affecting another session.
+      *(Registry contract: `invalidate` ends the session, the next playback
+      gets a new generation, old ids are `Stale`/`Ended`. Wiring those
+      engine events to `invalidate` lands with the adapter integration.)*
 - [ ] Two simultaneous sessions retain independent identity, state, and
-      profile isolation; recency ordering is deterministic.
-- [ ] Unknown/live duration has no fake total or seek capability.
+      profile isolation; recency ordering is deterministic. *(Identity,
+      state and recency proven in the registry; profile isolation is the
+      app-boundary mapping and remains open.)*
+- [x] Unknown/live duration has no fake total or seek capability.
 - [ ] Portable API object-safety/serialization/redaction and no-framework/
       no-unsafe gates pass.
 
