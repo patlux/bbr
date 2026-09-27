@@ -583,11 +583,6 @@ pub(crate) fn dispatch(
         .map(Response::Snapshot)
         .unwrap_or_else(err_response),
 
-        // Deterministic appearance override (task packet
-        // `system-appearance-theme`): force the effective production mode
-        // regardless of the host appearance (`None` clears the override and
-        // returns to the observed macOS system appearance). The snapshot's
-        // §15 `theme` field reports the effective mode.
         // §2 full-bleed card presentation seam (see the request docs for
         // the host-side full-screen block).
         Request::SetFullScreenOverride { full_screen } => {
@@ -614,6 +609,11 @@ pub(crate) fn dispatch(
         })
         .unwrap_or_else(err_response),
 
+        // Deterministic appearance override (task packet
+        // `system-appearance-theme`): force the effective production mode
+        // regardless of the host appearance (`None` clears the override and
+        // returns to the observed macOS system appearance). The snapshot's
+        // §15 `theme` field reports the effective mode.
         Request::SetAppearanceOverride { mode } => {
             with_app(window, app, cx, |view, _window, cx| {
                 view.set_appearance_override(

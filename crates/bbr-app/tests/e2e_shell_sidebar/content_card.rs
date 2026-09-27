@@ -94,6 +94,17 @@ fn content_card_seats_the_native_slot_through_resize_collapse_and_full_screen() 
 
         // Collapse: the leading inset appears and the native titlebar band
         // stays empty chassis above the card.
+        // The native traffic lights (they do not move with the rail) are
+        // the independent geometry the collapsed card must clear.
+        let lights = client
+            .snapshot()
+            .expect("expanded snapshot")
+            .titlebar
+            .traffic_lights;
+        assert!(
+            lights[2] > 0.0 && lights[3] > 0.0,
+            "traffic lights measured"
+        );
         keystroke(&mut client, "cmd-b");
         let band = client
             .snapshot()
@@ -107,6 +118,12 @@ fn content_card_seats_the_native_slot_through_resize_collapse_and_full_screen() 
         });
         assert_eq!(collapsed.content_card.inset_top, band.max(CONTENT_INSET));
         assert_eq!(collapsed.content_card.inset_leading, CONTENT_INSET);
+        assert!(
+            collapsed.content_rect[1] >= lights[1] + lights[3],
+            "the card clears the traffic lights: top {} vs {:?}",
+            collapsed.content_rect[1],
+            lights
+        );
         assert_ids(&collapsed, &["bbr-content-card", "bbr-chassis-band"]);
         assert_view_and_sessions_preserved(&collapsed, view, sessions);
 

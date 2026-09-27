@@ -88,6 +88,16 @@ fn titlebar_presents_safe_area_and_availability() {
             tl_x >= 0.0 && tl_y >= 0.0,
             "traffic lights inside the window"
         );
+        // Regression: the lights were measured in their superview's
+        // coordinates and flipped against the whole window, which put them
+        // near the window's bottom edge. In top-left window coordinates they
+        // sit inside the titlebar strip.
+        assert!(
+            tl_y + tl_h <= settled.titlebar.safe_area_height,
+            "traffic lights inside the titlebar strip: {:?} vs strip {}",
+            settled.titlebar.traffic_lights,
+            settled.titlebar.safe_area_height
+        );
         assert!(!settled.titlebar.sidebar_collapsed);
 
         // Genuine availability: a fresh fixture page has no history (Back/
@@ -256,9 +266,14 @@ fn titlebar_toggle_parity_and_collapse_removes_the_header() {
             collapsed_rect.content_rect[2],
             window_w - 2.0 * CONTENT_INSET
         );
+        // Checked against the native traffic-light geometry itself (not the
+        // band height the app sized the card with, which would be circular).
+        let [_, lights_top, _, lights_height] = settled.titlebar.traffic_lights;
+        let lights_bottom = lights_top + lights_height;
         assert!(
-            collapsed_rect.content_rect[1] >= collapsed.titlebar.safe_area_height,
-            "no web content under the traffic lights"
+            collapsed_rect.content_rect[1] >= lights_bottom,
+            "no web content under the traffic lights: card top {} vs lights bottom {lights_bottom}",
+            collapsed_rect.content_rect[1]
         );
 
         // Cmd-B expands: the last expanded width (320) and the complete

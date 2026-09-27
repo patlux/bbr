@@ -75,7 +75,13 @@ pub fn safe_titlebar_guide(_mtm: MainThreadMarker, root: &NSView) -> Option<Safe
     ] {
         let button: Option<Retained<NSButton>> = window.standardWindowButton(kind);
         if let Some(button) = button.as_deref() {
-            let rect = flip_window_frame(button.frame(), frame.size.height);
+            // `frame()` is relative to the button's superview (the titlebar
+            // container), not the window: convert the bounds to window
+            // coordinates first (bottom-left origin, frame-sized), then
+            // flip. Flipping the superview-relative frame put the lights
+            // near the window's bottom edge.
+            let in_window = button.convertRect_toView(button.bounds(), None);
+            let rect = flip_window_frame(in_window, frame.size.height);
             traffic_lights = Some(match traffic_lights {
                 Some(region) => union_rect(region, rect),
                 None => rect,
