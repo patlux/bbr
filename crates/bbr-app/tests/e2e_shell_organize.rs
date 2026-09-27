@@ -33,6 +33,11 @@ const ROW_H: f32 = 36.0;
 /// gap): rows render on this step, so pointer moves between slots use the
 /// pitch the render lays out in (36 pt surfaces, 4 pt gaps).
 const PITCH: f32 = 40.0;
+/// §11.2 drag offer: once a drag of an unpinned row activates, the
+/// organized area appends the one-pitch "Pin tab here" ghost row above the
+/// regular region, so every regular row sits one pitch lower for the rest
+/// of the gesture. A pinned source sits above it and does not move.
+const PIN_OFFER_GROWTH: f32 = PITCH;
 
 /// Assert the full tab row order by URL plus the pinned boundary and the
 /// selected row, so a wrong order or a wrong boundary fails loudly.
@@ -477,11 +482,21 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         client
             .send_ok(&dsl::begin_tab_drag(0, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin drag");
+        // §10.9: the activation move presents the drag (and commits the
+        // offers' growth); targets resolve from the next move.
+        client
+            .send_ok(&dsl::move_tab_drag(0.0, 6.0))
+            .expect("activation move");
         client
             .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
             .expect("move drag down");
         let during = client.snapshot().expect("during drag snapshot");
         assert_eq!(during.drag_source, Some(0));
+        assert_eq!(
+            during.drag_offers.growth,
+            Some(0.0),
+            "a pinned row sits above every offer; nothing moves it"
+        );
         assert_eq!(during.drag_slot, Some(2));
         assert!(during.drag_valid, "slot 2 is the pinned region's own end");
         assert_ids(&during, &["bbr-drag-tick-2"]);
@@ -507,6 +522,11 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         client
             .send_ok(&dsl::begin_tab_drag(1, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin boundary drag");
+        // §10.9: the activation move presents the drag (and commits the
+        // offers' growth); targets resolve from the next move.
+        client
+            .send_ok(&dsl::move_tab_drag(0.0, 6.0))
+            .expect("activation move");
         client
             .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
             .expect("move into the regular region");
@@ -536,15 +556,29 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         assert_eq!(boundary_events, 0, "illegal drop emits no reorder");
 
         // Legal regular-region reorder: drag the first regular row (index 2)
-        // two rows down — slot 4, the regular region's own end.
+        // two rows down — slot 4, the regular region's own end. The ghost
+        // row moved the regular rows one pitch down at activation, so the
+        // pointer travels that pitch on top.
         client
             .send_ok(&dsl::begin_tab_drag(2, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin regular drag");
+        // §10.9: the activation move presents the drag (and commits the
+        // offers' growth); targets resolve from the next move.
         client
-            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
+            .send_ok(&dsl::move_tab_drag(0.0, 6.0))
+            .expect("activation move");
+        client
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH + PIN_OFFER_GROWTH))
             .expect("move regular down");
+        let regular_drag = client.snapshot().expect("regular drag snapshot");
+        assert_eq!(
+            regular_drag.drag_offers.growth,
+            Some(PIN_OFFER_GROWTH),
+            "the ghost row is the only growth above an unpinned row"
+        );
+        assert_eq!(regular_drag.drag_slot, Some(4));
         assert!(
-            client.snapshot().expect("regular drag snapshot").drag_valid,
+            regular_drag.drag_valid,
             "within the regular region the drop is legal"
         );
         client
@@ -578,8 +612,13 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         client
             .send_ok(&dsl::begin_tab_drag(2, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin cancel drag");
+        // §10.9: the activation move presents the drag (and commits the
+        // offers' growth); targets resolve from the next move.
         client
-            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
+            .send_ok(&dsl::move_tab_drag(0.0, 6.0))
+            .expect("activation move");
+        client
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH + PIN_OFFER_GROWTH))
             .expect("move cancel drag");
         assert!(client
             .snapshot()
@@ -611,6 +650,11 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         client
             .send_ok(&dsl::begin_tab_drag(0, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin slot-0 drag");
+        // §10.9: the activation move presents the drag (and commits the
+        // offers' growth); targets resolve from the next move.
+        client
+            .send_ok(&dsl::move_tab_drag(0.0, 6.0))
+            .expect("activation move");
         client
             .send_ok(&dsl::move_tab_drag(0.0, -(ROW_H / 2.0)))
             .expect("move to list top");

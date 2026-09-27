@@ -49,6 +49,8 @@ pub enum DragTarget {
     Tab { slot: usize },
     /// The §11.10 favorites grid: toggle the dragged tab as a favorite.
     Favorites,
+    /// The §11.2 "Pin tab here" ghost row: pin the dragged (unpinned) tab.
+    PinOffer,
     /// A §11.3 identity chip in the permanent footer strip: move the
     /// dragged tab into that exact persistent space.
     Chip { space: SpaceId },
@@ -111,6 +113,10 @@ pub struct DragGeometry<'a> {
     /// anchor, never a parallel layout model). `None` when the region does
     /// not render (no tiles and no in-flight drag — no droppable band).
     pub favorites_band: Option<(f32, f32)>,
+    /// The §11.2 ghost row's rendered span `(y_top, y_bottom)` in window
+    /// coordinates (recorded by its anchor). `None` while no ghost row
+    /// renders or it does not offer pinning to this source.
+    pub pin_offer: Option<(f32, f32)>,
     /// The §11.3 strip chips' visual spans, in canonical display order
     /// (empty when the strip layout has not run yet — no chip targets).
     pub chips: &'a [ChipSpan],
@@ -139,6 +145,8 @@ pub struct DragGeometry<'a> {
 ///   window-global favorites). The band is addressed by the pointer's
 ///   absolute position, independent of the press anchor — exactly like the
 ///   strip chips — so it never drifts from the rendered region.
+/// - The pointer over the §11.2 ghost row's recorded span targets the pin
+///   offer (a drop pins the dragged tab).
 /// - The pointer over the tab list resolves to an insertion slot inside the
 ///   source region. A slot outside the region (the pinned/regular boundary
 ///   crossing) is illegal: the target clamps to the region edge so the tick
@@ -164,6 +172,7 @@ pub fn resolve_target(
         len,
         pitch,
         favorites_band,
+        pin_offer,
         chips,
     } = *geometry;
     // §11.3 drag-to-chip: the strip sits below the tab list in the footer;
@@ -198,6 +207,15 @@ pub fn resolve_target(
     if let Some((band_top, band_bottom)) = favorites_band {
         if pointer_y >= band_top && pointer_y < band_bottom {
             return (Some(DragTarget::Favorites), true);
+        }
+    }
+    // §11.2 drag-to-pin: the ghost row the organized area appends while an
+    // unpinned tab is dragged, hit by its recorded absolute span. It is a
+    // region-level offer: a drop pins the tab at the end of the pinned
+    // block.
+    if let Some((row_top, row_bottom)) = pin_offer {
+        if pointer_y >= row_top && pointer_y < row_bottom {
+            return (Some(DragTarget::PinOffer), true);
         }
     }
     // Distance from the pointer up to the tab list's top edge. The press

@@ -14,6 +14,7 @@ fn geometry<'a>(pinned: usize, len: usize, chips: &'a [ChipSpan]) -> DragGeometr
         len,
         pitch: 40.0,
         favorites_band: None,
+        pin_offer: None,
         chips,
     }
 }
@@ -32,6 +33,7 @@ fn geometry_with_favorites<'a>(
         len,
         pitch: 40.0,
         favorites_band: Some(favorites_band),
+        pin_offer: None,
         chips,
     }
 }
@@ -266,4 +268,38 @@ fn splice_index_maps_visual_slots_to_domain_indices() {
     assert_eq!(splice_index(3, 1), 1);
     // Dropping at the source slot is a no-op.
     assert_eq!(splice_index(2, 2), 2);
+}
+
+#[test]
+fn the_ghost_row_is_a_region_offer_hit_by_its_rendered_span() {
+    // §11.2: the ghost row is hit by the pointer's absolute y against its
+    // recorded span, before the tab-slot math, and never overlaps the
+    // Favorites band or a chip. Outside its span the list math applies.
+    let chips = [chip(9, 60.0, 150.0, 640.0, 676.0)];
+    let g = DragGeometry {
+        pinned: 1,
+        len: 4,
+        pitch: 40.0,
+        favorites_band: Some((100.0, 160.0)),
+        pin_offer: Some((220.0, 256.0)),
+        chips: &chips,
+    };
+    let (target, valid) = resolve_target(2, 10.0, 238.0, -60.0, center_press(), &g);
+    assert_eq!(target, Some(DragTarget::PinOffer));
+    assert!(valid, "pinning an unpinned tab is a legal drop");
+    // The band and the chips keep their own targets.
+    let (target, _) = resolve_target(2, 10.0, 130.0, -170.0, center_press(), &g);
+    assert_eq!(target, Some(DragTarget::Favorites));
+    let (target, _) = resolve_target(2, 100.0, 658.0, 358.0, center_press(), &g);
+    assert_eq!(target, Some(DragTarget::Chip { space: SpaceId(9) }));
+    // Just below the span the list math resolves a slot again.
+    let (target, _) = resolve_target(2, 10.0, 256.0, 0.0, center_press(), &g);
+    assert_eq!(target, Some(DragTarget::Tab { slot: 2 }));
+    // Without a rendered ghost row there is no pin offer.
+    let g = DragGeometry {
+        pin_offer: None,
+        ..g
+    };
+    let (target, _) = resolve_target(2, 10.0, 238.0, -60.0, center_press(), &g);
+    assert_ne!(target, Some(DragTarget::PinOffer));
 }

@@ -74,6 +74,18 @@ fn id_at(snapshot: &Snapshot, index: usize) -> u64 {
         .id
 }
 
+/// The measured Favorites region height equals the pure
+/// `favorites_region_height` the drag growth derives from.
+fn assert_region_height(snapshot: &Snapshot) {
+    let rect = snapshot.favorites_rect.expect("favorites rect");
+    assert!(
+        (rect[3] - snapshot.favorites_region_height).abs() < 0.5,
+        "rendered region {} vs favorites_region_height {}",
+        rect[3],
+        snapshot.favorites_region_height
+    );
+}
+
 fn has(snapshot: &Snapshot, id: &str) -> bool {
     snapshot.visible_ids.iter().any(|visible| visible == id)
 }
@@ -127,6 +139,23 @@ fn ghost_row_pins_the_dragged_tab_with_one_live_target() {
         assert_no_offers(&rest);
         let sessions = rest.engine_sessions;
         let dragged_id = id_at(&rest, 2);
+        assert_region_height(&rest);
+
+        // Regression: releasing right after the activation move is a no-op.
+        // The ghost row grows the rail one pitch above the source in the
+        // next frame, so resolving the activation event against the
+        // pre-growth geometry used to target the slot above and reorder.
+        let micro = activate_drag(&mut client, 2);
+        assert_eq!(micro.drag_slot, Some(2), "activation keeps the source slot");
+        client
+            .send_ok(&dsl::end_tab_drag())
+            .expect("release micro drag");
+        flush(&mut client);
+        let unmoved = client.snapshot().expect("micro-drag snapshot");
+        assert_eq!(id_at(&unmoved, 2), dragged_id, "no reorder");
+        assert_eq!(unmoved.pinned_count, 0, "no pin");
+        assert_eq!(unmoved.engine_sessions, sessions);
+        assert_no_offers(&unmoved);
 
         // Activation: the ghost row, the band and the proxy appear together
         // in one frame, and the growth above the unpinned row is exactly
@@ -158,6 +187,7 @@ fn ghost_row_pins_the_dragged_tab_with_one_live_target() {
         );
         assert!(!active.drag_offers.pin_offer_targeted);
         assert!(!active.drag_favorites);
+        assert_region_height(&active);
 
         // The proxy keeps the press point under the pointer and follows it.
         let proxy = active.drag_offers.proxy_rect.expect("proxy rect");
@@ -176,7 +206,10 @@ fn ghost_row_pins_the_dragged_tab_with_one_live_target() {
         assert!(!over_ghost.drag_favorites, "one live target at a time");
         assert_eq!(over_ghost.drag_slot, None);
         assert!(over_ghost.drag_valid, "pinning an unpinned tab is legal");
-        assert!(has(&over_ghost, "bbr-favorites-empty"), "the band stays offered");
+        assert!(
+            has(&over_ghost, "bbr-favorites-empty"),
+            "the band stays offered"
+        );
         let moved_proxy = over_ghost.drag_offers.proxy_rect.expect("proxy rect");
         assert!(
             (moved_proxy[1] - (center_y(ghost) - ROW_H / 2.0)).abs() < 0.5,
@@ -196,7 +229,9 @@ fn ghost_row_pins_the_dragged_tab_with_one_live_target() {
         // Back over the ghost row and drop: the exact dragged tab is pinned
         // at the end of the (empty) pinned block with its live session.
         move_to(&mut client, PRESS_X, center_y(ghost));
-        client.send_ok(&dsl::end_tab_drag()).expect("drop on ghost row");
+        client
+            .send_ok(&dsl::end_tab_drag())
+            .expect("drop on ghost row");
         since = wait_browser_change(&mut client, BrowserChange::TabPinned { index: 0 }, since);
         flush(&mut client);
         let pinned = client.snapshot().expect("pinned snapshot");
@@ -279,6 +314,7 @@ fn drop_cell_grows_once_at_activation_and_favorites_the_tab() {
         );
         assert_no_offers(&rest);
         let rest_band = rest.favorites_rect.expect("band rect at rest");
+        assert_region_height(&rest);
         let sessions = rest.engine_sessions;
         let dragged_id = id_at(&rest, 4);
 
@@ -289,6 +325,7 @@ fn drop_cell_grows_once_at_activation_and_favorites_the_tab() {
         let tile_row = active.favorites_tile_size[1] + FAVORITES_GAP;
         assert_eq!(active.drag_offers.growth, Some(PITCH + tile_row));
         let grown = active.favorites_rect.expect("band rect during the drag");
+        assert_region_height(&active);
         assert!(
             (grown[3] - (rest_band[3] + tile_row)).abs() < 0.5,
             "the region grows by one tile row: {} → {}",
@@ -308,13 +345,23 @@ fn drop_cell_grows_once_at_activation_and_favorites_the_tab() {
         // Over the grid the drop cell is the live target; drop it.
         let over_cell = move_to(&mut client, PRESS_X, center_y(grown));
         assert!(over_cell.drag_favorites);
+        assert_eq!(
+            over_cell.favorites_rect,
+            Some(grown),
+            "targeting the grid never outlines (and reflows) the region"
+        );
         assert!(!over_cell.drag_offers.pin_offer_targeted);
         assert!(over_cell.drag_valid);
-        client.send_ok(&dsl::end_tab_drag()).expect("drop on the cell");
+        client
+            .send_ok(&dsl::end_tab_drag())
+            .expect("drop on the cell");
         flush(&mut client);
         let dropped = client.snapshot().expect("dropped snapshot");
         assert_eq!(dropped.favorites.len(), 5, "one new tile");
-        assert_eq!(dropped.favorites[4].tab, dragged_id, "the exact dragged tab");
+        assert_eq!(
+            dropped.favorites[4].tab, dragged_id,
+            "the exact dragged tab"
+        );
         assert_eq!(dropped.tabs.len(), 5, "a drop never copies a tab");
         assert_eq!(dropped.engine_sessions, sessions, "no session change");
         assert_eq!(dropped.pinned_count, 0, "a favorite drop never pins");
@@ -323,6 +370,7 @@ fn drop_cell_grows_once_at_activation_and_favorites_the_tab() {
         // in the next free cell — the height the drag already reserved.
         assert!(has(&dropped, "bbr-favorites-empty"));
         assert_eq!(dropped.favorites_rect, Some(grown));
+        assert_region_height(&dropped);
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

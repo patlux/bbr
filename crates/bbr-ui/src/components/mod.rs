@@ -3,7 +3,8 @@
 //!
 //! Every shell surface composes these instead of inventing local layout:
 //! section labels, favicon tiles (monogram fallback), tab rows (pinned/
-//! regular anatomy), the close/pin controls, the drag insertion tick,
+//! regular anatomy), the close/pin controls, the drag insertion tick, the
+//! §10.9 drag offers (ghost row, drag proxy),
 //! profile chips, the empty-space pane, the crash panel, the §11.10
 //! favorites grid, the §11.11 folder rows, the §11.4 footer row, the
 //! plus-menu item contract, and the §11.5 address pill + staging surface.
@@ -18,6 +19,7 @@
 //! migration is a pure import-path change).
 
 pub mod address;
+pub mod drag_offer;
 pub mod drag_tick;
 pub mod favicon;
 pub mod favorites;

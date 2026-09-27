@@ -138,16 +138,6 @@ impl Density {
         })
     }
 
-    /// Reference-calibrated Favorite tile width. Normal density uses four
-    /// 64 pt tiles inside the 300 pt rail.
-    pub fn favorite_tile_width(self) -> Pixels {
-        px(match self {
-            Density::Small => 40.0,
-            Density::Normal => 64.0,
-            Density::ExtraLarge => 88.0,
-        })
-    }
-
     /// Reference-calibrated Favorite tile height (36 / 44 / 52 pt).
     pub fn favorite_tile_height(self) -> Pixels {
         px(match self {
@@ -225,7 +215,6 @@ mod tests {
         assert_eq!(Density::Small.favorites_gap(), px(4.0));
         assert_eq!(Density::Normal.favorites_gap(), px(4.0));
         assert_eq!(Density::ExtraLarge.favorites_gap(), px(8.0));
-        assert_eq!(Density::Normal.favorite_tile_width(), px(64.0));
         assert_eq!(Density::Normal.favorite_tile_height(), px(44.0));
         assert_eq!(Density::Small.state_slot(), px(8.0));
         assert_eq!(Density::Normal.state_slot(), px(10.0));

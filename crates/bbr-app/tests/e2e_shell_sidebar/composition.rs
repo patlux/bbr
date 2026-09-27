@@ -104,12 +104,24 @@ fn full_rail_composition_region_and_semantic_ordering() {
                 .any(|id| id == "bbr-brand" || id == "bbr-status"),
             "settled rail omits standalone brand and redundant status"
         );
+        // §11.10: the Favorites region is always present — at zero
+        // favorites its drop band names the region and the gesture (never a
+        // grid); the empty folders region still hides with its label.
+        assert_ids(
+            &initial,
+            &[
+                "bbr-section-favorites",
+                "bbr-favorites-empty",
+                "bbr-favorites-empty-label",
+                "bbr-favorites-empty-hint",
+            ],
+        );
         assert!(
             !initial
                 .visible_ids
                 .iter()
-                .any(|id| id == "bbr-section-favorites" || id == "bbr-section-folders"),
-            "empty regions hide their labels"
+                .any(|id| id == "bbr-favorites" || id == "bbr-section-folders"),
+            "no grid without favorites; the empty folders region hides"
         );
         // One rail authority: no legacy [Spaces] toggle or revealed-list
         // ids render anywhere in the rail.

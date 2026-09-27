@@ -49,11 +49,15 @@ use super::tabs::tab_surface;
 /// recorder the tab-drag resolver targets the real rendered drop band
 /// with); `command_results` is the app-owned §11.5 in-rail ranking
 /// surface; `space_config_panel` is the app-owned §11.3 rename/identity
-/// configuration surface. All five are app-owned elements grouped at the
-/// composition boundary — the model itself stays plain data.
+/// configuration surface; `pin_offer_anchor` and `drag_proxy_anchor` are
+/// the app-owned rect recorders inside the §11.2 ghost row and the §10.9
+/// drag proxy (only used while those render). All are app-owned elements
+/// grouped at the composition boundary — the model itself stays plain data.
 pub struct SidebarChildren {
     pub command_field_anchor: AnyElement,
     pub favorites_band_anchor: AnyElement,
+    pub pin_offer_anchor: Option<AnyElement>,
+    pub drag_proxy_anchor: Option<AnyElement>,
     pub command_results: Option<AnyElement>,
     pub downloads_panel: Option<AnyElement>,
     pub space_config_panel: Option<AnyElement>,
@@ -68,6 +72,8 @@ pub fn sidebar_surface(
     let SidebarChildren {
         command_field_anchor,
         favorites_band_anchor,
+        pin_offer_anchor,
+        drag_proxy_anchor,
         command_results,
         downloads_panel,
         space_config_panel,
@@ -80,7 +86,17 @@ pub fn sidebar_surface(
         .plus_menu
         .as_ref()
         .map(|plus_menu| plus_menu_surface(theme, model, plus_menu, callbacks));
-    let tabs = tab_surface(theme, model, callbacks);
+    let tabs = tab_surface(theme, model, callbacks, pin_offer_anchor);
+    // §10.9: the lifted row follows the pointer above the whole rail (the
+    // rail's origin is the window origin, so the proxy rect is in window
+    // coordinates).
+    let drag_proxy = model.drag_proxy.as_ref().map(|proxy| {
+        let element = components::drag_offer::tab_drag_proxy(theme, &proxy.row, proxy.rect);
+        match drag_proxy_anchor {
+            Some(anchor) => element.child(anchor),
+            None => element,
+        }
+    });
     let footer = footer_surface(theme, model, callbacks);
 
     div()
@@ -93,6 +109,7 @@ pub fn sidebar_surface(
         // effective geometry — breaking the §13 content boundary and the
         // §5 clamp (the content floor must stay exact).
         .flex_shrink_0()
+        .relative()
         .flex()
         .flex_row()
         // No right hairline (DESIGN §2 rule 4): the seated content card's
@@ -169,6 +186,7 @@ pub fn sidebar_surface(
             callbacks::mouse(&callbacks.on_divider_mouse_down),
             callbacks::key(&callbacks.on_divider_key_down),
         ))
+        .when_some(drag_proxy, |rail, proxy| rail.child(proxy))
 }
 
 /// The active Space title — the primary list heading in the reference

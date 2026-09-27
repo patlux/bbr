@@ -62,6 +62,11 @@ pub(super) fn drag_onto(client: &mut Client, index: usize, x: f32, y: f32) -> Sn
     client
         .send_ok(&dsl::begin_tab_drag(index, PRESS_X, PRESS_Y, ROW_H / 2.0))
         .expect("begin drag");
+    // §10.9: the activation move presents the drag (and commits the
+    // offers' growth); targets resolve from the next move.
+    client
+        .send_ok(&dsl::move_tab_drag(0.0, 6.0))
+        .expect("activation move");
     client
         .send_ok(&dsl::move_tab_drag(x - PRESS_X, y - PRESS_Y))
         .expect("move onto chip");

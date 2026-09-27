@@ -81,11 +81,14 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
         preview: None,
     };
 
-    // Empty U2 state: the footer is always part of the rail; the
-    // favorites/folders regions and the plus menu stay hidden.
+    // Empty U2 state: the footer is always part of the rail, and so is the
+    // Favorites region — its zero-favorites drop band names the region and
+    // the gesture (§11.10). Folders and the plus menu stay hidden, and no
+    // drag offer renders at rest.
     let ids = super::super::u2::u2_visible_ids(
         &browser,
         &[],
+        false,
         false,
         &[],
         &FolderPresentation::default(),
@@ -98,8 +101,33 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
             "bbr-downloads".to_string(),
             "bbr-space-strip".to_string(),
             "bbr-plus".to_string(),
+            "bbr-section-favorites".to_string(),
+            "bbr-favorites-empty".to_string(),
+            "bbr-favorites-empty-label".to_string(),
+            "bbr-favorites-empty-hint".to_string(),
         ]
     );
+
+    // A tab drag in flight at zero favorites: the band is the Favorites
+    // target (no extra cell), the ghost row offers pinning, and the proxy
+    // follows the pointer.
+    let ids = super::super::u2::u2_visible_ids(
+        &browser,
+        &[],
+        true,
+        true,
+        &[],
+        &FolderPresentation::default(),
+        &PlusMenuState::default(),
+    );
+    for required in [
+        "bbr-favorites-empty",
+        "bbr-pinned-drop-row",
+        "bbr-tab-drag-proxy",
+    ] {
+        assert!(ids.contains(&required.to_string()), "missing {required}");
+    }
+    assert!(!ids.contains(&"bbr-favorites-drop-cell".to_string()));
 
     let favorites = vec![FavoriteSnapshot {
         index: 0,
@@ -123,7 +151,7 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
         selection: 1,
     };
     let ids = super::super::u2::u2_visible_ids(
-        &browser, &favorites, false, &folders, &expanded, &plus_menu,
+        &browser, &favorites, false, false, &folders, &expanded, &plus_menu,
     );
     for required in [
         "bbr-footer",
@@ -150,6 +178,15 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
     ] {
         assert!(ids.contains(&required.to_string()), "missing {required}");
     }
+    // At rest the partly filled grid shows the glyph slot; a drag swaps it
+    // for the drop cell. A pinned source gets no ghost row.
+    assert!(ids.contains(&"bbr-favorites-empty".to_string()));
+    let dragging = super::super::u2::u2_visible_ids(
+        &browser, &favorites, true, false, &folders, &expanded, &plus_menu,
+    );
+    assert!(dragging.contains(&"bbr-favorites-drop-cell".to_string()));
+    assert!(!dragging.contains(&"bbr-favorites-empty".to_string()));
+    assert!(!dragging.contains(&"bbr-pinned-drop-row".to_string()));
 }
 
 fn global_tab(id: u64, url: &str, title: &str) -> bbr_browser::GlobalTabSnapshot {

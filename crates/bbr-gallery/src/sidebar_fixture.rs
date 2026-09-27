@@ -125,6 +125,7 @@ pub fn build_sidebar_fixture(
                 })
                 .collect(),
             targeted: false,
+            offer: case.drag_tick.is_some(),
         })
     } else if case.favorites_band {
         // §11.10: a tab drag is in flight and the empty grid renders as
@@ -134,6 +135,7 @@ pub fn build_sidebar_fixture(
         Some(FavoritesModel {
             tiles: Vec::new(),
             targeted: true,
+            offer: true,
         })
     } else {
         None
@@ -191,6 +193,9 @@ pub fn build_sidebar_fixture(
         tick: case.drag_tick,
         tick_valid: case.tick_valid,
         list_focused: case.list_focused,
+        // §11.2: an in-flight drag of an unpinned row offers the ghost row.
+        pin_offer: case.drag_tick.is_some() || case.favorites_band,
+        pin_offer_targeted: false,
     };
     let status = StatusModel {
         text: SharedString::from(if case.tab_count == 0 {
@@ -261,6 +266,9 @@ pub fn build_sidebar_fixture(
         favorites,
         folders,
         tabs,
+        // The proxy is window-positioned; the rail story shows the in-list
+        // `dragging` row instead.
+        drag_proxy: None,
         status,
         status_visible: false,
         titlebar,

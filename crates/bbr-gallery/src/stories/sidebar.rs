@@ -84,6 +84,9 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         bbr_ui::sidebar::SidebarChildren {
             command_field_anchor: field_anchor,
             favorites_band_anchor,
+            // The ghost-row and proxy rect recorders are app-owned.
+            pin_offer_anchor: None,
+            drag_proxy_anchor: None,
             command_results,
             downloads_panel,
             // The §11.3 Space-configuration panel is an app-owned child;

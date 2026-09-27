@@ -168,11 +168,20 @@ fn dense_edge_states_stay_usable() {
         client
             .send_ok(&dsl::begin_tab_drag(10, 130.0, 400.0, ROW_H / 2.0))
             .expect("begin dense drag");
+        // §10.9: the activation move presents the drag (and commits the
+        // offers' growth); targets resolve from the next move.
         client
-            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH))
+            .send_ok(&dsl::move_tab_drag(0.0, 6.0))
+            .expect("activation move");
+        // §11.2: activating the drag of this unpinned row appends the
+        // one-pitch ghost row above the regular region, so the rows the
+        // render shows sit one pitch lower for the whole gesture.
+        client
+            .send_ok(&dsl::move_tab_drag(0.0, 2.0 * PITCH + PITCH))
             .expect("move dense drag");
         let during = client.snapshot().expect("during dense drag snapshot");
         assert_eq!(during.drag_source, Some(10));
+        assert_eq!(during.drag_offers.growth, Some(PITCH));
         assert_eq!(
             during.drag_slot,
             Some(12),

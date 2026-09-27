@@ -81,11 +81,13 @@ fn footer_row_and_permanent_strip_render_in_the_compact_rail() {
         let identity_id = format!("bbr-space-identity-{}", initial.active_space.0);
         assert!(initial.visible_ids.contains(&chip_id));
         assert!(initial.visible_ids.contains(&identity_id));
-        // Empty favorites/folders regions hide their labels with them.
+        // §11.10: the Favorites region stays present as its drop band; the
+        // empty folders region hides with its label.
+        assert_ids(&initial, &["bbr-section-favorites", "bbr-favorites-empty"]);
         assert!(!initial
             .visible_ids
             .iter()
-            .any(|id| id == "bbr-section-favorites" || id == "bbr-section-folders"));
+            .any(|id| id == "bbr-favorites" || id == "bbr-section-folders"));
         assert!(initial.favorites.is_empty());
         assert!(initial.folders.is_empty());
 

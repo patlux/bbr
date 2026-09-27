@@ -8,15 +8,15 @@
 //! fixture builder, the matrix table, and the tests cannot drift. The
 //! rejected reasons also live here.
 //!
-//! Matrix rows come straight from the packet's Favorites row: S 5-col /
-//! N 4-col / XL 3-col (the deterministic per-density grid contract §11.10
-//! — the tile → index mapping is stable at every sidebar width); the
+//! Matrix rows come straight from the packet's Favorites row: S / N / XL
+//! grids (four columns at every density — §11.10 — so the tile → index
+//! mapping is stable at every sidebar width); the
 //! §7.2 monogram tile anatomy (distinct letters/hues through the
 //! production `FavoriteTileSpec`); the resolved
 //! `TabId + SpaceId + ProfileId` identity of every tile (a favorite is an
 //! additional presentation of one exact tab — the semantic name includes
 //! the owning space/profile when they differ from the current context);
-//! and the empty region (the §11.4 label-hiding rule). Rejected:
+//! and the empty region (the §11.10 drop band). Rejected:
 //! reorder during selection (tiles never reorder, §11.10) and a tile
 //! without a resolved tab/space/profile identity (§11.10 data source).
 //!
@@ -46,8 +46,8 @@ pub const FAVORITES_FAMILY_OFFSET: usize = 10;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FavoriteCase {
     pub label: &'static str,
-    /// The §8 density the family renders at (drives the §11.10 column
-    /// count: S 5 / N 4 / XL 3).
+    /// The §8 density the family renders at (drives the §11.10 tile
+    /// height; the column count is four at every density).
     pub density: Density,
     /// The number of destination tiles in this family's grid.
     pub tile_count: usize,
@@ -84,18 +84,18 @@ impl FavoriteCase {
 }
 
 /// Every valid favorites family — the single declaration the story
-/// renders. The density families cover the §11.10 per-density column
-/// contract (S 5 / N 4 / XL 3), the tile families cover the §7.2 monogram
-/// anatomy and the resolved cross-context identity, and the empty family
-/// covers the §11.4 label-hiding rule.
+/// renders. The density families cover the §11.10 four-column contract at
+/// every density, the tile families cover the §7.2 monogram anatomy and the
+/// resolved cross-context identity, and the empty family covers the §11.10
+/// drop band.
 #[rustfmt::skip]
 pub const FAVORITES_VALID: &[FavoriteCase] = &[
-    FavoriteCase::new("N 4-col grid", Density::Normal, 5, false),
-    FavoriteCase::new("S 5-col grid", Density::Small, 6, false),
-    FavoriteCase::new("XL 3-col grid", Density::ExtraLarge, 7, false),
+    FavoriteCase::new("N grid", Density::Normal, 5, false),
+    FavoriteCase::new("S grid", Density::Small, 6, false),
+    FavoriteCase::new("XL grid", Density::ExtraLarge, 7, false),
     FavoriteCase::new("tile — default monogram + hue", Density::Normal, 3, false),
     FavoriteCase::new("tile — resolved tab/space/profile identity", Density::Normal, 2, true),
-    FavoriteCase::new("empty region — label hidden", Density::Normal, 0, false),
+    FavoriteCase::new("empty region — drop band", Density::Normal, 0, false),
 ];
 
 /// A rejected combination with the exact DESIGN/packet reason (the matrix
@@ -240,12 +240,12 @@ mod tests {
         assert_eq!(
             labels,
             vec![
-                "N 4-col grid",
-                "S 5-col grid",
-                "XL 3-col grid",
+                "N grid",
+                "S grid",
+                "XL grid",
                 "tile — default monogram + hue",
                 "tile — resolved tab/space/profile identity",
-                "empty region — label hidden",
+                "empty region — drop band",
             ]
         );
         let mut seen = BTreeSet::new();
@@ -255,23 +255,22 @@ mod tests {
     }
 
     #[test]
-    fn per_density_column_counts_follow_the_section_11_10_contract() {
-        // §11.10: fixed per-density column counts (S 5 / N 4 / XL 3) so
-        // the tile → index mapping is deterministic at every sidebar width.
-        assert_eq!(grid_columns(Density::Small), 5);
-        assert_eq!(grid_columns(Density::Normal), 4);
-        assert_eq!(grid_columns(Density::ExtraLarge), 3);
-        // The three density families render exactly those counts through
-        // the production grid.
+    fn the_grid_is_four_columns_at_every_density() {
+        // §11.10: the grid is four columns at every density and width, so
+        // the tile → index mapping is deterministic; density scales only
+        // the tile height, the rail scales the tile width.
+        assert_eq!(grid_columns(), 4);
+        // The three density families wrap their tiles into those columns
+        // through the production grid.
         let by_label = |label: &str| {
             FAVORITES_VALID
                 .iter()
                 .find(|c| c.label == label)
                 .unwrap_or_else(|| panic!("family {label}"))
         };
-        assert_eq!(by_label("S 5-col grid").tile_count, 6);
-        assert_eq!(by_label("N 4-col grid").tile_count, 5);
-        assert_eq!(by_label("XL 3-col grid").tile_count, 7);
+        assert_eq!(by_label("S grid").tile_count, 6);
+        assert_eq!(by_label("N grid").tile_count, 5);
+        assert_eq!(by_label("XL grid").tile_count, 7);
     }
 
     #[test]
@@ -284,8 +283,8 @@ mod tests {
                 .find(|c| c.label == label)
                 .unwrap_or_else(|| panic!("family {label}"))
         };
-        let first = build_favorites_fixture(by_label("N 4-col grid")).unwrap();
-        let second = build_favorites_fixture(by_label("S 5-col grid")).unwrap();
+        let first = build_favorites_fixture(by_label("N grid")).unwrap();
+        let second = build_favorites_fixture(by_label("S grid")).unwrap();
         assert_eq!(first[0].index, 0, "family 0 starts at bbr-fav-0");
         assert_eq!(second[0].index, FAVORITES_FAMILY_OFFSET);
         assert_eq!(
@@ -304,8 +303,8 @@ mod tests {
         );
         // Stable: rebuilding yields the identical specs.
         assert_eq!(
-            build_favorites_fixture(by_label("N 4-col grid")),
-            build_favorites_fixture(by_label("N 4-col grid"))
+            build_favorites_fixture(by_label("N grid")),
+            build_favorites_fixture(by_label("N grid"))
         );
     }
 
@@ -327,17 +326,24 @@ mod tests {
     }
 
     #[test]
-    fn empty_region_hides_the_section_label() {
-        // §11.4 region rule: the section label renders only while tiles
-        // exist — `favorites_ids` returns nothing for the empty family.
-        assert!(favorites_ids(&[]).is_empty());
+    fn empty_region_renders_the_drop_band() {
+        // §11.10: the region is always present — with zero favorites it
+        // renders the drop band (region name + gesture), never a grid.
         let empty = FAVORITES_VALID
             .iter()
             .find(|c| c.tile_count == 0)
             .expect("empty family declared");
         let tiles = build_favorites_fixture(empty).unwrap();
         assert!(tiles.is_empty());
-        assert!(favorites_ids(&tiles).is_empty());
+        assert_eq!(
+            favorites_ids(&tiles, false),
+            vec![
+                "bbr-section-favorites".to_string(),
+                "bbr-favorites-empty".to_string(),
+                "bbr-favorites-empty-label".to_string(),
+                "bbr-favorites-empty-hint".to_string(),
+            ]
+        );
     }
 
     #[test]

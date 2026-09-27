@@ -44,7 +44,12 @@ pub const ORGANIZED_HAIRLINE_ID: &str = "bbr-organized-hairline";
 /// a 500-tab list never lays out 500 rows per frame. The pinned region
 /// renders all of its rows: it is a small, stable block and must never
 /// shift on selection (§11.2).
-pub fn tab_surface(theme: &Theme, model: &SidebarModel, callbacks: &Callbacks) -> Stateful<Div> {
+pub fn tab_surface(
+    theme: &Theme,
+    model: &SidebarModel,
+    callbacks: &Callbacks,
+    pin_offer_anchor: Option<gpui::AnyElement>,
+) -> Stateful<Div> {
     let tabs = &model.tabs;
     let list_focused = tabs.list_focused;
     let p = theme.palette;
@@ -75,6 +80,17 @@ pub fn tab_surface(theme: &Theme, model: &SidebarModel, callbacks: &Callbacks) -
     let has_folders = model.folders.is_some();
     if let Some(folders) = model.folders.as_ref() {
         children.push(folders_surface(theme, model, folders, callbacks).into_any());
+    }
+    // §11.2 drag offer: while an unpinned tab is dragged, the organized
+    // area appends one "Pin tab here" ghost row (one pitch tall). The
+    // hairline rule below stays content-based, so the offer's growth is
+    // exactly one pitch.
+    if tabs.pin_offer {
+        let anchor = pin_offer_anchor.unwrap_or_else(|| div().into_any());
+        children.push(
+            components::drag_offer::pinned_drop_row(theme, tabs.pin_offer_targeted, anchor)
+                .into_any(),
+        );
     }
     // §11.4 polish: one hairline separates the organized Pinned/Folders
     // area from the New Tab row (reference composition). It is present

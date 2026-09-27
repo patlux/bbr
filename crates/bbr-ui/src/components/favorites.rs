@@ -2,10 +2,13 @@
 //! a grid of square destination tiles.
 //!
 //! The grid renders the §7.2 favicon/monogram tile centered in a
-//! `radius:sm` tile at `density:row-tile` size, `density:favorites-gap`
-//! (S `sp:1` / N `sp:2` / XL `sp:2`) apart, with fixed per-density column
-//! counts (S 5 / N 4 / XL 3) so the tile → index mapping is deterministic
-//! at every sidebar width. Favorites are destinations
+//! `radius:sm` tile, `density:favorites-gap` apart, in **four columns at
+//! every density and width** ([`GRID_COLUMNS`]) so the tile → index mapping
+//! is deterministic. The tile width derives from the rail
+//! ([`favorite_tile_width`]) so the grid always spans the full content
+//! width; the tile height stays fixed per density, keeping
+//! [`favorites_region_height`] a pure function of density, count and the
+//! drag offer. Favorites are destinations
 //! (title + url identities from the L5 session-local grid), never tab
 //! references — tab lifecycle states do not apply.
 //!
@@ -23,7 +26,7 @@ use gpui::{
 use std::sync::Arc;
 
 use crate::palette::FaviconSlate;
-use crate::theme::{Density, Radius, Spacing, Theme, ThemeMode};
+use crate::theme::{Radius, Spacing, Theme, ThemeMode};
 
 /// The §15 id of the favorites grid container.
 pub const FAVORITES_ID: &str = "bbr-favorites";
@@ -42,15 +45,26 @@ pub fn favorite_tile_icon_id(index: usize) -> SharedString {
     SharedString::from(format!("bbr-fav-icon-{index}"))
 }
 
-/// Fixed per-density column count (DESIGN.md §11.10): S 5 / N 4 / XL 3, so
-/// the tile → index mapping is deterministic at every sidebar width.
-#[allow(dead_code)] // consumed by the rail composition step's grid layout
-pub fn grid_columns(density: Density) -> usize {
-    match density {
-        Density::Small => 5,
-        Density::Normal => 4,
-        Density::ExtraLarge => 3,
-    }
+/// DESIGN.md §11.10: the grid is four columns at every density and width.
+pub const GRID_COLUMNS: usize = 4;
+
+/// The constant column count (tile `n` always lands in the same cell).
+pub fn grid_columns() -> usize {
+    GRID_COLUMNS
+}
+
+/// The derived tile width for a rail of `rail_width` (points): the rail
+/// column (minus the 4 pt resize handle) inside the region's `sp:2` inline
+/// padding, split into [`GRID_COLUMNS`] tiles with the density gap. Widening
+/// the rail widens the tiles; it never adds a column or leaves slack.
+pub fn favorite_tile_width(theme: &Theme, rail_width: f32) -> f32 {
+    let content = (rail_width
+        - crate::sidebar::geometry::RESIZE_HANDLE_WIDTH
+        - 2.0 * f32::from(Spacing::sp2()))
+    .max(0.0);
+    let gap = f32::from(theme.density.favorites_gap());
+    let columns = GRID_COLUMNS as f32;
+    ((content - (columns - 1.0) * gap) / columns).max(0.0)
 }
 
 /// One favorite destination tile's rendered identity: the §7.2 monogram
@@ -113,9 +127,10 @@ pub fn favorites_grid(theme: &Theme, children: Vec<gpui::AnyElement>) -> Statefu
 pub fn favorite_tile(
     theme: &Theme,
     tile: &FavoriteTileSpec,
+    width: f32,
     on_activate: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let width = theme.density.favorite_tile_width();
+    let width = gpui::px(width);
     let height = theme.density.favorite_tile_height();
     let slate = match theme.mode {
         ThemeMode::Dark => FaviconSlate::dark(tile.hue),
@@ -182,47 +197,35 @@ pub fn favorite_tile(
         .child(icon_slot)
 }
 
-/// The favorites region's deterministic top-down height (points): the
-/// `type:badge` label (padding + line) plus the wrapped tile rows at the
-/// fixed per-density column count with `sp:1` gaps. The drag resolver and
-/// the render both derive the band from this same math, so a drop target
-/// above the tab list lines up exactly with the rendered grid.
-pub fn favorites_region_height(theme: &Theme, tile_count: usize) -> f32 {
-    if tile_count == 0 {
-        return 0.0;
-    }
-    let columns = grid_columns(theme.density);
-    let tile = f32::from(theme.density.favorite_tile_height());
-    let gap = f32::from(theme.density.favorites_gap());
-    let rows = tile_count.div_ceil(columns);
-    let grid = rows as f32 * tile + (rows.saturating_sub(1)) as f32 * gap;
-    // Label: `py:sp1` on both sides + the badge line (size × 1.2 lh).
-    let label = f32::from(Spacing::sp1()) * 2.0 + f32::from(theme.type_.badge.size) * 1.2;
-    // The surface wrapper adds `pb:sp1` (see `favorites_surface`).
-    label + grid + f32::from(Spacing::sp1())
+/// The favorites region's deterministic height (points) — a pure function
+/// of density, favorite count and whether a tab drag offers the drop cell
+/// (never of the live rail width). It mirrors the render in
+/// `sidebar::regions::favorites_surface`: the wrapper's `pt:sp1`/`pb:sp2`
+/// around either the zero-favorites band or the wrapped grid, whose last
+/// row also holds the rest slot (no extra row) or the drop cell (one more
+/// row only when the tiles fill the last row). The E2E compares the band
+/// anchor's measured rect with this value, and the offer growth is its
+/// difference.
+pub fn favorites_region_height(theme: &Theme, tile_count: usize, offer: bool) -> f32 {
+    let body = if tile_count == 0 {
+        favorites_empty_band_height(theme)
+    } else {
+        let cells = tile_count + usize::from(offer);
+        let rows = cells.div_ceil(GRID_COLUMNS);
+        let tile = f32::from(theme.density.favorite_tile_height());
+        let gap = f32::from(theme.density.favorites_gap());
+        rows as f32 * tile + (rows - 1) as f32 * gap
+    };
+    f32::from(Spacing::sp1()) + body + f32::from(Spacing::sp2())
 }
 
-/// The §15 id set for the `visible_ids` derivation: the section label only
-/// while tiles exist, then the grid, the tiles, and their icon slots. The
-/// caller decides the empty-region hiding exactly like the render.
-#[allow(dead_code)] // §15 visible-ids seam; consumed by the app's snapshot
-pub fn favorites_ids(tiles: &[FavoriteTileSpec]) -> Vec<String> {
-    let mut ids = Vec::new();
-    if tiles.is_empty() {
-        return ids;
-    }
-    ids.push(FAVORITES_SECTION_ID.to_string());
-    ids.push(FAVORITES_ID.to_string());
-    for tile in tiles {
-        ids.push(favorite_tile_id(tile.index).to_string());
-        ids.push(favorite_tile_icon_id(tile.index).to_string());
-    }
-    ids
-}
+mod affordance;
+pub use affordance::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::theme::Density;
 
     fn tiles() -> Vec<FavoriteTileSpec> {
         vec![
@@ -289,10 +292,49 @@ mod tests {
     }
 
     #[test]
-    fn grid_columns_follow_the_density_contract() {
-        assert_eq!(grid_columns(Density::Small), 5);
-        assert_eq!(grid_columns(Density::Normal), 4);
-        assert_eq!(grid_columns(Density::ExtraLarge), 3);
+    fn the_grid_is_four_columns_spanning_the_rail_at_every_width() {
+        for density in [Density::Small, Density::Normal, Density::ExtraLarge] {
+            let theme = crate::theme::Theme::new(
+                ThemeMode::Light,
+                crate::theme::ContrastMode::Standard,
+                density,
+            );
+            let gap = f32::from(density.favorites_gap());
+            let mut previous = 0.0;
+            for rail in [200.0, 250.0, 300.0, 340.0, 400.0] {
+                let tile = favorite_tile_width(&theme, rail);
+                let content = rail - 4.0 - 16.0;
+                assert!(tile > 0.0);
+                assert!(
+                    (tile * 4.0 + gap * 3.0 - content).abs() < 0.01,
+                    "no trailing slack at {rail} pt ({density:?})"
+                );
+                assert!(tile > previous, "a wider rail widens the tiles");
+                previous = tile;
+            }
+            // Height is a pure function of density and count: 0–9 tiles
+            // wrap into `ceil(n / 4)` rows inside `pt:sp1` + `pb:sp2`.
+            let tile_h = f32::from(density.favorite_tile_height());
+            for n in 1..=9usize {
+                let rows = n.div_ceil(4);
+                let grid = rows as f32 * tile_h + (rows - 1) as f32 * gap;
+                assert!(
+                    (favorites_region_height(&theme, n, false) - (4.0 + grid + 8.0)).abs() < 0.01,
+                    "{n} tiles wrap into {rows} rows ({density:?})"
+                );
+            }
+            // Zero favorites: the band (S 48 / N 56 / XL 64) inside the
+            // same padding, identical at rest and as the drag target.
+            assert_eq!(
+                favorites_region_height(&theme, 0, false),
+                4.0 + favorites_empty_band_height(&theme) + 8.0
+            );
+            assert_eq!(
+                favorites_region_height(&theme, 0, true),
+                favorites_region_height(&theme, 0, false)
+            );
+        }
+        assert_eq!(grid_columns(), 4);
     }
 
     #[test]
@@ -303,34 +345,24 @@ mod tests {
     }
 
     #[test]
-    fn region_height_is_deterministic_and_zero_when_empty() {
-        let theme = crate::theme::Theme::new(
-            crate::theme::ThemeMode::Dark,
-            crate::theme::ContrastMode::Standard,
-            crate::theme::Density::Normal,
-        );
-        assert_eq!(favorites_region_height(&theme, 0), 0.0);
-        let one = favorites_region_height(&theme, 1);
-        let two = favorites_region_height(&theme, 2);
-        assert!(one > 0.0);
-        // One wrapped row at N: the tiles sit on one line; two tiles share
-        // the same line, so the heights agree below the first wrap.
-        assert_eq!(one, two);
-        let columns = grid_columns(theme.density);
-        let wrapped = favorites_region_height(&theme, columns + 1);
-        assert!(wrapped > two, "a wrapped second row adds tile + gap height");
-    }
-
-    #[test]
-    fn favorites_ids_hide_the_empty_region() {
-        assert!(favorites_ids(&[]).is_empty());
-        let tiles = tiles();
-        let ids = favorites_ids(&tiles);
-        assert!(ids.contains(&"bbr-section-favorites".to_string()));
-        assert!(ids.contains(&"bbr-favorites".to_string()));
-        for tile in &tiles {
-            assert!(ids.contains(&favorite_tile_id(tile.index).to_string()));
-            assert!(ids.contains(&favorite_tile_icon_id(tile.index).to_string()));
+    fn the_offer_growth_is_the_region_height_difference() {
+        // The drag resolver subtracts `favorites_offer_growth`; the render
+        // grows by what `favorites_region_height` describes. One function
+        // family, so the two can never disagree.
+        for density in [Density::Small, Density::Normal, Density::ExtraLarge] {
+            let theme = crate::theme::Theme::new(
+                ThemeMode::Dark,
+                crate::theme::ContrastMode::Standard,
+                density,
+            );
+            for n in 0..=9usize {
+                let grown = favorites_region_height(&theme, n, true)
+                    - favorites_region_height(&theme, n, false);
+                assert!(
+                    (grown - favorites_offer_growth(&theme, n)).abs() < 0.01,
+                    "{n} favorites ({density:?})"
+                );
+            }
         }
     }
 }

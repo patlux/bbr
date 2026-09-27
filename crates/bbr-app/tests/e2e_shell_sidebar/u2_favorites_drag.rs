@@ -1,12 +1,15 @@
-//! Real-app §11.10 favorites drag evidence over real WKWebViews: dragging a
-//! concrete tab into the rendered favorites band targets the grid through
-//! the typed during-drag state (`drag_favorites` + the band's recorded
-//! `favorites_rect`), a drop toggles the exact pressed `TabId` through the
-//! canonical Favorite command — one tile, no copy, no session recreation,
-//! the tab stays open and selected — a repeated drop toggles it back off,
-//! a pointer over the fixed chrome above the band is rejected whole, and
-//! Escape cancels a targeted drag without committing. Every drag runs
-//! through the production request/handler path
+//! Real-app §11.10 favorites drag evidence over real WKWebViews: the
+//! Favorites region is present at rest (the zero-favorites drop band), a
+//! plain press never moves it, and an active drag offers the band (zero
+//! favorites) or the drop cell (populated grid) plus the §11.2 ghost row and
+//! the §10.9 drag proxy. Dragging a concrete tab into the rendered region
+//! targets the grid through the typed during-drag state (`drag_favorites` +
+//! the region's recorded `favorites_rect`), a drop toggles the exact pressed
+//! `TabId` through the canonical Favorite command — one tile, no copy, no
+//! session recreation, the tab stays open and selected — a repeated drop
+//! toggles it back off, a pointer over the fixed chrome above the region is
+//! rejected whole, and Escape cancels a targeted drag without committing.
+//! Every drag runs through the production request/handler path
 //! (`BeginTabDrag`/`MoveTabDrag`/`EndTabDrag`/`CancelTabDrag`) — never a
 //! direct controller mutation.
 
@@ -24,26 +27,26 @@ const PRESS_X: f32 = 130.0;
 const PRESS_Y: f32 = 400.0;
 
 /// Begin a drag on row `index` at the shared press anchor, cross the
-/// drag-activation distance (a plain click never presents the drag — the
-/// press arms and the presentation begins only after real pointer travel,
-/// so a click never shifts the rail layout), flush a rendered frame (the
-/// favorites band — empty grid during the drag — lays out and the
-/// production band anchor records its rect), and return the during-drag
-/// snapshot plus the recorded band rect.
-/// `rest_band` declares whether the favorites region legitimately renders
-/// at rest (a tile exists); only then may a band rect be recorded before
-/// the drag activates.
-fn begin_drag_and_band(
-    client: &mut Client,
-    index: usize,
-    rest_band: bool,
-) -> bbr_testkit::protocol::Snapshot {
+/// drag-activation distance, flush a rendered frame (the offers lay out and
+/// the production anchors record their rects), and return the during-drag
+/// snapshot.
+///
+/// Regression (layout jump on click): the Favorites region is always
+/// present, so a plain press — no pointer travel yet — must leave its
+/// recorded rect untouched and present no drag offer; the presentation
+/// begins only after real pointer travel.
+fn begin_drag_and_band(client: &mut Client, index: usize) -> bbr_testkit::protocol::Snapshot {
+    client
+        .send_ok(&bbr_testkit::Request::FlushFrame)
+        .expect("flush frame before the press");
+    let rest = client.snapshot().expect("rest snapshot");
+    assert!(
+        rest.favorites_rect.is_some(),
+        "the Favorites region renders at rest"
+    );
     client
         .send_ok(&dsl::begin_tab_drag(index, PRESS_X, PRESS_Y, ROW_H / 2.0))
         .expect("begin drag");
-    // Regression (layout jump on click): a plain press — no pointer travel
-    // yet — presents no drag: no dragged source and, while no tile exists,
-    // no favorites drop band, so a click never shifts the rail layout.
     client
         .send_ok(&bbr_testkit::Request::FlushFrame)
         .expect("flush frame after the plain press");
@@ -52,20 +55,22 @@ fn begin_drag_and_band(
         armed.drag_source, None,
         "a plain press arms without presenting a drag"
     );
-    if !rest_band {
-        assert!(
-            armed.favorites_rect.is_none(),
-            "no favorites drop band renders for a plain press (no layout shift)"
-        );
-    }
-    // The activation move: past the 4 pt threshold, still far inside the
-    // source row's own slot (no target change).
+    assert_eq!(
+        armed.favorites_rect, rest.favorites_rect,
+        "a plain press never shifts the Favorites region"
+    );
+    assert_eq!(
+        armed.drag_offers,
+        bbr_testkit::protocol::DragOffersSnapshot::default(),
+        "a plain press presents no drag offer"
+    );
+    // The activation move: past the 4 pt threshold.
     client
         .send_ok(&dsl::move_tab_drag(0.0, 6.0))
         .expect("activation move");
     client
         .send_ok(&bbr_testkit::Request::FlushFrame)
-        .expect("flush frame after begin");
+        .expect("flush frame after activation");
     let during = client.snapshot().expect("during-drag snapshot");
     assert_eq!(
         during.drag_source,
@@ -76,6 +81,7 @@ fn begin_drag_and_band(
         during.favorites_rect.is_some(),
         "the favorites band renders and records its rect during the drag"
     );
+    assert_ids(&during, &["bbr-tab-drag-proxy"]);
     during
 }
 
@@ -132,15 +138,35 @@ fn drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session() {
         // Begin a drag on row 1 (the non-active second tab): the empty grid
         // renders as the compact drop band and the production band anchor
         // records its rect. The pointer has not entered it yet.
-        let during = begin_drag_and_band(&mut client, 1, false);
+        let during = begin_drag_and_band(&mut client, 1);
         let band = during.favorites_rect.expect("band rect recorded");
         assert!(band[3] > 0.0, "the band has a positive height");
         assert!(
             !during.drag_favorites,
             "not targeted before entering the band"
         );
-        // The band's ids mirror the render during the drag (§15).
-        assert_ids(&during, &["bbr-section-favorites", "bbr-favorites"]);
+        // §11.10: at zero favorites the band itself is the target — its
+        // geometry is unchanged by the drag and no extra cell is offered.
+        assert_eq!(
+            Some(band),
+            two.favorites_rect,
+            "the zero-favorites band keeps its geometry during the drag"
+        );
+        assert_ids(
+            &during,
+            &[
+                "bbr-section-favorites",
+                "bbr-favorites-empty",
+                "bbr-pinned-drop-row",
+            ],
+        );
+        assert!(
+            !during
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-favorites" || id == "bbr-favorites-drop-cell"),
+            "no grid and no drop cell at zero favorites"
+        );
 
         // Enter the band: the typed target flips to favorites.
         move_into_band(&mut client, band);
@@ -201,8 +227,18 @@ fn drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session() {
 
         // Repeated drop on the same tab: the canonical Favorite command
         // toggles the tile back off; the tab stays open with its session.
-        let during_again = begin_drag_and_band(&mut client, 1, true);
+        let during_again = begin_drag_and_band(&mut client, 1);
         let band_again = during_again.favorites_rect.expect("band rect recorded");
+        // §11.10: a populated grid offers the drop cell in the next free
+        // cell instead of its rest slot.
+        assert_ids(&during_again, &["bbr-favorites", "bbr-favorites-drop-cell"]);
+        assert!(
+            !during_again
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-favorites-empty"),
+            "the drop cell replaces the rest slot"
+        );
         move_into_band(&mut client, band_again);
         let targeted_again = client.snapshot().expect("second targeted snapshot");
         assert!(targeted_again.drag_favorites, "targeted again");
@@ -232,7 +268,7 @@ fn drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session() {
         // Rejected target: a pointer over the fixed chrome above the band
         // (the command field / brand row) is no target — the drop commits
         // nothing.
-        let during_rej = begin_drag_and_band(&mut client, 1, false);
+        let during_rej = begin_drag_and_band(&mut client, 1);
         let band_rej = during_rej.favorites_rect.expect("band rect recorded");
         let chrome_y = band_rej[1] - 12.0;
         assert!(
@@ -266,7 +302,7 @@ fn drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session() {
         );
 
         // Escape cancels a targeted favorites drag without committing.
-        let during_cancel = begin_drag_and_band(&mut client, 1, false);
+        let during_cancel = begin_drag_and_band(&mut client, 1);
         let band_cancel = during_cancel.favorites_rect.expect("band rect recorded");
         move_into_band(&mut client, band_cancel);
         let targeted_cancel = client.snapshot().expect("cancel-targeted snapshot");
@@ -280,6 +316,18 @@ fn drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session() {
         let cancelled = client.snapshot().expect("cancelled snapshot");
         assert_eq!(cancelled.drag_source, None, "the drag is cleared");
         assert!(!cancelled.drag_favorites, "no target after cancel");
+        // Escape removes every offer and the proxy in the same frame.
+        assert_eq!(
+            cancelled.drag_offers,
+            bbr_testkit::protocol::DragOffersSnapshot::default(),
+            "no offer outlives the cancelled drag"
+        );
+        assert!(!cancelled
+            .visible_ids
+            .iter()
+            .any(|id| id == "bbr-pinned-drop-row"
+                || id == "bbr-tab-drag-proxy"
+                || id == "bbr-favorites-drop-cell"));
         assert!(
             cancelled.favorites.is_empty(),
             "Escape never commits a favorite"

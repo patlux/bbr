@@ -93,6 +93,7 @@ e2e-shell-organize:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_organize -- --ignored --nocapture
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_drag_chip -- --ignored --nocapture
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_folder_pins -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_drag_offers -- --ignored --nocapture
 
 # Tab/Favorite context menus (packet `tab-favorite-context-menus`,
 # DESIGN.md §11.13): the production right-click row/favorite seams open one

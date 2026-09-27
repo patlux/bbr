@@ -586,17 +586,43 @@ disabled UI is exempt from AA but must remain perceivable at IC.
 
 ### 10.9 `dragging` / `drag-target`
 A row press **arms** a drag; the dragging presentation (dragged-row state,
-insertion tick, favorites drop band, chip targets) begins only after the
+insertion tick, drag offers, drag proxy, chip targets) begins only after the
 pointer travels the 4 pt activation distance. Below it the press is a
 click — nothing shifts the rail layout on a plain click.
 `dragging`: the dragged row renders at 92% opacity with `elev:2` shadow and
-a 1 pt `border.strong` outline (`dur:micro` opacity, allowed).
+a 1 pt `border.strong` outline (`dur:micro` opacity, allowed); it stays in
+the list as the placeholder while the **drag proxy** — the lifted row
+(favicon + title, same 92% / `elev:2` / `border.strong` language) — follows
+the pointer with the press point kept under it.
 `drag-target`: insertion tick = 2 pt vertical accent rule at the target
 index spanning the row tile, plus target tile outline 1 pt accent and
 `tint.selected`. Cross-profile destinations additionally show the
 destination profile chip replacing the insertion rule (§12.3). Split zones
 reuse the accent outline language with the strip fills of §11.7.
-**Assert:** `dragging`, `drag-target`.
+
+**Drag offers.** At activation the rail offers the destinations a tab can
+be dropped into without a precise position: the Favorites band or drop cell
+(§11.10) and, for an unpinned tab, the Pinned ghost row (§11.2). They appear
+together and disappear together on drop, cancel or Escape. The growth they
+need is committed **once, at activation** (`activation_growth`): the ghost
+row adds one `density:pitch` above the regular rows, a full last Favorites
+row adds one tile row; the drag resolver subtracts that growth from the
+pointer travel, so slot targets stay on the rows the render shows and
+nothing reflows while the pointer moves. The activation event itself keeps
+the source slot (a drop there is a no-op): the offers render in the next
+frame, and resolving against the pre-growth geometry could commit a drop
+the user never saw.
+
+**One live target at a time.** Offers in different regions are visible at
+the same time because each names a different destination, but only the one
+under the pointer takes the `drag-target` language; the others stay in
+their offered (dashed) state. Region offers are hit through the rects their
+anchors recorded in the last frame — never a parallel layout model.
+
+**Assert:** `dragging`, `drag-target`, `bbr-tab-drag-proxy` (present only
+during an active drag), `bbr-drag-tick-<n>` (present only when a concrete
+index is resolved; the design branch's `bbr-drag-insertion-tick` is this
+indexed id).
 
 ### 10.10 `focused` (keyboard)
 Ring per §9, label brightens one step. Same presentation frame as the
@@ -647,13 +673,25 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Behavior:** pinned rows never shift order on selection; close is
   hover-reveal only; drag within the pinned region reorders; dragging to the
   regular region unpins (contract); a drag from the regular region into
-  pinned pins it.
+  pinned pins it through the ghost row below.
+- **Drag offer (`bbr-pinned-drop-row`):** pinning is only discoverable by
+  dragging, so once a drag of an **unpinned** tab passes the 4 pt activation
+  distance (§10.9) the organized area appends one ghost row after its loose
+  rows and folders: `density:row` surface plus the row gap (one pitch), a
+  dashed `accent` outline on the §10.2 inset row surface, no fill, a leading
+  plus glyph and `type:meta` “Pin tab here” in `accent.ink`. As the live
+  target the outline turns solid over `tint.selected`. A drop pins the tab
+  at the end of the pinned block through the one pin authority (same
+  `TabId`, same session). It is an offer, not a precision target, and it
+  appears in an empty organized area too — the only way a user without
+  pinned tabs learns the region exists; at rest an empty organized area
+  still consumes no space. A pinned tab is never offered the row.
 - **States:** same vocabulary; pinned rows additionally read a "locked
   position" identity: the favicon tile is never replaced by scroll chrome,
   and at S density the tile gets a subtle 1 pt `hairline` outline so
   icon-only rows are legible.
 - **Assert ids:** `bbr-tab-pinned-<n>` (shared sub-ids `-title/-favicon/
-  -close`).
+  -close`), and `bbr-pinned-drop-row` while it is offered.
 
 ### 11.3 Space identity chips and profile context
 
@@ -970,9 +1008,40 @@ scheme; a title consisting only of whitespace is treated as empty.
 
 - **Anatomy:** when real Favorites exist, `bbr-favorites` presents destination
   tiles without a repeated visible section label. The §7.2 favicon/monogram is
-  centered in a softly raised `radius:sm` surface sized 40×36 (S), 64×44 (N)
-  or 88×52 (XL), gap 4/4/8 pt. Column count remains deterministic per density
-  and available rail width; empty Favorites consume no production space.
+  centered in a softly raised `radius:sm` surface, gap 4/4/8 pt.
+- **Columns and wrap:** the grid is **4 columns at every density and every
+  width** (`grid_columns`), so tile `n` always lands in the same cell. Tile
+  *width* derives from the rail — `(content − 3·gap) / 4` inside the region's
+  `sp:2` inline padding — so the grid always spans the full content width;
+  tile *height* stays fixed per density (36 / 44 / 52 pt), keeping
+  `favorites_region_height` a pure function of density, count and the drag
+  offer (the E2E compares it with the measured region). Overflow
+  wraps (`rows = ceil(n / 4)`); a partly filled last row keeps its columns.
+- **Empty (`bbr-favorites-empty`):** with zero favorites the region renders
+  one full-width drop band (S 48 / N 56 / XL 64 pt) with a 1 px **dashed**
+  hairline outline, `radius:md`, no fill, a leading download-into glyph and
+  two lines: `bbr-favorites-empty-label` “Favorites” (`type:meta` 600,
+  `ink.secondary`) and `bbr-favorites-empty-hint` “Drop a tab here to
+  favorite it” (`type:meta`, `ink.faint`). This is the deliberate exception
+  to the truthful-empty-region rule (§11.4): the band teaches the only gesture
+  that creates a favorite and renders an affordance, never fabricated
+  content. As a drag target it takes the §10.9 language (solid `accent`
+  outline, `tint.selected` fill; label “Add to Favorites” in `accent.ink`,
+  hint “Reachable from every space and profile”) with **unchanged geometry**,
+  so nothing reflows under the pointer. Once favorites exist the band
+  shrinks to a glyph-only slot in the next free cell; when the last row is
+  exactly full the slot is omitted.
+- **Drop cell (`bbr-favorites-drop-cell`):** during an active tab drag a
+  populated grid offers one additional cell at the end of the wrap order
+  instead of the rest slot: tile geometry, dashed `accent` outline, no fill,
+  centered plus glyph in `accent`; with the pointer over the region it is
+  the live target (solid `accent`, `tint.selected`). The region is never
+  outlined as a whole — a cell names the slot, and an outline would reflow
+  the region mid-drag. When the last row is full the cell opens one more row
+  (`favorites_offer_growth`), committed once at activation. The whole
+  populated region resolves to the cell and the drop appends there;
+  per-tile insert-before targets need an insert-at-index favorite capability
+  and are deferred.
 - **Behavior:** clicking a tile activates that exact favorited tab: switch
   to its owning space in the same browser window (thereby selecting the
   space's profile/container), then focus its stable `TabId`. Never open a
@@ -990,7 +1059,9 @@ scheme; a title consisting only of whitespace is treated as empty.
   closing it removes the tile, and moving it makes the favorite follow its
   stable `TabId` to the new space/profile. No second web session is created.
 - **Assert ids:** `bbr-section-favorites`, `bbr-favorites`,
-  `bbr-fav-<n>`, `bbr-fav-icon-<n>`.
+  `bbr-fav-<n>`, `bbr-fav-icon-<n>`, `bbr-favorites-empty` (+ `-label`/
+  `-hint` in the zero-favorites band), and `bbr-favorites-drop-cell` while a
+  tab drag is active over a populated grid.
 
 ### 11.11 Folders (Implemented; pin invariant enforced)
 
@@ -1561,8 +1632,10 @@ production integration).
     above stay the shipped contract until each packet lands its text:
     [seated content card](docs/roadmap/tasks/seated-content-card.md)
     (landed as §2 "The content card", 2026-09-27),
-    [address field and space identity](docs/roadmap/tasks/address-field-space-identity.md),
-    [Favorites grid and drag offers](docs/roadmap/tasks/favorites-drag-offers.md).
+    [address field and space identity](docs/roadmap/tasks/address-field-space-identity.md)
+    (landed in §11.4/§11.5/§17.14, 2026-09-27),
+    [Favorites grid and drag offers](docs/roadmap/tasks/favorites-drag-offers.md)
+    (landed in §10.9/§11.2/§11.10, 2026-09-27).
 
 Resolving an item means moving its decision into the relevant section above
 and updating the affected roadmap track in the same group.

@@ -15,15 +15,10 @@ use super::model::{
     Callbacks, FavoritesModel, FoldersModel, PlusMenuModel, SidebarModel, StripModel,
 };
 
-/// The §11.10 favorites region: the `type:badge` "Favorites" label over
-/// the deterministic tile grid. The label hides with the region (the caller
-/// passes `None` while empty) — except while a tab drag is in flight, when
-/// the region renders as the compact drop band (label + wash) so the first
-/// favorite can be created by dragging a concrete tab into the grid
-/// (DESIGN.md §11.10 data source / the daily-driver Sidebar slice). While
-/// a tab drag targets the grid (a drop toggles the dragged tab as a
-/// favorite), the region renders the §10.9 drop wash so the add/remove
-/// affordance is visible.
+/// The §11.10 favorites region: the zero-favorites drop band, or the
+/// four-column tile grid with its trailing cell — the glyph-only rest slot,
+/// or, while a tab drag is active, the drop cell (`bbr-favorites-drop-cell`)
+/// that becomes the live §10.9 target when the pointer is over the region.
 ///
 /// `band_anchor` is the app-owned invisible rect recorder that overlays
 /// the region (absolute inset-0 within the `relative` wrapper): it
@@ -32,12 +27,12 @@ use super::model::{
 /// exposes its typed geometry — never a parallel layout model.
 pub fn favorites_surface(
     theme: &Theme,
-    _model: &SidebarModel,
+    model: &SidebarModel,
     favorites: &FavoritesModel,
     callbacks: &Callbacks,
     band_anchor: gpui::AnyElement,
 ) -> Stateful<Div> {
-    let p = theme.palette;
+    let tile_width = components::favorites::favorite_tile_width(theme, model.sidebar_width);
     let children: Vec<gpui::AnyElement> = favorites
         .tiles
         .iter()
@@ -45,6 +40,7 @@ pub fn favorites_surface(
             components::favorite_tile(
                 theme,
                 tile,
+                tile_width,
                 callbacks::row(&callbacks.on_activate_favorite, tile.index),
             )
             // §11.13: a secondary-click on the tile opens the Tab/Favorite
@@ -57,7 +53,26 @@ pub fn favorites_surface(
             .into_any()
         })
         .collect();
-    let grid = components::favorites_grid(theme, children);
+    // §11.10: zero favorites render the full-width drop band (region name
+    // and gesture); otherwise the grid, plus the glyph-only slot in the next
+    // free cell while the last row is not full.
+    let body: gpui::AnyElement = if favorites.tiles.is_empty() {
+        components::favorites::favorites_empty_band(theme, favorites.targeted).into_any()
+    } else {
+        let mut children = children;
+        if favorites.offer {
+            // §11.10: during a tab drag the grid offers one additional cell
+            // at the end of the wrap order (it replaces the rest slot).
+            children.push(
+                components::favorites::favorites_drop_cell(theme, tile_width, favorites.targeted)
+                    .into_any(),
+            );
+        } else if components::favorites::empty_slot_shown(favorites.tiles.len()) {
+            children
+                .push(components::favorites::favorites_empty_slot(theme, tile_width).into_any());
+        }
+        components::favorites_grid(theme, children).into_any()
+    };
     div()
         .id(components::favorites::FAVORITES_SECTION_ID)
         .relative()
@@ -68,13 +83,11 @@ pub fn favorites_surface(
         // The reference presents Favorite tiles as an immediately
         // recognizable destination band without a redundant section label.
         // The stable section id remains on the wrapper for semantics/E2E.
-        .child(grid)
+        // §11.10: the region is never outlined as a whole — the drop cell
+        // (or the zero-favorites band) names the exact slot, and an outline
+        // would reflow the region under the pointer mid-drag.
+        .child(body)
         .child(band_anchor)
-        .when(favorites.targeted, |el| {
-            el.rounded(Radius.medium())
-                .border_2()
-                .border_color(p.accent)
-        })
 }
 
 /// The §11.11 folders region: the `type:badge` "Folders" label over the

@@ -1,11 +1,11 @@
-//! The §11.10 favorites-band anchor (DESIGN.md §11.10, daily-driver
-//! Sidebar slice): an invisible element inside the favorites region that
-//! records the region's window-relative bounds every frame, so the tab-drag
-//! resolver targets the real rendered drop band and the E2E snapshot
-//! exposes its typed geometry — never a parallel layout model. The same
-//! pattern as the §11.4 command-field anchor (`app::palette::anchor`);
-//! `bbr-app` owns the recorder and passes it into the rail composition at
-//! the app-owned-child boundary.
+//! Rendered-rect anchors (DESIGN.md §11.10, §11.2, §10.9): an invisible
+//! element that records its parent's window-relative bounds every frame, so
+//! the tab-drag resolver hits the real rendered Favorites band and §11.2
+//! ghost row, and the E2E snapshot exposes their typed geometry (and the
+//! §10.9 drag proxy's) — never a parallel layout model. The same pattern as
+//! the §11.4 command-field anchor (`app::palette::anchor`); `bbr-app` owns
+//! the recorders and passes them into the rail composition at the
+//! app-owned-child boundary.
 
 use std::rc::Rc;
 
@@ -15,36 +15,37 @@ use gpui::{
     LayoutId, Length, Pixels, Position, Style, Window,
 };
 
-/// An invisible element inside the favorites region that records the
-/// region's window-relative bounds every frame (DESIGN.md §11.10): the
-/// exact drop-band span the tab-drag resolver and the E2E snapshot use, so
-/// a pointer inside the rendered band toggles the dragged tab as a
-/// favorite. Occupies no layout space (absolute inset-0 within the
-/// `relative` region) and paints nothing.
-pub struct FavoritesBandAnchor {
+/// An invisible element that records its `relative` parent's
+/// window-relative bounds every frame into an app-owned cell. Occupies no
+/// layout space (absolute inset-0) and paints nothing.
+pub struct RectAnchor {
     publish: Rc<dyn Fn(WebRect)>,
 }
 
-/// Build the band anchor wired to the app's measured-rect cell.
-pub(crate) fn favorites_band_anchor(
-    rect: Rc<std::cell::RefCell<Option<WebRect>>>,
-) -> FavoritesBandAnchor {
-    FavoritesBandAnchor {
+/// Build a rect anchor wired to an app-owned measured-rect cell.
+pub(crate) fn rect_anchor(rect: Rc<std::cell::RefCell<Option<WebRect>>>) -> RectAnchor {
+    RectAnchor {
         publish: Rc::new(move |measured| {
             *rect.borrow_mut() = Some(measured);
         }),
     }
 }
 
-impl IntoElement for FavoritesBandAnchor {
-    type Element = FavoritesBandAnchor;
+/// The §11.10 Favorites-band anchor: the exact drop-band span the tab-drag
+/// resolver and the E2E snapshot use.
+pub(crate) fn favorites_band_anchor(rect: Rc<std::cell::RefCell<Option<WebRect>>>) -> RectAnchor {
+    rect_anchor(rect)
+}
+
+impl IntoElement for RectAnchor {
+    type Element = RectAnchor;
 
     fn into_element(self) -> Self::Element {
         self
     }
 }
 
-impl Element for FavoritesBandAnchor {
+impl Element for RectAnchor {
     type RequestLayoutState = ();
     type PrepaintState = ();
 

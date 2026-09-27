@@ -16,10 +16,11 @@ use bbr_browser::ControllerSnapshot;
 /// revealable spaces region or toggle state).
 pub struct U2IdsInput<'a> {
     pub favorites: &'a [bbr_browser::FavoriteSnapshot],
-    /// §11.10: the favorites region renders as the compact drop band while
-    /// a tab drag is in flight even when the grid is empty (so the first
-    /// favorite can be created by drag). The band's ids mirror the render.
-    pub favorites_band_visible: bool,
+    /// §10.9: a tab drag is active — a populated Favorites grid offers its
+    /// drop cell and the drag proxy renders (the ids mirror the render).
+    pub drag_active: bool,
+    /// §11.2: the organized area renders the "Pin tab here" ghost row.
+    pub pin_offer: bool,
     pub folders: &'a [bbr_browser::FolderSnapshot],
     pub expanded: bbr_ui::components::folders::FolderPresentation,
     pub plus_menu: bbr_ui::components::menu::PlusMenuState,
@@ -63,7 +64,8 @@ impl<'a> Default for U2IdsInput<'a> {
     fn default() -> Self {
         U2IdsInput {
             favorites: &[],
-            favorites_band_visible: false,
+            drag_active: false,
+            pin_offer: false,
             folders: &[],
             expanded: bbr_ui::components::folders::FolderPresentation::default(),
             plus_menu: bbr_ui::components::menu::PlusMenuState::default(),
@@ -111,7 +113,8 @@ pub(crate) fn extend_visible_ids(
     ids.extend(u2_visible_ids(
         browser,
         u2.favorites,
-        u2.favorites_band_visible,
+        u2.drag_active,
+        u2.pin_offer,
         u2.folders,
         &u2.expanded,
         &u2.plus_menu,
@@ -191,7 +194,8 @@ fn downloads_visible_ids(
 pub(crate) fn u2_visible_ids(
     browser: &ControllerSnapshot,
     favorites: &[bbr_browser::FavoriteSnapshot],
-    favorites_band_visible: bool,
+    drag_active: bool,
+    pin_offer: bool,
     folders: &[bbr_browser::FolderSnapshot],
     expanded: &bbr_ui::components::folders::FolderPresentation,
     plus_menu: &bbr_ui::components::menu::PlusMenuState,
@@ -203,13 +207,20 @@ pub(crate) fn u2_visible_ids(
         favorites,
         &crate::app::favicon_presentation::FaviconImageMirror::default(),
     );
-    ids.extend(bbr_ui::components::favorites::favorites_ids(&tile_specs));
-    // §11.10: while a tab drag is in flight with an empty grid, the region
-    // renders as the compact drop band (label + grid) — mirror the render's
-    // ids exactly (the wrapper + the empty grid; no tiles).
-    if favorites_band_visible && favorites.is_empty() {
-        ids.push(bbr_ui::components::favorites::FAVORITES_SECTION_ID.into());
-        ids.push(bbr_ui::components::favorites::FAVORITES_ID.into());
+    // §11.10: the region always renders — the zero-favorites band or the
+    // grid with its trailing cell (the rest slot, or the drop cell while a
+    // tab drag is active).
+    ids.extend(bbr_ui::components::favorites::favorites_ids(
+        &tile_specs,
+        drag_active,
+    ));
+    // §11.2/§10.9: the ghost row and the drag proxy render only while a tab
+    // drag offers them.
+    if pin_offer {
+        ids.push(bbr_ui::components::drag_offer::PINNED_DROP_ROW_ID.into());
+    }
+    if drag_active {
+        ids.push(bbr_ui::components::drag_offer::TAB_DRAG_PROXY_ID.into());
     }
     // The ids derivation is hover-independent: the `bbr-folder-count-<n>`
     // id stays in the tree at rest (zero-opacity count), so no reveal state

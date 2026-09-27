@@ -1,238 +1,37 @@
-//! Tab drag state machine (DESIGN.md §10.9, §11.2, §11.3, interaction
-//! contract).
+//! Tab drag production listeners (DESIGN.md §10.9, §11.2, §11.3, §11.10,
+//! interaction contract).
 //!
-//! The pointer drag for tab organization: pressing a row begins a drag,
-//! mouse-move resolves a typed target (an insertion slot inside the source
-//! region, the §11.10 favorites grid, or the §11.3 space chip under the
-//! pointer), and mouse-up commits through the controller — region-bounded
-//! reorder for tab slots, favorite toggle for the grid, and the single
-//! tab-move authority for chips. Escape cancels. The source row is the
-//! dragged tab — the concrete pressed row (the "active or selected tab" of
-//! the interaction contract) — and the active tab itself is never mutated
-//! by grabbing a row.
+//! The pointer drag for tab organization: pressing a row arms a drag,
+//! mouse-move activates it past the 4 pt distance (committing the drag
+//! offers' growth once) and resolves a typed target — an insertion slot
+//! inside the source region, the §11.10 favorites grid, the §11.2 "Pin tab
+//! here" ghost row, or the §11.3 space chip under the pointer — and
+//! mouse-up commits through the controller: region-bounded reorder for tab
+//! slots, favorite toggle for the grid, pin for the ghost row, and the
+//! single tab-move authority for chips. Escape cancels. The source row is
+//! the dragged tab — the concrete pressed row — and the active tab itself
+//! is never mutated by grabbing a row.
 //!
-//! The pure target-resolution math lives in `super::drag_target`; the
-//! production chip geometry in `super::drag_chip`. This module owns the
-//! state machine and the production pointer listeners that drive it.
+//! The state machine lives in `super::drag_state`, the pure target math in
+//! `super::drag_target`, and the production chip geometry in
+//! `super::drag_chip`.
 
-use super::drag_target::{
-    resolve_target, splice_index, tab_pitch, ChipSpan, DragGeometry, DragTarget,
-};
+pub use super::drag_state::TabDrag;
+use super::drag_target::{splice_index, tab_pitch, DragGeometry, DragTarget};
 use super::BbrApp;
+use bbr_web::WebRect;
 use gpui::{Context, Window};
+use std::cell::RefCell;
+use std::rc::Rc;
 
-/// The in-flight drag state of the root view. Owned by `BbrApp`; the
-/// production listeners (`begin_tab_drag`/`on_tab_drag_move`/
-/// `end_tab_drag`/`cancel_tab_drag`) drive it, and the render derives the
-/// §10.9 dragging/tick/target visuals plus the E2E snapshot fields from it.
-#[derive(Debug, Clone)]
-pub struct TabDrag {
-    /// The press is armed but the pointer has not yet travelled the
-    /// activation distance: no drag presentation (tick, favorites band,
-    /// chip targets) renders for a plain click, so a click never shifts
-    /// the rail layout.
-    armed: bool,
-    active: bool,
-    /// The pressed row's active-space index — the dragged tab.
-    source: usize,
-    /// The pointer x (window coordinates) where the drag began.
-    start_x: f32,
-    /// The pointer y (window coordinates) where the drag began.
-    start_y: f32,
-    /// The press's y within the source row surface (0 at the top edge,
-    /// `row` at the bottom). The tab-list geometry is anchored at the
-    /// press, so this offset makes the favorites-band hit exact; when the
-    /// layout cannot expose it (GPUI 0.2.2 offers no element geometry) the
-    /// caller anchors at the row surface center (`row / 2`). The anchor is
-    /// a surface measurement: rows step on the §8 pitch, so the absolute
-    /// press position is `source * pitch + press_in_row`.
-    press_in_row: f32,
-    /// The current typed target, if the pointer is over a droppable zone
-    /// (`None` in the invalid no-target zones outside chips/list/
-    /// favorites).
-    target: Option<DragTarget>,
-    /// Whether the current target is a legal drop. An illegal boundary
-    /// crossing keeps the target (for the tick position) but reports
-    /// invalid, so the render can clearly signal the rejection (§10.9).
-    valid: bool,
-}
-
-impl Default for TabDrag {
-    fn default() -> Self {
-        Self {
-            armed: false,
-            active: false,
-            source: 0,
-            start_x: 0.0,
-            start_y: 0.0,
-            press_in_row: 0.0,
-            target: None,
-            valid: false,
-        }
-    }
-}
-
-/// The pointer distance (points, per axis) a pressed row must travel
-/// before the armed press becomes an active drag with its §10.9
-/// presentation. Below it, the press is a click: no tick, no favorites
-/// band, no layout shift.
-pub const DRAG_ACTIVATION_DISTANCE: f32 = 4.0;
-
-impl TabDrag {
-    pub fn is_active(&self) -> bool {
-        self.active
-    }
-
-    /// The press is armed but the activation distance is not yet exceeded.
-    pub fn is_armed(&self) -> bool {
-        self.armed
-    }
-
-    /// Arm a press on row `source` at the pointer position: the drag state
-    /// records the anchor but stays inactive (no presentation) until the
-    /// pointer travels [`DRAG_ACTIVATION_DISTANCE`].
-    pub fn arm(&mut self, source: usize, position_x: f32, position_y: f32, press_in_row: f32) {
-        *self = Self {
-            armed: true,
-            active: false,
-            source,
-            start_x: position_x,
-            start_y: position_y,
-            press_in_row,
-            target: None,
-            valid: false,
-        };
-    }
-
-    /// Whether a pointer position exceeds the activation distance from the
-    /// armed press anchor.
-    pub fn activation_exceeded(&self, position_x: f32, position_y: f32) -> bool {
-        (position_x - self.start_x).abs() >= DRAG_ACTIVATION_DISTANCE
-            || (position_y - self.start_y).abs() >= DRAG_ACTIVATION_DISTANCE
-    }
-
-    /// Promote the armed press into the active drag (the §10.9
-    /// presentation begins; the target starts at the source slot).
-    pub fn activate(&mut self) {
-        debug_assert!(self.armed, "activate requires an armed press");
-        self.armed = false;
-        self.active = true;
-        self.target = Some(DragTarget::Tab { slot: self.source });
-        self.valid = true;
-    }
-
-    /// The dragged row's active-space index.
-    pub fn source(&self) -> Option<usize> {
-        self.active.then_some(self.source)
-    }
-
-    /// The window x the drag began at (the E2E seam anchors its moves on
-    /// it). Available while armed too, so the seam's first move can cross
-    /// the activation distance from the true press anchor.
-    #[cfg(feature = "testkit")]
-    pub fn start_x(&self) -> Option<f32> {
-        (self.active || self.armed).then_some(self.start_x)
-    }
-
-    /// The window y the drag began at (the E2E seam anchors its moves on it).
-    #[cfg(feature = "testkit")]
-    pub fn start_y(&self) -> Option<f32> {
-        (self.active || self.armed).then_some(self.start_y)
-    }
-
-    /// Replace the press anchor after `begin` (E2E seam). No resolution has
-    /// run at begin time, so overriding the anchor is consistent; the seam
-    /// declares the offset its simulated press sits at within the source row
-    /// surface.
-    #[cfg(feature = "testkit")]
-    pub fn set_press_in_row(&mut self, press_in_row: f32) {
-        self.press_in_row = press_in_row;
-    }
-
-    /// The current typed target (`None` over no droppable zone).
-    pub fn target(&self) -> Option<DragTarget> {
-        self.target
-    }
-
-    /// The tab insertion slot target, when the drag currently targets one.
-    pub fn tab_slot(&self) -> Option<usize> {
-        match self.target {
-            Some(DragTarget::Tab { slot }) => Some(slot),
-            _ => None,
-        }
-    }
-
-    /// The §11.3 chip target: the exact persistent space the pointer
-    /// hovers, when the drag currently targets a strip chip.
-    pub fn chip_target(&self) -> Option<bbr_browser::SpaceId> {
-        match self.target {
-            Some(DragTarget::Chip { space }) => Some(space),
-            _ => None,
-        }
-    }
-
-    /// Whether the current target is a legal drop (region-bound reorder,
-    /// the favorites grid, or a strip chip).
-    pub fn valid(&self) -> bool {
-        self.valid
-    }
-
-    /// Test-only immediate begin: arm + activate in one step (the unit
-    /// tests exercise the resolution math without the activation-distance
-    /// pointer travel; production always arms first). `press_in_row` is
-    /// the press's y within the source row surface (0 at the top edge,
-    /// `row` at the bottom).
-    #[cfg(test)]
-    pub fn begin(&mut self, source: usize, position_x: f32, position_y: f32, press_in_row: f32) {
-        self.arm(source, position_x, position_y, press_in_row);
-        self.activate();
-    }
-
-    /// Resolve the drag target for a new pointer position and update the
-    /// state.
-    ///
-    /// `pinned` is the pinned/regular boundary (§11.2), `len` the tab count,
-    /// `pitch` the §8 row pitch (surface + gap — the step the rendered rows
-    /// sit on), `favorites_band` the §11.10 favorites region's rendered
-    /// drop-band span in absolute window-y coordinates (`None` when no band
-    /// renders), and `chips` the rendered strip chips' visual spans (§11.3).
-    /// Pure geometry: the pointer position itself is never stored beyond the
-    /// target.
-    #[allow(clippy::too_many_arguments)] // mirrors `DragGeometry` field-for-field
-    pub fn move_to(
-        &mut self,
-        position_x: f32,
-        position_y: f32,
-        pinned: usize,
-        len: usize,
-        pitch: f32,
-        favorites_band: Option<(f32, f32)>,
-        chips: &[ChipSpan],
-    ) {
-        let dy = position_y - self.start_y;
-        let geometry = DragGeometry {
-            pinned,
-            len,
-            pitch,
-            favorites_band,
-            chips,
-        };
-        let (target, valid) = resolve_target(
-            self.source,
-            position_x,
-            position_y,
-            dy,
-            self.press_in_row,
-            &geometry,
-        );
-        self.target = target;
-        self.valid = valid;
-    }
-
-    /// Clear the drag state (commit already happened or was cancelled).
-    pub fn clear(&mut self) {
-        *self = Self::default();
-    }
+/// The rendered window rects of the §11.2 ghost row and the §10.9 drag
+/// proxy, recorded by their anchors every frame they render (`None` while
+/// they do not). The resolver hit-tests the ghost row through its recorded
+/// rect — never a parallel layout model — and the snapshot reports both.
+#[derive(Clone, Default)]
+pub(crate) struct DragOfferRects {
+    pub pin_offer: Rc<RefCell<Option<WebRect>>>,
+    pub proxy: Rc<RefCell<Option<WebRect>>>,
 }
 
 impl BbrApp {
@@ -262,8 +61,8 @@ impl BbrApp {
     /// that row (the dragged tab is the row under the pointer, never the
     /// active tab unless they coincide). Chrome focus moves to the tab list
     /// (the drag is a chrome interaction). The drag presentation (tick,
-    /// favorites band, chip targets) begins only once the pointer travels
-    /// [`DRAG_ACTIVATION_DISTANCE`] — a plain click never shifts the rail
+    /// offers, proxy, chip targets) begins only once the pointer travels
+    /// the activation distance — a plain click never shifts the rail
     /// layout.
     pub fn begin_tab_drag(
         &mut self,
@@ -316,21 +115,54 @@ impl BbrApp {
             if !self.tab_drag.activation_exceeded(x, y) {
                 return;
             }
-            self.tab_drag.activate();
+            // The activation event commits the offers' growth and keeps the
+            // no-op source slot: the offers render in the next frame, so the
+            // recorded region rects are still pre-growth and a target
+            // resolved now could commit a drop the user never saw.
+            let growth = self.drag_activation_growth();
+            self.tab_drag.activate(growth, x, y);
+            cx.notify();
+            return;
         }
         self.resolve_tab_drag(x, y);
         cx.notify();
     }
 
+    /// Whether the pressed row (armed or active) is an unpinned tab — the
+    /// only kind the §11.2 ghost row offers pinning to.
+    pub(crate) fn drag_source_unpinned(&self) -> bool {
+        let browser = self.controller.snapshot();
+        self.tab_drag
+            .pressed_row()
+            .and_then(|row| browser.tabs.get(row))
+            .is_some_and(|tab| !tab.pinned)
+    }
+
+    /// The rail growth the drag offers commit above the pressed row when
+    /// the drag activates: the shared `bbr-ui` geometry function the render
+    /// lays out with (Favorites drop-cell row when the last row is full;
+    /// the ghost row above an unpinned source).
+    fn drag_activation_growth(&mut self) -> f32 {
+        let favorites = self
+            .organization
+            .organization_snapshot(&self.controller)
+            .favorites
+            .len();
+        bbr_ui::components::drag_offer::activation_growth(
+            &self.theme(),
+            favorites,
+            self.drag_source_unpinned(),
+        )
+    }
+
     /// Recompute the drag target for a pointer position. Shared by the
     /// production mouse-move listener and the E2E seam, so both paths
     /// resolve targets through the exact same geometry. The favorites
-    /// region's rendered drop band (when it renders — tiles, or an
-    /// in-flight drag) is hit through its recorded window-rect span from
-    /// the production band anchor; the fixed chrome above it (the command
-    /// field / brand row) is not droppable, and the §11.3 strip chips
-    /// below the list are hit through their rendered spans (the same
-    /// canonical chip visuals the render uses).
+    /// region and the §11.2 ghost row are hit through the window rects
+    /// their anchors recorded in the last render; the fixed chrome above
+    /// the list is not droppable, and the §11.3 strip chips below it are
+    /// hit through their rendered spans (the same canonical chip visuals
+    /// the render uses).
     pub(crate) fn resolve_tab_drag(&mut self, position_x: f32, position_y: f32) {
         let browser = self.controller.snapshot();
         let theme = self.theme();
@@ -350,15 +182,25 @@ impl BbrApp {
         // production strip layout (the same `space_chip_visuals` order the
         // render, the snapshot, and the semantic tree consume).
         let chips = self.chip_spans();
-        self.tab_drag.move_to(
-            position_x,
-            position_y,
+        // §11.2: the ghost row's recorded span, only while it offers pinning
+        // to this drag's (unpinned) source.
+        let pin_offer = if self.drag_source_unpinned() {
+            self.drag_offer_rects
+                .pin_offer
+                .borrow()
+                .map(|rect| (rect.y, rect.y + rect.height))
+        } else {
+            None
+        };
+        let geometry = DragGeometry {
             pinned,
-            browser.tabs.len(),
-            tab_pitch(&theme),
+            len: browser.tabs.len(),
+            pitch: tab_pitch(&theme),
             favorites_band,
-            &chips,
-        );
+            pin_offer,
+            chips: &chips,
+        };
+        self.tab_drag.move_to(position_x, position_y, &geometry);
     }
 
     /// Production drag-end: mouse-up anywhere in the window (or, via the
@@ -417,7 +259,8 @@ impl BbrApp {
     /// Commit a legal drop: a tab slot reorders within the source region
     /// (splice semantics), the favorites grid toggles the dragged tab in/out
     /// of the window-global favorites (add/remove — the tab keeps its space,
-    /// order, selection, and live session), and a §11.3 chip moves the
+    /// order, selection, and live session), the §11.2 ghost row pins the
+    /// dragged tab, and a §11.3 chip moves the
     /// dragged tab into that space through the existing single tab-move
     /// authority (`move_tab_to_space_at` — same-profile keeps the live
     /// session; cross-profile recreates it exactly once in the destination
@@ -449,6 +292,23 @@ impl BbrApp {
                 self.favorite_toggle_tab(source, window, cx);
                 true
             }
+            DragTarget::PinOffer => {
+                // §11.2: the ghost row pins the dragged tab through the one
+                // pin authority (appended to the pinned block; the live
+                // session and the selection are untouched). A pinned source
+                // is never offered the row, so this never unpins.
+                let pinned = self
+                    .controller
+                    .snapshot()
+                    .tabs
+                    .get(source)
+                    .is_some_and(|tab| tab.pinned);
+                if pinned || self.toggle_pin(source, cx).is_none() {
+                    return false;
+                }
+                self.focus_tab_list(window, cx);
+                true
+            }
             DragTarget::Chip { space } => {
                 // Dropping on the dragged tab's own space is a no-op: the
                 // dragged row lives in the active space, so the destination
@@ -467,52 +327,5 @@ impl BbrApp {
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::TabDrag;
-    use crate::app::drag_target::{ChipSpan, DragTarget};
-    use bbr_browser::SpaceId;
-
-    fn chip(space: u64, x_left: f32, x_right: f32, y_top: f32, y_bottom: f32) -> ChipSpan {
-        ChipSpan {
-            space: SpaceId(space),
-            x_left,
-            x_right,
-            y_top,
-            y_bottom,
-        }
-    }
-
-    #[test]
-    fn move_to_accumulates_dy_from_the_press_position() {
-        let chips = [chip(9, 60.0, 150.0, 640.0, 676.0)];
-        let mut drag = TabDrag::default();
-        // Row-surface-center press anchor (offset 18 in a 36 pt surface).
-        drag.begin(1, 10.0, 200.0, 18.0);
-        // One 40 pt pitch step down from the press → slot 2 (valid regular
-        // slot). No favorites band renders (no tiles, no in-flight drag).
-        drag.move_to(10.0, 240.0, 0, 3, 40.0, None, &chips);
-        assert_eq!(drag.tab_slot(), Some(2));
-        assert!(drag.valid());
-        // Back to the press position → the source slot.
-        drag.move_to(10.0, 200.0, 0, 3, 40.0, None, &chips);
-        assert_eq!(drag.tab_slot(), Some(1));
-        assert!(drag.valid());
-        // A pointer over the rendered favorites band targets the grid (the
-        // band is hit by its absolute window-y span, e.g. y 100..160).
-        drag.move_to(10.0, 130.0, 0, 3, 40.0, Some((100.0, 160.0)), &chips);
-        assert_eq!(drag.target(), Some(DragTarget::Favorites));
-        assert!(drag.valid());
-        // A pointer entering the rendered chip targets that exact space.
-        drag.move_to(100.0, 658.0, 0, 3, 40.0, None, &chips);
-        assert_eq!(drag.target(), Some(DragTarget::Chip { space: SpaceId(9) }));
-        assert!(drag.valid());
-        // A pointer below the list outside every chip is a no-target zone.
-        drag.move_to(20.0, 658.0, 0, 3, 40.0, None, &chips);
-        assert_eq!(drag.target(), None);
-        assert!(!drag.valid());
     }
 }

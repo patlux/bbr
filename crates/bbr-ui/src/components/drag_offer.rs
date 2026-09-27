@@ -115,17 +115,13 @@ pub fn drag_proxy_rect(
 /// The §10.9 drag proxy: the dragged row lifted off the list (92% opacity,
 /// `elev:2` shadow, 1 pt `border.strong` outline) at `rect` in window
 /// coordinates. It paints the row's favicon and title only; the row left in
-/// the list keeps its `dragging` state as the placeholder.
+/// the list keeps its `dragging` state as the placeholder. The positioned
+/// outer element carries no border, so a rect anchor appended to it records
+/// exactly `rect`; the bordered surface fills it.
 pub fn tab_drag_proxy(theme: &Theme, row: &RowVisuals, rect: [f32; 4]) -> Stateful<Div> {
     let p = theme.palette;
-    div()
-        .id(TAB_DRAG_PROXY_ID)
-        .debug_selector(|| TAB_DRAG_PROXY_ID.to_string())
-        .absolute()
-        .left(px(rect[0]))
-        .top(px(rect[1]))
-        .w(px(rect[2]))
-        .h(px(rect[3]))
+    let surface = div()
+        .size_full()
         .px(theme.density.row_padding_x())
         .flex()
         .flex_row()
@@ -153,7 +149,16 @@ pub fn tab_drag_proxy(theme: &Theme, row: &RowVisuals, rect: [f32; 4]) -> Statef
                 .font_weight(theme.type_.title.weight)
                 .text_color(p.ink)
                 .child(SharedString::from(row.title.to_string())),
-        )
+        );
+    div()
+        .id(TAB_DRAG_PROXY_ID)
+        .debug_selector(|| TAB_DRAG_PROXY_ID.to_string())
+        .absolute()
+        .left(px(rect[0]))
+        .top(px(rect[1]))
+        .w(px(rect[2]))
+        .h(px(rect[3]))
+        .child(surface)
 }
 
 #[cfg(test)]

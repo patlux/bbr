@@ -6,7 +6,7 @@
 
 use bbr_ui::components::{FavoriteTileSpec, FolderMemberVisual, FolderRowSpec};
 use bbr_ui::sidebar::model::{
-    FavoritesModel, FoldersModel, FooterModel, PlusMenuModel, StripModel, TabsModel,
+    DragProxyModel, FavoritesModel, FoldersModel, FooterModel, PlusMenuModel, StripModel, TabsModel,
 };
 use bbr_ui::theme::Theme;
 use gpui::Window;
@@ -15,22 +15,22 @@ use super::BbrApp;
 
 impl BbrApp {
     /// The §11.10 favorites region model: the deterministic tile grid plus
-    /// the §10.9 drag-target wash while a tab drag targets the grid. `None`
-    /// while the region is empty at rest — the label hides with it (§11.4
-    /// region rule) — except while a tab drag is in flight, when the region
-    /// renders as the compact drop band (label + wash once targeted) so the
-    /// first favorite can be created by dragging a concrete tab into the
-    /// grid (DESIGN.md §11.10 data source / daily-driver Sidebar slice).
+    /// the §10.9 drag-target state while a tab drag targets the grid, and
+    /// the drop-cell offer while any tab drag is active. The region is
+    /// always present: with zero favorites it renders the drop band that
+    /// names the region and the gesture (the deliberate exception to the
+    /// truthful-empty-region rule), so the first favorite can be created by
+    /// dragging a concrete tab.
     pub(super) fn favorites_model(&self, tiles: &[FavoriteTileSpec]) -> Option<FavoritesModel> {
-        let drag_active = self.tab_drag.is_active();
+        // §11.10: the region is always present — the zero-favorites band
+        // teaches the gesture at rest, so nothing reflows when a drag
+        // starts.
         let targeted =
             self.tab_drag.target() == Some(crate::app::drag_target::DragTarget::Favorites);
-        if tiles.is_empty() && !drag_active {
-            return None;
-        }
         Some(FavoritesModel {
             tiles: tiles.to_vec(),
             targeted,
+            offer: self.tab_drag.is_active(),
         })
     }
 
@@ -94,6 +94,11 @@ impl BbrApp {
         let window_rows = self.row_visuals(&regular[row_window.clone()], drag_source);
         let tick = self.tab_drag.tab_slot();
         let tick_valid = self.tab_drag.valid();
+        // §11.2: the ghost row is offered to an active drag of an unpinned
+        // tab; it is the live target while the pointer is over it.
+        let pin_offer = self.tab_drag.is_active() && self.drag_source_unpinned();
+        let pin_offer_targeted =
+            self.tab_drag.target() == Some(crate::app::drag_target::DragTarget::PinOffer);
         let list_focused = self.tab_list_handle.is_focused(window);
 
         self.dense_window.set(crate::dense::DenseRenderState {
@@ -111,7 +116,34 @@ impl BbrApp {
             tick,
             tick_valid,
             list_focused,
+            pin_offer,
+            pin_offer_targeted,
         }
+    }
+
+    /// The §10.9 drag proxy: the dragged row's own visuals (not its
+    /// `dragging` placeholder state) at the rect the shared `bbr-ui`
+    /// geometry derives from the pointer. `None` unless a drag is active.
+    pub(super) fn drag_proxy_model(
+        &self,
+        theme: &Theme,
+        sidebar_width: f32,
+    ) -> Option<DragProxyModel> {
+        let (dx, pointer_y, press_in_row) = self.tab_drag.proxy_anchor()?;
+        let source = self.tab_drag.source()?;
+        let browser = self.controller.snapshot();
+        let row = self
+            .row_visuals(browser.tabs.get(source..=source)?, None)
+            .into_iter()
+            .next()?;
+        let rect = bbr_ui::components::drag_offer::drag_proxy_rect(
+            theme,
+            sidebar_width,
+            dx,
+            pointer_y,
+            press_in_row,
+        );
+        Some(DragProxyModel { row, rect })
     }
 
     /// The §11.4 plus-menu model: the keyboard selection index into the

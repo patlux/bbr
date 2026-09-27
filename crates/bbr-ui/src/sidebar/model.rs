@@ -84,8 +84,13 @@ pub struct FavoritesModel {
     /// The tiles in deterministic insertion order (`bbr-fav-<n>`).
     pub tiles: Vec<FavoriteTileSpec>,
     /// §10.9: a tab drag currently targets the grid (a drop toggles the
-    /// dragged tab as a favorite) — the region renders the drop wash.
+    /// dragged tab as a favorite) — the band or the drop cell is the live
+    /// target.
     pub targeted: bool,
+    /// §11.10: a tab drag is active, so a populated grid offers the drop
+    /// cell at the end of the wrap order (the zero-favorites band is its
+    /// own target and needs no extra cell).
+    pub offer: bool,
 }
 
 /// The §11.11 folders region data: the folder rows plus the nested member
@@ -122,6 +127,20 @@ pub struct TabsModel {
     /// §9: whether the tab list owns chrome focus (the ring + brightened
     /// section labels).
     pub list_focused: bool,
+    /// §11.2: an unpinned tab is being dragged, so the organized area
+    /// appends the "Pin tab here" ghost row.
+    pub pin_offer: bool,
+    /// §10.9: the ghost row is the live target (the pointer is over it).
+    pub pin_offer_targeted: bool,
+}
+
+/// The §10.9 drag proxy: the dragged row's visuals and its window rect
+/// (`[x, y, width, height]`, from
+/// [`crate::components::drag_offer::drag_proxy_rect`]).
+#[derive(Debug, Clone)]
+pub struct DragProxyModel {
+    pub row: RowVisuals,
+    pub rect: [f32; 4],
 }
 
 /// The §11.4 plus-menu data: the keyboard selection index into the fixed
@@ -168,14 +187,17 @@ pub struct SidebarModel {
     pub active_space_title: SharedString,
     /// The §11.5 command slot (address pill or staging surface).
     pub command: CommandSlot,
-    /// The §11.10 favorites region (`None` while empty — the label hides
-    /// with it).
+    /// The §11.10 favorites region (always present in the app — the
+    /// zero-favorites band teaches the gesture; `None` only in gallery
+    /// compositions without the region).
     pub favorites: Option<FavoritesModel>,
     /// The §11.11 folders region (`None` while empty).
     pub folders: Option<FoldersModel>,
     /// The §11.1/§11.2/§11.6 tab region (always present; the pinned block
     /// and the bounded regular window).
     pub tabs: TabsModel,
+    /// The §10.9 drag proxy while a tab drag is active (`None` at rest).
+    pub drag_proxy: Option<DragProxyModel>,
     /// The §11.4 status line model.
     pub status: StatusModel,
     /// Whether the transient status line is visible. Ordinary settled page

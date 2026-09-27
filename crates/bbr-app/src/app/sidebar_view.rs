@@ -42,6 +42,15 @@ impl BbrApp {
         let callbacks = self.sidebar_callbacks(cx);
         let field_anchor = self.command_field_anchor_element();
         let favorites_band_anchor = self.favorites_band_anchor_element();
+        // §11.2/§10.9: the ghost-row and drag-proxy rect recorders (placed
+        // by the rail only while those render).
+        let pin_offer_anchor = Some(
+            crate::app::favorites_band::rect_anchor(self.drag_offer_rects.pin_offer.clone())
+                .into_any(),
+        );
+        let drag_proxy_anchor = Some(
+            crate::app::favorites_band::rect_anchor(self.drag_offer_rects.proxy.clone()).into_any(),
+        );
         let command_results = self
             .command_result_surface(theme)
             .map(|surface| surface.into_any());
@@ -58,6 +67,8 @@ impl BbrApp {
             bbr_ui::sidebar::SidebarChildren {
                 command_field_anchor: field_anchor,
                 favorites_band_anchor,
+                pin_offer_anchor,
+                drag_proxy_anchor,
                 command_results,
                 downloads_panel,
                 space_config_panel,
@@ -108,6 +119,15 @@ impl BbrApp {
         }
         let folders = self.folders_model(&u2.folder_rows, &u2.folder_members, window);
         let tabs = self.tabs_model(theme, window);
+        if !tabs.pin_offer {
+            // No ghost row this frame: drop its recorded rect so neither the
+            // resolver nor the snapshot consumes a previous drag's geometry.
+            *self.drag_offer_rects.pin_offer.borrow_mut() = None;
+        }
+        let drag_proxy = self.drag_proxy_model(theme, sidebar_width);
+        if drag_proxy.is_none() {
+            *self.drag_offer_rects.proxy.borrow_mut() = None;
+        }
         let browser = self.controller.snapshot();
         let status = crate::shell::status_model(&browser);
         let status_visible = crate::shell::status_visible(&browser);
@@ -129,6 +149,7 @@ impl BbrApp {
             favorites,
             folders,
             tabs,
+            drag_proxy,
             status,
             status_visible,
             // §11.14: the titlebar row is the rail's top strip — the

@@ -92,15 +92,19 @@ impl TabDrag {
             || (position_y - self.start_y).abs() >= DRAG_ACTIVATION_DISTANCE
     }
 
-    /// Promote the armed press into the active drag (the §10.9
-    /// presentation begins; the target starts at the source slot).
-    /// `growth` is the rail growth the offers commit above the source row
-    /// in this same frame; it stays fixed for the whole gesture.
-    pub fn activate(&mut self, growth: f32) {
+    /// Promote the armed press into the active drag at pointer `(x, y)`
+    /// (the §10.9 presentation begins). `growth` is the rail growth the
+    /// offers commit above the source row in the next frame; it stays fixed
+    /// for the whole gesture. The target stays on the source slot — a drop
+    /// before the pointer moves again is a no-op — because the offers have
+    /// not rendered yet: resolving now would hit-test the pre-growth rects.
+    pub fn activate(&mut self, growth: f32, x: f32, y: f32) {
         debug_assert!(self.armed, "activate requires an armed press");
         self.armed = false;
         self.active = true;
         self.growth = growth;
+        self.pointer_x = x;
+        self.pointer_y = y;
         self.target = Some(DragTarget::Tab { slot: self.source });
         self.valid = true;
     }
@@ -110,7 +114,8 @@ impl TabDrag {
         self.active.then_some(self.source)
     }
 
-    /// The committed activation growth while active.
+    /// The committed activation growth while active (snapshot evidence).
+    #[cfg(any(test, feature = "testkit"))]
     pub fn growth(&self) -> Option<f32> {
         self.active.then_some(self.growth)
     }
@@ -177,7 +182,7 @@ impl TabDrag {
     #[cfg(test)]
     pub fn begin(&mut self, source: usize, position_x: f32, position_y: f32, press_in_row: f32) {
         self.arm(source, position_x, position_y, press_in_row);
-        self.activate(0.0);
+        self.activate(0.0, position_x, position_y);
     }
 
     /// Resolve the drag target for a new pointer position against the
@@ -280,10 +285,19 @@ mod tests {
         drag.arm(1, 10.0, 200.0, 18.0);
         assert_eq!(drag.pressed_row(), Some(1));
         assert!(drag.activation_exceeded(10.0, 206.0));
-        drag.activate(40.0);
+        drag.activate(40.0, 10.0, 206.0);
         assert_eq!(drag.growth(), Some(40.0));
+        assert_eq!(
+            drag.tab_slot(),
+            Some(1),
+            "activation keeps the no-op source slot until the next move"
+        );
         drag.move_to(10.0, 240.0, &geometry(None, None, &chips));
-        assert_eq!(drag.tab_slot(), Some(1), "the source row moved under the pointer");
+        assert_eq!(
+            drag.tab_slot(),
+            Some(1),
+            "the source row moved under the pointer"
+        );
         drag.move_to(10.0, 280.0, &geometry(None, None, &chips));
         assert_eq!(drag.tab_slot(), Some(2));
     }
@@ -294,7 +308,8 @@ mod tests {
         let mut drag = TabDrag::default();
         drag.arm(0, 30.0, 300.0, 18.0);
         assert_eq!(drag.proxy_anchor(), None, "a plain press has no proxy");
-        drag.activate(0.0);
+        drag.activate(0.0, 34.0, 306.0);
+        assert_eq!(drag.proxy_anchor(), Some((4.0, 306.0, 18.0)));
         drag.move_to(42.0, 360.0, &geometry(None, None, &chips));
         assert_eq!(drag.proxy_anchor(), Some((12.0, 360.0, 18.0)));
         drag.clear();

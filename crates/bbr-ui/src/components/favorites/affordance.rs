@@ -6,8 +6,8 @@
 use gpui::{div, prelude::*, Div, Stateful, Styled};
 
 use super::{
-    favorite_tile_icon_id, favorite_tile_id, FavoriteTileSpec, FAVORITES_ID,
-    FAVORITES_SECTION_ID, GRID_COLUMNS,
+    favorite_tile_icon_id, favorite_tile_id, FavoriteTileSpec, FAVORITES_ID, FAVORITES_SECTION_ID,
+    GRID_COLUMNS,
 };
 use crate::theme::{Radius, Spacing, Theme};
 
@@ -24,7 +24,7 @@ pub const FAVORITES_EMPTY_HINT_ID: &str = "bbr-favorites-empty-hint";
 /// and nothing when the last row is exactly full (an affordance never costs
 /// a whole row).
 pub fn empty_slot_shown(count: usize) -> bool {
-    count == 0 || count % GRID_COLUMNS != 0
+    count == 0 || !count.is_multiple_of(GRID_COLUMNS)
 }
 
 /// The zero-favorites band height (S 48 / N 56 / XL 64): identical at rest
@@ -47,7 +47,11 @@ pub fn favorites_empty_band(theme: &Theme, targeted: bool) -> Stateful<Div> {
             p.accent_ink,
         )
     } else {
-        ("Favorites", "Drop a tab here to favorite it", p.ink_secondary)
+        (
+            "Favorites",
+            "Drop a tab here to favorite it",
+            p.ink_secondary,
+        )
     };
     let band = div()
         .id(FAVORITES_EMPTY_ID)
@@ -61,9 +65,7 @@ pub fn favorites_empty_band(theme: &Theme, targeted: bool) -> Stateful<Div> {
         .flex_row()
         .items_center()
         .gap(Spacing::sp2())
-        .child(
-            crate::icons::Icon::Downloads.canvas(theme, gpui::px(16.0)),
-        )
+        .child(crate::icons::Icon::Downloads.canvas(theme, gpui::px(16.0)))
         .child(
             div()
                 .flex()
@@ -123,7 +125,7 @@ pub const FAVORITES_DROP_CELL_ID: &str = "bbr-favorites-drop-cell";
 /// and the zero-favorites band keeps its geometry. Pure in density and
 /// count, so the render and the drag resolver agree by construction.
 pub fn favorites_offer_growth(theme: &Theme, count: usize) -> f32 {
-    if count == 0 || count % GRID_COLUMNS != 0 {
+    if count == 0 || !count.is_multiple_of(GRID_COLUMNS) {
         return 0.0;
     }
     f32::from(theme.density.favorite_tile_height()) + f32::from(theme.density.favorites_gap())
@@ -210,12 +212,18 @@ mod tests {
             assert!(empty_slot_shown(n), "{n}: a free cell in the last row");
         }
         for n in [4, 8, 12] {
-            assert!(!empty_slot_shown(n), "{n}: a full row never opens a new row");
+            assert!(
+                !empty_slot_shown(n),
+                "{n}: a full row never opens a new row"
+            );
         }
         let empty = favorites_ids(&[], false);
         assert!(empty.contains(&FAVORITES_EMPTY_LABEL_ID.to_string()));
         assert!(empty.contains(&FAVORITES_EMPTY_HINT_ID.to_string()));
-        assert!(!empty.contains(&FAVORITES_ID.to_string()), "no grid without tiles");
+        assert!(
+            !empty.contains(&FAVORITES_ID.to_string()),
+            "no grid without tiles"
+        );
     }
 
     #[test]
@@ -255,10 +263,15 @@ mod tests {
     fn the_drop_cell_grows_the_region_only_for_a_full_last_row() {
         for density in [Density::Small, Density::Normal, Density::ExtraLarge] {
             let theme = Theme::new(ThemeMode::Dark, ContrastMode::Standard, density);
-            let row = f32::from(density.favorite_tile_height()) + f32::from(density.favorites_gap());
+            let row =
+                f32::from(density.favorite_tile_height()) + f32::from(density.favorites_gap());
             for n in 0..=9usize {
                 let expected = if n > 0 && n % 4 == 0 { row } else { 0.0 };
-                assert_eq!(favorites_offer_growth(&theme, n), expected, "{n} ({density:?})");
+                assert_eq!(
+                    favorites_offer_growth(&theme, n),
+                    expected,
+                    "{n} ({density:?})"
+                );
             }
         }
         assert_eq!(FAVORITES_DROP_CELL_ID, "bbr-favorites-drop-cell");

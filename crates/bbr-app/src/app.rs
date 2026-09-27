@@ -68,6 +68,7 @@ mod drag;
 #[cfg(feature = "testkit")]
 mod drag_benchmarks;
 mod drag_chip;
+mod drag_state;
 mod drag_target;
 pub(crate) mod error_surface;
 pub(crate) mod error_surface_behavior;
@@ -434,6 +435,9 @@ pub struct BbrApp {
     /// the rendered band. `None` while no band is rendered (no tiles and
     /// no in-flight drag).
     favorites_band_rect: std::rc::Rc<std::cell::RefCell<Option<WebRect>>>,
+    /// The last frame's §11.2 ghost-row and §10.9 drag-proxy rects, recorded
+    /// by their anchors while a tab drag renders them.
+    drag_offer_rects: drag::DragOfferRects,
     /// The command-field text-edit model (DESIGN.md §11.5): UTF-8-safe
     /// cursor/selection, full selection on `Cmd-L`, replace-selection
     /// typing, backspace, and horizontal cursor movement. The text mirrors
@@ -630,6 +634,7 @@ impl BbrApp {
             geometry_engine: None,
             command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             favorites_band_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
+            drag_offer_rects: drag::DragOfferRects::default(),
             command_text: CommandText::new(),
             command_ranking: CommandRanking::default(),
             saved_pages: saved_pages::SavedPageCommand,

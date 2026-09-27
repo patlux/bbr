@@ -148,6 +148,12 @@ pub struct TestSnapshot {
     pub address_zoom: Option<u16>,
     /// §11.4 heading identity (the active chip's value).
     pub active_space_identity: Option<String>,
+    /// §11.10 grid columns and derived tile size.
+    pub favorites_columns: usize,
+    pub favorites_tile_size: [f32; 2],
+    pub favorites_region_height: f32,
+    /// §10.9/§11.2/§11.10 drag offers of the in-flight tab drag.
+    pub drag_offers: bbr_testkit::protocol::DragOffersSnapshot,
     /// The effective sidebar rail width: the DESIGN §5 adjustable width
     /// clamped to the window (0 when collapsed — the rail is gone).
     pub sidebar_width: f32,

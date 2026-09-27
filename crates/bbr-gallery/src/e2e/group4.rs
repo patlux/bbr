@@ -189,7 +189,7 @@ fn group4_stories_render_the_matrix_families_with_stable_ids() {
 #[ignore]
 fn real_pointer_presses_report_through_the_group4_recorders() {
     run_scenario(|window, app| {
-        // §11.10: a real pointer press on the first tile of the N 4-col
+        // §11.10: a real pointer press on the first tile of the N
         // family fires the production `on_activate` for that exact tile.
         open_story(window, app, "Favorites grid");
         flush(window);

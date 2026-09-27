@@ -156,6 +156,17 @@ impl BbrApp {
         );
         let row_surface = self.theme().density.row();
         self.set_tab_drag_press_in_row(f32::from(row_surface) / 2.0);
+        // The activation move (past the 4 pt distance) presents the drag;
+        // the next move resolves the chip target.
+        self.on_tab_drag_move(
+            &MouseMoveEvent {
+                position: point(press.x, press.y + px(6.0)),
+                pressed_button: Some(MouseButton::Left),
+                modifiers: Modifiers::default(),
+            },
+            window,
+            cx,
+        );
         self.on_tab_drag_move(
             &MouseMoveEvent {
                 position: release,

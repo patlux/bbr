@@ -322,8 +322,8 @@ impl BbrApp {
                     pane_layout,
                     &crate::shell::snapshot::U2IdsInput {
                         favorites: &organization.favorites,
-                        favorites_band_visible: self.tab_drag.is_active()
-                            && organization.favorites.is_empty(),
+                        drag_active: self.tab_drag.is_active(),
+                        pin_offer: self.tab_drag.is_active() && self.drag_source_unpinned(),
                         folders: &organization.folders,
                         expanded: self.u2.folder_presentation.clone(),
                         plus_menu: self.u2.plus_menu,
@@ -375,6 +375,35 @@ impl BbrApp {
             sidebar_visible: self.sidebar_visible,
             content_card: self.content_card_snapshot(window),
             address_zoom: self.address_zoom_chip(),
+            favorites_columns: bbr_ui::components::favorites::grid_columns(),
+            favorites_tile_size: [
+                bbr_ui::components::favorites::favorite_tile_width(
+                    &theme,
+                    self.sidebar
+                        .effective_width(f32::from(window.bounds().size.width)),
+                ),
+                f32::from(theme.density.favorite_tile_height()),
+            ],
+            favorites_region_height: bbr_ui::components::favorites::favorites_region_height(
+                &theme,
+                organization.favorites.len(),
+                self.tab_drag.is_active(),
+            ),
+            drag_offers: bbr_testkit::protocol::DragOffersSnapshot {
+                pin_offer_targeted: self.tab_drag.target()
+                    == Some(crate::app::drag_target::DragTarget::PinOffer),
+                pin_offer_rect: self
+                    .drag_offer_rects
+                    .pin_offer
+                    .borrow()
+                    .map(|rect| [rect.x, rect.y, rect.width, rect.height]),
+                proxy_rect: self
+                    .drag_offer_rects
+                    .proxy
+                    .borrow()
+                    .map(|rect| [rect.x, rect.y, rect.width, rect.height]),
+                growth: self.tab_drag.growth(),
+            },
             active_space_identity: self
                 .sidebar_visible
                 .then(|| {

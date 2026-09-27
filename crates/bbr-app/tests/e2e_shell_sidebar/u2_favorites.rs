@@ -69,6 +69,27 @@ fn favorites_grid_stays_global_and_activates_the_exact_tab_across_profiles() {
                 "bbr-fav-icon-0",
             ],
         );
+        // §11.10 grid geometry: four columns at every rail width; the tile
+        // width derives from the rail (no trailing slack), the height stays
+        // fixed per density.
+        let expected_tile = |rail: f32| (rail - 4.0 - 16.0 - 3.0 * 4.0) / 4.0;
+        assert_eq!(with_favorite.favorites_columns, 4);
+        assert_eq!(
+            with_favorite.favorites_tile_size,
+            [expected_tile(with_favorite.sidebar_width), 44.0]
+        );
+        for (delta, rail) in [(100.0, 400.0), (-200.0, 200.0), (100.0, 300.0)] {
+            client
+                .send_ok(&dsl::drag_sidebar_divider(delta))
+                .expect("resize the rail");
+            client
+                .send_ok(&bbr_testkit::Request::FlushFrame)
+                .expect("flush after resize");
+            let resized = client.snapshot().expect("resized snapshot");
+            assert_eq!(resized.sidebar_width, rail);
+            assert_eq!(resized.favorites_columns, 4, "never a fifth column");
+            assert_eq!(resized.favorites_tile_size, [expected_tile(rail), 44.0]);
+        }
         // The favorited tab's identity is untouched.
         assert_eq!(with_favorite.tabs.len(), 3);
         assert_eq!(with_favorite.tabs[1].web_view, Some(second_view));
@@ -186,10 +207,16 @@ fn favorites_grid_stays_global_and_activates_the_exact_tab_across_profiles() {
             closed.favorites.is_empty(),
             "closing the concrete tab removes the tile"
         );
-        assert!(!closed
-            .visible_ids
-            .iter()
-            .any(|id| id == "bbr-section-favorites" || id == "bbr-favorites"));
+        // Back to zero favorites: the grid goes, the drop band returns.
+        assert!(!closed.visible_ids.iter().any(|id| id == "bbr-favorites"));
+        assert_ids(
+            &closed,
+            &[
+                "bbr-section-favorites",
+                "bbr-favorites-empty",
+                "bbr-favorites-empty-label",
+            ],
+        );
 
         // Re-favorite a tab, then move it across profiles: the favorite
         // follows the same stable `TabId` and resolves the new space/profile.

@@ -1267,6 +1267,20 @@ pub struct Snapshot {
     /// (`bbr-active-space-identity`) — the active footer chip's own value.
     #[serde(default)]
     pub active_space_identity: Option<String>,
+    /// §11.10 grid geometry the render uses: the constant column count and
+    /// the derived `[tile_width, tile_height]` for the current rail width.
+    #[serde(default)]
+    pub favorites_columns: usize,
+    #[serde(default)]
+    pub favorites_tile_size: [f32; 2],
+    /// §11.10 `favorites_region_height` for the current count and drag
+    /// offer (the E2E compares it with the measured `favorites_rect`).
+    #[serde(default)]
+    pub favorites_region_height: f32,
+    /// §10.9/§11.2/§11.10 drag offers of the in-flight tab drag (all empty
+    /// at rest).
+    #[serde(default)]
+    pub drag_offers: DragOffersSnapshot,
     /// The effective sidebar rail width (DESIGN §5 range, window-clamped;
     /// 0 when collapsed).
     pub sidebar_width: f32,
@@ -1575,4 +1589,26 @@ pub struct SavedPagesCollectionSnapshot {
     pub id: u64,
     pub title: String,
     pub member_count: usize,
+}
+
+/// The drag offers of an in-flight tab drag (DESIGN.md §10.9, §11.2,
+/// §11.10), recorded from the render: which offer is the live target, the
+/// rendered ghost-row and drag-proxy rects, and the rail growth the offers
+/// committed at activation. All `None`/`false` at rest.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DragOffersSnapshot {
+    /// The pointer is over the §11.2 "Pin tab here" ghost row (a drop pins
+    /// the dragged tab).
+    #[serde(default)]
+    pub pin_offer_targeted: bool,
+    /// The ghost row's rendered window rect `[x, y, width, height]`.
+    #[serde(default)]
+    pub pin_offer_rect: Option<[f32; 4]>,
+    /// The §10.9 drag proxy's rendered window rect.
+    #[serde(default)]
+    pub proxy_rect: Option<[f32; 4]>,
+    /// The rail growth (points) the offers committed above the dragged row
+    /// once, at activation.
+    #[serde(default)]
+    pub growth: Option<f32>,
 }
