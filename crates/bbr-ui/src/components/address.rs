@@ -121,6 +121,7 @@ pub fn address_control(
     let zoom_chip = model.zoom.map(|level| {
         div()
             .id(ADDRESS_ZOOM_ID)
+            .debug_selector(|| ADDRESS_ZOOM_ID.to_string())
             .px(Spacing::sp1())
             .rounded(theme.radius.small())
             .bg(p.address_accessory_fill)

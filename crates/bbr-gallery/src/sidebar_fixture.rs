@@ -99,7 +99,7 @@ pub fn build_sidebar_fixture(
                 },
                 label: "Private".into(),
             }),
-            zoom: None,
+            zoom: case.zoom,
         }),
         CommandKind::Staging => CommandSlot::Staging(bbr_ui::components::StagingModel {
             focused: true,

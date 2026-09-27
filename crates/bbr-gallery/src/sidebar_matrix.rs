@@ -125,6 +125,9 @@ pub struct SidebarCase {
     pub claims_zero_content_floor: bool,
     pub claims_collapsed_chrome: bool,
     pub claims_two_strips: bool,
+    /// §17.14: the address zoom level while it differs from 100 % (the
+    /// accessory chip renders).
+    pub zoom: Option<u16>,
 }
 
 impl SidebarCase {
@@ -178,6 +181,7 @@ impl SidebarCase {
             claims_zero_content_floor: false,
             claims_collapsed_chrome: false,
             claims_two_strips: false,
+            zoom: None,
         }
     }
 }
@@ -200,6 +204,8 @@ pub const SIDEBAR_VALID: &[SidebarCase] = &[
         folder_count: 1,
         folder_members: 2,
         space_count: 2,
+        // §17.14: a zoomed page, so the address field carries its chip.
+        zoom: Some(125),
         ..SidebarCase::new("N open rail — full composition", Density::Normal, 280.0, 900.0, 3)
     },
     // §11.6 dense 500-tab windowed rail at S density: the model carries a

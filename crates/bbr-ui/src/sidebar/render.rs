@@ -208,9 +208,11 @@ fn active_space_heading(theme: &Theme, model: &SidebarModel) -> Stateful<Div> {
         .flex_row()
         .items_center()
         // The mark sits on the tab rows' favicon column, so the title
-        // starts on the same x as every tab title below it.
+        // starts on the same x as every tab title below it: the same
+        // leading padding and gap as the §11.1 row content (the row's
+        // `row_inset` belongs to its wash surface, not its content).
         .gap(Spacing::sp2())
-        .px(theme.density.row_inset() + theme.density.row_padding_x())
+        .px(theme.density.row_padding_x())
         .pt(Spacing::sp4())
         .pb(Spacing::sp2())
         .text_size(theme.type_.title.size)
@@ -231,8 +233,16 @@ fn active_space_heading(theme: &Theme, model: &SidebarModel) -> Stateful<Div> {
                     )),
             )
         })
-        .child(model.active_space_title.clone())
+        .child(
+            div()
+                .debug_selector(|| ACTIVE_SPACE_NAME_SELECTOR.to_string())
+                .child(model.active_space_title.clone()),
+        )
 }
+
+/// Test-support selector of the heading's title text (geometry evidence:
+/// it starts on the tab titles' x).
+pub const ACTIVE_SPACE_NAME_SELECTOR: &str = "bbr-active-space-name";
 
 /// The stable id of the active-space heading's identity mark (§11.4).
 pub const ACTIVE_SPACE_IDENTITY_ID: &str = "bbr-active-space-identity";

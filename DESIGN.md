@@ -1603,8 +1603,8 @@ production integration).
     but `about:blank` and future internal pages have no domain. Decide the
     short name they present (product name, a neutral label, or an empty
     pill) so the control never shows a raw scheme.
-14. **Address accessory slot contents** — **resolved as product direction
-    (2026-09-27), implementation open:** the slot shows the page zoom chip
+14. **Address accessory slot contents** — **resolved (2026-09-27),
+    implemented:** the slot shows the page zoom chip
     only while zoom is not 100 %; pressing it resets to 100 %. Copy Link and
     a permissions indicator remain later accessories. Owned by the
     [address field and space identity packet](docs/roadmap/tasks/address-field-space-identity.md),
@@ -1619,8 +1619,9 @@ production integration).
     [folder-membership invariant packet](docs/roadmap/tasks/folder-pinned-invariant.md)
     keeps only its performance gate open.
 
-16. **Design-branch adoption** — **resolved as product direction
-    (2026-09-27), implementation open.** The Paper exploration preserved on
+16. **Design-branch adoption** — **resolved (2026-09-27); the three
+    adopted packets are implemented, only their performance evidence is
+    deferred.** The Paper exploration preserved on
     `design/browser-shell-paper@414c97c7` was reviewed row by row against
     main. Adopted: the seated content card with the collapsed titlebar band
     (option B) and no rail hairline; a bordered address field whose fill

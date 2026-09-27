@@ -20,8 +20,12 @@ chip. The Paper shells use catalog glyphs only.
 ## Scope
 
 - DESIGN.md §11.5: field fill derived from the rail material (not a fixed hex)
-  plus a hairline-strength border; keyboard focus draws the §9 ring; still a
-  button with no caret, selection or text entry.
+  plus a hairline-strength border; still a button with no caret, selection
+  or text entry. *(Deferred 2026-09-27: the §9 focus ring needs a keyboard
+  traversal stop on the field, which does not exist — `Cmd-L` opens the
+  palette directly. It moves to the
+  [Accessibility track](../tracks/accessibility.md) item "Predictable focus
+  order across sidebar, command bar, …".)*
 - Resolve §17.14: the accessory hosts the zoom chip under the rule above; Copy
   Link and permission indicators stay future accessories.
 - Heading identity (`bbr-active-space-identity`) on the favicon column, drawn

@@ -25,7 +25,7 @@ Parent phases: [Phase 4](../phases/04-ui-shell.md), [Phase 5](../phases/05-comma
       command-field hint is exposed as a `Chip` node under the command field
       with the §12 monogram child, asserted by the shell-spaces suites.
       Platform exposure remains Phase 9.)*
-- [ ] Predictable focus order across sidebar, command bar, panes, dialogs, and native web content. *(Phase-4 surfaces follow §9 (command field → spaces → tabs → web) and are covered by the shell suites; split panes, dialogs, and the remaining surfaces land with their phases.)*
+- [ ] Predictable focus order across sidebar, command bar, panes, dialogs, and native web content. *(Phase-4 surfaces follow §9 (command field → spaces → tabs → web) and are covered by the shell suites; split panes, dialogs, and the remaining surfaces land with their phases. Includes the deferred §9 ring on the bordered address field from the [address field packet](../tasks/address-field-space-identity.md), once the field is a keyboard traversal stop.)*
 - [x] Visible keyboard focus that is not color-only. *(The §9 ring — a 2 pt accent outline inside the focused list's bounds — plus the text-step brightening of the focused element's content and section labels; the typed `focused` flags in the semantic tree expose the same fact to E2E, asserted by `just e2e-shell-hover`.)*
 - [x] Every pointer action has a keyboard equivalent. *(Phase-4 pointer surfaces — row select/close/reopen, pin, reorder, move between spaces, space activation, sidebar toggle/drag resize — all have keyboard equivalents proven by the shell suites; every later surface must keep the rule.)*
 - [ ] Shortcut discovery through menus/tooltips/help.

@@ -190,6 +190,17 @@ fn real_pointer_presses_report_through_the_sidebar_recorders() {
         // and the G2 component stories; the divider and space-strip
         // keyboard paths are covered below.
 
+        // §11.4: the active-space heading's title starts on the same x as
+        // the tab titles below it (rendered geometry, not tokens).
+        let heading = bounds_of(window, "bbr-active-space-name");
+        let title = bounds_of(window, "bbr-tab-title-1");
+        assert!(
+            (f32::from(heading.origin.x) - f32::from(title.origin.x)).abs() < 0.5,
+            "heading title x {:?} vs tab title x {:?}",
+            heading.origin.x,
+            title.origin.x
+        );
+
         // §11.1 row body: press + select + drag begin + the rail chrome
         // focus entry (the production pointer path, no stop-propagation).
         click_selector(window, "bbr-tab-row-1");
@@ -303,6 +314,23 @@ fn real_pointer_presses_report_through_the_sidebar_recorders() {
         assert_eq!(snap.sidebar.plus, 1, "plus press");
         assert_eq!(snap.sidebar.downloads, 1, "plus never touches downloads");
         assert_eq!(snap.sidebar.rail_mouse_downs, 4, "plus stops propagation");
+
+        // §17.14 zoom chip: the real press fires the reset callback and
+        // stops propagation — the address overlay never opens and the rail
+        // chrome entry never fires.
+        let before = snapshot(window, app).sidebar;
+        click_selector(window, "bbr-address-zoom");
+        flush(window);
+        let snap = snapshot(window, app);
+        assert_eq!(snap.sidebar.address_zoom_resets, 1, "zoom chip press");
+        assert_eq!(
+            snap.sidebar.command_opens, before.command_opens,
+            "the chip press never opens the address overlay"
+        );
+        assert_eq!(
+            snap.sidebar.rail_mouse_downs, before.rail_mouse_downs,
+            "the chip stops propagation"
+        );
     });
 }
 
