@@ -354,10 +354,15 @@ mod tests {
         assert_eq!(Density::Normal.sidebar_width(), px(300.0));
         assert_eq!(Density::Small.sidebar_width(), px(232.0));
         assert_eq!(Density::ExtraLarge.sidebar_width(), px(340.0));
-        // §11.4 `win:palette`: S 440 / N 520 / XL 620 pt.
-        assert_eq!(Density::Small.palette_width(), px(440.0));
-        assert_eq!(Density::Normal.palette_width(), px(520.0));
-        assert_eq!(Density::ExtraLarge.palette_width(), px(620.0));
+        // §11.4 `win:palette` (D9): S 508 / N 600 / XL 716 pt; the ⌘L
+        // overlay's lower clamp is 440 pt and never exceeds the palette.
+        assert_eq!(Density::Small.palette_width(), px(508.0));
+        assert_eq!(Density::Normal.palette_width(), px(600.0));
+        assert_eq!(Density::ExtraLarge.palette_width(), px(716.0));
+        for density in [Density::Small, Density::Normal, Density::ExtraLarge] {
+            assert_eq!(density.overlay_min_width(), px(440.0));
+            assert!(density.overlay_min_width() <= density.palette_width());
+        }
         assert_eq!(type_scale(Density::Small).title.size, px(12.0));
         assert_eq!(type_scale(Density::Normal).title.size, px(14.0));
         assert_eq!(type_scale(Density::ExtraLarge).title.size, px(16.0));

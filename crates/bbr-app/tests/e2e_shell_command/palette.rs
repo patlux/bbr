@@ -54,6 +54,19 @@ fn cmd_t_opens_centered_palette_in_new_tab_staging_and_escape_restores() {
             deadline(),
         );
         assert_command_portal_open(&palette, CommandSurface::Palette);
+        // §18.1 D9: the centered palette is `win:palette` wide for the
+        // shell's density (normal: 600 pt) whenever the window can host it
+        // with the 8 pt Portal margins.
+        assert_eq!(palette.shell_modes.density, "normal");
+        let palette_width = f32::from(bbr_ui::theme::Density::Normal.palette_width());
+        let palette_rect = palette.portal.rect.expect("resolved palette rect");
+        if palette.window_size[0] >= palette_width + 16.0 {
+            assert!(
+                (palette_rect[2] - palette_width).abs() <= 0.5,
+                "palette width {} vs win:palette {palette_width}",
+                palette_rect[2]
+            );
+        }
         let portal_window = palette.portal.portal_window_number;
         assert_eq!(palette.command_bar_mode, CommandBarMode::NewTab);
         assert!(palette.chrome_focused, "Cmd-T focuses the palette field");
@@ -382,6 +395,16 @@ fn address_click_opens_overlay_and_outside_press_closes_web_and_chrome_origins()
         assert!(
             flush(portal_rect[0], address_rect[0]) && flush(portal_rect[1], address_rect[1]),
             "top/leading edges flush with the control: pill {address_rect:?}, overlay {portal_rect:?}"
+        );
+        // §18.1 D9: the overlay is never narrower than 440 pt (and never
+        // wider than `win:palette`), however narrow the address field is.
+        let min_width = f32::from(bbr_ui::theme::Density::Normal.overlay_min_width());
+        assert!(
+            portal_rect[2] >= min_width - 0.5
+                && portal_rect[2]
+                    <= f32::from(bbr_ui::theme::Density::Normal.palette_width()) + 0.5,
+            "overlay width {} within 440 pt–win:palette",
+            portal_rect[2]
         );
         assert!(
             portal_rect[2] >= address_rect[2] - 0.5 && portal_rect[3] >= address_rect[3] - 0.5,

@@ -879,23 +879,27 @@ using the IDs of §15. All rows use `density` geometry from §8.
   geometry on the next frame; drag previews no intermediate chrome states.
 - **Command surface launch:** the command field owns two presentations of
   the same §11.5 engine:
-  - **Cmd-T → centered palette** (Planned, `bbr-palette`): `elev:2`
+  - **Cmd-T → centered palette** (`bbr-palette`): `elev:2`
     overlay centered over the window content, `material:overlay`, width
-    `win:palette` (S 440 / N 520 / XL 620 pt), `radius:lg` at S/N /
-    `radius:xl` at XL per §5. Field row on top (`bbr-palette-field`):
-    prefix glyph, `type:mono` text (`bbr-palette-text`), mode chip
+    `win:palette` (D9: S 508 / N 600 / XL 716 pt), `radius:xl` (16) at every
+    density. Field row on top (`bbr-palette-field`, 56 pt): prefix glyph,
+    the query at 17 pt in the UI sans (`bbr-palette-text`), mode chip
     (`bbr-palette-mode` — New Tab staged per the interaction contract),
     block cursor (`bbr-palette-cursor`). Results below
-    (`bbr-palette-result-<k>`) use the §11.5 row anatomy `[icon] [title]
-    [url mono trunc] [key hint]`, `selected` visuals (accent rail inside
-    the result list), and `accent.ink` match highlighting.
+    (`bbr-palette-result-<k>`, 40 pt rows at `radius:md` inside an 8 pt
+    padded list) use the §11.5 row anatomy `[icon] [title]
+    [url mono trunc] [key hint]`; the `selected` result is the inset
+    `tint.accent` row surface (no accent rail, §18.4), with `accent.ink`
+    match highlighting.
   - **Cmd-L / pointer click on the address control → palette over the
     address** (Planned, `bbr-command-overlay`): the resting control uses the
     reference-calibrated 4 pt rail inset; `elev:2` overlay that
     **covers** the §11.5 address control rather than dropping below it —
     top edge flush with the control's top edge, leading edge flush with
     the control's leading edge, width = control width clamped to
-    360–`win:palette`, `material:overlay`, `radius:lg`. The address
+    440 pt–`win:palette` (D9), `material:overlay`, `radius:lg` (12), a 40 pt
+    field keeping the `type:mono` size, and 36 pt result rows at
+    `radius:md` inside a 4 pt padded list. The address
     control is not visible while the overlay is open: the overlay takes
     its place, so the address never appears twice and the eye stays where
     the pointer clicked. Same result engine and row anatomy; results keep
@@ -1164,7 +1168,8 @@ gap: the loose pinned block still also lists grouped tabs; excluding them
 The fixed footer `[Downloads]` control (§11.4) opens the downloads surface. It
 is an **anchored popover** (`bbr-downloads-panel`), not a sidebar region and
 not an above-glass surface: `elev:2` over `material:overlay` with the palette's
-shadow class (§2), `radius:lg`, anchored so its bottom edge is flush with the
+shadow class (§2), `radius:lg`, a 1 pt `hairline` edge (the §9 focus ring
+stays the 2 pt accent, §18.4), anchored so its bottom edge is flush with the
 footer control's top edge and its leading edge with the sidebar column's
 leading edge. Width = the sidebar column's current width − 2 ×
 `density:row-inset` (S `sp:1` 4 / N `sp:1` 4 / XL `sp:2` 8, §8), clamped to stay
@@ -1271,7 +1276,12 @@ uses its own BBR tokens, copy, product capabilities, profile model and command
 authorities; it does not copy Zen/Firefox features or styling.
 
 - **Material and geometry:** production BBR menus use `material:overlay`,
-  `elev:2`, `radius:md`, `type:label`, and hairline group separators. Native
+  `elev:2` (v2), `radius:md`, `type:label`, and hairline group separators;
+  the card has a 1 pt edge (`hairline`, `accent` while the menu owns
+  keyboard focus) and 4 pt inner padding, and the keyboard/pointer cursor is
+  an inset `radius:sm` row filled with `tint.accent` — the 2 pt accent rail
+  is gone (§18.4). The Plus menu, page menu, tab/favorite/folder menus and
+  their submenus share this anatomy through one `bbr-ui` helper. Native
   platform/accent selection is allowed; Zen blue, oversized cards, gradients,
   and copied translucent slabs are not.
 - **Interaction:** secondary-click opens at the source pointer, clamped to the
@@ -1392,8 +1402,9 @@ or page snapshot and survives tab close and restart.
   captured title, then hostname/URL fallback; URL uses `type:mono` and the §4
   mid-ellipsis; the optional one-level collection label uses `type:meta`.
   Default/hover/selected/focused states use
-  the existing command-row language; the selected result keeps the accent rail
-  and no Saved Page-specific color family is introduced.
+  the existing command-row language; the selected result is the inset
+  `tint.accent` row (§18.4) and no Saved Page-specific color family is
+  introduced.
 - **Activation:** opening a Saved Page creates exactly one fresh regular tab in
   the currently active Space and therefore its current Profile. It never
   silently selects an existing matching tab, switches Space/Profile, pins,
@@ -1844,7 +1855,7 @@ second is replaced by the ring).
 | S2 tokens | [tokens](docs/roadmap/tasks/v2-tokens.md) | §2, §3, §5 | landed 2026-09-28 |
 | S3 rail | [rail](docs/roadmap/tasks/v2-rail.md) | §4, §10.2–§10.4, §11.1, §11.4, §11.5, §11.10 | landed 2026-09-28 |
 | S4 space paper | [space paper](docs/roadmap/tasks/v2-space-paper.md) | §11.3 | landed 2026-09-28 |
-| S5 floating surfaces | [overlays](docs/roadmap/tasks/v2-overlays.md) | §8 palette width, §11.4, §11.12, §11.13, §11.16 | adopted |
+| S5 floating surfaces | [overlays](docs/roadmap/tasks/v2-overlays.md) | §8 palette width, §11.4, §11.12, §11.13, §11.16 | landed 2026-09-28 |
 | S6 motion core | [motion core](docs/roadmap/tasks/v2-motion-core.md) | §6, §10.5, §10.6, §11.5 | adopted |
 | S7 after-commit moments | [motion moments](docs/roadmap/tasks/v2-motion-moments.md) | §6, §10, §11.3, §11.4, §11.10, §11.12 | adopted |
 | S8 empty states | [empty states](docs/roadmap/tasks/v2-empty-states.md) | §11.8 | adopted |

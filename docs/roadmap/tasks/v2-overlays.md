@@ -43,16 +43,21 @@ Integration order:       after S4
 
 ### Unit and contract
 
-- [ ] Palette width per density; menu row resolution; library selection pair.
+- [x] Palette width per density (`theme.rs`), ⌘T/⌘L anatomy
+      (`command/render.rs`), shared menu edge/padding/cursor/field helper
+      (`surfaces/floating.rs`), library selection pair (`rows.rs`, palette
+      gate `tint.accent` ink ≥ 9:1).
 
 ### Real-app E2E
 
-- [ ] Command suite asserts palette and overlay widths; menu, find, downloads,
-      saved-pages suites stay green.
+- [x] Command suite asserts palette (600 pt at normal density) and overlay
+      (440 pt–`win:palette`) widths; tab-menu, context-menu, find,
+      downloads, saved-pages-library, auth and gallery suites stay green.
 
 ### Performance
 
-- [ ] Command open scenarios unchanged; execution deferred.
+- [x] Command open scenarios unchanged in code; execution deferred per the
+      program constraint.
 
 ## Completion gates
 
@@ -82,10 +87,28 @@ stop with the geometry evidence.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
+Outcome:               menus (page, tab + submenu, plus) share the 1 pt edge,
+                        4 pt padding, elev:2 v2 and the inset tint.accent
+                        cursor; the in-rail and palette/overlay result cursors
+                        drop the accent rail; find/auth fields are 1 pt at rest;
+                        ⌘T 508/600/716, radius 16, 56 pt field, 17 pt query,
+                        40 pt rows in an 8 pt list; ⌘L ≥ 440 pt, 40 pt field,
+                        36 pt rows.
+Commits:               see git log (feat(ui): adopt the v2 floating-surface …)
+Functional evidence:   just verify ok; testkit clippy ok; bbr-ui 185 tests
+Real-app E2E:          shell-command 25/25, shell-tab-menu 12/12,
+                        shell-context-menu 11/11, shell-find 6/6,
+                        shell-downloads 11/11, shell-saved-pages-library
+                        12/12, auth 5/5, gallery 46/46
 Performance evidence:   not run — execution deferred
-Worktree state:
+Deviations:            the 17 pt ⌘T query and the ⌘L `type:mono` query both
+                        render in the system UI face (the shell loads no
+                        mono family yet — §4 role only); ⌘L card radius read
+                        as `radius:lg` 12 with rows at 10; Downloads, Space
+                        configuration and the auth sheet already had 1 pt
+                        card edges — only their resting fields changed.
+Review:                serial self-review: keyboard ownership, dismissal and
+                        Portal placement untouched; ids unchanged; widths fit
+                        the 1080 pt default window with 8 pt margins.
+Worktree state:        clean after commit
 ```

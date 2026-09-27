@@ -237,12 +237,12 @@ pub fn tab_menu_card(
         .h(px(rect.height))
         .rounded(theme.radius.medium())
         .bg(p.surface_overlay)
-        // The §9 focus ring: the menu card carries the accent border while
-        // the menu owns keyboard focus (the main-window menu handle).
-        .border_2()
-        .border_color(if model.focused { p.accent } else { p.hairline })
+        // §18.4 / §9: a 1 pt edge — `accent` while the menu owns keyboard
+        // focus (the main-window menu handle), `hairline` otherwise.
+        .border_1()
+        .border_color(super::floating::edge(theme, model.focused))
         .shadow(elev2(theme))
-        .py(Spacing::sp1())
+        .p(super::floating::menu_padding())
         .flex()
         .flex_col()
         .children(rows);
@@ -279,9 +279,9 @@ pub fn tab_menu_card(
                     .rounded(theme.radius.medium())
                     .bg(p.surface_overlay)
                     .border_1()
-                    .border_color(p.hairline)
+                    .border_color(super::floating::edge(theme, false))
                     .shadow(elev2(theme))
-                    .py(Spacing::sp1())
+                    .p(super::floating::menu_padding())
                     .flex()
                     .flex_col()
                     .children(sub_rows),
@@ -292,7 +292,7 @@ pub fn tab_menu_card(
 }
 
 /// One row of a menu card: the stable id, the label, the shared cursor
-/// (accent rail + wash), the submenu chevron, the danger text/glyph
+/// (the inset `tint.accent` surface, §18.4), the submenu chevron, the danger text/glyph
 /// companion, and the production hover/press listeners for enabled rows.
 fn render_row(
     theme: &Theme,
@@ -362,9 +362,10 @@ fn render_row(
             );
     }
     if is_selected {
-        el = el.bg(p.tint_accent).border_l_2().border_color(p.accent);
+        // §18.4: the shared cursor is the inset `tint.accent` surface.
+        el = super::floating::menu_cursor(el, theme);
     } else if submenu_open {
-        el = el.bg(p.wash_hover);
+        el = el.bg(p.wash_hover).rounded(crate::theme::Radius.small());
     }
     el
 }

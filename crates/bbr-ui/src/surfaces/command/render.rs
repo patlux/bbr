@@ -12,12 +12,12 @@
 
 use gpui::{
     div, prelude::*, px, Animation, AnimationExt, AnyElement, Div, MouseButton, MouseDownEvent,
-    SharedString, Stateful,
+    Pixels, SharedString, Stateful,
 };
 
 use crate::icons::Icon;
 use crate::theme::elevation::elev2;
-use crate::theme::{Density, Motion, Radius, Spacing, Theme};
+use crate::theme::{Motion, Radius, Spacing, Theme};
 
 use super::geometry::CommandRect;
 use super::ids::{
@@ -53,13 +53,55 @@ fn card_stop_propagation() -> impl Fn(&MouseDownEvent, &mut gpui::Window, &mut g
     }
 }
 
+/// §18.4 per-presentation anatomy: the ⌘T sheet and the ⌘L overlay share
+/// the engine, the field component and the row content, and differ only in
+/// these sizes.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CommandAnatomy {
+    /// The card corner radius.
+    pub radius: Pixels,
+    /// The field row height.
+    pub field_height: Pixels,
+    /// The query text size: `type:mono`'s size for the ⌘L URL, 17 pt for
+    /// the ⌘T query (the shell renders both in the system UI face; the
+    /// mono family is a DESIGN §4 role the text system does not load yet).
+    pub query_size: Pixels,
+    /// The padding around the result list.
+    pub list_padding: Pixels,
+    /// One result row's height.
+    pub row_height: Pixels,
+    /// One result row's (and its cursor's) corner radius.
+    pub row_radius: Pixels,
+}
+
+/// §18.4: ⌘T — radius 16, a 56 pt field with the 17 pt UI-sans query, 40 pt
+/// result rows at radius 10 inside an 8 pt padded list; ⌘L — radius 12, a
+/// 40 pt field keeping `type:mono`, 36 pt rows at radius 10 in a 4 pt list.
+pub fn anatomy(theme: &Theme, presentation: CommandPresentation) -> CommandAnatomy {
+    match presentation {
+        CommandPresentation::AnchoredOverlay => CommandAnatomy {
+            radius: theme.radius.large(),
+            field_height: px(40.0),
+            query_size: theme.type_.mono.size,
+            list_padding: Spacing::sp1(),
+            row_height: px(36.0),
+            row_radius: theme.radius.medium(),
+        },
+        _ => CommandAnatomy {
+            radius: theme.radius.xlarge(),
+            field_height: px(56.0),
+            query_size: px(17.0),
+            list_padding: Spacing::sp2(),
+            row_height: px(40.0),
+            row_radius: theme.radius.medium(),
+        },
+    }
+}
+
 fn palette_card(model: &CommandModel, rect: CommandRect) -> Stateful<Div> {
     let theme = &model.theme;
     let p = theme.palette;
-    let radius = match theme.density {
-        Density::ExtraLarge => theme.radius.xlarge(),
-        _ => theme.radius.large(),
-    };
+    let anatomy = anatomy(theme, CommandPresentation::CenteredPalette);
     div()
         .id(PALETTE_ID)
         // Test-support target: the production id as the gallery E2E lookup
@@ -72,7 +114,7 @@ fn palette_card(model: &CommandModel, rect: CommandRect) -> Stateful<Div> {
         .w(px(rect.width))
         .max_h(px(rect.height))
         .overflow_hidden()
-        .rounded(radius)
+        .rounded(anatomy.radius)
         .bg(p.surface_overlay)
         .border_1()
         .border_color(p.hairline)
@@ -81,13 +123,14 @@ fn palette_card(model: &CommandModel, rect: CommandRect) -> Stateful<Div> {
         .flex_col()
         .child(field_row(
             model,
+            anatomy,
             PALETTE_FIELD_ID,
             PALETTE_TEXT_ID,
             PALETTE_CURSOR_ID,
             "+",
             Some("New Tab"),
         ))
-        .children(result_rows(model, PALETTE_RESULT_PREFIX))
+        .child(result_list(model, anatomy, PALETTE_RESULT_PREFIX))
         .on_mouse_down(MouseButton::Left, card_stop_propagation())
 }
 
@@ -100,6 +143,7 @@ fn palette_card(model: &CommandModel, rect: CommandRect) -> Stateful<Div> {
 /// keystroke replaces it.
 fn field_row(
     model: &CommandModel,
+    anatomy: CommandAnatomy,
     field_id: &'static str,
     text_id: &'static str,
     cursor_id: &'static str,
@@ -116,8 +160,9 @@ fn field_row(
     div()
         .id(field_id)
         .debug_selector(|| field_id.to_string())
+        .h(anatomy.field_height)
+        .flex_shrink_0()
         .px(Spacing::sp3())
-        .py(Spacing::sp2())
         .gap(Spacing::sp2())
         .flex()
         .flex_row()
@@ -132,7 +177,7 @@ fn field_row(
             div()
                 .id(text_id)
                 .flex_1()
-                .text_size(theme.type_.mono.size)
+                .text_size(anatomy.query_size)
                 .text_color(p.ink)
                 .child(text),
         )
@@ -154,6 +199,7 @@ fn field_row(
 fn overlay_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
     let theme = &model.theme;
     let p = theme.palette;
+    let anatomy = anatomy(theme, CommandPresentation::AnchoredOverlay);
     let card = div()
         .id(OVERLAY_ID)
         // Test-support target: the production id as the gallery E2E lookup
@@ -165,7 +211,7 @@ fn overlay_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
         .w(px(rect.width))
         .max_h(px(rect.height))
         .overflow_hidden()
-        .rounded(theme.radius.large())
+        .rounded(anatomy.radius)
         .bg(p.surface_overlay)
         .border_1()
         .border_color(p.hairline)
@@ -177,13 +223,14 @@ fn overlay_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
         // overlay is Location mode by construction).
         .child(field_row(
             model,
+            anatomy,
             OVERLAY_FIELD_ID,
             OVERLAY_TEXT_ID,
             OVERLAY_CURSOR_ID,
             "▶",
             None,
         ))
-        .children(result_rows(model, "bbr-command-result"))
+        .child(result_list(model, anatomy, "bbr-command-result"))
         .on_mouse_down(MouseButton::Left, card_stop_propagation());
     // §11.4: the overlay opens with an opacity fade `dur:fine` only — never
     // translate or scale (§6). The fade is per-open: the animation element
@@ -197,13 +244,31 @@ fn overlay_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
     .into_any()
 }
 
-fn result_rows(model: &CommandModel, result_prefix: &str) -> Vec<Stateful<Div>> {
+/// §18.4: the result rows inside their padded list (the padding keeps the
+/// inset cursor off the card edge).
+fn result_list(model: &CommandModel, anatomy: CommandAnatomy, result_prefix: &str) -> Div {
+    let rows = result_rows(model, anatomy, result_prefix);
+    div()
+        .flex()
+        .flex_col()
+        .min_h_0()
+        .when(!rows.is_empty(), |el| el.p(anatomy.list_padding))
+        .children(rows)
+}
+
+fn result_rows(
+    model: &CommandModel,
+    anatomy: CommandAnatomy,
+    result_prefix: &str,
+) -> Vec<Stateful<Div>> {
     match model.state {
         CommandResultState::Results => model
             .results
             .iter()
             .enumerate()
-            .map(|(index, row)| result_row(model, row, index == model.selected, result_prefix))
+            .map(|(index, row)| {
+                result_row(model, anatomy, row, index == model.selected, result_prefix)
+            })
             .collect(),
         CommandResultState::Loading => vec![state_row(
             &model.theme,
@@ -242,6 +307,7 @@ pub(crate) fn state_id(model: &CommandModel, kind: &str) -> &'static str {
 
 fn result_row(
     model: &CommandModel,
+    anatomy: CommandAnatomy,
     row: &CommandResultRow,
     selected: bool,
     id_prefix: &str,
@@ -263,12 +329,14 @@ fn result_row(
         .flex()
         .flex_row()
         .items_center()
+        .flex_shrink_0()
         .gap(Spacing::sp2())
+        .h(anatomy.row_height)
         .px(Spacing::sp3())
-        .py(Spacing::sp1())
-        .when(selected, |el| {
-            el.bg(p.tint_accent).border_l_2().border_color(p.accent)
-        })
+        .rounded(anatomy.row_radius)
+        // §18.4: the cursor is the inset `tint.accent` row surface — the
+        // accent rail is gone; the selected result is committed at once.
+        .when(selected, |el| el.bg(p.tint_accent))
         .child(
             div()
                 .size(px(14.0))
@@ -368,5 +436,35 @@ pub(super) fn group_glyph(row: &CommandResultRow) -> Option<&'static str> {
         "action" => Some("A"),
         "history" => Some("H"),
         _ => Some("→"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::theme::{ContrastMode, Density, ThemeMode};
+
+    #[test]
+    fn the_palette_and_overlay_follow_the_v2_anatomy() {
+        // §18.4: ⌘T radius 16 / 56 pt field / 17 pt query / 40 pt rows at
+        // radius 10 in an 8 pt list; ⌘L radius 12 / 40 pt field / mono-size
+        // query / 36 pt rows at radius 10 in a 4 pt list — at every density.
+        for density in [Density::Small, Density::Normal, Density::ExtraLarge] {
+            let theme = Theme::new(ThemeMode::Light, ContrastMode::Standard, density);
+            let palette = anatomy(&theme, CommandPresentation::CenteredPalette);
+            assert_eq!(palette.radius, px(16.0));
+            assert_eq!(palette.field_height, px(56.0));
+            assert_eq!(palette.query_size, px(17.0));
+            assert_eq!(palette.list_padding, px(8.0));
+            assert_eq!(palette.row_height, px(40.0));
+            assert_eq!(palette.row_radius, px(10.0));
+            let overlay = anatomy(&theme, CommandPresentation::AnchoredOverlay);
+            assert_eq!(overlay.radius, px(12.0));
+            assert_eq!(overlay.field_height, px(40.0));
+            assert_eq!(overlay.query_size, theme.type_.mono.size);
+            assert_eq!(overlay.list_padding, px(4.0));
+            assert_eq!(overlay.row_height, px(36.0));
+            assert_eq!(overlay.row_radius, px(10.0));
+        }
     }
 }

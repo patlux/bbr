@@ -148,9 +148,10 @@ impl BbrApp {
             .gap(Spacing::sp2())
             .px(Spacing::sp3())
             .py(Spacing::sp1())
+            // §18.4: the shared list cursor is the inset `tint.accent`
+            // surface (no accent rail).
             .when(selected, |el| {
-                // §11.5 selected rail + `tint.accent` inside the list.
-                el.bg(p.tint_accent).border_l_2().border_color(p.accent)
+                bbr_ui::surfaces::floating::menu_cursor(el, theme)
             })
             .child(
                 div()

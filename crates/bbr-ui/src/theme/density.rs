@@ -76,15 +76,21 @@ impl Density {
         })
     }
 
-    /// `win:palette` (DESIGN.md §11.4): the centered Cmd-T palette width
-    /// (S 440 / N 520 / XL 620 pt) and the field-anchored overlay's upper
-    /// clamp.
+    /// `win:palette` (DESIGN.md §11.4, §18.1 D9): the centered Cmd-T
+    /// palette width (S 508 / N 600 / XL 716 pt) and the field-anchored
+    /// overlay's upper clamp.
     pub fn palette_width(self) -> Pixels {
         px(match self {
-            Density::Small => 440.0,
-            Density::Normal => 520.0,
-            Density::ExtraLarge => 620.0,
+            Density::Small => 508.0,
+            Density::Normal => 600.0,
+            Density::ExtraLarge => 716.0,
         })
+    }
+
+    /// D9: the field-anchored ⌘L overlay is never narrower than 440 pt, so
+    /// a URL has room even when the address field is narrow.
+    pub fn overlay_min_width(self) -> Pixels {
+        px(440.0)
     }
 
     /// §7/§8 `icon:` — row glyphs take the owning density's size

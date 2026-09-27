@@ -268,14 +268,15 @@ impl BbrApp {
                     .unwrap_or(WebRect::new(
                         12.0,
                         48.0,
-                        360.0,
+                        f32::from(theme.density.overlay_min_width()),
                         f32::from(theme.density.row()),
                     ));
-                // §11.4: the anchored overlay's width is the field width
-                // clamped to 360–`win:palette`.
-                let width = rect
-                    .width
-                    .clamp(360.0, f32::from(theme.density.palette_width()));
+                // §11.4/D9: the anchored overlay's width is the field width
+                // clamped to 440 pt–`win:palette`.
+                let width = rect.width.clamp(
+                    f32::from(theme.density.overlay_min_width()),
+                    f32::from(theme.density.palette_width()),
+                );
                 PortalRequest::native(
                     OVERLAY_PRESENTATION_ID,
                     overlay_placement(rect, width),

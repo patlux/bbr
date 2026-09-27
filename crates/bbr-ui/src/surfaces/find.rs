@@ -142,14 +142,13 @@ fn field(theme: &Theme, model: &FindSurface) -> Stateful<Div> {
     } else {
         SharedString::from(model.query.clone())
     };
-    div()
+    // §9/§18.4: 1 pt hairline at rest, the 2 pt accent ring while focused.
+    super::floating::field_edge(div(), theme, model.focused)
         .id(FIND_FIELD_ID)
         .flex_1()
         .h(theme.density.row())
         .px(Spacing::sp2())
         .rounded(theme.radius.medium())
-        .border_2()
-        .border_color(if model.focused { p.accent } else { p.hairline })
         .bg(p.surface_field)
         .flex()
         .flex_row()

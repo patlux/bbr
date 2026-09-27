@@ -223,14 +223,14 @@ fn field(
                 .child(label),
         )
         .child(
-            div()
+            // §9/§18.4: 1 pt hairline at rest, the 2 pt accent ring while
+            // focused.
+            super::floating::field_edge(div(), theme, focused)
                 .id(id)
                 .debug_selector(move || id.to_string())
                 .h(theme.density.row())
                 .px(Spacing::sp2())
                 .rounded(theme.radius.medium())
-                .border_2()
-                .border_color(if focused { p.accent } else { p.hairline })
                 .bg(p.surface_field)
                 .flex()
                 .flex_row()

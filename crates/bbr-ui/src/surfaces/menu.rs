@@ -11,10 +11,10 @@
 //! disabled reasons), the dismissal/activation rules, and the focus
 //! choreography; the portal root reads one live [`ContextMenuModel`] per
 //! render and builds GPUI chrome. This module owns the card anatomy only —
-//! `material:overlay`, `radius:md`, `elev:2`, `density:row`-tall entries,
-//! the §9 focus ring on the focused card, and the shared keyboard/pointer
-//! cursor (selected row) — exactly as the pre-cutover portal render drew
-//! it, so §15 ids and the semantic tree stay byte-identical.
+//! `material:overlay`, `radius:md`, `elev:2`, the §18.4 1 pt edge (accent
+//! while focused) and 4 pt padding, `density:row`-tall entries, and the
+//! shared keyboard/pointer cursor (the inset `tint.accent` row) — so §15
+//! ids and the semantic tree stay byte-identical.
 //!
 //! Pointer paths: each **enabled** row's `on_hover` selects it (the shared
 //! keyboard/pointer cursor) and its mouse-down activates it; disabled rows
@@ -167,9 +167,8 @@ pub fn context_menu_card(
                         },
                     );
             }
-            row.when(is_selected, |el| {
-                el.bg(p.tint_accent).border_l_2().border_color(p.accent)
-            })
+            // §18.4: the shared cursor is the inset `tint.accent` surface.
+            row.when(is_selected, |el| super::floating::menu_cursor(el, theme))
         })
         .collect();
     div()
@@ -186,12 +185,12 @@ pub fn context_menu_card(
         .h(px(rect.height))
         .rounded(theme.radius.medium())
         .bg(p.surface_overlay)
-        // The §9 focus ring: the menu card carries the accent border while
-        // the menu owns keyboard focus (the main-window menu handle).
-        .border_2()
-        .border_color(if model.focused { p.accent } else { p.hairline })
+        // §18.4 / §9: a 1 pt edge — `accent` while the menu owns keyboard
+        // focus (the main-window menu handle), `hairline` otherwise.
+        .border_1()
+        .border_color(super::floating::edge(theme, model.focused))
         .shadow(elev2(theme))
-        .py(Spacing::sp1())
+        .p(super::floating::menu_padding())
         .flex()
         .flex_col()
         .children(rows)

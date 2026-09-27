@@ -33,7 +33,7 @@ pub const COMMAND_FAMILY_SELECTOR: &str = "command-family";
 /// centered-palette / anchored-overlay placement the app's portal probe
 /// resolves; the gallery passes a fixed rect because it has no Portal —
 /// the geometry authority stays in the app).
-const CARD_RECT: CommandRect = CommandRect::new(0.0, 0.0, 520.0, 420.0);
+const CARD_RECT: CommandRect = CommandRect::new(0.0, 0.0, 600.0, 420.0);
 
 /// §11.4 Command: the production `bbr_ui::surfaces::command::command_card`
 /// renders the selected matrix family with the plain fixture model. The

@@ -11,6 +11,7 @@ pub mod command;
 pub mod downloads;
 pub mod error;
 pub mod find;
+pub mod floating;
 pub mod menu;
 pub mod space_config;
 pub mod tab_menu;

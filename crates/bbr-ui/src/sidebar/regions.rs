@@ -185,8 +185,9 @@ pub fn plus_menu_surface(
                 .flex()
                 .flex_row()
                 .cursor_pointer()
+                // §18.4: the shared cursor is the inset `tint.accent` surface.
                 .when(is_selected, |el| {
-                    el.bg(p.tint_accent).border_l_2().border_color(p.accent)
+                    crate::surfaces::floating::menu_cursor(el, theme)
                 })
                 .child(
                     div()
@@ -217,9 +218,12 @@ pub fn plus_menu_surface(
         .mb(Spacing::sp1())
         .rounded(theme.radius.medium())
         .bg(p.surface_overlay)
+        // §18.4: 1 pt edge, 4 pt padding and the `elev:2` v2 shadow of the
+        // menu family.
         .border_1()
-        .border_color(p.hairline)
-        .py(Spacing::sp1())
+        .border_color(crate::surfaces::floating::edge(theme, false))
+        .shadow(crate::theme::elevation::elev2(theme))
+        .p(crate::surfaces::floating::menu_padding())
         .on_key_down(callbacks::key(&callbacks.on_plus_menu_key_down))
         // The inside-press marker runs deepest in the bubble phase;
         // stopping propagation keeps the sidebar chrome-focus handler
