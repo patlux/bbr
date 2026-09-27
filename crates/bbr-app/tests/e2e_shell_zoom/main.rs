@@ -29,6 +29,7 @@
 #[path = "../e2e_common/mod.rs"]
 mod e2e_common;
 
+mod accessory;
 mod ladder;
 mod per_site;
 mod support;

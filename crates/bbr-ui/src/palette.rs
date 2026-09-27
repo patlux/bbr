@@ -154,15 +154,19 @@ pub struct Palette {
     pub wash_hover: Rgba,
     /// Pointer-down / pressed wash (§10.3).
     pub wash_active: Rgba,
-    /// §11.5 address-control fill: white-translucent on dark chrome,
-    /// black-translucent on light chrome — an alpha wash over the sidebar
-    /// material, so the token pair follows the theme and the space tint
-    /// through the material beneath (never a hardcoded color, never a
-    /// bordered field style).
+    /// §11.5 address field fill: a white veil over the rail material — one
+    /// step lighter than the rail in both modes — so the field follows the
+    /// theme and the space tint through the material beneath (never a
+    /// hardcoded surface color).
     pub address_fill: Rgba,
-    /// §11.5 address-control hover: one step brighter on dark chrome, one
-    /// step darker on light chrome (§10.2 wash mechanics at `dur:fine`).
+    /// §11.5 address-field hover: one step darker on light chrome, one step
+    /// brighter on dark chrome (§10.2 wash mechanics at `dur:fine`); the
+    /// border never changes.
     pub address_fill_hover: Rgba,
+    /// §11.5 address-field border: hairline-strength presence, not contrast.
+    pub address_border: Rgba,
+    /// §11.5 trailing accessory (zoom chip) inset wash.
+    pub address_accessory_fill: Rgba,
     /// The two status surface washes at the IC level.
     pub surface_error_ic: Rgba,
     pub surface_attention_ic: Rgba,
@@ -221,8 +225,10 @@ impl Palette {
             wash_active: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.08),
             // §11.5: white-translucent over the dark sidebar; the hover
             // steps one fill brighter (a higher white alpha).
-            address_fill: rgba_8(255, 255, 255, 25),
-            address_fill_hover: rgba_8(255, 255, 255, 41),
+            address_fill: rgba_8(255, 255, 255, 8),
+            address_fill_hover: rgba_8(255, 255, 255, 18),
+            address_border: rgba_8(255, 255, 255, 18),
+            address_accessory_fill: rgba_8(255, 255, 255, 15),
             surface_error_ic: rgba_8(255, 106, 99, 30),
             surface_attention_ic: rgba_8(255, 198, 63, 30),
         }
@@ -244,8 +250,10 @@ impl Palette {
             wash_active: blend(SURFACE_SIDEBAR_DARK, INK_DARK, 0.10),
             // Increased contrast hardens the translucent address fill the
             // same way it hardens the row washes.
-            address_fill: rgba_8(255, 255, 255, 30),
-            address_fill_hover: rgba_8(255, 255, 255, 48),
+            address_fill: rgba_8(255, 255, 255, 10),
+            address_fill_hover: rgba_8(255, 255, 255, 22),
+            address_border: rgba_8(255, 255, 255, 31),
+            address_accessory_fill: rgba_8(255, 255, 255, 20),
             ..base
         }
     }
@@ -279,8 +287,10 @@ impl Palette {
             wash_active: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.08),
             // §11.5: black-translucent over the light sidebar; the hover
             // steps one fill darker (a higher black alpha).
-            address_fill: rgba_8(0, 0, 0, 15),
-            address_fill_hover: rgba_8(0, 0, 0, 26),
+            address_fill: rgba_8(255, 255, 255, 122),
+            address_fill_hover: rgba_8(255, 255, 255, 77),
+            address_border: rgba_8(23, 26, 29, 26),
+            address_accessory_fill: rgba_8(23, 26, 29, 13),
             surface_error_ic: rgba_8(194, 46, 36, 30),
             surface_attention_ic: rgba_8(143, 92, 0, 30),
         }
@@ -303,8 +313,10 @@ impl Palette {
             wash_hover: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.07),
             wash_active: blend(SURFACE_SIDEBAR_LIGHT, INK_LIGHT, 0.10),
             // Increased contrast deepens the translucent address fill.
-            address_fill: rgba_8(0, 0, 0, 18),
-            address_fill_hover: rgba_8(0, 0, 0, 30),
+            address_fill: rgba_8(255, 255, 255, 122),
+            address_fill_hover: rgba_8(255, 255, 255, 77),
+            address_border: rgba_8(23, 26, 29, 46),
+            address_accessory_fill: rgba_8(23, 26, 29, 20),
             ..base
         }
     }

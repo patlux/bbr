@@ -347,6 +347,9 @@ impl BbrApp {
                 // draggable chassis band exists while the card has a top
                 // inset (never in full screen).
                 ids.push(bbr_ui::card::CONTENT_CARD_ID.to_string());
+                if self.address_zoom_chip().is_some() {
+                    ids.push(bbr_ui::components::address::ADDRESS_ZOOM_ID.to_string());
+                }
                 if self.content_card_frame(window).top > 0.0 {
                     ids.push(bbr_ui::card::CHASSIS_BAND_ID.to_string());
                 }
@@ -371,6 +374,16 @@ impl BbrApp {
             command_selection: self.command_text.selection.map(|(start, end)| [start, end]),
             sidebar_visible: self.sidebar_visible,
             content_card: self.content_card_snapshot(window),
+            address_zoom: self.address_zoom_chip(),
+            active_space_identity: self
+                .sidebar_visible
+                .then(|| {
+                    self.space_chip_visuals()
+                        .into_iter()
+                        .find(|chip| chip.selected)
+                        .map(|chip| chip.identity)
+                })
+                .flatten(),
             titlebar: {
                 let safe = self.safe_area(window);
                 bbr_testkit::protocol::TitlebarSnapshot {
@@ -380,17 +393,15 @@ impl BbrApp {
                     can_go_back: browser.nav.can_go_back,
                     can_go_forward: browser.nav.can_go_forward,
                     can_reload: browser.active_view.is_some(),
-                    // §11.5 rest evidence: the address pill's translucent
-                    // borderless token pair follows the effective chrome
-                    // polarity (white-translucent on dark, black-
-                    // translucent on light) — asserted in both appearance
-                    // modes semantically, never via pixels.
+                    // §11.5 rest evidence: the bordered field's token set
+                    // follows the effective chrome polarity — asserted in
+                    // both appearance modes semantically, never via pixels.
                     address_rest_fill: match theme.mode {
                         bbr_ui::theme::ThemeMode::Dark => {
-                            bbr_testkit::protocol::AddressRestFill::TranslucentOnDark
+                            bbr_testkit::protocol::AddressRestFill::BorderedFieldOnDark
                         }
                         bbr_ui::theme::ThemeMode::Light => {
-                            bbr_testkit::protocol::AddressRestFill::TranslucentOnLight
+                            bbr_testkit::protocol::AddressRestFill::BorderedFieldOnLight
                         }
                     },
                     // §11.14 rest evidence: Reload rests with no surface;

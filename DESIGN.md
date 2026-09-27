@@ -733,8 +733,13 @@ using the IDs of §15. All rows use `density` geometry from §8.
   Sidebar toggle + Back/Forward/Reload, followed by the compact address
   display (§11.5). There is **no standalone BBR app-mark/name brand block**.
   The Favorites grid (§11.10) sits directly under the address display, exactly
-  as in the reference composition. The active Space's exact title is then the
-  primary list heading for the scrolling list, followed by the organized area
+  as in the reference composition. The active Space's heading
+  (`bbr-active-space-title`) is then the primary list heading for the
+  scrolling list: `[identity bbr-active-space-identity] [exact title]`, where
+  the identity is the **same validated value the §11.3 footer chip renders**
+  (emoji, drawn §7 glyph, or two-letter badge — one space never shows two
+  marks) at `icon:m` on the tab rows' favicon column, so the title starts on
+  the same x as every tab title below it. The heading is followed by the organized area
   of loose Pinned rows (§11.2) and grouped Folder rows (§11.11), then a visible
   New Tab row routed through the existing
   staged-new-tab authority, and regular Tabs (§11.1). The Favorites region is
@@ -824,6 +829,7 @@ using the IDs of §15. All rows use `density` geometry from §8.
   and palette surfaces submit to their existing latency budgets. Larger S1
   geometry never changes bounded-window rendering or dense scroll math.
 - **Assert ids:** `bbr-sidebar`, `bbr-sidebar-column`, `bbr-active-space-title`,
+  `bbr-active-space-identity`,
   `bbr-new-tab`, `bbr-scroll`, conditional `bbr-status`,
   `bbr-titlebar-sidebar-toggle`, `bbr-sidebar-divider`, `bbr-organized-hairline`,
   `bbr-section-favorites` / `bbr-section-pinned` / `bbr-section-folders` /
@@ -849,29 +855,39 @@ of problem instead of styling it.
   leading `www.` elided, IDN shown human-readable. The full address exists
   in the palette, never here. Internal pages show their short name (the
   exact naming is open, §17.13).
-- **Anatomy:** a borderless pill, height `density:row` (S 32 / N 36 /
+- **Anatomy:** a quiet field surface, height `density:row` (S 32 / N 36 /
   XL 44), `radius:lg`, `type:title` domain text (`bbr-address-domain`,
-  mid-ellipsis), and a **trailing accessory slot** (`bbr-address-accessory`)
-  inset at the pill's trailing edge. The slot reserves space for one to
-  three §14 glyphs at `density:hit-min`; when a glyph appears, the domain
-  text yields width by ellipsis — the address never pushes an accessory out
-  of the pill. v1 ships the slot empty or with Copy Link only (§17.14).
-- **Fill:** translucent, not a bordered field — **white-translucent on dark
-  chrome, black-translucent on light chrome**, following the theme and the
-  space tint through the token pair, never a hardcoded color. **No border
-  and no focus ring**, at any time.
-- **Hover:** the fill moves one step brighter on dark chrome and one step
-  darker on light chrome, using the §10.2 wash mechanics at `dur:fine`.
+  mid-ellipsis) in `color:ink`, and a **trailing accessory slot**
+  (`bbr-address-accessory`) inset at the field's trailing edge. The slot
+  reserves one §14 glyph at `density:hit-min`; content in it never pushes
+  the domain out of the field (the domain yields by ellipsis).
+- **Fill:** a bordered field one step off the rail — a **white veil over the
+  rail material** (light `rgba(255,255,255,0.48)`, dark
+  `rgba(255,255,255,0.03)`), so the field follows the theme and the space
+  tint, plus a 1 px hairline-strength border (light `rgba(23,26,29,0.10)`,
+  dark `rgba(255,255,255,0.07)`; increased contrast deepens it) and **no
+  shadow**. Deliberately not `material:field` white: the address is the one
+  address affordance, not the loudest element in a rail whose job is to
+  recede. Colors come from the palette tokens, never the component.
+- **Zoom accessory (§17.14):** the slot shows the page zoom chip
+  (`bbr-address-zoom`, e.g. `110%`, `type:meta`) only while the active
+  site's zoom is not 100 %, on a quiet inset wash (light
+  `rgba(23,26,29,0.05)`, dark `rgba(255,255,255,0.06)`). Pressing it resets
+  the site to 100 % through the site-zoom authority and never opens the
+  palette. Copy Link and permission indicators stay future accessories.
+- **Hover:** the veil moves one step darker on light chrome and one step
+  brighter on dark chrome, using the §10.2 wash mechanics at `dur:fine`; the
+  border never changes weight or color.
 - **Activation:** pointer press or `Cmd-L` opens the §11.4 palette over the
   control. The control **never accepts keyboard text**; its semantic role is
   a button that opens address entry, and it holds no editing state, no
   cursor and no selection.
 - **Focus:** the control participates in the chrome focus domain as a
-  button. There is no field-focus appearance, because there is no field.
-  After the palette closes, focus returns where it was before opening — web
+  button; the field look communicates what the control is about, never that
+  it is being edited (no caret, no selection). After the palette closes, focus returns where it was before opening — web
   content or the sidebar — per the interaction contract.
 - **Assert ids:** `bbr-address`, `bbr-address-domain`,
-  `bbr-address-accessory`; the palette's own input carries
+  `bbr-address-accessory`, `bbr-address-zoom` (only while shown); the palette's own input carries
   `bbr-command-overlay-field` / `-text` / `-cursor`, and results keep
   `bbr-command-result-<k>`.
 
@@ -1520,8 +1536,8 @@ production integration).
     (2026-09-27), implementation open:** the slot shows the page zoom chip
     only while zoom is not 100 %; pressing it resets to 100 %. Copy Link and
     a permissions indicator remain later accessories. Owned by the
-    [address field and space identity packet](docs/roadmap/tasks/address-field-space-identity.md);
-    until it lands the shipped slot stays empty.
+    [address field and space identity packet](docs/roadmap/tasks/address-field-space-identity.md),
+    landed 2026-09-27 (§11.5).
 15. ~~**Folder membership versus pinned state**~~ **Resolved (2026-08-14),
     invariant implemented (2026-09-27):** folders are grouped pinned tabs in
     the common organized area. The domain `FolderStore` pins while grouping,

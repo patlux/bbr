@@ -52,6 +52,8 @@ pub enum SidebarObservation {
     /// §11.4: the address pill / staging surface pointer press
     /// (`on_command_open`).
     CommandOpen,
+    /// §17.14: the address zoom chip press (`on_address_zoom_reset`).
+    AddressZoomReset,
     /// §11.1: row selection (`on_select_row`), payload = the row index.
     SelectRow(usize),
     /// §11.1: row close (`on_close_row`), payload = the row index.
@@ -141,6 +143,8 @@ pub struct SidebarRecorder {
     pub command_hovers: Vec<bool>,
     /// `on_command_open` dispatches.
     pub command_opens: u32,
+    /// §17.14 zoom chip presses.
+    pub address_zoom_resets: u32,
     /// `on_select_row` row indexes, in dispatch order.
     pub select_rows: Vec<usize>,
     /// `on_close_row` row indexes, in dispatch order.
@@ -213,6 +217,7 @@ impl SidebarRecorder {
             SidebarObservation::TitlebarRelease => self.titlebar_releases += 1,
             SidebarObservation::CommandHover(value) => self.command_hovers.push(value),
             SidebarObservation::CommandOpen => self.command_opens += 1,
+            SidebarObservation::AddressZoomReset => self.address_zoom_resets += 1,
             SidebarObservation::SelectRow(index) => self.select_rows.push(index),
             SidebarObservation::CloseRow(index) => self.close_rows.push(index),
             SidebarObservation::TogglePin(index) => self.toggle_pins.push(index),

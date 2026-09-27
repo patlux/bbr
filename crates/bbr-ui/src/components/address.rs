@@ -4,9 +4,10 @@
 //!
 //! The sidebar address is a **display control, not a text field**: at rest
 //! (and behind an open palette/overlay presentation) the slot renders the
-//! domain pill `bbr-address` — borderless, translucent (token pair driven by
-//! theme and space tint), hover wash, button semantics, a reserved trailing
-//! accessory slot, and no border or focus ring in any state. All address
+//! domain field `bbr-address` — a quiet bordered surface one step off the
+//! rail (a veil that follows theme and space tint), hover wash, button
+//! semantics, and a trailing accessory slot that shows the page zoom chip
+//! only while zoom is not 100 % (DESIGN §11.5/§17.14). All address
 //! text entry lives in the §11.4 palette presentations; the pill holds no
 //! editing state, cursor or selection and never accepts keyboard text.
 //!
@@ -58,6 +59,17 @@ pub struct AddressModel {
     pub hovered: bool,
     /// The §11.3 cross-context profile hint; `None` at rest.
     pub profile_hint: Option<AddressProfileHint>,
+    /// §17.14 zoom accessory: the active site's zoom percent while it is
+    /// not 100 % ([`zoom_accessory`]); `None` keeps the slot empty.
+    pub zoom: Option<u16>,
+}
+
+/// The stable id of the §17.14 zoom chip in the address accessory slot.
+pub const ADDRESS_ZOOM_ID: &str = "bbr-address-zoom";
+
+/// §17.14: the zoom chip shows only while the page zoom is not 100 %.
+pub fn zoom_accessory(level: u16) -> Option<u16> {
+    (level != 100).then_some(level)
 }
 
 /// The §11.5 command **staging** surface's presentation model (`bbr-command-bar`):
@@ -83,14 +95,16 @@ pub struct StagingModel {
     pub profile_hint: Option<AddressProfileHint>,
 }
 
-/// The §11.5 address control: a borderless translucent pill carrying the
-/// domain only, with a reserved trailing accessory slot. `type:title`
-/// domain text (`bbr-address-domain`, mid-ellipsis), the slot
-/// (`bbr-address-accessory`) reserving one §14 glyph's `density:hit-min`
-/// width so a later icon changes no layout, hover wash on both chrome
-/// polarities, button semantics (pointer press opens the §11.4 overlay
-/// over the control), and — per §11.5 — **no border and no focus ring
-/// at any time**. The §11.3 cross-context profile hint renders at the
+/// The §11.5 address control: a quiet bordered field carrying the domain
+/// only, with a trailing accessory slot. `type:title` domain text
+/// (`bbr-address-domain`, mid-ellipsis), the slot (`bbr-address-accessory`)
+/// reserving one §14 glyph's `density:hit-min` width so the zoom chip
+/// changes no layout, hover wash on both chrome polarities (the border
+/// never changes), and button semantics (pointer press opens the §11.4
+/// overlay over the control; it never accepts text, shows no caret and no
+/// selection). A press on the zoom chip resets the site to 100 % through
+/// `on_zoom_reset` and never opens the overlay. The §11.3 cross-context
+/// profile hint renders at the
 /// leading edge for its one-interaction lifetime. `field_anchor` is the
 /// caller-built invisible §11.4 field anchor overlaying the pill to record
 /// its window-relative rect; `on_hover`/`on_open` are the production
@@ -101,8 +115,27 @@ pub fn address_control(
     field_anchor: gpui::AnyElement,
     on_hover: impl Fn(&bool, &mut Window, &mut App) + 'static,
     on_open: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+    on_zoom_reset: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
+    let zoom_chip = model.zoom.map(|level| {
+        div()
+            .id(ADDRESS_ZOOM_ID)
+            .px(Spacing::sp1())
+            .rounded(theme.radius.small())
+            .bg(p.address_accessory_fill)
+            .text_size(theme.type_.meta.size)
+            .font_weight(theme.type_.meta.weight)
+            .text_color(p.ink_secondary)
+            .cursor_pointer()
+            .child(SharedString::from(format!("{level}%")))
+            .on_mouse_down(MouseButton::Left, move |event, window, cx| {
+                // The chip resets the zoom; the press never reaches the
+                // field's overlay activation.
+                cx.stop_propagation();
+                on_zoom_reset(event, window, cx);
+            })
+    });
     div()
         .id("bbr-address")
         // The relative box is the containing block for the absolute
@@ -115,15 +148,18 @@ pub fn address_control(
         // content centers inside the fixed-height pill.
         .h(theme.density.row())
         .rounded(theme.radius.large())
-        // §11.5 fill: translucent token pair (white on dark chrome,
-        // black on light chrome) following theme and space tint through
-        // the material beneath; the hover wash steps one fill brighter
-        // (dark) / darker (light) at `dur:fine`. No border, no ring.
+        // §11.5 fill: a white veil one step off the rail, following theme
+        // and space tint through the material beneath, plus a
+        // hairline-strength border; the hover steps the veil darker
+        // (light) / brighter (dark) at `dur:fine` and never touches the
+        // border.
         .bg(if model.hovered {
             p.address_fill_hover
         } else {
             p.address_fill
         })
+        .border_1()
+        .border_color(p.address_border)
         .flex()
         .flex_row()
         .items_center()
@@ -173,9 +209,9 @@ pub fn address_control(
                 .child(model.domain.clone()),
         )
         // §11.5 trailing accessory slot: reserved geometry (one §14
-        // glyph at `density:hit-min`), `flex-shrink-0`, empty in v1
-        // (the §17.14 decision stays open). The slot's width never
-        // changes, so later icons cause no layout change.
+        // glyph at `density:hit-min`), `flex-shrink-0`; it hosts the
+        // §17.14 zoom chip only while zoom is not 100 %. The slot's width
+        // never changes, so the chip causes no layout change.
         .child(
             div()
                 .id("bbr-address-accessory")
@@ -183,7 +219,8 @@ pub fn address_control(
                 .flex_shrink_0()
                 .flex()
                 .items_center()
-                .justify_center(),
+                .justify_center()
+                .children(zoom_chip),
         )
         // The §11.4 field anchor overlays the pill (absolute, inset-0):
         // invisible, takes no layout space, records the pill rect.
@@ -288,6 +325,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn the_zoom_chip_shows_only_off_one_hundred_percent() {
+        assert_eq!(zoom_accessory(100), None);
+        assert_eq!(zoom_accessory(110), Some(110));
+        assert_eq!(zoom_accessory(90), Some(90));
+    }
+
+    #[test]
     fn address_models_round_trip_their_fields() {
         let hint = AddressProfileHint {
             profile_index: 1,
@@ -301,6 +345,7 @@ mod tests {
             domain: "example.com".into(),
             hovered: false,
             profile_hint: Some(hint.clone()),
+            zoom: None,
         };
         assert_eq!(model.domain, "example.com");
         assert!(!model.hovered);

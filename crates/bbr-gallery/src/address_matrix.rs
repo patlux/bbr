@@ -199,6 +199,7 @@ pub fn build_address_fixture(case: &AddressCase, theme: &Theme) -> Option<Addres
         } else {
             None
         },
+        zoom: None,
     })
 }
 

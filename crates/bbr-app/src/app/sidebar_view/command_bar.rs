@@ -72,6 +72,7 @@ impl BbrApp {
             domain: SharedString::from(label),
             hovered: self.address_hovered,
             profile_hint,
+            zoom: bbr_ui::components::address::zoom_accessory(self.address_zoom_level()),
         }
     }
 

@@ -108,6 +108,13 @@ impl BbrApp {
             cx.stop_propagation();
         });
 
+        // §17.14: the address zoom chip resets the active site to 100 %
+        // through the production zoom authority (`Cmd-0`'s path).
+        let entity = cx.entity();
+        let on_address_zoom_reset: MouseCallback = Rc::new(move |_e, _window, cx| {
+            entity.update(cx, |view, cx| view.zoom_reset(cx));
+        });
+
         // §11.1: row selection through the production pointer path.
         let entity = cx.entity();
         let on_select_row: RowCallback = Rc::new(move |index, _e, window, cx| {
@@ -334,6 +341,7 @@ impl BbrApp {
             titlebar,
             on_command_hover,
             on_command_open,
+            on_address_zoom_reset,
             on_select_row,
             on_close_row,
             on_toggle_pin,

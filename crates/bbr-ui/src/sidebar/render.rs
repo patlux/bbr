@@ -176,16 +176,48 @@ pub fn sidebar_surface(
 /// even when the Space has no tabs, so the user always knows the current
 /// browsing context without a separate BBR brand block.
 fn active_space_heading(theme: &Theme, model: &SidebarModel) -> Stateful<Div> {
+    // The identity is the active footer chip's own validated value, so the
+    // heading and the chip can never show two different marks.
+    let identity = model
+        .strip
+        .chips
+        .iter()
+        .find(|chip| chip.selected)
+        .map(|chip| chip.identity.clone());
     div()
         .id("bbr-active-space-title")
-        .px(Spacing::sp3())
+        .flex()
+        .flex_row()
+        .items_center()
+        // The mark sits on the tab rows' favicon column, so the title
+        // starts on the same x as every tab title below it.
+        .gap(Spacing::sp2())
+        .px(theme.density.row_inset() + theme.density.row_padding_x())
         .pt(Spacing::sp4())
         .pb(Spacing::sp2())
         .text_size(theme.type_.title.size)
         .font_weight(gpui::FontWeight(600.0))
         .text_color(theme.palette.ink_secondary)
+        .when_some(identity, |heading, identity| {
+            heading.child(
+                div()
+                    .id(ACTIVE_SPACE_IDENTITY_ID)
+                    .flex_shrink_0()
+                    .w(theme.density.icon())
+                    .flex()
+                    .justify_center()
+                    .child(super::strip::identity_mark(
+                        theme,
+                        &identity,
+                        gpui::FontWeight(600.0),
+                    )),
+            )
+        })
         .child(model.active_space_title.clone())
 }
+
+/// The stable id of the active-space heading's identity mark (§11.4).
+pub const ACTIVE_SPACE_IDENTITY_ID: &str = "bbr-active-space-identity";
 
 /// The §11.5 command slot: the address pill while no command surface is
 /// open and no non-address staging mode is active; the `bbr-command-bar`
@@ -205,6 +237,7 @@ fn command_slot(
             command_field_anchor,
             callbacks::boolean(&callbacks.on_command_hover),
             callbacks::mouse(&callbacks.on_command_open),
+            callbacks::mouse(&callbacks.on_address_zoom_reset),
         ),
         CommandSlot::Staging(staging) => components::staging_surface(
             theme,

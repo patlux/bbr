@@ -1538,6 +1538,9 @@ pub enum Request {
     SetFullScreenOverride {
         full_screen: Option<bool>,
     },
+    /// Press the §17.14 address zoom chip through the exact app method its
+    /// pointer listener calls (resets the active site to 100 %).
+    ClickAddressZoom,
     /// Liveness probe.
     Ping,
     /// Close the browser window through GPUI's production window-removal

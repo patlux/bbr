@@ -599,6 +599,21 @@ pub(crate) fn dispatch(
             .unwrap_or_else(err_response)
         }
 
+        // §17.14: the zoom chip's pointer path (the chip listener calls
+        // the same zoom reset; a chip that is not presented is a no-op
+        // error so E2E never passes against an empty slot).
+        Request::ClickAddressZoom => with_app(window, app, cx, |view, _window, cx| {
+            if view.address_zoom_chip().is_none() {
+                return Response::Error(Error::new(
+                    "not_presented",
+                    "the address zoom chip is not presented",
+                ));
+            }
+            view.zoom_reset(cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+
         Request::SetAppearanceOverride { mode } => {
             with_app(window, app, cx, |view, _window, cx| {
                 view.set_appearance_override(

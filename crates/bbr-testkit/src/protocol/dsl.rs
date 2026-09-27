@@ -511,6 +511,10 @@ pub fn set_full_screen_override(full_screen: Option<bool>) -> Request {
     Request::SetFullScreenOverride { full_screen }
 }
 
+pub fn click_address_zoom() -> Request {
+    Request::ClickAddressZoom
+}
+
 pub fn click_space_new() -> Request {
     Request::ClickSpaceNew
 }

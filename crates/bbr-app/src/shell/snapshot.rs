@@ -144,6 +144,10 @@ pub struct TestSnapshot {
     pub titlebar: bbr_testkit::protocol::TitlebarSnapshot,
     /// DESIGN §2 seated content card frame and native clip.
     pub content_card: bbr_testkit::protocol::ContentCardSnapshot,
+    /// §17.14 address zoom chip percent (`None` at 100 %).
+    pub address_zoom: Option<u16>,
+    /// §11.4 heading identity (the active chip's value).
+    pub active_space_identity: Option<String>,
     /// The effective sidebar rail width: the DESIGN §5 adjustable width
     /// clamped to the window (0 when collapsed — the rail is gone).
     pub sidebar_width: f32,
@@ -340,6 +344,7 @@ pub fn visible_ids_u2(
             "bbr-nav-forward",
             "bbr-nav-reload",
             "bbr-active-space-title",
+            "bbr-active-space-identity",
             "bbr-new-tab",
             "bbr-tab-list",
             "bbr-tab-scroll",

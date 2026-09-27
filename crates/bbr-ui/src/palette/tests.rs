@@ -2,7 +2,7 @@
 //! recomputed from the stored hex tokens — never a copied ratio.
 
 use super::*;
-use crate::theme::{ContrastMode, Density, Theme};
+use crate::theme::Theme;
 
 /// §12: profile tile/letter pairs must compute ≥ 3:1 from the tokens —
 /// the same bar the §7.2 favicon monogram tiles use. The DESIGN table's
@@ -186,50 +186,44 @@ fn light_theme_meets_the_documented_contrast_contract() {
     assert!(SECONDARY_IC_LIGHT.contrast(SURFACE_FOOTER_LIGHT) >= 9.0);
 }
 
-/// §11.5 address-control fill token pair: white-translucent on dark
-/// chrome, black-translucent on light chrome; the hover step is one
-/// fill brighter on dark and one fill darker on light — both derived
-/// from the token pair, never a hardcoded color in the component.
+/// §11.5 bordered address field: a white veil over the (tinted) rail —
+/// one step lighter than the rail in both modes, so it follows the space
+/// tint — with a hairline-strength border. The hover steps darker on light
+/// chrome and brighter on dark chrome; domain ink keeps the §3.1 bar on the
+/// composited field in every palette.
 #[test]
-fn address_fill_pair_is_translucent_and_polarized_per_theme() {
-    for theme in [
-        Theme::dark(),
-        Theme::new(
-            crate::theme::ThemeMode::Light,
-            ContrastMode::Standard,
-            Density::Normal,
-        ),
-        Theme::new(
-            crate::theme::ThemeMode::Dark,
-            ContrastMode::Increased,
-            Density::Normal,
-        ),
-        Theme::new(
-            crate::theme::ThemeMode::Light,
-            ContrastMode::Increased,
-            Density::Normal,
-        ),
+fn address_field_is_a_bordered_veil_one_step_off_the_rail() {
+    let over = |veil: gpui::Rgba, base: gpui::Rgba| gpui::Rgba {
+        r: veil.a * veil.r + (1.0 - veil.a) * base.r,
+        g: veil.a * veil.g + (1.0 - veil.a) * base.g,
+        b: veil.a * veil.b + (1.0 - veil.a) * base.b,
+        a: 1.0,
+    };
+    for (mode, p) in [
+        (crate::theme::ThemeMode::Light, Palette::light_standard()),
+        (crate::theme::ThemeMode::Light, Palette::light_increased()),
+        (crate::theme::ThemeMode::Dark, Palette::dark_standard()),
+        (crate::theme::ThemeMode::Dark, Palette::dark_increased()),
     ] {
-        let fill = theme.palette.address_fill;
-        let hover = theme.palette.address_fill_hover;
-        assert!(fill.a > 0.0 && fill.a < 1.0, "fill stays translucent");
-        assert!(hover.a > 0.0 && hover.a < 1.0, "hover stays translucent");
-        match theme.mode {
-            crate::theme::ThemeMode::Dark => {
-                // White-translucent: the RGB channels are near-white and
-                // the hover is strictly brighter (higher alpha).
-                assert!(fill.r >= 0.9 && fill.g >= 0.9 && fill.b >= 0.9);
-                assert!(hover.a > fill.a, "dark hover brightens one step");
-            }
-            crate::theme::ThemeMode::Light => {
-                // Black-translucent: RGB near-black and the hover is
-                // strictly darker (higher alpha).
-                assert!(fill.r <= 0.1 && fill.g <= 0.1 && fill.b <= 0.1);
-                assert!(hover.a > fill.a, "light hover darkens one step");
-            }
+        let (fill, hover) = (p.address_fill, p.address_fill_hover);
+        for veil in [fill, hover] {
+            assert!(veil.a > 0.0 && veil.a < 1.0, "a veil, never an opaque hex");
+            assert!(veil.r >= 0.99 && veil.g >= 0.99 && veil.b >= 0.99);
+            let field = over(veil, p.surface_sidebar);
+            assert!(
+                crate::palette::contrast(p.ink, field) >= 4.5,
+                "domain ink on the field"
+            );
         }
-        // The hover is never a different hue — only the alpha steps.
-        assert_eq!((fill.r, fill.g, fill.b), (hover.r, hover.g, hover.b));
+        match mode {
+            crate::theme::ThemeMode::Light => assert!(hover.a < fill.a, "light hover darkens"),
+            crate::theme::ThemeMode::Dark => assert!(hover.a > fill.a, "dark hover brightens"),
+        }
+        assert!(
+            p.address_border.a > 0.0 && p.address_border.a < 0.2,
+            "border is presence, not contrast"
+        );
+        assert!(p.address_accessory_fill.a > 0.0 && p.address_accessory_fill.a < 0.1);
     }
 }
 

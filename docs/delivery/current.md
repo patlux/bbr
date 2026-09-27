@@ -16,7 +16,7 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Target Orchestrator session | `01a062b1-9945-7d1b-aa68-02a11d6084fd`; reverify pane/session activity before any ownership transfer |
 | Preserved design checkpoint | `design/browser-shell-paper@414c97c7a5139cf6070a54138969a3bb34403bc2`; design intent only, not runtime acceptance |
 
-The UI contract conformance slice and the folder membership/pinned invariant are integrated on `main` (2026-09-27); the invariant's performance gate waits for the override to lift. The seated content card (DESIGN-CARD) is integrated the same way; the next serial slice is the address field and space identity (DESIGN-ADDRESS). Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
+The UI contract conformance slice and the folder membership/pinned invariant are integrated on `main` (2026-09-27); the invariant's performance gate waits for the override to lift. The seated content card (DESIGN-CARD) is integrated the same way; the address field and space identity (DESIGN-ADDRESS) followed; the next serial slice is the Favorites grid and drag offers (DESIGN-FAVORITES). Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
 
 ## Status vocabulary
 
@@ -68,8 +68,8 @@ The former post-F2a and Daily-driver waves are closed historical evidence. Their
 | ID | Status | Depends on / boundary |
 |---|---|---|
 | DESIGN-CARD | `blocked` | [Seated content card](../roadmap/tasks/seated-content-card.md); integrated on `main` with functional gates green; only `just e2e-perf` remains (override) |
-| DESIGN-ADDRESS | `ready` | [Address field and space identity](../roadmap/tasks/address-field-space-identity.md); DESIGN-CARD integrated |
-| DESIGN-FAVORITES | `planned` | [Favorites grid and drag offers](../roadmap/tasks/favorites-drag-offers.md); after FOLDER-PIN-INVARIANT and DESIGN-ADDRESS |
+| DESIGN-ADDRESS | `blocked` | [Address field and space identity](../roadmap/tasks/address-field-space-identity.md); integrated on `main` with functional gates green; `just e2e-perf` (override) and the Paper glyph redraw remain |
+| DESIGN-FAVORITES | `ready` | [Favorites grid and drag offers](../roadmap/tasks/favorites-drag-offers.md); FOLDER-PIN-INVARIANT and DESIGN-ADDRESS integrated |
 | DD-FOLDER-MENU | `blocked` | Requires the integrated shared menu seam; the delete truth is settled (Unpack) and `FOLDER-PIN-INVARIANT` is integrated |
 | DD-SHIFT-LINK | `planned` | Shift-modified link behavior remains intentionally unclassified; no writer may infer foreground/window semantics |
 | DD-MANUAL-SMOKE | `planned` | Requires a fresh deterministic package; representative-site smoke supplements rather than replaces automation |

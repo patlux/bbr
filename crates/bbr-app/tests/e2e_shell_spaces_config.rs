@@ -392,6 +392,14 @@ fn done_commits_rename_theme_and_identity_to_the_exact_space_only() {
         assert_eq!(default_chip.identity, "code", "sibling identity untouched");
         assert_eq!(default_chip.theme, "cobalt", "sibling theme untouched");
         assert_chip_evidence(&committed, reading);
+        // §11.4: the active-space heading carries the same identity as its
+        // footer chip — one space never shows two marks.
+        assert_eq!(
+            committed.active_space_identity.as_deref(),
+            Some("🌊"),
+            "the heading identity matches the chip"
+        );
+        assert_ids(&committed, &["bbr-active-space-identity"]);
         // The visible ids still carry the persistent-space chip ids.
         assert!(
             committed
@@ -422,6 +430,11 @@ fn done_commits_rename_theme_and_identity_to_the_exact_space_only() {
             "switching after configuration never recreates sessions"
         );
         assert_chip_evidence(&switched, default_space);
+        assert_eq!(
+            switched.active_space_identity.as_deref(),
+            Some(chip_of(&switched, default_space).identity.as_str()),
+            "the heading follows the active space's chip identity"
+        );
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

@@ -703,7 +703,7 @@ mod tests {
             can_go_back: true,
             can_go_forward: false,
             can_reload: true,
-            address_rest_fill: AddressRestFill::TranslucentOnDark,
+            address_rest_fill: AddressRestFill::BorderedFieldOnDark,
             reload_rest: ReloadRestSurface::Transparent,
             reload_hovered: true,
             reload_pressed: false,
@@ -718,7 +718,7 @@ mod tests {
                 "can_go_back":true,
                 "can_go_forward":false,
                 "can_reload":true,
-                "address_rest_fill":"translucent_on_dark",
+                "address_rest_fill":"bordered_field_on_dark",
                 "reload_rest":"transparent",
                 "reload_hovered":true,
                 "reload_pressed":false
@@ -733,7 +733,10 @@ mod tests {
             {"safe_area_height":28.0,"sidebar_collapsed":false,"can_reload":true}
         ))
         .unwrap();
-        assert_eq!(legacy.address_rest_fill, AddressRestFill::TranslucentOnDark);
+        assert_eq!(
+            legacy.address_rest_fill,
+            AddressRestFill::BorderedFieldOnDark
+        );
         assert_eq!(legacy.reload_rest, ReloadRestSurface::Transparent);
         assert!(!legacy.reload_hovered);
         assert!(!legacy.reload_pressed);

@@ -215,6 +215,17 @@ impl ZoomController {
         self.step(view, profile, url, |lifecycle| lifecycle.reset())
     }
 
+    /// The active site's effective zoom percent (the documented default
+    /// when no site is active).
+    pub fn active_level(&self) -> u16 {
+        self.active_key
+            .as_ref()
+            .and_then(|key| self.lifecycles.get(key))
+            .map(SiteZoomLifecycle::effective_zoom)
+            .unwrap_or_default()
+            .as_u16()
+    }
+
     /// The snapshot state for the active view.
     #[cfg(any(feature = "testkit", test))]
     pub fn snapshot(&self, view: WebViewId) -> ZoomSnapshotState {
@@ -366,6 +377,28 @@ impl super::BbrApp {
             return;
         };
         self.zoom.on_activated(view, profile, &url);
+    }
+
+    /// The §17.14 zoom chip the address field presents right now: only
+    /// while the rail shows the address field (not a staging surface) and
+    /// the zoom is off 100 %.
+    #[cfg(feature = "testkit")]
+    pub(crate) fn address_zoom_chip(&self) -> Option<u16> {
+        let staging = self.command_surface == crate::app::palette::CommandSurface::None
+            && self.command_bar_mode.is_active();
+        if !self.sidebar_visible || staging {
+            return None;
+        }
+        bbr_ui::components::address::zoom_accessory(self.address_zoom_level())
+    }
+
+    /// The active site's effective zoom percent (100 without an active
+    /// view) — the §17.14 address accessory input.
+    pub(crate) fn address_zoom_level(&self) -> u16 {
+        if self.zoom_active().is_none() {
+            return 100;
+        }
+        self.zoom.active_level()
     }
 
     /// The zoom state of the active view for the typed E2E snapshot.

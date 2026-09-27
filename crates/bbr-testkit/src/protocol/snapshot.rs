@@ -436,20 +436,20 @@ pub struct PaneRectSnapshot {
     pub rect: [f32; 4],
 }
 
-/// §11.5 address rest fill — the pill's rest surface is the translucent
-/// borderless token pair (white-translucent on dark chrome,
-/// black-translucent on light chrome); never a bordered field, never a
-/// focus ring at any time. The variant reports the effective chrome
-/// polarity of the §11.5 token pair so E2E asserts the rest state in both
-/// appearance modes semantically (no pixel reads).
+/// §11.5 address rest fill — the field's rest surface is a quiet bordered
+/// field one step off the rail: a white veil over the (tinted) rail plus a
+/// hairline-strength border, per chrome polarity. The variant reports the
+/// effective polarity of the §11.5 token set so E2E asserts the rest state
+/// in both appearance modes semantically (no pixel reads).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AddressRestFill {
-    /// White-translucent wash over dark chrome (`palette.address_fill`).
+    /// Bordered field on dark chrome (`palette.address_fill` +
+    /// `palette.address_border`).
     #[default]
-    TranslucentOnDark,
-    /// Black-translucent wash over light chrome (`palette.address_fill`).
-    TranslucentOnLight,
+    BorderedFieldOnDark,
+    /// Bordered field on light chrome.
+    BorderedFieldOnLight,
 }
 
 /// §11.14 Reload rest surface — the control rests with no surface
@@ -516,7 +516,7 @@ impl Default for TitlebarSnapshot {
             can_go_back: false,
             can_go_forward: false,
             can_reload: false,
-            address_rest_fill: AddressRestFill::TranslucentOnDark,
+            address_rest_fill: AddressRestFill::BorderedFieldOnDark,
             reload_rest: ReloadRestSurface::Transparent,
             reload_hovered: false,
             reload_pressed: false,
@@ -1259,6 +1259,14 @@ pub struct Snapshot {
     /// DESIGN §2 seated content card frame and native clip.
     #[serde(default)]
     pub content_card: ContentCardSnapshot,
+    /// §17.14 address zoom chip: the zoom percent it shows (`None` while
+    /// the page zoom is 100 % — the accessory slot stays empty).
+    #[serde(default)]
+    pub address_zoom: Option<u16>,
+    /// §11.4 the identity value the active-space heading renders
+    /// (`bbr-active-space-identity`) — the active footer chip's own value.
+    #[serde(default)]
+    pub active_space_identity: Option<String>,
     /// The effective sidebar rail width (DESIGN §5 range, window-clamped;
     /// 0 when collapsed).
     pub sidebar_width: f32,

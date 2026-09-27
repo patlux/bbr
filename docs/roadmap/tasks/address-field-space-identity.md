@@ -57,17 +57,17 @@ Integration order:       after seated-content-card, before favorites-drag-offers
 
 ### Unit and contract
 
-- [ ] Field fill/border tokens hold the §3.1 text bar in all four palettes and
+- [x] Field fill/border tokens hold the §3.1 text bar in all four palettes and
       follow the space tint.
-- [ ] Zoom accessory visibility is a pure function of the site zoom level.
+- [x] Zoom accessory visibility is a pure function of the site zoom level.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-zoom` proves the chip appears off 100 %, resets on press
+- [x] `just e2e-shell-zoom` proves the chip appears off 100 %, resets on press
       and disappears at 100 %.
-- [ ] `just e2e-shell-command` proves the overlay still covers the field with
+- [x] `just e2e-shell-command` proves the overlay still covers the field with
       the URL preselected.
-- [ ] `just e2e-shell-spaces` proves the heading identity matches the chip.
+- [x] `just e2e-shell-spaces` proves the heading identity matches the chip.
 
 ### Performance
 
@@ -99,12 +99,30 @@ the computed candidates and ask for a contract decision.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: the address reads as a quiet bordered field one step off the rail
+  (a white veil over the tinted rail plus a hairline-strength border), the
+  accessory slot hosts the zoom chip only off 100 % (press resets through
+  the site-zoom authority and never opens the overlay), and the active-space
+  heading renders the active footer chip's own identity on the favicon
+  column.
+Commits: this implementation commit on main.
+Functional evidence: palette test (veil over the rail, ink >= 4.5:1 on the
+  composited field in all four palettes, hover direction, border strength);
+  zoom_accessory unit test; shared identity_mark renderer for chip and
+  heading.
+Real-app E2E: new zoom accessory scenario (absent at 100 %, press on an
+  absent chip rejected, 125 % shown, press resets to 100 %, overlay stays
+  closed, identity unchanged); spaces-config asserts the heading identity
+  equals the chip before and after a space switch; reference polish asserts
+  the bordered-field rest fill in both modes; full `just e2e` aggregate
+  30/30 plus e2e-peek 7/7 and e2e-gallery 45/45 in 320 s. Visual capture
+  shows the bordered field and the heading identity.
+Performance evidence: open (performance-execution override).
+Roadmap/documentation updates: DESIGN §11.4 heading anatomy and ids, §11.5
+  field/zoom accessory/hover/focus, §17.14 landed.
+Open blockers and non-goals: keyboard focus ring on the address control has
+  no traversal path to it yet (Cmd-L opens the palette directly); redrawing
+  the Paper shells' glyphs waits for the Paper file to be opened; the
+  performance gate is blocked by the override.
+Worktree state: main, serial writer.
 ```

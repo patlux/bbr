@@ -104,6 +104,36 @@ fn badge_fallback(identity: &str) -> SharedString {
     )
 }
 
+/// The §11.3 identity mark of one validated `SpaceIdentity` value: a
+/// curated emoji directly, a curated catalog name as its drawn §7 path, a
+/// non-curated value as the §7 two-letter badge. The one renderer the
+/// footer chip and the active-space heading share, so a space never shows
+/// two different marks.
+pub fn identity_mark(
+    theme: &Theme,
+    identity: &str,
+    text_weight: gpui::FontWeight,
+) -> gpui::AnyElement {
+    let p = theme.palette;
+    match classify_identity(identity) {
+        IdentityForm::Emoji => div()
+            .text_size(theme.type_.badge.size)
+            .font_weight(text_weight)
+            .text_color(p.ink)
+            .child(SharedString::from(identity.to_string()))
+            .into_any(),
+        IdentityForm::Glyph(glyph) => crate::icons::Icon::Bbr(glyph)
+            .canvas(theme, theme.density.icon())
+            .into_any(),
+        IdentityForm::Badge => div()
+            .text_size(theme.type_.badge.size)
+            .font_weight(text_weight)
+            .text_color(p.ink)
+            .child(badge_fallback(identity))
+            .into_any(),
+    }
+}
+
 pub fn space_chip(
     theme: &Theme,
     visuals: &SpaceChipVisuals,
@@ -135,23 +165,7 @@ pub fn space_chip(
     } else {
         theme.type_.badge.weight
     };
-    let identity_slot = match classify_identity(&visuals.identity) {
-        IdentityForm::Emoji => div()
-            .text_size(theme.type_.badge.size)
-            .font_weight(text_weight)
-            .text_color(p.ink)
-            .child(SharedString::from(visuals.identity.clone()))
-            .into_any(),
-        IdentityForm::Glyph(glyph) => crate::icons::Icon::Bbr(glyph)
-            .canvas(theme, theme.density.icon())
-            .into_any(),
-        IdentityForm::Badge => div()
-            .text_size(theme.type_.badge.size)
-            .font_weight(text_weight)
-            .text_color(p.ink)
-            .child(badge_fallback(&visuals.identity))
-            .into_any(),
-    };
+    let identity_slot = identity_mark(theme, &visuals.identity, text_weight);
     div()
         .id(space_chip_id(visuals.space))
         .flex_shrink_0()

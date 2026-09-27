@@ -232,6 +232,9 @@ pub struct Callbacks {
     /// §11.4: the address pill / staging surface pointer press opens the
     /// field-anchored overlay.
     pub on_command_open: MouseCallback,
+    /// §17.14: the address zoom chip press resets the site zoom to 100 %
+    /// (the chip stops propagation; the overlay never opens).
+    pub on_address_zoom_reset: MouseCallback,
     /// §11.1: row selection through the production pointer path.
     pub on_select_row: RowCallback,
     /// §11.1: row close through the production pointer path (stops
@@ -316,6 +319,7 @@ impl Callbacks {
             titlebar: TitlebarCallbacks::noop(),
             on_command_hover: noop_bool,
             on_command_open: noop_mouse.clone(),
+            on_address_zoom_reset: noop_mouse.clone(),
             on_select_row: noop_row.clone(),
             on_close_row: noop_row.clone(),
             on_toggle_pin: noop_row.clone(),

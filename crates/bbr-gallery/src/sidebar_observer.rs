@@ -41,6 +41,8 @@ pub struct SidebarObserver {
     pub on_command_hover: BoolCallback,
     /// §11.4 address pill / staging press.
     pub on_command_open: MouseCallback,
+    /// §17.14 address zoom chip press.
+    pub on_address_zoom_reset: MouseCallback,
     /// §11.1 row selection.
     pub on_select_row: RowCallback,
     /// §11.1 row close (stops propagation).
@@ -204,6 +206,7 @@ pub fn build_sidebar_observer(
             })
         },
         on_command_open: mouse(SidebarObservation::CommandOpen, true),
+        on_address_zoom_reset: mouse(SidebarObservation::AddressZoomReset, true),
         on_select_row: row(SidebarObservation::SelectRow, false),
         on_close_row: row(SidebarObservation::CloseRow, true),
         on_toggle_pin: row(SidebarObservation::TogglePin, true),
@@ -373,6 +376,7 @@ impl SidebarObserver {
             titlebar: self.titlebar.clone(),
             on_command_hover: Rc::clone(&self.on_command_hover),
             on_command_open: Rc::clone(&self.on_command_open),
+            on_address_zoom_reset: Rc::clone(&self.on_address_zoom_reset),
             on_select_row: Rc::clone(&self.on_select_row),
             on_close_row: Rc::clone(&self.on_close_row),
             on_toggle_pin: Rc::clone(&self.on_toggle_pin),
@@ -426,6 +430,7 @@ mod tests {
         let _ = &callbacks.titlebar;
         let _ = &callbacks.on_command_hover;
         let _ = &callbacks.on_command_open;
+        let _ = &callbacks.on_address_zoom_reset;
         let _ = &callbacks.on_select_row;
         let _ = &callbacks.on_close_row;
         let _ = &callbacks.on_toggle_pin;

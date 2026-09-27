@@ -83,7 +83,7 @@ fn rest_states_hairline_and_glyph_chips_in_both_appearance_modes() {
         );
         assert_eq!(
             settled.titlebar.address_rest_fill,
-            bbr_testkit::protocol::AddressRestFill::TranslucentOnLight,
+            bbr_testkit::protocol::AddressRestFill::BorderedFieldOnLight,
             "§11.5 translucent borderless fill on light chrome"
         );
         assert_eq!(
@@ -173,7 +173,7 @@ fn rest_states_hairline_and_glyph_chips_in_both_appearance_modes() {
         assert_eq!(dark.shell_modes.theme, "dark", "dark mode took effect");
         assert_eq!(
             dark.titlebar.address_rest_fill,
-            bbr_testkit::protocol::AddressRestFill::TranslucentOnDark,
+            bbr_testkit::protocol::AddressRestFill::BorderedFieldOnDark,
             "§11.5 translucent borderless fill on dark chrome"
         );
         assert_eq!(
@@ -195,7 +195,7 @@ fn rest_states_hairline_and_glyph_chips_in_both_appearance_modes() {
         assert!(!hovered.titlebar.reload_pressed);
         assert_eq!(
             hovered.titlebar.address_rest_fill,
-            bbr_testkit::protocol::AddressRestFill::TranslucentOnDark,
+            bbr_testkit::protocol::AddressRestFill::BorderedFieldOnDark,
             "address rest stays translucent while Reload hovers"
         );
         client
@@ -272,9 +272,9 @@ fn rest_states_hairline_and_glyph_chips_in_both_appearance_modes() {
         flush_frame(&mut client);
         let restored = client.snapshot().expect("restored snapshot");
         let expected_fill = if restored.shell_modes.theme == "dark" {
-            bbr_testkit::protocol::AddressRestFill::TranslucentOnDark
+            bbr_testkit::protocol::AddressRestFill::BorderedFieldOnDark
         } else {
-            bbr_testkit::protocol::AddressRestFill::TranslucentOnLight
+            bbr_testkit::protocol::AddressRestFill::BorderedFieldOnLight
         };
         assert_eq!(
             restored.titlebar.address_rest_fill, expected_fill,

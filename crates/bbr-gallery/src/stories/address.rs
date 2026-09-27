@@ -89,6 +89,7 @@ pub fn render_address_control(ctx: &StoryContext) -> AnyElement {
                         on(event, window, cx)
                     }
                 },
+                |_event: &MouseDownEvent, _window: &mut Window, _cx: &mut App| {},
             );
             let derived = address_domain(case.url);
             let meta = if case.hovered {
