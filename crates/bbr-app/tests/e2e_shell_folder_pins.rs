@@ -16,7 +16,7 @@
 
 mod e2e_common;
 
-use bbr_testkit::protocol::{GlobalTabSnapshot, Snapshot};
+use bbr_testkit::protocol::{Event, GlobalTabSnapshot, Snapshot};
 use e2e_common::*;
 
 const MENU_SOURCE_TAB: &str = "bbr-tab-menu";
@@ -312,7 +312,101 @@ fn folder_membership_pins_tabs_through_the_production_paths() {
             assert_eq!(state.space, base.active_space, "space unchanged for {id}");
         }
         assert_eq!(cross.engine_sessions, 5, "one session per tab, no churn");
-        let _ = since;
+
+        // Grouping a favorite whose tab lives in another space (the
+        // Favorite menu groups into the tab's own space) pins that tab, but
+        // `TabPinned` carries an active-space index: the active tab list
+        // does not change, so no pin may be reported for it.
+        let default_space = base.active_space;
+        client
+            .send_ok(&dsl::activate_space(default_space))
+            .expect("back to the default space");
+        since = wait_browser_change(
+            &mut client,
+            BrowserChange::SpaceActivated {
+                space: default_space,
+            },
+            since,
+        );
+        let home = client.snapshot().expect("default space snapshot");
+        let c_index = home
+            .tabs
+            .iter()
+            .position(|row| row.web_view == views[2])
+            .expect("c is in the default space");
+        client
+            .send_ok(&dsl::toggle_favorite_tab(c_index))
+            .expect("favorite c");
+        client
+            .send_ok(&dsl::activate_space(second))
+            .expect("activate the second space");
+        since = wait_browser_change(
+            &mut client,
+            BrowserChange::SpaceActivated { space: second },
+            since,
+        );
+        flush_frame(&mut client);
+        client
+            .send_ok(&bbr_testkit::Request::RightClickFavorite {
+                index: 0,
+                x: 140.0,
+                y: 120.0,
+            })
+            .expect("right click the favorite");
+        flush_frame(&mut client);
+        let menu_deadline = deadline();
+        let menu = loop {
+            let snapshot = client.snapshot().expect("favorite menu snapshot");
+            if snapshot.tab_menu.open && snapshot.tab_menu.bound_tab == Some(c) {
+                break snapshot;
+            }
+            assert!(Instant::now() < menu_deadline, "favorite menu never opened");
+            std::thread::yield_now();
+        };
+        let folder_row = menu
+            .tab_menu
+            .rows
+            .iter()
+            .position(|row| row.id.ends_with("move-folder"))
+            .expect("the favorite's own-space folders are offered");
+        client
+            .send_ok(&bbr_testkit::Request::TabMenuActivate { index: folder_row })
+            .expect("open folder submenu");
+        flush_frame(&mut client);
+        client
+            .send_ok(&bbr_testkit::Request::TabMenuSubmenuActivate { index: 0 })
+            .expect("commit the folder row");
+        wait_menu_closed(&mut client);
+        let group_deadline = deadline();
+        let grouped = loop {
+            flush_frame(&mut client);
+            let snapshot = client.snapshot().expect("cross-space grouping snapshot");
+            if snapshot.folders[0].members == [c] {
+                break snapshot;
+            }
+            assert!(
+                Instant::now() < group_deadline,
+                "the favorite was never grouped"
+            );
+            std::thread::yield_now();
+        };
+        assert!(tab(&grouped, c).pinned, "grouping pins in the owning space");
+        assert_eq!(tab(&grouped, c).space, default_space);
+        assert_eq!(grouped.active_space, second, "no space switch");
+        let reported = client
+            .attach(Some(since))
+            .expect("replay after the cross-space grouping")
+            .into_iter()
+            .filter(|(_, event)| {
+                matches!(
+                    event,
+                    Event::BrowserChanged {
+                        kind: BrowserChange::TabPinned { .. }
+                    }
+                )
+            })
+            .count();
+        assert_eq!(reported, 0, "no active-space pin is reported");
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

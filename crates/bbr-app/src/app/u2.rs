@@ -473,7 +473,20 @@ impl BbrApp {
                 if let Some(index) = pinned_index {
                     self.clear_command_profile_hint();
                     self.sync_command_bar();
-                    self.emit_browser(&bbr_browser::ControllerEvent::TabPinned { index: *index });
+                    // `TabPinned` carries an active-space index, like every
+                    // other pin. A Favorite groups into its tab's own space,
+                    // which may not be the active one: that pin is persisted
+                    // but not reported, because the active list is unchanged.
+                    let snapshot = self.controller.snapshot();
+                    let in_active_space = snapshot
+                        .all_tabs
+                        .iter()
+                        .any(|t| t.id == *tab && t.space == snapshot.active_space);
+                    if in_active_space {
+                        self.emit_browser(&bbr_browser::ControllerEvent::TabPinned {
+                            index: *index,
+                        });
+                    }
                     self.persist_structure();
                 }
                 cx.notify();
