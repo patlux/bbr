@@ -83,3 +83,10 @@ objc2-web-kit = { version = "0.3.2", default-features = false }
 [patch.crates-io]
 gpui = { git = "https://github.com/gpui-ce/gpui-ce", rev = "568271c01c5a9d640d7b091e5bfd136b04035f28" }
 gpui-component = { path = "vendor/gpui-component" }
+# Host build artifacts (proc macros, build scripts) stay unstripped in the
+# release profile: with the Xcode 27.0 beta toolchain, the release default
+# `strip = "debuginfo"` turns proc-macro dylibs into Mach-O files dyld rejects
+# ("mis-aligned LINKEDIT string pool"), so release builds cannot load their
+# own proc macros. The shipped binary keeps the default strip.
+[profile.release.build-override]
+strip = false
