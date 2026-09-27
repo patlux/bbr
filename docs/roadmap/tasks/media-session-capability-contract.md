@@ -158,6 +158,35 @@ Any GUI/native suite runs sequentially under the repository lock.
 5. Independent architecture/security/native read-only review; one remediation
    writer only for concrete findings; focused recheck.
 
+## Public API inventory (delivery step 1, 2026-09-27)
+
+Source: `WebKit.framework/Headers` of the macOS 27.0 SDK (Xcode 27.0 beta 6).
+Public `WKWebView` media surface, all per web view (not per media element or
+session):
+
+| API | Availability | Gives |
+|---|---|---|
+| `requestMediaPlaybackStateWithCompletionHandler:` | macOS 12 | `None` / `Playing` / `Paused` / `Suspended` — a request, not an observable property |
+| `pauseAllMediaPlaybackWithCompletionHandler:` | macOS 12 | Pause every medium in the web view |
+| `setAllMediaPlaybackSuspended:completionHandler:` | macOS 12 | Suspend (blocks page/user resume) / lift the suspension; not a Play command |
+| `closeAllMediaPresentationsWithCompletionHandler:` | macOS 12 | Close out-of-window presentations (PiP/fullscreen) |
+| `camera/microphoneCaptureState` + setters | macOS 12 | Capture, not playback — out of scope |
+| `WKWebExtensionTab isPlayingAudioForWebExtensionContext:` | extension API | Protocol a host implements, not a WebKit fact |
+
+Not public: Play, Seek, Previous/Next, page mute, volume, elapsed/duration,
+metadata (title/artist/artwork), and any playback-change notification.
+Consequences for the contract:
+
+- Detection is a polled `requestMediaPlaybackState` per live web view; a
+  per-web-view playback generation is the only native identity.
+- The only native command is Pause (and suspend/resume, which is a policy
+  lever, not a user Play). Play, Seek, Previous/Next, Mute and metadata can
+  come only from an isolated `WKContentWorld.defaultClientWorld` bridge over
+  the page's own media elements / `navigator.mediaSession` metadata, and each
+  one must be proven independently before it becomes a capability.
+- Without that bridge the honest capability set is `{pause}` plus a
+  playing/paused/none fact; the sidebar UI packet must be sized for that.
+
 ## Iteration policy
 
 Begin with detection plus Play/Pause if and only if public evidence supports

@@ -16,7 +16,7 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Target Orchestrator session | `01a062b1-9945-7d1b-aa68-02a11d6084fd`; reverify pane/session activity before any ownership transfer |
 | Preserved design checkpoint | `design/browser-shell-paper@414c97c7a5139cf6070a54138969a3bb34403bc2`; design intent only, not runtime acceptance |
 
-The UI contract conformance slice and the folder membership/pinned invariant are integrated on `main` (2026-09-27); the invariant's performance gate waits for the override to lift. The seated content card (DESIGN-CARD) is integrated the same way; the address field and space identity (DESIGN-ADDRESS) followed; the next serial slice is the Favorites grid and drag offers (DESIGN-FAVORITES). Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
+UI-CONFORMANCE, FOLDER-PIN-INVARIANT, DESIGN-CARD, DESIGN-ADDRESS and DESIGN-FAVORITES are integrated on `main` (2026-09-27, through `d51a4b52`), each independently reviewed with the review findings remediated. Their performance evidence is deferred with the rest of performance execution until the end of the queue (Patrick, 2026-09-27). The next serial slice is RA-MEDIA, capability contract first. Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
 
 ## Status vocabulary
 
@@ -40,11 +40,14 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
 | CONTROL-RECONCILE | Product/delivery authority reconciliation | `closed` | commits `d2b507f5` and `f8e945c2`; locally integrated to `main` | none; reconciliation complete | [Roadmap maintenance](../roadmap/README.md) | Closed: worktree/index/head graph, script tests, targeted UI test/Clippy, ancestry, sessions, worktrees, and dirty-state preservation audited |
-| FOLDER-PIN-INVARIANT | Folder membership and pinned-state invariant | `blocked` | `main` (serial, no worktree) | none; implementation integrated | [folder membership pins tabs](../roadmap/tasks/folder-pinned-invariant.md) | Functional gates green on `main` (`just verify`, testkit Clippy, organize/dense/persistence, full `just e2e`); only `just e2e-perf` remains, blocked by the performance-execution override |
-| UI-CONFORMANCE | UI contract conformance fixes | `integrated` | `main` (serial, no worktree) | none; slice complete | [UI contract conformance](../roadmap/tasks/ui-contract-conformance.md) | Integrated on `main`: `just verify`, testkit Clippy, affected suites, `e2e-peek`, `e2e-gallery` and the full `just e2e` aggregate green; orchestrator self-review (no independent subagent review without Patrick's opt-in) |
-| RA-MEDIA | Media-session capability and Sidebar media control | `planned` | none | none | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Prioritize independently after an explicit delivery decision; capability contract first |
+| FOLDER-PIN-INVARIANT | Folder membership and pinned-state invariant | `integrated` | `main` (serial, no worktree) | none; implementation integrated | [folder membership pins tabs](../roadmap/tasks/folder-pinned-invariant.md) | Functional gates green; independent review remediated (`d51a4b52`: cross-space grouping pins are persisted but not reported as active-space pins); performance evidence deferred to the end of the queue |
+| UI-CONFORMANCE | UI contract conformance fixes | `integrated` | `main` (serial, no worktree) | none; slice complete | [UI contract conformance](../roadmap/tasks/ui-contract-conformance.md) | Integrated; independent review remediated (`fb79d688`: glyph extents checked against measured paths; E2E scope recorded in the packet) |
+| DESIGN-CARD | Seated content card | `integrated` | `main` (serial, no worktree) | none | [seated content card](../roadmap/tasks/seated-content-card.md) | Integrated; independent review remediated (`c48b0799`: the circular traffic-light assertion exposed and fixed a native measurement bug); performance evidence deferred |
+| DESIGN-ADDRESS | Address field and space identity | `integrated` | `main` (serial, no worktree) | none | [address field and space identity](../roadmap/tasks/address-field-space-identity.md) | Integrated; independent review remediated (`c4a0a20d`: heading aligned with tab titles, real zoom-chip press evidence, focus ring deferred to the Accessibility track); performance evidence deferred |
+| DESIGN-FAVORITES | Favorites grid and drag offers | `integrated` | `main` (serial, no worktree) | none | [Favorites grid and drag offers](../roadmap/tasks/favorites-drag-offers.md) | Integrated as `e6ba14ab` with its review remediation; full `just e2e` minus perf green; performance evidence deferred |
+| RA-MEDIA | Media-session capability and Sidebar media control | `running` | `main` (serial, no worktree) | orchestrator | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Delivery step 1 (public WebKit API inventory) recorded in the packet; next the portable `bbr-web` contract with fake-engine tests, then the macOS adapter |
 
-No product writer or background workflow is active. The Paper and Ladybird sessions are read-only and idle at their prompts; all historical BBR worktrees remain preserved.
+The orchestrator is the only product writer (RA-MEDIA on `main`); no background workflow is active. Independent reviews use `homelab-llm/opencode-go/deepseek-v4-flash:high`: the route named in `AGENTS.md` (`homelab-llm/deepseek-v4-flash`) no longer resolves in the model registry. All historical BBR worktrees remain preserved.
 
 ## Post-F2a parallel wave
 
@@ -58,18 +61,15 @@ The former post-F2a and Daily-driver waves are closed historical evidence. Their
 
 1. `CONTROL-RECONCILE` is closed; its exact durable-contract commit is `d2b507f56b9da068e7df0aa08c3f8b12cdec506c`, and no writer remains active.
 2. Do not infer a product lane from an idle historical worktree or session. Every new writer requires a fresh exact-base, status, process, lock, and ownership preflight.
-3. `FOLDER-PIN-INVARIANT` has landed functionally, so Folder-menu behavior may assume folders contain pinned tabs; `UI-CONFORMANCE` precedes the design-branch packets (`DESIGN-CARD` → `DESIGN-ADDRESS` → `DESIGN-FAVORITES`).
-4. RA-MEDIA remains a separate capability-first sequence and does not depend on the folder invariant.
+3. `FOLDER-PIN-INVARIANT` has landed, so Folder-menu behavior may assume folders contain pinned tabs. The design-branch packets (`DESIGN-CARD` → `DESIGN-ADDRESS` → `DESIGN-FAVORITES`) are integrated.
+4. RA-MEDIA runs now as a capability-first sequence: portable contract → macOS adapter → Sidebar media control.
 5. Split stays blocked; no preflight, inspection, port, review, or mutation of `bbr-split-app-composition` is authorized.
-6. GUI suites remain host-exclusive through the repository lock. Performance execution remains deferred until Patrick removes the active override.
+6. GUI suites remain host-exclusive through the repository lock and need an unlocked macOS session (a locked session presents no frames, so render-gated E2E time out). Performance execution is deferred to the end of the queue.
 
 ## Downstream dependency queue
 
 | ID | Status | Depends on / boundary |
 |---|---|---|
-| DESIGN-CARD | `blocked` | [Seated content card](../roadmap/tasks/seated-content-card.md); integrated on `main` with functional gates green; only `just e2e-perf` remains (override) |
-| DESIGN-ADDRESS | `blocked` | [Address field and space identity](../roadmap/tasks/address-field-space-identity.md); integrated on `main` with functional gates green; `just e2e-perf` (override) and the Paper glyph redraw remain |
-| DESIGN-FAVORITES | `ready` | [Favorites grid and drag offers](../roadmap/tasks/favorites-drag-offers.md); FOLDER-PIN-INVARIANT and DESIGN-ADDRESS integrated |
 | DD-FOLDER-MENU | `blocked` | Requires the integrated shared menu seam; the delete truth is settled (Unpack) and `FOLDER-PIN-INVARIANT` is integrated |
 | DD-SHIFT-LINK | `planned` | Shift-modified link behavior remains intentionally unclassified; no writer may infer foreground/window semantics |
 | DD-MANUAL-SMOKE | `planned` | Requires a fresh deterministic package; representative-site smoke supplements rather than replaces automation |
@@ -79,7 +79,7 @@ The former post-F2a and Daily-driver waves are closed historical evidence. Their
 | ID | Status | Owner / blocker | Required evidence or decision |
 |---|---|---|---|
 | SPLIT-COMPOSITION | `blocked` | Patrick must explicitly re-enable Split work | Fresh preflight from current `main`; stale worktree remains untouched |
-| PERFORMANCE | `blocked` | Patrick's active execution override | Preserve code/budgets/baselines/sample guards; execution and acceptance remain unpassed |
+| PERFORMANCE | `blocked` | Patrick deferred performance execution to the end of the queue (2026-09-27, after a first un-deferred run) | Preserve code/budgets/baselines/sample guards; execution and acceptance remain unpassed. The un-deferred run (unlocked session) showed that matrix blocks added under the override were never executed: four driver assumptions were fixed in `2b15ffb8`. The matrix now stops at the renderer-responsiveness block, which requires a two-tab warm pair (exactly two active-space tabs, global session counts relative to a baseline) that no matrix position provides (three active-space tabs, tab 0 pinned by the folder invariant) and reads the injected unresponsive state without waiting for it. Planned fix: give the block its own two-tab space, wait for the derived state under a deadline, restore the matrix; a partial attempt is kept outside the repository as a reference only |
 | STARTUP | `planned` | Phase 9 | Last recorded `535.866375 ms > 500 ms`; hard budget unchanged |
 | RELEASE | `planned` | Phase 9 | Packaging, Accessibility, canonical runner, energy/resource, polish, and release closeout |
 | MVP-BOUNDARY | `blocked` | Patrick owns the final finite In/Out classification | No feature-complete First-MVP claim before explicit decision and evidence review |
@@ -90,11 +90,11 @@ The former post-F2a and Daily-driver waves are closed historical evidence. Their
 - The Reference Shell packet is complete at exact reviewed tree `5f2b8a04c0c5bbf026e891058a3fabce17cfc191`, integrated as `4d1a534300344af48d28d8cb7f435b95c0548f02`. Its recorded performance/startup/packaging/Accessibility exclusions remain open; they do not reopen the visual slice.
 - Sidebar Polish is complete through `35c91189a4a895e3c7f627534acf00a56899fc7b`; its lane commits `e1081aeb`, `2ffc27fa`, and `891c720a` are all ancestors of current `main`.
 - Patrick's 2026-08-14 design decision supersedes the old “separate regions” wording: folders are grouped pinned tabs in one organized area, while loose pinned rows remain above folders. Runtime currently does not enforce `folder member => pinned`; only the dedicated open packet may change that authority.
-- Patrick's 2026-09-27 decisions: the design-branch drift ledger is adopted as proposed (DESIGN §17.14/§17.16; eight rows adopted, the compact media bar and non-catalog footer glyphs rejected); the media-card presentation answers live in the sidebar-media-control packet; deleting a folder is Unpack; Peek follows the shell appearance; the dark selection tint is recalibrated. The performance-execution override stays in force.
+- Patrick's 2026-09-27 decisions: the design-branch drift ledger is adopted as proposed (DESIGN §17.14/§17.16; eight rows adopted, the compact media bar and non-catalog footer glyphs rejected); the media-card presentation answers live in the sidebar-media-control packet; deleting a folder is Unpack; Peek follows the shell appearance; the dark selection tint is recalibrated. Performance execution was lifted for one evidence run, then deferred again to the end of the queue: `e2e-perf` is excluded from slice gates until then, and no budget, probe or assertion is weakened.
 - `design/browser-shell-paper@414c97c7` preserves the wider Paper exploration. Content card, revised address field, Favorites affordances, and other unimplemented targets on that branch are not shipped claims and must receive bounded packets before implementation.
 - Exactly one writer per worktree. Forward recovery only: no reset, clean, stash, amend, force-push, or silent ownership takeover.
 - No second renderer or product authority in `bbr-ui`/Gallery; no private WebKit SPI; profile isolation and native WKWebView child composition remain invariant.
-- Performance code remains mandatory while performance execution and canonical aggregate acceptance remain deferred/unpassed.
+- Performance code remains mandatory while performance execution and canonical aggregate acceptance remain deferred/unpassed. Until the deferral ends, the stable-slice gate is the `just e2e` aggregate without `e2e-perf`, plus `e2e-peek` and `e2e-gallery`.
 - No remote is configured and no push occurs as part of this generation.
 
 ## Cutover and rollback protocol
