@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slice:** none running; [UI contract conformance](docs/roadmap/tasks/ui-contract-conformance.md) and the [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md) are integrated (2026-09-27; the invariant's performance gate waits for the override). The adopted design-branch direction (DESIGN §17.16) is underway: the [seated content card](docs/roadmap/tasks/seated-content-card.md), the [address field and space identity](docs/roadmap/tasks/address-field-space-identity.md) and the [Favorites grid and drag offers](docs/roadmap/tasks/favorites-drag-offers.md) are integrated (performance gates deferred to the end of the queue); the [media-session capability contract](docs/roadmap/tasks/media-session-capability-contract.md) is next. The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
+- **Active product slice:** the [v2 visual refresh and motion program](docs/roadmap/tasks/v2-visual-refresh-program.md) (adopted 2026-09-28, DESIGN §18) runs serially on `main`; RA-MEDIA is paused after its integrated portable contract and resumes after the program. Earlier: [UI contract conformance](docs/roadmap/tasks/ui-contract-conformance.md) and the [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md) are integrated (2026-09-27; the invariant's performance gate waits for the override). The adopted design-branch direction (DESIGN §17.16) is underway: the [seated content card](docs/roadmap/tasks/seated-content-card.md), the [address field and space identity](docs/roadmap/tasks/address-field-space-identity.md) and the [Favorites grid and drag offers](docs/roadmap/tasks/favorites-drag-offers.md) are integrated (performance gates deferred to the end of the queue); the [media-session capability contract](docs/roadmap/tasks/media-session-capability-contract.md) is next. The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:
@@ -85,6 +85,14 @@ into a duplicate execution queue:
   → [current-base gesture revalidation](docs/roadmap/tasks/web-gesture-revalidation.md)
   → [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md)
   → [renderer isolation and unresponsive tabs](docs/roadmap/tasks/renderer-isolation-unresponsive-tabs.md)
+- **v2 visual refresh and motion (Phase 4):** [program](docs/roadmap/tasks/v2-visual-refresh-program.md)
+  → S0 [contract](docs/roadmap/tasks/v2-contract.md) → S1 [system preferences](docs/roadmap/tasks/v2-system-prefs.md)
+  / S2 [tokens](docs/roadmap/tasks/v2-tokens.md) → S3 [rail](docs/roadmap/tasks/v2-rail.md)
+  → S4 [space paper](docs/roadmap/tasks/v2-space-paper.md) → S5 [floating surfaces](docs/roadmap/tasks/v2-overlays.md)
+  → S6 [motion core](docs/roadmap/tasks/v2-motion-core.md) / S9 [brand icon](docs/roadmap/tasks/v2-brand-icon.md)
+  → S7 [after-commit moments](docs/roadmap/tasks/v2-motion-moments.md)
+  → S8 [empty states](docs/roadmap/tasks/v2-empty-states.md) / S10 [theme picker](docs/roadmap/tasks/v2-theme-picker.md)
+  → S11 [closeout](docs/roadmap/tasks/v2-closeout.md)
 - **Reference-design alignment (Phase 4):** [system-appearance theme](docs/roadmap/tasks/system-appearance-theme.md)
   → [real favicon pipeline](docs/roadmap/tasks/real-favicon-pipeline.md)
   → [sidebar reference polish](docs/roadmap/tasks/sidebar-reference-polish.md)

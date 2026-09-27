@@ -29,6 +29,10 @@ menu follow-up, which may start after F2 closeout when that territory is free.
 - [ ] Establish the public-API-only [media-session capability contract](../tasks/media-session-capability-contract.md), then render the conditional [sidebar media control](../tasks/sidebar-media-control.md) from advertised capabilities only.
 - [ ] Append the corresponding G2/G3 stories to the existing Gallery packets from the exact production components; no copies and no Gallery substitution for browser/native E2E. Saved Page result/menu stories wait for integrated [B2](../tasks/saved-pages-actions-command.md); Library stories wait for integrated [B3](../tasks/saved-pages-library.md). Detailed story acceptance remains owned by the G2/G3 packets.
 
+## v2 visual refresh and motion — Phase 4
+
+- [ ] Land the [v2 visual refresh and motion program](../tasks/v2-visual-refresh-program.md): DESIGN §18 tokens, lifted selection, space paper, floating surfaces, motion core and after-commit moments with Reduce Motion variants, drawn empty states, the Phosphor-b icon and curated intensity/grain. Paper and the generated WebP loops are reference only; every surface is native GPUI from `bbr-ui` tokens.
+
 ## Visual direction and tokens — Phase 4 start
 
 - [x] Create [DESIGN.md](../../../DESIGN.md) through an explicit visual-direction process.

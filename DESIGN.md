@@ -363,7 +363,7 @@ with the rest of the scale but keeps the language.
 | `dur:emphasis` | 260 ms — attention two-beat sequence, peek entrance (opacity) |
 | `ease:standard` | `cubic-bezier(0.22, 1, 0.36, 1)` |
 | `ease:accelerate` | `cubic-bezier(0.36, 0, 1, 1)` |
-| `ease:decelerate` | `cubic-bezier(0, 0, 0, 0.3)` |
+| `ease:decelerate` | `cubic-bezier(0, 0, 0.3, 1)` (v2 D11; the former `0, 0, 0, 0.3` was a transposition that read as a steep, almost linear ramp) |
 | `load:indeterminate` | 580 ms linear loop (§11.5) |
 
 Animated states and their permitted motion are enumerated in §10; anything
@@ -1638,8 +1638,161 @@ production integration).
     [Favorites grid and drag offers](docs/roadmap/tasks/favorites-drag-offers.md)
     (landed in §10.9/§11.2/§11.10, 2026-09-27).
 
+17. **v2 visual refresh and motion** — **resolved (2026-09-28).** After the
+    Arc study in Paper (file “BBR — Browser Shell”, pages 01–07) Patrick
+    adopted decisions D1–D11 as recommended. The adopted target is §18; the
+    numbered sections above keep describing the running app until the owning
+    slice lands its text and flips its §18 status row. Program packet:
+    [v2 visual refresh and motion](docs/roadmap/tasks/v2-visual-refresh-program.md).
+
 Resolving an item means moving its decision into the relevant section above
 and updating the affected roadmap track in the same group.
+
+## 18. v2 visual refresh and motion (adopted 2026-09-28)
+
+**Status:** adopted contract, landing slice by slice. Until a slice lands,
+§1–§15 describe the running app; each slice updates the sections it changes in
+the same commit as its implementation and flips its row in §18.6. Where §18
+and an unchanged older section disagree, §18 is the target and the older
+section is the shipped fact.
+
+**Why.** v1 was correct but read as lifeless: a flat grey rail, favorite tiles
+and address field in three unrelated greys, a pale-blue selection that did not
+lift, and a space tint (4 %) too quiet to notice. Arc feels alive for three
+reasons that need none of its candy gradients, site tint or spring
+choreography: the window is one tinted body, only the selection is solid, and
+everything else is a quiet veil. v2 adopts those three moves, keeps BBR's
+Phosphor accent, commit-first motion and native-glass boundary, and adds a
+small, bounded set of after-commit moments.
+
+### 18.1 Decisions
+
+| # | Decision |
+|---|---|
+| D1 | The dark selection lifts **above** the rail (white 9 % + lift) instead of sitting below it. The selected-row text bar becomes `ink ≥ 10.5:1` (IC ≥ 11:1) and `ink.secondary ≥ 4.5:1` (IC ≥ 7:1) on the composited selected surface. |
+| D2 | Exactly one static-shadow exception to “rows never shadow” (§2): the **lift** on the one selected row (tab, pinned, folder item) and on the active space chip. Painted with the surface, never animated, never on hover. |
+| D3 | Space tint on the rail rises from 4 % to **12 %** (IC 14 %). The text bars on every tinted rail become `ink ≥ 12:1` (IC ≥ 14:1) and `ink.secondary ≥ 5.9:1` (IC ≥ 9:1), recomputed for every curated theme in both modes. |
+| D4 | A committed space switch cross-fades **only the chrome tint** from source to destination over `dur:standard` with `ease:standard`. Geometry, lists, the selected tab and the native view snap on the commit frame. A swipe commit is already at the destination tint and does not fade again. |
+| D5 | Load progress lives in the **address field** (a 2 pt accent line on its inner bottom edge), not on the content card edge: GPUI never paints above the native web view. Supersedes the card-top bar of §10.5. |
+| D6 | No idle “living paper” drift. The space paper is a static tint with an optional static grain; nothing animates while the window is idle. |
+| D7 | The theme picker stays curated: hue chips, three intensity steps and a grain toggle. No free colour field or colour wheel. |
+| D8 | App icon concept C, “Phosphor b”: a lowercase b whose bowl is the loading arc. The Dock icon is static; motion, if any, is limited to the About panel. |
+| D9 | ⌘T palette width S 508 / N 600 / XL 716 pt (was 440/520/620); the ⌘T query renders in the 17 pt UI sans. The ⌘L overlay keeps `type:mono` for URLs and widens to at least 440 pt. |
+| D10 | Empty-state illustrations play two cycles after the pane appears, then rest on their final frame. |
+| D11 | `ease:decelerate` = `cubic-bezier(0, 0, 0.3, 1)` (§6 corrected). |
+
+### 18.2 Materials, colour and elevation
+
+Translucent tokens are painted over the (possibly space-tinted) rail, so one
+value follows every tint. Contrast gates composite them over the untinted and
+every tinted rail before computing ratios.
+
+| Token | v1 light / dark | v2 light | v2 dark |
+|---|---|---|---|
+| `material:sidebar` · chassis | `#E0E0E0` / `#1A1D21` | `#E5E5E2` (limestone) | `#1C1E22` (wet slate) |
+| `material:canvas` | `#F6F6F4` / `#121416` | `#F6F6F4` | `#131517` |
+| `material:field` | `#FFFFFF` / `#23272C` | `#FFFFFF` | `#2A2D33` |
+| `material:overlay` | `#FFFFFF` / `#202429` | `#FFFFFF` | `#25282D` |
+| `material:favorite` | `#D2D2D2` / `#23272C` | white 50 % veil | white 6 % veil |
+| `material:footer` (media card, footer surfaces) | `#F3F8FE` / `#202429` | white 62 % veil | white 7 % veil |
+| address fill / hover | white 48 % / 30 %; dark white 3 % / 7 % | white 55 % / 40 % | white 6 % / 10 % |
+| address border | ink 10 % / white 7 % | ink 4 % | white 4 % |
+| address accessory | ink 5 % / white 6 % | ink 6 % | white 6 % |
+| `color:hairline` | `#C7C7C7` / `#2A2E34` | `#D0D0CC` | `#2C2F35` |
+| `color:tint.selected` | `#EEF2F9` / `#0F1318` | `#FFFFFF` + lift | white 9 % + lift |
+| `tint.selected` IC | `#E1E8F3` / `#0A0D12` | `#FFFFFF` + lift | `#35383F` + lift |
+| `wash.hover` / `wash.active` | opaque `#D7D7D7`/`#CFD0D0`; dark `#25272B`/`#2B2E32` | ink 5 % / 9 % | white 5 % / 8 % |
+| washes IC | 7 % / 10 % | ink 8 % / 12 % | white 8 % / 12 % |
+| `color:tint.accent` **(new)** | — (used `tint.selected`) | `#E6F1EE` | `#26403F` |
+| `tint.accent` IC | — | `#D9EAE5` | `#2B4A48` |
+
+- **`tint.accent`** is the single accent moment on white/overlay surfaces:
+  command results, menu and library cursors, drop targets. It replaces the
+  2 pt accent rail and the accent fill on selected Library rows (§3.2 “one
+  thing at a time” unchanged). Text on it is `ink` / `accent.ink`; gates:
+  `ink ≥ 9:1`, `accent.ink ≥ 4.5:1` in every mode.
+- **Lift** (`elev:lift`): light `0 1 3 ink 10 %` + `0 0 0 1px ink 4 %`;
+  dark `0 1 2 black 35 %` + `0 0 0 1px white 4 %`. IC adds nothing beyond the
+  IC surface values.
+- **`elev:2` v2:** light `0 0 0 1px ink 7 %`, `0 2 4 ink 5 %`,
+  `0 16 36 −6 ink 18 %`; dark `0 0 0 1px white 8 %`, `0 16 32 black 45 %`.
+  Floating cards lose their 2 pt inset hairline edge (§18.4).
+- Ink, accent, status and profile hues are unchanged. Increased contrast keeps
+  its §3.4 rules on the v2 values.
+- **Space tint (D3):** rail wash alpha 0.12 (IC 0.14) toward the existing
+  desaturated chrome-wash hues. The active chip becomes the lift carrying 8 %
+  of the identity hue (so each space's chip stays distinguishable).
+
+### 18.3 Radius and type
+
+| Token | v1 | v2 | Used for |
+|---|---|---|---|
+| `radius:sm` | 6 | 6 | S rows, small tiles, menu cursors |
+| `radius:md` | 8 | 10 | N rows, Favorite tiles, buttons, menus |
+| `radius:lg` | 10 | 12 | address field, palette field, panels, XL rows |
+| `radius:xl` | 14 | 16 | the ⌘T palette sheet only |
+| content card | 10 | 10 | stays equal to `sp:content-inset` (§2) |
+
+Chrome radii stay within 6–12; 16 is reserved for the palette sheet. Type
+changes: the selected title drops from 600 to **500** (the lift carries
+selection); the active-space heading is 13 pt / 600 with +0.01 em tracking in
+`ink.secondary`; the address domain is 500; the ⌘T query is 17 pt UI sans.
+Footer glyphs render at 16 pt and the Space strip centres in its viewport.
+
+### 18.4 Floating surfaces
+
+- **Menus (§11.13):** 1 pt edge (`hairline`, `accent` while the menu owns
+  keyboard focus), 4 pt inner padding, `elev:2` v2. The cursor is an inset
+  row surface (radius 6) filled with `tint.accent`; the 2 pt accent rail is
+  removed.
+- **Find bar, auth sheet, Space configuration, Downloads:** 1 pt edges
+  instead of 2 pt insets; field focus keeps its 2 pt accent ring (§9).
+- **⌘T palette:** width per D9, radius 16, field 56 pt with the 17 pt query,
+  result rows 40 pt with radius 10 inside an 8 pt padded list.
+- **⌘L overlay:** width = field width clamped to 440 pt–`win:palette`, field
+  40 pt, result rows 36 pt, radius 10; the query stays `type:mono`.
+- **Library selection:** `tint.accent` with `ink` text (fixes the accent-fill
+  contrast deviation).
+
+### 18.5 Motion (supersedes the listed parts of §6/§10)
+
+Principles 1–4 of §6 stand: every item below starts only **after** the state
+it decorates is committed and presented, never delays a commit, and has a
+Reduced Motion variant. Single-shot motion is ≤ `dur:emphasis` (260 ms);
+loops exist only for loading and progress. When nothing is transient the
+shell requests **no animation frames** (asserted).
+
+| Moment | Motion | Reduced Motion |
+|---|---|---|
+| Loading arc (§10.5) | the favicon-slot arc rotates, 640 ms/turn linear | static arc |
+| Address progress (D5) | 2 pt accent line at the field's inner bottom edge: indeterminate sweep on `load:indeterminate`; on finish it fills (`dur:standard`) then fades (`dur:standard`) | static 2 pt line while loading, removed on finish |
+| Attention (§10.6) | two beats (each `dur:fine`, total ≤ 260 ms): dot scale 1→1.45→1 plus one ring 4→16 pt fading out | opacity-only 1→0.45→1 (the §10.6 contract) |
+| Favorite added | after the drop commits: the new tile pops 0.86→1 with overshoot and eight specks in the curated space hues radiate, both within 260 ms | 120 ms `tint.accent` flash on the tile |
+| Download finished | the row's status glyph draws the check stroke and one `status.ok` ring expands and fades, within 260 ms | check appears, no ring |
+| ⌘T results | results fade in with a 20 ms stagger (each `dur:fine`, 4 pt rise); the cursor highlight glides between rows in `dur:micro` while the selected result is committed immediately | opacity only, no rise; the cursor snaps |
+| Space switch (D4) | chrome tint cross-fade, `dur:standard`, `ease:standard` | instant |
+| Empty states (D10) | three drawn illustrations — empty space, crashed page, offline — play two cycles, then rest | final frame only |
+
+The §10.5 content-pane progress bar and the “one-frame amber surface flash”
+of §10.6 are withdrawn (the first cannot paint above native glass; the
+second is replaced by the ring).
+
+### 18.6 Slice status
+
+| Slice | Packet | Lands in | Status |
+|---|---|---|---|
+| S0 contract | [v2 contract](docs/roadmap/tasks/v2-contract.md) | §6 D11, §17.17, §18 | landed 2026-09-28 |
+| S1 system preferences | [system preferences](docs/roadmap/tasks/v2-system-prefs.md) | §3.4, §6, §15 | adopted |
+| S2 tokens | [tokens](docs/roadmap/tasks/v2-tokens.md) | §2, §3, §5 | adopted |
+| S3 rail | [rail](docs/roadmap/tasks/v2-rail.md) | §4, §10.2–§10.4, §11.1, §11.4, §11.5, §11.10 | adopted |
+| S4 space paper | [space paper](docs/roadmap/tasks/v2-space-paper.md) | §11.3 | adopted |
+| S5 floating surfaces | [overlays](docs/roadmap/tasks/v2-overlays.md) | §8 palette width, §11.4, §11.12, §11.13, §11.16 | adopted |
+| S6 motion core | [motion core](docs/roadmap/tasks/v2-motion-core.md) | §6, §10.5, §10.6, §11.5 | adopted |
+| S7 after-commit moments | [motion moments](docs/roadmap/tasks/v2-motion-moments.md) | §6, §10, §11.3, §11.4, §11.10, §11.12 | adopted |
+| S8 empty states | [empty states](docs/roadmap/tasks/v2-empty-states.md) | §11.8 | adopted |
+| S9 app icon | [brand icon](docs/roadmap/tasks/v2-brand-icon.md) | §1, §7 | adopted |
+| S10 theme picker | [theme picker](docs/roadmap/tasks/v2-theme-picker.md) | §11.3 configuration surface | adopted |
+| S11 closeout | [closeout](docs/roadmap/tasks/v2-closeout.md) | §18 status, Evidence | adopted |
 
 ## Evidence
 

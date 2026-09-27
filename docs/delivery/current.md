@@ -13,10 +13,10 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 | Integrated product checkpoint | product tree `c39201948409017aa4f95bdfd4713928a78aad0f` at `main@e464ca3282e969b192a30906915445a24dd704e6`; the following commits change documentation/control only |
 | Previous canonical pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md` |
 | Rollback pointer | `docs/delivery/2026-08-08-post-mvp-delivery.md@0dc22fee16d737a077aa1b097e359e2f1d08a764` |
-| Target Orchestrator session | `01a062b1-9945-7d1b-aa68-02a11d6084fd`; reverify pane/session activity before any ownership transfer |
+| Target Orchestrator session | `01a0e454-d11c-7743-8e0f-53fd4138ff08` (v2 program, since 2026-09-28; the RA-MEDIA session `01a0df39` has no live process); reverify pane/session activity before any ownership transfer |
 | Preserved design checkpoint | `design/browser-shell-paper@414c97c7a5139cf6070a54138969a3bb34403bc2`; design intent only, not runtime acceptance |
 
-UI-CONFORMANCE, FOLDER-PIN-INVARIANT, DESIGN-CARD, DESIGN-ADDRESS and DESIGN-FAVORITES are integrated on `main` (2026-09-27, through `d51a4b52`), each independently reviewed with the review findings remediated. Their performance evidence is deferred with the rest of performance execution until the end of the queue (Patrick, 2026-09-27). The next serial slice is RA-MEDIA, capability contract first. Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
+UI-CONFORMANCE, FOLDER-PIN-INVARIANT, DESIGN-CARD, DESIGN-ADDRESS and DESIGN-FAVORITES are integrated on `main` (2026-09-27, through `d51a4b52`), each independently reviewed with the review findings remediated. Their performance evidence is deferred with the rest of performance execution until the end of the queue (Patrick, 2026-09-27). RA-MEDIA integrated its portable `bbr-web` contract as `ec5e0bad` and is paused there (macOS adapter not started, no owner). Since 2026-09-28 the serial work on `main` is the V2 visual refresh and motion program (DESIGN §18), preflighted clean at `main@ec5e0bad368179b669983a60a22a7b47b152ebfb` with no other BBR writer process. Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
 
 ## Status vocabulary
 
@@ -45,9 +45,21 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 | DESIGN-CARD | Seated content card | `integrated` | `main` (serial, no worktree) | none | [seated content card](../roadmap/tasks/seated-content-card.md) | Integrated; independent review remediated (`c48b0799`: the circular traffic-light assertion exposed and fixed a native measurement bug); performance evidence deferred |
 | DESIGN-ADDRESS | Address field and space identity | `integrated` | `main` (serial, no worktree) | none | [address field and space identity](../roadmap/tasks/address-field-space-identity.md) | Integrated; independent review remediated (`c4a0a20d`: heading aligned with tab titles, real zoom-chip press evidence, focus ring deferred to the Accessibility track); performance evidence deferred |
 | DESIGN-FAVORITES | Favorites grid and drag offers | `integrated` | `main` (serial, no worktree) | none | [Favorites grid and drag offers](../roadmap/tasks/favorites-drag-offers.md) | Integrated as `e6ba14ab` with its review remediation; full `just e2e` minus perf green; performance evidence deferred |
-| RA-MEDIA | Media-session capability and Sidebar media control | `running` | `main` (serial, no worktree) | orchestrator | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Delivery step 1 (public WebKit API inventory) recorded in the packet; next the portable `bbr-web` contract with fake-engine tests, then the macOS adapter |
+| RA-MEDIA | Media-session capability and Sidebar media control | `planned` | `main` (serial, no worktree) | none; paused 2026-09-28 | [capability contract](../roadmap/tasks/media-session-capability-contract.md) → [media control](../roadmap/tasks/sidebar-media-control.md) | Portable contract integrated at `ec5e0bad`; resumes with the macOS adapter after V2-S11 |
+| V2-S0 | v2 contract and delivery control | `running` | `main` (serial, no worktree) | orchestrator `01a0e454` | [v2 contract](../roadmap/tasks/v2-contract.md) | `just roadmap`, `just verify`, commit |
+| V2-S1 | System contrast and motion preferences | `planned` | `main` (serial) | orchestrator | [system preferences](../roadmap/tasks/v2-system-prefs.md) | after S0 |
+| V2-S2 | Palette, radius and elevation tokens | `planned` | `main` (serial) | orchestrator | [tokens](../roadmap/tasks/v2-tokens.md) | after S0 |
+| V2-S3 | Rail: lift, veils, heading, footer | `planned` | `main` (serial) | orchestrator | [rail](../roadmap/tasks/v2-rail.md) | after S2 |
+| V2-S4 | Space paper and active chip lift | `planned` | `main` (serial) | orchestrator | [space paper](../roadmap/tasks/v2-space-paper.md) | after S3 |
+| V2-S5 | Floating surfaces | `planned` | `main` (serial) | orchestrator | [floating surfaces](../roadmap/tasks/v2-overlays.md) | after S4 |
+| V2-S6 | Motion core | `planned` | `main` (serial) | orchestrator | [motion core](../roadmap/tasks/v2-motion-core.md) | after S1 and S5 |
+| V2-S7 | After-commit moments | `planned` | `main` (serial) | orchestrator | [motion moments](../roadmap/tasks/v2-motion-moments.md) | after S6 |
+| V2-S8 | Drawn empty states | `planned` | `main` (serial) | orchestrator | [empty states](../roadmap/tasks/v2-empty-states.md) | after S7 |
+| V2-S9 | Phosphor-b app icon | `planned` | `main` (serial) | orchestrator | [brand icon](../roadmap/tasks/v2-brand-icon.md) | after S6 |
+| V2-S10 | Curated intensity and grain | `planned` | `main` (serial) | orchestrator | [theme picker](../roadmap/tasks/v2-theme-picker.md) | after S8 |
+| V2-S11 | Gallery, documentation and closeout | `planned` | `main` (serial) | orchestrator | [closeout](../roadmap/tasks/v2-closeout.md) | after S10; canonical aggregate |
 
-The orchestrator is the only product writer (RA-MEDIA on `main`); no background workflow is active. Independent reviews use `homelab-llm/opencode-go/deepseek-v4-flash:high`: the route named in `AGENTS.md` (`homelab-llm/deepseek-v4-flash`) no longer resolves in the model registry. All historical BBR worktrees remain preserved.
+The orchestrator (session `01a0e454`) is the only product writer and runs the V2 slices serially on `main`: no subagent or background workflow is authorized for this program, so the packets' parallel-capable pairs are executed in order and each slice is reviewed by a documented self-review against its packet before integration. Independent reviews use `homelab-llm/opencode-go/deepseek-v4-flash:high`: the route named in `AGENTS.md` (`homelab-llm/deepseek-v4-flash`) no longer resolves in the model registry. All historical BBR worktrees remain preserved.
 
 ## Post-F2a parallel wave
 
@@ -62,9 +74,10 @@ The former post-F2a and Daily-driver waves are closed historical evidence. Their
 1. `CONTROL-RECONCILE` is closed; its exact durable-contract commit is `d2b507f56b9da068e7df0aa08c3f8b12cdec506c`, and no writer remains active.
 2. Do not infer a product lane from an idle historical worktree or session. Every new writer requires a fresh exact-base, status, process, lock, and ownership preflight.
 3. `FOLDER-PIN-INVARIANT` has landed, so Folder-menu behavior may assume folders contain pinned tabs. The design-branch packets (`DESIGN-CARD` → `DESIGN-ADDRESS` → `DESIGN-FAVORITES`) are integrated.
-4. RA-MEDIA runs now as a capability-first sequence: portable contract → macOS adapter → Sidebar media control.
-5. Split stays blocked; no preflight, inspection, port, review, or mutation of `bbr-split-app-composition` is authorized.
-6. GUI suites remain host-exclusive through the repository lock and need an unlocked macOS session (a locked session presents no frames, so render-gated E2E time out). Performance execution is deferred to the end of the queue.
+4. V2 runs now, serially on `main`: S0 → S1 → S2 → S3 → S4 → S5 → S6 → S9 → S7 → S8 → S10 → S11. Each slice lands its DESIGN sections and §18.6 row with its implementation.
+5. RA-MEDIA resumes after V2-S11 as a capability-first sequence: macOS adapter → Sidebar media control (its portable contract is integrated).
+6. Split stays blocked; no preflight, inspection, port, review, or mutation of `bbr-split-app-composition` is authorized.
+7. GUI suites remain host-exclusive through the repository lock and need an unlocked macOS session (a locked session presents no frames, so render-gated E2E time out). Performance execution is deferred to the end of the queue.
 
 ## Downstream dependency queue
 

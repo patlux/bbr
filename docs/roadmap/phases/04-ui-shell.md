@@ -40,6 +40,15 @@ performance gate waits for the performance-execution override to lift.
 - [x] Present real site favicons in every favicon slot via the [real favicon pipeline](../tasks/real-favicon-pipeline.md).
 - [x] Match the reference row pitch, folder anatomy, rest states and identity-glyph catalog via the [sidebar reference polish](../tasks/sidebar-reference-polish.md). *(Integrated through merge `35c91189`; Sidebar 15/15, Dense 3/3, Organize 2/2 plus Drag-Chip 4/4, Spaces 21/21, Gallery 45/45, and the packet's non-GUI gates passed on the final tree. The later folder/pinned domain invariant is a separate open slice.)*
 
+## v2 visual refresh and motion (2026-09-28)
+
+After the Arc study in Paper, Patrick adopted DESIGN §18 (decisions D1–D11):
+one tinted body, a lifted selection, translucent veils, calmer floating
+surfaces and a bounded set of after-commit motion moments. Slices and
+acceptance live in the program packet.
+
+- [ ] Deliver the [v2 visual refresh and motion program](../tasks/v2-visual-refresh-program.md) (S0–S11).
+
 The sidebar media control is prioritized immediately after these slices; its
 canonical owner stays Phase 8 through the
 [media-session capability contract](../tasks/media-session-capability-contract.md)
