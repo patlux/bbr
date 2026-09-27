@@ -332,6 +332,7 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         letter: 'E',
         hue: 0,
         image: None,
+        selected: false,
     }];
     input.folder_members = &folder_members;
     input.plus_menu = bbr_ui::components::menu::PlusMenuState {

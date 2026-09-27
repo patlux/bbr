@@ -146,7 +146,13 @@ pub fn footer_surface(
         .child(footer_control(theme, FooterControl::Plus, on_plus))
 }
 
-/// One fixed footer control: the §7 glyph at the density icon size. Both
+/// §18.3: footer glyphs render at 16 pt in every density — the quiet
+/// transport row, smaller than the 18 pt row icons above it.
+pub fn footer_glyph_size() -> gpui::Pixels {
+    gpui::px(16.0)
+}
+
+/// One fixed footer control: the §7 glyph at the 16 pt footer size. Both
 /// controls are visually glyph-only in the compact reference footer; their
 /// full labels remain semantic names. The id sits on the control div;
 /// `on_select` is the caller's production pointer path.
@@ -156,11 +162,14 @@ pub fn footer_control(
     on_select: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let glyph = div()
-        .size(theme.density.icon())
+        // Test-support only (a release no-op): the glyph box as a geometry
+        // target for the §18.3 16 pt footer glyph evidence.
+        .debug_selector(move || format!("{}-glyph", control.id()))
+        .size(footer_glyph_size())
         .flex()
         .items_center()
         .justify_center()
-        .child(control.glyph().canvas(theme, theme.density.icon()));
+        .child(control.glyph().canvas(theme, footer_glyph_size()));
     div()
         .id(control.id())
         .debug_selector(move || control.id().to_string())
@@ -205,6 +214,11 @@ mod tests {
         assert_eq!(FooterControl::Downloads.glyph(), Icon::Downloads);
         // The glyph-only plus control keeps a non-empty text alternative.
         assert_eq!(FOOTER_PLUS_NAME, "More actions");
+    }
+
+    #[test]
+    fn footer_glyphs_are_sixteen_points_in_every_density() {
+        assert_eq!(footer_glyph_size(), gpui::px(16.0));
     }
 
     #[test]

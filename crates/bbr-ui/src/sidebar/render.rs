@@ -215,8 +215,11 @@ fn active_space_heading(theme: &Theme, model: &SidebarModel) -> Stateful<Div> {
         .px(theme.density.row_padding_x())
         .pt(Spacing::sp4())
         .pb(Spacing::sp2())
-        .text_size(theme.type_.title.size)
-        .font_weight(gpui::FontWeight(600.0))
+        // §18.3: the heading is `type:label` size (N 13) at 600 in
+        // `ink.secondary` — quieter than the 14 pt rows it heads. (The
+        // +0.01 em tracking is not expressible in GPUI text styles.)
+        .text_size(heading_size(theme))
+        .font_weight(HEADING_WEIGHT)
         .text_color(theme.palette.ink_secondary)
         .when_some(identity, |heading, identity| {
             heading.child(
@@ -239,6 +242,15 @@ fn active_space_heading(theme: &Theme, model: &SidebarModel) -> Stateful<Div> {
                 .child(model.active_space_title.clone()),
         )
 }
+
+/// §18.3 active-space heading size: the density's `type:label` step
+/// (S 12 / N 13 / XL 14).
+pub fn heading_size(theme: &Theme) -> gpui::Pixels {
+    theme.type_.label.size
+}
+
+/// §18.3 active-space heading weight.
+pub const HEADING_WEIGHT: gpui::FontWeight = gpui::FontWeight(600.0);
 
 /// Test-support selector of the heading's title text (geometry evidence:
 /// it starts on the tab titles' x).
@@ -273,5 +285,23 @@ fn command_slot(
             command_field_anchor,
             callbacks::mouse(&callbacks.on_command_open),
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::theme::{ContrastMode, Density, ThemeMode};
+
+    #[test]
+    fn the_active_space_heading_is_label_size_at_600() {
+        // §18.3: 13 pt / 600 at normal density, one step under the 14 pt
+        // row titles it heads; S/XL follow the `type:label` step.
+        let at = |density| Theme::new(ThemeMode::Light, ContrastMode::Standard, density);
+        assert_eq!(heading_size(&at(Density::Normal)), gpui::px(13.0));
+        assert_eq!(heading_size(&at(Density::Small)), gpui::px(12.0));
+        assert_eq!(heading_size(&at(Density::ExtraLarge)), gpui::px(14.0));
+        assert!(heading_size(&at(Density::Normal)) < at(Density::Normal).type_.title.size);
+        assert_eq!(HEADING_WEIGHT, gpui::FontWeight(600.0));
     }
 }

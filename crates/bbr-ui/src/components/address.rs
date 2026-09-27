@@ -254,7 +254,9 @@ pub fn staging_surface(
         .bg(if model.focused {
             p.surface_field
         } else {
-            p.surface_sidebar
+            // At rest the staging field is the same §18.2 veil as the
+            // address control it replaces, so it follows the space tint.
+            p.address_fill
         })
         .on_mouse_down(MouseButton::Left, on_open)
         .border_2()

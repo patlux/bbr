@@ -190,6 +190,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             shell_modes: self.shell_modes.clone(),
             tab_states: self.tab_states.clone(),
             row_titles: self.row_titles.clone(),
+            lifted_ids: self.lifted_ids.clone(),
             pinned_count: self.pinned_count,
             command_bar_hint: self.command_bar_hint.clone(),
             command_profile_hint: self.command_profile_hint.clone(),

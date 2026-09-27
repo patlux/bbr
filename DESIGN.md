@@ -286,6 +286,11 @@ the Phosphor focus/interaction accent is not used as decorative site tint.
 - **Size steps:** 11, 12, 13, 14, 16, 24 pt. Bold steps: 400/500/600/700.
   Calibrated from the preserved S1 reference (§8): normal-density title lands
   at 14 pt so the effective tab/space text reads 14–15 pt.
+- **v2 weights (§18.3):** row titles stay `type:title` 500 in every state —
+  the selected row is carried by the lift, not a heavier title; the
+  active-space heading is `type:label` size at 600 in `ink.secondary`; the
+  address domain is 500. GPUI text has no tracking control, so documented
+  tracking values (`type:badge` +0.06 em, heading +0.01 em) are not rendered.
 
 | Role | Size | Weight | Density S | N | XL | Notes |
 |---|---|---|---|---|---|---|
@@ -550,29 +555,33 @@ assert token used by E2E (§15). States are composable: `selected+loading`,
 `hover+drag-target`, etc., with the more specific state winning the visual.
 
 ### 10.1 `default`
-Row wash transparent; text per role. **Assert:** `visual_state == default`.
+Row surface paints nothing, so the (space-tinted) rail shows through; text
+per role. **Assert:** `visual_state == default`.
 
 ### 10.2 `hover` (pointer over control)
-Wash: light ink at 4.5 % over the rail (`#D7D7D7`), dark ink at 5 %
-(`#25272B`); increased contrast 7 % in both modes. The wash paints an inset
+Wash (v2 §18.2): a translucent veil over the (tinted) rail — light ink 5 %,
+dark white 5 %; increased contrast 8 % in both modes. The wash paints an inset
 rounded row surface — inset `density:row-inset` from the rail edges (S `sp:1`
-4 / N `sp:1` 4 / XL `sp:2` 8, §8), radius `density:radius` (S `radius:sm` / N `radius:md` / XL
-`radius:lg`) — rather than a full-bleed band, so the trailing close
-control sits inside that surface. Close button reveals on tab rows (fade-in
+4 / N `sp:1` 4 / XL `sp:2` 8, §8), radius `density:radius` (S `radius:sm` 6 /
+N `radius:md` 10 / XL `radius:lg` 12) — rather than a full-bleed band, so the
+trailing close control sits inside that surface. Hover never lifts. Close button reveals on tab rows (fade-in
 opacity `dur:micro`, allowed). Tint animates `dur:micro`. **Assert:** `hover`.
 
 ### 10.3 `active` (pointer down / pressed)
-Wash deepens (light 8%, dark 8%) plus 1 px inner `hairline` on the same inset
-rounded surface as §10.2 (`density:row-inset`, `density:radius`); `dur:micro`
+Wash deepens (light ink 9 %, dark white 8 %; IC 12 %) plus 1 px inner
+`hairline` on the same inset rounded surface as §10.2 (`density:row-inset`, `density:radius`); `dur:micro`
 tint. No translation or "press down" motion. **Assert:** `active`.
 
 ### 10.4 `selected`
-`tint.selected` paints the inset rounded row surface of §10.2
-(`density:row-inset`, `density:radius`); title becomes 600 weight in `ink`,
-meta stays `ink.secondary`. No decorative Phosphor rail appears at rest;
-keyboard focus, drag targets and active command surfaces retain the accent.
-Snap (`dur:instant`). **Assert:** `selected` (plus the domain via
-`chrome_focused`).
+`tint.selected` (§3.5) paints the inset rounded row surface of §10.2
+(`density:row-inset`, `density:radius`) with the static `elev:lift` (D2) — the
+only row surface that shadows. The title keeps `type:title` 500 in `ink` (the
+lift carries selection, v2 §18.3); meta stays `ink.secondary`. A selected
+folder member lifts the same way on its nested row. No decorative Phosphor
+rail appears at rest; keyboard focus, drag targets and active command
+surfaces retain the accent. Snap (`dur:instant`). **Assert:** `selected`
+(plus the domain via `chrome_focused`) and the typed `lifted_ids` evidence —
+exactly the selected tab's row ids.
 
 ### 10.5 `loading`
 Favicon slot swaps to an 18 pt circular arc spinner (S 16 / XL 20, accent,
@@ -672,7 +681,7 @@ using the IDs of §15. All rows use `density` geometry from §8.
   background semantics); close button appears on row `hover` or when the
   close control has keyboard focus; keyboard: `↑/↓` move selection, `⌫` or
   `⌘W` close, Enter activates.
-- **States:** all §10 states apply; `selected` rail is the leading edge;
+- **States:** all §10 states apply; `selected` lifts (§10.4);
   `loading` spinner replaces the favicon; `attention` dot in the state slot
   (pinned rows include the state slot except at S).
 - **Long title:** §4 truncation; tooltip on hover (Planned).
@@ -796,7 +805,9 @@ using the IDs of §15. All rows use `density` geometry from §8.
   the identity is the **same validated value the §11.3 footer chip renders**
   (emoji, drawn §7 glyph, or two-letter badge — one space never shows two
   marks) at `icon:m` on the tab rows' favicon column, so the title starts on
-  the same x as every tab title below it. The heading is followed by the organized area
+  the same x as every tab title below it. The heading text is `type:label`
+  size (N 13 pt) at 600 in `ink.secondary` (v2 §18.3; the +0.01 em tracking
+  is not expressible in GPUI and is omitted). The heading is followed by the organized area
   of loose Pinned rows (§11.2) and grouped Folder rows (§11.11), then a visible
   New Tab row routed through the existing
   staged-new-tab authority, and regular Tabs (§11.1). The Favorites region is
@@ -823,13 +834,18 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Spaces strip:** `bbr-space-strip` is the permanent space navigation
   surface defined by §11.3. It takes all remaining footer width, clips to one
   line, scrolls horizontally, and exposes one `bbr-space-chip-<n>` per space.
-  It is not a disclosure control and never changes the vertical region stack.
+  While the chips fit they centre in the strip viewport (auto margins on the
+  first and last chip); once they overflow they start at the leading edge,
+  so scrolling never hides a chip behind the scroll origin (v2 §18.3). It is
+  not a disclosure control and never changes the vertical region stack.
   Pointer click, keyboard activation, and horizontal trackpad swipe route
   through the same space-switch authority and preserve warm-session budgets.
 - **Footer:** the glyph-only `[Downloads]` control opens the downloads surface
   and exposes the full text alternative plus a `type:meta` `tnum` count when
   content exists. The middle flex region is the permanent icon/badge-only
-  Spaces strip; `[+]` is likewise glyph-only.
+  Spaces strip; `[+]` is likewise glyph-only. Both fixed glyphs render at
+  16 pt in every density (v2 §18.3); inactive chips paint no surface of their
+  own, so the footer veil and the rail tint show through.
   `[+]` opens the **plus menu** (Planned) — a real context menu
   (`bbr-plus-menu`, `elev:2`, `material:overlay`, `radius:md`) with exactly
   two items in v1: **New Space** (`bbr-plus-new-space`) and **New Folder**
@@ -913,27 +929,27 @@ of problem instead of styling it.
   in the palette, never here. Internal pages show their short name (the
   exact naming is open, §17.13).
 - **Anatomy:** a quiet field surface, height `density:row` (S 32 / N 36 /
-  XL 44), `radius:lg`, `type:title` domain text (`bbr-address-domain`,
-  mid-ellipsis) in `color:ink`, and a **trailing accessory slot**
+  XL 44), `radius:lg` (12), `type:title` domain text (`bbr-address-domain`,
+  mid-ellipsis) at 500 in `color:ink`, and a **trailing accessory slot**
   (`bbr-address-accessory`) inset at the field's trailing edge. The slot
   reserves one §14 glyph at `density:hit-min`; content in it never pushes
   the domain out of the field (the domain yields by ellipsis).
 - **Fill:** a bordered field one step off the rail — a **white veil over the
-  rail material** (light `rgba(255,255,255,0.48)`, dark
-  `rgba(255,255,255,0.03)`), so the field follows the theme and the space
-  tint, plus a 1 px hairline-strength border (light `rgba(23,26,29,0.10)`,
-  dark `rgba(255,255,255,0.07)`; increased contrast deepens it) and **no
-  shadow**. Deliberately not `material:field` white: the address is the one
+  rail material** (v2 §18.2: light white 55 %, dark white 6 %), so the field
+  follows the theme and the space tint, plus a 1 px presence edge (light
+  ink 4 %, dark white 4 %; increased contrast deepens it to 10 %) and **no
+  shadow**. The non-address staging surface (`bbr-command-bar`) uses the
+  same veil at rest. Deliberately not `material:field` white: the address is the one
   address affordance, not the loudest element in a rail whose job is to
   recede. Colors come from the palette tokens, never the component.
 - **Zoom accessory (§17.14):** the slot shows the page zoom chip
   (`bbr-address-zoom`, e.g. `110%`, `type:meta`) only while the active
-  site's zoom is not 100 %, on a quiet inset wash (light
-  `rgba(23,26,29,0.05)`, dark `rgba(255,255,255,0.06)`). Pressing it resets
+  site's zoom is not 100 %, on a quiet inset wash (light ink 6 %, dark
+  white 6 %). Pressing it resets
   the site to 100 % through the site-zoom authority and never opens the
   palette. Copy Link and permission indicators stay future accessories.
-- **Hover:** the veil moves one step darker on light chrome and one step
-  brighter on dark chrome, using the §10.2 wash mechanics at `dur:fine`; the
+- **Hover:** the veil moves one step darker on light chrome (white 40 %) and
+  one step brighter on dark chrome (white 10 %), using the §10.2 wash mechanics at `dur:fine`; the
   border never changes weight or color.
 - **Activation:** pointer press or `Cmd-L` opens the §11.4 palette over the
   control. The control **never accepts keyboard text**; its semantic role is
@@ -1027,7 +1043,9 @@ scheme; a title consisting only of whitespace is treated as empty.
 
 - **Anatomy:** when real Favorites exist, `bbr-favorites` presents destination
   tiles without a repeated visible section label. The §7.2 favicon/monogram is
-  centered in a softly raised `radius:sm` surface, gap 4/4/8 pt.
+  centered on the `material:favorite` veil (v2 §18.2: white 50 % light /
+  6 % dark over the tinted rail) at `radius:md` (10; `radius:sm` at S), gap
+  4/4/8 pt; the empty slot and the drop cell share the tile radius.
 - **Columns and wrap:** the grid is **4 columns at every density and every
   width** (`grid_columns`), so tile `n` always lands in the same cell. Tile
   *width* derives from the rail — `(content − 3·gap) / 4` inside the region's
@@ -1540,7 +1558,8 @@ semantically — never by pixel comparison.
   `VisualState ∈ {default, hover, active, selected, loading, attention,
   error, disabled, dragging, drag-target, focused}` — exactly the §10 names.
   During a drag report both the source row (`dragging`) and any target
-  (`drag-target`); the command-bar domain derives from the existing
+  (`drag-target`); `lifted_ids` lists the §15 ids of the surfaces painted
+  with `elev:lift` (the selected tab's row and nested folder row); the command-bar domain derives from the existing
   `chrome_focused` + `command_bar_mode` fields. Downloads rows expose
   `download_rows: Vec<DownloadRowSnapshot>` with `machine_state ∈ {Waiting,
   Running, Succeeded, Failed, Cancelled}` (the L6 contract states), `group ∈
@@ -1808,7 +1827,7 @@ second is replaced by the ring).
 | S0 contract | [v2 contract](docs/roadmap/tasks/v2-contract.md) | §6 D11, §17.17, §18 | landed 2026-09-28 |
 | S1 system preferences | [system preferences](docs/roadmap/tasks/v2-system-prefs.md) | §3.4, §6, §15 | landed 2026-09-28 |
 | S2 tokens | [tokens](docs/roadmap/tasks/v2-tokens.md) | §2, §3, §5 | landed 2026-09-28 |
-| S3 rail | [rail](docs/roadmap/tasks/v2-rail.md) | §4, §10.2–§10.4, §11.1, §11.4, §11.5, §11.10 | adopted |
+| S3 rail | [rail](docs/roadmap/tasks/v2-rail.md) | §4, §10.2–§10.4, §11.1, §11.4, §11.5, §11.10 | landed 2026-09-28 |
 | S4 space paper | [space paper](docs/roadmap/tasks/v2-space-paper.md) | §11.3 | adopted |
 | S5 floating surfaces | [overlays](docs/roadmap/tasks/v2-overlays.md) | §8 palette width, §11.4, §11.12, §11.13, §11.16 | adopted |
 | S6 motion core | [motion core](docs/roadmap/tasks/v2-motion-core.md) | §6, §10.5, §10.6, §11.5 | adopted |

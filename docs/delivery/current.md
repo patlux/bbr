@@ -49,8 +49,8 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 | V2-S0 | v2 contract and delivery control | `integrated` | `main` (serial, no worktree) | orchestrator `01a0e454` | [v2 contract](../roadmap/tasks/v2-contract.md) | Integrated as `907a668e` (`just roadmap`, `just verify`) |
 | V2-S1 | System contrast and motion preferences | `integrated` | `main` (serial) | orchestrator | [system preferences](../roadmap/tasks/v2-system-prefs.md) | Integrated; verify, testkit clippy, sidebar 17/17, smoke, gallery 45/45; self-review recorded |
 | V2-S2 | Palette, radius and elevation tokens | `integrated` | `main` (serial) | orchestrator | [tokens](../roadmap/tasks/v2-tokens.md) | Integrated; verify, testkit clippy, sidebar/hover/spaces/gallery + command/tab-menu/library/organize green; self-review recorded |
-| V2-S3 | Rail: lift, veils, heading, footer | `running` | `main` (serial) | orchestrator | [rail](../roadmap/tasks/v2-rail.md) | after S2 |
-| V2-S4 | Space paper and active chip lift | `planned` | `main` (serial) | orchestrator | [space paper](../roadmap/tasks/v2-space-paper.md) | after S3 |
+| V2-S3 | Rail: lift, veils, heading, footer | `integrated` | `main` (serial) | orchestrator | [rail](../roadmap/tasks/v2-rail.md) | Integrated; verify, testkit clippy, sidebar/hover/tabs/organize/dense/spaces/gallery green, visual capture read; self-review recorded |
+| V2-S4 | Space paper and active chip lift | `running` | `main` (serial) | orchestrator | [space paper](../roadmap/tasks/v2-space-paper.md) | after S3 |
 | V2-S5 | Floating surfaces | `planned` | `main` (serial) | orchestrator | [floating surfaces](../roadmap/tasks/v2-overlays.md) | after S4 |
 | V2-S6 | Motion core | `planned` | `main` (serial) | orchestrator | [motion core](../roadmap/tasks/v2-motion-core.md) | after S1 and S5 |
 | V2-S7 | After-commit moments | `planned` | `main` (serial) | orchestrator | [motion moments](../roadmap/tasks/v2-motion-moments.md) | after S6 |

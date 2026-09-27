@@ -47,18 +47,23 @@ Integration order:       S3 → S4 → S5
 
 ### Unit and contract
 
-- [ ] Row visual resolution: selected → lift + 500; hover/press → washes.
-- [ ] Footer glyph size and strip alignment tokens.
+- [x] Row visual resolution: selected → lift + 500; hover/press → washes;
+      rest → no paint (`tab_row.rs` tests, `app/testkit/lift.rs`).
+- [x] Footer glyph size and strip alignment tokens (`footer.rs`,
+      `favorites.rs` tile radius, `sidebar/render.rs` heading).
 
 ### Real-app E2E
 
-- [ ] Sidebar suite asserts the lifted selected row (exactly one), the washes
-      on hover/press and the footer geometry; hover, organize and dense suites
-      stay green.
+- [x] Sidebar suite asserts the lifted selected row (exactly one), the washes
+      on hover/press and the folder-member lift (`e2e_shell_sidebar/lift.rs`);
+      the footer geometry (16 pt glyphs, centred strip) is asserted in the
+      gallery's production sidebar (`bbr-gallery` e2e sidebar); hover,
+      tabs, organize, dense and spaces suites stay green.
 
 ### Performance
 
-- [ ] Existing selection/hover scenarios cover the path; execution deferred.
+- [x] Existing selection/hover scenarios cover the path (paint-only change,
+      no new interaction); execution deferred per the program constraint.
 
 ## Completion gates
 
@@ -85,10 +90,28 @@ geometry change, stop with the measured evidence.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
+Outcome:               selected tab rows and folder members lift (white /
+                        white 9 % + `elev:lift`), every title 500, rest rows
+                        and inactive chips paint nothing so the tint shows,
+                        veiled Favorites at radius:md, 13/600 heading, 16 pt
+                        footer glyphs, safe-centred strip, typed `lifted_ids`.
+Commits:               see git log (feat(ui): lift the selected rail row …)
+Functional evidence:   just verify ok; testkit clippy ok; bbr-ui 179 tests
+Real-app E2E:          shell-sidebar 18/18 (new lift scenario), shell-hover
+                        4/4, shell-tabs 3/3, shell-organize 9/9, shell-dense
+                        4/4, shell-spaces 21/21, gallery 46/46 (new footer
+                        geometry scenario)
+Visual evidence:       visual-capture release build, representative +
+                        ordinary light captures (/tmp/v2s3/cap, local only)
+                        read against the Paper v2 light shell.
 Performance evidence:   not run — execution deferred
-Worktree state:
+Deviations:            heading tracking (+0.01 em) not expressible in GPUI;
+                        footer geometry asserted in the gallery (real-app
+                        snapshot has no element bounds); folder-member tabs
+                        also render as pinned rows, so a selected member
+                        lifts on both presentations of the one tab.
+Review:                serial self-review: diff read against §18.2–§18.4,
+                        D2 exception limited to `row_lift` + selected member,
+                        geometry/ids unchanged (dense 500 green).
+Worktree state:        clean after commit
 ```

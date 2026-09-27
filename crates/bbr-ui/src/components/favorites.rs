@@ -187,7 +187,8 @@ pub fn favorite_tile(
         .debug_selector(move || favorite_tile_id(tile.index).to_string())
         .w(width)
         .h(height)
-        .rounded(Radius.small())
+        .rounded(favorite_tile_radius(theme.density))
+        // §18.2: a white veil over the (space-tinted) rail.
         .bg(theme.palette.surface_favorite)
         .flex()
         .items_center()
@@ -195,6 +196,16 @@ pub fn favorite_tile(
         .cursor_pointer()
         .on_mouse_down(MouseButton::Left, on_activate)
         .child(icon_slot)
+}
+
+/// §5/§18.3 Favorite tile corner radius: `radius:md` (10), `radius:sm` at
+/// S density. The empty slot and the drop cell share it so every cell in the
+/// grid reads as the same tile.
+pub fn favorite_tile_radius(density: crate::theme::Density) -> gpui::Pixels {
+    match density {
+        crate::theme::Density::Small => Radius.small(),
+        _ => Radius.medium(),
+    }
 }
 
 /// The favorites region's deterministic height (points) — a pure function
@@ -226,6 +237,19 @@ pub use affordance::*;
 mod tests {
     use super::*;
     use crate::theme::Density;
+
+    #[test]
+    fn favorite_tiles_use_radius_md_and_radius_sm_at_small_density() {
+        // §5/§18.3: Favorite tiles are `radius:md` (10); S keeps `radius:sm`.
+        assert_eq!(favorite_tile_radius(Density::Small), Radius.small());
+        assert_eq!(favorite_tile_radius(Density::Normal), gpui::px(10.0));
+        assert_eq!(favorite_tile_radius(Density::ExtraLarge), gpui::px(10.0));
+        // The tile surface is the §18.2 veil, never an opaque grey.
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            let theme = Theme::new(mode, crate::theme::ContrastMode::Standard, Density::Normal);
+            assert!(theme.palette.surface_favorite.a < 1.0);
+        }
+    }
 
     fn tiles() -> Vec<FavoriteTileSpec> {
         vec![

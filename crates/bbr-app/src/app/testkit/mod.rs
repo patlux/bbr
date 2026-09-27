@@ -11,6 +11,7 @@ use gpui::Context;
 
 use super::{BbrApp, BrowserSink, FocusSink};
 
+mod lift;
 mod snapshot;
 
 /// Create a profile with its first space (E2E seam; production uses the

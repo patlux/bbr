@@ -45,7 +45,7 @@ impl BbrApp {
         let folder_members = ui_adapters::folder_member_visuals(
             &folder_rows,
             &organization.folders,
-            &self.controller.snapshot().all_tabs,
+            &self.controller.snapshot(),
             &self.favicon_images,
         );
         U2Rail {

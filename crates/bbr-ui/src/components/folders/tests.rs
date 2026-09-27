@@ -109,6 +109,7 @@ fn folders_ids_hide_the_empty_region_and_mirror_expansion() {
             letter: 'E',
             hue: 0,
             image: None,
+            selected: false,
         },
         FolderMemberVisual {
             folder: bbr_domain::FolderId(1),
@@ -118,6 +119,7 @@ fn folders_ids_hide_the_empty_region_and_mirror_expansion() {
             letter: 'L',
             hue: 1,
             image: None,
+            selected: false,
         },
     ];
     let ids = folders_ids(&rows, &members);
@@ -153,6 +155,7 @@ fn member_visuals_accept_the_shared_resolved_image_record() {
         letter: 'E',
         hue: 0,
         image: Some(image.clone()),
+        selected: false,
     };
     assert!(member
         .image
@@ -171,6 +174,7 @@ fn member_visuals_carry_folder_order_identity() {
             letter: 'E',
             hue: 0,
             image: None,
+            selected: false,
         },
         FolderMemberVisual {
             folder: bbr_domain::FolderId(1),
@@ -180,6 +184,7 @@ fn member_visuals_carry_folder_order_identity() {
             letter: 'L',
             hue: 1,
             image: None,
+            selected: false,
         },
     ];
     assert_eq!(members[0].folder, bbr_domain::FolderId(1));

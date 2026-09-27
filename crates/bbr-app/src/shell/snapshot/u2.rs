@@ -229,7 +229,7 @@ pub(crate) fn u2_visible_ids(
     let members = crate::app::ui_adapters::folder_member_visuals(
         &rows,
         folders,
-        &browser.all_tabs,
+        browser,
         &crate::app::favicon_presentation::FaviconImageMirror::default(),
     );
     ids.extend(bbr_ui::components::folders::folders_ids(&rows, &members));

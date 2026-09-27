@@ -60,8 +60,10 @@ pub fn space_strip(
     scroll: ScrollHandle,
     chips: Vec<Stateful<Div>>,
 ) -> Stateful<Div> {
+    let chips = centre_chips(chips);
     div()
         .id(SPACE_STRIP_ID)
+        .debug_selector(|| SPACE_STRIP_ID.to_string())
         .flex_1()
         .min_w_0()
         .h(theme.density.row())
@@ -72,6 +74,29 @@ pub fn space_strip(
         .overflow_x_scroll()
         .track_scroll(&scroll)
         .children(chips)
+}
+
+/// §18.3: the chips centre in the strip viewport while they fit, and start
+/// at the leading edge once they overflow. Auto margins on the first and
+/// last chip give exactly that "safe centre": they absorb positive free
+/// space equally and resolve to zero when the content overflows, so the
+/// scroll origin never clips a chip (plain `justify-content: center` would
+/// push overflow off the leading, unscrollable side). The scroll handle
+/// still tracks the chips themselves as its direct children.
+fn centre_chips(chips: Vec<Stateful<Div>>) -> Vec<Stateful<Div>> {
+    let last = chips.len().saturating_sub(1);
+    chips
+        .into_iter()
+        .enumerate()
+        .map(|(index, chip)| {
+            let chip = if index == 0 { chip.ml_auto() } else { chip };
+            if index == last {
+                chip.mr_auto()
+            } else {
+                chip
+            }
+        })
+        .collect()
 }
 
 /// One §11.3 identity chip: `[identity]`, `radius:sm`, with
@@ -152,7 +177,9 @@ pub fn space_chip(
     let chip_surface = if selected {
         swipe_tint.map_or(tint.chip_active, |swipe| swipe.chip_active)
     } else {
-        p.surface_sidebar
+        // Inactive chips paint nothing: the footer veil and the rail tint
+        // show through (§18.2).
+        crate::components::tab_row::REST_SURFACE
     };
     // §11.3/§7: the identity renders its drawn §7 glyph path when the value
     // is a curated `BbrGlyph`, the emoji scalar directly when curated, and
@@ -166,8 +193,12 @@ pub fn space_chip(
         theme.type_.badge.weight
     };
     let identity_slot = identity_mark(theme, &visuals.identity, text_weight);
+    let space = visuals.space;
     div()
-        .id(space_chip_id(visuals.space))
+        .id(space_chip_id(space))
+        // Test-support only (a release no-op): the chip as a geometry
+        // target for the §18.3 centred-strip evidence.
+        .debug_selector(move || space_chip_id(space).to_string())
         .flex_shrink_0()
         .size(theme.density.row() - px(4.0))
         .px(Spacing::sp1())

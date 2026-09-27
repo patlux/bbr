@@ -10,7 +10,7 @@
 //! pre-cutover `components::favorites` / `components::folders` modules
 //! (the derivation semantics are unchanged — only the home moved).
 
-use bbr_browser::{FavoriteSnapshot, FolderSnapshot, GlobalTabSnapshot};
+use bbr_browser::{ControllerSnapshot, FavoriteSnapshot, FolderSnapshot};
 use bbr_domain::FolderId;
 
 use bbr_ui::components::favicon::{monogram_hue, monogram_letter};
@@ -81,9 +81,10 @@ pub fn folder_row_specs(
 pub fn folder_member_visuals(
     rows: &[FolderRowSpec],
     folders: &[FolderSnapshot],
-    tabs: &[GlobalTabSnapshot],
+    browser: &ControllerSnapshot,
     mirror: &FaviconImageMirror,
 ) -> Vec<FolderMemberVisual> {
+    let tabs = &browser.all_tabs;
     let mut visuals = Vec::new();
     for spec in rows {
         if !spec.expanded {
@@ -109,6 +110,10 @@ pub fn folder_member_visuals(
                 // The member's exact owning profile's bounded store record
                 // (the same record its tab row derives from).
                 image: mirror.get(&(tab.profile, host)).cloned(),
+                // §10.4: the member is the window's selected tab (the active
+                // space's active index) — the nested row then lifts.
+                selected: tab.space == browser.active_space
+                    && Some(tab.index) == browser.active_index,
             });
         }
     }

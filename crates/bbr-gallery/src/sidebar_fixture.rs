@@ -161,6 +161,7 @@ pub fn build_sidebar_fixture(
                     letter: (b'X' + m as u8) as char,
                     hue: m % 6,
                     image: None,
+                    selected: false,
                 })
                 .collect(),
             focused: case.folders_focused,

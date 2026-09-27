@@ -73,4 +73,4 @@ pub use saved_pages_library::{
 pub use section::section_label;
 pub use space::{profile_chip, profile_chip_id, ProfileChipSpec, SpaceRowVisuals};
 pub use status::{status_line, StatusModel, STATUS_ID};
-pub use tab_row::{tab_row, RowVisuals};
+pub use tab_row::{row_lift, tab_row, RowVisuals};

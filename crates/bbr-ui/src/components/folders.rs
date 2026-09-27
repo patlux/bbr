@@ -28,7 +28,7 @@ use std::sync::Arc;
 
 use crate::icons::Icon;
 use crate::palette::FaviconSlate;
-use crate::theme::{Radius, Spacing, Theme, ThemeMode};
+use crate::theme::{elevation, Radius, Spacing, Theme, ThemeMode};
 
 /// The §15 id of the folders list container.
 pub const FOLDERS_ID: &str = "bbr-folders";
@@ -123,6 +123,10 @@ pub struct FolderMemberVisual {
     /// the monogram — the same record the member's tab row derives from,
     /// one acquisition, every presentation.
     pub image: Option<Arc<Image>>,
+    /// Whether this member is the window's selected tab: the nested row then
+    /// presents the §10.4 selected surface with the static `elev:lift` (D2),
+    /// exactly like the tab row it mirrors.
+    pub selected: bool,
 }
 
 /// The session-local folder presentation state the app layer owns
@@ -192,8 +196,8 @@ pub fn folder_row(
         .items_center()
         .flex()
         .flex_row()
-        .rounded(Radius.medium())
-        .bg(p.surface_sidebar)
+        .rounded(theme.density.density_radius())
+        // Rest paints no surface: the (space-tinted) rail shows through.
         .cursor_pointer()
         .on_hover(on_hover)
         .child(
@@ -330,9 +334,25 @@ pub fn folder_item_row(
         .items_center()
         .flex()
         .flex_row()
-        .rounded(Radius.medium())
+        .relative()
         .cursor_pointer()
         .on_mouse_down(MouseButton::Left, on_select)
+        // §10.4/D2: the selected member lifts on the same inset rounded
+        // surface as the tab row it mirrors (`density:row-inset` from the
+        // rail edges, `density:radius`); geometry is unchanged.
+        .when(visual.selected, |el| {
+            el.child(
+                div()
+                    .absolute()
+                    .left(theme.density.row_inset())
+                    .right(theme.density.row_inset())
+                    .top(gpui::px(0.0))
+                    .bottom(gpui::px(0.0))
+                    .rounded(theme.density.density_radius())
+                    .bg(p.tint_selected)
+                    .shadow(elevation::lift(theme)),
+            )
+        })
         .child(favicon_slot)
         .child(
             div()
@@ -342,7 +362,11 @@ pub fn folder_item_row(
                 .text_ellipsis()
                 .text_size(theme.type_.title.size)
                 .font_weight(theme.type_.title.weight)
-                .text_color(p.ink_secondary)
+                .text_color(if visual.selected {
+                    p.ink
+                } else {
+                    p.ink_secondary
+                })
                 .child(visual.title.clone()),
         )
         .child(

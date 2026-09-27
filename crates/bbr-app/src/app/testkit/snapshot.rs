@@ -130,7 +130,7 @@ impl BbrApp {
         let folder_members = crate::app::ui_adapters::folder_member_visuals(
             &folder_rows,
             &organization.folders,
-            &browser.all_tabs,
+            &browser,
             &self.favicon_images,
         );
         let download_rows = self.download_rows_snapshot();
@@ -287,6 +287,7 @@ impl BbrApp {
                 })
                 .collect(),
             row_titles: rows.iter().map(|row| row.title.to_string()).collect(),
+            lifted_ids: super::lift::lifted_ids(&rows, &folder_members),
             pinned_count: crate::shell::pinned_count(&browser.tabs),
             command_bar_hint: self.command_bar_hint(),
             command_profile_hint: self.command_profile_hint.clone(),

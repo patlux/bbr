@@ -1114,6 +1114,12 @@ pub struct Snapshot {
     /// Per-row rendered titles (after §4 separator-aware truncation) in tab
     /// order, from the same `row_visuals` source the shell renders.
     pub row_titles: Vec<String>,
+    /// DESIGN §2/§18.1 D2: the §15 ids of every rail surface that renders
+    /// the static `elev:lift` — the selected tab row (`bbr-tab-row-<n>`) and
+    /// a selected folder member (`bbr-folder-item-<n>-<m>`) — resolved by
+    /// the same `row_lift`/member selection the render paints with.
+    #[serde(default)]
+    pub lifted_ids: Vec<String>,
     /// The pinned/regular boundary (DESIGN.md §11.2): leading `pinned_count`
     /// tabs of the active space are pinned. Typed explicitly so E2E asserts
     /// the boundary itself, never by re-deriving it from tab flags.

@@ -392,3 +392,35 @@ fn real_keyboard_events_report_through_the_sidebar_recorders() {
         );
     });
 }
+
+/// v2 rail footer geometry (task packet `v2-rail`, DESIGN §18.3): the fixed
+/// footer glyphs render at 16 pt, and the space chips centre in the strip
+/// viewport while they fit (auto margins — the overflow case starts at the
+/// leading edge and is proven by the real-app strip scroll suite).
+#[test]
+#[ignore]
+fn footer_glyphs_are_sixteen_points_and_the_strip_centres_its_chips() {
+    run_scenario(|window, app| {
+        open_sidebar(window, app);
+        for selector in ["bbr-downloads-glyph", "bbr-plus-glyph"] {
+            let glyph = bounds_of(window, selector);
+            assert_eq!(glyph.size.width, gpui::px(16.0), "{selector} width");
+            assert_eq!(glyph.size.height, gpui::px(16.0), "{selector} height");
+        }
+        // The default family's strip holds two spaces (ids 1 and 2).
+        let strip = bounds_of(window, "bbr-space-strip");
+        let first = bounds_of(window, "bbr-space-chip-1");
+        let last = bounds_of(window, "bbr-space-chip-2");
+        let leading = f32::from(first.origin.x - strip.origin.x);
+        let trailing =
+            f32::from((strip.origin.x + strip.size.width) - (last.origin.x + last.size.width));
+        assert!(
+            leading > 0.0,
+            "chips fit, so they do not hug the leading edge"
+        );
+        assert!(
+            (leading - trailing).abs() < 1.0,
+            "chips centre in the strip: leading {leading} vs trailing {trailing}"
+        );
+    });
+}

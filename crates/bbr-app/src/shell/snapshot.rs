@@ -38,6 +38,9 @@ pub struct TestSnapshot {
     pub shell_modes: bbr_testkit::protocol::ShellModes,
     pub tab_states: Vec<bbr_testkit::protocol::TabVisualState>,
     pub row_titles: Vec<String>,
+    /// D2 lift evidence: the ids of the rail surfaces painted with
+    /// `elev:lift` (selected tab row, selected folder member).
+    pub lifted_ids: Vec<String>,
     /// The pinned/regular boundary (DESIGN.md §11.2): leading `pinned_count`
     /// tabs of the active space are pinned.
     pub pinned_count: usize,

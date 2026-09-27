@@ -10,7 +10,7 @@ use gpui::{
 use crate::icons::Icon;
 use crate::palette::Palette;
 use crate::state::TabVisualState;
-use crate::theme::{Radius, Spacing, Theme, ThemeMode};
+use crate::theme::{elevation, Radius, Spacing, Theme, ThemeMode};
 
 use super::favicon::{favicon_tile, FaviconSpec};
 
@@ -43,7 +43,9 @@ pub struct RowVisuals {
 
 /// §11.1 row title: one line, end-ellipsis, `type:title`; the §11.9 fallback
 /// and the §4 separator-aware truncation have already been applied by the
-/// caller. Loading dims to `ink.secondary`.
+/// caller. Loading dims to `ink.secondary`. The weight is
+/// [`row_title_weight`] — 500 in every state since v2 (§18.3: the lift
+/// carries selection).
 pub fn row_title(theme: &Theme, index: usize, text: &str, state: TabVisualState) -> Stateful<Div> {
     let color = if state == TabVisualState::Loading {
         theme.palette.ink_secondary
@@ -59,11 +61,7 @@ pub fn row_title(theme: &Theme, index: usize, text: &str, state: TabVisualState)
         .overflow_hidden()
         .text_ellipsis()
         .text_size(theme.type_.title.size)
-        .font_weight(if state == TabVisualState::Selected {
-            gpui::FontWeight(600.0)
-        } else {
-            theme.type_.title.weight
-        })
+        .font_weight(row_title_weight(theme, state))
         .text_color(color)
         .child(SharedString::from(text.to_string()))
 }
@@ -159,10 +157,11 @@ pub fn pin_control(theme: &Theme, index: usize, pinned: bool, disabled: bool) ->
 /// its own component module [`crate::components::drag_tick`] so this row
 /// anatomy stays under the ~500-line budget):
 /// `[favicon 18] · [title flex, trunc] · [pin] · [state slot 10] ·
-/// [close hit-min.close]`, tile per §8 with a quiet selected surface and
-/// stronger title weight. The §10.2–§10.4 hover/active/selected wash paints an
-/// inset rounded surface (`density:row-inset` from the rail edges,
-/// `density:radius`) behind the content.
+/// [close hit-min.close]`, tile per §8. The §10.2–§10.4 hover/active/selected
+/// wash paints an inset rounded surface (`density:row-inset` from the rail
+/// edges, `density:radius`) behind the content; the selected surface carries
+/// the static `elev:lift` ([`row_lift`], D2) and the rest state paints
+/// nothing so the (space-tinted) rail shows through.
 ///
 /// `on_select`/`on_close`/`on_pin` are the production view listeners (built
 /// with `cx.listener` in the sidebar surface), so the pointer path stays in
@@ -238,6 +237,11 @@ pub fn tab_row(
                 .bottom(px(0.0))
                 .rounded(theme.density.density_radius())
                 .bg(bg)
+                // D2: the one static row shadow — only the selected row,
+                // painted with its surface, never animated, never on hover.
+                .when(row_lift(visuals.state), |el| {
+                    el.shadow(elevation::lift(theme))
+                })
                 // §10.3: a pressed row deepens its wash with a 1 px inner
                 // hairline (no translation, no "press down" motion).
                 .when(visuals.state == TabVisualState::Active, |el| {
@@ -278,19 +282,41 @@ pub fn row_wash(p: &Palette, state: TabVisualState) -> Rgba {
     match state {
         TabVisualState::Selected => p.tint_selected,
         TabVisualState::Error => p.status_error_surface,
-        // §10.11: the unresponsive row keeps the quiet sidebar surface
-        // (the lifering + clock companions carry the signal; a red wash on
-        // every hung tab would fight the chrome hierarchy).
-        TabVisualState::Unresponsive => p.surface_sidebar,
         TabVisualState::DragTarget => p.tint_accent,
-        // §10.2/§10.3: the pointer-state washes blend over the sidebar
-        // material exactly as DESIGN.md defines (token `wash_hover` /
-        // `wash_active`); these arms never fight selection/error/loading
-        // because the caller already composed a single winning state.
+        // §10.2/§10.3: the pointer-state washes are translucent veils over
+        // the (tinted) rail (§18.2); these arms never fight
+        // selection/error/loading because the caller already composed a
+        // single winning state.
         TabVisualState::Hover => p.wash_hover,
         TabVisualState::Active => p.wash_active,
-        _ => p.surface_sidebar,
+        // Rest, loading, attention, disabled, dragging, focused and
+        // §10.11 unresponsive (its lifering + clock companions carry the
+        // signal) paint no surface: the rail — and its space tint — shows
+        // through instead of an untinted opaque rectangle.
+        _ => REST_SURFACE,
     }
+}
+
+/// The rest-state row surface: fully transparent (no paint).
+pub const REST_SURFACE: Rgba = Rgba {
+    r: 0.0,
+    g: 0.0,
+    b: 0.0,
+    a: 0.0,
+};
+
+/// D2 (DESIGN §2, §18.1): whether the row surface carries the static
+/// `elev:lift` — exactly the selected row; hover, press and drag states
+/// never lift.
+pub fn row_lift(state: TabVisualState) -> bool {
+    state == TabVisualState::Selected
+}
+
+/// §4/§18.3 row title weight: `type:title` (500) in every state — v2
+/// dropped the 600-weight selected title because the lift carries
+/// selection.
+pub fn row_title_weight(theme: &Theme, _state: TabVisualState) -> gpui::FontWeight {
+    theme.type_.title.weight
 }
 
 /// §10.9 the dragged row's elev:2 shadow (the distinct single-shadow
@@ -399,9 +425,8 @@ mod tests {
         // §10.3 active wash beats §10.2 hover wash.
         assert_eq!(row_wash(p, TabVisualState::Active), p.wash_active);
         assert_eq!(row_wash(p, TabVisualState::Hover), p.wash_hover);
-        // Loading keeps the sidebar material (its visual is the arc +
-        // dimmed title); default/dragging/disabled/attention/focused stay
-        // on the sidebar material.
+        // Loading (its visual is the arc + dimmed title) and every other
+        // quiet state paint no surface, so the tinted rail shows through.
         for state in [
             TabVisualState::Default,
             TabVisualState::Loading,
@@ -409,11 +434,46 @@ mod tests {
             TabVisualState::Disabled,
             TabVisualState::Dragging,
             TabVisualState::Focused,
+            TabVisualState::Unresponsive,
         ] {
-            assert_eq!(row_wash(p, state), p.surface_sidebar, "{state:?}");
+            assert_eq!(row_wash(p, state), REST_SURFACE, "{state:?}");
         }
-        assert_ne!(p.wash_active, p.surface_sidebar);
-        assert_ne!(p.wash_hover, p.surface_sidebar);
+        assert_eq!(REST_SURFACE.a, 0.0);
+        // §18.2: hover and press are translucent veils, never opaque hexes.
+        assert!(p.wash_hover.a > 0.0 && p.wash_hover.a < 1.0);
+        assert!(p.wash_active.a > p.wash_hover.a && p.wash_active.a < 1.0);
+    }
+
+    #[test]
+    fn only_the_selected_row_lifts_and_every_title_is_500() {
+        // D2: exactly the selected row carries `elev:lift`; §18.3: the
+        // title weight is 500 in every state (the lift carries selection).
+        let theme = Theme::new(
+            ThemeMode::Light,
+            crate::theme::ContrastMode::Standard,
+            crate::theme::Density::Normal,
+        );
+        for state in [
+            TabVisualState::Default,
+            TabVisualState::Hover,
+            TabVisualState::Active,
+            TabVisualState::Selected,
+            TabVisualState::Loading,
+            TabVisualState::Attention,
+            TabVisualState::Error,
+            TabVisualState::Unresponsive,
+            TabVisualState::Disabled,
+            TabVisualState::Dragging,
+            TabVisualState::DragTarget,
+            TabVisualState::Focused,
+        ] {
+            assert_eq!(
+                row_lift(state),
+                state == TabVisualState::Selected,
+                "{state:?}"
+            );
+            assert_eq!(row_title_weight(&theme, state), gpui::FontWeight(500.0));
+        }
     }
 
     #[test]
