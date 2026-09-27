@@ -11,7 +11,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 ## Current execution
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
-- **Active product slice:** none; no implementation or control writer is active. The reference-faithful shell and Sidebar polish are integrated. The next prepared product gap is the [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md), but it remains `planned` until explicitly activated. The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
+- **Active product slice:** [UI contract conformance](docs/roadmap/tasks/ui-contract-conformance.md) (serial on `main`), activated by Patrick on 2026-09-27 together with the adopted design-branch direction (DESIGN §17.16). The [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md) is next. The completed [Daily-driver browser delivery](docs/delivery/2026-08-12-daily-driver-delivery.md) remains the semantic foundation. Split remains fully scheduling-deferred and its stale worktree stays untouched.
 - **Current product milestone:** [Phase 4 — Vertical tabs, spaces, and first intentional UI](docs/roadmap/phases/04-ui-shell.md)
 
 The current-delivery document is the only owner of volatile execution state:
@@ -88,7 +88,11 @@ into a duplicate execution queue:
 - **Reference-design alignment (Phase 4):** [system-appearance theme](docs/roadmap/tasks/system-appearance-theme.md)
   → [real favicon pipeline](docs/roadmap/tasks/real-favicon-pipeline.md)
   → [sidebar reference polish](docs/roadmap/tasks/sidebar-reference-polish.md)
-  → prepared [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md);
+  → [UI contract conformance](docs/roadmap/tasks/ui-contract-conformance.md)
+  → [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md)
+  → adopted design-branch direction: [seated content card](docs/roadmap/tasks/seated-content-card.md)
+  → [address field and space identity](docs/roadmap/tasks/address-field-space-identity.md)
+  → [Favorites grid and drag offers](docs/roadmap/tasks/favorites-drag-offers.md);
   separately, the prioritized [media-session capability contract](docs/roadmap/tasks/media-session-capability-contract.md)
   → [sidebar media control](docs/roadmap/tasks/sidebar-media-control.md)
 - **Daily-driver Sidebar:** [full-height titlebar navigation](docs/roadmap/tasks/titlebar-navigation-controls.md)

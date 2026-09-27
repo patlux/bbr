@@ -1436,10 +1436,12 @@ production integration).
     but `about:blank` and future internal pages have no domain. Decide the
     short name they present (product name, a neutral label, or an empty
     pill) so the control never shows a raw scheme.
-14. **Address accessory slot contents:** §11.5 defines the trailing slot and
-    its geometry. Decide what v1 actually shows — nothing, Copy Link only,
-    or Copy Link plus a permissions indicator once the §P8a contract has a
-    surface.
+14. **Address accessory slot contents** — **resolved as product direction
+    (2026-09-27), implementation open:** the slot shows the page zoom chip
+    only while zoom is not 100 %; pressing it resets to 100 %. Copy Link and
+    a permissions indicator remain later accessories. Owned by the
+    [address field and space identity packet](docs/roadmap/tasks/address-field-space-identity.md);
+    until it lands the shipped slot stays empty.
 15. ~~**Folder membership versus pinned state**~~ **Resolved as product
     direction (2026-08-14), implementation open:** folders are grouped pinned
     tabs in the common organized area. The current `FolderStore` does not
@@ -1447,6 +1449,21 @@ production integration).
     ungroup/delete behavior, restore reconciliation, and production E2E remain
     owned by the
     [folder-membership invariant packet](docs/roadmap/tasks/folder-pinned-invariant.md).
+
+16. **Design-branch adoption** — **resolved as product direction
+    (2026-09-27), implementation open.** The Paper exploration preserved on
+    `design/browser-shell-paper@414c97c7` was reviewed row by row against
+    main. Adopted: the seated content card with the collapsed titlebar band
+    (option B) and no rail hairline; a bordered address field whose fill
+    follows the rail/space tint; the zoom accessory rule (§17.14); the space
+    identity in the heading; the fixed four-column Favorites grid; the empty
+    Favorites drop band; the drag offers with one live target and a drag
+    proxy. Rejected: the compact media transport bar (superseded by §11.15)
+    and footer identity glyphs outside the curated catalog. The sections
+    above stay the shipped contract until each packet lands its text:
+    [seated content card](docs/roadmap/tasks/seated-content-card.md),
+    [address field and space identity](docs/roadmap/tasks/address-field-space-identity.md),
+    [Favorites grid and drag offers](docs/roadmap/tasks/favorites-drag-offers.md).
 
 Resolving an item means moving its decision into the relevant section above
 and updating the affected roadmap track in the same group.

@@ -52,6 +52,16 @@ and never controls a stale or different session.
 - Add typed semantics/snapshots, deterministic real-WKWebView media E2E,
   optimized `media_control_present` and `media_play_pause_commit` evidence,
   and Gallery G2/G3 stories from the same production component/composition.
+- Settled presentation decisions (Patrick, 2026-09-27; Paper board
+  “Next · Media card”):
+  - the whole title block (favicon, title, source line) is the one source
+    activation target;
+  - the session-count affordance cycles to the next most recently controlled
+    session; it never opens a list or stacks cards;
+  - the scrubber is a 3 pt track with no knob at rest; a knob appears on hover
+    and keyboard focus only;
+  - Previous, Play, Pause, Next, Mute and Unmute are drawn §7 stroke glyphs
+    added to the `Icon` catalog with this slice.
 
 ## Non-goals
 

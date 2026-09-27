@@ -40,15 +40,16 @@ and routes through a portable organization authority.
     silent partial failure;
   - `Move to Space ›` with explicit destination profile identity;
   - `Unpack Folder`, retaining tabs in deterministic order.
-- Resolve and implement `Delete Folder` only after the packet records one
-  unambiguous rule. Recommendation: delete the container and retain its tabs
-  in their canonical space order; never close tabs through a label that says
-  only “Delete Folder”.
+- Deleting a folder is `Unpack Folder` (settled by Patrick, 2026-09-27): the
+  container is removed and its members stay as loose pinned tabs in folder
+  order, per the [folder membership invariant](folder-pinned-invariant.md).
+  There is no separate `Delete Folder` row, and no folder row ever closes
+  tabs.
 - Keep `New Subfolder…` omitted while folders remain flat and session-local.
 - Keep `Convert Folder to Space` as a separate product/ownership decision; it
   is not a cosmetic menu callback.
 - Stable ids: `bbr-folder-menu`, `bbr-folder-menu-rename`, `-icon`,
-  `-suspend-all`, `-move-space`, `-convert-space`, `-unpack`, `-delete`.
+  `-suspend-all`, `-move-space`, `-convert-space`, `-unpack`.
 - Add typed semantics/snapshot state, real-app E2E, optimized open/commit
   evidence, and Gallery G2/G3 stories from the same production component.
 
@@ -97,7 +98,7 @@ sidebar rendering, or their Gallery stories.
   result deterministically.
 - `Suspend All Tabs` preserves every tab identity and excludes active/otherwise
   ineligible members according to the controller's lifecycle policy.
-- Delete and partial-failure copy must be deterministic and testable; color is
+- Unpack and partial-failure copy must be deterministic and testable; color is
   never the sole danger/disabled cue.
 - No new dependencies; files below roughly 500 lines; no weakened assertions,
   budgets, or sample counts.
@@ -112,7 +113,7 @@ sidebar rendering, or their Gallery stories.
 - [ ] Opening/dismissing leaves folder expansion, browser selection, order,
       sessions, and ownership unchanged.
 - [ ] Rename/icon validation, suspend-all result accounting, move isolation,
-      unpack ordering, and explicit delete semantics are proven.
+      and unpack ordering (the settled delete semantics) are proven.
 - [ ] Nested/convert rows cannot appear without their owning capabilities.
 
 ### Real-app E2E
@@ -122,8 +123,8 @@ sidebar rendering, or their Gallery stories.
 - [ ] Rename and icon update the bound folder only.
 - [ ] Suspend All preserves identities and reports ineligible/failed members.
 - [ ] Same-/cross-profile move repairs source selection and preserves isolation.
-- [ ] Unpack preserves deterministic order; delete applies the exact recorded
-      retain-tabs rule and never closes a tab.
+- [ ] Unpack preserves deterministic order, keeps every member as a loose pin,
+      and never closes a tab.
 
 ### Performance
 
@@ -150,8 +151,8 @@ GUI suites run sequentially under the repository lock.
 
 ## Delivery sequence
 
-1. Confirm F2/G1a integration and settle the delete-container rule in this
-   packet before implementation.
+1. Confirm F2/G1a and folder-membership-invariant integration; the delete
+   rule is settled as Unpack above.
 2. Add typed folder availability and commands to the portable organization
    seam.
 3. Cut over the production `bbr-ui` menu and sidebar anchor.
