@@ -50,8 +50,8 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 | V2-S1 | System contrast and motion preferences | `integrated` | `main` (serial) | orchestrator | [system preferences](../roadmap/tasks/v2-system-prefs.md) | Integrated; verify, testkit clippy, sidebar 17/17, smoke, gallery 45/45; self-review recorded |
 | V2-S2 | Palette, radius and elevation tokens | `integrated` | `main` (serial) | orchestrator | [tokens](../roadmap/tasks/v2-tokens.md) | Integrated; verify, testkit clippy, sidebar/hover/spaces/gallery + command/tab-menu/library/organize green; self-review recorded |
 | V2-S3 | Rail: lift, veils, heading, footer | `integrated` | `main` (serial) | orchestrator | [rail](../roadmap/tasks/v2-rail.md) | Integrated; verify, testkit clippy, sidebar/hover/tabs/organize/dense/spaces/gallery green, visual capture read; self-review recorded |
-| V2-S4 | Space paper and active chip lift | `running` | `main` (serial) | orchestrator | [space paper](../roadmap/tasks/v2-space-paper.md) | after S3 |
-| V2-S5 | Floating surfaces | `planned` | `main` (serial) | orchestrator | [floating surfaces](../roadmap/tasks/v2-overlays.md) | after S4 |
+| V2-S4 | Space paper and active chip lift | `integrated` | `main` (serial) | orchestrator | [space paper](../roadmap/tasks/v2-space-paper.md) | Integrated; verify, testkit clippy, spaces/sidebar/gallery/organize green, visual capture read; self-review recorded |
+| V2-S5 | Floating surfaces | `running` | `main` (serial) | orchestrator | [floating surfaces](../roadmap/tasks/v2-overlays.md) | after S4 |
 | V2-S6 | Motion core | `planned` | `main` (serial) | orchestrator | [motion core](../roadmap/tasks/v2-motion-core.md) | after S1 and S5 |
 | V2-S7 | After-commit moments | `planned` | `main` (serial) | orchestrator | [motion moments](../roadmap/tasks/v2-motion-moments.md) | after S6 |
 | V2-S8 | Drawn empty states | `planned` | `main` (serial) | orchestrator | [empty states](../roadmap/tasks/v2-empty-states.md) | after S7 |

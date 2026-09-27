@@ -287,7 +287,7 @@ impl BbrApp {
                 })
                 .collect(),
             row_titles: rows.iter().map(|row| row.title.to_string()).collect(),
-            lifted_ids: super::lift::lifted_ids(&rows, &folder_members),
+            lifted_ids: super::lift::lifted_ids(&rows, &folder_members, &self.space_chip_visuals()),
             pinned_count: crate::shell::pinned_count(&browser.tabs),
             command_bar_hint: self.command_bar_hint(),
             command_profile_hint: self.command_profile_hint.clone(),

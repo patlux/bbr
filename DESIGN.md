@@ -581,7 +581,7 @@ folder member lifts the same way on its nested row. No decorative Phosphor
 rail appears at rest; keyboard focus, drag targets and active command
 surfaces retain the accent. Snap (`dur:instant`). **Assert:** `selected`
 (plus the domain via `chrome_focused`) and the typed `lifted_ids` evidence —
-exactly the selected tab's row ids.
+exactly the selected tab's row ids plus the active space chip.
 
 ### 10.5 `loading`
 Favicon slot swaps to an 18 pt circular arc spinner (S 16 / XL 20, accent,
@@ -736,13 +736,24 @@ using the IDs of §15. All rows use `density` geometry from §8.
   hit-target family as the rest of the footer.
 - **Behavior:** pointer click or keyboard activation performs the existing warm
   space switch. The active space is unmistakable through a persistent selected
-  surface plus stronger identity weight; keyboard focus supplies the accent
-  outline and inactive chips remain quiet.
+  surface plus stronger identity weight: v2 paints the active chip as the
+  `tint.selected` surface over the tinted rail carrying 8 % of the identity
+  hue, with the static `elev:lift` (D2); keyboard focus supplies the accent
+  outline and inactive chips paint no surface of their own.
   Activation keeps the selected tab/session warm and preserves every existing
   50/100 ms budget and fast-but-wrong guard.
 - **Appearance:** each space owns one curated theme-color token and one identity.
-  The active token tints the BBR-owned sidebar material through a contrast-safe,
-  desaturated chrome variant. Web content is never sampled or tinted. During a
+  The active token tints the BBR-owned sidebar material (the whole chassis
+  body) by blending a curated chrome-wash hue into it at 12 % (increased
+  contrast 14 %, D3). The wash hues are calibrated per mode so every composited
+  bar holds on every tinted rail: `ink` ≥ 12:1 (IC 14:1), `ink.secondary` and
+  light `accent.ink` ≥ 5.9:1 (IC 9:1 for `ink.secondary`), the D1 selection
+  (`ink` ≥ 10.5:1) and the footer veil (`ink.secondary` ≥ 5.9:1). Dark washes
+  are the identity hue at 1.3× the v1 saturation with luminance near the
+  rail's own, so the tint reads as hue rather than a lighter rail; light
+  washes are the identity hue at HSV value 1 and saturation ≤ 0.45, lowered
+  until `accent.ink` holds (Slate half-saturated, Ink neutral grey). Web
+  content is never sampled or tinted. During a
   direct horizontal swipe over the sidebar/space strip, the sidebar tint may
   interpolate between source and candidate target tokens in direct proportion
   to gesture progress; cancellation returns to the source token and commit
@@ -1559,7 +1570,8 @@ semantically — never by pixel comparison.
   error, disabled, dragging, drag-target, focused}` — exactly the §10 names.
   During a drag report both the source row (`dragging`) and any target
   (`drag-target`); `lifted_ids` lists the §15 ids of the surfaces painted
-  with `elev:lift` (the selected tab's row and nested folder row); the command-bar domain derives from the existing
+  with `elev:lift` (the selected tab's row and nested folder row, then the
+  active space chip); the command-bar domain derives from the existing
   `chrome_focused` + `command_bar_mode` fields. Downloads rows expose
   `download_rows: Vec<DownloadRowSnapshot>` with `machine_state ∈ {Waiting,
   Running, Succeeded, Failed, Cancelled}` (the L6 contract states), `group ∈
@@ -1762,9 +1774,12 @@ ships 5 % (6.08:1). Per the iteration policy the value moved, not the bar.
   Floating cards lose their 2 pt inset hairline edge (§18.4).
 - Ink, accent, status and profile hues are unchanged. Increased contrast keeps
   its §3.4 rules on the v2 values.
-- **Space tint (D3):** rail wash alpha 0.12 (IC 0.14) toward the existing
-  desaturated chrome-wash hues. The active chip becomes the lift carrying 8 %
-  of the identity hue (so each space's chip stays distinguishable).
+- **Space tint (D3):** rail wash alpha 0.12 (IC 0.14). The v1 chrome-wash
+  hues could not hold D1 at 12 % (dark selection `ink` 9.69:1, footer
+  `ink.secondary` 5.26:1; light washes were near-white and invisible), so S4
+  recalibrated them per §11.3 — the values moved, not the bars. The active
+  chip becomes the lift carrying 8 % of the identity hue (so each space's
+  chip stays distinguishable).
 
 ### 18.3 Radius and type
 
@@ -1828,7 +1843,7 @@ second is replaced by the ring).
 | S1 system preferences | [system preferences](docs/roadmap/tasks/v2-system-prefs.md) | §3.4, §6, §15 | landed 2026-09-28 |
 | S2 tokens | [tokens](docs/roadmap/tasks/v2-tokens.md) | §2, §3, §5 | landed 2026-09-28 |
 | S3 rail | [rail](docs/roadmap/tasks/v2-rail.md) | §4, §10.2–§10.4, §11.1, §11.4, §11.5, §11.10 | landed 2026-09-28 |
-| S4 space paper | [space paper](docs/roadmap/tasks/v2-space-paper.md) | §11.3 | adopted |
+| S4 space paper | [space paper](docs/roadmap/tasks/v2-space-paper.md) | §11.3 | landed 2026-09-28 |
 | S5 floating surfaces | [overlays](docs/roadmap/tasks/v2-overlays.md) | §8 palette width, §11.4, §11.12, §11.13, §11.16 | adopted |
 | S6 motion core | [motion core](docs/roadmap/tasks/v2-motion-core.md) | §6, §10.5, §10.6, §11.5 | adopted |
 | S7 after-commit moments | [motion moments](docs/roadmap/tasks/v2-motion-moments.md) | §6, §10, §11.3, §11.4, §11.10, §11.12 | adopted |

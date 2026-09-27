@@ -4,7 +4,8 @@
 //! same row-state composition and folder-member selection the render paints
 //! with, so the suite proves:
 //!
-//! 1. exactly the selected tab row lifts, and the lift follows selection;
+//! 1. exactly the selected tab row (plus the active space chip, §18.2)
+//!    lifts, and the lift follows selection;
 //! 2. hover and press paint their washes (`hover`/`active` states) without
 //!    ever lifting;
 //! 3. a selected folder member lifts on its nested row as well as on the
@@ -17,6 +18,12 @@ use bbr_testkit::protocol::TabVisualState;
 /// The one lifted tab row id for `index`.
 fn row_id(index: usize) -> String {
     format!("bbr-tab-row-{index}")
+}
+
+/// The lifted active space chip id (§18.2: the chip is the lift carrying
+/// 8 % of the identity hue).
+fn chip_id(space: bbr_testkit::protocol::TestSpaceId) -> String {
+    format!("bbr-space-chip-{}", space.0)
 }
 
 #[test]
@@ -48,21 +55,34 @@ fn only_the_selected_row_lifts_through_hover_press_and_folders() {
 
         // 1. Exactly the selected row lifts.
         let two = client.snapshot().expect("two-tab snapshot");
+        let chip = chip_id(two.active_space);
         assert_eq!(two.active_tab_index, Some(1));
         assert_eq!(two.tab_states[1], TabVisualState::Selected);
-        assert_eq!(two.lifted_ids, vec![row_id(1)], "one lifted row");
+        assert_eq!(
+            two.lifted_ids,
+            vec![row_id(1), chip.clone()],
+            "one lifted row plus the active chip"
+        );
 
         // 2. Hover and press paint washes, never a lift; the selected row
         // keeps the only lift.
         client.send_ok(&dsl::hover_tab_row(0)).expect("hover row 0");
         let hovered = client.snapshot().expect("hovered snapshot");
         assert_eq!(hovered.tab_states[0], TabVisualState::Hover);
-        assert_eq!(hovered.lifted_ids, vec![row_id(1)], "hover never lifts");
+        assert_eq!(
+            hovered.lifted_ids,
+            vec![row_id(1), chip.clone()],
+            "hover never lifts"
+        );
         client.send_ok(&dsl::unhover_tab_row()).expect("unhover");
         client.send_ok(&dsl::press_tab_row(0)).expect("press row 0");
         let pressed = client.snapshot().expect("pressed snapshot");
         assert_eq!(pressed.tab_states[0], TabVisualState::Active);
-        assert_eq!(pressed.lifted_ids, vec![row_id(1)], "press never lifts");
+        assert_eq!(
+            pressed.lifted_ids,
+            vec![row_id(1), chip.clone()],
+            "press never lifts"
+        );
         client.send_ok(&dsl::release_tab_row()).expect("release");
 
         // The lift follows the committed selection.
@@ -72,7 +92,11 @@ fn only_the_selected_row_lifts_through_hover_press_and_folders() {
             .expect("flush selection");
         let moved = client.snapshot().expect("moved selection snapshot");
         assert_eq!(moved.active_tab_index, Some(0));
-        assert_eq!(moved.lifted_ids, vec![row_id(0)], "lift follows selection");
+        assert_eq!(
+            moved.lifted_ids,
+            vec![row_id(0), chip.clone()],
+            "lift follows selection"
+        );
 
         // 3. A selected folder member lifts on its nested row and on the
         // pinned row of the same tab (grouping pins the member).
@@ -118,7 +142,7 @@ fn only_the_selected_row_lifts_through_hover_press_and_folders() {
         assert_eq!(member.active_tab_index, Some(member_row));
         assert_eq!(
             member.lifted_ids,
-            vec![row_id(member_row), "bbr-folder-item-0-0".to_string()],
+            vec![row_id(member_row), "bbr-folder-item-0-0".to_string(), chip],
             "both presentations of the one selected tab lift, nothing else"
         );
 

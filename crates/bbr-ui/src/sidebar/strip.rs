@@ -215,11 +215,13 @@ pub fn space_chip(
         } else {
             chip_surface
         })
-        .when(selected && !target, |el| {
-            // Quiet selected surface; exact identity + stronger type weight
-            // are the non-color cues. The strip's keyboard focus owns the
-            // accent ring, so rest state carries no decorative rail.
-            el.border_1().border_color(p.hairline)
+        .when(chip_lifts(selected, target), |el| {
+            // §18.2/D2: the active chip is the lifted selection surface
+            // carrying 8 % of the identity hue; the lift's own 1 pt ring
+            // replaces the old hairline edge. Exact identity + stronger type
+            // weight are the non-color cues; the strip's keyboard focus owns
+            // the accent ring, so rest state carries no decorative rail.
+            el.shadow(crate::theme::elevation::lift(theme))
         })
         .when(target, |el| {
             // §10.9/§11.3: the drag-target outline plus the §12
@@ -249,10 +251,24 @@ pub fn space_chip(
         .on_mouse_down(MouseButton::Left, on_select)
 }
 
+/// D2: the active chip lifts (painted with its surface, never animated);
+/// a drag-targeted chip shows the §10.9 treatment instead.
+pub fn chip_lifts(selected: bool, drag_target: bool) -> bool {
+    selected && !drag_target
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use bbr_domain::SpaceTheme;
+
+    #[test]
+    fn only_the_active_undragged_chip_lifts() {
+        assert!(chip_lifts(true, false));
+        assert!(!chip_lifts(true, true));
+        assert!(!chip_lifts(false, false));
+        assert!(!chip_lifts(false, true));
+    }
 
     /// A chip visual for a persistent space; the fields that are irrelevant
     /// to id stability vary per caller.

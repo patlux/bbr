@@ -48,16 +48,20 @@ Integration order:       after S3, before S5
 
 ### Unit and contract
 
-- [ ] Gate: `ink ≥ 12:1` (IC 14), `ink.secondary ≥ 5.9:1` (IC 9) on every
-      tinted rail; chips distinct per theme.
+- [x] Gate: `ink ≥ 12:1` (IC 14), `ink.secondary ≥ 5.9:1` (IC 9) on every
+      tinted rail; chips distinct per theme (`space_tint.rs` gate, chip and
+      visibility tests; the S2 palette gates re-prove D1 and the footer on
+      the 12 % rails).
 
 ### Real-app E2E
 
-- [ ] Spaces suite: tint evidence per space, swipe tracking/cancel/commit.
+- [x] Spaces suite: tint evidence per space, swipe tracking/cancel/commit
+      (21/21); sidebar lift scenario asserts the lifted active chip.
 
 ### Performance
 
-- [ ] Space-switch scenarios unchanged; execution deferred.
+- [x] Space-switch scenarios unchanged (paint values only); execution
+      deferred per the program constraint.
 
 ## Completion gates
 
@@ -81,10 +85,24 @@ ratios.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
+Outcome:               12 % / 14 % space tint with recalibrated chrome-wash
+                        hues (dark: 1.3× saturation near rail luminance;
+                        light: value 1, saturation ≤ 0.45 bounded by
+                        accent.ink); active chip = selection + 8 % hue with
+                        `elev:lift`, reported in `lifted_ids`.
+Commits:               see git log (feat(ui): tint the whole rail …)
+Functional evidence:   just verify ok; testkit clippy ok; bbr-ui 182 tests;
+                        app bins 288
+Real-app E2E:          shell-spaces 21/21, shell-sidebar 18/18, gallery
+                        46/46, shell-organize 9/9
+Visual evidence:       visual-capture light representative/ordinary (cobalt
+                        default space, local /tmp/v2s4/cap)
 Performance evidence:   not run — execution deferred
-Worktree state:
+Deviations:            wash hues recalibrated (v1 values failed D1 at 12 %:
+                        dark selection ink 9.69, footer 5.26; light ΔE 0.3);
+                        the default space follows its profile hue, so a fresh
+                        profile now shows a visible cobalt tint.
+Review:                serial self-review: bars unchanged, every composited
+                        gate recomputed from tokens, IC deepens strictly.
+Worktree state:        clean after commit
 ```

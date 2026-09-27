@@ -1115,9 +1115,10 @@ pub struct Snapshot {
     /// order, from the same `row_visuals` source the shell renders.
     pub row_titles: Vec<String>,
     /// DESIGN §2/§18.1 D2: the §15 ids of every rail surface that renders
-    /// the static `elev:lift` — the selected tab row (`bbr-tab-row-<n>`) and
-    /// a selected folder member (`bbr-folder-item-<n>-<m>`) — resolved by
-    /// the same `row_lift`/member selection the render paints with.
+    /// the static `elev:lift` — the selected tab row (`bbr-tab-row-<n>`), a
+    /// selected folder member (`bbr-folder-item-<n>-<m>`) and the active
+    /// space chip (`bbr-space-chip-<space>`) — resolved by the same
+    /// `row_lift`/member selection/`chip_lifts` the render paints with.
     #[serde(default)]
     pub lifted_ids: Vec<String>,
     /// The pinned/regular boundary (DESIGN.md §11.2): leading `pinned_count`

@@ -212,7 +212,7 @@ Snapshot {
   chrome_focused: bool,
   shell_modes: ShellModes,      // theme/contrast/density (§15)
   tab_states: Vec<TabVisualState>, row_titles: Vec<String>,
-  lifted_ids: Vec<String>,      // D2: ids of the rail surfaces painted with elev:lift
+  lifted_ids: Vec<String>,      // D2: selected row/folder-member/active-chip ids painted with elev:lift
   space_chips: Vec<SpaceChipSnapshot>, // one chip per space, canonical display order
   space_strip_scroll: SpaceStripScrollSnapshot, // typed viewport/offset/max/chip rects (§11.3)
   visible_ids: Vec<String>,     // rendered bbr-* ids (§15)
