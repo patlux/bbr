@@ -455,6 +455,7 @@ fn the_permanent_strip_always_renders_chip_nodes() {
         profile_title: "Default".into(),
         identity: "book".into(),
         theme: bbr_browser::SpaceTheme::Pine,
+        intensity: bbr_domain::TintIntensity::Standard,
         selected: false,
         drag_target: false,
         companion: None,

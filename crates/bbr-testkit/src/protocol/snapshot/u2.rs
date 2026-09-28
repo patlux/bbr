@@ -91,6 +91,12 @@ pub struct SpaceAppearanceSnapshot {
     /// The resolved active-chip surface tint (`#RRGGBB`) for the active
     /// space's theme in the shell's mode/contrast.
     pub chip_tint: String,
+    /// v2 D7: the effective tint intensity step (`subtle`/`standard`/`rich`).
+    #[serde(default = "standard_intensity")]
+    pub intensity: String,
+    /// v2 D6: whether the rail and chassis paint the static grain.
+    #[serde(default)]
+    pub grain: bool,
 }
 
 /// §11.3/§11.4 strip scroll evidence on the wire: the strip's measured
@@ -248,7 +254,18 @@ pub struct SpaceConfigSnapshot {
     /// The selected validated identity in its canonical string form (the
     /// emoji scalar or the glyph name).
     pub identity: String,
+    /// v2 D7: the selected tint intensity step in the draft.
+    #[serde(default = "standard_intensity")]
+    pub intensity: String,
+    /// v2 D6: whether the draft turns the static grain on.
+    #[serde(default)]
+    pub grain: bool,
     /// Whether the surface owns chrome focus (the §9 ring + keyboard
     /// domain of the rename field).
     pub focused: bool,
+}
+
+/// The wire default of an older client's missing intensity (v2 D7).
+fn standard_intensity() -> String {
+    "standard".into()
 }

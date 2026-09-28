@@ -17,6 +17,10 @@ pub const SPACE_CONFIG_IDENTITY_LABEL_ID: &str = "bbr-space-config-identity-labe
 pub const SPACE_CONFIG_EMOJI_LABEL_ID: &str = "bbr-space-config-emoji-label";
 /// The glyph identity group label.
 pub const SPACE_CONFIG_GLYPH_LABEL_ID: &str = "bbr-space-config-glyph-label";
+/// The paper (intensity + grain) group label (v2 D6/D7).
+pub const SPACE_CONFIG_PAPER_LABEL_ID: &str = "bbr-space-config-paper-label";
+/// The static-grain toggle (v2 D6).
+pub const SPACE_CONFIG_GRAIN_ID: &str = "bbr-space-config-grain";
 /// The Done control (commits the rename + appearance).
 pub const SPACE_CONFIG_DONE_ID: &str = "bbr-space-config-done";
 /// The Cancel control (keeps the created Space and its valid defaults).
@@ -28,6 +32,12 @@ pub const SPACE_CONFIG_ACTIONS_ID: &str = "bbr-space-config-actions";
 /// (keyed by the canonical token name).
 pub fn space_config_theme_id(theme: bbr_domain::SpaceTheme) -> String {
     format!("bbr-space-config-theme-{}", theme.name())
+}
+
+/// The `bbr-space-config-intensity-<step>` id of one curated intensity
+/// step (keyed by the canonical step name).
+pub fn space_config_intensity_id(step: bbr_domain::TintIntensity) -> String {
+    format!("bbr-space-config-intensity-{}", step.name())
 }
 
 /// The `bbr-space-config-emoji-<index>` id of one curated emoji option
@@ -62,6 +72,11 @@ pub fn space_config_ids() -> Vec<String> {
     for theme in bbr_domain::SpaceTheme::ALL {
         ids.push(space_config_theme_id(theme));
     }
+    ids.push(SPACE_CONFIG_PAPER_LABEL_ID.to_string());
+    for step in bbr_domain::TintIntensity::ALL {
+        ids.push(space_config_intensity_id(step));
+    }
+    ids.push(SPACE_CONFIG_GRAIN_ID.to_string());
     for (index, _emoji) in bbr_domain::ALLOWED_EMOJI.iter().enumerate() {
         ids.push(space_config_emoji_id(index));
     }
@@ -95,6 +110,11 @@ mod tests {
             space_config_glyph_id(bbr_domain::BbrGlyph::Globe),
             "bbr-space-config-glyph-globe"
         );
+        assert_eq!(
+            space_config_intensity_id(bbr_domain::TintIntensity::Rich),
+            "bbr-space-config-intensity-rich"
+        );
+        assert_eq!(SPACE_CONFIG_GRAIN_ID, "bbr-space-config-grain");
         assert_eq!(SPACE_CONFIG_ID, "bbr-space-config");
         assert_eq!(SPACE_CONFIG_ACTIONS_ID, "bbr-space-config-actions");
     }
@@ -108,6 +128,10 @@ mod tests {
         for theme in bbr_domain::SpaceTheme::ALL {
             assert!(ids.contains(&space_config_theme_id(theme)));
         }
+        for step in bbr_domain::TintIntensity::ALL {
+            assert!(ids.contains(&space_config_intensity_id(step)));
+        }
+        assert!(ids.contains(&SPACE_CONFIG_GRAIN_ID.to_string()));
         for index in 0..bbr_domain::ALLOWED_EMOJI.len() {
             assert!(ids.contains(&space_config_emoji_id(index)));
         }

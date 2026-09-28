@@ -919,7 +919,7 @@ authority reject whole, so records are credential-free by construction and
 (bounded `valid_url` only) and enforces at-most-one-active-record-per-key
 through the `UNIQUE` column plus write-side validation.
 
-**Schema v3.** `SCHEMA_VERSION` is `3`; the v3 DDL adds `collections` and
+**Schema v3.** (Superseded by v4, §9e.) The v3 DDL adds `collections` and
 `saved_pages` (canonical key `UNIQUE`, `collection_id` a strict foreign key
 into `collections`, dense `position` order keys). Per the standing development
 rule there is **no migration and no backward compatibility**: a store whose
@@ -1077,6 +1077,28 @@ no optimized sample accepted, performance unpassed under the active delivery
 override.
 
 ---
+
+## 9e. Space appearance persistence — schema v4 (v2 S10)
+
+`SCHEMA_VERSION` is `4`: `spaces` gains `tint_intensity` (closed
+`subtle|standard|rich`) and `grain` (boolean) beside the v2 `tint`/`glyph`
+identity columns. `bbr-persistence` mirrors the closed sets
+(`TintIntensity`, `SpacePaper`) without depending on `bbr-domain`; an unknown
+value is corruption, never a fallback. Older stamps are discarded under the
+closed version-bump policy (no migration).
+
+The whole curated appearance now persists. The domain keeps it in the
+`SpaceAppearanceStore` beside the `Browser` (theme, identity and the
+`SpacePaper` intensity + grain), so the portable `RestoreIntent` stays
+appearance-free: the app's `store::appearance` module maps the rows
+variant-for-variant (a new token on either side fails to compile), the
+browser-state write takes the controller's effective appearance per space,
+and startup applies the persisted rows after `BrowserController::restored`
+through `restore_space_appearance`, which keeps a record only where it
+differs from the derived default ("defaults never create records"). The
+presentation resolves the intensity in `bbr-ui::theme::space_tint(token,
+intensity, theme)` and paints the static grain from `components::grain` on
+the rail and chassis.
 
 ## 10. Build & verification (bounded recipes, `justfile`)
 

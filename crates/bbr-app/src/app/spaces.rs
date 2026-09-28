@@ -216,6 +216,7 @@ impl BbrApp {
                     profile_title,
                     identity: appearance.identity.name(),
                     theme: appearance.theme,
+                    intensity: appearance.paper.intensity,
                     selected: space.active,
                     // §10.9/§11.3: the targeted chip renders the drag-target
                     // treatment plus the §12 destination-profile companion

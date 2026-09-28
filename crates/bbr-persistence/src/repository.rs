@@ -3,8 +3,8 @@ use std::collections::{HashMap, HashSet};
 use rusqlite::{params, Connection, OpenFlags};
 
 use crate::load_helpers::{
-    invalid_value, parse_appearance, persisted_id, require_bool, require_id, require_order,
-    require_owner_order,
+    invalid_value, parse_appearance, parse_paper, persisted_id, require_bool, require_id,
+    require_order, require_owner_order,
 };
 use crate::repository_load::{
     load_command_history, load_downloads, load_recently_closed, load_settings, load_windows,
@@ -112,8 +112,8 @@ impl Repository {
             inserted_rows += 1;
             for (space_position, space) in profile.spaces.iter().enumerate() {
                 transaction.execute(
-                    "INSERT INTO spaces(id, profile_id, title, tint, glyph_kind, glyph, position, active_tab_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    params![to_i64(space.id), to_i64(profile.id), space.title, space.tint.as_str(), glyph_kind(&space.glyph), glyph_value(&space.glyph), space_position as i64, space.active_tab.map(to_i64)],
+                    "INSERT INTO spaces(id, profile_id, title, tint, glyph_kind, glyph, position, active_tab_id, tint_intensity, grain) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    params![to_i64(space.id), to_i64(profile.id), space.title, space.tint.as_str(), glyph_kind(&space.glyph), glyph_value(&space.glyph), space_position as i64, space.active_tab.map(to_i64), space.paper.intensity.as_str(), space.paper.grain],
                 ).map_err(schema::storage)?;
                 inserted_rows += 1;
                 for (tab_position, tab) in space.tabs.iter().enumerate() {
@@ -389,7 +389,7 @@ fn load_spaces(
     identities: &mut HashSet<u64>,
 ) -> Result<Vec<(Space, u64)>, PersistenceError> {
     let mut statement = connection.prepare(
-        "SELECT id, profile_id, title, tint, glyph_kind, glyph, position, active_tab_id FROM spaces ORDER BY profile_id, position",
+        "SELECT id, profile_id, title, tint, glyph_kind, glyph, position, active_tab_id, tint_intensity, grain FROM spaces ORDER BY profile_id, position",
     ).map_err(schema::storage)?;
     let rows = statement
         .query_map([], |row| {
@@ -402,18 +402,31 @@ fn load_spaces(
                 row.get::<_, String>(5)?,
                 row.get::<_, i64>(6)?,
                 row.get::<_, Option<i64>>(7)?,
+                row.get::<_, String>(8)?,
+                row.get::<_, i64>(9)?,
             ))
         })
         .map_err(schema::storage)?;
     let mut result = Vec::new();
     let mut owner_positions = HashMap::new();
     for row in rows {
-        let (id, profile_id, title, tint, glyph_kind, glyph, position, active_tab) =
-            row.map_err(schema::storage)?;
+        let (
+            id,
+            profile_id,
+            title,
+            tint,
+            glyph_kind,
+            glyph,
+            position,
+            active_tab,
+            intensity,
+            grain,
+        ) = row.map_err(schema::storage)?;
         let profile_id = persisted_id("spaces", profile_id)?;
         require_owner_order("spaces", profile_id, position, &mut owner_positions)?;
         let id = require_id("spaces", id, identities)?;
         let (tint, glyph) = parse_appearance(&tint, &glyph_kind, &glyph, id)?;
+        let paper = parse_paper(&intensity, grain, id)?;
         let active_tab = active_tab
             .map(|value| persisted_id("spaces", value))
             .transpose()?;
@@ -423,6 +436,7 @@ fn load_spaces(
                 title,
                 tint,
                 glyph,
+                paper,
                 tabs: Vec::new(),
                 active_tab,
                 recently_closed: Vec::new(),

@@ -150,6 +150,16 @@ pub fn space_config_select_identity(identity: impl Into<String>) -> Request {
     }
 }
 
+pub fn space_config_select_intensity(intensity: impl Into<String>) -> Request {
+    Request::SpaceConfigSelectIntensity {
+        intensity: intensity.into(),
+    }
+}
+
+pub fn space_config_toggle_grain() -> Request {
+    Request::SpaceConfigToggleGrain
+}
+
 pub fn space_config_done() -> Request {
     Request::SpaceConfigDone
 }

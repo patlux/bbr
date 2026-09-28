@@ -14,7 +14,11 @@
 //!    token (the swatch fills with the one central
 //!    [`crate::theme::space_tint`] identity hue — never a raw consumer
 //!    color), the selected token carrying the §9 accent outline.
-//! 4. Identity row — `bbr-space-config-identity-label` with the two
+//! 4. Paper row — `bbr-space-config-paper-label`, one
+//!    `bbr-space-config-intensity-<step>` per curated step (subtle /
+//!    standard / rich, each previewing its rail) and the
+//!    `bbr-space-config-grain` toggle (v2 D6/D7).
+//! 5. Identity row — `bbr-space-config-identity-label` with the two
 //!    curated families: `bbr-space-config-emoji-<index>` per [`ALLOWED_EMOJI`]
 //!    scalar and `bbr-space-config-glyph-<name>` per [`BbrGlyph`] catalog
 //!    entry. Emoji options render the scalar directly; glyph options render
@@ -23,7 +27,7 @@
 //!    values exist here. The selected identity carries the accent outline
 //!    plus the `tint.accent`, so identity is never communicated by
 //!    selection color alone (the non-selected options remain labeled).
-//! 5. Actions — `bbr-space-config-cancel` (Cancel: keeps the created
+//! 6. Actions — `bbr-space-config-cancel` (Cancel: keeps the created
 //!    Space and its valid defaults) and `bbr-space-config-done` (Done:
 //!    commit the rename + appearance for the exact bound SpaceId).
 //!
@@ -95,6 +99,7 @@ pub fn space_config_surface(
         .child(header(theme, model))
         .child(name_row(theme, model))
         .child(theme_row(theme, model, callbacks))
+        .child(super::paper::paper_row(theme, model, callbacks))
         .child(identity_row(theme, model, callbacks))
         .child(actions(theme, callbacks))
 }
@@ -235,7 +240,7 @@ fn theme_swatch(
     selected: bool,
     on_select: SpaceConfigSelectTheme,
 ) -> Stateful<Div> {
-    let tint = crate::theme::space_tint(token, theme);
+    let tint = crate::theme::space_tint(token, crate::theme::TintIntensity::Standard, theme);
     let p = theme.palette;
     let id = space_config_theme_id(token);
     let id_capture = id.clone();

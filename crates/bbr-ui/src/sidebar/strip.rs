@@ -173,7 +173,7 @@ pub fn space_chip(
     // tokens (the tint is never the only state cue). While a swipe tracks,
     // the active chip's surface interpolates toward the adjacent space's
     // presentation (chrome-only; the selected evidence never changes).
-    let tint = crate::theme::space_tint(visuals.theme, theme);
+    let tint = crate::theme::space_tint(visuals.theme, visuals.intensity, theme);
     let chip_surface = if selected {
         swipe_tint.map_or(tint.chip_active, |swipe| swipe.chip_active)
     } else {
@@ -279,6 +279,7 @@ mod tests {
             profile_title: "Default".into(),
             identity: "book".into(),
             theme: SpaceTheme::Ink,
+            intensity: bbr_domain::TintIntensity::Standard,
             selected: false,
             drag_target: false,
             companion: None,
@@ -358,6 +359,7 @@ mod tests {
             profile_title: "Private".into(),
             identity: "lock".into(),
             theme: SpaceTheme::Violet,
+            intensity: bbr_domain::TintIntensity::Standard,
             selected: false,
             drag_target: true,
             companion: Some(crate::state::ProfileCompanion {
@@ -399,11 +401,16 @@ mod tests {
             profile_title: "Default".into(),
             identity: "code".into(),
             theme: SpaceTheme::Cobalt,
+            intensity: bbr_domain::TintIntensity::Standard,
             selected: true,
             drag_target: false,
             companion: None,
         };
-        let tint = crate::theme::space_tint(SpaceTheme::Cobalt, &theme);
+        let tint = crate::theme::space_tint(
+            SpaceTheme::Cobalt,
+            crate::theme::TintIntensity::Standard,
+            &theme,
+        );
         // The selected chip's surface is the tinted chip surface — a
         // stronger blend than the rail — distinct from the untinted
         // material and from the generic selection token.

@@ -1,5 +1,5 @@
 CREATE TABLE profiles (id INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL, hue TEXT NOT NULL, position INTEGER NOT NULL);
-CREATE TABLE spaces (id INTEGER PRIMARY KEY NOT NULL, profile_id INTEGER NOT NULL REFERENCES profiles(id), title TEXT NOT NULL, tint TEXT NOT NULL, glyph_kind TEXT NOT NULL, glyph TEXT NOT NULL, position INTEGER NOT NULL, active_tab_id INTEGER);
+CREATE TABLE spaces (id INTEGER PRIMARY KEY NOT NULL, profile_id INTEGER NOT NULL REFERENCES profiles(id), title TEXT NOT NULL, tint TEXT NOT NULL, glyph_kind TEXT NOT NULL, glyph TEXT NOT NULL, position INTEGER NOT NULL, active_tab_id INTEGER, tint_intensity TEXT NOT NULL, grain INTEGER NOT NULL);
 CREATE TABLE tabs (id INTEGER PRIMARY KEY NOT NULL, space_id INTEGER NOT NULL REFERENCES spaces(id), title TEXT NOT NULL, url TEXT NOT NULL, position INTEGER NOT NULL, pinned INTEGER NOT NULL);
 CREATE TABLE recently_closed (tab_id INTEGER PRIMARY KEY NOT NULL, space_id INTEGER NOT NULL REFERENCES spaces(id), title TEXT, url TEXT NOT NULL, pinned INTEGER NOT NULL, former_position INTEGER NOT NULL, position INTEGER NOT NULL);
 CREATE TABLE splits (space_id INTEGER PRIMARY KEY NOT NULL, primary_tab_id INTEGER NOT NULL, secondary_tab_id INTEGER NOT NULL);
@@ -9,9 +9,9 @@ CREATE TABLE downloads (id INTEGER PRIMARY KEY NOT NULL, outcome TEXT NOT NULL, 
 CREATE TABLE command_history (id INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL, url TEXT NOT NULL, visit_count INTEGER NOT NULL, last_visited INTEGER NOT NULL, position INTEGER NOT NULL);
 CREATE TABLE collections (id INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL, position INTEGER NOT NULL);
 CREATE TABLE saved_pages (id INTEGER PRIMARY KEY NOT NULL, canonical_url TEXT NOT NULL UNIQUE, captured_title TEXT NOT NULL, user_label TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, collection_id INTEGER REFERENCES collections(id), position INTEGER NOT NULL);
-PRAGMA user_version = 3;
+PRAGMA user_version = 4;
 INSERT INTO profiles VALUES (1, 'Personal', 'cobalt', 0);
-INSERT INTO spaces VALUES (10, 1, 'Main', 'ink', 'glyph', 'code', 0, 999);
+INSERT INTO spaces VALUES (10, 1, 'Main', 'ink', 'glyph', 'code', 0, 999, 'standard', 0);
 INSERT INTO tabs VALUES (100, 10, 'Pinned', 'https://example.test/pinned', 0, 1);
 INSERT INTO tabs VALUES (101, 10, 'Regular', 'https://example.test/regular', 1, 0);
 INSERT INTO recently_closed VALUES (900, 10, NULL, 'https://closed.test/', 0, 2, 0);

@@ -17,6 +17,9 @@
 //!   representable, and every value is closed and validated by construction:
 //!   emoji must be a member of the curated [`ALLOWED_EMOJI`] allowlist,
 //!   glyphs are a fixed catalog of stable names.
+//! - [`SpacePaper`] / [`TintIntensity`] — the curated v2 paper (D6/D7):
+//!   three intensity steps and a static grain flag, default `standard`,
+//!   grain off.
 //! - [`SpaceAppearance`] / [`SpaceAppearanceStore`] — the explicit
 //!   per-space appearance record and its companion store beside the
 //!   [`Browser`](crate::Browser) (the [`FolderStore`](crate::FolderStore)
@@ -30,13 +33,18 @@
 
 mod identity;
 mod palette;
+mod paper;
 mod store;
 
 pub use identity::{BbrGlyph, IdentityKind, SpaceEmoji, SpaceIdentity, ALLOWED_EMOJI};
 pub use palette::SpaceTheme;
+pub use paper::{SpacePaper, TintIntensity};
 pub use store::{
     AppearanceError, AppearanceInvariantViolation, SpaceAppearance, SpaceAppearanceStore,
 };
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod paper_tests;

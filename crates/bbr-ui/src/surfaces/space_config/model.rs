@@ -8,7 +8,7 @@
 //! [`bbr_domain::BbrGlyph::ALL`]) — no free-form value can reach the
 //! surface state.
 
-use bbr_domain::{SpaceIdentity, SpaceTheme};
+use bbr_domain::{SpaceIdentity, SpacePaper, SpaceTheme};
 
 /// The plain presentation model of the §11.3 configuration surface: the
 /// header title, the name draft, and the selected curated theme/identity.
@@ -22,6 +22,8 @@ pub struct SpaceConfigModel {
     pub theme: SpaceTheme,
     /// The selected validated identity (exactly one emoji or glyph).
     pub identity: SpaceIdentity,
+    /// v2 D6/D7: the selected intensity step and grain flag.
+    pub paper: SpacePaper,
 }
 
 impl SpaceConfigModel {
@@ -35,6 +37,7 @@ impl SpaceConfigModel {
             title,
             theme: SpaceTheme::default(),
             identity: SpaceIdentity::default(),
+            paper: SpacePaper::default(),
         }
     }
 
@@ -91,6 +94,7 @@ mod tests {
         assert_eq!(model.name, "Reading", "rename draft equals the title");
         assert_eq!(model.theme, SpaceTheme::default());
         assert_eq!(model.identity, SpaceIdentity::default());
+        assert_eq!(model.paper, SpacePaper::default());
     }
 
     #[test]
@@ -101,6 +105,7 @@ mod tests {
             name: "S".into(),
             theme: SpaceTheme::Pine,
             identity: SpaceIdentity::Emoji(emoji),
+            paper: SpacePaper::default(),
         };
         let index = bbr_domain::ALLOWED_EMOJI
             .iter()
@@ -118,6 +123,7 @@ mod tests {
             name: "S".into(),
             theme: SpaceTheme::Ink,
             identity: SpaceIdentity::Glyph(BbrGlyph::Terminal),
+            paper: SpacePaper::default(),
         };
         assert!(model.glyph_selected(BbrGlyph::Terminal));
         assert!(!model.glyph_selected(BbrGlyph::Code));

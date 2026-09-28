@@ -1164,6 +1164,12 @@ pub enum Request {
     SpaceConfigSelectIdentity {
         identity: String,
     },
+    /// v2 D7/D6 paper draft seams: select a curated intensity step by its
+    /// canonical name; toggle the static grain.
+    SpaceConfigSelectIntensity {
+        intensity: String,
+    },
+    SpaceConfigToggleGrain,
     SpaceConfigDone,
     SpaceConfigCancel,
     SpaceConfigPressOutside,

@@ -93,6 +93,9 @@ pub struct SpaceChipVisuals {
     /// chip resolves its tint through [`crate::theme::space_tint`], so the
     /// render, the snapshot, and the semantic tree share one theme source.
     pub theme: SpaceTheme,
+    /// The space's curated tint intensity (v2 D7): the active chip's
+    /// surface sits on the rail tinted at this step.
+    pub intensity: bbr_domain::TintIntensity,
     /// Whether this is the active space (the chip renders selected).
     pub selected: bool,
     /// §10.9: whether a pointer drag currently targets this exact chip (the

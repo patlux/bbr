@@ -111,6 +111,25 @@ pub(crate) fn parse_appearance(
     Ok((tint, glyph))
 }
 
+/// Parses a persisted space paper (`tint_intensity`, `grain`): an unknown
+/// intensity or a non-boolean grain is corruption, never a fallback.
+pub(crate) fn parse_paper(
+    intensity: &str,
+    grain: i64,
+    space_id: u64,
+) -> Result<crate::SpacePaper, PersistenceError> {
+    let intensity = crate::TintIntensity::parse(intensity).ok_or_else(|| {
+        invalid_value(
+            "spaces",
+            format!("space {space_id} has unknown tint intensity `{intensity}`"),
+        )
+    })?;
+    Ok(crate::SpacePaper {
+        intensity,
+        grain: require_bool("spaces", grain)?,
+    })
+}
+
 pub(crate) fn invalid_value(table: &str, detail: String) -> PersistenceError {
     PersistenceError::Corruption(CorruptionIssue::InvalidRequiredValue {
         table: table.to_owned(),

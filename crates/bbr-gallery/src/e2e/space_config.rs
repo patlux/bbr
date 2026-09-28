@@ -114,6 +114,9 @@ fn space_config_story_renders_the_matrix_families_with_stable_ids() {
             "bbr-space-config-theme-pine",
             "bbr-space-config-emoji-0",
             "bbr-space-config-glyph-code",
+            "bbr-space-config-intensity-subtle",
+            "bbr-space-config-intensity-rich",
+            "bbr-space-config-grain",
             "bbr-space-config-done",
             "bbr-space-config-cancel",
             "bbr-space-config-name",
@@ -174,6 +177,33 @@ fn pointer_presses_fire_the_production_recorder_callbacks() {
             ),
             "the production on_select_identity reported"
         );
+        // v2 D6/D7: real presses on an intensity step and the grain
+        // toggle fire the production paper callbacks (plus the marker).
+        for (selector, expected) in [
+            (
+                "bbr-space-config-intensity-rich",
+                crate::space_config_recorder::SpaceConfigObservation::IntensitySelected(
+                    bbr_domain::TintIntensity::Rich,
+                ),
+            ),
+            (
+                "bbr-space-config-grain",
+                crate::space_config_recorder::SpaceConfigObservation::GrainToggled,
+            ),
+        ] {
+            let point = center_of(window, static_selector(selector.into()));
+            window.simulate_click(point, Modifiers::default());
+            flush(window);
+            let events = snapshot(window, app).space_config.events;
+            assert_eq!(
+                events[events.len() - 2..],
+                [
+                    expected,
+                    crate::space_config_recorder::SpaceConfigObservation::InsidePress
+                ],
+                "{selector} fired its production callback"
+            );
+        }
         // A real pointer press on Done fires `on_done`.
         let done = center_of(window, static_selector("bbr-space-config-done".into()));
         window.simulate_click(done, Modifiers::default());

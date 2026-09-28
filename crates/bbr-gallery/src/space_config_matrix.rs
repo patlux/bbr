@@ -11,7 +11,7 @@
 //! [`BbrGlyph::ALL`]) — the same closed sets the domain enforces, so the
 //! story can never present a value the production surface cannot render.
 
-use bbr_domain::{BbrGlyph, SpaceEmoji, SpaceIdentity, SpaceTheme};
+use bbr_domain::{BbrGlyph, SpaceEmoji, SpaceIdentity, SpacePaper, SpaceTheme, TintIntensity};
 use bbr_ui::surfaces::space_config::SpaceConfigModel;
 
 /// One matrix case: a family label plus the plain production
@@ -46,6 +46,7 @@ pub fn space_config_cases() -> Vec<SpaceConfigCase> {
                 name: "Reading".into(),
                 theme: SpaceTheme::Cobalt,
                 identity: emoji_wave,
+                paper: SpacePaper::default(),
             },
         },
         SpaceConfigCase {
@@ -56,6 +57,10 @@ pub fn space_config_cases() -> Vec<SpaceConfigCase> {
                 name: "Work notes".into(),
                 theme: SpaceTheme::Pine,
                 identity: glyph_code,
+                paper: SpacePaper {
+                    intensity: TintIntensity::Rich,
+                    grain: true,
+                },
             },
         },
         SpaceConfigCase {
@@ -66,6 +71,10 @@ pub fn space_config_cases() -> Vec<SpaceConfigCase> {
                 name: "Personal vault".into(),
                 theme: SpaceTheme::Violet,
                 identity: SpaceIdentity::default(),
+                paper: SpacePaper {
+                    intensity: TintIntensity::Subtle,
+                    grain: false,
+                },
             },
         },
     ]

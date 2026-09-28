@@ -103,6 +103,24 @@ pub(crate) fn dispatch_u2(
             })
             .unwrap_or_else(err_response)
         }
+        Request::SpaceConfigSelectIntensity { intensity } => {
+            with_app(window, app, cx, |view, _window, cx| {
+                let Some(step) = bbr_domain::TintIntensity::from_name(intensity) else {
+                    return Response::Error(bbr_testkit::protocol::Error::new(
+                        "unknown_intensity",
+                        format!("space-config-select-intensity: unknown step {intensity:?}"),
+                    ));
+                };
+                view.space_config_select_intensity(step, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
+        Request::SpaceConfigToggleGrain => with_app(window, app, cx, |view, _window, cx| {
+            view.space_config_toggle_grain(cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
         Request::SpaceConfigSelectIdentity { identity } => {
             with_app(window, app, cx, |view, _window, cx| {
                 let resolved = bbr_domain::SpaceEmoji::new(identity.clone())

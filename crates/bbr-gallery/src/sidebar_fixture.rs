@@ -253,6 +253,7 @@ pub fn build_sidebar_fixture(
                 } else {
                     SpaceTheme::Violet
                 },
+                intensity: bbr_domain::TintIntensity::Standard,
                 selected: i == 0,
                 drag_target: false,
                 companion: None,
@@ -266,6 +267,7 @@ pub fn build_sidebar_fixture(
         sidebar_width,
         chrome_tint,
         tint_fade: None,
+        grain: false,
         active_space_title: SharedString::from("Default"),
         command,
         favorites,

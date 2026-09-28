@@ -202,6 +202,7 @@ pub(crate) fn seed_browser_store(profile: &std::path::Path, page_url: &str) {
                         id: 10,
                         title: "Main".into(),
                         tint: SpaceTint::Cobalt,
+                        paper: Default::default(),
                         glyph: SpaceGlyph::Glyph(GlyphName::Code),
                         tabs: vec![
                             Tab {
@@ -231,6 +232,7 @@ pub(crate) fn seed_browser_store(profile: &std::path::Path, page_url: &str) {
                         id: 11,
                         title: "Second".into(),
                         tint: SpaceTint::Slate,
+                        paper: Default::default(),
                         glyph: SpaceGlyph::Emoji("⚙".into()),
                         tabs: vec![Tab {
                             id: 110,
@@ -252,6 +254,7 @@ pub(crate) fn seed_browser_store(profile: &std::path::Path, page_url: &str) {
                     id: 20,
                     title: "Huge".into(),
                     tint: SpaceTint::Violet,
+                    paper: Default::default(),
                     glyph: SpaceGlyph::Glyph(GlyphName::Code),
                     tabs: (0..500)
                         .map(|index| Tab {

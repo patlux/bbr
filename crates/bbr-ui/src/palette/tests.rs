@@ -125,16 +125,20 @@ fn palettes() -> [(ThemeMode, crate::theme::ContrastMode, Palette); 4] {
     ]
 }
 
-/// The untinted rail plus the rail under every curated space tint — the
+/// The untinted rail plus the rail under every curated space tint and
+/// intensity step — the
 /// surfaces a §18.2 veil can actually be composited over.
 fn rails(mode: ThemeMode, contrast: crate::theme::ContrastMode) -> Vec<(String, Rgba)> {
     let theme = Theme::new(mode, contrast, crate::theme::Density::Normal);
     let mut rails = vec![("untinted".to_string(), theme.palette.surface_sidebar)];
+    // v2 D7: every curated intensity step is a rail the veils sit on.
     for token in bbr_domain::SpaceTheme::ALL {
-        rails.push((
-            format!("{token:?}"),
-            crate::theme::space_tint(token, &theme).chrome,
-        ));
+        for step in bbr_domain::TintIntensity::ALL {
+            rails.push((
+                format!("{token:?}/{step:?}"),
+                crate::theme::space_tint(token, step, &theme).chrome,
+            ));
+        }
     }
     rails
 }

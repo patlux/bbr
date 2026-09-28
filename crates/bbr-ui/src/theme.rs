@@ -34,6 +34,7 @@ pub use density::Density;
 /// chips, the snapshot evidence) call [`space_tint`]; no consumer authors
 /// a render color.
 mod space_tint;
+pub use bbr_domain::TintIntensity;
 pub use space_tint::{hex, space_tint, SpaceTint};
 
 /// The one `elev:2` floating-surface shadow helper (DESIGN.md §2): every

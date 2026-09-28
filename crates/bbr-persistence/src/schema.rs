@@ -4,15 +4,16 @@ use crate::PersistenceError;
 
 /// The current persistence schema version stamp.
 ///
-/// The store carries this stamp in SQLite's `PRAGMA user_version`. Schema v3
-/// adds the global Saved Pages tables (`saved_pages`, `collections`) on top
-/// of v2's space appearance identity, global settings record, terminal
+/// The store carries this stamp in SQLite's `PRAGMA user_version`. Schema v4
+/// adds the space paper (`spaces.tint_intensity`, `spaces.grain`; v2 D6/D7)
+/// on top of v3's global Saved Pages tables (`saved_pages`, `collections`)
+/// and v2's space appearance identity, global settings record, terminal
 /// download history, and visited command-history entries. There are **no
 /// migrations**: a store whose stamp does not match this constant is
 /// discarded and recreated empty (see [`crate::setup`]).
-pub(crate) const SCHEMA_VERSION: u32 = 3;
+pub(crate) const SCHEMA_VERSION: u32 = 4;
 
-pub(crate) const CREATE_SCHEMA_V3: &str = r#"
+pub(crate) const CREATE_SCHEMA: &str = r#"
 CREATE TABLE profiles (
     id INTEGER PRIMARY KEY NOT NULL,
     title TEXT NOT NULL,
@@ -27,7 +28,9 @@ CREATE TABLE spaces (
     glyph_kind TEXT NOT NULL,
     glyph TEXT NOT NULL,
     position INTEGER NOT NULL,
-    active_tab_id INTEGER
+    active_tab_id INTEGER,
+    tint_intensity TEXT NOT NULL,
+    grain INTEGER NOT NULL
 );
 CREATE TABLE tabs (
     id INTEGER PRIMARY KEY NOT NULL,

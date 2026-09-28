@@ -5,41 +5,20 @@
 //! is unit-testable without the app.
 //!
 //! The two shapes are the same identity graph; the deltas are mechanical:
-//! the persistence `Space` carries curated appearance identity (tint/glyph,
-//! schema v2) that the domain has no per-space field for in this slice, and
+//! the persistence `Space` carries the curated appearance (tint/glyph,
+//! schema v2; paper, schema v4) that the domain keeps beside the browser in
+//! its appearance store (mapped by [`super::appearance`]), and
 //! the persistence `BrowserState` additionally owns the window/sidebar
 //! presentation rows the app composes.
 //!
-//! ## Appearance truth
+//! ## Appearance (§11.3 configuration surface, schema v4)
 //!
-//! The space-appearance contract derives deterministic defaults from the
-//! owning profile identity hue when no record exists (`SpaceTheme::
-//! from_profile_hue`), and the identity defaults to the first curated glyph.
-//! This slice therefore writes exactly those derived defaults (the effective
-//! appearance is the same with or without a persisted row) and restore
-//! ignores the persisted tint/glyph (the domain has no per-space field; the
-//! appearance slice owns rendering them). No appearance fact is invented:
-//! both values are the canonical derived defaults of the integrated
-//! appearance contract.
-//!
-//! ## Truthful persistence boundary (§11.3 configuration surface)
-//!
-//! The Space-creation-and-configuration surface (packet
-//! `space-creation-appearance-ui.md`) commits a rename and a curated
-//! theme/identity for the exact bound `SpaceId`. Under the current schema:
-//!
-//! - **The rename persists truthfully.** The space title flows through this
-//!   mapping (`IntentSpace.title` → `Space.title`) on every structural
-//!   write, so a committed rename survives a graceful restart.
-//! - **The curated theme/identity is session-valid only.** The domain's
-//!   `SpaceAppearanceStore` is in-memory, and the persisted `Space` row
-//!   always stores the canonical derived defaults (`tint_for_hue` +
-//!   `DEFAULT_GLYPH`) while restore drops tint/glyph entirely. A curated
-//!   theme/identity therefore reverts to the derived default after a
-//!   restart. No code path claims otherwise: the surface's `Done` pokes the
-//!   browser-state writer (the rename is durable), and the appearance is
-//!   never mislabeled persistent. A future appearance-persistence slice
-//!   would extend the schema — never this mapping.
+//! The intent carries no appearance; the write side takes the controller's
+//! effective appearance per space (explicit record or derived default) and
+//! writes it through [`super::appearance::to_persisted`], and the restore
+//! side applies the persisted rows after the intent restore
+//! ([`super::appearance::restore_appearances`]). A committed rename and a
+//! committed theme/identity/paper therefore both survive a restart.
 //!
 //! ## Window identity
 //!
@@ -88,9 +67,9 @@ pub(crate) fn to_persisted_hue(hue: DomainHue) -> bbr_persistence::ProfileHue {
 }
 
 /// Maps the persisted structural profiles onto the portable restore intent
-/// the chrome-first hydration policy consumes. Appearance identity (tint/
-/// glyph) is dropped: the domain has no per-space appearance field in this
-/// slice, and the effective appearance derives the same defaults.
+/// the chrome-first hydration policy consumes. Appearance is not part of
+/// the intent: it is applied after the restore by
+/// [`super::appearance::restore_appearances`].
 pub fn persisted_to_intent(profiles: &[Profile]) -> RestoreIntent {
     RestoreIntent {
         profiles: profiles
@@ -139,10 +118,14 @@ pub fn persisted_to_intent(profiles: &[Profile]) -> RestoreIntent {
 }
 
 /// Maps the portable intent (the controller's live model export) onto the
-/// persistence browser-state DTO. Space appearance is written as the
-/// canonical derived defaults (see the module docs); the window row is
-/// supplied by the caller with its derived identity.
-pub fn intent_to_persisted(intent: &RestoreIntent) -> Vec<Profile> {
+/// persistence browser-state DTO. Space appearance comes from `appearance`
+/// (the controller's effective appearance); a space it does not know keeps
+/// the canonical derived defaults. The window row is supplied by the caller
+/// with its derived identity.
+pub fn intent_to_persisted(
+    intent: &RestoreIntent,
+    appearance: impl Fn(bbr_browser::SpaceId) -> Option<bbr_domain::SpaceAppearance>,
+) -> Vec<Profile> {
     intent
         .profiles
         .iter()
@@ -153,37 +136,47 @@ pub fn intent_to_persisted(intent: &RestoreIntent) -> Vec<Profile> {
             spaces: profile
                 .spaces
                 .iter()
-                .map(|space| Space {
-                    id: space.id,
-                    title: space.title.clone(),
-                    tint: tint_for_hue(profile.hue),
-                    glyph: SpaceGlyph::Glyph(DEFAULT_GLYPH),
-                    tabs: space
-                        .tabs
-                        .iter()
-                        .map(|tab| Tab {
-                            id: tab.id,
-                            title: tab.title.clone(),
-                            url: tab.url.clone(),
-                            pinned: tab.pinned,
-                        })
-                        .collect(),
-                    active_tab: space.active_tab,
-                    recently_closed: space
-                        .recently_closed
-                        .iter()
-                        .map(|closed| bbr_persistence::RecentlyClosedTab {
-                            tab_id: closed.tab_id,
-                            title: closed.title.clone(),
-                            url: closed.url.clone(),
-                            pinned: closed.pinned,
-                            former_position: closed.former_position,
-                        })
-                        .collect(),
-                    split: space.split.map(|split| bbr_persistence::Split {
-                        primary_tab: split.primary_tab,
-                        secondary_tab: split.secondary_tab,
-                    }),
+                .map(|space| {
+                    let (tint, glyph, paper) = appearance(bbr_browser::SpaceId(space.id))
+                        .map(|appearance| super::appearance::to_persisted(&appearance))
+                        .unwrap_or((
+                            tint_for_hue(profile.hue),
+                            SpaceGlyph::Glyph(DEFAULT_GLYPH),
+                            bbr_persistence::SpacePaper::default(),
+                        ));
+                    Space {
+                        id: space.id,
+                        title: space.title.clone(),
+                        tint,
+                        glyph,
+                        paper,
+                        tabs: space
+                            .tabs
+                            .iter()
+                            .map(|tab| Tab {
+                                id: tab.id,
+                                title: tab.title.clone(),
+                                url: tab.url.clone(),
+                                pinned: tab.pinned,
+                            })
+                            .collect(),
+                        active_tab: space.active_tab,
+                        recently_closed: space
+                            .recently_closed
+                            .iter()
+                            .map(|closed| bbr_persistence::RecentlyClosedTab {
+                                tab_id: closed.tab_id,
+                                title: closed.title.clone(),
+                                url: closed.url.clone(),
+                                pinned: closed.pinned,
+                                former_position: closed.former_position,
+                            })
+                            .collect(),
+                        split: space.split.map(|split| bbr_persistence::Split {
+                            primary_tab: split.primary_tab,
+                            secondary_tab: split.secondary_tab,
+                        }),
+                    }
                 })
                 .collect(),
         })
@@ -250,6 +243,7 @@ mod tests {
                 title: "Main".into(),
                 tint: SpaceTint::Slate,
                 glyph: SpaceGlyph::Emoji("⚙".into()),
+                paper: Default::default(),
                 tabs: vec![
                     Tab {
                         id: 100,
@@ -309,7 +303,7 @@ mod tests {
     #[test]
     fn intent_to_persisted_writes_derived_defaults_and_round_trips() {
         let intent = persisted_to_intent(&sample_profiles());
-        let profiles = intent_to_persisted(&intent);
+        let profiles = intent_to_persisted(&intent, |_| None);
         // Identities and structure round-trip exactly.
         assert_eq!(
             profiles,
@@ -318,6 +312,7 @@ mod tests {
                 .map(|mut p| {
                     p.spaces[0].tint = SpaceTint::Cobalt;
                     p.spaces[0].glyph = SpaceGlyph::Glyph(DEFAULT_GLYPH);
+                    p.spaces[0].paper = Default::default();
                     p
                 })
                 .collect::<Vec<_>>()

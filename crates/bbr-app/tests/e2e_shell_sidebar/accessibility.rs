@@ -23,7 +23,9 @@ fn light_chrome_tint(
         contrast,
         bbr_ui::theme::Density::Normal,
     );
-    bbr_ui::theme::hex(bbr_ui::theme::space_tint(token, &theme).chrome)
+    bbr_ui::theme::hex(
+        bbr_ui::theme::space_tint(token, bbr_ui::theme::TintIntensity::Standard, &theme).chrome,
+    )
 }
 
 #[test]

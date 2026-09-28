@@ -20,6 +20,7 @@
 
 mod error;
 mod fields;
+mod fields_paper;
 mod load_helpers;
 mod model;
 mod repository;
@@ -42,6 +43,7 @@ pub use fields::{
     SavedPageRecord, SavedPageSaveOutcome, SavedPageUpdate, SearchEngineId, SearchSettings,
     SpaceGlyph, SpaceTint, StoreDiscardReason, StoreLoad,
 };
+pub use fields_paper::{SpacePaper, TintIntensity};
 pub use model::{
     BrowserState, Profile, ProfileHue, RecentlyClosedTab, RecoveryWarning, Repository,
     RestoreOutcome, SidebarState, Snapshot, Space, Split, Tab, WindowGeometry, WindowState,

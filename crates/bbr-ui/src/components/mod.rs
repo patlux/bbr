@@ -26,6 +26,7 @@ pub mod favicon;
 pub mod favorites;
 pub mod folders;
 pub mod footer;
+pub mod grain;
 pub mod illustration;
 pub mod menu;
 pub mod pane;

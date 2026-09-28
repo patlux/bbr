@@ -186,13 +186,16 @@ impl BbrApp {
         // pixels.
         let active_appearance = {
             let appearance = self.active_space_appearance();
-            let tint = bbr_ui::theme::space_tint(appearance.theme, &theme);
+            let tint =
+                bbr_ui::theme::space_tint(appearance.theme, appearance.paper.intensity, &theme);
             Some(bbr_testkit::protocol::SpaceAppearanceSnapshot {
                 space: bbr_testkit::protocol::TestSpaceId(appearance.space.0),
                 theme: appearance.theme.name().to_string(),
                 identity: appearance.identity.name(),
                 chrome_tint: bbr_ui::theme::hex(tint.chrome),
                 chip_tint: bbr_ui::theme::hex(tint.chip_active),
+                intensity: appearance.paper.intensity.name().to_string(),
+                grain: appearance.paper.grain,
             })
         };
         let navigation_cover_visible = browser.active_view.is_some_and(|view| {

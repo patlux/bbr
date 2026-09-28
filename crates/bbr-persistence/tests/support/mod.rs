@@ -171,6 +171,7 @@ pub fn sample_snapshot(tab_count: usize) -> Snapshot {
                 id: 10,
                 title: "Main".into(),
                 tint: SpaceTint::Pine,
+                paper: Default::default(),
                 glyph: SpaceGlyph::Glyph(GlyphName::Code),
                 active_tab: tabs.first().map(|tab| tab.id),
                 split: (tabs.len() > 1).then(|| Split {

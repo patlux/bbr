@@ -16,7 +16,7 @@
 
 use std::rc::Rc;
 
-use bbr_domain::{SpaceIdentity, SpaceTheme};
+use bbr_domain::{SpaceIdentity, SpaceTheme, TintIntensity};
 use gpui::{App, MouseDownEvent, Window};
 
 /// What a production Space-configuration callback reports back to the
@@ -27,6 +27,10 @@ pub enum SpaceConfigObservation {
     ThemeSelected(SpaceTheme),
     /// The production `on_select_identity` fired for a curated identity.
     IdentitySelected(SpaceIdentity),
+    /// The production `on_select_intensity` fired for a curated step.
+    IntensitySelected(TintIntensity),
+    /// The production `on_toggle_grain` fired.
+    GrainToggled,
     /// The production `on_done` fired (commit the rename + appearance).
     Done,
     /// The production `on_cancel` fired (keep the created Space + defaults).
@@ -57,6 +61,9 @@ pub type SpaceConfigSelectThemeFn = Rc<dyn Fn(SpaceTheme, &mut Window, &mut App)
 /// The production `on_select_identity` callback shape
 /// (`SpaceConfigSelectIdentity`).
 pub type SpaceConfigSelectIdentityFn = Rc<dyn Fn(SpaceIdentity, &mut Window, &mut App)>;
+/// The production `on_select_intensity` callback shape
+/// (`SpaceConfigSelectIntensity`).
+pub type SpaceConfigSelectIntensityFn = Rc<dyn Fn(TintIntensity, &mut Window, &mut App)>;
 /// The production `on_inside_press` callback shape
 /// (`SpaceConfigInsidePress`).
 pub type SpaceConfigInsidePressFn = Rc<dyn Fn(&MouseDownEvent, &mut Window, &mut App)>;
@@ -72,6 +79,8 @@ pub type SpaceConfigActionFn = Rc<dyn Fn(&mut Window, &mut App)>;
 pub struct SpaceConfigObserver {
     pub on_select_theme: SpaceConfigSelectThemeFn,
     pub on_select_identity: SpaceConfigSelectIdentityFn,
+    pub on_select_intensity: SpaceConfigSelectIntensityFn,
+    pub on_toggle_grain: SpaceConfigActionFn,
     pub on_inside_press: SpaceConfigInsidePressFn,
     pub on_done: SpaceConfigActionFn,
     pub on_cancel: SpaceConfigActionFn,
@@ -96,6 +105,18 @@ pub fn build_space_config_observer(
             let record = record.clone();
             Rc::new(move |identity, _window, cx| {
                 record(SpaceConfigObservation::IdentitySelected(identity), cx);
+            })
+        },
+        on_select_intensity: {
+            let record = record.clone();
+            Rc::new(move |step, _window, cx| {
+                record(SpaceConfigObservation::IntensitySelected(step), cx);
+            })
+        },
+        on_toggle_grain: {
+            let record = record.clone();
+            Rc::new(move |_window, cx| {
+                record(SpaceConfigObservation::GrainToggled, cx);
             })
         },
         on_inside_press: {

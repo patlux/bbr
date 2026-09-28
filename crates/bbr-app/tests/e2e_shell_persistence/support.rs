@@ -44,6 +44,7 @@ pub fn dense_browser_state(page_url: &str) -> BrowserState {
                         id: 10,
                         title: "Main".into(),
                         tint: SpaceTint::Cobalt,
+                        paper: Default::default(),
                         glyph: SpaceGlyph::Glyph(GlyphName::Code),
                         tabs: vec![
                             Tab {
@@ -73,6 +74,7 @@ pub fn dense_browser_state(page_url: &str) -> BrowserState {
                         id: 11,
                         title: "Second".into(),
                         tint: SpaceTint::Slate,
+                        paper: Default::default(),
                         glyph: SpaceGlyph::Emoji("⚙".into()),
                         tabs: vec![Tab {
                             id: 110,
@@ -94,6 +96,7 @@ pub fn dense_browser_state(page_url: &str) -> BrowserState {
                     id: 20,
                     title: "Huge".into(),
                     tint: SpaceTint::Violet,
+                    paper: Default::default(),
                     glyph: SpaceGlyph::Glyph(GlyphName::Code),
                     tabs: (0..500)
                         .map(|index| Tab {
@@ -157,6 +160,7 @@ pub fn small_browser_state(page_url: &str) -> BrowserState {
                 id: 10,
                 title: "Main".into(),
                 tint: SpaceTint::Cobalt,
+                paper: Default::default(),
                 glyph: SpaceGlyph::Glyph(GlyphName::Code),
                 tabs: vec![
                     Tab {
@@ -213,6 +217,7 @@ pub fn reorder_browser_state(page_one: &str, page_two: &str) -> BrowserState {
                 id: 10,
                 title: "Main".into(),
                 tint: SpaceTint::Cobalt,
+                paper: Default::default(),
                 glyph: SpaceGlyph::Glyph(GlyphName::Code),
                 tabs: vec![
                     Tab {

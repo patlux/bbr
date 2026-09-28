@@ -21,10 +21,11 @@
 //! rolled back.
 
 use bbr_browser::SpaceId;
-use bbr_domain::{SpaceIdentity, SpaceTheme};
+use bbr_domain::{SpaceIdentity, SpaceTheme, TintIntensity};
 use bbr_ui::surfaces::space_config::{
     SpaceConfigCallbacks, SpaceConfigCancel, SpaceConfigDone, SpaceConfigInsidePress,
-    SpaceConfigModel, SpaceConfigSelectIdentity, SpaceConfigSelectTheme,
+    SpaceConfigModel, SpaceConfigSelectIdentity, SpaceConfigSelectIntensity,
+    SpaceConfigSelectTheme, SpaceConfigToggleGrain,
 };
 use gpui::{Context, FocusHandle, KeyDownEvent, Stateful, Window};
 use std::rc::Rc;
@@ -103,6 +104,7 @@ impl BbrApp {
                 .clone(),
             theme: appearance.theme,
             identity: appearance.identity,
+            paper: appearance.paper,
         };
         self.space_config.press_inside = false;
         window.focus(&self.space_config.handle, cx);
@@ -133,6 +135,26 @@ impl BbrApp {
             return;
         }
         self.space_config.model.theme = token;
+        cx.notify();
+    }
+
+    /// v2 D7 draft selection: pick one curated tint intensity step. The
+    /// draft updates only; nothing reaches the controller until Done.
+    pub fn space_config_select_intensity(&mut self, step: TintIntensity, cx: &mut Context<Self>) {
+        if !self.space_config.open {
+            return;
+        }
+        self.space_config.model.paper.intensity = step;
+        cx.notify();
+    }
+
+    /// v2 D6 draft toggle: turn the static grain on or off. The draft
+    /// updates only; nothing reaches the controller until Done.
+    pub fn space_config_toggle_grain(&mut self, cx: &mut Context<Self>) {
+        if !self.space_config.open {
+            return;
+        }
+        self.space_config.model.paper.grain = !self.space_config.model.paper.grain;
         cx.notify();
     }
 
@@ -185,9 +207,15 @@ impl BbrApp {
         {
             log::error!("could not set space identity {space:?}: {error}");
         }
+        if let Err(error) = self
+            .controller
+            .set_space_paper(space, self.space_config.model.paper)
+        {
+            log::error!("could not set space paper {space:?}: {error}");
+        }
         // The rename + appearance are structural browser mutations: poke the
         // one browser-state writer so a force quit recovers the committed
-        // model with the new title/theme/identity.
+        // model with the new title/theme/identity/paper (schema v4).
         self.persist_structure();
         self.close_space_config(window, cx);
         cx.notify();
@@ -321,6 +349,14 @@ impl BbrApp {
                 });
             });
         let entity = cx.entity();
+        let on_select_intensity: SpaceConfigSelectIntensity = Rc::new(move |step, _window, cx| {
+            entity.update(cx, |view, cx| view.space_config_select_intensity(step, cx));
+        });
+        let entity = cx.entity();
+        let on_toggle_grain: SpaceConfigToggleGrain = Rc::new(move |_window, cx| {
+            entity.update(cx, |view, cx| view.space_config_toggle_grain(cx));
+        });
+        let entity = cx.entity();
         let on_inside_press: SpaceConfigInsidePress = Rc::new(move |_e, _window, cx| {
             entity.update(cx, |view, _cx| view.mark_space_config_press_inside());
             cx.stop_propagation();
@@ -336,6 +372,8 @@ impl BbrApp {
         let callbacks = SpaceConfigCallbacks {
             on_select_theme,
             on_select_identity,
+            on_select_intensity,
+            on_toggle_grain,
             on_inside_press,
             on_done,
             on_cancel,
@@ -370,6 +408,8 @@ impl BbrApp {
             name: model.name.clone(),
             theme: model.theme.name().to_string(),
             identity: model.identity.name().to_string(),
+            intensity: model.paper.intensity.name().to_string(),
+            grain: model.paper.grain,
             focused: self.space_config.handle.is_focused(window),
         })
     }

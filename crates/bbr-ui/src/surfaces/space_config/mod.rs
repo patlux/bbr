@@ -18,18 +18,20 @@
 pub mod callbacks;
 pub mod ids;
 pub mod model;
+mod paper;
 pub mod render;
 
 pub use callbacks::{
     SpaceConfigCallbacks, SpaceConfigCancel, SpaceConfigDone, SpaceConfigInsidePress,
-    SpaceConfigSelectIdentity, SpaceConfigSelectTheme,
+    SpaceConfigSelectIdentity, SpaceConfigSelectIntensity, SpaceConfigSelectTheme,
+    SpaceConfigToggleGrain,
 };
 pub use ids::{
-    space_config_emoji_id, space_config_glyph_id, space_config_ids, space_config_theme_id,
-    SPACE_CONFIG_ACTIONS_ID, SPACE_CONFIG_CANCEL_ID, SPACE_CONFIG_DONE_ID,
-    SPACE_CONFIG_EMOJI_LABEL_ID, SPACE_CONFIG_GLYPH_LABEL_ID, SPACE_CONFIG_ID,
-    SPACE_CONFIG_IDENTITY_LABEL_ID, SPACE_CONFIG_NAME_ID, SPACE_CONFIG_THEME_LABEL_ID,
-    SPACE_CONFIG_TITLE_ID,
+    space_config_emoji_id, space_config_glyph_id, space_config_ids, space_config_intensity_id,
+    space_config_theme_id, SPACE_CONFIG_ACTIONS_ID, SPACE_CONFIG_CANCEL_ID, SPACE_CONFIG_DONE_ID,
+    SPACE_CONFIG_EMOJI_LABEL_ID, SPACE_CONFIG_GLYPH_LABEL_ID, SPACE_CONFIG_GRAIN_ID,
+    SPACE_CONFIG_ID, SPACE_CONFIG_IDENTITY_LABEL_ID, SPACE_CONFIG_NAME_ID,
+    SPACE_CONFIG_PAPER_LABEL_ID, SPACE_CONFIG_THEME_LABEL_ID, SPACE_CONFIG_TITLE_ID,
 };
 pub use model::SpaceConfigModel;
 pub use render::space_config_surface;

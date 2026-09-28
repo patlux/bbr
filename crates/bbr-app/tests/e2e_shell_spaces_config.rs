@@ -4,9 +4,8 @@
 //! paths share, the exact-SpaceId/stale-source contract, Escape/cancel
 //! keeping the created Space usable, the name/theme/identity commit through
 //! the one controller authorities, the icon-only footer chip identity
-//! updates with the accessible Space+Profile name, and the truthful
-//! restart/persistence boundary (rename persists; curated appearance is
-//! session-valid under the current schema).
+//! updates with the accessible Space+Profile name, and restart truth (the
+//! rename and, since schema v4, the curated appearance persist).
 //!
 //! Every interaction is driven through the production seams the surface
 //! listeners and the testkit gateway share: plus-menu New Space
@@ -661,16 +660,15 @@ fn stale_surface_never_mutates_another_space() {
     finish(result, &mut harness, &socket, &token);
 }
 
-/// Truthful restart/persistence boundary under the current schema: the
-/// committed rename persists across a graceful restart (the structural
-/// browser model carries the title through the persistence DTO), while the
-/// curated theme/identity is session-valid only — the persisted rows store
-/// the canonical derived defaults and restore drops tint/glyph, so the
-/// derived appearance returns. The E2E asserts exactly that boundary and
-/// never a false durable claim.
+/// Restart truth under schema v4 (v2 S10, DESIGN §11.3 persistence): the
+/// committed rename and the curated theme/identity both persist across a
+/// graceful restart — the browser-state write stores the effective
+/// appearance in the space row and restore applies it. (Before v4 the
+/// curated appearance was session-valid only; this test asserted that
+/// boundary and now asserts the durable one.)
 #[test]
 #[ignore]
-fn restart_truth_rename_persists_curated_identity_is_session_valid() {
+fn restart_truth_rename_and_curated_identity_persist() {
     let _serial = serial_gui();
     if !allow_gui() {
         return;
@@ -752,10 +750,8 @@ fn restart_truth_rename_persists_curated_identity_is_session_valid() {
     drop(harness);
 
     // Restart on the same profile directory: the rename survived (the
-    // structural model carries titles through the persistence DTO), while
-    // the curated appearance did not — the restored effective appearance is
-    // the canonical derived default (profile hue theme + default glyph),
-    // exactly the truthful boundary the current schema provides.
+    // structural model carries titles through the persistence DTO) and so
+    // did the curated appearance (schema v4 stores it in the space row).
     let (mut harness2, socket2, token2) = spawn_harness("spaces-config-restart", &page_one);
     let result2 = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket2);
@@ -772,16 +768,15 @@ fn restart_truth_rename_persists_curated_identity_is_session_valid() {
             renamed.title, "Work notes",
             "the committed rename persists across restart"
         );
-        // The curated identity/theme are session-valid: the derived default
-        // glyph and the profile-derived hue theme are presented instead.
+        // The curated identity/theme restored exactly.
         let chip = chip_of(&restored, reading);
         assert_eq!(
-            chip.identity, "code",
-            "the curated identity is session-valid (derived default after restart)"
+            chip.identity, "🌊",
+            "the curated identity persists across restart"
         );
         assert_eq!(
-            chip.theme, "cobalt",
-            "the curated theme is session-valid (profile-derived after restart)"
+            chip.theme, "pine",
+            "the curated theme persists across restart"
         );
         // No config surface opens on restore, and the default space is
         // intact.

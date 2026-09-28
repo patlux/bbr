@@ -188,6 +188,8 @@ pub struct SidebarModel {
     /// D4: `(source tint, moment key)` while a committed space switch
     /// cross-fades the chrome tint.
     pub tint_fade: Option<(gpui::Rgba, u64)>,
+    /// v2 D6: whether the active space's paper carries the static grain.
+    pub grain: bool,
     /// The active Space title shown as the rail's primary list heading.
     /// This is real controller data, not a brand label or fixture copy.
     pub active_space_title: SharedString,

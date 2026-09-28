@@ -83,6 +83,16 @@ const TABLES: &[(&str, &[ExpectedColumn])] = &[
                 not_null: false,
                 primary_key: false,
             },
+            ExpectedColumn {
+                name: "tint_intensity",
+                not_null: true,
+                primary_key: false,
+            },
+            ExpectedColumn {
+                name: "grain",
+                not_null: true,
+                primary_key: false,
+            },
         ],
     ),
     (

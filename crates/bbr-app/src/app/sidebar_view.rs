@@ -145,6 +145,7 @@ impl BbrApp {
             sidebar_width,
             chrome_tint,
             tint_fade: self.tint_fade(),
+            grain: self.active_space_appearance().paper.grain,
             active_space_title: SharedString::from(active_space_title),
             command,
             favorites,

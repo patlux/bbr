@@ -766,6 +766,8 @@ pub(crate) fn dispatch(
         | Request::OpenSpaceConfig { .. }
         | Request::SpaceConfigSelectTheme { .. }
         | Request::SpaceConfigSelectIdentity { .. }
+        | Request::SpaceConfigSelectIntensity { .. }
+        | Request::SpaceConfigToggleGrain
         | Request::SpaceConfigDone
         | Request::SpaceConfigCancel
         | Request::SpaceConfigPressOutside

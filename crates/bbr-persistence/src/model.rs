@@ -111,6 +111,9 @@ pub struct Space {
     pub tint: SpaceTint,
     /// Curated glyph identity (schema v2; see [`SpaceGlyph`]).
     pub glyph: SpaceGlyph,
+    /// Curated tint intensity and static grain (schema v4; see
+    /// [`crate::SpacePaper`]).
+    pub paper: crate::SpacePaper,
     pub tabs: Vec<Tab>,
     pub active_tab: Option<u64>,
     pub recently_closed: Vec<RecentlyClosedTab>,

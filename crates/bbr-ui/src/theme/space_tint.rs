@@ -29,7 +29,7 @@
 //!   composited over the tinted rail) carrying 8 % of the identity hue; the
 //!   strip paints it with `elev:lift`.
 
-use bbr_domain::SpaceTheme;
+use bbr_domain::{SpaceTheme, TintIntensity};
 use gpui::{rgb, Rgba};
 
 use crate::palette::ProfileHueRamp;
@@ -41,6 +41,16 @@ use crate::theme::{ContrastMode, Theme, ThemeMode};
 /// proves every text bar on the result.
 const TINT_ALPHA_STANDARD: f64 = 0.12;
 const TINT_ALPHA_INCREASED: f64 = 0.14;
+/// The curated intensity steps (v2 D7). `subtle` halves the wash
+/// (IC 8 %); `rich` doubles it (IC 26 %) and then pins the result to the
+/// standard step's relative luminance, so the step adds hue, never
+/// lightness: every D3 bar is a luminance ratio and stays where the
+/// standard step proved it (the near-achromatic Slate/Ink washes therefore
+/// barely move).
+const TINT_ALPHA_SUBTLE: f64 = 0.06;
+const TINT_ALPHA_SUBTLE_INCREASED: f64 = 0.08;
+const TINT_ALPHA_RICH: f64 = 0.24;
+const TINT_ALPHA_RICH_INCREASED: f64 = 0.26;
 /// The active chip (§18.2): the lifted selection surface carrying this
 /// share of the identity hue, so each space's chip stays distinguishable
 /// in both contrast modes.
@@ -68,15 +78,44 @@ pub struct SpaceTint {
 /// `surface_sidebar` token (so mode/contrast follow the theme); the six
 /// identity tokens map to the §12 profile tiles; the three space-only
 /// tokens have curated hue pairs.
-pub fn space_tint(token: SpaceTheme, theme: &Theme) -> SpaceTint {
+///
+/// `intensity` is the space's curated paper step (v2 D7); every step holds
+/// the D3 bars in every mode and contrast.
+pub fn space_tint(token: SpaceTheme, intensity: TintIntensity, theme: &Theme) -> SpaceTint {
     let base = theme.palette.surface_sidebar;
     let hue = identity_hue(token, theme.mode);
     let wash = chrome_wash_hue(token, theme.mode);
-    let tint_alpha = match theme.contrast {
-        ContrastMode::Standard => TINT_ALPHA_STANDARD,
-        ContrastMode::Increased => TINT_ALPHA_INCREASED,
+    let increased = theme.contrast == ContrastMode::Increased;
+    let standard_alpha = if increased {
+        TINT_ALPHA_INCREASED
+    } else {
+        TINT_ALPHA_STANDARD
     };
-    let chrome = blend(base, wash, tint_alpha);
+    let standard = blend(base, wash, standard_alpha);
+    let chrome = match intensity {
+        TintIntensity::Standard => standard,
+        TintIntensity::Subtle => blend(
+            base,
+            wash,
+            if increased {
+                TINT_ALPHA_SUBTLE_INCREASED
+            } else {
+                TINT_ALPHA_SUBTLE
+            },
+        ),
+        TintIntensity::Rich => pin_luminance(
+            blend(
+                base,
+                wash,
+                if increased {
+                    TINT_ALPHA_RICH_INCREASED
+                } else {
+                    TINT_ALPHA_RICH
+                },
+            ),
+            relative_luminance(standard),
+        ),
+    };
     let selection = crate::palette::over(theme.palette.tint_selected, chrome);
     SpaceTint {
         hue,
@@ -171,6 +210,42 @@ fn chrome_wash_hue(token: SpaceTheme, mode: ThemeMode) -> Rgba {
     rgb((r << 16) | (g << 8) | b)
 }
 
+/// WCAG relative luminance of a rendered colour.
+fn relative_luminance(color: Rgba) -> f64 {
+    let channel = |value: f32| {
+        let value = f64::from(value);
+        if value <= 0.04045 {
+            value / 12.92
+        } else {
+            ((value + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b)
+}
+
+/// Move `color` toward black or white until its relative luminance equals
+/// `target` (deterministic bisection; the hue direction is kept).
+fn pin_luminance(color: Rgba, target: f64) -> Rgba {
+    let darker = relative_luminance(color) > target;
+    let toward = if darker { rgb(0x000000) } else { rgb(0xFFFFFF) };
+    let (mut low, mut high) = (0.0_f64, 1.0_f64);
+    for _ in 0..32 {
+        let mid = (low + high) / 2.0;
+        let luminance = relative_luminance(blend(color, toward, mid));
+        let short = if darker {
+            luminance > target
+        } else {
+            luminance < target
+        };
+        if short {
+            low = mid;
+        } else {
+            high = mid;
+        }
+    }
+    blend(color, toward, (low + high) / 2.0)
+}
+
 /// Blend `hue` over the base material at `alpha` (per-channel linear
 /// blend, the same math the palette uses for its material washes).
 fn blend(base: Rgba, hue: Rgba, alpha: f64) -> Rgba {
@@ -184,319 +259,4 @@ fn blend(base: Rgba, hue: Rgba, alpha: f64) -> Rgba {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::theme::Density;
-
-    /// WCAG 2.x contrast of two rendered colors (computed from the actual
-    /// blended `Rgba` values, never copied ratios).
-    fn ratio(a: &Rgba, b: &Rgba) -> f64 {
-        let lum = |c: f64| {
-            if c <= 0.04045 {
-                c / 12.92
-            } else {
-                ((c + 0.055) / 1.055).powf(2.4)
-            }
-        };
-        let l = |r: &Rgba| {
-            0.2126 * lum(r.r as f64) + 0.7152 * lum(r.g as f64) + 0.0722 * lum(r.b as f64)
-        };
-        let (hi, lo) = if l(a) >= l(b) {
-            (l(a), l(b))
-        } else {
-            (l(b), l(a))
-        };
-        (hi + 0.05) / (lo + 0.05)
-    }
-
-    /// §11.3/§3.1 contrast gate on the *tinted* chrome: for every curated
-    /// token, mode, and contrast level, the rail material with the active
-    /// space's tint still satisfies the text/hairline/accent contracts
-    /// (D3: ink ≥ 12 standard / ≥ 14 IC on tinted chrome, secondary ≥ 5.9
-    /// standard / ≥ 9.0 IC, accent ≥ 3.0, accent.ink ≥ 5.9 light / 9.0
-    /// dark), and the active chip surface keeps the identity glyph and the
-    /// rail legible.
-    #[test]
-    fn every_curated_tint_keeps_the_contrast_contract() {
-        for mode in [ThemeMode::Dark, ThemeMode::Light] {
-            for contrast in [ContrastMode::Standard, ContrastMode::Increased] {
-                let theme = Theme::new(mode, contrast, Density::Normal);
-                let p = theme.palette;
-                let base = p.surface_sidebar;
-                for token in SpaceTheme::ALL {
-                    let tint = space_tint(token, &theme);
-                    // The tint is strictly a desaturated variant: it must
-                    // stay visibly close to the base material (the blend is
-                    // small) and never flip to the hue itself.
-                    let tint_vs_base = ratio(&tint.chrome, &base);
-                    assert!(
-                        (1.0..1.3).contains(&tint_vs_base),
-                        "{token:?} {mode:?} {contrast:?} chrome stays a quiet variant (ratio {tint_vs_base:.2})"
-                    );
-                    // Text contracts on the tinted rail (DESIGN §18.1 D3).
-                    let ink_min = match contrast {
-                        ContrastMode::Standard => 12.0,
-                        ContrastMode::Increased => 14.0,
-                    };
-                    assert!(
-                        ratio(&p.ink, &tint.chrome) >= ink_min,
-                        "{token:?} {mode:?} {contrast:?} ink ≥ {ink_min}:1 on tinted chrome"
-                    );
-                    let secondary_min = match contrast {
-                        // DESIGN §3.1: IC hardens ink.secondary to ≥ 9:1.
-                        ContrastMode::Standard => 5.9,
-                        ContrastMode::Increased => 9.0,
-                    };
-                    assert!(
-                        ratio(&p.ink_secondary, &tint.chrome) >= secondary_min,
-                        "{token:?} {mode:?} {contrast:?} secondary ≥ {secondary_min}:1"
-                    );
-                    assert!(
-                        ratio(&p.accent, &tint.chrome) >= 3.0,
-                        "{token:?} {mode:?} {contrast:?} accent rail ≥ 3:1"
-                    );
-                    // DESIGN §3.1: accent.ink ≥ 5.9 light / ≥ 9.0 dark.
-                    let accent_ink_min = match mode {
-                        ThemeMode::Light => 5.9,
-                        ThemeMode::Dark => 9.0,
-                    };
-                    assert!(
-                        ratio(&p.accent_ink, &tint.chrome) >= accent_ink_min,
-                        "{token:?} {mode:?} {contrast:?} accent.ink ≥ {accent_ink_min}:1"
-                    );
-                    // The active chip surface (selection + 8 % hue) still keeps
-                    // the identity legible: the identity glyph renders at
-                    // ink.secondary on it, and the selected rail accent reads.
-                    assert!(
-                        ratio(&p.ink_secondary, &tint.chip_active) >= 4.5,
-                        "{token:?} {mode:?} {contrast:?} chip identity ≥ 4.5:1"
-                    );
-                    assert!(
-                        ratio(&p.accent, &tint.chip_active) >= 3.0,
-                        "{token:?} {mode:?} {contrast:?} chip rail ≥ 3:1"
-                    );
-                }
-            }
-        }
-    }
-
-    /// §18.2: the active chip is the selection surface carrying 8 % of the
-    /// identity hue — lighter than the rail (it lifts), distinct per token,
-    /// and never the saturated hue itself.
-    #[test]
-    fn the_active_chip_is_the_selection_carrying_the_identity_hue() {
-        for mode in [ThemeMode::Dark, ThemeMode::Light] {
-            for contrast in [ContrastMode::Standard, ContrastMode::Increased] {
-                let theme = Theme::new(mode, contrast, Density::Normal);
-                let mut chips: Vec<Rgba> = Vec::new();
-                for token in SpaceTheme::ALL {
-                    let tint = space_tint(token, &theme);
-                    let selection = crate::palette::over(theme.palette.tint_selected, tint.chrome);
-                    assert_eq!(tint.chip_active, blend(selection, tint.hue, 0.08));
-                    let luminance = |c: &Rgba| ratio(c, &rgb(0x000000));
-                    assert!(
-                        luminance(&tint.chip_active) > luminance(&tint.chrome),
-                        "{token:?} {mode:?} {contrast:?} chip lifts above the rail"
-                    );
-                    assert!(
-                        !chips.contains(&tint.chip_active),
-                        "{token:?} chip is distinct"
-                    );
-                    chips.push(tint.chip_active);
-                }
-            }
-        }
-    }
-
-    /// D3: the tint is visible — every hued token moves the rail at least
-    /// 2 CIE ΔE76 away from the untinted material in both modes (the neutral
-    /// Ink and the blue-grey Slate are the quiet end of the family).
-    #[test]
-    fn hued_tokens_visibly_tint_the_rail() {
-        fn lab(c: &Rgba) -> [f64; 3] {
-            let lin = |v: f32| {
-                let v = v as f64;
-                if v <= 0.04045 {
-                    v / 12.92
-                } else {
-                    ((v + 0.055) / 1.055).powf(2.4)
-                }
-            };
-            let (r, g, b) = (lin(c.r), lin(c.g), lin(c.b));
-            let x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
-            let y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-            let z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
-            let f = |t: f64| {
-                if t > 0.008856 {
-                    t.cbrt()
-                } else {
-                    7.787 * t + 16.0 / 116.0
-                }
-            };
-            [
-                116.0 * f(y) - 16.0,
-                500.0 * (f(x) - f(y)),
-                200.0 * (f(y) - f(z)),
-            ]
-        }
-        for mode in [ThemeMode::Dark, ThemeMode::Light] {
-            let theme = Theme::new(mode, ContrastMode::Standard, Density::Normal);
-            let base = lab(&theme.palette.surface_sidebar);
-            for token in SpaceTheme::ALL {
-                if matches!(token, SpaceTheme::Ink | SpaceTheme::Slate) {
-                    continue;
-                }
-                let tinted = lab(&space_tint(token, &theme).chrome);
-                let delta = base
-                    .iter()
-                    .zip(tinted)
-                    .map(|(a, b)| (a - b).powi(2))
-                    .sum::<f64>()
-                    .sqrt();
-                assert!(delta >= 2.0, "{token:?} {mode:?} tint ΔE {delta:.2} ≥ 2");
-            }
-        }
-    }
-
-    /// IC deepens the tint (the §3.4 selected-tint deepening spirit) without
-    /// breaking the gate above. The deepened blend moves the chrome strictly
-    /// further from the base material, so the measured distance (the WCAG
-    /// ratio of the blended chrome against the base) strictly increases with
-    /// contrast — `d_ic > d_std` — for every one of the nine tones in both
-    /// modes, while the §3.1 text contracts still hold.
-    #[test]
-    fn increased_contrast_deepens_the_tint() {
-        for mode in [ThemeMode::Dark, ThemeMode::Light] {
-            let standard = Theme::new(mode, ContrastMode::Standard, Density::Normal);
-            let base = standard.palette.surface_sidebar;
-            for token in SpaceTheme::ALL {
-                let standard_tint = space_tint(token, &standard);
-                let increased = space_tint(
-                    token,
-                    &Theme::new(mode, ContrastMode::Increased, Density::Normal),
-                );
-                let d_std = ratio(&base, &standard_tint.chrome);
-                let d_ic = ratio(&base, &increased.chrome);
-                assert!(
-                    d_ic > d_std,
-                    "{token:?} {mode:?} IC chrome moves strictly further from the base material (d_std {d_std:.6}, d_ic {d_ic:.6})"
-                );
-            }
-        }
-    }
-
-    /// The six identity tokens consume the §12 profile tiles verbatim
-    /// (identity hues carry into the theming mechanism unchanged): the
-    /// resolved hue equals the existing `ProfileHueRamp` tile for the same
-    /// hue/mode, so there is exactly one authored identity hue per token.
-    #[test]
-    fn identity_tokens_reuse_the_profile_hue_tiles() {
-        use bbr_domain::ProfileHue;
-        for mode in [ThemeMode::Dark, ThemeMode::Light] {
-            let theme = Theme::new(mode, ContrastMode::Standard, Density::Normal);
-            for hue in [
-                ProfileHue::Cobalt,
-                ProfileHue::Violet,
-                ProfileHue::Fuchsia,
-                ProfileHue::Amber,
-                ProfileHue::Terracotta,
-                ProfileHue::Slate,
-            ] {
-                let token = SpaceTheme::from_profile_hue(hue);
-                let tint = space_tint(token, &theme);
-                assert_eq!(
-                    tint.hue,
-                    ProfileHueRamp::tile(hue, mode).tile,
-                    "{token:?} {mode:?} hue equals the §12 tile"
-                );
-            }
-        }
-    }
-
-    /// The three space-only tokens are distinct from the identity ramp and
-    /// from each other in both modes, so a space-only theme can never be
-    /// confused with a profile-hue theme by its resolved color.
-    #[test]
-    fn space_only_tokens_stay_distinct_from_the_identity_ramp() {
-        for mode in [ThemeMode::Dark, ThemeMode::Light] {
-            let identity_hues: Vec<Rgba> = SpaceTheme::ALL
-                .iter()
-                .filter_map(|token| token.profile_hue())
-                .map(|hue| ProfileHueRamp::tile(hue, mode).tile)
-                .collect();
-            for token in [SpaceTheme::Pine, SpaceTheme::Plum, SpaceTheme::Ink] {
-                let hue = identity_hue(token, mode);
-                assert!(
-                    !identity_hues.contains(&hue),
-                    "{token:?} {mode:?} hue stays outside the identity ramp"
-                );
-            }
-            assert_ne!(
-                identity_hue(SpaceTheme::Pine, mode),
-                identity_hue(SpaceTheme::Plum, mode)
-            );
-            assert_ne!(
-                identity_hue(SpaceTheme::Plum, mode),
-                identity_hue(SpaceTheme::Ink, mode)
-            );
-        }
-    }
-
-    #[test]
-    fn ink_token_is_the_only_neutral_theme() {
-        // The Ink token is the neutral family: its identity hue is
-        // achromatic in both modes, so its chrome variant is a pure
-        // luminance step.
-        for mode in [ThemeMode::Dark, ThemeMode::Light] {
-            let theme = Theme::new(mode, ContrastMode::Standard, Density::Normal);
-            let tint = space_tint(SpaceTheme::Ink, &theme);
-            assert!((tint.hue.r - tint.hue.g).abs() < 0.02, "ink hue is neutral");
-            assert!((tint.hue.g - tint.hue.b).abs() < 0.02, "ink hue is neutral");
-        }
-        // The other eight tokens keep a hue: no token besides Ink is
-        // achromatic, so identity is never confused with the neutral family.
-        for token in SpaceTheme::ALL {
-            if token == SpaceTheme::Ink {
-                continue;
-            }
-            for mode in [ThemeMode::Dark, ThemeMode::Light] {
-                let theme = Theme::new(mode, ContrastMode::Standard, Density::Normal);
-                let tint = space_tint(token, &theme);
-                assert!(
-                    (tint.hue.r - tint.hue.g).abs() >= 0.02
-                        || (tint.hue.g - tint.hue.b).abs() >= 0.02,
-                    "{token:?} {mode:?} hue carries color"
-                );
-            }
-        }
-    }
-
-    /// The wire hex form is deterministic and equals the rendered color:
-    /// the snapshot's typed tint evidence is the actual render value.
-    #[test]
-    fn hex_form_is_deterministic_and_matches_the_resolved_color() {
-        let theme = Theme::dark();
-        let tint = space_tint(SpaceTheme::Cobalt, &theme);
-        assert_eq!(hex(tint.hue), "#6E8BFF", "cobalt dark identity tile");
-        assert_eq!(hex(tint.chrome), "#1B2130", "cobalt dark standard chrome");
-        assert_eq!(
-            hex(tint.chip_active),
-            "#353C52",
-            "cobalt dark standard chip"
-        );
-        // The light identity hue is the §12 light cobalt tile.
-        let light = Theme::new(ThemeMode::Light, ContrastMode::Standard, Density::Normal);
-        let light_tint = space_tint(SpaceTheme::Cobalt, &light);
-        assert_eq!(hex(light_tint.hue), "#4062E8", "cobalt light identity tile");
-        assert_eq!(
-            hex(light_tint.chrome),
-            "#DDDFE5",
-            "cobalt light standard chrome"
-        );
-        assert_eq!(
-            hex(light_tint.chip_active),
-            "#F0F2FD",
-            "cobalt light standard chip"
-        );
-    }
-}
+mod tests;

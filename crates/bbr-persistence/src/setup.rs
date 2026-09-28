@@ -57,7 +57,7 @@ pub(crate) fn prepare_store(connection: &mut Connection) -> Result<StoreLoad, Pe
 pub(crate) fn create_schema(connection: &mut Connection) -> Result<(), PersistenceError> {
     let transaction = connection.transaction().map_err(schema::storage)?;
     transaction
-        .execute_batch(schema::CREATE_SCHEMA_V3)
+        .execute_batch(schema::CREATE_SCHEMA)
         .map_err(schema::storage)?;
     transaction
         .pragma_update(None, "user_version", schema::SCHEMA_VERSION)
@@ -103,7 +103,7 @@ pub(crate) fn discard_and_recreate(connection: &mut Connection) -> Result<(), Pe
             .map_err(schema::storage)?;
     }
     transaction
-        .execute_batch(schema::CREATE_SCHEMA_V3)
+        .execute_batch(schema::CREATE_SCHEMA)
         .map_err(schema::storage)?;
     transaction
         .pragma_update(None, "user_version", schema::SCHEMA_VERSION)

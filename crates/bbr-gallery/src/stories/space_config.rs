@@ -59,12 +59,16 @@ pub fn render_space_config(ctx: &StoryContext) -> AnyElement {
 
     let on_select_theme = Rc::clone(&observer.on_select_theme);
     let on_select_identity = Rc::clone(&observer.on_select_identity);
+    let on_select_intensity = Rc::clone(&observer.on_select_intensity);
+    let on_toggle_grain = Rc::clone(&observer.on_toggle_grain);
     let on_inside_press = Rc::clone(&observer.on_inside_press);
     let on_done = Rc::clone(&observer.on_done);
     let on_cancel = Rc::clone(&observer.on_cancel);
     let callbacks = bbr_ui::surfaces::space_config::SpaceConfigCallbacks {
         on_select_theme,
         on_select_identity,
+        on_select_intensity,
+        on_toggle_grain,
         on_inside_press,
         on_done,
         on_cancel,
@@ -72,10 +76,16 @@ pub fn render_space_config(ctx: &StoryContext) -> AnyElement {
     let surface = space_config_surface(theme, &case.model, case.focused, story.focus, &callbacks);
 
     let meta = format!(
-        "{} · theme {} · identity {} · name {:?}",
+        "{} · theme {} · identity {} · paper {}{} · name {:?}",
         if case.focused { "focused" } else { "unfocused" },
         case.model.theme.name(),
         case.model.identity.name(),
+        case.model.paper.intensity.name(),
+        if case.model.paper.grain {
+            " + grain"
+        } else {
+            ""
+        },
         case.model.name,
     );
     let mut children = vec![
@@ -91,7 +101,7 @@ pub fn render_space_config(ctx: &StoryContext) -> AnyElement {
         value_row(
             theme,
             "callbacks",
-            "on_select_theme · on_select_identity · on_inside_press · on_done · on_cancel (recorder)",
+            "on_select_theme · on_select_identity · on_select_intensity · on_toggle_grain · on_inside_press · on_done · on_cancel (recorder)",
         ),
         value_row(
             theme,

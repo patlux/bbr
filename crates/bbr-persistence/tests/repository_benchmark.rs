@@ -415,6 +415,7 @@ fn dense_snapshot() -> Snapshot {
                 id: 10,
                 title: "500 tabs".into(),
                 tint: SpaceTint::Slate,
+                paper: Default::default(),
                 glyph: SpaceGlyph::Glyph(GlyphName::Star),
                 active_tab: Some(100),
                 split: Some(Split {

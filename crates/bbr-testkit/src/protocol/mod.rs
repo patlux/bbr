@@ -677,6 +677,8 @@ mod tests {
             identity: "code".into(),
             chrome_tint: "#1C2028".into(),
             chip_tint: "#222837".into(),
+            intensity: "rich".into(),
+            grain: true,
         };
         let json = serde_json::to_value(&appearance).unwrap();
         assert_eq!(
@@ -686,11 +688,27 @@ mod tests {
                 "theme":"cobalt",
                 "identity":"code",
                 "chrome_tint":"#1C2028",
-                "chip_tint":"#222837"
+                "chip_tint":"#222837",
+                "intensity":"rich",
+                "grain":true
             })
         );
         let decoded: SpaceAppearanceSnapshot = serde_json::from_value(json).unwrap();
         assert_eq!(decoded, appearance);
+        // v2 D6/D7: an older client omitting the paper decodes the
+        // deterministic defaults.
+        let legacy: SpaceAppearanceSnapshot = serde_json::from_value(json!({
+            "space":2,
+            "theme":"cobalt",
+            "identity":"code",
+            "chrome_tint":"#1C2028",
+            "chip_tint":"#222837"
+        }))
+        .unwrap();
+        assert_eq!(
+            (legacy.intensity.as_str(), legacy.grain),
+            ("standard", false)
+        );
     }
 
     /// The §11.14/§11.5 rest-state evidence round-trips as plain data: the

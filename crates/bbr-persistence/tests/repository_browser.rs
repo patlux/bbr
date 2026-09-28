@@ -15,7 +15,8 @@ use std::{
 use bbr_persistence::{
     BrowserState, CommandHistoryEntry, DownloadOutcome, DownloadRecord, GlyphName, Profile,
     ProfileHue, RecentlyClosedTab, RecoveryWarning, Repository, SearchEngineId, SearchSettings,
-    SidebarState, Space, SpaceGlyph, SpaceTint, Split, Tab, WindowGeometry, WindowState,
+    SidebarState, Space, SpaceGlyph, SpacePaper, SpaceTint, Split, Tab, TintIntensity,
+    WindowGeometry, WindowState,
 };
 
 static NEXT_TEMP: AtomicU64 = AtomicU64::new(1);
@@ -66,6 +67,10 @@ fn sample_browser_state() -> BrowserState {
                     id: 10,
                     title: "Main".into(),
                     tint: SpaceTint::Pine,
+                    paper: SpacePaper {
+                        intensity: TintIntensity::Rich,
+                        grain: true,
+                    },
                     glyph: SpaceGlyph::Glyph(GlyphName::Code),
                     tabs: vec![
                         Tab {
@@ -104,6 +109,7 @@ fn sample_browser_state() -> BrowserState {
                     id: 11,
                     title: "Second".into(),
                     tint: SpaceTint::Slate,
+                    paper: Default::default(),
                     glyph: SpaceGlyph::Emoji("⚙".into()),
                     tabs: vec![Tab {
                         id: 110,
@@ -227,6 +233,7 @@ fn dense_500_tab_browser_state_round_trips() {
                 id: 10,
                 title: "Main".into(),
                 tint: SpaceTint::Pine,
+                paper: Default::default(),
                 glyph: SpaceGlyph::Glyph(GlyphName::Code),
                 tabs,
                 active_tab: Some(100),
@@ -417,4 +424,34 @@ fn browser_state_write_to_mismatched_store_discards_without_migration() {
         outcome.snapshot.profiles[0].id, 1,
         "the discarded legacy row is gone; the write's browser state restored"
     );
+}
+
+#[test]
+fn unknown_space_paper_values_are_corruption() {
+    // The v4 space paper is closed identity data: an unknown intensity or a
+    // non-boolean grain is refused read-only as corruption, never a
+    // fallback.
+    for update in [
+        "UPDATE spaces SET tint_intensity = 'vivid' WHERE id = 10",
+        "UPDATE spaces SET grain = 2 WHERE id = 10",
+    ] {
+        let db = TempDb::new("paper-corrupt");
+        let repository = db.repository();
+        repository.initialize_and_restore().unwrap();
+        repository
+            .store_browser_state(&sample_browser_state())
+            .unwrap();
+        let path = repository.path().to_path_buf();
+        drop(repository);
+        let connection = rusqlite::Connection::open(&path).unwrap();
+        connection.execute(update, []).unwrap();
+        drop(connection);
+        assert!(
+            matches!(
+                Repository::new(&path).restore_read_only(),
+                Err(bbr_persistence::PersistenceError::Corruption(_))
+            ),
+            "{update}"
+        );
+    }
 }

@@ -3,7 +3,7 @@
 //! identity record of a space beside the browser model. Split from
 //! `controller.rs` so the gateway module stays under the ~500-line budget.
 
-use bbr_domain::{AppearanceError, SpaceAppearance, SpaceIdentity, SpaceTheme};
+use bbr_domain::{AppearanceError, SpaceAppearance, SpaceIdentity, SpacePaper, SpaceTheme};
 
 use super::BrowserController;
 
@@ -39,6 +39,30 @@ impl BrowserController {
         theme: SpaceTheme,
     ) -> Result<(), AppearanceError> {
         self.appearances.set_theme(&self.browser, space, theme)?;
+        self.check_invariants();
+        Ok(())
+    }
+
+    /// Set only the curated paper (tint intensity + static grain) of
+    /// `space` (theme and identity stay as they are).
+    pub fn set_space_paper(
+        &mut self,
+        space: bbr_domain::SpaceId,
+        paper: SpacePaper,
+    ) -> Result<(), AppearanceError> {
+        self.appearances.set_paper(&self.browser, space, paper)?;
+        self.check_invariants();
+        Ok(())
+    }
+
+    /// Restore a persisted appearance after a restore: a record is kept only
+    /// when it differs from the derived default (defaults never create
+    /// records). Unknown spaces reject whole.
+    pub fn restore_space_appearance(
+        &mut self,
+        appearance: SpaceAppearance,
+    ) -> Result<(), AppearanceError> {
+        self.appearances.restore(&self.browser, appearance)?;
         self.check_invariants();
         Ok(())
     }

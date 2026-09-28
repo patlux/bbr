@@ -93,8 +93,8 @@ impl Repository {
             inserted_rows += 1;
             for (space_position, space) in profile.spaces.iter().enumerate() {
                 transaction.execute(
-                    "INSERT INTO spaces(id, profile_id, title, tint, glyph_kind, glyph, position, active_tab_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    params![to_i64(space.id), to_i64(profile.id), space.title, space.tint.as_str(), glyph_kind(&space.glyph), glyph_value(&space.glyph), space_position as i64, space.active_tab.map(to_i64)],
+                    "INSERT INTO spaces(id, profile_id, title, tint, glyph_kind, glyph, position, active_tab_id, tint_intensity, grain) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    params![to_i64(space.id), to_i64(profile.id), space.title, space.tint.as_str(), glyph_kind(&space.glyph), glyph_value(&space.glyph), space_position as i64, space.active_tab.map(to_i64), space.paper.intensity.as_str(), space.paper.grain],
                 ).map_err(schema::storage)?;
                 inserted_rows += 1;
                 for (tab_position, tab) in space.tabs.iter().enumerate() {

@@ -73,7 +73,8 @@ pub use saved_pages::{
 };
 pub use space_appearance::{
     AppearanceError, AppearanceInvariantViolation, BbrGlyph, IdentityKind, SpaceAppearance,
-    SpaceAppearanceStore, SpaceEmoji, SpaceIdentity, SpaceTheme, ALLOWED_EMOJI,
+    SpaceAppearanceStore, SpaceEmoji, SpaceIdentity, SpacePaper, SpaceTheme, TintIntensity,
+    ALLOWED_EMOJI,
 };
 pub use split::Split;
 

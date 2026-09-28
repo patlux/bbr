@@ -37,7 +37,7 @@ fn light_standard_tints(token: bbr_domain::SpaceTheme) -> (String, String) {
         bbr_ui::theme::ContrastMode::Standard,
         bbr_ui::theme::Density::Normal,
     );
-    let tint = bbr_ui::theme::space_tint(token, &theme);
+    let tint = bbr_ui::theme::space_tint(token, bbr_ui::theme::TintIntensity::Standard, &theme);
     (
         bbr_ui::theme::hex(tint.chrome),
         bbr_ui::theme::hex(tint.chip_active),

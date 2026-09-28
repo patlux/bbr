@@ -167,8 +167,16 @@ fn dominance_filter_keeps_vertical_and_equal_deltas_out() {
 #[test]
 fn interpolation_is_chrome_only_and_returns_exact_endpoints() {
     let theme = bbr_ui::theme::Theme::dark();
-    let source = space_tint(SpaceTheme::Cobalt, &theme);
-    let destination = space_tint(SpaceTheme::Pine, &theme);
+    let source = space_tint(
+        SpaceTheme::Cobalt,
+        bbr_ui::theme::TintIntensity::Standard,
+        &theme,
+    );
+    let destination = space_tint(
+        SpaceTheme::Pine,
+        bbr_ui::theme::TintIntensity::Standard,
+        &theme,
+    );
     let at_source = interpolate_tint(source, destination, 0.0);
     assert_eq!(at_source, source, "cancel returns the exact source");
     let at_destination = interpolate_tint(source, destination, 1.0);

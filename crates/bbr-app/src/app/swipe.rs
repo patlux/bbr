@@ -454,13 +454,15 @@ impl BbrApp {
         }
         let theme = self.theme();
         let resolve = |space: SpaceId| {
-            self.controller
+            let (token, intensity) = self
+                .controller
                 .space_appearance(space)
-                .map(|appearance| appearance.theme)
-                .unwrap_or(SpaceTheme::Ink)
+                .map(|appearance| (appearance.theme, appearance.paper.intensity))
+                .unwrap_or((SpaceTheme::Ink, bbr_ui::theme::TintIntensity::Standard));
+            space_tint(token, intensity, &theme)
         };
-        let source = space_tint(resolve(gesture.source()), &theme);
-        let destination = space_tint(resolve(gesture.destination()), &theme);
+        let source = resolve(gesture.source());
+        let destination = resolve(gesture.destination());
         Some(interpolate_tint(source, destination, gesture.progress()))
     }
 
@@ -470,7 +472,10 @@ impl BbrApp {
     /// accents, icons, and web content keep their own tokens.
     pub(crate) fn active_chrome_tint(&self) -> Rgba {
         self.swipe_tint().map_or_else(
-            || space_tint(self.active_space_appearance().theme, &self.theme()).chrome,
+            || {
+                let appearance = self.active_space_appearance();
+                space_tint(appearance.theme, appearance.paper.intensity, &self.theme()).chrome
+            },
             |tint| tint.chrome,
         )
     }

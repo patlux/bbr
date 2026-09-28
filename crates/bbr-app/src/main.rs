@@ -394,10 +394,16 @@ fn main() {
                             intent,
                             active_space,
                         ) {
-                            Ok((controller, plan)) => {
+                            Ok((mut controller, plan)) => {
                                 restore_evidence = app::RestoreEvidence::Restored {
                                     deferred_tabs: plan.deferred.len(),
                                 };
+                                // Schema v4: the curated space appearance
+                                // (theme, identity, paper) restores too.
+                                store::appearance::restore_appearances(
+                                    &mut controller,
+                                    &restored_browser.profiles,
+                                );
                                 controller
                             }
                             Err(error) => {

@@ -91,7 +91,10 @@ mod organization_tests;
 #[cfg(test)]
 mod responsiveness_tests;
 
-pub use bbr_domain::{FolderId, ProfileHue, SpaceAppearance, SpaceId, SpaceTheme, TabLifecycle};
+pub use bbr_domain::{
+    FolderId, ProfileHue, SpaceAppearance, SpaceId, SpacePaper, SpaceTheme, TabLifecycle,
+    TintIntensity,
+};
 pub use controller::BrowserController;
 pub use downloads::{
     display_filename, url_filename, ApplyOutcome, DownloadActionSink, DownloadController,

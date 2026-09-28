@@ -71,6 +71,7 @@ mod tests {
             profile_title: "Default".into(),
             identity: "book".into(),
             theme: bbr_domain::SpaceTheme::Cobalt,
+            intensity: bbr_domain::TintIntensity::Standard,
             selected,
             drag_target,
             companion: None,

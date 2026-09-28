@@ -1,14 +1,15 @@
 //! B1-owned repository contract tests (schema v3, packet
 //! `saved-pages-portable-persistence`), extracted from `repository_contract`
 //! so that target keeps its pre-B1 size: the prior-v2/v3 fixture
-//! dispositions, the same-version Saved Pages corruption fixtures
+//! dispositions (v3 is prior since the v4 space paper), the same-version Saved Pages corruption fixtures
 //! (broken shape, duplicate canonical keys, dangling collection
 //! references), and the Saved Pages/collections round trip. The v2
 //! aggregate-contract tests stay in `repository_contract.rs`.
 
 use bbr_persistence::{
     CommandHistoryEntry, CorruptionIssue, DownloadOutcome, DownloadRecord, PersistenceError,
-    SearchEngineId, SearchSettings, Snapshot, SpaceGlyph, SpaceTint, StoreDiscardReason, StoreLoad,
+    SearchEngineId, SearchSettings, Snapshot, SpaceGlyph, SpacePaper, SpaceTint,
+    StoreDiscardReason, StoreLoad, TintIntensity,
 };
 
 use super::support::{
@@ -20,26 +21,62 @@ fn schema_v2_fixture_is_refused_read_only_untouched_as_prior_schema() {
     // The v2 fixture is now a prior-schema store: the read-only path
     // refuses it with a typed SchemaMismatch and leaves it byte-for-byte
     // untouched (the current-schema restore-without-writes proof lives in
-    // the schema_v3 fixture test below).
+    // the schema_v4 fixture test below).
     let db = TempDb::from_fixture("schema_v2");
     let before = inventory(&db.0);
     assert_eq!(
         db.repository().restore_read_only().unwrap_err(),
         PersistenceError::SchemaMismatch {
             found: 2,
-            supported: 3
+            supported: 4
         }
     );
     assert_eq!(inventory(&db.0), before);
 }
 
 #[test]
-fn schema_v3_fixture_restores_without_writes() {
-    // The current-schema fixture proves the full v3 shape restores as
+fn schema_v3_fixture_is_discarded_by_the_v4_space_paper_bump() {
+    // Schema v4 adds the space paper columns (v2 D6/D7). A complete v3
+    // store is a prior-schema store under the closed discard-on-mismatch
+    // policy: read-only refuses it untouched; the write path discards it
+    // and the fresh store round-trips the new paper fields.
+    let db = TempDb::from_fixture("schema_v3");
+    let before = inventory(&db.0);
+    assert_eq!(
+        db.repository().restore_read_only().unwrap_err(),
+        PersistenceError::SchemaMismatch {
+            found: 3,
+            supported: 4
+        }
+    );
+    assert_eq!(inventory(&db.0), before);
+    let outcome = db.repository().initialize_and_restore().unwrap();
+    assert_eq!(outcome.snapshot, Snapshot::default());
+    assert_eq!(
+        outcome.store,
+        StoreLoad::Discarded {
+            reason: StoreDiscardReason::VersionMismatch { found: 3 }
+        }
+    );
+    let mut snapshot = sample_snapshot(3);
+    snapshot.profiles[0].spaces[0].paper = SpacePaper {
+        intensity: TintIntensity::Subtle,
+        grain: true,
+    };
+    db.repository().replace_snapshot(&snapshot).unwrap();
+    assert_eq!(
+        db.repository().restore_read_only().unwrap().snapshot,
+        snapshot
+    );
+}
+
+#[test]
+fn schema_v4_fixture_restores_without_writes() {
+    // The current-schema fixture proves the full v4 shape restores as
     // `Loaded` with every field group — including the Saved Pages tables —
     // and that a matching valid read performs zero writes (byte-identical
     // inventory).
-    let db = TempDb::from_fixture("schema_v3");
+    let db = TempDb::from_fixture("schema_v4");
     let before = inventory(&db.0);
     let outcome = db.repository().restore_read_only().unwrap();
     assert_eq!(outcome.store, StoreLoad::Loaded);
@@ -50,6 +87,13 @@ fn schema_v3_fixture_restores_without_writes() {
     assert_eq!(space.tabs.len(), 2);
     assert_eq!(space.tint, SpaceTint::Pine);
     assert_eq!(space.glyph, SpaceGlyph::Emoji("🚀".into()));
+    assert_eq!(
+        space.paper,
+        SpacePaper {
+            intensity: TintIntensity::Rich,
+            grain: true
+        }
+    );
     assert_eq!(
         snapshot.settings,
         SearchSettings {
@@ -133,10 +177,10 @@ fn schema_v3_fixture_restores_without_writes() {
 
 #[test]
 fn same_version_structural_corruption_is_discarded_on_write() {
-    // A v3-stamped store with a broken shape (missing `collections` table)
+    // A v4-stamped store with a broken shape (missing `collections` table)
     // is refused read-only and discarded as `Corrupt` on write — the
     // same-version corruption disposition of the development rule.
-    let db = TempDb::from_fixture("schema_v3_corrupt");
+    let db = TempDb::from_fixture("schema_v4_corrupt");
     let before = inventory(&db.0);
     assert!(matches!(
         db.repository().restore_read_only(),
@@ -166,7 +210,7 @@ fn duplicate_canonical_url_store_is_corruption_read_only_and_discarded_on_write(
     // Two rows sharing a canonical URL key violate the at-most-one-active-
     // record-per-key invariant: read-only refuses as typed corruption, the
     // write path discards under the development rule.
-    let db = TempDb::from_fixture("schema_v3_duplicate_url");
+    let db = TempDb::from_fixture("schema_v4_duplicate_url");
     let before = inventory(&db.0);
     assert!(matches!(
         db.repository().restore_read_only(),
@@ -190,7 +234,7 @@ fn dangling_collection_reference_is_corruption_read_only_and_discarded_on_write(
     // A saved-page row referencing a collection that does not exist violates
     // the strict membership invariant: the structural foreign-key check
     // refuses it read-only as corruption, and the write path discards it.
-    let db = TempDb::from_fixture("schema_v3_collection_integrity");
+    let db = TempDb::from_fixture("schema_v4_collection_integrity");
     let before = inventory(&db.0);
     assert!(matches!(
         db.repository().restore_read_only(),

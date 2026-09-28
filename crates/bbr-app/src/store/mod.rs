@@ -61,6 +61,7 @@ use gpui::BackgroundExecutor;
 
 use self::saved_pages::{provider_order, SavedPagesProvider};
 
+pub(crate) mod appearance;
 pub(crate) mod browser;
 pub(crate) mod browser_writer;
 pub(crate) mod saved_pages;

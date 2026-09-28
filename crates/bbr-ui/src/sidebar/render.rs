@@ -122,6 +122,10 @@ pub fn sidebar_surface(
             crate::components::tint_fade::tint_fade_layer(theme, "rail", model.tint_fade),
             |el, layer| el.child(layer),
         )
+        // D6: the static grain sits on the tint, beneath every child.
+        .when(model.grain, |el| {
+            el.child(crate::components::grain::grain_layer(theme))
+        })
         .on_scroll_wheel(callbacks::wheel(&callbacks.on_rail_scroll_wheel))
         .on_mouse_down(
             MouseButton::Left,

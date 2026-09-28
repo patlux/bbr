@@ -780,10 +780,22 @@ using the IDs of §15. All rows use `density` geometry from §8.
   outline and inactive chips paint no surface of their own.
   Activation keeps the selected tab/session warm and preserves every existing
   50/100 ms budget and fast-but-wrong guard.
-- **Appearance:** each space owns one curated theme-color token and one identity.
+- **Appearance:** each space owns one curated theme-color token, one identity,
+  and a curated paper: one of three tint intensity steps and a static-grain
+  flag (D6/D7; defaults `standard`, grain off).
   The active token tints the BBR-owned sidebar material (the whole chassis
   body) by blending a curated chrome-wash hue into it at 12 % (increased
-  contrast 14 %, D3). The wash hues are calibrated per mode so every composited
+  contrast 14 %, D3) — the `standard` step. `subtle` blends 6 % (IC 8 %);
+  `rich` blends 24 % (IC 26 %) and is then pinned to the `standard` step's
+  relative luminance, so it adds hue, never lightness, and every luminance
+  bar below stays where `standard` proves it (the near-achromatic Slate and
+  Ink washes therefore barely change at `rich`). The grain is one static
+  128 px noise tile (one texel per device pixel, anchored to the window
+  origin) painted on the tint beneath every child of the rail and the
+  chassis — never over the card, web content or control text, never
+  animated. Its specks are white on light chrome (≤ 28 %) and black on dark
+  chrome (≤ 36 %), about half the sheet clear, so every speck only moves
+  the paper away from its text and no text bar can drop. The wash hues are calibrated per mode so every composited
   bar holds on every tinted rail: `ink` ≥ 12:1 (IC 14:1), `ink.secondary` and
   light `accent.ink` ≥ 5.9:1 (IC 9:1 for `ink.secondary`), the D1 selection
   (`ink` ≥ 10.5:1) and the footer veil (`ink.secondary` ≥ 5.9:1). Dark washes
@@ -827,22 +839,25 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Surface:** one BBR-owned in-rail panel above the footer row
   (`bbr-space-config`) with a header (`bbr-space-config-title`), a rename
   field (`bbr-space-config-name`), the curated theme picker
-  (`bbr-space-config-theme-<name>`), the curated identity picker (emoji
+  (`bbr-space-config-theme-<name>`), the paper row
+  (`bbr-space-config-paper-label`, one `bbr-space-config-intensity-<step>` per
+  step — each previewing its rail at the draft theme — and the
+  `bbr-space-config-grain` toggle), the curated identity picker (emoji
   `bbr-space-config-emoji-<index>` and BBR-glyph `bbr-space-config-glyph-<name>`),
   and Done/Cancel (`bbr-space-config-done` / `bbr-space-config-cancel`).
-  Only curated emoji/BBR-glyph values and curated theme tokens exist — no
-  free-form icon or color. Keyboard: printable chars edit the draft,
+  Only curated emoji/BBR-glyph values, curated theme tokens and the three
+  intensity steps exist — no free-form icon, colour field or strength. Keyboard: printable chars edit the draft,
   Backspace deletes, Enter commits, Escape cancels.
 - **Exact-SpaceId contract:** the surface binds the exact persistent SpaceId
   at open and never re-derives it; every commit targets that id through the
   controller (which rejects unknown spaces whole), so a stale surface can
   never mutate another Space after a switch.
-- **Truthful persistence boundary:** the committed rename is durable (the
-  structural model carries titles through the persistence DTO). The curated
-  theme/identity is session-valid only under the current schema — the
-  persisted rows store the canonical derived defaults and restore drops
-  tint/glyph, so a curated appearance reverts to the derived default after a
-  restart. No path claims appearance persistence.
+- **Persistence (schema v4):** the committed rename and the whole curated
+  appearance — theme, identity, intensity and grain — are durable. The
+  browser-state write stores each space's effective appearance in its row;
+  restore applies it after the structural restore and keeps an explicit
+  record only where it differs from the derived default. A store stamped
+  with an older schema is discarded under the closed version-bump policy.
 
 ### 11.4 Sidebar
 
@@ -1931,7 +1946,7 @@ second is replaced by the ring).
 | S7 after-commit moments | [motion moments](docs/roadmap/tasks/v2-motion-moments.md) | §6, §10, §11.3, §11.4, §11.10, §11.12 | landed 2026-09-28 |
 | S8 empty states | [empty states](docs/roadmap/tasks/v2-empty-states.md) | §11.8 | landed 2026-09-28 |
 | S9 app icon | [brand icon](docs/roadmap/tasks/v2-brand-icon.md) | §1, §7 | landed 2026-09-28 |
-| S10 theme picker | [theme picker](docs/roadmap/tasks/v2-theme-picker.md) | §11.3 configuration surface | adopted |
+| S10 theme picker | [theme picker](docs/roadmap/tasks/v2-theme-picker.md) | §11.3 configuration surface | landed 2026-09-28 |
 | S11 closeout | [closeout](docs/roadmap/tasks/v2-closeout.md) | §18 status, Evidence | adopted |
 
 ## Evidence

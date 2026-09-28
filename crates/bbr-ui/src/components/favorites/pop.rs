@@ -65,7 +65,9 @@ pub(super) fn speck_layer(theme: &Theme, pop: Option<u64>) -> Option<AnyElement>
     let hues: Vec<Rgba> = bbr_domain::SpaceTheme::ALL
         .iter()
         .take(SPECKS)
-        .map(|token| crate::theme::space_tint(*token, theme).hue)
+        .map(|token| {
+            crate::theme::space_tint(*token, crate::theme::TintIntensity::Standard, theme).hue
+        })
         .collect();
     Some(
         div()

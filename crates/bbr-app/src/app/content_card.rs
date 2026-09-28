@@ -76,6 +76,11 @@ impl BbrApp {
                 ),
                 |chassis, layer| chassis.child(layer),
             )
+            // D6: the chassis shares the rail's static grain (beneath the
+            // card, which covers the web content).
+            .when(self.active_space_appearance().paper.grain, |chassis| {
+                chassis.child(bbr_ui::components::grain::grain_layer(theme))
+            })
             .pt(px(card.top))
             .pr(px(card.trailing))
             .pb(px(card.bottom))

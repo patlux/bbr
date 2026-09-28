@@ -2,10 +2,10 @@
 
 use std::collections::HashSet;
 
-use crate::{Browser, SpaceId, SpaceIdentity, SpaceTheme};
+use crate::{Browser, SpaceId, SpaceIdentity, SpacePaper, SpaceTheme};
 
-/// The complete per-Space appearance record: one curated theme token and
-/// one validated identity.
+/// The complete per-Space appearance record: one curated theme token, one
+/// validated identity, and the curated paper (intensity + static grain).
 ///
 /// The record is the **explicit override**: when no record exists, the
 /// effective appearance is derived deterministically from the space's
@@ -19,6 +19,8 @@ pub struct SpaceAppearance {
     pub theme: SpaceTheme,
     /// Validated emoji-or-glyph identity.
     pub identity: SpaceIdentity,
+    /// Curated tint intensity and static grain (v2 D6/D7).
+    pub paper: SpacePaper,
 }
 
 impl SpaceAppearance {
@@ -29,6 +31,7 @@ impl SpaceAppearance {
             space,
             theme: SpaceTheme::default(),
             identity: SpaceIdentity::default(),
+            paper: SpacePaper::default(),
         }
     }
 
@@ -43,6 +46,7 @@ impl SpaceAppearance {
             space,
             theme: SpaceTheme::from_profile_hue(hue),
             identity: SpaceIdentity::default(),
+            paper: SpacePaper::default(),
         }
     }
 }
@@ -155,6 +159,7 @@ impl SpaceAppearanceStore {
             space,
             theme,
             identity: SpaceIdentity::default(),
+            paper: SpacePaper::default(),
         })
     }
 
@@ -205,6 +210,39 @@ impl SpaceAppearanceStore {
         let entry = self.entry_mut(space);
         entry.theme = theme;
         entry.identity = identity;
+        Ok(())
+    }
+
+    /// Set the curated paper (intensity + static grain) for `space`. Rejects
+    /// unknown spaces whole; theme and identity are preserved (a first
+    /// record starts from the canonical defaults, as [`Self::set_theme`]).
+    pub fn set_paper(
+        &mut self,
+        browser: &Browser,
+        space: SpaceId,
+        paper: SpacePaper,
+    ) -> Result<(), AppearanceError> {
+        if browser.space(space).is_none() {
+            return Err(AppearanceError::UnknownSpace(space));
+        }
+        self.entry_mut(space).paper = paper;
+        Ok(())
+    }
+
+    /// Restore a persisted appearance for its space: the record is kept only
+    /// when it differs from the derived default (defaults never create
+    /// records), otherwise any record is removed. Rejects unknown spaces
+    /// whole.
+    pub fn restore(
+        &mut self,
+        browser: &Browser,
+        appearance: SpaceAppearance,
+    ) -> Result<(), AppearanceError> {
+        let space = appearance.space;
+        self.reset(browser, space)?;
+        if self.effective(browser, space).as_ref() != Some(&appearance) {
+            *self.entry_mut(space) = appearance;
+        }
         Ok(())
     }
 

@@ -777,12 +777,14 @@ impl BbrApp {
     /// plus the single window's presentation rows (geometry + sidebar). The
     /// window identity is derived above every domain id (global uniqueness
     /// across kinds), so a fresh creation can never collide with the window
-    /// row. Appearance values are the canonical derived defaults of the
-    /// integrated space-appearance contract (see `store::browser`).
+    /// row. Appearance values are the controller's effective per-space
+    /// appearance (schema v4 persists theme, identity and paper).
     fn current_browser_state(&self) -> bbr_persistence::BrowserState {
         use bbr_persistence::{SidebarState, WindowGeometry, WindowState};
         let intent = self.controller.intent();
-        let profiles = crate::store::browser::intent_to_persisted(&intent);
+        let profiles = crate::store::browser::intent_to_persisted(&intent, |space| {
+            self.controller.space_appearance(space)
+        });
         let window_id = crate::store::browser::derived_window_id(&profiles);
         let geometry = self
             .window_geometry

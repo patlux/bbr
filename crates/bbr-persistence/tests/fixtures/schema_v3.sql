@@ -1,7 +1,7 @@
--- Schema v3 current-schema fixture (B1 Saved Pages): the complete v3 shape
--- with representative rows, including a flat collection and member records.
--- `restore_read_only` must load it as `Loaded` with zero writes (the
--- inventory byte-identity test proves it).
+-- Prior-schema v3 fixture (the complete v3 shape before the v4 space paper
+-- columns). Under schema v4 this store is a version mismatch: the read-only
+-- path refuses it untouched and the write path discards it as
+-- `VersionMismatch { found: 3 }` (no migration, no compatibility path).
 CREATE TABLE profiles (id INTEGER PRIMARY KEY NOT NULL, title TEXT NOT NULL, hue TEXT NOT NULL, position INTEGER NOT NULL);
 CREATE TABLE spaces (id INTEGER PRIMARY KEY NOT NULL, profile_id INTEGER NOT NULL REFERENCES profiles(id), title TEXT NOT NULL, tint TEXT NOT NULL, glyph_kind TEXT NOT NULL, glyph TEXT NOT NULL, position INTEGER NOT NULL, active_tab_id INTEGER);
 CREATE TABLE tabs (id INTEGER PRIMARY KEY NOT NULL, space_id INTEGER NOT NULL REFERENCES spaces(id), title TEXT NOT NULL, url TEXT NOT NULL, position INTEGER NOT NULL, pinned INTEGER NOT NULL);

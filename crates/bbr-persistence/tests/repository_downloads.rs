@@ -26,14 +26,14 @@ fn prior_schema_downloads_shape_is_discarded_and_immediately_rewritable() {
     // leaves it untouched, and the write path discards it as a version
     // mismatch — never a partial load — and is immediately rewritable with
     // the current shape. (Same-version structural corruption is proven by
-    // the schema_v3_corrupt fixture.)
+    // the schema_v4_corrupt fixture.)
     let db = TempDb::from_fixture("schema_v2_legacy_downloads");
     let before = inventory(&db.0);
     assert_eq!(
         db.repository().restore_read_only().unwrap_err(),
         PersistenceError::SchemaMismatch {
             found: 2,
-            supported: 3
+            supported: 4
         }
     );
     assert_eq!(inventory(&db.0), before, "read-only never writes");

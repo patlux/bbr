@@ -229,8 +229,9 @@ fn half_way_light_chrome(
         bbr_ui::theme::Density::Normal,
     );
     let (a, b) = (
-        bbr_ui::theme::space_tint(source, &theme).chrome,
-        bbr_ui::theme::space_tint(destination, &theme).chrome,
+        bbr_ui::theme::space_tint(source, bbr_ui::theme::TintIntensity::Standard, &theme).chrome,
+        bbr_ui::theme::space_tint(destination, bbr_ui::theme::TintIntensity::Standard, &theme)
+            .chrome,
     );
     let lerp = |x: f32, y: f32| x + (y - x) * 0.5;
     bbr_ui::theme::hex(gpui::Rgba {

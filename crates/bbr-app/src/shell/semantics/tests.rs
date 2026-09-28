@@ -71,6 +71,7 @@ fn space_chip() -> SpaceChipVisuals {
         profile_title: "Default".into(),
         identity: "book".into(),
         theme: bbr_browser::SpaceTheme::Cobalt,
+        intensity: bbr_domain::TintIntensity::Standard,
         selected: true,
         drag_target: false,
         companion: None,

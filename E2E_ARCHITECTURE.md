@@ -539,7 +539,10 @@ surface over real WKWebViews:
    names plus the resolved chrome/chip tint hex from the one central
    presentation model, never raw pixels) exactly with the active space
    while warm-session counts, per-space WebViewIds, the native content
-   rect, the pane layout, and chrome focus stay untouched.
+   rect, the pane layout, and chrome focus stay untouched. Since v2 S10
+   `active_appearance` also carries the curated paper (`intensity`,
+   `grain`); `e2e_shell_persistence/space_paper.rs` proves the draft,
+   cancel, commit and restart legs of that paper.
 5. **Swipe commit/cancel** (`e2e_shell_spaces/swipe/`): every phase drives
    the exact production `on_sidebar_scroll_wheel` handler through the typed
    `SwipeScroll` request, with the release always a real **zero-delta**
