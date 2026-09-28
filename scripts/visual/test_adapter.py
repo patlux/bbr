@@ -36,6 +36,18 @@ class AdapterTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'Unexpected pinned tool source'):
                     verify_tool()
 
+    def test_evicted_mbx_target_link_is_not_vendor_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tool = Path(directory)
+            (tool / 'target').symlink_to(tool / 'evicted-managed-target', target_is_directory=True)
+            with patch('support.TOOL', tool), patch('support.json.loads', return_value={'files': {}}):
+                self.assertEqual(verify_tool(), {'files': {}})
+            (tool / 'target').unlink()
+            (tool / 'target').write_text('unexpected regular file')
+            with patch('support.TOOL', tool), patch('support.json.loads', return_value={'files': {}}):
+                with self.assertRaisesRegex(ValueError, 'Unexpected pinned tool source'):
+                    verify_tool()
+
     def test_capture_timeout_reaps_group_before_releasing_gui_lock(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -85,6 +85,10 @@ def verify_tool() -> dict:
             if (Path(directory) / name).is_symlink():
                 raise ValueError(f"Non-regular pinned tool directory: {name}")
         for name in files:
+            # os.walk classifies mbx's dangling target link as a file after GC.
+            # Exclude the same generated link, never an unexpected regular file.
+            if Path(directory) == TOOL and name == "target" and (TOOL / name).is_symlink():
+                continue
             relative = str((Path(directory) / name).relative_to(TOOL))
             if relative not in provenance["files"]:
                 raise ValueError(f"Unexpected pinned tool source: {relative}")
