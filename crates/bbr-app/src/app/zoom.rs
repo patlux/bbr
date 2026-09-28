@@ -394,7 +394,8 @@ impl super::BbrApp {
 
     /// Blueprint D03: the address control's leading identity mark while
     /// the address renders (never on the staging surface or with the rail
-    /// hidden).
+    /// hidden). Testkit evidence only: the render derives the mark itself.
+    #[cfg(feature = "testkit")]
     pub(crate) fn rendered_address_mark(&self) -> Option<bbr_ui::components::address::AddressMark> {
         let staging = self.command_surface == crate::app::palette::CommandSurface::None
             && self.command_bar_mode.is_active();
