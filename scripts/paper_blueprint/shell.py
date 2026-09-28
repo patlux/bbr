@@ -71,7 +71,7 @@ def work_rows(t, selected="Linear"):
 def profile_chip(t, letter, hue, size=24):
     fg = "var(--color-profile-amber-letter)" if hue == "amber" and not t.dark else "var(--color-on-accent)"
     if t.dark:
-        fg = "#FFFFFF"
+        fg = "var(--color-identity-letter)"
     return (f'<div layer-name="bbr-profile-chip · {hue}" style="width:{size}px;height:{size}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);'
             f'background-color:{t.c("profile-" + hue)}">{text(letter, "badge", fg, clamp=False, extra="letter-spacing:0;")}</div>')
 

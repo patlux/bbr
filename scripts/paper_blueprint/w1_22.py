@@ -117,14 +117,14 @@ if "P-5" in which:
               ids="bbr-profile-chip-<n>, bbr-command-profile-hint")
     from blocks import result_row, mode_pill
     def items(t):
-        chips = "".join(f'<div style="display:flex;flex-direction:column;gap:6px;align-items:center;width:54px">{profile_chip(t, l, h)}{text(h, "meta", t.c("ink-faint"), clamp=False)}</div>'
+        chips = "".join(f'<div style="display:flex;flex-direction:column;gap:6px;align-items:center;width:64px">{profile_chip(t, l, h)}{text(h, "meta", t.c("ink-faint"), clamp=False)}</div>'
                         for l, h in (("D", "cobalt"), ("W", "violet"), ("P", "fuchsia"), ("C", "amber"), ("T", "terracotta"), ("S", "slate")))
         hint = (f'<div style="margin:0 8px;height:48px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:var(--radius-lg);background-color:{t.c("overlay")};box-shadow:0 0 0 1px {t.c("hairline")}">'
                 f'{icon("search", t.c("ink-faint"), 16)}{text("in Profile · Work", "label", t.c("ink-secondary"), clamp=False)}{profile_chip(t, "W", "violet", 20)}<div style="flex:1 1 0"></div>{mode_pill(t, "OPEN")}</div>')
         res = f'<div style="margin:0 8px;padding:6px;border-radius:var(--radius-lg);background-color:{t.c("overlay")}">{result_row(t, "Linear — Sprint 42", None, ("site", "violet", "L"), "Tab", True, subtitle="Work · Profile Work")}</div>'
         tip = (f'<div style="display:flex;flex-direction:column;gap:8px;padding:0 12px">{footer(t, spaces=("code", "bag", "moon"))}'
                f'<div style="align-self:center;padding:4px 8px;border-radius:6px;background-color:{t.c("overlay")};box-shadow:0 0 0 1px {t.c("hairline")}">{text("Work — Profile Work", "meta", t.c("ink"), clamp=False)}</div></div>')
-        return [frag(t, f'<div style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 12px">{chips}</div>', "Profile chips", "six hues, round-robin, stable", w=420),
+        return [frag(t, f'<div style="display:flex;gap:2px;padding:8px 6px">{chips}</div>', "Profile chips", "six hues, round-robin, stable", w=420),
                 frag(t, hint, "Command hint", "after a cross-profile switch, one interaction", w=420),
                 frag(t, res, "Cross-profile result", "space and profile named", w=420),
                 frag(t, tip, "Chip accessible name", "space + profile", w=300)]
@@ -137,7 +137,7 @@ if "P-6" in which:
     from blocks import sheet, button, field
     def body(t):
         hues = "".join(f'<div style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background-color:{t.c("profile-" + h)};'
-                       + (f'box-shadow:0 0 0 2px {t.c("overlay")}, 0 0 0 4px {t.c("accent")}' if h == "terracotta" else "") + f'">{text("C", "badge", "#FFFFFF", clamp=False)}</div>'
+                       + (f'box-shadow:0 0 0 2px {t.c("overlay")}, 0 0 0 4px {t.c("accent")}' if h == "terracotta" else "") + f'">{text("C", "badge", "var(--color-identity-letter)", clamp=False)}</div>'
                        for h in ("cobalt", "violet", "fuchsia", "amber", "terracotta", "slate"))
         return (f'<div style="display:flex;align-items:center;gap:14px">{profile_chip(t, "C", "terracotta", 44)}<div style="display:flex;flex-direction:column;gap:2px">{text("Client work", "title-xl", t.c("ink"), weight=600)}{text("Separate cookies, logins, history and site data", "meta", t.c("ink-secondary"), clamp=False)}</div></div>'
                 f'{text("Name", "label", t.c("ink-secondary"), clamp=False)}{field(t, "Client work", state="focused", lead=None, width=380)}'

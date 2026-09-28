@@ -11,7 +11,7 @@ TABS = [("General", "gear"), ("Profiles", "person"), ("Search", "search"), ("Pri
 
 def app_icon(size=64):
     r = size * 0.225
-    return (f'<div style="width:{size}px;height:{size}px;flex-shrink:0;border-radius:{r}px;display:flex;align-items:center;justify-content:center;background-color:var(--color-dark-canvas);box-shadow:0 1px 3px rgb(0 0 0 / 25%)">'
+    return (f'<div style="width:{size}px;height:{size}px;flex-shrink:0;border-radius:{r}px;display:flex;align-items:center;justify-content:center;background-color:var(--color-dark-canvas);box-shadow:0 1px 3px var(--color-icon-shadow)">'
             f'<div style="width:{size * 0.5}px;height:{size * 0.5}px;border-radius:{size * 0.12}px;box-shadow:inset 0 0 0 {max(2, size * 0.06):.0f}px var(--color-dark-accent)"></div></div>')
 
 

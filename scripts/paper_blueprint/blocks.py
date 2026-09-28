@@ -70,7 +70,7 @@ def switch(t, on=False, label=None):
     track = t.c("accent") if on else t.c("border-strong")
     knob_pos = "left:14px" if on else "left:2px"
     sw = (f'<div style="position:relative;width:30px;height:18px;flex-shrink:0;border-radius:9999px;background-color:{track}">'
-          f'<div style="position:absolute;top:2px;{knob_pos};width:14px;height:14px;border-radius:9999px;background-color:var(--color-field);box-shadow:0 1px 2px rgb(0 0 0 / 20%)"></div></div>')
+          f'<div style="position:absolute;top:2px;{knob_pos};width:14px;height:14px;border-radius:9999px;background-color:var(--color-field);box-shadow:0 1px 2px var(--color-knob-shadow)"></div></div>')
     lab = text(label, "label", t.c("ink"), weight=400, clamp=False, grow=True) if label else ""
     return f'<div style="display:flex;align-items:center;gap:10px">{lab}{sw}</div>'
 

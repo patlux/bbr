@@ -518,7 +518,11 @@ W7:                     2026-09-28. Page 90 D-1 open decisions (12
                         Review fix: the S-7 note about chip alignment
                         (main centres; the Paper target starts after
                         Downloads — D01). I-1/I-2 regenerated with all
-                        waves done.
+                        waves done. Closing audit: the last literal colours
+                        (traffic lights, their edge, identity letters,
+                        switch knob and icon shadows — 1 403 nodes) moved to
+                        seven new tokens; a file-wide search finds no
+                        literal left on the blueprint pages.
 Token check:            W0 and W7 verify_tokens.py: 126 checked, 0
                         mismatches.
 Coverage check:         W7 check_coverage.py: boards 116/116, rows 118/118

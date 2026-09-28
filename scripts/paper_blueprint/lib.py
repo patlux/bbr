@@ -233,10 +233,10 @@ def favicon(t, fav, size=18):
 # ---------------------------------------------------------------- rail parts
 def traffic_lights(t, dim=False):
     """Native window controls (context only, never BBR paint)."""
-    colours = ["#FF5F57", "#FEBC2E", "#28C840"] if not dim else [t.c("border-strong")] * 3
+    colours = ["var(--color-native-close)", "var(--color-native-minimize)", "var(--color-native-zoom)"] if not dim else [t.c("border-strong")] * 3
     dots = "".join(
         f'<div style="width:12px;height:12px;border-radius:9999px;flex-shrink:0;background-color:{c};'
-        f'box-shadow:inset 0 0 0 0.5px rgb(0 0 0 / 12%);"></div>' for c in colours)
+        f'box-shadow:inset 0 0 0 0.5px var(--color-native-edge);"></div>' for c in colours)
     return f'<div layer-name="Traffic lights · native" style="display:flex;gap:8px;align-items:center;padding-right:8px;flex-shrink:0">{dots}</div>'
 
 
