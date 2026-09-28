@@ -490,3 +490,86 @@ fn peek_bar_follows_the_shell_appearance() {
     }));
     finish(result, &mut harness, &socket, &token);
 }
+
+/// Blueprint D09 (DESIGN §11.17): the preview sits in an inset frame under
+/// its bar and the portal washes the covered origin around it (never over
+/// the preview). Proven from the geometry the portal drew and the native
+/// slot rect the engine received; dismissal restores the full-card slot.
+#[test]
+#[ignore]
+fn peek_sits_inset_under_its_bar_over_a_washed_origin() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+
+    let (fixtures, page_one, _page_two) = fixtures();
+    let target = fixtures.url("/popup-target.html");
+    let (mut harness, socket, token) = spawn_harness("peek-inset", &page_one);
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let replay = client.attach(None).expect("attach");
+        let initial = client.snapshot().expect("initial peek snapshot");
+        let source = initial.active_web_view.expect("source view");
+        if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {
+            let since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+            let _ = wait_title(&mut client, source, PAGE_ONE_TITLE, since);
+        }
+        client.send_ok(&Request::FlushFrame).expect("flush");
+        let card = client.snapshot().expect("card snapshot").content_rect;
+
+        inject_default_new_window(&mut client, source, initial.active_profile, &target);
+        let near = |a: [f32; 4], b: [f32; 4]| a.iter().zip(b).all(|(a, b)| (a - b).abs() < 0.5);
+        let until = deadline();
+        let drawn = loop {
+            client
+                .send_ok(&Request::FlushFrame)
+                .expect("flush main and portal frames");
+            let snapshot = client.snapshot().expect("peek frame snapshot");
+            if let Some(frame) = snapshot.peek_frame {
+                if near(snapshot.content_rect, frame.preview) {
+                    break snapshot;
+                }
+            }
+            assert!(
+                Instant::now() < until,
+                "Peek frame not drawn: frame={:?} slot={:?}",
+                snapshot.peek_frame,
+                snapshot.content_rect
+            );
+        };
+        let frame = drawn.peek_frame.expect("peek frame");
+        assert!(near(frame.card, card), "the card is the origin's slot");
+        for id in ["bbr-peek-wash", "bbr-peek-frame", "bbr-peek-bar"] {
+            assert!(drawn.portal.ids.iter().any(|drawn| drawn == id), "{id}");
+        }
+        // Board G-8: 24 pt sides, 16 pt top/bottom, 8 pt bar → preview gap.
+        let [cx, cy, cw, ch] = frame.card;
+        let [bx, by, bw, bh] = frame.bar;
+        let [px, py, pw, ph] = frame.preview;
+        assert_eq!((bx - cx, by - cy), (24.0, 16.0));
+        assert_eq!((px, pw), (bx, bw));
+        assert_eq!(cx + cw - (px + pw), 24.0);
+        assert_eq!(py - (by + bh), 8.0);
+        assert_eq!(cy + ch - (py + ph), 16.0);
+        assert!(bh > 0.0 && ph > 0.0);
+
+        client
+            .send_ok(&Request::DispatchKeystroke {
+                keystroke: "escape".into(),
+            })
+            .expect("escape dismisses the preview");
+        let until = deadline();
+        loop {
+            client.send_ok(&Request::FlushFrame).expect("flush");
+            let closed = client.snapshot().expect("closed snapshot");
+            if closed.preview.is_none() && near(closed.content_rect, card) {
+                assert!(closed.peek_frame.is_none());
+                break;
+            }
+            assert!(Instant::now() < until, "slot did not return to the card");
+        }
+    }));
+    finish(result, &mut harness, &socket, &token);
+}

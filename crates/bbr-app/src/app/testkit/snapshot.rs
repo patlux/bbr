@@ -617,6 +617,15 @@ impl BbrApp {
             }),
             peek_presented: self.peek_presented(),
             peek_theme: self.peek_presented_theme.get().map(theme_label),
+            peek_frame: self
+                .peek_presented()
+                .then(|| self.peek_presented_frame.get())
+                .flatten()
+                .map(|frame| bbr_testkit::protocol::PeekFrameSnapshot {
+                    card: frame.card,
+                    bar: frame.bar,
+                    preview: frame.preview,
+                }),
             #[cfg(target_os = "macos")]
             preview_z_order: {
                 // Truthful native z-order evidence (Link Preview / Peek

@@ -90,6 +90,64 @@ impl CardInsets {
 /// Dark:  0 0 0 1px rgba(255,255,255,0.05), 0 1 2 rgba(0,0,0,0.45),
 ///        0 10 24 rgba(0,0,0,0.38)
 /// ```
+/// Blueprint D09 (DESIGN §11.17): the Peek frame's horizontal inset inside
+/// the card (`sp6`).
+pub const PEEK_INSET_X: f32 = 24.0;
+/// The Peek frame's top and bottom inset inside the card (`sp4`).
+pub const PEEK_INSET_Y: f32 = 16.0;
+/// The gap between the Peek bar and the preview below it (`sp2`).
+pub const PEEK_GAP: f32 = 8.0;
+/// The preview's corner radius (`radius:md`); the native layer clips to it.
+pub const PEEK_PREVIEW_RADIUS: f32 = 10.0;
+
+/// The Peek presentation inside the content card (blueprint D09): the bar
+/// sits inset at the card top and the preview WKWebView sits in an inset
+/// frame under it. The warm origin keeps the whole card underneath; the
+/// portal washes exactly the card minus the preview. All rects are
+/// `[x, y, width, height]` in window points and never go negative.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PeekFrame {
+    /// The card's inner box (the origin's native slot).
+    pub card: [f32; 4],
+    /// The Peek bar.
+    pub bar: [f32; 4],
+    /// The preview's native slot.
+    pub preview: [f32; 4],
+    /// The card's corner radius (0 in full screen): the wash follows it so
+    /// it never paints onto the chassis.
+    pub card_radius: f32,
+}
+
+impl PeekFrame {
+    /// Resolve the frame for a card inner box and the bar height
+    /// (`density:row`).
+    pub fn resolve(card: [f32; 4], card_radius: f32, bar_height: f32) -> Self {
+        let [x, y, width, height] = card;
+        let inner_width = (width - 2.0 * PEEK_INSET_X).max(0.0);
+        let bar = [x + PEEK_INSET_X, y + PEEK_INSET_Y, inner_width, bar_height];
+        let preview_top = y + PEEK_INSET_Y + bar_height + PEEK_GAP;
+        let preview_height = (y + height - PEEK_INSET_Y - preview_top).max(0.0);
+        let preview = [x + PEEK_INSET_X, preview_top, inner_width, preview_height];
+        Self {
+            card,
+            bar,
+            preview,
+            card_radius,
+        }
+    }
+
+    /// The preview slot's insets inside the card `(top, right, bottom,
+    /// left)` — what the app's layout applies around the preview slot.
+    pub fn preview_insets(bar_height: f32) -> [f32; 4] {
+        [
+            PEEK_INSET_Y + bar_height + PEEK_GAP,
+            PEEK_INSET_X,
+            PEEK_INSET_Y,
+            PEEK_INSET_X,
+        ]
+    }
+}
+
 pub fn content_card_shadow(theme: &Theme) -> Vec<BoxShadow> {
     let shadow = |color, y: f32, blur: f32, spread: f32| BoxShadow {
         color,
@@ -115,6 +173,32 @@ pub fn content_card_shadow(theme: &Theme) -> Vec<BoxShadow> {
 mod tests {
     use super::*;
     use crate::theme::{ContrastMode, Density};
+
+    #[test]
+    fn peek_frame_insets_the_bar_and_the_preview_inside_the_card() {
+        for density in [Density::Small, Density::Normal, Density::ExtraLarge] {
+            let bar_height = f32::from(density.row());
+            let frame = PeekFrame::resolve([260.0, 10.0, 900.0, 700.0], CARD_RADIUS, bar_height);
+            assert_eq!(frame.bar, [284.0, 26.0, 852.0, bar_height]);
+            assert_eq!(frame.preview[0], frame.bar[0]);
+            assert_eq!(frame.preview[2], frame.bar[2]);
+            assert_eq!(frame.preview[1], frame.bar[1] + bar_height + PEEK_GAP);
+            // The preview ends one inset above the card bottom.
+            assert_eq!(
+                frame.preview[1] + frame.preview[3],
+                10.0 + 700.0 - PEEK_INSET_Y
+            );
+            // The layout insets describe the same preview rect.
+            let [top, right, bottom, left] = PeekFrame::preview_insets(bar_height);
+            assert_eq!(frame.preview[0], 260.0 + left);
+            assert_eq!(frame.preview[1], 10.0 + top);
+            assert_eq!(frame.preview[0] + frame.preview[2], 260.0 + 900.0 - right);
+            assert_eq!(frame.preview[1] + frame.preview[3], 10.0 + 700.0 - bottom);
+        }
+        // A tiny card never yields negative geometry.
+        let tiny = PeekFrame::resolve([0.0, 0.0, 20.0, 30.0], 0.0, 36.0);
+        assert!(tiny.bar[2] >= 0.0 && tiny.preview[2] >= 0.0 && tiny.preview[3] >= 0.0);
+    }
 
     #[test]
     fn expanded_card_is_flush_with_the_rail_and_inset_elsewhere() {

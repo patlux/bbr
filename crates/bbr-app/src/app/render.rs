@@ -108,6 +108,9 @@ impl Render for BbrApp {
         // §2 seated content card: one frame for the chassis, the card and
         // every native slot's clip.
         let card = self.content_card_frame(window);
+        // Blueprint D09: the portal washes the card around the inset
+        // preview, so it needs the card's inner box of this exact frame.
+        self.record_peek_card(card, sidebar_width, window, cx);
 
         // §11.5 presentation milestone: the result palette was constructed
         // into the sidebar above. When a `CommandType` benchmark is pending,
@@ -198,7 +201,7 @@ impl Render for BbrApp {
                 }
                 self.performance.prune_pane_rects(&keep);
             }
-            let build_slot = |this: &BbrApp, id: WebViewId, _focused: bool| {
+            let build_slot = |this: &BbrApp, id: WebViewId, _focused: bool, radius: f32| {
                 // §11.8a: the unresponsive pane replaces the exact active
                 // view's native slot while its renderer is reported
                 // unresponsive (the session and tab stay alive); every
@@ -224,8 +227,7 @@ impl Render for BbrApp {
                     )
                     .into_any();
                 }
-                let slot =
-                    NativeWebViewSlot::new(this.engine.clone(), id).corner_radius(card.radius);
+                let slot = NativeWebViewSlot::new(this.engine.clone(), id).corner_radius(radius);
                 #[cfg(feature = "testkit")]
                 let slot = slot.on_keyed_geometry(this.performance.keyed_geometry_callback());
                 #[cfg(feature = "testkit")]
@@ -243,7 +245,53 @@ impl Render for BbrApp {
                 };
                 slot.into_any()
             };
+            let peek_open = self
+                .controller
+                .preview()
+                .is_some_and(|preview| preview.view == layout.primary);
             match layout.secondary {
+                // Blueprint D09 (§11.17): the preview sits in an inset
+                // frame under its bar while the covered origin panes stay
+                // framed across the whole card underneath (the portal
+                // washes them). Native z-order keeps the preview on top.
+                None if peek_open => {
+                    let bar_height = f32::from(theme.density.row());
+                    let [top, right, bottom, left] =
+                        bbr_ui::card::PeekFrame::preview_insets(bar_height);
+                    let covered = self.controller.covered_pane_layout().map(|covered| {
+                        let slot = |id| {
+                            NativeWebViewSlot::new(self.engine.clone(), id)
+                                .corner_radius(card.radius)
+                        };
+                        div()
+                            .absolute()
+                            .inset_0()
+                            .flex()
+                            .flex_row()
+                            .child(slot(covered.primary))
+                            .children(covered.secondary.map(slot))
+                    });
+                    div()
+                        .relative()
+                        .size_full()
+                        .children(covered)
+                        .child(
+                            div()
+                                .absolute()
+                                .top(gpui::px(top))
+                                .right(gpui::px(right))
+                                .bottom(gpui::px(bottom))
+                                .left(gpui::px(left))
+                                .flex()
+                                .child(build_slot(
+                                    self,
+                                    layout.primary,
+                                    true,
+                                    bbr_ui::card::PEEK_PREVIEW_RADIUS,
+                                )),
+                        )
+                        .into_any()
+                }
                 Some(_) => div()
                     .flex()
                     .flex_row()
@@ -253,14 +301,16 @@ impl Render for BbrApp {
                         self,
                         layout.primary,
                         layout.focused == layout.primary,
+                        card.radius,
                     ))
                     .child(build_slot(
                         self,
                         layout.secondary.expect("split has two panes"),
                         layout.focused == layout.secondary.expect("split has two panes"),
+                        card.radius,
                     ))
                     .into_any(),
-                None => build_slot(self, layout.primary, true),
+                None => build_slot(self, layout.primary, true, card.radius),
             }
         } else if browser
             .active_index

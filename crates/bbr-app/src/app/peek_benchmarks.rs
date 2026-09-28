@@ -267,8 +267,13 @@ impl BbrApp {
     /// including the truthful native z-order of the preview above its warm
     /// origin.
     #[cfg(feature = "testkit")]
-    pub(crate) fn observe_portal_peek_render(&self, mode: bbr_ui::theme::ThemeMode) {
+    pub(crate) fn observe_portal_peek_render(
+        &self,
+        mode: bbr_ui::theme::ThemeMode,
+        frame: Option<bbr_ui::card::PeekFrame>,
+    ) {
         self.peek_presented_theme.set(Some(mode));
+        self.peek_presented_frame.set(frame);
         let presented = self.peek_presented();
         let (view, source) = match self.controller.snapshot().preview {
             Some(preview) => (Some(preview.view), Some(preview.source)),

@@ -441,6 +441,9 @@ pub struct BbrApp {
     pub(crate) auth_presented_theme: std::cell::Cell<Option<bbr_ui::theme::ThemeMode>>,
     #[cfg(feature = "testkit")]
     pub(crate) peek_presented_theme: std::cell::Cell<Option<bbr_ui::theme::ThemeMode>>,
+    /// Blueprint D09 render evidence: the Peek frame the portal last drew.
+    #[cfg(feature = "testkit")]
+    pub(crate) peek_presented_frame: std::cell::Cell<Option<bbr_ui::card::PeekFrame>>,
     /// Keeps the GPUI window-appearance observer alive (task packet
     /// `system-appearance-theme`): a dropped subscription silently stops
     /// live flip observation.
@@ -714,6 +717,8 @@ impl BbrApp {
             auth_presented_theme: std::cell::Cell::new(None),
             #[cfg(feature = "testkit")]
             peek_presented_theme: std::cell::Cell::new(None),
+            #[cfg(feature = "testkit")]
+            peek_presented_frame: std::cell::Cell::new(None),
             appearance_subscription: None,
             window_geometry: std::cell::RefCell::new(None),
             sidebar_visible: true,

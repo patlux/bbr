@@ -1684,9 +1684,17 @@ open. Exactly one preview per pane: a new eligible request from inside the
 preview navigates it, any other source replaces it (the old session is
 destroyed first).
 
-- **Surface:** a full web-content-area-width bar anchored to the top of the web
-  content area (right of the sidebar), `density:row`-tall, in the §11.4
-  command-surface family — `material:overlay`, `radius:lg`, `elev:2`.
+- **Surface (blueprint D09, implemented):** the bar sits inset at the top of
+  the content card — 24 pt (`sp6`) from the sides, 16 pt (`sp4`) from the
+  top, `density:row`-tall — in the §11.4 command-surface family
+  (`material:overlay`, `radius:lg`, `elev:2`). The preview WKWebView sits in
+  an inset frame under it: 8 pt (`sp2`) below the bar, 16 pt above the card
+  bottom, clipped natively to `radius:md` with a hairline ring just outside
+  the clip. The covered origin stays framed across the whole card and dims
+  under `wash.active`, painted by the portal as the card minus the preview
+  frame (even-odd path) — the preview itself is never covered, sampled or
+  tinted. Geometry authority: `bbr_ui::card::PeekFrame`; the wash is
+  `bbr_ui::surfaces::peek_wash`.
 - **Anatomy:** label (preview title, mid-ellipsized, with URL fallback), a
   state token (`Peek` / `Loading` / `Crashed`), and the controls
   Back / Forward / Reload / Open as Tab / Close. Controls route through the
@@ -1700,15 +1708,20 @@ destroyed first).
 - **Focus:** while open, the preview owns browser-command focus; Back /
   Forward / Reload / Stop / Navigate route to the preview session. Dismissal
   restores focus to the exact warm origin control/web view.
-- **Motion:** present and dismiss bound to the portal frame with no
-  intermediate chrome geometry (reduced-motion safe by construction); an
-  entrance/exit transition remains later polish.
-- **Theme:** the bar follows the shell appearance (light/dark) like every
-  other portal surface; the increased-contrast/compact/reduced-motion matrix
-  stays open (§16).
+- **Motion:** present and dismiss land in one frame with the portal — the
+  wash, the inset preview and the bar appear together; no transition (V-6),
+  reduced-motion safe by construction.
+- **Theme:** the bar and the wash follow the shell appearance (light/dark)
+  and contrast (`wash.active` has its increased-contrast step) like every
+  other portal surface; density changes only the bar height (Gallery story
+  50 "Peek presentation" renders the S/N/XL × contrast × appearance matrix
+  of the production wash).
 - **Assert ids:** `bbr-peek-bar`, `bbr-peek-url`, `bbr-peek-state`,
   `bbr-peek-back`, `bbr-peek-forward`, `bbr-peek-reload`,
-  `bbr-peek-open-as-tab`, `bbr-peek-close`.
+  `bbr-peek-open-as-tab`, `bbr-peek-close`, `bbr-peek-wash`,
+  `bbr-peek-frame`; the snapshot's `peek_frame` carries the card, bar and
+  preview rects the portal drew, and the preview's native slot equals
+  `peek_frame.preview`.
 
 Canonical packet: [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md).
 
@@ -2119,7 +2132,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D06 | Create, edit and delete profiles | P-6 L-4 PR-08 | §12 | adopted | [blueprint-profile-management](docs/roadmap/tasks/blueprint-profile-management.md) |
 | D07 | Cross-profile move feedback | P-7 PR-08 | §11.3 §12 §10.9 | adopted | [blueprint-cross-profile-move-feedback](docs/roadmap/tasks/blueprint-cross-profile-move-feedback.md) |
 | D08 | Toasts and uniform surface transitions | B-7 G-7 V-6 PR-12 | §6 §18.4 §18.5 | adopted | [blueprint-feedback-toasts](docs/roadmap/tasks/blueprint-feedback-toasts.md) |
-| D09 | Peek presentation | G-8 PR-04 | §11.17 | adopted | [blueprint-peek-presentation](docs/roadmap/tasks/blueprint-peek-presentation.md) |
+| D09 | Peek presentation | G-8 PR-04 | §11.17 | implemented | [blueprint-peek-presentation](docs/roadmap/tasks/blueprint-peek-presentation.md) |
 | D10 | History and Clear Browsing Data | M-6 M-7 PR-22 | §11.16 | adopted | [blueprint-history-clear-data](docs/roadmap/tasks/blueprint-history-clear-data.md) |
 | D11 | Site settings and permission prompts | M-8 M-9 L-6 PR-14 | §11.5 | adopted | [blueprint-site-settings-permissions](docs/roadmap/tasks/blueprint-site-settings-permissions.md) |
 | D12 | Client certificate chooser | M-11 PR-15 | §18.4 | adopted | [blueprint-client-certificates](docs/roadmap/tasks/blueprint-client-certificates.md) |

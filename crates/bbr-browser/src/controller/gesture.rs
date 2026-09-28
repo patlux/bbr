@@ -173,6 +173,14 @@ impl BrowserController {
         if let Some(layout) = self.preview_pane_layout() {
             return Some(layout);
         }
+        self.covered_pane_layout()
+    }
+
+    /// The active space's own pane layout, ignoring an open Peek preview:
+    /// what the preview covers (blueprint D09 keeps these warm origin panes
+    /// framed under the inset preview). Equal to [`Self::pane_layout`]
+    /// while no preview is open.
+    pub fn covered_pane_layout(&self) -> Option<PaneLayout> {
         let space = self.browser.space(self.active_space)?;
         let focused = space
             .active_tab

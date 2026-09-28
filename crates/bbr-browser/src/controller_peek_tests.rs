@@ -227,6 +227,12 @@ fn preview_opens_a_source_profile_session_above_the_warm_origin_without_a_tab() 
     assert_eq!(preview.source, source);
     assert_eq!(preview.profile, ProfileId(1));
     assert_eq!(preview.url, "https://preview.example");
+    // Blueprint D09: the preview is the one pane; the covered layout is the
+    // origin's own, so the shell keeps the origin framed underneath.
+    let layout = c.pane_layout().expect("preview layout");
+    assert_eq!((layout.primary, layout.focused), (view, view));
+    let covered = c.covered_pane_layout().expect("covered layout");
+    assert_eq!((covered.primary, covered.secondary), (source, None));
 
     // The engine saw create → raise (above origin) → show for the preview.
     assert!(h.recorded(&[

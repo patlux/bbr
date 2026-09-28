@@ -4,7 +4,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.17, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 12 of 24. Paper boards: G-8 · Peek preview, PR-04 · Open links — foreground, background, Peek, external, pop-up (file
+Status: implemented 2026-09-29 (DESIGN §19); position 12 of 24. Paper boards: G-8 · Peek preview, PR-04 · Open links — foreground, background, Peek, external, pop-up (file
 “BBR — Browser Shell”).
 
 ## Outcome
@@ -43,17 +43,15 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Portable model / controller / component tests for the new behaviour
-      and its states.
+- [x] `PeekFrame` geometry across S/N/XL density (`card::tests::peek_frame_insets_the_bar_and_the_preview_inside_the_card`), `covered_pane_layout` under an open preview (controller_peek_tests), Gallery story 50 renders the production wash (`just gallery-capture 50`).
 
 ### Real-app E2E
 
-- [ ] `just e2e-peek` covers the flow drawn on the boards through the
-      production path with semantic ids and typed snapshots.
+- [x] `just e2e-peek` — `peek_sits_inset_under_its_bar_over_a_washed_origin` proves the drawn bar/preview/card rects, the native preview slot equal to the inset frame, the `bbr-peek-wash`/`bbr-peek-frame` ids and the full-card slot after Escape; the existing Peek flows stay green.
 
 ### Performance
 
-- [ ] Add the optimized presentation scenario for the new user-visible interaction, or record why none applies (performance contract).
+- [ ] No new interaction: the existing `peek_request_to_present` scenario measures this presentation (its commit frame now carries the wash); execution deferred (Patrick, 2026-09-27).
 
 ## Completion gates
 
@@ -81,12 +79,12 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                The origin dims under wash.active and the preview sits in an inset frame under its inset bar
+Commits:                see git log (feat/fix commit carrying this packet)
+Functional evidence:    `PeekFrame` geometry across S/N/XL density (`card::tests::peek_frame_insets_the_bar_and_the_preview_inside_the_card`), `covered_pane_layout` under an open preview (controller_peek_tests), Gallery story 50 renders the production wash (`just gallery-capture 50`).
+Real-app E2E:           `just e2e-peek` — `peek_sits_inset_under_its_bar_over_a_washed_origin` proves the drawn bar/preview/card rects, the native preview slot equal to the inset frame, the `bbr-peek-wash`/`bbr-peek-frame` ids and the full-card slot after Escape; the existing Peek flows stay green.
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §11.17 surface/motion/theme/ids, §19 D09 row
+Open blockers and non-goals: none
+Worktree state:         main, clean after commit
 ```

@@ -32,6 +32,7 @@ pub mod foundations;
 pub mod library_composition;
 pub mod menu;
 pub mod page_menu;
+pub mod peek;
 pub mod primitives;
 pub mod profile_chip;
 pub mod saved_pages_library;
@@ -296,6 +297,11 @@ pub fn catalog() -> CatalogRegistry {
             space_delete::render_space_delete,
             &[],
         )],
+    );
+    // Blueprint D09: the Peek presentation appends at StoryId 50.
+    registry.add_group(
+        "Peek",
+        vec![story("Peek presentation", peek::render_peek, &[])],
     );
     registry
 }

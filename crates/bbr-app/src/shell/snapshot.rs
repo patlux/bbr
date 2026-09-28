@@ -270,6 +270,8 @@ pub struct TestSnapshot {
     pub peek_presented: bool,
     /// Theme mode the portal render last drew the Peek bar in.
     pub peek_theme: Option<String>,
+    /// Blueprint D09: the Peek frame the portal drew (while presented).
+    pub peek_frame: Option<bbr_testkit::protocol::PeekFrameSnapshot>,
     /// Native z-order evidence: while a preview is open the preview
     /// WKWebView's subview index must exceed its covered origin's (the
     /// preview is raised above the warm origin). `None` at rest.

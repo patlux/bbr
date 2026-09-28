@@ -1064,6 +1064,18 @@ pub struct PreviewSnapshot {
     pub crashed: bool,
 }
 
+/// Blueprint D09: the Peek presentation geometry, `[x, y, width, height]`
+/// in window points.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct PeekFrameSnapshot {
+    /// The content card's inner box (the covered origin's slot).
+    pub card: [f32; 4],
+    /// The inset Peek bar.
+    pub bar: [f32; 4],
+    /// The inset preview frame.
+    pub preview: [f32; 4],
+}
+
 /// Truthful native z-order evidence (Link Preview / Peek packet): the
 /// AppKit subview indices of the preview and its covered origin (a higher
 /// index draws above a lower one).
@@ -1451,6 +1463,11 @@ pub struct Snapshot {
     /// `None` until the bar has been presented.
     #[serde(default)]
     pub peek_theme: Option<String>,
+    /// Blueprint D09 (DESIGN §11.17): the card, bar and inset preview rects
+    /// the portal drew while the Peek is presented (`None` otherwise). The
+    /// preview's native slot (`content_rect`) equals `preview`.
+    #[serde(default)]
+    pub peek_frame: Option<PeekFrameSnapshot>,
     /// Truthful native z-order evidence (Link Preview / Peek packet): while
     /// a preview is open the preview WKWebView's subview index must exceed
     /// its covered origin's. `None` at rest.

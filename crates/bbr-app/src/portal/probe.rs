@@ -205,6 +205,8 @@ impl PortalProbeState {
             ],
             Some(PortalContent::Peek) => vec![
                 crate::app::peek::PEEK_BAR_ID.into(),
+                bbr_ui::surfaces::peek_wash::PEEK_WASH_ID.into(),
+                bbr_ui::surfaces::peek_wash::PEEK_FRAME_ID.into(),
                 crate::app::peek::PEEK_URL_ID.into(),
                 crate::app::peek::PEEK_STATE_ID.into(),
                 crate::app::peek::PEEK_BACK_ID.into(),
@@ -827,8 +829,18 @@ impl Render for PortalRoot {
                 // warm origin (fast-but-wrong guard).
                 let theme = app.read(cx).theme();
                 #[cfg(feature = "testkit")]
-                app.read(cx).observe_portal_peek_render(theme.mode);
-                let card = crate::portal::peek::peek_bar(&surface, &theme, rect, cx);
+                app.read(cx)
+                    .observe_portal_peek_render(theme.mode, surface.frame);
+                // Blueprint D09: the bar sits inset at the card top and the
+                // origin dims around the inset preview (never over it).
+                let bar_rect = surface.frame.map_or(rect, |frame| {
+                    let [x, y, width, height] = frame.bar;
+                    Rect::new(super::geometry::Pt::new(x, y), Sz::new(width, height))
+                });
+                let wash = surface
+                    .frame
+                    .map(|frame| bbr_ui::surfaces::peek_wash::peek_wash(&theme, frame));
+                let card = crate::portal::peek::peek_bar(&surface, &theme, bar_rect, cx);
                 div()
                     .id("bbr-peek-portal-surface")
                     .size_full()
@@ -839,6 +851,7 @@ impl Render for PortalRoot {
                             cx.stop_propagation();
                         }),
                     )
+                    .children(wash.into_iter().flatten())
                     .child(card)
                     .into_any()
             }

@@ -49,7 +49,7 @@ pub const PEEK_CLOSE_ID: &str = "bbr-peek-close";
 /// App-owned Peek presentation state. The preview *session* state lives in
 /// the controller snapshot (`preview`); this is only the presentation/
 /// focus-restore bookkeeping the app must own.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct PeekState {
     /// The Peek bar portal is currently presented.
     pub presented: bool,
@@ -57,6 +57,10 @@ pub struct PeekState {
     /// explicit dismissal can restore focus to the exact origin control/web
     /// view even after the transient state is released.
     pub source_view: Option<WebViewId>,
+    /// Blueprint D09: the content card's inner box of the last main-window
+    /// frame while a preview is open (the portal washes it around the inset
+    /// preview); `None` at rest.
+    pub card: Option<([f32; 4], f32)>,
 }
 
 /// The read-only Peek surface model the portal bar renders (derived each
@@ -73,6 +77,9 @@ pub struct PeekSurface {
     pub can_go_back: bool,
     pub can_go_forward: bool,
     pub crashed: bool,
+    /// Blueprint D09: the bar/preview/card geometry of the last main-window
+    /// frame (`None` until the card has been laid out with the preview).
+    pub frame: Option<bbr_ui::card::PeekFrame>,
 }
 
 impl BbrApp {
@@ -96,7 +103,37 @@ impl BbrApp {
             can_go_back: preview.can_go_back,
             can_go_forward: preview.can_go_forward,
             crashed: preview.crashed,
+            frame: self.peek.card.map(|(card, radius)| {
+                bbr_ui::card::PeekFrame::resolve(
+                    card,
+                    radius,
+                    f32::from(self.theme().density.row()),
+                )
+            }),
         })
+    }
+
+    /// Record the card's inner box for the portal's wash while a preview is
+    /// open (blueprint D09). A changed box re-notifies so the portal redraws
+    /// from this frame's geometry, never a stale one.
+    pub(super) fn record_peek_card(
+        &mut self,
+        card: bbr_ui::card::CardInsets,
+        rail_width: f32,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) {
+        let inner = self.controller.preview_open().then(|| {
+            let size = window.viewport_size();
+            let rect = card.inner_rect([f32::from(size.width), f32::from(size.height)], rail_width);
+            (rect, card.radius)
+        });
+        if self.peek.card != inner {
+            self.peek.card = inner;
+            if inner.is_some() {
+                cx.notify();
+            }
+        }
     }
 
     /// Present (or refresh) the Peek bar over the web content area and route
@@ -291,8 +328,8 @@ impl BbrApp {
 /// window margins on overflow.
 fn peek_placement(viewport: Sz, theme: &Theme, sidebar_width: f32) -> PortalPlacement {
     let gap = f32::from(bbr_ui::theme::Spacing::sp2());
-    let row = f32::from(theme.density.row());
-    let bar_height = row + f32::from(bbr_ui::theme::Spacing::sp1()) * 2.0;
+    // §11.17: the bar is `density:row` tall (blueprint G-8).
+    let bar_height = f32::from(theme.density.row());
     let web_left = sidebar_width + gap;
     let web_width = (viewport.width - web_left - gap).max(1.0);
     PortalPlacement::Anchored(AnchoredPlacement {
