@@ -196,6 +196,8 @@ pub fn rank(
         if query.is_empty() {
             if query.mode == Mode::Switcher {
                 collect_empty_current_tabs(corpus, context, &mut rows);
+            } else if query.mode == Mode::NewTab {
+                crate::recents::collect_recents(corpus, registry, context, &mut rows);
             }
         } else {
             collect_tab_matches(corpus, context, needle, &mut rows);

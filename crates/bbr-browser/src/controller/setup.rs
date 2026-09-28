@@ -154,6 +154,14 @@ impl BrowserController {
         self.browser.can_delete_space(space)
     }
 
+    /// Whether Reopen Closed Tab has something to reopen in the active space
+    /// (blueprint D04: the empty ⌘T offers the command only then).
+    pub fn can_reopen_tab(&self) -> bool {
+        self.browser
+            .space(self.active_space)
+            .is_some_and(|space| !space.recently_closed.is_empty())
+    }
+
     /// The profile backing the active space.
     pub fn active_profile(&self) -> ProfileId {
         self.browser

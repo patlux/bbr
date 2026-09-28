@@ -198,7 +198,13 @@ fn staging_field_node(input: &SemanticInput<'_>) -> SemanticNode {
 /// stays a sidebar child either way. `None` when no palette/overlay
 /// presentation is open.
 pub(super) fn command_surface_node(input: &SemanticInput<'_>) -> Option<SemanticNode> {
-    let mode = input.command.mode.clone();
+    // Blueprint D04: a leading `>` switches the palette to actions (the
+    // mode chip says so).
+    let mode = if input.command.text.trim_start().starts_with('>') {
+        "actions".to_string()
+    } else {
+        input.command.mode.clone()
+    };
     let text = if input.command.text.is_empty() {
         "Type a URL…".to_string()
     } else {

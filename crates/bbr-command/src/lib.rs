@@ -77,6 +77,7 @@ pub mod registry;
 pub mod search_settings;
 
 mod collect;
+mod recents;
 
 pub use corpus::{Corpus, HistoryEntry, ProfileEntry, SavedPageEntry, SpaceEntry, TabEntry};
 pub use id::{ActionId, BookmarkId, HistoryId, ProfileId, SpaceId, TabId};

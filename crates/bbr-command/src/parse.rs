@@ -27,6 +27,14 @@ pub enum Mode {
     Action,
 }
 
+/// The prefix that switches the command surface to actions (blueprint D04).
+pub const ACTIONS_PREFIX: char = '>';
+
+/// Whether raw command text asks for the actions mode (leading `>`).
+pub fn is_actions_text(text: &str) -> bool {
+    text.trim_start().starts_with(ACTIONS_PREFIX)
+}
+
 /// Parsed intent of the raw text inside one command-bar mode.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Destination {
@@ -55,10 +63,17 @@ pub struct Query {
 impl Query {
     /// Parses trimmed text into a typed query for `mode`.
     ///
-    /// The lowercase projection is computed once here so ranking never
-    /// repeats case folding.
+    /// Blueprint D04: text that starts with `>` switches any surface to
+    /// [`Mode::Action`] and ranks the remainder against the browser
+    /// commands only. The lowercase projection is computed once here so
+    /// ranking never repeats case folding.
     pub fn new(mode: Mode, text: &str) -> Self {
-        let text = text.trim().to_owned();
+        let text = text.trim();
+        let (mode, text) = match text.strip_prefix(ACTIONS_PREFIX) {
+            Some(rest) => (Mode::Action, rest.trim()),
+            None => (mode, text),
+        };
+        let text = text.to_owned();
         let destination = parse_destination(&text);
         let lower = text.to_lowercase();
         Query {
@@ -91,6 +106,8 @@ pub struct QueryContext {
     pub current_space: Option<SpaceId>,
     /// The profile the current space belongs to.
     pub current_profile: Option<ProfileId>,
+    /// The tab the user is looking at (the empty ⌘T recents skip it).
+    pub current_tab: Option<crate::id::TabId>,
 }
 
 impl QueryContext {
@@ -104,7 +121,14 @@ impl QueryContext {
         Self {
             current_space: Some(space),
             current_profile: Some(profile),
+            current_tab: None,
         }
+    }
+
+    /// The same context with the tab the user is looking at.
+    pub fn with_current_tab(mut self, tab: Option<crate::id::TabId>) -> Self {
+        self.current_tab = tab;
+        self
     }
 }
 

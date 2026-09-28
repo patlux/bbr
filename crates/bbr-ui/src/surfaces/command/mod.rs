@@ -50,3 +50,13 @@ pub(crate) use rows::state_id;
 
 #[cfg(test)]
 mod tests;
+
+/// The match needle of the field text: the `>` actions prefix (blueprint
+/// D04) is a mode switch, not part of the query.
+pub fn actions_query(text: &str) -> &str {
+    let trimmed = text.trim_start();
+    match trimmed.strip_prefix('>') {
+        Some(rest) => rest.trim_start(),
+        None => text,
+    }
+}

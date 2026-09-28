@@ -58,15 +58,19 @@ pub fn corpus_from_snapshot(
     // space is activated first (restoring its warm sessions) and the exact
     // index selected inside it — never an active-space position guess.
     for tab in &snapshot.all_tabs {
-        corpus.tabs.push(TabEntry::new(
-            TabId(tab.id.0),
-            tab.title.clone(),
-            tab.url.clone(),
-            SpaceId(tab.space.0),
-            ProfileId(tab.profile.0),
-            tab.pinned,
-            tab.index as u64,
-        ));
+        corpus.tabs.push(
+            TabEntry::new(
+                TabId(tab.id.0),
+                tab.title.clone(),
+                tab.url.clone(),
+                SpaceId(tab.space.0),
+                ProfileId(tab.profile.0),
+                tab.pinned,
+                tab.index as u64,
+            )
+            // Blueprint D04: the recency the empty ⌘T recents order by.
+            .with_last_used(tab.last_used),
+        );
     }
     // History from the app-owned in-memory provider, in persisted corpus
     // order: the single runtime authority ranking consumes (Phase 7).

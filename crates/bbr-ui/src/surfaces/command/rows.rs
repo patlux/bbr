@@ -108,10 +108,17 @@ fn result_row(
     // [url mono, shortened] … [kind hint]. A subtitle (cross-space identity,
     // shortcut) takes the mono column when present — identity is never
     // hidden behind the URL.
-    let detail = row
-        .subtitle
-        .clone()
-        .or_else(|| row.url.as_deref().map(crate::text::short_url));
+    // Blueprint D04: an action's shortcut takes the kind column (so the
+    // palette teaches the keyboard); it never repeats in the mono column.
+    let detail = if row.group == "action" {
+        None
+    } else {
+        row.subtitle
+            .clone()
+            .or_else(|| row.url.as_deref().map(crate::text::short_url))
+    };
+    // The `>` actions prefix is not part of the match highlight.
+    let query = crate::surfaces::command::actions_query(&model.text);
     div()
         .id(SharedString::from(id.clone()))
         // Test-support target: the production result id as the gallery E2E
@@ -130,7 +137,7 @@ fn result_row(
         // accent rail is gone; the selected result is committed at once.
         .when(selected, |el| el.bg(p.tint_accent))
         .child(row_badge(theme, row))
-        .child(title_line(theme, &model.text, &row.title, title_color))
+        .child(title_line(theme, query, &row.title, title_color))
         .when_some(detail, |el, detail| {
             el.child(
                 div()
@@ -154,7 +161,7 @@ fn result_row(
                 } else {
                     p.ink_faint
                 })
-                .child(kind_hint(row, selected)),
+                .child(SharedString::from(kind_hint(row, selected))),
         )
 }
 
@@ -243,14 +250,20 @@ pub(super) fn match_range(title: &str, query: &str) -> Option<(usize, usize)> {
 
 /// The trailing hint: `↵` on the selected row, the result kind otherwise
 /// (destructive rows say so).
-pub(super) fn kind_hint(row: &CommandResultRow, selected: bool) -> &'static str {
+pub(super) fn kind_hint(row: &CommandResultRow, selected: bool) -> String {
     if row.destructive {
-        return "destructive";
+        return "destructive".into();
     }
     if selected {
-        return "↵";
+        return "↵".into();
     }
-    match row.group.as_str() {
+    // Blueprint D04: an action shows its shortcut when it has one.
+    if row.group == "action" {
+        if let Some(shortcut) = &row.subtitle {
+            return shortcut.clone();
+        }
+    }
+    let kind = match row.group.as_str() {
         "tab" | "exact_tab" | "current_pinned" | "current_tab" | "other_space" => "Tab",
         "space" => "Space",
         "saved_page" => "Saved",
@@ -258,7 +271,8 @@ pub(super) fn kind_hint(row: &CommandResultRow, selected: bool) -> &'static str 
         "action" => "Action",
         _ if row.url.is_some() => "URL",
         _ => "Search",
-    }
+    };
+    kind.into()
 }
 
 fn state_row(theme: &Theme, id: &str, text: &str) -> Stateful<Div> {

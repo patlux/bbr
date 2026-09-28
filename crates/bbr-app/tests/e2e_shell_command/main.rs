@@ -46,6 +46,7 @@ mod moved;
 mod navigation;
 mod palette;
 mod palette_surfaces;
+mod recents;
 mod states;
 mod text;
 

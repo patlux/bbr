@@ -86,7 +86,7 @@ pub(crate) fn collect_empty_current_tabs(
     }
 }
 
-fn tab_result(
+pub(crate) fn tab_result(
     corpus: &Corpus,
     context: &QueryContext,
     tab: &TabEntry,
@@ -345,7 +345,11 @@ pub(crate) fn collect_all_actions(
     }
 }
 
-fn action_result(action: &Action, quality: MatchQuality, secondary: u64) -> CommandResult {
+pub(crate) fn action_result(
+    action: &Action,
+    quality: MatchQuality,
+    secondary: u64,
+) -> CommandResult {
     let key = RankKey {
         group: ResultGroup::Action.rank(),
         quality,

@@ -4,7 +4,7 @@ Parents: [Phase 5](../phases/05-command-bar.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.4, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 6 of 24. Paper boards: C-1 · ⌘T — empty with recents, C-4 · ⌘T — actions, L-9 · Settings — Shortcuts (file
+Status: implemented 2026-09-29 (DESIGN §19); position 6 of 24. Paper boards: C-1 · ⌘T — empty with recents, C-4 · ⌘T — actions, L-9 · Settings — Shortcuts (file
 “BBR — Browser Shell”).
 
 ## Outcome
@@ -43,17 +43,15 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Portable model / controller / component tests for the new behaviour
-      and its states.
+- [x] bbr-command recents (recent tabs by last_used excluding the current tab, deduplicated recent history, Reopen Closed Tab only when available) and the > prefix → Mode::Action; rank test updated for the new empty ⌘T contract; bbr-ui kind hint shows an action's shortcut and the > prefix is not the match needle; BrowserController::can_reopen_tab.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-command` covers the flow drawn on the boards through the
-      production path with semantic ids and typed snapshots.
+- [x] `just e2e-shell-command` — recents::empty_new_tab_offers_recents_and_the_angle_bracket_switches_to_actions (empty ⌘T lists the previous tab first and never the one on screen, ⌘T ↵ switches back, Reopen Closed Tab appears last after a close with ⇧⌘T, > lists only actions with the ACTIONS chip, '> reopen' + Return reopens, an unmatched > query is Empty and Return opens nothing); saved-pages and tabs suites green.
 
 ### Performance
 
-- [ ] Extend `just e2e-perf` with the presentation scenario for this interaction (performance contract).
+- [ ] Performance scenario: none added — recents rank through the measured debounce/rank/render path; measurement is deferred (Patrick, 2026-09-27).
 
 ## Completion gates
 
@@ -81,12 +79,12 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                Empty ⌘T offers recents and Reopen Closed Tab; a leading > switches the palette to actions with shortcuts.
+Commits:                see git log (feat/fix commit carrying this packet)
+Functional evidence:    bbr-command recents (recent tabs by last_used excluding the current tab, deduplicated recent history, Reopen Closed Tab only when available) and the > prefix → Mode::Action; rank test updated for the new empty ⌘T contract; bbr-ui kind hint shows an action's shortcut and the > prefix is not the match needle; BrowserController::can_reopen_tab.
+Real-app E2E:           `just e2e-shell-command` — recents::empty_new_tab_offers_recents_and_the_angle_bracket_switches_to_actions (empty ⌘T lists the previous tab first and never the one on screen, ⌘T ↵ switches back, Reopen Closed Tab appears last after a close with ⇧⌘T, > lists only actions with the ACTIONS chip, '> reopen' + Return reopens, an unmatched > query is Empty and Return opens nothing); saved-pages and tabs suites green.
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §11.4 recents + actions mode + kind column, §19 D04 implemented
+Open blockers and non-goals: none
+Worktree state:         main, clean after commit
 ```

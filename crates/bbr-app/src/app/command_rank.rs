@@ -189,19 +189,28 @@ pub fn rank_text(
     collections: &[CollectionRecord],
     mode: CommandBarMode,
     text: &str,
+    reopen_available: bool,
 ) -> (Vec<CommandResultRow>, usize) {
     let core_mode = match mode {
         CommandBarMode::Location => Mode::Location,
         CommandBarMode::NewTab => Mode::NewTab,
         _ => return (Vec::new(), 0),
     };
-    let corpus = corpus_from_snapshot(snapshot, history, saved_pages, collections);
+    let mut corpus = corpus_from_snapshot(snapshot, history, saved_pages, collections);
+    corpus.reopen_available = reopen_available;
     let registry = CommandRegistry::builtin();
     let query = Query::new(core_mode, text);
+    // Blueprint D04: the empty ⌘T recents skip the tab on screen.
+    let current_tab = snapshot
+        .all_tabs
+        .iter()
+        .find(|tab| tab.space == snapshot.active_space && Some(tab.index) == snapshot.active_index)
+        .map(|tab| bbr_command::id::TabId(tab.id.0));
     let context = QueryContext::with_current(
         bbr_command::id::SpaceId(snapshot.active_space.0),
         bbr_command::id::ProfileId(snapshot.active_profile.0),
-    );
+    )
+    .with_current_tab(current_tab);
     let ranked = rank(&corpus, &registry, &query, &context, RESULT_LIMIT);
     let total = ranked.total;
     let rows = ranked.results.into_iter().map(row_from_result).collect();
@@ -237,7 +246,9 @@ impl BbrApp {
         }
         let snapshot = self.controller.snapshot();
         let text = self.command_text.text.clone();
-        if text.trim().is_empty() {
+        // Blueprint D04: an empty ⌘T ranks its recents; the other surfaces
+        // stay empty until the user types.
+        if text.trim().is_empty() && self.command_bar_mode != CommandBarMode::NewTab {
             self.command_ranking.state = CommandResultState::Empty;
             self.command_ranking.results.clear();
             self.command_ranking.selected = 0;
@@ -254,16 +265,21 @@ impl BbrApp {
                     collections,
                     self.command_bar_mode,
                     &text,
+                    self.controller.can_reopen_tab(),
                 )
             })
         });
-        // Location/NewTab queries always carry the navigate/search fallback
-        // row (the portable core), so a published non-empty pass is never
-        // empty; there is no production NoMatch state in this slice.
-        debug_assert!(!rows.is_empty(), "fallback row always publishes");
+        // Typed Location/NewTab text always carries the navigate/search
+        // fallback row; an empty ⌘T with nothing recent and an actions
+        // query (`>`) with no match publish the Empty state instead.
+        let state = if rows.is_empty() {
+            CommandResultState::Empty
+        } else {
+            CommandResultState::Results
+        };
         self.command_ranking.results = rows;
         self.command_ranking.total = total;
-        self.command_ranking.state = CommandResultState::Results;
+        self.command_ranking.state = state;
         self.command_ranking.selected = self
             .command_ranking
             .selected
@@ -424,6 +440,7 @@ mod tests {
             &[],
             CommandBarMode::Location,
             "alpha",
+            false,
         );
         assert!(!rows.is_empty());
         assert_eq!(rows[0].key, "tab:1");
@@ -436,6 +453,7 @@ mod tests {
             &[],
             CommandBarMode::Location,
             "close",
+            false,
         );
         let close = rows
             .iter()
@@ -454,6 +472,7 @@ mod tests {
             &[],
             CommandBarMode::Location,
             "nonexistent term",
+            false,
         );
         assert!(
             rows.iter()

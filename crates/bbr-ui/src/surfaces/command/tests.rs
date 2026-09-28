@@ -262,3 +262,18 @@ fn kind_hint_names_the_result_kind() {
     search.url = Some("https://example.com".into());
     assert_eq!(kind_hint(&search, false), "URL");
 }
+
+/// Blueprint D04: an action shows its shortcut in the kind column; the `>`
+/// prefix is a mode switch, not part of the match needle.
+#[test]
+fn actions_show_their_shortcut_and_the_prefix_is_not_the_needle() {
+    use super::rows::kind_hint;
+    let mut action = row("action:4", "action");
+    action.subtitle = Some("⇧⌘P".into());
+    assert_eq!(kind_hint(&action, false), "⇧⌘P");
+    assert_eq!(kind_hint(&action, true), "↵");
+    action.subtitle = None;
+    assert_eq!(kind_hint(&action, false), "Action");
+    assert_eq!(super::actions_query("> pin"), "pin");
+    assert_eq!(super::actions_query("pin"), "pin");
+}

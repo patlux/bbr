@@ -126,7 +126,12 @@ fn palette_card(model: &CommandModel, rect: CommandRect) -> Stateful<Div> {
             PALETTE_FIELD_ID,
             PALETTE_TEXT_ID,
             PALETTE_CURSOR_ID,
-            Some("New Tab"),
+            // Blueprint D04: a leading `>` switches the palette to actions.
+            Some(if has_actions_prefix(&model.text) {
+                "Actions"
+            } else {
+                "New Tab"
+            }),
         ))
         .child(super::rows::result_list(
             model,
@@ -273,6 +278,11 @@ fn overlay_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
         |el, delta| el.opacity(delta),
     )
     .into_any()
+}
+
+/// Whether the field text asks for the actions mode (a leading `>`).
+fn has_actions_prefix(text: &str) -> bool {
+    text.trim_start().starts_with('>')
 }
 
 #[cfg(test)]

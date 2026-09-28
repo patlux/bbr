@@ -25,6 +25,9 @@ pub struct TabEntry {
     pub pinned: bool,
     /// Deterministic ordering key within the space (lower renders first).
     pub index: u64,
+    /// Monotonic recency stamp (higher = used more recently; 0 = unknown):
+    /// the empty ⌘T recents order (blueprint D04).
+    pub last_used: u64,
     title_lower: String,
     url_lower: String,
 }
@@ -52,9 +55,16 @@ impl TabEntry {
             profile,
             pinned,
             index,
+            last_used: 0,
             title_lower,
             url_lower,
         }
+    }
+
+    /// The same entry with its recency stamp (blueprint D04 recents).
+    pub fn with_last_used(mut self, last_used: u64) -> Self {
+        self.last_used = last_used;
+        self
     }
 
     /// Precomputed lowercase title used for deterministic matching.
@@ -274,6 +284,9 @@ pub struct Corpus {
     /// `saved-pages-actions-command`): the provider's deterministic
     /// presentation order, preserved verbatim by ranking.
     pub saved_pages: Vec<SavedPageEntry>,
+    /// Whether Reopen Closed Tab has something to reopen in the current
+    /// space (blueprint D04: the empty ⌘T offers it only then).
+    pub reopen_available: bool,
 }
 
 impl Corpus {

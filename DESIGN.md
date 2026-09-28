@@ -988,8 +988,23 @@ using the IDs of §15. All rows use `density` geometry from §8.
     (`host/…/last`) unless a cross-space identity or shortcut subtitle
     takes the column, and a trailing hint — `↵` on the selected row, the
     kind (`Tab`, `History`, `Saved`, `Space`, `Action`, `URL`, `Search`)
-    otherwise; the `selected` result is the inset `tint.accent` row
-    surface (no accent rail, §18.4). A freshly published result set fades in with a
+    otherwise, an action's shortcut in place of `Action` (blueprint D04);
+    the `selected` result is the inset `tint.accent` row
+    surface (no accent rail, §18.4).
+  - **Empty ⌘T recents (blueprint D04):** before the user types, the
+    palette lists up to four recently used tabs (never the tab on screen;
+    other spaces carry their identity subtitle), then up to three recent
+    history pages not already listed, then Reopen Closed Tab (`⇧⌘T`) when
+    the active space has something to reopen. Return on a recent tab
+    returns to that tab (⌘T ↵ goes back to the last thing); a typed
+    destination keeps the staged new-tab semantics. With nothing recent the
+    palette stays in its Empty state.
+  - **Actions mode (blueprint D04):** text that starts with `>` switches the
+    same engine to browser commands only: the mode chip reads ACTIONS, the
+    remainder filters the commands, each row shows its shortcut in the kind
+    column, and Return runs the selected command on the selected tab or
+    focused pane. An actions query never falls back to navigation or
+    search; without a match the palette is Empty. A freshly published result set fades in with a
     20 ms stagger and a 4 pt rise (rows past the seventh share the last
     slot, ≤ 260 ms); Up/Down commits the selection at once and the cursor
     highlight glides to it in `dur:micro` (Reduce Motion: fade only, the
@@ -2081,7 +2096,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D01 | Footer chips start after Downloads | S-7 W-1 | §11.3 §11.4 §18.3 | implemented | [blueprint-footer-strip-leading](docs/roadmap/tasks/blueprint-footer-strip-leading.md) |
 | D02 | Hover reveal of a hidden rail | W-3 V-6 | §2 §11.4 §11.14 | adopted | [blueprint-sidebar-hover-reveal](docs/roadmap/tasks/blueprint-sidebar-hover-reveal.md) |
 | D03 | Address control states | S-1 M-8 | §11.5 §17.13 | implemented | [blueprint-address-states](docs/roadmap/tasks/blueprint-address-states.md) |
-| D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | §11.4 | adopted | [blueprint-palette-recents-actions](docs/roadmap/tasks/blueprint-palette-recents-actions.md) |
+| D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | §11.4 | implemented | [blueprint-palette-recents-actions](docs/roadmap/tasks/blueprint-palette-recents-actions.md) |
 | D05 | Space menu and delete confirmation | P-4 PR-07 | §11.3 §11.13 | implemented | [blueprint-space-menu-delete](docs/roadmap/tasks/blueprint-space-menu-delete.md) |
 | D06 | Create, edit and delete profiles | P-6 L-4 PR-08 | §12 | adopted | [blueprint-profile-management](docs/roadmap/tasks/blueprint-profile-management.md) |
 | D07 | Cross-profile move feedback | P-7 PR-08 | §11.3 §12 §10.9 | adopted | [blueprint-cross-profile-move-feedback](docs/roadmap/tasks/blueprint-cross-profile-move-feedback.md) |

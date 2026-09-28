@@ -48,7 +48,12 @@ impl BbrApp {
                 let Some(activation) = self.selected_or_typed_activation() else {
                     return;
                 };
-                self.dispatch_activation(activation, true, window, cx);
+                // Blueprint D04: on an empty ⌘T a recent tab row returns to
+                // that tab (⌘T ↵ goes back to the last thing); typed
+                // destinations keep the staged new-tab semantics.
+                let recent_tab = self.command_text.text.trim().is_empty()
+                    && matches!(activation, Activation::SelectTab { .. });
+                self.dispatch_activation(activation, !recent_tab, window, cx);
             }
             _ => self.submit_staged_command_bar(window, cx),
         }
@@ -87,6 +92,11 @@ impl BbrApp {
             _ => return None,
         };
         let query = Query::new(mode, self.command_text.text.trim());
+        // Blueprint D04: the `>` actions mode never falls back to a
+        // navigation or a search; only a listed action activates.
+        if query.mode == Mode::Action {
+            return None;
+        }
         match query.destination {
             Destination::Navigate(url) => Some(Activation::Navigate { url }),
             Destination::Search(terms) => Some(Activation::Search { terms }),

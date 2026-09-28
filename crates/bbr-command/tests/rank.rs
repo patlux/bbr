@@ -204,20 +204,20 @@ fn empty_switcher_lists_current_tabs_pinned_first() {
     );
 }
 
+/// An empty ⌘L yields nothing; an empty ⌘T offers its recents instead
+/// (blueprint D04 — covered by the `recents` unit tests).
 #[test]
-fn empty_location_and_newtab_yield_nothing() {
+fn empty_location_yields_nothing() {
     let corpus = fixture_corpus();
-    for mode in [Mode::Location, Mode::NewTab] {
-        let ranked = rank(
-            &corpus,
-            &CommandRegistry::builtin(),
-            &Query::new(mode, ""),
-            &context(),
-            16,
-        );
-        assert!(ranked.results.is_empty(), "{mode:?}");
-        assert_eq!(ranked.total, 0, "{mode:?}");
-    }
+    let ranked = rank(
+        &corpus,
+        &CommandRegistry::builtin(),
+        &Query::new(Mode::Location, ""),
+        &context(),
+        16,
+    );
+    assert!(ranked.results.is_empty());
+    assert_eq!(ranked.total, 0);
 }
 
 #[test]
