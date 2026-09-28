@@ -15,6 +15,15 @@ settled G1a `bbr-ui` anchor.
 Stable information-architecture reference, not a feature or visual copy:
 `/Users/patwoz/dev/Personal/macos/bbr-design-references/zen-folder-context-menu.png`.
 
+Blueprint D25 (DESIGN §19, 2026-09-29): Paper board M-2 draws this menu as
+**Rename…**, **New Tab in Folder**, **Open All Tabs**, then **Delete Folder —
+keep its tabs** (the settled Unpack) and a danger row **Close Folder and Its
+Tabs…**. The danger row conflicts with the 2026-09-27 settlement below and
+stays omitted until Patrick answers §19 question 13. The board's rows replace
+the initial action list for the first slice; Change Icon…, Suspend All Tabs and
+Move to Space › remain scoped follow-ups of this packet. Rename reuses the D20
+inline rename.
+
 ## Outcome
 
 Secondary-clicking a folder opens one production BBR menu bound to the exact

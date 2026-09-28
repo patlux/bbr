@@ -2017,7 +2017,7 @@ restate it; boards marked *Change* or *New · proposal* are targets. Patrick
 adopted every row below on 2026-09-28 (“setz alles von Paper um”). An adopted
 target becomes the specification of its owning section when its packet lands
 that text with the implementation; until then the shipped sections still
-describe the running app. Implementation order: D01 → D20 → D05 → D14 → D03 → D04 → D08 → D07 → D02 → D21 → D22 → D09 → D10 → D06 → D16 → D17 → D19 → D11 → D12 → D13 → D15 → D18 → D24 → D23.
+describe the running app. Implementation order: D01 → D20 → D05 → D14 → D03 → D04 → D08 → D07 → D02 → D21 → D22 → D09 → D10 → D06 → D16 → D17 → D19 → D11 → D12 → D13 → D15 → D18 → D24 → D25 → D23.
 
 | Delta | Target | Boards | Sections | Status | Packet |
 |---|---|---|---|---|---|
@@ -2045,6 +2045,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D22 | Full-screen card rules under test | W-5 | §2 | adopted | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
 | D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted | [split-app-composition](docs/roadmap/tasks/split-app-composition.md) |
 | D24 | Sidebar media card | S-8 PR-17 | §11.15 | adopted | [sidebar-media-control](docs/roadmap/tasks/sidebar-media-control.md) |
+| D25 | Folder context menu (ledger correction: M-2 was marked Shipped, but no folder menu exists) | M-2 S-4 | §11.13 §11.11 | adopted without the closing row (question 13) | [folder-context-menu](docs/roadmap/tasks/folder-context-menu.md) |
 
 Questions raised by the blueprint (board D-1), answered by the adoption as
 drawn: 1 yes, 300 ms dwell · 2 yes · 3 leading edge · 4 short name + glyph ·
@@ -2066,6 +2067,7 @@ drawn: 1 yes, 300 ms dwell · 2 yes · 3 leading edge · 4 short name + glyph ·
 | 10 | Stay native NSToolTip everywhere? | — |
 | 11 | Which shortcut opens a split (phase 6 open decision)? | D23 |
 | 12 | Safari and Chrome only in v1 (D15)? | D15 |
+| 13 | M-2 draws "Close Folder and Its Tabs…"; the 2026-09-27 settlement says no folder row closes tabs. Keep the row omitted? (Until answered, D25 ships Rename…, New Tab in Folder, Open All Tabs and "Delete Folder — keep its tabs".) | D25 |
 
 ## Evidence
 

@@ -118,7 +118,10 @@ decision needed.
 ## Delta packets
 
 W7 compares every board with main. Each difference is one delta with one
-target packet (D23 and D24 reuse the existing split and media packets).
+target packet (D23, D24 and D25 reuse the existing split, media and
+folder-menu packets). D25 was added on 2026-09-29 during implementation:
+W7 had marked M-2 as Shipped, but only the favorite half of that board
+exists; the folder menu is still the open folder-context-menu packet.
 All are proposals until Patrick adopts the row in DESIGN §19; the Paper
 board D-2 shows the same ledger.
 
@@ -148,6 +151,7 @@ board D-2 shows the same ledger.
 | D22 | Full-screen card rules under test | W-5 | Full-screen rules are specified in DESIGN §2 but have no dedicated evidence. | [blueprint-fullscreen-evidence](blueprint-fullscreen-evidence.md) |
 | D23 | Split view | G-9 G-10 PR-09 | Split is scheduling-deferred; no split UI ships. | [split-app-composition](split-app-composition.md) |
 | D24 | Sidebar media card | S-8 PR-17 | The media-session contract is integrated; the card is not. | [sidebar-media-control](sidebar-media-control.md) |
+| D25 | Folder context menu | M-2 S-4 | Folders have no secondary-click menu; W7 wrongly marked M-2 Shipped. | [folder-context-menu](folder-context-menu.md) |
 
 ## Coverage matrix
 
@@ -307,7 +311,7 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 | 21 | S-1 · Address control | Shipped | §11.5 §17.13 §18.5 | [address-field-space-identity](address-field-space-identity.md) | yes |
 | 21 | S-2 · Favorites grid | Shipped | §11.10 §18.5 | [favorites-drag-offers](favorites-drag-offers.md) | yes |
 | 21 | S-3 · Space heading & pinned tabs | Shipped | §11.2 §11.3 | [sidebar-reference-polish](sidebar-reference-polish.md) | yes |
-| 21 | S-4 · Folders | Shipped | §11.11 | [folder-context-menu](folder-context-menu.md) | yes |
+| 21 | S-4 · Folders | Change | §11.11 | [blueprint-folder-rename-on-create](blueprint-folder-rename-on-create.md) (D20) · [folder-context-menu](folder-context-menu.md) (D25) | yes |
 | 21 | S-5 · Tab rows in context | Shipped | §10 §11.1 §11.9 | [sidebar-reference-polish](sidebar-reference-polish.md) | yes |
 | 21 | S-6 · New Tab row & staged tab | Shipped | §11.4 | [browser-mvp-sidebar-ui](browser-mvp-sidebar-ui.md) | yes |
 | 21 | S-7 · Footer strip | Shipped | §11.3 §11.4 | [space-footer-strip-appearance-ui](space-footer-strip-appearance-ui.md) | yes |
@@ -338,7 +342,7 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 | 24 | G-9 · Split view — two panes | Change | §11.7 | [split-app-composition](split-app-composition.md) | yes |
 | 24 | G-10 · Split view — create, resize, compact | Change | §11.7 | [split-app-composition](split-app-composition.md) | yes |
 | 25 | M-1 · Tab menu | Shipped | §11.13 | [tab-favorite-context-menus](tab-favorite-context-menus.md) | yes |
-| 25 | M-2 · Favorite & folder menus | Shipped | §11.13 §11.11 | [folder-context-menu](folder-context-menu.md) | yes |
+| 25 | M-2 · Favorite & folder menus | Change (favorite menu shipped; folder menu D25) | §11.13 §11.11 | [tab-favorite-context-menus](tab-favorite-context-menus.md) · [folder-context-menu](folder-context-menu.md) | yes |
 | 25 | M-3 · Page menu & web menus | Shipped | §11.13 | [page-background-context-menu](page-background-context-menu.md) | yes |
 | 25 | M-4 · Downloads panel | Shipped | §11.12 | [downloads-sidebar-panel](downloads-sidebar-panel.md) | yes |
 | 25 | M-5 · Saved Pages Library | Shipped | §11.16 | [saved-pages-library](saved-pages-library.md) | yes |
