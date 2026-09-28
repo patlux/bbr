@@ -22,6 +22,7 @@ mod errors_drive;
 mod find;
 mod find_drive;
 pub mod harness;
+mod idle;
 mod library_drive;
 pub mod machine;
 mod peek;

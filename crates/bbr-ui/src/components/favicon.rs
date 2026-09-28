@@ -2,9 +2,9 @@
 //! `FaviconSpec` DTO, the FNV-1a hostname monogram derivation, and the
 //! rendered tile. When a tab has no favicon yet, the slot renders the
 //! monogram letter on a desaturated slate-hue tile instead of an empty
-//! box; while loading it shows the §10.5 accent arc (drawn, static —
-//! rotation is a later polish pass). Monograms are static — no spin, no
-//! pulse, no animation (§7.2).
+//! box; while loading it shows the §10.5 accent arc, rotating at 640 ms per
+//! turn (static under Reduce Motion, §18.5). Monograms are static — no
+//! spin, no pulse, no animation (§7.2).
 //!
 //! When the owning profile's bounded host-keyed store holds resolved
 //! favicon bytes (task packet `real-favicon-pipeline.md`), the tile renders
@@ -17,14 +17,15 @@
 use std::sync::Arc;
 
 use gpui::{
-    div, img, prelude::*, px, Div, Image, ImageSource, ObjectFit, Pixels, Rgba, SharedString,
-    Stateful,
+    div, img, prelude::*, px, AnimationExt, AnyElement, Div, Image, ImageSource, ObjectFit, Pixels,
+    Rgba, SharedString, Stateful,
 };
 
 use crate::icons::Icon;
 use crate::palette::FaviconSlate;
 use crate::state::TabVisualState;
 use crate::text::{host_of, scheme_of};
+use crate::theme::motion::Moment;
 use crate::theme::{Radius, Theme, ThemeMode};
 
 /// §15 stable id of the tab row's favicon slot (DESIGN.md §11.1 assert
@@ -98,8 +99,7 @@ pub fn monogram_hue(url: &str) -> usize {
 /// §7.2 favicon tile: the §8 density icon size (S 16 / N 18 / XL 20)
 /// square, `radius:sm`, monogram letter on the FNV-slate ramp — or the
 /// decoded favicon image when the owning profile's store holds one; while
-/// loading the slot shows the §10.5 accent arc (drawn, static — rotation
-/// is a later polish pass). The §10.7 error lifering and the §10.11
+/// loading the slot shows the §10.5 accent arc ([`loading_spinner`]). The §10.7 error lifering and the §10.11
 /// unresponsive lifering+clock replace the tile content exactly as before:
 /// the image never overrides a state glyph.
 pub fn favicon_tile(
@@ -164,7 +164,7 @@ pub fn favicon_tile(
         .font_weight(badge_weight)
         .text_color(fg)
         .when(content_kind == FaviconContentKind::Loading, |el| {
-            el.child(Icon::LoadingArc.canvas(theme, size))
+            el.child(loading_spinner(theme, index, size))
         })
         .when(content_kind == FaviconContentKind::Error, |el| {
             // §10.7: the lifering replaces the favicon on an error row.
@@ -186,6 +186,31 @@ pub fn favicon_tile(
             ),
             |el| el.child(content),
         )
+}
+
+/// §10.5/§18.5 the loading arc: rotating at 640 ms per turn while the row
+/// loads (a loop that exists only while the state holds — the element
+/// leaves the tree with the state, so no frame is requested afterwards),
+/// or the static arc under Reduce Motion.
+pub fn loading_spinner(theme: &Theme, index: usize, size: Pixels) -> AnyElement {
+    match Moment::LoadingArc.plan(theme.motion_mode) {
+        Some(plan) => {
+            let theme = *theme;
+            div()
+                .size(size)
+                .with_animation(
+                    ("bbr-loading-arc", index),
+                    plan.animation(),
+                    move |el, turn| {
+                        el.child(crate::icons::spinner::loading_arc_canvas(
+                            &theme, size, turn,
+                        ))
+                    },
+                )
+                .into_any_element()
+        }
+        None => Icon::LoadingArc.canvas(theme, size).into_any_element(),
+    }
 }
 
 /// The §7.2 monogram letter tile (also the image decode-failure fallback):

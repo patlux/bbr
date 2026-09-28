@@ -23,6 +23,11 @@ use super::BbrApp;
 
 impl Render for BbrApp {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // §18.5 idle evidence: every animation frame re-renders this view.
+        #[cfg(feature = "testkit")]
+        {
+            self.motion.root_renders += 1;
+        }
         let theme = self.theme();
         let p = theme.palette;
         let chrome_focused = self.chrome_handle.is_focused(window);

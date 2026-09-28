@@ -93,6 +93,7 @@ mod find_benchmarks;
 mod gesture_benchmarks;
 mod interaction;
 pub(crate) mod library;
+mod motion;
 mod new_window;
 pub(crate) mod palette;
 pub(crate) mod peek;
@@ -225,6 +226,8 @@ pub struct BbrApp {
     /// hover moves the translucent fill one step brighter (dark chrome) /
     /// darker (light chrome) via the §11.5 token pair.
     address_hovered: bool,
+    /// §6/§18.5 app-side motion state (D5 finish timer, idle evidence).
+    motion: motion::MotionState,
     /// §11.14 titlebar hover state: the control under the pointer (DESIGN
     /// §10.2 wash), driven by the production `on_hover` listener. `None` at
     /// rest.
@@ -609,6 +612,7 @@ impl BbrApp {
             hovered_folder: None,
             pressed_row: None,
             address_hovered: false,
+            motion: motion::MotionState::default(),
             titlebar_hovered: None,
             titlebar_pressed: None,
             command_bar_mode: CommandBarMode::Inactive,

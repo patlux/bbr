@@ -52,8 +52,8 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 | V2-S3 | Rail: lift, veils, heading, footer | `integrated` | `main` (serial) | orchestrator | [rail](../roadmap/tasks/v2-rail.md) | Integrated; verify, testkit clippy, sidebar/hover/tabs/organize/dense/spaces/gallery green, visual capture read; self-review recorded |
 | V2-S4 | Space paper and active chip lift | `integrated` | `main` (serial) | orchestrator | [space paper](../roadmap/tasks/v2-space-paper.md) | Integrated; verify, testkit clippy, spaces/sidebar/gallery/organize green, visual capture read; self-review recorded |
 | V2-S5 | Floating surfaces | `integrated` | `main` (serial) | orchestrator | [floating surfaces](../roadmap/tasks/v2-overlays.md) | Integrated; verify, testkit clippy, command/tab-menu/context-menu/find/downloads/library/auth/gallery green; self-review recorded |
-| V2-S6 | Motion core | `running` | `main` (serial) | orchestrator | [motion core](../roadmap/tasks/v2-motion-core.md) | after S1 and S5 |
-| V2-S7 | After-commit moments | `planned` | `main` (serial) | orchestrator | [motion moments](../roadmap/tasks/v2-motion-moments.md) | after S6 |
+| V2-S6 | Motion core | `integrated` | `main` (serial) | orchestrator | [motion core](../roadmap/tasks/v2-motion-core.md) | Integrated; verify, testkit clippy, sidebar/hover/errors/tabs/favicons/gallery green; attention E2E not expressible (no producer); self-review recorded |
+| V2-S7 | After-commit moments | `running` | `main` (serial) | orchestrator | [motion moments](../roadmap/tasks/v2-motion-moments.md) | after S6 |
 | V2-S8 | Drawn empty states | `planned` | `main` (serial) | orchestrator | [empty states](../roadmap/tasks/v2-empty-states.md) | after S7 |
 | V2-S9 | Phosphor-b app icon | `planned` | `main` (serial) | orchestrator | [brand icon](../roadmap/tasks/v2-brand-icon.md) | after S6 |
 | V2-S10 | Curated intensity and grain | `planned` | `main` (serial) | orchestrator | [theme picker](../roadmap/tasks/v2-theme-picker.md) | after S8 |

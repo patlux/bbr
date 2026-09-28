@@ -41,6 +41,11 @@ pub use space_tint::{hex, space_tint, SpaceTint};
 /// authoring its own shadow list.
 pub mod elevation;
 
+/// The v2 motion helper (DESIGN.md §6, §18.5): easing curves from the §6
+/// tokens and the transient-moment descriptors with their Reduce Motion
+/// variants.
+pub mod motion;
+
 /// Typography steps (DESIGN.md §4).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TypeRole {

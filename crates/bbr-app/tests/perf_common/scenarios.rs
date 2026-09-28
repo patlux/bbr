@@ -573,6 +573,9 @@ pub fn run_cold_trial_raw(
             &page_two,
             &page_find,
         );
+        // v2 motion idle budget: the settled shell requests no animation
+        // frames (zero animation elements across forced frames).
+        super::idle::assert_idle_requests_no_frames(&mut client);
 
         client.quit().expect("quit");
         wait_for_exit(&mut harness.child, deadline());

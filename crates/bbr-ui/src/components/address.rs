@@ -62,7 +62,29 @@ pub struct AddressModel {
     /// §17.14 zoom accessory: the active site's zoom percent while it is
     /// not 100 % ([`zoom_accessory`]); `None` keeps the slot empty.
     pub zoom: Option<u16>,
+    /// D5 (§18.1): the active tab's load progress on the field's inner
+    /// bottom edge.
+    pub progress: AddressProgress,
 }
+
+/// D5 load progress in the address field (§18.5): GPUI never paints above
+/// the native web view, so the line lives in the chrome the user is
+/// already looking at.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum AddressProgress {
+    /// No load in flight and no finish playing: nothing renders.
+    #[default]
+    Idle,
+    /// The active tab is loading: the indeterminate sweep (a static 2 pt
+    /// line under Reduce Motion).
+    Loading,
+    /// The load just finished: the line fills, then fades (Reduce Motion
+    /// removes it on finish instead, so this phase never occurs there).
+    Finishing,
+}
+
+/// The stable id of the D5 progress line (present only while shown).
+pub const ADDRESS_PROGRESS_ID: &str = "bbr-address-progress";
 
 /// The stable id of the §17.14 zoom chip in the address accessory slot.
 pub const ADDRESS_ZOOM_ID: &str = "bbr-address-zoom";
@@ -223,9 +245,73 @@ pub fn address_control(
                 .justify_center()
                 .children(zoom_chip),
         )
+        .when_some(progress_line(theme, model.progress), |el, line| {
+            el.child(line)
+        })
         // The §11.4 field anchor overlays the pill (absolute, inset-0):
         // invisible, takes no layout space, records the pill rect.
         .child(field_anchor)
+}
+
+/// D5/§18.5: the 2 pt accent progress line on the field's inner bottom
+/// edge, inset by the corner radius so it stays on the straight edge. The
+/// sweep loops only while the tab loads; the finish is a one-shot; Reduce
+/// Motion shows a static line while loading and nothing on finish.
+fn progress_line(theme: &Theme, progress: AddressProgress) -> Option<gpui::AnyElement> {
+    use crate::theme::motion::{progress_finish_sample, progress_sweep_sample, Moment};
+    use gpui::{relative, AnimationExt};
+    let accent = theme.palette.accent;
+    let track = || {
+        div()
+            .id(ADDRESS_PROGRESS_ID)
+            .absolute()
+            .bottom(px(0.0))
+            .left(theme.radius.large())
+            .right(theme.radius.large())
+            .h(px(2.0))
+            .overflow_hidden()
+    };
+    let segment = move |left: f32, width: f32, opacity: f32| {
+        div()
+            .absolute()
+            .top(px(0.0))
+            .bottom(px(0.0))
+            .left(relative(left))
+            .w(relative(width))
+            .bg(accent)
+            .opacity(opacity)
+    };
+    match progress {
+        AddressProgress::Idle => None,
+        AddressProgress::Loading => Some(match Moment::AddressProgress.plan(theme.motion_mode) {
+            Some(plan) => track()
+                .with_animation(
+                    "bbr-address-progress-sweep",
+                    plan.animation(),
+                    move |el, t| {
+                        let (left, width) = progress_sweep_sample(t);
+                        el.child(segment(left, width, 1.0))
+                    },
+                )
+                .into_any_element(),
+            None => track().child(segment(0.0, 1.0, 1.0)).into_any_element(),
+        }),
+        AddressProgress::Finishing => {
+            let plan = Moment::AddressProgressFinish.plan(theme.motion_mode)?;
+            Some(
+                track()
+                    .with_animation(
+                        "bbr-address-progress-finish",
+                        plan.animation(),
+                        move |el, t| {
+                            let (width, opacity) = progress_finish_sample(t, 0.3);
+                            el.child(segment(0.0, width, opacity))
+                        },
+                    )
+                    .into_any_element(),
+            )
+        }
+    }
 }
 
 /// The §11.5 command **staging** surface (`bbr-command-bar`): the input
@@ -349,6 +435,7 @@ mod tests {
             hovered: false,
             profile_hint: Some(hint.clone()),
             zoom: None,
+            progress: AddressProgress::Idle,
         };
         assert_eq!(model.domain, "example.com");
         assert!(!model.hovered);

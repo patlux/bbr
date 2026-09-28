@@ -19,6 +19,7 @@
 //! migration is a pure import-path change).
 
 pub mod address;
+mod attention;
 pub mod drag_offer;
 pub mod drag_tick;
 pub mod favicon;
@@ -34,7 +35,8 @@ pub mod status;
 pub mod tab_row;
 
 pub use address::{
-    address_control, staging_surface, AddressModel, AddressProfileHint, StagingModel,
+    address_control, staging_surface, AddressModel, AddressProfileHint, AddressProgress,
+    StagingModel,
 };
 pub use drag_tick::{drag_tick, drag_tick_bottom, DRAG_TICK_ID};
 pub use favicon::{favicon_tile, FaviconSpec};

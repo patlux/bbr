@@ -49,20 +49,34 @@ Integration order:       before S7
 
 ### Unit and contract
 
-- [ ] Easing curves match the tokens at sample points; D11 correction.
-- [ ] Transient descriptors under full and reduced motion.
+- [x] Easing curves match the tokens at sample points; D11 correction
+      (`theme/motion.rs`).
+- [x] Transient descriptors under full and reduced motion, sample shapes,
+      spinner geometry shared with the static glyph.
 
 ### Real-app E2E
 
-- [ ] Loading: arc animation reported running while loading, stopped after.
-- [ ] Attention: pulse reported once, reduced variant under the override.
-- [ ] Address progress present while the active tab loads, gone after.
-- [ ] Idle: no animation frames requested over a bounded idle window.
+- [x] Loading: arc animation reported running while loading, stopped after
+      (`e2e_shell_sidebar/motion.rs`, slow fixture).
+- [ ] Attention: pulse reported once, reduced variant under the override —
+      **not expressible**: the app has no attention producer (the §10.6
+      state is contract-only; `row_state` never yields it). The pulse is
+      covered by the component (`components/attention.rs`), the moment
+      descriptor tests and the gallery's Tab Row states; the typed
+      `attention-pulse` moment evidence is wired and attaches when a
+      producer lands.
+- [x] Address progress present while the active tab loads, fill-and-fade on
+      finish, gone after; static line and no finish under Reduce Motion.
+- [x] Idle: no animation frames requested over a bounded idle window —
+      render-side proof (a forced frame renders but builds zero animation
+      elements); the display link does not tick for hidden/locked test
+      windows, so a frame-tick count is not observable there.
 
 ### Performance
 
-- [ ] Idle scenario code added (frame requests while idle); execution
-      deferred.
+- [x] Idle scenario code added (`perf_common/idle.rs`: zero animation
+      elements across forced frames after the interaction matrix);
+      execution deferred.
 
 ## Completion gates
 
@@ -89,10 +103,25 @@ use the app-owned transient registry as the idle proof.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:   not run — execution deferred
-Worktree state:
+Outcome:               `theme::motion` (easing + moment plans + samples +
+                        built-element counter); rotating loading arc; one-shot
+                        attention pulse; D5 address progress (sweep, finish
+                        timer); typed `motion` snapshot (moments, root renders,
+                        animation elements).
+Commits:               see git log (feat(ui): add the v2 motion core …)
+Functional evidence:   just verify ok; testkit clippy ok; bbr-ui 188 tests
+Real-app E2E:          shell-sidebar 19/19 (new motion scenario),
+                        shell-hover 4/4, shell-errors 10/10, shell-tabs 3/3,
+                        shell-favicons 3/3, gallery 46/46
+Performance evidence:   not run — execution deferred (idle budget code added)
+Deviations:            attention E2E not expressible (no producer); idle
+                        proof is render-side because the screen was locked
+                        (IOConsoleLocked since 01:33) and hidden windows get no
+                        display-link frames — the counter showed 3 renders in
+                        30 s, all forced flushes; the command overlay's
+                        existing open fade is not routed through the helper.
+Review:                serial self-review: moments never delay commits (state
+                        is applied before the moment is chosen), loops live
+                        only while their state holds, one-shots rest.
+Worktree state:        clean after commit
 ```

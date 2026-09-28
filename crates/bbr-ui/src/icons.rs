@@ -11,15 +11,16 @@
 //! Icons are pure presentation: callers keep their own control ids, hit
 //! squares, listeners, labels, and semantics on the owning div, so this
 //! module never changes behavior, focus, or layout. The loading glyph is the
-//! §10.5 circular arc in accent; it renders statically because rotation is
-//! transient-indication motion that belongs to a later polish pass — this
-//! slice replaces the placeholder, it does not introduce animation.
+//! §10.5 circular arc in accent; [`spinner::loading_arc_canvas`] draws it at
+//! any rotation for the v2 spinner (§18.5), and this static glyph is its
+//! rest frame (the Reduce Motion variant).
 //!
 //! The pure path geometry lives in [`glyphs`].
 
 pub mod bbr;
 pub mod glyphs;
 mod paint;
+pub mod spinner;
 
 pub use bbr::{classify_identity, IdentityForm};
 
@@ -31,10 +32,10 @@ use crate::palette::Palette;
 use crate::theme::Theme;
 
 use glyphs::{
-    arc_radius, bookmark_geometry, chassis_radii, check_geometry, chevron_arm, clock_geometry,
-    clock_hands, close_arm, disclosure_arm, downloads_geometry, folder_geometry,
-    folder_open_geometry, icon_stroke, lifering_radii, nav_arrow_geometry, pencil_geometry,
-    pin_radius, plus_arm, reload_geometry, sidebar_geometry, stopped_half,
+    bookmark_geometry, chassis_radii, check_geometry, chevron_arm, clock_geometry, clock_hands,
+    close_arm, disclosure_arm, downloads_geometry, folder_geometry, folder_open_geometry,
+    icon_stroke, lifering_radii, nav_arrow_geometry, pencil_geometry, pin_radius, plus_arm,
+    reload_geometry, sidebar_geometry, stopped_half,
 };
 use paint::{paint_filled_circle, paint_path, paint_ring, paint_rounded_square_ring, paint_stroke};
 
@@ -349,18 +350,9 @@ impl Icon {
                 paint_path(window, path, color);
             }
             Icon::LoadingArc => {
-                let radius = arc_radius(size);
-                let mut path = PathBuilder::stroke(stroke);
-                // A 270° accent arc: from the top clockwise to the left.
-                path.move_to(point(px(cx), px(cy - radius)));
-                path.arc_to(
-                    point(px(radius), px(radius)),
-                    px(0.0),
-                    true,
-                    true,
-                    point(px(cx - radius), px(cy)),
-                );
-                paint_path(window, path, color);
+                // A 270° accent arc from the top clockwise to the left — the
+                // spinner's rest frame (the one shared geometry).
+                spinner::paint_arc(bounds, window, density, color, 0.0);
             }
             Icon::ChevronLeft | Icon::ChevronRight => {
                 let arm = chevron_arm(size);

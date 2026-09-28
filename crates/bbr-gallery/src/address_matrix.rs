@@ -200,6 +200,7 @@ pub fn build_address_fixture(case: &AddressCase, theme: &Theme) -> Option<Addres
             None
         },
         zoom: None,
+        progress: bbr_ui::components::AddressProgress::Idle,
     })
 }
 

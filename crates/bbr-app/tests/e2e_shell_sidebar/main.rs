@@ -494,6 +494,7 @@ mod composition;
 mod composition_geometry;
 mod content_card;
 mod lift;
+mod motion;
 mod reference_polish;
 mod support;
 mod u2_favorites;

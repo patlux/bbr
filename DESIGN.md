@@ -390,8 +390,19 @@ pills around text; `density:radius` is S 6 / N 10 / XL 12.
 | `ease:decelerate` | `cubic-bezier(0, 0, 0.3, 1)` (v2 D11; the former `0, 0, 0, 0.3` was a transposition that read as a steep, almost linear ramp) |
 | `load:indeterminate` | 580 ms linear loop (§11.5) |
 
-Animated states and their permitted motion are enumerated in §10; anything
-not listed there is `dur:instant`.
+Animated states and their permitted motion are enumerated in §10 and §18.5;
+anything not listed there is `dur:instant`.
+
+**Implementation (v2 S6).** One helper, `bbr_ui::theme::motion`, owns the
+easing curves (bezier-evaluated from the tokens above) and one descriptor per
+transient moment with its Reduce Motion variant; every animated cue is built
+from it, so timing and the reduced variant cannot drift per component. A
+moment only decorates a state that is already committed and rendered on the
+commit frame. Loops (loading arc, address sweep) exist only while their state
+holds — the element leaves the tree with the state — and one-shots rest on
+their final frame, so an idle shell builds no animation element and requests
+no animation frames (asserted in E2E and the performance idle budget through
+the typed `motion` snapshot).
 
 ## 7. Iconography
 
@@ -584,17 +595,19 @@ surfaces retain the accent. Snap (`dur:instant`). **Assert:** `selected`
 exactly the selected tab's row ids plus the active space chip.
 
 ### 10.5 `loading`
-Favicon slot swaps to an 18 pt circular arc spinner (S 16 / XL 20, accent,
-rotating,
-`dur` 640 ms linear — allowed, it is transient indication); tab title drops
-to `ink.secondary`; a 2 pt indeterminate progress bar sweeps the top edge of
-the content pane (`load:indeterminate`, opacity 1→0.6 loop). Selection/
-hover visuals unchanged. **Assert:** `loading`.
+Favicon slot swaps to an 18 pt circular arc spinner (S 16 / XL 20, accent)
+rotating at 640 ms per turn, linear (static arc under Reduce Motion); tab
+title drops to `ink.secondary`. Page progress is the D5 line in the address
+field (§11.5), never a bar on the content pane — GPUI does not paint above
+the native web view. Selection/hover visuals unchanged. **Assert:**
+`loading`, plus the `loading-arc` moment in the `motion` snapshot.
 
 ### 10.6 `attention`
-Amber dot (8 pt at the row's trailing state slot) + one two-beat opacity
-pulse (`dur:emphasis`, 1→0.45→1) + a one-frame amber surface flash
-(`status.attention.surface`, `dur:fine`). Non-color companions: the badge
+Amber dot (8 pt at the row's trailing state slot) playing one two-beat pulse
+when the row enters the state (§18.5: two `dur:fine` beats, dot scale
+1→1.45→1 plus one ring 4→16 pt fading out; Reduce Motion: opacity-only
+1→0.45→1), then resting on the static dot. The former one-frame amber surface
+flash is withdrawn (§18.5). Non-color companions: the badge
 only appears with a reason line in the status area, and the row keeps its
 title in `ink`. Used for e.g. a tab update the user flagged, a
 requested-but-unfocused action, or a failed background open — never for
@@ -963,6 +976,11 @@ of problem instead of styling it.
   white 6 %). Pressing it resets
   the site to 100 % through the site-zoom authority and never opens the
   palette. Copy Link and permission indicators stay future accessories.
+- **Load progress (D5):** while the active tab loads, a 2 pt `accent` line
+  on the field's inner bottom edge (inset by the corner radius) sweeps
+  (`load:indeterminate`); when the load ends it fills (`dur:standard`) and
+  fades (`dur:standard`), then leaves the tree. Reduce Motion: a static line
+  while loading, removed on finish. Id `bbr-address-progress` while shown.
 - **Hover:** the veil moves one step darker on light chrome (white 40 %) and
   one step brighter on dark chrome (white 10 %), using the §10.2 wash mechanics at `dur:fine`; the
   border never changes weight or color.
@@ -975,7 +993,7 @@ of problem instead of styling it.
   it is being edited (no caret, no selection). After the palette closes, focus returns where it was before opening — web
   content or the sidebar — per the interaction contract.
 - **Assert ids:** `bbr-address`, `bbr-address-domain`,
-  `bbr-address-accessory`, `bbr-address-zoom` (only while shown); the palette's own input carries
+  `bbr-address-accessory`, `bbr-address-zoom` and `bbr-address-progress` (only while shown); the palette's own input carries
   `bbr-command-overlay-field` / `-text` / `-cursor`, and results keep
   `bbr-command-result-<k>`.
 
@@ -1856,7 +1874,7 @@ second is replaced by the ring).
 | S3 rail | [rail](docs/roadmap/tasks/v2-rail.md) | §4, §10.2–§10.4, §11.1, §11.4, §11.5, §11.10 | landed 2026-09-28 |
 | S4 space paper | [space paper](docs/roadmap/tasks/v2-space-paper.md) | §11.3 | landed 2026-09-28 |
 | S5 floating surfaces | [overlays](docs/roadmap/tasks/v2-overlays.md) | §8 palette width, §11.4, §11.12, §11.13, §11.16 | landed 2026-09-28 |
-| S6 motion core | [motion core](docs/roadmap/tasks/v2-motion-core.md) | §6, §10.5, §10.6, §11.5 | adopted |
+| S6 motion core | [motion core](docs/roadmap/tasks/v2-motion-core.md) | §6, §10.5, §10.6, §11.5 | landed 2026-09-28 |
 | S7 after-commit moments | [motion moments](docs/roadmap/tasks/v2-motion-moments.md) | §6, §10, §11.3, §11.4, §11.10, §11.12 | adopted |
 | S8 empty states | [empty states](docs/roadmap/tasks/v2-empty-states.md) | §11.8 | adopted |
 | S9 app icon | [brand icon](docs/roadmap/tasks/v2-brand-icon.md) | §1, §7 | adopted |

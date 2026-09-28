@@ -12,6 +12,8 @@ use crate::palette::Palette;
 use crate::state::TabVisualState;
 use crate::theme::{elevation, Radius, Spacing, Theme, ThemeMode};
 
+use super::attention::attention_dot;
+pub use super::attention::attention_visible;
 use super::favicon::{favicon_tile, FaviconSpec};
 
 /// §15 stable ids of the §11.1/§11.2 vertical tab row (DESIGN.md §11.1/
@@ -81,29 +83,8 @@ pub fn row_state_slot(theme: &Theme, index: usize, state: TabVisualState) -> Sta
         .text_size(theme.type_.meta.size)
         .text_color(theme.palette.ink_faint)
         .when(attention_visible(state), |el| {
-            el.child(attention_dot(theme))
+            el.child(attention_dot(theme, index))
         })
-}
-
-/// §10.6: whether the attention dot shows in the trailing state slot. The
-/// dot appears only while the composed §10 winner is `Attention` (the
-/// caller already resolved error > loading > pressed > selected > hover >
-/// default, so attention never rides another state's row).
-pub fn attention_visible(state: TabVisualState) -> bool {
-    state == TabVisualState::Attention
-}
-
-/// §10.6 attention dot: an 8 pt `status.attention` dot in the row's
-/// trailing state slot. Static — the two-beat opacity pulse and the
-/// one-frame amber surface flash stay later polish (the same honesty as
-/// the static loading arc); the dot itself is the attention visual
-/// contract, and the §10.6 badge always comes with its reason line in the
-/// status area (app-owned).
-fn attention_dot(theme: &Theme) -> Div {
-    div()
-        .size(px(8.0))
-        .rounded(Radius.full())
-        .bg(theme.palette.status_attention)
 }
 
 /// §11.1 close control: the §7 drawn close glyph (two 1.5 pt diagonal

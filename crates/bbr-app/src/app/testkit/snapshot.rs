@@ -303,6 +303,7 @@ impl BbrApp {
             drag_valid: self.tab_drag.valid(),
             space_chips,
             active_appearance,
+            motion: self.motion_snapshot(&rows),
             space_strip_scroll: self.space_strip_scroll_snapshot(),
             space_config: self.space_config_snapshot(window),
             swipe: self.swipe_snapshot(),
@@ -351,6 +352,10 @@ impl BbrApp {
                 ids.push(bbr_ui::card::CONTENT_CARD_ID.to_string());
                 if self.address_zoom_chip().is_some() {
                     ids.push(bbr_ui::components::address::ADDRESS_ZOOM_ID.to_string());
+                }
+                // D5: the progress line is an id only while it renders.
+                if self.rendered_address_progress() != bbr_ui::components::AddressProgress::Idle {
+                    ids.push(bbr_ui::components::address::ADDRESS_PROGRESS_ID.to_string());
                 }
                 if self.content_card_frame(window).top > 0.0 {
                     ids.push(bbr_ui::card::CHASSIS_BAND_ID.to_string());

@@ -100,6 +100,7 @@ pub fn build_sidebar_fixture(
                 label: "Private".into(),
             }),
             zoom: case.zoom,
+            progress: bbr_ui::components::AddressProgress::Idle,
         }),
         CommandKind::Staging => CommandSlot::Staging(bbr_ui::components::StagingModel {
             focused: true,

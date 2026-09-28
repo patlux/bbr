@@ -26,13 +26,18 @@ impl BbrApp {
     /// empty New Tab surface. The rail renders the matching `bbr-ui`
     /// component; the app keeps the mode authority.
     pub(super) fn command_slot(&self, theme: &Theme, chrome_focused: bool) -> CommandSlot {
-        let staging = self.command_surface == crate::app::palette::CommandSurface::None
-            && self.command_bar_mode.is_active();
-        if staging {
-            CommandSlot::Staging(self.staging_model(chrome_focused))
-        } else {
+        if self.command_slot_is_address() {
             CommandSlot::Address(self.address_model(theme))
+        } else {
+            CommandSlot::Staging(self.staging_model(chrome_focused))
         }
+    }
+
+    /// Whether the command slot shows the §11.5 address control (no
+    /// non-address staging mode owns it without a floating presentation).
+    pub(crate) fn command_slot_is_address(&self) -> bool {
+        !(self.command_surface == crate::app::palette::CommandSurface::None
+            && self.command_bar_mode.is_active())
     }
 
     /// The §11.4 field anchor element: an invisible element inside the
@@ -73,6 +78,7 @@ impl BbrApp {
             hovered: self.address_hovered,
             profile_hint,
             zoom: bbr_ui::components::address::zoom_accessory(self.address_zoom_level()),
+            progress: self.address_progress(),
         }
     }
 

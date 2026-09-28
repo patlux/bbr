@@ -138,7 +138,16 @@ impl BbrApp {
         if let WebEvent::ContextMenuRequested(view, point) = &event {
             self.menu_open_from_event(*view, *point, window, cx);
         }
+        // D5: when this event ends the active tab's load (commit, finish,
+        // failure or crash all clear the flag), the address line plays its
+        // fill-and-fade after the state is applied.
+        let loading_before = self.active_load();
         let _ = self.controller.apply_event(event.clone());
+        if let Some(view) = loading_before {
+            if self.active_load().is_none() {
+                self.note_load_finished(view, cx);
+            }
+        }
         if !self.command_bar_mode.is_active() {
             self.sync_command_bar();
         }
