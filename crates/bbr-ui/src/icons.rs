@@ -17,6 +17,7 @@
 //!
 //! The pure path geometry lives in [`glyphs`].
 
+mod address_marks;
 pub mod bbr;
 pub mod glyphs;
 mod paint;
@@ -98,6 +99,14 @@ pub enum Icon {
     Pencil,
     /// §11.4 command field: the search magnifier the query leads with.
     Search,
+    /// Blueprint D03 §11.5: the not-secure (plain http) address mark — a
+    /// warning triangle at `status.attention`.
+    Warning,
+    /// Blueprint D03 §11.5: the Settings internal-page mark (a gear).
+    Gear,
+    /// Blueprint D03 §11.5: the local-file address mark (a page with a
+    /// folded corner).
+    Document,
 }
 
 impl Icon {
@@ -153,6 +162,9 @@ impl Icon {
             Icon::Bookmark => "bookmark",
             Icon::Pencil => "pencil",
             Icon::Search => "search",
+            Icon::Warning => "warning",
+            Icon::Gear => "gear",
+            Icon::Document => "document",
         }
     }
 
@@ -178,6 +190,8 @@ impl Icon {
             Icon::Sidebar { .. } => palette.ink_secondary,
             Icon::NavBack | Icon::NavForward | Icon::Reload => palette.ink_secondary,
             Icon::Bookmark | Icon::Pencil | Icon::Search => palette.ink_secondary,
+            Icon::Warning => palette.status_attention,
+            Icon::Gear | Icon::Document => palette.ink_secondary,
         }
     }
 
@@ -309,6 +323,9 @@ impl Icon {
                 }
             }
             Icon::Search => shapes::paint_search(window, stroke, color, cx, cy, size),
+            Icon::Warning => address_marks::paint_warning(window, stroke, color, cx, cy, size),
+            Icon::Gear => address_marks::paint_gear(window, stroke, color, cx, cy, size),
+            Icon::Document => address_marks::paint_document(window, stroke, color, cx, cy, size),
             Icon::Disclosure { expanded } => {
                 let arm = disclosure_arm(size);
                 let mut path = PathBuilder::stroke(stroke);

@@ -67,12 +67,24 @@ fn address_control_node(input: &SemanticInput<'_>) -> SemanticNode {
         id: "bbr-address".into(),
         role: SemanticRole::Button,
         name: Some(input.command.address.clone()),
-        value: None,
+        // Blueprint D03: the identity is spoken, not only drawn.
+        value: address_identity_value(&input.command.address_identity),
         enabled: true,
         selected: false,
         focused: false,
         drag_target: false,
         children,
+    }
+}
+
+/// Blueprint D03: the address control's spoken identity (`None` for a
+/// secure site and for placeholders).
+fn address_identity_value(kind: &str) -> Option<String> {
+    match kind {
+        "not-secure" => Some("Not secure".into()),
+        "internal" => Some("BBR page".into()),
+        "file" => Some("Local file".into()),
+        _ => None,
     }
 }
 

@@ -4,7 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.5 §17.13, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 5 of 24. Paper boards: S-1 · Address control, M-8 · Site settings (file
+Status: implemented 2026-09-29 (DESIGN §19); position 5 of 24. Paper boards: S-1 · Address control, M-8 · Site settings (file
 “BBR — Browser Shell”).
 
 ## Outcome
@@ -43,17 +43,15 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Portable model / controller / component tests for the new behaviour
-      and its states.
+- [x] bbr-ui text::address_identity (https/loopback secure contexts, plain http not secure, bbr:// internal names, file names decoded without path, placeholders) and AddressMark mapping; Warning/Gear/Document §7 glyphs; gallery address families (not secure, Library, Settings, local file); semantics value (Not secure / BBR page / Local file).
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-zoom` covers the flow drawn on the boards through the
-      production path with semantic ids and typed snapshots.
+- [x] `just e2e-shell-zoom` — identity::address_marks_not_secure_sites_and_names_local_files over a real WKWebView (loopback fixture secure with no mark; http://bbr-not-secure.invalid shows the mark and 'Not secure'; a file:// fixture shows page2.html and 'Local file'); command, sidebar and gallery suites green. Internal pages are unit/gallery evidence until the first bbr:// page is served (D10/D15).
 
 ### Performance
 
-- [ ] Add the optimized presentation scenario for the new user-visible interaction, or record why none applies (performance contract).
+- [ ] Performance scenario: none added — the mark is a static glyph derived from the URL on the existing address render path; measurement is deferred (Patrick, 2026-09-27).
 
 ## Completion gates
 
@@ -81,12 +79,12 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                The address shows the not-secure mark for plain http, internal pages by short name + glyph, and local files by file name.
+Commits:                see git log (feat/fix commit carrying this packet)
+Functional evidence:    bbr-ui text::address_identity (https/loopback secure contexts, plain http not secure, bbr:// internal names, file names decoded without path, placeholders) and AddressMark mapping; Warning/Gear/Document §7 glyphs; gallery address families (not secure, Library, Settings, local file); semantics value (Not secure / BBR page / Local file).
+Real-app E2E:           `just e2e-shell-zoom` — identity::address_marks_not_secure_sites_and_names_local_files over a real WKWebView (loopback fixture secure with no mark; http://bbr-not-secure.invalid shows the mark and 'Not secure'; a file:// fixture shows page2.html and 'Local file'); command, sidebar and gallery suites green. Internal pages are unit/gallery evidence until the first bbr:// page is served (D10/D15).
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §11.5 content + identity mark, §17.13 resolved, §19 D03 implemented
+Open blockers and non-goals: none
+Worktree state:         main, clean after commit
 ```

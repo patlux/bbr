@@ -9,6 +9,9 @@
 
 use crate::theme::{Density, Spacing, Theme};
 
+mod address_identity;
+pub use address_identity::{address_identity, AddressIdentity, InternalPage};
+
 /// DESIGN.md §4 truncation preference: one line, end-ellipsis; when the full
 /// title exceeds the row budget and contains a separator (`" – "`, `" - "`,
 /// or `" | "`), cut at the first separator so the site name survives;
@@ -96,26 +99,30 @@ pub fn display_title(url: &str, title: &str) -> String {
 /// §11.5 address-control display derivation: the **domain only** — host
 /// without scheme, path or query; a leading `www.` elided; IDN punycode
 /// decoded to the human-readable form; an explicit port dropped (the pill
-/// shows the domain; the full address lives in the palette). Non-http(s)
-/// schemes (internal pages) render their scheme's short name as the §17.13
-/// placeholder — the exact internal-page naming is an open decision and
-/// this slice does not invent it. Empty or unparsable input yields the
-/// empty label.
+/// shows the domain; the full address lives in the palette). Other
+/// schemes are named by [`address_identity`] (blueprint D03): internal
+/// pages by their short name, local files by their file name, anything
+/// else by its scheme. Empty or unparsable input yields the empty label.
 pub fn address_domain(url: &str) -> String {
+    let trimmed = url.trim();
+    let scheme = trimmed
+        .split_once(':')
+        .map(|(scheme, _)| scheme.trim().to_ascii_lowercase());
+    match scheme.as_deref() {
+        Some("http") | Some("https") => site_domain(trimmed),
+        _ => address_identity(trimmed).label(),
+    }
+}
+
+/// The display domain of an http(s) URL (the [`address_domain`] rule).
+fn site_domain(url: &str) -> String {
     let url = url.trim();
     if url.is_empty() {
         return String::new();
     }
-    let Some((scheme, rest)) = url.split_once(':') else {
-        // No scheme at all: not a parsable URL, nothing to display.
+    let Some((_scheme, rest)) = url.split_once(':') else {
         return String::new();
     };
-    let scheme = scheme.trim();
-    if scheme != "http" && scheme != "https" {
-        // Internal pages (§17.13 open): the scheme is the short-name
-        // placeholder, never an invented name.
-        return scheme.to_string();
-    }
     // http(s): the host is the authority without the scheme prefix, cut at
     // the first path/query/fragment delimiter.
     let authority = rest.strip_prefix("//").unwrap_or(rest);
@@ -418,10 +425,11 @@ mod tests {
     }
 
     #[test]
-    fn address_domain_internal_pages_show_the_scheme_placeholder() {
+    fn address_domain_names_files_and_internal_pages_and_keeps_scheme_placeholders() {
         assert_eq!(address_domain("about:blank"), "about");
         assert_eq!(address_domain("data:text/html,hi"), "data");
-        assert_eq!(address_domain("file:///tmp/x.html"), "file");
+        assert_eq!(address_domain("file:///tmp/x.html"), "x.html");
+        assert_eq!(address_domain("bbr://library"), "Library");
     }
 
     #[test]

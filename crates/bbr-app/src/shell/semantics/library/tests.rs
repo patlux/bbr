@@ -108,6 +108,7 @@ fn library_input(
         command: SemanticCommand {
             mode: "inactive".into(),
             address: "example.com".into(),
+            address_identity: "secure".into(),
             text: String::new(),
             hint: None,
             profile_hint: None,

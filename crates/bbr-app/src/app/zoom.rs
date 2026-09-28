@@ -392,6 +392,20 @@ impl super::BbrApp {
         bbr_ui::components::address::zoom_accessory(self.address_zoom_level())
     }
 
+    /// Blueprint D03: the address control's leading identity mark while
+    /// the address renders (never on the staging surface or with the rail
+    /// hidden).
+    pub(crate) fn rendered_address_mark(&self) -> Option<bbr_ui::components::address::AddressMark> {
+        let staging = self.command_surface == crate::app::palette::CommandSurface::None
+            && self.command_bar_mode.is_active();
+        if !self.sidebar_visible || staging {
+            return None;
+        }
+        bbr_ui::components::address::AddressMark::for_identity(&bbr_ui::text::address_identity(
+            &self.active_url(),
+        ))
+    }
+
     /// The active site's effective zoom percent (100 without an active
     /// view) — the §17.14 address accessory input.
     pub(crate) fn address_zoom_level(&self) -> u16 {

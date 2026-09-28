@@ -119,6 +119,9 @@ pub struct TestSnapshot {
     /// The §11.5 address pill's derived domain (display-only — the pill
     /// never holds the editable text, a cursor or a selection).
     pub address_domain: String,
+    /// Blueprint D03: the address identity kind (`secure`, `not-secure`,
+    /// `internal`, `file`, `other`, `empty`).
+    pub address_identity: String,
     /// The §11.5 address-pill hover state (the fill steps one
     /// brighter/darker via the token pair).
     pub address_hovered: bool,

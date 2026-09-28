@@ -102,6 +102,10 @@ pub const ADDRESS_VALID: &[AddressCase] = &[
     AddressCase::new("domain — explicit port (dropped)", "https://example.com:8443/", false, false),
     AddressCase::new("hover fill step (hovered)", "https://example.com/", true, false),
     AddressCase::new("profile-hint chip (present)", "https://example.com/", false, true),
+    AddressCase::new("not secure (plain http)", "http://router.lan/", false, false),
+    AddressCase::new("internal page — Library", "bbr://library", false, false),
+    AddressCase::new("internal page — Settings", "bbr://settings", false, false),
+    AddressCase::new("local file (file name only)", "file:///Users/me/report-q3.pdf", false, false),
 ];
 
 /// A rejected combination with the exact DESIGN/packet reason (the matrix
@@ -201,6 +205,9 @@ pub fn build_address_fixture(case: &AddressCase, theme: &Theme) -> Option<Addres
         },
         zoom: None,
         progress: bbr_ui::components::AddressProgress::Idle,
+        mark: bbr_ui::components::address::AddressMark::for_identity(
+            &bbr_ui::text::address_identity(case.url),
+        ),
     })
 }
 
@@ -374,6 +381,10 @@ mod tests {
                 "domain — explicit port (dropped)",
                 "hover fill step (hovered)",
                 "profile-hint chip (present)",
+                "not secure (plain http)",
+                "internal page — Library",
+                "internal page — Settings",
+                "local file (file name only)",
             ]
         );
         let staging_labels: Vec<&str> = STAGING_VALID.iter().map(|c| c.label).collect();

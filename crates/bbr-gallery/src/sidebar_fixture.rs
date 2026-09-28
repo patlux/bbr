@@ -137,6 +137,7 @@ pub fn build_sidebar_fixture_with_theme(
             }),
             zoom: case.zoom,
             progress: bbr_ui::components::AddressProgress::Idle,
+            mark: None,
         }),
         CommandKind::Staging => CommandSlot::Staging(bbr_ui::components::StagingModel {
             focused: true,

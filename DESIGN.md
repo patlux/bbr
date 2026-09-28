@@ -1044,8 +1044,21 @@ of problem instead of styling it.
 
 - **Content:** the **domain only** — host without scheme, path or query, a
   leading `www.` elided, IDN shown human-readable. The full address exists
-  in the palette, never here. Internal pages show their short name (the
-  exact naming is open, §17.13).
+  in the palette, never here. BBR's internal pages show a short name —
+  `bbr://library` Library, `bbr://settings` Settings, `bbr://history`
+  History, `bbr://welcome` Welcome — and local files their file name
+  (decoded, never the path). Any other scheme keeps its short name as a
+  placeholder (§17.13 resolved by blueprint D03).
+- **Identity mark (blueprint D03):** a leading 16 pt slot
+  (`bbr-address-mark`, 14 pt §7 glyph) appears only when there is something
+  to say: plain `http` off a loopback host shows the not-secure triangle at
+  `status.attention` (loopback hosts are secure contexts); internal pages
+  show their glyph (Library bookmark, Settings gear, History clock, Welcome
+  compass) at `ink.secondary`; local files show the document mark. `https`
+  sites show none. The control's accessible value names the state (Not
+  secure, BBR page, Local file), so the mark is never the only cue. The
+  mark becomes the site-identity trigger that opens site settings with
+  D11; until then it is not interactive.
 - **Anatomy:** a quiet field surface, height `density:row` (S 32 / N 36 /
   XL 44), `radius:lg` (12), `type:title` domain text (`bbr-address-domain`,
   mid-ellipsis) at 500 in `color:ink`, and a **trailing accessory slot**
@@ -1836,10 +1849,11 @@ production integration).
     files open **only** through the per-row Reveal-in-Finder action
     (§11.12) — no auto-open, no open-on-double-click, no save panel.
 
-13. **Internal page naming in the address control:** §11.5 shows a domain,
-    but `about:blank` and future internal pages have no domain. Decide the
-    short name they present (product name, a neutral label, or an empty
-    pill) so the control never shows a raw scheme.
+13. **Internal page naming in the address control** — **resolved
+    (2026-09-29, blueprint D03), implemented:** internal pages show a short
+    name behind their glyph (Library, Settings, History, Welcome), local
+    files their file name, and plain http the not-secure mark (§11.5).
+    Unknown schemes keep their short name as a placeholder.
 14. **Address accessory slot contents** — **resolved (2026-09-27),
     implemented:** the slot shows the page zoom chip
     only while zoom is not 100 %; pressing it resets to 100 %. Copy Link and
@@ -2066,7 +2080,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 |---|---|---|---|---|---|
 | D01 | Footer chips start after Downloads | S-7 W-1 | §11.3 §11.4 §18.3 | implemented | [blueprint-footer-strip-leading](docs/roadmap/tasks/blueprint-footer-strip-leading.md) |
 | D02 | Hover reveal of a hidden rail | W-3 V-6 | §2 §11.4 §11.14 | adopted | [blueprint-sidebar-hover-reveal](docs/roadmap/tasks/blueprint-sidebar-hover-reveal.md) |
-| D03 | Address control states | S-1 M-8 | §11.5 §17.13 | adopted | [blueprint-address-states](docs/roadmap/tasks/blueprint-address-states.md) |
+| D03 | Address control states | S-1 M-8 | §11.5 §17.13 | implemented | [blueprint-address-states](docs/roadmap/tasks/blueprint-address-states.md) |
 | D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | §11.4 | adopted | [blueprint-palette-recents-actions](docs/roadmap/tasks/blueprint-palette-recents-actions.md) |
 | D05 | Space menu and delete confirmation | P-4 PR-07 | §11.3 §11.13 | implemented | [blueprint-space-menu-delete](docs/roadmap/tasks/blueprint-space-menu-delete.md) |
 | D06 | Create, edit and delete profiles | P-6 L-4 PR-08 | §12 | adopted | [blueprint-profile-management](docs/roadmap/tasks/blueprint-profile-management.md) |

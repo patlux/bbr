@@ -228,6 +228,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             command_bar_mode: self.command_bar_mode,
             command_bar_text: self.command_bar_text.clone(),
             address_domain: self.address_domain.clone(),
+            address_identity: self.address_identity.clone(),
             address_hovered: self.address_hovered,
             address_rect: self.address_rect,
             command_surface: self.command_surface,

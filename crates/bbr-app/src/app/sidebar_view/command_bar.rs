@@ -54,7 +54,13 @@ impl BbrApp {
     fn address_model(&self, theme: &Theme) -> AddressModel {
         // The domain display derives from the live URL (never from the
         // command text model — the pill holds no editing state).
-        let domain = address_domain(&self.active_url());
+        let url = self.active_url();
+        let domain = address_domain(&url);
+        // Blueprint D03: the leading identity mark (not secure, internal
+        // page, local file); a secure site shows none.
+        let mark = bbr_ui::components::address::AddressMark::for_identity(
+            &bbr_ui::text::address_identity(&url),
+        );
         // The accessory slot is reserved even while empty (§11.5), so the
         // domain budget always accounts for it.
         let budget = address_domain_budget_chars(theme, true);
@@ -79,6 +85,7 @@ impl BbrApp {
             profile_hint,
             zoom: bbr_ui::components::address::zoom_accessory(self.address_zoom_level()),
             progress: self.address_progress(),
+            mark,
         }
     }
 

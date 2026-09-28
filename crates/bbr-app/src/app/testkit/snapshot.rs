@@ -372,6 +372,9 @@ impl BbrApp {
                 if self.address_zoom_chip().is_some() {
                     ids.push(bbr_ui::components::address::ADDRESS_ZOOM_ID.to_string());
                 }
+                if self.rendered_address_mark().is_some() {
+                    ids.push(bbr_ui::components::address::ADDRESS_MARK_ID.to_string());
+                }
                 // D5: the progress line is an id only while it renders.
                 if self.rendered_address_progress() != bbr_ui::components::AddressProgress::Idle {
                     ids.push(bbr_ui::components::address::ADDRESS_PROGRESS_ID.to_string());
@@ -385,6 +388,9 @@ impl BbrApp {
             command_bar_mode: self.command_bar_mode.into(),
             command_bar_text: self.command_text.text.clone(),
             address_domain: bbr_ui::text::address_domain(&self.active_url()),
+            address_identity: bbr_ui::text::address_identity(&self.active_url())
+                .kind()
+                .to_string(),
             address_hovered: self.address_hovered,
             address_rect: self
                 .command_field_rect
@@ -1088,6 +1094,9 @@ impl BbrApp {
                 // The §11.5 pill's derived domain (display-only; the pill
                 // never holds the editable text).
                 address: bbr_ui::text::address_domain(&self.active_url()),
+                address_identity: bbr_ui::text::address_identity(&self.active_url())
+                    .kind()
+                    .to_string(),
                 text: self.command_text.text.clone(),
                 hint: self.command_bar_hint(),
                 results: self

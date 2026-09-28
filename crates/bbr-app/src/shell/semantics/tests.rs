@@ -90,6 +90,7 @@ fn input<'a>(
         command: SemanticCommand {
             mode: "inactive".into(),
             address: "example.com".into(),
+            address_identity: "secure".into(),
             text: "".into(),
             hint: None,
             profile_hint: None,

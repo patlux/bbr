@@ -39,6 +39,17 @@ fn catalog_names_are_stable() {
     assert_eq!(Icon::Reload.name(), "reload");
     assert_eq!(Icon::Bookmark.name(), "bookmark");
     assert_eq!(Icon::Pencil.name(), "pencil");
+    assert_eq!(Icon::Warning.name(), "warning");
+    assert_eq!(Icon::Gear.name(), "gear");
+    assert_eq!(Icon::Document.name(), "document");
+}
+
+#[test]
+fn the_not_secure_mark_carries_the_attention_status() {
+    let p = crate::theme::Theme::dark().palette;
+    assert_eq!(Icon::Warning.rest_color(p), p.status_attention);
+    assert_eq!(Icon::Gear.rest_color(p), p.ink_secondary);
+    assert_eq!(Icon::Document.rest_color(p), p.ink_secondary);
 }
 
 #[test]

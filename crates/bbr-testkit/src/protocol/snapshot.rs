@@ -1233,6 +1233,10 @@ pub struct Snapshot {
     /// never holds the editable text, a cursor or a selection).
     #[serde(default)]
     pub address_domain: String,
+    /// Blueprint D03: the address identity kind — `secure`, `not-secure`,
+    /// `internal`, `file`, `other` or `empty`.
+    #[serde(default)]
+    pub address_identity: String,
     /// The §11.5 address-pill hover state (the pointer is over the pill;
     /// the translucent fill steps one brighter/darker via the token pair).
     #[serde(default)]

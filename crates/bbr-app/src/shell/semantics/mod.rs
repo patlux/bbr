@@ -84,6 +84,10 @@ pub struct SemanticCommand {
     /// The §11.5 address pill's derived domain (display-only — the pill
     /// never holds the editable text or a selection).
     pub address: String,
+    /// Blueprint D03: the address identity kind (`secure`, `not-secure`,
+    /// `internal`, `file`, `other`, `empty`) — announced as the control's
+    /// value so the not-secure state is never carried by the mark alone.
+    pub address_identity: String,
     pub text: String,
     /// The rendered destination hint ("→ Space" / "in Profile · P → Space").
     pub hint: Option<String>,

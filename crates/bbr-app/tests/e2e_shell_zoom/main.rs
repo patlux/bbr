@@ -30,6 +30,7 @@
 mod e2e_common;
 
 mod accessory;
+mod identity;
 mod ladder;
 mod per_site;
 mod support;

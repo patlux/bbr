@@ -71,7 +71,7 @@ fn address_stories_render_the_matrix_families_with_stable_ids() {
         // Every valid pill family is registered and renders through the
         // production component (each family wrapper has non-empty bounds).
         let family_count = window.read(|_| ADDRESS_VALID.len());
-        assert_eq!(family_count, 6);
+        assert_eq!(family_count, 10);
         for index in 0..family_count {
             let bounds = bounds_of(
                 window,

@@ -65,6 +65,50 @@ pub struct AddressModel {
     /// D5 (§18.1): the active tab's load progress on the field's inner
     /// bottom edge.
     pub progress: AddressProgress,
+    /// Blueprint D03: the leading identity mark (`None` for a secure site
+    /// and for placeholders).
+    pub mark: Option<AddressMark>,
+}
+
+/// The stable id of the leading identity mark (blueprint D03).
+pub const ADDRESS_MARK_ID: &str = "bbr-address-mark";
+
+/// Blueprint D03 (§11.5): the leading mark before the address label.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AddressMark {
+    /// Plain http off loopback: the attention triangle.
+    NotSecure,
+    /// A BBR internal page's glyph.
+    Internal(crate::text::InternalPage),
+    /// A local file: the document mark.
+    File,
+}
+
+impl AddressMark {
+    /// The mark for an identity: secure sites and placeholders show none.
+    pub fn for_identity(identity: &crate::text::AddressIdentity) -> Option<Self> {
+        use crate::text::AddressIdentity;
+        match identity {
+            AddressIdentity::Site { secure: false, .. } => Some(Self::NotSecure),
+            AddressIdentity::Internal(page) => Some(Self::Internal(*page)),
+            AddressIdentity::File { .. } => Some(Self::File),
+            _ => None,
+        }
+    }
+
+    /// The §7 glyph the mark draws.
+    pub fn icon(self) -> crate::icons::Icon {
+        use crate::icons::Icon;
+        use crate::text::InternalPage;
+        match self {
+            Self::NotSecure => Icon::Warning,
+            Self::Internal(InternalPage::Library) => Icon::Bookmark,
+            Self::Internal(InternalPage::Settings) => Icon::Gear,
+            Self::Internal(InternalPage::History) => Icon::Clock,
+            Self::Internal(InternalPage::Welcome) => Icon::Bbr(bbr_domain::BbrGlyph::Compass),
+            Self::File => Icon::Document,
+        }
+    }
 }
 
 /// D5 load progress in the address field (§18.5): GPUI never paints above
@@ -216,6 +260,23 @@ pub fn address_control(
                             .text_color(p.ink_secondary)
                             .child(hint.label.clone()),
                     ),
+            )
+        })
+        // Blueprint D03: the leading identity mark (14 pt glyph in a 16 pt
+        // slot) — the not-secure triangle at `status.attention`, an
+        // internal page's glyph, or the file mark, never color alone (the
+        // shape carries it).
+        .when_some(model.mark, |el, mark| {
+            el.child(
+                div()
+                    .id(ADDRESS_MARK_ID)
+                    .debug_selector(|| ADDRESS_MARK_ID.to_string())
+                    .size(px(16.0))
+                    .flex_shrink_0()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(mark.icon().canvas(theme, px(14.0))),
             )
         })
         .child(
@@ -439,6 +500,7 @@ mod tests {
             profile_hint: Some(hint.clone()),
             zoom: None,
             progress: AddressProgress::Idle,
+            mark: None,
         };
         assert_eq!(model.domain, "example.com");
         assert!(!model.hovered);
@@ -446,6 +508,21 @@ mod tests {
         assert_eq!(carried.profile_index, 1);
         assert_eq!(carried.spec.letter, "PR");
         assert_eq!(carried.label, "Switch to Private");
+    }
+
+    #[test]
+    fn marks_follow_the_identity_and_secure_sites_show_none() {
+        use crate::icons::Icon;
+        use crate::text::address_identity;
+        let mark = |url: &str| AddressMark::for_identity(&address_identity(url));
+        assert_eq!(mark("https://x.com/"), None);
+        assert_eq!(mark("http://127.0.0.1:9/"), None);
+        assert_eq!(mark("about:blank"), None);
+        assert_eq!(mark("http://router.lan/"), Some(AddressMark::NotSecure));
+        assert_eq!(mark("http://router.lan/").unwrap().icon(), Icon::Warning);
+        assert_eq!(mark("bbr://settings").unwrap().icon(), Icon::Gear);
+        assert_eq!(mark("bbr://library").unwrap().icon(), Icon::Bookmark);
+        assert_eq!(mark("file:///a/b.pdf"), Some(AddressMark::File));
     }
 
     #[test]
