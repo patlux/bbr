@@ -72,7 +72,7 @@ Not parallelized. One writer works serially on one Paper file; no subagents.
       and screenshot-reviewed; Paper tokens match the code.
 - [x] W1: shell, sidebar, spaces and profiles boards drawn and reviewed.
 - [x] W2: command and content/glass boards drawn and reviewed.
-- [ ] W3: menus and panels boards drawn and reviewed.
+- [x] W3: menus and panels boards drawn and reviewed.
 - [ ] W4: system, lifecycle and split-view boards drawn and reviewed.
 - [ ] W5: 23 process storyboards drawn and reviewed.
 - [ ] W6: variant matrices and motion specification drawn and reviewed.
@@ -155,20 +155,20 @@ is read from the Paper file.
 | DESIGN §11.8a | Unresponsive renderer pane | G-4 · Glass — unresponsive page | yes |
 | DESIGN §11.9 | Missing favicon and long titles | S-5 · Tab rows in context; B-4 · Tiles, chips & badges | yes |
 | DESIGN §11.10 | Favorites grid | S-2 · Favorites grid; S-9 · Drag in flight | yes |
-| DESIGN §11.11 | Folders | S-4 · Folders; M-2 · Favorite & folder menus | planned |
-| DESIGN §11.12 | Downloads panel, find bar, sheets | M-4 · Downloads panel; G-6 · Find in page | planned |
-| DESIGN §11.13 | Context-menu language | M-1 · Tab menu; M-2 · Favorite & folder menus; M-3 · Page menu & web menus; P-4 · Space menu & delete | planned |
+| DESIGN §11.11 | Folders | S-4 · Folders; M-2 · Favorite & folder menus | yes |
+| DESIGN §11.12 | Downloads panel, find bar, sheets | M-4 · Downloads panel; G-6 · Find in page | yes |
+| DESIGN §11.13 | Context-menu language | M-1 · Tab menu; M-2 · Favorite & folder menus; M-3 · Page menu & web menus; P-4 · Space menu & delete | yes |
 | DESIGN §11.14 | Titlebar navigation controls | W-7 · Shell — titlebar navigation states | yes |
 | DESIGN §11.15 | Sidebar media control | S-8 · Media card; PR-17 · Media in a background tab | planned |
 | DESIGN §11.16 | Saved Pages result and Library | C-2 · ⌘T — results by kind; M-5 · Saved Pages Library; PR-12 · Save a page & Library | planned |
 | DESIGN §11.17 | Peek preview bar | G-8 · Peek preview; PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
 | DESIGN §12 | Profile identity | P-5 · Profile identity in chrome; P-6 · Profiles — create & edit; P-7 · Move a tab across profiles | yes |
-| DESIGN §13 | Native web-content boundary | G-1 · Glass — before attach & blank; M-3 · Page menu & web menus; M-14 · File upload & save | planned |
+| DESIGN §13 | Native web-content boundary | G-1 · Glass — before attach & blank; M-3 · Page menu & web menus; M-14 · File upload & save | yes |
 | DESIGN §17.2 | Tooltips | B-6 · Floating shells | yes |
 | DESIGN §17.13 | Internal page names in the address | S-1 · Address control | yes |
 | DESIGN §18.2 | v2 materials, colour, elevation | F-1 · Colour — neutrals, accent, status; F-4 · Space, radius, elevation, materials; W-2 · Shell — space tint | yes |
 | DESIGN §18.3 | v2 radius and type | F-3 · Type & density; F-4 · Space, radius, elevation, materials | yes |
-| DESIGN §18.4 | v2 floating surfaces | B-6 · Floating shells; C-2 · ⌘T — results by kind; C-6 · ⌘L — edit address; M-1 · Tab menu | planned |
+| DESIGN §18.4 | v2 floating surfaces | B-6 · Floating shells; C-2 · ⌘T — results by kind; C-6 · ⌘L — edit address; M-1 · Tab menu | yes |
 | DESIGN §18.5 | v2 motion moments | V-5 · Motion — moments; V-4 · Reduce Motion | planned |
 | Phase 4 | Startup presents sidebar and selected tab | L-10 · Session restore; PR-18 · Quit, relaunch, crash recovery | planned |
 | Phase 4 | Empty space, first launch, many tabs, long titles, missing favicons, crashed pages | G-2 · Glass — empty space; L-1 · First run — welcome; W-8 · Shell — dense list (500 tabs); S-5 · Tab rows in context; G-3 · Glass — crashed page | planned |
@@ -181,7 +181,7 @@ is read from the Paper file.
 | Phase 8 | Find in page | G-6 · Find in page; PR-11 · Find in page | planned |
 | Phase 8 | Camera, microphone, location, notification, clipboard permissions | M-9 · Permission requests; M-8 · Site settings; PR-14 · Permissions | planned |
 | Phase 8 | HTTP/proxy authentication and client certificates | M-10 · Sign-in challenges; M-11 · Client certificates; PR-15 · Sign-in challenges | planned |
-| Phase 8 | Upload/save panels | M-14 · File upload & save | planned |
+| Phase 8 | Upload/save panels | M-14 · File upload & save | yes |
 | Phase 8 | Web errors and recovery | G-5 · Glass — load errors; PR-13 · Errors & recovery | planned |
 | Phase 8 | History UI and clear-data controls | M-6 · History; M-7 · Clear browsing data; PR-22 · History & clear data | planned |
 | Phase 8 | Saved Pages | M-5 · Saved Pages Library; C-2 · ⌘T — results by kind; PR-12 · Save a page & Library | planned |
@@ -191,7 +191,7 @@ is read from the Paper file.
 | Phase 8 | Per-site settings and zoom | M-8 · Site settings; G-7 · Page zoom; L-6 · Settings — Privacy & site data; PR-16 · Per-site zoom | planned |
 | Phase 8 | Pop-up / new-window policy | M-13 · Pop-ups & new windows; PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
 | Phase 8 | Renderer hang: responsive chrome | G-4 · Glass — unresponsive page; PR-13 · Errors & recovery | planned |
-| Phase 8 | Empty, loading, error, cancellation, destructive states | G-1 · Glass — before attach & blank; G-2 · Glass — empty space; G-5 · Glass — load errors; P-4 · Space menu & delete; M-7 · Clear browsing data; B-7 · Feedback — progress, attention, banners | planned |
+| Phase 8 | Empty, loading, error, cancellation, destructive states | G-1 · Glass — before attach & blank; G-2 · Glass — empty space; G-5 · Glass — load errors; P-4 · Space menu & delete; M-7 · Clear browsing data; B-7 · Feedback — progress, attention, banners | yes |
 | Phase 8 | Portal host (floating surfaces above web) | B-6 · Floating shells; G-6 · Find in page; G-8 · Peek preview | yes |
 | Phase 9 | Light, dark, IC, narrow, wide, empty, dense, loading, error variants | V-1 · Increased contrast; V-2 · Space paper matrix; V-3 · Density S · N · XL; W-4 · Shell — narrow & wide windows; W-8 · Shell — dense list (500 tabs) | planned |
 | Phase 9 | Purposeful transitions, Reduce Motion | V-4 · Reduce Motion; V-5 · Motion — moments; V-6 · Motion — transitions | planned |
@@ -204,9 +204,9 @@ is read from the Paper file.
 | Inventory | Foreground/background link opening | PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
 | Inventory | Titlebar and shortcut back/forward/reload | W-7 · Shell — titlebar navigation states; PR-03 · Address, back, forward, reload | planned |
 | Inventory | Reopen recently closed tabs | PR-05 · Tab life — pin, folder, favorite, close, reopen, suspend; M-6 · History | planned |
-| Inventory | Downloads, find, errors, auth, permissions, file panels | M-4 · Downloads panel; G-6 · Find in page; G-5 · Glass — load errors; M-10 · Sign-in challenges; M-9 · Permission requests; M-14 · File upload & save | planned |
+| Inventory | Downloads, find, errors, auth, permissions, file panels | M-4 · Downloads panel; G-6 · Find in page; G-5 · Glass — load errors; M-10 · Sign-in challenges; M-9 · Permission requests; M-14 · File upload & save | yes |
 | Inventory | Saved Pages | M-5 · Saved Pages Library; PR-12 · Save a page & Library | planned |
-| Inventory | Native context menus | M-1 · Tab menu; M-2 · Favorite & folder menus; M-3 · Page menu & web menus | planned |
+| Inventory | Native context menus | M-1 · Tab menu; M-2 · Favorite & folder menus; M-3 · Page menu & web menus | yes |
 | Inventory | Split-view daily use | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | planned |
 | Inventory | External URLs / default browser | M-12 · Open in another app; PR-20 · Links from other apps | planned |
 | Inventory | Per-site zoom/settings | G-7 · Page zoom; M-8 · Site settings; PR-16 · Per-site zoom | planned |
@@ -220,11 +220,11 @@ is read from the Paper file.
 | E2E shell-titlebar-navigation | Titlebar controls | W-7 · Shell — titlebar navigation states | yes |
 | E2E shell-split-geometry | Split geometry | G-9 · Split view — two panes | planned |
 | E2E shell-organize | Folders and organized area | S-4 · Folders; PR-06 · Organize — folders & drag rules | planned |
-| E2E shell-tab-menu | Tab menu | M-1 · Tab menu | planned |
+| E2E shell-tab-menu | Tab menu | M-1 · Tab menu | yes |
 | E2E shell-hover | Hover and press | B-3 · Rail rows — §10 states | yes |
 | E2E shell-command | ⌘T/⌘L command surfaces | C-1 · ⌘T — empty with recents; C-2 · ⌘T — results by kind; C-3 · ⌘T — no match & web search; C-4 · ⌘T — actions; C-5 · ⌘T — tab in another space or profile; C-6 · ⌘L — edit address | yes |
-| E2E shell-saved-pages(-library) | Saved Pages and Library | M-5 · Saved Pages Library; C-2 · ⌘T — results by kind | planned |
-| E2E shell-new-window | New-window requests | M-13 · Pop-ups & new windows; W-9 · Shell — several windows | planned |
+| E2E shell-saved-pages(-library) | Saved Pages and Library | M-5 · Saved Pages Library; C-2 · ⌘T — results by kind | yes |
+| E2E shell-new-window | New-window requests | M-13 · Pop-ups & new windows; W-9 · Shell — several windows | yes |
 | E2E background-links | Background link tabs | PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
 | E2E web-navigation-gestures | Navigation gestures | PR-03 · Address, back, forward, reload | planned |
 | E2E peek | Peek preview | G-8 · Peek preview | yes |
@@ -232,13 +232,13 @@ is read from the Paper file.
 | E2E shell-portal | Portal host above web | B-6 · Floating shells | yes |
 | E2E shell-find | Find bar | G-6 · Find in page | yes |
 | E2E shell-zoom | Zoom chip | G-7 · Page zoom; S-1 · Address control | yes |
-| E2E shell-context-menu | Page/favorite/folder menus | M-2 · Favorite & folder menus; M-3 · Page menu & web menus | planned |
+| E2E shell-context-menu | Page/favorite/folder menus | M-2 · Favorite & folder menus; M-3 · Page menu & web menus | yes |
 | E2E shell-dense | Dense list | W-8 · Shell — dense list (500 tabs) | yes |
-| E2E shell-downloads | Downloads panel | M-4 · Downloads panel | planned |
-| E2E external-url | External URL opening | M-12 · Open in another app | planned |
+| E2E shell-downloads | Downloads panel | M-4 · Downloads panel | yes |
+| E2E external-url | External URL opening | M-12 · Open in another app | yes |
 | E2E shell-errors | Error surfaces and illustrations | G-2 · Glass — empty space; G-3 · Glass — crashed page; G-5 · Glass — load errors | yes |
 | E2E shell-responsiveness | Unresponsive renderer | G-4 · Glass — unresponsive page | yes |
-| E2E auth | Authentication sheet | M-10 · Sign-in challenges | planned |
+| E2E auth | Authentication sheet | M-10 · Sign-in challenges | yes |
 | E2E gallery | Component Gallery stories | B-1 · Buttons & keys; B-2 · Fields, toggles & focus; B-3 · Rail rows — §10 states; B-4 · Tiles, chips & badges; B-5 · Menu & result items; B-6 · Floating shells; B-7 · Feedback — progress, attention, banners | yes |
 | E2E perf | Presentation budgets (no visual surface) | V-6 · Motion — transitions | planned |
 
@@ -303,20 +303,20 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 | 24 | G-8 · Peek preview | Shipped | §11.17 | [link-preview-peek](link-preview-peek.md) | yes |
 | 24 | G-9 · Split view — two panes | Change | §11.7 | [split-app-composition](split-app-composition.md) | planned |
 | 24 | G-10 · Split view — create, resize, compact | Change | §11.7 | [split-app-composition](split-app-composition.md) | planned |
-| 25 | M-1 · Tab menu | Shipped | §11.13 | [tab-favorite-context-menus](tab-favorite-context-menus.md) | planned |
-| 25 | M-2 · Favorite & folder menus | Shipped | §11.13 §11.11 | [folder-context-menu](folder-context-menu.md) | planned |
-| 25 | M-3 · Page menu & web menus | Shipped | §11.13 | [page-background-context-menu](page-background-context-menu.md) | planned |
-| 25 | M-4 · Downloads panel | Shipped | §11.12 | [downloads-sidebar-panel](downloads-sidebar-panel.md) | planned |
-| 25 | M-5 · Saved Pages Library | Shipped | §11.16 | [saved-pages-library](saved-pages-library.md) | planned |
-| 25 | M-6 · History | New · proposal | phase 8 | paper-browser-blueprint | planned |
-| 25 | M-7 · Clear browsing data | New · proposal | phase 8 | paper-browser-blueprint | planned |
-| 25 | M-8 · Site settings | New · proposal | §11.5 phase 8 | [site-settings-zoom-contract](site-settings-zoom-contract.md) | planned |
-| 25 | M-9 · Permission requests | New · proposal | phase 8 | [permissions-contract](permissions-contract.md) | planned |
-| 25 | M-10 · Sign-in challenges | Shipped | phase 8 | [auth-challenges-contract](auth-challenges-contract.md) | planned |
-| 25 | M-11 · Client certificates | New · proposal | phase 8 | [auth-challenges-contract](auth-challenges-contract.md) | planned |
-| 25 | M-12 · Open in another app | Change | phase 8 | [external-url-open-contract](external-url-open-contract.md) | planned |
-| 25 | M-13 · Pop-ups & new windows | Change | phase 8 | [new-window-production-seam](new-window-production-seam.md) | planned |
-| 25 | M-14 · File upload & save | Native OS | phase 8 | [file-panels-contract](file-panels-contract.md) | planned |
+| 25 | M-1 · Tab menu | Shipped | §11.13 | [tab-favorite-context-menus](tab-favorite-context-menus.md) | yes |
+| 25 | M-2 · Favorite & folder menus | Shipped | §11.13 §11.11 | [folder-context-menu](folder-context-menu.md) | yes |
+| 25 | M-3 · Page menu & web menus | Shipped | §11.13 | [page-background-context-menu](page-background-context-menu.md) | yes |
+| 25 | M-4 · Downloads panel | Shipped | §11.12 | [downloads-sidebar-panel](downloads-sidebar-panel.md) | yes |
+| 25 | M-5 · Saved Pages Library | Shipped | §11.16 | [saved-pages-library](saved-pages-library.md) | yes |
+| 25 | M-6 · History | New · proposal | phase 8 | paper-browser-blueprint | yes |
+| 25 | M-7 · Clear browsing data | New · proposal | phase 8 | paper-browser-blueprint | yes |
+| 25 | M-8 · Site settings | New · proposal | §11.5 phase 8 | [site-settings-zoom-contract](site-settings-zoom-contract.md) | yes |
+| 25 | M-9 · Permission requests | New · proposal | phase 8 | [permissions-contract](permissions-contract.md) | yes |
+| 25 | M-10 · Sign-in challenges | Shipped | phase 8 | [auth-challenges-contract](auth-challenges-contract.md) | yes |
+| 25 | M-11 · Client certificates | New · proposal | phase 8 | [auth-challenges-contract](auth-challenges-contract.md) | yes |
+| 25 | M-12 · Open in another app | Change | phase 8 | [external-url-open-contract](external-url-open-contract.md) | yes |
+| 25 | M-13 · Pop-ups & new windows | Change | phase 8 | [new-window-production-seam](new-window-production-seam.md) | yes |
+| 25 | M-14 · File upload & save | Native OS | phase 8 | [file-panels-contract](file-panels-contract.md) | yes |
 | 26 | L-1 · First run — welcome | New · proposal | phase 9 | paper-browser-blueprint | planned |
 | 26 | L-2 · First run — import, default browser, first space | New · proposal | phase 7 phase 9 | paper-browser-blueprint | planned |
 | 26 | L-3 · Settings — General | New · proposal | phase 8 | [general-search-settings-contract](general-search-settings-contract.md) | planned |
@@ -418,7 +418,20 @@ W2:                     2026-09-28. Page 23 C-1…C-6 (⌘T empty with recents
                         to opacity), card min-width clipping, placeholder
                         max-width, state rows fitted to the board, the >
                         prefix text.
-W3:
+W3:                     2026-09-28. Page 25 M-1…M-14: tab menu with the
+                        Move to Space submenu (shipped rows), favorite and
+                        folder menus with the safe delete, page menu +
+                        WebKit element menu (Native OS) + back-history menu
+                        proposal, Downloads popover (active/history/empty),
+                        Saved Pages Library, and the new surfaces: History
+                        (Library anatomy), Clear Browsing Data sheet, site
+                        settings popover, permission prompts (camera/mic,
+                        location, clipboard, in-use and quietly blocked
+                        chips), sign-in sheet (shipped, + wrong password,
+                        proxy), client certificates, open-in-app sheet +
+                        no-app banner, pop-up notice + sign-in pop-up
+                        window, native file panel context. Review fix: the
+                        site-identity trigger drawn in the address.
 W4:
 W5:
 W6:
