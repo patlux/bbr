@@ -240,7 +240,7 @@ impl Palette {
             address_fill: white(15),
             address_fill_hover: white(26),
             address_border: white(10),
-            address_accessory_fill: white(15),
+            address_accessory_fill: white(20),
             surface_error_ic: rgba_8(255, 106, 99, 30),
             surface_attention_ic: rgba_8(255, 198, 63, 30),
         }
@@ -304,7 +304,7 @@ impl Palette {
             address_fill: white(140),
             address_fill_hover: white(102),
             address_border: ink_veil(10),
-            address_accessory_fill: ink_veil(15),
+            address_accessory_fill: ink_veil(20),
             surface_error_ic: rgba_8(194, 46, 36, 30),
             surface_attention_ic: rgba_8(143, 92, 0, 30),
         }
@@ -387,26 +387,25 @@ impl FaviconSlate {
         }
     }
 
-    /// The monogram letter color for the mode's ramp: ink on the light
-    /// ramp, white on the dark ramp. One authority for every monogram tile
-    /// (tab rows, Favorites, folders, Library) so the §12/§7.2 letter bar
-    /// holds everywhere.
-    pub fn letter(mode: ThemeMode) -> Rgba {
-        match mode {
-            ThemeMode::Light => INK_LIGHT.rgba(),
-            ThemeMode::Dark => rgb(0xFFFFFF),
-        }
+    /// The monogram letter color: white on both ramps (S12 Paper — the
+    /// tiles are mid slates in both modes). One authority for every
+    /// monogram tile (tab rows, Favorites, folders, Library, command rows)
+    /// so the §12/§7.2 letter bar holds everywhere.
+    pub fn letter(_mode: ThemeMode) -> Rgba {
+        rgb(0xFFFFFF)
     }
 
-    /// Tile background in the light shell (lighter slate ramp).
+    /// Tile background in the light shell: the Paper mid-slate ramp
+    /// (`#616A75`/`#707A87` family) that reads as a favicon on the light
+    /// rail, white letters ≥ 3:1.
     pub fn light(hue_index: usize) -> Rgba {
         match hue_index % 6 {
-            0 => rgb(0xC3CBD4),
-            1 => rgb(0xC9D0D8),
-            2 => rgb(0xBDC6CF),
-            3 => rgb(0xD0D6DD),
-            4 => rgb(0xC6CCD3),
-            _ => rgb(0xB6C0CA),
+            0 => rgb(0x616A75),
+            1 => rgb(0x6B7582),
+            2 => rgb(0x5A636E),
+            3 => rgb(0x707A87),
+            4 => rgb(0x666D77),
+            _ => rgb(0x535C67),
         }
     }
 }

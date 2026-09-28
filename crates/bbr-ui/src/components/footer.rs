@@ -110,9 +110,8 @@ pub fn footer_surface(
         .id(FOOTER_ID)
         .debug_selector(|| FOOTER_ID.to_string())
         .h(theme.density.row())
-        .border_t_1()
-        .border_color(p.hairline)
-        .bg(p.surface_footer)
+        // S12 (Paper): the strip sits directly on the (tinted) rail — no
+        // band and no rule; `material:footer` is the media card's surface.
         .px(Spacing::sp2())
         .gap(Spacing::sp3())
         .items_center()

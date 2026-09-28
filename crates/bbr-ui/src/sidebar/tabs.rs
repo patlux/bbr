@@ -101,7 +101,8 @@ pub fn tab_surface(
                 .id(ORGANIZED_HAIRLINE_ID)
                 .debug_selector(|| ORGANIZED_HAIRLINE_ID.to_string())
                 .h(px(1.0))
-                .w_full()
+                // S12 (Paper): the rule is inset to the rows' text column.
+                .mx(theme.density.row_inset() + theme.density.row_padding_x())
                 .flex_shrink_0()
                 .bg(p.hairline)
                 .into_any(),

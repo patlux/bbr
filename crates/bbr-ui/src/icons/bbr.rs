@@ -154,16 +154,9 @@ fn paint_terminal(window: &mut Window, stroke: Pixels, color: Rgba, cx: f32, cy:
 /// (a folder to switch into; the disclosure state belongs to the folder
 /// row anatomy, not the identity chip).
 fn paint_folder(window: &mut Window, stroke: Pixels, color: Rgba, cx: f32, cy: f32, h: f32) {
-    let tab_depth = h * 0.47;
-    let tab_width = h * 0.67;
-    let mut path = PathBuilder::stroke(stroke);
-    path.move_to(point(px(cx - h), px(cy + h)));
-    path.line_to(point(px(cx - h), px(cy - h + tab_depth)));
-    path.line_to(point(px(cx - h + tab_width), px(cy - h)));
-    path.line_to(point(px(cx + h), px(cy - h)));
-    path.line_to(point(px(cx + h), px(cy + h)));
-    path.line_to(point(px(cx - h), px(cy + h)));
-    paint_path(window, path, color);
+    // `h` is the identity glyph's half extent; the shared silhouette is
+    // sized by its full box (half width 0.36 of the box).
+    super::shapes::paint_folder_closed(window, stroke, color, cx, cy, h / 0.36);
 }
 
 /// Person: a head ring and a shoulder arc.

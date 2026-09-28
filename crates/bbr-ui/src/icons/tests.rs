@@ -1,8 +1,8 @@
 use super::*;
 use crate::theme::{ContrastMode, ThemeMode};
 use glyphs::{
-    arc_radius, chassis_radii, chevron_arm, close_arm, folder_geometry, folder_open_geometry,
-    lifering_radii, nav_arrow_geometry, plus_arm, reload_geometry, sidebar_geometry,
+    arc_radius, chassis_radii, chevron_arm, close_arm, folder_shape, lifering_radii,
+    nav_arrow_geometry, plus_arm, reload_geometry, sidebar_geometry,
 };
 
 #[test]
@@ -18,6 +18,7 @@ fn catalog_names_are_stable() {
     assert_eq!(Icon::Stopped.name(), "stopped");
     assert_eq!(Icon::Folder { open: false }.name(), "folder");
     assert_eq!(Icon::Folder { open: true }.name(), "folder-open");
+    assert_eq!(Icon::Search.name(), "search");
     assert_eq!(Icon::Disclosure { expanded: false }.name(), "disclosure");
     assert_eq!(
         Icon::Disclosure { expanded: true }.name(),
@@ -179,18 +180,17 @@ fn glyph_geometry_stays_inside_its_box() {
         assert!(plus_arm(size) < size / 2.0, "plus arm fits at {size}pt");
         let pin = pin_radius(size) + 1.5 / 2.0;
         assert!(pin <= size / 2.0, "pin ring fits at {size}pt");
-        // The closed folder stays inside its box; the open variant's
-        // mouth and lid also fit (the lid flap ends at 55% width, the
-        // mouth sits below the closed top).
-        let (half, _tab_depth, tab_width) = folder_geometry(size);
-        assert!(half <= size / 2.0, "folder body fits at {size}pt");
-        assert!(tab_width <= size, "folder tab fits at {size}pt");
-        let (ohalf, _otab_depth, otab_width, mouth) = folder_open_geometry(size);
-        assert!(ohalf <= size / 2.0, "open folder body fits at {size}pt");
-        assert!(otab_width <= size, "open folder tab fits at {size}pt");
+        // The folder (closed and open share the silhouette) stays inside
+        // its box.
+        let folder = folder_shape(size);
+        assert!(folder.half_w <= size / 2.0, "folder body fits at {size}pt");
         assert!(
-            mouth > 0.0 && mouth < ohalf,
-            "open folder mouth is inside the body at {size}pt"
+            folder.half_h <= size / 2.0,
+            "folder height fits at {size}pt"
+        );
+        assert!(
+            folder.tab_w + folder.slant <= size,
+            "folder tab fits at {size}pt"
         );
         let (outer, inner) = lifering_radii(size);
         assert!(inner < outer, "lifering radii ordered at {size}pt");

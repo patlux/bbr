@@ -100,19 +100,35 @@ pub fn downloads_geometry(size: f32) -> (f32, f32, f32, f32, f32) {
     )
 }
 
-/// Folder silhouette geometry: (body half-width/height, tab height above
-/// the body, tab width).
-pub fn folder_geometry(size: f32) -> (f32, f32, f32) {
-    (size * 0.30, size * 0.14, size * 0.20)
+/// The S12 Paper folder silhouette: a body wider than tall whose top-left
+/// tab rises above the body top and steps down to it on a short slant.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FolderShape {
+    pub half_w: f32,
+    pub half_h: f32,
+    /// The tab's flat top width from the left edge.
+    pub tab_w: f32,
+    /// How far the body top sits below the tab top.
+    pub tab_h: f32,
+    /// The horizontal run of the step from the tab down to the body top.
+    pub slant: f32,
 }
 
-/// Open-folder geometry: (body half-width/height, tab height above the
-/// body, tab width, mouth). `mouth` is the distance the open body's top
-/// edge sits below the closed top (`cy - mouth`): the lid flap lifts
-/// above it, so the open variant reads as the folder's lid raised off the
-/// body (the §11.11 expanded disclosure state).
-pub fn folder_open_geometry(size: f32) -> (f32, f32, f32, f32) {
-    (size * 0.30, size * 0.14, size * 0.20, size * 0.105)
+/// The folder silhouette geometry (closed and open share it).
+pub fn folder_shape(size: f32) -> FolderShape {
+    FolderShape {
+        half_w: size * 0.36,
+        half_h: size * 0.28,
+        tab_w: size * 0.26,
+        tab_h: size * 0.11,
+        slant: size * 0.08,
+    }
+}
+
+/// The search magnifier: (lens radius, lens offset up-left from the
+/// center, handle length).
+pub fn search_geometry(size: f32) -> (f32, f32, f32) {
+    (size * 0.26, size * 0.08, size * 0.20)
 }
 
 /// Disclosure chevron: half the arm length from the apex to either corner.
@@ -182,11 +198,22 @@ mod tests {
                 "downloads tray fits at {size}pt"
             );
             assert!(tray_side < tray_depth, "tray side shorter than depth");
-            // Folder: the body plus the stroke fits, the tab stays inside.
-            let (fhalf, tab_depth, tab_width) = folder_geometry(size);
-            assert!(fhalf + stroke <= size / 2.0, "folder body fits");
-            assert!(tab_depth < fhalf, "folder tab below the body top");
-            assert!(tab_width < fhalf * 2.0, "folder tab inside the width");
+            // Folder: the body plus the stroke fits, the tab steps down
+            // inside the width and above the body middle.
+            let folder = folder_shape(size);
+            assert!(folder.half_w + stroke <= size / 2.0, "folder body fits");
+            assert!(folder.half_h + stroke <= size / 2.0, "folder height fits");
+            assert!(folder.half_w > folder.half_h, "wider than tall");
+            assert!(folder.tab_h < folder.half_h, "tab above the middle");
+            assert!(
+                folder.tab_w + folder.slant < folder.half_w * 2.0,
+                "tab inside the width"
+            );
+            // Search: lens plus handle stay inside the box.
+            let (radius, offset, handle) = search_geometry(size);
+            assert!(radius + offset + stroke <= size / 2.0, "lens fits");
+            let reach = (radius + handle) * std::f32::consts::FRAC_1_SQRT_2 - offset;
+            assert!(reach + stroke <= size / 2.0, "handle fits at {size}pt");
             assert!(
                 disclosure_arm(size) * 1.5 <= size / 2.0,
                 "disclosure chevron fits at {size}pt"

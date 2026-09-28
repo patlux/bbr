@@ -119,7 +119,7 @@ L3 floating        — command palette, peek, dialogs        elev-2
 | `material:overlay` | `#FFFFFF` | `#25282D` | floating surfaces, elevation 2 |
 | `material:glass` | `#FFFFFF` | `#151719` | what sits behind native web views; must never be textured or sampled |
 | `material:favorite` | white 50 % veil | white 6 % veil | Favorite destination tile, painted over the (tinted) rail |
-| `material:footer` | white 62 % veil | white 5 % veil | compact Downloads/Space/Plus strip and media card at the rail bottom |
+| `material:footer` | white 62 % veil | white 5 % veil | the media card at the rail bottom (the Downloads/Space/Plus strip sits directly on the rail, S12) |
 
 Veils (§18.2) are translucent tokens painted over the possibly space-tinted
 rail, so one value follows every tint; contrast gates composite them over the
@@ -259,7 +259,8 @@ strengthened; `accent` darkened/lightened per §3.2; the dark selection
 becomes the opaque `#35383F` step (light keeps white + lift) and
 `tint.accent` deepens (§3.5); focus ring becomes 3 px with a 1 px
 material-gap double ring (§9); row washes deepen to 8 % / 12 %; the address
-border and accessory strengthen (ink 10 % / 8 % light, white 10 % / 8 % dark,
+border strengthens (ink 10 % light, white 10 % dark; the accessory keeps
+its 8 %),
 fill white 8 % / hover 12 % dark); the crash/error and attention surfaces
 gain a 1 px `border.strong` outline so tint is never required.
 
@@ -462,8 +463,9 @@ an empty box:
 
 - 18 pt (S: 16, XL: 20) square, `radius:sm`, letter = first character of the
   registrable hostname (uppercase, `type:badge` size), on a desaturated
-  slate-hue ramp derived from FNV-1a(hostname) mod 6. The letter is `ink` on
-  the light ramp and white on the dark ramp, so every tile holds ≥ 3:1.
+  slate-hue ramp derived from FNV-1a(hostname) mod 6. Both modes use mid
+  slates with a white letter (S12, Paper: light `#616A75`…`#707A87`, dark
+  `#4A5662`…`#606B77`), so every tile holds ≥ 3:1 and reads as a favicon.
 - The slate ramp is separate from accent/status/profile hues so favicon tiles
   never impersonate identity or status.
 - While loading, the tile slot shows the `loading` spinner (§10.5); after
@@ -784,25 +786,26 @@ using the IDs of §15. All rows use `density` geometry from §8.
   and a curated paper: one of three tint intensity steps and a static-grain
   flag (D6/D7; defaults `standard`, grain off).
   The active token tints the BBR-owned sidebar material (the whole chassis
-  body) by blending a curated chrome-wash hue into it at 12 % (increased
-  contrast 14 %, D3) — the `standard` step. `subtle` blends 6 % (IC 8 %);
-  `rich` blends 24 % (IC 26 %) and is then pinned to the `standard` step's
-  relative luminance, so it adds hue, never lightness, and every luminance
-  bar below stays where `standard` proves it (the near-achromatic Slate and
-  Ink washes therefore barely change at `rich`). The grain is one static
+  body) by blending a curated chrome-wash hue into it and pinning the result
+  to the untinted rail's relative luminance (S12, Paper model): each step
+  adds hue, never lightness, so every luminance bar below holds exactly as
+  on the untinted rail, and the neutral Ink token reads as the untinted rail.
+  The steps are chroma shares — light `subtle` 18 %, `standard` 36 %,
+  `rich` 54 %; dark 12 / 24 / 36 % (the same share reads louder on a dark
+  rail); increased contrast adds 4 % to each. Light cobalt `standard` is
+  `#E0E5F4` (Paper `#DFE4F3`). The grain is one static
   128 px noise tile (one texel per device pixel, anchored to the window
   origin) painted on the tint beneath every child of the rail and the
   chassis — never over the card, web content or control text, never
   animated. Its specks are white on light chrome (≤ 28 %) and black on dark
   chrome (≤ 36 %), about half the sheet clear, so every speck only moves
-  the paper away from its text and no text bar can drop. The wash hues are calibrated per mode so every composited
-  bar holds on every tinted rail: `ink` ≥ 12:1 (IC 14:1), `ink.secondary` and
-  light `accent.ink` ≥ 5.9:1 (IC 9:1 for `ink.secondary`), the D1 selection
-  (`ink` ≥ 10.5:1) and the footer veil (`ink.secondary` ≥ 5.9:1). Dark washes
-  are the identity hue at 1.3× the v1 saturation with luminance near the
-  rail's own, so the tint reads as hue rather than a lighter rail; light
-  washes are the identity hue at HSV value 1 and saturation ≤ 0.45, lowered
-  until `accent.ink` holds (Slate half-saturated, Ink neutral grey). Web
+  the paper away from its text and no text bar can drop. Every composited
+  bar holds on every tinted rail and step: `ink` ≥ 12:1 (IC 14:1),
+  `ink.secondary` and light `accent.ink` ≥ 5.9:1 (IC 9:1 for
+  `ink.secondary`), the D1 selection (`ink` ≥ 10.5:1). Dark washes are the
+  identity hue at 1.3× the v1 saturation; light washes are the identity hue
+  at HSV value 1 and saturation ≤ 0.45 (Slate half-saturated, Ink neutral
+  grey). Web
   content is never sampled or tinted. During a
   direct horizontal swipe over the sidebar/space strip, the sidebar tint may
   interpolate between source and candidate target tokens in direct proportion
@@ -883,7 +886,8 @@ using the IDs of §15. All rows use `density` geometry from §8.
   the region present. Settled redundant status copy consumes no row; loading,
   crash/error and unresponsive status remains visible. The footer is exactly
   `[Downloads icon] [horizontally scrollable Spaces strip, flex:1] [Plus icon]`
-  (`bbr-downloads`, `bbr-space-strip`, `bbr-plus`) on `material:footer`. The
+  (`bbr-downloads`, `bbr-space-strip`, `bbr-plus`) directly on the rail — no
+  band and no rule (S12, Paper). The
   former `[Spaces]` reveal-toggle and upper space-row region do not exist.
 - **Regions:** Favorites, Pinned, Tabs and Folder wrappers retain stable ids
   and truthful empty-region behavior, but the production rail does not repeat
@@ -1019,9 +1023,9 @@ of problem instead of styling it.
   address affordance, not the loudest element in a rail whose job is to
   recede. Colors come from the palette tokens, never the component.
 - **Zoom accessory (§17.14):** the slot shows the page zoom chip
-  (`bbr-address-zoom`, e.g. `110%`, `type:meta`) only while the active
-  site's zoom is not 100 %, on a quiet inset wash (light ink 6 %, dark
-  white 6 %). Pressing it resets
+  (`bbr-address-zoom`, e.g. `110%`, `type:meta` at 500 in `ink`) only while
+  the active site's zoom is not 100 %, on an inset wash (light ink 8 %, dark
+  white 8 %; S12 Paper). Pressing it resets
   the site to 100 % through the site-zoom authority and never opens the
   palette. Copy Link and permission indicators stay future accessories.
 - **Load progress (D5):** while the active tab loads, a 2 pt `accent` line
@@ -1819,7 +1823,7 @@ small, bounded set of after-commit moments.
 |---|---|
 | D1 | The dark selection lifts **above** the rail (white 9 % + lift) instead of sitting below it. The selected-row text bar becomes `ink ≥ 10.5:1` (IC ≥ 11:1) and `ink.secondary ≥ 4.5:1` (IC ≥ 7:1) on the composited selected surface. |
 | D2 | Exactly one static-shadow exception to “rows never shadow” (§2): the **lift** on the one selected row (tab, pinned, folder item) and on the active space chip. Painted with the surface, never animated, never on hover. |
-| D3 | Space tint on the rail rises from 4 % to **12 %** (IC 14 %). The text bars on every tinted rail become `ink ≥ 12:1` (IC ≥ 14:1) and `ink.secondary ≥ 5.9:1` (IC ≥ 9:1), recomputed for every curated theme in both modes. |
+| D3 | Space tint on the rail rises from 4 % to **12 %** (IC 14 %); S12 replaces the alpha with a luminance-pinned chroma share (§11.3). The text bars on every tinted rail become `ink ≥ 12:1` (IC ≥ 14:1) and `ink.secondary ≥ 5.9:1` (IC ≥ 9:1), recomputed for every curated theme in both modes. |
 | D4 | A committed space switch cross-fades **only the chrome tint** from source to destination over `dur:standard` with `ease:standard`. Geometry, lists, the selected tab and the native view snap on the commit frame. A swipe commit is already at the destination tint and does not fade again. |
 | D5 | Load progress lives in the **address field** (a 2 pt accent line on its inner bottom edge), not on the content card edge: GPUI never paints above the native web view. Supersedes the card-top bar of §10.5. |
 | D6 | No idle “living paper” drift. The space paper is a static tint with an optional static grain; nothing animates while the window is idle. |
@@ -1845,7 +1849,7 @@ every tinted rail before computing ratios.
 | `material:footer` (media card, footer surfaces) | `#F3F8FE` / `#202429` | white 62 % veil | white 5 % veil ¹ |
 | address fill / hover | white 48 % / 30 %; dark white 3 % / 7 % | white 55 % / 40 % | white 6 % / 10 % |
 | address border | ink 10 % / white 7 % | ink 4 % | white 4 % |
-| address accessory | ink 5 % / white 6 % | ink 6 % | white 6 % |
+| address accessory | ink 5 % / white 6 % | ink 8 % | white 8 % |
 | address IC | — | border ink 10 %, accessory 8 % | fill 8 % / hover 12 %, border 10 %, accessory 8 % |
 | `color:hairline` | `#C7C7C7` / `#2A2E34` | `#D0D0CC` | `#2C2F35` |
 | `color:tint.selected` | `#EEF2F9` / `#0F1318` | `#FFFFFF` + lift | white 9 % + lift |
@@ -1872,10 +1876,12 @@ ships 5 % (6.08:1). Per the iteration policy the value moved, not the bar.
   Floating cards lose their 2 pt inset hairline edge (§18.4).
 - Ink, accent, status and profile hues are unchanged. Increased contrast keeps
   its §3.4 rules on the v2 values.
-- **Space tint (D3):** rail wash alpha 0.12 (IC 0.14). The v1 chrome-wash
-  hues could not hold D1 at 12 % (dark selection `ink` 9.69:1, footer
-  `ink.secondary` 5.26:1; light washes were near-white and invisible), so S4
-  recalibrated them per §11.3 — the values moved, not the bars. The active
+- **Space tint (D3):** first shipped as a rail wash alpha 0.12 (IC 0.14),
+  with the S4 wash hues recalibrated to hold D1 — the values moved, not the
+  bars. The 2026-09-28 Paper comparison showed that rail as nearly grey, so
+  S12 pins every step to the untinted rail's luminance and raises the
+  chroma share (light 36 %, dark 24 % at `standard`, §11.3); the bars now
+  hold by construction. The active
   chip becomes the lift carrying 8 % of the identity hue (so each space's
   chip stays distinguishable).
 

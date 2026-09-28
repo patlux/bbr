@@ -180,28 +180,61 @@ fn hued_tokens_visibly_tint_the_rail() {
 }
 
 /// IC deepens the tint (the §3.4 selected-tint deepening spirit) without
-/// breaking the gate above. The deepened blend moves the chrome strictly
-/// further from the base material, so the measured distance (the WCAG
-/// ratio of the blended chrome against the base) strictly increases with
-/// contrast — `d_ic > d_std` — for every one of the nine tones in both
-/// modes, while the §3.1 text contracts still hold.
+/// breaking the gate above. Since S12 every step keeps the rail's
+/// luminance, so the deepening is chroma: the IC chrome moves strictly
+/// further from the base material in CIE ΔE76 for every hued token (the
+/// neutral Ink has no hue to deepen and stays at the rail), and never
+/// changes the luminance the bars are proven on.
 #[test]
 fn increased_contrast_deepens_the_tint() {
+    fn delta(a: &Rgba, b: &Rgba) -> f64 {
+        let lab = |c: &Rgba| {
+            let lin = |v: f32| {
+                let v = f64::from(v);
+                if v <= 0.04045 {
+                    v / 12.92
+                } else {
+                    ((v + 0.055) / 1.055).powf(2.4)
+                }
+            };
+            let (r, g, b) = (lin(c.r), lin(c.g), lin(c.b));
+            let x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
+            let y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            let z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+            let f = |t: f64| {
+                if t > 0.008856 {
+                    t.cbrt()
+                } else {
+                    7.787 * t + 16.0 / 116.0
+                }
+            };
+            [
+                116.0 * f(y) - 16.0,
+                500.0 * (f(x) - f(y)),
+                200.0 * (f(y) - f(z)),
+            ]
+        };
+        let (a, b) = (lab(a), lab(b));
+        a.iter()
+            .zip(b)
+            .map(|(x, y)| (x - y).powi(2))
+            .sum::<f64>()
+            .sqrt()
+    }
     for mode in [ThemeMode::Dark, ThemeMode::Light] {
         let standard = Theme::new(mode, ContrastMode::Standard, Density::Normal);
-        let base = standard.palette.surface_sidebar;
+        let increased_theme = Theme::new(mode, ContrastMode::Increased, Density::Normal);
         for token in SpaceTheme::ALL {
+            if token == SpaceTheme::Ink {
+                continue;
+            }
             let standard_tint = space_tint(token, TintIntensity::Standard, &standard);
-            let increased = space_tint(
-                token,
-                TintIntensity::Standard,
-                &Theme::new(mode, ContrastMode::Increased, Density::Normal),
-            );
-            let d_std = ratio(&base, &standard_tint.chrome);
-            let d_ic = ratio(&base, &increased.chrome);
+            let increased = space_tint(token, TintIntensity::Standard, &increased_theme);
+            let d_std = delta(&standard.palette.surface_sidebar, &standard_tint.chrome);
+            let d_ic = delta(&increased_theme.palette.surface_sidebar, &increased.chrome);
             assert!(
                 d_ic > d_std,
-                "{token:?} {mode:?} IC chrome moves strictly further from the base material (d_std {d_std:.6}, d_ic {d_ic:.6})"
+                "{token:?} {mode:?} IC chrome moves strictly further from the base material (ΔE std {d_std:.3}, IC {d_ic:.3})"
             );
         }
     }
@@ -299,19 +332,20 @@ fn hex_form_is_deterministic_and_matches_the_resolved_color() {
     let theme = Theme::dark();
     let tint = space_tint(SpaceTheme::Cobalt, TintIntensity::Standard, &theme);
     assert_eq!(hex(tint.hue), "#6E8BFF", "cobalt dark identity tile");
-    assert_eq!(hex(tint.chrome), "#1B2130", "cobalt dark standard chrome");
+    assert_eq!(hex(tint.chrome), "#151D32", "cobalt dark standard chrome");
     assert_eq!(
         hex(tint.chip_active),
-        "#353C52",
+        "#303954",
         "cobalt dark standard chip"
     );
     // The light identity hue is the §12 light cobalt tile.
     let light = Theme::new(ThemeMode::Light, ContrastMode::Standard, Density::Normal);
     let light_tint = space_tint(SpaceTheme::Cobalt, TintIntensity::Standard, &light);
     assert_eq!(hex(light_tint.hue), "#4062E8", "cobalt light identity tile");
+    // S12: the Paper cobalt rail (#DFE4F3 reference).
     assert_eq!(
         hex(light_tint.chrome),
-        "#DDDFE5",
+        "#E0E5F4",
         "cobalt light standard chrome"
     );
     assert_eq!(

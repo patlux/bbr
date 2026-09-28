@@ -1,4 +1,5 @@
-//! v2 D7 intensity steps: ordered, luminance-safe, and deterministic.
+//! v2 D7 intensity steps (S12 chroma model): ordered, luminance-pinned,
+//! and deterministic.
 
 use super::super::*;
 use crate::theme::Density;
@@ -81,21 +82,23 @@ fn steps_order_from_subtle_to_rich() {
     }
 }
 
-/// Rich adds hue, never lightness: its relative luminance equals the
-/// standard step's, which is what keeps every D3 luminance bar.
+/// S12: every step adds hue, never lightness — its relative luminance is
+/// the untinted rail's, which is what keeps every D3 luminance bar.
 #[test]
-fn rich_keeps_the_standard_luminance() {
+fn every_step_keeps_the_rail_luminance() {
     for theme in themes() {
+        let rail = relative_luminance(theme.palette.surface_sidebar);
         for token in SpaceTheme::ALL {
-            let standard = space_tint(token, TintIntensity::Standard, &theme).chrome;
-            let rich = space_tint(token, TintIntensity::Rich, &theme).chrome;
-            let (l_standard, l_rich) = (relative_luminance(standard), relative_luminance(rich));
-            assert!(
-                (l_standard - l_rich).abs() < 1e-4,
-                "{token:?} {:?} {:?} luminance {l_rich:.5} = {l_standard:.5}",
-                theme.mode,
-                theme.contrast
-            );
+            for step in TintIntensity::ALL {
+                let chrome = space_tint(token, step, &theme).chrome;
+                let luminance = relative_luminance(chrome);
+                assert!(
+                    (luminance - rail).abs() < 1e-4,
+                    "{token:?} {step:?} {:?} {:?} luminance {luminance:.5} = rail {rail:.5}",
+                    theme.mode,
+                    theme.contrast
+                );
+            }
         }
     }
 }

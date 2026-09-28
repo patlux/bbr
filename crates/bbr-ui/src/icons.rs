@@ -20,6 +20,7 @@
 pub mod bbr;
 pub mod glyphs;
 mod paint;
+mod shapes;
 pub mod spinner;
 
 pub use bbr::{classify_identity, IdentityForm};
@@ -33,9 +34,8 @@ use crate::theme::Theme;
 
 use glyphs::{
     bookmark_geometry, chassis_radii, check_geometry, chevron_arm, clock_geometry, clock_hands,
-    close_arm, disclosure_arm, downloads_geometry, folder_geometry, folder_open_geometry,
-    icon_stroke, lifering_radii, nav_arrow_geometry, pencil_geometry, pin_radius, plus_arm,
-    reload_geometry, sidebar_geometry, stopped_half,
+    close_arm, disclosure_arm, downloads_geometry, icon_stroke, lifering_radii, nav_arrow_geometry,
+    pencil_geometry, pin_radius, plus_arm, reload_geometry, sidebar_geometry, stopped_half,
 };
 use paint::{paint_filled_circle, paint_path, paint_ring, paint_rounded_square_ring, paint_stroke};
 
@@ -96,6 +96,8 @@ pub enum Icon {
     Bookmark,
     /// §11.16 Library rename: a pencil on the rising diagonal.
     Pencil,
+    /// §11.4 command field: the search magnifier the query leads with.
+    Search,
 }
 
 impl Icon {
@@ -150,6 +152,7 @@ impl Icon {
             Icon::Reload => "reload",
             Icon::Bookmark => "bookmark",
             Icon::Pencil => "pencil",
+            Icon::Search => "search",
         }
     }
 
@@ -174,7 +177,7 @@ impl Icon {
             Icon::ChevronLeft | Icon::ChevronRight => palette.ink_secondary,
             Icon::Sidebar { .. } => palette.ink_secondary,
             Icon::NavBack | Icon::NavForward | Icon::Reload => palette.ink_secondary,
-            Icon::Bookmark | Icon::Pencil => palette.ink_secondary,
+            Icon::Bookmark | Icon::Pencil | Icon::Search => palette.ink_secondary,
         }
     }
 
@@ -300,39 +303,12 @@ impl Icon {
             }
             Icon::Folder { open } => {
                 if open {
-                    let (half, tab_depth, tab_width, mouth) = folder_open_geometry(size);
-                    let mut path = PathBuilder::stroke(stroke);
-                    // The body with its open mouth: the top edge sits below
-                    // the closed top (`mouth`), so the lid visibly lifts off
-                    // the body.
-                    path.move_to(point(px(cx - half), px(cy + half)));
-                    path.line_to(point(px(cx - half), px(cy - mouth)));
-                    path.line_to(point(px(cx + half), px(cy - mouth)));
-                    path.line_to(point(px(cx + half), px(cy + half)));
-                    path.line_to(point(px(cx - half), px(cy + half)));
-                    // The lifted lid: the tab diagonal from the left edge up
-                    // to the closed top, across to the flap end, then down
-                    // into the mouth.
-                    let flap_x = cx + half * 0.55;
-                    path.move_to(point(px(cx - half), px(cy - half + tab_depth)));
-                    path.line_to(point(px(cx - half + tab_width), px(cy - half)));
-                    path.line_to(point(px(flap_x), px(cy - half)));
-                    path.line_to(point(px(flap_x), px(cy - mouth)));
-                    paint_path(window, path, color);
+                    shapes::paint_folder_open(window, stroke, color, cx, cy, size);
                 } else {
-                    let (half, tab_depth, tab_width) = folder_geometry(size);
-                    let mut path = PathBuilder::stroke(stroke);
-                    // Left edge up to the tab, the tab diagonal, then the
-                    // body.
-                    path.move_to(point(px(cx - half), px(cy + half)));
-                    path.line_to(point(px(cx - half), px(cy - half + tab_depth)));
-                    path.line_to(point(px(cx - half + tab_width), px(cy - half)));
-                    path.line_to(point(px(cx + half), px(cy - half)));
-                    path.line_to(point(px(cx + half), px(cy + half)));
-                    path.line_to(point(px(cx - half), px(cy + half)));
-                    paint_path(window, path, color);
+                    shapes::paint_folder_closed(window, stroke, color, cx, cy, size);
                 }
             }
+            Icon::Search => shapes::paint_search(window, stroke, color, cx, cy, size),
             Icon::Disclosure { expanded } => {
                 let arm = disclosure_arm(size);
                 let mut path = PathBuilder::stroke(stroke);

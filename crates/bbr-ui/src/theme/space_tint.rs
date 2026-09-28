@@ -21,10 +21,11 @@
 //!   hues "go into" the theming mechanism without a second color
 //!   vocabulary. Pine/Plum/Ink are the curated space-only tokens.
 //! - The "chrome variant" is a second hue family ([`chrome_wash_hue`])
-//!   blended into the base material at 12 % (IC 14 %, DESIGN §18.1 D3) —
-//!   never the saturated identity hue itself — calibrated so the D3
-//!   tinted-rail bars and the D1 selected-row and footer bars hold on every
-//!   tinted surface, veils composited.
+//!   blended into the base material at the step's chroma share (S12 Paper
+//!   model: light 18/36/54 %, dark 12/24/36 %, IC +4 %) and then pinned to
+//!   the base material's relative luminance — never the saturated identity
+//!   hue itself — so the D3 tinted-rail bars and the D1 selected-row bars
+//!   hold on every tinted surface exactly as on the untinted rail.
 //! - The active chip (§18.2) is the selected-row surface (`tint.selected`
 //!   composited over the tinted rail) carrying 8 % of the identity hue; the
 //!   strip paints it with `elev:lift`.
@@ -35,22 +36,28 @@ use gpui::{rgb, Rgba};
 use crate::palette::ProfileHueRamp;
 use crate::theme::{ContrastMode, Theme, ThemeMode};
 
-/// The blend alpha of the chrome wash into the base sidebar material
-/// (DESIGN §18.1 D3): 12 % so the space is felt on the whole window body,
-/// 14 % under increased contrast (the §3.4 deepening spirit) — the gate
-/// proves every text bar on the result.
-const TINT_ALPHA_STANDARD: f64 = 0.12;
-const TINT_ALPHA_INCREASED: f64 = 0.14;
-/// The curated intensity steps (v2 D7). `subtle` halves the wash
-/// (IC 8 %); `rich` doubles it (IC 26 %) and then pins the result to the
-/// standard step's relative luminance, so the step adds hue, never
-/// lightness: every D3 bar is a luminance ratio and stays where the
-/// standard step proved it (the near-achromatic Slate/Ink washes therefore
-/// barely move).
-const TINT_ALPHA_SUBTLE: f64 = 0.06;
-const TINT_ALPHA_SUBTLE_INCREASED: f64 = 0.08;
-const TINT_ALPHA_RICH: f64 = 0.24;
-const TINT_ALPHA_RICH_INCREASED: f64 = 0.26;
+/// The chroma of each curated intensity step (v2 D7, S12 Paper model): the
+/// share of the chrome-wash hue blended into the rail before the result is
+/// pinned back to the rail's own relative luminance. Pinning is what keeps
+/// every D3 bar exactly where the untinted rail proves it (every bar is a
+/// luminance ratio), so the steps can carry the Paper-strength hue; the
+/// neutral Ink token therefore reads as the untinted rail. Light rails take
+/// more hue than dark ones (the same share reads louder on a dark rail);
+/// increased contrast deepens each step by 4 %.
+fn step_alpha(intensity: TintIntensity, mode: ThemeMode, contrast: ContrastMode) -> f64 {
+    let base = match (mode, intensity) {
+        (ThemeMode::Light, TintIntensity::Subtle) => 0.18,
+        (ThemeMode::Light, TintIntensity::Standard) => 0.36,
+        (ThemeMode::Light, TintIntensity::Rich) => 0.54,
+        (ThemeMode::Dark, TintIntensity::Subtle) => 0.12,
+        (ThemeMode::Dark, TintIntensity::Standard) => 0.24,
+        (ThemeMode::Dark, TintIntensity::Rich) => 0.36,
+    };
+    match contrast {
+        ContrastMode::Standard => base,
+        ContrastMode::Increased => base + 0.04,
+    }
+}
 /// The active chip (§18.2): the lifted selection surface carrying this
 /// share of the identity hue, so each space's chip stays distinguishable
 /// in both contrast modes.
@@ -85,37 +92,8 @@ pub fn space_tint(token: SpaceTheme, intensity: TintIntensity, theme: &Theme) ->
     let base = theme.palette.surface_sidebar;
     let hue = identity_hue(token, theme.mode);
     let wash = chrome_wash_hue(token, theme.mode);
-    let increased = theme.contrast == ContrastMode::Increased;
-    let standard_alpha = if increased {
-        TINT_ALPHA_INCREASED
-    } else {
-        TINT_ALPHA_STANDARD
-    };
-    let standard = blend(base, wash, standard_alpha);
-    let chrome = match intensity {
-        TintIntensity::Standard => standard,
-        TintIntensity::Subtle => blend(
-            base,
-            wash,
-            if increased {
-                TINT_ALPHA_SUBTLE_INCREASED
-            } else {
-                TINT_ALPHA_SUBTLE
-            },
-        ),
-        TintIntensity::Rich => pin_luminance(
-            blend(
-                base,
-                wash,
-                if increased {
-                    TINT_ALPHA_RICH_INCREASED
-                } else {
-                    TINT_ALPHA_RICH
-                },
-            ),
-            relative_luminance(standard),
-        ),
-    };
+    let alpha = step_alpha(intensity, theme.mode, theme.contrast);
+    let chrome = pin_luminance(blend(base, wash, alpha), relative_luminance(base));
     let selection = crate::palette::over(theme.palette.tint_selected, chrome);
     SpaceTint {
         hue,
@@ -172,19 +150,12 @@ fn identity_hue(token: SpaceTheme, mode: ThemeMode) -> Rgba {
 }
 
 /// The *chrome wash* hue pair for a token (light/dark): the color the rail
-/// material is blended toward at 12 % (IC 14 %). This is deliberately
-/// **not** the saturated identity hue — it is the variant the gates prove
-/// against (DESIGN §18.1 D1/D3, calibrated with v2 S4):
-///
-/// - Dark mode: the identity hue at 1.3× the v1 wash saturation and the
-///   highest value that keeps `ink ≥ 12:1` on the rail, the composited
-///   selection at `ink ≥ 10.5:1` and the footer veil at
-///   `ink.secondary ≥ 5.9:1` (IC: 14:1 / 9:1 at 14 %). Luminance sits near
-///   the rail's own, so the tint reads as hue, not as a lighter rail.
-/// - Light mode: the identity hue at value 1 and HSV saturation 0.45 (Slate
-///   half that, Ink a neutral grey), lowered until `accent.ink ≥ 5.9:1` —
-///   the binding light bar — holds on the rail; the tint may darken the
-///   rail slightly while `ink.secondary` keeps ≥ 5.9:1 (IC ≥ 9:1).
+/// material is blended toward before the luminance pin. This is
+/// deliberately **not** the saturated identity hue (calibrated with v2 S4):
+/// dark washes carry the identity hue at 1.3× the v1 wash saturation near
+/// the rail's own luminance; light washes are the identity hue at HSV value
+/// 1 and saturation ≤ 0.45 (Slate half that, Ink a neutral grey). Since S12
+/// the pin, not the wash value, holds the D3 bars.
 fn chrome_wash_hue(token: SpaceTheme, mode: ThemeMode) -> Rgba {
     use SpaceTheme as T;
     let (r, g, b) = match (token, mode) {

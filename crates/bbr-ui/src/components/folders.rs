@@ -223,8 +223,10 @@ pub fn folder_row(
                 .overflow_hidden()
                 .text_ellipsis()
                 .text_size(theme.type_.title.size)
-                .font_weight(theme.type_.title.weight)
-                .text_color(p.ink_secondary)
+                // S12 (Paper): folder names read as group headings — the
+                // semibold weight in `ink`.
+                .font_weight(gpui::FontWeight::SEMIBOLD)
+                .text_color(p.ink)
                 .child(spec.title.clone()),
         )
         .child(
@@ -328,8 +330,11 @@ pub fn folder_item_row(
         // row, so the expanded folder's extent stays an exact pitch
         // multiple (§11.6).
         .mb(theme.density.gap())
-        .pl(Spacing::sp3())
+        // S12 (Paper): nested rows indent one `sp:3` step past the row
+        // padding, so members sit visibly inside their folder.
+        .pl(theme.density.row_padding_x() + Spacing::sp3())
         .pr(theme.density.row_padding_x())
+        .group(folder_item_id(visual.folder_index, visual.member))
         .gap(Spacing::sp2())
         .items_center()
         .flex()
@@ -362,11 +367,7 @@ pub fn folder_item_row(
                 .text_ellipsis()
                 .text_size(theme.type_.title.size)
                 .font_weight(theme.type_.title.weight)
-                .text_color(if visual.selected {
-                    p.ink
-                } else {
-                    p.ink_secondary
-                })
+                .text_color(p.ink)
                 .child(visual.title.clone()),
         )
         .child(
@@ -380,6 +381,14 @@ pub fn folder_item_row(
                 .items_center()
                 .justify_center()
                 .on_mouse_down(MouseButton::Left, on_close)
+                // S12 (Paper): the close control is revealed while the row
+                // is hovered or selected, like a tab row; at rest it keeps
+                // its id and hit square at zero opacity.
+                .opacity(if visual.selected { 1.0 } else { 0.0 })
+                .group_hover(
+                    folder_item_id(visual.folder_index, visual.member),
+                    |style| style.opacity(1.0),
+                )
                 .child(Icon::Close.canvas(theme, theme.density.icon())),
         )
 }

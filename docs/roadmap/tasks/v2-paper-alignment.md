@@ -77,7 +77,7 @@ Not parallelized.
       exactly that tab's session.
 - [x] Sidebar model: loose pinned rows exclude folder members; drag slots and
       keyboard traversal follow the rendered rows.
-- [ ] Tint gates across tokens × steps × modes × contrast with the new model.
+- [x] Tint gates across tokens × steps × modes × contrast with the new model.
 - [ ] Palette/illustration/pop frame and anatomy tests.
 
 ### Real-app E2E

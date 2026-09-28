@@ -144,12 +144,15 @@ pub fn address_control(
         div()
             .id(ADDRESS_ZOOM_ID)
             .debug_selector(|| ADDRESS_ZOOM_ID.to_string())
-            .px(Spacing::sp1())
+            // S12 (Paper): a readable chip — `ink` text at 500 on the
+            // accessory fill, with room around the percentage.
+            .px(Spacing::sp2())
+            .py(px(1.0))
             .rounded(theme.radius.small())
             .bg(p.address_accessory_fill)
             .text_size(theme.type_.meta.size)
-            .font_weight(theme.type_.meta.weight)
-            .text_color(p.ink_secondary)
+            .font_weight(gpui::FontWeight::MEDIUM)
+            .text_color(p.ink)
             .cursor_pointer()
             .child(SharedString::from(format!("{level}%")))
             .on_mouse_down(MouseButton::Left, move |event, window, cx| {
