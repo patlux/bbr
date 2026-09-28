@@ -42,7 +42,8 @@ pub fn render_profile_chip(ctx: &StoryContext) -> AnyElement {
         .map(|(index, case)| {
             // Each family renders at its own §8 density through the
             // production component (the canvas theme stays the caller's).
-            let case_theme = Theme::new(theme.mode, theme.contrast, case.density);
+            let case_theme = Theme::new(theme.mode, theme.contrast, case.density)
+                .with_motion_mode(theme.motion_mode);
             let (profile_index, spec) =
                 build_profile_chip_fixture(case).expect("valid matrix family builds");
             let chip = profile_chip(&case_theme, profile_index, &spec);

@@ -150,7 +150,13 @@ impl GalleryApp {
 
     /// The resolved theme from the current mode/contrast/density.
     pub fn theme(&self) -> Theme {
-        Theme::new(self.mode, self.contrast, self.density)
+        Theme::new(self.mode, self.contrast, self.density).with_motion_mode(
+            if self.reduced_motion {
+                bbr_ui::theme::MotionMode::Reduced
+            } else {
+                bbr_ui::theme::MotionMode::Standard
+            },
+        )
     }
 
     /// The selected story's current state label.
@@ -353,7 +359,7 @@ impl Render for GalleryApp {
         // production floating command surface takes no callbacks, so this
         // module builds the selected family's fixture model, records its
         // presentation summary, and hands the canvas the recorder + model.
-        let command = self.command.render_context(selected, story_state);
+        let command = self.command.render_context(selected, story_state, &theme);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {

@@ -56,11 +56,12 @@ pub fn render_tab_menu(ctx: &StoryContext) -> AnyElement {
         .map(|(index, case)| {
             let model = build_tab_menu_fixture(case).expect("valid matrix family builds");
             let has_submenu = case.open_submenu.is_some();
+            let (rect, submenu_rect) = fixture_rects(theme, &model);
             let card = tab_menu_card(
                 theme,
                 &model,
-                TAB_MENU_FIXTURE_RECT,
-                has_submenu.then_some(TAB_MENU_FIXTURE_SUBMENU_RECT),
+                rect,
+                submenu_rect,
                 {
                     let on = Rc::clone(&on_row_hover);
                     move |row: usize, hovered: &bool, window: &mut Window, cx: &mut App| {
@@ -104,7 +105,7 @@ pub fn render_tab_menu(ctx: &StoryContext) -> AnyElement {
                 .debug_selector(move || format!("{TAB_MENU_FAMILY_SELECTOR}{index}"))
                 .relative()
                 .w(px(480.0))
-                .h(px(320.0))
+                .h(px(rect.y + rect.height + 48.0))
                 .child(card)
                 .into_any()
                 .with_meta_label(theme, case.label, &meta)
@@ -155,6 +156,37 @@ pub fn render_tab_menu(ctx: &StoryContext) -> AnyElement {
     ));
     children.extend(rejected);
     story_page(theme, "Tab / Favorite menu", children)
+}
+
+/// Gallery placement, not production geometry: fit every real row using the
+/// inherited GPUI text metrics and production padding. The old fixed 240 pt
+/// fixture let rows escape the card and overlap the next family's label.
+pub(crate) fn fixture_rects(
+    theme: &bbr_ui::theme::Theme,
+    model: &bbr_ui::surfaces::tab_menu::TabMenuModel,
+) -> (
+    bbr_ui::surfaces::tab_menu::TabMenuRect,
+    Option<bbr_ui::surfaces::tab_menu::TabMenuRect>,
+) {
+    let text = gpui::TextStyle::default()
+        .line_height
+        .to_pixels(theme.type_.label.size.into(), px(16.0));
+    // GPUI rounds individual text line boxes to device pixels. Round each
+    // row up before summing, not the final card (which can underallocate).
+    let row_height = f32::from(text.max(theme.density.icon())).ceil()
+        + 2.0 * f32::from(bbr_ui::theme::Spacing::sp2());
+    let padding = 2.0 * f32::from(bbr_ui::surfaces::floating::menu_padding()) + 2.0;
+    let mut rect = TAB_MENU_FIXTURE_RECT;
+    rect.height = (row_height * model.rows.len() as f32 + padding).ceil();
+    let submenu = model
+        .open_submenu
+        .and_then(|index| model.rows[index].submenu.as_ref())
+        .map(|rows| {
+            let mut sub = TAB_MENU_FIXTURE_SUBMENU_RECT;
+            sub.height = (row_height * rows.len() as f32 + padding).ceil();
+            sub
+        });
+    (rect, submenu)
 }
 
 /// A tiny helper: append the family's meta line below its card container.

@@ -144,7 +144,7 @@ explicit review before any new baseline acceptance.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-GALLERY | Native Gallery coverage | `running` | existing `bbr-visual-snapshots`, `parallel/visual-snapshots`; clean activation base `a04d708e41e3785a6a3ac60124df820675341d27` | same sole writer `01a0e635-9c12-70d8-8376-9a6ab8aeabd5`; no handoff | [Gallery visual coverage](../roadmap/tasks/gallery-visual-coverage.md) | Audit catalog/state matrices and establish native capture/framing before full-matrix acceptance |
+| VISUAL-GALLERY | Native Gallery coverage | `blocked` | existing `bbr-visual-snapshots`, `parallel/visual-snapshots`; clean activation base `a04d708e41e3785a6a3ac60124df820675341d27` | same sole writer `01a0e635-9c12-70d8-8376-9a6ab8aeabd5`; no handoff | [Gallery visual coverage](../roadmap/tasks/gallery-visual-coverage.md) | Unlock macOS for fresh native endpoint evidence; inventory/framing and sealed comparator adapter remain unfinished, no Gallery baseline accepted |
 
 Activation preflight: clean index/worktree at the named base, no lane test
 processes or Git index locks. Existing GUI lock remains mandatory. Main is at
@@ -160,6 +160,55 @@ Gallery story wiring, recipes, roadmap/current ledger and E2E documentation;
 resolve semantically product-first, tooling-second, then recapture/re-review.
 No dependency/runtime contract changes. RA-MEDIA, Split and performance remain
 deferred; additional browser composition capture awaits its own bounded packet.
+
+### Gallery fixture checkpoint and blocked capture evidence
+
+The first bounded increment fixes Gallery-only fixture wiring: Reduce Motion now
+reaches the rendered theme (the regression failed before the fix), Command no
+longer hardcodes Dark, Sidebar model tint/pitch and renderer share a resolved
+family theme, and Tab/Favorite menu fixture heights contain the production rows.
+Family densities remain intrinsic; named increased-contrast/reduced-motion
+families retain their requirements. No bbr-ui or browser production source change.
+Self-review found a half-point menu underallocation; the natural-layout regression
+failed, then passed after per-row rounding. No snapshot masks/tolerance/acceptance.
+
+Evidence before the host locked:
+
+- Gallery unit/contract tests 155 passed with the capture feature (150 without
+  it); feature all-target Clippy `-D warnings` passed. Existing semantic Gallery
+  E2E plus two new regressions: **48/48**, 25.69s measured. These tests use the
+  established TestPlatform and are not native screenshot evidence.
+- Native optimized probe `bbr-gallery-native-settled-c` under `/private/tmp`:
+  49 stories, 1,260 selector/theme cases, 1,872 PNG pages; first-to-last image
+  write span 169.95s (measured, not total runtime or product performance).
+  Menu, Sidebar and Command images inspected. Earlier focused Command repeats
+  `bbr-gallery-command-fixed-a` / `-b` matched 144/144 PNG bytes, but preceded
+  final family-theme reconciliation and are not final baseline candidates.
+- Partial full repeats `bbr-gallery-native-settled-a` (1,334 pages) and `-d`
+  (1,593) timed out; incomplete runs have no coverage TSV and are unusable.
+  Comparison of `-c`/`-d` isolates 12 RGBA differences to Tab Row page 0; the
+  16×16-pixel attention dot retains its finite opacity pulse under Reduce Motion.
+  A production-duration endpoint wait was added to the uncommitted prototype;
+  it still needs native verification. Reduced Motion fixed the other animated
+  States/Favicon probe differences, not all animation by definition.
+- The final `bbr-gallery-native-diagnose-a` produced no frames and hit its 300s
+  deadline. `ioreg` then reports `CGSSessionScreenIsLocked=Yes`. Do not infer the
+  earlier intermittent stalls have the same cause without contemporaneous data.
+  Native GUI work is stopped, process cleanup completed, GUI lock released.
+
+Logs: `/tmp/bbr-gallery-settled-gates.log`, `/tmp/bbr-gallery-regressions.log`,
+`/tmp/bbr-gallery-framing.log` (red), `/tmp/bbr-gallery-framing-after.log` (green),
+`/tmp/bbr-gallery-settled-repeat.log`, `/tmp/bbr-gallery-native-diagnose.log`.
+All native probes are unsealed diagnostics, not accepted comparator runs.
+The exact all-state audit, nested/shadow framing, bounded sealed adapter/recipes,
+independent final comparison and broader functional gates remain open. Initial
+Titlebar/Portal blockers remain unchanged; performance remains deferred.
+
+Checkpoint parallelism audit: no other lane/subagent/worktree is authorized.
+Product/Paper remains with its existing owner; Split/media/performance are not
+runnable here. Preserve this lane's prototype dirty tree and ownership. Resume
+with an unlocked session, capture readiness diagnosis and coverage audit before
+accepting any Gallery baseline or activating a browser-composition slice.
 
 ## Post-F2a parallel wave
 

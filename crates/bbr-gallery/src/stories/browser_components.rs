@@ -81,7 +81,8 @@ pub fn render_tab_row(ctx: &StoryContext) -> AnyElement {
         .map(|case| {
             // Each family renders at its own §8 density through the
             // production component (the canvas theme stays the caller's).
-            let case_theme = Theme::new(theme.mode, theme.contrast, case.density);
+            let case_theme = Theme::new(theme.mode, theme.contrast, case.density)
+                .with_motion_mode(theme.motion_mode);
             let visuals = build_tab_row_fixture(case).expect("valid matrix family builds");
             let row = tab_row(
                 &case_theme,

@@ -13,17 +13,38 @@
 //! `bbr_ui::surfaces::command::command_card` renders from the model.
 
 use bbr_ui::surfaces::command::{CommandModel, CommandResultRow};
-use bbr_ui::theme::{Theme, ThemeMode};
+use bbr_ui::theme::{ContrastMode, MotionMode, Theme};
 
 use crate::command_matrix::{command_case_valid, CommandCase};
 
+/// Matrix density is intrinsic to the family, as in the Tab Row stories.
+/// Canvas appearance is inherited; an increased-contrast/reduced-motion family
+/// must keep its named requirement even when the canvas controls are standard.
+/// The capture inventory must record these overrides, not claim twelve unique
+/// component variants when only the surrounding canvas differs.
+pub fn fixture_theme(case: &CommandCase, canvas: &Theme) -> Theme {
+    Theme::new(
+        canvas.mode,
+        if case.contrast == ContrastMode::Increased {
+            case.contrast
+        } else {
+            canvas.contrast
+        },
+        case.density,
+    )
+    .with_motion_mode(if case.reduced_motion {
+        MotionMode::Reduced
+    } else {
+        canvas.motion_mode
+    })
+}
+
 /// Build the plain production model for one valid matrix family; `None` for
 /// any rejected combination (the mutual-exclusion / missing-key contract).
-pub fn build_command_fixture(case: &CommandCase) -> Option<CommandModel> {
+pub fn build_command_fixture(case: &CommandCase, theme: &Theme) -> Option<CommandModel> {
     if !command_case_valid(case) {
         return None;
     }
-    let theme = Theme::new(ThemeMode::Dark, case.contrast, case.density);
     let results: Vec<CommandResultRow> = case
         .rows
         .iter()
@@ -44,7 +65,7 @@ pub fn build_command_fixture(case: &CommandCase) -> Option<CommandModel> {
         .collect();
     let model = CommandModel {
         presentation: case.presentation,
-        theme,
+        theme: fixture_theme(case, theme),
         chrome_focused: case.chrome_focused,
         text: case.text.to_string(),
         state: case.state,

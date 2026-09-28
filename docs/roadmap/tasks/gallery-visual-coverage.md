@@ -20,6 +20,9 @@ baseline acceptance. Coverage failures cannot silently remove cases.
   represented states and explicit exclusions, including unsupported states.
 - Reuse the unchanged comparator and source/environment sealing, add bounded
   recipes and completeness contracts, and review independent captures.
+- Correct Gallery-only fixture wiring exposed by native captures (appearance,
+  Reduced Motion and undersized presentation bounds), with regression tests.
+  This does not authorize changes to bbr-ui or browser production behavior.
 - Deliver in coherent increments: inventory/native capture foundation first,
   then audited full Gallery coverage. Real browser compositions require their
   own subsequent packet before implementation.
@@ -113,6 +116,14 @@ input. Do not alter production pixels or tests to make the comparator pass.
 
 ## Delivery ledger
 
-Activation only. Coverage inventory, capture implementation and acceptance are
-not yet proven. Volatile owner/base/status/evidence live in
-[Current delivery](../../delivery/current.md).
+First bounded increment corrects Gallery-only theme propagation and Tab/Favorite
+menu fixture capacity. The canvas now supplies actual appearance and Reduce
+Motion; family-specific density and named accessibility requirements remain
+explicit. Regression coverage checks model tint/geometry and natural production
+menu layout rather than metadata alone. No bbr-ui or browser product change.
+
+The native capture prototype remains uncommitted and unaccepted. Registry state
+selectors are not yet an audited all-supported-state inventory; nested framing,
+interactive-state applicability and sealed comparator integration remain open.
+Static endpoint waits do not prove animation. Volatile owner/base/status/evidence
+and the unlocked-session blocker live in [Current delivery](../../delivery/current.md).
