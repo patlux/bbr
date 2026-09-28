@@ -140,6 +140,27 @@ product tests. Next owner needs explicit handoff, product-first integration,
 resolution/recheck of the failing gates, and fresh combined-tree captures with
 explicit review before any new baseline acceptance.
 
+### Gallery coverage extension (user-approved)
+
+| ID | Slice | Status | Worktree | Owner | Contract | Next gate |
+|---|---|---|---|---|---|---|
+| VISUAL-GALLERY | Native Gallery coverage | `running` | existing `bbr-visual-snapshots`, `parallel/visual-snapshots`; clean activation base `a04d708e41e3785a6a3ac60124df820675341d27` | same sole writer `01a0e635-9c12-70d8-8376-9a6ab8aeabd5`; no handoff | [Gallery visual coverage](../roadmap/tasks/gallery-visual-coverage.md) | Audit catalog/state matrices and establish native capture/framing before full-matrix acceptance |
+
+Activation preflight: clean index/worktree at the named base, no lane test
+processes or Git index locks. Existing GUI lock remains mandatory. Main is at
+`a10a52262facbdb5a4eddec447f6ebf3c515ffa7` (worktree metadata only); no main or
+other lane source is inspected or mutated. The earlier visual adapter's exact
+capture/contract gates are green; its two functional blockers remain open.
+
+Parallelism audit: Patrick approved Gallery-first coverage followed by bounded
+app-composition slices. Only this local writer is authorized; no subagents or
+extra worktrees. Product/Paper remains owned by `01a0e454`. Gallery, adapter,
+visual configs and baselines are this lane's territory. Shared conflicts are
+Gallery story wiring, recipes, roadmap/current ledger and E2E documentation;
+resolve semantically product-first, tooling-second, then recapture/re-review.
+No dependency/runtime contract changes. RA-MEDIA, Split and performance remain
+deferred; additional browser composition capture awaits its own bounded packet.
+
 ## Post-F2a parallel wave
 
 The former post-F2a and Daily-driver waves are closed historical evidence. Their lane details remain in Git and [the completed Daily-driver delivery](2026-08-12-daily-driver-delivery.md); they grant dependencies but schedule no work.
