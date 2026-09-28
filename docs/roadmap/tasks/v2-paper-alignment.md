@@ -88,7 +88,7 @@ Not parallelized.
       the empty pane.
 - [x] Folder member is not listed as a loose pinned row; selecting/closing
       still works.
-- [ ] Affected suites (spaces, sidebar, organize, command, errors, persistence,
+- [x] Affected suites (spaces, sidebar, organize, command, errors, persistence,
       gallery) and the canonical aggregate without `e2e-perf`.
 
 ### Performance
@@ -163,8 +163,8 @@ Real-app E2E:           e2e_shell_persistence `space_activation` (restored
                         IOConsoleLocked) frontmost at the probe point.
                         S12 changes no portal code (portal host, web-macos
                         and portal tests untouched since S11, where the
-                        suite passed 7/7 after unlocking); the rerun on an
-                        unlocked console is the open gate.
+                        suite passed 7/7 after unlocking). Rerun on the
+                        unlocked console (same tree): e2e-shell-portal 7/7.
 Visual evidence:        hidden release visual-capture recordings compared
                         with the Paper posters and shell references
                         (Patrick's comparison folder, refreshed after S12).
