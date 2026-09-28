@@ -91,6 +91,14 @@ def capture(binary: Path, output: Path, story: int | None, env: dict[str, str]) 
             fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
 
+def build_producer() -> tuple[Path, dict[str, str]]:
+    binary = executable(build(ROOT / "Cargo.toml", "-p", "bbr-gallery",
+                              "--features", "visual-capture"), "bbr-gallery")
+    env = capture_environment()
+    env["SEED"] = "0"
+    return binary, env
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--story", default="all", help="registry story id, or all")
@@ -98,10 +106,7 @@ def main() -> int:
     story = None if args.story == "all" else int(args.story)
     if story is not None and story < 0:
         parser.error("story id must be nonnegative")
-    binary = executable(build(ROOT / "Cargo.toml", "-p", "bbr-gallery",
-                              "--features", "visual-capture"), "bbr-gallery")
-    env = capture_environment()
-    env["SEED"] = "0"
+    binary, env = build_producer()
     cases = inventory(run([binary, "--capture-inventory"], seconds=30,
                           capture=True, env=env).stdout, story)
     parent = ROOT / "reports/visual/gallery-probes"

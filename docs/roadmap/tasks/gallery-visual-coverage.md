@@ -22,6 +22,12 @@ baseline acceptance. Coverage failures cannot silently remove cases.
   represented states and explicit exclusions, including unsupported states.
 - Reuse the unchanged comparator and source/environment sealing, add bounded
   recipes and completeness contracts, and review independent captures.
+- Provide one `just visual` command for Gallery and the existing eight browser
+  snapshots, with both suite reports even when one comparison needs review.
+  Provide `just visual-update <batch> <reviewed-case>...` to route explicit
+  selections from either suite through unchanged upstream acceptance. No implicit
+  latest-run selection, accept-all or automatic baseline writes. This command
+  integration does not claim the pending all-state/framing audit is complete.
 - Correct Gallery-only fixture wiring exposed by native captures (appearance,
   Reduced Motion and undersized presentation bounds), with regression tests.
   This does not authorize changes to bbr-ui or browser production behavior.
@@ -133,8 +139,11 @@ menu layout rather than metadata alone. No bbr-ui or browser product change.
 The next bounded increment supplies the windowless optimized Metal producer and
 `just gallery-capture [story-id]` with a completeness-checked but unsealed probe
 adapter. Registry state selectors are not yet an audited all-supported-state
-inventory; nested framing, interactive-state applicability, locked-session proof
-and sealed comparator integration remain open. Static endpoint waits do not prove
+inventory; nested framing, interactive-state applicability and locked-session
+proof remain open. The subsequent command increment connects the current matrix
+to source/environment seals and unchanged comparator reports in `just visual`,
+alongside existing browser snapshots. Explicit `visual-update` routes reviewed
+selections from either suite; no Gallery baseline is accepted by implementation. Static endpoint waits do not prove
 animation. Volatile owner/base/status and headless runtime evidence live in
 [Current delivery](../../delivery/current.md).
 Patrick approved the windowless path after the visible-window producer stalled

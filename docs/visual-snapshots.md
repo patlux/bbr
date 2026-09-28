@@ -43,9 +43,57 @@ substitutes for them. The accompanying typed snapshots preserve native/session
 and geometry diagnostics. Functional E2E, native-boundary tests, performance
 and animation tests remain separate mandatory evidence.
 
-## Commands
+## One command for all current snapshots
 
 Use the existing macOS dev environment and Xcode/Metal toolchain:
+
+```sh
+just visual
+```
+
+Runs the adapter/upstream contracts, then all registered Gallery selector/theme
+pages and the existing eight browser-chrome snapshots sequentially. Gallery is
+windowless; **browser capture still opens native BBR windows** and needs an
+unlocked macOS session. This does not run unrelated functional E2E/performance.
+Both suites run even when the first comparison needs review or fails. Exit 0
+means both pass, 1 means an upstream non-passing comparison (inspect findings and
+validation errors), 2 means invalid input or failed execution. Contract failure
+stops before capture.
+
+The command prints one batch ID and an HTML entrypoint at
+`reports/visual/batches/<batch>/index.html`, linking both unchanged upstream
+reports, command logs and per-batch candidate directories. It never opens a
+browser/server. The Gallery config (`visual-gallery.toml`) has its own environment
+and baseline namespace, keeping the existing browser renderer/environment intact.
+Both configs seal current source/environment before and after capture. Gallery
+output names move `page-NN` before final `--light`/`--dark`; PNG content is untouched.
+
+### Update reviewed snapshots
+
+After reviewing the report, use one command for selections from either suite:
+
+```sh
+just visual-update <batch-id> \
+  gallery:gallery-22-state-00-standard-normal-page-00--light \
+  gallery:gallery-22-state-00-standard-normal-page-00--dark \
+  browser:ordinary-full--light
+```
+
+Copy exact IDs from the suite report and prefix them with `gallery:` or
+`browser:`. Only named changed/missing cases are updated, using the unchanged
+upstream accept operation. The explicit batch is required: no implicit latest,
+accept-all, wildcards, new captures or automatic baseline writes. Every selected
+suite is preflighted before writes; upstream revalidates its own acceptance.
+Multiple suites are not a single filesystem transaction: on interruption inspect
+the reported suite and Git diff before retrying. Re-run `just visual` after an
+update or source edit before accepting another selection. Environment drift
+still requires separately reviewed upstream `--adopt-environment`; this shortcut
+never opts in automatically. Adding the command does not accept any Gallery
+baseline or complete its supported-state/framing audit.
+
+## Individual commands
+
+The existing browser-only operations remain available:
 
 ```sh
 just visual-test               # adapter + unchanged upstream contracts
@@ -126,7 +174,8 @@ contiguous child ranges, exact page names/dimensions and no extra output.
 **These are unsealed probes, not accepted baselines or all-state coverage.** The
 registry selector/appearance matrix does not yet audit interactive states,
 family overrides/redundancy or nested/shadow framing. Gallery comparator config,
-source/environment sealing, HTML review and explicit acceptance remain in the
+source/environment sealing and HTML review for the current matrix are available
+through `just visual`; complete coverage review/acceptance remains in the
 [coverage packet](roadmap/tasks/gallery-visual-coverage.md). Do not feed these
 probe directories to the existing eight-case browser acceptance command.
 

@@ -144,7 +144,7 @@ explicit review before any new baseline acceptance.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-GALLERY | Offscreen Metal Gallery coverage | `running` | existing `bbr-visual-snapshots`, `parallel/visual-snapshots`; clean activation base `a04d708e41e3785a6a3ac60124df820675341d27` | same sole writer `01a0e635-9c12-70d8-8376-9a6ab8aeabd5`; no handoff | [Gallery visual coverage](../roadmap/tasks/gallery-visual-coverage.md) | Windowless Metal probe delivered with exact full repeats; locked-session proof, supported-state/framing audit and sealed comparator integration remain open; no Gallery baseline accepted |
+| VISUAL-GALLERY | Offscreen Metal Gallery coverage | `running` | existing `bbr-visual-snapshots`, `parallel/visual-snapshots`; clean activation base `a04d708e41e3785a6a3ac60124df820675341d27` | same sole writer `01a0e635-9c12-70d8-8376-9a6ab8aeabd5`; no handoff | [Gallery visual coverage](../roadmap/tasks/gallery-visual-coverage.md) | Unified visual/check-update commands integrate sealed Gallery and browser suites; locked-session proof, supported-state/framing audit and Gallery baseline review remain open |
 
 Activation preflight: clean index/worktree at the named base, no lane test
 processes or Git index locks. Existing GUI lock remains mandatory. Main is at
@@ -272,6 +272,63 @@ No full acceptance, functional aggregate rerun, performance, browser-composition
 activation, baseline acceptance, merge, push or handoff is claimed. Final
 parallelism audit: only this writer is authorized; other owners and deferrals
 remain untouched. The current checkpoint does not activate additional lanes.
+
+### Unified visual commands (user-requested follow-up)
+
+Patrick requested one command for Gallery **and** the existing browser snapshots,
+plus one command to update reviewed snapshots. Sole writer and existing branch
+remain unchanged; clean activation base `47b6ea31`. No extra lane/subagent or
+browser product changes. Scope is the adapter/config/recipe/report wiring only.
+
+`just visual` runs adapter/upstream contracts, then both capture/compare/report
+suites. `just visual-update <batch> <suite:case>...` requires explicit reviewed
+selections; it never chooses latest, accepts all, recaptures or adopts environment
+drift. Each suite keeps its own baseline/environment authority and upstream seals.
+Batch HTML links the original comparator reports; no fork or second comparison
+algorithm. Gallery identities are renamed to put appearance last without changing
+PNG bytes. Both checks run on review-needed/failed suite results. Cross-suite
+updates preflight every selection but remain explicitly nontransactional.
+
+First real `just visual` batch `1790597536807106000-94418`: Gallery 1,872 sealed
+candidates, all missing baselines as expected, zero validation errors (86.68s
+including build/seal/report); browser 8/8 exact, zero errors (33.45s). Aggregate
+exit 1 is correct, not a failed capture or a green acceptance claim. HTML:
+`reports/visual/batches/1790597536807106000-94418/index.html`. Follow-up source
+edits invalidate that first batch for acceptance; recapture rather than reseal.
+
+The actual update router is exercised with the unchanged CLI in a temporary Git
+fixture: one selected image per suite is accepted, unselected images stay absent,
+stale report/baseline and changed source attempts fail without new writes. Real
+Gallery baselines are not accepted as part of command implementation. Existing
+Titlebar/Portal blockers, native-browser window requirement, locked-session proof,
+all-state/framing audit and product-first integration remain open.
+
+Final fresh batch `1790598062285304000-41557` proves the final source tree:
+Gallery 1,872 missing-baseline candidates with zero errors (156.72s including
+managed-target rebuild), browser 8/8 exact with zero errors (45.13s). Aggregate
+correctly exits 1. Both manifests pass upstream source/image validation; all
+1,880 image hashes match the first independent batch. Report:
+`reports/visual/batches/1790598062285304000-41557/index.html` (generated, not opened
+in a managed browser). No real baseline changes. A real update attempt against
+the first stale batch was rejected before writes; the final wrapper reports that
+error without a Python traceback.
+
+Final `just visual` includes 35 Python unit contracts (the integration class is
+skipped in discovery), 29 unchanged upstream contracts and one separately run
+real-CLI two-suite update integration test. `just script-tests`: 49/49;
+`just roadmap` and whitespace checks pass. No Rust production code changed;
+full functional aggregate/performance are not rerun for this bounded tooling
+increment. Logs: `/tmp/bbr-visual-unified-{final,contracts,update-tests,seals,script-tests}.log`
+and `/tmp/bbr-visual-update-stale.log`. Timings above measure complete tool phases,
+not product performance.
+
+Self-review checked independent namespaces, source/environment/PNG seals, complete
+Gallery pairing without pixel edits, continuing both checks after a non-pass,
+explicit-only acceptance, stale/invalid no-write paths, signal/lock lifetime and
+managed-target eviction recovery. Parallelism audit: only this requested adapter
+lane is runnable here. Product/Paper ownership and Split/media/performance deferrals
+are unchanged; no merge/push or handoff. Current all-state/framing/locked-session
+and baseline-review limits remain explicit.
 
 ## Post-F2a parallel wave
 

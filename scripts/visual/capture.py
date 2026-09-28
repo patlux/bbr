@@ -23,9 +23,9 @@ def output_directory(raw: str) -> Path:
         raise ValueError("Capture output must be an absolute path without traversal")
     if any(parent.is_symlink() for parent in (path, *path.parents)):
         raise ValueError("Capture output cannot contain a symlink")
-    root = ROOT / "reports/visual/runs"
-    if not path.is_relative_to(root) or path == root or path.exists():
-        raise ValueError("Capture needs a fresh directory beneath reports/visual/runs")
+    roots = (ROOT / "reports/visual/runs", ROOT / "reports/visual/batches")
+    if path.exists() or not any(path != root and path.is_relative_to(root) for root in roots):
+        raise ValueError("Capture needs a fresh directory beneath visual runs/batches")
     return path
 
 

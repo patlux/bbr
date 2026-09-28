@@ -6,5 +6,5 @@ report = "reports/visual/latest"
 runs = "reports/visual/runs"
 
 [source_policy]
-scopes = ["crates", "vendor/gpui-component", "vendor/cargo-gpui-visual", "scripts/visual", "scripts/with_gui_lock.py", "scripts/xcode-shims", "Cargo.toml", "Cargo.lock", "flake.nix", "flake.lock", "justfile", "visual.toml"]
+scopes = ["crates", "vendor/gpui-component", "vendor/cargo-gpui-visual", "scripts/visual", "scripts/with_gui_lock.py", "scripts/xcode-shims", "Cargo.toml", "Cargo.lock", "flake.nix", "flake.lock", "justfile", "visual.toml", "visual-gallery.toml"]
 suffixes = [".rs", ".toml", ".lock", ".nix", ".py", ".html", ".png", ".svg", ".jpg", ".jpeg", ".ttf", ".otf", ".json", ".js", ".css", ".metal", ".h", ".scm", ".sql", "justfile", "xcrun", "LICENSE", "NOTICE"]

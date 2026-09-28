@@ -1209,7 +1209,25 @@ than synthesized. Pixel comparison supplements functional E2E and never acts
 as its synchronization. Commands, provenance, geometry, baseline review and
 integration boundaries are documented in [Visual snapshots](docs/visual-snapshots.md).
 
-### Windowless Gallery producer (dev-only probe)
+### Unified snapshot command
+
+`just visual` runs portable adapter/upstream contracts, then sealed Gallery and
+browser snapshot checks sequentially. Independent suite configs preserve the
+browser baseline environment while adding an offscreen Gallery namespace. Each
+batch gets one HTML index plus the unchanged comparator's per-suite report, run
+and source/environment seals. Both suites execute despite a review-needed result
+or a failed capture; the aggregate cannot report success when either fails.
+
+`just visual-update <batch> <suite:case>...` preflights all explicitly selected
+suites before routing acceptance to the unchanged CLI. No implicit latest/all,
+recapture, environment adoption or automatic baseline update occurs. Actual
+update/rejection is tested against the real CLI in a temporary fixture repository;
+no real Gallery baselines are accepted by that test. Cross-suite updates are not
+transactional; interruption requires inspecting Git diff and exact suite status.
+Native browser snapshots still use real windows. Functional E2E, complete Gallery
+state/framing coverage and performance acceptance remain separate gates.
+
+### Windowless Gallery producer
 
 `just gallery-capture [story-id]` builds `bbr-gallery --features visual-capture`
 in release mode through mbx. Pinned GPUI `HeadlessAppContext` supplies test-window
@@ -1227,8 +1245,11 @@ Instant is not advanced by the test scheduler clock. No image-stability polling.
 
 The bounded adapter retains the host lock through descendant cleanup, derives
 inventory from the binary, and validates complete contiguous page ranges. These
-unsealed probes do not establish all supported interactive states, nested/shadow
-framing, accepted baselines, native-browser behavior or locked-session support.
+standalone probes remain unsealed; the combined command additionally validates,
+renames page identities (not pixels), inventories and seals the same production
+output through the upstream CLI. Neither path establishes all supported interactive
+states, nested/shadow framing, accepted baselines, native-browser behavior or
+locked-session support.
 Those open gates remain in the [Gallery coverage packet](docs/roadmap/tasks/gallery-visual-coverage.md).
 
 ## 8. Security & release exclusion
