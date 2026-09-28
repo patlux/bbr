@@ -251,5 +251,6 @@ pub fn render_color(ctx: &StoryContext) -> AnyElement {
         section_heading(theme, "Tokens (contrast derived from tokens)"),
     ];
     children.extend(rows);
+    children.extend(super::paper::paper_sections(theme));
     story_page(theme, "Color", children)
 }

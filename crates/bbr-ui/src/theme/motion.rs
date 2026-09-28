@@ -142,6 +142,21 @@ impl MomentPlan {
 }
 
 impl Moment {
+    /// Every moment in §18.5 table order (the Gallery motion page and the
+    /// evidence tests enumerate this).
+    pub const ALL: [Moment; 10] = [
+        Moment::LoadingArc,
+        Moment::AttentionPulse,
+        Moment::AddressProgress,
+        Moment::AddressProgressFinish,
+        Moment::FavoritePop,
+        Moment::DownloadCheck,
+        Moment::CommandResults,
+        Moment::CommandCursor,
+        Moment::SpaceTintFade,
+        Moment::PaneIllustration,
+    ];
+
     /// The stable wire/evidence name of the moment.
     pub const fn name(self) -> &'static str {
         match self {

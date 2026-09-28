@@ -1100,6 +1100,35 @@ presentation resolves the intensity in `bbr-ui::theme::space_tint(token,
 intensity, theme)` and paints the static grain from `components::grain` on
 the rail and chassis.
 
+## 9f. Motion core and transient moments (v2 S6–S8)
+
+**One timing authority.** `bbr-ui::theme::motion` owns the §6 easing curves
+and the `Moment` descriptors (`Moment::ALL`, §18.5 order). `Moment::plan
+(MotionMode)` returns the one `MomentPlan` (duration, easing, loop or once,
+opacity-only reduced flag) or `None` — "render the static counterpart and
+request no frames". Every animated element is built through
+`MomentPlan::animation()`, which also counts it (`animated_elements_built`),
+so a frame's animation work is observable render-side. `Theme.motion_mode`
+comes from the appearance authority (§S1 accessibility display options or
+the testkit override); components read it from the theme, never from AppKit.
+
+**After-commit rule.** A moment only decorates a state that is already
+committed and presented: descriptors carry no delay and the committed state
+paints on the commit frame whether or not anything animates. The app's
+`moments.rs` registry starts one-shot moments (Favorite pop, download check,
+⌘T entrance and glide, chrome tint fade) with a unique key per start, keeps
+one instance per kind — a newer commit supersedes the older decoration even
+when the newer one is static — and ends each with a timer, after which the
+render passes no key and builds no animation element. Loops exist only for
+loading (the favicon arc, the D5 address progress sweep while the active
+load runs).
+
+**Pane illustrations (D10).** The render decides which content branch wins,
+so it also observes the presented illustration kind (`content_illustration`)
+and keys its appearance; a new kind restarts it, and after the two 1400 ms
+cycles the render passes `None`, so the rest frame builds no animation
+element.
+
 ## 10. Build & verification (bounded recipes, `justfile`)
 
 From repo root in the dev shell (`nix develop` or direnv):

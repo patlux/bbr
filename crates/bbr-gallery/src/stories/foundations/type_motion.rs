@@ -1,7 +1,7 @@
 //! The G1b type/motion Foundations pages (packet `component-gallery-mvp.md`):
 //! Typography (type roles per density), Spacing/Radius (the 4 pt grid and
-//! radius tokens), and Motion (durations + reduced-motion behavior). Every
-//! value derives from the real `bbr-ui` tokens; nothing is copied or
+//! radius tokens); the Motion page lives in the sibling `motion` module.
+//! Every value derives from the real `bbr-ui` tokens; nothing is copied or
 //! reimplemented.
 
 use gpui::{div, prelude::*, px, AnyElement};
@@ -145,65 +145,4 @@ pub fn render_spacing_radius(ctx: &StoryContext) -> AnyElement {
     children.push(section_heading(theme, "Radius"));
     children.extend(radii);
     story_page(theme, "Spacing / Radius", children)
-}
-
-/// §6 motion durations + reduced-motion behavior.
-pub fn render_motion(ctx: &StoryContext) -> AnyElement {
-    let theme = ctx.theme;
-    let durations: Vec<AnyElement> = [
-        ("dur:instant", "0 ms", "state changes snap"),
-        ("dur:micro", "70 ms", "hover/active tint, drag feedback"),
-        ("dur:fine", "120 ms", "palette open (opacity)"),
-        ("dur:standard", "180 ms", "attention pulse beat"),
-        ("dur:emphasis", "260 ms", "attention two-beat sequence"),
-        ("load:indeterminate", "580 ms", "loading loop"),
-    ]
-    .into_iter()
-    .map(|(name, value, note)| {
-        div()
-            .flex()
-            .flex_row()
-            .justify_between()
-            .child(
-                div()
-                    .text_size(theme.type_.label.size)
-                    .text_color(theme.palette.ink)
-                    .child(name),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_end()
-                    .child(
-                        div()
-                            .text_size(theme.type_.mono.size)
-                            .text_color(theme.palette.ink_secondary)
-                            .child(value),
-                    )
-                    .child(
-                        div()
-                            .text_size(theme.type_.meta.size)
-                            .text_color(theme.palette.ink_faint)
-                            .child(note),
-                    ),
-            )
-            .into_any()
-    })
-    .collect();
-    let mut children = vec![section_heading(theme, "Durations")];
-    children.extend(durations);
-    children.push(section_heading(theme, "Reduced Motion"));
-    children.push(
-        div()
-            .text_size(theme.type_.meta.size)
-            .text_color(theme.palette.ink_secondary)
-            .child(if ctx.reduced_motion {
-                "Reduced Motion is ON: only opacity at dur:fine remains; state changes stay 0 ms."
-            } else {
-                "Reduced Motion is OFF: transient indication may animate after the fact."
-            })
-            .into_any(),
-    );
-    story_page(theme, "Motion", children)
 }

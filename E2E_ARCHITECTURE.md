@@ -1162,6 +1162,35 @@ joins the interaction matrix in the fresh native-session class (100/150 — no
 new budget class) with an in-app fast-but-wrong guard, but stays
 unexecuted/unpassed under the active performance override.
 
+## 7q. v2 motion evidence (S6–S8)
+
+Motion is asserted through typed evidence, never pixels or sleeps:
+
+- `motion.moments` lists the moments presented on the last drawn frame with
+  their target id and variant (`animated`, `reduced` opacity-only, or
+  `static`); `motion.started` keeps the most recent start records, so a
+  moment that already ended is still provably started (timing-independent).
+- `motion.animated_elements` counts animation elements built since launch
+  (`MomentPlan::animation`), and `motion.root_renders` counts root renders.
+  A hidden E2E window — and any window while the screen is locked — gets no
+  display-link frames, so animation frames never tick there. The idle proof
+  is therefore render-side: a forced `FlushFrame` at rest must build **zero**
+  animation elements (a looping or unfinished moment would build one per
+  frame).
+- `motion.illustration` reports the D10 pane illustration kind and
+  `playing`/`rest`; the Reduce Motion variant starts at `rest`.
+- `SetAccessibilityOverride` forces Reduce Motion (and Increase Contrast) so
+  every suite proves both variants deterministically.
+
+Coverage: `e2e_shell_sidebar/{motion,moments}.rs` (loading arc, D5 address
+progress, Favorite pop, idle), `e2e_shell_downloads/moments.rs` (check),
+`e2e_shell_command/moments.rs` (⌘T entrance/glide),
+`e2e_shell_spaces/swipe/tint_fade.rs` (D4 fade, swipe commit never fades),
+`e2e_shell_errors/illustrations.rs` (D10), and `perf_common/idle.rs` (idle
+scenario code; performance execution is deferred). The attention pulse has
+no production producer yet, so its E2E is not expressible (recorded in the
+motion-core packet).
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature
