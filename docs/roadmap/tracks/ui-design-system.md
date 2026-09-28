@@ -31,7 +31,7 @@ menu follow-up, which may start after F2 closeout when that territory is free.
 
 ## v2 visual refresh and motion — Phase 4
 
-- [ ] Land the [v2 visual refresh and motion program](../tasks/v2-visual-refresh-program.md): DESIGN §18 tokens, lifted selection, space paper, floating surfaces, motion core and after-commit moments with Reduce Motion variants, drawn empty states, the Phosphor-b icon and curated intensity/grain. Paper and the generated WebP loops are reference only; every surface is native GPUI from `bbr-ui` tokens.
+- [x] Land the [v2 visual refresh and motion program](../tasks/v2-visual-refresh-program.md): DESIGN §18 tokens, lifted selection, space paper, floating surfaces, motion core and after-commit moments with Reduce Motion variants, drawn empty states, the Phosphor-b icon and curated intensity/grain. Paper and the generated WebP loops are reference only; every surface is native GPUI from `bbr-ui` tokens.
 
 ## Visual direction and tokens — Phase 4 start
 

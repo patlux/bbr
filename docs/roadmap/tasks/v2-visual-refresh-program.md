@@ -40,6 +40,7 @@ and ledger:
 | S9 | [brand icon](v2-brand-icon.md) | S0 |
 | S10 | [theme picker](v2-theme-picker.md) | S4 |
 | S11 | [closeout](v2-closeout.md) | all |
+| S12 | [Paper alignment](v2-paper-alignment.md) | S11 (follow-up) |
 
 ## Non-goals
 
@@ -88,10 +89,11 @@ current-delivery document records a parallel lane.
 ### Real-app E2E
 
 - [x] Each slice's affected suites green (per packet).
-- [ ] Final canonical `just e2e` aggregate without `e2e-perf`, plus
+- [x] Final canonical `just e2e` aggregate without `e2e-perf`, plus
       `e2e-peek` and `e2e-gallery`, green from the integrated commit.
-      *(31/32 suites green from `92263be8`; one portal hardening test needs
-      an unlocked session — see the [closeout](v2-closeout.md) ledger.)*
+      *(31/32 from `92263be8` in the locked session, then the portal suite
+      7/7 unlocked on the identical product tree — see the
+      [closeout](v2-closeout.md) ledger.)*
 
 ### Performance
 
@@ -140,9 +142,9 @@ Commits:                S0 907a668e · S1 cb943d27 · S2 b5eaa1d2 ·
 Functional evidence:    just verify, workspace + testkit clippy and the
                         testkit bin tests per slice (see packets).
 Real-app E2E:           per-slice affected suites green; canonical aggregate
-                        from 92263be8: 31/32 suites green, e2e-shell-portal
-                        6/7 (minimize/restore hit test blocked by the locked
-                        session's loginwindow shield).
+                        from 92263be8: 31/32 suites green while locked;
+                        e2e-shell-portal 7/7 after unlocking (65dc94d2,
+                        same product tree).
 Performance evidence:   unpassed — execution deferred by Patrick
 Roadmap/documentation updates:
                         DESIGN §18.6 all rows landed; ARCHITECTURE §9e/§9f;
@@ -156,7 +158,8 @@ Deviations:             S2 dark footer veil 5 % (DESIGN-recorded); S3 D3
                         whole curated appearance, not only the paper
                         (schema v4).
 Open blockers and non-goals:
-                        rerun `just e2e-shell-portal` in an unlocked
-                        session; performance execution deferred.
+                        none; performance execution deferred. Follow-up:
+                        the Paper comparison of 2026-09-28 opened
+                        [S12 Paper alignment](v2-paper-alignment.md).
 Worktree state:         main, serial
 ```

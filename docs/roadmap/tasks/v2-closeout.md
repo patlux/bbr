@@ -38,12 +38,11 @@ Not parallelized.
 
 ### Real-app E2E
 
-- [ ] `just e2e` aggregate without `e2e-perf`, plus `e2e-peek` and
+- [x] `just e2e` aggregate without `e2e-perf`, plus `e2e-peek` and
       `e2e-gallery`, green from the integrated commit. *(31 of 32 suites
-      green from `92263be8`; `e2e-shell-portal` is 6/7 — the
-      `hardening::host_hides_on_minimize_and_restores` AppKit hit-test
-      cannot converge while the macOS session is locked. Rerun
-      `just e2e-shell-portal` in an unlocked session.)*
+      green from `92263be8` while the session was locked; `e2e-shell-portal`
+      then 7/7 in the unlocked session on `65dc94d2`, whose product tree is
+      identical to `92263be8`.)*
 
 ### Performance
 
@@ -113,8 +112,8 @@ Real-app E2E:           canonical aggregate from 92263be8 (screen locked
                         accessibility_display observer in bbr-web-macos);
                         the suite was green in the unlocked 2026-09-27 run.
 Performance evidence:   unpassed — execution deferred
-Blocked:                owning packet native-portal-hardening; unblocker:
-                        an unlocked macOS session, then
-                        `BBR_E2E_TIMEOUT=10m just e2e-shell-portal`.
+Portal rerun:           unlocked session, 65dc94d2 (product tree = 92263be8):
+                        just e2e-shell-portal 7/7 incl.
+                        hardening::host_hides_on_minimize_and_restores.
 Worktree state:         clean after commit
 ```

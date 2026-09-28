@@ -47,7 +47,8 @@ one tinted body, a lifted selection, translucent veils, calmer floating
 surfaces and a bounded set of after-commit motion moments. Slices and
 acceptance live in the program packet.
 
-- [ ] Deliver the [v2 visual refresh and motion program](../tasks/v2-visual-refresh-program.md) (S0–S11).
+- [x] Deliver the [v2 visual refresh and motion program](../tasks/v2-visual-refresh-program.md) (S0–S11).
+- [ ] Align the shipped v2 shell with the Paper references via [S12 Paper alignment](../tasks/v2-paper-alignment.md).
 
 The sidebar media control is prioritized immediately after these slices; its
 canonical owner stays Phase 8 through the
