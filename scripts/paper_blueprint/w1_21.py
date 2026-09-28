@@ -174,7 +174,7 @@ if "S-7" in which:
     frag_rows(b, items)
     b.notes(["Chips are icon-only; the accessible name carries space and profile; colour or glyph alone never carries identity.",
              "Pointer, keyboard (⌃1 … ⌃9) and a horizontal swipe over the rail use one switch authority (P-1).",
-             "DESIGN §11.4 still says chips centre while they fit; S12 aligned them to the leading edge after Downloads (delta D-2 fixes the text)."])
+             "Target: chips start after Downloads as in the Paper reference; main and DESIGN §11.4 centre them while they fit (delta D01)."])
     print(b.finish())
 
 if "S-8" in which:

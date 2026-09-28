@@ -1821,6 +1821,10 @@ production integration).
     numbered sections above keep describing the running app until the owning
     slice lands its text and flips its §18 status row. Program packet:
     [v2 visual refresh and motion](docs/roadmap/tasks/v2-visual-refresh-program.md).
+18. **Complete-browser blueprint proposals** — **open (2026-09-28).** The
+    blueprint's *Change* and *New · proposal* boards and their questions are
+    listed in §19; each row is decided by adopting, changing or rejecting its
+    delta packet.
 
 Resolving an item means moving its decision into the relevant section above
 and updating the affected roadmap track in the same group.
@@ -1981,6 +1985,67 @@ second is replaced by the ring).
 | S10 theme picker | [theme picker](docs/roadmap/tasks/v2-theme-picker.md) | §11.3 configuration surface | landed 2026-09-28 |
 | S11 closeout | [closeout](docs/roadmap/tasks/v2-closeout.md) | §18 status, Evidence | landed 2026-09-28 |
 | S12 Paper alignment | [Paper alignment](docs/roadmap/tasks/v2-paper-alignment.md) | §2, §7, §11.3–§11.5, §11.8, §11.10, §11.11, §18.2, §18.5 | landed 2026-09-28 |
+
+## 19. Complete-browser blueprint (2026-09-28)
+
+The Paper file “BBR — Browser Shell” holds the complete browser as a target
+design ([packet](docs/roadmap/tasks/paper-browser-blueprint.md)): page 00
+index and coverage, 10 foundations, 11 building blocks, 20–26 every surface
+in light and dark, 30 the 23 process storyboards, 40 the variant matrices and
+the motion specification, 90 the decisions and the delta ledger. The Paper
+tokens mirror the palette, space-tint and theme code and are checked against
+it (`scripts/paper_blueprint/verify_tokens.py`).
+
+**Authority.** This document stays the contract. Boards marked *Shipped*
+restate it; boards marked *Change* or *New · proposal* are targets. A target
+becomes contract only when its row below is adopted and its packet lands the
+full specification in the owning section above. Until then the shipped
+sections win.
+
+| Delta | Target | Boards | Sections | Status | Packet |
+|---|---|---|---|---|---|
+| D01 | Footer chips start after Downloads | S-7 W-1 | §11.3 §11.4 §18.3 | proposed | [blueprint-footer-strip-leading](docs/roadmap/tasks/blueprint-footer-strip-leading.md) |
+| D02 | Hover reveal of a hidden rail | W-3 V-6 | §2 §11.4 §11.14 | proposed | [blueprint-sidebar-hover-reveal](docs/roadmap/tasks/blueprint-sidebar-hover-reveal.md) |
+| D03 | Address control states | S-1 M-8 | §11.5 §17.13 | proposed | [blueprint-address-states](docs/roadmap/tasks/blueprint-address-states.md) |
+| D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | §11.4 | proposed | [blueprint-palette-recents-actions](docs/roadmap/tasks/blueprint-palette-recents-actions.md) |
+| D05 | Space menu and delete confirmation | P-4 PR-07 | §11.3 §11.13 | proposed | [blueprint-space-menu-delete](docs/roadmap/tasks/blueprint-space-menu-delete.md) |
+| D06 | Create, edit and delete profiles | P-6 L-4 PR-08 | §12 | proposed | [blueprint-profile-management](docs/roadmap/tasks/blueprint-profile-management.md) |
+| D07 | Cross-profile move feedback | P-7 PR-08 | §11.3 §12 §10.9 | proposed | [blueprint-cross-profile-move-feedback](docs/roadmap/tasks/blueprint-cross-profile-move-feedback.md) |
+| D08 | Toasts and uniform surface transitions | B-7 G-7 V-6 PR-12 | §6 §18.4 §18.5 | proposed | [blueprint-feedback-toasts](docs/roadmap/tasks/blueprint-feedback-toasts.md) |
+| D09 | Peek presentation | G-8 PR-04 | §11.17 | proposed | [blueprint-peek-presentation](docs/roadmap/tasks/blueprint-peek-presentation.md) |
+| D10 | History and Clear Browsing Data | M-6 M-7 PR-22 | §11.16 | proposed | [blueprint-history-clear-data](docs/roadmap/tasks/blueprint-history-clear-data.md) |
+| D11 | Site settings and permission prompts | M-8 M-9 L-6 PR-14 | §11.5 | proposed | [blueprint-site-settings-permissions](docs/roadmap/tasks/blueprint-site-settings-permissions.md) |
+| D12 | Client certificate chooser | M-11 PR-15 | §18.4 | proposed | [blueprint-client-certificates](docs/roadmap/tasks/blueprint-client-certificates.md) |
+| D13 | Open-in-app, pop-up and link-routing UI | M-12 M-13 PR-04 PR-20 | §11.13 §18.4 | proposed | [blueprint-link-destinations](docs/roadmap/tasks/blueprint-link-destinations.md) |
+| D14 | Back / Forward history menu | W-7 M-3 | §11.14 §11.13 | proposed | [blueprint-navigation-history-menu](docs/roadmap/tasks/blueprint-navigation-history-menu.md) |
+| D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | proposed | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |
+| D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 | proposed | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |
+| D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | proposed | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
+| D18 | About and updates | L-12 | §1 §7 | proposed | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
+| D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | proposed | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |
+| D20 | New folders open in rename | S-4 PR-06 | §11.11 | proposed | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |
+| D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | proposed | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
+| D22 | Full-screen card rules under test | W-5 | §2 | proposed | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
+| D23 | Split view | G-9 G-10 PR-09 | §11.7 | proposed | [split-app-composition](docs/roadmap/tasks/split-app-composition.md) |
+| D24 | Sidebar media card | S-8 PR-17 | §11.15 | proposed | [sidebar-media-control](docs/roadmap/tasks/sidebar-media-control.md) |
+
+Open questions raised by the blueprint (board D-1); each is answered by
+adopting, changing or rejecting the linked delta:
+
+| # | Question | Delta |
+|---|---|---|
+| 1 | Adopt the 300 ms edge dwell (D02), or keep ⌘B-only? | D02 |
+| 2 | Show recents on empty input (D04), or keep the empty palette quiet? | D04 |
+| 3 | Leading edge as in Paper (D01), or keep the shipped centring and update Paper? | D01 |
+| 4 | Short name + glyph in the address (D03 closes §17.13)? | D03 |
+| 5 | History per profile with a profile filter (D10), or one merged list? | D10 |
+| 6 | Default to the last active space, with 'Ask' as an option (D13)? | D13 |
+| 7 | Introduce a toast for reversible actions (D08), or keep banners only? | D08 |
+| 8 | Read-only shortcut list in v1 (D16)? | D16 |
+| 9 | Dim the card with a 9 % wash under blocking sheets (B-6)? | D08 |
+| 10 | Stay native NSToolTip everywhere? | — |
+| 11 | Which shortcut opens a split (phase 6 open decision)? | D23 |
+| 12 | Safari and Chrome only in v1 (D15)? | D15 |
 
 ## Evidence
 

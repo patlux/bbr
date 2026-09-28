@@ -82,6 +82,7 @@ menu follow-up, which may start after F2 closeout when that territory is free.
 - [ ] Persistence/recovery states communicate trust and reversibility.
 - [ ] Downloads, permissions, errors, history, settings, Saved Pages, and onboarding use the same components and language. Bounded follow-ups: [downloads sidebar panel](../tasks/downloads-sidebar-panel.md), [find-in-page Portal bar](../tasks/find-in-page-portal-bar.md), [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md), and [B3 Saved Pages Library](../tasks/saved-pages-library.md). *(B3's production Library and exact G2/G3 stories are integrated at `492615b5`, with real-app 12/12, Command 25/25, and Gallery 22/22 evidence; performance acceptance and the broader cross-feature language/state polish remain open, so this row stays unchecked.)*
 - [ ] Every new surface ships light/dark, empty/loading/error, keyboard-focus, and reduced-motion variants.
+- [ ] Implement the adopted [complete browser blueprint](../tasks/paper-browser-blueprint.md) deltas D01–D24 (DESIGN §19); each delta packet owns its own evidence.
 
 ## Product-wide polish — Phase 9
 

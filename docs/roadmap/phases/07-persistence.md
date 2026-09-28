@@ -51,7 +51,7 @@ plus discard, no migration or compatibility path.
 - [x] Restore browser chrome first and hydrate only visible sessions. *(F3 warm-restore slice: the repository-restored snapshot maps through the portable chrome-first `HydrationPolicy` into id-preserving domain/controller restore; only the active space's visible set hydrates — the dense 500-tab real-app E2E ends with exactly one live session (two for an active split) and every other identity session-less until activation.)*
 - [x] Recover optional corrupt session state without deleting profile browsing data. *(Repository projection returns ordered typed warnings without mutating persisted state.)*
 - [x] Add checked-in migration fixtures and force-quit recovery tests. *(Migration/recovery fixtures are integrated; real-app force-quit recovery E2E `e2e_shell_persistence` proves only the last committed repository state returns after a graceful restart and after a SIGKILL force quit — for the open and the tab-reorder mutation classes — never a partial or fast-but-wrong model.)*
-- [ ] Add first-run, empty, migration-error, and recovery UI states.
+- [ ] Add first-run, empty, migration-error, and recovery UI states. *(Targets: [restore and recovery UI](../tasks/blueprint-restore-recovery-ui.md), [first run](../tasks/blueprint-first-run.md).)*
 
 Durable global Saved Page URL records, flat collections, canonical-URL
 idempotence, and the next development schema are a Phase-8 extension owned by

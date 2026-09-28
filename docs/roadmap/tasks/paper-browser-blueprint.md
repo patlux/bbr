@@ -76,7 +76,7 @@ Not parallelized. One writer works serially on one Paper file; no subagents.
 - [x] W4: system, lifecycle and split-view boards drawn and reviewed.
 - [x] W5: 23 process storyboards drawn and reviewed.
 - [x] W6: variant matrices and motion specification drawn and reviewed.
-- [ ] W7: decisions and delta ledger drawn; DESIGN.md updated; one packet
+- [x] W7: decisions and delta ledger drawn; DESIGN.md updated; one packet
       per delta; coverage check reports every row drawn.
 
 ### Real-app E2E
@@ -114,6 +114,40 @@ If Paper or its MCP endpoint is unavailable, token writes fail, or a board
 cannot be drawn without contradicting DESIGN.md in a way only Patrick can
 decide, stop with the evidence, the attempted paths, the blocker and the
 decision needed.
+
+## Delta packets
+
+W7 compares every board with main. Each difference is one delta with one
+target packet (D23 and D24 reuse the existing split and media packets).
+All are proposals until Patrick adopts the row in DESIGN §19; the Paper
+board D-2 shows the same ledger.
+
+| Delta | Title | Boards | Main today | Target packet |
+|---|---|---|---|---|
+| D01 | Footer chips start after Downloads | S-7 W-1 | Chips centre in the strip viewport while they fit (DESIGN §11.4, §18.3). | [blueprint-footer-strip-leading](blueprint-footer-strip-leading.md) |
+| D02 | Hover reveal of a hidden rail | W-3 V-6 | ⌘B hides the rail; only ⌘B or the toggle bring it back. | [blueprint-sidebar-hover-reveal](blueprint-sidebar-hover-reveal.md) |
+| D03 | Address control states | S-1 M-8 | The control shows the host only (internal pages unnamed, §17.13 open). | [blueprint-address-states](blueprint-address-states.md) |
+| D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | The empty palette waits for input; actions are result rows without a mode. | [blueprint-palette-recents-actions](blueprint-palette-recents-actions.md) |
+| D05 | Space menu and delete confirmation | P-4 PR-07 | Spaces have no chip menu and no delete surface. | [blueprint-space-menu-delete](blueprint-space-menu-delete.md) |
+| D06 | Create, edit and delete profiles | P-6 L-4 PR-08 | Profiles exist in the domain; there is no UI to create, rename or delete them. | [blueprint-profile-management](blueprint-profile-management.md) |
+| D07 | Cross-profile move feedback | P-7 PR-08 | A cross-profile move recreates the page silently. | [blueprint-cross-profile-move-feedback](blueprint-cross-profile-move-feedback.md) |
+| D08 | Toasts and uniform surface transitions | B-7 G-7 V-6 PR-12 | No toast component; zoom has no readout; sheets fade only where they are Portal surfaces. | [blueprint-feedback-toasts](blueprint-feedback-toasts.md) |
+| D09 | Peek presentation | G-8 PR-04 | The Peek bar spans the card top over the preview. | [blueprint-peek-presentation](blueprint-peek-presentation.md) |
+| D10 | History and Clear Browsing Data | M-6 M-7 PR-22 | No history surface and no clear-data control. | [blueprint-history-clear-data](blueprint-history-clear-data.md) |
+| D11 | Site settings and permission prompts | M-8 M-9 L-6 PR-14 | The permissions and site-settings contracts exist; no prompt, popover or in-use indicator. | [blueprint-site-settings-permissions](blueprint-site-settings-permissions.md) |
+| D12 | Client certificate chooser | M-11 PR-15 | Client-certificate challenges have a contract but no chooser. | [blueprint-client-certificates](blueprint-client-certificates.md) |
+| D13 | Open-in-app, pop-up and link-routing UI | M-12 M-13 PR-04 PR-20 | External schemes open known apps directly; blocked pop-ups and unknown schemes give no feedback; links from other apps always open in the last space. | [blueprint-link-destinations](blueprint-link-destinations.md) |
+| D14 | Back / Forward history menu | W-7 M-3 | Back and Forward act one step; no history list. | [blueprint-navigation-history-menu](blueprint-navigation-history-menu.md) |
+| D15 | First run and onboarding | L-1 L-2 PR-01 | A first launch opens the default empty shell. | [blueprint-first-run](blueprint-first-run.md) |
+| D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | No settings window; values live in contracts and defaults. | [blueprint-settings-window](blueprint-settings-window.md) |
+| D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | Restore is silent; unreadable or newer stores fall back without explanation. | [blueprint-restore-recovery-ui](blueprint-restore-recovery-ui.md) |
+| D18 | About and updates | L-12 | No About window beyond the default; no update channel. | [blueprint-about-updates](blueprint-about-updates.md) |
+| D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | The menu bar carries the basic items; closing a window has no reopen affordance. | [blueprint-menus-windows](blueprint-menus-windows.md) |
+| D20 | New folders open in rename | S-4 PR-06 | New folders are created as 'New Folder' and keep that name until renamed from the menu. | [blueprint-folder-rename-on-create](blueprint-folder-rename-on-create.md) |
+| D21 | Keyboard entry into the rail | PR-19 B-2 | The rail is reached through the chrome focus order only. | [blueprint-rail-focus-shortcut](blueprint-rail-focus-shortcut.md) |
+| D22 | Full-screen card rules under test | W-5 | Full-screen rules are specified in DESIGN §2 but have no dedicated evidence. | [blueprint-fullscreen-evidence](blueprint-fullscreen-evidence.md) |
+| D23 | Split view | G-9 G-10 PR-09 | Split is scheduling-deferred; no split UI ships. | [split-app-composition](split-app-composition.md) |
+| D24 | Sidebar media card | S-8 PR-17 | The media-session contract is integrated; the card is not. | [sidebar-media-control](sidebar-media-control.md) |
 
 ## Coverage matrix
 
@@ -337,8 +371,8 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 | 40 | V-4 · Reduce Motion | Shipped | §6 §18.5 | [v2-system-prefs](v2-system-prefs.md) | yes |
 | 40 | V-5 · Motion — moments | Shipped | §18.5 | [v2-motion-moments](v2-motion-moments.md) | yes |
 | 40 | V-6 · Motion — transitions | Change | §6 §18.5 | [v2-motion-core](v2-motion-core.md) | yes |
-| 90 | D-1 · Open decisions | New · proposal | §17 | paper-browser-blueprint | planned |
-| 90 | D-2 · Delta — Paper vs code | Change | all | paper-browser-blueprint | planned |
+| 90 | D-1 · Open decisions | New · proposal | §17 | paper-browser-blueprint | yes |
+| 90 | D-2 · Delta — Paper vs code | Change | all | paper-browser-blueprint | yes |
 | 30 | PR-01 · First run & onboarding | New · proposal | flow | paper-browser-blueprint | yes |
 | 30 | PR-02 · New tab from ⌘T | Shipped | flow | paper-browser-blueprint | yes |
 | 30 | PR-03 · Address, back, forward, reload | Shipped | flow | paper-browser-blueprint | yes |
@@ -367,7 +401,13 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 ## Delivery ledger
 
 ```text
-Outcome:
+Outcome:                The complete browser is drawn in Paper: 116 boards
+                        on 13 pages (index, foundations, blocks, every
+                        surface light + dark, 23 storyboards with 109
+                        frames, variant and motion matrices, decisions and
+                        the delta ledger); 118/118 coverage rows drawn;
+                        24 deltas, 22 new proposal packets plus the split
+                        and media packets; DESIGN §19 + §17 item 18.
 W0:                     2026-09-28. Eight old pages renamed "Archiv · …";
                         13 new pages (00–90). Tokens synced from the code:
                         7 values corrected (font-ui → System Sans-Serif,
@@ -466,9 +506,25 @@ W6:                     2026-09-28. Page 40 V-1 increased contrast (both
                         heartbeat), V-6 transition table with marks + menu
                         fade frames. Review fix: XL favorite tiles share the
                         rail width (four columns always).
-W7:
-Token check:            W0 verify_tokens.py: 126 checked, 0 mismatches.
-Coverage check:
-Commits:
-Worktree state:
+W7:                     2026-09-28. Page 90 D-1 open decisions (12
+                        questions, each tied to a delta) and D-2 the delta
+                        ledger (D01–D24: what main does today, the target,
+                        the packet). docs/roadmap/tasks/blueprint-*.md: 22
+                        packets on the current template, status proposed,
+                        each gated on adoption in DESIGN §19. DESIGN.md
+                        gains §19 (authority rule, delta table, questions)
+                        and §17 item 18; the UI track gets the roll-up and
+                        the phase 7/8/9 items link their target packets.
+                        Review fix: the S-7 note about chip alignment
+                        (main centres; the Paper target starts after
+                        Downloads — D01). I-1/I-2 regenerated with all
+                        waves done.
+Token check:            W0 and W7 verify_tokens.py: 126 checked, 0
+                        mismatches.
+Coverage check:         W7 check_coverage.py: boards 116/116, rows 118/118
+                        (exit 0); page counts 2·6·7·9·10·7·6·10·14·14·23·6·2.
+Commits:                7af65e0a W0 · b0f495f9 W1 · ebd209c4 W2 ·
+                        636fe632 W3 · 01f75e71 W4 · a3e21c00 W5 · 707e9a00
+                        W6 · W7 closeout commit.
+Worktree state:         main; only this packet's files staged per wave.
 ```

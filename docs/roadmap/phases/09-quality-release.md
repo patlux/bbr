@@ -14,7 +14,7 @@ The complete alpha feature set receives a deliberate product-wide quality pass a
 - [ ] Refine purposeful transitions and micro-interactions; honor Reduce Motion.
 - [ ] Verify light, dark, increased-contrast, narrow, wide, empty, dense, loading, and error variants.
 - [ ] Remove placeholder copy, glyphs, debug surfaces, and inconsistent terminology.
-- [ ] Add onboarding and first-run activation only after the real workflow exists.
+- [ ] Add onboarding and first-run activation only after the real workflow exists. *(Target: [first run](../tasks/blueprint-first-run.md).)*
 
 ## Accessibility and input
 
