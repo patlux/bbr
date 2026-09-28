@@ -369,7 +369,7 @@ def spinner(t, size=18, colour=None):
     colour = colour or t.c("accent")
     return slot(
         f'<svg width="14" height="14" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">'
-        f'<circle cx="7" cy="7" r="5.5" fill="none" stroke="{colour}" stroke-opacity="0.22" stroke-width="1.6"/>'
+        f'<circle cx="7" cy="7" r="5.5" fill="none" stroke="{colour}" opacity="0.22" stroke-width="1.6"/>'
         f'<path d="M7 1.5a5.5 5.5 0 0 1 5.5 5.5" fill="none" stroke="{colour}" stroke-width="1.6" stroke-linecap="round"/></svg>',
         size)
 
@@ -429,10 +429,10 @@ def page_placeholder(t, title="x.com", lines=6, width=640):
         f'<div style="height:10px;width:{w}%;border-radius:5px;background-color:{ink}"></div>'
         for w in [92, 84, 96, 70, 88, 60][:lines])
     return (f'<div layer-name="Web content · placeholder" style="flex:1 1 0;display:flex;flex-direction:column;gap:24px;'
-            f'padding:56px 72px;background-color:{t.c("glass")}">'
-            f'<div style="display:flex;flex-direction:column;gap:14px;width:{width}px">'
+            f'padding:56px 72px;min-width:0;overflow:hidden;background-color:{t.c("glass")}">'
+            f'<div style="display:flex;flex-direction:column;gap:14px;width:100%;max-width:{width}px">'
             f'<div style="height:22px;width:55%;border-radius:6px;background-color:{t.c("border-strong")}"></div>{bars}</div>'
-            f'<div style="display:flex;gap:16px;width:{width}px">'
+            f'<div style="display:flex;gap:16px;width:100%;max-width:{width}px">'
             + "".join(f'<div style="flex:1 1 0;height:120px;border-radius:10px;background-color:{ink}"></div>' for _ in range(3))
             + '</div></div>')
 

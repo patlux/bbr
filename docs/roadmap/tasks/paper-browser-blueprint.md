@@ -71,7 +71,7 @@ Not parallelized. One writer works serially on one Paper file; no subagents.
 - [x] W0: old pages archived; index, foundations and building blocks drawn
       and screenshot-reviewed; Paper tokens match the code.
 - [x] W1: shell, sidebar, spaces and profiles boards drawn and reviewed.
-- [ ] W2: command and content/glass boards drawn and reviewed.
+- [x] W2: command and content/glass boards drawn and reviewed.
 - [ ] W3: menus and panels boards drawn and reviewed.
 - [ ] W4: system, lifecycle and split-view boards drawn and reviewed.
 - [ ] W5: 23 process storyboards drawn and reviewed.
@@ -123,7 +123,7 @@ is read from the Paper file.
 <!-- coverage:start -->
 | Source | Item | Artboards | Drawn |
 |---|---|---|---|
-| DESIGN §2 | Composition, materials, content card, hairlines | F-4 · Space, radius, elevation, materials; W-1 · Shell — standard; G-1 · Glass — before attach & blank | planned |
+| DESIGN §2 | Composition, materials, content card, hairlines | F-4 · Space, radius, elevation, materials; W-1 · Shell — standard; G-1 · Glass — before attach & blank | yes |
 | DESIGN §3 | Colour tokens — neutrals, accent, status, selection | F-1 · Colour — neutrals, accent, status | yes |
 | DESIGN §3.4 | Increased-contrast mode | F-1 · Colour — neutrals, accent, status; V-1 · Increased contrast | planned |
 | DESIGN §4 | Typography and truncation | F-3 · Type & density; S-5 · Tab rows in context | yes |
@@ -139,20 +139,20 @@ is read from the Paper file.
 | DESIGN §10.4 | State selected | B-3 · Rail rows — §10 states; S-5 · Tab rows in context | yes |
 | DESIGN §10.5 | State loading | B-3 · Rail rows — §10 states; B-7 · Feedback — progress, attention, banners; W-6 · Shell — page loading | yes |
 | DESIGN §10.6 | State attention | B-3 · Rail rows — §10 states; B-7 · Feedback — progress, attention, banners; S-5 · Tab rows in context | yes |
-| DESIGN §10.7 | State error | B-3 · Rail rows — §10 states; G-5 · Glass — load errors | planned |
+| DESIGN §10.7 | State error | B-3 · Rail rows — §10 states; G-5 · Glass — load errors | yes |
 | DESIGN §10.8 | State disabled | B-1 · Buttons & keys; B-3 · Rail rows — §10 states; W-7 · Shell — titlebar navigation states | yes |
 | DESIGN §10.9 | State dragging / drag-target | B-3 · Rail rows — §10 states; S-9 · Drag in flight | yes |
 | DESIGN §10.10 | State focused (keyboard) | B-2 · Fields, toggles & focus; B-3 · Rail rows — §10 states | yes |
-| DESIGN §10.11 | State unresponsive | B-3 · Rail rows — §10 states; G-4 · Glass — unresponsive page | planned |
+| DESIGN §10.11 | State unresponsive | B-3 · Rail rows — §10 states; G-4 · Glass — unresponsive page | yes |
 | DESIGN §11.1 | Vertical tab row | B-3 · Rail rows — §10 states; S-5 · Tab rows in context | yes |
 | DESIGN §11.2 | Pinned tab | S-3 · Space heading & pinned tabs; S-9 · Drag in flight | yes |
 | DESIGN §11.3 | Space chips, profile context, configuration | S-7 · Footer strip; P-1 · Space switching; P-2 · Space configuration; P-3 · New space; P-4 · Space menu & delete | yes |
-| DESIGN §11.4 | Sidebar and command surfaces | W-1 · Shell — standard; S-6 · New Tab row & staged tab; C-1 · ⌘T — empty with recents; C-2 · ⌘T — results by kind; C-6 · ⌘L — edit address | planned |
-| DESIGN §11.5 | Address control | S-1 · Address control; G-7 · Page zoom | planned |
+| DESIGN §11.4 | Sidebar and command surfaces | W-1 · Shell — standard; S-6 · New Tab row & staged tab; C-1 · ⌘T — empty with recents; C-2 · ⌘T — results by kind; C-6 · ⌘L — edit address | yes |
+| DESIGN §11.5 | Address control | S-1 · Address control; G-7 · Page zoom | yes |
 | DESIGN §11.6 | Dense list (500 tabs) | W-8 · Shell — dense list (500 tabs) | yes |
 | DESIGN §11.7 | Split preview / split view | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | planned |
-| DESIGN §11.8 | Empty, crash and load-error panes | G-2 · Glass — empty space; G-3 · Glass — crashed page; G-5 · Glass — load errors | planned |
-| DESIGN §11.8a | Unresponsive renderer pane | G-4 · Glass — unresponsive page | planned |
+| DESIGN §11.8 | Empty, crash and load-error panes | G-2 · Glass — empty space; G-3 · Glass — crashed page; G-5 · Glass — load errors | yes |
+| DESIGN §11.8a | Unresponsive renderer pane | G-4 · Glass — unresponsive page | yes |
 | DESIGN §11.9 | Missing favicon and long titles | S-5 · Tab rows in context; B-4 · Tiles, chips & badges | yes |
 | DESIGN §11.10 | Favorites grid | S-2 · Favorites grid; S-9 · Drag in flight | yes |
 | DESIGN §11.11 | Folders | S-4 · Folders; M-2 · Favorite & folder menus | planned |
@@ -192,7 +192,7 @@ is read from the Paper file.
 | Phase 8 | Pop-up / new-window policy | M-13 · Pop-ups & new windows; PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
 | Phase 8 | Renderer hang: responsive chrome | G-4 · Glass — unresponsive page; PR-13 · Errors & recovery | planned |
 | Phase 8 | Empty, loading, error, cancellation, destructive states | G-1 · Glass — before attach & blank; G-2 · Glass — empty space; G-5 · Glass — load errors; P-4 · Space menu & delete; M-7 · Clear browsing data; B-7 · Feedback — progress, attention, banners | planned |
-| Phase 8 | Portal host (floating surfaces above web) | B-6 · Floating shells; G-6 · Find in page; G-8 · Peek preview | planned |
+| Phase 8 | Portal host (floating surfaces above web) | B-6 · Floating shells; G-6 · Find in page; G-8 · Peek preview | yes |
 | Phase 9 | Light, dark, IC, narrow, wide, empty, dense, loading, error variants | V-1 · Increased contrast; V-2 · Space paper matrix; V-3 · Density S · N · XL; W-4 · Shell — narrow & wide windows; W-8 · Shell — dense list (500 tabs) | planned |
 | Phase 9 | Purposeful transitions, Reduce Motion | V-4 · Reduce Motion; V-5 · Motion — moments; V-6 · Motion — transitions | planned |
 | Phase 9 | Onboarding and first-run activation | L-1 · First run — welcome; L-2 · First run — import, default browser, first space; PR-01 · First run & onboarding | planned |
@@ -222,22 +222,22 @@ is read from the Paper file.
 | E2E shell-organize | Folders and organized area | S-4 · Folders; PR-06 · Organize — folders & drag rules | planned |
 | E2E shell-tab-menu | Tab menu | M-1 · Tab menu | planned |
 | E2E shell-hover | Hover and press | B-3 · Rail rows — §10 states | yes |
-| E2E shell-command | ⌘T/⌘L command surfaces | C-1 · ⌘T — empty with recents; C-2 · ⌘T — results by kind; C-3 · ⌘T — no match & web search; C-4 · ⌘T — actions; C-5 · ⌘T — tab in another space or profile; C-6 · ⌘L — edit address | planned |
+| E2E shell-command | ⌘T/⌘L command surfaces | C-1 · ⌘T — empty with recents; C-2 · ⌘T — results by kind; C-3 · ⌘T — no match & web search; C-4 · ⌘T — actions; C-5 · ⌘T — tab in another space or profile; C-6 · ⌘L — edit address | yes |
 | E2E shell-saved-pages(-library) | Saved Pages and Library | M-5 · Saved Pages Library; C-2 · ⌘T — results by kind | planned |
 | E2E shell-new-window | New-window requests | M-13 · Pop-ups & new windows; W-9 · Shell — several windows | planned |
 | E2E background-links | Background link tabs | PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
 | E2E web-navigation-gestures | Navigation gestures | PR-03 · Address, back, forward, reload | planned |
-| E2E peek | Peek preview | G-8 · Peek preview | planned |
+| E2E peek | Peek preview | G-8 · Peek preview | yes |
 | E2E shell-persistence | Restore, space paper, activation | L-10 · Session restore; P-2 · Space configuration | planned |
 | E2E shell-portal | Portal host above web | B-6 · Floating shells | yes |
-| E2E shell-find | Find bar | G-6 · Find in page | planned |
-| E2E shell-zoom | Zoom chip | G-7 · Page zoom; S-1 · Address control | planned |
+| E2E shell-find | Find bar | G-6 · Find in page | yes |
+| E2E shell-zoom | Zoom chip | G-7 · Page zoom; S-1 · Address control | yes |
 | E2E shell-context-menu | Page/favorite/folder menus | M-2 · Favorite & folder menus; M-3 · Page menu & web menus | planned |
 | E2E shell-dense | Dense list | W-8 · Shell — dense list (500 tabs) | yes |
 | E2E shell-downloads | Downloads panel | M-4 · Downloads panel | planned |
 | E2E external-url | External URL opening | M-12 · Open in another app | planned |
-| E2E shell-errors | Error surfaces and illustrations | G-2 · Glass — empty space; G-3 · Glass — crashed page; G-5 · Glass — load errors | planned |
-| E2E shell-responsiveness | Unresponsive renderer | G-4 · Glass — unresponsive page | planned |
+| E2E shell-errors | Error surfaces and illustrations | G-2 · Glass — empty space; G-3 · Glass — crashed page; G-5 · Glass — load errors | yes |
+| E2E shell-responsiveness | Unresponsive renderer | G-4 · Glass — unresponsive page | yes |
 | E2E auth | Authentication sheet | M-10 · Sign-in challenges | planned |
 | E2E gallery | Component Gallery stories | B-1 · Buttons & keys; B-2 · Fields, toggles & focus; B-3 · Rail rows — §10 states; B-4 · Tiles, chips & badges; B-5 · Menu & result items; B-6 · Floating shells; B-7 · Feedback — progress, attention, banners | yes |
 | E2E perf | Presentation budgets (no visual surface) | V-6 · Motion — transitions | planned |
@@ -287,20 +287,20 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 | 22 | P-5 · Profile identity in chrome | Shipped | §12 | [cross-context-profile-hint](cross-context-profile-hint.md) | yes |
 | 22 | P-6 · Profiles — create & edit | New · proposal | §12 | paper-browser-blueprint | yes |
 | 22 | P-7 · Move a tab across profiles | Change | §12 PRODUCT | [browser-controller](browser-controller.md) | yes |
-| 23 | C-1 · ⌘T — empty with recents | Shipped | §11.4 §18.4 | [browser-mvp-palette-ui](browser-mvp-palette-ui.md) | planned |
-| 23 | C-2 · ⌘T — results by kind | Shipped | §11.4 §11.16 §18.4 | [v2-paper-alignment](v2-paper-alignment.md) | planned |
-| 23 | C-3 · ⌘T — no match & web search | Shipped | §11.4 | [general-search-settings-contract](general-search-settings-contract.md) | planned |
-| 23 | C-4 · ⌘T — actions | Change | §11.4 | [command-composition](command-composition.md) | planned |
-| 23 | C-5 · ⌘T — tab in another space or profile | Shipped | §11.4 §12 | [cross-context-profile-hint](cross-context-profile-hint.md) | planned |
-| 23 | C-6 · ⌘L — edit address | Shipped | §11.4 §11.5 §18.4 | [url-address-control-palette](url-address-control-palette.md) | planned |
-| 24 | G-1 · Glass — before attach & blank | Shipped | §2 §13 | [seated-content-card](seated-content-card.md) | planned |
-| 24 | G-2 · Glass — empty space | Shipped | §11.8 D10 | [v2-empty-states](v2-empty-states.md) | planned |
-| 24 | G-3 · Glass — crashed page | Shipped | §11.8 D10 | [v2-empty-states](v2-empty-states.md) | planned |
-| 24 | G-4 · Glass — unresponsive page | Shipped | §11.8a | [renderer-isolation-unresponsive-tabs](renderer-isolation-unresponsive-tabs.md) | planned |
-| 24 | G-5 · Glass — load errors | Shipped | §11.8 §10.7 | [error-surface-contract](error-surface-contract.md) | planned |
-| 24 | G-6 · Find in page | Shipped | §11.12 | [find-in-page-portal-bar](find-in-page-portal-bar.md) | planned |
-| 24 | G-7 · Page zoom | Change | §11.5 | [site-settings-zoom-contract](site-settings-zoom-contract.md) | planned |
-| 24 | G-8 · Peek preview | Shipped | §11.17 | [link-preview-peek](link-preview-peek.md) | planned |
+| 23 | C-1 · ⌘T — empty with recents | Shipped | §11.4 §18.4 | [browser-mvp-palette-ui](browser-mvp-palette-ui.md) | yes |
+| 23 | C-2 · ⌘T — results by kind | Shipped | §11.4 §11.16 §18.4 | [v2-paper-alignment](v2-paper-alignment.md) | yes |
+| 23 | C-3 · ⌘T — no match & web search | Shipped | §11.4 | [general-search-settings-contract](general-search-settings-contract.md) | yes |
+| 23 | C-4 · ⌘T — actions | Change | §11.4 | [command-composition](command-composition.md) | yes |
+| 23 | C-5 · ⌘T — tab in another space or profile | Shipped | §11.4 §12 | [cross-context-profile-hint](cross-context-profile-hint.md) | yes |
+| 23 | C-6 · ⌘L — edit address | Shipped | §11.4 §11.5 §18.4 | [url-address-control-palette](url-address-control-palette.md) | yes |
+| 24 | G-1 · Glass — before attach & blank | Shipped | §2 §13 | [seated-content-card](seated-content-card.md) | yes |
+| 24 | G-2 · Glass — empty space | Shipped | §11.8 D10 | [v2-empty-states](v2-empty-states.md) | yes |
+| 24 | G-3 · Glass — crashed page | Shipped | §11.8 D10 | [v2-empty-states](v2-empty-states.md) | yes |
+| 24 | G-4 · Glass — unresponsive page | Shipped | §11.8a | [renderer-isolation-unresponsive-tabs](renderer-isolation-unresponsive-tabs.md) | yes |
+| 24 | G-5 · Glass — load errors | Shipped | §11.8 §10.7 | [error-surface-contract](error-surface-contract.md) | yes |
+| 24 | G-6 · Find in page | Shipped | §11.12 | [find-in-page-portal-bar](find-in-page-portal-bar.md) | yes |
+| 24 | G-7 · Page zoom | Change | §11.5 | [site-settings-zoom-contract](site-settings-zoom-contract.md) | yes |
+| 24 | G-8 · Peek preview | Shipped | §11.17 | [link-preview-peek](link-preview-peek.md) | yes |
 | 24 | G-9 · Split view — two panes | Change | §11.7 | [split-app-composition](split-app-composition.md) | planned |
 | 24 | G-10 · Split view — create, resize, compact | Change | §11.7 | [split-app-composition](split-app-composition.md) | planned |
 | 25 | M-1 · Tab menu | Shipped | §11.13 | [tab-favorite-context-menus](tab-favorite-context-menus.md) | planned |
@@ -404,7 +404,20 @@ W1:                     2026-09-28. Page 20 W-1…W-9 (standard, tint,
                         focus ring clipping, chip targets, token-only tint
                         cross-fade layer (no colour-mix), config panel
                         widths, drag label clipping.
-W2:
+W2:                     2026-09-28. Page 23 C-1…C-6 (⌘T empty with recents
+                        proposal, results by kind, no match, > actions
+                        proposal, cross-space/profile results + one-shot
+                        hint, ⌘L overlay with the URL selected), page 24
+                        G-1…G-8 (canvas before attach / blank / page, empty
+                        space with the D10 cards, crash heartbeat,
+                        unresponsive Wait/Reload/Close, offline / DNS /
+                        certificate errors with the code's copy, find bar
+                        incl. no match, zoom readout proposal, Peek incl.
+                        loading and crashed). Review fixes: SVG
+                        fill-/stroke-opacity is ignored by Paper (switched
+                        to opacity), card min-width clipping, placeholder
+                        max-width, state rows fitted to the board, the >
+                        prefix text.
 W3:
 W4:
 W5:
