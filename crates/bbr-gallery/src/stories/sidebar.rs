@@ -187,7 +187,7 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Sidebar", children)
+    story_page(ctx, "Sidebar", children)
 }
 
 /// The Gallery-owned §11.4 field anchor placeholder: an invisible element

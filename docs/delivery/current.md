@@ -144,7 +144,7 @@ explicit review before any new baseline acceptance.
 
 | ID | Slice | Status | Worktree | Owner | Contract | Next gate |
 |---|---|---|---|---|---|---|
-| VISUAL-GALLERY | Native Gallery coverage | `blocked` | existing `bbr-visual-snapshots`, `parallel/visual-snapshots`; clean activation base `a04d708e41e3785a6a3ac60124df820675341d27` | same sole writer `01a0e635-9c12-70d8-8376-9a6ab8aeabd5`; no handoff | [Gallery visual coverage](../roadmap/tasks/gallery-visual-coverage.md) | Unlock macOS for fresh native endpoint evidence; inventory/framing and sealed comparator adapter remain unfinished, no Gallery baseline accepted |
+| VISUAL-GALLERY | Offscreen Metal Gallery coverage | `running` | existing `bbr-visual-snapshots`, `parallel/visual-snapshots`; clean activation base `a04d708e41e3785a6a3ac60124df820675341d27` | same sole writer `01a0e635-9c12-70d8-8376-9a6ab8aeabd5`; no handoff | [Gallery visual coverage](../roadmap/tasks/gallery-visual-coverage.md) | Windowless Metal probe delivered with exact full repeats; locked-session proof, supported-state/framing audit and sealed comparator integration remain open; no Gallery baseline accepted |
 
 Activation preflight: clean index/worktree at the named base, no lane test
 processes or Git index locks. Existing GUI lock remains mandatory. Main is at
@@ -206,9 +206,72 @@ Titlebar/Portal blockers remain unchanged; performance remains deferred.
 
 Checkpoint parallelism audit: no other lane/subagent/worktree is authorized.
 Product/Paper remains with its existing owner; Split/media/performance are not
-runnable here. Preserve this lane's prototype dirty tree and ownership. Resume
-with an unlocked session, capture readiness diagnosis and coverage audit before
-accepting any Gallery baseline or activating a browser-composition slice.
+runnable here. Preserve this lane's prototype dirty tree and ownership.
+
+Headless continuation (Patrick approved): replace native-window scheduling with
+pinned `HeadlessAppContext`, injected macOS text system and the existing offscreen
+Metal renderer. No NSWindow, activation, DisplayLink or hidden-window fallback.
+Keep the existing host lock through process cleanup for conservative GPU
+serialization. First prove small probes, animation endpoints, independent exact
+repeats and locked-session operation without changing the user's lock state;
+then expand. Saved native probes are diagnostic references, not baseline authority.
+No additional lane, subagent, worktree or browser-composition scope is activated.
+
+### Offscreen Metal foundation checkpoint
+
+Implemented `just gallery-capture [story-id]`: optimized, production Gallery
+components with real macOS text and existing Metal offscreen textures, no native
+window/event loop/activation. Registry-derived selector/theme cases, measured
+pagination, production-duration finite opacity endpoints, arena clearing and
+ordered app shutdown are explicit. The small bounded adapter resolves the mbx
+artifact, retains the existing host lock through process-group cleanup and
+rejects missing/extra/duplicate pages, broken child ranges and wrong dimensions.
+This is intentionally an **unsealed probe**, not comparator/baseline acceptance.
+
+Runtime evidence:
+
+- `/private/tmp/bbr-gallery-headless-full-a` and `-b`: each 49 stories, 1,260
+  selector/theme cases, 1,872 PNG pages plus completion TSV; all files byte-exact
+  across independent processes. Measured wrapper wall time 50.64s / 50.26s.
+  CoreGraphics observations: 838 / 822 samples, zero native producer windows.
+- Compared with saved native `bbr-gallery-native-settled-c`: 1,860 PNGs identical;
+  only the 12 known Tab Row attention-dot pages differ. Each difference is
+  confined to its 16×16-pixel dot (density-specific y); the production-duration
+  endpoint is now repeatable. No mask, tolerance, baseline or production change.
+- Real recipe run `reports/visual/gallery-probes/1790594701123197000-6956`:
+  1,260 cases / 1,872 validated pages, 50.95s capture+validation; all PNGs and TSV
+  byte-exact with independent A. Focused Command observer run
+  `/private/tmp/bbr-gallery-headless-observed-final`: 328 observations, no native
+  window, zero producer-frontmost samples, same foreground PID before/after.
+- Every observation reported an on-console session with no locked flag; **locked
+  operation is still unproven**. The user's session was never locked/unlocked by
+  tooling. Metal API availability alone is not treated as locked-session proof.
+- Two first pilots exposed and fixed lifecycle errors: typed WindowHandle update
+  leased Root during explicit draw; app context initially dropped before the held
+  Gallery entity. Untyped app update and entity-before-context drop correct both.
+  The completion marker is now written only after successful shutdown.
+
+Verification: 150 normal Gallery tests / 156 capture-feature tests; normal and
+capture-feature all-target Clippy with `-D warnings`; 48/48 semantic Gallery E2E
+both normally (24.10s) and with capture enabled (24.34s measured); format and
+roadmap checks. Final `just visual-test`: 25/25 Python adapter/probe tests and
+29/29 unchanged upstream contracts, including the added lock-ownership contract. A GC-evicted mbx target
+symlink exposed an existing provenance bug, fixed separately in `7be94ca` after
+a red regression, without touching comparator sources or weakening file checks.
+
+Logs: `/tmp/bbr-gallery-headless-{build,full-a,full-b,final-gates,e2e,recipe,final-contracts,observed-final}.log`,
+`/tmp/bbr-gallery-visual-contracts.log`; observation JSONs beside the temporary
+probe directories. Throughput is tooling evidence, not product performance.
+Self-review checked dependency boundaries, real renderer/text injection, no
+window fallback, finite readiness, cleanup, completeness and acceptance limits.
+
+Next bounded work remains the supported-state/applicability and nested/shadow
+framing audit, then sealed unchanged-comparator integration and HTML review.
+Locked-session proof awaits an actually locked host, not a tooling-induced lock.
+No full acceptance, functional aggregate rerun, performance, browser-composition
+activation, baseline acceptance, merge, push or handoff is claimed. Final
+parallelism audit: only this writer is authorized; other owners and deferrals
+remain untouched. The current checkpoint does not activate additional lanes.
 
 ## Post-F2a parallel wave
 

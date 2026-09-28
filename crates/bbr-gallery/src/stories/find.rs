@@ -197,5 +197,5 @@ pub fn render_find_bar(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Find bar", children)
+    story_page(ctx, "Find bar", children)
 }

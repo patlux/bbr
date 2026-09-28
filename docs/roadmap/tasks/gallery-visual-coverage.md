@@ -5,16 +5,18 @@ Parents: [Phase 4](../phases/04-ui-shell.md) · [Testing track](../tracks/testin
 ## Outcome
 
 Every registered Gallery story and its finite supported visual-state inventory
-is discoverable and captured through the native optimized GPUI renderer, with
-complete component framing, exact comparisons, HTML review and explicit
+is discoverable and captured through the pinned GPUI offscreen Metal renderer,
+with real macOS text shaping and no native window or focus takeover, complete
+component framing, exact comparisons, HTML review and explicit
 baseline acceptance. Coverage failures cannot silently remove cases.
 
 ## Scope
 
 - Audit the existing catalog, state selectors, valid/rejected fixture matrices
   and interactive controls. Reuse those authorities rather than copying them.
-- Add a dev-only native capture entrypoint to the Gallery. Capture real
-  production components without the catalog sidebar or recorder noise;
+- Add a dev-only windowless capture entrypoint to the Gallery, using the pinned
+  HeadlessAppContext with real macOS text and Metal (not no-op test pixels).
+  Capture real production components without the catalog sidebar or recorder noise;
   preserve component anatomy, fonts, shadows and callback/model boundaries.
 - Capture Light/Dark and applicable contrast/density states. Inventory records
   represented states and explicit exclusions, including unsupported states.
@@ -55,7 +57,11 @@ fixtures, persistence or command runtimes. Keep normal Gallery behavior and
 semantic E2E intact. Capture state must be deterministic and semantically
 ready; no sleeps/pixel-stability loop. Detect clipping rather than accept a
 scroll viewport as full coverage. Use mbx, hard deadlines and the existing
-host-wide GUI lock through descendant cleanup. No mutation of other worktrees.
+host-wide GUI lock through descendant cleanup, conservatively retained for GPU
+serialization even though the producer opens no native window. No mutation of
+other worktrees. Do not hide/offscreen-position an NSWindow as a headless fallback.
+Prove locked-session operation on the host before claiming it; do not change the
+user's lock state. Native browser/window/WebKit E2Es remain separate.
 
 ## Evidence
 
@@ -69,8 +75,10 @@ host-wide GUI lock through descendant cleanup. No mutation of other worktrees.
 
 ### Real-app E2E
 
-- [ ] Native optimized Gallery captures use production story renderers and
-  deterministic appearance, state, content bounds and backing scale.
+- [ ] Offscreen optimized Gallery captures use production story renderers, real
+  macOS text/Metal and deterministic appearance, state, content bounds and scale.
+- [ ] No native window/focus takeover; locked-session operation and repeatability
+  have runtime evidence, with differences from saved native references explained.
 - [ ] Each supported inventory case is fully framed and visually reviewed.
 - [ ] Two independent captures match exactly; missing baselines initially fail
   and every accepted case is explicitly named after review.
@@ -122,8 +130,13 @@ Motion; family-specific density and named accessibility requirements remain
 explicit. Regression coverage checks model tint/geometry and natural production
 menu layout rather than metadata alone. No bbr-ui or browser product change.
 
-The native capture prototype remains uncommitted and unaccepted. Registry state
-selectors are not yet an audited all-supported-state inventory; nested framing,
-interactive-state applicability and sealed comparator integration remain open.
-Static endpoint waits do not prove animation. Volatile owner/base/status/evidence
-and the unlocked-session blocker live in [Current delivery](../../delivery/current.md).
+The next bounded increment supplies the windowless optimized Metal producer and
+`just gallery-capture [story-id]` with a completeness-checked but unsealed probe
+adapter. Registry state selectors are not yet an audited all-supported-state
+inventory; nested framing, interactive-state applicability, locked-session proof
+and sealed comparator integration remain open. Static endpoint waits do not prove
+animation. Volatile owner/base/status and headless runtime evidence live in
+[Current delivery](../../delivery/current.md).
+Patrick approved the windowless path after the visible-window producer stalled
+with a locked macOS session. The existing pinned renderer is reused unchanged;
+no GPUI upgrade, renderer fork, simulated text or synthesized pixels is allowed.

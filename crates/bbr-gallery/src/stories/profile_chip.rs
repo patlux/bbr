@@ -135,5 +135,5 @@ pub fn render_profile_chip(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Profile chip (S/N/XL)", children)
+    story_page(ctx, "Profile chip (S/N/XL)", children)
 }

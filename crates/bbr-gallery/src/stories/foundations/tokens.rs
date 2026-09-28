@@ -15,7 +15,7 @@ pub fn render_tokens(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let p = theme.palette;
     story_page(
-        theme,
+        ctx,
         "Tokens — surfaces, materials, elevation",
         vec![
             section_heading(theme, "Materials"),
@@ -95,7 +95,7 @@ pub fn render_density(ctx: &StoryContext) -> AnyElement {
     .collect();
     let mut children = vec![header];
     children.extend(rows);
-    story_page(theme, "Density — S / N / XL geometry", children)
+    story_page(ctx, "Density — S / N / XL geometry", children)
 }
 
 /// The §8 density geometry value for one token at one density.
@@ -162,7 +162,7 @@ pub fn render_elevation(ctx: &StoryContext) -> AnyElement {
             .child("Floating surface sample")
             .into_any(),
     );
-    story_page(theme, "Elevation", children)
+    story_page(ctx, "Elevation", children)
 }
 
 /// §3 color tokens per mode+contrast with the derived contrast ratio.
@@ -252,5 +252,5 @@ pub fn render_color(ctx: &StoryContext) -> AnyElement {
     ];
     children.extend(rows);
     children.extend(super::paper::paper_sections(theme));
-    story_page(theme, "Color", children)
+    story_page(ctx, "Color", children)
 }

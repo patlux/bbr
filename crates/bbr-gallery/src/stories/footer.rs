@@ -162,5 +162,5 @@ pub fn render_footer(ctx: &StoryContext) -> AnyElement {
         "footer_ids",
         &format!("{} ids — {}", ids.len(), ids.join(" · ")),
     ));
-    story_page(theme, "Footer", children)
+    story_page(ctx, "Footer", children)
 }

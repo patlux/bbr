@@ -10,6 +10,11 @@ description = "BBR Gallery — dev-only keyboard-first component browser (never 
 name = "bbr-gallery"
 path = "src/main.rs"
 
+[features]
+default = []
+# Native readback is dev-tool opt-in, never part of the normal Gallery build.
+visual-capture = ["gpui/test-support", "gpui_platform/test-support"]
+
 [dependencies]
 bbr-ui = { path = "../bbr-ui" }
 # The single hue/identity authority (bbr_domain::ProfileHue) the §12

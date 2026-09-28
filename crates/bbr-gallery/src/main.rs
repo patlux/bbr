@@ -131,6 +131,13 @@ mod tree;
 #[cfg(target_os = "macos")]
 mod tree_surface;
 
+#[cfg(all(target_os = "macos", feature = "visual-capture"))]
+mod capture;
+#[cfg(all(target_os = "macos", feature = "visual-capture"))]
+mod capture_cases;
+#[cfg(all(target_os = "macos", feature = "visual-capture"))]
+mod capture_page;
+
 #[cfg(test)]
 mod dependency_contract;
 #[cfg(all(test, target_os = "macos"))]
@@ -175,7 +182,17 @@ pub fn open_window(
     gpui::WindowHandle<gpui_component::Root>,
     Entity<app::GalleryApp>,
 ) {
-    let options = window_options(cx);
+    open_window_with_options(cx, window_options(cx))
+}
+
+#[cfg(target_os = "macos")]
+pub fn open_window_with_options(
+    cx: &mut App,
+    options: WindowOptions,
+) -> (
+    gpui::WindowHandle<gpui_component::Root>,
+    Entity<app::GalleryApp>,
+) {
     let mut entity: Option<Entity<app::GalleryApp>> = None;
     let window = cx
         .open_window(options, |window, cx| {
@@ -193,6 +210,10 @@ pub fn open_window(
 
 #[cfg(target_os = "macos")]
 fn main() {
+    #[cfg(feature = "visual-capture")]
+    if capture::cli() {
+        return;
+    }
     let application = gpui_platform::application();
     application.run(move |cx: &mut App| {
         // The production gpui-component integration pattern the Core

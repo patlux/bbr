@@ -171,7 +171,7 @@ pub fn render_address_control(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Address control", children)
+    story_page(ctx, "Address control", children)
 }
 
 /// §11.5 Command staging: the production `bbr-ui` `staging_surface`
@@ -257,5 +257,5 @@ pub fn render_command_staging(ctx: &StoryContext) -> AnyElement {
         ),
     ];
     children.extend(families);
-    story_page(theme, "Command staging", children)
+    story_page(ctx, "Command staging", children)
 }

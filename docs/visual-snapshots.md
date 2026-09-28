@@ -93,6 +93,43 @@ Source changes after capture invalidate comparison/acceptance; take a fresh
 run instead of resealing old images. A hash seal detects stale inputs; it is
 not authentication of a human review.
 
+## Windowless Gallery probes
+
+```sh
+just gallery-capture       # all registered selector/theme cases
+just gallery-capture 22    # one registry story: Tab Row
+```
+
+This separate dev-only producer uses pinned GPUI `HeadlessAppContext` with the
+real macOS font-kit text system and `current_headless_renderer()` (Metal). It
+creates no NSWindow, activates no application, uses no DisplayLink and never
+falls back to a hidden native window. The ordinary interactive `just gallery`
+remains unchanged. Browser/WebKit/native-window E2Es are **not** made headless.
+macOS and a working Metal device are required; a Linux/server substitute is not
+claimed. Locked-session operation still needs direct runtime evidence.
+
+The optimized binary renders the same Gallery entities, `gpui_component::Root`
+and production story children. Pages are 1200×1000 points at fixed 2×. Direct
+children are measured and paginated without rescaling or splitting a child;
+oversized content fails. Finite Reduced Motion opacity endpoints use production
+durations and layout timestamps, not sleeps, image polling or a simulated clock.
+This proves static endpoints, not animation or native interaction behavior.
+
+The recipe resolves the executable from mbx artifact output and retains the
+common host lock for conservative GPU serialization through timeout/process-group
+cleanup. Build: 900s; producer: 600s; lock wait: existing repository policy;
+outer recipe: `BBR_VISUAL_TIMEOUT` (60m default). Output goes to a fresh ignored
+`reports/visual/gallery-probes/<run>` directory. `coverage.tsv` is written only
+after all pages and app shutdown succeed. The adapter checks case completeness,
+contiguous child ranges, exact page names/dimensions and no extra output.
+
+**These are unsealed probes, not accepted baselines or all-state coverage.** The
+registry selector/appearance matrix does not yet audit interactive states,
+family overrides/redundancy or nested/shadow framing. Gallery comparator config,
+source/environment sealing, HTML review and explicit acceptance remain in the
+[coverage packet](roadmap/tasks/gallery-visual-coverage.md). Do not feed these
+probe directories to the existing eight-case browser acceptance command.
+
 ## Updating the shared tool
 
 Import only a reviewed immutable CLI revision, stage it outside the repository

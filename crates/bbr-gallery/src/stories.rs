@@ -293,10 +293,15 @@ pub fn catalog() -> CatalogRegistry {
 /// A story page scaffold: a scrollable column with a `type:title` header
 /// and the story content.
 pub fn story_page(
-    theme: &bbr_ui::theme::Theme,
+    ctx: &crate::registry::StoryContext,
     title: &str,
     children: Vec<AnyElement>,
 ) -> AnyElement {
+    #[cfg(feature = "visual-capture")]
+    if ctx.capture.is_some() {
+        return crate::capture_page::render(ctx, title, children);
+    }
+    let theme = ctx.theme;
     div()
         .id("bbr-gallery-story-page")
         .debug_selector(|| "bbr-gallery-story-page".to_string())

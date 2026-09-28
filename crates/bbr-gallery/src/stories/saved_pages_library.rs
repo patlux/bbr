@@ -20,8 +20,8 @@ use crate::stories::{section_heading, story_page, value_row};
 
 /// The shared no-op body for a Library story rendered without its context
 /// (defensive only — the app always supplies the context).
-fn missing_context(theme: &bbr_ui::theme::Theme, title: &str) -> AnyElement {
-    story_page(theme, title, Vec::new())
+fn missing_context(ctx: &StoryContext, title: &str) -> AnyElement {
+    story_page(ctx, title, Vec::new())
 }
 
 /// A `self_start` container that hugs its child so its debug bounds equal
@@ -53,7 +53,7 @@ fn row_slot(bookmark: u64, child: impl IntoElement) -> AnyElement {
 pub fn render_library_row(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(library) = ctx.library.as_ref() else {
-        return missing_context(theme, "Library row");
+        return missing_context(ctx, "Library row");
     };
     let (rows, editing, draft) = library_row_fixture(ctx.state);
     let row_elements: Vec<AnyElement> = rows
@@ -92,7 +92,7 @@ pub fn render_library_row(ctx: &StoryContext) -> AnyElement {
         ),
     ];
     children.extend(row_elements);
-    story_page(theme, "Library row", children)
+    story_page(ctx, "Library row", children)
 }
 
 /// §11.16 flat collection row: the production `bbr-ui` collection row with
@@ -101,7 +101,7 @@ pub fn render_library_row(ctx: &StoryContext) -> AnyElement {
 pub fn render_library_collection_row(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(library) = ctx.library.as_ref() else {
-        return missing_context(theme, "Library collection row");
+        return missing_context(ctx, "Library collection row");
     };
     let rows: Vec<AnyElement> = library_collections()
         .iter()
@@ -121,7 +121,7 @@ pub fn render_library_collection_row(ctx: &StoryContext) -> AnyElement {
         value_row(theme, "collection id", "bbr-saved-pages-collection-<id>"),
     ];
     children.extend(rows);
-    story_page(theme, "Library collection row", children)
+    story_page(ctx, "Library collection row", children)
 }
 
 /// §11.16 search field: the production `bbr-ui` search field with the
@@ -135,7 +135,7 @@ pub fn render_library_search(ctx: &StoryContext) -> AnyElement {
     };
     let focused = ctx.state == "focused";
     story_page(
-        theme,
+        ctx,
         "Library search",
         vec![
             section_heading(theme, "§11.16 search field · bbr-ui library_search_field"),
@@ -163,7 +163,7 @@ pub fn render_library_search(ctx: &StoryContext) -> AnyElement {
 pub fn render_library_sort(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(library) = ctx.library.as_ref() else {
-        return missing_context(theme, "Library sort");
+        return missing_context(ctx, "Library sort");
     };
     let orders = [
         LibrarySort::UpdatedNewest,
@@ -188,7 +188,7 @@ pub fn render_library_sort(ctx: &StoryContext) -> AnyElement {
         value_row(theme, "id", "bbr-saved-pages-sort"),
     ];
     children.extend(controls);
-    story_page(theme, "Library sort", children)
+    story_page(ctx, "Library sort", children)
 }
 
 /// §11.16 count line: the production `bbr-ui` count line for 1, many, and
@@ -210,7 +210,7 @@ pub fn render_library_count(ctx: &StoryContext) -> AnyElement {
         value_row(theme, "id", "bbr-saved-pages-count"),
     ];
     children.extend(lines);
-    story_page(theme, "Library count", children)
+    story_page(ctx, "Library count", children)
 }
 
 /// §11.16 destructive remove confirmation: the production `bbr-ui` confirm
@@ -219,11 +219,11 @@ pub fn render_library_count(ctx: &StoryContext) -> AnyElement {
 pub fn render_library_remove_confirm(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(library) = ctx.library.as_ref() else {
-        return missing_context(theme, "Library remove confirm");
+        return missing_context(ctx, "Library remove confirm");
     };
     let count = if ctx.state == "multi" { 3 } else { 1 };
     story_page(
-        theme,
+        ctx,
         "Library remove confirm",
         vec![
             section_heading(
@@ -273,5 +273,5 @@ pub fn render_library_state_rows(ctx: &StoryContext) -> AnyElement {
         value_row(theme, "no-results id", LIBRARY_NO_RESULTS_ID),
     ];
     children.extend(elements);
-    story_page(theme, "Library state rows", children)
+    story_page(ctx, "Library state rows", children)
 }

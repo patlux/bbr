@@ -21,7 +21,7 @@ use crate::stories::{section_heading, story_page, value_row};
 pub fn render_library(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(library) = ctx.library.as_ref() else {
-        return story_page(theme, "Library", Vec::new());
+        return story_page(ctx, "Library", Vec::new());
     };
     let model = library_model(ctx.state);
     let surface = library_surface(
@@ -51,7 +51,7 @@ pub fn render_library(ctx: &StoryContext) -> AnyElement {
         },
     );
     story_page(
-        theme,
+        ctx,
         "Library",
         vec![
             section_heading(theme, "§11.16 composition · bbr-ui library_surface"),

@@ -161,5 +161,5 @@ pub fn render_command(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Command palette / overlay", children)
+    story_page(ctx, "Command palette / overlay", children)
 }

@@ -185,7 +185,7 @@ pub fn render_favorites(ctx: &StoryContext) -> AnyElement {
     children.push(section_heading(theme, "§15 id derivation"));
     let empty_ids = favorites_ids(&[], false).join(" · ");
     children.push(value_row(theme, "empty region", &empty_ids));
-    story_page(theme, "Favorites grid", children)
+    story_page(ctx, "Favorites grid", children)
 }
 
 /// The production affordance components in each state: the drop band at

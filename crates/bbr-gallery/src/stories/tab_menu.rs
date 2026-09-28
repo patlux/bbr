@@ -155,7 +155,7 @@ pub fn render_tab_menu(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Tab / Favorite menu", children)
+    story_page(ctx, "Tab / Favorite menu", children)
 }
 
 /// Gallery placement, not production geometry: fit every real row using the

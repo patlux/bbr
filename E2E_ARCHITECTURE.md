@@ -1209,6 +1209,28 @@ than synthesized. Pixel comparison supplements functional E2E and never acts
 as its synchronization. Commands, provenance, geometry, baseline review and
 integration boundaries are documented in [Visual snapshots](docs/visual-snapshots.md).
 
+### Windowless Gallery producer (dev-only probe)
+
+`just gallery-capture [story-id]` builds `bbr-gallery --features visual-capture`
+in release mode through mbx. Pinned GPUI `HeadlessAppContext` supplies test-window
+and scheduler infrastructure, injected real macOS text shaping and the existing
+offscreen Metal renderer supply the pixels. No NSWindow, application activation,
+DisplayLink or no-op rasterizer is involved. The ordinary semantic Gallery
+harness remains distinct and is not pixel evidence.
+
+The producer renders production story children via the normal Gallery selection
+path and Root integration, measures/paginates direct children, and asserts fixed
+1200×1000 logical / 2400×2000 physical geometry. Explicit draws clear the element
+arena; entity handles drop before app shutdown. Static finite opacity readiness
+uses production durations and layout-start timestamps because GPUI animation
+Instant is not advanced by the test scheduler clock. No image-stability polling.
+
+The bounded adapter retains the host lock through descendant cleanup, derives
+inventory from the binary, and validates complete contiguous page ranges. These
+unsealed probes do not establish all supported interactive states, nested/shadow
+framing, accepted baselines, native-browser behavior or locked-session support.
+Those open gates remain in the [Gallery coverage packet](docs/roadmap/tasks/gallery-visual-coverage.md).
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature

@@ -178,5 +178,5 @@ pub fn render_folders(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Folders", children)
+    story_page(ctx, "Folders", children)
 }

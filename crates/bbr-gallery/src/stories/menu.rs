@@ -233,5 +233,5 @@ pub fn render_plus_menu(ctx: &StoryContext) -> AnyElement {
         "plus_menu_ids (open)",
         &open_ids.join(" · "),
     ));
-    story_page(theme, "Plus menu", children)
+    story_page(ctx, "Plus menu", children)
 }
