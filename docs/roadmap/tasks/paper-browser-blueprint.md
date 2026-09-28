@@ -75,7 +75,7 @@ Not parallelized. One writer works serially on one Paper file; no subagents.
 - [x] W3: menus and panels boards drawn and reviewed.
 - [x] W4: system, lifecycle and split-view boards drawn and reviewed.
 - [x] W5: 23 process storyboards drawn and reviewed.
-- [ ] W6: variant matrices and motion specification drawn and reviewed.
+- [x] W6: variant matrices and motion specification drawn and reviewed.
 - [ ] W7: decisions and delta ledger drawn; DESIGN.md updated; one packet
       per delta; coverage check reports every row drawn.
 
@@ -125,13 +125,13 @@ is read from the Paper file.
 |---|---|---|---|
 | DESIGN §2 | Composition, materials, content card, hairlines | F-4 · Space, radius, elevation, materials; W-1 · Shell — standard; G-1 · Glass — before attach & blank | yes |
 | DESIGN §3 | Colour tokens — neutrals, accent, status, selection | F-1 · Colour — neutrals, accent, status | yes |
-| DESIGN §3.4 | Increased-contrast mode | F-1 · Colour — neutrals, accent, status; V-1 · Increased contrast | planned |
+| DESIGN §3.4 | Increased-contrast mode | F-1 · Colour — neutrals, accent, status; V-1 · Increased contrast | yes |
 | DESIGN §4 | Typography and truncation | F-3 · Type & density; S-5 · Tab rows in context | yes |
 | DESIGN §5 | Spacing, radius, layout grid | F-4 · Space, radius, elevation, materials; S-10 · Rail width & resize | yes |
-| DESIGN §6 | Motion principles and tokens | F-6 · Motion tokens; V-5 · Motion — moments; V-6 · Motion — transitions | planned |
+| DESIGN §6 | Motion principles and tokens | F-6 · Motion tokens; V-5 · Motion — moments; V-6 · Motion — transitions | yes |
 | DESIGN §7 | Iconography, app icon, identity glyphs | F-5 · Icons & identity glyphs | yes |
 | DESIGN §7.2 | Favicon tiles and monograms | F-2 · Colour — space paper, grain, monograms; B-4 · Tiles, chips & badges | yes |
-| DESIGN §8 | Density S / N / XL | F-3 · Type & density; V-3 · Density S · N · XL; W-8 · Shell — dense list (500 tabs) | planned |
+| DESIGN §8 | Density S / N / XL | F-3 · Type & density; V-3 · Density S · N · XL; W-8 · Shell — dense list (500 tabs) | yes |
 | DESIGN §9 | Focus | B-2 · Fields, toggles & focus; PR-19 · Keyboard focus — chrome ↔ page | yes |
 | DESIGN §10.1 | State default | B-3 · Rail rows — §10 states | yes |
 | DESIGN §10.2 | State hover | B-3 · Rail rows — §10 states; B-1 · Buttons & keys | yes |
@@ -169,7 +169,7 @@ is read from the Paper file.
 | DESIGN §18.2 | v2 materials, colour, elevation | F-1 · Colour — neutrals, accent, status; F-4 · Space, radius, elevation, materials; W-2 · Shell — space tint | yes |
 | DESIGN §18.3 | v2 radius and type | F-3 · Type & density; F-4 · Space, radius, elevation, materials | yes |
 | DESIGN §18.4 | v2 floating surfaces | B-6 · Floating shells; C-2 · ⌘T — results by kind; C-6 · ⌘L — edit address; M-1 · Tab menu | yes |
-| DESIGN §18.5 | v2 motion moments | V-5 · Motion — moments; V-4 · Reduce Motion | planned |
+| DESIGN §18.5 | v2 motion moments | V-5 · Motion — moments; V-4 · Reduce Motion | yes |
 | Phase 4 | Startup presents sidebar and selected tab | L-10 · Session restore; PR-18 · Quit, relaunch, crash recovery | yes |
 | Phase 4 | Empty space, first launch, many tabs, long titles, missing favicons, crashed pages | G-2 · Glass — empty space; L-1 · First run — welcome; W-8 · Shell — dense list (500 tabs); S-5 · Tab rows in context; G-3 · Glass — crashed page | yes |
 | Phase 4 | Collapsible, adjustable sidebar | W-3 · Shell — sidebar hidden ⌘B & hover reveal; S-10 · Rail width & resize | yes |
@@ -193,8 +193,8 @@ is read from the Paper file.
 | Phase 8 | Renderer hang: responsive chrome | G-4 · Glass — unresponsive page; PR-13 · Errors & recovery | yes |
 | Phase 8 | Empty, loading, error, cancellation, destructive states | G-1 · Glass — before attach & blank; G-2 · Glass — empty space; G-5 · Glass — load errors; P-4 · Space menu & delete; M-7 · Clear browsing data; B-7 · Feedback — progress, attention, banners | yes |
 | Phase 8 | Portal host (floating surfaces above web) | B-6 · Floating shells; G-6 · Find in page; G-8 · Peek preview | yes |
-| Phase 9 | Light, dark, IC, narrow, wide, empty, dense, loading, error variants | V-1 · Increased contrast; V-2 · Space paper matrix; V-3 · Density S · N · XL; W-4 · Shell — narrow & wide windows; W-8 · Shell — dense list (500 tabs) | planned |
-| Phase 9 | Purposeful transitions, Reduce Motion | V-4 · Reduce Motion; V-5 · Motion — moments; V-6 · Motion — transitions | planned |
+| Phase 9 | Light, dark, IC, narrow, wide, empty, dense, loading, error variants | V-1 · Increased contrast; V-2 · Space paper matrix; V-3 · Density S · N · XL; W-4 · Shell — narrow & wide windows; W-8 · Shell — dense list (500 tabs) | yes |
+| Phase 9 | Purposeful transitions, Reduce Motion | V-4 · Reduce Motion; V-5 · Motion — moments; V-6 · Motion — transitions | yes |
 | Phase 9 | Onboarding and first-run activation | L-1 · First run — welcome; L-2 · First run — import, default browser, first space; PR-01 · First run & onboarding | yes |
 | Phase 9 | Keyboard and VoiceOver for every action | B-2 · Fields, toggles & focus; PR-19 · Keyboard focus — chrome ↔ page; L-9 · Settings — Shortcuts | yes |
 | Phase 9 | Settings surface (search, privacy, appearance, shortcuts) | L-3 · Settings — General; L-4 · Settings — Profiles & spaces; L-5 · Settings — Search; L-6 · Settings — Privacy & site data; L-7 · Settings — Downloads; L-8 · Settings — Appearance; L-9 · Settings — Shortcuts; PR-23 · Change settings | yes |
@@ -240,7 +240,7 @@ is read from the Paper file.
 | E2E shell-responsiveness | Unresponsive renderer | G-4 · Glass — unresponsive page | yes |
 | E2E auth | Authentication sheet | M-10 · Sign-in challenges | yes |
 | E2E gallery | Component Gallery stories | B-1 · Buttons & keys; B-2 · Fields, toggles & focus; B-3 · Rail rows — §10 states; B-4 · Tiles, chips & badges; B-5 · Menu & result items; B-6 · Floating shells; B-7 · Feedback — progress, attention, banners | yes |
-| E2E perf | Presentation budgets (no visual surface) | V-6 · Motion — transitions | planned |
+| E2E perf | Presentation budgets (no visual surface) | V-6 · Motion — transitions | yes |
 
 Board inventory (page · code · title · mark · DESIGN · packet):
 
@@ -331,12 +331,12 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 | 26 | L-12 · About & updates | New · proposal | phase 9 | [macos-app-packaging](macos-app-packaging.md) | yes |
 | 26 | L-13 · Menu bar & Dock | Native OS | phase 8 | paper-browser-blueprint | yes |
 | 26 | L-14 · Windows — new, close, quit | Change | phase 8 | [process-lifecycle-shutdown](process-lifecycle-shutdown.md) | yes |
-| 40 | V-1 · Increased contrast | Shipped | §3.4 | [v2-system-prefs](v2-system-prefs.md) | planned |
-| 40 | V-2 · Space paper matrix | Shipped | §11.3 D7 | [v2-theme-picker](v2-theme-picker.md) | planned |
-| 40 | V-3 · Density S · N · XL | Shipped | §8 | [global-ui-scale-density](global-ui-scale-density.md) | planned |
-| 40 | V-4 · Reduce Motion | Shipped | §6 §18.5 | [v2-system-prefs](v2-system-prefs.md) | planned |
-| 40 | V-5 · Motion — moments | Shipped | §18.5 | [v2-motion-moments](v2-motion-moments.md) | planned |
-| 40 | V-6 · Motion — transitions | Change | §6 §18.5 | [v2-motion-core](v2-motion-core.md) | planned |
+| 40 | V-1 · Increased contrast | Shipped | §3.4 | [v2-system-prefs](v2-system-prefs.md) | yes |
+| 40 | V-2 · Space paper matrix | Shipped | §11.3 D7 | [v2-theme-picker](v2-theme-picker.md) | yes |
+| 40 | V-3 · Density S · N · XL | Shipped | §8 | [global-ui-scale-density](global-ui-scale-density.md) | yes |
+| 40 | V-4 · Reduce Motion | Shipped | §6 §18.5 | [v2-system-prefs](v2-system-prefs.md) | yes |
+| 40 | V-5 · Motion — moments | Shipped | §18.5 | [v2-motion-moments](v2-motion-moments.md) | yes |
+| 40 | V-6 · Motion — transitions | Change | §6 §18.5 | [v2-motion-core](v2-motion-core.md) | yes |
 | 90 | D-1 · Open decisions | New · proposal | §17 | paper-browser-blueprint | planned |
 | 90 | D-2 · Delta — Paper vs code | Change | all | paper-browser-blueprint | planned |
 | 30 | PR-01 · First run & onboarding | New · proposal | flow | paper-browser-blueprint | yes |
@@ -457,7 +457,15 @@ W5:                     2026-09-28. Page 30 PR-01…PR-23: 109 numbered
                         in-use device chip. Two Paper disconnects rolled
                         back four boards once; they were redrawn and every
                         storyboard's frame count re-read from the file.
-W6:
+W6:                     2026-09-28. Page 40 V-1 increased contrast (both
+                        windows, palette, menu), V-2 the 54-rail paper
+                        matrix (9 tokens × 3 steps × 2 modes), V-3 density
+                        S/N/XL rails in both modes, V-4 Reduce Motion table
+                        with reduced frames in both modes, V-5 moment
+                        frame strips (pop, check, attention, tint fade,
+                        heartbeat), V-6 transition table with marks + menu
+                        fade frames. Review fix: XL favorite tiles share the
+                        rail width (four columns always).
 W7:
 Token check:            W0 verify_tokens.py: 126 checked, 0 mismatches.
 Coverage check:
