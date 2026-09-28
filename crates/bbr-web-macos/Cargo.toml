@@ -156,6 +156,10 @@ objc2-web-kit = { workspace = true, features = [
     # fail-with-resume-data, cancel).
     "WKDownload",
     "WKDownloadDelegate",
+    # Blueprint D14: the Back/Forward history menu reads and jumps through
+    # WebKit's own back-forward list.
+    "WKBackForwardList",
+    "WKBackForwardListItem",
     "block2",
     "objc2-app-kit",
     "objc2-core-foundation",

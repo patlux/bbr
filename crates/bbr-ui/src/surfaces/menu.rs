@@ -119,6 +119,23 @@ pub fn context_menu_card(
     on_row_hover: impl Fn(usize, &bool, &mut Window, &mut App) + 'static,
     on_row_press: impl Fn(usize, &MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
+    menu_card(theme, PAGE_MENU_ID, model, rect, on_row_hover, on_row_press)
+}
+
+/// The §15 id of the Back/Forward history menu card (blueprint D14): the
+/// same card anatomy as the page menu, over web content in the portal.
+pub const NAV_HISTORY_MENU_ID: &str = "bbr-nav-history-menu";
+
+/// The same card under another stable §15 card id (the Back/Forward
+/// history menu, blueprint D14).
+pub fn menu_card(
+    theme: &Theme,
+    card_id: &'static str,
+    model: &ContextMenuModel,
+    rect: ContextMenuRect,
+    on_row_hover: impl Fn(usize, &bool, &mut Window, &mut App) + 'static,
+    on_row_press: impl Fn(usize, &MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
     let p = theme.palette;
     // Each enabled row routes through the same shared listener closures
     // (Rc-shared so every row owns a `'static` handle to the production
@@ -172,12 +189,12 @@ pub fn context_menu_card(
         })
         .collect();
     div()
-        .id(PAGE_MENU_ID)
+        .id(card_id)
         // The stable §15 id is also registered as a test-support
         // `debug_selector` target (the same registration the Tab Row /
         // Favicon components use, so the Gallery E2E can resolve the card
         // through GPUI's `debug_bounds`). No-op outside test builds.
-        .debug_selector(|| PAGE_MENU_ID.to_string())
+        .debug_selector(move || card_id.to_string())
         .absolute()
         .left(px(rect.x))
         .top(px(rect.y))

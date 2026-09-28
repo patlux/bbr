@@ -109,6 +109,9 @@ pub enum PortalContent {
     /// Blueprint D05: the Delete Space confirmation sheet with its veil
     /// over the content card (the render derives both from the app).
     SpaceDelete,
+    /// Blueprint D14: the Back/Forward history menu (the render derives
+    /// the rows from the app each frame).
+    NavHistory,
 }
 
 /// The portal window's render state, shared between the app (present/dismiss)
@@ -210,6 +213,14 @@ impl PortalProbeState {
                 crate::app::peek::PEEK_OPEN_AS_TAB_ID.into(),
                 crate::app::peek::PEEK_CLOSE_ID.into(),
             ],
+            Some(PortalContent::NavHistory) => {
+                // The backdrop and card ids; the row ids come from the app's
+                // live rows through the menu snapshot.
+                vec![
+                    crate::app::nav_history_ids::BACKDROP.into(),
+                    bbr_ui::surfaces::menu::NAV_HISTORY_MENU_ID.into(),
+                ]
+            }
             Some(PortalContent::SpaceDelete) => {
                 use bbr_ui::surfaces::space_delete as sheet;
                 vec![
@@ -284,6 +295,13 @@ impl PortalProbeState {
     pub fn present_auth(&mut self, request: PortalRequest, viewport: Sz) {
         self.request = Some(request);
         self.content = Some(PortalContent::Auth);
+        self.viewport = viewport;
+    }
+
+    /// Present the Back/Forward history menu (blueprint D14).
+    pub fn present_nav_history(&mut self, request: PortalRequest, viewport: Sz) {
+        self.request = Some(request);
+        self.content = Some(PortalContent::NavHistory);
         self.viewport = viewport;
     }
 
@@ -786,6 +804,10 @@ impl Render for PortalRoot {
             PortalContent::SpaceDelete => {
                 drop(probe);
                 super::space_delete::render(self, rect, cx)
+            }
+            PortalContent::NavHistory => {
+                drop(probe);
+                super::nav_history::render(self, rect, cx)
             }
             PortalContent::Peek => {
                 drop(probe);

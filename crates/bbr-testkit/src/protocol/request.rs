@@ -154,9 +154,33 @@ pub enum Request {
     PressTitlebarControl {
         control: String,
     },
-    /// §11.14 primary-button up through the production release slot (clears
-    /// the pressed wash).
+    /// §11.14 primary-button up through the production release path (the
+    /// root's mouse-up: clears the pressed wash and — blueprint D14 —
+    /// steps Back/Forward when a short press is released over its control).
     ReleaseTitlebarControl,
+    /// Blueprint D14: the full production primary-button down on a
+    /// titlebar control at the pointer `(x, y)` — the pressed wash plus the
+    /// control's press slot (Back/Forward arm the history hold timer).
+    PressTitlebarControlAt {
+        control: String,
+        x: f32,
+        y: f32,
+    },
+    /// Blueprint D14: a secondary click on Back/Forward at `(x, y)` (the
+    /// production listener opens the history menu).
+    RightClickTitlebarControl {
+        control: String,
+        x: f32,
+        y: f32,
+    },
+    /// Blueprint D14: the history menu's row hover / press and close paths.
+    NavHistorySelect {
+        index: usize,
+    },
+    NavHistoryActivate {
+        index: usize,
+    },
+    NavHistoryClose,
     /// Pointer hover over the §11.5 address pill through the production
     /// `on_hover` listener path (the exact app method the pill's element
     /// handler calls): the pill renders the §10.2/§11.5 hover wash (one

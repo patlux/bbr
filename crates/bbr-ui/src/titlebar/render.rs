@@ -90,6 +90,16 @@ fn control_button(
                 callbacks::control_mouse_down(activation, control, callbacks),
             )
             .on_hover(callbacks::control_hover(callbacks, control));
+        if matches!(control, TitlebarControl::Back | TitlebarControl::Forward) {
+            // Blueprint D14: a secondary click lists the session history.
+            let secondary = callbacks.on_control_secondary.clone();
+            button = button.on_mouse_down(
+                MouseButton::Right,
+                move |event: &gpui::MouseDownEvent,
+                      window: &mut gpui::Window,
+                      cx: &mut gpui::App| { secondary(control, event, window, cx) },
+            );
+        }
     }
     button
 }

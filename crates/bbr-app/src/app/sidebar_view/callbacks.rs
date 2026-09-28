@@ -47,16 +47,41 @@ impl BbrApp {
             on_toggle_sidebar: Rc::new(move |_e, window, cx| {
                 entity.update(cx, |view, cx| view.toggle_sidebar(window, cx));
             }),
+            // Blueprint D14: Back/Forward arm the hold timer on press and
+            // step on release (the root's mouse-up), so a long press opens
+            // the history menu without also navigating.
             on_back: {
                 let entity = cx.entity();
-                Rc::new(move |_e, _window, cx| {
-                    entity.update(cx, |view, _cx| view.go_back());
+                Rc::new(move |event, window, cx| {
+                    entity.update(cx, |view, cx| {
+                        view.begin_nav_press(
+                            bbr_ui::titlebar::TitlebarControl::Back,
+                            event.position,
+                            window,
+                            cx,
+                        )
+                    });
                 })
             },
             on_forward: {
                 let entity = cx.entity();
-                Rc::new(move |_e, _window, cx| {
-                    entity.update(cx, |view, _cx| view.go_forward());
+                Rc::new(move |event, window, cx| {
+                    entity.update(cx, |view, cx| {
+                        view.begin_nav_press(
+                            bbr_ui::titlebar::TitlebarControl::Forward,
+                            event.position,
+                            window,
+                            cx,
+                        )
+                    });
+                })
+            },
+            on_control_secondary: {
+                let entity = cx.entity();
+                Rc::new(move |control, event, window, cx| {
+                    entity.update(cx, |view, cx| {
+                        view.open_nav_history_from_control(control, event.position, window, cx)
+                    });
                 })
             },
             on_reload: {

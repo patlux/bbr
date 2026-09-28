@@ -104,11 +104,69 @@ pub(crate) fn dispatch_titlebar(
         }
         Request::ReleaseTitlebarControl => Some(
             with_app(window, app, cx, |view, _window, cx| {
+                // The root's mouse-up path (blueprint D14 steps Back/Forward
+                // on a short release over the control).
+                view.end_nav_press(cx);
                 view.clear_titlebar_pressed(cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+        ),
+        Request::PressTitlebarControlAt { control, x, y } => {
+            let Some(control) = control_from_name(control) else {
+                return Some(unknown_control());
+            };
+            let point = gpui::point(gpui::px(*x), gpui::px(*y));
+            Some(
+                with_app(window, app, cx, |view, window, cx| {
+                    view.set_titlebar_pressed(control, cx);
+                    view.begin_nav_press(control, point, window, cx);
+                    Response::Ok
+                })
+                .unwrap_or_else(err_response),
+            )
+        }
+        Request::RightClickTitlebarControl { control, x, y } => {
+            let Some(control) = control_from_name(control) else {
+                return Some(unknown_control());
+            };
+            let point = gpui::point(gpui::px(*x), gpui::px(*y));
+            Some(
+                with_app(window, app, cx, |view, window, cx| {
+                    view.open_nav_history_from_control(control, point, window, cx);
+                    Response::Ok
+                })
+                .unwrap_or_else(err_response),
+            )
+        }
+        Request::NavHistorySelect { index } => Some(
+            with_app(window, app, cx, |view, _window, cx| {
+                view.nav_history_select(*index, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+        ),
+        Request::NavHistoryActivate { index } => Some(
+            with_app(window, app, cx, |view, window, cx| {
+                view.nav_history_activate(*index, window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response),
+        ),
+        Request::NavHistoryClose => Some(
+            with_app(window, app, cx, |view, window, cx| {
+                view.nav_history_close(window, cx);
                 Response::Ok
             })
             .unwrap_or_else(err_response),
         ),
         _ => None,
     }
+}
+
+fn unknown_control() -> Response {
+    Response::Error(bbr_testkit::protocol::Error::new(
+        "unknown_titlebar_control",
+        "control must be toggle/back/forward/reload",
+    ))
 }

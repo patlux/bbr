@@ -32,6 +32,7 @@
 
 pub mod geometry;
 pub mod native;
+mod nav_history;
 pub mod peek;
 pub mod probe;
 mod space_delete;

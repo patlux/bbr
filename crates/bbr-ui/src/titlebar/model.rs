@@ -70,6 +70,10 @@ pub type KeyCallback = std::rc::Rc<dyn for<'a> Fn(&'a KeyDownEvent, &mut Window,
 pub type ControlHoverCallback = std::rc::Rc<dyn Fn(TitlebarControl, bool, &mut Window, &mut App)>;
 /// A control-indexed press callback slot (primary button down).
 pub type ControlPressCallback = std::rc::Rc<dyn Fn(TitlebarControl, &mut Window, &mut App)>;
+/// A control-indexed secondary-click slot (blueprint D14: Back/Forward open
+/// the history menu at the pointer).
+pub type ControlSecondaryCallback =
+    std::rc::Rc<dyn Fn(TitlebarControl, &gpui::MouseDownEvent, &mut Window, &mut App)>;
 /// The release callback slot (primary button up).
 pub type ControlReleaseCallback = std::rc::Rc<dyn Fn(&mut Window, &mut App)>;
 
@@ -154,6 +158,8 @@ pub struct TitlebarCallbacks {
     pub on_control_press: ControlPressCallback,
     /// §10.3: the primary button up (clears the pressed wash).
     pub on_control_release: ControlReleaseCallback,
+    /// Blueprint D14: a secondary click on Back/Forward (the history menu).
+    pub on_control_secondary: ControlSecondaryCallback,
 }
 
 impl TitlebarCallbacks {
@@ -173,6 +179,7 @@ impl TitlebarCallbacks {
             on_control_hover: noop_hover,
             on_control_press: noop_press,
             on_control_release: noop_release,
+            on_control_secondary: std::rc::Rc::new(|_c, _e, _window, _cx| {}),
         }
     }
 }

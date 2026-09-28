@@ -64,6 +64,8 @@ pub struct FakeSession {
     pub loading: bool,
     pub can_go_back: bool,
     pub can_go_forward: bool,
+    /// Blueprint D14: the scripted session history a test installs.
+    pub history: bbr_web::SessionHistory,
 }
 
 impl FakeSession {
@@ -76,6 +78,7 @@ impl FakeSession {
             loading: false,
             can_go_back: false,
             can_go_forward: false,
+            history: bbr_web::SessionHistory::default(),
         }
     }
 }
@@ -188,6 +191,13 @@ impl FakeEngine {
         self.emit(WebEvent::NavigationFailed(view, message.to_string()));
     }
 
+    /// Install the session history a live view reports (blueprint D14).
+    pub fn set_history(&mut self, view: WebViewId, history: bbr_web::SessionHistory) {
+        if let Some(session) = self.sessions.get_mut(&view) {
+            session.history = history;
+        }
+    }
+
     /// Simulate a WebKit content process termination.
     pub fn crash(&mut self, view: WebViewId) {
         if let Some(session) = self.sessions.get_mut(&view) {
@@ -285,6 +295,12 @@ impl WebEngine for FakeEngine {
 
     fn focus_host_chrome(&mut self) {
         self.ops.borrow_mut().push(EngineOp::FocusChrome);
+    }
+
+    fn session_history(&self, id: WebViewId) -> Option<bbr_web::SessionHistory> {
+        self.sessions
+            .get(&id)
+            .map(|session| session.history.clone())
     }
 
     fn live_session_count(&self) -> usize {

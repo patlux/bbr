@@ -304,9 +304,13 @@ impl Render for BbrApp {
                     && !self.auth_sheet_is_presented()
                     && !self.space_delete_open()
                     && !self.context_menu.state.open
-                    && !self.tab_menu.state.open,
+                    && !self.tab_menu.state.open
+                    && !self.nav_history_open(),
                 |root| root.track_focus(&self.chrome_handle),
             )
+            .when(self.nav_history_open(), |root| {
+                root.track_focus(&self.menu_handle)
+            })
             .when(self.space_delete_open(), |root| {
                 root.track_focus(&self.space_delete_handle)
             })
@@ -364,13 +368,18 @@ impl Render for BbrApp {
             .on_mouse_up(
                 MouseButton::Left,
                 cx.listener(|this, _e: &gpui::MouseUpEvent, _window, cx| {
-                    this.clear_row_pressed(cx)
+                    this.clear_row_pressed(cx);
+                    // Blueprint D14: Back/Forward step on release.
+                    this.end_nav_press(cx);
+                    this.clear_titlebar_pressed(cx);
                 }),
             )
             .on_mouse_up_out(
                 MouseButton::Left,
                 cx.listener(|this, _e: &gpui::MouseUpEvent, _window, cx| {
-                    this.clear_row_pressed(cx)
+                    this.clear_row_pressed(cx);
+                    this.end_nav_press(cx);
+                    this.clear_titlebar_pressed(cx);
                 }),
             )
             .on_hover(cx.listener(|this, hovered: &bool, _window, cx| {

@@ -25,6 +25,7 @@ mod appearance;
 mod events;
 mod favicon;
 mod gesture;
+mod history;
 mod new_window;
 mod responsiveness;
 mod session;

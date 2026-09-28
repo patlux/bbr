@@ -95,6 +95,11 @@ mod gesture_benchmarks;
 mod interaction;
 pub(crate) mod library;
 mod moments;
+mod nav_history;
+/// Blueprint D14 portal ids shared with the portal render.
+pub(crate) mod nav_history_ids {
+    pub const BACKDROP: &str = super::nav_history::NAV_HISTORY_BACKDROP_ID;
+}
 mod motion;
 mod new_window;
 pub(crate) mod palette;
@@ -242,6 +247,12 @@ pub struct BbrApp {
     /// down (DESIGN §10.3 wash), driven by the production press/release
     /// slots. `None` at rest.
     titlebar_pressed: Option<bbr_ui::titlebar::TitlebarControl>,
+    /// Blueprint D14: the Back/Forward history menu, the in-flight
+    /// Back/Forward press and its hold timer.
+    nav_history: crate::app::nav_history::NavHistoryState,
+    nav_press: Option<crate::app::nav_history::NavPress>,
+    nav_press_generation: u64,
+    nav_hold_timer: Option<gpui::Task<()>>,
     /// Current command-bar intent. `NewTab` stages navigation without creating
     /// a domain tab or native session until Enter commits it.
     pub command_bar_mode: CommandBarMode,
@@ -626,6 +637,10 @@ impl BbrApp {
             moments: moments::Moments::default(),
             titlebar_hovered: None,
             titlebar_pressed: None,
+            nav_history: Default::default(),
+            nav_press: None,
+            nav_press_generation: 0,
+            nav_hold_timer: None,
             command_bar_mode: CommandBarMode::Inactive,
             command_bar_return: None,
             command_surface: CommandSurface::None,

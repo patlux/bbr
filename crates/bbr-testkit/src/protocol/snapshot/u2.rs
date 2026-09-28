@@ -291,3 +291,13 @@ pub struct SpaceDeleteSnapshot {
     pub delete_focused: bool,
     pub card: [f32; 4],
 }
+
+/// Blueprint D14: the open Back/Forward history menu — the side it lists,
+/// the rows nearest first (label and URL) and the keyboard cursor.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NavHistorySnapshot {
+    pub direction: String,
+    pub labels: Vec<String>,
+    pub urls: Vec<String>,
+    pub selected: Option<usize>,
+}

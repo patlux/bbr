@@ -158,6 +158,31 @@ pub enum WebAction {
     /// Copy the view's current URL to the system clipboard (the BBR context
     /// menu's Copy Link entry; the engine owns the platform pasteboard).
     CopyLink,
+    /// Jump `offset` entries through the session history in one step
+    /// (negative = back, positive = forward; blueprint D14's history
+    /// menu). An offset outside the list is a no-op.
+    GoToHistory {
+        offset: i32,
+    },
+}
+
+/// One session-history entry as the engine reports it (blueprint D14).
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HistoryEntry {
+    pub url: String,
+    /// The page title at the time of the visit (may be empty).
+    pub title: String,
+}
+
+/// A live view's session history around the current entry: `back` is
+/// ordered nearest first (offset −1, −2, …), `forward` nearest first
+/// (offset +1, +2, …).
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct SessionHistory {
+    pub back: Vec<HistoryEntry>,
+    pub forward: Vec<HistoryEntry>,
 }
 
 /// Events emitted by the native engine, keyed by [`WebViewId`].
@@ -270,6 +295,14 @@ pub trait WebEngine {
     /// GPUI's own focus tree is managed by GPUI; this only fixes the native
     /// side so key events stop going to the web view.
     fn focus_host_chrome(&mut self);
+
+    /// The session history of one live view (blueprint D14's Back/Forward
+    /// history menu), read synchronously from the engine's own list. The
+    /// default suits engines without a history list; unknown ids are
+    /// `None`.
+    fn session_history(&self, _id: WebViewId) -> Option<SessionHistory> {
+        None
+    }
 
     /// Number of currently live (hosted, not yet destroyed) web views.
     /// Used by the controller and E2E snapshots as native destruction

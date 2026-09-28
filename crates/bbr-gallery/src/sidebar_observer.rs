@@ -187,6 +187,9 @@ pub fn build_sidebar_observer(
                 record(SidebarObservation::TitlebarRelease, cx);
             })
         },
+        // Blueprint D14: the history menu is app-owned; the gallery rail
+        // has no session history to list.
+        on_control_secondary: Rc::new(|_control, _event, _window, _cx| {}),
     };
     SidebarObserver {
         on_rail_mouse_down: mouse(SidebarObservation::RailMouseDown, false),

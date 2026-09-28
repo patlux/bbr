@@ -13,9 +13,9 @@ mod u2;
 pub use card::ContentCardSnapshot;
 pub use motion::{IllustrationSnapshot, MotionMomentSnapshot, MotionSnapshot};
 pub use u2::{
-    ChipCompanionSnapshot, FavoriteTileSnapshot, FolderRowSnapshot, SpaceAppearanceSnapshot,
-    SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot, SpaceStripScrollSnapshot,
-    SwipeSnapshot,
+    ChipCompanionSnapshot, FavoriteTileSnapshot, FolderRowSnapshot, NavHistorySnapshot,
+    SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot,
+    SpaceStripScrollSnapshot, SwipeSnapshot,
 };
 
 /// The L6 contract state of one download attempt (DESIGN.md §15): the panel
@@ -1205,6 +1205,10 @@ pub struct Snapshot {
     /// Blueprint D05: the open Delete Space sheet (`None` while closed).
     #[serde(default)]
     pub space_delete: Option<SpaceDeleteSnapshot>,
+    /// Blueprint D14: the open Back/Forward history menu (`None` while
+    /// closed).
+    #[serde(default)]
+    pub nav_history: Option<NavHistorySnapshot>,
     /// DESIGN.md §11.3 swipe gesture evidence: the active space (truthful
     /// at every phase — a tracking gesture never changes the selected
     /// space), the source/destination persistent space ids and display-order

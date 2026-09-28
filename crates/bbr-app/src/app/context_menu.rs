@@ -295,7 +295,11 @@ pub struct ContextMenuSurface {
 /// compact clamp; the height derives from the **actual** row model (label
 /// size plus the `sp:2` row padding, `sp:1` card padding — settled tokens,
 /// never local literals), so the card always fits its rows exactly.
-fn context_menu_placement(point: WebRect, items: usize, theme: &Theme) -> PortalPlacement {
+pub(crate) fn context_menu_placement(
+    point: WebRect,
+    items: usize,
+    theme: &Theme,
+) -> PortalPlacement {
     let row_height =
         f32::from(theme.type_.label.size) + 2.0 * f32::from(bbr_ui::theme::Spacing::sp2());
     let card_padding = 2.0 * f32::from(bbr_ui::theme::Spacing::sp1());

@@ -833,7 +833,12 @@ pub(crate) fn dispatch(
         | Request::HoverTitlebarControl { .. }
         | Request::UnhoverTitlebarControl
         | Request::PressTitlebarControl { .. }
-        | Request::ReleaseTitlebarControl => {
+        | Request::ReleaseTitlebarControl
+        | Request::PressTitlebarControlAt { .. }
+        | Request::RightClickTitlebarControl { .. }
+        | Request::NavHistorySelect { .. }
+        | Request::NavHistoryActivate { .. }
+        | Request::NavHistoryClose => {
             unreachable!("titlebar requests route through dispatch_titlebar")
         }
 

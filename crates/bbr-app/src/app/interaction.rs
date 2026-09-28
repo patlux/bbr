@@ -435,6 +435,11 @@ impl BbrApp {
     /// actions first and actions stop propagation, so this route is the
     /// panel's primary Escape dismissal).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Blueprint D14: Escape closes the Back/Forward history menu.
+        if self.nav_history_open() {
+            self.nav_history_close(window, cx);
+            return;
+        }
         // Blueprint D05: Escape cancels the Delete Space sheet (the global
         // binding routes here before the sheet's key handler).
         if self.space_delete_open() {
@@ -662,6 +667,11 @@ impl BbrApp {
         // Escape dismisses (queue item 12, part B).
         if self.context_menu.state.open {
             self.on_menu_key_down(event, window, cx);
+            return;
+        }
+        // Blueprint D14: the Back/Forward history menu owns the keyboard.
+        if self.nav_history_open() {
+            self.on_nav_history_key_down(event, window, cx);
             return;
         }
         // The Tab/Favorite menu owns the keyboard while it is open: Up/Down

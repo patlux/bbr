@@ -221,6 +221,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             space_strip_scroll: self.space_strip_scroll.clone(),
             space_config: self.space_config.clone(),
             space_delete: self.space_delete.clone(),
+            nav_history: self.nav_history.clone(),
             swipe: self.swipe.clone(),
             visible_ids: self.visible_ids.clone(),
             semantics: self.semantics.clone(),

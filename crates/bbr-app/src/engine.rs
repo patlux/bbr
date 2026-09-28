@@ -170,6 +170,7 @@ impl WebEngine for NullEngine {
             WebAction::Reload => self.actions.push("reload".into()),
             WebAction::Stop => self.actions.push("stop".into()),
             WebAction::CopyLink => self.actions.push("copy-link".into()),
+            WebAction::GoToHistory { offset } => self.actions.push(format!("history {offset}")),
         }
     }
 

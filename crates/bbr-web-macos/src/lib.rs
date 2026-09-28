@@ -101,6 +101,9 @@ mod card_clip;
 mod native_session;
 
 #[cfg(target_os = "macos")]
+mod session_history;
+
+#[cfg(target_os = "macos")]
 pub mod new_window;
 
 #[cfg(target_os = "macos")]

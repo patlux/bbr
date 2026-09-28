@@ -517,6 +517,7 @@ impl WebEngine for WebEngineWk {
                     crate::menu_adapter::copy_to_pasteboard(&url.to_string());
                 }
             }
+            WebAction::GoToHistory { offset } => crate::session_history::go(web_view, offset),
         }
     }
 
@@ -545,6 +546,12 @@ impl WebEngine for WebEngineWk {
         self.assert_main_thread();
         let mtm = MainThreadMarker::new().expect("main thread");
         self.host.focus_chrome(mtm);
+    }
+
+    fn session_history(&self, id: WebViewId) -> Option<bbr_web::SessionHistory> {
+        self.assert_main_thread();
+        self.session(id)
+            .map(|session| crate::session_history::read(&session.web_view))
     }
 
     fn live_session_count(&self) -> usize {

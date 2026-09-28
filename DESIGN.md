@@ -1456,8 +1456,9 @@ authorities; it does not copy Zen/Firefox features or styling.
   dismissing never implicitly selects, activates, expands, moves, reloads,
   closes, suspends, or recreates that source.
 - **Ownership:** sidebar tab/Favorite/folder/space menus are ordinary GPUI chrome.
-  Only BBR page-background menus overlap WebKit and use the existing one-per-
-  window `NativeAboveWeb` Portal. Link/image/selection/editable/media and
+  Only BBR page-background menus and the Back/Forward history menu (§11.14)
+  overlap WebKit and use the existing one-per-window `NativeAboveWeb`
+  Portal. Link/image/selection/editable/media and
   JavaScript/unclassified WebKit element menus remain native and untouched.
 - **Commands:** callbacks route through an existing or explicitly added
   portable command/controller authority. A missing capability omits its row or
@@ -1469,8 +1470,9 @@ authorities; it does not copy Zen/Firefox features or styling.
   capability-gated `Bookmark Page` / `Remove Bookmark` rows; both invoke the
   same app-owned Saved Page command as Cmd-D and never own duplicate policy.
 - **Stable family ids:** `bbr-tab-menu`, `bbr-favorite-menu`,
-  `bbr-folder-menu`, `bbr-space-menu`, and `bbr-page-menu`, with
-  action/submenu ids owned by their bounded task packets.
+  `bbr-folder-menu`, `bbr-space-menu`, `bbr-page-menu`, and
+  `bbr-nav-history-menu` (§11.14), with action/submenu ids owned by their
+  bounded task packets.
 - **Gallery:** G2/G3 stories register closed/open/submenu/disabled/danger/
   overflow states from the exact production `bbr-ui` menu components. Gallery
   fixtures never rebuild menu anatomy and never replace real-browser E2E.
@@ -1506,8 +1508,21 @@ inside the actual macOS safe titlebar layout guide.
   row together with the Sidebar. No compact content toolbar or floating
   Back/Forward/Reload replacement remains over the webpage; native traffic
   lights remain available and Cmd-B restores the Sidebar.
+- **History menu (blueprint D14):** a secondary click on Back or Forward —
+  or holding the primary button on it for 500 ms — opens the history menu
+  (`bbr-nav-history-menu`, the §11.13 menu anatomy) at the pointer. It lists
+  that side of the focused session's history nearest entry first (page
+  title, or the URL when the page had no title; at most 12 rows,
+  `bbr-nav-history-<n>`), read from the engine's own back-forward list at
+  open. A row jumps straight to its entry in one step. The menu hangs over
+  web content, so it renders in the native portal; Up/Down/Return/Escape and
+  one outside press behave as in the page menu. A side without entries
+  opens nothing. Back and Forward step on release over the control (a
+  click), so a long press opens the menu without also navigating. Show Full
+  History waits for the History window (D10) and is omitted until then.
 - Stable ids: `bbr-titlebar`, `bbr-titlebar-sidebar-toggle`, `bbr-nav-back`,
-  `bbr-nav-forward`, `bbr-nav-reload`.
+  `bbr-nav-forward`, `bbr-nav-reload`, `bbr-nav-history-menu` (+
+  `bbr-nav-history-<n>`, `bbr-nav-history-backdrop`).
 
 Canonical packets: [Unified titlebar navigation controls](docs/roadmap/tasks/titlebar-navigation-controls.md) and the superseding visual authority [reference-faithful production shell](docs/roadmap/tasks/visual-shell-reference.md).
 
@@ -2062,7 +2077,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D11 | Site settings and permission prompts | M-8 M-9 L-6 PR-14 | §11.5 | adopted | [blueprint-site-settings-permissions](docs/roadmap/tasks/blueprint-site-settings-permissions.md) |
 | D12 | Client certificate chooser | M-11 PR-15 | §18.4 | adopted | [blueprint-client-certificates](docs/roadmap/tasks/blueprint-client-certificates.md) |
 | D13 | Open-in-app, pop-up and link-routing UI | M-12 M-13 PR-04 PR-20 | §11.13 §18.4 | adopted | [blueprint-link-destinations](docs/roadmap/tasks/blueprint-link-destinations.md) |
-| D14 | Back / Forward history menu | W-7 M-3 | §11.14 §11.13 | adopted | [blueprint-navigation-history-menu](docs/roadmap/tasks/blueprint-navigation-history-menu.md) |
+| D14 | Back / Forward history menu | W-7 M-3 | §11.14 §11.13 | implemented | [blueprint-navigation-history-menu](docs/roadmap/tasks/blueprint-navigation-history-menu.md) |
 | D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | adopted | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |
 | D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 | adopted | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |
 | D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | adopted | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
