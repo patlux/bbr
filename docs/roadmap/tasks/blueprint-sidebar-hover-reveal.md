@@ -7,6 +7,17 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 Status: adopted 2026-09-28 (DESIGN §19); implementation position 9 of 24. Paper boards: W-3 · Shell — sidebar hidden ⌘B & hover reveal, V-6 · Motion — transitions (file
 “BBR — Browser Shell”).
 
+**Blocked 2026-09-29 (implementation stop):** a rail that floats over the
+card sits above the native WKWebView, so only the one native Portal may draw
+it (§13). The Portal window is a non-activating panel that never becomes key
+and captures every click in the window while shown. The rail's address field
+needs text input and focus, its rows drag (GPUI drags are window-local), and
+its 34 callbacks are bound to the main window. Running them from the Portal
+would take one of two things: a second rail host window that can become key,
+or a click-only floating rail. Both are product/architecture decisions for
+Patrick. The 300 ms dwell detection itself is possible: the collapsed card
+keeps a 10 pt GPUI chassis strip at the leading edge.
+
 ## Outcome
 
 A 300 ms dwell at the left edge reveals the rail as a floating panel over the card (elev:2), without reflowing the card; leaving or Escape hides it.

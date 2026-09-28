@@ -7,6 +7,16 @@ Parents: [Phase 9](../phases/09-quality-release.md) ·
 Status: adopted 2026-09-28 (DESIGN §19); implementation position 7 of 24. Paper boards: B-7 · Feedback — progress, attention, banners, G-7 · Page zoom, V-6 · Motion — transitions, PR-12 · Save a page & Library (file
 “BBR — Browser Shell”).
 
+**Blocked 2026-09-29 (implementation stop):** a toast at the bottom centre
+of the card overlaps web content, so it must render in the native Portal
+(§13). The Portal window captures every click in the browser window while it
+is shown, so a 4 s toast would block the page for 4 s. The toast needs a
+hit-region Portal mode first: the panel lets clicks through outside the
+toast rect, for example by toggling `ignoresMouseEvents` from a local
+mouse-moved monitor. That mode also lets the D09 Peek preview take pointer
+input through its hole. Real-pointer evidence for it needs an unlocked
+screen. D07's reload toast depends on this.
+
 ## Outcome
 
 One toast (4 s, Undo, bottom-centre of the card), a transient zoom readout, and the V-6 table as the rule for every appearing surface.

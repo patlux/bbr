@@ -7,6 +7,10 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 Status: adopted 2026-09-28 (DESIGN §19); implementation position 8 of 24. Paper boards: P-7 · Move a tab across profiles, PR-08 · Profiles — create, assign, move a tab (file
 “BBR — Browser Shell”).
 
+**Blocked 2026-09-29:** the post-drop toast with Undo depends on the D08
+toast, which in turn waits for a hit-region Portal mode (see
+[D08](blueprint-feedback-toasts.md)).
+
 ## Outcome
 
 The drag names the destination profile before the drop; after it a toast says the page reloaded in that profile, with Undo.
