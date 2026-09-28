@@ -24,6 +24,7 @@ mod e2e_semantics_common;
 use bbr_testkit::protocol::{dsl, SemanticRole};
 use e2e_common::*;
 use e2e_semantics_common::assert_node;
+mod full_screen;
 mod history;
 mod support;
 use support::*;

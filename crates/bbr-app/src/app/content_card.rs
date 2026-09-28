@@ -31,7 +31,7 @@ impl BbrApp {
 
     /// The window's native full-screen state (testkit builds may present a
     /// forced state, see `SetFullScreenOverride`).
-    fn is_full_screen(&self, window: &Window) -> bool {
+    pub(crate) fn is_full_screen(&self, window: &Window) -> bool {
         #[cfg(feature = "testkit")]
         if let Some(full_screen) = self.full_screen_override {
             return full_screen;

@@ -4,7 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §2, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 11 of 24. Paper boards: W-5 · Shell — full screen (file
+Status: implemented 2026-09-29 (DESIGN §19); position 11 of 24. Paper boards: W-5 · Shell — full screen (file
 “BBR — Browser Shell”).
 
 ## Outcome
@@ -43,17 +43,15 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Portable model / controller / component tests for the new behaviour
-      and its states.
+- [x] SafeArea::full_screen (no traffic-light clearance, ≥ 40 pt row) unit test in bbr-ui; the app's safe area switches to it while the window is in full screen; CardInsets full-bleed rule unchanged.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-titlebar-navigation` covers the flow drawn on the boards through the
-      production path with semantic ids and typed snapshots.
+- [x] `just e2e-shell-titlebar-navigation` — full_screen::full_screen_is_full_bleed_and_the_titlebar_keeps_its_controls (full screen: inset 0, radius 0, no shadow, no chassis band, zero traffic-light clearance, row ≥ 40 pt, all titlebar controls present; windowed again: the clearance and the card shadow return). The existing sidebar content-card scenario keeps covering the native clip radius.
 
 ### Performance
 
-- [ ] Add the optimized presentation scenario for the new user-visible interaction, or record why none applies (performance contract).
+- [ ] Performance scenario: none added — evidence-only delta; measurement is deferred (Patrick, 2026-09-27).
 
 ## Completion gates
 
@@ -81,12 +79,12 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                Full screen is proven full-bleed and the titlebar keeps its controls without traffic-light clearance.
+Commits:                see git log (feat/fix commit carrying this packet)
+Functional evidence:    SafeArea::full_screen (no traffic-light clearance, ≥ 40 pt row) unit test in bbr-ui; the app's safe area switches to it while the window is in full screen; CardInsets full-bleed rule unchanged.
+Real-app E2E:           `just e2e-shell-titlebar-navigation` — full_screen::full_screen_is_full_bleed_and_the_titlebar_keeps_its_controls (full screen: inset 0, radius 0, no shadow, no chassis band, zero traffic-light clearance, row ≥ 40 pt, all titlebar controls present; windowed again: the clearance and the card shadow return). The existing sidebar content-card scenario keeps covering the native clip radius.
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §2 full-screen rule, §19 D22 implemented
+Open blockers and non-goals: none
+Worktree state:         main, clean after commit
 ```

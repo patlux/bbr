@@ -77,6 +77,10 @@ pub type ControlSecondaryCallback =
 /// The release callback slot (primary button up).
 pub type ControlReleaseCallback = std::rc::Rc<dyn Fn(&mut Window, &mut App)>;
 
+/// The titlebar row height in native full screen: the 32 pt control hit
+/// area plus a 4 pt margin above and below (blueprint D22).
+pub const FULL_SCREEN_TITLEBAR_HEIGHT: f32 = 40.0;
+
 /// The native safe-titlebar layout guide as plain presentation data
 /// (points, window coordinates, top-left origin). The macOS adapter in
 /// `bbr-web-macos` produces it; the rail renders from it. The portable
@@ -96,6 +100,16 @@ impl SafeArea {
     pub fn none() -> Self {
         Self {
             height: 0.0,
+            traffic_lights: [0.0; 4],
+        }
+    }
+
+    /// Blueprint D22 (DESIGN §2): native full screen hides the traffic
+    /// lights, so the row keeps its controls without their clearance and
+    /// keeps a usable height even when the native strip collapses.
+    pub fn full_screen(native_height: f32) -> Self {
+        Self {
+            height: native_height.max(FULL_SCREEN_TITLEBAR_HEIGHT),
             traffic_lights: [0.0; 4],
         }
     }
@@ -187,6 +201,17 @@ impl TitlebarCallbacks {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Blueprint D22: full screen drops the traffic-light clearance and
+    /// keeps a usable row height when the native strip collapses.
+    #[test]
+    fn full_screen_keeps_the_controls_without_traffic_lights() {
+        let collapsed = SafeArea::full_screen(0.0);
+        assert_eq!(collapsed.height, FULL_SCREEN_TITLEBAR_HEIGHT);
+        assert_eq!(collapsed.control_left(), 0.0);
+        assert_eq!(collapsed.traffic_lights, [0.0; 4]);
+        assert_eq!(SafeArea::full_screen(52.0).height, 52.0);
+    }
 
     /// The §11.14 availability matrix: no history, back-only,
     /// forward-only, both, loading/reload, and collapsed/expanded sidebar

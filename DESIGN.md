@@ -167,7 +167,10 @@ seated in the chassis.
 4. **The rail loses its right hairline**, and the resize divider is empty
    paint at rest (accent only under keyboard focus).
 5. **The inset is chrome, so it disappears with chrome.** Native full screen
-   is full-bleed: inset `0`, radius `0`, no shadow. A collapsed sidebar adds
+   is full-bleed: inset `0`, radius `0`, no shadow, no chassis band; the
+   §11.14 titlebar row keeps its controls without the (hidden) traffic
+   lights' clearance and keeps at least a 40 pt row (blueprint D22, proven
+   by real-app E2E). A collapsed sidebar adds
    the leading inset, and the top inset becomes the native titlebar band
    (`win:titlebar`, the safe titlebar strip height) so the traffic lights
    never sit on web content. The band is empty, draggable chassis
@@ -2119,7 +2122,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | adopted | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |
 | D20 | New folders open in rename | S-4 PR-06 | §11.11 | implemented | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |
 | D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | implemented | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
-| D22 | Full-screen card rules under test | W-5 | §2 | adopted | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
+| D22 | Full-screen card rules under test | W-5 | §2 | implemented | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
 | D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted | [split-app-composition](docs/roadmap/tasks/split-app-composition.md) |
 | D24 | Sidebar media card | S-8 PR-17 | §11.15 | adopted | [sidebar-media-control](docs/roadmap/tasks/sidebar-media-control.md) |
 | D25 | Folder context menu (ledger correction: M-2 was marked Shipped, but no folder menu exists) | M-2 S-4 | §11.13 §11.11 | adopted without the closing row (question 13) | [folder-context-menu](docs/roadmap/tasks/folder-context-menu.md) |

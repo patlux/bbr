@@ -24,7 +24,18 @@ impl BbrApp {
     /// window (`None`/zero-height before the window attaches or on
     /// non-macOS hosts). The row renders only what this reports.
     #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
-    pub fn safe_area(&self, _window: &Window) -> SafeArea {
+    pub fn safe_area(&self, window: &Window) -> SafeArea {
+        let native = self.native_safe_area(window);
+        // Blueprint D22: full screen hides the traffic lights; the row keeps
+        // its controls without their clearance.
+        if self.is_full_screen(window) {
+            SafeArea::full_screen(native.height)
+        } else {
+            native
+        }
+    }
+
+    fn native_safe_area(&self, _window: &Window) -> SafeArea {
         #[cfg(target_os = "macos")]
         {
             let guide = self
