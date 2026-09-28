@@ -1,0 +1,21 @@
+cargo-gpui-visual
+
+Copyright (c) 2025-present piparo.tech GmbH.
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+Report assets and adapted comparison, integrity and acceptance behavior
+originate in Hackerschau at revision
+b1528bd21a728da3a110074fb88b635a03f15c8c.
+They have been adapted into the reusable GPUI Mobile Kit Cargo CLI.
+The SDK-local extraction, its report assets and associated tests were
+explicitly approved for Apache-2.0. This does not relicense Hackerschau
+as a whole or any third-party dependency.
+
+Original source-license and file-hash provenance remains recorded in
+GPUI Mobile Kit docs/visual-import.json; approval scope is documented
+in docs/licensing.md. Those historical import records are not the
+current license of this package.
+
+Dependencies retain their own licenses and notices. This notice is
+informational, not a complete notice bundle for a compiled application.
