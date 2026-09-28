@@ -70,7 +70,7 @@ Not parallelized. One writer works serially on one Paper file; no subagents.
 
 - [x] W0: old pages archived; index, foundations and building blocks drawn
       and screenshot-reviewed; Paper tokens match the code.
-- [ ] W1: shell, sidebar, spaces and profiles boards drawn and reviewed.
+- [x] W1: shell, sidebar, spaces and profiles boards drawn and reviewed.
 - [ ] W2: command and content/glass boards drawn and reviewed.
 - [ ] W3: menus and panels boards drawn and reviewed.
 - [ ] W4: system, lifecycle and split-view boards drawn and reviewed.
@@ -126,8 +126,8 @@ is read from the Paper file.
 | DESIGN §2 | Composition, materials, content card, hairlines | F-4 · Space, radius, elevation, materials; W-1 · Shell — standard; G-1 · Glass — before attach & blank | planned |
 | DESIGN §3 | Colour tokens — neutrals, accent, status, selection | F-1 · Colour — neutrals, accent, status | yes |
 | DESIGN §3.4 | Increased-contrast mode | F-1 · Colour — neutrals, accent, status; V-1 · Increased contrast | planned |
-| DESIGN §4 | Typography and truncation | F-3 · Type & density; S-5 · Tab rows in context | planned |
-| DESIGN §5 | Spacing, radius, layout grid | F-4 · Space, radius, elevation, materials; S-10 · Rail width & resize | planned |
+| DESIGN §4 | Typography and truncation | F-3 · Type & density; S-5 · Tab rows in context | yes |
+| DESIGN §5 | Spacing, radius, layout grid | F-4 · Space, radius, elevation, materials; S-10 · Rail width & resize | yes |
 | DESIGN §6 | Motion principles and tokens | F-6 · Motion tokens; V-5 · Motion — moments; V-6 · Motion — transitions | planned |
 | DESIGN §7 | Iconography, app icon, identity glyphs | F-5 · Icons & identity glyphs | yes |
 | DESIGN §7.2 | Favicon tiles and monograms | F-2 · Colour — space paper, grain, monograms; B-4 · Tiles, chips & badges | yes |
@@ -136,43 +136,43 @@ is read from the Paper file.
 | DESIGN §10.1 | State default | B-3 · Rail rows — §10 states | yes |
 | DESIGN §10.2 | State hover | B-3 · Rail rows — §10 states; B-1 · Buttons & keys | yes |
 | DESIGN §10.3 | State active/pressed | B-3 · Rail rows — §10 states; B-1 · Buttons & keys | yes |
-| DESIGN §10.4 | State selected | B-3 · Rail rows — §10 states; S-5 · Tab rows in context | planned |
-| DESIGN §10.5 | State loading | B-3 · Rail rows — §10 states; B-7 · Feedback — progress, attention, banners; W-6 · Shell — page loading | planned |
-| DESIGN §10.6 | State attention | B-3 · Rail rows — §10 states; B-7 · Feedback — progress, attention, banners; S-5 · Tab rows in context | planned |
+| DESIGN §10.4 | State selected | B-3 · Rail rows — §10 states; S-5 · Tab rows in context | yes |
+| DESIGN §10.5 | State loading | B-3 · Rail rows — §10 states; B-7 · Feedback — progress, attention, banners; W-6 · Shell — page loading | yes |
+| DESIGN §10.6 | State attention | B-3 · Rail rows — §10 states; B-7 · Feedback — progress, attention, banners; S-5 · Tab rows in context | yes |
 | DESIGN §10.7 | State error | B-3 · Rail rows — §10 states; G-5 · Glass — load errors | planned |
-| DESIGN §10.8 | State disabled | B-1 · Buttons & keys; B-3 · Rail rows — §10 states; W-7 · Shell — titlebar navigation states | planned |
-| DESIGN §10.9 | State dragging / drag-target | B-3 · Rail rows — §10 states; S-9 · Drag in flight | planned |
+| DESIGN §10.8 | State disabled | B-1 · Buttons & keys; B-3 · Rail rows — §10 states; W-7 · Shell — titlebar navigation states | yes |
+| DESIGN §10.9 | State dragging / drag-target | B-3 · Rail rows — §10 states; S-9 · Drag in flight | yes |
 | DESIGN §10.10 | State focused (keyboard) | B-2 · Fields, toggles & focus; B-3 · Rail rows — §10 states | yes |
 | DESIGN §10.11 | State unresponsive | B-3 · Rail rows — §10 states; G-4 · Glass — unresponsive page | planned |
-| DESIGN §11.1 | Vertical tab row | B-3 · Rail rows — §10 states; S-5 · Tab rows in context | planned |
-| DESIGN §11.2 | Pinned tab | S-3 · Space heading & pinned tabs; S-9 · Drag in flight | planned |
-| DESIGN §11.3 | Space chips, profile context, configuration | S-7 · Footer strip; P-1 · Space switching; P-2 · Space configuration; P-3 · New space; P-4 · Space menu & delete | planned |
+| DESIGN §11.1 | Vertical tab row | B-3 · Rail rows — §10 states; S-5 · Tab rows in context | yes |
+| DESIGN §11.2 | Pinned tab | S-3 · Space heading & pinned tabs; S-9 · Drag in flight | yes |
+| DESIGN §11.3 | Space chips, profile context, configuration | S-7 · Footer strip; P-1 · Space switching; P-2 · Space configuration; P-3 · New space; P-4 · Space menu & delete | yes |
 | DESIGN §11.4 | Sidebar and command surfaces | W-1 · Shell — standard; S-6 · New Tab row & staged tab; C-1 · ⌘T — empty with recents; C-2 · ⌘T — results by kind; C-6 · ⌘L — edit address | planned |
 | DESIGN §11.5 | Address control | S-1 · Address control; G-7 · Page zoom | planned |
-| DESIGN §11.6 | Dense list (500 tabs) | W-8 · Shell — dense list (500 tabs) | planned |
+| DESIGN §11.6 | Dense list (500 tabs) | W-8 · Shell — dense list (500 tabs) | yes |
 | DESIGN §11.7 | Split preview / split view | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | planned |
 | DESIGN §11.8 | Empty, crash and load-error panes | G-2 · Glass — empty space; G-3 · Glass — crashed page; G-5 · Glass — load errors | planned |
 | DESIGN §11.8a | Unresponsive renderer pane | G-4 · Glass — unresponsive page | planned |
-| DESIGN §11.9 | Missing favicon and long titles | S-5 · Tab rows in context; B-4 · Tiles, chips & badges | planned |
-| DESIGN §11.10 | Favorites grid | S-2 · Favorites grid; S-9 · Drag in flight | planned |
+| DESIGN §11.9 | Missing favicon and long titles | S-5 · Tab rows in context; B-4 · Tiles, chips & badges | yes |
+| DESIGN §11.10 | Favorites grid | S-2 · Favorites grid; S-9 · Drag in flight | yes |
 | DESIGN §11.11 | Folders | S-4 · Folders; M-2 · Favorite & folder menus | planned |
 | DESIGN §11.12 | Downloads panel, find bar, sheets | M-4 · Downloads panel; G-6 · Find in page | planned |
 | DESIGN §11.13 | Context-menu language | M-1 · Tab menu; M-2 · Favorite & folder menus; M-3 · Page menu & web menus; P-4 · Space menu & delete | planned |
-| DESIGN §11.14 | Titlebar navigation controls | W-7 · Shell — titlebar navigation states | planned |
+| DESIGN §11.14 | Titlebar navigation controls | W-7 · Shell — titlebar navigation states | yes |
 | DESIGN §11.15 | Sidebar media control | S-8 · Media card; PR-17 · Media in a background tab | planned |
 | DESIGN §11.16 | Saved Pages result and Library | C-2 · ⌘T — results by kind; M-5 · Saved Pages Library; PR-12 · Save a page & Library | planned |
 | DESIGN §11.17 | Peek preview bar | G-8 · Peek preview; PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
-| DESIGN §12 | Profile identity | P-5 · Profile identity in chrome; P-6 · Profiles — create & edit; P-7 · Move a tab across profiles | planned |
+| DESIGN §12 | Profile identity | P-5 · Profile identity in chrome; P-6 · Profiles — create & edit; P-7 · Move a tab across profiles | yes |
 | DESIGN §13 | Native web-content boundary | G-1 · Glass — before attach & blank; M-3 · Page menu & web menus; M-14 · File upload & save | planned |
 | DESIGN §17.2 | Tooltips | B-6 · Floating shells | yes |
-| DESIGN §17.13 | Internal page names in the address | S-1 · Address control | planned |
-| DESIGN §18.2 | v2 materials, colour, elevation | F-1 · Colour — neutrals, accent, status; F-4 · Space, radius, elevation, materials; W-2 · Shell — space tint | planned |
+| DESIGN §17.13 | Internal page names in the address | S-1 · Address control | yes |
+| DESIGN §18.2 | v2 materials, colour, elevation | F-1 · Colour — neutrals, accent, status; F-4 · Space, radius, elevation, materials; W-2 · Shell — space tint | yes |
 | DESIGN §18.3 | v2 radius and type | F-3 · Type & density; F-4 · Space, radius, elevation, materials | yes |
 | DESIGN §18.4 | v2 floating surfaces | B-6 · Floating shells; C-2 · ⌘T — results by kind; C-6 · ⌘L — edit address; M-1 · Tab menu | planned |
 | DESIGN §18.5 | v2 motion moments | V-5 · Motion — moments; V-4 · Reduce Motion | planned |
 | Phase 4 | Startup presents sidebar and selected tab | L-10 · Session restore; PR-18 · Quit, relaunch, crash recovery | planned |
 | Phase 4 | Empty space, first launch, many tabs, long titles, missing favicons, crashed pages | G-2 · Glass — empty space; L-1 · First run — welcome; W-8 · Shell — dense list (500 tabs); S-5 · Tab rows in context; G-3 · Glass — crashed page | planned |
-| Phase 4 | Collapsible, adjustable sidebar | W-3 · Shell — sidebar hidden ⌘B & hover reveal; S-10 · Rail width & resize | planned |
+| Phase 4 | Collapsible, adjustable sidebar | W-3 · Shell — sidebar hidden ⌘B & hover reveal; S-10 · Rail width & resize | yes |
 | Phase 4 | Drag reorder and move between spaces | S-9 · Drag in flight; PR-06 · Organize — folders & drag rules | planned |
 | Phase 6 | Split view: create, show two, divider, focus, route, close, dissolve, compact | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | planned |
 | Phase 7 | First-run, empty, migration-error and recovery UI | L-1 · First run — welcome; L-2 · First run — import, default browser, first space; L-11 · Recovery & migration errors | planned |
@@ -213,11 +213,11 @@ is read from the Paper file.
 | Inventory | Session restore and crash recovery | L-10 · Session restore; L-11 · Recovery & migration errors; PR-18 · Quit, relaunch, crash recovery | planned |
 | E2E smoke/shutdown | Launch and quit | L-10 · Session restore; L-14 · Windows — new, close, quit | planned |
 | E2E tabs/shell-tabs | Tab open/select/close/reopen | S-5 · Tab rows in context; PR-05 · Tab life — pin, folder, favorite, close, reopen, suspend | planned |
-| E2E profiles | Profile-isolated sessions | P-5 · Profile identity in chrome; P-7 · Move a tab across profiles | planned |
-| E2E shell-spaces | Spaces, strip, swipe, configuration | P-1 · Space switching; P-2 · Space configuration; P-3 · New space | planned |
-| E2E shell-sidebar | Rail, favorites, lift, appearance | W-1 · Shell — standard; S-2 · Favorites grid; S-3 · Space heading & pinned tabs | planned |
-| E2E shell-favicons | Favicon slots | S-5 · Tab rows in context; B-4 · Tiles, chips & badges | planned |
-| E2E shell-titlebar-navigation | Titlebar controls | W-7 · Shell — titlebar navigation states | planned |
+| E2E profiles | Profile-isolated sessions | P-5 · Profile identity in chrome; P-7 · Move a tab across profiles | yes |
+| E2E shell-spaces | Spaces, strip, swipe, configuration | P-1 · Space switching; P-2 · Space configuration; P-3 · New space | yes |
+| E2E shell-sidebar | Rail, favorites, lift, appearance | W-1 · Shell — standard; S-2 · Favorites grid; S-3 · Space heading & pinned tabs | yes |
+| E2E shell-favicons | Favicon slots | S-5 · Tab rows in context; B-4 · Tiles, chips & badges | yes |
+| E2E shell-titlebar-navigation | Titlebar controls | W-7 · Shell — titlebar navigation states | yes |
 | E2E shell-split-geometry | Split geometry | G-9 · Split view — two panes | planned |
 | E2E shell-organize | Folders and organized area | S-4 · Folders; PR-06 · Organize — folders & drag rules | planned |
 | E2E shell-tab-menu | Tab menu | M-1 · Tab menu | planned |
@@ -233,7 +233,7 @@ is read from the Paper file.
 | E2E shell-find | Find bar | G-6 · Find in page | planned |
 | E2E shell-zoom | Zoom chip | G-7 · Page zoom; S-1 · Address control | planned |
 | E2E shell-context-menu | Page/favorite/folder menus | M-2 · Favorite & folder menus; M-3 · Page menu & web menus | planned |
-| E2E shell-dense | Dense list | W-8 · Shell — dense list (500 tabs) | planned |
+| E2E shell-dense | Dense list | W-8 · Shell — dense list (500 tabs) | yes |
 | E2E shell-downloads | Downloads panel | M-4 · Downloads panel | planned |
 | E2E external-url | External URL opening | M-12 · Open in another app | planned |
 | E2E shell-errors | Error surfaces and illustrations | G-2 · Glass — empty space; G-3 · Glass — crashed page; G-5 · Glass — load errors | planned |
@@ -261,32 +261,32 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 | 11 | B-5 · Menu & result items | Shipped | §11.4 §11.13 §18.4 | [tab-favorite-context-menus](tab-favorite-context-menus.md) | yes |
 | 11 | B-6 · Floating shells | Shipped | §18.4 §11.12 §11.13 | [v2-overlays](v2-overlays.md) | yes |
 | 11 | B-7 · Feedback — progress, attention, banners | Change | §10.5 §10.6 §18.5 | [v2-motion-core](v2-motion-core.md) | yes |
-| 20 | W-1 · Shell — standard | Shipped | §1 §2 §11.4 | [visual-shell-reference](visual-shell-reference.md) | planned |
-| 20 | W-2 · Shell — space tint | Shipped | §11.3 §18.2 | [v2-paper-alignment](v2-paper-alignment.md) | planned |
-| 20 | W-3 · Shell — sidebar hidden ⌘B & hover reveal | Change | §2 §11.4 §17 | [daily-driver-sidebar-main](daily-driver-sidebar-main.md) | planned |
-| 20 | W-4 · Shell — narrow & wide windows | Change | §5 §8 | [global-ui-scale-density](global-ui-scale-density.md) | planned |
-| 20 | W-5 · Shell — full screen | New · proposal | §2 | paper-browser-blueprint | planned |
-| 20 | W-6 · Shell — page loading | Shipped | §10.5 §18.5 D5 | [v2-motion-core](v2-motion-core.md) | planned |
-| 20 | W-7 · Shell — titlebar navigation states | Shipped | §11.14 | [titlebar-navigation-controls](titlebar-navigation-controls.md) | planned |
-| 20 | W-8 · Shell — dense list (500 tabs) | Shipped | §8 §11.6 | [dense-list-slice](dense-list-slice.md) | planned |
-| 20 | W-9 · Shell — several windows | Change | §2 §11.4 | [new-window-production-seam](new-window-production-seam.md) | planned |
-| 21 | S-1 · Address control | Shipped | §11.5 §17.13 §18.5 | [address-field-space-identity](address-field-space-identity.md) | planned |
-| 21 | S-2 · Favorites grid | Shipped | §11.10 §18.5 | [favorites-drag-offers](favorites-drag-offers.md) | planned |
-| 21 | S-3 · Space heading & pinned tabs | Shipped | §11.2 §11.3 | [sidebar-reference-polish](sidebar-reference-polish.md) | planned |
-| 21 | S-4 · Folders | Shipped | §11.11 | [folder-context-menu](folder-context-menu.md) | planned |
-| 21 | S-5 · Tab rows in context | Shipped | §10 §11.1 §11.9 | [sidebar-reference-polish](sidebar-reference-polish.md) | planned |
-| 21 | S-6 · New Tab row & staged tab | Shipped | §11.4 | [browser-mvp-sidebar-ui](browser-mvp-sidebar-ui.md) | planned |
-| 21 | S-7 · Footer strip | Shipped | §11.3 §11.4 | [space-footer-strip-appearance-ui](space-footer-strip-appearance-ui.md) | planned |
-| 21 | S-8 · Media card | New · proposal | §11.15 | [sidebar-media-control](sidebar-media-control.md) | planned |
-| 21 | S-9 · Drag in flight | Shipped | §10.9 §11.2 §11.10 §11.11 | [favorites-drag-offers](favorites-drag-offers.md) | planned |
-| 21 | S-10 · Rail width & resize | Shipped | §5 §8 | [daily-driver-sidebar-main](daily-driver-sidebar-main.md) | planned |
-| 22 | P-1 · Space switching | Shipped | §11.3 §18.5 D4 | [space-footer-strip-appearance-ui](space-footer-strip-appearance-ui.md) | planned |
-| 22 | P-2 · Space configuration | Shipped | §11.3 D7 | [v2-theme-picker](v2-theme-picker.md) | planned |
-| 22 | P-3 · New space | Shipped | §11.3 | [space-creation-appearance-ui](space-creation-appearance-ui.md) | planned |
-| 22 | P-4 · Space menu & delete | Change | §11.3 §11.13 | [space-creation-appearance-ui](space-creation-appearance-ui.md) | planned |
-| 22 | P-5 · Profile identity in chrome | Shipped | §12 | [cross-context-profile-hint](cross-context-profile-hint.md) | planned |
-| 22 | P-6 · Profiles — create & edit | New · proposal | §12 | paper-browser-blueprint | planned |
-| 22 | P-7 · Move a tab across profiles | Change | §12 PRODUCT | [browser-controller](browser-controller.md) | planned |
+| 20 | W-1 · Shell — standard | Shipped | §1 §2 §11.4 | [visual-shell-reference](visual-shell-reference.md) | yes |
+| 20 | W-2 · Shell — space tint | Shipped | §11.3 §18.2 | [v2-paper-alignment](v2-paper-alignment.md) | yes |
+| 20 | W-3 · Shell — sidebar hidden ⌘B & hover reveal | Change | §2 §11.4 §17 | [daily-driver-sidebar-main](daily-driver-sidebar-main.md) | yes |
+| 20 | W-4 · Shell — narrow & wide windows | Change | §5 §8 | [global-ui-scale-density](global-ui-scale-density.md) | yes |
+| 20 | W-5 · Shell — full screen | New · proposal | §2 | paper-browser-blueprint | yes |
+| 20 | W-6 · Shell — page loading | Shipped | §10.5 §18.5 D5 | [v2-motion-core](v2-motion-core.md) | yes |
+| 20 | W-7 · Shell — titlebar navigation states | Shipped | §11.14 | [titlebar-navigation-controls](titlebar-navigation-controls.md) | yes |
+| 20 | W-8 · Shell — dense list (500 tabs) | Shipped | §8 §11.6 | [dense-list-slice](dense-list-slice.md) | yes |
+| 20 | W-9 · Shell — several windows | Change | §2 §11.4 | [new-window-production-seam](new-window-production-seam.md) | yes |
+| 21 | S-1 · Address control | Shipped | §11.5 §17.13 §18.5 | [address-field-space-identity](address-field-space-identity.md) | yes |
+| 21 | S-2 · Favorites grid | Shipped | §11.10 §18.5 | [favorites-drag-offers](favorites-drag-offers.md) | yes |
+| 21 | S-3 · Space heading & pinned tabs | Shipped | §11.2 §11.3 | [sidebar-reference-polish](sidebar-reference-polish.md) | yes |
+| 21 | S-4 · Folders | Shipped | §11.11 | [folder-context-menu](folder-context-menu.md) | yes |
+| 21 | S-5 · Tab rows in context | Shipped | §10 §11.1 §11.9 | [sidebar-reference-polish](sidebar-reference-polish.md) | yes |
+| 21 | S-6 · New Tab row & staged tab | Shipped | §11.4 | [browser-mvp-sidebar-ui](browser-mvp-sidebar-ui.md) | yes |
+| 21 | S-7 · Footer strip | Shipped | §11.3 §11.4 | [space-footer-strip-appearance-ui](space-footer-strip-appearance-ui.md) | yes |
+| 21 | S-8 · Media card | New · proposal | §11.15 | [sidebar-media-control](sidebar-media-control.md) | yes |
+| 21 | S-9 · Drag in flight | Shipped | §10.9 §11.2 §11.10 §11.11 | [favorites-drag-offers](favorites-drag-offers.md) | yes |
+| 21 | S-10 · Rail width & resize | Shipped | §5 §8 | [daily-driver-sidebar-main](daily-driver-sidebar-main.md) | yes |
+| 22 | P-1 · Space switching | Shipped | §11.3 §18.5 D4 | [space-footer-strip-appearance-ui](space-footer-strip-appearance-ui.md) | yes |
+| 22 | P-2 · Space configuration | Shipped | §11.3 D7 | [v2-theme-picker](v2-theme-picker.md) | yes |
+| 22 | P-3 · New space | Shipped | §11.3 | [space-creation-appearance-ui](space-creation-appearance-ui.md) | yes |
+| 22 | P-4 · Space menu & delete | Change | §11.3 §11.13 | [space-creation-appearance-ui](space-creation-appearance-ui.md) | yes |
+| 22 | P-5 · Profile identity in chrome | Shipped | §12 | [cross-context-profile-hint](cross-context-profile-hint.md) | yes |
+| 22 | P-6 · Profiles — create & edit | New · proposal | §12 | paper-browser-blueprint | yes |
+| 22 | P-7 · Move a tab across profiles | Change | §12 PRODUCT | [browser-controller](browser-controller.md) | yes |
 | 23 | C-1 · ⌘T — empty with recents | Shipped | §11.4 §18.4 | [browser-mvp-palette-ui](browser-mvp-palette-ui.md) | planned |
 | 23 | C-2 · ⌘T — results by kind | Shipped | §11.4 §11.16 §18.4 | [v2-paper-alignment](v2-paper-alignment.md) | planned |
 | 23 | C-3 · ⌘T — no match & web search | Shipped | §11.4 | [general-search-settings-contract](general-search-settings-contract.md) | planned |
@@ -385,7 +385,25 @@ W0:                     2026-09-28. Eight old pages renamed "Archiv · …";
                         title secondary, lifering error/unresponsive,
                         92 % drag with border.strong), elevation row,
                         danger labels, banner placement (no chassis gap).
-W1:
+W1:                     2026-09-28. Page 20 W-1…W-9 (standard, tint,
+                        ⌘B hidden + hover-reveal proposal, narrow/minimum/
+                        wide, full screen, loading with D5 frames, titlebar
+                        states, 500-tab list, two windows), page 21
+                        S-1…S-10 (address states incl. §17.13 proposals,
+                        Favorites incl. drag offers, heading/pinned incl.
+                        ghost row and S tiles, folders, rows in context,
+                        New Tab, footer strip incl. plus menu and drag
+                        target, media card capability states, drag in
+                        flight ×5 targets, rail widths/divider), page 22
+                        P-1…P-7 (switch frames swipe + D4 fade, config
+                        panel, new space, space menu + delete sheet,
+                        profile identity, new-profile sheet, cross-profile
+                        move). Review fixes: minimum-window rail formula,
+                        loading title colour on the selected row, inactive
+                        window lights, fragment caption alignment, strip
+                        focus ring clipping, chip targets, token-only tint
+                        cross-fade layer (no colour-mix), config panel
+                        widths, drag label clipping.
 W2:
 W3:
 W4:

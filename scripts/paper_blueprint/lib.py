@@ -240,9 +240,9 @@ def traffic_lights(t, dim=False):
     return f'<div layer-name="Traffic lights · native" style="display:flex;gap:8px;align-items:center;padding-right:8px;flex-shrink:0">{dots}</div>'
 
 
-def titlebar(t, back=True, forward=False, loading=False, lights=True, sidebar_toggle=True):
+def titlebar(t, back=True, forward=False, loading=False, lights=True, sidebar_toggle=True, dim=False):
     ink2, faint = t.c("ink-secondary"), t.c("ink-faint")
-    parts = [traffic_lights(t) if lights else ""]
+    parts = [traffic_lights(t, dim) if lights else ""]
     if sidebar_toggle:
         parts.append(icon_button(t, "sidebar", label="bbr-sidebar-toggle"))
     parts.append('<div style="flex:1 1 0"></div>')
@@ -253,11 +253,13 @@ def titlebar(t, back=True, forward=False, loading=False, lights=True, sidebar_to
             f'padding:0 12px;gap:8px">{"".join(parts)}</div>')
 
 
-def address(t, domain="x.com", zoom=None, state="rest", progress=None, secure=True, label=None):
-    """§11.5 address display control. state: rest | hover | pressed."""
+def address(t, domain="x.com", zoom=None, state="rest", progress=None, secure=True, label=None, glyph_name=None):
+    """§11.5 address display control. state: rest | hover | pressed | focused."""
     fill = {"rest": t.c("address"), "hover": t.c("address-hover"),
-            "pressed": t.c("wash-active")}[state]
+            "pressed": t.c("wash-active"), "focused": t.c("address")}[state]
     lead = "" if secure else slot(icon("warn", t.c("status-attention"), 14), 16)
+    if glyph_name:
+        lead = slot(icon(glyph_name, t.c("ink-secondary"), 14), 16)
     chip = ""
     if zoom:
         chip = (f'<div layer-name="bbr-address-zoom" style="height:22px;flex-shrink:0;display:flex;align-items:center;'
@@ -270,7 +272,7 @@ def address(t, domain="x.com", zoom=None, state="rest", progress=None, secure=Tr
     return (f'<div layer-name="{esc(label or "bbr-address")}" style="flex-shrink:0;display:flex;padding:0 4px 12px 4px">'
             f'<div style="position:relative;flex:1 1 0;height:36px;display:flex;align-items:center;gap:8px;'
             f'padding:0 6px 0 12px;border-radius:var(--radius-lg);background-color:{fill};'
-            f'border:1px solid {t.c("address-border")}">{lead}'
+            f'border:1px solid {t.c("address-border")};{"box-shadow:0 0 0 2px " + t.c("accent") if state == "focused" else ""}">{lead}'
             f'{text(domain, "title", t.c("ink"), grow=True)}{chip}{bar}</div></div>')
 
 
@@ -326,7 +328,7 @@ def tab_row(t, title, fav=("mono", "A", 1), state="rest", indent=0, trailing=Non
         bg = t.c("wash-active")
     if state in ("selected", "dragging"):
         bg, shadow = t.c("tint-selected"), t.lift()
-        colour = t.c("ink")
+        colour = t.c("ink-secondary") if asleep else t.c("ink")
     if state == "dragging":
         shadow = f"0 0 0 1px {t.c('border-strong')}, {t.elev2()}"
         extra = "opacity:0.92;"
@@ -414,8 +416,8 @@ def footer(t, spaces=("code", "bag"), active=0, downloads_badge=None):
     if downloads_badge:
         dl = (f'<div style="position:relative;flex-shrink:0">{dl}<div style="position:absolute;right:3px;top:3px;'
               f'width:7px;height:7px;border-radius:9999px;background-color:{t.c("accent")}"></div></div>')
-    return (f'<div layer-name="bbr-footer" style="height:48px;flex-shrink:0;display:flex;align-items:center;gap:4px;'
-            f'padding:6px 10px 10px 10px">{dl}<div style="display:flex;gap:2px;align-items:center;flex:1 1 0;min-width:0">{chips}</div>'
+    return (f'<div layer-name="bbr-footer" style="height:44px;flex-shrink:0;display:flex;align-items:center;gap:12px;'
+            f'padding:0 8px 8px 8px">{dl}<div layer-name="bbr-space-strip" style="display:flex;gap:4px;align-items:center;flex:1 1 0;min-width:0;overflow:hidden">{chips}</div>'
             f'{icon_button(t, "plus", label="bbr-footer-new-space")}</div>')
 
 
@@ -519,38 +521,50 @@ class Board:
             return path
 
 
+def build_rail(b, parent, t, spec, h, rail_w=300, extra_style=""):
+    rail = b.add(f'<div layer-name="bbr-sidebar" style="width:{rail_w}px;flex-shrink:0;display:flex;flex-direction:column;height:{h}px;{extra_style}">'
+                 f'{titlebar(t, **spec.get("titlebar", {})) if spec.get("titlebar", {}) is not None else ""}</div>', parent)
+    if spec.get("address", {}) is not None:
+        b.add(address(t, **spec.get("address", {})), rail)
+    if spec.get("favorites"):
+        b.add(favorites(t, spec["favorites"], spec.get("fav_states")), rail)
+    for extra in spec.get("above_heading", []):
+        b.add(extra, rail)
+    if spec.get("heading", ("Default", "code")):
+        b.add(heading(t, *spec.get("heading", ("Default", "code"))), rail)
+    body = b.add('<div layer-name="bbr-scroll" style="position:relative;flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:4px;padding-bottom:8px;overflow:hidden"></div>', rail)
+    for group in spec.get("groups", []):
+        if group == "divider":
+            b.add(divider(t), body)
+        elif group == "new":
+            b.add(f'<div style="flex-shrink:0;padding:0 8px;display:flex;flex-direction:column">{new_tab_row(t, spec.get("new_state", "rest"))}</div>', body)
+        elif isinstance(group, str):
+            b.add(group, body)
+        else:
+            b.add(rows_block(t, group), body)
+    for extra in spec.get("above_footer", []):
+        b.add(extra, rail)
+    if spec.get("media"):
+        b.add(spec["media"], rail)
+    if spec.get("footer", {}) is not None:
+        b.add(footer(t, **spec.get("footer", {})), rail)
+    return rail
+
+
 def window(b, target, t, spec, w=1440, h=900, name=None):
     """Write a whole browser window into `target`, group by group."""
     chassis = t.c("sidebar")
     win = b.add(
         f'<div layer-name="{esc(name or ("Window · " + t.label()))}" style="position:relative;width:{w}px;height:{h}px;flex-shrink:0;display:flex;'
-        f'border-radius:12px;overflow:hidden;background-color:{chassis};box-shadow:0 0 0 1px {DOC.c("hairline")}, 0 24px 48px -12px var(--color-elev-deep)"></div>',
+        f'border-radius:{spec.get("win_radius", 12)}px;overflow:hidden;background-color:{chassis};box-shadow:0 0 0 1px {spec.get("ring", DOC.c("hairline"))}, 0 24px 48px -12px var(--color-elev-deep);{spec.get("win_style", "")}"></div>',
         target)
     rail_w = spec.get("rail_width", 300)
     if spec.get("sidebar", True):
-        rail = b.add(f'<div layer-name="Rail" style="width:{rail_w}px;flex-shrink:0;display:flex;flex-direction:column;height:{h}px">'
-                     f'{titlebar(t, **spec.get("titlebar", {}))}</div>', win)
-        if spec.get("address", {}) is not None:
-            b.add(address(t, **spec.get("address", {})), rail)
-        if spec.get("favorites"):
-            b.add(favorites(t, spec["favorites"], spec.get("fav_states")), rail)
-        if spec.get("heading", ("Default", "code")):
-            b.add(heading(t, *spec.get("heading", ("Default", "code"))), rail)
-        body = b.add('<div layer-name="Rows" style="flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:4px;padding-bottom:8px;overflow:hidden"></div>', rail)
-        for group in spec.get("groups", []):
-            if group == "divider":
-                b.add(divider(t), body)
-            elif group == "new":
-                b.add(f'<div style="flex-shrink:0;padding:0 8px;display:flex;flex-direction:column">{new_tab_row(t)}</div>', body)
-            else:
-                b.add(rows_block(t, group), body)
-        if spec.get("media"):
-            b.add(spec["media"], rail)
-        b.add(footer(t, **spec.get("footer", {})), rail)
+        build_rail(b, win, t, spec, h, rail_w)
     area_pad = spec.get("card_pad", "10px 10px 10px 0" if spec.get("sidebar", True) else "52px 10px 10px 10px")
     if not spec.get("sidebar", True) and spec.get("band", True):
-        b.add(f'<div layer-name="Titlebar band (chassis)" style="position:absolute;left:0;top:0;right:0;height:52px;display:flex;align-items:center;padding:0 12px;gap:8px">'
-              f'{traffic_lights(t)}{icon_button(t, "sidebar", label="bbr-sidebar-toggle")}</div>', win)
+        b.add(f'<div layer-name="bbr-chassis-band" style="position:absolute;left:0;top:0;right:0;height:52px;display:flex;align-items:center;padding:0 12px;gap:8px">'
+              f'{traffic_lights(t)}</div>', win)
     area = b.add(f'<div layer-name="Card area" style="flex:1 1 0;min-width:0;display:flex;padding:{area_pad}"></div>', win)
     radius = spec.get("card_radius", 10)
     card = b.add(f'<div layer-name="bbr-content-card" style="position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:column;border-radius:{radius}px;'
@@ -561,9 +575,24 @@ def window(b, target, t, spec, w=1440, h=900, name=None):
     elif content:
         for part in (content if isinstance(content, list) else [content]):
             b.add(part, card)
+    for overlay in spec.get("card_overlays", []):
+        b.add(overlay, card)
     for overlay in spec.get("overlays", []):
         b.add(overlay, win)
     return win
+
+
+def rail_plate(b, target, t, spec, h=900, name=None, w=300):
+    """A rail alone (no card) on its chassis, for sidebar boards."""
+    frame = b.add(f'<div layer-name="{esc(name or ("Rail · " + t.label()))}" style="position:relative;width:{w}px;height:{h}px;flex-shrink:0;display:flex;'
+                  f'border-radius:12px;overflow:hidden;background-color:{spec.get("bg", t.c("sidebar"))};box-shadow:0 0 0 1px {DOC.c("hairline")}"></div>', target)
+    if spec.get("bg_layer"):
+        colour, opacity = spec["bg_layer"]
+        b.add(f'<div layer-name="Tint cross-fade layer" style="position:absolute;inset:0;background-color:{colour};opacity:{opacity}"></div>', frame)
+    rail = build_rail(b, frame, t, spec, h, w)
+    for overlay in spec.get("overlays", []):
+        b.add(overlay, frame)
+    return frame
 
 
 def plate(b, target, t, inner_html=None, w=None, h=None, pad=24, name=None, bg="sidebar"):
