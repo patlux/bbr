@@ -694,7 +694,7 @@ impl BbrApp {
             // Up/Down select results without moving focus out of the field.
             "up" | "down" => {
                 let delta = if ks.key == "up" { -1 } else { 1 };
-                self.command_move_selection(delta);
+                self.command_move_selection(delta, cx);
                 cx.stop_propagation();
             }
             // Horizontal cursor movement (UTF-8-safe; collapses any

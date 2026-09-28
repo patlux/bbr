@@ -123,11 +123,13 @@ pub fn favorites_grid(theme: &Theme, children: Vec<gpui::AnyElement>) -> Statefu
 /// `radius:sm` square at `density:row-tile` size, `density:favorites-gap`
 /// apart. The tile id and the inner icon id are the stable §15 identity
 /// pair. `on_activate` is the production activation listener
-/// (open-vs-focus semantics is an open decision).
+/// (open-vs-focus semantics is an open decision). `pop` carries the §18.5
+/// favorite-pop moment key while this tile's favorite was just committed.
 pub fn favorite_tile(
     theme: &Theme,
     tile: &FavoriteTileSpec,
     width: f32,
+    pop: Option<u64>,
     on_activate: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let width = gpui::px(width);
@@ -187,15 +189,21 @@ pub fn favorite_tile(
         .debug_selector(move || favorite_tile_id(tile.index).to_string())
         .w(width)
         .h(height)
-        .rounded(favorite_tile_radius(theme.density))
-        // §18.2: a white veil over the (space-tinted) rail.
-        .bg(theme.palette.surface_favorite)
+        .relative()
         .flex()
         .items_center()
         .justify_center()
         .cursor_pointer()
         .on_mouse_down(MouseButton::Left, on_activate)
+        // §18.2: a white veil over the (space-tinted) rail — the surface
+        // layer, which pops (§18.5) without moving the tile's box.
+        .child(pop::surface_layer(
+            theme,
+            favorite_tile_radius(theme.density),
+            pop,
+        ))
         .child(icon_slot)
+        .when_some(pop::speck_layer(theme, pop), |el, specks| el.child(specks))
 }
 
 /// §5/§18.3 Favorite tile corner radius: `radius:md` (10), `radius:sm` at
@@ -231,6 +239,7 @@ pub fn favorites_region_height(theme: &Theme, tile_count: usize, offer: bool) ->
 }
 
 mod affordance;
+mod pop;
 pub use affordance::*;
 
 #[cfg(test)]

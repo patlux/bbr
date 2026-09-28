@@ -121,6 +121,9 @@ pub struct DownloadsPanelModel<'a> {
     /// The panel's chrome focus handle (the surface tracks focus on it;
     /// the app owns the handle).
     pub focus: &'a gpui::FocusHandle,
+    /// §18.5: `(download id, moment key)` of the row whose success was just
+    /// committed — its check draws once with one `status.ok` ring.
+    pub check: Option<(u64, u64)>,
 }
 
 /// The pure panel layout math (DESIGN.md §11.12): the scroll content is the

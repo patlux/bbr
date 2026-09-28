@@ -19,8 +19,15 @@ pub struct MotionMomentSnapshot {
 /// The motion evidence of the main window.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct MotionSnapshot {
-    /// The presented moments, in render order.
+    /// The presented moments: loops in render order, then the running
+    /// after-commit moments.
     pub moments: Vec<MotionMomentSnapshot>,
+    /// The most recent after-commit moment starts, newest last (bounded):
+    /// evidence that a moment began after its commit, independent of how
+    /// long it runs. A Reduce Motion start without an animation reports
+    /// `static`.
+    #[serde(default)]
+    pub started: Vec<MotionMomentSnapshot>,
     /// Root-view renders since launch (proves a forced frame rendered).
     pub root_renders: u64,
     /// Animation elements the render has built since launch. Only animated

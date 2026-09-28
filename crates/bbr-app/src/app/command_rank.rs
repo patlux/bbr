@@ -283,6 +283,7 @@ impl BbrApp {
             return;
         }
         self.rank_command_now();
+        self.start_command_entrance(cx);
         cx.notify();
         #[cfg(feature = "testkit")]
         self.schedule_command_text_render_commit(cx);
@@ -294,18 +295,24 @@ impl BbrApp {
     pub fn flush_command_ranking(&mut self, cx: &mut Context<Self>) {
         self.command_ranking.flush();
         self.rank_command_now();
+        self.start_command_entrance(cx);
         cx.notify();
     }
 
     /// Up/Down selection inside the published results: clamps at the edges,
-    /// never moves focus out of the field.
-    pub fn command_move_selection(&mut self, delta: isize) {
+    /// never moves focus out of the field. The selection commits at once;
+    /// the ⌘T cursor highlight then glides from the previous row (§18.5).
+    pub fn command_move_selection(&mut self, delta: isize, cx: &mut Context<Self>) {
         let len = self.command_ranking.results.len();
         if len == 0 {
             return;
         }
+        let from = self.command_ranking.selected;
         let next = self.command_ranking.selected as isize + delta;
         self.command_ranking.selected = next.clamp(0, len as isize - 1) as usize;
+        if self.command_ranking.selected != from {
+            self.start_command_glide(from, cx);
+        }
     }
 }
 

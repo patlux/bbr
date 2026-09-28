@@ -330,6 +330,44 @@ pub(crate) fn benchmark_reopen(
 /// `expected_sessions` is the live-session count both spaces' tabs hold
 /// together; the activation must never change it (warm switching only
 /// show/hides).
+/// D4 fade path (v2 S7): the measured switch committed first (the caller
+/// checked the destination presentation); when the chrome tint changed under
+/// full motion, exactly one `space-tint-fade` decoration started after that
+/// commit — the fade never gates the measured presentation.
+fn assert_fade_path(
+    before: &bbr_testkit::protocol::Snapshot,
+    after: &bbr_testkit::protocol::Snapshot,
+) {
+    let tint = |snapshot: &bbr_testkit::protocol::Snapshot| {
+        snapshot
+            .active_appearance
+            .as_ref()
+            .map(|appearance| appearance.chrome_tint.clone())
+    };
+    let fades = |snapshot: &bbr_testkit::protocol::Snapshot| {
+        snapshot
+            .motion
+            .started
+            .iter()
+            .filter(|start| start.moment == "space-tint-fade")
+            .count()
+    };
+    if tint(before) != tint(after) && !after.shell_modes.reduced_motion {
+        let fade = after
+            .motion
+            .started
+            .iter()
+            .rev()
+            .find(|start| start.moment == "space-tint-fade")
+            .expect("a tint change starts the D4 fade");
+        assert_eq!(fade.variant, "animated");
+        assert!(
+            fades(after) > fades(before) || fades(before) >= 16,
+            "one new fade per committed tint change"
+        );
+    }
+}
+
 pub(crate) fn benchmark_space_switch(
     client: &mut Client,
     since: &mut u64,
@@ -339,6 +377,8 @@ pub(crate) fn benchmark_space_switch(
     expected_sessions: usize,
 ) -> PresentationMeasurement {
     let operation_id = BenchmarkOperationId(operation);
+    // D4 fade path (v2 S7): read outside the timed region.
+    let before = client.snapshot().expect("pre-switch snapshot");
     client
         .send_ok(&Request::BenchmarkActivateSpace {
             operation_id,
@@ -361,6 +401,7 @@ pub(crate) fn benchmark_space_switch(
     let snapshot = client.snapshot().expect("space switch snapshot");
     assert_eq!(snapshot.active_space, space);
     assert_eq!(snapshot.active_web_view, Some(expected_view));
+    assert_fade_path(&before, &snapshot);
     assert_eq!(
         snapshot.engine_sessions, expected_sessions,
         "warm space switching never recreates sessions"

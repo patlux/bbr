@@ -144,6 +144,7 @@ impl BbrApp {
         SidebarModel {
             sidebar_width,
             chrome_tint,
+            tint_fade: self.tint_fade(),
             active_space_title: SharedString::from(active_space_title),
             command,
             favorites,

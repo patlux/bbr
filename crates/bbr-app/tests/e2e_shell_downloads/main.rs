@@ -36,6 +36,7 @@ mod e2e_common;
 mod actions;
 mod bounded;
 mod lifecycle;
+mod moments;
 mod open_dismiss;
 mod persistence;
 mod support;

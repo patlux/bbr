@@ -40,6 +40,7 @@ mod cancel;
 mod commit;
 mod cross_profile;
 mod noops;
+mod tint_fade;
 mod tracking;
 
 /// The persistent chip id of a space (`bbr-space-chip-<persistent-id>`).

@@ -399,6 +399,9 @@ impl BbrApp {
                     if let Some(destination) = gesture.end() {
                         // The one activation authority: same focus/hint/
                         // session rules as pointer and keyboard activation.
+                        // D4: the gesture already reached the destination
+                        // tint, so the commit does not fade it again.
+                        self.moments.swipe_commit = true;
                         self.activate_space(destination, window, cx);
                     }
                     cx.notify();

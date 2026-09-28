@@ -50,8 +50,26 @@ impl BbrApp {
             }
             AddressProgress::Idle => {}
         }
+        for active in self.running_moments() {
+            moments.push(MotionMomentSnapshot {
+                moment: active.moment.name().to_string(),
+                target: active.target.clone(),
+                variant: active.variant.to_string(),
+            });
+        }
+        let started = self
+            .moments
+            .started
+            .iter()
+            .map(|(moment, target, variant)| MotionMomentSnapshot {
+                moment: moment.name().to_string(),
+                target: target.clone(),
+                variant: (*variant).to_string(),
+            })
+            .collect();
         MotionSnapshot {
             moments,
+            started,
             root_renders: self.motion.root_renders,
             animated_elements: bbr_ui::theme::motion::animated_elements_built(),
         }

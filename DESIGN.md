@@ -411,6 +411,14 @@ their final frame, so an idle shell builds no animation element and requests
 no animation frames (asserted in E2E and the performance idle budget through
 the typed `motion` snapshot).
 
+**After-commit moments (v2 S7).** The favorite pop (§11.10), the download
+check (§11.12), the ⌘T result entrance and cursor glide (§11.4) and the D4
+space-tint fade (§11.3) are started only by the code path that has already
+committed their state, keyed per start, bounded by their plan (≤ 260 ms) and
+removed by a timer. One instance per kind: a newer commit supersedes a
+running decoration, even when the newer start is static under Reduce Motion.
+The `motion.started` evidence records every start with its variant.
+
 ## 7. Iconography
 
 ### Family
@@ -788,7 +796,11 @@ using the IDs of §15. All rows use `density` geometry from §8.
   interpolate between source and candidate target tokens in direct proportion
   to gesture progress; cancellation returns to the source token and commit
   selects the target. The native web view itself never cross-fades or
-  interpolates.
+  interpolates. A committed non-swipe switch (pointer, keyboard, command)
+  paints the destination tint on the commit frame and cross-fades only the
+  chrome tint (rail and chassis) from the source over `dur:standard` with
+  `ease:standard` (D4); a swipe commit is already at the destination and
+  never fades; Reduce Motion switches instantly.
 - **Overflow and ordering:** chips follow the canonical space-list order in one
   single-line horizontal scroll viewport. The viewport consumes all footer
   width left after Downloads and before Plus; it scrolls without wrapping or
@@ -920,7 +932,11 @@ using the IDs of §15. All rows use `density` geometry from §8.
     padded list) use the §11.5 row anatomy `[icon] [title]
     [url mono trunc] [key hint]`; the `selected` result is the inset
     `tint.accent` row surface (no accent rail, §18.4), with `accent.ink`
-    match highlighting.
+    match highlighting. A freshly published result set fades in with a
+    20 ms stagger and a 4 pt rise (rows past the seventh share the last
+    slot, ≤ 260 ms); Up/Down commits the selection at once and the cursor
+    highlight glides to it in `dur:micro` (Reduce Motion: fade only, the
+    cursor snaps). The ⌘L overlay renders at rest.
   - **Cmd-L / pointer click on the address control → palette over the
     address** (Planned, `bbr-command-overlay`): the resting control uses the
     reference-calibrated 4 pt rail inset; `elev:2` overlay that
@@ -1095,7 +1111,10 @@ scheme; a title consisting only of whitespace is treated as empty.
   tiles without a repeated visible section label. The §7.2 favicon/monogram is
   centered on the `material:favorite` veil (v2 §18.2: white 50 % light /
   6 % dark over the tinted rail) at `radius:md` (10; `radius:sm` at S), gap
-  4/4/8 pt; the empty slot and the drop cell share the tile radius.
+  4/4/8 pt; the empty slot and the drop cell share the tile radius. A newly
+  committed favorite's tile surface pops 0.86 → 1 with overshoot while eight
+  specks in the curated space hues radiate (≤ 260 ms; the tile box, icon and
+  listeners never move); Reduce Motion flashes `tint.accent` for `dur:fine`.
 - **Columns and wrap:** the grid is **4 columns at every density and every
   width** (`grid_columns`), so tile `n` always lands in the same cell. Tile
   *width* derives from the rail — `(content − 3·gap) / 4` inside the region's
@@ -1235,7 +1254,9 @@ draft and is **not** provisional; only the open questions named in §17 remain.
   `density:hit-min`.
   - **Status glyph** (§7 icon system): active rows (Waiting/Running) show the
     §10.5 spinner at `icon:<density>` (accent, transient indication — allowed);
-    succeeded shows the `status.ok` check glyph; failed the §10.7
+    succeeded shows the `status.ok` check glyph (right after the success
+    commits it draws its stroke with one expanding, fading `status.ok` ring
+    within 260 ms; Reduce Motion: it simply appears); failed the §10.7
     `status.error` glyph; cancelled a neutral glyph at `ink.secondary`. §3.3
     non-color companions apply.
   - **Name line:** filename, one line, end-ellipsis (§4); tooltip on hover
@@ -1892,7 +1913,7 @@ second is replaced by the ring).
 | S4 space paper | [space paper](docs/roadmap/tasks/v2-space-paper.md) | §11.3 | landed 2026-09-28 |
 | S5 floating surfaces | [overlays](docs/roadmap/tasks/v2-overlays.md) | §8 palette width, §11.4, §11.12, §11.13, §11.16 | landed 2026-09-28 |
 | S6 motion core | [motion core](docs/roadmap/tasks/v2-motion-core.md) | §6, §10.5, §10.6, §11.5 | landed 2026-09-28 |
-| S7 after-commit moments | [motion moments](docs/roadmap/tasks/v2-motion-moments.md) | §6, §10, §11.3, §11.4, §11.10, §11.12 | adopted |
+| S7 after-commit moments | [motion moments](docs/roadmap/tasks/v2-motion-moments.md) | §6, §10, §11.3, §11.4, §11.10, §11.12 | landed 2026-09-28 |
 | S8 empty states | [empty states](docs/roadmap/tasks/v2-empty-states.md) | §11.8 | adopted |
 | S9 app icon | [brand icon](docs/roadmap/tasks/v2-brand-icon.md) | §1, §7 | landed 2026-09-28 |
 | S10 theme picker | [theme picker](docs/roadmap/tasks/v2-theme-picker.md) | §11.3 configuration surface | adopted |

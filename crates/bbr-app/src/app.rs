@@ -93,6 +93,7 @@ mod find_benchmarks;
 mod gesture_benchmarks;
 mod interaction;
 pub(crate) mod library;
+mod moments;
 mod motion;
 mod new_window;
 pub(crate) mod palette;
@@ -228,6 +229,9 @@ pub struct BbrApp {
     address_hovered: bool,
     /// §6/§18.5 app-side motion state (D5 finish timer, idle evidence).
     motion: motion::MotionState,
+    /// §18.5 after-commit moments (favorite pop, download check, ⌘T
+    /// entrance/glide, D4 tint fade).
+    moments: moments::Moments,
     /// §11.14 titlebar hover state: the control under the pointer (DESIGN
     /// §10.2 wash), driven by the production `on_hover` listener. `None` at
     /// rest.
@@ -613,6 +617,7 @@ impl BbrApp {
             pressed_row: None,
             address_hovered: false,
             motion: motion::MotionState::default(),
+            moments: moments::Moments::default(),
             titlebar_hovered: None,
             titlebar_pressed: None,
             command_bar_mode: CommandBarMode::Inactive,

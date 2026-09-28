@@ -353,6 +353,8 @@ impl BbrApp {
                 })
                 .collect(),
             selected: self.command_ranking.selected,
+            entrance: self.command_entrance(),
+            glide: self.command_glide(),
         }
     }
 

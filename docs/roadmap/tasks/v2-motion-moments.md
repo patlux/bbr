@@ -49,21 +49,28 @@ Integration order:       after S6
 
 ### Unit and contract
 
-- [ ] Moment descriptors and reduced variants.
+- [x] Moment descriptors and reduced variants; sample shapes (pop
+      overshoot, check stroke/ring, stagger bound) — `theme/motion.rs`.
 
 ### Real-app E2E
 
-- [ ] Favorite drop: favorite committed in the snapshot immediately; pop
-      reported, reduced variant under override.
-- [ ] Download success: check moment reported; reduced variant.
-- [ ] ⌘T: selection committed on the key press; glide/stagger reported.
-- [ ] Space switch: destination tint committed as target, fade reported,
-      instant under Reduce Motion; swipe commit does not fade.
+- [x] Favorite drop (the drop's commit method): favorite committed in the
+      snapshot immediately; pop reported (`animated`), `reduced` flash under
+      override; removal starts nothing (`e2e_shell_sidebar/moments.rs`).
+- [x] Download success: check moment reported on the row's status slot;
+      `static` under Reduce Motion (`e2e_shell_downloads/moments.rs`).
+- [x] ⌘T: selection committed on the key press; glide/stagger reported;
+      `reduced` entrance and `static` cursor under Reduce Motion
+      (`e2e_shell_command/moments.rs`).
+- [x] Space switch: destination tint committed as target, fade reported,
+      instant under Reduce Motion; swipe commit does not fade
+      (`e2e_shell_spaces/swipe/tint_fade.rs`).
 
 ### Performance
 
-- [ ] Existing space-switch and command scenarios keep their budgets; scenario
-      code for the fade path added; execution deferred.
+- [x] Existing space-switch and command scenarios unchanged in timing;
+      fade-path assertions added to the space-switch benchmark
+      (`perf_common/benchmarks.rs::assert_fade_path`); execution deferred.
 
 ## Completion gates
 
@@ -90,10 +97,25 @@ and ship the static variant.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:   not run — execution deferred
-Worktree state:
+Outcome:               favorite pop + specks / flash, download check + ring,
+                        ⌘T stagger entrance + cursor glide, D4 chrome-tint
+                        fade (rail + chassis); app-side keyed registry with
+                        timers; `motion.started` evidence.
+Commits:               see git log (feat(ui): play the v2 after-commit …)
+Functional evidence:   just verify ok; testkit clippy ok; bbr-ui 190 tests
+Real-app E2E:          shell-sidebar 20/20, shell-downloads 12/12,
+                        shell-command 26/26, shell-spaces 22/22,
+                        shell-organize 9/9, gallery 46/46
+Performance evidence:   not run — execution deferred (fade-path assertions)
+Deviations:            evidence is the start record (`motion.started`) rather
+                        than a running-window sample, so it is independent of
+                        how fast the harness snapshots; one instance per kind
+                        (a newer commit supersedes a running decoration);
+                        the result entrance replays on every publish, as
+                        §18.5 specifies; visual QA of the frames is not
+                        possible on the locked screen.
+Review:                serial self-review: every start sits after the commit
+                        in the same code path; the tile/row/list boxes never
+                        change geometry; nothing loops.
+Worktree state:        clean after commit
 ```

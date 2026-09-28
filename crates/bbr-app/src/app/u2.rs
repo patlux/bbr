@@ -296,6 +296,9 @@ impl BbrApp {
                     "favorite {}: tab {tab:?} of space {space:?} (profile {profile:?})",
                     if added { "added" } else { "removed" }
                 );
+                if added {
+                    self.start_favorite_pop(tab, cx);
+                }
                 self.focus_tab_list(window, cx);
                 cx.notify();
             }

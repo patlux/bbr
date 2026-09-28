@@ -41,6 +41,10 @@ pub fn favorites_surface(
                 theme,
                 tile,
                 tile_width,
+                favorites
+                    .pop
+                    .filter(|(tab, _)| *tab == tile.tab)
+                    .map(|(_, key)| key),
                 callbacks::row(&callbacks.on_activate_favorite, tile.index),
             )
             // §11.13: a secondary-click on the tile opens the Tab/Favorite

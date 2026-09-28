@@ -33,6 +33,7 @@ pub mod section;
 pub mod space;
 pub mod status;
 pub mod tab_row;
+pub mod tint_fade;
 
 pub use address::{
     address_control, staging_surface, AddressModel, AddressProfileHint, AddressProgress,

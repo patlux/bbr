@@ -67,6 +67,15 @@ impl BbrApp {
             .min_w_0()
             .h_full()
             .bg(self.active_chrome_tint())
+            // D4: the chassis shares the rail's tint cross-fade.
+            .when_some(
+                bbr_ui::components::tint_fade::tint_fade_layer(
+                    &self.theme(),
+                    "chassis",
+                    self.tint_fade(),
+                ),
+                |chassis, layer| chassis.child(layer),
+            )
             .pt(px(card.top))
             .pr(px(card.trailing))
             .pb(px(card.bottom))

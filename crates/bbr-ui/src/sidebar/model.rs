@@ -91,6 +91,9 @@ pub struct FavoritesModel {
     /// cell at the end of the wrap order (the zero-favorites band is its
     /// own target and needs no extra cell).
     pub offer: bool,
+    /// §18.5 favorite pop: `(tab id, moment key)` of the favorite that was
+    /// just committed; its tile plays the pop once.
+    pub pop: Option<(u64, u64)>,
 }
 
 /// The §11.11 folders region data: the folder rows plus the nested member
@@ -182,6 +185,9 @@ pub struct SidebarModel {
     /// §11.3: the active space's resolved chrome tint (or the interpolated
     /// swipe tint while a swipe tracks).
     pub chrome_tint: gpui::Rgba,
+    /// D4: `(source tint, moment key)` while a committed space switch
+    /// cross-fades the chrome tint.
+    pub tint_fade: Option<(gpui::Rgba, u64)>,
     /// The active Space title shown as the rail's primary list heading.
     /// This is real controller data, not a brand label or fixture copy.
     pub active_space_title: SharedString,

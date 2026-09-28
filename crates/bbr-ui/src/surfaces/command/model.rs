@@ -133,6 +133,12 @@ pub struct CommandModel {
     pub state: CommandResultState,
     pub results: Vec<CommandResultRow>,
     pub selected: usize,
+    /// §18.5 ⌘T: the key of the result-entrance moment while the freshly
+    /// published rows fade in (staggered); `None` renders them at rest.
+    pub entrance: Option<u64>,
+    /// §18.5 ⌘T: `(previous row, moment key)` while the cursor highlight
+    /// glides to `selected` (the selection itself is already committed).
+    pub glide: Option<(usize, u64)>,
 }
 
 impl CommandModel {

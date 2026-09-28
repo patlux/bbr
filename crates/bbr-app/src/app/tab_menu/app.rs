@@ -513,6 +513,11 @@ impl BbrApp {
             }
             TabMenuAction::ToggleFavorite => {
                 match self.organization.favorite_toggle_id(&self.controller, tab) {
+                    Ok(bbr_browser::OrganizationEvent::FavoriteToggled {
+                        added: true,
+                        tab,
+                        ..
+                    }) => self.start_favorite_pop(tab, cx),
                     Ok(_) => {}
                     Err(error) => log::error!("tab menu favorite toggle failed: {error}"),
                 }

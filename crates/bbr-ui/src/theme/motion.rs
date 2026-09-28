@@ -90,7 +90,23 @@ pub enum Moment {
     AddressProgress,
     /// D5: the address progress line filling, then fading, on finish.
     AddressProgressFinish,
+    /// §18.5: a new Favorite tile pops and radiates specks.
+    FavoritePop,
+    /// §18.5: a finished download's check draws with one `status.ok` ring.
+    DownloadCheck,
+    /// §18.5: ⌘T results fade in with a 20 ms stagger and a 4 pt rise.
+    CommandResults,
+    /// §18.5: the ⌘T cursor highlight glides to the committed result.
+    CommandCursor,
+    /// D4: a committed space switch cross-fades the chrome tint.
+    SpaceTintFade,
 }
+
+/// The ⌘T stagger step between consecutive result rows.
+pub const STAGGER_STEP: Duration = Duration::from_millis(20);
+/// Rows past this index share the last stagger slot, so the whole moment
+/// stays within `dur:emphasis` (7 × 20 ms + `dur:fine` = 260 ms).
+pub const STAGGER_ROWS: usize = 7;
 
 /// How a moment animates under the active motion mode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -128,6 +144,11 @@ impl Moment {
             Moment::AttentionPulse => "attention-pulse",
             Moment::AddressProgress => "address-progress",
             Moment::AddressProgressFinish => "address-progress-finish",
+            Moment::FavoritePop => "favorite-pop",
+            Moment::DownloadCheck => "download-check",
+            Moment::CommandResults => "command-results",
+            Moment::CommandCursor => "command-cursor",
+            Moment::SpaceTintFade => "space-tint-fade",
         }
     }
 
@@ -166,6 +187,52 @@ impl Moment {
                 easing: Easing::Linear,
                 reduced: false,
             }),
+            // Pop with overshoot and specks within `dur:emphasis`; Reduce
+            // Motion: a `dur:fine` `tint.accent` flash on the tile.
+            Moment::FavoritePop => Some(if reduced {
+                MomentPlan {
+                    duration: Motion::fine(),
+                    repeat: false,
+                    easing: Easing::Linear,
+                    reduced: true,
+                }
+            } else {
+                MomentPlan {
+                    duration: Motion::emphasis(),
+                    repeat: false,
+                    easing: Easing::Linear,
+                    reduced: false,
+                }
+            }),
+            // Check stroke draw plus one ring; Reduce Motion: the check
+            // simply appears.
+            Moment::DownloadCheck => (!reduced).then_some(MomentPlan {
+                duration: Motion::emphasis(),
+                repeat: false,
+                easing: Easing::Linear,
+                reduced: false,
+            }),
+            // Stagger + rise; Reduce Motion keeps the fade without the rise.
+            Moment::CommandResults => Some(MomentPlan {
+                duration: Motion::emphasis(),
+                repeat: false,
+                easing: Easing::Linear,
+                reduced,
+            }),
+            // `dur:micro` glide; Reduce Motion: the cursor snaps.
+            Moment::CommandCursor => (!reduced).then_some(MomentPlan {
+                duration: Motion::micro(),
+                repeat: false,
+                easing: Easing::Standard,
+                reduced: false,
+            }),
+            // D4: `dur:standard` with `ease:standard`; Reduce Motion: instant.
+            Moment::SpaceTintFade => (!reduced).then_some(MomentPlan {
+                duration: Motion::standard(),
+                repeat: false,
+                easing: Easing::Standard,
+                reduced: false,
+            }),
         }
     }
 
@@ -193,6 +260,46 @@ pub fn attention_sample(t: f32, reduced: bool) -> (f32, f32, f32, f32) {
     } else {
         (1.0 + 0.45 * beat, 1.0, 4.0 + 12.0 * t, 1.0 - t)
     }
+}
+
+/// §18.5 favorite pop sample at (linear) time `t`: `(tile scale, speck
+/// travel pt, speck opacity, flash opacity)`. Full motion: the tile pops
+/// 0.86 → 1 with a back-ease overshoot while eight specks radiate 0 → 18 pt
+/// and fade; reduced: a `tint.accent` flash fading 1 → 0 at scale 1.
+pub fn favorite_pop_sample(t: f32, reduced: bool) -> (f32, f32, f32, f32) {
+    let t = t.clamp(0.0, 1.0);
+    if reduced {
+        return (1.0, 0.0, 0.0, 1.0 - t);
+    }
+    // Back-ease-out (overshoot ≈ 6 %), mapped 0.86 → 1.
+    let (c1, c3) = (1.701_58_f32, 2.701_58_f32);
+    let back = 1.0 + c3 * (t - 1.0).powi(3) + c1 * (t - 1.0).powi(2);
+    let scale = 0.86 + 0.14 * back;
+    let travel = 18.0 * Easing::Decelerate.apply(t);
+    (scale, travel, 1.0 - t, 0.0)
+}
+
+/// §18.5 download check sample at time `t`: `(check stroke fraction, ring
+/// growth pt, ring opacity)` — the stroke draws over the first half, the
+/// ring expands 0 → 8 pt and fades over the whole moment.
+pub fn download_check_sample(t: f32) -> (f32, f32, f32) {
+    let t = t.clamp(0.0, 1.0);
+    let stroke = Easing::Decelerate.apply((t * 2.0).min(1.0));
+    (stroke, 8.0 * Easing::Decelerate.apply(t), 1.0 - t)
+}
+
+/// §18.5 ⌘T result entrance at moment time `t` for row `index`: `(opacity,
+/// rise pt)`. Row `i` starts `min(i, 7) × 20 ms` in and fades over
+/// `dur:fine`; the full variant also rises 4 pt, the reduced variant only
+/// fades.
+pub fn result_entrance_sample(t: f32, index: usize, reduced: bool) -> (f32, f32) {
+    let total = Motion::emphasis().as_secs_f32();
+    let delay = STAGGER_STEP.as_secs_f32() * index.min(STAGGER_ROWS) as f32;
+    let local =
+        ((t.clamp(0.0, 1.0) * total - delay) / Motion::fine().as_secs_f32()).clamp(0.0, 1.0);
+    let eased = Easing::Standard.apply(local);
+    let rise = if reduced { 0.0 } else { 4.0 * (1.0 - eased) };
+    (eased, rise)
 }
 
 /// D5 finish sample at time `t`: `(line width fraction, opacity)` — the
@@ -295,6 +402,74 @@ mod tests {
                 assert!(plan.repeat || plan.duration <= Motion::emphasis() * 2);
             }
         }
+    }
+
+    #[test]
+    fn after_commit_moments_stay_bounded_one_shots() {
+        let full = MotionMode::Standard;
+        let reduced = MotionMode::Reduced;
+        for moment in [
+            Moment::FavoritePop,
+            Moment::DownloadCheck,
+            Moment::CommandResults,
+            Moment::CommandCursor,
+            Moment::SpaceTintFade,
+        ] {
+            let plan = moment.plan(full).expect("animates under full motion");
+            assert!(!plan.repeat, "{moment:?} never loops");
+            assert!(plan.duration <= Motion::emphasis(), "{moment:?} ≤ 260 ms");
+        }
+        assert_eq!(
+            Moment::CommandCursor.plan(full).unwrap().duration,
+            Motion::micro()
+        );
+        assert_eq!(
+            Moment::SpaceTintFade.plan(full).unwrap().duration,
+            Motion::standard()
+        );
+        assert_eq!(
+            Moment::SpaceTintFade.plan(full).unwrap().easing,
+            Easing::Standard
+        );
+        // Reduced variants: flash, static check, fade-only results, snapping
+        // cursor, instant tint.
+        let flash = Moment::FavoritePop.plan(reduced).expect("flash");
+        assert!(flash.reduced && flash.duration == Motion::fine());
+        assert_eq!(Moment::DownloadCheck.plan(reduced), None);
+        assert!(Moment::CommandResults.plan(reduced).unwrap().reduced);
+        assert_eq!(Moment::CommandCursor.plan(reduced), None);
+        assert_eq!(Moment::SpaceTintFade.plan(reduced), None);
+    }
+
+    #[test]
+    fn after_commit_samples_follow_the_documented_shapes() {
+        // Favorite: 0.86 → overshoot → 1; specks travel out and fade.
+        let (start, travel, opacity, flash) = favorite_pop_sample(0.0, false);
+        assert!(close(start, 0.86) && close(travel, 0.0));
+        assert!(close(opacity, 1.0) && flash == 0.0);
+        let peak = (1..20)
+            .map(|step| favorite_pop_sample(step as f32 / 20.0, false).0)
+            .fold(0.0, f32::max);
+        assert!(peak > 1.0, "the pop overshoots");
+        assert!(close(favorite_pop_sample(1.0, false).0, 1.0));
+        assert!(close(favorite_pop_sample(1.0, false).1, 18.0));
+        assert_eq!(favorite_pop_sample(0.0, true), (1.0, 0.0, 0.0, 1.0));
+        // Download: the stroke is drawn by mid-moment; the ring fades out.
+        assert!(close(download_check_sample(0.5).0, 1.0));
+        assert!(close(download_check_sample(1.0).2, 0.0));
+        // Results: row 0 enters first, later rows wait; everything is in by
+        // the end; the reduced variant never rises.
+        let (first, rise) = result_entrance_sample(0.2, 0, false);
+        let (later, _) = result_entrance_sample(0.2, 5, false);
+        assert!(first > later && rise < 4.0);
+        for index in [0, 3, 7, 20] {
+            let (opacity, rise) = result_entrance_sample(1.0, index, false);
+            assert!(
+                close(opacity, 1.0) && close(rise, 0.0),
+                "row {index} settled"
+            );
+        }
+        assert_eq!(result_entrance_sample(0.1, 0, true).1, 0.0);
     }
 
     #[test]

@@ -249,10 +249,16 @@ fn overlay_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
 fn result_list(model: &CommandModel, anatomy: CommandAnatomy, result_prefix: &str) -> Div {
     let rows = result_rows(model, anatomy, result_prefix);
     div()
+        .relative()
         .flex()
         .flex_col()
         .min_h_0()
         .when(!rows.is_empty(), |el| el.p(anatomy.list_padding))
+        // §18.5: the gliding cursor paints beneath the rows.
+        .when_some(
+            super::moments::glide_highlight(model, anatomy),
+            |el, glide| el.child(glide),
+        )
         .children(rows)
 }
 
@@ -260,31 +266,34 @@ fn result_rows(
     model: &CommandModel,
     anatomy: CommandAnatomy,
     result_prefix: &str,
-) -> Vec<Stateful<Div>> {
+) -> Vec<AnyElement> {
+    let cursor = super::moments::row_paints_cursor(model);
     match model.state {
         CommandResultState::Results => model
             .results
             .iter()
             .enumerate()
             .map(|(index, row)| {
-                result_row(model, anatomy, row, index == model.selected, result_prefix)
+                let selected = cursor && index == model.selected;
+                let row = result_row(model, anatomy, row, selected, result_prefix);
+                super::moments::entering_row(model, index, row)
             })
             .collect(),
-        CommandResultState::Loading => vec![state_row(
-            &model.theme,
-            state_id(model, "loading"),
-            "Ranking…",
-        )],
-        CommandResultState::Empty => vec![state_row(
-            &model.theme,
-            state_id(model, "empty"),
-            "Type a destination",
-        )],
-        CommandResultState::ActivationError => vec![state_row(
-            &model.theme,
-            state_id(model, "error"),
-            "Activation failed",
-        )],
+        CommandResultState::Loading => {
+            vec![state_row(&model.theme, state_id(model, "loading"), "Ranking…").into_any_element()]
+        }
+        CommandResultState::Empty => {
+            vec![
+                state_row(&model.theme, state_id(model, "empty"), "Type a destination")
+                    .into_any_element(),
+            ]
+        }
+        CommandResultState::ActivationError => {
+            vec![
+                state_row(&model.theme, state_id(model, "error"), "Activation failed")
+                    .into_any_element(),
+            ]
+        }
         CommandResultState::Inactive => Vec::new(),
     }
 }

@@ -50,6 +50,8 @@ pub fn build_command_fixture(case: &CommandCase) -> Option<CommandModel> {
         state: case.state,
         results,
         selected: case.selected,
+        entrance: None,
+        glide: None,
     };
     // The production validation authority: the model must be renderable
     // (the rejected missing-key case fails here and refuses to build).

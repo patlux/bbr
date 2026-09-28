@@ -268,6 +268,7 @@ impl BbrApp {
             layout,
             scroll: &self.downloads.scroll,
             focus: &self.downloads_panel_handle,
+            check: self.download_check(),
         };
 
         // The production listener bundle (the Library wrapper pattern): the

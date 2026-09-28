@@ -37,6 +37,8 @@ impl BbrApp {
         // manual activation (the swipe's own commit already took the
         // gesture, so this is a no-op there).
         self.cancel_swipe(cx);
+        let swipe_commit = std::mem::take(&mut self.moments.swipe_commit);
+        let source_tint = self.active_chrome_tint();
         let source_profile = self.controller.active_profile();
         let result = self
             .controller
@@ -73,6 +75,17 @@ impl BbrApp {
                 self.command_profile_hint = Some(crate::shell::profile_line(&title));
             } else {
                 self.command_profile_hint = None;
+            }
+            // D4: the destination tint is committed now; only the chrome
+            // tint cross-fades from the source (a swipe commit already
+            // arrived at the destination tint and never fades again).
+            if !swipe_commit && self.active_chrome_tint() != source_tint {
+                self.start_moment(
+                    bbr_ui::theme::motion::Moment::SpaceTintFade,
+                    super::moments::MomentData::Tint { from: source_tint },
+                    "bbr-sidebar".to_string(),
+                    cx,
+                );
             }
             #[cfg(feature = "testkit")]
             self.commit_benchmark_sync(window);

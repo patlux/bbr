@@ -81,6 +81,7 @@ pub fn render_favorites(ctx: &StoryContext) -> AnyElement {
                             &case_theme,
                             tile,
                             bbr_ui::components::favorites::favorite_tile_width(&case_theme, 300.0),
+                            None,
                             activate,
                         )
                         .into_any()

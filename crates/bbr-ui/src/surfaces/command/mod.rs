@@ -29,6 +29,7 @@
 pub mod geometry;
 pub mod ids;
 pub mod model;
+mod moments;
 pub mod render;
 
 pub use geometry::CommandRect;

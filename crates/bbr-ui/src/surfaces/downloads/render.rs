@@ -87,7 +87,11 @@ pub fn downloads_panel_surface(
         .iter()
         .filter(|row| model.window.contains(&row.index))
     {
-        scroll_children.push(downloads_row(theme, visual, callbacks).into_any());
+        let check = model
+            .check
+            .filter(|(id, _)| *id == visual.id)
+            .map(|(_, key)| key);
+        scroll_children.push(downloads_row(theme, visual, check, callbacks).into_any());
     }
     if window_items.hairline {
         scroll_children.push(
@@ -220,6 +224,7 @@ pub fn downloads_group_label(theme: &Theme, active: bool) -> Stateful<Div> {
 pub fn downloads_row(
     theme: &Theme,
     visual: &DownloadRowModel,
+    check: Option<u64>,
     callbacks: &DownloadsCallbacks,
 ) -> Stateful<Div> {
     let p = theme.palette;
@@ -233,10 +238,9 @@ pub fn downloads_row(
         }
         DownloadMachine::Succeeded => {
             // §3.3 `status.ok` check with its non-color companion (the
-            // status glyph is always next to the name line).
-            Icon::Check
-                .canvas_with(theme, icon_size, p.status_ok)
-                .into_any()
+            // status glyph is always next to the name line); right after
+            // the success commits it draws itself once (§18.5).
+            super::check_moment::succeeded_glyph(theme, icon_size, check)
         }
         DownloadMachine::Failed => Icon::Lifering.canvas(theme, icon_size).into_any(),
         DownloadMachine::Cancelled => {

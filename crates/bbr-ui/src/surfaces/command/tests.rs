@@ -28,6 +28,8 @@ fn model(presentation: CommandPresentation) -> CommandModel {
         state: CommandResultState::Results,
         results: vec![row("tab:0", "exact_tab"), row("fallback", "fallback")],
         selected: 0,
+        entrance: None,
+        glide: None,
     }
 }
 
@@ -160,6 +162,8 @@ fn the_closed_presentation_is_a_valid_renderable_model() {
         state: CommandResultState::Inactive,
         results: Vec::new(),
         selected: 0,
+        entrance: None,
+        glide: None,
     };
     assert_eq!(closed.validate(), Ok(()));
     assert!(!closed.chrome_focused);

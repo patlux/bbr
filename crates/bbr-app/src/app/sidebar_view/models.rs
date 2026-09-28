@@ -31,6 +31,7 @@ impl BbrApp {
             tiles: tiles.to_vec(),
             targeted,
             offer: self.tab_drag.is_active(),
+            pop: self.favorite_pop(),
         })
     }
 

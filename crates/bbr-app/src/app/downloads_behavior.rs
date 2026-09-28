@@ -222,8 +222,13 @@ pub fn download_click_row_action(
 /// reached `Succeeded` re-checks its Reveal-in-Finder eligibility natively.
 pub fn on_download_event(app: &mut BbrApp, event: DownloadEvent, cx: &mut Context<BbrApp>) {
     let id = event_id(&event);
+    let succeeded = matches!(event, DownloadEvent::Succeeded { .. });
     let outcome = app.downloads.controller.apply(event);
     if matches!(outcome, bbr_browser::ApplyOutcome::Applied) {
+        // §18.5: the check draws once the success is committed.
+        if succeeded {
+            app.start_download_check(id, cx);
+        }
         let terminal = app
             .downloads
             .controller

@@ -58,6 +58,7 @@ fn family_model<'a>(
         layout,
         scroll: story.scroll,
         focus: story.focus,
+        check: None,
     }
 }
 

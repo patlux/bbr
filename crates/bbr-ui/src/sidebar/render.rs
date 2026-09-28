@@ -116,6 +116,12 @@ pub fn sidebar_surface(
         // edge and shadow are the boundary; painting both is a double
         // border.
         .bg(model.chrome_tint)
+        // D4: the source tint fades out above the committed paint and
+        // beneath every child.
+        .when_some(
+            crate::components::tint_fade::tint_fade_layer(theme, "rail", model.tint_fade),
+            |el, layer| el.child(layer),
+        )
         .on_scroll_wheel(callbacks::wheel(&callbacks.on_rail_scroll_wheel))
         .on_mouse_down(
             MouseButton::Left,

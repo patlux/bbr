@@ -127,6 +127,7 @@ pub fn build_sidebar_fixture(
                 .collect(),
             targeted: false,
             offer: case.drag_tick.is_some(),
+            pop: None,
         })
     } else if case.favorites_band {
         // §11.10: a tab drag is in flight and the empty grid renders as
@@ -137,6 +138,7 @@ pub fn build_sidebar_fixture(
             tiles: Vec::new(),
             targeted: true,
             offer: true,
+            pop: None,
         })
     } else {
         None
@@ -263,6 +265,7 @@ pub fn build_sidebar_fixture(
     Some(SidebarModel {
         sidebar_width,
         chrome_tint,
+        tint_fade: None,
         active_space_title: SharedString::from("Default"),
         command,
         favorites,
