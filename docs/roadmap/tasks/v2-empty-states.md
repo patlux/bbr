@@ -43,11 +43,11 @@ Integration order:       parallel-capable with S10
 
 ### Unit and contract
 
-- [ ] Illustration frame function is deterministic and ends on the rest frame.
+- [x] Illustration frame function is deterministic and ends on the rest frame.
 
 ### Real-app E2E
 
-- [ ] Empty space, crash and load-error panes report their illustration and
+- [x] Empty space, crash and load-error panes report their illustration and
       reach `rest`; reduced variant starts at `rest`.
 
 ### Performance
@@ -76,10 +76,46 @@ offline illustration for the generic load-error pane and record the gap.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
+Outcome:                D10 illustrations landed. bbr-ui
+                        `components/illustration.rs` draws the empty-space
+                        pills around a ⌘ key cap, the crash heartbeat and
+                        the offline broken link from tokens (quads + one
+                        canvas path); frame functions are pure in the
+                        cycle phase and end on the rest frame.
+                        `Moment::PaneIllustration` = 2 × 1400 ms linear,
+                        no repeat, None under Reduce Motion. The app
+                        derives the presented kind at render time
+                        (`content_illustration`, mirroring the content
+                        branch order); a new kind restarts the appearance
+                        key; after two cycles the render passes `None`, so
+                        the rest frame builds no animation element. The
+                        offline class is bound through
+                        `IncidentCategory::Offline`
+                        (`ErrorSurfaceModel.illustration`); TLS/navigation
+                        keep the lifering, so the blocked-stop fallback was
+                        not needed.
+Commits:                feat(ui): draw the v2 empty-state illustrations
+Functional evidence:    bbr-ui 192 unit tests (frames deterministic, rest
+                        frame, two cycles, reduced = none); workspace +
+                        testkit clippy clean; just verify; testkit bins.
+Real-app E2E:           e2e-shell-errors 11/11 incl. new
+                        `illustrations::pane_illustrations_play_two_cycles_then_rest`
+                        (offline playing → rest → 0 animated elements per
+                        forced frame; reduced appearance starts at rest;
+                        crashed playing → rest; empty space after closing
+                        the last tab playing → rest → 0); e2e-shell-tabs
+                        3/3; e2e_shell_states 1/1 (crash recovery; no just
+                        recipe, run under the GUI lock); e2e-gallery 46/46.
+                        Visual capture (release, visual-capture) of all
+                        three rest frames light + dark read.
 Performance evidence:   not applicable
-Worktree state:
+Self-review:            the illustration kind is observed in render (the
+                        only place that knows which content branch won);
+                        the snapshot reads the stored kind, so it is the
+                        presented state, not a recomputation. Offline
+                        detection uses the incident taxonomy rather than
+                        copy. Gallery stories pass `None` (rest frame) so
+                        gallery tests stay deterministic. No copy/action
+                        change in the panes.
+Worktree state:         clean after commit
 ```

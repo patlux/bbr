@@ -67,9 +67,21 @@ impl BbrApp {
                 variant: (*variant).to_string(),
             })
             .collect();
+        let illustration =
+            self.pane_illustration()
+                .map(|kind| bbr_testkit::protocol::IllustrationSnapshot {
+                    kind: kind.name().to_string(),
+                    state: if self.playing_pane_illustration().is_some() {
+                        "playing"
+                    } else {
+                        "rest"
+                    }
+                    .to_string(),
+                });
         MotionSnapshot {
             moments,
             started,
+            illustration,
             root_renders: self.motion.root_renders,
             animated_elements: bbr_ui::theme::motion::animated_elements_built(),
         }

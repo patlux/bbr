@@ -157,6 +157,9 @@ impl Render for BbrApp {
                 surface.as_ref().map(|spec| spec.incident.reason.category()),
             );
         }
+        // D10: the drawn pane illustration restarts on each appearance.
+        let illustration_kind = self.content_illustration();
+        let illustration = self.observe_pane_illustration(illustration_kind);
         let content: gpui::AnyElement = if self.library.open {
             // The Saved Pages Library is an internal chrome surface: it
             // replaces the active view's native slot (the view was hidden
@@ -169,7 +172,10 @@ impl Render for BbrApp {
             // destroyed — identity is untouched). The panel is the
             // extracted `bbr-ui` surface (G2 Error/Crash cut); the app
             // keeps the incident lifecycle and builds the DTO.
-            let model = spec.to_model();
+            let mut model = spec.to_model();
+            if model.illustration.is_some() {
+                model.illustration = Some(illustration);
+            }
             bbr_ui::surfaces::error::error_surface(
                 &theme,
                 &model,
@@ -266,6 +272,7 @@ impl Render for BbrApp {
             // crash flag, never from `browser.nav` (DESIGN.md §10.7).
             components::crash_panel(
                 &theme,
+                illustration,
                 cx.listener(|this, _e, window, cx| this.reload_active_from_panel(window, cx)),
                 cx.listener(|this, _e, window, cx| {
                     let _ = this.close_active_tab(window, cx);
@@ -278,6 +285,7 @@ impl Render for BbrApp {
                 &crate::shell::profile_line(
                     browser.active_profile_title.as_deref().unwrap_or("Default"),
                 ),
+                illustration,
                 cx.listener(|this, _e, window, cx| this.activate_new_tab(window, cx)),
             )
             .into_any()

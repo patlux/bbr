@@ -16,6 +16,16 @@ pub struct MotionMomentSnapshot {
     pub variant: String,
 }
 
+/// D10 evidence: the drawn pane illustration on screen and its cycle state.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IllustrationSnapshot {
+    /// `empty-space`, `crashed` or `offline`.
+    pub kind: String,
+    /// `playing` (inside its two cycles) or `rest` (the final frame; the
+    /// only state under Reduce Motion).
+    pub state: String,
+}
+
 /// The motion evidence of the main window.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct MotionSnapshot {
@@ -28,6 +38,9 @@ pub struct MotionSnapshot {
     /// `static`.
     #[serde(default)]
     pub started: Vec<MotionMomentSnapshot>,
+    /// D10: the drawn pane illustration, while one is on screen.
+    #[serde(default)]
+    pub illustration: Option<IllustrationSnapshot>,
     /// Root-view renders since launch (proves a forced frame rendered).
     pub root_renders: u64,
     /// Animation elements the render has built since launch. Only animated

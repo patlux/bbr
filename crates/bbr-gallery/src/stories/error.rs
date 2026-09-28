@@ -189,6 +189,7 @@ pub fn render_crash_empty_panes(ctx: &StoryContext) -> AnyElement {
             let panel: AnyElement = match kind {
                 PanelKind::Crash => crash_panel(
                     theme,
+                    None,
                     {
                         let on = Rc::clone(&on_reload);
                         move |event: &MouseDownEvent, window: &mut Window, cx: &mut App| {
@@ -203,7 +204,7 @@ pub fn render_crash_empty_panes(ctx: &StoryContext) -> AnyElement {
                     },
                 )
                 .into_any(),
-                PanelKind::Empty => empty_space_pane(theme, case.profile_line, {
+                PanelKind::Empty => empty_space_pane(theme, case.profile_line, None, {
                     let on = Rc::clone(&on_new_tab);
                     move |event: &MouseDownEvent, window: &mut Window, cx: &mut App| {
                         on(event, window, cx)

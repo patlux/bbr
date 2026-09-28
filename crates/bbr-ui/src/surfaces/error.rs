@@ -40,6 +40,10 @@ pub struct ErrorSurfaceModel {
     /// The secondary action's button label (Dismiss — a lifecycle event,
     /// never a tab mutation).
     pub dismiss_label: SharedString,
+    /// D10: the offline (network) class shows the drawn illustration instead
+    /// of the lifering; `Some(key)` while it plays, `Some(None)` at rest,
+    /// `None` for the other classes.
+    pub illustration: Option<Option<u64>>,
 }
 
 /// The §11.8-style error surface: a flat GPUI pane (`material:field`,
@@ -65,14 +69,20 @@ pub fn error_surface(
         .justify_center()
         .gap(Spacing::sp3())
         .bg(theme.palette.surface_field)
-        .child(
-            div()
+        .child(match model.illustration {
+            Some(key) => crate::components::illustration::illustration(
+                theme,
+                crate::components::illustration::Illustration::Offline,
+                key,
+            ),
+            None => div()
                 .size(px(32.0))
                 .flex()
                 .items_center()
                 .justify_center()
-                .child(Icon::Lifering.canvas(theme, px(32.0))),
-        )
+                .child(Icon::Lifering.canvas(theme, px(32.0)))
+                .into_any_element(),
+        })
         .child(
             div()
                 .id("bbr-error-title")
@@ -151,6 +161,7 @@ mod tests {
             origin: origin.map(SharedString::from),
             action_label: "Try again".into(),
             dismiss_label: "Dismiss".into(),
+            illustration: None,
         }
     }
 

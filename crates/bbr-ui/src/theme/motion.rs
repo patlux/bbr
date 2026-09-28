@@ -100,7 +100,12 @@ pub enum Moment {
     CommandCursor,
     /// D4: a committed space switch cross-fades the chrome tint.
     SpaceTintFade,
+    /// D10: a drawn pane illustration plays two cycles, then rests.
+    PaneIllustration,
 }
+
+/// One cycle of a D10 pane illustration.
+pub const ILLUSTRATION_CYCLE: Duration = Duration::from_millis(1400);
 
 /// The ⌘T stagger step between consecutive result rows.
 pub const STAGGER_STEP: Duration = Duration::from_millis(20);
@@ -149,6 +154,7 @@ impl Moment {
             Moment::CommandResults => "command-results",
             Moment::CommandCursor => "command-cursor",
             Moment::SpaceTintFade => "space-tint-fade",
+            Moment::PaneIllustration => "pane-illustration",
         }
     }
 
@@ -231,6 +237,15 @@ impl Moment {
                 duration: Motion::standard(),
                 repeat: false,
                 easing: Easing::Standard,
+                reduced: false,
+            }),
+            // D10: two cycles once, then the rest frame; Reduce Motion: the
+            // rest frame only. Not a single-shot moment of the ≤ 260 ms
+            // family: it decorates a whole pane that just appeared.
+            Moment::PaneIllustration => (!reduced).then_some(MomentPlan {
+                duration: ILLUSTRATION_CYCLE * 2,
+                repeat: false,
+                easing: Easing::Linear,
                 reduced: false,
             }),
         }

@@ -36,6 +36,7 @@
 #[path = "../e2e_common/mod.rs"]
 mod e2e_common;
 
+mod illustrations;
 mod recovery;
 mod support;
 mod surface;

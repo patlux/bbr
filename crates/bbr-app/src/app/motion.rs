@@ -5,6 +5,7 @@
 
 use std::time::Instant;
 
+use bbr_ui::components::illustration::Illustration;
 use bbr_ui::components::AddressProgress;
 use bbr_ui::theme::motion::Moment;
 use bbr_web::WebViewId;
@@ -24,9 +25,68 @@ pub(crate) struct MotionState {
     /// frame re-renders the root view).
     #[cfg(feature = "testkit")]
     pub(crate) root_renders: u64,
+    /// D10: the pane illustration on screen, its appearance key, and when
+    /// that appearance began (a new kind or a fresh appearance restarts it).
+    pane: Option<(Illustration, u64, Instant)>,
+    pane_keys: u64,
 }
 
 impl BbrApp {
+    /// D10: which drawn illustration the content area shows — mirrors the
+    /// render's content branch order (Library, error surface, native panes,
+    /// crash panel, empty space). Only the offline (network) error class has
+    /// an illustration; TLS and navigation keep the lifering.
+    pub(crate) fn content_illustration(&self) -> Option<Illustration> {
+        if self.library.open {
+            return None;
+        }
+        if let Some(spec) = self.active_error_surface_spec() {
+            return (spec.incident.reason.category()
+                == bbr_web::web_errors::IncidentCategory::Offline)
+                .then_some(Illustration::Offline);
+        }
+        if self.controller.pane_layout().is_some() {
+            return None;
+        }
+        let browser = self.controller.snapshot();
+        let crashed = browser
+            .active_index
+            .and_then(|index| browser.tabs.get(index))
+            .is_some_and(|tab| tab.crashed);
+        Some(if crashed {
+            Illustration::Crashed
+        } else {
+            Illustration::EmptySpace
+        })
+    }
+
+    /// Record the illustration this frame presents (render-time) and return
+    /// its animation key while it plays its two cycles under full motion.
+    pub(crate) fn observe_pane_illustration(&mut self, kind: Option<Illustration>) -> Option<u64> {
+        let Some(kind) = kind else {
+            self.motion.pane = None;
+            return None;
+        };
+        if self.motion.pane.map(|(current, _, _)| current) != Some(kind) {
+            self.motion.pane_keys += 1;
+            self.motion.pane = Some((kind, self.motion.pane_keys, Instant::now()));
+        }
+        self.playing_pane_illustration()
+    }
+
+    /// The appearance key while the current illustration still plays.
+    pub(crate) fn playing_pane_illustration(&self) -> Option<u64> {
+        let (_, key, started) = self.motion.pane?;
+        let plan = Moment::PaneIllustration.plan(self.theme().motion_mode)?;
+        (started.elapsed() < plan.duration).then_some(key)
+    }
+
+    /// The presented illustration kind (evidence).
+    #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
+    pub(crate) fn pane_illustration(&self) -> Option<Illustration> {
+        self.motion.pane.map(|(kind, _, _)| kind)
+    }
+
     /// D5: the active tab's load progress for the address field — the sweep
     /// while it loads, the fill-and-fade right after it finished (full
     /// motion only), nothing otherwise.

@@ -92,6 +92,11 @@ impl ErrorSurfaceSpec {
             origin: self.origin.clone().map(SharedString::from),
             action_label: self.action_label.into(),
             dismiss_label: self.dismiss_label.into(),
+            // D10: the offline (network) class shows the drawn illustration
+            // (the render supplies the playing key).
+            illustration: (self.incident.reason.category()
+                == bbr_web::web_errors::IncidentCategory::Offline)
+                .then_some(None),
         }
     }
 }

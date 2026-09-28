@@ -11,7 +11,7 @@ mod card;
 mod motion;
 mod u2;
 pub use card::ContentCardSnapshot;
-pub use motion::{MotionMomentSnapshot, MotionSnapshot};
+pub use motion::{IllustrationSnapshot, MotionMomentSnapshot, MotionSnapshot};
 pub use u2::{
     ChipCompanionSnapshot, FavoriteTileSnapshot, FolderRowSnapshot, SpaceAppearanceSnapshot,
     SpaceChipSnapshot, SpaceConfigSnapshot, SpaceStripScrollSnapshot, SwipeSnapshot,

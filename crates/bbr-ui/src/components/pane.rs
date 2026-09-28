@@ -8,12 +8,15 @@ use gpui::{
 use crate::icons::Icon;
 use crate::theme::{Spacing, Theme};
 
-/// §11.8 empty space pane: `material:canvas` mark, `type:display` headline,
-/// profile line, and a primary "New Tab ⌘T" button that focuses the command
-/// bar in NewTab mode. `profile_line` names the owning profile (§11.8).
+/// §11.8 empty space pane: the D10 drawn illustration (tab pills floating
+/// around a ⌘ key), `type:display` headline, profile line, and a primary
+/// "New Tab ⌘T" button that focuses the command bar in NewTab mode.
+/// `profile_line` names the owning profile (§11.8); `illustration` is the
+/// pane-appearance key while the illustration plays (`None`: rest frame).
 pub fn empty_space_pane(
     theme: &Theme,
     profile_line: &str,
+    illustration: Option<u64>,
     on_new_tab: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     div()
@@ -27,7 +30,11 @@ pub fn empty_space_pane(
         .justify_center()
         .gap(Spacing::sp3())
         .bg(theme.palette.surface_canvas)
-        .child(Icon::ChassisMark.canvas(theme, px(64.0)))
+        .child(super::illustration::illustration(
+            theme,
+            super::illustration::Illustration::EmptySpace,
+            illustration,
+        ))
         .child(
             div()
                 .text_size(theme.type_.display.size)
@@ -58,12 +65,14 @@ pub fn empty_space_pane(
         )
 }
 
-/// §11.8 crash panel: replaces the glass area of a crashed tab with the
-/// 32 pt §7 lifering glyph (outer + inner ring in `status.error`), copy, and
-/// Reload / Close tab actions. The crashed tab row stays selected and listed;
-/// the native view is hidden.
+/// §11.8 crash panel: replaces the glass area of a crashed tab with the D10
+/// heartbeat illustration (in `status.error`; the row's lifering stays the
+/// non-color companion), copy, and Reload / Close tab actions. The crashed
+/// tab row stays selected and listed; the native view is hidden.
+/// `illustration` is the pane-appearance key while it plays.
 pub fn crash_panel(
     theme: &Theme,
+    illustration: Option<u64>,
     on_reload: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
     on_close: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
@@ -78,14 +87,11 @@ pub fn crash_panel(
         .justify_center()
         .gap(Spacing::sp3())
         .bg(theme.palette.surface_field)
-        .child(
-            div()
-                .size(px(32.0))
-                .flex()
-                .items_center()
-                .justify_center()
-                .child(Icon::Lifering.canvas(theme, px(32.0))),
-        )
+        .child(super::illustration::illustration(
+            theme,
+            super::illustration::Illustration::Crashed,
+            illustration,
+        ))
         .child(
             div()
                 .text_size(theme.type_.title.size)

@@ -1066,21 +1066,36 @@ of problem instead of styling it.
 ### 11.8 Empty and crash states (glass panes)
 
 - **Empty space** (no tabs, no staged tab): the glass area shows
-  `material:canvas` with a centered 64 pt chassis mark (drawn glyph, not
-  emoji), headline `type:display` "No tabs in this space", a line naming the
+  `material:canvas` with the D10 illustration (drawn, not emoji): three
+  tab pills (`surface.field` capsules with an `accent` dot and an
+  `ink.tertiary` title bar) floating around a 52 pt ⌘ key cap (`r:md`,
+  `elev:1`), headline `type:display` "No tabs in this space", a line naming the
   profile ("in Profile · Work"), and one primary button "New Tab  ⌘T" that
   focuses the command field in NewTab mode; Escape returns to the glass pane.
   Closing the final tab already opens the empty New-Tab command surface
   (contract); this pane is what the user returns to after Escape.
   **Assert:** `bbr-empty-new-tab`, `bbr-crash-*` absent.
 - **Crash panel:** replaces the glass area of the crashed tab (native view
-  hidden) with `material:field`, `elev:1`: 32 pt lifering glyph in
-  `status.error`, title "This page crashed", copy "The tab stays open; reload
+  hidden) with `material:field`, `elev:1`: the D10 heartbeat illustration
+  (a 160 × 40 pt ECG trace in `status.error`, drawn left to right; the
+  crashed row's lifering stays the non-color companion), title "This page crashed", copy "The tab stays open; reload
   to restore it.", buttons `[Reload]` (primary, accent) and `[Close tab]`
   (secondary); focus order: Reload → Close tab → sidebar. The tab remains
   selected and listed per the interaction contract; no auto-reload in v1
   (open decision). **Assert:** `bbr-crash-panel`, `bbr-crash-reload`,
   `bbr-crash-close`; crashed tab row carries `error` state.
+- **Offline load error:** the error surface of the network (offline)
+  class replaces its lifering with the D10 illustration — two
+  `ink.tertiary` ring nodes joined by a link with a visible break; three
+  `accent` packets travel from the left node and queue before the break.
+  TLS and navigation errors keep the lifering (their cause is not a
+  network link).
+- **Motion (D10):** each illustration plays two 1400 ms cycles (`linear`)
+  from the moment its pane appears — a new kind or a fresh appearance
+  restarts it — then rests on its final frame (pills in place, the whole
+  trace, packets queued) and builds no animation element afterwards. Reduce
+  Motion shows only the rest frame. **Assert:** `motion.illustration`
+  (`kind` `empty-space` / `crashed` / `offline`, `state` `playing` / `rest`).
 - Both panes paint flat GPUI surfaces; they never render web content or
   screenshots.
 
@@ -1914,7 +1929,7 @@ second is replaced by the ring).
 | S5 floating surfaces | [overlays](docs/roadmap/tasks/v2-overlays.md) | §8 palette width, §11.4, §11.12, §11.13, §11.16 | landed 2026-09-28 |
 | S6 motion core | [motion core](docs/roadmap/tasks/v2-motion-core.md) | §6, §10.5, §10.6, §11.5 | landed 2026-09-28 |
 | S7 after-commit moments | [motion moments](docs/roadmap/tasks/v2-motion-moments.md) | §6, §10, §11.3, §11.4, §11.10, §11.12 | landed 2026-09-28 |
-| S8 empty states | [empty states](docs/roadmap/tasks/v2-empty-states.md) | §11.8 | adopted |
+| S8 empty states | [empty states](docs/roadmap/tasks/v2-empty-states.md) | §11.8 | landed 2026-09-28 |
 | S9 app icon | [brand icon](docs/roadmap/tasks/v2-brand-icon.md) | §1, §7 | landed 2026-09-28 |
 | S10 theme picker | [theme picker](docs/roadmap/tasks/v2-theme-picker.md) | §11.3 configuration surface | adopted |
 | S11 closeout | [closeout](docs/roadmap/tasks/v2-closeout.md) | §18 status, Evidence | adopted |

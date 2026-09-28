@@ -318,6 +318,7 @@ pub fn build_error_fixture(case: &ErrorCase) -> Option<ErrorSurfaceModel> {
         origin: case.origin.map(SharedString::from),
         action_label: case.action_label.into(),
         dismiss_label: case.dismiss_label.into(),
+        illustration: None,
     })
 }
 
