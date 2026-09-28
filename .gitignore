@@ -5,3 +5,4 @@ crates/bbr-app/target/
 .DS_Store
 __pycache__/
 *.pyc
+/reports/visual/

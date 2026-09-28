@@ -68,7 +68,7 @@ pub fn render_states(ctx: &StoryContext) -> AnyElement {
         section_heading(theme, "§10 vocabulary"),
     ];
     children.extend(rows);
-    story_page(theme, "States", children)
+    story_page(ctx, "States", children)
 }
 
 /// §7 icon catalog × S/N/XL sizes.
@@ -103,7 +103,7 @@ pub fn render_iconography(ctx: &StoryContext) -> AnyElement {
         .collect();
     let mut children = vec![section_heading(theme, "Every glyph × S / N / XL")];
     children.extend(rows);
-    story_page(theme, "Iconography", children)
+    story_page(ctx, "Iconography", children)
 }
 
 /// §11.4 brand block: the chassis mark + product name (gallery-owned
@@ -111,7 +111,7 @@ pub fn render_iconography(ctx: &StoryContext) -> AnyElement {
 pub fn render_brand(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     story_page(
-        theme,
+        ctx,
         "Brand",
         vec![div()
             .flex()

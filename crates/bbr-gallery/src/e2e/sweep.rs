@@ -128,6 +128,12 @@ fn mode_state_switching_changes_canvas_fields_and_keeps_ids_stable() {
         flush(window);
         let snap = snapshot(window, app);
         assert!(snap.reduced_motion);
+        window.read(|cx| {
+            assert!(
+                app.read(cx).theme().motion_mode.is_reduced(),
+                "the rendered theme, not just snapshot metadata, must honor Reduce Motion"
+            );
+        });
 
         // Story state: navigate with real keys to the States story (which
         // registers the §10 vocabulary) and switch its state.

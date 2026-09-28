@@ -41,6 +41,8 @@ use crate::tree_surface::tree_surface;
 /// snapshot construction; the types live in the focused `snapshot` module).
 pub use crate::snapshot::{GallerySnapshot, TreeNodeSnapshot};
 
+#[cfg(feature = "visual-capture")]
+mod capture;
 /// The app-owned snapshot construction (a bounded split of this file so
 /// the app entity stays under the ~500-line module budget).
 mod snapshot;
@@ -53,6 +55,8 @@ pub struct StoryState {
 }
 
 pub struct GalleryApp {
+    #[cfg(feature = "visual-capture")]
+    pub(crate) capture: Option<crate::capture_page::PageCapture>,
     registry: CatalogRegistry,
     tree: TreeState,
     mode: ThemeMode,
@@ -120,6 +124,8 @@ impl GalleryApp {
             };
         }
         GalleryApp {
+            #[cfg(feature = "visual-capture")]
+            capture: None,
             // Built before `registry` moves (story discovery borrows it).
             tab_row: TabRowAppState::new(&registry),
             address: AddressAppState::new(&registry),
@@ -150,7 +156,13 @@ impl GalleryApp {
 
     /// The resolved theme from the current mode/contrast/density.
     pub fn theme(&self) -> Theme {
-        Theme::new(self.mode, self.contrast, self.density)
+        Theme::new(self.mode, self.contrast, self.density).with_motion_mode(
+            if self.reduced_motion {
+                bbr_ui::theme::MotionMode::Reduced
+            } else {
+                bbr_ui::theme::MotionMode::Standard
+            },
+        )
     }
 
     /// The selected story's current state label.
@@ -353,7 +365,7 @@ impl Render for GalleryApp {
         // production floating command surface takes no callbacks, so this
         // module builds the selected family's fixture model, records its
         // presentation summary, and hands the canvas the recorder + model.
-        let command = self.command.render_context(selected, story_state);
+        let command = self.command.render_context(selected, story_state, &theme);
         // The Core Controls story context: the real entities, the current
         // recorder snapshot, and the observer callbacks.
         let controls = if core_selected {
@@ -408,6 +420,8 @@ impl Render for GalleryApp {
             theme: &theme,
             reduced_motion: self.reduced_motion,
             story_state,
+            #[cfg(feature = "visual-capture")]
+            capture: self.capture.as_ref(),
             controls,
             tab_row,
             library,
@@ -423,6 +437,10 @@ impl Render for GalleryApp {
             command,
             space_config,
         });
+        #[cfg(feature = "visual-capture")]
+        if self.capture.is_some() {
+            return canvas;
+        }
         div()
             .id("bbr-gallery-root")
             .track_focus(&self.focus_handle)
@@ -450,6 +468,7 @@ impl Render for GalleryApp {
                     .child(controls_bar)
                     .child(canvas),
             )
+            .into_any()
     }
 }
 

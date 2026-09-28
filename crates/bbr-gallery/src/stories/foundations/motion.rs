@@ -151,7 +151,7 @@ pub fn render_motion(ctx: &StoryContext) -> AnyElement {
             })
             .into_any(),
     );
-    story_page(theme, "Motion", children)
+    story_page(ctx, "Motion", children)
 }
 
 #[cfg(test)]

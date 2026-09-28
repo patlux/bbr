@@ -60,7 +60,8 @@ pub fn render_favorites(ctx: &StoryContext) -> AnyElement {
         .map(|(index, case)| {
             // Each family renders at its own §8 density through the
             // production component (the canvas theme stays the caller's).
-            let case_theme = Theme::new(theme.mode, theme.contrast, case.density);
+            let case_theme = Theme::new(theme.mode, theme.contrast, case.density)
+                .with_motion_mode(theme.motion_mode);
             let tiles = build_favorites_fixture(case).expect("valid matrix family builds");
             let body: AnyElement = if tiles.is_empty() {
                 // §11.10: the empty region renders the drop band that names
@@ -184,7 +185,7 @@ pub fn render_favorites(ctx: &StoryContext) -> AnyElement {
     children.push(section_heading(theme, "§15 id derivation"));
     let empty_ids = favorites_ids(&[], false).join(" · ");
     children.push(value_row(theme, "empty region", &empty_ids));
-    story_page(theme, "Favorites grid", children)
+    story_page(ctx, "Favorites grid", children)
 }
 
 /// The production affordance components in each state: the drop band at

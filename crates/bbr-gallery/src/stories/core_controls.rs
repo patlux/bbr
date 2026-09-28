@@ -31,8 +31,8 @@ use crate::stories::{section_heading, story_page, value_row};
 
 /// The shared no-op body for a Core Controls story rendered without its
 /// context (defensive only — the app always supplies the context).
-fn missing_context(theme: &bbr_ui::theme::Theme, title: &str) -> AnyElement {
-    story_page(theme, title, Vec::new())
+fn missing_context(ctx: &StoryContext, title: &str) -> AnyElement {
+    story_page(ctx, title, Vec::new())
 }
 
 /// A `self_start` container that hugs its child so its debug bounds equal
@@ -50,13 +50,13 @@ fn control_slot(selector: &str, child: impl IntoElement) -> AnyElement {
 pub fn render_button(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(controls) = ctx.controls.as_ref() else {
-        return missing_context(theme, "Button");
+        return missing_context(ctx, "Button");
     };
     let clicks = controls.recorder.button_clicks;
     let on_button = controls.observer.on_button.clone();
     let on_button_2 = controls.observer.on_button.clone();
     story_page(
-        theme,
+        ctx,
         "Button",
         vec![
             section_heading(theme, "gpui-component Button · primary"),
@@ -87,14 +87,14 @@ pub fn render_button(ctx: &StoryContext) -> AnyElement {
 pub fn render_input(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(controls) = ctx.controls.as_ref() else {
-        return missing_context(theme, "Input");
+        return missing_context(ctx, "Input");
     };
     let Some(input) = controls.input else {
-        return missing_context(theme, "Input");
+        return missing_context(ctx, "Input");
     };
     let input_value = controls.input_value.clone();
     story_page(
-        theme,
+        ctx,
         "Input",
         vec![
             section_heading(theme, "gpui-component Input"),
@@ -114,12 +114,12 @@ pub fn render_input(ctx: &StoryContext) -> AnyElement {
 pub fn render_checkbox(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(controls) = ctx.controls.as_ref() else {
-        return missing_context(theme, "Checkbox");
+        return missing_context(ctx, "Checkbox");
     };
     let checked = controls.recorder.checkbox_checked;
     let on_checkbox = controls.observer.on_checkbox.clone();
     story_page(
-        theme,
+        ctx,
         "Checkbox",
         vec![
             section_heading(theme, "gpui-component Checkbox"),
@@ -141,12 +141,12 @@ pub fn render_checkbox(ctx: &StoryContext) -> AnyElement {
 pub fn render_switch(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(controls) = ctx.controls.as_ref() else {
-        return missing_context(theme, "Switch");
+        return missing_context(ctx, "Switch");
     };
     let checked = controls.recorder.switch_checked;
     let on_switch = controls.observer.on_switch.clone();
     story_page(
-        theme,
+        ctx,
         "Switch",
         vec![
             section_heading(theme, "gpui-component Switch"),
@@ -168,7 +168,7 @@ pub fn render_switch(ctx: &StoryContext) -> AnyElement {
 pub fn render_radio(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(controls) = ctx.controls.as_ref() else {
-        return missing_context(theme, "Radio");
+        return missing_context(ctx, "Radio");
     };
     let selected = controls.recorder.radio_index;
     let options: [&str; 3] = ["Small", "Normal", "Extra large"];
@@ -193,7 +193,7 @@ pub fn render_radio(ctx: &StoryContext) -> AnyElement {
         })
         .collect();
     story_page(
-        theme,
+        ctx,
         "Radio",
         vec![
             section_heading(theme, "gpui-component Radio"),
@@ -210,14 +210,14 @@ pub fn render_radio(ctx: &StoryContext) -> AnyElement {
 pub fn render_slider(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(controls) = ctx.controls.as_ref() else {
-        return missing_context(theme, "Slider");
+        return missing_context(ctx, "Slider");
     };
     let Some(slider) = controls.slider else {
-        return missing_context(theme, "Slider");
+        return missing_context(ctx, "Slider");
     };
     let slider_value = controls.slider_value;
     story_page(
-        theme,
+        ctx,
         "Slider",
         vec![
             section_heading(theme, "gpui-component Slider · 0–100"),
@@ -237,7 +237,7 @@ pub fn render_slider(ctx: &StoryContext) -> AnyElement {
 pub fn render_progress(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     let Some(controls) = ctx.controls.as_ref() else {
-        return missing_context(theme, "Progress");
+        return missing_context(ctx, "Progress");
     };
     let slider_value = controls.slider_value;
     let bars: Vec<AnyElement> = [25.0, 50.0, 75.0, 100.0]
@@ -285,5 +285,5 @@ pub fn render_progress(ctx: &StoryContext) -> AnyElement {
             )
             .into_any(),
     );
-    story_page(theme, "Progress", children)
+    story_page(ctx, "Progress", children)
 }

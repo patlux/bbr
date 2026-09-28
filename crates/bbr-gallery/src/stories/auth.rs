@@ -169,5 +169,5 @@ pub fn render_auth_sheet(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Auth sheet", children)
+    story_page(ctx, "Auth sheet", children)
 }

@@ -55,7 +55,7 @@ pub fn render_status_line(ctx: &StoryContext) -> AnyElement {
         value_row(theme, "type", "type:meta · ink_faint"),
     ];
     children.extend(rows);
-    story_page(theme, "Status line", children)
+    story_page(ctx, "Status line", children)
 }
 
 /// §11.1/§11.2/§10/§8 Tab Row: the production `bbr-ui` `tab_row` renders
@@ -81,7 +81,8 @@ pub fn render_tab_row(ctx: &StoryContext) -> AnyElement {
         .map(|case| {
             // Each family renders at its own §8 density through the
             // production component (the canvas theme stays the caller's).
-            let case_theme = Theme::new(theme.mode, theme.contrast, case.density);
+            let case_theme = Theme::new(theme.mode, theme.contrast, case.density)
+                .with_motion_mode(theme.motion_mode);
             let visuals = build_tab_row_fixture(case).expect("valid matrix family builds");
             let row = tab_row(
                 &case_theme,
@@ -227,5 +228,5 @@ pub fn render_tab_row(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Tab Row", children)
+    story_page(ctx, "Tab Row", children)
 }

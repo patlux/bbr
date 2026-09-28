@@ -51,7 +51,7 @@ pub fn render_command(ctx: &StoryContext) -> AnyElement {
         .iter()
         .find(|c| c.label == ctx.state)
         .unwrap_or(&COMMAND_VALID[0]);
-    let model = build_command_fixture(case).expect("valid matrix family builds");
+    let model = build_command_fixture(case, theme).expect("valid matrix family builds");
     // The rendered card inside a bounded surface wrapper (the card is
     // absolutely positioned at `CARD_RECT`; the wrapper is `relative` so
     // the card's absolute coordinates resolve inside it).
@@ -134,16 +134,16 @@ pub fn render_command(ctx: &StoryContext) -> AnyElement {
             "mode fields",
             &format!(
                 "{} density · {} contrast · reduced motion {}",
-                match case.density {
+                match model.theme.density {
                     bbr_ui::theme::Density::Small => "S",
                     bbr_ui::theme::Density::Normal => "N",
                     bbr_ui::theme::Density::ExtraLarge => "XL",
                 },
-                match case.contrast {
+                match model.theme.contrast {
                     bbr_ui::theme::ContrastMode::Standard => "standard",
                     bbr_ui::theme::ContrastMode::Increased => "increased",
                 },
-                if case.reduced_motion { "on" } else { "off" },
+                if model.theme.motion_mode == bbr_ui::theme::MotionMode::Reduced { "on" } else { "off" },
             ),
         ),
     ];
@@ -161,5 +161,5 @@ pub fn render_command(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Command palette / overlay", children)
+    story_page(ctx, "Command palette / overlay", children)
 }

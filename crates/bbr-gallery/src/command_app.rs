@@ -77,6 +77,7 @@ impl CommandAppState {
         &mut self,
         selected: StoryId,
         family_label: &str,
+        theme: &bbr_ui::theme::Theme,
     ) -> Option<CommandStory<'_>> {
         if selected != self.command_story {
             self.model = None;
@@ -86,7 +87,7 @@ impl CommandAppState {
             .iter()
             .find(|c| c.label == family_label)
             .unwrap_or(&COMMAND_VALID[0]);
-        self.model = build_command_fixture(case);
+        self.model = build_command_fixture(case, theme);
         if let Some(model) = &self.model {
             self.observe(CommandRecorder::of(model));
         }

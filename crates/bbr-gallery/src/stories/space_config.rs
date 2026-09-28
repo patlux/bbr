@@ -142,5 +142,5 @@ pub fn render_space_config(ctx: &StoryContext) -> AnyElement {
             )
             .into_any(),
     );
-    story_page(theme, "Space configuration", children)
+    story_page(ctx, "Space configuration", children)
 }

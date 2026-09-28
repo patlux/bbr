@@ -267,11 +267,51 @@ gallery:
 e2e-gallery:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr-gallery --bin bbr-gallery -- --ignored --nocapture
 
+# Windowless Metal probe, not a sealed comparator/baseline run. Optional story
+# selector derives from the registry. Builds with mbx; retains the host GPU lock.
+gallery-capture story="all":
+    timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/gallery.py --story {{quote(story)}}
+
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
 e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-favicons e2e-shell-titlebar-navigation e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-background-links e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-shell-responsiveness e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-shell-tab-menu e2e-web-navigation-gestures e2e-auth e2e-perf
 
 verify: fmt check test clippy roadmap ui-deps script-tests
+
+# --- Exact production-chrome snapshots (separate from functional E2E) ---
+visual_timeout := env_var_or_default("BBR_VISUAL_TIMEOUT", "60m")
+
+# Portable upstream contracts plus the small BBR integration adapter.
+visual-test:
+    timeout --kill-after=10s {{test_timeout}} python3 -m unittest discover -s scripts/visual -p 'test_*.py' -v
+    timeout --kill-after=10s {{test_timeout}} mbx test --locked --manifest-path vendor/cargo-gpui-visual/Cargo.toml
+    timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/test_update_integration.py -v
+
+# All current snapshots: contracts, offscreen Gallery and native browser chrome.
+# Both reports are produced even when one suite requires visual review.
+visual: visual-test
+    timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/batch.py
+
+# Explicit reviewed selections from the printed batch; never implicit latest/all.
+[positional-arguments]
+visual-update batch +cases:
+    timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/update.py "$@"
+
+# Capture builds via mbx, then takes the GUI lock only for the real app suite.
+# First run exits 1 until its explicitly reviewed cases have baselines.
+visual-check:
+    timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/tool.py check
+
+visual-compare run:
+    timeout --kill-after=10s {{check_timeout}} python3 scripts/visual/tool.py compare --run {{quote(run)}}
+
+# Deliberately no accept-all; each argument is one reviewed case id.
+[positional-arguments]
+visual-accept run +cases:
+    timeout --kill-after=10s {{check_timeout}} python3 scripts/visual/accept.py "$@"
+
+visual-doctor:
+    timeout --kill-after=10s {{check_timeout}} python3 scripts/visual/tool.py doctor
 
 # --- Packaging lane (L1): deterministic .app bundle (additive lane recipes) ---
 package_timeout := env_var_or_default("BBR_PACKAGE_TIMEOUT", "12m")

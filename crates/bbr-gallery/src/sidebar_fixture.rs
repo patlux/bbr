@@ -24,7 +24,9 @@ use bbr_ui::sidebar::model::{
     StripModel, TabsModel,
 };
 use bbr_ui::state::{SpaceChipVisuals, TabVisualState};
-use bbr_ui::theme::{Theme, ThemeMode};
+#[cfg(test)]
+use bbr_ui::theme::ThemeMode;
+use bbr_ui::theme::{ContrastMode, MotionMode, Theme};
 use gpui::{FocusHandle, ScrollHandle, SharedString};
 
 use crate::sidebar_matrix::{sidebar_case_valid, CommandKind, SidebarCase};
@@ -65,10 +67,30 @@ impl SidebarFixtureHandles {
     }
 }
 
+/// Family density and named accessibility requirements stay authoritative;
+/// canvas appearance and stronger accessibility preferences are inherited.
+pub fn fixture_theme(case: &SidebarCase, canvas: &Theme) -> Theme {
+    Theme::new(
+        canvas.mode,
+        if case.contrast == ContrastMode::Increased {
+            case.contrast
+        } else {
+            canvas.contrast
+        },
+        case.density,
+    )
+    .with_motion_mode(if case.reduced_motion {
+        MotionMode::Reduced
+    } else {
+        canvas.motion_mode
+    })
+}
+
 /// Build the plain §11.4 rail model for a matrix family. `None` for any
 /// case the validity authority rejects. The model is plain data (the
 /// handles travel in the fixture bundle); the rail renders it through the
 /// production `bbr-ui` components.
+#[cfg(test)]
 pub fn build_sidebar_fixture(
     case: &SidebarCase,
     handles: &SidebarFixtureHandles,
@@ -77,6 +99,20 @@ pub fn build_sidebar_fixture(
         return None;
     }
     let theme = Theme::new(ThemeMode::Dark, case.contrast, case.density);
+    build_sidebar_fixture_with_theme(case, handles, &theme)
+}
+
+/// Resolve the canvas appearance and family constraints consistently for both
+/// model geometry/tint and the production Sidebar renderer.
+pub fn build_sidebar_fixture_with_theme(
+    case: &SidebarCase,
+    handles: &SidebarFixtureHandles,
+    theme: &Theme,
+) -> Option<SidebarModel> {
+    if !sidebar_case_valid(case) {
+        return None;
+    }
+    let theme = fixture_theme(case, theme);
     let sidebar_width = if case.collapsed {
         0.0
     } else {

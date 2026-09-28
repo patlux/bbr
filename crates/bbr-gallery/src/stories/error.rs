@@ -164,7 +164,7 @@ pub fn render_error_surface(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Error surface", children)
+    story_page(ctx, "Error surface", children)
 }
 
 /// §11.8 Crash / Empty panes: the production `bbr-ui` `crash_panel` and
@@ -273,5 +273,5 @@ pub fn render_crash_empty_panes(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Crash / Empty panes", children)
+    story_page(ctx, "Crash / Empty panes", children)
 }

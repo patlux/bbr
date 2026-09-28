@@ -381,7 +381,12 @@ mod tests {
     #[test]
     fn every_valid_family_builds_a_model_through_the_production_validation() {
         for case in COMMAND_VALID {
-            let model = build_command_fixture(case)
+            let theme = bbr_ui::theme::Theme::new(
+                bbr_ui::theme::ThemeMode::Dark,
+                case.contrast,
+                case.density,
+            );
+            let model = build_command_fixture(case, &theme)
                 .unwrap_or_else(|| panic!("valid family {} must build", case.label));
             // The production validation authority accepts the model.
             assert_eq!(
@@ -410,7 +415,15 @@ mod tests {
                 rejected.label
             );
             assert!(
-                build_command_fixture(&rejected.case).is_none(),
+                build_command_fixture(
+                    &rejected.case,
+                    &bbr_ui::theme::Theme::new(
+                        bbr_ui::theme::ThemeMode::Dark,
+                        rejected.case.contrast,
+                        rejected.case.density,
+                    )
+                )
+                .is_none(),
                 "rejected {} builds a model",
                 rejected.label
             );

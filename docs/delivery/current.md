@@ -58,9 +58,330 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 | V2-S9 | Phosphor-b app icon | `integrated` | `main` (serial) | orchestrator | [brand icon](../roadmap/tasks/v2-brand-icon.md) | Integrated; verify, package-test 14/14, package + determinism identical, package-smoke alive; self-review recorded |
 | V2-S10 | Curated intensity and grain | `integrated` | `main` (serial) | orchestrator | [theme picker](../roadmap/tasks/v2-theme-picker.md) | Integrated; verify, testkit clippy, persistence (new space-paper restart E2E), spaces, gallery green, visual capture read; whole appearance persists (schema v4); self-review recorded |
 | V2-S11 | Gallery, documentation and closeout | `integrated` | `main` (serial) | orchestrator | [closeout](../roadmap/tasks/v2-closeout.md) | Integrated (`92263be8`); canonical aggregate green (31/32 locked, portal 7/7 after unlocking on the identical product tree) |
-| V2-S12 | Paper alignment and comparison findings | `integrating` | `main` (serial) | orchestrator | [Paper alignment](../roadmap/tasks/v2-paper-alignment.md) | Implemented (`43703235`…`05015039`); verify, testkit clippy/bins green; aggregate 31/32 suites green, portal 6/7 on a locked console (the lock shield owns the probe point) — rerun on an unlocked console closes it; performance evidence deferred |
+| V2-S12 | Paper alignment and comparison findings | `integrating` | `main` (serial) | product orchestrator `01a0e454`; settled during the authorized tooling merge | [Paper alignment](../roadmap/tasks/v2-paper-alignment.md) | Implemented (`43703235`…`05015039`); fresh combined-tree functional sequence passes, including Portal 7/7 and Titlebar 5/5 (merge evidence below). Product-owner documentary closeout remains separate; performance evidence deferred |
 
 The orchestrator (session `01a0e454`) is the only product writer and runs the V2 slices serially on `main`: no subagent or background workflow is authorized for this program, so the packets' parallel-capable pairs are executed in order and each slice is reviewed by a documented self-review against its packet before integration. Independent reviews use `homelab-llm/opencode-go/deepseek-v4-flash:high`: the route named in `AGENTS.md` (`homelab-llm/deepseek-v4-flash`) no longer resolves in the model registry. All historical BBR worktrees remain preserved.
+
+## Isolated visual-tooling lane (2026-09-28)
+
+Patrick initially authorized this isolated worktree alongside the product writer.
+He subsequently requested its local merge into `main`; the integration record
+below supersedes the historical no-merge/branch-only statements. Those earlier
+checkpoints remain provenance, not current ownership or acceptance claims.
+
+| ID | Slice | Status | Worktree | Owner | Contract | Next gate |
+|---|---|---|---|---|---|---|
+| VISUAL-SNAPSHOTS | Reusable visual snapshots | `integrated` | local merge into `main`; preserved source `parallel/visual-snapshots@7f5f6243` | session `01a0e635`, integration settled by this merge; no ongoing product ownership | [visual snapshots](../roadmap/tasks/visual-snapshot-tooling.md) | Combined-tree functional/capture/contract gates pass; all eight browser references require explicit re-review after Paper alignment. No baseline updates or push |
+
+Parallelism audit: only this requested tooling lane is authorized here; V2-S12
+is owned by the other session. RA-MEDIA retains its explicit sequencing;
+Split, performance and the other blocked/deferred items stay untouched. No
+subagent/workflow is authorized. Territory is the capture test, visual adapter,
+CLI vendor and baselines. Expected shared conflicts: justfile, roadmap/current
+ledger and E2E documentation; resolve as semantic unions. Product alignment
+integrates first, tooling second, with fresh baseline review on the combined
+tree. GUI captures acquire the same common-directory lock. Base is a clean
+committed checkpoint; this lane must run its own gates, not infer a current
+pass from historical evidence.
+
+### Tooling evidence and handoff boundary
+
+Outcome: unchanged CLI vendored as `539c4cbc`, BBR adapter and eight reviewed
+baselines delivered in the following local implementation commit. No merge,
+push, main-worktree mutation or ownership transfer was performed.
+
+Evidence (all paths below are on this host):
+
+- `just visual-test`: 15 BBR adapter tests and 29 unchanged upstream contracts.
+  Self-review remediated added vendor-source detection, non-regular PNGs and
+  holding the existing GUI lock through timeout/process-group cleanup. The two
+  input-validation regressions failed before the fix; the new lock-lifetime
+  test exercises a SIGTERM-resistant child and proves reaping before unlock.
+- First valid capture `reports/visual/runs/1790570337671813000-55313` failed only
+  for eight missing baselines. All eight PNGs were opened and inspected, then
+  accepted with eight explicit IDs. Independent run
+  `1790570427719032000-82082` passed 8/8 exact, zero errors. Native content/traffic
+  lights remain intentionally absent, not synthesized.
+- After adapter hardening, fresh run `1790571479914399000-46151` and explicit
+  `just visual-compare` pass 8/8 exact. Its suite takes 6.24s (measured); the
+  earlier independent suite took 4.21s. These are capture timings, not product
+  performance. An old run is correctly rejected with exit 2 after source edits.
+  Report: `reports/visual/latest/index.html`; `visual-doctor`: 1130 source inputs.
+- Workspace `verify` passes, including 49 existing script tests. Testkit
+  all-target Clippy and visual-capture test Clippy pass with `-D warnings`.
+  Existing Cargo recipes were invoked through a temporary mbx-equivalent
+  `/tmp/bbr-visual-verification.just`; no target-dir/cache-wrapper override.
+- Canonical functional sequence (only deferred perf omitted) stops at
+  `e2e-shell-titlebar-navigation`: reload parity at `main.rs:488` sees `Some("")`
+  instead of `BBR Fixture Two`. One focused rerun reproduces it. Event ring
+  `/tmp/bbr-st-titlebar-nav-parity-86914/event-ring.txt` shows the old title
+  during reload followed by an empty title, then the completed title.
+- Remaining recipes were run sequentially, not silently skipped. Portal is
+  6/7: `host_hides_on_minimize_and_restores` fails hit-test convergence with
+  foreign frontmost window `28977` versus parent `29431` / portal `29432`.
+  Diagnostics: `/var/folders/8j/xtk9v77x03q_cqw3fmh7hdw40000gn/T/bbr-st-portal-minimize-31641`.
+  Host occlusion is observed; no product cause or repair is claimed.
+- Overall 28/30 functional recipes pass, with the two named failures. Peek
+  passes 7/7, Gallery 46/46. Product source and both failing suites have no lane
+  diff. Neither the aggregate nor performance is marked passed.
+
+Logs: `/tmp/bbr-visual-verify.log`, `/tmp/bbr-visual-final-contracts.log`,
+`/tmp/bbr-visual-functional-gates.log`, `/tmp/bbr-visual-remaining-gates.log`,
+`/tmp/bbr-visual-snapshots-sealed-final.log`; machine outcomes are in
+`/tmp/bbr-visual-functional-results.json` and
+`/tmp/bbr-visual-remaining-results.json`. Measured first gate sequence: testkit
+Clippy 50.477s, capture Clippy 12.499s, functional aggregate to failure 97.188s,
+Peek 19.509s, Gallery 32.217s; remaining 22 recipe invocations 358.710s.
+Planning/implementation/review wall time was not instrumented.
+
+Final parallelism audit: no additional lane authorized; main remains owned by
+`01a0e454`; media/Split/performance boundaries unchanged. Stop at the two
+functional blockers and handoff boundary rather than changing unrelated
+product tests. Next owner needs explicit handoff, product-first integration,
+resolution/recheck of the failing gates, and fresh combined-tree captures with
+explicit review before any new baseline acceptance.
+
+### Gallery coverage extension (user-approved)
+
+| ID | Slice | Status | Worktree | Owner | Contract | Next gate |
+|---|---|---|---|---|---|---|
+| VISUAL-GALLERY | Offscreen Metal Gallery coverage | `planned` | capture/command foundation locally integrated into `main`; source worktree preserved | no active writer after integration; continuation requires activation | [Gallery visual coverage](../roadmap/tasks/gallery-visual-coverage.md) | Combined-tree capture validates 1,872 pages; all Gallery baselines remain absent. Locked-session proof, supported-state/framing audit and visual review remain open |
+
+Activation preflight: clean index/worktree at the named base, no lane test
+processes or Git index locks. Existing GUI lock remains mandatory. Main is at
+`a10a52262facbdb5a4eddec447f6ebf3c515ffa7` (worktree metadata only); no main or
+other lane source is inspected or mutated. The earlier visual adapter's exact
+capture/contract gates are green; its two functional blockers remain open.
+
+Parallelism audit: Patrick approved Gallery-first coverage followed by bounded
+app-composition slices. Only this local writer is authorized; no subagents or
+extra worktrees. Product/Paper remains owned by `01a0e454`. Gallery, adapter,
+visual configs and baselines are this lane's territory. Shared conflicts are
+Gallery story wiring, recipes, roadmap/current ledger and E2E documentation;
+resolve semantically product-first, tooling-second, then recapture/re-review.
+No dependency/runtime contract changes. RA-MEDIA, Split and performance remain
+deferred; additional browser composition capture awaits its own bounded packet.
+
+### Gallery fixture checkpoint and blocked capture evidence
+
+The first bounded increment fixes Gallery-only fixture wiring: Reduce Motion now
+reaches the rendered theme (the regression failed before the fix), Command no
+longer hardcodes Dark, Sidebar model tint/pitch and renderer share a resolved
+family theme, and Tab/Favorite menu fixture heights contain the production rows.
+Family densities remain intrinsic; named increased-contrast/reduced-motion
+families retain their requirements. No bbr-ui or browser production source change.
+Self-review found a half-point menu underallocation; the natural-layout regression
+failed, then passed after per-row rounding. No snapshot masks/tolerance/acceptance.
+
+Evidence before the host locked:
+
+- Gallery unit/contract tests 155 passed with the capture feature (150 without
+  it); feature all-target Clippy `-D warnings` passed. Existing semantic Gallery
+  E2E plus two new regressions: **48/48**, 25.69s measured. These tests use the
+  established TestPlatform and are not native screenshot evidence.
+- Native optimized probe `bbr-gallery-native-settled-c` under `/private/tmp`:
+  49 stories, 1,260 selector/theme cases, 1,872 PNG pages; first-to-last image
+  write span 169.95s (measured, not total runtime or product performance).
+  Menu, Sidebar and Command images inspected. Earlier focused Command repeats
+  `bbr-gallery-command-fixed-a` / `-b` matched 144/144 PNG bytes, but preceded
+  final family-theme reconciliation and are not final baseline candidates.
+- Partial full repeats `bbr-gallery-native-settled-a` (1,334 pages) and `-d`
+  (1,593) timed out; incomplete runs have no coverage TSV and are unusable.
+  Comparison of `-c`/`-d` isolates 12 RGBA differences to Tab Row page 0; the
+  16×16-pixel attention dot retains its finite opacity pulse under Reduce Motion.
+  A production-duration endpoint wait was added to the uncommitted prototype;
+  it still needs native verification. Reduced Motion fixed the other animated
+  States/Favicon probe differences, not all animation by definition.
+- The final `bbr-gallery-native-diagnose-a` produced no frames and hit its 300s
+  deadline. `ioreg` then reports `CGSSessionScreenIsLocked=Yes`. Do not infer the
+  earlier intermittent stalls have the same cause without contemporaneous data.
+  Native GUI work is stopped, process cleanup completed, GUI lock released.
+
+Logs: `/tmp/bbr-gallery-settled-gates.log`, `/tmp/bbr-gallery-regressions.log`,
+`/tmp/bbr-gallery-framing.log` (red), `/tmp/bbr-gallery-framing-after.log` (green),
+`/tmp/bbr-gallery-settled-repeat.log`, `/tmp/bbr-gallery-native-diagnose.log`.
+All native probes are unsealed diagnostics, not accepted comparator runs.
+The exact all-state audit, nested/shadow framing, bounded sealed adapter/recipes,
+independent final comparison and broader functional gates remain open. Initial
+Titlebar/Portal blockers remain unchanged; performance remains deferred.
+
+Checkpoint parallelism audit: no other lane/subagent/worktree is authorized.
+Product/Paper remains with its existing owner; Split/media/performance are not
+runnable here. Preserve this lane's prototype dirty tree and ownership.
+
+Headless continuation (Patrick approved): replace native-window scheduling with
+pinned `HeadlessAppContext`, injected macOS text system and the existing offscreen
+Metal renderer. No NSWindow, activation, DisplayLink or hidden-window fallback.
+Keep the existing host lock through process cleanup for conservative GPU
+serialization. First prove small probes, animation endpoints, independent exact
+repeats and locked-session operation without changing the user's lock state;
+then expand. Saved native probes are diagnostic references, not baseline authority.
+No additional lane, subagent, worktree or browser-composition scope is activated.
+
+### Offscreen Metal foundation checkpoint
+
+Implemented `just gallery-capture [story-id]`: optimized, production Gallery
+components with real macOS text and existing Metal offscreen textures, no native
+window/event loop/activation. Registry-derived selector/theme cases, measured
+pagination, production-duration finite opacity endpoints, arena clearing and
+ordered app shutdown are explicit. The small bounded adapter resolves the mbx
+artifact, retains the existing host lock through process-group cleanup and
+rejects missing/extra/duplicate pages, broken child ranges and wrong dimensions.
+This is intentionally an **unsealed probe**, not comparator/baseline acceptance.
+
+Runtime evidence:
+
+- `/private/tmp/bbr-gallery-headless-full-a` and `-b`: each 49 stories, 1,260
+  selector/theme cases, 1,872 PNG pages plus completion TSV; all files byte-exact
+  across independent processes. Measured wrapper wall time 50.64s / 50.26s.
+  CoreGraphics observations: 838 / 822 samples, zero native producer windows.
+- Compared with saved native `bbr-gallery-native-settled-c`: 1,860 PNGs identical;
+  only the 12 known Tab Row attention-dot pages differ. Each difference is
+  confined to its 16×16-pixel dot (density-specific y); the production-duration
+  endpoint is now repeatable. No mask, tolerance, baseline or production change.
+- Real recipe run `reports/visual/gallery-probes/1790594701123197000-6956`:
+  1,260 cases / 1,872 validated pages, 50.95s capture+validation; all PNGs and TSV
+  byte-exact with independent A. Focused Command observer run
+  `/private/tmp/bbr-gallery-headless-observed-final`: 328 observations, no native
+  window, zero producer-frontmost samples, same foreground PID before/after.
+- Every observation reported an on-console session with no locked flag; **locked
+  operation is still unproven**. The user's session was never locked/unlocked by
+  tooling. Metal API availability alone is not treated as locked-session proof.
+- Two first pilots exposed and fixed lifecycle errors: typed WindowHandle update
+  leased Root during explicit draw; app context initially dropped before the held
+  Gallery entity. Untyped app update and entity-before-context drop correct both.
+  The completion marker is now written only after successful shutdown.
+
+Verification: 150 normal Gallery tests / 156 capture-feature tests; normal and
+capture-feature all-target Clippy with `-D warnings`; 48/48 semantic Gallery E2E
+both normally (24.10s) and with capture enabled (24.34s measured); format and
+roadmap checks. Final `just visual-test`: 25/25 Python adapter/probe tests and
+29/29 unchanged upstream contracts, including the added lock-ownership contract. A GC-evicted mbx target
+symlink exposed an existing provenance bug, fixed separately in `7be94ca` after
+a red regression, without touching comparator sources or weakening file checks.
+
+Logs: `/tmp/bbr-gallery-headless-{build,full-a,full-b,final-gates,e2e,recipe,final-contracts,observed-final}.log`,
+`/tmp/bbr-gallery-visual-contracts.log`; observation JSONs beside the temporary
+probe directories. Throughput is tooling evidence, not product performance.
+Self-review checked dependency boundaries, real renderer/text injection, no
+window fallback, finite readiness, cleanup, completeness and acceptance limits.
+
+Next bounded work remains the supported-state/applicability and nested/shadow
+framing audit, then sealed unchanged-comparator integration and HTML review.
+Locked-session proof awaits an actually locked host, not a tooling-induced lock.
+No full acceptance, functional aggregate rerun, performance, browser-composition
+activation, baseline acceptance, merge, push or handoff is claimed. Final
+parallelism audit: only this writer is authorized; other owners and deferrals
+remain untouched. The current checkpoint does not activate additional lanes.
+
+### Unified visual commands (user-requested follow-up)
+
+Patrick requested one command for Gallery **and** the existing browser snapshots,
+plus one command to update reviewed snapshots. Sole writer and existing branch
+remain unchanged; clean activation base `47b6ea31`. No extra lane/subagent or
+browser product changes. Scope is the adapter/config/recipe/report wiring only.
+
+`just visual` runs adapter/upstream contracts, then both capture/compare/report
+suites. `just visual-update <batch> <suite:case>...` requires explicit reviewed
+selections; it never chooses latest, accepts all, recaptures or adopts environment
+drift. Each suite keeps its own baseline/environment authority and upstream seals.
+Batch HTML links the original comparator reports; no fork or second comparison
+algorithm. Gallery identities are renamed to put appearance last without changing
+PNG bytes. Both checks run on review-needed/failed suite results. Cross-suite
+updates preflight every selection but remain explicitly nontransactional.
+
+First real `just visual` batch `1790597536807106000-94418`: Gallery 1,872 sealed
+candidates, all missing baselines as expected, zero validation errors (86.68s
+including build/seal/report); browser 8/8 exact, zero errors (33.45s). Aggregate
+exit 1 is correct, not a failed capture or a green acceptance claim. HTML:
+`reports/visual/batches/1790597536807106000-94418/index.html`. Follow-up source
+edits invalidate that first batch for acceptance; recapture rather than reseal.
+
+The actual update router is exercised with the unchanged CLI in a temporary Git
+fixture: one selected image per suite is accepted, unselected images stay absent,
+stale report/baseline and changed source attempts fail without new writes. Real
+Gallery baselines are not accepted as part of command implementation. Existing
+Titlebar/Portal blockers, native-browser window requirement, locked-session proof,
+all-state/framing audit and product-first integration remain open.
+
+Final fresh batch `1790598062285304000-41557` proves the final source tree:
+Gallery 1,872 missing-baseline candidates with zero errors (156.72s including
+managed-target rebuild), browser 8/8 exact with zero errors (45.13s). Aggregate
+correctly exits 1. Both manifests pass upstream source/image validation; all
+1,880 image hashes match the first independent batch. Report:
+`reports/visual/batches/1790598062285304000-41557/index.html` (generated, not opened
+in a managed browser). No real baseline changes. A real update attempt against
+the first stale batch was rejected before writes; the final wrapper reports that
+error without a Python traceback.
+
+Final `just visual` includes 35 Python unit contracts (the integration class is
+skipped in discovery), 29 unchanged upstream contracts and one separately run
+real-CLI two-suite update integration test. `just script-tests`: 49/49;
+`just roadmap` and whitespace checks pass. No Rust production code changed;
+full functional aggregate/performance are not rerun for this bounded tooling
+increment. Logs: `/tmp/bbr-visual-unified-{final,contracts,update-tests,seals,script-tests}.log`
+and `/tmp/bbr-visual-update-stale.log`. Timings above measure complete tool phases,
+not product performance.
+
+Self-review checked independent namespaces, source/environment/PNG seals, complete
+Gallery pairing without pixel edits, continuing both checks after a non-pass,
+explicit-only acceptance, stale/invalid no-write paths, signal/lock lifetime and
+managed-target eviction recovery. Parallelism audit: only this requested adapter
+lane is runnable here. Product/Paper ownership and Split/media/performance deferrals
+are unchanged; no merge/push or handoff. Current all-state/framing/locked-session
+and baseline-review limits remain explicit.
+
+### Authorized local integration (2026-09-28)
+
+Patrick requested “merge es in main bitte”. Preflight found clean, settled
+`main@a10a52262facbdb5a4eddec447f6ebf3c515ffa7` and source
+`parallel/visual-snapshots@7f5f6243adf30f447873c5c46c6e0b720c95bb86`.
+Product session `01a0e454` was paused after committing S12 evidence; no BBR
+compiler/capture or Git-lock owner was active. Session `01a0e635` took only the
+bounded integration work on the existing main worktree, preserving every Paper
+commit and the source branch/worktree. The no-ff merge was conflict-free;
+Command/Sidebar fixture unions preserve Paper model additions and capture theme
+resolution. No product source was changed by integration.
+
+Combined-tree verification before the merge commit:
+
+- `just verify`, through `/tmp/bbr-visual-merge.just`, passes (the temporary
+  recipe copy substitutes mbx for compiler-invoking Cargo commands only).
+  Normal Gallery tests: 150; script contracts: 49.
+- Bounded mbx all-target testkit Clippy and Gallery capture-feature Clippy pass
+  with `-D warnings`; capture-feature Gallery tests: 156. Browser visual-capture
+  test Clippy also passes.
+- Canonical sequential `just e2e` with only the explicitly deferred `e2e-perf`
+  omitted, plus Peek and Gallery: **32/32 recipes, 281 tests, zero failures**,
+  385.14s measured including builds. Titlebar passes 5/5 and Portal 7/7;
+  this supersedes the earlier functional blockers on this combined tree.
+  Gallery passes 48/48 normally (24.70s test time) and 48/48 with capture enabled
+  (24.80s test time). The console was observed unlocked before the sequence;
+  no lock-state change was induced. S12 product closeout is not performed here.
+- `just visual`: 35 Python unit contracts, 29 unchanged upstream contracts and
+  the separate real-CLI two-suite acceptance integration test pass. Fresh batch
+  `1790600840022959000-69552` produces 1,872 Gallery pages (all missing baselines)
+  and eight browser images (all changed against pre-Paper references). Both
+  reports have **zero validation errors and no environment mismatch**. Correct
+  aggregate exit is 1 (review required), not green visual acceptance.
+  Gallery phase 142.71s, browser phase 40.88s, whole command 205.41s measured;
+  these are tool timings, not product performance.
+
+Report: `reports/visual/batches/1790600840022959000-69552/index.html`.
+It is generated, not claimed visually reviewed. Both suites pass the upstream
+source/image seal validator after the documentation updates. No Gallery or
+browser baseline is accepted or rewritten. Final roadmap, format and whitespace
+checks pass. Logs: `/tmp/bbr-visual-merge-{verify,feature-gates,e2e,gallery-feature-e2e,visual,capture-clippy,seals,final-docs}.log`.
+The existing comparator, pixel exactness, native exclusions and explicit-update
+policy are unchanged. Self-review checked the shared fixture unions, absence of
+product-source edits and truthful separation of merge verification from visual
+acceptance. Locked-session capture proof and all-state/nested-framing audits
+remain open. Historical source-branch runs are not combined-main evidence.
+
+Integration parallelism audit: only the requested merge is authorized; no
+subagents, new lanes or worktrees. Product-first/tooling-second order is retained.
+RA-MEDIA sequencing, Split prohibition and performance deferral remain unchanged.
+No push, branch deletion or worktree removal; no unrelated product work starts.
 
 ## Post-F2a parallel wave
 
@@ -75,7 +396,7 @@ The former post-F2a and Daily-driver waves are closed historical evidence. Their
 1. `CONTROL-RECONCILE` is closed; its exact durable-contract commit is `d2b507f56b9da068e7df0aa08c3f8b12cdec506c`, and no writer remains active.
 2. Do not infer a product lane from an idle historical worktree or session. Every new writer requires a fresh exact-base, status, process, lock, and ownership preflight.
 3. `FOLDER-PIN-INVARIANT` has landed, so Folder-menu behavior may assume folders contain pinned tabs. The design-branch packets (`DESIGN-CARD` → `DESIGN-ADDRESS` → `DESIGN-FAVORITES`) are integrated.
-4. V2 ran serially on `main`: S0 → S1 → S2 → S3 → S4 → S5 → S6 → S9 → S7 → S8 → S10 → S11, all integrated (through `92263be8`); S12 (Paper alignment, from Patrick's 2026-09-28 comparison request) followed serially and is implemented through `05015039`; only its portal rerun on an unlocked console remains.
+4. V2 ran serially on `main`: S0 → S1 → S2 → S3 → S4 → S5 → S6 → S9 → S7 → S8 → S10 → S11, all integrated (through `92263be8`); S12 (Paper alignment, from Patrick's 2026-09-28 comparison request) followed serially and is implemented through `05015039`; the combined-tree integration now supplies the passing unlocked Portal rerun; product-owner documentary closeout remains.
 5. RA-MEDIA resumes after V2-S12 as a capability-first sequence: macOS adapter → Sidebar media control (its portable contract is integrated).
 6. Split stays blocked; no preflight, inspection, port, review, or mutation of `bbr-split-app-composition` is authorized.
 7. GUI suites remain host-exclusive through the repository lock and need an unlocked macOS session (a locked session presents no frames, so render-gated E2E time out). Performance execution is deferred to the end of the queue.

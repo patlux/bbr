@@ -37,6 +37,8 @@ pub struct StoryContext<'a> {
     pub theme: &'a bbr_ui::theme::Theme,
     pub reduced_motion: bool,
     pub state: &'a str,
+    #[cfg(feature = "visual-capture")]
+    pub capture: Option<&'a crate::capture_page::PageCapture>,
     /// `Some` only for the Core Controls stories: the real gpui-component
     /// state entities, the current recorder snapshot, and the observer
     /// callbacks real control events route through. `None` for every other

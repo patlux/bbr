@@ -70,7 +70,7 @@ pub fn render_favicon_tile(ctx: &StoryContext) -> AnyElement {
             )
             .into_any(),
     );
-    story_page(theme, "Favicon tile", children)
+    story_page(ctx, "Favicon tile", children)
 }
 
 /// §12 profile chip: one chip per hue with its deterministic monogram.
@@ -107,14 +107,14 @@ pub fn render_profile_chip(ctx: &StoryContext) -> AnyElement {
         .collect();
     let mut children = vec![section_heading(theme, "§12 identity chips")];
     children.extend(chips);
-    story_page(theme, "Profile chip", children)
+    story_page(ctx, "Profile chip", children)
 }
 
 /// §11.2 section label: uppercase `type:badge`, focused brightens one step.
 pub fn render_section_label(ctx: &StoryContext) -> AnyElement {
     let theme = ctx.theme;
     story_page(
-        theme,
+        ctx,
         "Section label",
         vec![
             section_heading(theme, "At rest"),
@@ -162,7 +162,7 @@ pub fn render_loading_arc(ctx: &StoryContext) -> AnyElement {
         value_row(theme, "motion", "rotation is a later polish pass"),
     ];
     children.extend(rows);
-    story_page(theme, "Loading arc", children)
+    story_page(ctx, "Loading arc", children)
 }
 
 /// Map the favicon story's state option to a `TabVisualState`.

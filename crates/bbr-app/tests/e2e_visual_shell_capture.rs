@@ -1,19 +1,15 @@
-//! Manual/CI-artifact visual evidence for the reference-faithful production
-//! shell. The ignored tests launch an externally supplied *optimized* BBR
-//! binary with the explicit `visual-capture` feature, populate only through
-//! existing production
-//! requests, capture the exact native parent-window id, and quit gracefully.
-//!
-//! This is not a pixel assertion and adds no production screenshot API. Run
-//! under the repository GUI lock with `BBR_VISUAL_CAPTURE_BIN` and
-//! `BBR_VISUAL_CAPTURE_DIR` set by the bounded capture recipe.
+//! Production-chrome PNG producer for the shared cargo-gpui-visual comparator.
+//! Real optimized app, real WKWebViews, fresh profiles and typed readiness.
+//! Native WebKit/AppKit/portal pixels are deliberately not composited.
+//! `just visual-check` sets the binary/output and takes the host GUI lock.
+//! Pixel comparison is a separate regression gate, never synchronization.
 
 #![cfg(all(target_os = "macos", feature = "visual-capture"))]
 
 #[path = "e2e_common/mod.rs"]
 mod e2e_common;
 
-use bbr_testkit::protocol::{dsl, Request, Snapshot};
+use bbr_testkit::protocol::{dsl, Request, Snapshot, ThemeModeOverride};
 use e2e_common::{
     catch_unwind, connect, deadline, harness_root, harness_socket_path, open_tab,
     wait_for_window_settled, AssertUnwindSafe, Client, FixtureServer, Harness, Instant,
@@ -29,13 +25,17 @@ const SIDEBAR_CROP_WIDTH_PT: f64 = 304.0;
 #[test]
 #[ignore = "visual evidence: requires optimized app binary and an unlocked macOS GUI"]
 fn representative_production_path_capture() {
-    capture(CaptureKind::Representative);
+    for appearance in [ThemeModeOverride::Light, ThemeModeOverride::Dark] {
+        capture(CaptureKind::Representative, appearance);
+    }
 }
 
 #[test]
 #[ignore = "visual evidence: requires optimized app binary and an unlocked macOS GUI"]
 fn ordinary_current_data_capture() {
-    capture(CaptureKind::Ordinary);
+    for appearance in [ThemeModeOverride::Light, ThemeModeOverride::Dark] {
+        capture(CaptureKind::Ordinary, appearance);
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -53,9 +53,17 @@ impl CaptureKind {
     }
 }
 
-fn capture(kind: CaptureKind) {
+fn appearance_name(appearance: ThemeModeOverride) -> &'static str {
+    match appearance {
+        ThemeModeOverride::Light => "light",
+        ThemeModeOverride::Dark => "dark",
+    }
+}
+
+fn capture(kind: CaptureKind, appearance: ThemeModeOverride) {
     let _serial = e2e_common::serial_gui();
-    let root_tag = format!("visual-{}", kind.name());
+    let appearance_name = appearance_name(appearance);
+    let root_tag = format!("visual-{}-{appearance_name}", kind.name());
     let root = harness_root(&root_tag, std::process::id());
     let profile = root.join("profile");
     fs::create_dir_all(&profile).expect("create capture profile");
@@ -101,18 +109,15 @@ fn capture(kind: CaptureKind) {
             .expect("attach")
             .last()
             .map_or(0, |v| v.0);
-        // The capture is the reference-faithful **light** shell evidence
-        // (task packet `system-appearance-theme`): force the light rail
-        // regardless of the host appearance so the captured state matches
-        // the integrated VS-REFERENCE evidence exactly.
         client
-            .send_ok(&dsl::set_appearance_override(Some(
-                bbr_testkit::protocol::ThemeModeOverride::Light,
-            )))
-            .expect("force light capture");
+            .send_ok(&dsl::set_appearance_override(Some(appearance)))
+            .expect("force capture appearance");
+        client
+            .send_ok(&dsl::set_accessibility_override(Some(false), Some(true)))
+            .expect("normal contrast and reduced motion, independent of host");
         client
             .send_ok(&Request::FlushFrame)
-            .expect("flush forced light capture");
+            .expect("flush capture appearance");
         let initial = client.snapshot().expect("initial snapshot");
         let initial_view = initial.active_web_view.expect("initial view");
         if initial.title.as_deref() != Some(PAGE_ONE_TITLE) {
@@ -135,12 +140,14 @@ fn capture(kind: CaptureKind) {
         client
             .send_ok(&Request::FlushFrame)
             .expect("flush capture frame");
-        let snapshot = wait_for_window_settled(&mut client, deadline());
-        assert_capture_state(kind, &snapshot);
+        wait_for_window_settled(&mut client, deadline());
+        let snapshot = wait_for_capture_ready(&mut client);
+        assert_capture_state(kind, appearance, &snapshot);
         let window_number = snapshot.portal.parent_window_number;
         assert!(window_number > 0, "native parent window number is required");
 
-        let metadata_path = output_dir.join(format!("{}.snapshot.json", kind.name()));
+        let metadata_path =
+            output_dir.join(format!("{}--{appearance_name}.snapshot.json", kind.name()));
         fs::write(
             &metadata_path,
             serde_json::to_vec_pretty(&snapshot).expect("serialize snapshot"),
@@ -148,20 +155,31 @@ fn capture(kind: CaptureKind) {
         .expect("write capture snapshot");
 
         let direct_capture = PathBuf::from(format!(
-            "/tmp/bbr-visual-{}-{}.png",
+            "/tmp/bbr-visual-{}-{appearance_name}-{}.png",
             kind.name(),
             std::process::id()
         ));
+        assert!(!direct_capture.exists(), "never reuse a temporary capture");
         client
             .send_ok(&Request::CaptureChrome {
                 path: direct_capture.to_string_lossy().into_owned(),
             })
             .expect("capture production GPUI frame");
         assert!(direct_capture.metadata().is_ok_and(|meta| meta.len() > 0));
-        let full_path = output_dir.join(format!("{}.full.png", kind.name()));
+        let full_path = output_dir.join(format!("{}-full--{appearance_name}.png", kind.name()));
+        assert!(!full_path.exists(), "never overwrite a capture");
         fs::rename(&direct_capture, &full_path).expect("move direct capture into artifact dir");
-        let rail_path = output_dir.join(format!("{}.rail.png", kind.name()));
-        crop_left_rail(&full_path, &rail_path, snapshot.window_size[0]);
+        let rail_path = output_dir.join(format!("{}-rail--{appearance_name}.png", kind.name()));
+        crop_left_rail(&full_path, &rail_path);
+        let after = client.snapshot().expect("post-readback semantic snapshot");
+        assert_capture_state(kind, appearance, &after);
+        assert_eq!(
+            after.tabs, snapshot.tabs,
+            "readback preserves exact tab/session state"
+        );
+        assert_eq!(after.active_profile, snapshot.active_profile);
+        assert_eq!(after.active_space, snapshot.active_space);
+        assert_eq!(after.engine_sessions, snapshot.engine_sessions);
 
         client.quit().expect("graceful visual capture quit");
         wait_for_process_exit(&mut harness, deadline());
@@ -219,8 +237,45 @@ fn populate_representative(
         .expect("flush representative frame");
 }
 
-fn assert_capture_state(kind: CaptureKind, snapshot: &Snapshot) {
-    assert_eq!(snapshot.shell_modes.theme, "light");
+fn wait_for_capture_ready(client: &mut Client) -> Snapshot {
+    let until = deadline();
+    loop {
+        client
+            .send_ok(&Request::FlushFrame)
+            .expect("draw readiness frame");
+        let snapshot = client.snapshot().expect("readiness snapshot");
+        if capture_ready(&snapshot) {
+            return snapshot;
+        }
+        assert!(
+            Instant::now() < until,
+            "capture never reached typed idle state"
+        );
+        std::thread::yield_now();
+    }
+}
+
+fn capture_ready(snapshot: &Snapshot) -> bool {
+    !snapshot.loading
+        && snapshot
+            .tabs
+            .iter()
+            .all(|tab| !tab.loading && !tab.crashed && !tab.unresponsive)
+        && snapshot.motion.moments.is_empty()
+}
+
+fn assert_capture_state(kind: CaptureKind, appearance: ThemeModeOverride, snapshot: &Snapshot) {
+    assert_eq!(snapshot.shell_modes.theme, appearance_name(appearance));
+    assert_eq!(snapshot.shell_modes.contrast, "standard");
+    assert!(snapshot.shell_modes.reduced_motion);
+    assert!(
+        capture_ready(snapshot),
+        "capture must remain semantically idle"
+    );
+    assert_eq!(snapshot.engine_kind, "native-wkwebview");
+    assert!(!snapshot.chrome_focused);
+    assert!(!snapshot.portal.visible);
+    assert_eq!(snapshot.window_size, [CAPTURE_WIDTH_PT, CAPTURE_HEIGHT_PT]);
     assert!(snapshot.sidebar_visible);
     assert!(
         (snapshot.sidebar_width - 300.0).abs() <= 0.5,
@@ -233,7 +288,7 @@ fn assert_capture_state(kind: CaptureKind, snapshot: &Snapshot) {
     assert!(snapshot.visible_ids.iter().any(|id| id == "bbr-new-tab"));
     match kind {
         CaptureKind::Representative => {
-            assert!(snapshot.tabs.len() >= 4, "representative real tabs");
+            assert_eq!(snapshot.tabs.len(), 4, "representative real tabs");
             assert_eq!(snapshot.favorites.len(), 4, "representative real favorites");
             assert_eq!(snapshot.pinned_count, 1, "representative real pinned tab");
             assert_eq!(snapshot.active_tab_index, Some(0));
@@ -249,12 +304,17 @@ fn assert_capture_state(kind: CaptureKind, snapshot: &Snapshot) {
     }
 }
 
-fn crop_left_rail(full_path: &Path, rail_path: &Path, window_width_points: f32) {
+fn crop_left_rail(full_path: &Path, rail_path: &Path) {
     let image = image::open(full_path).expect("open direct renderer capture");
-    let scale = f64::from(image.width()) / f64::from(window_width_points);
-    let crop_width = (SIDEBAR_CROP_WIDTH_PT * scale).round() as u32;
+    assert_eq!(
+        (image.width(), image.height()),
+        (2160, 2814),
+        "exact 2x readback; never rescale"
+    );
+    assert!(!rail_path.exists(), "never overwrite a rail capture");
+    let crop_width = (SIDEBAR_CROP_WIDTH_PT * 2.0) as u32;
     image
-        .crop_imm(0, 0, crop_width.min(image.width()), image.height())
+        .crop_imm(0, 0, crop_width, image.height())
         .save(rail_path)
         .expect("save left rail crop");
 }

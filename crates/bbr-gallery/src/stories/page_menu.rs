@@ -95,7 +95,7 @@ pub fn render_page_menu(ctx: &StoryContext) -> AnyElement {
         .collect();
 
     story_page(
-        theme,
+        ctx,
         "Page menu",
         vec![
             section_heading(theme, "§11.4/§11.13 enriched page-background menu (production card)"),

@@ -20,6 +20,8 @@ pub struct CanvasModel<'a> {
     pub theme: &'a Theme,
     pub reduced_motion: bool,
     pub story_state: &'a str,
+    #[cfg(feature = "visual-capture")]
+    pub capture: Option<&'a crate::capture_page::PageCapture>,
     /// The Core Controls context (`Some` only when a Core Controls story is
     /// selected) — see [`ControlsStory`].
     pub controls: Option<ControlsStory<'a>>,
@@ -74,6 +76,8 @@ pub fn canvas_surface(model: CanvasModel) -> AnyElement {
         theme: model.theme,
         reduced_motion: model.reduced_motion,
         state: model.story_state,
+        #[cfg(feature = "visual-capture")]
+        capture: model.capture,
         controls: model.controls,
         tab_row: model.tab_row,
         library: model.library,
@@ -90,6 +94,10 @@ pub fn canvas_surface(model: CanvasModel) -> AnyElement {
         space_config: model.space_config,
     };
     let content = (story.render)(&context);
+    #[cfg(feature = "visual-capture")]
+    if model.capture.is_some() {
+        return content;
+    }
     div()
         .id("bbr-gallery-canvas")
         .flex()

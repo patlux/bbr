@@ -144,7 +144,7 @@ pub fn render_context_menu(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Context menu", children)
+    story_page(ctx, "Context menu", children)
 }
 
 /// A tiny helper: append the family's meta line below its card container

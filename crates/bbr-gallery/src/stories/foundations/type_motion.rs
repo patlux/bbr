@@ -49,7 +49,7 @@ pub fn render_typography(ctx: &StoryContext) -> AnyElement {
             .into_any()
     })
     .collect();
-    story_page(theme, "Typography — type roles", rows)
+    story_page(ctx, "Typography — type roles", rows)
 }
 
 /// §5 spacing scale + radius tokens.
@@ -144,5 +144,5 @@ pub fn render_spacing_radius(ctx: &StoryContext) -> AnyElement {
     children.extend(spacing);
     children.push(section_heading(theme, "Radius"));
     children.extend(radii);
-    story_page(theme, "Spacing / Radius", children)
+    story_page(ctx, "Spacing / Radius", children)
 }

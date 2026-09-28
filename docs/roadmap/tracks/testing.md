@@ -40,6 +40,13 @@ Parent: [Roadmap](../../../ROADMAP.md) · Architecture: [E2E_ARCHITECTURE.md](..
 
 ## Harness improvements
 
+The bounded [visual snapshot tooling packet](../tasks/visual-snapshot-tooling.md)
+owns production-chrome Light/Dark captures, exact comparisons and reviewed
+baselines; native pixels and functional E2E remain separate evidence.
+The [Native Gallery coverage packet](../tasks/gallery-visual-coverage.md) owns
+registry/state completeness, full component framing and native Gallery captures;
+app compositions follow in separately activated slices.
+
 - [ ] Emit semantic window-resized events instead of snapshot polling.
 - [x] Emit `Quitting` before graceful shutdown, after the gateway writer has flushed the successful Quit response so process exit cannot race the client response.
 - [ ] Add model snapshots for complete profile/space/split collections; active profile/space and tab/session snapshots exist. *(Complete profile/space collections with per-space active tab, live session, and tab count are exposed; split collections remain.)*

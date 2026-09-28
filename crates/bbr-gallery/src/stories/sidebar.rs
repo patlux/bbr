@@ -18,7 +18,7 @@ use bbr_ui::theme::Theme;
 use gpui::{div, prelude::*, px, AnyElement, SharedString};
 
 use crate::registry::StoryContext;
-use crate::sidebar_fixture::build_sidebar_fixture;
+use crate::sidebar_fixture::build_sidebar_fixture_with_theme;
 use crate::sidebar_matrix::{sidebar_case_valid, SIDEBAR_REJECTED, SIDEBAR_VALID};
 use crate::stories::{section_heading, story_page, value_row};
 
@@ -68,7 +68,9 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         .iter()
         .find(|c| c.label == ctx.state)
         .unwrap_or(&SIDEBAR_VALID[0]);
-    let model = build_sidebar_fixture(case, handles).expect("valid matrix family builds");
+    let family_theme = crate::sidebar_fixture::fixture_theme(case, theme);
+    let model =
+        build_sidebar_fixture_with_theme(case, handles, theme).expect("valid matrix family builds");
     let field_anchor = field_anchor_placeholder();
     let favorites_band_anchor = band_anchor_placeholder();
     let command_results = case
@@ -78,7 +80,7 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         .downloads_panel
         .then(|| child_placeholder(theme, "downloads panel (app-owned child)"));
     let rail = sidebar_surface(
-        theme,
+        &family_theme,
         &model,
         &callbacks,
         bbr_ui::sidebar::SidebarChildren {
@@ -150,16 +152,16 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
             "mode fields",
             &format!(
                 "{} density · {} contrast · reduced motion {}",
-                match case.density {
+                match family_theme.density {
                     bbr_ui::theme::Density::Small => "S",
                     bbr_ui::theme::Density::Normal => "N",
                     bbr_ui::theme::Density::ExtraLarge => "XL",
                 },
-                match case.contrast {
+                match family_theme.contrast {
                     bbr_ui::theme::ContrastMode::Standard => "standard",
                     bbr_ui::theme::ContrastMode::Increased => "increased",
                 },
-                if case.reduced_motion { "on" } else { "off" },
+                if family_theme.motion_mode == bbr_ui::theme::MotionMode::Reduced { "on" } else { "off" },
             ),
         ),
     ];
@@ -185,7 +187,7 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         "Rejected combinations (matrix contract)",
     ));
     children.extend(rejected);
-    story_page(theme, "Sidebar", children)
+    story_page(ctx, "Sidebar", children)
 }
 
 /// The Gallery-owned §11.4 field anchor placeholder: an invisible element
