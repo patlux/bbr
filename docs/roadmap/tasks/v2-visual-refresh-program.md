@@ -161,6 +161,6 @@ Open blockers and non-goals:
                         none; performance execution deferred. Follow-up:
                         the Paper comparison of 2026-09-28 opened
                         [S12 Paper alignment](v2-paper-alignment.md),
-                        implemented through 05015039.
+                        integrated through 05015039.
 Worktree state:         main, serial
 ```
