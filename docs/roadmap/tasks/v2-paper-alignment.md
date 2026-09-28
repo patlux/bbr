@@ -80,7 +80,7 @@ Not parallelized.
 - [x] Tint gates across tokens × steps × modes × contrast with the new model.
 - [x] Palette anatomy tests (match range, kind hint, short URL, magnifier
       geometry).
-- [ ] Illustration and pop frame tests.
+- [x] Illustration and pop frame tests.
 
 ### Real-app E2E
 

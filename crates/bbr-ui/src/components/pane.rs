@@ -8,8 +8,8 @@ use gpui::{
 use crate::icons::Icon;
 use crate::theme::{Spacing, Theme};
 
-/// §11.8 empty space pane: the D10 drawn illustration (tab pills floating
-/// around a ⌘ key), `type:display` headline, profile line, and a primary
+/// §11.8 empty space pane: the D10 drawn illustration (tab cards floating
+/// around a ⌘ key cap), `type:display` headline, profile line, and a primary
 /// "New Tab ⌘T" button that focuses the command bar in NewTab mode.
 /// `profile_line` names the owning profile (§11.8); `illustration` is the
 /// pane-appearance key while the illustration plays (`None`: rest frame).
@@ -66,8 +66,8 @@ pub fn empty_space_pane(
 }
 
 /// §11.8 crash panel: replaces the glass area of a crashed tab with the D10
-/// heartbeat illustration (in `status.error`; the row's lifering stays the
-/// non-color companion), copy, and Reload / Close tab actions. The crashed
+/// heartbeat illustration (the accent beat; the row's lifering stays the
+/// status companion), copy, and Reload / Close tab actions. The crashed
 /// tab row stays selected and listed; the native view is hidden.
 /// `illustration` is the pane-appearance key while it plays.
 pub fn crash_panel(

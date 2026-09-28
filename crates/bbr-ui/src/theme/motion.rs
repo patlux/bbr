@@ -292,23 +292,6 @@ pub fn attention_sample(t: f32, reduced: bool) -> (f32, f32, f32, f32) {
     }
 }
 
-/// §18.5 favorite pop sample at (linear) time `t`: `(tile scale, speck
-/// travel pt, speck opacity, flash opacity)`. Full motion: the tile pops
-/// 0.86 → 1 with a back-ease overshoot while eight specks radiate 0 → 18 pt
-/// and fade; reduced: a `tint.accent` flash fading 1 → 0 at scale 1.
-pub fn favorite_pop_sample(t: f32, reduced: bool) -> (f32, f32, f32, f32) {
-    let t = t.clamp(0.0, 1.0);
-    if reduced {
-        return (1.0, 0.0, 0.0, 1.0 - t);
-    }
-    // Back-ease-out (overshoot ≈ 6 %), mapped 0.86 → 1.
-    let (c1, c3) = (1.701_58_f32, 2.701_58_f32);
-    let back = 1.0 + c3 * (t - 1.0).powi(3) + c1 * (t - 1.0).powi(2);
-    let scale = 0.86 + 0.14 * back;
-    let travel = 18.0 * Easing::Decelerate.apply(t);
-    (scale, travel, 1.0 - t, 0.0)
-}
-
 /// §18.5 download check sample at time `t`: `(check stroke fraction, ring
 /// growth pt, ring opacity)` — the stroke draws over the first half, the
 /// ring expands 0 → 8 pt and fades over the whole moment.
@@ -473,17 +456,8 @@ mod tests {
 
     #[test]
     fn after_commit_samples_follow_the_documented_shapes() {
-        // Favorite: 0.86 → overshoot → 1; specks travel out and fade.
-        let (start, travel, opacity, flash) = favorite_pop_sample(0.0, false);
-        assert!(close(start, 0.86) && close(travel, 0.0));
-        assert!(close(opacity, 1.0) && flash == 0.0);
-        let peak = (1..20)
-            .map(|step| favorite_pop_sample(step as f32 / 20.0, false).0)
-            .fold(0.0, f32::max);
-        assert!(peak > 1.0, "the pop overshoots");
-        assert!(close(favorite_pop_sample(1.0, false).0, 1.0));
-        assert!(close(favorite_pop_sample(1.0, false).1, 18.0));
-        assert_eq!(favorite_pop_sample(0.0, true), (1.0, 0.0, 0.0, 1.0));
+        // (The favorite pop's shape is tested with its drawing in
+        // `components::favorites::pop`.)
         // Download: the stroke is drawn by mid-moment; the ring fades out.
         assert!(close(download_check_sample(0.5).0, 1.0));
         assert!(close(download_check_sample(1.0).2, 0.0));

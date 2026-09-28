@@ -203,7 +203,10 @@ pub fn favorite_tile(
             pop,
         ))
         .child(icon_slot)
-        .when_some(pop::speck_layer(theme, pop), |el, specks| el.child(specks))
+        .when_some(
+            pop::speck_layer(theme, favorite_tile_radius(theme.density), pop),
+            |el, specks| el.child(specks),
+        )
 }
 
 /// §5/§18.3 Favorite tile corner radius: `radius:md` (10), `radius:sm` at

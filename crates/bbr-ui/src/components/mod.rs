@@ -28,6 +28,7 @@ pub mod folders;
 pub mod footer;
 pub mod grain;
 pub mod illustration;
+mod illustration_draw;
 pub mod menu;
 pub mod pane;
 pub mod saved_pages_library;

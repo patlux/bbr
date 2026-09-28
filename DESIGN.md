@@ -1094,10 +1094,15 @@ of problem instead of styling it.
 ### 11.8 Empty and crash states (glass panes)
 
 - **Empty space** (no tabs, no staged tab): the glass area shows
-  `material:canvas` with the D10 illustration (drawn, not emoji): three
-  tab pills (`surface.field` capsules with an `accent` dot and an
-  `ink.tertiary` title bar) floating around a 52 pt ⌘ key cap (`r:md`,
-  `elev:1`), headline `type:display` "No tabs in this space", a line naming the
+  `material:canvas` with the D10 illustration (drawn, not emoji; S12
+  follows the Paper `empty_space` poster on a 400 × 240 pt board): six tab
+  cards (`material:overlay`, radius 11, `elev:2`, an 18 pt favicon square
+  in a curated space hue — Cobalt, Terracotta, Pine, Amber, Plum — or
+  `ink`, and a `border.strong` title bar) floating around an 80 × 60 pt ⌘
+  key cap (radius 14, `material:canvas` face with an 8 % `ink` edge on a
+  `hairline` depth step, the ⌘ drawn as a 2 pt path). The cards stay
+  axis-aligned (GPUI divs do not rotate; the poster's ±4° tilt is
+  omitted). Headline `type:display` "No tabs in this space", a line naming the
   profile ("in Profile · Work"), and one primary button "New Tab  ⌘T" that
   focuses the command field in NewTab mode; Escape returns to the glass pane.
   Closing the final tab already opens the empty New-Tab command surface
@@ -1105,23 +1110,30 @@ of problem instead of styling it.
   **Assert:** `bbr-empty-new-tab`, `bbr-crash-*` absent.
 - **Crash panel:** replaces the glass area of the crashed tab (native view
   hidden) with `material:field`, `elev:1`: the D10 heartbeat illustration
-  (a 160 × 40 pt ECG trace in `status.error`, drawn left to right; the
-  crashed row's lifering stays the non-color companion), title "This page crashed", copy "The tab stays open; reload
+  (Paper `empty_crash`: a 400 × 90 pt band; a 2.4 pt line whose beat — one
+  damped 38 pt cycle, 26 pt wide — travels just behind an `accent` head dot
+  with a 15 % halo; the trail is `accent` fading over 260 pt behind the
+  head, the rest of the line `ink.tertiary` at 12 %; the crashed row's
+  lifering stays the status companion), title "This page crashed", copy "The tab stays open; reload
   to restore it.", buttons `[Reload]` (primary, accent) and `[Close tab]`
   (secondary); focus order: Reload → Close tab → sidebar. The tab remains
   selected and listed per the interaction contract; no auto-reload in v1
   (open decision). **Assert:** `bbr-crash-panel`, `bbr-crash-reload`,
   `bbr-crash-close`; crashed tab row carries `error` state.
 - **Offline load error:** the error surface of the network (offline)
-  class replaces its lifering with the D10 illustration — two
-  `ink.tertiary` ring nodes joined by a link with a visible break; three
-  `accent` packets travel from the left node and queue before the break.
+  class replaces its lifering with the D10 illustration (Paper
+  `empty_offline`, 310 × 58 pt) — a laptop and a globe stroked in `ink`
+  joined by a dotted `border.strong` link with a gap; three `accent`
+  packets run from the laptop into the gap and fade there, and the broken
+  link (two severed `status.attention` ends on a 10 % disc) pulses.
   TLS and navigation errors keep the lifering (their cause is not a
   network link).
 - **Motion (D10):** each illustration plays two 1400 ms cycles (`linear`)
   from the moment its pane appears — a new kind or a fresh appearance
-  restarts it — then rests on its final frame (pills in place, the whole
-  trace, packets queued) and builds no animation element afterwards. Reduce
+  restarts it — then rests on its final frame, the Paper poster (cards in
+  place with the key up; the head mid-line after a full sweep and a
+  decelerating second one; packets a third apart) and builds no animation
+  element afterwards. Reduce
   Motion shows only the rest frame. **Assert:** `motion.illustration`
   (`kind` `empty-space` / `crashed` / `offline`, `state` `playing` / `rest`).
 - Both panes paint flat GPUI surfaces; they never render web content or
@@ -1155,9 +1167,13 @@ scheme; a title consisting only of whitespace is treated as empty.
   centered on the `material:favorite` veil (v2 §18.2: white 50 % light /
   6 % dark over the tinted rail) at `radius:md` (10; `radius:sm` at S), gap
   4/4/8 pt; the empty slot and the drop cell share the tile radius. A newly
-  committed favorite's tile surface pops 0.86 → 1 with overshoot while eight
-  specks in the curated space hues radiate (≤ 260 ms; the tile box, icon and
-  listeners never move); Reduce Motion flashes `tint.accent` for `dur:fine`.
+  committed favorite's tile surface pops 0.86 → 1 with overshoot while a
+  1.5 pt `accent` outline breathes 0 → 3 pt out of the tile (60 % → clear)
+  and ten specks in `accent` and the curated space hues burst 18 → 44 pt
+  past the tile's edge (the burst 0.8 as tall as wide), shrinking 3 → 0.6 pt
+  as they fade (Paper `micro_favorite`, compressed into ≤ 260 ms; the tile
+  box, icon and listeners never move); Reduce Motion flashes `tint.accent`
+  for `dur:fine`.
 - **Columns and wrap:** the grid is **4 columns at every density and every
   width** (`grid_columns`), so tile `n` always lands in the same cell. Tile
   *width* derives from the rail — `(content − 3·gap) / 4` inside the region's
@@ -1938,7 +1954,7 @@ shell requests **no animation frames** (asserted).
 | Loading arc (§10.5) | the favicon-slot arc rotates, 640 ms/turn linear | static arc |
 | Address progress (D5) | 2 pt accent line at the field's inner bottom edge: indeterminate sweep on `load:indeterminate`; on finish it fills (`dur:standard`) then fades (`dur:standard`) | static 2 pt line while loading, removed on finish |
 | Attention (§10.6) | two beats (each `dur:fine`, total ≤ 260 ms): dot scale 1→1.45→1 plus one ring 4→16 pt fading out | opacity-only 1→0.45→1 (the §10.6 contract) |
-| Favorite added | after the drop commits: the new tile pops 0.86→1 with overshoot and eight specks in the curated space hues radiate, both within 260 ms | 120 ms `tint.accent` flash on the tile |
+| Favorite added | after the drop commits: the new tile pops 0.86→1 with overshoot, an `accent` outline breathes out 3 pt, and ten specks in `accent` and the curated space hues burst past the tile's edge, all within 260 ms | 120 ms `tint.accent` flash on the tile |
 | Download finished | the row's status glyph draws the check stroke and one `status.ok` ring expands and fades, within 260 ms | check appears, no ring |
 | ⌘T results | results fade in with a 20 ms stagger (each `dur:fine`, 4 pt rise); the cursor highlight glides between rows in `dur:micro` while the selected result is committed immediately | opacity only, no rise; the cursor snaps |
 | Space switch (D4) | chrome tint cross-fade, `dur:standard`, `ease:standard` | instant |
