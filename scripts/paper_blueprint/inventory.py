@@ -130,8 +130,9 @@ PROCESSES = [
     "Keyboard focus — chrome ↔ page", "Links from other apps", "Windows — new, move, close",
     "History & clear data", "Change settings",
 ]
-for index, title in enumerate(PROCESSES, start=1):
-    BOARDS[f"PR-{index:02d}"] = ("30", title, S, "flow", "paper-browser-blueprint")
+PROCESS_MARKS = "N S S C S S C C C S S S S N S C N S C C C N N".split()
+for index, (title, m) in enumerate(zip(PROCESSES, PROCESS_MARKS), start=1):
+    BOARDS[f"PR-{index:02d}"] = ("30", title, {"S": S, "C": C, "N": N}[m], "flow", "paper-browser-blueprint")
 
 
 def board_name(code):

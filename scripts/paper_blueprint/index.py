@@ -21,7 +21,7 @@ def i1(wave_status):
     b.caption(col, "How to read a board")
     items = [("Name", "CODE · Title — the code maps to the coverage matrix and the task packet (e.g. S-2 · Favorites grid)."),
              ("Mark", "the chip under the code says how true the board is against main (below)."),
-             ("Plates", "every surface is drawn in light and dark; increased contrast, tints, density and narrow windows appear in page 40 or where a surface changes shape."),
+             ("Plates", "every surface is drawn in light and dark; increased contrast, tints, density and narrow windows appear in page 40 or where a surface changes shape. Process storyboards (page 30) are drawn in light and name the boards that hold each surface's dark variant."),
              ("Meta line", "DESIGN sections · owning packet · E2E assertion ids."),
              ("Stand-ins", "System Sans-Serif renders SF Pro; JetBrains Mono stands in for SF Mono. Site favicons are token hue tiles, web pages are neutral placeholders, so every colour is a token."),
              ("Native OS", "traffic lights, file panels, WebKit element menus, system prompts and the menu bar are drawn as labelled context only.")]

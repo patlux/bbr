@@ -74,7 +74,7 @@ Not parallelized. One writer works serially on one Paper file; no subagents.
 - [x] W2: command and content/glass boards drawn and reviewed.
 - [x] W3: menus and panels boards drawn and reviewed.
 - [x] W4: system, lifecycle and split-view boards drawn and reviewed.
-- [ ] W5: 23 process storyboards drawn and reviewed.
+- [x] W5: 23 process storyboards drawn and reviewed.
 - [ ] W6: variant matrices and motion specification drawn and reviewed.
 - [ ] W7: decisions and delta ledger drawn; DESIGN.md updated; one packet
       per delta; coverage check reports every row drawn.
@@ -132,7 +132,7 @@ is read from the Paper file.
 | DESIGN §7 | Iconography, app icon, identity glyphs | F-5 · Icons & identity glyphs | yes |
 | DESIGN §7.2 | Favicon tiles and monograms | F-2 · Colour — space paper, grain, monograms; B-4 · Tiles, chips & badges | yes |
 | DESIGN §8 | Density S / N / XL | F-3 · Type & density; V-3 · Density S · N · XL; W-8 · Shell — dense list (500 tabs) | planned |
-| DESIGN §9 | Focus | B-2 · Fields, toggles & focus; PR-19 · Keyboard focus — chrome ↔ page | planned |
+| DESIGN §9 | Focus | B-2 · Fields, toggles & focus; PR-19 · Keyboard focus — chrome ↔ page | yes |
 | DESIGN §10.1 | State default | B-3 · Rail rows — §10 states | yes |
 | DESIGN §10.2 | State hover | B-3 · Rail rows — §10 states; B-1 · Buttons & keys | yes |
 | DESIGN §10.3 | State active/pressed | B-3 · Rail rows — §10 states; B-1 · Buttons & keys | yes |
@@ -150,7 +150,7 @@ is read from the Paper file.
 | DESIGN §11.4 | Sidebar and command surfaces | W-1 · Shell — standard; S-6 · New Tab row & staged tab; C-1 · ⌘T — empty with recents; C-2 · ⌘T — results by kind; C-6 · ⌘L — edit address | yes |
 | DESIGN §11.5 | Address control | S-1 · Address control; G-7 · Page zoom | yes |
 | DESIGN §11.6 | Dense list (500 tabs) | W-8 · Shell — dense list (500 tabs) | yes |
-| DESIGN §11.7 | Split preview / split view | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | planned |
+| DESIGN §11.7 | Split preview / split view | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | yes |
 | DESIGN §11.8 | Empty, crash and load-error panes | G-2 · Glass — empty space; G-3 · Glass — crashed page; G-5 · Glass — load errors | yes |
 | DESIGN §11.8a | Unresponsive renderer pane | G-4 · Glass — unresponsive page | yes |
 | DESIGN §11.9 | Missing favicon and long titles | S-5 · Tab rows in context; B-4 · Tiles, chips & badges | yes |
@@ -159,9 +159,9 @@ is read from the Paper file.
 | DESIGN §11.12 | Downloads panel, find bar, sheets | M-4 · Downloads panel; G-6 · Find in page | yes |
 | DESIGN §11.13 | Context-menu language | M-1 · Tab menu; M-2 · Favorite & folder menus; M-3 · Page menu & web menus; P-4 · Space menu & delete | yes |
 | DESIGN §11.14 | Titlebar navigation controls | W-7 · Shell — titlebar navigation states | yes |
-| DESIGN §11.15 | Sidebar media control | S-8 · Media card; PR-17 · Media in a background tab | planned |
-| DESIGN §11.16 | Saved Pages result and Library | C-2 · ⌘T — results by kind; M-5 · Saved Pages Library; PR-12 · Save a page & Library | planned |
-| DESIGN §11.17 | Peek preview bar | G-8 · Peek preview; PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
+| DESIGN §11.15 | Sidebar media control | S-8 · Media card; PR-17 · Media in a background tab | yes |
+| DESIGN §11.16 | Saved Pages result and Library | C-2 · ⌘T — results by kind; M-5 · Saved Pages Library; PR-12 · Save a page & Library | yes |
+| DESIGN §11.17 | Peek preview bar | G-8 · Peek preview; PR-04 · Open links — foreground, background, Peek, external, pop-up | yes |
 | DESIGN §12 | Profile identity | P-5 · Profile identity in chrome; P-6 · Profiles — create & edit; P-7 · Move a tab across profiles | yes |
 | DESIGN §13 | Native web-content boundary | G-1 · Glass — before attach & blank; M-3 · Page menu & web menus; M-14 · File upload & save | yes |
 | DESIGN §17.2 | Tooltips | B-6 · Floating shells | yes |
@@ -170,63 +170,63 @@ is read from the Paper file.
 | DESIGN §18.3 | v2 radius and type | F-3 · Type & density; F-4 · Space, radius, elevation, materials | yes |
 | DESIGN §18.4 | v2 floating surfaces | B-6 · Floating shells; C-2 · ⌘T — results by kind; C-6 · ⌘L — edit address; M-1 · Tab menu | yes |
 | DESIGN §18.5 | v2 motion moments | V-5 · Motion — moments; V-4 · Reduce Motion | planned |
-| Phase 4 | Startup presents sidebar and selected tab | L-10 · Session restore; PR-18 · Quit, relaunch, crash recovery | planned |
+| Phase 4 | Startup presents sidebar and selected tab | L-10 · Session restore; PR-18 · Quit, relaunch, crash recovery | yes |
 | Phase 4 | Empty space, first launch, many tabs, long titles, missing favicons, crashed pages | G-2 · Glass — empty space; L-1 · First run — welcome; W-8 · Shell — dense list (500 tabs); S-5 · Tab rows in context; G-3 · Glass — crashed page | yes |
 | Phase 4 | Collapsible, adjustable sidebar | W-3 · Shell — sidebar hidden ⌘B & hover reveal; S-10 · Rail width & resize | yes |
-| Phase 4 | Drag reorder and move between spaces | S-9 · Drag in flight; PR-06 · Organize — folders & drag rules | planned |
-| Phase 6 | Split view: create, show two, divider, focus, route, close, dissolve, compact | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | planned |
+| Phase 4 | Drag reorder and move between spaces | S-9 · Drag in flight; PR-06 · Organize — folders & drag rules | yes |
+| Phase 6 | Split view: create, show two, divider, focus, route, close, dissolve, compact | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | yes |
 | Phase 7 | First-run, empty, migration-error and recovery UI | L-1 · First run — welcome; L-2 · First run — import, default browser, first space; L-11 · Recovery & migration errors | yes |
-| Phase 7 | Chrome-first restore | L-10 · Session restore; PR-18 · Quit, relaunch, crash recovery | planned |
-| Phase 8 | Downloads | M-4 · Downloads panel; L-7 · Settings — Downloads; PR-10 · Downloads — progress, done, reveal, retry | planned |
-| Phase 8 | Find in page | G-6 · Find in page; PR-11 · Find in page | planned |
-| Phase 8 | Camera, microphone, location, notification, clipboard permissions | M-9 · Permission requests; M-8 · Site settings; PR-14 · Permissions | planned |
-| Phase 8 | HTTP/proxy authentication and client certificates | M-10 · Sign-in challenges; M-11 · Client certificates; PR-15 · Sign-in challenges | planned |
+| Phase 7 | Chrome-first restore | L-10 · Session restore; PR-18 · Quit, relaunch, crash recovery | yes |
+| Phase 8 | Downloads | M-4 · Downloads panel; L-7 · Settings — Downloads; PR-10 · Downloads — progress, done, reveal, retry | yes |
+| Phase 8 | Find in page | G-6 · Find in page; PR-11 · Find in page | yes |
+| Phase 8 | Camera, microphone, location, notification, clipboard permissions | M-9 · Permission requests; M-8 · Site settings; PR-14 · Permissions | yes |
+| Phase 8 | HTTP/proxy authentication and client certificates | M-10 · Sign-in challenges; M-11 · Client certificates; PR-15 · Sign-in challenges | yes |
 | Phase 8 | Upload/save panels | M-14 · File upload & save | yes |
-| Phase 8 | Web errors and recovery | G-5 · Glass — load errors; PR-13 · Errors & recovery | planned |
-| Phase 8 | History UI and clear-data controls | M-6 · History; M-7 · Clear browsing data; PR-22 · History & clear data | planned |
-| Phase 8 | Saved Pages | M-5 · Saved Pages Library; C-2 · ⌘T — results by kind; PR-12 · Save a page & Library | planned |
-| Phase 8 | Default browser and external URLs | M-12 · Open in another app; L-2 · First run — import, default browser, first space; PR-20 · Links from other apps | planned |
-| Phase 8 | Native menus, window lifecycle, app updates | L-13 · Menu bar & Dock; L-14 · Windows — new, close, quit; L-12 · About & updates; W-9 · Shell — several windows; PR-21 · Windows — new, move, close | planned |
-| Phase 8 | Media session control | S-8 · Media card; PR-17 · Media in a background tab | planned |
-| Phase 8 | Per-site settings and zoom | M-8 · Site settings; G-7 · Page zoom; L-6 · Settings — Privacy & site data; PR-16 · Per-site zoom | planned |
-| Phase 8 | Pop-up / new-window policy | M-13 · Pop-ups & new windows; PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
-| Phase 8 | Renderer hang: responsive chrome | G-4 · Glass — unresponsive page; PR-13 · Errors & recovery | planned |
+| Phase 8 | Web errors and recovery | G-5 · Glass — load errors; PR-13 · Errors & recovery | yes |
+| Phase 8 | History UI and clear-data controls | M-6 · History; M-7 · Clear browsing data; PR-22 · History & clear data | yes |
+| Phase 8 | Saved Pages | M-5 · Saved Pages Library; C-2 · ⌘T — results by kind; PR-12 · Save a page & Library | yes |
+| Phase 8 | Default browser and external URLs | M-12 · Open in another app; L-2 · First run — import, default browser, first space; PR-20 · Links from other apps | yes |
+| Phase 8 | Native menus, window lifecycle, app updates | L-13 · Menu bar & Dock; L-14 · Windows — new, close, quit; L-12 · About & updates; W-9 · Shell — several windows; PR-21 · Windows — new, move, close | yes |
+| Phase 8 | Media session control | S-8 · Media card; PR-17 · Media in a background tab | yes |
+| Phase 8 | Per-site settings and zoom | M-8 · Site settings; G-7 · Page zoom; L-6 · Settings — Privacy & site data; PR-16 · Per-site zoom | yes |
+| Phase 8 | Pop-up / new-window policy | M-13 · Pop-ups & new windows; PR-04 · Open links — foreground, background, Peek, external, pop-up | yes |
+| Phase 8 | Renderer hang: responsive chrome | G-4 · Glass — unresponsive page; PR-13 · Errors & recovery | yes |
 | Phase 8 | Empty, loading, error, cancellation, destructive states | G-1 · Glass — before attach & blank; G-2 · Glass — empty space; G-5 · Glass — load errors; P-4 · Space menu & delete; M-7 · Clear browsing data; B-7 · Feedback — progress, attention, banners | yes |
 | Phase 8 | Portal host (floating surfaces above web) | B-6 · Floating shells; G-6 · Find in page; G-8 · Peek preview | yes |
 | Phase 9 | Light, dark, IC, narrow, wide, empty, dense, loading, error variants | V-1 · Increased contrast; V-2 · Space paper matrix; V-3 · Density S · N · XL; W-4 · Shell — narrow & wide windows; W-8 · Shell — dense list (500 tabs) | planned |
 | Phase 9 | Purposeful transitions, Reduce Motion | V-4 · Reduce Motion; V-5 · Motion — moments; V-6 · Motion — transitions | planned |
-| Phase 9 | Onboarding and first-run activation | L-1 · First run — welcome; L-2 · First run — import, default browser, first space; PR-01 · First run & onboarding | planned |
-| Phase 9 | Keyboard and VoiceOver for every action | B-2 · Fields, toggles & focus; PR-19 · Keyboard focus — chrome ↔ page; L-9 · Settings — Shortcuts | planned |
-| Phase 9 | Settings surface (search, privacy, appearance, shortcuts) | L-3 · Settings — General; L-4 · Settings — Profiles & spaces; L-5 · Settings — Search; L-6 · Settings — Privacy & site data; L-7 · Settings — Downloads; L-8 · Settings — Appearance; L-9 · Settings — Shortcuts; PR-23 · Change settings | planned |
-| Inventory | Trackpad back/forward over web content | W-7 · Shell — titlebar navigation states; PR-03 · Address, back, forward, reload | planned |
-| Inventory | Child-tab Back-at-root returns to opener | PR-03 · Address, back, forward, reload | planned |
-| Inventory | Link-created tab vs Peek vs external vs blocked | G-8 · Peek preview; M-12 · Open in another app; M-13 · Pop-ups & new windows; PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
-| Inventory | Foreground/background link opening | PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
-| Inventory | Titlebar and shortcut back/forward/reload | W-7 · Shell — titlebar navigation states; PR-03 · Address, back, forward, reload | planned |
-| Inventory | Reopen recently closed tabs | PR-05 · Tab life — pin, folder, favorite, close, reopen, suspend; M-6 · History | planned |
+| Phase 9 | Onboarding and first-run activation | L-1 · First run — welcome; L-2 · First run — import, default browser, first space; PR-01 · First run & onboarding | yes |
+| Phase 9 | Keyboard and VoiceOver for every action | B-2 · Fields, toggles & focus; PR-19 · Keyboard focus — chrome ↔ page; L-9 · Settings — Shortcuts | yes |
+| Phase 9 | Settings surface (search, privacy, appearance, shortcuts) | L-3 · Settings — General; L-4 · Settings — Profiles & spaces; L-5 · Settings — Search; L-6 · Settings — Privacy & site data; L-7 · Settings — Downloads; L-8 · Settings — Appearance; L-9 · Settings — Shortcuts; PR-23 · Change settings | yes |
+| Inventory | Trackpad back/forward over web content | W-7 · Shell — titlebar navigation states; PR-03 · Address, back, forward, reload | yes |
+| Inventory | Child-tab Back-at-root returns to opener | PR-03 · Address, back, forward, reload | yes |
+| Inventory | Link-created tab vs Peek vs external vs blocked | G-8 · Peek preview; M-12 · Open in another app; M-13 · Pop-ups & new windows; PR-04 · Open links — foreground, background, Peek, external, pop-up | yes |
+| Inventory | Foreground/background link opening | PR-04 · Open links — foreground, background, Peek, external, pop-up | yes |
+| Inventory | Titlebar and shortcut back/forward/reload | W-7 · Shell — titlebar navigation states; PR-03 · Address, back, forward, reload | yes |
+| Inventory | Reopen recently closed tabs | PR-05 · Tab life — pin, folder, favorite, close, reopen, suspend; M-6 · History | yes |
 | Inventory | Downloads, find, errors, auth, permissions, file panels | M-4 · Downloads panel; G-6 · Find in page; G-5 · Glass — load errors; M-10 · Sign-in challenges; M-9 · Permission requests; M-14 · File upload & save | yes |
-| Inventory | Saved Pages | M-5 · Saved Pages Library; PR-12 · Save a page & Library | planned |
+| Inventory | Saved Pages | M-5 · Saved Pages Library; PR-12 · Save a page & Library | yes |
 | Inventory | Native context menus | M-1 · Tab menu; M-2 · Favorite & folder menus; M-3 · Page menu & web menus | yes |
-| Inventory | Split-view daily use | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | planned |
-| Inventory | External URLs / default browser | M-12 · Open in another app; PR-20 · Links from other apps | planned |
-| Inventory | Per-site zoom/settings | G-7 · Page zoom; M-8 · Site settings; PR-16 · Per-site zoom | planned |
-| Inventory | Session restore and crash recovery | L-10 · Session restore; L-11 · Recovery & migration errors; PR-18 · Quit, relaunch, crash recovery | planned |
+| Inventory | Split-view daily use | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | yes |
+| Inventory | External URLs / default browser | M-12 · Open in another app; PR-20 · Links from other apps | yes |
+| Inventory | Per-site zoom/settings | G-7 · Page zoom; M-8 · Site settings; PR-16 · Per-site zoom | yes |
+| Inventory | Session restore and crash recovery | L-10 · Session restore; L-11 · Recovery & migration errors; PR-18 · Quit, relaunch, crash recovery | yes |
 | E2E smoke/shutdown | Launch and quit | L-10 · Session restore; L-14 · Windows — new, close, quit | yes |
-| E2E tabs/shell-tabs | Tab open/select/close/reopen | S-5 · Tab rows in context; PR-05 · Tab life — pin, folder, favorite, close, reopen, suspend | planned |
+| E2E tabs/shell-tabs | Tab open/select/close/reopen | S-5 · Tab rows in context; PR-05 · Tab life — pin, folder, favorite, close, reopen, suspend | yes |
 | E2E profiles | Profile-isolated sessions | P-5 · Profile identity in chrome; P-7 · Move a tab across profiles | yes |
 | E2E shell-spaces | Spaces, strip, swipe, configuration | P-1 · Space switching; P-2 · Space configuration; P-3 · New space | yes |
 | E2E shell-sidebar | Rail, favorites, lift, appearance | W-1 · Shell — standard; S-2 · Favorites grid; S-3 · Space heading & pinned tabs | yes |
 | E2E shell-favicons | Favicon slots | S-5 · Tab rows in context; B-4 · Tiles, chips & badges | yes |
 | E2E shell-titlebar-navigation | Titlebar controls | W-7 · Shell — titlebar navigation states | yes |
 | E2E shell-split-geometry | Split geometry | G-9 · Split view — two panes | yes |
-| E2E shell-organize | Folders and organized area | S-4 · Folders; PR-06 · Organize — folders & drag rules | planned |
+| E2E shell-organize | Folders and organized area | S-4 · Folders; PR-06 · Organize — folders & drag rules | yes |
 | E2E shell-tab-menu | Tab menu | M-1 · Tab menu | yes |
 | E2E shell-hover | Hover and press | B-3 · Rail rows — §10 states | yes |
 | E2E shell-command | ⌘T/⌘L command surfaces | C-1 · ⌘T — empty with recents; C-2 · ⌘T — results by kind; C-3 · ⌘T — no match & web search; C-4 · ⌘T — actions; C-5 · ⌘T — tab in another space or profile; C-6 · ⌘L — edit address | yes |
 | E2E shell-saved-pages(-library) | Saved Pages and Library | M-5 · Saved Pages Library; C-2 · ⌘T — results by kind | yes |
 | E2E shell-new-window | New-window requests | M-13 · Pop-ups & new windows; W-9 · Shell — several windows | yes |
-| E2E background-links | Background link tabs | PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
-| E2E web-navigation-gestures | Navigation gestures | PR-03 · Address, back, forward, reload | planned |
+| E2E background-links | Background link tabs | PR-04 · Open links — foreground, background, Peek, external, pop-up | yes |
+| E2E web-navigation-gestures | Navigation gestures | PR-03 · Address, back, forward, reload | yes |
 | E2E peek | Peek preview | G-8 · Peek preview | yes |
 | E2E shell-persistence | Restore, space paper, activation | L-10 · Session restore; P-2 · Space configuration | yes |
 | E2E shell-portal | Portal host above web | B-6 · Floating shells | yes |
@@ -339,29 +339,29 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 | 40 | V-6 · Motion — transitions | Change | §6 §18.5 | [v2-motion-core](v2-motion-core.md) | planned |
 | 90 | D-1 · Open decisions | New · proposal | §17 | paper-browser-blueprint | planned |
 | 90 | D-2 · Delta — Paper vs code | Change | all | paper-browser-blueprint | planned |
-| 30 | PR-01 · First run & onboarding | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-02 · New tab from ⌘T | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-03 · Address, back, forward, reload | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-04 · Open links — foreground, background, Peek, external, pop-up | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-05 · Tab life — pin, folder, favorite, close, reopen, suspend | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-06 · Organize — folders & drag rules | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-07 · Spaces — create, style, switch, delete | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-08 · Profiles — create, assign, move a tab | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-09 · Split view — create, focus, resize, close | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-10 · Downloads — progress, done, reveal, retry | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-11 · Find in page | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-12 · Save a page & Library | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-13 · Errors & recovery | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-14 · Permissions | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-15 · Sign-in challenges | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-16 · Per-site zoom | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-17 · Media in a background tab | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-18 · Quit, relaunch, crash recovery | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-19 · Keyboard focus — chrome ↔ page | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-20 · Links from other apps | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-21 · Windows — new, move, close | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-22 · History & clear data | Shipped | flow | paper-browser-blueprint | planned |
-| 30 | PR-23 · Change settings | Shipped | flow | paper-browser-blueprint | planned |
+| 30 | PR-01 · First run & onboarding | New · proposal | flow | paper-browser-blueprint | yes |
+| 30 | PR-02 · New tab from ⌘T | Shipped | flow | paper-browser-blueprint | yes |
+| 30 | PR-03 · Address, back, forward, reload | Shipped | flow | paper-browser-blueprint | yes |
+| 30 | PR-04 · Open links — foreground, background, Peek, external, pop-up | Change | flow | paper-browser-blueprint | yes |
+| 30 | PR-05 · Tab life — pin, folder, favorite, close, reopen, suspend | Shipped | flow | paper-browser-blueprint | yes |
+| 30 | PR-06 · Organize — folders & drag rules | Shipped | flow | paper-browser-blueprint | yes |
+| 30 | PR-07 · Spaces — create, style, switch, delete | Change | flow | paper-browser-blueprint | yes |
+| 30 | PR-08 · Profiles — create, assign, move a tab | Change | flow | paper-browser-blueprint | yes |
+| 30 | PR-09 · Split view — create, focus, resize, close | Change | flow | paper-browser-blueprint | yes |
+| 30 | PR-10 · Downloads — progress, done, reveal, retry | Shipped | flow | paper-browser-blueprint | yes |
+| 30 | PR-11 · Find in page | Shipped | flow | paper-browser-blueprint | yes |
+| 30 | PR-12 · Save a page & Library | Shipped | flow | paper-browser-blueprint | yes |
+| 30 | PR-13 · Errors & recovery | Shipped | flow | paper-browser-blueprint | yes |
+| 30 | PR-14 · Permissions | New · proposal | flow | paper-browser-blueprint | yes |
+| 30 | PR-15 · Sign-in challenges | Shipped | flow | paper-browser-blueprint | yes |
+| 30 | PR-16 · Per-site zoom | Change | flow | paper-browser-blueprint | yes |
+| 30 | PR-17 · Media in a background tab | New · proposal | flow | paper-browser-blueprint | yes |
+| 30 | PR-18 · Quit, relaunch, crash recovery | Shipped | flow | paper-browser-blueprint | yes |
+| 30 | PR-19 · Keyboard focus — chrome ↔ page | Change | flow | paper-browser-blueprint | yes |
+| 30 | PR-20 · Links from other apps | Change | flow | paper-browser-blueprint | yes |
+| 30 | PR-21 · Windows — new, move, close | Change | flow | paper-browser-blueprint | yes |
+| 30 | PR-22 · History & clear data | New · proposal | flow | paper-browser-blueprint | yes |
+| 30 | PR-23 · Change settings | New · proposal | flow | paper-browser-blueprint | yes |
 <!-- coverage:end -->
 
 ## Delivery ledger
@@ -445,7 +445,18 @@ W4:                     2026-09-28. Page 26 L-1…L-14: welcome in the first
                         pair mark, drop zone, divider drag, compact rest).
                         Review fixes: duplicated New Profile label, the
                         Shortcuts window height, the > prefix text.
-W5:
+W5:                     2026-09-28. Page 30 PR-01…PR-23: 109 numbered
+                        frames (4–6 per flow) with action → result captions
+                        and timing chips, composed from the page-11 blocks
+                        as single-write frames (compact rail content so
+                        every change stays in view). Storyboards are drawn
+                        in light and name the boards holding each
+                        surface's dark variant (I-1 read-me). Marks per
+                        flow: shipped, change or proposal. Review fixes:
+                        one selection per list, the tinted Done frame, the
+                        in-use device chip. Two Paper disconnects rolled
+                        back four boards once; they were redrawn and every
+                        storyboard's frame count re-read from the file.
 W6:
 W7:
 Token check:            W0 verify_tokens.py: 126 checked, 0 mismatches.
