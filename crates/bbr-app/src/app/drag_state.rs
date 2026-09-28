@@ -241,6 +241,7 @@ mod tests {
             favorites_band,
             pin_offer,
             chips,
+            loose: None,
         }
     }
 

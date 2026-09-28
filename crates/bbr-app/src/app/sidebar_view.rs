@@ -118,7 +118,7 @@ impl BbrApp {
             *self.favorites_band_rect.borrow_mut() = None;
         }
         let folders = self.folders_model(&u2.folder_rows, &u2.folder_members, window);
-        let tabs = self.tabs_model(theme, window);
+        let tabs = self.tabs_model(theme, window, &u2.grouped);
         if !tabs.pin_offer {
             // No ghost row this frame: drop its recorded rect so neither the
             // resolver nor the snapshot consumes a previous drag's geometry.

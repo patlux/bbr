@@ -133,6 +133,13 @@ impl BbrApp {
             &browser,
             &self.favicon_images,
         );
+        // §11.11: grouped pinned tabs render inside their folder only.
+        let grouped = crate::shell::organized::grouped_indices(&organization.folders, &browser);
+        let loose_rows: Vec<bbr_ui::components::RowVisuals> = rows
+            .iter()
+            .filter(|row| !grouped.contains(&row.index))
+            .cloned()
+            .collect();
         let download_rows = self.download_rows_snapshot();
         let downloads = self.downloads_panel_snapshot();
         let error_surface = self.error_surface_snapshot();
@@ -143,6 +150,7 @@ impl BbrApp {
         let semantics = self.semantic_snapshot(
             &browser,
             &rows,
+            &grouped,
             window,
             sidebar_width,
             &favorite_tiles,
@@ -290,7 +298,11 @@ impl BbrApp {
                 })
                 .collect(),
             row_titles: rows.iter().map(|row| row.title.to_string()).collect(),
-            lifted_ids: super::lift::lifted_ids(&rows, &folder_members, &self.space_chip_visuals()),
+            lifted_ids: super::lift::lifted_ids(
+                &loose_rows,
+                &folder_members,
+                &self.space_chip_visuals(),
+            ),
             pinned_count: crate::shell::pinned_count(&browser.tabs),
             command_bar_hint: self.command_bar_hint(),
             command_profile_hint: self.command_profile_hint.clone(),
@@ -983,6 +995,7 @@ impl BbrApp {
         &self,
         browser: &bbr_browser::ControllerSnapshot,
         rows: &[bbr_ui::components::RowVisuals],
+        grouped: &[usize],
         window: &Window,
         sidebar_width: f32,
         favorite_tiles: &[bbr_ui::components::FavoriteTileSpec],
@@ -996,7 +1009,8 @@ impl BbrApp {
         let total = browser.tabs.len();
         let pinned = crate::shell::pinned_count(&browser.tabs);
         let dense = self.dense_window.get();
-        let mut rendered_indices: Vec<usize> = (0..pinned.min(total)).collect();
+        let mut rendered_indices =
+            crate::shell::organized::loose_pinned(pinned.min(total), grouped);
         rendered_indices.extend(
             (dense.first_rendered..dense.first_rendered + dense.rendered_rows)
                 .filter(|&index| index < total),

@@ -75,7 +75,7 @@ Not parallelized.
 
 - [x] Controller: activating a space with a session-less active tab creates
       exactly that tab's session.
-- [ ] Sidebar model: loose pinned rows exclude folder members; drag slots and
+- [x] Sidebar model: loose pinned rows exclude folder members; drag slots and
       keyboard traversal follow the rendered rows.
 - [ ] Tint gates across tokens × steps × modes × contrast with the new model.
 - [ ] Palette/illustration/pop frame and anatomy tests.
@@ -84,7 +84,7 @@ Not parallelized.
 
 - [x] Restored second space: activation presents its tab's native view, never
       the empty pane.
-- [ ] Folder member is not listed as a loose pinned row; selecting/closing
+- [x] Folder member is not listed as a loose pinned row; selecting/closing
       still works.
 - [ ] Affected suites (spaces, sidebar, organize, command, errors, persistence,
       gallery) and the canonical aggregate without `e2e-perf`.

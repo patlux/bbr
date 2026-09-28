@@ -95,6 +95,17 @@ fn folders_region_disclosure_and_nested_rows() {
         assert_eq!(with_member.engine_sessions, 2);
         assert!(with_member.tabs[0].pinned, "grouping pins the member");
         assert_eq!(with_member.pinned_count, 1);
+        // §11.11 (S12 regression): the grouped tab renders inside its
+        // folder only — never also as a loose pinned row — while the
+        // regular row keeps rendering.
+        assert!(
+            !with_member
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-tab-row-0"),
+            "a folder member is not a loose pinned row"
+        );
+        assert_ids(&with_member, &["bbr-tab-row-1"]);
 
         // Pointer disclosure toggle: the nested rows render with the
         // deterministic `bbr-folder-item-<n>-<m>` ids and their slots.
@@ -122,6 +133,10 @@ fn folders_region_disclosure_and_nested_rows() {
         assert!(
             expanded.chrome_focused,
             "folder pointer entry keeps chrome focus"
+        );
+        assert!(
+            !expanded.visible_ids.iter().any(|id| id == "bbr-tab-row-0"),
+            "the expanded member renders as the nested row only"
         );
 
         // Nested row selection activates the member tab through the

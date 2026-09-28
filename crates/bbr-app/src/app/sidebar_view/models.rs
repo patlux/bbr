@@ -79,7 +79,12 @@ impl BbrApp {
     /// so the testkit snapshot reports the bounded window and the
     /// deterministic scroll anchor (the snapshot is taken on demand; the
     /// recorded state mirrors the last frame).
-    pub(super) fn tabs_model(&mut self, theme: &Theme, window: &Window) -> TabsModel {
+    pub(super) fn tabs_model(
+        &mut self,
+        theme: &Theme,
+        window: &Window,
+        grouped: &[usize],
+    ) -> TabsModel {
         let browser = self.controller.snapshot();
         let pinned = crate::shell::pinned_count(&browser.tabs);
         let regular = &browser.tabs[pinned..];
@@ -91,7 +96,14 @@ impl BbrApp {
         let anchor = crate::dense::anchor_from_offset(offset_y, pitch, regular.len());
         let row_window = crate::dense::window_for(anchor, regular.len());
         let drag_source = self.tab_drag.source();
-        let pinned_rows = self.row_visuals(&browser.tabs[..pinned], drag_source);
+        // §11.11: grouped pinned tabs render inside their folder only; the
+        // loose block lists the rest (their tab indices stay the row ids).
+        let loose: Vec<bbr_browser::TabSnapshot> =
+            crate::shell::organized::loose_pinned(pinned, grouped)
+                .into_iter()
+                .map(|index| browser.tabs[index].clone())
+                .collect();
+        let pinned_rows = self.row_visuals(&loose, drag_source);
         let window_rows = self.row_visuals(&regular[row_window.clone()], drag_source);
         let tick = self.tab_drag.tab_slot();
         let tick_valid = self.tab_drag.valid();
@@ -111,6 +123,7 @@ impl BbrApp {
 
         TabsModel {
             pinned: pinned_rows,
+            pinned_end: pinned,
             window: window_rows,
             scroll_top: crate::dense::scroll_top_for_anchor(row_window.start, pitch),
             scroll_bottom: (regular.len().saturating_sub(row_window.end)) as f32 * f32::from(pitch),

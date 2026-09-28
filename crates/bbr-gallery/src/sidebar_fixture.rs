@@ -191,6 +191,7 @@ pub fn build_sidebar_fixture(
     let scroll_bottom = (case.tab_count.saturating_sub(window_len)) as f32 * f32::from(pitch);
     let tabs = TabsModel {
         pinned,
+        pinned_end: case.pinned_count,
         window,
         scroll_top,
         scroll_bottom,

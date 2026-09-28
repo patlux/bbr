@@ -82,13 +82,31 @@ impl BbrApp {
             "up" | "down" => {
                 if len > 1 {
                     let delta = if event.keystroke.key == "up" { -1 } else { 1 };
-                    let next = if len > crate::dense::DENSE_WINDOW_ROWS {
+                    let dense = len > crate::dense::DENSE_WINDOW_ROWS;
+                    // §11.11: traversal follows the rendered rows — loose
+                    // pinned, expanded folders' members, then the regular
+                    // region (a member of a collapsed folder keeps the
+                    // index-order step).
+                    let organization = self.organization.organization_snapshot(&self.controller);
+                    let grouped =
+                        crate::shell::organized::grouped_indices(&organization.folders, &snapshot);
+                    let presentation = &self.u2.folder_presentation;
+                    let expanded = crate::shell::organized::expanded_member_indices(
+                        &organization.folders,
+                        &snapshot,
+                        |id| presentation.is_expanded(id),
+                    );
+                    let pinned = crate::shell::pinned_count(&snapshot.tabs);
+                    let order =
+                        crate::shell::organized::traversal_order(len, pinned, &grouped, &expanded);
+                    let stepped = crate::shell::organized::step(&order, active, delta, !dense);
+                    let next = stepped.unwrap_or(if dense {
                         // Dense: clamp at the edges (no wrap across the
                         // collection).
                         (active as isize + delta).clamp(0, len as isize - 1) as usize
                     } else {
                         (active as isize + delta).rem_euclid(len as isize) as usize
-                    };
+                    });
                     if self.select_tab(next, cx).is_some() {
                         self.ensure_active_visible();
                         cx.notify();

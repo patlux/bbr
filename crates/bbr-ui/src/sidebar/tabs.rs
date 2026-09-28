@@ -53,7 +53,6 @@ pub fn tab_surface(
     let tabs = &model.tabs;
     let list_focused = tabs.list_focused;
     let p = theme.palette;
-    let pinned_count = tabs.pinned.len();
 
     let mut children: Vec<gpui::AnyElement> = Vec::new();
     if !tabs.pinned.is_empty() {
@@ -69,9 +68,9 @@ pub fn tab_surface(
             }
             children.push(render_row(theme, row, callbacks).into_any());
         }
-        if tabs.tick == Some(pinned_count) {
+        if tabs.tick == Some(tabs.pinned_end) {
             children.push(
-                components::drag_tick(theme, pinned_count, !tabs.tick_valid, false).into_any(),
+                components::drag_tick(theme, tabs.pinned_end, !tabs.tick_valid, false).into_any(),
             );
         }
     }

@@ -1210,10 +1210,11 @@ grouping a regular tab pins it in the same transition (it moves to the end of
 the pinned region, reported as an ordinary pin); removing a member from its
 folder leaves a loose pinned tab; unpinning a member through any path ends
 its membership; a rejected grouping changes neither. Folders are
-session-local, so a restore never recreates a membership. Open presentation
-gap: the loose pinned block still also lists grouped tabs; excluding them
-(with the drag-slot and keyboard traversal geometry) is owned by the
-[UI design-system track](docs/roadmap/tracks/ui-design-system.md).
+session-local, so a restore never recreates a membership. A grouped tab
+renders inside its folder only: the loose pinned block lists the ungrouped
+pinned tabs, a loose row's drag resolves among the loose rows (past the last
+one is the pinned region's end), and ↑/↓ traverse the rendered rows — loose
+pinned, the expanded folders' members, then the regular region.
 
 - **Anatomy:** a `type:badge` "Folders" label (`bbr-section-folders`,
   hidden when empty) over folder rows (`bbr-folders`): `[folder glyph §7,

@@ -9,6 +9,8 @@
 //!
 //! - [`presentation`] — the status-line text derivation and the empty-pane
 //!   profile line.
+//! - [`organized`] — the loose pinned rows beside the folders and the
+//!   rendered-row keyboard traversal (§11.2/§11.11).
 //! - [`tab`] — the vertical tab row presentation (one-line budgets, row
 //!   states, the pinned/regular boundary).
 //! - [`space`] — the profile-grouped space surface (§11.3) and its budgets.
@@ -16,6 +18,7 @@
 //!   enabled/selected/focused/hierarchy).
 //! - [`snapshot`] — the testkit `TestSnapshot` and `visible_ids`.
 
+pub mod organized;
 pub mod presentation;
 #[cfg(feature = "testkit")]
 pub mod semantics;

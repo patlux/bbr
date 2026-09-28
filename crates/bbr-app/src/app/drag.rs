@@ -192,7 +192,12 @@ impl BbrApp {
         } else {
             None
         };
+        // §11.11: the pinned region's rendered rows exclude grouped tabs.
+        let organization = self.organization.organization_snapshot(&self.controller);
+        let grouped = crate::shell::organized::grouped_indices(&organization.folders, &browser);
+        let loose = crate::shell::organized::loose_pinned(pinned, &grouped);
         let geometry = DragGeometry {
+            loose: Some(&loose),
             pinned,
             len: browser.tabs.len(),
             pitch: tab_pitch(&theme),

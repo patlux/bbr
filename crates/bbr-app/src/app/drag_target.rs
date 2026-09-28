@@ -120,6 +120,10 @@ pub struct DragGeometry<'a> {
     /// The §11.3 strip chips' visual spans, in canonical display order
     /// (empty when the strip layout has not run yet — no chip targets).
     pub chips: &'a [ChipSpan],
+    /// §11.11: the pinned region's rendered (loose) rows as tab indices,
+    /// when grouped pinned tabs render inside their folders instead. `None`
+    /// means the pinned rows are exactly `0..pinned`.
+    pub loose: Option<&'a [usize]>,
 }
 
 /// Resolve the drag target for a source row and a pointer position.
@@ -174,6 +178,7 @@ pub fn resolve_target(
         favorites_band,
         pin_offer,
         chips,
+        loose,
     } = *geometry;
     // §11.3 drag-to-chip: the strip sits below the tab list in the footer;
     // a pointer inside a rendered chip's span targets that exact persistent
@@ -216,6 +221,27 @@ pub fn resolve_target(
     if let Some((row_top, row_bottom)) = pin_offer {
         if pointer_y >= row_top && pointer_y < row_bottom {
             return (Some(DragTarget::PinOffer), true);
+        }
+    }
+    // §11.11: a pinned source resolves among the rendered (loose) pinned
+    // rows — grouped tabs render inside their folders — and the slot maps
+    // back to its tab index (the row after the last loose row is the
+    // region end, `pinned`).
+    if source < pinned {
+        if let Some(visual) = loose.and_then(|rows| rows.iter().position(|row| *row == source)) {
+            let rows = loose.expect("checked above");
+            let above_list = -(dy) - (visual as f32 * pitch + press_in_row);
+            if above_list > 0.0 {
+                return (None, false);
+            }
+            let raw = visual as isize + (dy / pitch).round() as isize;
+            let hi = rows.len() as isize;
+            let slot = rows
+                .get(raw.clamp(0, hi) as usize)
+                .copied()
+                .unwrap_or(pinned);
+            let valid = raw <= hi || (pinned == len && raw > hi);
+            return (Some(DragTarget::Tab { slot }), valid);
         }
     }
     // Distance from the pointer up to the tab list's top edge. The press

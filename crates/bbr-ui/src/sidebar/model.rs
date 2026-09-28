@@ -116,6 +116,10 @@ pub struct FoldersModel {
 pub struct TabsModel {
     /// The pinned region rows (a small, stable block above the scroll view).
     pub pinned: Vec<RowVisuals>,
+    /// The tab-index slot at the end of the pinned region (the drop slot
+    /// after the last pinned tab). Grouped pinned tabs render inside their
+    /// folder, so this can exceed the loose rows' count.
+    pub pinned_end: usize,
     /// The visible regular-region window rows (bounded, §11.6).
     pub window: Vec<RowVisuals>,
     /// The spacer height above the window (keeps the container's content

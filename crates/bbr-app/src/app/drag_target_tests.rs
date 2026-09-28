@@ -16,6 +16,7 @@ fn geometry<'a>(pinned: usize, len: usize, chips: &'a [ChipSpan]) -> DragGeometr
         favorites_band: None,
         pin_offer: None,
         chips,
+        loose: None,
     }
 }
 
@@ -35,6 +36,7 @@ fn geometry_with_favorites<'a>(
         favorites_band: Some(favorites_band),
         pin_offer: None,
         chips,
+        loose: None,
     }
 }
 
@@ -283,6 +285,7 @@ fn the_ghost_row_is_a_region_offer_hit_by_its_rendered_span() {
         favorites_band: Some((100.0, 160.0)),
         pin_offer: Some((220.0, 256.0)),
         chips: &chips,
+        loose: None,
     };
     let (target, valid) = resolve_target(2, 10.0, 238.0, -60.0, center_press(), &g);
     assert_eq!(target, Some(DragTarget::PinOffer));
@@ -302,4 +305,34 @@ fn the_ghost_row_is_a_region_offer_hit_by_its_rendered_span() {
     };
     let (target, _) = resolve_target(2, 10.0, 238.0, -60.0, center_press(), &g);
     assert_ne!(target, Some(DragTarget::PinOffer));
+}
+
+/// §11.11: with grouped pinned tabs rendered inside their folders, a loose
+/// pinned row resolves among the loose rows and maps back to tab slots —
+/// the pointer one row down lands before the next *rendered* row, and past
+/// the last loose row it lands at the pinned region's end.
+#[test]
+fn loose_pinned_rows_resolve_in_rendered_row_space() {
+    // Pinned 0..4 with 1 and 2 grouped: loose rows [0, 3]; regular 4..6.
+    let loose = [0usize, 3];
+    let g = DragGeometry {
+        loose: Some(&loose),
+        ..geometry(4, 6, &[])
+    };
+    // Row 0 dragged down one pitch: before loose row 3 (not tab slot 1).
+    let (target, valid) = resolve_target(0, 10.0, 60.0, 40.0, center_press(), &g);
+    assert_eq!(target, Some(DragTarget::Tab { slot: 3 }));
+    assert!(valid);
+    // Two pitches: past the last loose row → the region end (slot 4).
+    let (target, valid) = resolve_target(0, 10.0, 100.0, 80.0, center_press(), &g);
+    assert_eq!(target, Some(DragTarget::Tab { slot: 4 }));
+    assert!(valid);
+    // Further down crosses into the regular region: clamped and illegal.
+    let (target, valid) = resolve_target(0, 10.0, 140.0, 120.0, center_press(), &g);
+    assert_eq!(target, Some(DragTarget::Tab { slot: 4 }));
+    assert!(!valid);
+    // Loose row 3 dragged up one pitch: before row 0.
+    let (target, valid) = resolve_target(3, 10.0, 18.0, -40.0, center_press(), &g);
+    assert_eq!(target, Some(DragTarget::Tab { slot: 0 }));
+    assert!(valid);
 }

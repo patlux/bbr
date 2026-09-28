@@ -140,11 +140,14 @@ fn only_the_selected_row_lifts_through_hover_press_and_folders() {
             .expect("flush member selection");
         let member = client.snapshot().expect("member selected snapshot");
         assert_eq!(member.active_tab_index, Some(member_row));
+        // §11.11 (S12): a grouped tab renders inside its folder only, so
+        // its nested row is the one presentation that lifts.
         assert_eq!(
             member.lifted_ids,
-            vec![row_id(member_row), "bbr-folder-item-0-0".to_string(), chip],
-            "both presentations of the one selected tab lift, nothing else"
+            vec!["bbr-folder-item-0-0".to_string(), chip],
+            "the selected member's one presentation lifts, nothing else"
         );
+        assert!(!member.visible_ids.contains(&row_id(member_row)));
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

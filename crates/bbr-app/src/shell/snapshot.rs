@@ -496,7 +496,9 @@ pub fn visible_ids_u2(
     // into the empty pane) is never exposed by a stale window.
     let total = browser.tabs.len();
     let pinned = crate::shell::pinned_count(&browser.tabs);
-    let mut rendered: Vec<usize> = (0..pinned.min(total)).collect();
+    // §11.11: grouped pinned tabs render inside their folder only.
+    let grouped = crate::shell::organized::grouped_indices(u2.folders, browser);
+    let mut rendered = crate::shell::organized::loose_pinned(pinned.min(total), &grouped);
     rendered.extend(
         (dense.first_rendered..dense.first_rendered + dense.rendered_rows)
             .filter(|&index| index < total),
