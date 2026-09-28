@@ -246,16 +246,17 @@ impl BbrApp {
         self.cancel_command_bar(window, cx);
     }
 
-    fn command_portal_request(&self, surface: CommandSurface) -> PortalRequest {
+    fn command_portal_request(
+        &self,
+        surface: CommandSurface,
+        content: Option<WebRect>,
+    ) -> PortalRequest {
         let theme = self.theme();
         match surface {
             CommandSurface::None => unreachable!("closed command surface has no request"),
             CommandSurface::Palette => PortalRequest::native(
                 PALETTE_PRESENTATION_ID,
-                PortalPlacement::Centered {
-                    size: Sz::new(f32::from(theme.density.palette_width()), 420.0),
-                    margin: Edges::all(8.0),
-                },
+                palette_placement(f32::from(theme.density.palette_width()), content),
                 COMMAND_PORTAL_PRIORITY,
                 DismissalPolicy::any(),
             ),
@@ -293,7 +294,21 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let request = self.command_portal_request(surface);
+        // §11.4: the palette centres over the seated content card.
+        let window_width = f32::from(window.bounds().size.width);
+        let sidebar_width = if self.sidebar_visible {
+            self.sidebar.effective_width(window_width)
+        } else {
+            0.0
+        };
+        let card = self.content_card_frame(window);
+        let content = WebRect::new(
+            sidebar_width + card.leading,
+            card.top,
+            (window_width - sidebar_width - card.leading - card.trailing).max(0.0),
+            (f32::from(window.bounds().size.height) - card.top - card.bottom).max(0.0),
+        );
+        let request = self.command_portal_request(surface, Some(content));
         let viewport = Sz::new(
             f32::from(window.bounds().size.width),
             f32::from(window.bounds().size.height),
@@ -349,6 +364,7 @@ impl BbrApp {
                     group: row.group.clone(),
                     title: row.title.clone(),
                     subtitle: row.subtitle.clone(),
+                    url: row.url.clone(),
                     destructive: row.destructive,
                 })
                 .collect(),
@@ -369,6 +385,34 @@ impl BbrApp {
 /// leading edge flush with the control's leading edge (DESIGN.md §11.4).
 /// The address control is not visible while the overlay is open: the
 /// overlay takes its place, so the address never appears twice.
+/// The ⌘T palette's offset below the content card's top edge (Paper
+/// reference: the palette reads as a sheet near the top of the page, not
+/// in the vertical middle of the window).
+const PALETTE_TOP_OFFSET: f32 = 110.0;
+
+/// §11.4: the ⌘T palette centred horizontally over the seated content
+/// card, `PALETTE_TOP_OFFSET` below its top edge, snapped into the window.
+/// Without a content rect (never in production) it centres in the window.
+fn palette_placement(width: f32, content: Option<WebRect>) -> PortalPlacement {
+    let size = Sz::new(width, 420.0);
+    match content {
+        Some(card) => PortalPlacement::Anchored(AnchoredPlacement {
+            anchor_point: Pt::new(
+                card.x + (card.width - width) / 2.0,
+                card.y + PALETTE_TOP_OFFSET,
+            ),
+            anchor: PortalAnchor::TopLeft,
+            size,
+            offset: Pt::new(0.0, 0.0),
+            fit: FitMode::SnapToWindowWithMargin(Edges::all(8.0)),
+        }),
+        None => PortalPlacement::Centered {
+            size,
+            margin: Edges::all(8.0),
+        },
+    }
+}
+
 fn overlay_placement(field: WebRect, width: f32) -> PortalPlacement {
     PortalPlacement::Anchored(AnchoredPlacement {
         anchor_point: Pt::new(field.x, field.y),

@@ -39,6 +39,7 @@ pub fn build_command_fixture(case: &CommandCase) -> Option<CommandModel> {
                 spec.title.to_string()
             },
             subtitle: spec.subtitle.map(str::to_string),
+            url: None,
             destructive: spec.destructive,
         })
         .collect();

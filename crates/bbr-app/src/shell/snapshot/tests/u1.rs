@@ -96,6 +96,7 @@ fn visible_ids_expose_the_open_surface_result_rows_when_published() {
             group: "exact_tab".into(),
             title: "Alpha".into(),
             subtitle: Some("https://a.example".into()),
+            url: None,
             collection: None,
             destructive: false,
             activation: bbr_command::rank::Activation::Navigate {
@@ -107,6 +108,7 @@ fn visible_ids_expose_the_open_surface_result_rows_when_published() {
             group: "fallback".into(),
             title: "Search DuckDuckGo".into(),
             subtitle: None,
+            url: None,
             collection: None,
             destructive: false,
             activation: bbr_command::rank::Activation::Search {

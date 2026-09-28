@@ -44,6 +44,34 @@ pub fn host_of(url: &str) -> String {
     host.trim().to_string()
 }
 
+/// The §11.4 palette's shortened URL: scheme and `www.` dropped, a deep
+/// path collapsed to `host/…/last` (`https://zed.dev/docs/gpui` →
+/// `zed.dev/…/gpui`), a query kept after a root path.
+pub fn short_url(url: &str) -> String {
+    let rest = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .unwrap_or(url);
+    let rest = rest.strip_prefix("www.").unwrap_or(rest);
+    let (location, query) = match rest.split_once('?') {
+        Some((location, query)) => (location, Some(query)),
+        None => (rest, None),
+    };
+    let mut parts = location.split('/').filter(|part| !part.is_empty());
+    let host = parts.next().unwrap_or("");
+    let segments: Vec<&str> = parts.collect();
+    let mut short = match segments.as_slice() {
+        [] => host.to_string(),
+        [only] => format!("{host}/{only}"),
+        [.., last] => format!("{host}/…/{last}"),
+    };
+    if let Some(query) = query.filter(|_| segments.is_empty()) {
+        short.push_str("/?");
+        short.push_str(query);
+    }
+    short
+}
+
 /// The URL scheme (`https`, `http`, `about`, `data`), used as the last title
 /// fallback when even the host is empty.
 pub fn scheme_of(url: &str) -> String {
@@ -265,6 +293,20 @@ fn adapt(mut delta: u32, numpoints: u32, first_time: bool) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn short_url_keeps_the_host_and_the_last_segment() {
+        assert_eq!(
+            short_url("https://zed.dev/docs/render/gpui"),
+            "zed.dev/…/gpui"
+        );
+        assert_eq!(short_url("https://www.youtube.com/"), "youtube.com");
+        assert_eq!(short_url("http://example.test/simd"), "example.test/simd");
+        assert_eq!(
+            short_url("https://duckduckgo.com/?q=gpui+render"),
+            "duckduckgo.com/?q=gpui+render"
+        );
+    }
     use crate::theme::{ContrastMode, Theme, ThemeMode};
     use gpui::px;
 

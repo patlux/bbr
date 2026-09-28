@@ -78,7 +78,9 @@ Not parallelized.
 - [x] Sidebar model: loose pinned rows exclude folder members; drag slots and
       keyboard traversal follow the rendered rows.
 - [x] Tint gates across tokens × steps × modes × contrast with the new model.
-- [ ] Palette/illustration/pop frame and anatomy tests.
+- [x] Palette anatomy tests (match range, kind hint, short URL, magnifier
+      geometry).
+- [ ] Illustration and pop frame tests.
 
 ### Real-app E2E
 

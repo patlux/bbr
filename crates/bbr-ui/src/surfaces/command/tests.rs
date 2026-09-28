@@ -11,6 +11,7 @@ fn row(key: &str, group: &str) -> CommandResultRow {
         group: group.into(),
         title: "Title".into(),
         subtitle: Some("https://example.com".into()),
+        url: None,
         destructive: false,
     }
 }
@@ -212,7 +213,7 @@ fn saved_page_results_use_the_drawn_bookmark_mark() {
     // Regression: the palette/overlay renderer had no Saved Page branch and
     // showed the `→` fallback; the in-rail surface showed the text `★`.
     // A Saved Page result carries no letter — it renders `Icon::Bookmark`.
-    assert_eq!(super::render::group_glyph(&row("k", "saved_page")), None);
+    assert_eq!(super::rows::group_glyph(&row("k", "saved_page")), None);
     for (group, letter) in [
         ("exact_tab", "T"),
         ("space", "S"),
@@ -221,9 +222,43 @@ fn saved_page_results_use_the_drawn_bookmark_mark() {
         ("fallback", "→"),
     ] {
         assert_eq!(
-            super::render::group_glyph(&row("k", group)),
+            super::rows::group_glyph(&row("k", group)),
             Some(letter),
             "letter for {group}"
         );
     }
+}
+
+/// S12: the query's first case-insensitive occurrence is the highlighted
+/// range; no match (or an empty query) highlights nothing.
+#[test]
+fn match_range_finds_the_query_in_the_title() {
+    use super::rows::match_range;
+    assert_eq!(
+        match_range("GPUI render pipeline", "gpui render"),
+        Some((0, 11))
+    );
+    assert_eq!(match_range("YouTube Music", "tube"), Some((3, 7)));
+    assert_eq!(match_range("YouTube", "  "), None);
+    assert_eq!(match_range("YouTube", "vimeo"), None);
+    assert_eq!(match_range("Ä", "äb"), None);
+}
+
+/// S12: the trailing hint is `↵` on the selected row and the kind
+/// otherwise; destructive rows always say so.
+#[test]
+fn kind_hint_names_the_result_kind() {
+    use super::rows::kind_hint;
+    assert_eq!(kind_hint(&row("k", "current_tab"), true), "↵");
+    assert_eq!(kind_hint(&row("k", "current_tab"), false), "Tab");
+    assert_eq!(kind_hint(&row("k", "history"), false), "History");
+    assert_eq!(kind_hint(&row("k", "saved_page"), false), "Saved");
+    let mut destructive = row("k", "action");
+    destructive.destructive = true;
+    assert_eq!(kind_hint(&destructive, true), "destructive");
+    let mut search = row("k", "fallback");
+    search.url = None;
+    assert_eq!(kind_hint(&search, false), "Search");
+    search.url = Some("https://example.com".into());
+    assert_eq!(kind_hint(&search, false), "URL");
 }

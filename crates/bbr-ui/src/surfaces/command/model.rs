@@ -114,6 +114,9 @@ pub struct CommandResultRow {
     pub title: String,
     /// The optional mono subtitle (the URL / secondary line).
     pub subtitle: Option<String>,
+    /// The row's destination URL (shown shortened in the mono column when
+    /// no subtitle — a cross-space identity or a shortcut — takes it).
+    pub url: Option<String>,
     /// Whether the row uses the error/destructive tint (the settled §11.5
     /// destructive set; no confirmation dialog is invented).
     pub destructive: bool,

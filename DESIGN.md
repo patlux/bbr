@@ -941,17 +941,26 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Command surface launch:** the command field owns two presentations of
   the same §11.5 engine:
   - **Cmd-T → centered palette** (`bbr-palette`): `elev:2`
-    overlay centered over the window content, `material:overlay`, width
+    overlay centred horizontally over the seated content card, 110 pt below
+    its top edge (S12, Paper), `material:overlay`, width
     `win:palette` (D9: S 508 / N 600 / XL 716 pt), `radius:xl` (16) at every
-    density. Field row on top (`bbr-palette-field`, 56 pt): prefix glyph,
-    the query at 17 pt in the UI sans (`bbr-palette-text`), mode chip
-    (`bbr-palette-mode` — New Tab staged per the interaction contract),
-    block cursor (`bbr-palette-cursor`). Results below
-    (`bbr-palette-result-<k>`, 40 pt rows at `radius:md` inside an 8 pt
-    padded list) use the §11.5 row anatomy `[icon] [title]
-    [url mono trunc] [key hint]`; the `selected` result is the inset
-    `tint.accent` row surface (no accent rail, §18.4), with `accent.ink`
-    match highlighting. A freshly published result set fades in with a
+    density. Field row on top (`bbr-palette-field`, 56 pt, a hairline below):
+    the drawn search magnifier, the query at 17 pt in the UI sans
+    (`bbr-palette-text`) with the caret (`bbr-palette-cursor`, 2 pt `accent`
+    at the query's text height) at the insertion point — after the query,
+    before the placeholder while empty — and the mode chip
+    (`bbr-palette-mode`, an uppercase `type:badge` pill on `tint.accent` in
+    `accent.ink` — New Tab staged per the interaction contract). Results
+    below (`bbr-palette-result-<k>`, 40 pt rows at `radius:md` inside an
+    8 pt padded list) use the §11.5 row anatomy `[badge] [title]
+    [url mono trunc] [kind hint]`: an 18 pt host-monogram badge (§7.2; the
+    drawn bookmark for a Saved Page, the group letter without a URL), the
+    title with the query's match in `accent.ink`, the shortened URL
+    (`host/…/last`) unless a cross-space identity or shortcut subtitle
+    takes the column, and a trailing hint — `↵` on the selected row, the
+    kind (`Tab`, `History`, `Saved`, `Space`, `Action`, `URL`, `Search`)
+    otherwise; the `selected` result is the inset `tint.accent` row
+    surface (no accent rail, §18.4). A freshly published result set fades in with a
     20 ms stagger and a 4 pt rise (rows past the seventh share the last
     slot, ≤ 260 ms); Up/Down commits the selection at once and the cursor
     highlight glides to it in `dur:micro` (Reduce Motion: fade only, the

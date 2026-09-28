@@ -21,12 +21,11 @@ use crate::theme::{Motion, Radius, Spacing, Theme};
 
 use super::geometry::CommandRect;
 use super::ids::{
-    OVERLAY_CURSOR_ID, OVERLAY_FADE_ELEMENT_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_STATE_EMPTY,
-    OVERLAY_STATE_ERROR, OVERLAY_STATE_LOADING, OVERLAY_TEXT_ID, PALETTE_CURSOR_ID,
-    PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID, PALETTE_RESULT_PREFIX, PALETTE_STATE_EMPTY,
-    PALETTE_STATE_ERROR, PALETTE_STATE_LOADING, PALETTE_TEXT_ID,
+    OVERLAY_CURSOR_ID, OVERLAY_FADE_ELEMENT_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_TEXT_ID,
+    PALETTE_CURSOR_ID, PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID, PALETTE_RESULT_PREFIX,
+    PALETTE_TEXT_ID,
 };
-use super::model::{CommandModel, CommandPresentation, CommandResultRow, CommandResultState};
+use super::model::{CommandModel, CommandPresentation};
 
 /// Build the U1 card at the resolved portal rect. The caller owns the
 /// full-window backdrop and pointer propagation policy; the card itself
@@ -127,17 +126,20 @@ fn palette_card(model: &CommandModel, rect: CommandRect) -> Stateful<Div> {
             PALETTE_FIELD_ID,
             PALETTE_TEXT_ID,
             PALETTE_CURSOR_ID,
-            "+",
             Some("New Tab"),
         ))
-        .child(result_list(model, anatomy, PALETTE_RESULT_PREFIX))
+        .child(super::rows::result_list(
+            model,
+            anatomy,
+            PALETTE_RESULT_PREFIX,
+        ))
         .on_mouse_down(MouseButton::Left, card_stop_propagation())
 }
 
 /// The §11.4 field row shared by both command-surface presentations: the
-/// prefix glyph, the `type:mono` text (`<text_id>`), an optional mode chip
-/// (the centered palette only), and the block cursor (`<cursor_id>`) while
-/// the surface owns chrome focus. The centered Cmd-T palette and the
+/// search glyph, the query (`<text_id>`) with the caret (`<cursor_id>`) at
+/// the insertion point while the surface owns chrome focus, and an
+/// optional mode chip (the centered palette only). The centered Cmd-T palette and the
 /// field-anchored Cmd-L/click overlay are the same §11.5 engine and input
 /// component; the overlay opens with the full current URL selected, so one
 /// keystroke replaces it.
@@ -147,15 +149,46 @@ fn field_row(
     field_id: &'static str,
     text_id: &'static str,
     cursor_id: &'static str,
-    prefix: &'static str,
     mode_chip: Option<&'static str>,
 ) -> Stateful<Div> {
     let theme = &model.theme;
     let p = theme.palette;
-    let text = if model.text.is_empty() {
+    let empty = model.text.is_empty();
+    let text = if empty {
         SharedString::from("Type a URL…")
     } else {
         SharedString::from(model.text.clone())
+    };
+    // S12: the caret sits at the insertion point — after the query (before
+    // the placeholder while empty) — at the query's text height, never as a
+    // full-height bar at the end of the row.
+    let caret = model.chrome_focused.then(|| {
+        div()
+            .id(cursor_id)
+            .flex_shrink_0()
+            .w(px(2.0))
+            .h(anatomy.query_size * 1.25)
+            .rounded(px(1.0))
+            .bg(p.accent)
+    });
+    let query = div()
+        .text_size(anatomy.query_size)
+        .text_color(if empty { p.ink_faint } else { p.ink })
+        .overflow_hidden()
+        .text_ellipsis()
+        .child(text);
+    let line = div()
+        .id(text_id)
+        .flex_1()
+        .min_w_0()
+        .flex()
+        .flex_row()
+        .items_center()
+        .gap(px(1.0));
+    let line = match (empty, caret) {
+        (true, Some(caret)) => line.child(caret).child(query),
+        (false, Some(caret)) => line.child(query).child(caret),
+        (_, None) => line.child(query),
     };
     div()
         .id(field_id)
@@ -167,32 +200,27 @@ fn field_row(
         .flex()
         .flex_row()
         .items_center()
-        .child(
-            div()
-                .text_size(theme.type_.meta.size)
-                .text_color(p.ink_faint)
-                .child(prefix),
-        )
-        .child(
-            div()
-                .id(text_id)
-                .flex_1()
-                .text_size(anatomy.query_size)
-                .text_color(p.ink)
-                .child(text),
-        )
-        .when(mode_chip.is_some(), |el| {
+        // S12: the field leads with the drawn search magnifier and closes
+        // with a hairline above the results.
+        .border_b_1()
+        .border_color(p.hairline)
+        .child(Icon::Search.canvas(theme, px(18.0)))
+        .child(line)
+        .when_some(mode_chip, |el, chip| {
+            // The mode chip is an uppercase pill on `tint.accent`.
             el.child(
                 div()
                     .id(PALETTE_MODE_ID)
+                    .flex_shrink_0()
+                    .px(Spacing::sp2())
+                    .py(px(2.0))
+                    .rounded(Radius.small())
+                    .bg(p.tint_accent)
                     .text_size(theme.type_.badge.size)
-                    .font_weight(theme.type_.badge.weight)
+                    .font_weight(gpui::FontWeight::SEMIBOLD)
                     .text_color(p.accent_ink)
-                    .child(mode_chip.expect("chip checked")),
+                    .child(chip.to_uppercase()),
             )
-        })
-        .when(model.chrome_focused, |el| {
-            el.child(div().id(cursor_id).w(px(2.0)).h_full().bg(p.accent))
         })
 }
 
@@ -227,10 +255,13 @@ fn overlay_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
             OVERLAY_FIELD_ID,
             OVERLAY_TEXT_ID,
             OVERLAY_CURSOR_ID,
-            "▶",
             None,
         ))
-        .child(result_list(model, anatomy, "bbr-command-result"))
+        .child(super::rows::result_list(
+            model,
+            anatomy,
+            "bbr-command-result",
+        ))
         .on_mouse_down(MouseButton::Left, card_stop_propagation());
     // §11.4: the overlay opens with an opacity fade `dur:fine` only — never
     // translate or scale (§6). The fade is per-open: the animation element
@@ -242,210 +273,6 @@ fn overlay_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
         |el, delta| el.opacity(delta),
     )
     .into_any()
-}
-
-/// §18.4: the result rows inside their padded list (the padding keeps the
-/// inset cursor off the card edge).
-fn result_list(model: &CommandModel, anatomy: CommandAnatomy, result_prefix: &str) -> Div {
-    let rows = result_rows(model, anatomy, result_prefix);
-    div()
-        .relative()
-        .flex()
-        .flex_col()
-        .min_h_0()
-        .when(!rows.is_empty(), |el| el.p(anatomy.list_padding))
-        // §18.5: the gliding cursor paints beneath the rows.
-        .when_some(
-            super::moments::glide_highlight(model, anatomy),
-            |el, glide| el.child(glide),
-        )
-        .children(rows)
-}
-
-fn result_rows(
-    model: &CommandModel,
-    anatomy: CommandAnatomy,
-    result_prefix: &str,
-) -> Vec<AnyElement> {
-    let cursor = super::moments::row_paints_cursor(model);
-    match model.state {
-        CommandResultState::Results => model
-            .results
-            .iter()
-            .enumerate()
-            .map(|(index, row)| {
-                let selected = cursor && index == model.selected;
-                let row = result_row(model, anatomy, row, selected, result_prefix);
-                super::moments::entering_row(model, index, row)
-            })
-            .collect(),
-        CommandResultState::Loading => {
-            vec![state_row(&model.theme, state_id(model, "loading"), "Ranking…").into_any_element()]
-        }
-        CommandResultState::Empty => {
-            vec![
-                state_row(&model.theme, state_id(model, "empty"), "Type a destination")
-                    .into_any_element(),
-            ]
-        }
-        CommandResultState::ActivationError => {
-            vec![
-                state_row(&model.theme, state_id(model, "error"), "Activation failed")
-                    .into_any_element(),
-            ]
-        }
-        CommandResultState::Inactive => Vec::new(),
-    }
-}
-
-/// The typed state-row id of the open surface: the palette's own family
-/// (`bbr-palette-loading` / `-empty` / `-error`) or the overlay's §11.5
-/// state ids (`bbr-command-loading` / `-empty` / `-error`, the same
-/// strings the in-rail surface uses).
-pub(crate) fn state_id(model: &CommandModel, kind: &str) -> &'static str {
-    match (model.presentation, kind) {
-        (CommandPresentation::CenteredPalette, "loading") => PALETTE_STATE_LOADING,
-        (CommandPresentation::CenteredPalette, "empty") => PALETTE_STATE_EMPTY,
-        (CommandPresentation::CenteredPalette, "error") => PALETTE_STATE_ERROR,
-        (CommandPresentation::AnchoredOverlay, "loading") => OVERLAY_STATE_LOADING,
-        (CommandPresentation::AnchoredOverlay, "empty") => OVERLAY_STATE_EMPTY,
-        (CommandPresentation::AnchoredOverlay, "error") => OVERLAY_STATE_ERROR,
-        _ => unreachable!("state rows render only for an open presentation"),
-    }
-}
-
-fn result_row(
-    model: &CommandModel,
-    anatomy: CommandAnatomy,
-    row: &CommandResultRow,
-    selected: bool,
-    id_prefix: &str,
-) -> Stateful<Div> {
-    let theme = &model.theme;
-    let p = theme.palette;
-    let title_color = if row.destructive {
-        p.status_error
-    } else {
-        p.ink
-    };
-    let id = format!("{id_prefix}-{}", row.key);
-    div()
-        .id(SharedString::from(id.clone()))
-        // Test-support target: the production result id as the gallery E2E
-        // lookup key (no-op in release builds — the same pattern the
-        // downloads/auth rows use).
-        .debug_selector(move || id.clone())
-        .flex()
-        .flex_row()
-        .items_center()
-        .flex_shrink_0()
-        .gap(Spacing::sp2())
-        .h(anatomy.row_height)
-        .px(Spacing::sp3())
-        .rounded(anatomy.row_radius)
-        // §18.4: the cursor is the inset `tint.accent` row surface — the
-        // accent rail is gone; the selected result is committed at once.
-        .when(selected, |el| el.bg(p.tint_accent))
-        .child(
-            div()
-                .size(px(14.0))
-                .flex()
-                .items_center()
-                .justify_center()
-                .rounded(Radius.small())
-                .bg(if row.destructive {
-                    p.status_error_surface
-                } else {
-                    p.surface_field
-                })
-                .text_size(theme.type_.key.size)
-                .font_weight(theme.type_.key.weight)
-                .text_color(if row.destructive {
-                    p.status_error
-                } else {
-                    p.ink_faint
-                })
-                .child(group_mark(theme, row)),
-        )
-        .child(
-            div()
-                .max_w(px(140.0))
-                .overflow_hidden()
-                .text_ellipsis()
-                .text_size(theme.type_.title.size)
-                .font_weight(theme.type_.title.weight)
-                .text_color(title_color)
-                .child(SharedString::from(row.title.clone())),
-        )
-        .when(row.subtitle.is_some(), |el| {
-            el.child(
-                div()
-                    .flex_1()
-                    .overflow_hidden()
-                    .text_ellipsis()
-                    .text_size(theme.type_.mono.size)
-                    .text_color(p.ink_secondary)
-                    .child(SharedString::from(
-                        row.subtitle.clone().expect("checked above"),
-                    )),
-            )
-        })
-        .when(row.destructive || selected, |el| {
-            el.child(
-                div()
-                    .text_size(theme.type_.key.size)
-                    .text_color(if row.destructive {
-                        p.status_error
-                    } else {
-                        p.ink_faint
-                    })
-                    .child(if row.destructive {
-                        "destructive"
-                    } else {
-                        "↵"
-                    }),
-            )
-        })
-}
-
-fn state_row(theme: &Theme, id: &str, text: &str) -> Stateful<Div> {
-    let error = id.ends_with("-error");
-    div()
-        .id(SharedString::from(id))
-        // Test-support target: the production state-row id as the gallery
-        // E2E lookup key (no-op in release builds).
-        .debug_selector(move || id.to_string())
-        .px(Spacing::sp3())
-        .py(Spacing::sp1())
-        .text_size(theme.type_.meta.size)
-        .text_color(if error {
-            theme.palette.status_error
-        } else {
-            theme.palette.ink_faint
-        })
-        .child(SharedString::from(text.to_string()))
-}
-
-/// The result row's leading mark: the drawn §11.16 bookmark glyph for a
-/// Saved Page (never a Unicode `★`, never the `→` fallback), otherwise
-/// the group letter.
-fn group_mark(theme: &Theme, row: &CommandResultRow) -> AnyElement {
-    match group_glyph(row) {
-        Some(letter) => SharedString::from(letter).into_any_element(),
-        None => Icon::Bookmark.canvas(theme, px(12.0)).into_any_element(),
-    }
-}
-
-/// The group letter, or `None` for a Saved Page (drawn glyph instead).
-pub(super) fn group_glyph(row: &CommandResultRow) -> Option<&'static str> {
-    match row.group.as_str() {
-        "tab" | "exact_tab" | "current_pinned" | "current_tab" | "other_space" => Some("T"),
-        "space" => Some("S"),
-        "saved_page" => None,
-        "action" => Some("A"),
-        "history" => Some("H"),
-        _ => Some("→"),
-    }
 }
 
 #[cfg(test)]

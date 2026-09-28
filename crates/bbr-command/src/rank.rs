@@ -152,6 +152,10 @@ pub struct CommandResult {
     /// Secondary display line (cross-space identity label, shortcut hint,
     /// or the Saved Page's canonical URL).
     pub subtitle: Option<String>,
+    /// The destination URL the row opens or shows, when it has one (tabs,
+    /// history, Saved Pages, a typed address) — the palette's mono URL
+    /// column (DESIGN §11.4).
+    pub url: Option<String>,
     /// Optional flat collection label of a Saved Page result (B2 packet
     /// `saved-pages-actions-command`; DESIGN.md §11.16 `type:meta` label).
     /// `None` for every other group.

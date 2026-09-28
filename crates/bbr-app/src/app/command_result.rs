@@ -16,6 +16,8 @@ pub struct CommandResultRow {
     pub group: String,
     pub title: String,
     pub subtitle: Option<String>,
+    /// The row's destination URL for the palette's mono column.
+    pub url: Option<String>,
     /// Optional flat collection label of a Saved Page result (B2 packet
     /// `saved-pages-actions-command`; DESIGN.md §11.16 `type:meta` label).
     pub collection: Option<String>,
@@ -56,6 +58,7 @@ pub fn row_from_result(result: CommandResult) -> CommandResultRow {
         group: group_name(result.group).to_string(),
         title: result.title,
         subtitle: result.subtitle,
+        url: result.url,
         collection: result.collection,
         destructive,
         activation: result.activation,

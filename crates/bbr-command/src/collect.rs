@@ -114,6 +114,7 @@ fn tab_result(
         group,
         title,
         subtitle,
+        url: Some(tab.url.clone()),
         collection: None,
         profile: Some(tab.profile),
         key: format!("tab:{}", tab.id.0),
@@ -188,6 +189,7 @@ fn space_result(
         group: ResultGroup::Space,
         title,
         subtitle: Some(subtitle),
+        url: None,
         collection: None,
         profile: Some(space.profile),
         key: format!("space:{}", space.id.0),
@@ -230,6 +232,7 @@ fn saved_page_result(page: &SavedPageEntry, score: RankKey) -> CommandResult {
         group: ResultGroup::SavedPage,
         title: page.title.clone(),
         subtitle: Some(page.url.clone()),
+        url: Some(page.url.clone()),
         collection: page.collection.clone(),
         profile: None,
         key: format!("saved_page:{}", page.id.0),
@@ -288,6 +291,7 @@ pub(crate) fn collect_history_matches(
                 group: ResultGroup::History,
                 title,
                 subtitle: None,
+                url: Some(entry.url.clone()),
                 collection: None,
                 profile: None,
                 key: format!("history:{}", entry.id.0),
@@ -353,6 +357,7 @@ fn action_result(action: &Action, quality: MatchQuality, secondary: u64) -> Comm
         group: ResultGroup::Action,
         title: action.title.clone(),
         subtitle: action.shortcut.map(str::to_owned),
+        url: None,
         collection: None,
         profile: None,
         key: format!("action:{}", action.id.0),
@@ -366,16 +371,18 @@ pub(crate) fn collect_fallback(query: &Query, rows: &mut Vec<(RankKey, CommandRe
         Destination::Search(terms) => format!("search:{terms}"),
         Destination::Empty => return,
     };
-    let (activation, title) = match &query.destination {
+    let (activation, title, url) = match &query.destination {
         Destination::Navigate(url) => (
             Activation::Navigate { url: url.clone() },
             format!("Open {url}"),
+            Some(url.clone()),
         ),
         Destination::Search(terms) => (
             Activation::Search {
                 terms: terms.clone(),
             },
             format!("Search for {terms}"),
+            None,
         ),
         Destination::Empty => unreachable!(),
     };
@@ -392,6 +399,7 @@ pub(crate) fn collect_fallback(query: &Query, rows: &mut Vec<(RankKey, CommandRe
             group: ResultGroup::Fallback,
             title,
             subtitle: None,
+            url,
             collection: None,
             profile: None,
             key: key_string,

@@ -31,6 +31,7 @@ pub mod ids;
 pub mod model;
 mod moments;
 pub mod render;
+mod rows;
 
 pub use geometry::CommandRect;
 pub use ids::{
@@ -45,7 +46,7 @@ pub use model::{
 pub use render::command_card;
 
 #[cfg(test)]
-pub(crate) use render::state_id;
+pub(crate) use rows::state_id;
 
 #[cfg(test)]
 mod tests;

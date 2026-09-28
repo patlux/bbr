@@ -289,6 +289,7 @@ mod tests {
             group: group.into(),
             title: "Title".into(),
             subtitle: Some("https://example.com".into()),
+            url: None,
             collection: None,
             destructive: false,
             activation: Activation::Navigate {
