@@ -189,6 +189,7 @@ pub fn build_sidebar_fixture_with_theme(
                     count: case.folder_members,
                     expanded: case.folder_members > 0,
                     reveal_count: case.folders_focused,
+                    rename: None,
                 })
                 .collect(),
             members: (0..case.folder_members)

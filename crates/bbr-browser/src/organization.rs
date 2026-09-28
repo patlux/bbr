@@ -73,6 +73,11 @@ pub enum OrganizationEvent {
         space: SpaceId,
         title: String,
     },
+    /// A folder took a new (trimmed, non-empty) title.
+    FolderRenamed {
+        id: bbr_domain::FolderId,
+        title: String,
+    },
     /// The tab joined `folder` (space membership untouched). A regular tab
     /// was pinned by the same transition: `pinned_index` is its new
     /// space-local index then, `None` when it was already pinned.
@@ -212,6 +217,21 @@ impl OrganizationController {
         self.check_invariants(controller)
             .expect("organization invariants hold after reconcile");
         Ok(OrganizationEvent::FolderCreated { id, space, title })
+    }
+
+    /// `RenameFolder` command (Blueprint D20, folder menu Rename): give the
+    /// session-local `folder` a new title. Empty titles and unknown folders
+    /// are rejected whole; membership, pins and sessions are untouched.
+    pub fn rename_folder(
+        &mut self,
+        folder: bbr_domain::FolderId,
+        title: &str,
+    ) -> Result<OrganizationEvent, OrganizationError> {
+        let title = self
+            .store
+            .rename_folder(folder, title)
+            .map_err(OrganizationError::Folder)?;
+        Ok(OrganizationEvent::FolderRenamed { id: folder, title })
     }
 
     /// `MoveTabIntoFolder` command: group the active space's tab at `index`

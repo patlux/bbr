@@ -190,6 +190,7 @@ fn folders_node_mirrors_expansion_values_and_nested_items() {
         }],
         &presentation,
         None,
+        None,
     );
     let section = super::super::u2::folders_node(&rows, &[]).expect("folders node");
     assert_eq!(section.id, "bbr-section-folders");
@@ -232,6 +233,7 @@ fn folders_node_mirrors_expansion_values_and_nested_items() {
             members: vec![],
         }],
         &bbr_ui::components::folders::FolderPresentation::default(),
+        None,
         None,
     );
     let section = super::super::u2::folders_node(&collapsed, &[]).expect("folders node");
@@ -322,7 +324,7 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         members: vec![bbr_domain::TabId(1)],
     }];
     let folder_rows =
-        crate::app::ui_adapters::folder_row_specs(&folder_snapshots, &presentation, None);
+        crate::app::ui_adapters::folder_row_specs(&folder_snapshots, &presentation, None, None);
     input.folder_rows = &folder_rows;
     let folder_members = [bbr_ui::components::FolderMemberVisual {
         folder: bbr_domain::FolderId(1),

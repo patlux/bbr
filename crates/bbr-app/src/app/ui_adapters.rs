@@ -58,6 +58,7 @@ pub fn folder_row_specs(
     folders: &[FolderSnapshot],
     presentation: &FolderPresentation,
     revealed: Option<FolderId>,
+    rename: Option<(FolderId, &str, bool)>,
 ) -> Vec<FolderRowSpec> {
     folders
         .iter()
@@ -68,6 +69,14 @@ pub fn folder_row_specs(
             count: folder.members.len(),
             expanded: presentation.is_expanded(folder.id),
             reveal_count: revealed == Some(folder.id),
+            rename: rename
+                .filter(|(id, _, _)| *id == folder.id)
+                .map(
+                    |(_, draft, selected)| bbr_ui::components::folders::FolderRenameField {
+                        draft: draft.to_string(),
+                        selected,
+                    },
+                ),
         })
         .collect()
 }

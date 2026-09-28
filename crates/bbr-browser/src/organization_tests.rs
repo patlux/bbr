@@ -118,6 +118,27 @@ fn new_folder_creates_in_the_active_space_with_distinct_ids() {
 }
 
 #[test]
+fn rename_folder_commits_a_trimmed_title_and_rejects_empty_ones_whole() {
+    let (c, _, _) = populated();
+    let mut org = OrganizationController::new();
+    let id = match org.new_folder(&c, "New Folder").unwrap() {
+        OrganizationEvent::FolderCreated { id, .. } => id,
+        other => panic!("unexpected event: {other:?}"),
+    };
+    assert_eq!(
+        org.rename_folder(id, " Reading ").unwrap(),
+        OrganizationEvent::FolderRenamed {
+            id,
+            title: "Reading".into()
+        }
+    );
+    assert_eq!(org.organization_snapshot(&c).folders[0].title, "Reading");
+    assert!(org.rename_folder(id, "").is_err());
+    assert_eq!(org.organization_snapshot(&c).folders[0].title, "Reading");
+    assert!(org.rename_folder(FolderId(77), "Ghost").is_err());
+}
+
+#[test]
 fn new_folder_uses_the_active_space_across_switches() {
     let (mut c, default_space, _) = populated();
     let other = c.create_space_event(ProfileId(1), "Second").unwrap();

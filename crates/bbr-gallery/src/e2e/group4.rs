@@ -83,7 +83,7 @@ fn group4_stories_render_the_matrix_families_with_stable_ids() {
         assert_eq!(snap.selected_story_label, "Folders");
         assert!(snap.group4.folder_toggles.is_empty());
         let family_count = window.read(|_| FOLDERS_VALID.len());
-        assert_eq!(family_count, 5);
+        assert_eq!(family_count, 6);
         for index in 0..family_count {
             let bounds = bounds_of(
                 window,
@@ -98,6 +98,8 @@ fn group4_stories_render_the_matrix_families_with_stable_ids() {
         assert!(bounds_of(window, "bbr-folder-toggle-10").size.width > px(0.0));
         assert!(bounds_of(window, "bbr-folder-item-10-0").size.height > px(0.0));
         assert!(bounds_of(window, "bbr-folder-item-10-0-close").size.width > px(0.0));
+        // Blueprint D20: the inline-rename family paints the field.
+        assert!(bounds_of(window, "bbr-folder-rename").size.width > px(0.0));
         let rejected_count = window.read(|_| FOLDERS_REJECTED.len());
         assert_eq!(rejected_count, 2);
 

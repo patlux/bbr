@@ -58,6 +58,9 @@ pub struct U2IdsInput<'a> {
     /// title, name field, group labels, every curated option, and the
     /// Done/Cancel controls); closed, none of them render.
     pub space_config_open: bool,
+    /// Blueprint D20: an inline folder rename is open (the
+    /// `bbr-folder-rename` field replaces that row's name slot).
+    pub folder_renaming: bool,
 }
 
 impl<'a> Default for U2IdsInput<'a> {
@@ -84,6 +87,7 @@ impl<'a> Default for U2IdsInput<'a> {
             library_open: false,
             library_ids: Vec::new(),
             space_config_open: false,
+            folder_renaming: false,
         }
     }
 }
@@ -131,6 +135,9 @@ pub(crate) fn extend_visible_ids(
     // open, mirroring the render gating).
     if u2.space_config_open {
         ids.extend(bbr_ui::surfaces::space_config::space_config_ids());
+    }
+    if u2.folder_renaming {
+        ids.push(bbr_ui::components::folders::FOLDER_RENAME_ID.into());
     }
 }
 
@@ -225,7 +232,7 @@ pub(crate) fn u2_visible_ids(
     // The ids derivation is hover-independent: the `bbr-folder-count-<n>`
     // id stays in the tree at rest (zero-opacity count), so no reveal state
     // is needed here.
-    let rows = crate::app::ui_adapters::folder_row_specs(folders, expanded, None);
+    let rows = crate::app::ui_adapters::folder_row_specs(folders, expanded, None, None);
     let members = crate::app::ui_adapters::folder_member_visuals(
         &rows,
         folders,

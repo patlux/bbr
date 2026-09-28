@@ -463,3 +463,21 @@ fn store_is_a_plain_value() {
     store.favorite_toggle(&b, tabs[1]).unwrap();
     assert_eq!(store.clone(), store);
 }
+
+#[test]
+fn rename_folder_trims_and_rejects_empty_titles_whole() {
+    let (b, s, _) = populated();
+    let mut store = FolderStore::new();
+    let f = store.create_folder(&b, s, "New Folder").unwrap();
+    assert_eq!(store.rename_folder(f, "  Reading  ").unwrap(), "Reading");
+    assert_eq!(store.folder(f).unwrap().title, "Reading");
+    assert_eq!(
+        store.rename_folder(f, "   "),
+        Err(FolderError::EmptyTitle(f))
+    );
+    assert_eq!(store.folder(f).unwrap().title, "Reading", "rejected whole");
+    assert_eq!(
+        store.rename_folder(FolderId(99), "Ghost"),
+        Err(FolderError::UnknownFolder(FolderId(99)))
+    );
+}

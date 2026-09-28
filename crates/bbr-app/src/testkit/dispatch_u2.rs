@@ -161,6 +161,11 @@ pub(crate) fn dispatch_u2(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        Request::ChromeBackgroundPress => with_app(window, app, cx, |view, window, cx| {
+            view.on_root_left_press(window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
         // §11.3 sidebar swipe: drives one synthetic GPUI scroll-wheel event
         // through the exact production handler the sidebar's `on_scroll_wheel`

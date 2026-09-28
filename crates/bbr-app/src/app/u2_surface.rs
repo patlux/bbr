@@ -44,6 +44,7 @@ impl BbrApp {
             &organization.folders,
             &self.u2.folder_presentation,
             self.hovered_folder,
+            self.folder_rename_view(),
         );
         let folder_members = ui_adapters::folder_member_visuals(
             &folder_rows,

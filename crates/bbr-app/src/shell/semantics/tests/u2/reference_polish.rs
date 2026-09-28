@@ -48,7 +48,7 @@ fn hairline_presence_mirrors_the_organized_area_truthfully() {
         members: vec![],
     }];
     let folder_rows =
-        crate::app::ui_adapters::folder_row_specs(&folder_snapshots, &presentation, None);
+        crate::app::ui_adapters::folder_row_specs(&folder_snapshots, &presentation, None, None);
     input.folder_rows = &folder_rows;
     let with_folders = semantic_tree(&input);
     let tab_list = find(&with_folders, "bbr-tab-list").expect("tab list");

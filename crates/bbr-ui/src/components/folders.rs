@@ -30,11 +30,20 @@ use crate::icons::Icon;
 use crate::palette::FaviconSlate;
 use crate::theme::{elevation, Radius, Spacing, Theme, ThemeMode};
 
+mod rename;
+use rename::rename_slot;
+pub use rename::FolderRenameField;
+
 /// The §15 id of the folders list container.
 pub const FOLDERS_ID: &str = "bbr-folders";
 /// The §15 id of the "Folders" section label (hidden when empty).
 #[allow(dead_code)] // §15 visible-ids seam; consumed by the app's snapshot
 pub const FOLDERS_SECTION_ID: &str = "bbr-section-folders";
+
+/// The §15 id of the inline rename field (blueprint D20). At most one
+/// folder is in rename, so the id is singular; it replaces that row's
+/// name slot while the rename is open.
+pub const FOLDER_RENAME_ID: &str = "bbr-folder-rename";
 
 /// The stable folder-row id `bbr-folder-row-<n>` (DESIGN.md §11.11).
 pub fn folder_row_id(index: usize) -> SharedString {
@@ -96,6 +105,10 @@ pub struct FolderRowSpec {
     /// the pointer hovers the row or the row is the keyboard focus anchor
     /// (`true`), and stays quiet (zero-opacity, id still present) at rest.
     pub reveal_count: bool,
+    /// Blueprint D20: the open inline rename of this folder (`None` at
+    /// rest). The row paints as a focused field and its name slot shows
+    /// the draft instead of the committed title.
+    pub rename: Option<FolderRenameField>,
 }
 
 /// One nested §11.1 row's rendered identity inside an expanded folder:
@@ -182,8 +195,8 @@ pub fn folder_row(
     on_toggle: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
-    let reveal = spec.reveal_count;
-    div()
+    let reveal = spec.reveal_count && spec.rename.is_none();
+    let row = div()
         .id(folder_row_id(spec.index))
         .debug_selector(move || folder_row_id(spec.index).to_string())
         .h(theme.density.row())
@@ -216,8 +229,9 @@ pub fn folder_row(
                     .canvas(theme, theme.density.icon()),
                 ),
         )
-        .child(
-            div()
+        .child(match &spec.rename {
+            Some(field) => rename_slot(theme, spec.index, field),
+            None => div()
                 .id(folder_name_id(spec.index))
                 .flex_1()
                 .overflow_hidden()
@@ -228,7 +242,7 @@ pub fn folder_row(
                 .font_weight(gpui::FontWeight::SEMIBOLD)
                 .text_color(p.ink)
                 .child(spec.title.clone()),
-        )
+        })
         .child(
             div()
                 .id(folder_count_id(spec.index))
@@ -240,7 +254,25 @@ pub fn folder_row(
                 // stable §15 id).
                 .opacity(if reveal { 1.0 } else { 0.0 })
                 .child(spec.count.to_string()),
-        )
+        );
+    // Blueprint D20 (board S-4 "Rename inline"): the renaming row reads as
+    // a focused field — the `field` surface, a 1 pt accent edge and the
+    // `tint-accent` halo — so the rename is never color-only (the caret
+    // and the field shape carry it too).
+    if spec.rename.is_some() {
+        row.bg(p.surface_field)
+            .border_1()
+            .border_color(p.accent)
+            .shadow(vec![gpui::BoxShadow {
+                color: p.tint_accent.into(),
+                offset: gpui::point(gpui::px(0.0), gpui::px(0.0)),
+                blur_radius: gpui::px(0.0),
+                spread_radius: gpui::px(2.0),
+                inset: false,
+            }])
+    } else {
+        row
+    }
 }
 
 /// The folders id set for the §15 `visible_ids` derivation: the section

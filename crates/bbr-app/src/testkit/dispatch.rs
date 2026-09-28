@@ -771,6 +771,7 @@ pub(crate) fn dispatch(
         | Request::SpaceConfigDone
         | Request::SpaceConfigCancel
         | Request::SpaceConfigPressOutside
+        | Request::ChromeBackgroundPress
         | Request::ToggleFavoriteTab { .. }
         | Request::ClickFavoriteTile { .. }
         | Request::ClickFolderRow { .. }

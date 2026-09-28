@@ -923,11 +923,12 @@ using the IDs of §15. All rows use `density` geometry from §8.
   (`bbr-plus-menu`, `elev:2`, `material:overlay`, `radius:md`) with exactly
   two items in v1: **New Space** (`bbr-plus-new-space`) and **New Folder**
   (`bbr-plus-new-folder`). New Space creates a real space through the
-  controller; New Folder creates a session-local folder (§11.11). The menu
-  is keyboard-operable (`↑`/`↓`, Enter commits, Escape dismisses without
-  action), closes on outside pointer press (one pointer action, §13), and
-  the chosen action preserves the invoking focus domain per the
-  interaction contract.
+  controller; New Folder creates a session-local folder that opens in
+  inline rename (§11.11). The menu is keyboard-operable (`↑`/`↓`, Enter
+  commits, Escape dismisses without action), closes on outside pointer
+  press (one pointer action, §13), and New Space preserves the invoking
+  focus domain per the interaction contract (New Folder hands chrome focus
+  to the rename, §11.11).
 - **Behavior:** width per §5 (`win:sidebar.*`), draggable 4 pt hairline
   (`bbr-sidebar-divider`), collapse Cmd-B to 0 **instantly** (performance
   contract next-frame; the opening glass gets no animation), expand
@@ -1266,6 +1267,21 @@ pinned, the expanded folders' members, then the regular region.
   region owns chrome focus; at rest every count stays quiet (zero-opacity,
   the `bbr-folder-count-<n>` id stays in the tree). The typed snapshot
   reports `count_revealed` so E2E proves the reveal semantically.
+- **Rename on create (blueprint D20):** a folder created through the plus
+  menu's New Folder opens in inline rename at once: the row reads as a
+  focused field (`surface:field`, a 1 pt `accent` edge and the
+  `tint-accent` halo, never color-only — the field shape and the 1.5 pt
+  accent caret carry it too), its name slot shows the draft
+  (`bbr-folder-rename`) with the default title "New Folder" selected, the
+  count stays quiet, and the folders region owns chrome focus. The first
+  printable character replaces the selection; Backspace deletes; a bare
+  arrow collapses the selection to the caret. Return, a primary press
+  outside the field, or focus leaving the folders region (Cmd-T, a tab row,
+  the web view) commits a changed, non-empty draft through the
+  organization's rename command (trimmed; the folder keeps its identity,
+  members and expansion); Escape — and an emptied or unchanged draft —
+  keeps the committed title. At most one folder is in rename. The typed
+  snapshot reports `rename_draft`/`rename_selected` per folder row.
 - **Drag:** dragging a tab over a folder row renders the folder as a
   `drag-target` (§10.9); a drop routes through the move-into-folder
   command of the favorites/folders domain slice, and keyboard staging
@@ -1276,7 +1292,7 @@ pinned, the expanded folders' members, then the regular region.
 - **Assert ids:** `bbr-section-folders`, `bbr-folders`,
   `bbr-folder-row-<n>`, `bbr-folder-name-<n>`, `bbr-folder-count-<n>`,
   `bbr-folder-toggle-<n>`, `bbr-folder-item-<n>-<m>` (+ `-title`/
-  `-favicon`/`-close`).
+  `-favicon`/`-close`), `bbr-folder-rename` (only while a rename is open).
 
 ### 11.12 Downloads panel (Planned)
 
@@ -2024,7 +2040,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | adopted | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
 | D18 | About and updates | L-12 | §1 §7 | adopted | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
 | D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | adopted | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |
-| D20 | New folders open in rename | S-4 PR-06 | §11.11 | adopted | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |
+| D20 | New folders open in rename | S-4 PR-06 | §11.11 | implemented | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |
 | D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | adopted | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
 | D22 | Full-screen card rules under test | W-5 | §2 | adopted | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
 | D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted | [split-app-composition](docs/roadmap/tasks/split-app-composition.md) |

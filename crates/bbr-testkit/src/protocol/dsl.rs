@@ -172,6 +172,10 @@ pub fn space_config_press_outside() -> Request {
     Request::SpaceConfigPressOutside
 }
 
+pub fn chrome_background_press() -> Request {
+    Request::ChromeBackgroundPress
+}
+
 pub fn toggle_favorite_tab(index: usize) -> Request {
     Request::ToggleFavoriteTab { index }
 }

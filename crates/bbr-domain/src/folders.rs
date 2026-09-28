@@ -138,6 +138,8 @@ pub enum FolderError {
     /// A validated-facts membership was requested for an unpinned tab; only
     /// [`FolderStore::move_tab_into_folder`] may pin while grouping.
     TabNotPinned(TabId),
+    /// A rename to an empty or whitespace-only title.
+    EmptyTitle(FolderId),
 }
 
 impl std::fmt::Display for FolderError {
@@ -151,6 +153,7 @@ impl std::fmt::Display for FolderError {
                 "tab {tab:?} does not belong to the space of folder {folder:?}"
             ),
             Self::TabNotPinned(id) => write!(f, "tab {id:?} is not pinned"),
+            Self::EmptyTitle(id) => write!(f, "folder {id:?} cannot take an empty title"),
         }
     }
 }
@@ -234,6 +237,24 @@ impl FolderStore {
             tabs: Vec::new(),
         });
         id
+    }
+
+    /// Rename `folder`. The title is trimmed; an empty (or whitespace-only)
+    /// title is rejected whole and the folder keeps its name (Blueprint
+    /// D20: committing an empty rename never produces a nameless folder).
+    /// Returns the committed title.
+    pub fn rename_folder(&mut self, folder: FolderId, title: &str) -> Result<String, FolderError> {
+        let title = title.trim();
+        let entry = self
+            .folders
+            .iter_mut()
+            .find(|f| f.id == folder)
+            .ok_or(FolderError::UnknownFolder(folder))?;
+        if title.is_empty() {
+            return Err(FolderError::EmptyTitle(folder));
+        }
+        entry.title = title.to_string();
+        Ok(entry.title.clone())
     }
 
     /// Group `tab` into `folder`: the one domain transition that joins a

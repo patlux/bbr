@@ -36,6 +36,8 @@ pub(super) struct U2State {
     /// row).
     pub folder_focus: Option<FolderId>,
     pub plus_menu_press_inside: bool,
+    /// Blueprint D20: the open inline folder rename (`None` at rest).
+    pub folder_rename: Option<super::folder_rename::FolderRename>,
 }
 
 impl U2State {
@@ -47,6 +49,7 @@ impl U2State {
             folder_presentation: bbr_ui::components::folders::FolderPresentation::default(),
             folder_focus: None,
             plus_menu_press_inside: false,
+            folder_rename: None,
         }
     }
 }
@@ -184,6 +187,7 @@ impl BbrApp {
     /// chrome focus domain is restored.
     pub fn commit_plus_menu(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let selected = self.u2.plus_menu.selected_item();
+        let mut created_folder = None;
         match selected.id {
             bbr_ui::components::menu::PLUS_NEW_SPACE_ID => {
                 match self
@@ -219,7 +223,10 @@ impl BbrApp {
                     .organization
                     .new_folder(&self.controller, PLUS_NEW_FOLDER_TITLE)
                 {
-                    Ok(OrganizationEvent::FolderCreated { .. }) => cx.notify(),
+                    Ok(OrganizationEvent::FolderCreated { id, .. }) => {
+                        created_folder = Some(id);
+                        cx.notify();
+                    }
                     Ok(_) => unreachable!("new_folder only emits FolderCreated"),
                     Err(error) => log::error!("could not create folder: {error}"),
                 }
@@ -227,6 +234,11 @@ impl BbrApp {
             other => log::error!("unknown plus-menu item: {other}"),
         }
         self.close_plus_menu(window, cx);
+        // Blueprint D20: a new folder opens expanded and in rename, after the
+        // menu handed chrome focus back.
+        if let Some(folder) = created_folder {
+            self.begin_folder_rename(folder, window, cx);
+        }
     }
 
     /// §11.10 favorites tile activation: a favorite is an additional
@@ -342,6 +354,10 @@ impl BbrApp {
         cx: &mut Context<Self>,
     ) {
         if self.command_bar_mode.is_active() {
+            return;
+        }
+        // Blueprint D20: an open inline rename owns the region's keyboard.
+        if self.on_folder_rename_key_down(event, window, cx) {
             return;
         }
         let organization = self.organization.organization_snapshot(&self.controller);

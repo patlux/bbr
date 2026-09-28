@@ -1173,6 +1173,11 @@ pub enum Request {
     SpaceConfigDone,
     SpaceConfigCancel,
     SpaceConfigPressOutside,
+    /// A primary press on bare chrome (no control under the pointer): runs
+    /// the window root's production left-press handler, which dismisses
+    /// every open outside-press surface — and commits an open inline
+    /// folder rename (blueprint D20, DESIGN §11.11).
+    ChromeBackgroundPress,
     ToggleFavoriteTab {
         index: usize,
     },

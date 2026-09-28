@@ -126,6 +126,7 @@ impl BbrApp {
             &organization.folders,
             &self.u2.folder_presentation,
             revealed_folder,
+            self.folder_rename_view(),
         );
         let folder_members = crate::app::ui_adapters::folder_member_visuals(
             &folder_rows,
@@ -358,6 +359,7 @@ impl BbrApp {
                             &library_model,
                         ),
                         space_config_open: self.space_config.open,
+                        folder_renaming: self.folder_rename_open(),
                     },
                 );
                 ids.extend(self.tab_menu_visible_ids());
@@ -531,6 +533,8 @@ impl BbrApp {
                         .find(|folder| folder.id == row.id)
                         .map(|folder| folder.members.iter().map(|tab| tab.0).collect())
                         .unwrap_or_default(),
+                    rename_draft: row.rename.as_ref().map(|field| field.draft.clone()),
+                    rename_selected: row.rename.as_ref().is_some_and(|field| field.selected),
                 })
                 .collect(),
             download_rows,

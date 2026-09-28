@@ -339,10 +339,7 @@ impl Render for BbrApp {
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _e: &MouseDownEvent, window, cx| {
-                    this.dismiss_plus_menu_on_outside_press(window, cx);
-                    this.dismiss_downloads_on_outside_press(window, cx);
-                    this.dismiss_space_config_on_outside_press(window, cx);
-                    this.dismiss_tab_menu_on_outside_press(window, cx);
+                    this.on_root_left_press(window, cx);
                 }),
             )
             // §11.13: a secondary press outside the open Tab/Favorite menu

@@ -89,6 +89,7 @@ mod favorites_band;
 pub(crate) mod find;
 #[cfg(feature = "testkit")]
 mod find_benchmarks;
+mod folder_rename;
 #[cfg(feature = "testkit")]
 mod gesture_benchmarks;
 mod interaction;
@@ -1103,6 +1104,7 @@ impl BbrApp {
     /// Report the actual chrome-focus state through the focus sink (main
     /// thread). No-op when no sink is installed.
     fn emit_focus(&mut self, window: &Window) {
+        self.commit_folder_rename_on_focus_change(window);
         if let Some(sink) = self.focus_sink.borrow_mut().as_mut() {
             let focused = self.chrome_focused(window);
             sink(focused);

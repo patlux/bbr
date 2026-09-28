@@ -435,6 +435,13 @@ impl BbrApp {
     /// actions first and actions stop propagation, so this route is the
     /// panel's primary Escape dismissal).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Blueprint D20: Escape during an inline folder rename keeps the
+        // committed title (the global `escape → FocusWeb` binding routes
+        // here before the region's key handler could see it).
+        if self.folder_rename_open() {
+            self.cancel_folder_rename(cx);
+            return;
+        }
         // Escape while the Saved Pages Library is open closes it and
         // restores the exact native view the Library hid (DESIGN.md §11.16;
         // the global `escape → FocusWeb` binding routes here).

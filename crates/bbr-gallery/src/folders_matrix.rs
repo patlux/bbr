@@ -13,8 +13,9 @@
 //! on nested rows is a DESIGN state the current `FolderMemberVisual`
 //! carries no field for — documented in the story, never fabricated);
 //! empty collapsible folder (a folder whose tabs were all closed remains
-//! as an empty collapsible row); the count `tnum` column; hairlines
-//! between folder groups (two folder rows in one family). Rejected:
+//! as an empty collapsible row); the count `tnum` column; the inline
+//! rename field (blueprint D20); hairlines between folder groups (two
+//! folder rows in one family). Rejected:
 //! nested rows in a collapsed folder (they render only when expanded,
 //! §11.11) and persisted folders (session-local only, §11.11).
 //!
@@ -53,6 +54,9 @@ pub struct FolderCase {
     /// Matrix-only: this case claims nested rows inside a collapsed
     /// folder (§11.11 — nested rows render only when expanded).
     pub claims_nested_in_collapsed: bool,
+    /// Blueprint D20: the row position in inline rename and its draft
+    /// (`None` at rest). At most one row renames.
+    pub rename: Option<(usize, &'static str)>,
 }
 
 /// Every valid folders family — the single declaration the story renders.
@@ -65,6 +69,7 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         members: &[],
         claims_persisted: false,
         claims_nested_in_collapsed: false,
+        rename: None,
     },
     FolderCase {
         label: "expanded folder with nested rows",
@@ -73,6 +78,7 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         members: &[(0, "Example"), (0, "Local")],
         claims_persisted: false,
         claims_nested_in_collapsed: false,
+        rename: None,
     },
     FolderCase {
         label: "empty collapsible folder",
@@ -81,6 +87,7 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         members: &[],
         claims_persisted: false,
         claims_nested_in_collapsed: false,
+        rename: None,
     },
     FolderCase {
         label: "count tnum",
@@ -89,6 +96,16 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         members: &[],
         claims_persisted: false,
         claims_nested_in_collapsed: false,
+        rename: None,
+    },
+    FolderCase {
+        label: "inline rename",
+        rows: &[("New Folder", 0)],
+        expanded: &[],
+        members: &[],
+        claims_persisted: false,
+        claims_nested_in_collapsed: false,
+        rename: Some((0, "Review Tools")),
     },
     FolderCase {
         label: "hairlines between groups",
@@ -97,6 +114,7 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         members: &[(0, "Example")],
         claims_persisted: false,
         claims_nested_in_collapsed: false,
+        rename: None,
     },
 ];
 
@@ -123,6 +141,7 @@ pub const FOLDERS_REJECTED: &[RejectedFolder] = &[
             members: &[(0, "Example")],
             claims_persisted: false,
             claims_nested_in_collapsed: true,
+            rename: None,
         },
         reason: "§11.11: nested rows render only when the folder is expanded — a collapsed folder exposes no nested rows",
     },
@@ -135,6 +154,7 @@ pub const FOLDERS_REJECTED: &[RejectedFolder] = &[
             members: &[],
             claims_persisted: true,
             claims_nested_in_collapsed: false,
+            rename: None,
         },
         reason: "§11.11: a folder is a session-local container of tab identities — in-memory in v1, never persisted (Phase 7 owns restoration)",
     },
@@ -158,6 +178,10 @@ pub fn folder_case_valid(case: &FolderCase) -> bool {
         if !case.expanded.contains(folder_pos) {
             return false;
         }
+    }
+    // A rename binds an existing row.
+    if case.rename.is_some_and(|(row, _)| row >= case.rows.len()) {
+        return false;
     }
     // A member row for a folder that does not exist cannot render.
     for (folder_pos, _) in case.members {
@@ -196,6 +220,15 @@ pub fn build_folders_fixture(
             count: *count,
             expanded: case.expanded.contains(&pos),
             reveal_count: false,
+            rename: case
+                .rename
+                .filter(|(row, _)| *row == pos)
+                .map(
+                    |(_, draft)| bbr_ui::components::folders::FolderRenameField {
+                        draft: draft.to_string(),
+                        selected: false,
+                    },
+                ),
         })
         .collect();
     let mut members = Vec::new();
@@ -282,6 +315,7 @@ mod tests {
                 "expanded folder with nested rows",
                 "empty collapsible folder",
                 "count tnum",
+                "inline rename",
                 "hairlines between groups",
             ]
         );

@@ -8,6 +8,7 @@ fn rows() -> Vec<FolderRowSpec> {
             count: 2,
             expanded: false,
             reveal_count: false,
+            rename: None,
         },
         FolderRowSpec {
             index: 1,
@@ -16,6 +17,7 @@ fn rows() -> Vec<FolderRowSpec> {
             count: 0,
             expanded: false,
             reveal_count: false,
+            rename: None,
         },
     ]
 }
@@ -194,4 +196,17 @@ fn member_visuals_carry_folder_order_identity() {
     assert_eq!(members[1].member, 1);
     assert_eq!(members[1].letter, 'L');
     assert!((0..6).contains(&members[0].hue));
+}
+
+#[test]
+fn a_renaming_row_keeps_its_whole_id_set() {
+    // The `bbr-folder-rename` field id is gated by the app snapshot (one
+    // rename at most); the row's own §15 ids never change while renaming.
+    let mut rows = rows();
+    let at_rest = folders_ids(&rows, &[]);
+    rows[1].rename = Some(FolderRenameField {
+        draft: "New Folder".into(),
+        selected: true,
+    });
+    assert_eq!(folders_ids(&rows, &[]), at_rest);
 }

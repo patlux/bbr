@@ -51,6 +51,42 @@ fn compact_rail_always_renders_the_space_strip_ids() {
     }
 }
 
+/// Blueprint D20: the `bbr-folder-rename` field id renders only while an
+/// inline folder rename is open.
+#[test]
+fn the_folder_rename_field_id_is_gated_by_the_open_rename() {
+    let browser = space_snapshot();
+    let ids_with = |input: &super::super::U2IdsInput<'_>| {
+        visible_ids_u2(
+            &browser,
+            false,
+            crate::command_bar::CommandBarMode::Inactive,
+            true,
+            None,
+            None,
+            closed(),
+            crate::app::command_rank::CommandResultState::Inactive,
+            &[],
+            &[],
+            None,
+            None,
+            dense_all(0),
+            None,
+            input,
+        )
+    };
+    let rename = bbr_ui::components::folders::FOLDER_RENAME_ID.to_string();
+    assert!(!ids_with(&super::super::U2IdsInput::default()).contains(&rename));
+    let open = super::super::U2IdsInput {
+        folder_renaming: true,
+        ..Default::default()
+    };
+    assert_eq!(
+        ids_with(&open).iter().filter(|id| **id == rename).count(),
+        1
+    );
+}
+
 #[test]
 fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
     use bbr_browser::{FavoriteSnapshot, FolderSnapshot, SpaceId};

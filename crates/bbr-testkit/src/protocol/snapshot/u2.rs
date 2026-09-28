@@ -180,6 +180,15 @@ pub struct FolderRowSnapshot {
     /// every member is pinned by the folder-membership invariant).
     #[serde(default)]
     pub members: Vec<u64>,
+    /// Blueprint D20: the inline rename draft while this folder is in
+    /// rename (`bbr-folder-rename` present), `None` at rest. `title` stays
+    /// the committed title until the rename commits.
+    #[serde(default)]
+    pub rename_draft: Option<String>,
+    /// Whether the whole rename draft is selected (the next printable
+    /// character replaces it). `false` at rest.
+    #[serde(default)]
+    pub rename_selected: bool,
 }
 
 /// DESIGN.md §11.3 sidebar-swipe evidence on the wire (F2a swipe kernel):
