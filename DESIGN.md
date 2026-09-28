@@ -1980,6 +1980,7 @@ second is replaced by the ring).
 | S9 app icon | [brand icon](docs/roadmap/tasks/v2-brand-icon.md) | §1, §7 | landed 2026-09-28 |
 | S10 theme picker | [theme picker](docs/roadmap/tasks/v2-theme-picker.md) | §11.3 configuration surface | landed 2026-09-28 |
 | S11 closeout | [closeout](docs/roadmap/tasks/v2-closeout.md) | §18 status, Evidence | landed 2026-09-28 |
+| S12 Paper alignment | [Paper alignment](docs/roadmap/tasks/v2-paper-alignment.md) | §2, §7, §11.3–§11.5, §11.8, §11.10, §11.11, §18.2, §18.5 | landed 2026-09-28 |
 
 ## Evidence
 

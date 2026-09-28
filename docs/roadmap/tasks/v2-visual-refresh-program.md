@@ -160,6 +160,7 @@ Deviations:             S2 dark footer veil 5 % (DESIGN-recorded); S3 D3
 Open blockers and non-goals:
                         none; performance execution deferred. Follow-up:
                         the Paper comparison of 2026-09-28 opened
-                        [S12 Paper alignment](v2-paper-alignment.md).
+                        [S12 Paper alignment](v2-paper-alignment.md),
+                        implemented through 05015039.
 Worktree state:         main, serial
 ```

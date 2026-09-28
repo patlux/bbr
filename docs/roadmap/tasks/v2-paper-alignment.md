@@ -124,10 +124,65 @@ holding value and the gap.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
+Outcome:                The three comparison defects are fixed with
+                        regressions (space activation hydrates the visible
+                        tab; folder members render only inside their
+                        folder; the ⌘T caret sits after the query) and the
+                        shell follows the Paper references: palette
+                        anatomy and placement, luminance-pinned chroma
+                        tint, the footer strip on the rail, folder
+                        anatomy, the zoom chip, the monogram slates, the
+                        drawn empty states and the favorite burst.
+Commits:                43703235 fix(browser): hydrate a space's visible
+                        tabs when it is activated
+                        958be8e2 fix(ui): render grouped pinned tabs only
+                        inside their folder
+                        8a835a25 feat(ui): align the rail and space tint
+                        with the Paper references
+                        5d20f09b feat(command): give the Cmd-T palette the
+                        Paper anatomy
+                        05015039 feat(ui): draw the Paper empty-state
+                        posters and favorite burst
+Functional evidence:    restore_tests (activation hydrates exactly the
+                        visible set); organized-model tests (loose pinned
+                        excludes members, traversal, drag slots); tint
+                        gates across tokens × steps × modes × contrast
+                        (IC by ΔE); palette tests (match range, kind hint,
+                        short URL, magnifier); illustration frame tests
+                        (rest = poster, determinism, two cycles, bounds)
+                        and the pop sample test; just verify; testkit
+                        clippy; testkit bins 292.
+Real-app E2E:           e2e_shell_persistence `space_activation` (restored
+                        second space shows its native view); sidebar lift
+                        E2E (member not loose); canonical aggregate (all
+                        `just e2e` suites minus e2e-perf, plus e2e-peek and
+                        e2e-gallery): 31/32 suites green (272 tests);
+                        e2e-shell-portal 6/7 twice —
+                        `host_hides_on_minimize_and_restores` saw the
+                        loginwindow lock shield (layer 2004, full screen,
+                        IOConsoleLocked) frontmost at the probe point.
+                        S12 changes no portal code (portal host, web-macos
+                        and portal tests untouched since S11, where the
+                        suite passed 7/7 after unlocking); the rerun on an
+                        unlocked console is the open gate.
+Visual evidence:        hidden release visual-capture recordings compared
+                        with the Paper posters and shell references
+                        (Patrick's comparison folder, refreshed after S12).
 Performance evidence:   unpassed — execution deferred
-Worktree state:
+Deviations:             cards stay axis-aligned (GPUI divs do not rotate;
+                        the poster tilts ±4°); the favorite burst keeps
+                        dur:emphasis (Paper's study runs 600 ms); the
+                        Paper favicon orange maps to the Terracotta token;
+                        the titlebar offset stays derived from the native
+                        safe area; D4 list snap, D5 progress and the ⌘L
+                        minimum width stay (non-goals).
+Self-review:            hydration creates exactly one session and leaves
+                        warm switches untouched; member exclusion flows
+                        through one organized model so rows, drag slots,
+                        keyboard and snapshot agree; tint steps are pinned
+                        to the base luminance, so every D3 bar holds by
+                        construction; illustration frames stay pure and
+                        close on the rest frame, and the drawing uses
+                        tokens only (no image, no web content).
+Worktree state:         main, clean after commit
 ```
