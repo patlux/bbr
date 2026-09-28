@@ -87,6 +87,8 @@ mod hydration_tests;
 #[cfg(test)]
 mod organization_pin_tests;
 #[cfg(test)]
+mod organization_space_tests;
+#[cfg(test)]
 mod organization_tests;
 #[cfg(test)]
 mod responsiveness_tests;
@@ -109,7 +111,7 @@ pub use hydration::{
 pub use nav::NavState;
 pub use organization::{
     FavoriteSnapshot, FolderSnapshot, OrganizationController, OrganizationError, OrganizationEvent,
-    OrganizationSnapshot,
+    OrganizationSnapshot, SpaceDeleteSummary,
 };
 pub use outcome::ControllerEvent;
 pub use pane::PaneLayout;

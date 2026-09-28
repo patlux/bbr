@@ -324,6 +324,9 @@ pub struct Callbacks {
     pub on_plus: MouseCallback,
     /// §11.3: a space chip activation through the production pointer path.
     pub on_select_space: SpaceCallback,
+    /// Blueprint D05 (§11.13): a secondary-click on a space chip opens the
+    /// space menu bound to that exact space (never activates it).
+    pub on_context_menu_space: SpaceCallback,
     /// §11.3: the space strip's keyboard traversal (`↑`/`↓`, Enter).
     pub on_space_strip_key_down: KeyCallback,
     /// §5/§11.4: the divider's pointer begin-drag.
@@ -377,7 +380,8 @@ impl Callbacks {
             on_plus_menu_inside_press: noop_mouse.clone(),
             on_downloads: noop_mouse.clone(),
             on_plus: noop_mouse.clone(),
-            on_select_space: noop_space,
+            on_select_space: noop_space.clone(),
+            on_context_menu_space: noop_space,
             on_space_strip_key_down: noop_key.clone(),
             on_divider_mouse_down: noop_mouse.clone(),
             on_divider_key_down: noop_key,

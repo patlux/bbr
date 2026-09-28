@@ -322,6 +322,7 @@ impl BbrApp {
             motion: self.motion_snapshot(&rows),
             space_strip_scroll: self.space_strip_scroll_snapshot(),
             space_config: self.space_config_snapshot(window),
+            space_delete: self.space_delete_snapshot(),
             swipe: self.swipe_snapshot(),
             visible_ids: {
                 let mut ids = crate::shell::snapshot::visible_ids_u2(

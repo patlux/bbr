@@ -43,6 +43,7 @@ mod lifecycle;
 mod model;
 mod saved_pages;
 mod space_appearance;
+mod space_lifecycle;
 mod split;
 
 #[cfg(test)]
@@ -57,6 +58,8 @@ mod tests_layout;
 mod tests_restore;
 #[cfg(test)]
 mod tests_saved_pages;
+#[cfg(test)]
+mod tests_space_lifecycle;
 
 pub use browser::Browser;
 pub use error::{DomainError, InvariantViolation};
@@ -76,6 +79,7 @@ pub use space_appearance::{
     SpaceAppearanceStore, SpaceEmoji, SpaceIdentity, SpacePaper, SpaceTheme, TintIntensity,
     ALLOWED_EMOJI,
 };
+pub use space_lifecycle::{DeletedSpace, SpaceMove};
 pub use split::Split;
 
 pub use bbr_web::ProfileId;

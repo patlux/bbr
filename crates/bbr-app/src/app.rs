@@ -109,6 +109,7 @@ mod saved_pages_benchmarks;
 mod sidebar;
 mod sidebar_view;
 mod space_config;
+mod space_delete;
 mod spaces;
 mod swipe;
 #[cfg(feature = "testkit")]
@@ -284,6 +285,10 @@ pub struct BbrApp {
     /// portal window is never key, so keystrokes route through the root
     /// listener while the sheet is open).
     auth_handle: FocusHandle,
+    /// Blueprint D05: the open Delete Space confirmation sheet and its
+    /// focus handle (the sheet owns the keyboard while open).
+    space_delete: Option<crate::app::space_delete::SpaceDeleteState>,
+    space_delete_handle: FocusHandle,
     /// Downloads panel composition (task packet `downloads-sidebar-panel`):
     /// the controller-owned attempt/history store (L6), the anchored
     /// popover presentation state, and the deterministic row model.
@@ -632,6 +637,8 @@ impl BbrApp {
             find_handle: cx.focus_handle(),
             auth: crate::app::auth::AuthCoordinator::new(),
             auth_handle: cx.focus_handle(),
+            space_delete: None,
+            space_delete_handle: cx.focus_handle(),
             downloads: downloads_state,
             downloads_panel_handle: cx.focus_handle(),
             downloads_control_handle: cx.focus_handle(),

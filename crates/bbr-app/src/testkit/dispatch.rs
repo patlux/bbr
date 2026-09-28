@@ -749,6 +749,7 @@ pub(crate) fn dispatch(
         // here is a routing bug.
         Request::RightClickRow { .. }
         | Request::RightClickFavorite { .. }
+        | Request::RightClickSpaceChip { .. }
         | Request::TabMenuSelect { .. }
         | Request::TabMenuSubmenuSelect { .. }
         | Request::TabMenuActivate { .. }
@@ -772,6 +773,8 @@ pub(crate) fn dispatch(
         | Request::SpaceConfigCancel
         | Request::SpaceConfigPressOutside
         | Request::ChromeBackgroundPress
+        | Request::SpaceDeleteCancel
+        | Request::SpaceDeleteConfirm
         | Request::ToggleFavoriteTab { .. }
         | Request::ClickFavoriteTile { .. }
         | Request::ClickFolderRow { .. }

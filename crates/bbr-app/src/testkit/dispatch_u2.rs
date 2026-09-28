@@ -166,6 +166,16 @@ pub(crate) fn dispatch_u2(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        Request::SpaceDeleteCancel => with_app(window, app, cx, |view, window, cx| {
+            view.space_delete_cancel(window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::SpaceDeleteConfirm => with_app(window, app, cx, |view, window, cx| {
+            view.space_delete_confirm(window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
 
         // §11.3 sidebar swipe: drives one synthetic GPUI scroll-wheel event
         // through the exact production handler the sidebar's `on_scroll_wheel`

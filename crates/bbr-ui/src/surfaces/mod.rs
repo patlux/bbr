@@ -14,6 +14,7 @@ pub mod find;
 pub mod floating;
 pub mod menu;
 pub mod space_config;
+pub mod space_delete;
 pub mod tab_menu;
 
 pub use auth::{

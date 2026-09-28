@@ -3,7 +3,7 @@
 //! activation, and the active-profile accessor. Split from `controller.rs`
 //! so the gateway module stays under the ~500-line budget.
 
-use bbr_domain::SpaceId;
+use bbr_domain::{SpaceId, SpaceMove};
 use bbr_web::ProfileId;
 
 use crate::outcome::ControllerEvent;
@@ -84,6 +84,74 @@ impl BrowserController {
         self.sync_views();
         self.check_invariants();
         Ok(ControllerEvent::SpaceActivated { space })
+    }
+
+    /// Blueprint D05 (space menu Move Left/Right): swap `space` with its
+    /// same-profile neighbor in display order. Tabs, selection and
+    /// sessions stay untouched; a move past the group's edge is rejected.
+    pub fn move_space(
+        &mut self,
+        space: SpaceId,
+        direction: SpaceMove,
+    ) -> Result<ControllerEvent, ControllerError> {
+        self.browser.move_space(space, direction)?;
+        self.check_invariants();
+        let to = self
+            .browser
+            .spaces()
+            .position(|candidate| candidate.id == space)
+            .expect("moved space exists");
+        Ok(ControllerEvent::SpaceMoved { space, to })
+    }
+
+    /// Blueprint D05 (space menu Delete Space…): delete `space`. Every
+    /// session of its tabs is destroyed, the tabs close onto the fallback
+    /// space's recently-closed stack (Reopen Closed Tab is the undo), its
+    /// appearance record is dropped, and — when it was active — the
+    /// fallback becomes the active space. The last space of a profile is
+    /// rejected whole.
+    pub fn delete_space(&mut self, space: SpaceId) -> Result<ControllerEvent, ControllerError> {
+        if !self.browser.can_delete_space(space) {
+            // Validate before any session teardown (unknown or last space).
+            self.browser.delete_space(space)?;
+        }
+        let members = self
+            .browser
+            .space(space)
+            .map(|state| state.tabs.clone())
+            .unwrap_or_default();
+        for tab in &members {
+            self.destroy_session_of(*tab);
+            self.provenance.invalidate_for(*tab);
+        }
+        self.appearances
+            .reset(&self.browser, space)
+            .expect("the space exists until deletion");
+        let deleted = self.browser.delete_space(space)?;
+        let activated = self.active_space == space;
+        if activated {
+            self.active_space = deleted.fallback;
+            self.browser.wake_visible(deleted.fallback)?;
+        }
+        self.close_preview_if_stale();
+        self.sync_views();
+        self.check_invariants();
+        Ok(ControllerEvent::SpaceDeleted {
+            space,
+            fallback: deleted.fallback,
+            closed_tabs: deleted.closed.len(),
+            activated,
+        })
+    }
+
+    /// Whether `space` can move `direction` / be deleted (the space menu's
+    /// availability).
+    pub fn can_move_space(&self, space: SpaceId, direction: SpaceMove) -> bool {
+        self.browser.can_move_space(space, direction)
+    }
+
+    pub fn can_delete_space(&self, space: SpaceId) -> bool {
+        self.browser.can_delete_space(space)
     }
 
     /// The profile backing the active space.

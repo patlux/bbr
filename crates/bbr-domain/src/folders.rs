@@ -257,6 +257,14 @@ impl FolderStore {
         Ok(entry.title.clone())
     }
 
+    /// Blueprint D05: drop every folder of a deleted `space` (its members
+    /// closed with the space). Returns how many folders were removed.
+    pub fn remove_folders_in(&mut self, space: SpaceId) -> usize {
+        let before = self.folders.len();
+        self.folders.retain(|folder| folder.space != space);
+        before - self.folders.len()
+    }
+
     /// Group `tab` into `folder`: the one domain transition that joins a
     /// folder. Validates the tab, the folder, and the shared space **before**
     /// any mutation, then pins the tab in the live browser (a regular tab

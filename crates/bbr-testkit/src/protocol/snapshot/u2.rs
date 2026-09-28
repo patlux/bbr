@@ -278,3 +278,16 @@ pub struct SpaceConfigSnapshot {
 fn standard_intensity() -> String {
     "standard".into()
 }
+
+/// Blueprint D05: the open Delete Space confirmation sheet — the bound
+/// persistent `SpaceId`, the rendered title/body copy, whether the danger
+/// button owns the keyboard (Cancel does when the sheet opens), and the
+/// content-card rect `[x, y, width, height]` the veil covers.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SpaceDeleteSnapshot {
+    pub space: u64,
+    pub title: String,
+    pub body: String,
+    pub delete_focused: bool,
+    pub card: [f32; 4],
+}

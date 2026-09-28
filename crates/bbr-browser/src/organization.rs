@@ -73,6 +73,14 @@ pub enum OrganizationEvent {
         space: SpaceId,
         title: String,
     },
+    /// Blueprint D05: a space was deleted with its folders and tabs.
+    SpaceDeleted {
+        space: SpaceId,
+        fallback: SpaceId,
+        closed_tabs: usize,
+        removed_folders: usize,
+        activated: bool,
+    },
     /// A folder took a new (trimmed, non-empty) title.
     FolderRenamed {
         id: bbr_domain::FolderId,
@@ -148,6 +156,18 @@ impl From<FolderError> for OrganizationError {
     }
 }
 
+/// What a space deletion would remove (blueprint D05's delete sheet).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SpaceDeleteSummary {
+    pub title: String,
+    pub tabs: usize,
+    pub folders: usize,
+    /// How many of the space's tabs are favorites (their tiles go too).
+    pub favorites: usize,
+    /// Whether the space may be deleted (not the last of its profile).
+    pub deletable: bool,
+}
+
 /// Portable companion service for controller-level tab organization.
 ///
 /// See the module docs for the integration contract. Constructed once per
@@ -217,6 +237,74 @@ impl OrganizationController {
         self.check_invariants(controller)
             .expect("organization invariants hold after reconcile");
         Ok(OrganizationEvent::FolderCreated { id, space, title })
+    }
+
+    /// What deleting `space` would remove (the delete sheet's copy): its
+    /// title, tab count, folder count and how many of its tabs are
+    /// favorites. `None` for an unknown space.
+    pub fn space_delete_summary(
+        &mut self,
+        controller: &BrowserController,
+        space: SpaceId,
+    ) -> Option<SpaceDeleteSummary> {
+        self.reconcile(controller);
+        let snapshot = controller.snapshot();
+        let title = snapshot
+            .spaces
+            .iter()
+            .find(|s| s.id == space)?
+            .title
+            .clone();
+        let tabs: Vec<TabId> = snapshot
+            .all_tabs
+            .iter()
+            .filter(|tab| tab.space == space)
+            .map(|tab| tab.id)
+            .collect();
+        Some(SpaceDeleteSummary {
+            title,
+            tabs: tabs.len(),
+            folders: self.store.folders().filter(|f| f.space == space).count(),
+            favorites: self
+                .store
+                .favorites()
+                .filter(|favorite| tabs.contains(&favorite.tab))
+                .count(),
+            deletable: controller.can_delete_space(space),
+        })
+    }
+
+    /// `DeleteSpace` command (blueprint D05): delete `space` with its tabs
+    /// and folders through the controller. Rejections (unknown space, the
+    /// last space of a profile) change nothing, folders included.
+    pub fn delete_space(
+        &mut self,
+        controller: &mut BrowserController,
+        space: SpaceId,
+    ) -> Result<OrganizationEvent, OrganizationError> {
+        let event = controller
+            .delete_space(space)
+            .map_err(OrganizationError::Controller)?;
+        let ControllerEvent::SpaceDeleted {
+            space,
+            fallback,
+            closed_tabs,
+            activated,
+        } = event
+        else {
+            unreachable!("delete_space only emits SpaceDeleted, got {event:?}")
+        };
+        let removed_folders = self.store.remove_folders_in(space);
+        self.reconcile(controller);
+        self.check_invariants(controller)
+            .expect("organization invariants hold after a space deletion");
+        Ok(OrganizationEvent::SpaceDeleted {
+            space,
+            fallback,
+            closed_tabs,
+            removed_folders,
+            activated,
+        })
     }
 
     /// `RenameFolder` command (Blueprint D20, folder menu Rename): give the

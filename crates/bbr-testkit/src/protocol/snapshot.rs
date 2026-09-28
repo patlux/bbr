@@ -14,7 +14,8 @@ pub use card::ContentCardSnapshot;
 pub use motion::{IllustrationSnapshot, MotionMomentSnapshot, MotionSnapshot};
 pub use u2::{
     ChipCompanionSnapshot, FavoriteTileSnapshot, FolderRowSnapshot, SpaceAppearanceSnapshot,
-    SpaceChipSnapshot, SpaceConfigSnapshot, SpaceStripScrollSnapshot, SwipeSnapshot,
+    SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot, SpaceStripScrollSnapshot,
+    SwipeSnapshot,
 };
 
 /// The L6 contract state of one download attempt (DESIGN.md §15): the panel
@@ -985,8 +986,12 @@ pub struct TabMenuSnapshot {
     /// The exact persistent `TabId` the menu is bound to (identity
     /// evidence: the source never changes on open/traverse/dismiss).
     pub bound_tab: Option<u64>,
+    /// Blueprint D05: the exact `SpaceId` the space menu is bound to
+    /// (`None` for the Tab/Favorite menus).
+    #[serde(default)]
+    pub bound_space: Option<u64>,
     /// The stable presentation source key (`bbr-tab-menu` |
-    /// `bbr-favorite-menu`).
+    /// `bbr-favorite-menu` | `bbr-space-menu`).
     pub source_key: String,
     /// The keyboard cursor / hovered top-level row (None while closed).
     pub selected: Option<usize>,
@@ -1197,6 +1202,9 @@ pub struct Snapshot {
     /// focus. `None` while closed (the surface is not rendered).
     #[serde(default)]
     pub space_config: Option<SpaceConfigSnapshot>,
+    /// Blueprint D05: the open Delete Space sheet (`None` while closed).
+    #[serde(default)]
+    pub space_delete: Option<SpaceDeleteSnapshot>,
     /// DESIGN.md §11.3 swipe gesture evidence: the active space (truthful
     /// at every phase — a tracking gesture never changes the selected
     /// space), the source/destination persistent space ids and display-order

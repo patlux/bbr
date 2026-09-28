@@ -251,7 +251,9 @@ pub(crate) fn install_actions(
             // presented the handler is a no-op and leaves propagation
             // open, so gpui-component's `Root` focus-traversal binding
             // keeps handling Tab exactly as before.
-            if !app.read(cx).auth_sheet_is_presented() {
+            // Blueprint D05: the Delete Space sheet shares the binding.
+            let view = app.read(cx);
+            if !view.auth_sheet_is_presented() && !view.space_delete_open() {
                 return;
             }
             // The sheet owns the keyboard while open: consume Tab so the

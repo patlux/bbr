@@ -38,6 +38,20 @@ pub enum BrowserChange {
     SpaceActivated {
         space: TestSpaceId,
     },
+    /// Blueprint D05: a space moved within its profile group (`to` is its
+    /// new position in the space order).
+    SpaceMoved {
+        space: TestSpaceId,
+        to: usize,
+    },
+    /// Blueprint D05: a space was deleted; its tabs closed onto
+    /// `fallback`'s recently-closed stack.
+    SpaceDeleted {
+        space: TestSpaceId,
+        fallback: TestSpaceId,
+        closed_tabs: usize,
+        activated: bool,
+    },
     TabOpened {
         index: usize,
     },

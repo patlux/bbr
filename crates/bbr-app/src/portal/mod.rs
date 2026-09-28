@@ -34,4 +34,5 @@ pub mod geometry;
 pub mod native;
 pub mod peek;
 pub mod probe;
+mod space_delete;
 pub mod state;

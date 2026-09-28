@@ -1178,6 +1178,18 @@ pub enum Request {
     /// every open outside-press surface — and commits an open inline
     /// folder rename (blueprint D20, DESIGN §11.11).
     ChromeBackgroundPress,
+    /// Blueprint D05: a secondary press on the space chip of `space` at the
+    /// pointer `(x, y)` opens the space menu (the exact production listener
+    /// method). Its rows then take the `TabMenu*` seams.
+    RightClickSpaceChip {
+        space: TestSpaceId,
+        x: f32,
+        y: f32,
+    },
+    /// Blueprint D05: the Delete Space sheet's Cancel / Delete Space button
+    /// paths (the production app methods the portal buttons call).
+    SpaceDeleteCancel,
+    SpaceDeleteConfirm,
     ToggleFavoriteTab {
         index: usize,
     },

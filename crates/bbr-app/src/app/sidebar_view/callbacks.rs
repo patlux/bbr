@@ -310,6 +310,15 @@ impl BbrApp {
             });
         });
 
+        // Blueprint D05: a secondary-click on a space chip opens the space
+        // menu bound to that exact space.
+        let entity = cx.entity();
+        let on_context_menu_space: SpaceCallback = Rc::new(move |space, event, window, cx| {
+            entity.update(cx, |view, cx| {
+                view.open_space_menu(space, event, window, cx)
+            });
+        });
+
         // §11.3: the space strip's keyboard traversal (`↑`/`↓`, Enter).
         let entity = cx.entity();
         let on_space_strip_key_down: KeyCallback = Rc::new(move |event, window, cx| {
@@ -366,6 +375,7 @@ impl BbrApp {
             on_downloads,
             on_plus,
             on_select_space,
+            on_context_menu_space,
             on_space_strip_key_down,
             on_divider_mouse_down,
             on_divider_key_down,

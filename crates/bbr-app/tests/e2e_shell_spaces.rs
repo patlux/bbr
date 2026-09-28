@@ -20,6 +20,8 @@
 mod appearance;
 mod e2e_common;
 mod e2e_semantics_common;
+#[path = "e2e_shell_spaces/space_menu.rs"]
+mod space_menu;
 #[path = "e2e_shell_spaces/strip.rs"]
 mod strip;
 #[path = "e2e_shell_spaces/swipe/mod.rs"]

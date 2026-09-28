@@ -260,6 +260,12 @@ fn space_strip_surface(theme: &Theme, strip: &StripModel, callbacks: &Callbacks)
                 strip.swipe_tint,
                 callbacks::space(&callbacks.on_select_space, visual.space),
             )
+            // Blueprint D05 (§11.13): a secondary-click opens the space menu
+            // bound to this exact space; opening never activates it.
+            .on_mouse_down(
+                MouseButton::Right,
+                callbacks::space(&callbacks.on_context_menu_space, visual.space),
+            )
         })
         .collect();
     super::strip::space_strip(theme, strip.scroll.clone(), chips)

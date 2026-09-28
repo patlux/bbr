@@ -106,6 +106,9 @@ pub enum PortalContent {
     /// portal render derives the live surface from the app entity each
     /// frame, so the bar carries no data of its own.
     Peek,
+    /// Blueprint D05: the Delete Space confirmation sheet with its veil
+    /// over the content card (the render derives both from the app).
+    SpaceDelete,
 }
 
 /// The portal window's render state, shared between the app (present/dismiss)
@@ -207,6 +210,17 @@ impl PortalProbeState {
                 crate::app::peek::PEEK_OPEN_AS_TAB_ID.into(),
                 crate::app::peek::PEEK_CLOSE_ID.into(),
             ],
+            Some(PortalContent::SpaceDelete) => {
+                use bbr_ui::surfaces::space_delete as sheet;
+                vec![
+                    sheet::SPACE_DELETE_VEIL_ID.into(),
+                    sheet::SPACE_DELETE_SHEET_ID.into(),
+                    sheet::SPACE_DELETE_TITLE_ID.into(),
+                    sheet::SPACE_DELETE_BODY_ID.into(),
+                    sheet::SPACE_DELETE_CANCEL_ID.into(),
+                    sheet::SPACE_DELETE_CONFIRM_ID.into(),
+                ]
+            }
             Some(PortalContent::Command(surface)) => vec![match surface {
                 crate::app::palette::CommandSurface::Palette => {
                     bbr_ui::surfaces::command::PALETTE_ID.into()
@@ -270,6 +284,14 @@ impl PortalProbeState {
     pub fn present_auth(&mut self, request: PortalRequest, viewport: Sz) {
         self.request = Some(request);
         self.content = Some(PortalContent::Auth);
+        self.viewport = viewport;
+    }
+
+    /// Present the Delete Space sheet (blueprint D05; the render derives
+    /// the model and the veil rect from the app entity).
+    pub fn present_space_delete(&mut self, request: PortalRequest, viewport: Sz) {
+        self.request = Some(request);
+        self.content = Some(PortalContent::SpaceDelete);
         self.viewport = viewport;
     }
 
@@ -760,6 +782,10 @@ impl Render for PortalRoot {
                     )
                     .child(card)
                     .into_any()
+            }
+            PortalContent::SpaceDelete => {
+                drop(probe);
+                super::space_delete::render(self, rect, cx)
             }
             PortalContent::Peek => {
                 drop(probe);

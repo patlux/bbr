@@ -44,6 +44,10 @@ pub enum DomainError {
     /// entry (the domain identity contract is global uniqueness across
     /// kinds), or an id that is not a positive persisted value.
     RestoreCollision(u64),
+    /// Blueprint D05: the last space of a profile cannot be deleted.
+    LastSpaceOfProfile(SpaceId),
+    /// Blueprint D05: a space move past the edge of its profile group.
+    SpaceMoveOutOfRange(SpaceId),
 }
 
 impl std::fmt::Display for DomainError {
@@ -77,6 +81,12 @@ impl std::fmt::Display for DomainError {
             ),
             Self::RestoreCollision(id) => {
                 write!(f, "restore rejected identity {id}: id already owned")
+            }
+            Self::LastSpaceOfProfile(id) => {
+                write!(f, "space {id:?} is the last space of its profile")
+            }
+            Self::SpaceMoveOutOfRange(id) => {
+                write!(f, "space {id:?} has no neighbor in that direction")
             }
         }
     }

@@ -20,6 +20,21 @@ pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange>
         ControllerEvent::SpaceActivated { space } => Some(BrowserChange::SpaceActivated {
             space: bbr_testkit::protocol::TestSpaceId(space.0),
         }),
+        ControllerEvent::SpaceMoved { space, to } => Some(BrowserChange::SpaceMoved {
+            space: TestSpaceId(space.0),
+            to: *to,
+        }),
+        ControllerEvent::SpaceDeleted {
+            space,
+            fallback,
+            closed_tabs,
+            activated,
+        } => Some(BrowserChange::SpaceDeleted {
+            space: TestSpaceId(space.0),
+            fallback: TestSpaceId(fallback.0),
+            closed_tabs: *closed_tabs,
+            activated: *activated,
+        }),
         ControllerEvent::TabOpened { index, .. } => {
             Some(BrowserChange::TabOpened { index: *index })
         }
@@ -205,6 +220,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             motion: self.motion.clone(),
             space_strip_scroll: self.space_strip_scroll.clone(),
             space_config: self.space_config.clone(),
+            space_delete: self.space_delete.clone(),
             swipe: self.swipe.clone(),
             visible_ids: self.visible_ids.clone(),
             semantics: self.semantics.clone(),

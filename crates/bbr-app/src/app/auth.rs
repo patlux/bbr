@@ -284,6 +284,10 @@ impl BbrApp {
     /// gpui-component's default focus traversal, which had no observable
     /// sheet effect before this action existed.
     pub fn auth_field_tab(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        // Blueprint D05: the Delete Space sheet shares the Tab binding.
+        if self.space_delete_toggle_focus(cx) {
+            return;
+        }
         if !self.auth_sheet_is_presented() {
             return;
         }

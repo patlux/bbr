@@ -124,6 +124,7 @@ impl BbrApp {
             open: true,
             focused: false,
             bound_tab: Some(tab),
+            bound_space: None,
             source_key: source_key.into(),
             selected: None,
             open_submenu: None,
@@ -436,6 +437,16 @@ impl BbrApp {
         let Some(action) = self.tab_menu_selected_action() else {
             return;
         };
+        if action.hands_off_focus() {
+            // The committed surface (space configuration, ⌘T palette,
+            // delete sheet) takes focus: close first, never restore.
+            let space = self.tab_menu.state.bound_space;
+            self.tab_menu_discard(cx);
+            if let Some(space) = space {
+                self.space_menu_dispatch(space, action, window, cx);
+            }
+            return;
+        }
         self.tab_menu_dispatch(action, window, cx);
         self.tab_menu_close(window, cx);
     }
@@ -485,6 +496,10 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if let Some(space) = self.tab_menu.state.bound_space {
+            self.space_menu_dispatch(space, action, window, cx);
+            return;
+        }
         let Some(tab) = self.tab_menu.state.bound_tab else {
             return;
         };
@@ -540,6 +555,13 @@ impl BbrApp {
                     }
                 }
             }
+            TabMenuAction::EditSpace
+            | TabMenuAction::NewTabInSpace
+            | TabMenuAction::MoveSpaceLeft
+            | TabMenuAction::MoveSpaceRight
+            | TabMenuAction::DeleteSpace => {
+                log::error!("space menu action {action:?} without a bound space; ignored")
+            }
         }
         window.refresh();
         cx.notify();
@@ -582,6 +604,7 @@ impl BbrApp {
             open: state.open,
             focused: state.focused,
             bound_tab: state.bound_tab.map(|tab| tab.0),
+            bound_space: state.bound_space.map(|space| space.0),
             source_key: state.source_key.clone(),
             selected: state.selected,
             open_submenu: state.open_submenu,

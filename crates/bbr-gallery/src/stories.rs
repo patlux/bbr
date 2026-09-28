@@ -37,6 +37,7 @@ pub mod profile_chip;
 pub mod saved_pages_library;
 pub mod sidebar;
 pub mod space_config;
+pub mod space_delete;
 pub mod tab_menu;
 
 use gpui::{div, prelude::*, px, AnyElement, Rgba, SharedString};
@@ -286,6 +287,15 @@ pub fn catalog() -> CatalogRegistry {
     registry.add_group(
         "Page menu composition",
         vec![story("Page menu", page_menu::render_page_menu, &[])],
+    );
+    // Blueprint D05: the Delete Space sheet appends at StoryId 49.
+    registry.add_group(
+        "Space delete",
+        vec![story(
+            "Delete Space sheet",
+            space_delete::render_space_delete,
+            &[],
+        )],
     );
     registry
 }

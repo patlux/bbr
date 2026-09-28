@@ -17,6 +17,18 @@ pub enum ControllerEvent {
     SpaceCreated { profile: ProfileId, space: SpaceId },
     /// The controller switched its active workspace.
     SpaceActivated { space: SpaceId },
+    /// Blueprint D05: a space moved within its profile group's display
+    /// order (`to` is its new position in the controller's space order).
+    SpaceMoved { space: SpaceId, to: usize },
+    /// Blueprint D05: a space was deleted. Its tabs closed onto `fallback`'s
+    /// recently-closed stack (their sessions were destroyed); `activated`
+    /// reports whether `fallback` became the active space.
+    SpaceDeleted {
+        space: SpaceId,
+        fallback: SpaceId,
+        closed_tabs: usize,
+        activated: bool,
+    },
     /// A tab was opened at `index` in the active space.
     TabOpened { index: usize, url: String },
     /// A user-initiated new-window request opened one regular tab in the

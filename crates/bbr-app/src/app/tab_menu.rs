@@ -49,6 +49,9 @@ pub const TAB_MENU_SOURCE: &str = "bbr-tab-menu";
 /// The §15 id of the Favorite menu (the same menu family; the app registers
 /// the id it presents).
 pub const FAVORITE_MENU_SOURCE: &str = "bbr-favorite-menu";
+/// The §15 id of the space menu (blueprint D05; the same menu family,
+/// bound to a `SpaceId` instead of a `TabId`).
+pub const SPACE_MENU_SOURCE: &str = "bbr-space-menu";
 
 /// The typed action one menu row dispatches. Rows without an authority are
 /// never built, so this enum is exactly the set of owned actions today.
@@ -67,6 +70,24 @@ pub enum TabMenuAction {
     ToggleFavorite,
     BookmarkSave,
     BookmarkRemove,
+    /// Blueprint D05 space-menu rows (bound to the menu's `SpaceId`).
+    EditSpace,
+    NewTabInSpace,
+    MoveSpaceLeft,
+    MoveSpaceRight,
+    DeleteSpace,
+}
+
+impl TabMenuAction {
+    /// Whether committing the action hands keyboard focus to another
+    /// surface (the space configuration, the ⌘T palette, the delete sheet),
+    /// so the menu closes without restoring its origin focus.
+    pub fn hands_off_focus(self) -> bool {
+        matches!(
+            self,
+            Self::EditSpace | Self::NewTabInSpace | Self::DeleteSpace
+        )
+    }
 }
 
 /// One deterministic app-side menu row: the presentation fields (stable §15
@@ -139,8 +160,11 @@ pub struct TabMenuState {
     /// The menu owns keyboard focus (the main-window menu focus handle).
     pub focused: bool,
     /// The exact persistent `TabId` the menu is bound to; `None` while
-    /// closed.
+    /// closed and for the space menu.
     pub bound_tab: Option<TabId>,
+    /// Blueprint D05: the exact `SpaceId` the space menu is bound to;
+    /// `None` for the Tab/Favorite menus.
+    pub bound_space: Option<SpaceId>,
     /// The stable presentation source key (`bbr-tab-menu` |
     /// `bbr-favorite-menu`).
     pub source_key: String,
@@ -175,6 +199,7 @@ impl Default for TabMenuState {
             open: false,
             focused: false,
             bound_tab: None,
+            bound_space: None,
             source_key: String::new(),
             selected: None,
             open_submenu: None,
@@ -581,5 +606,6 @@ impl TabMenuController {
 }
 
 mod app;
+mod space;
 #[cfg(test)]
 mod tests;

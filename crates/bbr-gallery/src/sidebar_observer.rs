@@ -401,6 +401,9 @@ impl SidebarObserver {
             on_downloads: Rc::clone(&self.on_downloads),
             on_plus: Rc::clone(&self.on_plus),
             on_select_space: Rc::clone(&self.on_select_space),
+            // Blueprint D05: the chip's secondary click opens the app's
+            // space menu; the gallery rail has no menu to open.
+            on_context_menu_space: Rc::new(|_space, _event, _window, _cx| {}),
             on_space_strip_key_down: Rc::clone(&self.on_space_strip_key_down),
             on_divider_mouse_down: Rc::clone(&self.on_divider_mouse_down),
             on_divider_key_down: Rc::clone(&self.on_divider_key_down),

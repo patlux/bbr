@@ -435,6 +435,12 @@ impl BbrApp {
     /// actions first and actions stop propagation, so this route is the
     /// panel's primary Escape dismissal).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Blueprint D05: Escape cancels the Delete Space sheet (the global
+        // binding routes here before the sheet's key handler).
+        if self.space_delete_open() {
+            self.space_delete_cancel(window, cx);
+            return;
+        }
         // Blueprint D20: Escape during an inline folder rename keeps the
         // committed title (the global `escape → FocusWeb` binding routes
         // here before the region's key handler could see it).
@@ -643,6 +649,12 @@ impl BbrApp {
         // the merged auth contract).
         if self.auth_sheet_is_presented() {
             self.on_auth_key_down(event, window, cx);
+            return;
+        }
+        // Blueprint D05: the Delete Space sheet owns the keyboard while it
+        // is open (Return triggers the focused button, Tab moves).
+        if self.space_delete_open() {
+            self.on_space_delete_key_down(event, window, cx);
             return;
         }
         // A context-menu presentation owns the keyboard while it is open:

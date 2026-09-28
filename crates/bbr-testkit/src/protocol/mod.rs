@@ -41,9 +41,9 @@ pub use snapshot::{
     PaneRectSnapshot, PortalSnapshot, PreviewSnapshot, PreviewZOrder, ProfileSnapshot,
     ReloadRestSurface, RestoreDisposition, SavedPagesCollectionSnapshot,
     SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot, SemanticNode, SemanticRole, Snapshot,
-    SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceSnapshot,
-    SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot,
-    SwipeSnapshot, TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState,
+    SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot,
+    SpaceSnapshot, SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
+    StoreSnapshot, SwipeSnapshot, TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState,
     TitlebarSnapshot, WebContentProbe, ZoomSnapshot,
 };
 

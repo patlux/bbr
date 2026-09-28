@@ -302,10 +302,14 @@ impl Render for BbrApp {
                 !self.library.open
                     && !self.find.state.open
                     && !self.auth_sheet_is_presented()
+                    && !self.space_delete_open()
                     && !self.context_menu.state.open
                     && !self.tab_menu.state.open,
                 |root| root.track_focus(&self.chrome_handle),
             )
+            .when(self.space_delete_open(), |root| {
+                root.track_focus(&self.space_delete_handle)
+            })
             .when(self.library.open, |root| {
                 root.track_focus(&self.library_handle)
             })

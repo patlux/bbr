@@ -98,6 +98,8 @@ pub struct TestSnapshot {
     /// curated theme/identity names, and the surface's chrome-focus state.
     /// `None` while closed (the surface is not rendered).
     pub space_config: Option<bbr_testkit::protocol::SpaceConfigSnapshot>,
+    /// Blueprint D05: the open Delete Space sheet (`None` while closed).
+    pub space_delete: Option<bbr_testkit::protocol::SpaceDeleteSnapshot>,
     /// DESIGN.md §11.3 sidebar-swipe evidence: the truthful active space at
     /// every phase plus the gesture's source/destination persistent space
     /// ids, display-order direction, signed progress, and the interpolated

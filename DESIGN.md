@@ -826,10 +826,37 @@ using the IDs of §15. All rows use `density` geometry from §8.
   (`type:label` "in Profile · Work"). During drag-to-space, the targeted identity
   chip gains the existing drag-target treatment plus a visible destination
   profile companion so isolation is never communicated by color alone.
+- **Space menu (blueprint D05):** a secondary click on a chip opens the space
+  menu (`bbr-space-menu`, the §11.13 menu anatomy) at the pointer, bound to
+  that exact `SpaceId`; opening never activates the space. Rows in order:
+  **Edit Space…** (opens the configuration surface below), **New Tab in
+  Space** (activates the space and opens ⌘T), **Move Left** / **Move Right**
+  (swap the chip with its neighbour of the same profile — the strip groups
+  spaces by profile; disabled at the group's edge), **Delete Space…** (the
+  danger row; disabled for the last space of a profile). Row ids
+  `bbr-space-menu-edit`, `-new-tab`, `-move-left`, `-move-right`, `-delete`.
+- **Delete confirmation (blueprint D05):** Delete Space… asks once in a
+  blocking sheet (`bbr-space-delete-sheet`, 400 pt, `radius:lg`, overlay
+  surface, hairline edge, `elev:2`, `sp:5` padding) attached to the content
+  card's top edge in the native portal, over a `wash.active` veil on the card
+  only (`bbr-space-delete-veil`; the rail stays clear). The title names the
+  space (`Delete “Research”?`); the body counts what closes — tabs, folders,
+  and favorite tiles among the tabs — and says that Reopen Closed Tab brings
+  tabs back and that history and site data stay in the profile. Buttons
+  `[Cancel] [Delete Space]` (`bbr-space-delete-cancel`, `-confirm`); Delete
+  Space is the danger button (label in `status.error`, the action named in
+  the text). Cancel owns the keyboard when the sheet opens, so Return
+  cancels; Tab moves the 2 pt accent ring to Delete Space; Escape cancels; no
+  outside press dismisses. Confirming closes the space's tabs and destroys
+  their sessions, removes its folders and appearance record, and — when it
+  was active — activates the next space of the profile (else the previous).
+  The closed tabs move onto that space's recently-closed stack, first tab on
+  top, so Reopen Closed Tab restores them in order; there is no other undo.
 - **Assert ids:** `bbr-space-strip`, `bbr-space-chip-<n>`,
-  `bbr-space-identity-<n>`, and the existing transient
-  `bbr-command-profile-hint` / `bbr-profile-chip-<n>` where profile context is
-  presented.
+  `bbr-space-identity-<n>`, `bbr-space-menu` (+ row ids),
+  `bbr-space-delete-sheet` (+ `-title`, `-body`, `-cancel`, `-confirm`,
+  `-veil`), and the existing transient `bbr-command-profile-hint` /
+  `bbr-profile-chip-<n>` where profile context is presented.
 
 #### Configuration surface
 
@@ -1424,10 +1451,11 @@ authorities; it does not copy Zen/Firefox features or styling.
   reason. Danger state has a text/glyph companion; color never carries it
   alone.
 - **Source identity:** a menu stays bound to the exact `TabId`, Favorite-backed
-  `TabId`, `FolderId`, or page/pane that opened it. Opening, traversing, or
+  `TabId`, `FolderId`, `SpaceId` (the space menu, §11.3), or page/pane that
+  opened it. Opening, traversing, or
   dismissing never implicitly selects, activates, expands, moves, reloads,
   closes, suspends, or recreates that source.
-- **Ownership:** sidebar tab/Favorite/folder menus are ordinary GPUI chrome.
+- **Ownership:** sidebar tab/Favorite/folder/space menus are ordinary GPUI chrome.
   Only BBR page-background menus overlap WebKit and use the existing one-per-
   window `NativeAboveWeb` Portal. Link/image/selection/editable/media and
   JavaScript/unclassified WebKit element menus remain native and untouched.
@@ -1441,8 +1469,8 @@ authorities; it does not copy Zen/Firefox features or styling.
   capability-gated `Bookmark Page` / `Remove Bookmark` rows; both invoke the
   same app-owned Saved Page command as Cmd-D and never own duplicate policy.
 - **Stable family ids:** `bbr-tab-menu`, `bbr-favorite-menu`,
-  `bbr-folder-menu`, and `bbr-page-menu`, with action/submenu ids owned by
-  their bounded task packets.
+  `bbr-folder-menu`, `bbr-space-menu`, and `bbr-page-menu`, with
+  action/submenu ids owned by their bounded task packets.
 - **Gallery:** G2/G3 stories register closed/open/submenu/disabled/danger/
   overflow states from the exact production `bbr-ui` menu components. Gallery
   fixtures never rebuild menu anatomy and never replace real-browser E2E.
@@ -2025,7 +2053,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D02 | Hover reveal of a hidden rail | W-3 V-6 | §2 §11.4 §11.14 | adopted | [blueprint-sidebar-hover-reveal](docs/roadmap/tasks/blueprint-sidebar-hover-reveal.md) |
 | D03 | Address control states | S-1 M-8 | §11.5 §17.13 | adopted | [blueprint-address-states](docs/roadmap/tasks/blueprint-address-states.md) |
 | D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | §11.4 | adopted | [blueprint-palette-recents-actions](docs/roadmap/tasks/blueprint-palette-recents-actions.md) |
-| D05 | Space menu and delete confirmation | P-4 PR-07 | §11.3 §11.13 | adopted | [blueprint-space-menu-delete](docs/roadmap/tasks/blueprint-space-menu-delete.md) |
+| D05 | Space menu and delete confirmation | P-4 PR-07 | §11.3 §11.13 | implemented | [blueprint-space-menu-delete](docs/roadmap/tasks/blueprint-space-menu-delete.md) |
 | D06 | Create, edit and delete profiles | P-6 L-4 PR-08 | §12 | adopted | [blueprint-profile-management](docs/roadmap/tasks/blueprint-profile-management.md) |
 | D07 | Cross-profile move feedback | P-7 PR-08 | §11.3 §12 §10.9 | adopted | [blueprint-cross-profile-move-feedback](docs/roadmap/tasks/blueprint-cross-profile-move-feedback.md) |
 | D08 | Toasts and uniform surface transitions | B-7 G-7 V-6 PR-12 | §6 §18.4 §18.5 | adopted | [blueprint-feedback-toasts](docs/roadmap/tasks/blueprint-feedback-toasts.md) |
