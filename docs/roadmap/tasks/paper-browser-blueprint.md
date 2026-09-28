@@ -73,7 +73,7 @@ Not parallelized. One writer works serially on one Paper file; no subagents.
 - [x] W1: shell, sidebar, spaces and profiles boards drawn and reviewed.
 - [x] W2: command and content/glass boards drawn and reviewed.
 - [x] W3: menus and panels boards drawn and reviewed.
-- [ ] W4: system, lifecycle and split-view boards drawn and reviewed.
+- [x] W4: system, lifecycle and split-view boards drawn and reviewed.
 - [ ] W5: 23 process storyboards drawn and reviewed.
 - [ ] W6: variant matrices and motion specification drawn and reviewed.
 - [ ] W7: decisions and delta ledger drawn; DESIGN.md updated; one packet
@@ -171,11 +171,11 @@ is read from the Paper file.
 | DESIGN §18.4 | v2 floating surfaces | B-6 · Floating shells; C-2 · ⌘T — results by kind; C-6 · ⌘L — edit address; M-1 · Tab menu | yes |
 | DESIGN §18.5 | v2 motion moments | V-5 · Motion — moments; V-4 · Reduce Motion | planned |
 | Phase 4 | Startup presents sidebar and selected tab | L-10 · Session restore; PR-18 · Quit, relaunch, crash recovery | planned |
-| Phase 4 | Empty space, first launch, many tabs, long titles, missing favicons, crashed pages | G-2 · Glass — empty space; L-1 · First run — welcome; W-8 · Shell — dense list (500 tabs); S-5 · Tab rows in context; G-3 · Glass — crashed page | planned |
+| Phase 4 | Empty space, first launch, many tabs, long titles, missing favicons, crashed pages | G-2 · Glass — empty space; L-1 · First run — welcome; W-8 · Shell — dense list (500 tabs); S-5 · Tab rows in context; G-3 · Glass — crashed page | yes |
 | Phase 4 | Collapsible, adjustable sidebar | W-3 · Shell — sidebar hidden ⌘B & hover reveal; S-10 · Rail width & resize | yes |
 | Phase 4 | Drag reorder and move between spaces | S-9 · Drag in flight; PR-06 · Organize — folders & drag rules | planned |
 | Phase 6 | Split view: create, show two, divider, focus, route, close, dissolve, compact | G-9 · Split view — two panes; G-10 · Split view — create, resize, compact; PR-09 · Split view — create, focus, resize, close | planned |
-| Phase 7 | First-run, empty, migration-error and recovery UI | L-1 · First run — welcome; L-2 · First run — import, default browser, first space; L-11 · Recovery & migration errors | planned |
+| Phase 7 | First-run, empty, migration-error and recovery UI | L-1 · First run — welcome; L-2 · First run — import, default browser, first space; L-11 · Recovery & migration errors | yes |
 | Phase 7 | Chrome-first restore | L-10 · Session restore; PR-18 · Quit, relaunch, crash recovery | planned |
 | Phase 8 | Downloads | M-4 · Downloads panel; L-7 · Settings — Downloads; PR-10 · Downloads — progress, done, reveal, retry | planned |
 | Phase 8 | Find in page | G-6 · Find in page; PR-11 · Find in page | planned |
@@ -211,14 +211,14 @@ is read from the Paper file.
 | Inventory | External URLs / default browser | M-12 · Open in another app; PR-20 · Links from other apps | planned |
 | Inventory | Per-site zoom/settings | G-7 · Page zoom; M-8 · Site settings; PR-16 · Per-site zoom | planned |
 | Inventory | Session restore and crash recovery | L-10 · Session restore; L-11 · Recovery & migration errors; PR-18 · Quit, relaunch, crash recovery | planned |
-| E2E smoke/shutdown | Launch and quit | L-10 · Session restore; L-14 · Windows — new, close, quit | planned |
+| E2E smoke/shutdown | Launch and quit | L-10 · Session restore; L-14 · Windows — new, close, quit | yes |
 | E2E tabs/shell-tabs | Tab open/select/close/reopen | S-5 · Tab rows in context; PR-05 · Tab life — pin, folder, favorite, close, reopen, suspend | planned |
 | E2E profiles | Profile-isolated sessions | P-5 · Profile identity in chrome; P-7 · Move a tab across profiles | yes |
 | E2E shell-spaces | Spaces, strip, swipe, configuration | P-1 · Space switching; P-2 · Space configuration; P-3 · New space | yes |
 | E2E shell-sidebar | Rail, favorites, lift, appearance | W-1 · Shell — standard; S-2 · Favorites grid; S-3 · Space heading & pinned tabs | yes |
 | E2E shell-favicons | Favicon slots | S-5 · Tab rows in context; B-4 · Tiles, chips & badges | yes |
 | E2E shell-titlebar-navigation | Titlebar controls | W-7 · Shell — titlebar navigation states | yes |
-| E2E shell-split-geometry | Split geometry | G-9 · Split view — two panes | planned |
+| E2E shell-split-geometry | Split geometry | G-9 · Split view — two panes | yes |
 | E2E shell-organize | Folders and organized area | S-4 · Folders; PR-06 · Organize — folders & drag rules | planned |
 | E2E shell-tab-menu | Tab menu | M-1 · Tab menu | yes |
 | E2E shell-hover | Hover and press | B-3 · Rail rows — §10 states | yes |
@@ -228,7 +228,7 @@ is read from the Paper file.
 | E2E background-links | Background link tabs | PR-04 · Open links — foreground, background, Peek, external, pop-up | planned |
 | E2E web-navigation-gestures | Navigation gestures | PR-03 · Address, back, forward, reload | planned |
 | E2E peek | Peek preview | G-8 · Peek preview | yes |
-| E2E shell-persistence | Restore, space paper, activation | L-10 · Session restore; P-2 · Space configuration | planned |
+| E2E shell-persistence | Restore, space paper, activation | L-10 · Session restore; P-2 · Space configuration | yes |
 | E2E shell-portal | Portal host above web | B-6 · Floating shells | yes |
 | E2E shell-find | Find bar | G-6 · Find in page | yes |
 | E2E shell-zoom | Zoom chip | G-7 · Page zoom; S-1 · Address control | yes |
@@ -301,8 +301,8 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 | 24 | G-6 · Find in page | Shipped | §11.12 | [find-in-page-portal-bar](find-in-page-portal-bar.md) | yes |
 | 24 | G-7 · Page zoom | Change | §11.5 | [site-settings-zoom-contract](site-settings-zoom-contract.md) | yes |
 | 24 | G-8 · Peek preview | Shipped | §11.17 | [link-preview-peek](link-preview-peek.md) | yes |
-| 24 | G-9 · Split view — two panes | Change | §11.7 | [split-app-composition](split-app-composition.md) | planned |
-| 24 | G-10 · Split view — create, resize, compact | Change | §11.7 | [split-app-composition](split-app-composition.md) | planned |
+| 24 | G-9 · Split view — two panes | Change | §11.7 | [split-app-composition](split-app-composition.md) | yes |
+| 24 | G-10 · Split view — create, resize, compact | Change | §11.7 | [split-app-composition](split-app-composition.md) | yes |
 | 25 | M-1 · Tab menu | Shipped | §11.13 | [tab-favorite-context-menus](tab-favorite-context-menus.md) | yes |
 | 25 | M-2 · Favorite & folder menus | Shipped | §11.13 §11.11 | [folder-context-menu](folder-context-menu.md) | yes |
 | 25 | M-3 · Page menu & web menus | Shipped | §11.13 | [page-background-context-menu](page-background-context-menu.md) | yes |
@@ -317,20 +317,20 @@ Board inventory (page · code · title · mark · DESIGN · packet):
 | 25 | M-12 · Open in another app | Change | phase 8 | [external-url-open-contract](external-url-open-contract.md) | yes |
 | 25 | M-13 · Pop-ups & new windows | Change | phase 8 | [new-window-production-seam](new-window-production-seam.md) | yes |
 | 25 | M-14 · File upload & save | Native OS | phase 8 | [file-panels-contract](file-panels-contract.md) | yes |
-| 26 | L-1 · First run — welcome | New · proposal | phase 9 | paper-browser-blueprint | planned |
-| 26 | L-2 · First run — import, default browser, first space | New · proposal | phase 7 phase 9 | paper-browser-blueprint | planned |
-| 26 | L-3 · Settings — General | New · proposal | phase 8 | [general-search-settings-contract](general-search-settings-contract.md) | planned |
-| 26 | L-4 · Settings — Profiles & spaces | New · proposal | §12 | paper-browser-blueprint | planned |
-| 26 | L-5 · Settings — Search | New · proposal | phase 8 | [general-search-settings-contract](general-search-settings-contract.md) | planned |
-| 26 | L-6 · Settings — Privacy & site data | New · proposal | phase 8 | [site-settings-zoom-contract](site-settings-zoom-contract.md) | planned |
-| 26 | L-7 · Settings — Downloads | New · proposal | §11.12 | [downloads-sidebar-panel](downloads-sidebar-panel.md) | planned |
-| 26 | L-8 · Settings — Appearance | New · proposal | §3.4 §6 §8 | [v2-system-prefs](v2-system-prefs.md) | planned |
-| 26 | L-9 · Settings — Shortcuts | New · proposal | §9 | paper-browser-blueprint | planned |
-| 26 | L-10 · Session restore | Shipped | phase 7 | [persistence-hydration](persistence-hydration.md) | planned |
-| 26 | L-11 · Recovery & migration errors | New · proposal | phase 7 | [persistence-sqlite-contract](persistence-sqlite-contract.md) | planned |
-| 26 | L-12 · About & updates | New · proposal | phase 9 | [macos-app-packaging](macos-app-packaging.md) | planned |
-| 26 | L-13 · Menu bar & Dock | Native OS | phase 8 | paper-browser-blueprint | planned |
-| 26 | L-14 · Windows — new, close, quit | Change | phase 8 | [process-lifecycle-shutdown](process-lifecycle-shutdown.md) | planned |
+| 26 | L-1 · First run — welcome | New · proposal | phase 9 | paper-browser-blueprint | yes |
+| 26 | L-2 · First run — import, default browser, first space | New · proposal | phase 7 phase 9 | paper-browser-blueprint | yes |
+| 26 | L-3 · Settings — General | New · proposal | phase 8 | [general-search-settings-contract](general-search-settings-contract.md) | yes |
+| 26 | L-4 · Settings — Profiles & spaces | New · proposal | §12 | paper-browser-blueprint | yes |
+| 26 | L-5 · Settings — Search | New · proposal | phase 8 | [general-search-settings-contract](general-search-settings-contract.md) | yes |
+| 26 | L-6 · Settings — Privacy & site data | New · proposal | phase 8 | [site-settings-zoom-contract](site-settings-zoom-contract.md) | yes |
+| 26 | L-7 · Settings — Downloads | New · proposal | §11.12 | [downloads-sidebar-panel](downloads-sidebar-panel.md) | yes |
+| 26 | L-8 · Settings — Appearance | New · proposal | §3.4 §6 §8 | [v2-system-prefs](v2-system-prefs.md) | yes |
+| 26 | L-9 · Settings — Shortcuts | New · proposal | §9 | paper-browser-blueprint | yes |
+| 26 | L-10 · Session restore | Shipped | phase 7 | [persistence-hydration](persistence-hydration.md) | yes |
+| 26 | L-11 · Recovery & migration errors | New · proposal | phase 7 | [persistence-sqlite-contract](persistence-sqlite-contract.md) | yes |
+| 26 | L-12 · About & updates | New · proposal | phase 9 | [macos-app-packaging](macos-app-packaging.md) | yes |
+| 26 | L-13 · Menu bar & Dock | Native OS | phase 8 | paper-browser-blueprint | yes |
+| 26 | L-14 · Windows — new, close, quit | Change | phase 8 | [process-lifecycle-shutdown](process-lifecycle-shutdown.md) | yes |
 | 40 | V-1 · Increased contrast | Shipped | §3.4 | [v2-system-prefs](v2-system-prefs.md) | planned |
 | 40 | V-2 · Space paper matrix | Shipped | §11.3 D7 | [v2-theme-picker](v2-theme-picker.md) | planned |
 | 40 | V-3 · Density S · N · XL | Shipped | §8 | [global-ui-scale-density](global-ui-scale-density.md) | planned |
@@ -432,7 +432,19 @@ W3:                     2026-09-28. Page 25 M-1…M-14: tab menu with the
                         no-app banner, pop-up notice + sign-in pop-up
                         window, native file panel context. Review fix: the
                         site-identity trigger drawn in the address.
-W4:
+W4:                     2026-09-28. Page 26 L-1…L-14: welcome in the first
+                        tab, three skippable first-run steps (import,
+                        default browser, first space), the Settings window
+                        with seven panes (General, Profiles, Search,
+                        Privacy, Downloads, Appearance, Shortcuts), chrome-
+                        first session restore with notice, partial /
+                        unreadable / newer-schema recovery panes, About +
+                        update ready, menu bar and Dock (Native OS), new /
+                        closed window with reopen toast; page 24 G-9/G-10
+                        split view (two panes with focus outline and rail
+                        pair mark, drop zone, divider drag, compact rest).
+                        Review fixes: duplicated New Profile label, the
+                        Shortcuts window height, the > prefix text.
 W5:
 W6:
 W7:
