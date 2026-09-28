@@ -4,8 +4,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.17, §19.
 
-Status: proposed. Blueprint delta D09; it starts only after Patrick adopts
-the D09 row in DESIGN §19. Paper boards: G-8 · Peek preview, PR-04 · Open links — foreground, background, Peek, external, pop-up (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 12 of 24. Paper boards: G-8 · Peek preview, PR-04 · Open links — foreground, background, Peek, external, pop-up (file
 “BBR — Browser Shell”).
 
 ## Outcome

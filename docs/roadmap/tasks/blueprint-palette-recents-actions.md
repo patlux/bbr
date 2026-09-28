@@ -4,8 +4,7 @@ Parents: [Phase 5](../phases/05-command-bar.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.4, §19.
 
-Status: proposed. Blueprint delta D04; it starts only after Patrick adopts
-the D04 row in DESIGN §19. Paper boards: C-1 · ⌘T — empty with recents, C-4 · ⌘T — actions, L-9 · Settings — Shortcuts (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 6 of 24. Paper boards: C-1 · ⌘T — empty with recents, C-4 · ⌘T — actions, L-9 · Settings — Shortcuts (file
 “BBR — Browser Shell”).
 
 ## Outcome

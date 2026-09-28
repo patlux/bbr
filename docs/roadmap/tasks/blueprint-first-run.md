@@ -4,8 +4,7 @@ Parents: [Phase 9](../phases/09-quality-release.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.8, §19.
 
-Status: proposed. Blueprint delta D15; it starts only after Patrick adopts
-the D15 row in DESIGN §19. Paper boards: L-1 · First run — welcome, L-2 · First run — import, default browser, first space, PR-01 · First run & onboarding (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 21 of 24. Paper boards: L-1 · First run — welcome, L-2 · First run — import, default browser, first space, PR-01 · First run & onboarding (file
 “BBR — Browser Shell”).
 
 ## Outcome

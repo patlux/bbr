@@ -4,8 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.3 §12 §10.9, §19.
 
-Status: proposed. Blueprint delta D07; it starts only after Patrick adopts
-the D07 row in DESIGN §19. Paper boards: P-7 · Move a tab across profiles, PR-08 · Profiles — create, assign, move a tab (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 8 of 24. Paper boards: P-7 · Move a tab across profiles, PR-08 · Profiles — create, assign, move a tab (file
 “BBR — Browser Shell”).
 
 ## Outcome

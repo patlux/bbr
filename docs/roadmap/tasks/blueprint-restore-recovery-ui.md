@@ -4,8 +4,7 @@ Parents: [Phase 7](../phases/07-persistence.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.8, §19.
 
-Status: proposed. Blueprint delta D17; it starts only after Patrick adopts
-the D17 row in DESIGN §19. Paper boards: L-10 · Session restore, L-11 · Recovery & migration errors, PR-18 · Quit, relaunch, crash recovery (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 16 of 24. Paper boards: L-10 · Session restore, L-11 · Recovery & migration errors, PR-18 · Quit, relaunch, crash recovery (file
 “BBR — Browser Shell”).
 
 ## Outcome

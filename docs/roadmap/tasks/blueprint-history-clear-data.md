@@ -4,8 +4,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.16, §19.
 
-Status: proposed. Blueprint delta D10; it starts only after Patrick adopts
-the D10 row in DESIGN §19. Paper boards: M-6 · History, M-7 · Clear browsing data, PR-22 · History & clear data (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 13 of 24. Paper boards: M-6 · History, M-7 · Clear browsing data, PR-22 · History & clear data (file
 “BBR — Browser Shell”).
 
 ## Outcome

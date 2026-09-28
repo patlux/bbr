@@ -4,8 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.3 §11.4 §18.3, §19.
 
-Status: proposed. Blueprint delta D01; it starts only after Patrick adopts
-the D01 row in DESIGN §19. Paper boards: S-7 · Footer strip, W-1 · Shell — standard (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 1 of 24. Paper boards: S-7 · Footer strip, W-1 · Shell — standard (file
 “BBR — Browser Shell”).
 
 ## Outcome

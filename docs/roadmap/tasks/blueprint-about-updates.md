@@ -4,8 +4,7 @@ Parents: [Phase 9](../phases/09-quality-release.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §1 §7, §19.
 
-Status: proposed. Blueprint delta D18; it starts only after Patrick adopts
-the D18 row in DESIGN §19. Paper boards: L-12 · About & updates (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 22 of 24. Paper boards: L-12 · About & updates (file
 “BBR — Browser Shell”).
 
 ## Outcome

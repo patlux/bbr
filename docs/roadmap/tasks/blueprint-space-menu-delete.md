@@ -4,8 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.3 §11.13, §19.
 
-Status: proposed. Blueprint delta D05; it starts only after Patrick adopts
-the D05 row in DESIGN §19. Paper boards: P-4 · Space menu & delete, PR-07 · Spaces — create, style, switch, delete (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 3 of 24. Paper boards: P-4 · Space menu & delete, PR-07 · Spaces — create, style, switch, delete (file
 “BBR — Browser Shell”).
 
 ## Outcome

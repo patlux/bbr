@@ -4,8 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.5 §17.13, §19.
 
-Status: proposed. Blueprint delta D03; it starts only after Patrick adopts
-the D03 row in DESIGN §19. Paper boards: S-1 · Address control, M-8 · Site settings (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 5 of 24. Paper boards: S-1 · Address control, M-8 · Site settings (file
 “BBR — Browser Shell”).
 
 ## Outcome

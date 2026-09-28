@@ -4,8 +4,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.13, §19.
 
-Status: proposed. Blueprint delta D19; it starts only after Patrick adopts
-the D19 row in DESIGN §19. Paper boards: L-13 · Menu bar & Dock, L-14 · Windows — new, close, quit, W-9 · Shell — several windows, PR-21 · Windows — new, move, close (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 17 of 24. Paper boards: L-13 · Menu bar & Dock, L-14 · Windows — new, close, quit, W-9 · Shell — several windows, PR-21 · Windows — new, move, close (file
 “BBR — Browser Shell”).
 
 ## Outcome

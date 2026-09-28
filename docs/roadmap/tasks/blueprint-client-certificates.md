@@ -4,8 +4,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §18.4, §19.
 
-Status: proposed. Blueprint delta D12; it starts only after Patrick adopts
-the D12 row in DESIGN §19. Paper boards: M-11 · Client certificates, PR-15 · Sign-in challenges (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 19 of 24. Paper boards: M-11 · Client certificates, PR-15 · Sign-in challenges (file
 “BBR — Browser Shell”).
 
 ## Outcome

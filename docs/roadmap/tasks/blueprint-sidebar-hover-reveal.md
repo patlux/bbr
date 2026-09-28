@@ -4,8 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §2 §11.4 §11.14, §19.
 
-Status: proposed. Blueprint delta D02; it starts only after Patrick adopts
-the D02 row in DESIGN §19. Paper boards: W-3 · Shell — sidebar hidden ⌘B & hover reveal, V-6 · Motion — transitions (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 9 of 24. Paper boards: W-3 · Shell — sidebar hidden ⌘B & hover reveal, V-6 · Motion — transitions (file
 “BBR — Browser Shell”).
 
 ## Outcome

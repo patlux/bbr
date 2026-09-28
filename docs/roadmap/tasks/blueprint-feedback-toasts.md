@@ -4,8 +4,7 @@ Parents: [Phase 9](../phases/09-quality-release.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §6 §18.4 §18.5, §19.
 
-Status: proposed. Blueprint delta D08; it starts only after Patrick adopts
-the D08 row in DESIGN §19. Paper boards: B-7 · Feedback — progress, attention, banners, G-7 · Page zoom, V-6 · Motion — transitions, PR-12 · Save a page & Library (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 7 of 24. Paper boards: B-7 · Feedback — progress, attention, banners, G-7 · Page zoom, V-6 · Motion — transitions, PR-12 · Save a page & Library (file
 “BBR — Browser Shell”).
 
 ## Outcome

@@ -4,8 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.14 §11.13, §19.
 
-Status: proposed. Blueprint delta D14; it starts only after Patrick adopts
-the D14 row in DESIGN §19. Paper boards: W-7 · Shell — titlebar navigation states, M-3 · Page menu & web menus (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 4 of 24. Paper boards: W-7 · Shell — titlebar navigation states, M-3 · Page menu & web menus (file
 “BBR — Browser Shell”).
 
 ## Outcome

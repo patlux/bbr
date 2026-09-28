@@ -4,8 +4,7 @@ Parents: [Phase 9](../phases/09-quality-release.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §9, §19.
 
-Status: proposed. Blueprint delta D21; it starts only after Patrick adopts
-the D21 row in DESIGN §19. Paper boards: PR-19 · Keyboard focus — chrome ↔ page, B-2 · Fields, toggles & focus (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 10 of 24. Paper boards: PR-19 · Keyboard focus — chrome ↔ page, B-2 · Fields, toggles & focus (file
 “BBR — Browser Shell”).
 
 ## Outcome

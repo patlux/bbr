@@ -4,8 +4,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §3.4 §6 §8 §9, §19.
 
-Status: proposed. Blueprint delta D16; it starts only after Patrick adopts
-the D16 row in DESIGN §19. Paper boards: L-3 · Settings — General, L-4 · Settings — Profiles & spaces, L-5 · Settings — Search, L-6 · Settings — Privacy & site data, L-7 · Settings — Downloads, L-8 · Settings — Appearance, L-9 · Settings — Shortcuts, PR-23 · Change settings (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 15 of 24. Paper boards: L-3 · Settings — General, L-4 · Settings — Profiles & spaces, L-5 · Settings — Search, L-6 · Settings — Privacy & site data, L-7 · Settings — Downloads, L-8 · Settings — Appearance, L-9 · Settings — Shortcuts, PR-23 · Change settings (file
 “BBR — Browser Shell”).
 
 ## Outcome

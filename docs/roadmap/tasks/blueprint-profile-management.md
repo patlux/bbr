@@ -4,8 +4,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §12, §19.
 
-Status: proposed. Blueprint delta D06; it starts only after Patrick adopts
-the D06 row in DESIGN §19. Paper boards: P-6 · Profiles — create & edit, L-4 · Settings — Profiles & spaces, PR-08 · Profiles — create, assign, move a tab (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 14 of 24. Paper boards: P-6 · Profiles — create & edit, L-4 · Settings — Profiles & spaces, PR-08 · Profiles — create, assign, move a tab (file
 “BBR — Browser Shell”).
 
 ## Outcome
