@@ -101,6 +101,8 @@ canonical owner stays Phase 8 through the
 
 ## Quality acceptance
 
+Visual regression tooling is owned by [Reusable visual snapshots](../tasks/visual-snapshot-tooling.md) in the [Testing track](../tracks/testing.md); it supplements semantic real-app E2E.
+
 - [ ] Shell follows the [UI design-system track](../tracks/ui-design-system.md).
 - [ ] Keyboard and VoiceOver acceptance in [Accessibility track](../tracks/accessibility.md) is green.
 - [x] Tab/space E2E covers open, switch, close, reopen, pin, reorder, and profile labels. *(Open/select/close/reopen via `just e2e-shell-tabs`, switching + identity via `just e2e-shell-spaces{,_hint,_keyboard}` (including the §11.3 cross-context command-field hint: copy, chip/hint ids, typed semantic node, deterministic clear boundaries, same-profile absence, the separate staged-move hint, and the empty cross-profile branch), and pin/unpin, legal/illegal reorder, same-profile/cross-profile moves, cancellation, focus, session identity, and isolation via `just e2e-shell-organize`.)*

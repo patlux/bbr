@@ -1,0 +1,10 @@
+schema = 1
+capture = ["python3", "scripts/visual/capture.py"]
+environment_command = ["python3", "scripts/visual/environment.py"]
+baselines = "tests/visual/baselines"
+report = "reports/visual/latest"
+runs = "reports/visual/runs"
+
+[source_policy]
+scopes = ["crates", "vendor/gpui-component", "vendor/cargo-gpui-visual", "scripts/visual", "scripts/with_gui_lock.py", "scripts/xcode-shims", "Cargo.toml", "Cargo.lock", "flake.nix", "flake.lock", "justfile", "visual.toml"]
+suffixes = [".rs", ".toml", ".lock", ".nix", ".py", ".html", ".png", ".svg", ".jpg", ".jpeg", ".ttf", ".otf", ".json", ".js", ".css", ".metal", ".h", ".scm", ".sql", "justfile", "xcrun", "LICENSE", "NOTICE"]

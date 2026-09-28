@@ -273,6 +273,30 @@ e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-space
 
 verify: fmt check test clippy roadmap ui-deps script-tests
 
+# --- Exact production-chrome snapshots (separate from functional E2E) ---
+visual_timeout := env_var_or_default("BBR_VISUAL_TIMEOUT", "60m")
+
+# Portable upstream contracts plus the small BBR integration adapter.
+visual-test:
+    timeout --kill-after=10s {{test_timeout}} python3 -m unittest discover -s scripts/visual -p 'test_*.py' -v
+    timeout --kill-after=10s {{test_timeout}} mbx test --locked --manifest-path vendor/cargo-gpui-visual/Cargo.toml
+
+# Capture builds via mbx, then takes the GUI lock only for the real app suite.
+# First run exits 1 until its explicitly reviewed cases have baselines.
+visual-check:
+    timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/tool.py check
+
+visual-compare run:
+    timeout --kill-after=10s {{check_timeout}} python3 scripts/visual/tool.py compare --run {{quote(run)}}
+
+# Deliberately no accept-all; each argument is one reviewed case id.
+[positional-arguments]
+visual-accept run +cases:
+    timeout --kill-after=10s {{check_timeout}} python3 scripts/visual/accept.py "$@"
+
+visual-doctor:
+    timeout --kill-after=10s {{check_timeout}} python3 scripts/visual/tool.py doctor
+
 # --- Packaging lane (L1): deterministic .app bundle (additive lane recipes) ---
 package_timeout := env_var_or_default("BBR_PACKAGE_TIMEOUT", "12m")
 package_smoke_timeout := env_var_or_default("BBR_PACKAGE_SMOKE_TIMEOUT", "90s")

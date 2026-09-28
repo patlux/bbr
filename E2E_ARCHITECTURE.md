@@ -1191,6 +1191,24 @@ scenario code; performance execution is deferred). The attention pulse has
 no production producer yet, so its E2E is not expressible (recorded in the
 motion-core packet).
 
+## 7r. Exact production-chrome visual snapshots
+
+The separate `just visual-check` gate reuses the unchanged, GPUI-independent
+`cargo-gpui-visual` comparator/report. BBR owns the optimized real-app producer
+in `tests/e2e_visual_shell_capture.rs`: ordinary and representative fixtures,
+Light/Dark, full scene and exact Sidebar crop. Existing typed requests set up
+the real app; readiness and native/session state are asserted before and after
+Metal readback. `visual-capture` remains separate from ordinary `testkit`.
+
+The adapter builds through mbx, serializes GUI execution on the existing lock,
+and supplies the eight-case PNG inventory. Source/environment sealing, exact
+RGBA comparison and explicit selective baseline acceptance stay upstream.
+This adds no network service, production screenshot API or renderer graph.
+WKWebView, AppKit traffic lights and portal-child pixels are excluded rather
+than synthesized. Pixel comparison supplements functional E2E and never acts
+as its synchronization. Commands, provenance, geometry, baseline review and
+integration boundaries are documented in [Visual snapshots](docs/visual-snapshots.md).
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature

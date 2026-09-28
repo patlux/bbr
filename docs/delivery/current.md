@@ -62,6 +62,84 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 
 The orchestrator (session `01a0e454`) is the only product writer and runs the V2 slices serially on `main`: no subagent or background workflow is authorized for this program, so the packets' parallel-capable pairs are executed in order and each slice is reviewed by a documented self-review against its packet before integration. Independent reviews use `homelab-llm/opencode-go/deepseek-v4-flash:high`: the route named in `AGENTS.md` (`homelab-llm/deepseek-v4-flash`) no longer resolves in the model registry. All historical BBR worktrees remain preserved.
 
+## Isolated visual-tooling lane (2026-09-28)
+
+Patrick explicitly authorized this isolated worktree while the product writer
+continues on `main`. This record is lane-local until orchestrator integration;
+it does not transfer `main` ownership or schedule unrelated product work.
+
+| ID | Slice | Status | Worktree | Owner | Contract | Next gate |
+|---|---|---|---|---|---|---|
+| VISUAL-SNAPSHOTS | Reusable visual snapshots | `blocked` | `bbr-visual-snapshots`, branch `parallel/visual-snapshots`, clean base `75a30e1b238054c0a7395cf6b90ddc1d37fa93e3` | session `01a0e635-9c12-70d8-8376-9a6ab8aeabd5`, sole writer; local implementation settled, ownership retained pending handoff | [visual snapshots](../roadmap/tasks/visual-snapshot-tooling.md) | Capture/adapter gates green; unchanged Titlebar/Portal functional failures prevent stable aggregate acceptance; product-first integration and baseline re-review remain pending |
+
+Parallelism audit: only this requested tooling lane is authorized here; V2-S12
+is owned by the other session. RA-MEDIA retains its explicit sequencing;
+Split, performance and the other blocked/deferred items stay untouched. No
+subagent/workflow is authorized. Territory is the capture test, visual adapter,
+CLI vendor and baselines. Expected shared conflicts: justfile, roadmap/current
+ledger and E2E documentation; resolve as semantic unions. Product alignment
+integrates first, tooling second, with fresh baseline review on the combined
+tree. GUI captures acquire the same common-directory lock. Base is a clean
+committed checkpoint; this lane must run its own gates, not infer a current
+pass from historical evidence.
+
+### Tooling evidence and handoff boundary
+
+Outcome: unchanged CLI vendored as `539c4cbc`, BBR adapter and eight reviewed
+baselines delivered in the following local implementation commit. No merge,
+push, main-worktree mutation or ownership transfer was performed.
+
+Evidence (all paths below are on this host):
+
+- `just visual-test`: 15 BBR adapter tests and 29 unchanged upstream contracts.
+  Self-review remediated added vendor-source detection, non-regular PNGs and
+  holding the existing GUI lock through timeout/process-group cleanup. The two
+  input-validation regressions failed before the fix; the new lock-lifetime
+  test exercises a SIGTERM-resistant child and proves reaping before unlock.
+- First valid capture `reports/visual/runs/1790570337671813000-55313` failed only
+  for eight missing baselines. All eight PNGs were opened and inspected, then
+  accepted with eight explicit IDs. Independent run
+  `1790570427719032000-82082` passed 8/8 exact, zero errors. Native content/traffic
+  lights remain intentionally absent, not synthesized.
+- After adapter hardening, fresh run `1790571479914399000-46151` and explicit
+  `just visual-compare` pass 8/8 exact. Its suite takes 6.24s (measured); the
+  earlier independent suite took 4.21s. These are capture timings, not product
+  performance. An old run is correctly rejected with exit 2 after source edits.
+  Report: `reports/visual/latest/index.html`; `visual-doctor`: 1130 source inputs.
+- Workspace `verify` passes, including 49 existing script tests. Testkit
+  all-target Clippy and visual-capture test Clippy pass with `-D warnings`.
+  Existing Cargo recipes were invoked through a temporary mbx-equivalent
+  `/tmp/bbr-visual-verification.just`; no target-dir/cache-wrapper override.
+- Canonical functional sequence (only deferred perf omitted) stops at
+  `e2e-shell-titlebar-navigation`: reload parity at `main.rs:488` sees `Some("")`
+  instead of `BBR Fixture Two`. One focused rerun reproduces it. Event ring
+  `/tmp/bbr-st-titlebar-nav-parity-86914/event-ring.txt` shows the old title
+  during reload followed by an empty title, then the completed title.
+- Remaining recipes were run sequentially, not silently skipped. Portal is
+  6/7: `host_hides_on_minimize_and_restores` fails hit-test convergence with
+  foreign frontmost window `28977` versus parent `29431` / portal `29432`.
+  Diagnostics: `/var/folders/8j/xtk9v77x03q_cqw3fmh7hdw40000gn/T/bbr-st-portal-minimize-31641`.
+  Host occlusion is observed; no product cause or repair is claimed.
+- Overall 28/30 functional recipes pass, with the two named failures. Peek
+  passes 7/7, Gallery 46/46. Product source and both failing suites have no lane
+  diff. Neither the aggregate nor performance is marked passed.
+
+Logs: `/tmp/bbr-visual-verify.log`, `/tmp/bbr-visual-final-contracts.log`,
+`/tmp/bbr-visual-functional-gates.log`, `/tmp/bbr-visual-remaining-gates.log`,
+`/tmp/bbr-visual-snapshots-sealed-final.log`; machine outcomes are in
+`/tmp/bbr-visual-functional-results.json` and
+`/tmp/bbr-visual-remaining-results.json`. Measured first gate sequence: testkit
+Clippy 50.477s, capture Clippy 12.499s, functional aggregate to failure 97.188s,
+Peek 19.509s, Gallery 32.217s; remaining 22 recipe invocations 358.710s.
+Planning/implementation/review wall time was not instrumented.
+
+Final parallelism audit: no additional lane authorized; main remains owned by
+`01a0e454`; media/Split/performance boundaries unchanged. Stop at the two
+functional blockers and handoff boundary rather than changing unrelated
+product tests. Next owner needs explicit handoff, product-first integration,
+resolution/recheck of the failing gates, and fresh combined-tree captures with
+explicit review before any new baseline acceptance.
+
 ## Post-F2a parallel wave
 
 The former post-F2a and Daily-driver waves are closed historical evidence. Their lane details remain in Git and [the completed Daily-driver delivery](2026-08-12-daily-driver-delivery.md); they grant dependencies but schedule no work.
