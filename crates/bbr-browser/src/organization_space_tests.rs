@@ -140,3 +140,38 @@ fn moves_reorder_spaces_and_report_the_new_position() {
     assert_eq!(c.snapshot().active_space, first, "moves never activate");
     assert!(c.move_space(first, SpaceMove::Later).is_err());
 }
+
+#[test]
+fn unpacking_a_folder_keeps_its_members_as_loose_pinned_tabs() {
+    let (mut c, h) = plain();
+    c.open_tab("https://a.example").unwrap();
+    c.open_tab("https://b.example").unwrap();
+    let space = c.snapshot().active_space;
+    let tabs = tabs_of(&c, space);
+    let mut org = OrganizationController::new();
+    let folder = match org.new_folder(&c, "Work").unwrap() {
+        OrganizationEvent::FolderCreated { id, .. } => id,
+        other => panic!("unexpected event: {other:?}"),
+    };
+    org.move_tab_into_folder_id(&mut c, tabs[1], folder)
+        .unwrap();
+    org.move_tab_into_folder_id(&mut c, tabs[0], folder)
+        .unwrap();
+    let sessions = h.engine.borrow().live_session_count();
+    assert_eq!(
+        org.unpack_folder(&c, folder).unwrap(),
+        OrganizationEvent::FolderUnpacked {
+            id: folder,
+            members: vec![tabs[1], tabs[0]],
+        }
+    );
+    assert!(org.organization_snapshot(&c).folders.is_empty());
+    let snapshot = c.snapshot();
+    assert_eq!(snapshot.all_tabs.len(), 2, "no tab closed");
+    assert!(
+        snapshot.tabs.iter().all(|tab| tab.pinned),
+        "members stay pinned"
+    );
+    assert_eq!(h.engine.borrow().live_session_count(), sessions);
+    assert!(org.unpack_folder(&c, folder).is_err(), "unknown folder");
+}

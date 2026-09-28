@@ -38,6 +38,9 @@ pub(super) struct U2State {
     pub plus_menu_press_inside: bool,
     /// Blueprint D20: the open inline folder rename (`None` at rest).
     pub folder_rename: Option<super::folder_rename::FolderRename>,
+    /// Blueprint D25: the folder the next ⌘T-committed tab joins (set by
+    /// the folder menu's New Tab in Folder; cleared when the palette closes).
+    pub new_tab_folder: Option<FolderId>,
 }
 
 impl U2State {
@@ -50,6 +53,7 @@ impl U2State {
             folder_focus: None,
             plus_menu_press_inside: false,
             folder_rename: None,
+            new_tab_folder: None,
         }
     }
 }

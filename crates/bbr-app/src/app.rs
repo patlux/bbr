@@ -995,6 +995,9 @@ impl BbrApp {
             // authority: the fresh active view is hidden (never destroyed).
             self.sync_library_visibility();
             self.zoom_after_activation();
+            // Blueprint D25: a tab committed from New Tab in Folder joins
+            // its folder.
+            self.join_pending_new_tab_folder(cx);
             self.persist_structure();
             self.sync_peek_surface(cx);
             cx.notify();

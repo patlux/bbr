@@ -300,6 +300,9 @@ pub struct Callbacks {
     /// §11.11: pointer entry into a folder row (focuses the region with
     /// that row as the keyboard anchor).
     pub on_focus_folder: FolderCallback,
+    /// Blueprint D25 (§11.13): a secondary-click on a folder row opens the
+    /// folder menu bound to that exact folder (never toggles it).
+    pub on_context_menu_folder: FolderCallback,
     /// §11.11: the pointer enters/leaves a folder row (hover/focus-reveals
     /// the `type:meta` count).
     pub on_hover_folder: FolderHoverCallback,
@@ -370,6 +373,7 @@ impl Callbacks {
             on_context_menu_row: noop_row.clone(),
             on_context_menu_favorite: noop_row.clone(),
             on_focus_folder: noop_folder.clone(),
+            on_context_menu_folder: noop_folder.clone(),
             on_hover_folder: noop_folder_hover,
             on_toggle_folder: noop_folder.clone(),
             on_select_folder_member: noop_member.clone(),

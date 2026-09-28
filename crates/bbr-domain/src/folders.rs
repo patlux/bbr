@@ -257,6 +257,18 @@ impl FolderStore {
         Ok(entry.title.clone())
     }
 
+    /// Blueprint D25 (folder menu "Delete Folder — keep its tabs", the
+    /// settled Unpack): remove `folder` and return its members in folder
+    /// order. The members stay pinned tabs of their space — no tab closes.
+    pub fn unpack_folder(&mut self, folder: FolderId) -> Result<Vec<TabId>, FolderError> {
+        let at = self
+            .folders
+            .iter()
+            .position(|f| f.id == folder)
+            .ok_or(FolderError::UnknownFolder(folder))?;
+        Ok(self.folders.remove(at).tabs)
+    }
+
     /// Blueprint D05: drop every folder of a deleted `space` (its members
     /// closed with the space). Returns how many folders were removed.
     pub fn remove_folders_in(&mut self, space: SpaceId) -> usize {

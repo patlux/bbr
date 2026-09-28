@@ -81,6 +81,12 @@ pub enum OrganizationEvent {
         removed_folders: usize,
         activated: bool,
     },
+    /// Blueprint D25: a folder was unpacked; its members stay loose pinned
+    /// tabs in folder order.
+    FolderUnpacked {
+        id: bbr_domain::FolderId,
+        members: Vec<TabId>,
+    },
     /// A folder took a new (trimmed, non-empty) title.
     FolderRenamed {
         id: bbr_domain::FolderId,
@@ -304,6 +310,28 @@ impl OrganizationController {
             closed_tabs,
             removed_folders,
             activated,
+        })
+    }
+
+    /// `UnpackFolder` command (blueprint D25, the folder menu's "Delete
+    /// Folder — keep its tabs"): the folder goes, every member stays a loose
+    /// pinned tab; no tab closes and no session changes. Unknown folders are
+    /// rejected whole.
+    pub fn unpack_folder(
+        &mut self,
+        controller: &BrowserController,
+        folder: bbr_domain::FolderId,
+    ) -> Result<OrganizationEvent, OrganizationError> {
+        self.reconcile(controller);
+        let members = self
+            .store
+            .unpack_folder(folder)
+            .map_err(OrganizationError::Folder)?;
+        self.check_invariants(controller)
+            .expect("organization invariants hold after an unpack");
+        Ok(OrganizationEvent::FolderUnpacked {
+            id: folder,
+            members,
         })
     }
 

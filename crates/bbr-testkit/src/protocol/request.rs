@@ -1210,6 +1210,14 @@ pub enum Request {
         x: f32,
         y: f32,
     },
+    /// Blueprint D25: a secondary press on the folder row of `folder` at
+    /// `(x, y)` opens the folder menu (the exact production listener
+    /// method). Its rows then take the `TabMenu*` seams.
+    RightClickFolderRow {
+        folder: u64,
+        x: f32,
+        y: f32,
+    },
     /// Blueprint D05: the Delete Space sheet's Cancel / Delete Space button
     /// paths (the production app methods the portal buttons call).
     SpaceDeleteCancel,

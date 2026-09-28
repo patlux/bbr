@@ -750,6 +750,7 @@ pub(crate) fn dispatch(
         Request::RightClickRow { .. }
         | Request::RightClickFavorite { .. }
         | Request::RightClickSpaceChip { .. }
+        | Request::RightClickFolderRow { .. }
         | Request::TabMenuSelect { .. }
         | Request::TabMenuSubmenuSelect { .. }
         | Request::TabMenuActivate { .. }

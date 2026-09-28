@@ -125,6 +125,11 @@ pub fn folders_surface(
                 MouseButton::Left,
                 callbacks::folder(&callbacks.on_focus_folder, id),
             )
+            // Blueprint D25: a secondary-click opens the folder menu.
+            .on_mouse_down(
+                MouseButton::Right,
+                callbacks::folder(&callbacks.on_context_menu_folder, id),
+            )
             .into_any(),
         );
         for member in folders

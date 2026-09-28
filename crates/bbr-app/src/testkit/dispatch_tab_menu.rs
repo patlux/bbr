@@ -81,6 +81,25 @@ pub(crate) fn dispatch_tab_menu(
             })
             .unwrap_or_else(err_response)
         }
+        Request::RightClickFolderRow { folder, x, y } => {
+            with_app(window, app, cx, |view, window, cx| {
+                use gpui::{point, px, Modifiers, MouseButton, MouseDownEvent};
+                view.open_folder_menu(
+                    bbr_domain::FolderId(*folder),
+                    &MouseDownEvent {
+                        button: MouseButton::Right,
+                        position: point(px(*x), px(*y)),
+                        modifiers: Modifiers::default(),
+                        click_count: 1,
+                        first_mouse: true,
+                    },
+                    window,
+                    cx,
+                );
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
         Request::TabMenuSelect { index } => with_app(window, app, cx, |view, window, cx| {
             view.tab_menu_select(*index, true, window, cx);
             Response::Ok

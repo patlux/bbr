@@ -1505,6 +1505,16 @@ authorities; it does not copy Zen/Firefox features or styling.
   After integrated B2, Tab/Favorite and BBR page-background menus may show
   capability-gated `Bookmark Page` / `Remove Bookmark` rows; both invoke the
   same app-owned Saved Page command as Cmd-D and never own duplicate policy.
+- **Folder menu (blueprint D25, implemented):** a secondary click on a
+  folder row opens `bbr-folder-menu` at the pointer, bound to that
+  `FolderId`; opening never toggles the folder. Rows: **Rename…**
+  (`-rename`, the §11.11 inline rename), **New Tab in Folder** (`-new-tab`:
+  ⌘T opens and the committed tab joins the folder, pinned; a palette closed
+  without a commit drops the target) and **Delete Folder — keep its tabs**
+  (`-unpack`: the settled Unpack — the members stay loose pinned tabs in
+  folder order, no tab closes, no session is touched). Open All Tabs and the
+  closing row stay omitted (§19 question 13); Change Icon…, Suspend All Tabs
+  and Move to Space › remain follow-ups of the packet.
 - **Stable family ids:** `bbr-tab-menu`, `bbr-favorite-menu`,
   `bbr-folder-menu`, `bbr-space-menu`, `bbr-page-menu`, and
   `bbr-nav-history-menu` (§11.14), with action/submenu ids owned by their
@@ -2125,7 +2135,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D22 | Full-screen card rules under test | W-5 | §2 | implemented | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
 | D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted | [split-app-composition](docs/roadmap/tasks/split-app-composition.md) |
 | D24 | Sidebar media card | S-8 PR-17 | §11.15 | adopted | [sidebar-media-control](docs/roadmap/tasks/sidebar-media-control.md) |
-| D25 | Folder context menu (ledger correction: M-2 was marked Shipped, but no folder menu exists) | M-2 S-4 | §11.13 §11.11 | adopted without the closing row (question 13) | [folder-context-menu](docs/roadmap/tasks/folder-context-menu.md) |
+| D25 | Folder context menu (ledger correction: M-2 was marked Shipped, but no folder menu exists) | M-2 S-4 | §11.13 §11.11 | implemented without Open All Tabs and the closing row (question 13) | [folder-context-menu](docs/roadmap/tasks/folder-context-menu.md) |
 
 Questions raised by the blueprint (board D-1), answered by the adoption as
 drawn: 1 yes, 300 ms dwell · 2 yes · 3 leading edge · 4 short name + glyph ·
@@ -2147,7 +2157,7 @@ drawn: 1 yes, 300 ms dwell · 2 yes · 3 leading edge · 4 short name + glyph ·
 | 10 | Stay native NSToolTip everywhere? | — |
 | 11 | Which shortcut opens a split (phase 6 open decision)? | D23 |
 | 12 | Safari and Chrome only in v1 (D15)? | D15 |
-| 13 | M-2 draws "Close Folder and Its Tabs…"; the 2026-09-27 settlement says no folder row closes tabs. Keep the row omitted? (Until answered, D25 ships Rename…, New Tab in Folder, Open All Tabs and "Delete Folder — keep its tabs".) | D25 |
+| 13 | M-2 draws "Close Folder and Its Tabs…"; the 2026-09-27 settlement says no folder row closes tabs. Keep the row omitted? M-2 also draws "Open All Tabs", which has no settled BBR meaning (wake every suspended member? select them?). (Until answered, D25 ships Rename…, New Tab in Folder and "Delete Folder — keep its tabs".) | D25 |
 
 ## Evidence
 

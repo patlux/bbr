@@ -24,6 +24,14 @@ the initial action list for the first slice; Change Icon…, Suspend All Tabs an
 Move to Space › remain scoped follow-ups of this packet. Rename reuses the D20
 inline rename.
 
+**First slice implemented 2026-09-29 (D25):** Rename…, New Tab in Folder and
+Delete Folder — keep its tabs ship through the Tab-menu machinery bound to a
+`FolderId` (`TabMenuState.bound_folder`, `app/tab_menu/folder.rs`). Open All
+Tabs is omitted as well: BBR has no settled meaning for it (wake every
+suspended member, or select them?), recorded in §19 question 13. Unpack is
+`FolderStore::unpack_folder` → `OrganizationController::unpack_folder`
+(`OrganizationEvent::FolderUnpacked`).
+
 ## Outcome
 
 Secondary-clicking a folder opens one production BBR menu bound to the exact
@@ -120,9 +128,13 @@ sidebar rendering, or their Gallery stories.
       live/suspended, active-tab member, split member, same-/cross-profile
       destination, and missing capabilities.
 - [ ] Opening/dismissing leaves folder expansion, browser selection, order,
-      sessions, and ownership unchanged.
+      sessions, and ownership unchanged. *(First slice: proven in the real-app
+      E2E below; no portable availability matrix yet.)*
 - [ ] Rename/icon validation, suspend-all result accounting, move isolation,
-      and unpack ordering (the settled delete semantics) are proven.
+      and unpack ordering (the settled delete semantics) are proven. *(Unpack
+      ordering, pinning and session preservation:
+      `unpacking_a_folder_keeps_its_members_as_loose_pinned_tabs`; menu rows:
+      `tab_menu::folder` tests. Icon, suspend-all and move remain open.)*
 - [ ] Nested/convert rows cannot appear without their owning capabilities.
 
 ### Real-app E2E
@@ -187,14 +199,19 @@ row omitted rather than implementing ambiguous or destructive behavior.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                first slice (D25) — Rename…, New Tab in Folder, Delete
+                        Folder — keep its tabs; secondary-click on a folder row
+Commits:                see git log (feat commit carrying blueprint D25)
+Functional evidence:    cargo test -p bbr-browser organization_space_tests;
+                        cargo test -p bbr tab_menu::folder
+Real-app E2E:           just e2e-shell-organize (e2e_shell_folder_menu:
+                        open without toggle, Escape no-op, rename, new tab
+                        joins pinned, unpack keeps tabs and sessions)
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §11.13 folder menu, §19 D25 + question 13
+Open blockers and non-goals: Open All Tabs / closing row (question 13); Change
+                        Icon…, Suspend All Tabs, Move to Space › follow-ups
+Worktree state:         main, clean after commit
 
 Planning/read-only:
 Implementation:

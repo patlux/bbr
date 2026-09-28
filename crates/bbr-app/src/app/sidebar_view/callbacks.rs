@@ -239,6 +239,15 @@ impl BbrApp {
             entity.update(cx, |view, cx| view.focus_folder_row(folder, window, cx));
         });
 
+        // Blueprint D25: a secondary-click on a folder row opens the folder
+        // menu bound to that exact folder.
+        let entity = cx.entity();
+        let on_context_menu_folder: FolderCallback = Rc::new(move |folder, event, window, cx| {
+            entity.update(cx, |view, cx| {
+                view.open_folder_menu(folder, event, window, cx)
+            });
+        });
+
         // §11.11: the pointer enters/leaves a folder row — hover/focus
         // reveals the `type:meta` count (the same production hover path as
         // the row wash).
@@ -389,6 +398,7 @@ impl BbrApp {
             on_context_menu_row,
             on_context_menu_favorite,
             on_focus_folder,
+            on_context_menu_folder,
             on_hover_folder,
             on_toggle_folder,
             on_select_folder_member,

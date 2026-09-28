@@ -990,6 +990,9 @@ pub struct TabMenuSnapshot {
     /// (`None` for the Tab/Favorite menus).
     #[serde(default)]
     pub bound_space: Option<u64>,
+    /// Blueprint D25: the exact `FolderId` the folder menu is bound to.
+    #[serde(default)]
+    pub bound_folder: Option<u64>,
     /// The stable presentation source key (`bbr-tab-menu` |
     /// `bbr-favorite-menu` | `bbr-space-menu`).
     pub source_key: String,

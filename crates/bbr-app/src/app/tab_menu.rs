@@ -52,6 +52,8 @@ pub const FAVORITE_MENU_SOURCE: &str = "bbr-favorite-menu";
 /// The §15 id of the space menu (blueprint D05; the same menu family,
 /// bound to a `SpaceId` instead of a `TabId`).
 pub const SPACE_MENU_SOURCE: &str = "bbr-space-menu";
+/// The §15 id of the folder menu (blueprint D25; bound to a `FolderId`).
+pub const FOLDER_MENU_SOURCE: &str = "bbr-folder-menu";
 
 /// The typed action one menu row dispatches. Rows without an authority are
 /// never built, so this enum is exactly the set of owned actions today.
@@ -76,6 +78,10 @@ pub enum TabMenuAction {
     MoveSpaceLeft,
     MoveSpaceRight,
     DeleteSpace,
+    /// Blueprint D25 folder-menu rows (bound to the menu's `FolderId`).
+    RenameFolder,
+    NewTabInFolder,
+    UnpackFolder,
 }
 
 impl TabMenuAction {
@@ -85,7 +91,11 @@ impl TabMenuAction {
     pub fn hands_off_focus(self) -> bool {
         matches!(
             self,
-            Self::EditSpace | Self::NewTabInSpace | Self::DeleteSpace
+            Self::EditSpace
+                | Self::NewTabInSpace
+                | Self::DeleteSpace
+                | Self::RenameFolder
+                | Self::NewTabInFolder
         )
     }
 }
@@ -165,6 +175,8 @@ pub struct TabMenuState {
     /// Blueprint D05: the exact `SpaceId` the space menu is bound to;
     /// `None` for the Tab/Favorite menus.
     pub bound_space: Option<SpaceId>,
+    /// Blueprint D25: the exact `FolderId` the folder menu is bound to.
+    pub bound_folder: Option<FolderId>,
     /// The stable presentation source key (`bbr-tab-menu` |
     /// `bbr-favorite-menu`).
     pub source_key: String,
@@ -200,6 +212,7 @@ impl Default for TabMenuState {
             focused: false,
             bound_tab: None,
             bound_space: None,
+            bound_folder: None,
             source_key: String::new(),
             selected: None,
             open_submenu: None,
@@ -606,6 +619,7 @@ impl TabMenuController {
 }
 
 mod app;
+mod folder;
 mod space;
 #[cfg(test)]
 mod tests;
