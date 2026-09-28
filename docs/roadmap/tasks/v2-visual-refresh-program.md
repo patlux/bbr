@@ -83,18 +83,22 @@ current-delivery document records a parallel lane.
 
 ### Unit and contract
 
-- [ ] Each slice's unit/contract evidence (per packet).
+- [x] Each slice's unit/contract evidence (per packet).
 
 ### Real-app E2E
 
-- [ ] Each slice's affected suites green (per packet).
+- [x] Each slice's affected suites green (per packet).
 - [ ] Final canonical `just e2e` aggregate without `e2e-perf`, plus
       `e2e-peek` and `e2e-gallery`, green from the integrated commit.
+      *(31/32 suites green from `92263be8`; one portal hardening test needs
+      an unlocked session — see the [closeout](v2-closeout.md) ledger.)*
 
 ### Performance
 
 - [ ] Scenario code for new user-visible timing lands with its slice;
       execution deferred (Patrick, 2026-09-27) and recorded as unpassed.
+      *(Scenario code landed: `perf_common/idle.rs` (S6) and the tint-fade
+      path assertion (S7); execution not run.)*
 
 ## Completion gates
 
@@ -124,12 +128,35 @@ change needs a schema decision.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
+Outcome:                S0–S11 integrated on main in the recorded order
+                        (S0 → S1 → S2 → S3 → S4 → S5 → S6 → S9 → S7 → S8 →
+                        S10 → S11). Each slice packet holds its evidence and
+                        self-review.
+Commits:                S0 907a668e · S1 cb943d27 · S2 b5eaa1d2 ·
+                        S3 7b5d454c · S4 3a12afef · S5 88215758 ·
+                        S6 b7a9aab7 · S9 b45b2a61 · S7 d9364da7 ·
+                        S8 8ac17909 · S10 f4c02ee2 · S11 92263be8 + closeout
+                        docs commit.
+Functional evidence:    just verify, workspace + testkit clippy and the
+                        testkit bin tests per slice (see packets).
+Real-app E2E:           per-slice affected suites green; canonical aggregate
+                        from 92263be8: 31/32 suites green, e2e-shell-portal
+                        6/7 (minimize/restore hit test blocked by the locked
+                        session's loginwindow shield).
 Performance evidence:   unpassed — execution deferred by Patrick
 Roadmap/documentation updates:
+                        DESIGN §18.6 all rows landed; ARCHITECTURE §9e/§9f;
+                        E2E_ARCHITECTURE §7q; current delivery.
+Deviations:             S2 dark footer veil 5 % (DESIGN-recorded); S3 D3
+                        tinted-rail ink bar 12:1 (D3); S3 heading tracking
+                        not expressible in GPUI (omitted); S6 attention
+                        pulse E2E not expressible (no producer); S6–S8 idle
+                        and motion proof render-side (no display-link
+                        frames in hidden/locked windows); S10 persists the
+                        whole curated appearance, not only the paper
+                        (schema v4).
 Open blockers and non-goals:
+                        rerun `just e2e-shell-portal` in an unlocked
+                        session; performance execution deferred.
 Worktree state:         main, serial
 ```

@@ -57,7 +57,7 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 | V2-S8 | Drawn empty states | `integrated` | `main` (serial) | orchestrator | [empty states](../roadmap/tasks/v2-empty-states.md) | Integrated; verify, testkit clippy, errors 11/11 (new illustrations E2E), tabs, states, gallery green, visual capture read; self-review recorded |
 | V2-S9 | Phosphor-b app icon | `integrated` | `main` (serial) | orchestrator | [brand icon](../roadmap/tasks/v2-brand-icon.md) | Integrated; verify, package-test 14/14, package + determinism identical, package-smoke alive; self-review recorded |
 | V2-S10 | Curated intensity and grain | `integrated` | `main` (serial) | orchestrator | [theme picker](../roadmap/tasks/v2-theme-picker.md) | Integrated; verify, testkit clippy, persistence (new space-paper restart E2E), spaces, gallery green, visual capture read; whole appearance persists (schema v4); self-review recorded |
-| V2-S11 | Gallery, documentation and closeout | `running` | `main` (serial) | orchestrator | [closeout](../roadmap/tasks/v2-closeout.md) | after S10; canonical aggregate |
+| V2-S11 | Gallery, documentation and closeout | `blocked` | `main` (serial) | orchestrator | [closeout](../roadmap/tasks/v2-closeout.md) | Gallery/docs integrated as `92263be8`; canonical aggregate 31/32 green; `e2e-shell-portal` minimize/restore hit test needs an unlocked macOS session (loginwindow shield frontmost). Unblocker: unlock, then `BBR_E2E_TIMEOUT=10m just e2e-shell-portal` |
 
 The orchestrator (session `01a0e454`) is the only product writer and runs the V2 slices serially on `main`: no subagent or background workflow is authorized for this program, so the packets' parallel-capable pairs are executed in order and each slice is reviewed by a documented self-review against its packet before integration. Independent reviews use `homelab-llm/opencode-go/deepseek-v4-flash:high`: the route named in `AGENTS.md` (`homelab-llm/deepseek-v4-flash`) no longer resolves in the model registry. All historical BBR worktrees remain preserved.
 
@@ -74,7 +74,7 @@ The former post-F2a and Daily-driver waves are closed historical evidence. Their
 1. `CONTROL-RECONCILE` is closed; its exact durable-contract commit is `d2b507f56b9da068e7df0aa08c3f8b12cdec506c`, and no writer remains active.
 2. Do not infer a product lane from an idle historical worktree or session. Every new writer requires a fresh exact-base, status, process, lock, and ownership preflight.
 3. `FOLDER-PIN-INVARIANT` has landed, so Folder-menu behavior may assume folders contain pinned tabs. The design-branch packets (`DESIGN-CARD` → `DESIGN-ADDRESS` → `DESIGN-FAVORITES`) are integrated.
-4. V2 runs now, serially on `main`: S0 → S1 → S2 → S3 → S4 → S5 → S6 → S9 → S7 → S8 → S10 → S11. Each slice lands its DESIGN sections and §18.6 row with its implementation.
+4. V2 ran serially on `main`: S0 → S1 → S2 → S3 → S4 → S5 → S6 → S9 → S7 → S8 → S10 → S11, all integrated (through `92263be8`). Only the S11 canonical portal rerun in an unlocked session remains.
 5. RA-MEDIA resumes after V2-S11 as a capability-first sequence: macOS adapter → Sidebar media control (its portable contract is integrated).
 6. Split stays blocked; no preflight, inspection, port, review, or mutation of `bbr-split-app-composition` is authorized.
 7. GUI suites remain host-exclusive through the repository lock and need an unlocked macOS session (a locked session presents no frames, so render-gated E2E time out). Performance execution is deferred to the end of the queue.
