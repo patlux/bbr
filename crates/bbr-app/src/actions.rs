@@ -66,5 +66,9 @@ gpui::actions!(
         /// default focus-traversal `Tab`; the handler is a no-op when no
         /// sheet is presented (Tab had no observable effect before).
         AuthSheetFieldTab,
+        /// `Opt-Cmd-S`: move keyboard focus into the rail on the selected
+        /// row (blueprint D21); ↑↓ move, Return selects and returns focus
+        /// to the page.
+        FocusRail,
     ]
 );

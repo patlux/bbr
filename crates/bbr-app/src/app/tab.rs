@@ -45,6 +45,22 @@ impl BbrApp {
         }
     }
 
+    /// Blueprint D21 (`⌥⌘S`): move keyboard focus into the rail on the
+    /// selected row — the tab list takes chrome focus with its ring on the
+    /// selected tab, scrolled into view; ↑↓ move and Return selects and
+    /// returns focus to the page (the existing tab-list keyboard). An open
+    /// command surface closes first; a hidden rail shows (it cannot take
+    /// focus while collapsed).
+    pub fn focus_rail(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.dismiss_command_portal(cx);
+        if !self.sidebar_visible {
+            self.toggle_sidebar(window, cx);
+        }
+        self.focus_tab_list(window, cx);
+        self.ensure_active_visible();
+        cx.notify();
+    }
+
     /// Focus the tab list (chrome domain) without activating the command bar.
     pub(super) fn focus_tab_list(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.command_bar_mode = crate::command_bar::CommandBarMode::Inactive;

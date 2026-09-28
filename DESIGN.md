@@ -582,6 +582,11 @@ unchanged; only the inter-row pitch grew.
   non-interactive space-strip viewport are skipped. An absent media card adds
   no focus stop. Both directions are verified by real-app focus E2E (a11y
   track).
+- **Keyboard entry into the rail (blueprint D21):** `⌥⌘S` moves keyboard
+  focus from anywhere into the rail on the selected tab row (the ring shows,
+  the row scrolls into view, an open command surface closes, a hidden rail
+  shows first); `↑`/`↓` move the selection and `Return` selects and hands
+  focus back to the page.
 - **Focus after tab mutation:** governed by the browser interaction contract;
   the visual system only guarantees the ring lands on the correct control in
   the same presentation frame as the selection change.
@@ -2113,7 +2118,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D18 | About and updates | L-12 | §1 §7 | adopted | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
 | D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | adopted | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |
 | D20 | New folders open in rename | S-4 PR-06 | §11.11 | implemented | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |
-| D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | adopted | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
+| D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | implemented | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
 | D22 | Full-screen card rules under test | W-5 | §2 | adopted | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
 | D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted | [split-app-composition](docs/roadmap/tasks/split-app-composition.md) |
 | D24 | Sidebar media card | S-8 PR-17 | §11.15 | adopted | [sidebar-media-control](docs/roadmap/tasks/sidebar-media-control.md) |

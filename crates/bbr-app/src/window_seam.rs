@@ -15,9 +15,10 @@ use smol::channel::Receiver;
 use smol::prelude::*;
 
 use crate::actions::{
-    AuthSheetFieldTab, Back, CloseTab, FindInPage, FocusCommandBar, FocusWeb, Forward, MoveTab,
-    NewSpace, NewTab, OpenOverlay, OpenPalette, OpenSavedPagesLibrary, PinTab, Reload, ReopenTab,
-    ReorderTabDown, ReorderTabUp, ToggleBookmark, ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
+    AuthSheetFieldTab, Back, CloseTab, FindInPage, FocusCommandBar, FocusRail, FocusWeb, Forward,
+    MoveTab, NewSpace, NewTab, OpenOverlay, OpenPalette, OpenSavedPagesLibrary, PinTab, Reload,
+    ReopenTab, ReorderTabDown, ReorderTabUp, ToggleBookmark, ToggleSidebar, ZoomIn, ZoomOut,
+    ZoomReset,
 };
 use crate::app::BbrApp;
 /// Root-window + app-entity seam: run an update against the separately
@@ -232,6 +233,17 @@ pub(crate) fn install_actions(
     });
     cx.on_action({
         let app = app.clone();
+        move |_: &FocusRail, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.focus_rail(window, cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
         move |_: &FindInPage, cx| {
             let app = app.clone();
             cx.defer(move |cx| {
@@ -384,6 +396,7 @@ pub(crate) fn install_actions(
 
     cx.bind_keys([
         KeyBinding::new("cmd-f", FindInPage, None),
+        KeyBinding::new("alt-cmd-s", FocusRail, None),
         KeyBinding::new("cmd-l", OpenOverlay, None),
         KeyBinding::new("escape", FocusWeb, None),
         KeyBinding::new("cmd-[", Back, None),

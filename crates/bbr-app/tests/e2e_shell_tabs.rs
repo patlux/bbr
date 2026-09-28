@@ -15,6 +15,9 @@ mod e2e_common;
 use bbr_testkit::protocol::CommandBarMode;
 use e2e_common::*;
 
+#[path = "e2e_shell_tabs/rail_focus.rs"]
+mod rail_focus;
+
 #[test]
 #[ignore]
 fn pointer_opens_selects_closes_reopens_visible_tabs() {

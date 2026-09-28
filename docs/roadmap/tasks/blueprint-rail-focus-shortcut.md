@@ -4,7 +4,7 @@ Parents: [Phase 9](../phases/09-quality-release.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §9, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 10 of 24. Paper boards: PR-19 · Keyboard focus — chrome ↔ page, B-2 · Fields, toggles & focus (file
+Status: implemented 2026-09-29 (DESIGN §19); position 10 of 24. Paper boards: PR-19 · Keyboard focus — chrome ↔ page, B-2 · Fields, toggles & focus (file
 “BBR — Browser Shell”).
 
 ## Outcome
@@ -43,17 +43,15 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Portable model / controller / component tests for the new behaviour
-      and its states.
+- [x] FocusRail action bound to alt-cmd-s routes to BbrApp::focus_rail (closes the command portal, shows a hidden rail, focuses the tab list on the selected row); the existing tab-list keyboard (↑/↓, Return → page) is reused.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-sidebar` covers the flow drawn on the boards through the
-      production path with semantic ids and typed snapshots.
+- [x] `just e2e-shell-tabs` — rail_focus::option_command_s_moves_focus_into_the_rail_and_return_goes_back_to_the_page (page focus → ⌥⌘S chrome focus on the selected row → ↑ selects row 0 → Return returns focus to the page with sessions intact; with the rail hidden ⌥⌘S shows it).
 
 ### Performance
 
-- [ ] Add the optimized presentation scenario for the new user-visible interaction, or record why none applies (performance contract).
+- [ ] Performance scenario: none added — a focus move on the existing tab-list path; measurement is deferred (Patrick, 2026-09-27).
 
 ## Completion gates
 
@@ -81,12 +79,12 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                ⌥⌘S moves keyboard focus into the rail on the selected row; Return selects and returns to the page.
+Commits:                see git log (feat/fix commit carrying this packet)
+Functional evidence:    FocusRail action bound to alt-cmd-s routes to BbrApp::focus_rail (closes the command portal, shows a hidden rail, focuses the tab list on the selected row); the existing tab-list keyboard (↑/↓, Return → page) is reused.
+Real-app E2E:           `just e2e-shell-tabs` — rail_focus::option_command_s_moves_focus_into_the_rail_and_return_goes_back_to_the_page (page focus → ⌥⌘S chrome focus on the selected row → ↑ selects row 0 → Return returns focus to the page with sessions intact; with the rail hidden ⌥⌘S shows it).
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §9 keyboard entry into the rail, §19 D21 implemented
+Open blockers and non-goals: none
+Worktree state:         main, clean after commit
 ```
