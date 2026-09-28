@@ -49,6 +49,7 @@ acceptance live in the program packet.
 
 - [x] Deliver the [v2 visual refresh and motion program](../tasks/v2-visual-refresh-program.md) (S0–S11).
 - [x] Align the shipped v2 shell with the Paper references via [S12 Paper alignment](../tasks/v2-paper-alignment.md).
+- [ ] Design the complete browser in Paper — every surface, state and process, with a coverage matrix and a delta ledger against the code — via the [complete browser blueprint](../tasks/paper-browser-blueprint.md) (2026-09-28).
 
 The sidebar media control is prioritized immediately after these slices; its
 canonical owner stays Phase 8 through the

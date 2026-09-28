@@ -1,0 +1,5 @@
+shots/
+.session
+*.png
+*.jpg
+__pycache__/
