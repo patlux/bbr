@@ -9,6 +9,7 @@ Covers:
 
 from __future__ import annotations
 
+import math
 import os
 import plistlib
 import shutil
@@ -21,6 +22,7 @@ import zlib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+REPO = Path(__file__).resolve().parent.parent.parent
 
 from package import build_app, gen_icon, smoke_launch  # noqa: E402
 
@@ -87,22 +89,70 @@ class IconTests(unittest.TestCase):
         self.assertEqual(gen_icon.build_icns(), gen_icon.build_icns())
 
     def test_render_shape(self) -> None:
-        rgba = gen_icon.render_rgba(128)
+        """The Phosphor b (DESIGN §18.1 D8): dark tile, light stem, accent
+        arc as the bowl, faint track where the arc is not."""
         size = 128
-        scale = size / gen_icon.BASE
+        rgba = gen_icon.render_rgba(size)
 
-        def pixel(u: float, v: float) -> tuple[int, ...]:
-            i = (int(v * size) * size + int(u * size)) * 4
+        def pixel(x: float, y: float) -> tuple[int, ...]:
+            """Sample at design-space coordinates (0..1024)."""
+            px = int(x / gen_icon.BASE * size)
+            py = int(y / gen_icon.BASE * size)
+            i = (py * size + px) * 4
             return tuple(rgba[i:i + 4])
 
-        # Outside the rounded tile corner the pixel is transparent.
-        self.assertEqual(pixel(0.005, 0.005), (0, 0, 0, 0))
-        # Mid-left edge is accent tile.
-        self.assertEqual(pixel(0.1, 0.5), (*gen_icon.ACCENT, 255))
-        # Inside the bowl hole the accent shows through the ring hole.
-        self.assertEqual(pixel(0.62, 0.53), (*gen_icon.ACCENT, 255))
-        # On the stem the white monogram covers the tile.
-        self.assertEqual(pixel(0.38, 0.5), (*gen_icon.MONOGRAM, 255))
+        # Outside the continuous-corner tile the pixel is transparent.
+        self.assertEqual(pixel(4, 4), (0, 0, 0, 0))
+        self.assertEqual(pixel(110, 110)[3], 0, "the corner curves away")
+        # The tile body is the dark gradient.
+        r, g, b, a = pixel(160, 520)
+        self.assertEqual(a, 255)
+        self.assertLess(max(r, g, b), 60)
+        # The stem is the light ink bar.
+        r, g, b, _ = pixel(382, 330)
+        self.assertGreater(min(r, g, b), 200)
+        # The arc's bottom (90°) is the accent: teal, green-dominant.
+        cx, cy, radius, _ = gen_icon.BOWL
+        r, g, b, _ = pixel(cx, cy + radius)
+        self.assertGreater(g, 150)
+        self.assertGreater(g, r + 60)
+        # Where the arc is not (330°), only the faint track shows.
+        angle = math.radians(330)
+        r, g, b, _ = pixel(cx + radius * math.cos(angle), cy + radius * math.sin(angle))
+        self.assertLess(g, 140)
+        # The bowl's hole is dark (halo only), never the arc colour.
+        r, g, b, _ = pixel(cx, cy)
+        self.assertLess(max(r, g, b), 120)
+
+    def test_mark_stays_legible_at_16_points(self) -> None:
+        """Size ladder: at 16 px the stem and the accent bowl still resolve
+        to distinct pixels, and the tile corners stay open."""
+        rgba = gen_icon.downsample(gen_icon.render_rgba(256), 256, 16)
+        pixels = [tuple(rgba[i:i + 4]) for i in range(0, len(rgba), 4)]
+        def luminance(p: tuple[int, ...]) -> float:
+            def lin(c: int) -> float:
+                v = c / 255
+                return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+            return 0.2126 * lin(p[0]) + 0.7152 * lin(p[1]) + 0.0722 * lin(p[2])
+
+        tile = pixels[3 * 16 + 3]  # plain tile body near the top-left
+        teal = [p for p in pixels if p[1] > 110 and p[1] > p[0] + 40]
+        # The stem: neutral (not teal) pixels at ≥ 3:1 against the tile.
+        stem = [p for p in pixels
+                if p[3] == 255 and abs(p[1] - p[0]) < 25
+                and (luminance(p) + 0.05) / (luminance(tile) + 0.05) >= 3.0]
+        self.assertGreaterEqual(len(teal), 6, "the accent bowl reads")
+        self.assertGreaterEqual(len(stem), 3, "the stem reads")
+        self.assertLess(pixels[0][3], 128, "the tile corner stays open")
+
+    def test_vector_master_matches_the_renderer(self) -> None:
+        """The committed SVG master carries the renderer's key geometry."""
+        master = (REPO / "packaging" / "icon" / "bbr-icon.svg").read_text()
+        cx, cy, radius, stroke = gen_icon.BOWL
+        for token in (f'cx="{cx:g}"', f'cy="{cy:g}"', f'r="{radius:g}"',
+                      f'stroke-width="{stroke:g}"', "#3DF0CE", "#0A7967",
+                      "#1C2127", "#0B0D10", "#ECEEF1"):
+            self.assertIn(token, master)
 
 
 class BundleTests(unittest.TestCase):

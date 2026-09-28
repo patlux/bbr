@@ -55,7 +55,7 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 | V2-S6 | Motion core | `integrated` | `main` (serial) | orchestrator | [motion core](../roadmap/tasks/v2-motion-core.md) | Integrated; verify, testkit clippy, sidebar/hover/errors/tabs/favicons/gallery green; attention E2E not expressible (no producer); self-review recorded |
 | V2-S7 | After-commit moments | `running` | `main` (serial) | orchestrator | [motion moments](../roadmap/tasks/v2-motion-moments.md) | after S6 |
 | V2-S8 | Drawn empty states | `planned` | `main` (serial) | orchestrator | [empty states](../roadmap/tasks/v2-empty-states.md) | after S7 |
-| V2-S9 | Phosphor-b app icon | `planned` | `main` (serial) | orchestrator | [brand icon](../roadmap/tasks/v2-brand-icon.md) | after S6 |
+| V2-S9 | Phosphor-b app icon | `integrated` | `main` (serial) | orchestrator | [brand icon](../roadmap/tasks/v2-brand-icon.md) | Integrated; verify, package-test 14/14, package + determinism identical, package-smoke alive; self-review recorded |
 | V2-S10 | Curated intensity and grain | `planned` | `main` (serial) | orchestrator | [theme picker](../roadmap/tasks/v2-theme-picker.md) | after S8 |
 | V2-S11 | Gallery, documentation and closeout | `planned` | `main` (serial) | orchestrator | [closeout](../roadmap/tasks/v2-closeout.md) | after S10; canonical aggregate |
 

@@ -1,34 +1,42 @@
-"""Deterministic BBR placeholder app icon (.icns), Python stdlib only.
+"""Deterministic BBR app icon (.icns) — "Phosphor b", Python stdlib only.
 
-Renders a rounded-square tile in the DESIGN token accent (Phosphor teal
-`#0E8F79`, DESIGN §3 `color:accent` light) with a white geometric lowercase
-"b" monogram, then packs the canonical icns sizes (128/256/512/1024) as PNG
-chunks. Every step is pure integer/float math: no randomness, no timestamps,
-fixed zlib level, so identical input always yields byte-identical output.
+DESIGN §18.1 D8 concept C: a lowercase b on a dark continuous-corner tile
+whose bowl is the accent loading arc (the same 270°-class spinner the tab rows
+turn while loading), with a soft Phosphor halo. The vector master is
+`packaging/icon/bbr-icon.svg`; this module renders the same geometry with
+pure float math — analytic signed distances give anti-aliased edges, no
+randomness, no timestamps, fixed zlib level — so identical input always
+yields byte-identical output.
 
-Geometry (1024-unit design space, y grows downward):
+Geometry (1024-unit design space, y grows downward, the macOS icon grid):
 
-  background   rounded square, full canvas, corner radius 192
-  stem         pill: x 340..428, y 300..760, corner radius 44
-  bowl         ring centred (620, 545), outer radius 205, inner radius 118
+  tile     superellipse (n = 5) filling 100..924 — the continuous corner
+  fill     vertical gradient #1C2127 → #0B0D10, Phosphor halo at the bowl
+  stem     rounded bar x 353..411, y 259..751, radius 29, #ECEEF1
+  bowl     ring centred (555, 591), radius 159, stroke 58: a faint white
+           track plus the accent arc (62 % of the turn, starting 40° past
+           3 o'clock, round caps, #3DF0CE → #0A7967) with a soft glow
 
-The inner disc of the bowl shows the accent tile through the ring hole; the
-stem overlaps the ring's left edge so both read as one "b" glyph.
-
-The largest size is rendered one sample per pixel; the smaller icns sizes are
-produced by exact box downsampling, which also anti-aliases them.
+The largest size is rendered at one analytic sample per pixel; the smaller
+icns sizes are exact box downsamples of it.
 """
 
 from __future__ import annotations
 
+import math
 import struct
 import sys
 import zlib
 from pathlib import Path
 
-# DESIGN §3 `color:accent` (light) #0E8F79 — the single Phosphor signal hue.
-ACCENT = (14, 143, 121)
-MONOGRAM = (255, 255, 255)
+# Colours (sRGB 8-bit).
+BG_TOP = (0x1C, 0x21, 0x27)
+BG_BOTTOM = (0x0B, 0x0D, 0x10)
+STEM_COLOR = (0xEC, 0xEE, 0xF1)
+ARC_FROM = (0x3D, 0xF0, 0xCE)  # color:accent.ink (dark)
+ARC_TO = (0x0A, 0x79, 0x67)  # color:accent (light)
+HALO = (0x2A, 0xD4, 0xB6)  # color:accent (dark)
+WHITE = (0xFF, 0xFF, 0xFF)
 
 # icns chunk type -> square pixel size. Modern macOS scales the largest PNG
 # chunk down for every display size, so the four canonical chunks suffice.
@@ -36,54 +44,123 @@ ICNS_SIZES = ((b"ic07", 128), (b"ic08", 256), (b"ic09", 512), (b"ic10", 1024))
 BASE = ICNS_SIZES[-1][1]  # 1024
 
 # Design-space geometry (unit scale 0..BASE).
-TILE_RADIUS = 192
-STEM = (340, 300, 428, 760, 44)  # x0, y0, x1, y1, corner radius
-RING = (620, 545, 205, 118)  # centre x, centre y, outer radius, inner radius
+TILE = (100.0, 100.0, 924.0, 924.0)  # x0, y0, x1, y1 — macOS 824 pt grid
+TILE_EXPONENT = 5.0  # superellipse n: the continuous corner
+STEM = (353.0, 259.0, 411.0, 751.0, 29.0)  # x0, y0, x1, y1, corner radius
+BOWL = (555.0, 591.0, 159.0, 58.0)  # centre x, centre y, radius, stroke
+ARC_START_DEG = 40.0  # clockwise from 3 o'clock (screen coordinates)
+ARC_SWEEP = 0.62  # share of the full turn
+TRACK_OPACITY = 0.12
+GLOW_SIGMA = 22.0
+GLOW_OPACITY = 0.45
+HALO_RADIUS = 343.0
+HALO_OPACITY = 0.35
 
 
-def _inside_rounded_rect(x: float, y: float, x0: float, y0: float, x1: float,
-                         y1: float, r: float) -> bool:
-    """Point-in-rounded-rectangle test (radius r may be 0 for a plain rect)."""
-    cx = min(max(x, x0 + r), x1 - r)
-    cy = min(max(y, y0 + r), y1 - r)
-    dx = x - cx
-    dy = y - cy
-    return dx * dx + dy * dy <= r * r
+def _coverage(signed_distance: float) -> float:
+    """Pixel coverage of a shape from its signed distance (px, < 0 inside)."""
+    return min(1.0, max(0.0, 0.5 - signed_distance))
 
 
-def _inside_ring(x: float, y: float, cx: float, cy: float, outer: float,
-                 inner: float) -> bool:
-    """Point-in-annulus test; the inner disc shows the tile through the hole."""
-    d2 = (x - cx) ** 2 + (y - cy) ** 2
-    return d2 <= outer * outer and d2 >= inner * inner
+def _tile_distance(x: float, y: float) -> float:
+    """Approximate signed distance to the superellipse tile boundary."""
+    x0, y0, x1, y1 = TILE
+    half = (x1 - x0) / 2.0
+    u = abs(x - (x0 + x1) / 2.0) / half
+    v = abs(y - (y0 + y1) / 2.0) / half
+    if u == 0.0 and v == 0.0:
+        return -half
+    f = (u ** TILE_EXPONENT + v ** TILE_EXPONENT) ** (1.0 / TILE_EXPONENT)
+    return (f - 1.0) * half
+
+
+def _rounded_rect_distance(x: float, y: float, x0: float, y0: float,
+                           x1: float, y1: float, r: float) -> float:
+    """Signed distance to a rounded rectangle."""
+    cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+    hx, hy = (x1 - x0) / 2.0 - r, (y1 - y0) / 2.0 - r
+    qx, qy = abs(x - cx) - hx, abs(y - cy) - hy
+    outside = math.hypot(max(qx, 0.0), max(qy, 0.0))
+    return outside + min(max(qx, qy), 0.0) - r
+
+
+def _arc_centreline_distance(x: float, y: float) -> float:
+    """Distance from a point to the accent arc's centreline (round caps)."""
+    cx, cy, radius, _ = BOWL
+    dx, dy = x - cx, y - cy
+    start = math.radians(ARC_START_DEG)
+    sweep = ARC_SWEEP * 2.0 * math.pi
+    angle = (math.atan2(dy, dx) - start) % (2.0 * math.pi)
+    if angle <= sweep:
+        return abs(math.hypot(dx, dy) - radius)
+    ends = (start, start + sweep)
+    return min(
+        math.hypot(x - (cx + radius * math.cos(a)), y - (cy + radius * math.sin(a)))
+        for a in ends
+    )
+
+
+def _arc_colour(x: float, y: float) -> tuple[float, float, float]:
+    """The arc's diagonal gradient across the bowl's bounding box."""
+    cx, cy, radius, _ = BOWL
+    t = ((x - (cx - radius)) + (y - (cy - radius))) / (4.0 * radius)
+    t = min(1.0, max(0.0, t))
+    return tuple(a + (b - a) * t for a, b in zip(ARC_FROM, ARC_TO))
+
+
+def _over(dst: list[float], colour: tuple[float, ...], alpha: float) -> None:
+    """Source-over an opaque colour at `alpha` onto the opaque `dst` RGB."""
+    if alpha <= 0.0:
+        return
+    for c in range(3):
+        dst[c] = colour[c] * alpha + dst[c] * (1.0 - alpha)
+
+
+def _pixel(x: float, y: float) -> tuple[int, int, int, int]:
+    """Shade one design-space sample; returns straight (non-premultiplied)
+    8-bit RGBA."""
+    tile = _coverage(_tile_distance(x, y))
+    if tile <= 0.0:
+        return (0, 0, 0, 0)
+    t = (y - TILE[1]) / (TILE[3] - TILE[1])
+    rgb = [a + (b - a) * min(1.0, max(0.0, t)) for a, b in zip(BG_TOP, BG_BOTTOM)]
+    cx, cy, radius, stroke = BOWL
+    halo = max(0.0, 1.0 - math.hypot(x - cx, y - cy) / HALO_RADIUS)
+    _over(rgb, HALO, HALO_OPACITY * halo)
+    _over(rgb, STEM_COLOR, _coverage(_rounded_rect_distance(x, y, *STEM)))
+    ring = abs(math.hypot(x - cx, y - cy) - radius) - stroke / 2.0
+    _over(rgb, WHITE, TRACK_OPACITY * _coverage(ring))
+    arc = _arc_centreline_distance(x, y) - stroke / 2.0
+    colour = _arc_colour(x, y)
+    glow = math.exp(-(max(0.0, arc) ** 2) / (2.0 * GLOW_SIGMA ** 2))
+    _over(rgb, colour, GLOW_OPACITY * glow)
+    _over(rgb, colour, _coverage(arc))
+    return (
+        int(round(rgb[0])),
+        int(round(rgb[1])),
+        int(round(rgb[2])),
+        int(round(255.0 * tile)),
+    )
 
 
 def render_rgba(size: int) -> bytes:
-    """Render the icon at `size` x `size` as raw RGBA bytes (8-bit)."""
+    """Render the icon at `size` x `size` as raw RGBA bytes (8-bit), one
+    analytic sample per pixel centre."""
     scale = BASE / size
     out = bytearray(size * size * 4)
     i = 0
     for py in range(size):
         y = (py + 0.5) * scale
         for px in range(size):
-            x = (px + 0.5) * scale
-            if _inside_rounded_rect(x, y, 0, 0, BASE, BASE, TILE_RADIUS):
-                if (_inside_rounded_rect(x, y, *STEM)
-                        or _inside_ring(x, y, *RING)):
-                    out[i] = MONOGRAM[0]
-                    out[i + 1] = MONOGRAM[1]
-                    out[i + 2] = MONOGRAM[2]
-                else:
-                    out[i] = ACCENT[0]
-                    out[i + 1] = ACCENT[1]
-                    out[i + 2] = ACCENT[2]
-                out[i + 3] = 255
+            out[i:i + 4] = bytes(_pixel((px + 0.5) * scale, y))
             i += 4
     return bytes(out)
 
 
-def _box_downsample(rgba: bytes, src: int, dst: int) -> bytes:
-    """Exact box filter (k x k mean) from `src` to `dst`; dst divides src."""
+def downsample(rgba: bytes, src: int, dst: int) -> bytes:
+    """Exact box filter (k x k mean) from `src` to `dst`; dst divides src.
+    Colour is averaged alpha-weighted so transparent margins never darken
+    the tile edge."""
     k = src // dst
     if src % dst or k <= 0:
         raise ValueError(f"cannot downsample {src} to {dst}")
@@ -96,14 +173,16 @@ def _box_downsample(rgba: bytes, src: int, dst: int) -> bytes:
                 row = (y * k + sy) * src * 4 + x * k * 4
                 for sx in range(k):
                     j = row + sx * 4
-                    r += rgba[j]
-                    g += rgba[j + 1]
-                    b += rgba[j + 2]
-                    a += rgba[j + 3]
+                    alpha = rgba[j + 3]
+                    r += rgba[j] * alpha
+                    g += rgba[j + 1] * alpha
+                    b += rgba[j + 2] * alpha
+                    a += alpha
             i = (y * dst + x) * 4
-            out[i] = r // n
-            out[i + 1] = g // n
-            out[i + 2] = b // n
+            if a:
+                out[i] = r // a
+                out[i + 1] = g // a
+                out[i + 2] = b // a
             out[i + 3] = a // n
     return bytes(out)
 
@@ -130,7 +209,7 @@ def build_icns() -> bytes:
     rgba1024 = render_rgba(BASE)
     chunks = b""
     for ctype, size in ICNS_SIZES:
-        rgba = rgba1024 if size == BASE else _box_downsample(rgba1024, BASE, size)
+        rgba = rgba1024 if size == BASE else downsample(rgba1024, BASE, size)
         data = png_rgba(rgba, size, size)
         chunks += struct.pack(">4sI", ctype, 8 + len(data)) + data
     return struct.pack(">4sI", b"icns", 8 + len(chunks)) + chunks

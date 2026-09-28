@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!--
+    BBR app icon — "Phosphor b" (DESIGN §18.1 D8, concept C).
+    Vector master for design use; scripts/package/gen_icon.py renders the same
+    geometry deterministically into AppIcon.icns. The tile is a superellipse
+    (n = 5) on the macOS 824 pt grid; this master approximates it with one
+    cubic per quadrant (the renderer's analytic tile is authoritative).
+  -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1C2127"/>
+      <stop offset="1" stop-color="#0B0D10"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="555" cy="591" r="343" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2AD4B6" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#2AD4B6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="arc" x1="396" y1="432" x2="714" y2="750" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3DF0CE"/>
+      <stop offset="1" stop-color="#0A7967"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+  </defs>
+  <!-- One cubic per quadrant through the superellipse's 45° point (870.7). -->
+  <path fill="url(#tile)" d="M512 100 C 919.2 100 924 104.8 924 512 C 924 919.2 919.2 924 512 924 C 104.8 924 100 919.2 100 512 C 100 104.8 104.8 100 512 100 Z"/>
+  <circle cx="555" cy="591" r="343" fill="url(#halo)"/>
+  <rect x="353" y="259" width="58" height="492" rx="29" fill="#ECEEF1"/>
+  <circle cx="555" cy="591" r="159" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="58"/>
+  <g transform="rotate(40 555 591)">
+    <circle cx="555" cy="591" r="159" fill="none" stroke="url(#arc)" stroke-width="58" stroke-linecap="round"
+            stroke-dasharray="619.4 999" filter="url(#glow)" opacity="0.45"/>
+    <circle cx="555" cy="591" r="159" fill="none" stroke="url(#arc)" stroke-width="58" stroke-linecap="round"
+            stroke-dasharray="619.4 999"/>
+  </g>
+</svg>

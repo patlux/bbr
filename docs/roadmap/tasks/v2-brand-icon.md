@@ -44,11 +44,13 @@ Integration order:       parallel-capable with S6
 
 ### Unit and contract
 
-- [ ] Packaging script tests (icon sizes, determinism).
+- [x] Packaging script tests (icon sizes, determinism, render shape,
+      16 pt size ladder, vector master geometry) — `just package-test` 14/14.
 
 ### Real-app E2E
 
-- [ ] Bounded package smoke launches the bundle (GUI lock).
+- [x] Bounded package smoke launches the bundle (GUI lock): alive for the
+      5.2 s observation, then terminated.
 
 ### Performance
 
@@ -75,10 +77,21 @@ land the renderer and tests, mark the smoke deferred with the exact error.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
+Outcome:               "Phosphor b" rendered analytically (superellipse tile,
+                        halo, stem, track, gradient arc with glow, SDF edges);
+                        SVG master committed; placeholder retired.
+Commits:               see git log (feat(package): render the Phosphor b …)
+Functional evidence:   just verify ok; just package-test 14/14
+Real-app E2E:          just package-smoke (bundle launched, 5.2 s alive)
+Determinism:           just package (release build) + just
+                        package-determinism: diff -r identical
 Performance evidence:   not applicable
-Worktree state:
+Deviations:            the glow is an analytic Gaussian falloff of the arc's
+                        distance field rather than a blur pass (keeps the
+                        renderer pure stdlib and ~3 s); the tile is an
+                        n = 5 superellipse approximating Apple's continuous
+                        corner.
+Review:                serial self-review: renderer vs SVG master compared
+                        side by side at 256 px; 16/32 px ladder inspected.
+Worktree state:        clean after commit
 ```

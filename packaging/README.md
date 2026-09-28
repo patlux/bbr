@@ -12,7 +12,7 @@ any app code: it consumes the already-built `bbr` Mach-O binary generically.
   Contents/Info.plist              token-filled from Info.plist.template
   Contents/PkgInfo                 APPL????
   Contents/MacOS/bbr               the release binary, mode 0755
-  Contents/Resources/AppIcon.icns  generated placeholder (scripts/package/gen_icon.py)
+  Contents/Resources/AppIcon.icns  "Phosphor b" (scripts/package/gen_icon.py; master packaging/icon/bbr-icon.svg)
   Contents/_CodeSignature/         ad-hoc signature (unless --skip-codesign)
 ```
 
@@ -36,8 +36,9 @@ trees as living evidence.
 
 - `CFBundleIdentifier` default `dev.patwoz.bbr` — no final bundle id exists yet.
 - `LSMinimumSystemVersion` `13.0` — the repo pins no deployment target yet.
-- `AppIcon.icns` is a geometric placeholder on the DESIGN accent; the real
-  product icon and notarization/Developer-ID signing are Phase 9 work.
+- Notarization/Developer-ID signing remain Phase 9 work. `AppIcon.icns` is
+  the adopted "Phosphor b" product icon (DESIGN §18.1 D8), rendered from the
+  vector master's geometry.
 
 ## Boundaries
 

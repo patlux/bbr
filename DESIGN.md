@@ -61,6 +61,13 @@ and geometry and only swaps the token set.
 | Motion | playful spring choreography | animated everywhere | subtle | none | commit-first snaps; animation only on transient indication |
 | Content relation | sidebar overlays page | sidebar overlays page | toolbar merges | separate | sidebar is a physical rail; content is never overlapped or sampled |
 
+**App icon (v2 D8).** The packaged app carries "Phosphor b": a lowercase b on
+a dark continuous-corner tile whose bowl is the accent loading arc — the
+spinner of §10.5 becomes the brand, so the Dock and the rail speak one visual
+language. The Dock icon is static; the vector master is
+`packaging/icon/bbr-icon.svg` and `scripts/package/gen_icon.py` renders it
+deterministically into `AppIcon.icns` (§7).
+
 The Swift reference is a functional ancestor (spaces, profiles, pinned tabs),
 not the production visual authority. Patrick's complete-shell screenshot above
 supersedes the former dark placeholder interpretation. The implementation uses
@@ -429,6 +436,16 @@ the typed `motion` snapshot).
   exception is a space's user-selected identity in §11.3: that value is a
   validated member of the curated `SpaceIdentity` emoji/glyph catalog, not a
   fallback or substitute for a missing chrome icon.
+
+### App icon
+
+"Phosphor b" (§1, D8) on the macOS 824 pt icon grid: a superellipse tile
+(n = 5, `#1C2127` → `#0B0D10`), a soft Phosphor halo at the bowl, an `ink`
+(dark) stem, and the bowl as the §10.5 arc — 62 % of the turn with round caps,
+`accent.ink` (dark) → `accent` (light), a faint 12 % white track where the arc
+is not, and a soft glow. The mark stays legible at 16 pt (stem and bowl
+resolve to distinct pixels; packaging tests assert it). Static in the Dock;
+no animated Dock icon.
 
 ### Favicon tiles (missing favicon rule)
 
@@ -1877,7 +1894,7 @@ second is replaced by the ring).
 | S6 motion core | [motion core](docs/roadmap/tasks/v2-motion-core.md) | §6, §10.5, §10.6, §11.5 | landed 2026-09-28 |
 | S7 after-commit moments | [motion moments](docs/roadmap/tasks/v2-motion-moments.md) | §6, §10, §11.3, §11.4, §11.10, §11.12 | adopted |
 | S8 empty states | [empty states](docs/roadmap/tasks/v2-empty-states.md) | §11.8 | adopted |
-| S9 app icon | [brand icon](docs/roadmap/tasks/v2-brand-icon.md) | §1, §7 | adopted |
+| S9 app icon | [brand icon](docs/roadmap/tasks/v2-brand-icon.md) | §1, §7 | landed 2026-09-28 |
 | S10 theme picker | [theme picker](docs/roadmap/tasks/v2-theme-picker.md) | §11.3 configuration surface | adopted |
 | S11 closeout | [closeout](docs/roadmap/tasks/v2-closeout.md) | §18 status, Evidence | adopted |
 

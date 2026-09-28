@@ -38,8 +38,9 @@ byte-identical bundle on every rebuild.
 
 ## Non-goals
 
-- Notarization, Developer-ID/App Store signing, hard-coded provisioning, and
-  the final product icon: Phase 9 release hardening, documented as placeholders.
+- Notarization, Developer-ID/App Store signing and hard-coded provisioning:
+  Phase 9 release hardening, documented as placeholders. (The final product
+  icon landed with [v2 S9](v2-brand-icon.md).)
 - Bundling/embedding of native frameworks, `.dylib` relocation, or app code
   changes: the lane consumes the already-built binary generically.
 - Rejecting `--bbr-*` test flags in non-testkit builds (the release-exclusion
