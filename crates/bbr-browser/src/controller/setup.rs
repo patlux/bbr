@@ -75,6 +75,10 @@ impl BrowserController {
             return Err(ControllerError::UnknownSpace(space));
         }
         self.active_space = space;
+        // The destination's visible set is shown now: a session-less
+        // (restored/suspended) visible tab wakes, and `sync_views` below
+        // recreates exactly its session.
+        self.browser.wake_visible(space)?;
         // A preview belongs to its source space; switching away ends it.
         self.close_preview_if_stale();
         self.sync_views();

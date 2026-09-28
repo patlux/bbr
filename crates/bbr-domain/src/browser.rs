@@ -409,6 +409,19 @@ impl Browser {
         Ok(())
     }
 
+    /// The space became the shown space: its visible set (the active tab, or
+    /// both split panes) becomes Active, so a session-less (restored or
+    /// suspended) visible tab gets its session back from the orchestration
+    /// layer. Discarded (crashed) tabs stay recoverable, exactly as on
+    /// selection; nothing else in the space changes.
+    pub fn wake_visible(&mut self, space: SpaceId) -> Result<(), DomainError> {
+        if self.space(space).is_none() {
+            return Err(DomainError::UnknownSpace(space));
+        }
+        self.sync_lifecycles(space);
+        Ok(())
+    }
+
     // ---- Id-preserving restore (chrome-first hydration import) -------------
 
     /// Reserve a persisted identity id: reject ids already owned by any kind

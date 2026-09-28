@@ -212,6 +212,50 @@ fn restored_single_pane_active_space_hydrates_exactly_one_session() {
 }
 
 #[test]
+fn activating_a_restored_space_hydrates_its_visible_set() {
+    // Regression (S12): activating a space whose restored active tab is
+    // session-less left it Suspended, so the app presented the empty-space
+    // pane over a space that has tabs. Activation wakes exactly the
+    // destination's visible set.
+    let intent = dense_intent();
+    let harness = crate::fake::FakeEngine::new().into_harness();
+    let (mut controller, _plan) = BrowserController::restored(
+        harness.engine.clone(),
+        seq_ids(),
+        &intent,
+        bbr_domain::SpaceId(20),
+    )
+    .unwrap();
+    assert_eq!(controller.snapshot().engine_sessions, 1);
+    controller.activate_space(bbr_domain::SpaceId(11)).unwrap();
+    let snap = controller.snapshot();
+    assert_eq!(snap.engine_sessions, 2, "exactly the destination's tab 110");
+    assert!(
+        snap.active_view.is_some(),
+        "the destination presents its tab"
+    );
+    let solo = snap
+        .all_tabs
+        .iter()
+        .find(|t| t.id == bbr_domain::TabId(110))
+        .expect("tab 110");
+    assert_eq!(solo.lifecycle, crate::TabLifecycle::Active);
+    // A split destination wakes both panes and nothing else.
+    controller.activate_space(bbr_domain::SpaceId(10)).unwrap();
+    let snap = controller.snapshot();
+    assert_eq!(snap.engine_sessions, 4, "panes 101/102 added");
+    let suspended = snap
+        .all_tabs
+        .iter()
+        .filter(|t| t.lifecycle == crate::TabLifecycle::Suspended)
+        .count();
+    assert_eq!(
+        suspended, 500,
+        "the pinned 100 and 499 dense tabs stay deferred"
+    );
+}
+
+#[test]
 fn restore_failure_rolls_back_to_fresh_default() {
     let harness = crate::fake::FakeEngine::new().into_harness();
     // A duplicate identity fails validation before any op.

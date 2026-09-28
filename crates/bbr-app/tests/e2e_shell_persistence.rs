@@ -29,7 +29,9 @@
 //!   ([`folder_pins`](e2e_shell_persistence/folder_pins.rs));
 //! - the curated space paper (v2 S10) edits as a draft, commits, and
 //!   restores with the theme across a restart
-//!   ([`space_paper`](e2e_shell_persistence/space_paper.rs)).
+//!   ([`space_paper`](e2e_shell_persistence/space_paper.rs));
+//! - activating a restored (session-less) space hydrates exactly its tab
+//!   ([`space_activation`](e2e_shell_persistence/space_activation.rs)).
 //!
 //! No sleeps: every step synchronizes on typed snapshot state or semantic
 //! events under an explicit deadline. GUI suites must not run in parallel
@@ -48,6 +50,9 @@ mod folder_pins;
 
 #[path = "e2e_shell_persistence/space_paper.rs"]
 mod space_paper;
+
+#[path = "e2e_shell_persistence/space_activation.rs"]
+mod space_activation;
 
 pub use bbr_testkit::protocol::{RestoreDisposition, StoreLoadSnapshot};
 pub use e2e_common::*;

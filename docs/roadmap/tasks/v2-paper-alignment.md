@@ -73,7 +73,7 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Controller: activating a space with a session-less active tab creates
+- [x] Controller: activating a space with a session-less active tab creates
       exactly that tab's session.
 - [ ] Sidebar model: loose pinned rows exclude folder members; drag slots and
       keyboard traversal follow the rendered rows.
@@ -82,7 +82,7 @@ Not parallelized.
 
 ### Real-app E2E
 
-- [ ] Restored second space: activation presents its tab's native view, never
+- [x] Restored second space: activation presents its tab's native view, never
       the empty pane.
 - [ ] Folder member is not listed as a loose pinned row; selecting/closing
       still works.
