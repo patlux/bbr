@@ -4,7 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.3 §11.4 §18.3, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 1 of 24. Paper boards: S-7 · Footer strip, W-1 · Shell — standard (file
+Status: implemented 2026-09-28 (DESIGN §19); position 1 of 24. Paper boards: S-7 · Footer strip, W-1 · Shell — standard (file
 “BBR — Browser Shell”).
 
 ## Outcome
@@ -43,17 +43,15 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Portable model / controller / component tests for the new behaviour
-      and its states.
+- [x] Gallery footer-geometry test rewritten to the D01 rule (first chip at the strip's leading edge, free space trailing); bbr-ui lib 201.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-spaces` covers the flow drawn on the boards through the
-      production path with semantic ids and typed snapshots.
+- [x] `just e2e-shell-spaces` — new `strip::fitting_chips_start_at_the_strip_leading_edge` (typed strip viewport/offset/chip bounds), all 23 green; `just e2e-gallery` 48/48.
 
 ### Performance
 
-- [ ] Add the optimized presentation scenario for the new user-visible interaction, or record why none applies (performance contract).
+- [ ] Performance: no new interaction (layout only); unpassed — deferred.
 
 ## Completion gates
 
@@ -81,12 +79,12 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                The footer chips start right after Downloads whether they fit or overflow; the v2 centring is withdrawn.
+Commits:                see git log (feat/fix commit carrying this packet)
+Functional evidence:    Gallery footer-geometry test rewritten to the D01 rule (first chip at the strip's leading edge, free space trailing); bbr-ui lib 201.
+Real-app E2E:           `just e2e-shell-spaces` — new `strip::fitting_chips_start_at_the_strip_leading_edge` (typed strip viewport/offset/chip bounds), all 23 green; `just e2e-gallery` 48/48.
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §11.4 strip text and §18.3 footer line
+Open blockers and non-goals: none
+Worktree state:         main, clean after commit
 ```

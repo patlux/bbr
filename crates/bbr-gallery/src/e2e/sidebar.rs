@@ -393,13 +393,13 @@ fn real_keyboard_events_report_through_the_sidebar_recorders() {
     });
 }
 
-/// v2 rail footer geometry (task packet `v2-rail`, DESIGN §18.3): the fixed
-/// footer glyphs render at 16 pt, and the space chips centre in the strip
-/// viewport while they fit (auto margins — the overflow case starts at the
-/// leading edge and is proven by the real-app strip scroll suite).
+/// Rail footer geometry (DESIGN §11.4/§18.3, Blueprint D01): the fixed
+/// footer glyphs render at 16 pt, and the space chips start at the strip's
+/// leading edge right after Downloads — fitting or overflowing alike (the
+/// overflow scroll is proven by the real-app strip scroll suite).
 #[test]
 #[ignore]
-fn footer_glyphs_are_sixteen_points_and_the_strip_centres_its_chips() {
+fn footer_glyphs_are_sixteen_points_and_the_strip_leads_with_its_chips() {
     run_scenario(|window, app| {
         open_sidebar(window, app);
         for selector in ["bbr-downloads-glyph", "bbr-plus-glyph"] {
@@ -415,12 +415,12 @@ fn footer_glyphs_are_sixteen_points_and_the_strip_centres_its_chips() {
         let trailing =
             f32::from((strip.origin.x + strip.size.width) - (last.origin.x + last.size.width));
         assert!(
-            leading > 0.0,
-            "chips fit, so they do not hug the leading edge"
+            leading.abs() < 1.0,
+            "the first chip starts at the strip's leading edge: {leading}"
         );
         assert!(
-            (leading - trailing).abs() < 1.0,
-            "chips centre in the strip: leading {leading} vs trailing {trailing}"
+            trailing > leading,
+            "free strip space stays trailing: leading {leading} vs trailing {trailing}"
         );
     });
 }

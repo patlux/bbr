@@ -906,9 +906,10 @@ using the IDs of §15. All rows use `density` geometry from §8.
 - **Spaces strip:** `bbr-space-strip` is the permanent space navigation
   surface defined by §11.3. It takes all remaining footer width, clips to one
   line, scrolls horizontally, and exposes one `bbr-space-chip-<n>` per space.
-  While the chips fit they centre in the strip viewport (auto margins on the
-  first and last chip); once they overflow they start at the leading edge,
-  so scrolling never hides a chip behind the scroll origin (v2 §18.3). It is
+  The chips start at the strip's leading edge right after Downloads, whether
+  they fit or overflow, so scrolling never hides a chip behind the scroll
+  origin and the strip reads as one row with Downloads (Blueprint D01; the
+  v2 §18.3 centring is withdrawn). It is
   not a disclosure control and never changes the vertical region stack.
   Pointer click, keyboard activation, and horizontal trackpad swipe route
   through the same space-switch authority and preserve warm-session budgets.
@@ -1927,7 +1928,7 @@ Chrome radii stay within 6–12; 16 is reserved for the palette sheet. Type
 changes: the selected title drops from 600 to **500** (the lift carries
 selection); the active-space heading is 13 pt / 600 with +0.01 em tracking in
 `ink.secondary`; the address domain is 500; the ⌘T query is 17 pt UI sans.
-Footer glyphs render at 16 pt and the Space strip centres in its viewport.
+Footer glyphs render at 16 pt; the Space strip starts at its leading edge (§11.4, D01).
 
 ### 18.4 Floating surfaces
 
@@ -2004,7 +2005,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 
 | Delta | Target | Boards | Sections | Status | Packet |
 |---|---|---|---|---|---|
-| D01 | Footer chips start after Downloads | S-7 W-1 | §11.3 §11.4 §18.3 | adopted | [blueprint-footer-strip-leading](docs/roadmap/tasks/blueprint-footer-strip-leading.md) |
+| D01 | Footer chips start after Downloads | S-7 W-1 | §11.3 §11.4 §18.3 | implemented | [blueprint-footer-strip-leading](docs/roadmap/tasks/blueprint-footer-strip-leading.md) |
 | D02 | Hover reveal of a hidden rail | W-3 V-6 | §2 §11.4 §11.14 | adopted | [blueprint-sidebar-hover-reveal](docs/roadmap/tasks/blueprint-sidebar-hover-reveal.md) |
 | D03 | Address control states | S-1 M-8 | §11.5 §17.13 | adopted | [blueprint-address-states](docs/roadmap/tasks/blueprint-address-states.md) |
 | D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | §11.4 | adopted | [blueprint-palette-recents-actions](docs/roadmap/tasks/blueprint-palette-recents-actions.md) |

@@ -464,3 +464,72 @@ fn selected_offscreen_chip_scrolls_fully_into_view_on_compact_window() {
 
     finish(result, &mut harness, &socket, &token);
 }
+
+/// §11.4 / Blueprint D01: while the chips fit, they start at the strip's
+/// leading edge right after Downloads and follow each other at the strip
+/// gap — the free space stays trailing (no centring). Read from the typed
+/// viewport/offset/chip bounds of the production `space_strip_scroll`
+/// handle on a real window.
+#[test]
+#[ignore]
+fn fitting_chips_start_at_the_strip_leading_edge() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+
+    let (_fixtures, page_one, _page_two) = fixtures();
+    let (mut harness, socket, token) = spawn_harness("spaces-strip-leading", &page_one);
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let replay = client.attach(None).expect("attach");
+        let since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+
+        let initial = client.snapshot().expect("initial snapshot");
+        client
+            .send_ok(&dsl::create_space(initial.active_profile, "Reading"))
+            .expect("create second space");
+        let _ = wait_browser_change_matching(
+            &mut client,
+            |kind| matches!(kind, BrowserChange::SpaceCreated { .. }),
+            since,
+        );
+
+        let until = Instant::now() + Duration::from_secs(30);
+        let snapshot = loop {
+            client
+                .send_ok(&bbr_testkit::Request::FlushFrame)
+                .expect("flush strip layout");
+            let snapshot = client.snapshot().expect("strip snapshot");
+            if snapshot.space_strip_scroll.chip_bounds.len() == 2 {
+                break snapshot;
+            }
+            assert!(Instant::now() < until, "two chips never laid out");
+        };
+        let scroll = &snapshot.space_strip_scroll;
+        assert_eq!(scroll.max_offset[0], 0.0, "two chips fit the strip");
+        assert_eq!(scroll.offset[0], 0.0, "a fitting strip is not scrolled");
+        let first = chip_visual(scroll.chip_bounds[0], scroll.offset);
+        let second = chip_visual(scroll.chip_bounds[1], scroll.offset);
+        assert!(
+            (first[0] - scroll.viewport[0]).abs() < 0.5,
+            "the first chip starts at the strip's leading edge: chip {first:?} viewport {:?}",
+            scroll.viewport
+        );
+        let gap = second[0] - (first[0] + first[2]);
+        assert!(
+            (gap - 8.0).abs() < 0.5,
+            "the second chip follows at the strip gap (8 pt), got {gap}"
+        );
+        let trailing = scroll.viewport[0] + scroll.viewport[2] - (second[0] + second[2]);
+        assert!(trailing > 8.0, "the free space stays trailing ({trailing})");
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+
+    finish(result, &mut harness, &socket, &token);
+}

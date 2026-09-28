@@ -52,7 +52,8 @@ pub fn space_identity_id(space: SpaceId) -> SharedString {
 }
 
 /// The §11.3 space strip: the single-line horizontal scroll viewport that
-/// holds the identity chips. `chips` are the caller-built chip elements in
+/// holds the identity chips, starting at its leading edge right after
+/// Downloads (Blueprint D01). `chips` are the caller-built chip elements in
 /// canonical order (the strip scrolls to the selected chip via the tracked
 /// handle); `focus`/`on_key_down` are the app-layer keyboard seams.
 pub fn space_strip(
@@ -60,7 +61,6 @@ pub fn space_strip(
     scroll: ScrollHandle,
     chips: Vec<Stateful<Div>>,
 ) -> Stateful<Div> {
-    let chips = centre_chips(chips);
     div()
         .id(SPACE_STRIP_ID)
         .debug_selector(|| SPACE_STRIP_ID.to_string())
@@ -74,29 +74,6 @@ pub fn space_strip(
         .overflow_x_scroll()
         .track_scroll(&scroll)
         .children(chips)
-}
-
-/// §18.3: the chips centre in the strip viewport while they fit, and start
-/// at the leading edge once they overflow. Auto margins on the first and
-/// last chip give exactly that "safe centre": they absorb positive free
-/// space equally and resolve to zero when the content overflows, so the
-/// scroll origin never clips a chip (plain `justify-content: center` would
-/// push overflow off the leading, unscrollable side). The scroll handle
-/// still tracks the chips themselves as its direct children.
-fn centre_chips(chips: Vec<Stateful<Div>>) -> Vec<Stateful<Div>> {
-    let last = chips.len().saturating_sub(1);
-    chips
-        .into_iter()
-        .enumerate()
-        .map(|(index, chip)| {
-            let chip = if index == 0 { chip.ml_auto() } else { chip };
-            if index == last {
-                chip.mr_auto()
-            } else {
-                chip
-            }
-        })
-        .collect()
 }
 
 /// One §11.3 identity chip: `[identity]`, `radius:sm`, with
@@ -197,7 +174,7 @@ pub fn space_chip(
     div()
         .id(space_chip_id(space))
         // Test-support only (a release no-op): the chip as a geometry
-        // target for the §18.3 centred-strip evidence.
+        // target for the §11.4 leading-strip evidence.
         .debug_selector(move || space_chip_id(space).to_string())
         .flex_shrink_0()
         .size(theme.density.row() - px(4.0))
