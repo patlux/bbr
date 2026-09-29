@@ -7,16 +7,35 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 Status: adopted 2026-09-28 (DESIGN §19); implementation position 9 of 24. Paper boards: W-3 · Shell — sidebar hidden ⌘B & hover reveal, V-6 · Motion — transitions (file
 “BBR — Browser Shell”).
 
-**Blocked 2026-09-29 (implementation stop):** a rail that floats over the
-card sits above the native WKWebView, so only the one native Portal may draw
-it (§13). The Portal window is a non-activating panel that never becomes key
-and captures every click in the window while shown. The rail's address field
-needs text input and focus, its rows drag (GPUI drags are window-local), and
-its 34 callbacks are bound to the main window. Running them from the Portal
-would take one of two things: a second rail host window that can become key,
-or a click-only floating rail. Both are product/architecture decisions for
-Patrick. The 300 ms dwell detection itself is possible: the collapsed card
-keeps a 10 pt GPUI chassis strip at the leading edge.
+**Decision and review 2026-09-29.** Patrick rejected a click-only floating
+rail: everything in the floating rail must work exactly like the docked
+rail. An independent read-only architecture review (gpt-6-astra, 2026-09-29)
+compared a second key-capable rail window, a main-window rail under a
+masked WKWebView, and an interactive Portal. It recommends the third: the
+one Portal becomes an interactive chrome host that may own key focus while
+the floating rail is operated. The browser window stays the main/document
+owner, and the Portal renders the exact rail composition. `BbrApp` stays
+the only authority, and no WKWebView frame changes. The review corrected
+three premises of the earlier block note. The Portal has a hit-region mode.
+GPUI's panel class answers YES to `canBecomeKeyWindow`. The rail callbacks
+capture the app entity and use the event's window. The masked-web-view
+variant keeps input simple, but a soft shadow and fade under a masked page
+do not match compositing above it.
+
+Parity gaps the review found in the docked rail as well (verified): the
+command field has no IME/marked-text input handler (it edits raw key
+events), and the tab drag has no folder drop target. Some drop targets also
+match on y alone. "Works exactly the same" therefore first needs a shared
+command editor with IME/selection and a 2-D drag-target model with a folder
+target, implemented once for both rails.
+
+Open decisions for Patrick (recommendations in brackets): what counts as
+leaving the rail (the rail and its menus, panels and drags form one
+domain); Escape order (IME, then nested menu, then the rail); whether ⌥⌘S
+and ⌘L on a hidden rail dock it or float it (float); whether ⌘B while
+floating docks it at the remembered width (yes); a fullscreen hotspot
+(narrow native-observed edge); dismissal on deactivate/minimize (yes).
+Full review: session artifact `/private/tmp/bbr-d02-astra-review.md`.
 
 ## Outcome
 
