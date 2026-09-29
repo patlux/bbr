@@ -110,7 +110,7 @@ fn close_switch_sidebar_space_and_split_paths_ignore_hung_renderer() {
         client.send_ok(&Request::ActivateSpace { space }).unwrap();
         let other = wait_snapshot(&mut client, |s| s.active_space == space);
         assert_eq!(other.active_web_view, None);
-        key(&mut client, "cmd-b");
+        key(&mut client, "cmd-s");
         let toggled = wait_snapshot(&mut client, |s| s.sidebar_visible != other.sidebar_visible);
         assert_eq!(toggled.active_space, space);
 
@@ -135,7 +135,7 @@ fn close_switch_sidebar_space_and_split_paths_ignore_hung_renderer() {
         let third = open_tab(&mut client, &mut since, &fixtures.url(BUSY_PATH), None);
         let _ = wait_real_unresponsive(&mut client, third);
         // The sidebar toggle above deliberately collapsed the rail. Restore it
-        // through the real Cmd-B action before using the production row
+        // through the real Cmd-S action before using the production row
         // pointer path: an unrendered list cannot own GPUI focus or receive a
         // real Backspace keystroke.
         if !client
@@ -143,7 +143,7 @@ fn close_switch_sidebar_space_and_split_paths_ignore_hung_renderer() {
             .expect("pre-focus snapshot")
             .sidebar_visible
         {
-            key(&mut client, "cmd-b");
+            key(&mut client, "cmd-s");
             let _ = wait_snapshot(&mut client, |s| s.sidebar_visible);
         }
         client.send_ok(&Request::ClickTab { index: 1 }).unwrap();

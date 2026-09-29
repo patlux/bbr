@@ -148,7 +148,7 @@ pub(crate) fn benchmark_sidebar(
         .send_ok(&Request::BenchmarkDispatchKeystroke {
             operation_id,
             kind: BenchmarkKind::SidebarToggle,
-            keystroke: "cmd-b".into(),
+            keystroke: "cmd-s".into(),
         })
         .expect("benchmark sidebar toggle");
     let (seq, measured) =
@@ -208,7 +208,7 @@ pub(crate) fn benchmark_resize_sidebar(
     measured
 }
 
-/// Sidebar restoration: collapse through the production Cmd-B path
+/// Sidebar restoration: collapse through the production Cmd-S path
 /// (unmeasured setup inside the app), then measure the expand that restores
 /// the last expanded width. The restored width must equal the pre-collapse
 /// rail width (DESIGN §11.4), and the measured sample must show it.

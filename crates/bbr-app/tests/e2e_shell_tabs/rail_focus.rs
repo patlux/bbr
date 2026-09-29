@@ -62,7 +62,7 @@ fn option_command_s_moves_focus_into_the_rail_and_return_goes_back_to_the_page()
         assert_eq!(back.engine_sessions, 2, "no session was recreated");
 
         // With the rail hidden, ⌥⌘S shows it and focuses the selected row.
-        keystroke(&mut client, "cmd-b");
+        keystroke(&mut client, "cmd-s");
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
             .expect("flush collapse");

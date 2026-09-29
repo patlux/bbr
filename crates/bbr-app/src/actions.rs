@@ -32,7 +32,7 @@ gpui::actions!(
         CloseTab,
         /// `Cmd-Shift-T`: reopen the most recently closed tab.
         ReopenTab,
-        /// `Cmd-B`: toggle the sidebar.
+        /// `Cmd-S`: toggle the sidebar.
         ToggleSidebar,
         /// `Cmd-[`: go back.
         Back,

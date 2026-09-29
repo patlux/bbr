@@ -45,7 +45,7 @@ impl TitlebarControl {
     /// The semantic name (the future Accessibility label; §15).
     pub fn label(self) -> &'static str {
         match self {
-            TitlebarControl::Toggle => "Sidebar (Cmd-B)",
+            TitlebarControl::Toggle => "Sidebar (Cmd-S)",
             TitlebarControl::Back => "Back",
             TitlebarControl::Forward => "Forward",
             TitlebarControl::Reload => "Reload",
@@ -151,7 +151,7 @@ pub struct TitlebarModel {
 /// row never invents behavior.
 #[derive(Clone)]
 pub struct TitlebarCallbacks {
-    /// §11.14: the sidebar toggle (`Cmd-B` pointer entry — the same
+    /// §11.14: the sidebar toggle (`Cmd-S` pointer entry — the same
     /// sidebar-width/collapse authority as the shortcut).
     pub on_toggle_sidebar: MouseCallback,
     /// §11.14: Back through the existing navigation authority (the same
@@ -295,7 +295,7 @@ mod tests {
     /// Accessibility names).
     #[test]
     fn control_labels_are_semantic() {
-        assert_eq!(TitlebarControl::Toggle.label(), "Sidebar (Cmd-B)");
+        assert_eq!(TitlebarControl::Toggle.label(), "Sidebar (Cmd-S)");
         assert_eq!(TitlebarControl::Back.label(), "Back");
         assert_eq!(TitlebarControl::Forward.label(), "Forward");
         assert_eq!(TitlebarControl::Reload.label(), "Reload");

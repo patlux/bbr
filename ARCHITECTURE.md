@@ -362,7 +362,7 @@ Focus movements (both AppKit **and** GPUI focus tree are kept in sync):
 | Click in the sidebar | Enter `Inactive` command-bar mode, focus `chrome_handle`, and call `focus_host_chrome()` |
 
 GPUI `Action`s are bound with `cx.bind_keys` (`cmd-l`, `escape`, `cmd-[`,
-`cmd-]`, `cmd-r`, `cmd-b`, `cmd-t`). They run in the bubble phase and are
+`cmd-]`, `cmd-r`, `cmd-s`, `cmd-t`). They run in the bubble phase and are
 dispatched through `performKeyEquivalent:`, so they fire even while the
 WKWebView is the AppKit first responder. Because handlers are invoked during
 `Window::dispatch_keystroke` (window borrowed), the actual `win.update` is
@@ -565,7 +565,7 @@ tab.
    create `BrowserController(engine.clone(), allocator)`, create `BbrApp`,
    retain its entity, and wrap it in `Root::new`.
 5. Open the initial controller-backed tab after the window exists (via the seam).
-6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-B, Cmd-T staging, the focus-preserving Cmd-W, command-result arrows/Enter/Cmd-Enter, and the tab-organization commands (Cmd-Shift-P pin toggle, Cmd-Shift-↑/↓ reorder, Cmd-Shift-M staged move) — every handler routes through `with_app` so actions address the app entity with `&mut Window` access from the Root window.
+6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-S, Cmd-T staging, the focus-preserving Cmd-W, command-result arrows/Enter/Cmd-Enter, and the tab-organization commands (Cmd-Shift-P pin toggle, Cmd-Shift-↑/↓ reorder, Cmd-Shift-M staged move) — every handler routes through `with_app` so actions address the app entity with `&mut Window` access from the Root window.
 7. Install process-lifecycle ownership: closing the browser window triggers
    `cx.quit()` even on macOS (where GPUI otherwise stays resident after the
    last window), and terminal `SIGINT`/Ctrl-C is received asynchronously then
@@ -799,7 +799,7 @@ active-tab restoration without recreating warm sessions, and cross-profile
 view-only switches — proven by `just e2e-shell-spaces` and the
 `space_switch` performance scenario. The adjustable/collapsible sidebar slice
 adds the DESIGN §5/§11.4 width contract, pointer drag + keyboard resize/
-reset parity, Cmd-B collapse/expand with last-expanded-width restoration, and
+reset parity, Cmd-S collapse/expand with last-expanded-width restoration, and
 compact-window clamping that keeps the native WKWebView geometry strictly
 positive — proven by `just e2e-shell-sidebar` and the `sidebar_resize` /
 `sidebar_restore` performance scenarios. The tab-organization slice adds the

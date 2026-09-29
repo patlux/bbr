@@ -8,7 +8,7 @@
 //!
 //! No browser/session/navigation authority lives here: the model carries
 //! the genuine enablement of the focused pane and the callbacks route
-//! through the existing app authorities (Cmd-B / Cmd-[ / Cmd-] / Cmd-R).
+//! through the existing app authorities (Cmd-S / Cmd-[ / Cmd-] / Cmd-R).
 
 pub mod callbacks;
 pub mod model;

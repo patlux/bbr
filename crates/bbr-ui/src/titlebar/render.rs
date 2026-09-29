@@ -8,7 +8,7 @@
 //! traffic-light clearance come from the model's [`SafeArea`] (the macOS
 //! adapter produces it; nothing is hardcoded here), the sidebar toggle
 //! sits immediately after the traffic lights with the identical
-//! sidebar-width/collapse authority as Cmd-B, and Back/Forward/Reload form
+//! sidebar-width/collapse authority as Cmd-S, and Back/Forward/Reload form
 //! the compact trailing cluster. The empty region between the toggle and
 //! the cluster is the draggable titlebar space; controls never intercept
 //! a drag outside their hit targets. Glyphs are the BBR geometric 18 pt

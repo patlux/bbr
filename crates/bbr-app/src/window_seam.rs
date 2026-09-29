@@ -454,7 +454,7 @@ pub(crate) fn install_actions(
         KeyBinding::new("cmd-[", Back, None),
         KeyBinding::new("cmd-]", Forward, None),
         KeyBinding::new("cmd-r", Reload, None),
-        KeyBinding::new("cmd-b", ToggleSidebar, None),
+        KeyBinding::new("cmd-s", ToggleSidebar, None),
         KeyBinding::new("cmd-t", OpenPalette, None),
         KeyBinding::new("cmd-shift-n", NewSpace, None),
         KeyBinding::new("cmd-shift-p", PinTab, None),

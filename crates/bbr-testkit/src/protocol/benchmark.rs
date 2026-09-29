@@ -41,7 +41,7 @@ pub enum BenchmarkKind {
     /// destination space, its warm selected view, and the Idle machine
     /// phase are presented.
     SwipeCommit,
-    /// The sidebar visibility changed through the production Cmd-B path
+    /// The sidebar visibility changed through the production Cmd-S path
     /// (collapse and open/toggle share this kind).
     SidebarToggle,
     /// The sidebar width changed through the production resize path (pointer
@@ -49,7 +49,7 @@ pub enum BenchmarkKind {
     /// clamped geometry.
     SidebarResize,
     /// Expand restored the last expanded sidebar width through the production
-    /// Cmd-B path.
+    /// Cmd-S path.
     SidebarRestore,
     /// A §11.14 titlebar navigation control (Back/Forward/Reload) committed
     /// through the exact production dispatch the click and the keyboard

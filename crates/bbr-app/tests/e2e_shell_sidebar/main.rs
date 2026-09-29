@@ -4,7 +4,7 @@
 //! visible resize divider through the production listener path (the testkit
 //! seam drives the exact app methods the element handlers call, never a
 //! controller mutation), keyboard resize/reset parity on the focused
-//! divider, Cmd-B collapse/expand with last-expanded-width restoration,
+//! divider, Cmd-S collapse/expand with last-expanded-width restoration,
 //! compact-window clamping that keeps the native content floor (never
 //! zero/negative geometry), native content-rect correctness from the
 //! engine-received slot geometry, selected WebViewId/session preservation,
@@ -290,7 +290,7 @@ fn keyboard_resize_and_reset_match_pointer_parity() {
     finish(result, &mut harness, &socket, &token);
 }
 
-/// Cmd-B collapse/expand through the production path: collapse yields an
+/// Cmd-S collapse/expand through the production path: collapse yields an
 /// instant full-bleed native slot (width 0) and expand restores the last
 /// expanded width. In a compact window the rail yields below the requested
 /// width so the native content never drops below the 64 pt floor, and it
@@ -346,10 +346,10 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
             deadline(),
         );
 
-        // Cmd-B collapses: the rail is gone (width 0) and the native slot
+        // Cmd-S collapses: the rail is gone (width 0) and the native slot
         // re-flows instantly to the full window; the selected session is
         // untouched.
-        keystroke(&mut client, "cmd-b");
+        keystroke(&mut client, "cmd-s");
         flush_frame(&mut client);
         let collapsed = client.snapshot().expect("collapsed snapshot");
         assert!(!collapsed.sidebar_visible);
@@ -378,9 +378,9 @@ fn collapse_reopen_restores_width_and_compact_window_keeps_content_positive() {
             "the traffic lights keep a chrome ground"
         );
 
-        // Cmd-B expands: the last expanded width (320) is restored, not the
+        // Cmd-S expands: the last expanded width (320) is restored, not the
         // default.
-        keystroke(&mut client, "cmd-b");
+        keystroke(&mut client, "cmd-s");
         flush_frame(&mut client);
         let expanded = client.snapshot().expect("expanded snapshot");
         assert!(expanded.sidebar_visible);

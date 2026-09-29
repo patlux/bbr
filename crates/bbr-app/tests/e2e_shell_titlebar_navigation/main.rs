@@ -4,7 +4,7 @@
 //! Covers over real WKWebViews: the §11.14 titlebar row presenting the
 //! native safe-area guide (strip height + traffic-light clearance, never
 //! hardcoded coordinates) and the genuine navigation availability of the
-//! focused pane; the sidebar toggle click sharing the exact Cmd-B
+//! focused pane; the sidebar toggle click sharing the exact Cmd-S
 //! sidebar-width/collapse authority (collapse removes the **complete**
 //! BBR-owned titlebar/navigation header — no content toolbar remains — and
 //! expand restores the remembered width); Back/Forward/Reload clicks
@@ -129,7 +129,7 @@ fn titlebar_presents_safe_area_and_availability() {
             &titlebar.children,
             "bbr-titlebar-sidebar-toggle",
             SemanticRole::Button,
-            Some("Sidebar (Cmd-B)"),
+            Some("Sidebar (Cmd-S)"),
             Some("expanded"),
             true,
             false,
@@ -184,10 +184,10 @@ fn titlebar_presents_safe_area_and_availability() {
 }
 
 /// §11.14 toggle parity + complete-header disappearance: the titlebar
-/// toggle click collapses the Sidebar through the exact Cmd-B authority —
+/// toggle click collapses the Sidebar through the exact Cmd-S authority —
 /// the **complete** BBR-owned titlebar/navigation header disappears with
 /// the rail (no content toolbar replaces it), the native web slot goes
-/// full-bleed, and Cmd-B expands restoring the last expanded width and the
+/// full-bleed, and Cmd-S expands restoring the last expanded width and the
 /// full header.
 #[test]
 #[ignore]
@@ -230,7 +230,7 @@ fn titlebar_toggle_parity_and_collapse_removes_the_header() {
         );
 
         // Pointer toggle collapse: the titlebar toggle click mutates the
-        // same sidebar geometry authority as Cmd-B.
+        // same sidebar geometry authority as Cmd-S.
         client
             .send_ok(&dsl::click_titlebar_toggle())
             .expect("titlebar toggle click");
@@ -278,9 +278,9 @@ fn titlebar_toggle_parity_and_collapse_removes_the_header() {
             collapsed_rect.content_rect[1]
         );
 
-        // Cmd-B expands: the last expanded width (320) and the complete
+        // Cmd-S expands: the last expanded width (320) and the complete
         // header (toggle + cluster) are restored.
-        keystroke(&mut client, "cmd-b");
+        keystroke(&mut client, "cmd-s");
         flush_frame(&mut client);
         let expanded = client.snapshot().expect("expanded snapshot");
         assert!(expanded.sidebar_visible);

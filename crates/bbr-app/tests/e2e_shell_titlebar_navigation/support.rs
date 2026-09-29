@@ -18,7 +18,7 @@ pub(super) fn flush_frame(client: &mut Client) {
 }
 
 /// Drive one production keyboard shortcut through the real GPUI action
-/// path (the same bindings the shell installs: `cmd-b`, `cmd-[`, `cmd-]`,
+/// path (the same bindings the shell installs: `cmd-s`, `cmd-[`, `cmd-]`,
 /// `cmd-r`).
 pub(super) fn keystroke(client: &mut Client, key: &str) {
     client

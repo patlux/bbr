@@ -245,7 +245,7 @@ fn sidebar_node(input: &SemanticInput<'_>) -> SemanticNode {
     }
 }
 
-/// §11.14 the titlebar row node: the sidebar toggle (the `Cmd-B` pointer
+/// §11.14 the titlebar row node: the sidebar toggle (the `Cmd-S` pointer
 /// entry; value reflects collapsed versus expanded) plus the compact
 /// Back/Forward/Reload cluster with genuine enablement derived from the
 /// focused pane's real navigation state. Disabled controls stay visible
@@ -255,7 +255,7 @@ fn titlebar_node(input: &SemanticInput<'_>) -> SemanticNode {
     let mut toggle = node(
         "bbr-titlebar-sidebar-toggle",
         SemanticRole::Button,
-        Some("Sidebar (Cmd-B)".into()),
+        Some("Sidebar (Cmd-S)".into()),
         Some(
             if input.sidebar_visible {
                 "expanded"

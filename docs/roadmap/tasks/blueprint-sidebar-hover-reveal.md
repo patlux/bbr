@@ -4,7 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §2 §11.4 §11.14, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 9 of 24. Paper boards: W-3 · Shell — sidebar hidden ⌘B & hover reveal, V-6 · Motion — transitions (file
+Status: adopted 2026-09-28 (DESIGN §19); implementation position 9 of 24. Paper boards: W-3 · Shell — sidebar hidden ⌘S & hover reveal, V-6 · Motion — transitions (file
 “BBR — Browser Shell”).
 
 **Decision and review 2026-09-29.** Patrick rejected a click-only floating
@@ -29,10 +29,11 @@ match on y alone. "Works exactly the same" therefore first needs a shared
 command editor with IME/selection and a 2-D drag-target model with a folder
 target, implemented once for both rails.
 
-Open decisions for Patrick (recommendations in brackets): what counts as
+Decided 2026-09-29: Patrick adopted every recommendation below, and the
+sidebar toggle moved from ⌘B to ⌘S. The former open decisions (recommendations in brackets): what counts as
 leaving the rail (the rail and its menus, panels and drags form one
 domain); Escape order (IME, then nested menu, then the rail); whether ⌥⌘S
-and ⌘L on a hidden rail dock it or float it (float); whether ⌘B while
+and ⌘L on a hidden rail dock it or float it (float); whether ⌘S while
 floating docks it at the remembered width (yes); a fullscreen hotspot
 (narrow native-observed edge); dismissal on deactivate/minimize (yes).
 Full review: session artifact `/private/tmp/bbr-d02-astra-review.md`.
@@ -75,7 +76,7 @@ Not parallelized.
 
 ## Constraints
 
-- Today on main: ⌘B hides the rail; only ⌘B or the toggle bring it back.
+- Today on main: ⌘S hides the rail; only ⌘S or the toggle bring it back.
 - GPUI owns the chrome; floating surfaces over web content use the one
   native Portal; web content is never sampled or redrawn.
 - Colours, type and spacing come from the palette and theme tokens that

@@ -165,7 +165,7 @@ impl CommandRegistry {
                 "Toggle Sidebar",
                 ["sidebar", "toggle", "collapse", "expand"],
                 ActionCategory::View,
-                Some("⌘B"),
+                Some("⌘S"),
             ),
             Action::new(
                 ActionId(12),
@@ -230,7 +230,7 @@ mod tests {
             (8, "Forward", ActionCategory::Navigation, Some("⌘]")),
             (9, "Reload", ActionCategory::Navigation, Some("⌘R")),
             (10, "Stop", ActionCategory::Navigation, None),
-            (11, "Toggle Sidebar", ActionCategory::View, Some("⌘B")),
+            (11, "Toggle Sidebar", ActionCategory::View, Some("⌘S")),
             (12, "Reorder Tab Up", ActionCategory::Tab, Some("⇧⌘↑")),
             (13, "Reorder Tab Down", ActionCategory::Tab, Some("⇧⌘↓")),
             (14, "Set as Default Browser", ActionCategory::View, None),

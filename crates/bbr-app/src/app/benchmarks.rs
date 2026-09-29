@@ -364,7 +364,7 @@ impl BbrApp {
         true
     }
 
-    /// Benchmark sidebar restoration: collapse through the production Cmd-B
+    /// Benchmark sidebar restoration: collapse through the production Cmd-S
     /// path (unmeasured setup), then expand through the same path and measure
     /// the presentation that restores the last expanded width.
     pub fn benchmark_restore_sidebar(

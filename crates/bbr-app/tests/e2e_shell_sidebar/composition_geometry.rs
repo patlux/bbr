@@ -149,7 +149,7 @@ fn split_collapse_expand_keeps_native_geometry_and_identity() {
         // Collapse: both panes reflow to the full content width (rail 0),
         // the focused pane's rect is the full window, and both sessions
         // stay live.
-        keystroke(&mut client, "cmd-b");
+        keystroke(&mut client, "cmd-s");
         flush_frame(&mut client);
         let collapsed = client.snapshot().expect("collapsed split snapshot");
         assert!(!collapsed.sidebar_visible);
@@ -178,7 +178,7 @@ fn split_collapse_expand_keeps_native_geometry_and_identity() {
 
         // Expand: the rail returns to the default width and both panes
         // reflow back to the rail-offset split; identity is untouched.
-        keystroke(&mut client, "cmd-b");
+        keystroke(&mut client, "cmd-s");
         flush_frame(&mut client);
         let expanded = client.snapshot().expect("expanded split snapshot");
         assert!(expanded.sidebar_visible);

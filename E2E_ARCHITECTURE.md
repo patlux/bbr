@@ -432,7 +432,7 @@ monotonic clock to include process spawn).
    measured from process spawn to the fixture title/loading on the expected
    view — separate from shell/native-view presentation.
 3. Thirty measured warm-tab switches after discarded warm-up iterations.
-4. Thirty sidebar toggles through the real `Cmd-B` GPUI input/action path.
+4. Thirty sidebar toggles through the real `Cmd-S` GPUI input/action path.
 5. Ten staged `Cmd-T` command-bar activations, ten Enter/new-tab creations, and
    ten active-tab closes through the real shortcuts.
 6. Semantic state assertions for active view/tab, sidebar, native session count,
@@ -596,7 +596,7 @@ harness (no display link, no sleeps, no pixels):
 2. **Keyboard parity**: real `←`/`→` keystrokes on the focused divider step
    the same requested width the pointer path mutated, `0` resets to the §8
    default, and the native content follows every step.
-3. **Collapse/reopen + compact window**: real Cmd-B yields an instant
+3. **Collapse/reopen + compact window**: real Cmd-S yields an instant
    full-bleed slot (width 0) and expand restores the last expanded width
    (not the default); in compact windows the rail yields below the requested
    width so the native content keeps exactly the 64 pt content floor —

@@ -105,7 +105,7 @@ fn content_card_seats_the_native_slot_through_resize_collapse_and_full_screen() 
             lights[2] > 0.0 && lights[3] > 0.0,
             "traffic lights measured"
         );
-        keystroke(&mut client, "cmd-b");
+        keystroke(&mut client, "cmd-s");
         let band = client
             .snapshot()
             .expect("collapsed snapshot")
@@ -127,7 +127,7 @@ fn content_card_seats_the_native_slot_through_resize_collapse_and_full_screen() 
         assert_ids(&collapsed, &["bbr-content-card", "bbr-chassis-band"]);
         assert_view_and_sessions_preserved(&collapsed, view, sessions);
 
-        keystroke(&mut client, "cmd-b");
+        keystroke(&mut client, "cmd-s");
         let restored = wait_card(&mut client, "expanded again", |s| {
             s.sidebar_visible && close(s.content_rect, content_rect_for(wide, window_w, height))
         });

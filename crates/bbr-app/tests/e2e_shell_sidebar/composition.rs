@@ -168,7 +168,7 @@ fn full_rail_composition_region_and_semantic_ordering() {
             &initial.semantics,
             "bbr-titlebar-sidebar-toggle",
             SemanticRole::Button,
-            Some("Sidebar (Cmd-B)"),
+            Some("Sidebar (Cmd-S)"),
             Some("expanded"),
             true,
             false,
@@ -310,7 +310,7 @@ fn full_rail_composition_region_and_semantic_ordering() {
 /// ranked results render in-rail, Escape closes and restores the origin
 /// focus; the footer `[Downloads]` opens the anchored panel as a sidebar
 /// child; the command surface and the downloads panel are mutually
-/// exclusive; Cmd-B collapse/expand keeps the command surface and the
+/// exclusive; Cmd-S collapse/expand keeps the command surface and the
 /// native geometry exact; and no session/WebView identity churns.
 #[test]
 #[ignore]
@@ -472,11 +472,11 @@ fn command_and_downloads_compose_with_sidebar_focus_and_collapse() {
         );
         assert_eq!(rect.content_rect[3], height, "no vertical drift");
 
-        // Cmd-B collapse/expand with the command surface closed: the rail
+        // Cmd-S collapse/expand with the command surface closed: the rail
         // yields to width 0, the native slot re-flows to the full window,
         // expand restores the last expanded width, and the selected
         // session never changes.
-        keystroke(&mut client, "cmd-b");
+        keystroke(&mut client, "cmd-s");
         flush_frame(&mut client);
         let collapsed = client.snapshot().expect("collapsed snapshot");
         assert!(!collapsed.sidebar_visible);
@@ -501,7 +501,7 @@ fn command_and_downloads_compose_with_sidebar_focus_and_collapse() {
             window_w - 2.0 * CONTENT_INSET
         );
 
-        keystroke(&mut client, "cmd-b");
+        keystroke(&mut client, "cmd-s");
         flush_frame(&mut client);
         let expanded = client.snapshot().expect("expanded snapshot");
         assert!(expanded.sidebar_visible);

@@ -129,7 +129,7 @@ fn menu_bar_and_dock_menu_dispatch_the_shortcut_actions_and_follow_the_spaces() 
             since,
         );
 
-        // View › Toggle Sidebar is ⌘B.
+        // View › Toggle Sidebar is ⌘S.
         invoke(&mut client, "View", "Toggle Sidebar");
         settle(&mut client, "sidebar hidden", |s| !s.sidebar_visible);
         invoke(&mut client, "View", "Toggle Sidebar");

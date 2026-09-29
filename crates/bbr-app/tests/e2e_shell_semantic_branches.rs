@@ -197,7 +197,7 @@ fn shell_profile_crash_empty_and_collapsed_semantics() {
         // (DESIGN §11.4) — no sidebar nodes exist.
         client
             .send_ok(&bbr_testkit::Request::DispatchKeystroke {
-                keystroke: "cmd-b".into(),
+                keystroke: "cmd-s".into(),
             })
             .expect("collapse sidebar");
         let _ = wait_chrome_focus(&mut client, true, since);

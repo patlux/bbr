@@ -37,7 +37,7 @@ impl BbrApp {
         });
 
         // §11.14: the titlebar row's callbacks — the sidebar toggle (the
-        // `Cmd-B` pointer entry through the same sidebar-width/collapse
+        // `Cmd-S` pointer entry through the same sidebar-width/collapse
         // authority as the shortcut), Back/Forward/Reload through the
         // existing navigation authorities (the same dispatch as
         // Cmd-[ / Cmd-] / Cmd-R), the empty-titlebar window drag, and the

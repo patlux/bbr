@@ -356,7 +356,7 @@ pills around text; `density:radius` is S 6 / N 10 / XL 12.
   the window edge are the same number. Identical at S, N and XL.
 - **Sidebar widths:** `win:sidebar.S` 232, `.N` 300, `.XL` 340 pt; adjustable
   between 200 and 400 pt via a 4 px drag handle (cursor `ew-resize`, empty
-  paint at rest), minimum width enforced; collapse (Cmd-B) yields 0 and the
+  paint at rest), minimum width enforced; collapse (Cmd-S) yields 0 and the
   content card takes the freed width, gaining the leading inset and the
   titlebar-band top inset (§2 rule 5, §11.4). **Native-content floor stays
   strictly positive:** the native slot keeps ≥ 64 pt (`CONTENT_MIN`,
@@ -965,7 +965,7 @@ using the IDs of §15. All rows use `density` geometry from §8.
   focus domain per the interaction contract (New Folder hands chrome focus
   to the rename, §11.11).
 - **Behavior:** width per §5 (`win:sidebar.*`), draggable 4 pt hairline
-  (`bbr-sidebar-divider`), collapse Cmd-B to 0 **instantly** (performance
+  (`bbr-sidebar-divider`), collapse Cmd-S to 0 **instantly** (performance
   contract next-frame; the opening glass gets no animation), expand
   restores the previous width. On collapse the content card keeps its
   trailing and bottom inset, gains the leading inset, and its top inset grows
@@ -1589,7 +1589,7 @@ inside the actual macOS safe titlebar layout guide.
 - The window uses the public transparent/full-size macOS titlebar so the
   expanded Sidebar owns the complete left rail from the top window edge to the
   footer behind the native traffic-light area. Its collapse control sits immediately after the traffic lights,
-  uses the same sidebar-width/collapse authority as Cmd-B, changes glyph for
+  uses the same sidebar-width/collapse authority as Cmd-S, changes glyph for
   collapsed versus expanded, and replaces rather than duplicates the pre-G1a
   status-row control.
 - Back/Forward/Reload form a compact trailing cluster and target the selected
@@ -1606,7 +1606,7 @@ inside the actual macOS safe titlebar layout guide.
 - Collapsing the Sidebar removes the complete BBR-owned titlebar/navigation
   row together with the Sidebar. No compact content toolbar or floating
   Back/Forward/Reload replacement remains over the webpage; native traffic
-  lights remain available and Cmd-B restores the Sidebar.
+  lights remain available and Cmd-S restores the Sidebar.
 - **History menu (blueprint D14):** a secondary click on Back or Forward —
   or holding the primary button on it for 500 ms — opens the history menu
   (`bbr-nav-history-menu`, the §11.13 menu anatomy) at the pointer. It lists
@@ -2260,7 +2260,16 @@ signed appcast is the default candidate then). D02 (Patrick, 2026-09-29):
 the floating rail must work exactly like the docked rail (no click-only
 variant). It also appears at once when the pointer reaches the left edge
 moving fast and mostly leftward (proposed threshold 600 pt/s over the last
-~80 ms). A slow arrival keeps the 300 ms dwell.
+~80 ms). A slow arrival keeps the 300 ms dwell. Patrick adopted every
+recommendation of the D02 explainer: the rail, its menus, panels and drags
+form one interaction domain; Escape cancels IME composition, then the open
+menu, then hides the rail; ⌥⌘S and ⌘L on a hidden rail float it; ⌘S while
+floating docks it at the remembered width; fullscreen uses a 2–3 pt
+native-observed edge; switching apps or minimizing closes the floating
+rail. The sidebar toggle moves from ⌘B to **⌘S** (Patrick, 2026-09-29):
+⌘B reaches web pages again (bold in web editors), while ⌘S no longer does
+(save in web editors). The Paper boards W-3, C-4 and V-6 still draw ⌘B;
+this document is authoritative.
 
 | # | Question | Delta |
 |---|---|---|

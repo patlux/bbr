@@ -129,7 +129,7 @@ pub enum Request {
     UnhoverFolderRow,
     /// §11.14 pointer-path activation of the titlebar sidebar toggle
     /// through the exact production app method the element listener calls
-    /// (the same sidebar-width/collapse authority as Cmd-B).
+    /// (the same sidebar-width/collapse authority as Cmd-S).
     ClickTitlebarToggle,
     /// §11.14 pointer-path activation of the titlebar Back control through
     /// the same navigation authority as Cmd-[.
