@@ -183,6 +183,7 @@ e2e-peek:
 # committed repository state over real process lifecycles.
 e2e-shell-persistence:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_persistence -- --ignored --nocapture
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_recovery -- --ignored --nocapture
 
 e2e-shell-portal:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_portal -- --ignored --nocapture

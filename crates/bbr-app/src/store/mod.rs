@@ -85,6 +85,9 @@ pub struct AppStore {
     /// the testkit snapshot — never silently converted.
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
     pub store_load: Option<StoreLoad>,
+    /// Blueprint D17: why the last session did not come back, if it did
+    /// not (the card explains it once instead of starting silently empty).
+    pub recovery: Option<StoreRecovery>,
     /// Effective global search settings (persisted row; the v2 exactly-one-
     /// row invariant means the startup restore always yields a value, with
     /// defaults on a fresh or incoherent record).
@@ -134,6 +137,17 @@ pub struct AppStore {
     /// accepted save/remove mutations; never queried from SQLite during
     /// ranking or render.
     saved_pages: SavedPagesProvider,
+}
+
+/// Blueprint D17: a startup that could not restore the last session.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StoreRecovery {
+    /// The store was unreadable; it was kept aside at `kept` (if the copy
+    /// could be written) and BBR started empty.
+    Unreadable { kept: Option<std::path::PathBuf> },
+    /// The store was written by a newer BBR and left unchanged; this
+    /// session runs in memory.
+    Newer { found: u32 },
 }
 
 impl AppStore {
@@ -203,6 +217,16 @@ impl AppStore {
                 next_bookmark_id,
             ),
             repository: Some(repository),
+            recovery: match (&store_load, outcome.kept_aside) {
+                (_, Some(kept)) => Some(StoreRecovery::Unreadable { kept: Some(kept) }),
+                (
+                    StoreLoad::Discarded {
+                        reason: bbr_persistence::StoreDiscardReason::Corrupt { .. },
+                    },
+                    None,
+                ) => Some(StoreRecovery::Unreadable { kept: None }),
+                _ => None,
+            },
             store_load: Some(store_load),
             settings,
             history: Arc::new(Mutex::new(loaded)),
@@ -228,6 +252,7 @@ impl AppStore {
         let (browser_tx, browser_rx) = smol::channel::bounded::<()>(1);
         AppStore {
             repository: None,
+            recovery: None,
             store_load: None,
             settings: SearchSettingsV1::defaults(),
             history: Arc::new(Mutex::new(Vec::new())),

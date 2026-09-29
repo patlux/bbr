@@ -186,6 +186,9 @@ pub struct RestoreOutcome {
     /// Whether the persisted store was loaded as-is or discarded and
     /// recreated empty (see [`StoreLoad`]).
     pub store: StoreLoad,
+    /// Blueprint D17: where the unreadable store was kept before it was
+    /// discarded (`None` when nothing was discarded as corrupt).
+    pub kept_aside: Option<std::path::PathBuf>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

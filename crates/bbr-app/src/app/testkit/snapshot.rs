@@ -628,6 +628,18 @@ impl BbrApp {
                 }
             }),
             zoom_readout: self.transient.zoom_readout.map(|readout| readout.percent),
+            recovery: self.recovery_pane_kind().map(|kind| {
+                match kind {
+                    bbr_ui::components::recovery::RecoveryKind::Unreadable { kept: true } => {
+                        "unreadable-kept"
+                    }
+                    bbr_ui::components::recovery::RecoveryKind::Unreadable { kept: false } => {
+                        "unreadable"
+                    }
+                    bbr_ui::components::recovery::RecoveryKind::Newer => "newer",
+                }
+                .to_string()
+            }),
             menu_bar: crate::menus::menu_bar_spec(self.menu_spaces())
                 .into_iter()
                 .map(|menu| bbr_testkit::protocol::MenuSnapshot {

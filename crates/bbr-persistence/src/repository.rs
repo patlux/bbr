@@ -27,10 +27,18 @@ impl Repository {
     /// the returned snapshot is always complete (never a partial load).
     pub fn initialize_and_restore(&self) -> Result<RestoreOutcome, PersistenceError> {
         let mut connection = Connection::open(self.path()).map_err(schema::storage)?;
+        // Blueprint D17: a newer BBR's store is refused and left unchanged;
+        // a corrupt current-schema store is copied aside before the discard.
+        crate::recovery::refuse_newer(&connection)?;
+        let mut kept_aside = (schema::user_version(&connection)? == schema::SCHEMA_VERSION
+            && schema::validate_all(&connection).is_err())
+        .then(|| crate::recovery::keep_aside(self.path()))
+        .flatten();
         let store = setup::prepare_store(&mut connection)?;
         match restore_from_connection(&connection) {
             Ok(mut outcome) => {
                 outcome.store = store;
+                outcome.kept_aside = kept_aside;
                 Ok(outcome)
             }
             // Data-level corruption (invalid order keys, duplicate
@@ -38,8 +46,12 @@ impl Repository {
             // path discards the store and returns a complete empty snapshot
             // instead of a partial load or a fatal error.
             Err(error @ PersistenceError::Corruption(_)) => {
+                if kept_aside.is_none() {
+                    kept_aside = crate::recovery::keep_aside(self.path());
+                }
                 setup::discard_and_recreate(&mut connection)?;
                 let mut outcome = restore_from_connection(&connection)?;
+                outcome.kept_aside = kept_aside;
                 outcome.store = StoreLoad::Discarded {
                     reason: StoreDiscardReason::Corrupt {
                         detail: error.to_string(),
@@ -77,6 +89,7 @@ impl Repository {
         schema::validate_schema(&connection)?;
         schema::check_foreign_keys(&connection)?;
         restore_from_connection(&connection).map(|outcome| RestoreOutcome {
+            kept_aside: None,
             store: StoreLoad::Loaded,
             ..outcome
         })
@@ -336,6 +349,7 @@ fn restore_from_connection(connection: &Connection) -> Result<RestoreOutcome, Pe
     let saved_pages = load_saved_pages(connection, &mut HashSet::new(), &collections)?;
     warnings.sort_by_key(RecoveryWarning::sort_key);
     Ok(RestoreOutcome {
+        kept_aside: None,
         snapshot: Snapshot {
             profiles,
             windows,

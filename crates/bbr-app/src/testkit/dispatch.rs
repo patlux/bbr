@@ -708,6 +708,7 @@ pub(crate) fn dispatch(
         | Request::PortalRoutePointer { .. }
         | Request::ToastAction
         | Request::InvokeMenuItem { .. }
+        | Request::RecoveryAction
         | Request::PortalTeardown
         | Request::PortalSetFullscreen { .. }
         | Request::PortalSetMinimized { .. }

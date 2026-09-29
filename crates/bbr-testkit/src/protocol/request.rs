@@ -755,6 +755,9 @@ pub enum Request {
         menu: String,
         item: String,
     },
+    /// Blueprint D17: press the recovery pane's action through its
+    /// production method.
+    RecoveryAction,
     /// Blueprint D08: press the toast's action (e.g. Undo) through the
     /// production method its button calls.
     ToastAction,

@@ -7,6 +7,17 @@ Parents: [Phase 7](../phases/07-persistence.md) ·
 Status: adopted 2026-09-28 (DESIGN §19); implementation position 16 of 24. Paper boards: L-10 · Session restore, L-11 · Recovery & migration errors, PR-18 · Quit, relaunch, crash recovery (file
 “BBR — Browser Shell”).
 
+**First slice implemented 2026-09-29 (recovery):** a newer store is
+refused and left unchanged (the session runs in memory); a corrupt store is
+copied aside (`bbr_persistence` `recovery.rs`) before the discard; the empty
+space shows the recovery pane (`bbr_ui::components::recovery`). Evidence:
+`repository_contract` (newer refused on both paths, corrupt kept aside
+byte for byte), `recovery` component tests, `e2e_shell_recovery` (in `just
+e2e-shell-persistence`). Still open: the restore notice banner ("Restored 3
+spaces and 42 tabs …", L-10) and the partial-restore banner (L-11). Both
+float over the card top through the Portal's overlay layer, like the D08
+toast.
+
 ## Outcome
 
 A one-time restore notice, a partial-restore banner, and panes for an unreadable session and a newer data version that never touch profile data.

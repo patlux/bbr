@@ -31,6 +31,7 @@ pub mod illustration;
 mod illustration_draw;
 pub mod menu;
 pub mod pane;
+pub mod recovery;
 pub mod saved_pages_library;
 pub mod section;
 pub mod space;

@@ -331,6 +331,17 @@ impl Render for BbrApp {
                 }),
             )
             .into_any()
+        } else if let Some(kind) = self.recovery_pane_kind() {
+            // Blueprint D17: the empty state explains a session that did
+            // not come back.
+            components::recovery::recovery_pane(
+                &theme,
+                kind,
+                cx.listener(|this, _e, _window, cx| {
+                    this.recovery_action(cx);
+                }),
+            )
+            .into_any()
         } else {
             components::empty_space_pane(
                 &theme,

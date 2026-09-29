@@ -277,6 +277,8 @@ pub struct TestSnapshot {
     /// Blueprint D19 menus.
     pub menu_bar: Vec<bbr_testkit::protocol::MenuSnapshot>,
     pub dock_menu: Vec<bbr_testkit::protocol::MenuItemSnapshot>,
+    /// Blueprint D17 recovery pane.
+    pub recovery: Option<String>,
     /// Blueprint D08 overlays.
     pub toast: Option<bbr_testkit::protocol::ToastSnapshot>,
     pub zoom_readout: Option<u32>,

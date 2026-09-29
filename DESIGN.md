@@ -1203,6 +1203,25 @@ of problem instead of styling it.
   (`kind` `empty-space` / `crashed` / `offline`, `state` `playing` / `rest`).
 - Both panes paint flat GPUI surfaces; they never render web content or
   screenshots.
+- **Recovery panes (blueprint D17, implemented):** when the last session
+  does not come back, BBR starts with an empty space (no initial tab), and
+  its empty state explains why once (`bbr-recovery`: the 56 pt
+  `status.attention` warning mark on its surface, a `type:title` title, the
+  body and one secondary action `bbr-recovery-action`). **Unreadable** (the
+  current-schema store fails validation): the store is copied aside byte
+  for byte as `bbr.unreadable-<seconds>.sqlite` next to it before the
+  discard — "Your last session couldn't be opened … The old session file
+  was kept …" with **Show File in Finder**. The copy never claims a kept
+  file that could not be written. **Newer** (the store is stamped by a
+  newer BBR): the store is refused on every path and left byte-for-byte
+  unchanged; this session runs in memory — "This session was saved by a
+  newer BBR … Update BBR to open it" with **Continue**, which shows the
+  ordinary empty space. The board's Try Again and Check for Updates are
+  omitted: BBR cannot retry a read that failed validation, and it has no
+  update channel (§19 question on D18). Older stamps keep the closed
+  policy: they are discarded without a copy or a pane. Profile data (the
+  WebKit stores with cookies and logins) is never touched. Snapshot:
+  `recovery` (`unreadable`, `unreadable-kept`, `newer`).
 
 ### 11.8a Unresponsive renderer pane
 
@@ -2199,7 +2218,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D14 | Back / Forward history menu | W-7 M-3 | §11.14 §11.13 | implemented | [blueprint-navigation-history-menu](docs/roadmap/tasks/blueprint-navigation-history-menu.md) |
 | D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | adopted | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |
 | D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 | adopted | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |
-| D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | adopted | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
+| D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | recovery panes implemented; restore notice banner open | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
 | D18 | About and updates | L-12 | §1 §7 | adopted | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
 | D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | menus implemented; window reopen and cross-window drag open | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |
 | D20 | New folders open in rename | S-4 PR-06 | §11.11 | implemented | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |

@@ -85,26 +85,24 @@ fn mismatched_stamp_discards_and_is_immediately_rewritable() {
     );
 }
 
+/// Blueprint D17 (DESIGN §11.8): a store written by a newer BBR is refused
+/// on both paths and left unchanged — the app runs with a fresh in-memory
+/// session until BBR is updated.
 #[test]
-fn newer_stamp_is_refused_read_only_and_discarded_on_write() {
+fn newer_stamp_is_refused_on_both_paths_and_left_unchanged() {
     let db = TempDb::from_fixture("newer_schema");
     let before = inventory(&db.0);
-    assert_eq!(
-        db.repository().restore_read_only().unwrap_err(),
-        PersistenceError::SchemaMismatch {
-            found: 5,
-            supported: 4
-        }
-    );
+    let refused = PersistenceError::SchemaMismatch {
+        found: 5,
+        supported: 4,
+    };
+    assert_eq!(db.repository().restore_read_only().unwrap_err(), refused);
     assert_eq!(inventory(&db.0), before);
-    let outcome = db.repository().initialize_and_restore().unwrap();
-    assert_eq!(outcome.snapshot, Snapshot::default());
     assert_eq!(
-        outcome.store,
-        StoreLoad::Discarded {
-            reason: StoreDiscardReason::VersionMismatch { found: 5 }
-        }
+        db.repository().initialize_and_restore().unwrap_err(),
+        refused
     );
+    assert_eq!(inventory(&db.0), before, "the newer store is untouched");
 }
 
 #[test]
@@ -139,6 +137,16 @@ fn structural_corruption_is_fatal_read_only_and_discarded_on_write() {
             reason: StoreDiscardReason::Corrupt { .. }
         }
     ));
+    // Blueprint D17: the unreadable store was kept aside before the
+    // discard, byte-for-byte recoverable next to the store.
+    let kept = outcome.kept_aside.expect("the unreadable store is kept");
+    assert_eq!(kept.parent(), db.0.parent());
+    assert!(kept
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.contains(".unreadable-")));
+    assert_eq!(inventory(&kept), before, "the kept copy is the old store");
+    std::fs::remove_file(kept).unwrap();
 }
 
 #[test]

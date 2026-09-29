@@ -23,6 +23,7 @@ mod fields;
 mod fields_paper;
 mod load_helpers;
 mod model;
+mod recovery;
 mod repository;
 mod repository_browser;
 mod repository_load;

@@ -108,6 +108,7 @@ pub(crate) mod peek;
 #[cfg(feature = "testkit")]
 mod peek_benchmarks;
 mod portal_host;
+mod recovery;
 mod render;
 mod saved_pages;
 #[cfg(feature = "testkit")]
@@ -217,6 +218,8 @@ pub struct BbrApp {
     /// Blueprint D19: the spaces the installed menu bar and Dock menu list
     /// (`None` until the first render installs them).
     pub(crate) menu_spaces: Option<Vec<crate::menus::MenuSpace>>,
+    /// Blueprint D17: the recovery pane was dismissed (Continue).
+    pub(crate) recovery_dismissed: bool,
     /// The one-active portal state for this browser window (task packet
     /// `native-portal-host`): exactly one presentation, deterministic
     /// dismissal, stable ids.
@@ -639,6 +642,7 @@ impl BbrApp {
             native_portal: None,
             transient: transient::TransientOverlays::default(),
             menu_spaces: None,
+            recovery_dismissed: false,
             portal: PortalState::new(crate::portal::probe::PORTAL_ID),
             portal_probe: Rc::new(RefCell::new(PortalProbeState::new())),
             hovered_row: None,
@@ -968,6 +972,11 @@ impl BbrApp {
 
     /// Open the initial controller-backed tab after the first window frame.
     pub fn open_initial_tab(&mut self, initial_url: &str) {
+        // Blueprint D17: a session that did not come back starts with an
+        // empty space whose empty state explains why (the recovery pane).
+        if self.store.recovery.is_some() {
+            return;
+        }
         if let Err(error) = self.controller.open_tab(initial_url) {
             log::error!("could not open initial tab: {error}");
         }

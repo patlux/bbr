@@ -218,6 +218,16 @@ fn main() {
         // touch SQLite.
         let mut store = match store::AppStore::open(&cli.profile_dir) {
             Ok(store) => store,
+            // Blueprint D17: a newer BBR's store is left unchanged; this
+            // session runs in memory and the card says why.
+            Err(bbr_persistence::PersistenceError::SchemaMismatch { found, supported })
+                if found > supported =>
+            {
+                log::warn!("persistence store v{found} is newer than v{supported}; left unchanged");
+                let mut store = store::AppStore::ephemeral();
+                store.recovery = Some(store::StoreRecovery::Newer { found });
+                store
+            }
             Err(error) => {
                 // A fatal open failure (the store cannot even be created)
                 // is logged truthfully and the app continues ephemeral:

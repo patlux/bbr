@@ -1516,6 +1516,10 @@ pub struct Snapshot {
     pub menu_bar: Vec<MenuSnapshot>,
     #[serde(default)]
     pub dock_menu: Vec<MenuItemSnapshot>,
+    /// Blueprint D17: the recovery pane on screen (`unreadable`,
+    /// `unreadable-kept` or `newer`); `None` when none shows.
+    #[serde(default)]
+    pub recovery: Option<String>,
     /// Blueprint D08: the live toast (`None` at rest).
     #[serde(default)]
     pub toast: Option<ToastSnapshot>,
