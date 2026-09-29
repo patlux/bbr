@@ -30,7 +30,9 @@ Quit restores every window.
    remembers its own selected tab per space. A tab's page shows in one
    window at a time: selecting a tab another window shows moves it to this
    window, and the other window shows that space's empty state (New Tab
-   ready).
+   ready). A Peek preview belongs to the window that opened it and sits
+   in that window's root; it closes when that window loses its origin tab
+   or closes.
 2. **⌘N** (menu, Dock menu): a new window on the active space's profile and
    space, empty, with the ⌘T palette open (L-14 note 2).
 3. **⇧⌘W** closes the window; its tabs stay in their spaces. The remaining
@@ -38,9 +40,10 @@ Quit restores every window.
    recently closed window when nothing was closed after it, otherwise the
    last closed tab. The window keeps its geometry, active space and
    selections.
-4. **Last window closed:** BBR keeps running without a window (macOS
-   convention); the Dock icon or ⌘N opens one. ⌘Q quits; relaunch restores
-   every window.
+4. **Last window closed** (its close button or ⇧⌘W): BBR saves everything
+   and quits, as closing its one window did before; relaunch restores
+   every window. (Patrick 2026-09-30 rejected keeping BBR running with the
+   window hidden.)
 5. **Drag between windows:** a tab row dragged out of one window's rail
    onto another window's rail lands at that insertion slot in the other
    window's active space and shows there; onto the other window's card it
@@ -60,9 +63,20 @@ Quit restores every window.
 - `bbr-web` / `bbr-web-macos`: the engine hosts several root views; a
   session lives in the root of the window that shows it and is re-parented
   (never reloaded) when it moves; geometry flips against its own root.
-- `bbr-app`: one `BbrApp` per window (UI state, focus handles, Portal)
-  sharing the controller, store and the app-global subsystems; GPUI routes
-  each window's events to its own entity.
+- `bbr-app`: one `BbrApp` entity per window, the root view of that
+  window: its UI state, focus handles, Portal and pointer observer. The
+  shared state (controller, organization, store, downloads, permissions,
+  media, certificates, error surfaces, zoom, preferences, …) lives behind
+  shared handles every window clones; state keyed by a tab, view or site
+  is shared, presentation state (what is open, hovered, dragged, where it
+  was drawn) is per window. A window's controller access first switches
+  the controller to that window's context, so the window is explicit at
+  every access. GPUI routes each window's input, timers and async results
+  to its own entity; engine events are routed to the window that shows
+  their view. A change of shared state re-renders the other windows.
+  Rejected (2026-09-30): one `BbrApp` swapping every window's UI state in
+  and out — it hides the window behind an implicit “current window” that
+  every callback, timer and event would have to switch correctly.
 - Persistence: the store's `windows` table already keys rows by window;
   per-window active space and selections persist in `windows.txt` beside
   the store (no schema change).
@@ -75,8 +89,11 @@ Serial slices:
 1. Controller window contexts (model, visibility union, move-on-select),
    with fake-engine tests.
 2. Multi-root engine hosting and re-parenting (fake + macOS).
-3. Per-window app shells over shared state; ⌘N / New Window (menu, Dock),
-   ⇧⌘W, window focus, last-window behavior; testkit window addressing.
+3. Per-window app shells over shared state: (a) shared handles for the
+   shared state and window-scoped controller access, one window, no
+   behavior change, every suite green; (b) ⌘N / New Window (menu, Dock),
+   ⇧⌘W, window focus, event routing, last-window quit, testkit window
+   addressing.
 4. Persistence and restore of every window.
 5. Reopen: toast and ⇧⌘T.
 6. Tab drag and drop between windows (rail slots, card zones, preview in
@@ -111,6 +128,10 @@ Not parallelized.
       and moved tabs repairing other windows' selections. *(Slice 1,
       2026-09-30: `controller/windows.rs`, the model's selected-elsewhere
       set, `WebEngine::place_web_view`; `controller_window_tests` (6).)*
+- [x] Window contexts, part 2: reading a window's context without moving
+      sessions (`view_window`), a window's selection, Peek previews per
+      window. *(2026-09-30: `controller_window_tests` (10), full
+      `bbr-browser` suite.)*
 - [ ] Multi-root engine: sessions re-parent between roots without reload;
       per-root geometry.
       *(Slice 2, 2026-09-30: `bbr-web-macos` `window_roots.rs` — further

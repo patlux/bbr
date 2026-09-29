@@ -180,6 +180,13 @@ impl BrowserController {
         self.engine
             .borrow_mut()
             .create_web_view(view, source_profile, session.url());
+        // Blueprint D19: the preview sits in the root of the window that
+        // opened it.
+        let window = self.windows.current;
+        if window != crate::WindowKey::default() {
+            self.engine.borrow_mut().place_web_view(view, window.0);
+        }
+        self.windows.placement.insert(view, window);
         // The preview must sit above the warm origin: raise it to the top of
         // the native z-order (the origin view stays warm underneath).
         self.engine.borrow_mut().raise_web_view(view);
@@ -345,9 +352,10 @@ impl BrowserController {
 
     /// Destroy the preview's disposable session (engine + visibility +
     /// profile + nav state). The origin session is never touched.
-    fn destroy_preview_session(&mut self, view: WebViewId) {
+    pub(crate) fn destroy_preview_session(&mut self, view: WebViewId) {
         self.engine.borrow_mut().destroy_web_view(view);
         self.visibility.remove(&view);
+        self.windows.placement.remove(&view);
         self.session_profiles.remove(&view);
         self.nav.remove(&view);
     }
@@ -375,10 +383,9 @@ impl BrowserController {
             | WebEvent::MediaCaptureChanged { view: v, .. }
             | WebEvent::MediaObserved { view: v, .. } => *v,
         };
-        let is_preview = self
-            .preview
-            .as_ref()
-            .is_some_and(|preview| preview.view == view);
+        // Any window's preview (its events reach the controller whichever
+        // window is current).
+        let is_preview = self.previews().any(|preview| preview.view == view);
         if !is_preview {
             return false;
         }

@@ -382,7 +382,7 @@ impl BrowserController {
             .expect("registry bijection");
         // The transient preview is deliberately registry-free because it
         // backs no domain tab; still account for its live engine session.
-        let preview_extra = usize::from(self.preview.is_some());
+        let preview_extra = self.previews().count();
         assert_eq!(
             self.registry.live_sessions() + preview_extra,
             self.engine.borrow().live_session_count(),

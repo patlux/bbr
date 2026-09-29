@@ -170,3 +170,112 @@ fn closing_a_window_keeps_its_tabs_warm() {
     c.close_window(first).unwrap();
     assert_eq!(c.current_window(), first);
 }
+
+#[test]
+fn viewing_a_window_neither_moves_nor_shows_sessions() {
+    let (mut c, h) = three();
+    let first = c.current_window();
+    let second = c.open_window();
+    c.enter_window(second).unwrap();
+    c.select_tab(0).unwrap();
+    let one = view(&c, 0);
+    c.enter_window(first).unwrap();
+    let before = h.ops().len();
+    // A render of the second window reads its context...
+    c.view_window(second).unwrap();
+    assert_eq!(c.current_window(), second);
+    assert_eq!(c.snapshot().active_index, Some(0));
+    assert_eq!(c.window_selection(first), c.tab_at(2).ok());
+    // ...and gives it back without touching a session.
+    c.view_window(first).unwrap();
+    assert_eq!(c.snapshot().active_index, Some(2));
+    assert_eq!(h.ops().len(), before, "no engine operation");
+    assert!(shown(&h, one));
+    assert_eq!(window_of(&h, one), second.0);
+    c.check_invariants();
+}
+
+#[test]
+fn an_operation_while_viewing_runs_in_the_viewed_window() {
+    let (mut c, h) = three();
+    let first = c.current_window();
+    let second = c.open_window();
+    c.view_window(second).unwrap();
+    c.select_tab(1).unwrap();
+    let two = view(&c, 1);
+    assert_eq!(window_of(&h, two), second.0, "placed in the second root");
+    c.view_window(first).unwrap();
+    assert_eq!(c.snapshot().active_index, Some(2));
+    assert_eq!(c.window_selection(second), c.tab_at(1).ok());
+    assert!(shown(&h, two));
+}
+
+fn open_preview(c: &mut BrowserController, source: WebViewId, url: &str) -> WebViewId {
+    use bbr_web::{
+        decide, NewWindowDecision, NewWindowFeatures, NewWindowInput, NewWindowOutcome,
+        NewWindowRequest, NewWindowTarget, ProfileId,
+    };
+    let request = NewWindowRequest {
+        source,
+        source_profile: ProfileId(1),
+        url: url.into(),
+        user_initiated: true,
+        target: NewWindowTarget::NewWindow,
+        input: NewWindowInput::Primary,
+        features: NewWindowFeatures::default(),
+    };
+    let session = match decide(&request, NewWindowDecision::Preview) {
+        NewWindowOutcome::CreateSession { session } => session,
+        other => panic!("expected preview session, got {other:?}"),
+    };
+    c.open_preview_from_new_window(source, &session)
+        .expect("open preview succeeds");
+    c.preview().expect("preview open").view
+}
+
+#[test]
+fn a_preview_belongs_to_the_window_that_opened_it() {
+    let (mut c, h) = three();
+    let first = c.current_window();
+    let second = c.open_window();
+    c.view_window(second).unwrap();
+    c.select_tab(0).unwrap();
+    let source = view(&c, 0);
+    let preview = open_preview(&mut c, source, "https://preview.example");
+    assert_eq!(window_of(&h, preview), second.0, "in the opener's root");
+    // The first window has no preview; acting there keeps the other's.
+    c.view_window(first).unwrap();
+    assert!(c.preview().is_none());
+    assert!(c.snapshot().preview.is_none());
+    c.select_tab(1).unwrap();
+    assert!(!h.ops().contains(&EngineOp::Destroy { view: preview }));
+    c.view_window(second).unwrap();
+    assert_eq!(c.preview().map(|p| p.view), Some(preview));
+    c.check_invariants();
+}
+
+#[test]
+fn a_waiting_windows_preview_closes_with_its_origin_or_window() {
+    let (mut c, h) = three();
+    let first = c.current_window();
+    let second = c.open_window();
+    c.view_window(second).unwrap();
+    c.select_tab(0).unwrap();
+    let source = view(&c, 0);
+    let preview = open_preview(&mut c, source, "https://preview.example");
+    // The first window takes the origin tab: the second loses it and its
+    // preview closes.
+    c.view_window(first).unwrap();
+    c.select_tab(0).unwrap();
+    assert!(h.ops().contains(&EngineOp::Destroy { view: preview }));
+    c.view_window(second).unwrap();
+    assert!(c.preview().is_none());
+    // A preview goes with its window.
+    c.select_tab(1).unwrap();
+    let source = view(&c, 1);
+    let preview = open_preview(&mut c, source, "https://again.example");
+    c.view_window(first).unwrap();
+    c.close_window(second).unwrap();
+    assert!(h.ops().contains(&EngineOp::Destroy { view: preview }));
+    c.check_invariants();
+}

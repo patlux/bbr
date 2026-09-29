@@ -27,11 +27,14 @@ use crate::ControllerError;
 pub struct WindowKey(pub u64);
 
 /// A window's waiting context.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub(crate) struct WindowContext {
     pub(crate) active_space: Option<SpaceId>,
     /// Per space: the selected tab (`None`: the space's empty state).
     pub(crate) selections: BTreeMap<SpaceId, Option<TabId>>,
+    /// The window's open Peek preview (a preview belongs to the window
+    /// that opened it; its view sits in that window's root).
+    pub(crate) preview: Option<crate::peek::PeekPreview>,
 }
 
 /// The controller's window bookkeeping.
@@ -80,6 +83,7 @@ impl BrowserController {
             WindowContext {
                 active_space: Some(self.active_space),
                 selections,
+                preview: None,
             },
         );
         key
@@ -106,16 +110,72 @@ impl BrowserController {
         Ok(())
     }
 
+    /// Load `window`'s context to *read and act in it* without touching
+    /// the sessions: every access of a window's shell goes through this.
+    /// Unlike [`Self::enter_window`] nothing is re-placed or re-shown; any
+    /// operation run while it is loaded reconciles the sessions as usual.
+    pub fn view_window(&mut self, window: WindowKey) -> Result<(), ControllerError> {
+        if window == self.windows.current {
+            return Ok(());
+        }
+        let context = self
+            .windows
+            .waiting
+            .remove(&window)
+            .ok_or(ControllerError::UnknownWindow(window))?;
+        let outgoing = self.current_context();
+        self.windows.waiting.insert(self.windows.current, outgoing);
+        self.windows.current = window;
+        if let Some(space) = context
+            .active_space
+            .filter(|space| self.browser.space(*space).is_some())
+        {
+            self.active_space = space;
+        }
+        self.load_selections(&context);
+        self.preview = context.preview;
+        // What the other windows select (model bookkeeping; a waiting
+        // window's preview that lost its origin closes).
+        let _ = self.reconcile_windows();
+        Ok(())
+    }
+
+    /// Every open preview (the current window's first).
+    pub(crate) fn previews(&self) -> impl Iterator<Item = &crate::peek::PeekPreview> {
+        self.preview.iter().chain(
+            self.windows
+                .waiting
+                .values()
+                .filter_map(|context| context.preview.as_ref()),
+        )
+    }
+
+    /// The selected tab of `window` in its active space (`None`: the
+    /// space's empty state).
+    pub fn window_selection(&self, window: WindowKey) -> Option<TabId> {
+        if window == self.windows.current {
+            return self.browser.space(self.active_space)?.active_tab;
+        }
+        let context = self.windows.waiting.get(&window)?;
+        let space = context.active_space?;
+        context.selections.get(&space).copied().flatten()
+    }
+
     /// Close `window`: its context is dropped (its tabs stay in their
     /// spaces, warm). Closing the current window makes `next` current
     /// (another open window), or keeps the context without a window when it
     /// was the last one. Returns the closed context for a later reopen.
     pub fn close_window(&mut self, window: WindowKey) -> Result<(), ControllerError> {
         if window != self.windows.current {
-            self.windows
+            let closed = self
+                .windows
                 .waiting
                 .remove(&window)
                 .ok_or(ControllerError::UnknownWindow(window))?;
+            // Its preview goes with it.
+            if let Some(preview) = closed.preview {
+                self.destroy_preview_session(preview.view);
+            }
             self.sync_views();
             self.check_invariants();
             return Ok(());
@@ -125,6 +185,9 @@ impl BrowserController {
             return Ok(());
         };
         let context = self.windows.waiting.remove(&next).expect("listed");
+        if let Some(preview) = self.preview.take() {
+            self.destroy_preview_session(preview.view);
+        }
         self.windows.current = next;
         self.load_context(context);
         self.sync_views();
@@ -141,6 +204,7 @@ impl BrowserController {
                 .spaces()
                 .map(|space| (space.id, space.active_tab))
                 .collect(),
+            preview: self.preview.clone(),
         }
     }
 
@@ -152,6 +216,19 @@ impl BrowserController {
         {
             self.active_space = space;
         }
+        self.load_selections(&context);
+        self.preview = context.preview;
+        let spaces: Vec<SpaceId> = self.browser.spaces().map(|space| space.id).collect();
+        for space in spaces {
+            let _ = self.browser.wake_visible(space);
+        }
+        // The window's own preview stays only while its origin does.
+        self.close_preview_if_stale();
+    }
+
+    /// Load `context`'s per-space selections (a selection that no longer
+    /// fits falls back to the space's empty state).
+    fn load_selections(&mut self, context: &WindowContext) {
         let spaces: Vec<SpaceId> = self.browser.spaces().map(|space| space.id).collect();
         for space in spaces {
             let selection = context
@@ -166,12 +243,6 @@ impl BrowserController {
                 });
             let _ = self.browser.restore_active_tab(space, selection);
         }
-        let spaces: Vec<SpaceId> = self.browser.spaces().map(|space| space.id).collect();
-        for space in spaces {
-            let _ = self.browser.wake_visible(space);
-        }
-        // A preview belongs to the window that opened it.
-        self.close_preview_if_stale();
     }
 
     /// The tabs a waiting context shows or keeps (its selections and their
@@ -256,6 +327,21 @@ impl BrowserController {
                 .is_some_and(|space| self.browser.space(space).is_none())
             {
                 kept.active_space = Some(self.active_space);
+            }
+            // The window's preview stays only while its origin is the
+            // window's selection in its active space.
+            let stale = kept.preview.as_ref().filter(|preview| {
+                kept.active_space != Some(preview.source_space)
+                    || kept
+                        .selections
+                        .get(&preview.source_space)
+                        .copied()
+                        .flatten()
+                        != Some(preview.source_tab)
+            });
+            if let Some(view) = stale.map(|preview| preview.view) {
+                kept.preview = None;
+                self.destroy_preview_session(view);
             }
             self.windows.waiting.insert(key, kept);
         }

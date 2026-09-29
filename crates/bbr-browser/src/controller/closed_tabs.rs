@@ -22,7 +22,7 @@ impl BrowserController {
     /// The profile whose data store backs the live `view` (a tab's session
     /// or the open Peek preview); `None` for an unknown view.
     pub fn profile_of_view(&self, view: bbr_web::WebViewId) -> Option<bbr_web::ProfileId> {
-        if let Some(preview) = self.preview.as_ref().filter(|p| p.view == view) {
+        if let Some(preview) = self.previews().find(|p| p.view == view) {
             return Some(preview.profile);
         }
         let tab = self.registry.tab_for_view(view)?;
@@ -51,7 +51,7 @@ impl BrowserController {
                 Some((view, profile, url))
             })
             .collect();
-        if let Some(preview) = self.preview.as_ref() {
+        for preview in self.previews() {
             let url = self
                 .nav
                 .get(&preview.view)
