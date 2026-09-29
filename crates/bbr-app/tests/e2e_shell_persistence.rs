@@ -53,6 +53,9 @@ mod folder_pins;
 #[path = "e2e_shell_persistence/space_paper.rs"]
 mod space_paper;
 
+#[path = "e2e_shell_persistence/restore_notice.rs"]
+mod restore_notice;
+
 #[path = "e2e_shell_persistence/space_activation.rs"]
 mod space_activation;
 

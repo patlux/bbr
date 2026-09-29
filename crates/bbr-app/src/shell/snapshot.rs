@@ -279,6 +279,7 @@ pub struct TestSnapshot {
     pub dock_menu: Vec<bbr_testkit::protocol::MenuItemSnapshot>,
     /// Blueprint D17 recovery pane.
     pub recovery: Option<String>,
+    pub restore_notice: Option<String>,
     /// Blueprint D08 overlays.
     pub toast: Option<bbr_testkit::protocol::ToastSnapshot>,
     pub zoom_readout: Option<u32>,

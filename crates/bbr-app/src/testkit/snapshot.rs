@@ -313,6 +313,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             peek_frame: self.peek_frame,
             toast: self.toast.clone(),
             recovery: self.recovery.clone(),
+            restore_notice: self.restore_notice.clone(),
             menu_bar: self.menu_bar.clone(),
             dock_menu: self.dock_menu.clone(),
             zoom_readout: self.zoom_readout,

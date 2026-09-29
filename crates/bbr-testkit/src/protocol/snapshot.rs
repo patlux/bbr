@@ -1520,6 +1520,9 @@ pub struct Snapshot {
     /// `unreadable-kept` or `newer`); `None` when none shows.
     #[serde(default)]
     pub recovery: Option<String>,
+    /// Blueprint D17: the restore notice message while it shows.
+    #[serde(default)]
+    pub restore_notice: Option<String>,
     /// Blueprint D08: the live toast (`None` at rest).
     #[serde(default)]
     pub toast: Option<ToastSnapshot>,

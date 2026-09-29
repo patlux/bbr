@@ -24,6 +24,12 @@ pub const TOAST_ID: &str = "bbr-toast";
 pub const TOAST_MESSAGE_ID: &str = "bbr-toast-message";
 pub const TOAST_ACTION_ID: &str = "bbr-toast-action";
 pub const ZOOM_READOUT_ID: &str = "bbr-zoom-readout";
+/// Blueprint D17: the restore notice banner and its parts.
+pub const RESTORE_NOTICE_ID: &str = "bbr-restore-notice";
+pub const RESTORE_NOTICE_MESSAGE_ID: &str = "bbr-restore-notice-message";
+pub const RESTORE_NOTICE_DISMISS_ID: &str = "bbr-restore-notice-dismiss";
+/// The banner's inset from the card's sides and top.
+pub const BANNER_INSET: [f32; 2] = [20.0, 14.0];
 pub const ZOOM_READOUT_LEVEL_ID: &str = "bbr-zoom-readout-level";
 pub const ZOOM_READOUT_MINUS_ID: &str = "bbr-zoom-readout-minus";
 pub const ZOOM_READOUT_PLUS_ID: &str = "bbr-zoom-readout-plus";
@@ -89,6 +95,76 @@ pub fn toast_rect(card: [f32; 4], width: f32) -> [f32; 4] {
         width,
         TOAST_HEIGHT,
     ]
+}
+
+/// The banner's slot inside the card inner box (full width minus the side
+/// insets, at the top inset; the banner hugs its content's height).
+pub fn banner_slot(card: [f32; 4]) -> [f32; 3] {
+    let [x, y, w, _] = card;
+    let [side, top] = BANNER_INSET;
+    [x + side, y + top, (w - 2.0 * side).max(0.0)]
+}
+
+/// Blueprint D17 (boards B-7, L-10): the info banner over the card top —
+/// the `status.info` mark, the `type:label` message and one quiet action,
+/// on the `tint.accent` wash over an opaque overlay surface (the page
+/// never shows through the copy). Fades in over `dur:fine`.
+pub fn info_banner(
+    theme: &Theme,
+    message: SharedString,
+    action: SharedString,
+    on_action: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+) -> AnyElement {
+    let p = theme.palette;
+    let banner = div()
+        .id(RESTORE_NOTICE_ID)
+        .w_full()
+        .rounded(theme.radius.medium())
+        .bg(p.surface_overlay)
+        .shadow(elev2(theme))
+        .child(
+            div()
+                .min_h(px(40.0))
+                .py(px(6.0))
+                .pl(px(12.0))
+                .pr(px(8.0))
+                .gap(px(10.0))
+                .flex()
+                .flex_row()
+                .items_center()
+                .rounded(theme.radius.medium())
+                .bg(p.tint_accent)
+                .child(Icon::Info.canvas_with(theme, px(16.0), p.status_info))
+                .child(
+                    div()
+                        .id(RESTORE_NOTICE_MESSAGE_ID)
+                        .flex_1()
+                        .min_w_0()
+                        .text_size(theme.type_.label.size)
+                        .text_color(p.ink)
+                        .child(message),
+                )
+                .child(
+                    div()
+                        .id(RESTORE_NOTICE_DISMISS_ID)
+                        .h(px(28.0))
+                        .px(crate::theme::Spacing::sp2())
+                        .flex()
+                        .items_center()
+                        .rounded(theme.radius.small())
+                        .text_size(theme.type_.label.size)
+                        .font_weight(gpui::FontWeight::MEDIUM)
+                        .text_color(p.accent_ink)
+                        .hover(move |style| style.bg(p.wash_hover))
+                        .cursor_pointer()
+                        .on_mouse_down(MouseButton::Left, move |event, window, cx| {
+                            cx.stop_propagation();
+                            on_action(event, window, cx);
+                        })
+                        .child(action),
+                ),
+        );
+    crate::surfaces::floating::appear(theme, "bbr-restore-notice-appear", banner)
 }
 
 /// The zoom readout's rect inside the card inner box (top-centre).

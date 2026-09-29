@@ -50,6 +50,30 @@ pub struct ZoomReadoutState {
     pub percent: u32,
 }
 
+/// Blueprint D17: the one restore notice of a launch.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RestoreNotice {
+    pub message: String,
+    /// The selected tab's restored URL: its own load is not "the first
+    /// navigation".
+    pub restored_url: Option<String>,
+}
+
+/// The notice copy for a restore of `spaces` spaces and `tabs` tabs.
+pub(crate) fn restore_notice_message(spaces: usize, tabs: usize) -> String {
+    let spaces = if spaces == 1 {
+        "1 space".to_string()
+    } else {
+        format!("{spaces} spaces")
+    };
+    let tabs = if tabs == 1 {
+        "1 tab".to_string()
+    } else {
+        format!("{tabs} tabs")
+    };
+    format!("Restored {spaces} and {tabs} from your last session.")
+}
+
 /// App-owned overlay state (see the module docs).
 #[derive(Default)]
 pub struct TransientOverlays {
@@ -60,6 +84,13 @@ pub struct TransientOverlays {
     /// The toast's rendered bounds (window points), recorded by the Portal
     /// render: the toast hugs its content, so its hit region is measured.
     pub toast_bounds: Rc<Cell<Option<[f32; 4]>>>,
+    /// Blueprint D17: the restore notice ("Restored 3 spaces and 42 tabs
+    /// from your last session.") and the restored page's URL — the notice
+    /// leaves on the first navigation elsewhere, or on Dismiss.
+    pub notice: Option<RestoreNotice>,
+    /// The notice's rendered bounds (its hit region), recorded by the
+    /// Portal render.
+    pub notice_bounds: Rc<Cell<Option<[f32; 4]>>>,
     generation: u64,
     toast_task: Option<Task<()>>,
     readout_task: Option<Task<()>>,
@@ -68,7 +99,7 @@ pub struct TransientOverlays {
 impl TransientOverlays {
     /// Whether any overlay is on screen.
     pub fn showing(&self) -> bool {
-        self.toast.is_some() || self.zoom_readout.is_some()
+        self.toast.is_some() || self.zoom_readout.is_some() || self.notice.is_some()
     }
 
     /// The capture regions of the overlays that take input (a leaving toast
@@ -86,6 +117,11 @@ impl TransientOverlays {
         }
         if let (Some(_), Some(card)) = (self.zoom_readout, self.card) {
             rects.push(zoom_readout_rect(card));
+        }
+        if self.notice.is_some() {
+            if let Some(bounds) = self.notice_bounds.get() {
+                rects.push(bounds);
+            }
         }
         rects
     }
@@ -183,6 +219,46 @@ impl BbrApp {
         self.dismiss_toast(toast.model.generation, cx);
         cx.notify();
         true
+    }
+
+    /// Blueprint D17: after a restore, say what came back (once per launch).
+    pub(crate) fn show_restore_notice(&mut self) {
+        let browser = self.controller.snapshot();
+        let tabs = browser.all_tabs.len();
+        if tabs == 0 {
+            return;
+        }
+        let restored_url = browser
+            .active_index
+            .and_then(|index| browser.tabs.get(index))
+            .map(|tab| tab.url.clone());
+        self.transient.notice = Some(RestoreNotice {
+            message: restore_notice_message(browser.spaces.len(), tabs),
+            restored_url,
+        });
+    }
+
+    /// Dismiss the restore notice (its Dismiss action and the testkit seam).
+    pub fn dismiss_restore_notice(&mut self, cx: &mut Context<Self>) -> bool {
+        if self.transient.notice.take().is_none() {
+            return false;
+        }
+        self.transient.notice_bounds.set(None);
+        self.sync_portal_overlays(cx);
+        true
+    }
+
+    /// A navigation landed: the first one away from the restored page ends
+    /// the notice.
+    pub(crate) fn restore_notice_navigation(&mut self, url: &str, cx: &mut Context<Self>) {
+        let away = self
+            .transient
+            .notice
+            .as_ref()
+            .is_some_and(|notice| notice.restored_url.as_deref() != Some(url));
+        if away {
+            self.dismiss_restore_notice(cx);
+        }
     }
 
     /// Show (or refresh) the zoom readout at `percent`; it leaves
@@ -379,6 +455,18 @@ impl BbrApp {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_notice_counts_what_came_back() {
+        assert_eq!(
+            restore_notice_message(3, 42),
+            "Restored 3 spaces and 42 tabs from your last session."
+        );
+        assert_eq!(
+            restore_notice_message(1, 1),
+            "Restored 1 space and 1 tab from your last session."
+        );
+    }
 
     #[test]
     fn hit_rects_cover_the_measured_toast_and_the_readout_only() {

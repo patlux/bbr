@@ -810,6 +810,10 @@ impl BbrApp {
     /// Record the startup restore evidence (the composition root passes the
     /// chrome-first plan's deferred count, or nothing on the fresh path).
     pub fn set_restore_evidence(&mut self, evidence: RestoreEvidence) {
+        // Blueprint D17: a restored session is announced once.
+        if matches!(evidence, RestoreEvidence::Restored { .. }) {
+            self.show_restore_notice();
+        }
         self.restore_evidence = evidence;
     }
 

@@ -10,12 +10,47 @@ use bbr_ui::surfaces::toast::{toast, toast_rect, zoom_readout, zoom_readout_rect
 
 use super::probe::PortalRoot;
 
+/// Records an overlay's laid-out bounds (window points) for its hit region;
+/// a change re-syncs the Portal once. The toast and the banner hug their
+/// content, so their regions are measured, not predicted.
+fn bounds_recorder(
+    bounds: std::rc::Rc<std::cell::Cell<Option<[f32; 4]>>>,
+    app: gpui::Entity<crate::app::BbrApp>,
+    browser_window: gpui::WindowHandle<gpui_component::Root>,
+) -> impl IntoElement {
+    canvas(
+        move |item_bounds, _window, cx| {
+            let rect = [
+                f32::from(item_bounds.origin.x),
+                f32::from(item_bounds.origin.y),
+                f32::from(item_bounds.size.width),
+                f32::from(item_bounds.size.height),
+            ];
+            if bounds.get() != Some(rect) {
+                bounds.set(Some(rect));
+                let app = app.clone();
+                cx.defer(move |cx| {
+                    let _ = crate::window_seam::with_app(
+                        &browser_window,
+                        &app,
+                        cx,
+                        |view, _window, cx| view.sync_portal_overlays(cx),
+                    );
+                });
+            }
+        },
+        |_, _, _, _| {},
+    )
+    .absolute()
+    .inset_0()
+}
+
 /// The overlay elements for the current app state (empty at rest).
 pub(super) fn render_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -> Vec<AnyElement> {
     let Some(app) = root.app.clone() else {
         return Vec::new();
     };
-    let (theme, card, toast_state, readout, bounds) = {
+    let (theme, card, toast_state, readout, bounds, notice, notice_bounds) = {
         let app = app.read(cx);
         (
             app.theme(),
@@ -23,6 +58,8 @@ pub(super) fn render_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -
             app.transient.toast.clone(),
             app.transient.zoom_readout,
             app.transient.toast_bounds.clone(),
+            app.transient.notice.clone(),
+            app.transient.notice_bounds.clone(),
         )
     };
     let Some(card) = card else {
@@ -41,34 +78,6 @@ pub(super) fn render_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -
                 });
             });
         });
-        // Records the toast's laid-out bounds (window points) for its hit
-        // region; a change re-syncs the Portal once.
-        let record_app = app.clone();
-        let recorder = canvas(
-            move |item_bounds, _window, cx| {
-                let rect = [
-                    f32::from(item_bounds.origin.x),
-                    f32::from(item_bounds.origin.y),
-                    f32::from(item_bounds.size.width),
-                    f32::from(item_bounds.size.height),
-                ];
-                if bounds.get() != Some(rect) {
-                    bounds.set(Some(rect));
-                    let app = record_app.clone();
-                    cx.defer(move |cx| {
-                        let _ = crate::window_seam::with_app(
-                            &browser_window,
-                            &app,
-                            cx,
-                            |view, _window, cx| view.sync_portal_overlays(cx),
-                        );
-                    });
-                }
-            },
-            |_, _, _, _| {},
-        )
-        .absolute()
-        .inset_0();
         overlays.push(
             div()
                 .absolute()
@@ -78,7 +87,42 @@ pub(super) fn render_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -
                 .h(px(TOAST_HEIGHT))
                 .flex()
                 .justify_center()
-                .child(div().relative().child(element).child(recorder))
+                .child(div().relative().child(element).child(bounds_recorder(
+                    bounds,
+                    app.clone(),
+                    browser_window,
+                )))
+                .into_any_element(),
+        );
+    }
+    if let Some(notice) = notice {
+        let [x, y, width] = bbr_ui::surfaces::toast::banner_slot(card);
+        let dismiss_app = app.clone();
+        let banner = bbr_ui::surfaces::toast::info_banner(
+            &theme,
+            notice.message.into(),
+            "Dismiss".into(),
+            move |_event, _window, cx| {
+                let app = dismiss_app.clone();
+                cx.defer(move |cx| {
+                    let _ =
+                        crate::window_seam::with_app(&browser_window, &app, cx, |view, _w, cx| {
+                            view.dismiss_restore_notice(cx)
+                        });
+                });
+            },
+        );
+        overlays.push(
+            div()
+                .absolute()
+                .left(px(x))
+                .top(px(y))
+                .w(px(width))
+                .child(div().relative().child(banner).child(bounds_recorder(
+                    notice_bounds,
+                    app.clone(),
+                    browser_window,
+                )))
                 .into_any_element(),
         );
     }

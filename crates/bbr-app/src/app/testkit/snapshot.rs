@@ -628,6 +628,11 @@ impl BbrApp {
                 }
             }),
             zoom_readout: self.transient.zoom_readout.map(|readout| readout.percent),
+            restore_notice: self
+                .transient
+                .notice
+                .as_ref()
+                .map(|notice| notice.message.clone()),
             recovery: self.recovery_pane_kind().map(|kind| {
                 match kind {
                     bbr_ui::components::recovery::RecoveryKind::Unreadable { kept: true } => {
@@ -1014,6 +1019,16 @@ impl BbrApp {
                     .ids
                     .push(bbr_ui::surfaces::toast::TOAST_ACTION_ID.into());
             }
+        }
+        if self.transient.notice.is_some() {
+            portal.ids.extend(
+                [
+                    bbr_ui::surfaces::toast::RESTORE_NOTICE_ID,
+                    bbr_ui::surfaces::toast::RESTORE_NOTICE_MESSAGE_ID,
+                    bbr_ui::surfaces::toast::RESTORE_NOTICE_DISMISS_ID,
+                ]
+                .map(String::from),
+            );
         }
         if self.transient.zoom_readout.is_some() {
             portal.ids.extend(

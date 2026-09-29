@@ -130,6 +130,8 @@ impl BbrApp {
         // switches to its own; a fresh view restores the stored level).
         if let WebEvent::UrlChanged(view, url) = &event {
             self.zoom_navigation(*view, url);
+            // Blueprint D17: the first navigation ends the restore notice.
+            self.restore_notice_navigation(url, cx);
         }
         // A right-click over the active view was classified BBR-owned (page
         // background, not a WebKit interactive element): present the BBR

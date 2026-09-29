@@ -1222,6 +1222,17 @@ of problem instead of styling it.
   policy: they are discarded without a copy or a pane. Profile data (the
   WebKit stores with cookies and logins) is never touched. Snapshot:
   `recovery` (`unreadable`, `unreadable-kept`, `newer`).
+- **Restore notice (blueprint D17, implemented):** a launch that restored a
+  session says what came back, once: "Restored 3 spaces and 42 tabs from
+  your last session." The info banner (`bbr-restore-notice`: the
+  `status.info` mark on `tint.accent` over an opaque overlay, `radius:md`,
+  `elev:2`, a quiet Dismiss) floats 14 pt below the card top, 20 pt from
+  its sides, through the Portal's overlay layer, so it takes the pointer
+  only over itself. It leaves on Dismiss or on the first navigation away
+  from the restored page (the restored page's own load does not count). A
+  fresh start announces nothing. The board's partial-restore banner ("2
+  tabs … could not be restored") is omitted: the persistence layer reports
+  no lost tabs (it restores whole or discards).
 
 ### 11.8a Unresponsive renderer pane
 
@@ -2218,7 +2229,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D14 | Back / Forward history menu | W-7 M-3 | §11.14 §11.13 | implemented | [blueprint-navigation-history-menu](docs/roadmap/tasks/blueprint-navigation-history-menu.md) |
 | D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | adopted | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |
 | D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 | adopted | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |
-| D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | recovery panes implemented; restore notice banner open | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
+| D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | implemented (partial-restore banner omitted: no lost-tab report exists) | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
 | D18 | About and updates | L-12 | §1 §7 | adopted | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
 | D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | menus implemented; window reopen and cross-window drag open | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |
 | D20 | New folders open in rename | S-4 PR-06 | §11.11 | implemented | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |

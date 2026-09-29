@@ -107,6 +107,9 @@ pub enum Icon {
     Warning,
     /// Blueprint D03 §11.5: the Settings internal-page mark (a gear).
     Gear,
+    /// Blueprint D17: the information mark of an info banner (a ring with
+    /// a dot over a short stem) at `status.info`.
+    Info,
     /// Blueprint D03 §11.5: the local-file address mark (a page with a
     /// folded corner).
     Document,
@@ -168,6 +171,7 @@ impl Icon {
             Icon::Search => "search",
             Icon::Warning => "warning",
             Icon::Gear => "gear",
+            Icon::Info => "info",
             Icon::Document => "document",
         }
     }
@@ -196,6 +200,7 @@ impl Icon {
             Icon::NavBack | Icon::NavForward | Icon::Reload => palette.ink_secondary,
             Icon::Bookmark | Icon::Pencil | Icon::Search => palette.ink_secondary,
             Icon::Warning => palette.status_attention,
+            Icon::Info => palette.status_info,
             Icon::Gear | Icon::Document => palette.ink_secondary,
         }
     }
@@ -337,6 +342,15 @@ impl Icon {
             Icon::Search => shapes::paint_search(window, stroke, color, cx, cy, size),
             Icon::Warning => address_marks::paint_warning(window, stroke, color, cx, cy, size),
             Icon::Gear => address_marks::paint_gear(window, stroke, color, cx, cy, size),
+            Icon::Info => {
+                let ring = size * 0.42;
+                paint_ring(window, cx, cy, ring, stroke, color);
+                paint_filled_circle(window, cx, cy - size * 0.17, f32::from(stroke) * 0.8, color);
+                let mut path = PathBuilder::stroke(stroke);
+                path.move_to(point(px(cx), px(cy - size * 0.02)));
+                path.line_to(point(px(cx), px(cy + size * 0.22)));
+                paint_path(window, path, color);
+            }
             Icon::Document => address_marks::paint_document(window, stroke, color, cx, cy, size),
             Icon::Disclosure { expanded } => {
                 let arm = disclosure_arm(size);

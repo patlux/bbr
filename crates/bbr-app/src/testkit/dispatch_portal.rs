@@ -71,6 +71,19 @@ pub(super) fn dispatch_portal(
             }
         })
         .unwrap_or_else(err_response),
+        Request::DismissRestoreNotice => match with_app(window, app, cx, |view, _window, cx| {
+            (view.dismiss_restore_notice(cx), view.portal_frame_handle())
+        }) {
+            Ok((dismissed, handle)) => {
+                flush_portal_frame(handle, cx);
+                if dismissed {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new("no_notice", "no restore notice"))
+                }
+            }
+            Err(error) => err_response(error),
+        },
         // Blueprint D19: a menu item through the NSMenuItem dispatch path.
         Request::InvokeMenuItem { menu, item } => {
             let spaces = app.read(cx).menu_spaces().to_vec();

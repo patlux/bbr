@@ -643,8 +643,13 @@ fn main() {
                 )
             }
             .expect("open native portal host");
-            let _ = with_app(&window, &app, cx, |view, _w, _cx| {
+            let _ = with_app(&window, &app, cx, |view, _w, cx| {
                 view.set_native_portal(bridge);
+                // Blueprint D17: an overlay set before the portal existed
+                // (the restore notice) shows now.
+                if view.transient.showing() {
+                    view.sync_portal_overlays(cx);
+                }
             });
         }
         // Keyboard actions (fire even while the WKWebView is first responder,
