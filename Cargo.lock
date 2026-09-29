@@ -647,6 +647,7 @@ dependencies = [
 name = "bbr-split"
 version = "0.1.0"
 dependencies = [
+ "bbr-domain",
  "bbr-web",
 ]
 

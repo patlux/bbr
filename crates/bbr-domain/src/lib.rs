@@ -46,6 +46,7 @@ mod saved_pages;
 mod space_appearance;
 mod space_lifecycle;
 mod split;
+pub mod tiling;
 
 #[cfg(test)]
 mod tests;

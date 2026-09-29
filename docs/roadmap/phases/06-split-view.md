@@ -31,6 +31,12 @@ a fresh read-only preflight against the exact post-Command checkpoint; no Split
 writer is authorized before that preflight and a committed activation contract.
 See the [parallel-delivery contract](../../parallel-delivery.md).
 
+**Blueprint D23 (2026-09-29/30):** the Split block is lifted and the split
+becomes a tiling of rows and columns with several groups per space; the
+serial [split tiling packet](../tasks/split-tiling.md) owns the six slices
+(tiling contract, domain/controller, persistence, composition, commands,
+rail and drag) and supersedes the two-pane constraints below.
+
 ## Checklist
 
 - [x] Extend the WebEngine geometry contract to address each WebViewId independently. *(Proven by the keyed `set_web_view_rect` contract on null/fake/macOS engines, the controller pane-layout tests, and the real-app split-geometry suite.)*

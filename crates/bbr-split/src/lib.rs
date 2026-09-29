@@ -132,6 +132,7 @@
 
 pub mod geometry;
 pub mod plan;
+pub mod tiling;
 
 pub use bbr_web::WebRect;
 pub use geometry::{DividerPosition, GeometryError, Projection};

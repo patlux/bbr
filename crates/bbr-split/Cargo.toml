@@ -4,7 +4,8 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Portable two-pane split interaction: typed horizontal open/focus/close/divider intents validated statelessly, plus pure f32 geometry projection onto bbr_web::WebRect (no frameworks, no unsafe)."
+description = "Portable split interaction and geometry: typed open/focus/close/divider intents validated statelessly, the two-pane projection, and the tiling projection of bbr_domain split groups onto bbr_web::WebRect (no frameworks, no unsafe)."
 
 [dependencies]
+bbr-domain = { workspace = true }
 bbr-web = { workspace = true }

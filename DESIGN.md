@@ -2552,7 +2552,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D20 | New folders open in rename | S-4 PR-06 | §11.11 | implemented | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |
 | D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | implemented | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
 | D22 | Full-screen card rules under test | W-5 | §2 | implemented | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
-| D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted; Split block lifted by Patrick 2026-09-29 | [split-app-composition](docs/roadmap/tasks/split-app-composition.md) |
+| D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted; Split block lifted by Patrick 2026-09-29; tiling contract implemented (slice 1 of 6) | [split-tiling](docs/roadmap/tasks/split-tiling.md) |
 | D24 | Sidebar media card | S-8 PR-17 | §11.15 | implemented without Previous/Next (no public source proves them) and without keyboard traversal into the card | [sidebar-media-control](docs/roadmap/tasks/sidebar-media-control.md) |
 | D25 | Folder context menu (ledger correction: M-2 was marked Shipped, but no folder menu exists) | M-2 S-4 | §11.13 §11.11 | implemented without Open All Tabs and the closing row (question 13) | [folder-context-menu](docs/roadmap/tasks/folder-context-menu.md) |
 
