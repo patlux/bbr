@@ -113,6 +113,11 @@ Not parallelized.
       set, `WebEngine::place_web_view`; `controller_window_tests` (6).)*
 - [ ] Multi-root engine: sessions re-parent between roots without reload;
       per-root geometry.
+      *(Slice 2, 2026-09-30: `bbr-web-macos` `window_roots.rs` — further
+      windows' roots with their own menu and gesture bridges,
+      `place_web_view` re-parents the page and its cover, geometry and
+      focus use the session's own root. Proven by `just e2e-windows` in
+      slice 3.)*
 
 ### Real-app E2E
 

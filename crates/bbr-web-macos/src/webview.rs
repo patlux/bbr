@@ -80,6 +80,10 @@ pub struct WebEngineWk {
     client_certificates: crate::client_identities::ClientCertificateRequests,
     /// Blueprint D24: the per-view media probes.
     media: crate::media_adapter::MediaHost,
+    /// Blueprint D19: the further windows' roots and each session's window.
+    roots: crate::window_roots::WindowRoots,
+    /// The content-gesture sink every window's bridge shares.
+    gesture_sink: ContentGestureSink,
 }
 
 impl WebEngineWk {
@@ -101,6 +105,7 @@ impl WebEngineWk {
             crate::menu_adapter::NativeContextMenuBridge::attach(mtm, ns_view, sink.clone())
         };
         let content_gesture_reporter: ContentGestureSink = Rc::new(RefCell::new(None));
+        let gesture_sink = content_gesture_reporter.clone();
         let content_gesture = ContentGestureHost::attach(mtm, ns_view, content_gesture_reporter);
         let probe = crate::responsiveness::RendererProbeHost::new(sink.clone());
         let favicon_acquisition =
@@ -122,9 +127,58 @@ impl WebEngineWk {
             probe,
             favicon_acquisition,
             media,
+            roots: Default::default(),
+            gesture_sink,
             permissions: Default::default(),
             client_certificates: Default::default(),
         }
+    }
+
+    /// Blueprint D19: attach a further browser window's GPUI root view as
+    /// window `window` (the app's window key).
+    ///
+    /// # Safety
+    ///
+    /// `ns_view` must be that window's live GPUI root `NSView*`, captured
+    /// on the main thread.
+    pub unsafe fn attach_window(
+        &mut self,
+        mtm: MainThreadMarker,
+        window: u64,
+        ns_view: *mut std::ffi::c_void,
+    ) {
+        unsafe {
+            self.roots.attach(
+                mtm,
+                window,
+                ns_view,
+                self.sink.clone(),
+                self.gesture_sink.clone(),
+            )
+        };
+    }
+
+    /// Blueprint D19: forget a closed window's root (its sessions moved or
+    /// were hidden first).
+    pub fn detach_window(&mut self, window: u64) {
+        self.roots.detach(window);
+    }
+
+    /// Blueprint D19: the window whose chrome `focus_host_chrome` serves.
+    pub fn set_key_window(&mut self, window: u64) {
+        self.roots.key_window = window;
+    }
+
+    /// The host of `window` (the first window's for an unknown one).
+    fn host_of_window(&self, window: u64) -> &HostBridge {
+        self.roots
+            .root(window)
+            .map_or(&self.host, |root| &root.host)
+    }
+
+    /// The host of the window `id` lives in.
+    fn host_of_view(&self, id: WebViewId) -> &HostBridge {
+        self.host_of_window(self.roots.window_of(id))
     }
 
     /// True when at least one live WKWebView is hosted.
@@ -162,7 +216,7 @@ impl WebEngineWk {
     pub fn subview_index(&self, id: WebViewId) -> Option<usize> {
         self.assert_main_thread();
         let session = self.sessions.get(&id)?;
-        let root = self.host.root_view()?;
+        let root = self.host_of_view(id).root_view()?;
         let target = objc2::rc::Retained::as_ptr(&session.web_view) as *const std::ffi::c_void;
         // `subviews()` returns the live children of the retained root view,
         // which includes `session.web_view`, and the array is not mutated
@@ -327,7 +381,7 @@ impl WebEngine for WebEngineWk {
         if self.geometry.get(&id) == Some(&rect) {
             return;
         }
-        let frame = self.host.frame_rect(rect);
+        let frame = self.host_of_view(id).frame_rect(rect);
         self.geometry.insert(id, rect);
         if let Some(session) = self.sessions.get_mut(&id) {
             session.web_view.setFrame(frame);
@@ -451,11 +505,23 @@ impl WebEngine for WebEngineWk {
         } else {
             log::warn!("destroy requested for unknown web view {id:?}");
         }
+        let window = self.roots.window_of(id);
+        self.roots.session_window.remove(&id);
         if let Some(mtm) = MainThreadMarker::new() {
-            if let Some(bridge) = self.menu_bridge.as_ref() {
-                bridge.unregister_web_view(mtm, id);
+            match self.roots.root(window) {
+                Some(root) => {
+                    if let Some(bridge) = root.menu_bridge.as_ref() {
+                        bridge.unregister_web_view(mtm, id);
+                    }
+                    root.content_gesture.unregister_web_view(mtm, id);
+                }
+                None => {
+                    if let Some(bridge) = self.menu_bridge.as_ref() {
+                        bridge.unregister_web_view(mtm, id);
+                    }
+                    self.content_gesture.unregister_web_view(mtm, id);
+                }
             }
-            self.content_gesture.unregister_web_view(mtm, id);
         }
     }
 
@@ -471,7 +537,7 @@ impl WebEngine for WebEngineWk {
         session.visible = visible;
         if !visible {
             let mtm = MainThreadMarker::new().expect("main thread");
-            self.host.focus_chrome(mtm);
+            self.host_of_view(id).focus_chrome(mtm);
         }
     }
 
@@ -480,7 +546,7 @@ impl WebEngine for WebEngineWk {
         let Some(session) = self.session(id) else {
             return;
         };
-        let Some(root) = self.host.root_view() else {
+        let Some(root) = self.host_of_view(id).root_view() else {
             return;
         };
         // AppKit subviews draw front-to-back: re-adding the view moves it to
@@ -556,13 +622,73 @@ impl WebEngine for WebEngineWk {
             return;
         };
         let mtm = MainThreadMarker::new().expect("main thread");
-        self.host.focus_web_view(mtm, &session.web_view);
+        self.host_of_view(id).focus_web_view(mtm, &session.web_view);
     }
 
     fn focus_host_chrome(&mut self) {
         self.assert_main_thread();
         let mtm = MainThreadMarker::new().expect("main thread");
-        self.host.focus_chrome(mtm);
+        self.host_of_window(self.roots.key_window).focus_chrome(mtm);
+    }
+
+    fn place_web_view(&mut self, id: WebViewId, window: u64) {
+        self.assert_main_thread();
+        let Some(mtm) = MainThreadMarker::new() else {
+            return;
+        };
+        let from = self.roots.window_of(id);
+        if from == window || (window != 0 && self.roots.root(window).is_none()) {
+            return;
+        }
+        let Some(session) = self.sessions.get(&id) else {
+            return;
+        };
+        let Some(root) = self.host_of_window(window).root_view() else {
+            return;
+        };
+        // Re-parent the page and its cover: the WKWebView keeps its
+        // process, history and state.
+        session.web_view.removeFromSuperview();
+        root.addSubview(&session.web_view);
+        session.navigation_cover.removeFromSuperview();
+        root.addSubview(&session.navigation_cover);
+        let web_view = session.web_view.clone();
+        // The bridges of the old window let go; the new window's take it.
+        match self.roots.root(from) {
+            Some(old) => {
+                if let Some(bridge) = old.menu_bridge.as_ref() {
+                    bridge.unregister_web_view(mtm, id);
+                }
+                old.content_gesture.unregister_web_view(mtm, id);
+            }
+            None => {
+                if let Some(bridge) = self.menu_bridge.as_ref() {
+                    bridge.unregister_web_view(mtm, id);
+                }
+                self.content_gesture.unregister_web_view(mtm, id);
+            }
+        }
+        match self.roots.root(window) {
+            Some(new) => {
+                if let Some(bridge) = new.menu_bridge.as_ref() {
+                    bridge.register_web_view(mtm, id, &web_view);
+                }
+                new.content_gesture.register_web_view(mtm, id, &web_view);
+            }
+            None => {
+                if let Some(bridge) = self.menu_bridge.as_ref() {
+                    bridge.register_web_view(mtm, id, &web_view);
+                }
+                self.content_gesture.register_web_view(mtm, id, &web_view);
+            }
+        }
+        if window == 0 {
+            self.roots.session_window.remove(&id);
+        } else {
+            self.roots.session_window.insert(id, window);
+        }
+        // The next slot geometry flips against the new root.
+        self.geometry.remove(&id);
     }
 
     fn session_history(&self, id: WebViewId) -> Option<bbr_web::SessionHistory> {

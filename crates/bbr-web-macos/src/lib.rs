@@ -115,6 +115,10 @@ pub mod permission_requests;
 #[cfg(target_os = "macos")]
 mod media_adapter;
 
+/// Blueprint D19: the root views of the browser windows after the first.
+#[cfg(target_os = "macos")]
+mod window_roots;
+
 /// Blueprint D10: the local time zone's current offset from UTC in
 /// seconds (the History page's day boundaries and times).
 #[cfg(target_os = "macos")]
