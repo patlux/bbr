@@ -258,6 +258,28 @@ impl CommandRegistry {
                 ActionCategory::Tab,
                 Some("⌃⇧⇥"),
             ),
+            // Blueprint D23: split commands.
+            Action::new(
+                ActionId(23),
+                "Split Right",
+                ["split", "side", "right", "pane", "tile"],
+                ActionCategory::Tab,
+                Some("⌃⌘S"),
+            ),
+            Action::new(
+                ActionId(24),
+                "Split Below",
+                ["split", "stack", "below", "pane", "tile"],
+                ActionCategory::Tab,
+                Some("⌃⌥⌘S"),
+            ),
+            Action::new(
+                ActionId(25),
+                "Close Split",
+                ["close", "split", "dissolve", "unsplit", "panes"],
+                ActionCategory::Tab,
+                Some("⇧⌃⌘S"),
+            ),
         ];
         CommandRegistry { actions }
     }
@@ -317,6 +339,9 @@ mod tests {
             (20, "Duplicate Tab", ActionCategory::Tab, None),
             (21, "Select Next Tab", ActionCategory::Tab, Some("⌃⇥")),
             (22, "Select Previous Tab", ActionCategory::Tab, Some("⌃⇧⇥")),
+            (23, "Split Right", ActionCategory::Tab, Some("⌃⌘S")),
+            (24, "Split Below", ActionCategory::Tab, Some("⌃⌥⌘S")),
+            (25, "Close Split", ActionCategory::Tab, Some("⇧⌃⌘S")),
         ];
         let registry = CommandRegistry::builtin();
         let actual: Vec<_> = registry

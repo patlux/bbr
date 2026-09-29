@@ -171,6 +171,9 @@ impl Render for BbrApp {
             );
         }
         // D10: the drawn pane illustration restarts on each appearance.
+        // Blueprint D23: a group too big for the card rests on its focused
+        // pane (the others hidden natively).
+        self.sync_split_collapse(cx);
         let illustration_kind = self.content_illustration();
         let illustration = self.observe_pane_illustration(illustration_kind);
         let content: gpui::AnyElement = if self.library.open {
@@ -213,6 +216,10 @@ impl Render for BbrApp {
                 let mut keep = vec![layout.primary];
                 if let Some(secondary) = layout.secondary {
                     keep.push(secondary);
+                }
+                // Blueprint D23: every pane of the shown group.
+                if let Some(split) = self.controller.split_layout() {
+                    keep.extend(split.views.iter().map(|(_, view)| *view));
                 }
                 self.performance.prune_pane_rects(&keep);
             }
@@ -307,6 +314,13 @@ impl Render for BbrApp {
                         )
                         .into_any()
                 }
+                // Blueprint D23: the shown group tiles the card.
+                Some(_) if self.controller.split_layout().is_some() => self
+                    .split_content(
+                        &|this: &BbrApp, id, focused| build_slot(this, id, focused, card.radius),
+                        cx,
+                    )
+                    .unwrap_or_else(|| build_slot(self, layout.focused, true, card.radius)),
                 Some(_) => div()
                     .flex()
                     .flex_row()
@@ -493,6 +507,10 @@ impl Render for BbrApp {
             .on_mouse_move(cx.listener(Self::on_tab_drag_move))
             .on_mouse_up(MouseButton::Left, cx.listener(Self::end_tab_drag))
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::end_tab_drag))
+            // Blueprint D23: a split divider drag.
+            .on_mouse_move(cx.listener(Self::on_split_divider_move))
+            .on_mouse_up(MouseButton::Left, cx.listener(Self::on_split_divider_end))
+            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_split_divider_end))
             .when(self.sidebar_visible, |root| root.child(sidebar))
             .child(self.seated_content(&theme, card, content, cx))
             // Blueprint D02: the command field's platform text-input client

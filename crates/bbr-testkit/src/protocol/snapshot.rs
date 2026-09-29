@@ -1641,6 +1641,9 @@ pub struct Snapshot {
     /// Blueprint D24: the media card and sessions.
     #[serde(default)]
     pub media: super::MediaSnapshot,
+    /// Blueprint D23: the shown split group.
+    #[serde(default)]
+    pub split: Option<super::SplitSnapshot>,
     /// Blueprint D12: the client-certificate sheet and answers.
     #[serde(default)]
     pub client_certificates: super::ClientCertificatesSnapshot,

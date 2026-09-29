@@ -15,11 +15,11 @@ use smol::channel::Receiver;
 use smol::prelude::*;
 
 use crate::actions::{
-    AuthSheetFieldTab, Back, ClearBrowsingData, CloseTab, DuplicateTab, FindInPage,
-    FocusCommandBar, FocusRail, FocusWeb, Forward, MoveTab, NewSpace, NewTab, OpenOverlay,
-    OpenPalette, OpenSavedPagesLibrary, PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp,
-    SelectNextTab, SelectPreviousTab, ShowHistory, ToggleBookmark, ToggleSidebar, ZoomIn, ZoomOut,
-    ZoomReset,
+    AuthSheetFieldTab, Back, ClearBrowsingData, CloseSplit, CloseTab, DuplicateTab, FindInPage,
+    FocusCommandBar, FocusPaneDown, FocusPaneLeft, FocusPaneRight, FocusPaneUp, FocusRail,
+    FocusWeb, Forward, MoveTab, NewSpace, NewTab, OpenOverlay, OpenPalette, OpenSavedPagesLibrary,
+    PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp, SelectNextTab, SelectPreviousTab,
+    ShowHistory, SplitBelow, SplitRight, ToggleBookmark, ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
 };
 use crate::app::BbrApp;
 /// Root-window + app-entity seam: run an update against the separately
@@ -383,6 +383,59 @@ pub(crate) fn install_actions(
             });
         }
     });
+    // Blueprint D23: split commands.
+    for (edge, below) in [
+        (bbr_domain::tiling::Edge::Right, false),
+        (bbr_domain::tiling::Edge::Bottom, true),
+    ] {
+        let app = app.clone();
+        let run = move |cx: &mut App| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.begin_split_palette(edge, window, cx);
+                });
+            });
+        };
+        if below {
+            cx.on_action(move |_: &SplitBelow, cx| run(cx));
+        } else {
+            cx.on_action(move |_: &SplitRight, cx| run(cx));
+        }
+    }
+    cx.on_action({
+        let app = app.clone();
+        move |_: &CloseSplit, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                    view.dissolve_shown_split(cx);
+                });
+            });
+        }
+    });
+    for edge in [
+        bbr_domain::tiling::Edge::Left,
+        bbr_domain::tiling::Edge::Right,
+        bbr_domain::tiling::Edge::Top,
+        bbr_domain::tiling::Edge::Bottom,
+    ] {
+        let app = app.clone();
+        let run = move |cx: &mut App| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                    view.split_focus_neighbour(edge, cx);
+                });
+            });
+        };
+        let _ = match edge {
+            bbr_domain::tiling::Edge::Left => cx.on_action(move |_: &FocusPaneLeft, cx| run(cx)),
+            bbr_domain::tiling::Edge::Right => cx.on_action(move |_: &FocusPaneRight, cx| run(cx)),
+            bbr_domain::tiling::Edge::Top => cx.on_action(move |_: &FocusPaneUp, cx| run(cx)),
+            bbr_domain::tiling::Edge::Bottom => cx.on_action(move |_: &FocusPaneDown, cx| run(cx)),
+        };
+    }
     // Blueprint D19: Duplicate Tab and Select Next/Previous Tab.
     cx.on_action({
         let app = app.clone();
@@ -752,6 +805,14 @@ pub(crate) fn keybindings() -> Vec<KeyBinding> {
         KeyBinding::new("cmd-shift-down", ReorderTabDown, None),
         KeyBinding::new("ctrl-tab", SelectNextTab, None),
         KeyBinding::new("ctrl-shift-tab", SelectPreviousTab, None),
+        // Blueprint D23: split commands.
+        KeyBinding::new("ctrl-cmd-s", SplitRight, None),
+        KeyBinding::new("ctrl-alt-cmd-s", SplitBelow, None),
+        KeyBinding::new("ctrl-shift-cmd-s", CloseSplit, None),
+        KeyBinding::new("ctrl-cmd-left", FocusPaneLeft, None),
+        KeyBinding::new("ctrl-cmd-right", FocusPaneRight, None),
+        KeyBinding::new("ctrl-cmd-up", FocusPaneUp, None),
+        KeyBinding::new("ctrl-cmd-down", FocusPaneDown, None),
         KeyBinding::new("cmd-shift-m", MoveTab, None),
         KeyBinding::new("cmd-w", CloseTab, None),
         KeyBinding::new("cmd-shift-t", ReopenTab, None),

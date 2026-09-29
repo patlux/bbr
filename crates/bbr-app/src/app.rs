@@ -135,6 +135,7 @@ pub(crate) mod space_chooser;
 mod space_config;
 mod space_delete;
 mod spaces;
+mod split_view;
 mod swipe;
 #[cfg(feature = "testkit")]
 mod swipe_benchmarks;
@@ -237,6 +238,8 @@ pub struct BbrApp {
     pub(crate) permissions: permissions::PermissionsState,
     /// Blueprint D24: the media sessions behind the sidebar media card.
     pub(crate) media: media::MediaState,
+    /// Blueprint D23: the shown group's divider drag and collapse state.
+    pub(crate) split_view: split_view::SplitView,
     /// Blueprint D23: `splits.txt` and the groups last written there.
     split_layouts_path: Option<std::path::PathBuf>,
     split_layouts_saved: std::cell::RefCell<Option<crate::split_layouts::SpaceGroups>>,
@@ -698,6 +701,7 @@ impl BbrApp {
             transient: transient::TransientOverlays::default(),
             permissions: permissions::PermissionsState::default(),
             media: media::MediaState::default(),
+            split_view: split_view::SplitView::default(),
             split_layouts_path: None,
             split_layouts_saved: std::cell::RefCell::new(None),
             certificates: client_certificates::CertificateState::default(),
@@ -1122,6 +1126,8 @@ impl BbrApp {
             // Blueprint D25: a tab committed from New Tab in Folder joins
             // its folder.
             self.join_pending_new_tab_folder(cx);
+            // Blueprint D23: a tab committed from ⌃⌘S joins the split.
+            self.join_pending_split(cx);
             self.persist_structure();
             self.sync_peek_surface(cx);
             cx.notify();
@@ -1157,6 +1163,9 @@ impl BbrApp {
             // destroyed).
             self.sync_library_visibility();
             self.zoom_after_activation();
+            // Blueprint D23: an existing tab picked from ⌃⌘S joins the
+            // split.
+            self.join_pending_split(cx);
             self.persist_structure();
             self.sync_peek_surface(cx);
             cx.notify();

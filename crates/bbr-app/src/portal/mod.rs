@@ -36,5 +36,6 @@ mod nav_history;
 pub mod peek;
 pub mod probe;
 mod space_delete;
+mod split_chip;
 pub mod state;
 mod transient;

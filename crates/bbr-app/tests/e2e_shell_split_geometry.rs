@@ -2,7 +2,8 @@
 //!
 //! Proves the keyed per-`WebViewId` geometry seam and the authoritative pane
 //! layout over real WKWebViews: two simultaneous native panes with distinct,
-//! adjacent, strictly positive keyed rects; unchanged session identities;
+//! strictly positive keyed rects either side of the 2 pt divider (blueprint
+//! D23); unchanged session identities;
 //! focused pane equals the domain-active pre-split tab; member selection
 //! switches focus without dissolving the split; a window resize reframes
 //! both pane ids independently; `CloseSplit` returns to one full-width
@@ -44,13 +45,16 @@ fn single_pane_rect(sidebar: f32, window_w: f32, height: f32) -> [f32; 4] {
 /// trailing, bottom; flush with the rail).
 const CONTENT_INSET: f32 = 10.0;
 
-/// The expected split pane rects (equal horizontal panes, primary left):
-/// both strictly positive, adjacent, full height.
+/// Blueprint D23: the 2 pt divider between two panes.
+const DIVIDER: f32 = 2.0;
+
+/// The expected split pane rects (equal horizontal panes, primary left, the
+/// divider between): both strictly positive, full height.
 fn split_rects(sidebar: f32, window_w: f32, height: f32) -> ([f32; 4], [f32; 4]) {
-    let pane_w = (window_w - sidebar - CONTENT_INSET) / 2.0;
+    let pane_w = (window_w - sidebar - CONTENT_INSET - DIVIDER) / 2.0;
     (
         [sidebar, CONTENT_INSET, pane_w, height],
-        [sidebar + pane_w, CONTENT_INSET, pane_w, height],
+        [sidebar + pane_w + DIVIDER, CONTENT_INSET, pane_w, height],
     )
 }
 
@@ -234,10 +238,11 @@ fn split_geometry_keyed_panes_focus_resize_and_close() {
         }
         assert!(
             (split.pane_rects[1].rect[0]
-                - (split.pane_rects[0].rect[0] + split.pane_rects[0].rect[2]))
+                - (split.pane_rects[0].rect[0] + split.pane_rects[0].rect[2])
+                - DIVIDER)
                 .abs()
-                <= 1.0,
-            "the two panes are adjacent: {:?}",
+                <= 0.5,
+            "the divider sits between the two panes: {:?}",
             split.pane_rects
         );
         assert!(

@@ -32,6 +32,18 @@ gpui::actions!(
         SelectNextTab,
         /// Blueprint D19 `Ctrl-Shift-Tab`: select the previous tab.
         SelectPreviousTab,
+        /// Blueprint D23 `Ctrl-Cmd-S`: the ⌘T palette in split mode; its
+        /// commit becomes a pane right of the focused one.
+        SplitRight,
+        /// Blueprint D23 `Ctrl-Alt-Cmd-S`: the same, below.
+        SplitBelow,
+        /// Blueprint D23 `Ctrl-Shift-Cmd-S`: dissolve the shown split.
+        CloseSplit,
+        /// Blueprint D23 `Ctrl-Cmd-←/→/↑/↓`: focus the neighbouring pane.
+        FocusPaneLeft,
+        FocusPaneRight,
+        FocusPaneUp,
+        FocusPaneDown,
         /// `Cmd-Shift-M`: stage a destination space for the active tab;
         /// Enter commits the move, Escape cancels it.
         MoveTab,

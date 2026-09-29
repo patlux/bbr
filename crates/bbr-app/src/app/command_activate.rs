@@ -437,6 +437,25 @@ impl BbrApp {
                 }
                 duplicated
             }
+            // Blueprint D23: Split Right / Below open the palette in split
+            // mode (after this one closed); Close Split dissolves.
+            23 | 24 => {
+                self.finish_action_activation(window, cx);
+                let edge = if action.0 == 23 {
+                    bbr_domain::tiling::Edge::Right
+                } else {
+                    bbr_domain::tiling::Edge::Bottom
+                };
+                self.begin_split_palette(edge, window, cx);
+                true
+            }
+            25 => {
+                let dissolved = self.dissolve_shown_split(cx);
+                if dissolved {
+                    self.finish_action_activation(window, cx);
+                }
+                dissolved
+            }
             21 | 22 => {
                 let delta = if action.0 == 21 { 1 } else { -1 };
                 let selected = self.select_adjacent_tab(delta, cx).is_some();

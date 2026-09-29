@@ -787,6 +787,10 @@ pub enum Request {
     PermissionInput {
         input: super::PermissionInput,
     },
+    /// Blueprint D23: one split interaction.
+    SplitInput {
+        input: super::SplitInput,
+    },
     /// Blueprint D24: one media-card press (or a raw command for an
     /// explicit session identity).
     MediaInput {

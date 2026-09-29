@@ -197,8 +197,15 @@ dir. The flake devshell prepends `scripts/xcode-shims` (a forwarder to
      exposes exactly those rendered keyed ids.
    - The shell renders one slot per visible pane from the controller's
      authoritative [`PaneLayout`]: one full-width slot in single-pane mode
-     (geometry identical to the pre-split contract) and two equal, adjacent
-     horizontal slots in split mode. The focused/active slot additionally
+     (geometry identical to the pre-split contract) and, for a shown split
+     group (blueprint D23), one absolutely placed slot per pane at the rect
+     `bbr_split::tiling::project` gives the group's tree over the card's
+     inner box (`BrowserController::split_layout` names every pane's view;
+     2 pt GPUI dividers sit in the gaps). A group that cannot give every
+     pane 320 × 200 pt renders only the focused pane and hides the others
+     natively (`engine.show(view, false)`), never destroying them. Split
+     groups live in `bbr_domain::Space::splits` and persist in the app's
+     `splits.txt`, not in the store's two-pane table. The focused/active slot additionally
      feeds the legacy `content_rect` and the presentation-commit path; a
      secondary pane never satisfies an existing benchmark.
    - `set_web_view_rect` writes the frame only when that view's rect

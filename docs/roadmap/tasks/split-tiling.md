@@ -109,6 +109,12 @@ Not parallelized.
 - [ ] `just e2e-split` covers creation from the keyboard and by drop, focus
       movement, divider resize and equalize, collapse under the minimum,
       dissolve, ⌘W, the rail block and restore, over real WKWebViews.
+      *(Slices 4–5, 2026-09-30: `e2e_split` — a three-pane row/column framed
+      at the projection, ⌃⌘← and a pane press focus, divider drag and
+      double-click, a tab outside keeping the group, the collapsed chip and
+      its list, ⇧⌃⌘S, ⌃⌘S with the palette commit, restore of the group and
+      its share after a restart. Open: creation by drop and the rail block
+      (slice 6).)*
 
 ### Performance
 

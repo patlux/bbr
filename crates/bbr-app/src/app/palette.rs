@@ -335,6 +335,8 @@ impl BbrApp {
         // Blueprint D25: a palette that closes without a commit drops the
         // New Tab in Folder target (a commit joins it first, in `open_tab`).
         self.u2.new_tab_folder = None;
+        // Blueprint D23: the same for ⌃⌘S's split target.
+        self.split_view.pending = None;
     }
 
     pub(crate) fn command_portal_model(&self, surface: CommandSurface) -> CommandModel {

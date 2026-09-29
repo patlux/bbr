@@ -1239,9 +1239,31 @@ of problem instead of styling it.
   branch); the groups persist in `splits.txt` in the profile directory
   (`R(…)`/`C(…)` rows and columns of `weight:tab` children), not in the
   store's two-pane table, which now only feeds older saved splits in as a
-  two-pane group. The composition, commands, rail block and drop zones
-  below follow in the [split tiling packet](docs/roadmap/tasks/split-tiling.md);
-  until then the shell frames the first two panes of a group.
+  two-pane group.
+- **Tiling in the card (blueprint D23, implemented):** the shown group is
+  projected onto the card's inner box in whole points (`bbr-split`): one
+  native slot per pane (`bbr-pane-<n>` in reading order), a 2 pt divider
+  in every gap (`bbr-split-divider-<n>`, `hairline` at rest, `accent`
+  while dragged, the resize cursor). Dragging a divider moves only its two
+  neighbours and keeps both at least 320 pt wide (200 pt tall in a column);
+  a double-click evens out that row or column. A press on a pane focuses
+  it (the press still reaches the page); ⌃⌘+arrow focuses the neighbour
+  toward the arrow. When the card cannot give every pane 320 × 200 pt the
+  group rests on its focused pane — the other panes' views are hidden,
+  never destroyed — and an "n of N" chip sits 12 pt inside the card's
+  top-right corner (`bbr-split-chip`: 26 pt pill, `material:overlay`,
+  `elev:2`, the §7 split mark and `type:key` text); it opens a list of the
+  panes (`bbr-split-list`, 240 pt, one 30 pt row per pane, the focused one
+  on `tint.accent`) and a row focuses its pane. Both sit in the Portal
+  (over the page) and capture the pointer only over themselves.
+- **Commands (blueprint D23, implemented):** ⌃⌘S (Split Right) and ⌃⌥⌘S
+  (Split Below) open the ⌘T palette in split mode; the committed page — a
+  new tab, or an existing tab picked there — becomes a pane at that edge of
+  the focused pane and takes the focus. ⇧⌃⌘S (Close Split) dissolves the
+  shown group and keeps its tabs; ⌘W closes the focused pane's tab. All
+  three are Tab menu items, ⌘T actions and Settings › Shortcuts rows. The
+  rail block with its accent bracket and the drop zones below follow in
+  the [split tiling packet](docs/roadmap/tasks/split-tiling.md).
 
 - **Invocation:** dragging a tab toward the glass area; the drop zone strips
   are the edges (top / bottom / left / right) at 24% of the pane dimension,

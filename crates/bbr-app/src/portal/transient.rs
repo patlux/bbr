@@ -67,6 +67,8 @@ pub(super) fn render_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -
     };
     let browser_window = root.browser_window;
     let mut overlays = render_permission_overlays(root, cx);
+    // Blueprint D23: the collapsed split's chip and pane list.
+    overlays.extend(super::split_chip::render(root, cx));
     if let Some(state) = toast_state {
         let [x, y, width, _] = toast_rect(card, card[2]);
         let action_app = app.clone();

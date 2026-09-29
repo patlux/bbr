@@ -140,6 +140,8 @@ pub enum Icon {
     /// Blueprint D24 media card: the speaker — sound waves, or the §7
     /// cross when `muted`.
     Speaker { muted: bool },
+    /// Blueprint D23: the split mark (a card with a centre line).
+    Split,
 }
 
 impl Icon {
@@ -214,6 +216,7 @@ impl Icon {
             Icon::MediaNext => "media-next",
             Icon::Speaker { muted: false } => "speaker",
             Icon::Speaker { muted: true } => "speaker-muted",
+            Icon::Split => "split",
         }
     }
 
@@ -247,6 +250,7 @@ impl Icon {
             Icon::Camera { .. } | Icon::Microphone { .. } => palette.ink_secondary,
             Icon::MediaPrevious | Icon::MediaNext | Icon::Speaker { .. } => palette.ink_secondary,
             Icon::MediaPlay | Icon::MediaPause => palette.ink,
+            Icon::Split => palette.ink_secondary,
         }
     }
 
@@ -420,6 +424,7 @@ impl Icon {
             Icon::Speaker { muted } => {
                 media_marks::paint_speaker(window, stroke, color, cx, cy, size, muted)
             }
+            Icon::Split => media_marks::paint_split(window, stroke, color, cx, cy, size),
             Icon::Disclosure { expanded } => {
                 let arm = disclosure_arm(size);
                 let mut path = PathBuilder::stroke(stroke);

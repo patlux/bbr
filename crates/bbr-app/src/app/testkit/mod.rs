@@ -15,6 +15,7 @@ mod lift;
 mod media;
 mod motion;
 mod snapshot;
+mod split;
 
 /// Create a profile with its first space (E2E seam; production uses the
 /// startup profile).

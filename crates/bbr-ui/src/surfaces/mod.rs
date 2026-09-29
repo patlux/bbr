@@ -22,6 +22,7 @@ pub mod settings;
 pub mod space_chooser;
 pub mod space_config;
 pub mod space_delete;
+pub mod split_chip;
 pub mod tab_menu;
 pub mod toast;
 pub mod welcome;

@@ -81,6 +81,8 @@ pub(crate) fn install(
                         // lands outside them; moves feed the rail reveal.
                         if down {
                             view.site_settings_pointer_down(sample.x, sample.y, cx);
+                            // Blueprint D23: a press on a pane focuses it.
+                            view.split_pointer_down(sample.x, sample.y, cx);
                         } else {
                             view.on_rail_pointer(sample, window, cx);
                         }

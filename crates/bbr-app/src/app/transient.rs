@@ -315,6 +315,7 @@ impl BbrApp {
             let mut rects = self.transient.hit_rects();
             rects.extend(self.floating_rail_regions());
             rects.extend(self.permission_hit_rects());
+            rects.extend(self.split_hit_rects());
             return Some(rects);
         }
         let peek = matches!(
@@ -341,6 +342,7 @@ impl BbrApp {
         let showing = self.transient.showing()
             || self.rail_floating()
             || self.floating_rail.leaving.is_some()
+            || self.split_collapsed().is_some()
             || self.permission_prompt_model().is_some()
             || self.certificate_sheet_open()
             || self.popup_notice_visible().is_some()

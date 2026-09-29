@@ -4,7 +4,10 @@
 //! §7 cross when muted). Drawn from the board's 18-pt geometry, scaled to
 //! the slot; one stroke weight with the rest of the catalog.
 
-use gpui::{point, px, PathBuilder, Pixels, Point, Rgba, Window};
+use gpui::{
+    point, px, quad, size as gsize, transparent_black, BorderStyle, Bounds, PathBuilder, Pixels,
+    Point, Rgba, Window,
+};
 
 use super::paint::paint_path;
 
@@ -135,4 +138,30 @@ pub(super) fn paint_speaker(
         }
     }
     paint_path(window, marks, color);
+}
+
+/// Blueprint D23: the split mark — a rounded card (board 18-pt grid
+/// 1.75,3.25 · 14.5 × 11.5, radius 2.5) with a centre line.
+pub(super) fn paint_split(
+    window: &mut Window,
+    stroke: Pixels,
+    color: Rgba,
+    cx: f32,
+    cy: f32,
+    size: f32,
+) {
+    let grid = Grid::new(cx, cy, size);
+    let origin = grid.at(1.75, 3.25);
+    window.paint_quad(quad(
+        Bounds::new(origin, gsize(px(14.5 * grid.unit), px(11.5 * grid.unit))),
+        px(2.5 * grid.unit),
+        transparent_black(),
+        stroke,
+        color,
+        BorderStyle::default(),
+    ));
+    let mut line = PathBuilder::stroke(stroke);
+    line.move_to(grid.at(9.0, 3.25));
+    line.line_to(grid.at(9.0, 14.75));
+    paint_path(window, line, color);
 }

@@ -29,6 +29,7 @@ mod media;
 mod permissions;
 mod request;
 mod snapshot;
+mod split;
 
 pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
@@ -61,6 +62,7 @@ pub use snapshot::{
     StoreSnapshot, SwipeSnapshot, TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState,
     TextInputReadback, TitlebarSnapshot, ToastSnapshot, WebContentProbe, ZoomSnapshot,
 };
+pub use split::{SplitInput, SplitPaneSnapshot, SplitSnapshot};
 
 /// Current protocol version understood by this crate.
 pub const PROTOCOL_VERSION: u32 = 7;

@@ -109,6 +109,15 @@ pub(super) fn dispatch_portal(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // Blueprint D23: split interactions.
+        Request::SplitInput { input } => with_app(window, app, cx, |view, window, cx| {
+            if view.split_input(input.clone(), window, cx) {
+                Response::Ok
+            } else {
+                Response::Error(Error::new("split_input", "not applicable"))
+            }
+        })
+        .unwrap_or_else(err_response),
         // Blueprint D24: the media card.
         Request::MediaInput { input } => with_app(window, app, cx, |view, window, cx| {
             view.media_input(input.clone(), window, cx);

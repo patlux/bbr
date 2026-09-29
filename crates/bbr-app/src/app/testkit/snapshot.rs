@@ -100,6 +100,15 @@ impl BbrApp {
                         rect: rect_of(secondary),
                     });
                 }
+                // Blueprint D23: the shown group's further panes.
+                if let Some(split) = self.controller.split_layout() {
+                    for (_, view) in split.views.iter().skip(2) {
+                        rects.push(bbr_testkit::protocol::PaneRectSnapshot {
+                            view: *view,
+                            rect: rect_of(*view),
+                        });
+                    }
+                }
                 rects
             }
             None => Vec::new(),
@@ -377,6 +386,34 @@ impl BbrApp {
                     },
                 );
                 ids.extend(self.tab_menu_visible_ids());
+                // Blueprint D23: the shown group's slots, panes, dividers
+                // and the collapsed chip (the pane layout above names only
+                // its first two panes).
+                if let Some(split) = self.split_snapshot() {
+                    let panes: Vec<String> = split
+                        .panes
+                        .iter()
+                        .map(|pane| format!("bbr-native-web-slot-{}", pane.view.0))
+                        .collect();
+                    ids.retain(|id| !panes.contains(id));
+                    match split.collapsed {
+                        Some(_) => {
+                            ids.push(format!("bbr-native-web-slot-{}", split.focused.0));
+                            ids.push("bbr-split-chip".into());
+                            if split.list_open {
+                                ids.push("bbr-split-list".into());
+                            }
+                        }
+                        None => {
+                            ids.extend(panes);
+                            ids.push("bbr-split".into());
+                            ids.extend((0..split.panes.len()).map(|i| format!("bbr-pane-{i}")));
+                            ids.extend(
+                                (0..split.dividers.len()).map(|i| format!("bbr-split-divider-{i}")),
+                            );
+                        }
+                    }
+                }
                 // Blueprint D24: the media card above the footer.
                 if self.sidebar_visible {
                     if let Some(media) = self.media_card_model() {
@@ -699,6 +736,7 @@ impl BbrApp {
             history: self.history_snapshot(window),
             permissions: self.permissions_snapshot(),
             media: self.media_snapshot(),
+            split: self.split_snapshot(),
             client_certificates: self.client_certificates_snapshot(),
             open_app: self.open_app_snapshot(),
             onboarding: self.onboarding_snapshot(),
