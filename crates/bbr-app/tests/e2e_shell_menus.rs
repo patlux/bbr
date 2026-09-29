@@ -140,6 +140,14 @@ fn menu_bar_and_dock_menu_dispatch_the_shortcut_actions_and_follow_the_spaces() 
             s.command_bar_mode == CommandBarMode::NewTab
         });
 
+        // BBR › About BBR opens the About window with the version.
+        invoke(&mut client, "BBR", "About BBR");
+        let about = settle(&mut client, "About BBR", |s| s.about.is_some());
+        assert_eq!(
+            about.about.as_deref(),
+            Some(concat!("Version ", env!("CARGO_PKG_VERSION")))
+        );
+
         // BBR › Quit BBR flushes and exits cleanly.
         invoke(&mut client, "BBR", "Quit BBR");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

@@ -45,3 +45,12 @@ impl BbrApp {
         }
     }
 }
+
+/// Blueprint D18: the About window.
+impl BbrApp {
+    /// Open About BBR (the menu item's action).
+    pub fn show_about(&mut self, cx: &mut Context<Self>) {
+        let theme = self.theme();
+        self.about_window = crate::about::open(self.about_window, theme, !self.windows_hidden, cx);
+    }
+}

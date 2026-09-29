@@ -412,6 +412,15 @@ pub(crate) fn install_actions(
     cx.on_action(|_: &crate::menus::HideApp, cx| cx.hide());
     cx.on_action({
         let app = app.clone();
+        move |_: &crate::menus::ShowAbout, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, _window, cx| view.show_about(cx));
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
         move |_: &crate::menus::MinimizeWindow, cx| {
             let app = app.clone();
             cx.defer(move |cx| {

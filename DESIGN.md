@@ -1218,7 +1218,7 @@ of problem instead of styling it.
   newer BBR … Update BBR to open it" with **Continue**, which shows the
   ordinary empty space. The board's Try Again and Check for Updates are
   omitted: BBR cannot retry a read that failed validation, and it has no
-  update channel (§19 question on D18). Older stamps keep the closed
+  update channel (§19 question 14). Older stamps keep the closed
   policy: they are discarded without a copy or a pane. Profile data (the
   WebKit stores with cookies and logins) is never touched. Snapshot:
   `recovery` (`unreadable`, `unreadable-kept`, `newer`).
@@ -1547,7 +1547,7 @@ authorities; it does not copy Zen/Firefox features or styling.
   and Move to Space › remain follow-ups of the packet.
 - **Menu bar and Dock menu (blueprint D19, first slice implemented):** BBR
   supplies the structure and titles; macOS draws them (Native OS). The bar
-  is BBR (Hide BBR ⌘H, Quit BBR ⌘Q), File (New Tab, Open Location…, Close
+  is BBR (About BBR, Hide BBR ⌘H, Quit BBR ⌘Q), File (New Tab, Open Location…, Close
   Tab, Reopen Closed Tab, Find in Page…), View (Toggle Sidebar, Focus
   Sidebar, Zoom In/Out, Actual Size), History (Back, Forward, Reload, Save
   Page to Library, Saved Pages Library), Spaces (New Space…, then every
@@ -1561,6 +1561,13 @@ authorities; it does not copy Zen/Firefox features or styling.
   reopen toast, New Window, Duplicate Tab, Select Next/Previous Tab and
   dragging tabs between windows need window and tab commands BBR does not
   have yet. They stay in the D19 packet.
+- **About BBR (blueprint D18, window implemented):** a 340 × 380 pt window
+  with a transparent titlebar (`bbr-about`). It shows the brand mark (the
+  §7 chassis glyph on an 88 pt `accent` tile), "BBR" in `type:display`
+  and "Version 0.1.0" (`bbr-about-version`, `type:meta`, `ink.faint`).
+  The About menu item brings an open window forward. It states no update
+  status: BBR has no update channel, and the background download and
+  relaunch install of board L-12 wait for §19 question 14.
 - **Stable family ids:** `bbr-tab-menu`, `bbr-favorite-menu`,
   `bbr-folder-menu`, `bbr-space-menu`, `bbr-page-menu`, and
   `bbr-nav-history-menu` (§11.14), with action/submenu ids owned by their
@@ -2230,7 +2237,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | adopted | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |
 | D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 | adopted | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |
 | D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | implemented (partial-restore banner omitted: no lost-tab report exists) | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
-| D18 | About and updates | L-12 | §1 §7 | adopted | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
+| D18 | About and updates | L-12 | §1 §7 | About window implemented; updates wait for an update channel | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
 | D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | menus implemented; window reopen and cross-window drag open | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |
 | D20 | New folders open in rename | S-4 PR-06 | §11.11 | implemented | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |
 | D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | implemented | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
@@ -2260,6 +2267,7 @@ drawn: 1 yes, 300 ms dwell · 2 yes · 3 leading edge · 4 short name + glyph ·
 | 11 | Which shortcut opens a split (phase 6 open decision)? | D23 |
 | 12 | Safari and Chrome only in v1 (D15)? | D15 |
 | 13 | M-2 draws "Close Folder and Its Tabs…"; the 2026-09-27 settlement says no folder row closes tabs. Keep the row omitted? M-2 also draws "Open All Tabs", which has no settled BBR meaning (wake every suspended member? select them?). (Until answered, D25 ships Rename…, New Tab in Folder and "Delete Folder — keep its tabs".) | D25 |
+| 14 | Which update feed should BBR use (signed appcast, GitHub releases, …), and who signs the builds? Until answered, About BBR shows no update status. | D18 |
 
 ## Evidence
 

@@ -220,6 +220,10 @@ pub struct BbrApp {
     pub(crate) menu_spaces: Option<Vec<crate::menus::MenuSpace>>,
     /// Blueprint D17: the recovery pane was dismissed (Continue).
     pub(crate) recovery_dismissed: bool,
+    /// Blueprint D18: the About window, once opened; and whether windows
+    /// open hidden (the test harness).
+    pub(crate) about_window: Option<gpui::WindowHandle<crate::about::AboutView>>,
+    pub(crate) windows_hidden: bool,
     /// The one-active portal state for this browser window (task packet
     /// `native-portal-host`): exactly one presentation, deterministic
     /// dismissal, stable ids.
@@ -643,6 +647,8 @@ impl BbrApp {
             transient: transient::TransientOverlays::default(),
             menu_spaces: None,
             recovery_dismissed: false,
+            about_window: None,
+            windows_hidden: false,
             portal: PortalState::new(crate::portal::probe::PORTAL_ID),
             portal_probe: Rc::new(RefCell::new(PortalProbeState::new())),
             hovered_row: None,

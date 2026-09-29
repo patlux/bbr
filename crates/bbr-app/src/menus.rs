@@ -31,6 +31,8 @@ gpui::actions!(
         HideApp,
         /// `Cmd-M`: minimize the browser window.
         MinimizeWindow,
+        /// Blueprint D18: open the About BBR window.
+        ShowAbout,
     ]
 );
 
@@ -104,6 +106,8 @@ fn bar(spaces: &[MenuSpace]) -> Vec<(&'static str, Vec<Entry>)> {
         (
             "BBR",
             vec![
+                item("About BBR", ShowAbout),
+                Entry::Separator,
                 item("Hide BBR", HideApp),
                 Entry::Separator,
                 item("Quit BBR", Quit),

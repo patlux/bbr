@@ -7,6 +7,13 @@ Parents: [Phase 9](../phases/09-quality-release.md) ·
 Status: adopted 2026-09-28 (DESIGN §19); implementation position 22 of 24. Paper boards: L-12 · About & updates (file
 “BBR — Browser Shell”).
 
+**First slice implemented 2026-09-29 (About window):** BBR › About BBR
+opens `crates/bbr-app/src/about.rs` (brand mark, name, version). Evidence:
+the `about` unit test; `e2e_shell_menus` opens it through the menu and reads
+the version line. Still open: the update channel (background download,
+"Relaunch to Update", release notes). That waits for Patrick to name the
+update feed (DESIGN §19).
+
 ## Outcome
 
 An About window with version and update state; updates download in the background and apply on relaunch.

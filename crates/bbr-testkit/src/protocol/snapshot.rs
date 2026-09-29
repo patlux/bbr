@@ -1523,6 +1523,9 @@ pub struct Snapshot {
     /// Blueprint D17: the restore notice message while it shows.
     #[serde(default)]
     pub restore_notice: Option<String>,
+    /// Blueprint D18: the About window's version line once it was opened.
+    #[serde(default)]
+    pub about: Option<String>,
     /// Blueprint D08: the live toast (`None` at rest).
     #[serde(default)]
     pub toast: Option<ToastSnapshot>,

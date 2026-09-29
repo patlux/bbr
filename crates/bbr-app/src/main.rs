@@ -14,6 +14,7 @@ use bbr_browser::BrowserController;
 use gpui::prelude::*;
 use gpui::{px, size, App, Bounds, Entity, TitlebarOptions, Window, WindowBounds, WindowOptions};
 
+mod about;
 mod actions;
 mod app;
 mod command_bar;
@@ -449,6 +450,7 @@ fn main() {
                         cx,
                     );
                     app.set_restore_evidence(restore_evidence);
+                    app.windows_hidden = cli.hidden;
                     app
                 });
                 app_entity = Some(app.clone());

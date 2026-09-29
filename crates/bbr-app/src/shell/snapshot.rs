@@ -280,6 +280,7 @@ pub struct TestSnapshot {
     /// Blueprint D17 recovery pane.
     pub recovery: Option<String>,
     pub restore_notice: Option<String>,
+    pub about: Option<String>,
     /// Blueprint D08 overlays.
     pub toast: Option<bbr_testkit::protocol::ToastSnapshot>,
     pub zoom_readout: Option<u32>,
