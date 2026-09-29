@@ -2237,12 +2237,12 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | adopted | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |
 | D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 | adopted | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |
 | D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | implemented (partial-restore banner omitted: no lost-tab report exists) | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
-| D18 | About and updates | L-12 | §1 §7 | About window implemented; updates wait for an update channel | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
+| D18 | About and updates | L-12 | §1 §7 | About window implemented; no update channel while BBR is built locally (answer 14) | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
 | D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | menus implemented; window reopen and cross-window drag open | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |
 | D20 | New folders open in rename | S-4 PR-06 | §11.11 | implemented | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |
 | D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | implemented | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
 | D22 | Full-screen card rules under test | W-5 | §2 | implemented | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
-| D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted | [split-app-composition](docs/roadmap/tasks/split-app-composition.md) |
+| D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted; Split block lifted by Patrick 2026-09-29 | [split-app-composition](docs/roadmap/tasks/split-app-composition.md) |
 | D24 | Sidebar media card | S-8 PR-17 | §11.15 | adopted | [sidebar-media-control](docs/roadmap/tasks/sidebar-media-control.md) |
 | D25 | Folder context menu (ledger correction: M-2 was marked Shipped, but no folder menu exists) | M-2 S-4 | §11.13 §11.11 | implemented without Open All Tabs and the closing row (question 13) | [folder-context-menu](docs/roadmap/tasks/folder-context-menu.md) |
 
@@ -2250,7 +2250,13 @@ Questions raised by the blueprint (board D-1), answered by the adoption as
 drawn: 1 yes, 300 ms dwell · 2 yes · 3 leading edge · 4 short name + glyph ·
 5 per profile with a filter · 6 last active space, 'Ask' optional · 7 yes ·
 8 read-only in v1 · 9 yes, 9 % wash · 10 native · 11 still open (phase 6) ·
-12 Safari and Chrome.
+12 Safari and Chrome. Answered by Patrick on 2026-09-29: the Split block is
+lifted (D23 proceeds); the D17 and D25 omissions stand. Patrick had no
+preference on 13 and 14, so the recommendations were adopted: 13 keeps
+both rows omitted (the 2026-09-27 settlement: no folder row closes tabs;
+Open All Tabs has no BBR meaning), and 14 ships no update channel while
+BBR is built locally (revisit when BBR is distributed; Sparkle with a
+signed appcast is the default candidate then).
 
 | # | Question | Delta |
 |---|---|---|
