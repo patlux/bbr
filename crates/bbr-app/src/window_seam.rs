@@ -394,7 +394,50 @@ pub(crate) fn install_actions(
         }
     });
 
+    // Blueprint D19: the menu-bar-only commands and the space activation
+    // the Spaces and Dock menus dispatch.
+    cx.on_action({
+        let app = app.clone();
+        move |_: &crate::menus::Quit, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                app.update(cx, |view, _cx| {
+                    view.flush_browser_state();
+                    view.flush_saved_pages();
+                });
+                cx.quit();
+            });
+        }
+    });
+    cx.on_action(|_: &crate::menus::HideApp, cx| cx.hide());
+    cx.on_action({
+        let app = app.clone();
+        move |_: &crate::menus::MinimizeWindow, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |_view, window, _cx| {
+                    window.minimize_window();
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
+        move |action: &crate::menus::ActivateSpace, cx| {
+            let app = app.clone();
+            let space = bbr_browser::SpaceId(action.id);
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    let _ = view.activate_space(space, window, cx);
+                });
+            });
+        }
+    });
+
     cx.bind_keys([
+        KeyBinding::new("cmd-q", crate::menus::Quit, None),
+        KeyBinding::new("cmd-h", crate::menus::HideApp, None),
+        KeyBinding::new("cmd-m", crate::menus::MinimizeWindow, None),
         KeyBinding::new("cmd-f", FindInPage, None),
         KeyBinding::new("alt-cmd-s", FocusRail, None),
         KeyBinding::new("cmd-l", OpenOverlay, None),

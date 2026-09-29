@@ -707,6 +707,7 @@ pub(crate) fn dispatch(
         | Request::PortalOutsideDismiss
         | Request::PortalRoutePointer { .. }
         | Request::ToastAction
+        | Request::InvokeMenuItem { .. }
         | Request::PortalTeardown
         | Request::PortalSetFullscreen { .. }
         | Request::PortalSetMinimized { .. }

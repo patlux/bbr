@@ -1071,6 +1071,22 @@ pub struct PreviewSnapshot {
     pub crashed: bool,
 }
 
+/// Blueprint D19: one menu of the menu bar.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MenuSnapshot {
+    pub name: String,
+    pub items: Vec<MenuItemSnapshot>,
+}
+
+/// One menu item; a separator has no name.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MenuItemSnapshot {
+    pub name: Option<String>,
+    /// The dispatched action's registered name (e.g. `bbr::CloseTab`).
+    pub action: Option<String>,
+    pub checked: bool,
+}
+
 /// Blueprint D08: one live toast.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ToastSnapshot {
@@ -1494,6 +1510,12 @@ pub struct Snapshot {
     /// preview's native slot (`content_rect`) equals `preview`.
     #[serde(default)]
     pub peek_frame: Option<PeekFrameSnapshot>,
+    /// Blueprint D19: the installed menu bar (BBR supplies the structure;
+    /// macOS draws it) and the Dock menu.
+    #[serde(default)]
+    pub menu_bar: Vec<MenuSnapshot>,
+    #[serde(default)]
+    pub dock_menu: Vec<MenuItemSnapshot>,
     /// Blueprint D08: the live toast (`None` at rest).
     #[serde(default)]
     pub toast: Option<ToastSnapshot>,

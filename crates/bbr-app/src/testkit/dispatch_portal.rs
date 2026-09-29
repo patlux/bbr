@@ -62,6 +62,17 @@ pub(super) fn dispatch_portal(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // Blueprint D19: a menu item through the NSMenuItem dispatch path.
+        Request::InvokeMenuItem { menu, item } => {
+            let spaces = app.read(cx).menu_spaces().to_vec();
+            match crate::menus::menu_action(&spaces, menu, item) {
+                Some(action) => {
+                    cx.dispatch_action(&*action);
+                    Response::Ok
+                }
+                None => Response::Error(Error::new("no_menu_item", format!("{menu} › {item}"))),
+            }
+        }
         Request::ToastAction => match with_app(window, app, cx, |view, _window, cx| {
             (view.toast_action(cx), view.portal_frame_handle())
         }) {

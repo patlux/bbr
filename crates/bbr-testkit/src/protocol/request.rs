@@ -748,6 +748,13 @@ pub enum Request {
         x: f32,
         y: f32,
     },
+    /// Blueprint D19: invoke the menu item `menu › item` (`menu` = "Dock"
+    /// for the Dock menu) through the same action dispatch an `NSMenuItem`
+    /// click takes.
+    InvokeMenuItem {
+        menu: String,
+        item: String,
+    },
     /// Blueprint D08: press the toast's action (e.g. Undo) through the
     /// production method its button calls.
     ToastAction,

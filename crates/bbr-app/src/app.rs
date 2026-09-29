@@ -100,6 +100,7 @@ mod nav_history;
 pub(crate) mod nav_history_ids {
     pub const BACKDROP: &str = super::nav_history::NAV_HISTORY_BACKDROP_ID;
 }
+mod menu_sync;
 mod motion;
 mod new_window;
 pub(crate) mod palette;
@@ -213,6 +214,9 @@ pub struct BbrApp {
     native_portal: Option<crate::portal::native::NativePortalBridge>,
     /// Blueprint D08: the toast and zoom-readout overlays over the card.
     pub(crate) transient: transient::TransientOverlays,
+    /// Blueprint D19: the spaces the installed menu bar and Dock menu list
+    /// (`None` until the first render installs them).
+    pub(crate) menu_spaces: Option<Vec<crate::menus::MenuSpace>>,
     /// The one-active portal state for this browser window (task packet
     /// `native-portal-host`): exactly one presentation, deterministic
     /// dismissal, stable ids.
@@ -634,6 +638,7 @@ impl BbrApp {
             tab_drag: drag::TabDrag::default(),
             native_portal: None,
             transient: transient::TransientOverlays::default(),
+            menu_spaces: None,
             portal: PortalState::new(crate::portal::probe::PORTAL_ID),
             portal_probe: Rc::new(RefCell::new(PortalProbeState::new())),
             hovered_row: None,

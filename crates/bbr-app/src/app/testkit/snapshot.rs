@@ -628,6 +628,17 @@ impl BbrApp {
                 }
             }),
             zoom_readout: self.transient.zoom_readout.map(|readout| readout.percent),
+            menu_bar: crate::menus::menu_bar_spec(self.menu_spaces())
+                .into_iter()
+                .map(|menu| bbr_testkit::protocol::MenuSnapshot {
+                    name: menu.name,
+                    items: menu.items.into_iter().map(menu_item_snapshot).collect(),
+                })
+                .collect(),
+            dock_menu: crate::menus::dock_menu_spec(self.menu_spaces())
+                .into_iter()
+                .map(menu_item_snapshot)
+                .collect(),
             peek_frame: self
                 .peek_presented()
                 .then(|| self.peek_presented_frame.get())
@@ -1239,5 +1250,25 @@ fn theme_label(mode: bbr_ui::theme::ThemeMode) -> String {
     match mode {
         bbr_ui::theme::ThemeMode::Light => "light".into(),
         bbr_ui::theme::ThemeMode::Dark => "dark".into(),
+    }
+}
+
+/// Blueprint D19: one portable menu item on the wire.
+fn menu_item_snapshot(item: crate::menus::ItemSpec) -> bbr_testkit::protocol::MenuItemSnapshot {
+    match item {
+        crate::menus::ItemSpec::Separator => bbr_testkit::protocol::MenuItemSnapshot {
+            name: None,
+            action: None,
+            checked: false,
+        },
+        crate::menus::ItemSpec::Action {
+            name,
+            action,
+            checked,
+        } => bbr_testkit::protocol::MenuItemSnapshot {
+            name: Some(name),
+            action: Some(action),
+            checked,
+        },
     }
 }

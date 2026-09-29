@@ -274,6 +274,9 @@ pub struct TestSnapshot {
     pub peek_theme: Option<String>,
     /// Blueprint D09: the Peek frame the portal drew (while presented).
     pub peek_frame: Option<bbr_testkit::protocol::PeekFrameSnapshot>,
+    /// Blueprint D19 menus.
+    pub menu_bar: Vec<bbr_testkit::protocol::MenuSnapshot>,
+    pub dock_menu: Vec<bbr_testkit::protocol::MenuItemSnapshot>,
     /// Blueprint D08 overlays.
     pub toast: Option<bbr_testkit::protocol::ToastSnapshot>,
     pub zoom_readout: Option<u32>,

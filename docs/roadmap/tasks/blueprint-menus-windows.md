@@ -7,6 +7,17 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 Status: adopted 2026-09-28 (DESIGN §19); implementation position 17 of 24. Paper boards: L-13 · Menu bar & Dock, L-14 · Windows — new, close, quit, W-9 · Shell — several windows, PR-21 · Windows — new, move, close (file
 “BBR — Browser Shell”).
 
+**First slice implemented 2026-09-29 (menus):** the menu bar (BBR, File,
+View, History, Spaces, Tab, Window) and the Dock menu with the spaces
+(`crates/bbr-app/src/menus.rs`). Every item dispatches its shortcut's
+action; Quit BBR (⌘Q) flushes and exits; Hide ⌘H and Minimize ⌘M are new.
+Evidence: `menus` unit tests; `e2e_shell_menus` (in `just e2e-shell-spaces`)
+invokes items through the NSMenuItem action dispatch, checks that the menus
+follow a new space and the active space, and quits cleanly. Still open in
+this packet: ⇧⌘W window close with a reopen toast, New Window, Duplicate
+Tab, Select Next/Previous Tab and dragging tabs between windows. BBR has no
+window or tab commands for these yet.
+
 ## Outcome
 
 Spaces and Tab menus matching the ⌘T actions, a Dock menu with spaces, ⇧⌘T for windows with a reopen toast, and tab moves between windows by drag.

@@ -21,6 +21,7 @@ mod components;
 mod dense;
 mod engine;
 mod inject;
+mod menus;
 #[cfg(feature = "testkit")]
 mod performance;
 // The general Portal API (deferred host, anchored placement, escape

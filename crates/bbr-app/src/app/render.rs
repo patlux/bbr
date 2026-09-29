@@ -111,6 +111,8 @@ impl Render for BbrApp {
         // Blueprint D09: the portal washes the card around the inset
         // preview, so it needs the card's inner box of this exact frame.
         self.record_peek_card(card, sidebar_width, window, cx);
+        // Blueprint D19: the menu bar and the Dock menu list the spaces.
+        self.sync_menus(cx);
 
         // §11.5 presentation milestone: the result palette was constructed
         // into the sidebar above. When a `CommandType` benchmark is pending,
