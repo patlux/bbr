@@ -32,17 +32,20 @@ pub(crate) fn install(
     let Some(view) = view else {
         return;
     };
-    let (tx, rx) = smol::channel::unbounded::<PointerSample>();
+    let (tx, rx) = smol::channel::unbounded::<(PointerSample, bool)>();
     // SAFETY: `view` is the live GPUI root view of the browser window, on
     // the main thread; the sink only sends down a channel.
     let observer = unsafe {
         bbr_web_macos::pointer_observer::PointerObserver::install(view, move |pointer| {
-            let _ = tx.try_send(PointerSample {
-                x: pointer.x as f32,
-                y: pointer.y as f32,
-                time_ms: pointer.time_ms,
-                pressed: pointer.pressed,
-            });
+            let _ = tx.try_send((
+                PointerSample {
+                    x: pointer.x as f32,
+                    y: pointer.y as f32,
+                    time_ms: pointer.time_ms,
+                    pressed: pointer.pressed,
+                },
+                pointer.down,
+            ));
         })
     };
     let Some(observer) = observer else {
@@ -73,8 +76,14 @@ pub(crate) fn install(
             }
             cx.update(|cx| {
                 let _ = with_app(&window, &app, cx, |view, window, cx| {
-                    for sample in samples {
-                        view.on_rail_pointer(sample, window, cx);
+                    for (sample, down) in samples {
+                        // Blueprint D11: a press closes site settings when it
+                        // lands outside them; moves feed the rail reveal.
+                        if down {
+                            view.site_settings_pointer_down(sample.x, sample.y, cx);
+                        } else {
+                            view.on_rail_pointer(sample, window, cx);
+                        }
                     }
                 });
             });

@@ -318,6 +318,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             floating_rail: self.floating_rail.clone(),
             settings: self.settings.clone(),
             history: self.history.clone(),
+            permissions: self.permissions.clone(),
             recovery: self.recovery.clone(),
             restore_notice: self.restore_notice.clone(),
             about: self.about.clone(),

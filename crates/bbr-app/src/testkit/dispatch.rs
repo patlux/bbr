@@ -712,6 +712,7 @@ pub(crate) fn dispatch(
         | Request::SettingsInput { .. }
         | Request::OpenHistory
         | Request::HistoryInput { .. }
+        | Request::PermissionInput { .. }
         | Request::CloseSettings
         | Request::ToastAction
         | Request::InvokeMenuItem { .. }

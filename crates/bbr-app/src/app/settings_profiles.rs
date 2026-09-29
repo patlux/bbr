@@ -409,6 +409,9 @@ impl BbrApp {
                 {
                     Ok(event) => {
                         self.engine.borrow_mut().delete_profile_store(profile);
+                        // Blueprint D11: its site permissions go with it.
+                        self.permissions.policies.forget_profile(profile);
+                        self.save_site_permissions();
                         self.emit_browser(&event);
                         if let bbr_browser::ControllerEvent::ProfileDeleted {
                             fallback,

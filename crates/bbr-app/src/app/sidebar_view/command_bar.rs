@@ -86,6 +86,7 @@ impl BbrApp {
             zoom: bbr_ui::components::address::zoom_accessory(self.address_zoom_level()),
             progress: self.address_progress(),
             mark,
+            site: self.address_site(&url),
         }
     }
 

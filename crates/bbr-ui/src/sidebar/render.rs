@@ -307,6 +307,7 @@ fn command_slot(
             callbacks::boolean(&callbacks.on_command_hover),
             callbacks::mouse(&callbacks.on_command_open),
             callbacks::mouse(&callbacks.on_address_zoom_reset),
+            callbacks::mouse(&callbacks.on_address_site),
         ),
         CommandSlot::Staging(staging) => components::staging_surface(
             theme,

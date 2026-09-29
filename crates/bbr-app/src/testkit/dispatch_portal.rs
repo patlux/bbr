@@ -97,6 +97,12 @@ pub(super) fn dispatch_portal(
             }
         })
         .unwrap_or_else(err_response),
+        // Blueprint D11: the permission prompt and site settings.
+        Request::PermissionInput { input } => with_app(window, app, cx, |view, _window, cx| {
+            view.permission_input(input.clone(), cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
         // Blueprint D16: the Settings window.
         Request::OpenSettings => with_app(window, app, cx, |view, _window, cx| {
             view.show_settings(cx);

@@ -35,6 +35,7 @@ mod preferences;
 mod rail_observer;
 mod settings_window;
 mod shell;
+mod site_permissions;
 mod slot;
 mod store;
 #[cfg(feature = "testkit")]
@@ -625,6 +626,7 @@ fn main() {
         // store; defaults when absent).
         let _ = with_app(&window, &app, cx, |view, _w, cx| {
             view.browser_window = Some(window);
+            view.load_site_permissions(site_permissions::path_in(&cli.profile_dir));
             view.load_preferences(preferences::path_in(&cli.profile_dir), cx)
         });
         // Native portal host (task packet native-portal-host): exactly one

@@ -291,6 +291,8 @@ pub struct TestSnapshot {
     pub settings: Option<bbr_testkit::protocol::SettingsSnapshot>,
     /// Blueprint D10: the History page while it is open.
     pub history: Option<bbr_testkit::protocol::HistorySnapshot>,
+    /// Blueprint D11: the permission prompt, site settings and marks.
+    pub permissions: bbr_testkit::protocol::PermissionsSnapshot,
     pub zoom_readout: Option<u32>,
     /// Native z-order evidence: while a preview is open the preview
     /// WKWebView's subview index must exceed its covered origin's (the

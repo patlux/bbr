@@ -1122,9 +1122,9 @@ of problem instead of styling it.
   show their glyph (Library bookmark, Settings gear, History clock, Welcome
   compass) at `ink.secondary`; local files show the document mark. `https`
   sites show none. The control's accessible value names the state (Not
-  secure, BBR page, Local file), so the mark is never the only cue. The
-  mark becomes the site-identity trigger that opens site settings with
-  D11; until then it is not interactive.
+  secure, BBR page, Local file), so the mark is never the only cue. On
+  http(s) pages the leading slot is the site-identity trigger: pressing the
+  mark (or a device mark, below) opens site settings.
 - **Anatomy:** a quiet field surface, height `density:row` (S 32 / N 36 /
   XL 44), `radius:lg` (12), `type:title` domain text (`bbr-address-domain`,
   mid-ellipsis) at 500 in `color:ink`, and a **trailing accessory slot**
@@ -1144,7 +1144,47 @@ of problem instead of styling it.
   the active site's zoom is not 100 %, on an inset wash (light ink 8 %, dark
   white 8 %; S12 Paper). Pressing it resets
   the site to 100 % through the site-zoom authority and never opens the
-  palette. Copy Link and permission indicators stay future accessories.
+  palette. Copy Link stays a future accessory.
+- **Permissions (blueprint D11, boards M-9 PR-14):** WebKit asks the
+  browser for the camera and the microphone only (location, notifications
+  and the clipboard have no WebKit request BBR can answer, so the board's
+  rows for them are not drawn). A request that a remembered Allow covers
+  is granted, one a remembered Block covers is refused quietly — the
+  leading slot then shows the slashed device mark (`bbr-address-blocked`,
+  `ink.secondary`) until the page leaves the site or the setting changes.
+  Anything else gets one prompt (`bbr-permission-prompt`, 360 pt, `radius`
+  12, `elev:2`) hanging 6 pt below the address (at the card's top-left
+  when the rail is hidden) in the Portal's overlay layer: a 32 pt
+  `tint.accent` tile with the device mark, "meet.example.com wants to use
+  your camera and microphone", "Profile · Work", the "Remember for this
+  site" checkbox (`bbr-permission-remember`, off by default), then Don't
+  Allow (`bbr-permission-deny`) and the primary Allow
+  (`bbr-permission-allow`). Nothing is granted by default; one prompt shows
+  at a time for the active page and further requests wait behind it ("1
+  more request waiting"). Leaving the site answers its waiting requests
+  with a refusal; closing the tab refuses them in the engine. Remembered
+  decisions are per profile, origin and device and live in
+  `site-permissions.txt` next to the store (not in the SQLite schema). The
+  macOS privacy prompt (Native OS) follows only after an Allow, and the
+  bundle carries the camera and microphone usage descriptions it needs.
+  While the page captures, the leading slot shows the device mark at
+  `status.attention` (`bbr-address-capture`, camera over microphone); it
+  opens site settings. The board's device pickers are the page's choice
+  and are not drawn.
+- **Site settings (blueprint D11, board M-8):** the leading slot and the ⌘T
+  action Site Settings… open a 320 pt popover (`bbr-site-settings`) at the
+  prompt's place: the host in `type:title`, "Connection is secure ·
+  Profile Work" (or "not secure"), Camera and Microphone rows with an
+  Allow / Ask / Block segmented control (`bbr-site-settings-<key>-<0..2>`,
+  applied and written at once; Ask forgets the decision), the zoom row with
+  Reset while the site is not at 100 % (`bbr-site-settings-zoom-reset`),
+  then Clear Site Data… (`bbr-site-settings-clear`, asks inline "Sign out of
+  <host> and remove its data?" with Cancel and a destructive Clear, removes
+  every WebKit record of the site's domain in the profile's store and
+  confirms with a toast) and All Site Settings (`bbr-site-settings-all`,
+  Settings › Privacy). Escape, the leading slot again, or a press anywhere
+  outside closes it; it follows the active page and never survives a
+  change of site.
 - **Load progress (D5):** while the active tab loads, a 2 pt `accent` line
   on the field's inner bottom edge (inset by the corner radius) sweeps
   (`load:indeterminate`); when the load ends it fills (`dur:standard`) and
@@ -1162,7 +1202,8 @@ of problem instead of styling it.
   it is being edited (no caret, no selection). After the palette closes, focus returns where it was before opening — web
   content or the sidebar — per the interaction contract.
 - **Assert ids:** `bbr-address`, `bbr-address-domain`,
-  `bbr-address-accessory`, `bbr-address-zoom` and `bbr-address-progress` (only while shown); the palette's own input carries
+  `bbr-address-accessory`, `bbr-address-zoom`, `bbr-address-progress`,
+  `bbr-address-capture` and `bbr-address-blocked` (only while shown); the palette's own input carries
   `bbr-command-overlay-field` / `-text` / `-cursor`, and results keep
   `bbr-command-result-<k>`.
 
@@ -1912,9 +1953,12 @@ density); the default paper for new spaces. Shortcuts: the bound keys,
 grouped, read from the keymap. Board rows without behaviour behind them
 (startup behaviour, the target space for links from other apps, tab
 suspension and auto-close, search suggestions and keywords, the cookie
-policy, a save prompt per download, history retention, per-site settings
-before D11) are not drawn. Privacy holds Clear browsing data (Clear…),
-which brings the browser window forward with the §11.16 sheet.
+policy, a save prompt per download, history retention, and per-site
+settings beyond the permissions below) are not drawn. Privacy holds Clear browsing data (Clear…), which brings
+the browser window forward with the §11.16 sheet, and Site permissions:
+one row per site of the active profile with a remembered decision
+("Camera: Allow · Microphone: Block") and Forget, which returns it to Ask
+(blueprint D11, board L-6).
 
 ## 12. Profile identity
 
@@ -2379,7 +2423,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D08 | Toasts and uniform surface transitions | B-7 G-7 V-6 PR-12 | §6 §18.4 §18.5 | implemented | [blueprint-feedback-toasts](docs/roadmap/tasks/blueprint-feedback-toasts.md) |
 | D09 | Peek presentation | G-8 PR-04 | §11.17 | implemented | [blueprint-peek-presentation](docs/roadmap/tasks/blueprint-peek-presentation.md) |
 | D10 | History and Clear Browsing Data | M-6 M-7 PR-22 | §11.16 | implemented with global visits (answer 5's profile filter needs a store schema change); downloads and Saved Pages clear only with All time | [blueprint-history-clear-data](docs/roadmap/tasks/blueprint-history-clear-data.md) |
-| D11 | Site settings and permission prompts | M-8 M-9 L-6 PR-14 | §11.5 | adopted | [blueprint-site-settings-permissions](docs/roadmap/tasks/blueprint-site-settings-permissions.md) |
+| D11 | Site settings and permission prompts | M-8 M-9 L-6 PR-14 | §11.5 | implemented for camera and microphone (WebKit asks for nothing else); requests reach E2E through the engine's event transport, the native delegate is checked by hand | [blueprint-site-settings-permissions](docs/roadmap/tasks/blueprint-site-settings-permissions.md) |
 | D12 | Client certificate chooser | M-11 PR-15 | §18.4 | adopted | [blueprint-client-certificates](docs/roadmap/tasks/blueprint-client-certificates.md) |
 | D13 | Open-in-app, pop-up and link-routing UI | M-12 M-13 PR-04 PR-20 | §11.13 §18.4 | adopted | [blueprint-link-destinations](docs/roadmap/tasks/blueprint-link-destinations.md) |
 | D14 | Back / Forward history menu | W-7 M-3 | §11.14 §11.13 | implemented | [blueprint-navigation-history-menu](docs/roadmap/tasks/blueprint-navigation-history-menu.md) |

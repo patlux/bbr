@@ -195,7 +195,7 @@ impl BbrApp {
     fn privacy_sections(&self) -> Vec<SettingsSection> {
         // Blueprint D10: Clear Browsing Data opens its sheet over History in
         // the browser window.
-        vec![section(
+        let mut sections = vec![section(
             "Browsing data",
             vec![SettingsRow::new(
                 "privacy-clear-data",
@@ -206,7 +206,54 @@ impl BbrApp {
                 },
             )
             .detail("History, cookies and site data, cached files")],
-        )]
+        )];
+        // Blueprint D11 (board L-6): the active profile's sites with a
+        // remembered permission; Forget returns them to Ask.
+        let profile = self.controller.active_profile();
+        let policies = &self.permissions.policies;
+        let rows: Vec<SettingsRow> = policies
+            .sites(profile)
+            .iter()
+            .enumerate()
+            .map(|(index, origin)| {
+                let detail = crate::site_permissions::DECIDABLE
+                    .iter()
+                    .filter_map(|capability| {
+                        let policy = policies.policy(profile, origin, *capability);
+                        (policy != crate::site_permissions::SitePolicy::Ask).then(|| {
+                            format!(
+                                "{}: {}",
+                                crate::site_permissions::capability_label(*capability),
+                                policy.label()
+                            )
+                        })
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" · ");
+                SettingsRow::new(
+                    &format!("privacy-site-{index}"),
+                    crate::site_permissions::origin_host(origin).to_string(),
+                    SettingsControl::Button {
+                        label: "Forget".into(),
+                        destructive: false,
+                    },
+                )
+                .detail(detail)
+            })
+            .collect();
+        sections.push(section(
+            "Site permissions",
+            if rows.is_empty() {
+                vec![SettingsRow::new(
+                    "privacy-sites-none",
+                    "No site has a remembered permission",
+                    SettingsControl::None,
+                )]
+            } else {
+                rows
+            },
+        ));
+        sections
     }
 
     fn download_sections(&self) -> Vec<SettingsSection> {
@@ -361,6 +408,15 @@ impl BbrApp {
                     crate::app::downloads_history::downloads_clear(self, cx)
                 }
                 "privacy-clear-data" => self.clear_data_in_browser(cx),
+                row if row.starts_with("privacy-site-") => {
+                    let profile = self.controller.active_profile();
+                    let index = row["privacy-site-".len()..].parse::<usize>().ok();
+                    let sites = self.permissions.policies.sites(profile);
+                    if let Some(origin) = index.and_then(|index| sites.get(index)) {
+                        self.permissions.policies.forget_site(profile, origin);
+                        self.save_site_permissions();
+                    }
+                }
                 _ => {}
             },
         }

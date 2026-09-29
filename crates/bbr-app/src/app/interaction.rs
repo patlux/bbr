@@ -140,6 +140,9 @@ impl BbrApp {
         if let WebEvent::ContextMenuRequested(view, point) = &event {
             self.menu_open_from_event(*view, *point, window, cx);
         }
+        // Blueprint D11: permission requests, capture state, and the
+        // navigation that ends a site's pending requests.
+        self.permission_web_event(&event, cx);
         // D5: when this event ends the active tab's load (commit, finish,
         // failure or crash all clear the flag), the address line plays its
         // fill-and-fade after the state is applied.
@@ -442,6 +445,11 @@ impl BbrApp {
     /// actions first and actions stop propagation, so this route is the
     /// panel's primary Escape dismissal).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Blueprint D11: Escape closes site settings first.
+        if self.site_settings_open() {
+            self.close_site_settings(cx);
+            return;
+        }
         // Blueprint D14: Escape closes the Back/Forward history menu.
         if self.nav_history_open() {
             self.nav_history_close(window, cx);

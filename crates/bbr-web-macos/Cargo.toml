@@ -165,6 +165,10 @@ objc2-web-kit = { workspace = true, features = [
     # WebKit's own back-forward list.
     "WKBackForwardList",
     "WKBackForwardListItem",
+    # Blueprint D11: camera/microphone permission requests (the security
+    # origin) and Clear Site Data (data records by domain).
+    "WKSecurityOrigin",
+    "WKWebsiteDataRecord",
     "block2",
     "objc2-app-kit",
     "objc2-core-foundation",

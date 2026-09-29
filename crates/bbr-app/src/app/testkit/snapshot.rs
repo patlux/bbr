@@ -384,7 +384,20 @@ impl BbrApp {
                 if self.address_zoom_chip().is_some() {
                     ids.push(bbr_ui::components::address::ADDRESS_ZOOM_ID.to_string());
                 }
-                if self.rendered_address_mark().is_some() {
+                // Blueprint D11: a device mark takes the leading slot.
+                if let Some(indicator) = self.rendered_address_indicator() {
+                    ids.push(
+                        match indicator {
+                            bbr_ui::components::address::SiteIndicator::Live { .. } => {
+                                bbr_ui::components::address::ADDRESS_CAPTURE_ID
+                            }
+                            bbr_ui::components::address::SiteIndicator::Blocked { .. } => {
+                                bbr_ui::components::address::ADDRESS_BLOCKED_ID
+                            }
+                        }
+                        .to_string(),
+                    );
+                } else if self.rendered_address_mark().is_some() {
                     ids.push(bbr_ui::components::address::ADDRESS_MARK_ID.to_string());
                 }
                 // D5: the progress line is an id only while it renders.
@@ -653,6 +666,7 @@ impl BbrApp {
             floating_rail: self.floating_rail_snapshot(),
             settings: self.settings_snapshot(),
             history: self.history_snapshot(window),
+            permissions: self.permissions_snapshot(),
             about: self.about_window.is_some().then(crate::about::version_line),
             restore_notice: self
                 .transient

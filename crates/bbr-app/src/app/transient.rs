@@ -314,6 +314,7 @@ impl BbrApp {
         if self.portal.active().is_none() {
             let mut rects = self.transient.hit_rects();
             rects.extend(self.floating_rail_regions());
+            rects.extend(self.permission_hit_rects());
             return Some(rects);
         }
         let peek = matches!(
@@ -325,6 +326,7 @@ impl BbrApp {
             (true, Some(frame)) => {
                 let mut rects = frame.capture_rects().to_vec();
                 rects.extend(self.transient.hit_rects());
+                rects.extend(self.permission_hit_rects());
                 Some(rects)
             }
             _ => None,
@@ -336,7 +338,10 @@ impl BbrApp {
     /// [`Self::portal_hit_regions`].
     pub(crate) fn sync_portal_overlays(&mut self, cx: &mut Context<Self>) {
         let presentation = self.portal.active().is_some();
-        let showing = self.transient.showing() || self.rail_floating();
+        let showing = self.transient.showing()
+            || self.rail_floating()
+            || self.permission_prompt_model().is_some()
+            || self.site_settings_open();
         #[cfg(target_os = "macos")]
         {
             let regions = self.portal_hit_regions();

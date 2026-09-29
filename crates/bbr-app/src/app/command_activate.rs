@@ -421,6 +421,14 @@ impl BbrApp {
                 self.open_clear_browsing_data(window, cx);
                 true
             }
+            19 => {
+                // Blueprint D11: the active site's settings (http(s) only).
+                self.finish_action_activation(window, cx);
+                if !self.site_settings_open() {
+                    self.toggle_site_settings(cx);
+                }
+                true
+            }
             _ => false,
         }
     }

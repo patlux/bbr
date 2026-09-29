@@ -1629,6 +1629,9 @@ pub struct Snapshot {
     /// Blueprint D10: the History page while it is open.
     #[serde(default)]
     pub history: Option<super::HistorySnapshot>,
+    /// Blueprint D11: the permission prompt, site settings and marks.
+    #[serde(default)]
+    pub permissions: super::PermissionsSnapshot,
     /// Blueprint D08: the live zoom readout's percent (`None` at rest).
     #[serde(default)]
     pub zoom_readout: Option<u32>,

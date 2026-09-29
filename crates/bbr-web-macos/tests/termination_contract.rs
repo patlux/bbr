@@ -80,6 +80,7 @@ fn build_delegate(
             favicon_acquisition: bbr_web_macos::favicon_acquisition::FaviconAcquisitionHost::new(
                 Rc::new(RefCell::new(None)),
             ),
+            permissions: Default::default(),
         },
     );
     (delegate, probe)

@@ -96,6 +96,8 @@ pub struct DelegateHandles {
     /// Real favicon acquisition host: started after each navigation commit;
     /// emits `FaviconChanged` observations through the shared sink.
     pub favicon_acquisition: crate::favicon_acquisition::FaviconAcquisitionHost,
+    /// Blueprint D11: the open camera/microphone requests.
+    pub permissions: crate::permission_requests::PermissionRequests,
 }
 
 /// Instance variables for the navigation delegate.
@@ -116,6 +118,8 @@ pub struct WebViewDelegateIvars {
     /// `real-favicon-pipeline.md`): started after each navigation commit;
     /// emits `FaviconChanged` observations through the shared sink.
     pub(crate) favicon_acquisition: crate::favicon_acquisition::FaviconAcquisitionHost,
+    /// Blueprint D11: the open camera/microphone requests.
+    pub(crate) permissions: crate::permission_requests::PermissionRequests,
 }
 
 define_class!(
@@ -136,6 +140,19 @@ define_class!(
             _change: Option<&AnyObject>,
             context: *mut c_void,
         ) {
+            // Blueprint D11: the page's camera/microphone capture state.
+            if context == crate::permission_requests::capture_kvo_context() {
+                if let Some(web_view) = object.and_then(|o| o.downcast_ref::<WKWebView>()) {
+                    let (camera, microphone) =
+                        crate::permission_requests::capture_state(web_view);
+                    self.emit(WebEvent::MediaCaptureChanged {
+                        view: self.id(),
+                        camera,
+                        microphone,
+                    });
+                }
+                return;
+            }
             // Scope to our own `title` observation; ignore everyone else's.
             if context != title_kvo_context() {
                 return;
@@ -257,6 +274,46 @@ define_class!(
         // `WebUIDelegate`, which this project does not use), so chrome-
         // initiated close destroys the WKWebView immediately and never runs
         // page scripts.
+        // Blueprint D11: a page asks for the camera and/or microphone. The
+        // handler waits in the shared table until the app answers (a
+        // remembered decision, or the prompt); destroying the view denies.
+        #[unsafe(method(webView:requestMediaCapturePermissionForOrigin:initiatedByFrame:type:decisionHandler:))]
+        fn request_media_capture_permission(
+            &self,
+            _web_view: &WKWebView,
+            origin: &objc2_web_kit::WKSecurityOrigin,
+            _frame: &objc2_web_kit::WKFrameInfo,
+            capture: objc2_web_kit::WKMediaCaptureType,
+            decision_handler: &block2::DynBlock<dyn Fn(objc2_web_kit::WKPermissionDecision)>,
+        ) {
+            use bbr_web::permissions::PermissionCapability;
+            use objc2_web_kit::WKMediaCaptureType;
+            // SAFETY: WebKit delivered a live origin for the call.
+            let origin = unsafe {
+                crate::permission_requests::origin_string(
+                    &origin.protocol().to_string(),
+                    &origin.host().to_string(),
+                    origin.port(),
+                )
+            };
+            let capabilities = match capture {
+                WKMediaCaptureType::Camera => vec![PermissionCapability::Camera],
+                WKMediaCaptureType::Microphone => vec![PermissionCapability::Microphone],
+                _ => vec![PermissionCapability::Camera, PermissionCapability::Microphone],
+            };
+            let request = self
+                .ivars()
+                .permissions
+                .borrow_mut()
+                .register(self.id(), decision_handler.copy());
+            self.emit(WebEvent::PermissionRequested {
+                view: self.id(),
+                request,
+                origin,
+                capabilities,
+            });
+        }
+
         #[unsafe(method(webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:))]
         fn run_javascript_alert_panel(
             &self,
@@ -318,6 +375,7 @@ impl WebViewDelegate {
             navigation_cover,
             new_window: handles.new_window,
             favicon_acquisition: handles.favicon_acquisition,
+            permissions: handles.permissions,
         });
         // SAFETY: `init` is the NSObject initializer; we are on the main thread.
         unsafe { msg_send![super(this), init] }

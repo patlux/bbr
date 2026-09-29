@@ -68,7 +68,31 @@ pub struct AddressModel {
     /// Blueprint D03: the leading identity mark (`None` for a secure site
     /// and for placeholders).
     pub mark: Option<AddressMark>,
+    /// Blueprint D11: the leading site slot — a live or blocked device
+    /// mark, and whether a press opens site settings.
+    pub site: AddressSite,
 }
+
+/// Blueprint D11: what the leading slot says about the site's devices and
+/// whether it opens site settings (http and https pages only).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct AddressSite {
+    pub indicator: Option<SiteIndicator>,
+    pub interactive: bool,
+}
+
+/// Blueprint D11: the device mark in the leading slot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SiteIndicator {
+    /// The page is using the camera and/or the microphone.
+    Live { camera: bool },
+    /// A remembered Block refused the page's last request.
+    Blocked { camera: bool },
+}
+
+/// The stable ids of the device marks (blueprint D11).
+pub const ADDRESS_CAPTURE_ID: &str = "bbr-address-capture";
+pub const ADDRESS_BLOCKED_ID: &str = "bbr-address-blocked";
 
 /// The stable id of the leading identity mark (blueprint D03).
 pub const ADDRESS_MARK_ID: &str = "bbr-address-mark";
@@ -187,8 +211,58 @@ pub fn address_control(
     on_hover: impl Fn(&bool, &mut Window, &mut App) + 'static,
     on_open: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
     on_zoom_reset: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
+    on_site: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
+    // Blueprint D11: the leading slot opens site settings; the press never
+    // reaches the field's overlay activation.
+    let interactive = model.site.interactive;
+    let on_site = std::rc::Rc::new(on_site);
+    let site_press = move |slot: Stateful<Div>| {
+        let on_site = on_site.clone();
+        slot.when(interactive, move |slot| {
+            slot.cursor_pointer()
+                .on_mouse_down(MouseButton::Left, move |event, window, cx| {
+                    cx.stop_propagation();
+                    on_site(event, window, cx);
+                })
+        })
+    };
+    let indicator = model.site.indicator.map(|indicator| {
+        let (id, icon, color) = match indicator {
+            SiteIndicator::Live { camera: true } => (
+                ADDRESS_CAPTURE_ID,
+                crate::icons::Icon::Camera { blocked: false },
+                p.status_attention,
+            ),
+            SiteIndicator::Live { camera: false } => (
+                ADDRESS_CAPTURE_ID,
+                crate::icons::Icon::Microphone { blocked: false },
+                p.status_attention,
+            ),
+            SiteIndicator::Blocked { camera: true } => (
+                ADDRESS_BLOCKED_ID,
+                crate::icons::Icon::Camera { blocked: true },
+                p.ink_secondary,
+            ),
+            SiteIndicator::Blocked { camera: false } => (
+                ADDRESS_BLOCKED_ID,
+                crate::icons::Icon::Microphone { blocked: true },
+                p.ink_secondary,
+            ),
+        };
+        site_press.clone()(
+            div()
+                .id(id)
+                .debug_selector(move || id.to_string())
+                .size(px(16.0))
+                .flex_shrink_0()
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(icon.canvas_with(theme, px(14.0), color)),
+        )
+    });
     let zoom_chip = model.zoom.map(|level| {
         div()
             .id(ADDRESS_ZOOM_ID)
@@ -271,8 +345,8 @@ pub fn address_control(
         // slot) — the not-secure triangle at `status.attention`, an
         // internal page's glyph, or the file mark, never color alone (the
         // shape carries it).
-        .when_some(model.mark, |el, mark| {
-            el.child(
+        .when_some(model.mark.filter(|_| indicator.is_none()), |el, mark| {
+            el.child(site_press(
                 div()
                     .id(ADDRESS_MARK_ID)
                     .debug_selector(|| ADDRESS_MARK_ID.to_string())
@@ -282,8 +356,9 @@ pub fn address_control(
                     .items_center()
                     .justify_center()
                     .child(mark.icon().canvas(theme, px(14.0))),
-            )
+            ))
         })
+        .children(indicator)
         .child(
             div()
                 .id("bbr-address-domain")
@@ -508,6 +583,7 @@ mod tests {
             zoom: None,
             progress: AddressProgress::Idle,
             mark: None,
+            site: AddressSite::default(),
         };
         assert_eq!(model.domain, "example.com");
         assert!(!model.hovered);

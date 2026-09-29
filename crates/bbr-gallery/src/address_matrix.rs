@@ -208,6 +208,7 @@ pub fn build_address_fixture(case: &AddressCase, theme: &Theme) -> Option<Addres
         mark: bbr_ui::components::address::AddressMark::for_identity(
             &bbr_ui::text::address_identity(case.url),
         ),
+        site: Default::default(),
     })
 }
 

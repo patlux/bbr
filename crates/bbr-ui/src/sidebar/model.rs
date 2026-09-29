@@ -275,6 +275,9 @@ pub struct Callbacks {
     /// §17.14: the address zoom chip press resets the site zoom to 100 %
     /// (the chip stops propagation; the overlay never opens).
     pub on_address_zoom_reset: MouseCallback,
+    /// Blueprint D11: the address's leading site slot opens site settings
+    /// (the slot stops propagation; the overlay never opens).
+    pub on_address_site: MouseCallback,
     /// §11.1: row selection through the production pointer path.
     pub on_select_row: RowCallback,
     /// §11.1: row close through the production pointer path (stops
@@ -366,6 +369,7 @@ impl Callbacks {
             on_command_hover: noop_bool,
             on_command_open: noop_mouse.clone(),
             on_address_zoom_reset: noop_mouse.clone(),
+            on_address_site: noop_mouse.clone(),
             on_select_row: noop_row.clone(),
             on_close_row: noop_row.clone(),
             on_toggle_pin: noop_row.clone(),

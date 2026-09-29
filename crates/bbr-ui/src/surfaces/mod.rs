@@ -15,6 +15,7 @@ pub mod floating;
 pub mod history;
 pub mod menu;
 pub mod peek_wash;
+pub mod permissions;
 pub mod settings;
 pub mod space_config;
 pub mod space_delete;

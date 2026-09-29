@@ -70,6 +70,10 @@ impl NavState {
             // A favicon acquisition carries no navigation state (the image
             // is presentation data keyed by host in the controller's store).
             bbr_web::WebEvent::FaviconChanged(_, _) => {}
+            // Blueprint D11: permission requests and capture state are the
+            // app's site-permission state, not navigation state.
+            bbr_web::WebEvent::PermissionRequested { .. }
+            | bbr_web::WebEvent::MediaCaptureChanged { .. } => {}
         }
     }
 }

@@ -21,6 +21,7 @@ mod address_marks;
 pub mod bbr;
 pub mod glyphs;
 mod paint;
+mod permission_marks;
 mod settings_marks;
 mod shapes;
 pub mod spinner;
@@ -122,6 +123,11 @@ pub enum Icon {
     Eye,
     /// Blueprint D16 Settings toolbar: Shortcuts.
     Keyboard,
+    /// Blueprint D11: the camera permission mark (`blocked` adds the
+    /// slash).
+    Camera { blocked: bool },
+    /// Blueprint D11: the microphone permission mark.
+    Microphone { blocked: bool },
 }
 
 impl Icon {
@@ -186,6 +192,10 @@ impl Icon {
             Icon::Shield => "shield",
             Icon::Eye => "eye",
             Icon::Keyboard => "keyboard",
+            Icon::Camera { blocked: false } => "camera",
+            Icon::Camera { blocked: true } => "camera-blocked",
+            Icon::Microphone { blocked: false } => "microphone",
+            Icon::Microphone { blocked: true } => "microphone-blocked",
         }
     }
 
@@ -216,6 +226,7 @@ impl Icon {
             Icon::Info => palette.status_info,
             Icon::Gear | Icon::Document => palette.ink_secondary,
             Icon::Person | Icon::Shield | Icon::Eye | Icon::Keyboard => palette.ink_secondary,
+            Icon::Camera { .. } | Icon::Microphone { .. } => palette.ink_secondary,
         }
     }
 
@@ -370,6 +381,18 @@ impl Icon {
             Icon::Shield => settings_marks::paint_shield(window, stroke, color, cx, cy, size),
             Icon::Eye => settings_marks::paint_eye(window, stroke, color, cx, cy, size),
             Icon::Keyboard => settings_marks::paint_keyboard(window, stroke, color, cx, cy, size),
+            Icon::Camera { blocked } => {
+                permission_marks::paint_camera(window, stroke, color, cx, cy, size);
+                if blocked {
+                    permission_marks::paint_slash(window, stroke, color, cx, cy, size);
+                }
+            }
+            Icon::Microphone { blocked } => {
+                permission_marks::paint_microphone(window, stroke, color, cx, cy, size);
+                if blocked {
+                    permission_marks::paint_slash(window, stroke, color, cx, cy, size);
+                }
+            }
             Icon::Disclosure { expanded } => {
                 let arm = disclosure_arm(size);
                 let mut path = PathBuilder::stroke(stroke);

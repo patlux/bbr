@@ -103,5 +103,7 @@ fn event_view(event: &WebEvent) -> WebViewId {
         // navigation state).
         WebEvent::ContextMenuRequested(v, _) => *v,
         WebEvent::FaviconChanged(v, _) => *v,
+        WebEvent::PermissionRequested { view, .. } => *view,
+        WebEvent::MediaCaptureChanged { view, .. } => *view,
     }
 }

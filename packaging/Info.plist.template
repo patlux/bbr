@@ -38,8 +38,12 @@
 	<string>public.app-category.productivity</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>__MIN_SYSTEM_VERSION__</string>
+	<key>NSCameraUsageDescription</key>
+	<string>A website you allow can use the camera.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>A website you allow can use the microphone.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>__COPYRIGHT__</string>
 	<key>NSPrincipalClass</key>

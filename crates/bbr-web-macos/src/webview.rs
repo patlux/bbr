@@ -74,6 +74,8 @@ pub struct WebEngineWk {
     /// download emits `FaviconChanged` observations through the shared
     /// engine sink. Silent on any failure (the §7.2 monogram stays).
     pub(crate) favicon_acquisition: crate::favicon_acquisition::FaviconAcquisitionHost,
+    /// Blueprint D11: the open camera/microphone requests.
+    permissions: crate::permission_requests::PermissionRequests,
 }
 
 impl WebEngineWk {
@@ -114,6 +116,7 @@ impl WebEngineWk {
             content_gesture,
             probe,
             favicon_acquisition,
+            permissions: Default::default(),
         }
     }
 
@@ -382,12 +385,14 @@ impl WebEngine for WebEngineWk {
             delegate::DelegateHandles {
                 new_window: self.new_window.clone(),
                 favicon_acquisition: self.favicon_acquisition.clone(),
+                permissions: self.permissions.clone(),
             },
         );
         unsafe {
             web_view.setNavigationDelegate(Some(ProtocolObject::from_ref(&*delegate)));
             web_view.setUIDelegate(Some(ProtocolObject::from_ref(&*delegate)));
             delegate::observe_title(&web_view, delegate.as_super());
+            crate::permission_requests::observe_capture(&web_view, delegate.as_super());
         }
         web_view.setHidden(true);
         navigation_cover.setHidden(true);
@@ -429,6 +434,8 @@ impl WebEngine for WebEngineWk {
         // or live download) for the id is dropped or invalidated: a late
         // observation cannot mutate a newer session.
         self.favicon_acquisition.forget(id);
+        // Blueprint D11: WebKit expects every permission handler answered.
+        self.permissions.borrow_mut().deny_view(id);
         if let Some(session) = self.sessions.remove(&id) {
             session.teardown();
         } else {
@@ -552,6 +559,23 @@ impl WebEngine for WebEngineWk {
         self.assert_main_thread();
         self.session(id)
             .map(|session| crate::session_history::read(&session.web_view))
+    }
+
+    fn decide_permission(&mut self, request: u64, allow: bool) {
+        self.permissions.borrow_mut().decide(request, allow);
+    }
+
+    fn clear_site_data(&mut self, profile: ProfileId, host: &str) {
+        let Some(mtm) = MainThreadMarker::new() else {
+            return;
+        };
+        let store = native_session::data_store_for_profile(
+            mtm,
+            profile,
+            self.options.non_persistent,
+            &mut self.stores,
+        );
+        crate::profile_data::clear_site(&store, host);
     }
 
     fn delete_profile_store(&mut self, profile: ProfileId) {

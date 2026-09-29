@@ -54,6 +54,8 @@ pub enum SidebarObservation {
     CommandOpen,
     /// §17.14: the address zoom chip press (`on_address_zoom_reset`).
     AddressZoomReset,
+    /// Blueprint D11: the address site slot press.
+    AddressSite,
     /// §11.1: row selection (`on_select_row`), payload = the row index.
     SelectRow(usize),
     /// §11.1: row close (`on_close_row`), payload = the row index.
@@ -218,6 +220,7 @@ impl SidebarRecorder {
             SidebarObservation::CommandHover(value) => self.command_hovers.push(value),
             SidebarObservation::CommandOpen => self.command_opens += 1,
             SidebarObservation::AddressZoomReset => self.address_zoom_resets += 1,
+            SidebarObservation::AddressSite => {}
             SidebarObservation::SelectRow(index) => self.select_rows.push(index),
             SidebarObservation::CloseRow(index) => self.close_rows.push(index),
             SidebarObservation::TogglePin(index) => self.toggle_pins.push(index),

@@ -66,7 +66,7 @@ pub(super) fn render_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -
         return Vec::new();
     };
     let browser_window = root.browser_window;
-    let mut overlays = Vec::new();
+    let mut overlays = render_permission_overlays(root, cx);
     if let Some(state) = toast_state {
         let [x, y, width, _] = toast_rect(card, card[2]);
         let action_app = app.clone();
@@ -162,6 +162,104 @@ pub(super) fn render_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -
                         });
                     },
                 ))
+                .into_any_element(),
+        );
+    }
+    overlays
+}
+
+/// Blueprint D11: the permission prompt and the site-settings popover,
+/// hanging from the address control (their bounds are their hit regions).
+fn render_permission_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -> Vec<AnyElement> {
+    use bbr_ui::surfaces::permissions::{permission_prompt, site_settings_popover};
+    let Some(app) = root.app.clone() else {
+        return Vec::new();
+    };
+    let (theme, anchor, prompt, popover, prompt_bounds, popover_bounds) = {
+        let app = app.read(cx);
+        (
+            app.theme(),
+            app.permission_anchor(),
+            app.permission_prompt_model(),
+            app.site_settings_model(),
+            app.permissions.prompt_bounds.clone(),
+            app.permissions.popover_bounds.clone(),
+        )
+    };
+    let Some((x, y)) = anchor else {
+        return Vec::new();
+    };
+    let browser_window = root.browser_window;
+    let mut overlays = Vec::new();
+    // The popover and the prompt share the anchor; the prompt (a page
+    // waiting for an answer) wins.
+    if let Some(model) = prompt {
+        let events_app = app.clone();
+        let card = permission_prompt(
+            &theme,
+            &model,
+            std::rc::Rc::new(move |event, _window, cx| {
+                use bbr_ui::surfaces::permissions::PermissionPromptEvent as E;
+                let app = events_app.clone();
+                cx.defer(move |cx| {
+                    let _ =
+                        crate::window_seam::with_app(&browser_window, &app, cx, |view, _w, cx| {
+                            match event {
+                                E::Remember => view.toggle_permission_remember(cx),
+                                E::Deny => view.decide_current_permission(false, cx),
+                                E::Allow => view.decide_current_permission(true, cx),
+                            }
+                        });
+                });
+            }),
+        );
+        overlays.push(
+            div()
+                .absolute()
+                .left(px(x))
+                .top(px(y))
+                .child(
+                    div()
+                        .relative()
+                        .child(bbr_ui::surfaces::floating::appear(
+                            &theme,
+                            "bbr-permission-prompt-appear",
+                            card,
+                        ))
+                        .child(bounds_recorder(prompt_bounds, app.clone(), browser_window)),
+                )
+                .into_any_element(),
+        );
+    } else if let Some(model) = popover {
+        let events_app = app.clone();
+        let card = site_settings_popover(
+            &theme,
+            &model,
+            std::rc::Rc::new(move |event, _window, cx| {
+                let app = events_app.clone();
+                cx.defer(move |cx| {
+                    let _ =
+                        crate::window_seam::with_app(&browser_window, &app, cx, |view, _w, cx| {
+                            view.on_site_settings_event(event, cx)
+                        });
+                });
+            }),
+        );
+        overlays.push(
+            div()
+                .absolute()
+                .left(px(x))
+                .top(px(y))
+                .child(
+                    div()
+                        .relative()
+                        .child(bbr_ui::surfaces::floating::appear(
+                            &theme,
+                            "bbr-site-settings-appear",
+                            card,
+                        ))
+                        .child(bounds_recorder(popover_bounds, app.clone(), browser_window)),
+                )
                 .into_any_element(),
         );
     }

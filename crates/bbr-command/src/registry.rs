@@ -221,6 +221,21 @@ impl CommandRegistry {
                 ActionCategory::View,
                 Some("⇧⌘⌫"),
             ),
+            // Blueprint D11: the active site's settings.
+            Action::new(
+                ActionId(19),
+                "Site Settings…",
+                [
+                    "site",
+                    "settings",
+                    "permissions",
+                    "camera",
+                    "microphone",
+                    "cookies",
+                ],
+                ActionCategory::View,
+                None,
+            ),
         ];
         CommandRegistry { actions }
     }
@@ -276,6 +291,7 @@ mod tests {
                 ActionCategory::View,
                 Some("⇧⌘⌫"),
             ),
+            (19, "Site Settings…", ActionCategory::View, None),
         ];
         let registry = CommandRegistry::builtin();
         let actual: Vec<_> = registry

@@ -25,6 +25,7 @@ mod benchmark;
 pub mod dsl;
 mod event;
 mod history;
+mod permissions;
 mod request;
 mod snapshot;
 
@@ -33,6 +34,9 @@ pub use event::{BrowserChange, Event};
 pub use history::{
     ClearDataSnapshot, ClearOptionSnapshot, HistoryGroupSnapshot, HistoryInput, HistoryRowSnapshot,
     HistorySnapshot,
+};
+pub use permissions::{
+    PermissionInput, PermissionPromptSnapshot, PermissionsSnapshot, SiteSettingsSnapshot,
 };
 pub use request::{Request, SavedPagesLibraryCollectionOp, SettingsInput, TextInputOp};
 pub use snapshot::{

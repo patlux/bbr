@@ -228,6 +228,24 @@ pub enum WebEvent {
     /// candidate-URL observation is representable and fake-engine tests can
     /// prove the boundary without a display server.
     FaviconChanged(WebViewId, FaviconContent),
+    /// Blueprint D11: a page asked for `capabilities` (camera and/or
+    /// microphone). The engine holds the request until
+    /// [`WebEngine::decide_permission`] answers `request`; destroying the
+    /// view denies it.
+    PermissionRequested {
+        view: WebViewId,
+        request: u64,
+        /// The requesting origin (`scheme://host[:port]`).
+        origin: String,
+        capabilities: Vec<permissions::PermissionCapability>,
+    },
+    /// Blueprint D11: the view's camera / microphone capture is live
+    /// (active or muted) or not.
+    MediaCaptureChanged {
+        view: WebViewId,
+        camera: bool,
+        microphone: bool,
+    },
 }
 
 /// The seam between chrome and engine.
@@ -313,6 +331,14 @@ pub trait WebEngine {
     /// (cookies, site data, caches). Its sessions are already destroyed.
     /// The default suits engines without persistent stores.
     fn delete_profile_store(&mut self, _profile: ProfileId) {}
+
+    /// Blueprint D11: answer a [`WebEvent::PermissionRequested`]. Unknown
+    /// or already answered requests are no-ops.
+    fn decide_permission(&mut self, _request: u64, _allow: bool) {}
+
+    /// Blueprint D11: remove every kind of `profile`'s website data that
+    /// belongs to `host` (cookies, storage, caches).
+    fn clear_site_data(&mut self, _profile: ProfileId, _host: &str) {}
 
     /// Blueprint D10: remove `profile`'s website data of `kinds` modified
     /// since `since_unix_seconds` (`None`: all of it).

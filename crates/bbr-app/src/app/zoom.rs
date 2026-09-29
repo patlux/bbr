@@ -395,6 +395,20 @@ impl super::BbrApp {
         bbr_ui::components::address::zoom_accessory(self.address_zoom_level())
     }
 
+    /// Blueprint D11: the device mark the rendered address shows (testkit
+    /// evidence only, like the mark below).
+    #[cfg(feature = "testkit")]
+    pub(crate) fn rendered_address_indicator(
+        &self,
+    ) -> Option<bbr_ui::components::address::SiteIndicator> {
+        let staging = self.command_surface == crate::app::palette::CommandSurface::None
+            && self.command_bar_mode.is_active();
+        if !self.sidebar_visible || staging {
+            return None;
+        }
+        self.address_site(&self.active_url()).indicator
+    }
+
     /// Blueprint D03: the address control's leading identity mark while
     /// the address renders (never on the staging surface or with the rail
     /// hidden). Testkit evidence only: the render derives the mark itself.

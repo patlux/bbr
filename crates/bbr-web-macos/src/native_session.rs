@@ -43,6 +43,7 @@ impl NativeWebSession {
     pub(crate) fn teardown(self) {
         unsafe {
             delegate::unobserve_title(&self.web_view, self.delegate.as_super());
+            crate::permission_requests::unobserve_capture(&self.web_view, self.delegate.as_super());
         }
         self.navigation_cover.removeFromSuperview();
         self.web_view.removeFromSuperview();

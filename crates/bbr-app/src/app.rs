@@ -118,6 +118,7 @@ pub(crate) mod palette;
 pub(crate) mod peek;
 #[cfg(feature = "testkit")]
 mod peek_benchmarks;
+pub(crate) mod permissions;
 mod portal_host;
 mod recovery;
 mod render;
@@ -226,6 +227,8 @@ pub struct BbrApp {
     native_portal: Option<crate::portal::native::NativePortalBridge>,
     /// Blueprint D08: the toast and zoom-readout overlays over the card.
     pub(crate) transient: transient::TransientOverlays,
+    /// Blueprint D11: permission prompts, device marks, site settings.
+    pub(crate) permissions: permissions::PermissionsState,
     /// Blueprint D19: the spaces the installed menu bar and Dock menu list
     /// (`None` until the first render installs them).
     pub(crate) menu_spaces: Option<Vec<crate::menus::MenuSpace>>,
@@ -672,6 +675,7 @@ impl BbrApp {
             tab_drag: drag::TabDrag::default(),
             native_portal: None,
             transient: transient::TransientOverlays::default(),
+            permissions: permissions::PermissionsState::default(),
             menu_spaces: None,
             recovery_dismissed: false,
             about_window: None,

@@ -140,6 +140,13 @@ impl BbrApp {
             entity.update(cx, |view, cx| view.zoom_reset(cx));
         });
 
+        // Blueprint D11: the address's leading site slot opens site
+        // settings.
+        let entity = cx.entity();
+        let on_address_site: MouseCallback = Rc::new(move |_e, _window, cx| {
+            entity.update(cx, |view, cx| view.toggle_site_settings(cx));
+        });
+
         // §11.1: row selection through the production pointer path.
         let entity = cx.entity();
         let on_select_row: RowCallback = Rc::new(move |index, _e, window, cx| {
@@ -385,6 +392,7 @@ impl BbrApp {
             on_command_hover,
             on_command_open,
             on_address_zoom_reset,
+            on_address_site,
             on_select_row,
             on_close_row,
             on_toggle_pin,

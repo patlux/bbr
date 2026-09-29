@@ -1,5 +1,7 @@
 //! Blueprint D10: the active space's recently closed tabs for History ›
-//! Recently closed, and reopening one of them by identity.
+//! Recently closed, and reopening one of them by identity. Blueprint D11:
+//! the profile a live view belongs to (a permission request names its
+//! view).
 
 use bbr_domain::TabId;
 
@@ -17,6 +19,17 @@ pub struct ClosedTabEntry {
 }
 
 impl BrowserController {
+    /// The profile whose data store backs the live `view` (a tab's session
+    /// or the open Peek preview); `None` for an unknown view.
+    pub fn profile_of_view(&self, view: bbr_web::WebViewId) -> Option<bbr_web::ProfileId> {
+        if let Some(preview) = self.preview.as_ref().filter(|p| p.view == view) {
+            return Some(preview.profile);
+        }
+        let tab = self.registry.tab_for_view(view)?;
+        let space = self.browser.tab(tab)?.space;
+        Some(self.browser.space(space)?.profile)
+    }
+
     /// The active space's recently closed tabs, most recent first.
     pub fn recently_closed(&self) -> Vec<ClosedTabEntry> {
         self.browser

@@ -27,6 +27,9 @@ pub struct ObservedPointer {
     pub time_ms: f64,
     /// A mouse button is held.
     pub pressed: bool,
+    /// Blueprint D11: this sample is a primary-button press (a press
+    /// outside site settings closes them).
+    pub down: bool,
 }
 
 /// The installed monitor; removing it (drop) stops the samples.
@@ -62,11 +65,13 @@ impl PointerObserver {
                         y: frame.size.height - (screen.y - frame.origin.y),
                         time_ms: native.timestamp() * 1000.0,
                         pressed: NSEvent::pressedMouseButtons() != 0,
+                        down: native.r#type() == objc2_app_kit::NSEventType::LeftMouseDown,
                     });
                 }
                 event.as_ptr()
             });
-        let mask = NSEventMask::MouseMoved | NSEventMask::LeftMouseDragged;
+        let mask =
+            NSEventMask::MouseMoved | NSEventMask::LeftMouseDragged | NSEventMask::LeftMouseDown;
         // SAFETY: main thread; the handler returns the original event (pure
         // observation). AppKit copies the block for the monitor's lifetime;
         // it is retained here as well until the monitor is removed.

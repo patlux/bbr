@@ -182,6 +182,10 @@ class BundleTests(unittest.TestCase):
         self.assertEqual(plist["CFBundleShortVersionString"], build_app.workspace_version())
         self.assertEqual(plist["CFBundleVersion"], build_app.workspace_version())
         self.assertTrue(plist["NSHighResolutionCapable"])
+        # Blueprint D11: WebKit asks macOS for the devices a site was
+        # allowed only when the app says why it uses them.
+        self.assertIn("camera", plist["NSCameraUsageDescription"])
+        self.assertIn("microphone", plist["NSMicrophoneUsageDescription"])
 
         # Queue item 13: the bundle declares exactly the schemes BBR genuinely
         # handles — http/https, the supported web schemes of the merged

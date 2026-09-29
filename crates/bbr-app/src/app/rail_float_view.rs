@@ -48,6 +48,7 @@ pub(crate) fn retarget(mut c: Callbacks, b: Browser) -> Callbacks {
     via_browser!(c.on_command_hover, b; h: &bool);
     via_browser!(c.on_command_open, b; e: &MouseDownEvent);
     via_browser!(c.on_address_zoom_reset, b; e: &MouseDownEvent);
+    via_browser!(c.on_address_site, b; e: &MouseDownEvent);
     via_browser!(c.on_select_row, b; i: usize, e: &MouseDownEvent);
     via_browser!(c.on_close_row, b; i: usize, e: &MouseDownEvent);
     via_browser!(c.on_toggle_pin, b; i: usize, e: &MouseDownEvent);

@@ -782,6 +782,11 @@ pub enum Request {
     HistoryInput {
         input: super::HistoryInput,
     },
+    /// Blueprint D11: one permission-prompt or site-settings interaction
+    /// through the method its control calls.
+    PermissionInput {
+        input: super::PermissionInput,
+    },
     /// Blueprint D19: invoke the menu item `menu › item` (`menu` = "Dock"
     /// for the Dock menu) through the same action dispatch an `NSMenuItem`
     /// click takes.
