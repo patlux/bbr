@@ -193,7 +193,20 @@ impl BbrApp {
     }
 
     fn privacy_sections(&self) -> Vec<SettingsSection> {
-        Vec::new()
+        // Blueprint D10: Clear Browsing Data opens its sheet over History in
+        // the browser window.
+        vec![section(
+            "Browsing data",
+            vec![SettingsRow::new(
+                "privacy-clear-data",
+                "Clear browsing data",
+                SettingsControl::Button {
+                    label: "Clear…".into(),
+                    destructive: false,
+                },
+            )
+            .detail("History, cookies and site data, cached files")],
+        )]
     }
 
     fn download_sections(&self) -> Vec<SettingsSection> {
@@ -347,6 +360,7 @@ impl BbrApp {
                 "downloads-clear-history" => {
                     crate::app::downloads_history::downloads_clear(self, cx)
                 }
+                "privacy-clear-data" => self.clear_data_in_browser(cx),
                 _ => {}
             },
         }

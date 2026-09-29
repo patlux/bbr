@@ -204,6 +204,23 @@ impl CommandRegistry {
                 ActionCategory::View,
                 Some("⌘,"),
             ),
+            // Blueprint D10: History and Clear Browsing Data.
+            Action::new(
+                ActionId(17),
+                "Show All History",
+                ["history", "visited", "recently", "closed", "past"],
+                ActionCategory::View,
+                Some("⌘Y"),
+            ),
+            Action::new(
+                ActionId(18),
+                "Clear Browsing Data…",
+                [
+                    "clear", "delete", "browsing", "data", "cookies", "cache", "privacy",
+                ],
+                ActionCategory::View,
+                Some("⇧⌘⌫"),
+            ),
         ];
         CommandRegistry { actions }
     }
@@ -252,6 +269,13 @@ mod tests {
             (14, "Set as Default Browser", ActionCategory::View, None),
             (15, "New Profile…", ActionCategory::Space, None),
             (16, "Settings…", ActionCategory::View, Some("⌘,")),
+            (17, "Show All History", ActionCategory::View, Some("⌘Y")),
+            (
+                18,
+                "Clear Browsing Data…",
+                ActionCategory::View,
+                Some("⇧⌘⌫"),
+            ),
         ];
         let registry = CommandRegistry::builtin();
         let actual: Vec<_> = registry

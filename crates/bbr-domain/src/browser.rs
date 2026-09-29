@@ -360,12 +360,31 @@ impl Browser {
     /// (clamped to the current length, honoring the pinned region) and
     /// activate it.
     pub fn reopen_tab(&mut self, space: SpaceId) -> Result<TabId, DomainError> {
-        let ClosedTab { tab, index } = self
+        self.reopen_closed(space, None)
+    }
+
+    /// Blueprint D10: restore the recently closed `tab` of `space` (History
+    /// › Recently closed), exactly as [`Self::reopen_tab`] restores the
+    /// latest one.
+    pub fn reopen_closed_tab(&mut self, space: SpaceId, tab: TabId) -> Result<TabId, DomainError> {
+        self.reopen_closed(space, Some(tab))
+    }
+
+    fn reopen_closed(
+        &mut self,
+        space: SpaceId,
+        which: Option<TabId>,
+    ) -> Result<TabId, DomainError> {
+        let closed = &mut self
             .space_mut(space)
             .ok_or(DomainError::UnknownSpace(space))?
-            .recently_closed
-            .pop()
-            .ok_or(DomainError::NothingToReopen(space))?;
+            .recently_closed;
+        let position = match which {
+            None => closed.len().checked_sub(1),
+            Some(id) => closed.iter().position(|entry| entry.tab.id == id),
+        }
+        .ok_or(DomainError::NothingToReopen(space))?;
+        let ClosedTab { tab, index } = closed.remove(position);
         let (len, pinned_count) = {
             let s = self.space(space).expect("validated above");
             (s.tabs.len(), s.pinned_count)

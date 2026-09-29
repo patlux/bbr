@@ -274,6 +274,35 @@ impl BbrApp {
                 error
             })
             .ok();
+        self.after_reopen(result, chrome_focused, window, cx)
+    }
+
+    /// Blueprint D10: reopen one recently closed tab from History (the
+    /// page takes the keyboard afterwards).
+    pub fn reopen_closed_tab(
+        &mut self,
+        tab: bbr_domain::TabId,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<bbr_browser::ControllerEvent> {
+        let result = self
+            .controller
+            .reopen_closed_tab(tab)
+            .map_err(|error| {
+                log::error!("could not reopen tab: {error}");
+                error
+            })
+            .ok();
+        self.after_reopen(result, false, window, cx)
+    }
+
+    fn after_reopen(
+        &mut self,
+        result: Option<bbr_browser::ControllerEvent>,
+        chrome_focused: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<bbr_browser::ControllerEvent> {
         if let Some(outcome) = &result {
             self.clear_command_profile_hint();
             self.sync_command_bar();

@@ -15,10 +15,10 @@ use smol::channel::Receiver;
 use smol::prelude::*;
 
 use crate::actions::{
-    AuthSheetFieldTab, Back, CloseTab, FindInPage, FocusCommandBar, FocusRail, FocusWeb, Forward,
-    MoveTab, NewSpace, NewTab, OpenOverlay, OpenPalette, OpenSavedPagesLibrary, PinTab, Reload,
-    ReopenTab, ReorderTabDown, ReorderTabUp, ToggleBookmark, ToggleSidebar, ZoomIn, ZoomOut,
-    ZoomReset,
+    AuthSheetFieldTab, Back, ClearBrowsingData, CloseTab, FindInPage, FocusCommandBar, FocusRail,
+    FocusWeb, Forward, MoveTab, NewSpace, NewTab, OpenOverlay, OpenPalette, OpenSavedPagesLibrary,
+    PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp, ShowHistory, ToggleBookmark,
+    ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
 };
 use crate::app::BbrApp;
 /// Root-window + app-entity seam: run an update against the separately
@@ -301,6 +301,28 @@ pub(crate) fn install_actions(
             cx.defer(move |cx| {
                 let _ = with_app(&window, &app, cx, |view, window, cx| {
                     view.open_saved_pages_library(window, cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
+        move |_: &ShowHistory, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.open_history(window, cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
+        move |_: &ClearBrowsingData, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    view.open_clear_browsing_data(window, cx)
                 });
             });
         }
@@ -717,6 +739,9 @@ pub(crate) fn keybindings() -> Vec<KeyBinding> {
         // Cmd-Shift-L opens the Saved Pages Library (B3 packet
         // `saved-pages-library`; DESIGN.md §11.16).
         KeyBinding::new("cmd-shift-l", OpenSavedPagesLibrary, None),
+        // Blueprint D10: History and Clear Browsing Data.
+        KeyBinding::new("cmd-y", ShowHistory, None),
+        KeyBinding::new("cmd-shift-backspace", ClearBrowsingData, None),
         // App-wide (context-less) bindings resolve at the deepest depth, so
         // they outrank gpui-component `Root`'s element-scoped `tab`/`shift-tab`
         // focus-traversal bindings: Tab moves the credential sheet's field

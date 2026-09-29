@@ -72,6 +72,8 @@ objc2-foundation = { workspace = true, features = [
     # NSTimer initializer.
     "NSTimer",
     "NSDate",
+    # Blueprint D10: the History page's local day boundaries.
+    "NSTimeZone",
     # Favicon acquisition (task packet `real-favicon-pipeline.md`): the
     # bounded, profile-isolated download runs through an `NSURLSession`
     # whose private cookie storage is seeded from the owning profile's

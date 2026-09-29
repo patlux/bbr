@@ -411,6 +411,16 @@ impl BbrApp {
                 self.show_settings(cx);
                 true
             }
+            17 => {
+                self.finish_action_activation(window, cx);
+                self.open_history(window, cx);
+                true
+            }
+            18 => {
+                self.finish_action_activation(window, cx);
+                self.open_clear_browsing_data(window, cx);
+                true
+            }
             _ => false,
         }
     }

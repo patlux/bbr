@@ -361,10 +361,17 @@ impl BbrApp {
                         downloads_delete_rows: self.downloads_delete_rows_in_window(),
                         error_surface_visible,
                         error_surface_origin,
-                        library_open: self.library.open,
+                        library_open: self.library.open && !self.history_open(),
                         library_ids: crate::app::library::model::library_visible_ids(
                             &library_model,
                         ),
+                        history_ids: if self.history_open() {
+                            bbr_ui::surfaces::history::history_visible_ids(
+                                &self.history_model(false),
+                            )
+                        } else {
+                            Vec::new()
+                        },
                         space_config_open: self.space_config.open,
                         folder_renaming: self.folder_rename_open(),
                     },
@@ -645,6 +652,7 @@ impl BbrApp {
             rail_reveal: self.rail_reveal_label().into(),
             floating_rail: self.floating_rail_snapshot(),
             settings: self.settings_snapshot(),
+            history: self.history_snapshot(window),
             about: self.about_window.is_some().then(crate::about::version_line),
             restore_notice: self
                 .transient
@@ -765,7 +773,7 @@ impl BbrApp {
         use bbr_testkit::protocol::{
             SavedPagesCollectionSnapshot, SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot,
         };
-        if !self.library.open {
+        if !self.library.open || self.history_open() {
             return SavedPagesLibrarySnapshot::default();
         }
         let native_view_hidden = self
@@ -1147,7 +1155,26 @@ impl BbrApp {
         // §11.8-style error surface (task packet
         // `error-surface-contract`) wins over the native slot, and the
         // crash panel wins over the empty pane.
-        let content = if self.library.open {
+        let content = if self.history_open() {
+            crate::shell::semantics::SemanticContent::History {
+                rows: self
+                    .history_rows()
+                    .groups
+                    .iter()
+                    .flat_map(|group| group.rows.iter())
+                    .map(|row| {
+                        (
+                            bbr_ui::surfaces::history::history_row_id(
+                                row.id,
+                                self.library.history.view == 1,
+                            ),
+                            row.title.to_string(),
+                        )
+                    })
+                    .collect(),
+                sheet: self.library.history.clear.is_some(),
+            }
+        } else if self.library.open {
             crate::shell::semantics::SemanticContent::Library {
                 model: library.clone(),
                 focused: self.library_handle.is_focused(window),

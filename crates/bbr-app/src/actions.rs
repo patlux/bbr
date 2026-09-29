@@ -60,6 +60,10 @@ gpui::actions!(
         /// `Cmd-Shift-L`: open the Saved Pages Library (B3 packet
         /// `saved-pages-library`; DESIGN.md §11.16 internal chrome surface).
         OpenSavedPagesLibrary,
+        /// `Cmd-Y`: open History (blueprint D10).
+        ShowHistory,
+        /// `Cmd-Shift-Backspace`: open History with Clear Browsing Data.
+        ClearBrowsingData,
         /// `Tab`/`Shift-Tab`: move the credential sheet's field cursor
         /// between Username and Password while the sheet is open (queue item
         /// 10). Bound app-wide so the binding outranks gpui-component's

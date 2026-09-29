@@ -306,4 +306,8 @@ pub struct NavHistorySnapshot {
     pub labels: Vec<String>,
     pub urls: Vec<String>,
     pub selected: Option<usize>,
+    /// Blueprint D10: the Show Full History row follows the entries (its
+    /// index is `labels.len()`).
+    #[serde(default)]
+    pub show_full_history: bool,
 }

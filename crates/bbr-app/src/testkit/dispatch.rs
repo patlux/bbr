@@ -710,6 +710,8 @@ pub(crate) fn dispatch(
         | Request::RailPointer { .. }
         | Request::OpenSettings
         | Request::SettingsInput { .. }
+        | Request::OpenHistory
+        | Request::HistoryInput { .. }
         | Request::CloseSettings
         | Request::ToastAction
         | Request::InvokeMenuItem { .. }

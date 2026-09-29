@@ -24,11 +24,16 @@ use serde::{Deserialize, Serialize};
 mod benchmark;
 pub mod dsl;
 mod event;
+mod history;
 mod request;
 mod snapshot;
 
 pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
+pub use history::{
+    ClearDataSnapshot, ClearOptionSnapshot, HistoryGroupSnapshot, HistoryInput, HistoryRowSnapshot,
+    HistorySnapshot,
+};
 pub use request::{Request, SavedPagesLibraryCollectionOp, SettingsInput, TextInputOp};
 pub use snapshot::{
     AddressRestFill, AuthSnapshot, ChipCompanionSnapshot, CommandInputSnapshot,

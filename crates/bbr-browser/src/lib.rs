@@ -101,7 +101,7 @@ pub use bbr_domain::{
     FolderId, ProfileHue, SpaceAppearance, SpaceId, SpacePaper, SpaceTheme, TabLifecycle,
     TintIntensity,
 };
-pub use controller::BrowserController;
+pub use controller::{BrowserController, ClosedTabEntry};
 pub use downloads::{
     display_filename, url_filename, ApplyOutcome, DownloadActionSink, DownloadController,
     DownloadError, DownloadRecord, RestoredTerminal,

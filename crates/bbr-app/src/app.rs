@@ -94,6 +94,7 @@ mod find_benchmarks;
 mod folder_rename;
 #[cfg(feature = "testkit")]
 mod gesture_benchmarks;
+pub(crate) mod history_page;
 mod interaction;
 pub(crate) mod library;
 mod moments;

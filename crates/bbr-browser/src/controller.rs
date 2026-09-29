@@ -22,6 +22,7 @@ use bbr_domain::{Browser, SpaceAppearanceStore, TabId, TabLifecycle};
 use bbr_web::{ProfileId, WebAction, WebViewId};
 
 mod appearance;
+mod closed_tabs;
 mod events;
 mod favicon;
 mod gesture;
@@ -31,6 +32,8 @@ mod responsiveness;
 mod session;
 mod setup;
 mod snapshot;
+
+pub use closed_tabs::ClosedTabEntry;
 
 use crate::nav::NavState;
 use crate::outcome::ControllerEvent;

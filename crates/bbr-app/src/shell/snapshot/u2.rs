@@ -53,6 +53,9 @@ pub struct U2IdsInput<'a> {
     /// model the typed snapshot exposes (empty while closed — the surface
     /// is not drawn).
     pub library_ids: Vec<String>,
+    /// Blueprint D10: the History page's ids while it is open (it replaces
+    /// the native slot like the Library; empty while closed).
+    pub history_ids: Vec<String>,
     /// §11.3 Space-configuration surface gating: while open the in-rail
     /// rename/identity panel renders its full §15 id set (container,
     /// title, name field, group labels, every curated option, and the
@@ -86,6 +89,7 @@ impl<'a> Default for U2IdsInput<'a> {
             error_surface_origin: false,
             library_open: false,
             library_ids: Vec::new(),
+            history_ids: Vec::new(),
             space_config_open: false,
             folder_renaming: false,
         }

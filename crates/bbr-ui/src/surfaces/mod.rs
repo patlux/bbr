@@ -12,6 +12,7 @@ pub mod downloads;
 pub mod error;
 pub mod find;
 pub mod floating;
+pub mod history;
 pub mod menu;
 pub mod peek_wash;
 pub mod settings;

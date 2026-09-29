@@ -4,7 +4,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.16, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 13 of 24. Paper boards: M-6 · History, M-7 · Clear browsing data, PR-22 · History & clear data (file
+Status: implemented 2026-09-30 (DESIGN §19); position 13 of 24. Paper boards: M-6 · History, M-7 · Clear browsing data, PR-22 · History & clear data (file
 “BBR — Browser Shell”).
 
 ## Outcome
@@ -43,23 +43,22 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Portable model / controller / component tests for the new behaviour
-      and its states.
+- [x] Unit/contract: `app::history_page::{time,model,clear}` (local days/titles/times, day groups, range/search, row limit, closed tabs, clear ranges and options, toast text), `store::history_ops` (wall-clock stamps, remove/clear/count), domain `reopen_closed_tab_restores_that_entry_and_keeps_the_rest`, controller `history_reopens_an_older_closed_tab_by_identity`, registry catalog (actions 17/18), shortcut list bound.
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-saved-pages-library` covers the flow drawn on the boards through the
-      production path with semantic ids and typed snapshots.
+- [x] `just e2e-history` (`e2e_history.rs`, real WKWebView): Today/Earlier groups, search, range, keyboard remove, Recently closed reopen, ⌘T action, History menu, Settings › Privacy, ⌘⇧⌫ sheet with Escape order, Return clears visits and the profile's cookie (fixture echo reads none); `e2e_shell_titlebar_navigation` Show Full History; saved-pages-library, settings and command suites green.
 
 ### Performance
 
-- [ ] Extend `just e2e-perf` with the presentation scenario for this interaction (performance contract).
+- [ ] Extend `just e2e-perf` with the History open and Clear Data presentation scenarios (deferred).
 
 ## Completion gates
 
 ```bash
 just verify
 cargo clippy -p bbr --features testkit --all-targets -- -D warnings
+just e2e-history
 just e2e-shell-saved-pages-library
 just e2e-perf
 just e2e
@@ -81,12 +80,12 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                ⌘Y History as a Library page (global visits by local day, Recently closed), Clear Browsing Data sheet (range, visits, cookies/site data, caches, downloads and Saved Pages with All time), Settings › Privacy entry, History menu and ⌘T actions, Show Full History.
+Commits:                see git log (feat/fix commit carrying this packet)
+Functional evidence:    Unit/contract: `app::history_page::{time,model,clear}` (local days/titles/times, day groups, range/search, row limit, closed tabs, clear ranges and options, toast text), `store::history_ops` (wall-clock stamps, remove/clear/count), domain `reopen_closed_tab_restores_that_entry_and_keeps_the_rest`, controller `history_reopens_an_older_closed_tab_by_identity`, registry catalog (actions 17/18), shortcut list bound.
+Real-app E2E:           `just e2e-history` (`e2e_history.rs`, real WKWebView): Today/Earlier groups, search, range, keyboard remove, Recently closed reopen, ⌘T action, History menu, Settings › Privacy, ⌘⇧⌫ sheet with Escape order, Return clears visits and the profile's cookie (fixture echo reads none); `e2e_shell_titlebar_navigation` Show Full History; saved-pages-library, settings and command suites green.
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §11.16 History + Clear Browsing Data, §11.14 Show Full History, §11.13 menu bar, §11.18 Privacy, §19 D10 row; answer 5 deviation recorded.
+Open blockers and non-goals: visits carry no profile (answer 5's per-profile filter needs a store schema change, which discards the store); the performance scenarios are deferred
+Worktree state:         main, clean after commit
 ```

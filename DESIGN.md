@@ -1596,7 +1596,8 @@ authorities; it does not copy Zen/Firefox features or styling.
   is BBR (About BBR, Hide BBR ⌘H, Quit BBR ⌘Q), File (New Tab, Open Location…, Close
   Tab, Reopen Closed Tab, Find in Page…), View (Toggle Sidebar, Focus
   Sidebar, Zoom In/Out, Actual Size), History (Back, Forward, Reload, Save
-  Page to Library, Saved Pages Library), Spaces (New Space…, then every
+  Page to Library, Saved Pages Library, Show All History ⌘Y, Clear
+  Browsing Data… ⇧⌘⌫), Spaces (New Space…, then every
   space with the active one checked), Tab (New Tab, Close Tab, Reopen Closed
   Tab, Pin or Unpin Tab, Move Tab to Space…, Reorder Tab Up/Down) and Window
   (Minimize ⌘M). The Dock menu lists the spaces, then New Tab. Every item
@@ -1663,8 +1664,8 @@ inside the actual macOS safe titlebar layout guide.
   web content, so it renders in the native portal; Up/Down/Return/Escape and
   one outside press behave as in the page menu. A side without entries
   opens nothing. Back and Forward step on release over the control (a
-  click), so a long press opens the menu without also navigating. Show Full
-  History waits for the History window (D10) and is omitted until then.
+  click), so a long press opens the menu without also navigating. The last
+  row, Show Full History (`bbr-nav-history-full`), opens History (§11.16).
 - Stable ids: `bbr-titlebar`, `bbr-titlebar-sidebar-toggle`, `bbr-nav-back`,
   `bbr-nav-forward`, `bbr-nav-reload`, `bbr-nav-history-menu` (+
   `bbr-nav-history-<n>`, `bbr-nav-history-backdrop`).
@@ -1767,9 +1768,54 @@ or page snapshot and survives tab close and restart.
   never proves persistence, restart, command activation, or bounded product
   performance.
 
+- **History (blueprint D10, boards M-6 PR-22):** ⌘Y, History › Show All
+  History (also a ⌘T `>` action) and the history menu's Show Full History
+  open History as a second page of the same Library surface (the
+  same native-view hiding and restore, Escape closes it, ⌘⇧L switches to
+  Saved Pages, ⌘T/⌘L replace it). A 220 pt side column carries the title,
+  "stays on this Mac", All history and Recently closed with its count; the
+  list carries the 320 pt search field (typed keys go to it), the Today /
+  Week / All segmented range (All history only) and Clear Browsing Data….
+  Visits are listed newest first under local day headings (Today,
+  Yesterday, "Saturday, 19 September", the year when it is not this year);
+  a row is `[HH:MM] [§7.2 monogram] [title] [url mono]`, 40 pt, and the
+  list draws at most 300 rows with a line pointing to the search for the
+  rest. Visits are global, as in the command bar: the store records no
+  profile per visit, and recording one needs a schema change, which
+  discards the store (no migrations). Answer 5 (per profile with a filter)
+  therefore waits for that change; the board's profile rows are not drawn.
+  A visit opens in a new tab of the active space.
+  A visit's time is its latest visit; visits restored from a store written
+  before D10 carry no time and list under Earlier. ↑↓ move the keyboard
+  row (the row shows its × remove control), Return opens it, Delete or
+  ⌘⌫ removes that visit (also from the command bar's history results).
+  Recently closed lists the active space's closed tabs, most recent first;
+  opening one reopens that tab with its identity, like ⇧⌘T for the latest.
+- **Clear Browsing Data (blueprint D10, board M-7):** ⌘⇧⌫, History's
+  button and Settings › Privacy open a 440 pt sheet over History with the
+  9 % wash: the active profile's chip ("Profile · Default"), the time range
+  (Last hour, Last 24 hours — the default —, Last 7 days, Last 4 weeks, All
+  time) and five checkboxes: browsing history with the page count in the
+  range, cookies and site data ("signs you out of most sites"), cached
+  images and files, download history, Saved Pages (all profiles). Visits
+  and the profile's website data clear by range (WebKit removes the data
+  modified since the range start); download history and Saved Pages carry
+  no wall time and clear only with All time — their rows are dimmed
+  otherwise. Cancel, Escape (after closing the range menu) or Clear Data;
+  Return confirms. The clear ends in the §18.4 toast "Cleared 24 hours of
+  data from Default".
+- **History ids:** `bbr-history`, `bbr-history-all`, `bbr-history-closed`,
+  `bbr-history-search`, `bbr-history-range-<0..2>`, `bbr-history-clear`,
+  `bbr-history-list`, `bbr-history-row-<visit-id>`,
+  `bbr-history-closed-<tab-id>`, `bbr-history-remove-<visit-id>`,
+  `bbr-history-empty`, `bbr-clear-data`, `bbr-clear-data-range`
+  (+ `-menu`, `-<n>`), `bbr-clear-data-option-<n>`,
+  `bbr-clear-data-cancel`, `bbr-clear-data-confirm`.
+
 Canonical packets: [B1 contract/persistence](docs/roadmap/tasks/saved-pages-portable-persistence.md),
 [B2 actions/command provider](docs/roadmap/tasks/saved-pages-actions-command.md),
-and [B3 Library](docs/roadmap/tasks/saved-pages-library.md).
+[B3 Library](docs/roadmap/tasks/saved-pages-library.md) and
+[blueprint D10](docs/roadmap/tasks/blueprint-history-clear-data.md).
 
 ### 11.17 Peek preview bar (Link Preview / Peek)
 
@@ -1867,7 +1913,8 @@ grouped, read from the keymap. Board rows without behaviour behind them
 (startup behaviour, the target space for links from other apps, tab
 suspension and auto-close, search suggestions and keywords, the cookie
 policy, a save prompt per download, history retention, per-site settings
-and Clear Browsing Data before D10/D11) are not drawn.
+before D11) are not drawn. Privacy holds Clear browsing data (Clear…),
+which brings the browser window forward with the §11.16 sheet.
 
 ## 12. Profile identity
 
@@ -2331,7 +2378,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D07 | Cross-profile move feedback | P-7 PR-08 | §11.3 §12 §10.9 | implemented | [blueprint-cross-profile-move-feedback](docs/roadmap/tasks/blueprint-cross-profile-move-feedback.md) |
 | D08 | Toasts and uniform surface transitions | B-7 G-7 V-6 PR-12 | §6 §18.4 §18.5 | implemented | [blueprint-feedback-toasts](docs/roadmap/tasks/blueprint-feedback-toasts.md) |
 | D09 | Peek presentation | G-8 PR-04 | §11.17 | implemented | [blueprint-peek-presentation](docs/roadmap/tasks/blueprint-peek-presentation.md) |
-| D10 | History and Clear Browsing Data | M-6 M-7 PR-22 | §11.16 | adopted | [blueprint-history-clear-data](docs/roadmap/tasks/blueprint-history-clear-data.md) |
+| D10 | History and Clear Browsing Data | M-6 M-7 PR-22 | §11.16 | implemented with global visits (answer 5's profile filter needs a store schema change); downloads and Saved Pages clear only with All time | [blueprint-history-clear-data](docs/roadmap/tasks/blueprint-history-clear-data.md) |
 | D11 | Site settings and permission prompts | M-8 M-9 L-6 PR-14 | §11.5 | adopted | [blueprint-site-settings-permissions](docs/roadmap/tasks/blueprint-site-settings-permissions.md) |
 | D12 | Client certificate chooser | M-11 PR-15 | §18.4 | adopted | [blueprint-client-certificates](docs/roadmap/tasks/blueprint-client-certificates.md) |
 | D13 | Open-in-app, pop-up and link-routing UI | M-12 M-13 PR-04 PR-20 | §11.13 §18.4 | adopted | [blueprint-link-destinations](docs/roadmap/tasks/blueprint-link-destinations.md) |

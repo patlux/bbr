@@ -103,6 +103,9 @@ pub fn history_rows(entries: &[bbr_web::HistoryEntry]) -> Vec<NavHistoryRow> {
         .collect()
 }
 
+/// Blueprint D10: the last row opens History.
+pub const NAV_HISTORY_FULL_ID: &str = "bbr-nav-history-full";
+
 /// The stable §15 id of the `index`-th row.
 pub fn nav_history_row_id(index: usize) -> String {
     format!("bbr-nav-history-{index}")
@@ -144,7 +147,8 @@ impl BbrApp {
         self.tab_menu_discard(cx);
         self.find_discard(cx);
         self.dismiss_command_portal(cx);
-        let count = rows.len();
+        // The entries plus Show Full History.
+        let count = rows.len() + 1;
         self.nav_history = NavHistoryState {
             direction: Some(direction),
             rows,
@@ -201,13 +205,19 @@ impl BbrApp {
                     enabled: true,
                     disabled_reason: None,
                 })
+                .chain(std::iter::once(ContextMenuRow {
+                    id: SharedString::from(NAV_HISTORY_FULL_ID),
+                    title: SharedString::from("Show Full History"),
+                    enabled: true,
+                    disabled_reason: None,
+                }))
                 .collect(),
         }
     }
 
     /// Pointer hover on a row (the shared keyboard/pointer cursor).
     pub fn nav_history_select(&mut self, index: usize, cx: &mut Context<Self>) {
-        if self.nav_history_open() && index < self.nav_history.rows.len() {
+        if self.nav_history_open() && index <= self.nav_history.rows.len() {
             self.nav_history.selected = Some(index);
             cx.notify();
         }
@@ -233,7 +243,12 @@ impl BbrApp {
                 Err(error) => log::error!("history jump failed: {error}"),
             }
         }
+        let full = index == self.nav_history.rows.len();
         self.nav_history_close(window, cx);
+        // Blueprint D10: Show Full History opens the History page.
+        if full {
+            self.open_history(window, cx);
+        }
     }
 
     /// Escape / backdrop press / close seam: close and restore the focus
@@ -263,7 +278,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let count = self.nav_history.rows.len();
+        let count = self.nav_history.rows.len() + 1;
         match event.keystroke.key.as_str() {
             "escape" => {
                 cx.stop_propagation();
@@ -374,6 +389,7 @@ impl BbrApp {
                 .map(|row| row.url.clone())
                 .collect(),
             selected: self.nav_history.selected,
+            show_full_history: true,
         })
     }
 }

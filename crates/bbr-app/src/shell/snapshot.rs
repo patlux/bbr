@@ -289,6 +289,8 @@ pub struct TestSnapshot {
     pub rail_reveal: String,
     pub floating_rail: Option<bbr_testkit::protocol::FloatingRailSnapshot>,
     pub settings: Option<bbr_testkit::protocol::SettingsSnapshot>,
+    /// Blueprint D10: the History page while it is open.
+    pub history: Option<bbr_testkit::protocol::HistorySnapshot>,
     pub zoom_readout: Option<u32>,
     /// Native z-order evidence: while a preview is open the preview
     /// WKWebView's subview index must exceed its covered origin's (the
@@ -459,6 +461,8 @@ pub fn visible_ids_u2(
     // error surface ids are advertised.
     if u2.library_open {
         ids.extend(u2.library_ids.iter().cloned());
+    } else if !u2.history_ids.is_empty() {
+        ids.extend(u2.history_ids.iter().cloned());
     } else if u2.error_surface_visible {
         ids.push("bbr-error-panel".into());
         ids.push("bbr-error-title".into());

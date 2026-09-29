@@ -464,6 +464,17 @@ impl BbrApp {
         // restores the exact native view the Library hid (DESIGN.md §11.16;
         // the global `escape → FocusWeb` binding routes here).
         if self.library.open {
+            // Blueprint D10: Escape closes the Clear Browsing Data sheet
+            // (or History's range menu) before History itself.
+            if let Some(clear) = self.library.history.clear.as_mut() {
+                if clear.range_open {
+                    clear.range_open = false;
+                } else {
+                    self.library.history.clear = None;
+                }
+                cx.notify();
+                return;
+            }
             self.close_saved_pages_library(window, cx);
             return;
         }
@@ -707,6 +718,10 @@ impl BbrApp {
         // The Saved Pages Library owns the keyboard while it is open:
         // printable chars edit the search query, backspace deletes, Escape
         // closes (handled by the bound action before this handler).
+        if self.history_open() {
+            self.on_history_key_down(event, window, cx);
+            return;
+        }
         if self.library.open {
             self.on_library_key_down(event, window, cx);
             return;

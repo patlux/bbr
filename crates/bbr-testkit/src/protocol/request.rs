@@ -774,6 +774,14 @@ pub enum Request {
     },
     /// Blueprint D16: close the Settings window (its close button path).
     CloseSettings,
+    /// Blueprint D10: open History through its production method (⌘Y,
+    /// the History menu and the command bar call it too).
+    OpenHistory,
+    /// Blueprint D10: one History interaction through the method the
+    /// page's controls call.
+    HistoryInput {
+        input: super::HistoryInput,
+    },
     /// Blueprint D19: invoke the menu item `menu › item` (`menu` = "Dock"
     /// for the Dock menu) through the same action dispatch an `NSMenuItem`
     /// click takes.

@@ -429,6 +429,21 @@ impl BbrApp {
         cx.notify();
     }
 
+    /// Blueprint D10: Settings › Privacy › Clear… brings the browser
+    /// window forward with History's Clear Browsing Data sheet.
+    pub(crate) fn clear_data_in_browser(&mut self, cx: &mut Context<Self>) {
+        let Some(browser) = self.browser_window else {
+            return;
+        };
+        let app = cx.entity();
+        cx.defer(move |cx| {
+            let _ = crate::window_seam::with_app(&browser, &app, cx, |view, window, cx| {
+                window.activate_window();
+                view.open_clear_browsing_data(window, cx);
+            });
+        });
+    }
+
     /// Activate `space` against the browser window (a Settings action runs
     /// in the Settings window; the space's presentation belongs to the
     /// browser).

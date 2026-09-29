@@ -268,6 +268,27 @@ fn reopen_pinned_tab_lands_in_pinned_region() {
 }
 
 #[test]
+fn reopen_closed_tab_restores_that_entry_and_keeps_the_rest() {
+    let mut b = populated();
+    let s = b.spaces().next().unwrap().id;
+    let before = ids(&b, s);
+    b.close_tab(s, before[2]).unwrap();
+    b.close_tab(s, before[1]).unwrap();
+    // Blueprint D10: History › Recently closed reopens the older entry C.
+    let reopened = b.reopen_closed_tab(s, before[2]).unwrap();
+    assert_eq!(reopened, before[2]);
+    assert_eq!(ids(&b, s), vec![before[0], before[2]]);
+    assert_eq!(b.space(s).unwrap().active_tab, Some(before[2]));
+    // B stays closed and is still the next ⇧⌘T.
+    assert_eq!(b.reopen_tab(s).unwrap(), before[1]);
+    assert!(matches!(
+        b.reopen_closed_tab(s, before[1]),
+        Err(DomainError::NothingToReopen(_))
+    ));
+    b.check_invariants().unwrap();
+}
+
+#[test]
 fn reopen_empty_errors() {
     let mut b = Browser::new();
     let p = b.create_profile("P");

@@ -44,6 +44,12 @@ pub enum SemanticContent {
         model: bbr_ui::components::SavedPagesLibraryModel,
         focused: bool,
     },
+    /// Blueprint D10: History covers the content area like the Library —
+    /// its rows `(id, title)` and whether Clear Browsing Data is open.
+    History {
+        rows: Vec<(String, String)>,
+        sheet: bool,
+    },
 }
 
 /// The typed content-pane node.
@@ -147,6 +153,42 @@ pub fn content_node(content: &SemanticContent) -> SemanticNode {
         ),
         SemanticContent::Library { model, focused } => {
             super::library::library_node(model, *focused)
+        }
+        SemanticContent::History { rows, sheet } => {
+            let mut children: Vec<SemanticNode> = rows
+                .iter()
+                .map(|(id, title)| {
+                    node(
+                        id,
+                        SemanticRole::Button,
+                        Some(title.clone()),
+                        None,
+                        false,
+                        false,
+                        vec![],
+                    )
+                })
+                .collect();
+            if *sheet {
+                children.push(node(
+                    "bbr-clear-data",
+                    SemanticRole::Content,
+                    Some("Clear Browsing Data".into()),
+                    None,
+                    false,
+                    false,
+                    vec![],
+                ));
+            }
+            node(
+                "bbr-history",
+                SemanticRole::Content,
+                Some("History".into()),
+                None,
+                false,
+                false,
+                children,
+            )
         }
         SemanticContent::Error {
             title,

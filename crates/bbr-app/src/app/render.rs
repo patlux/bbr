@@ -178,7 +178,12 @@ impl Render for BbrApp {
             // replaces the active view's native slot (the view was hidden
             // by `sync_library_visibility`; never destroyed — identity is
             // untouched) and wins over the error surface while open.
-            self.library_surface(&theme, window, cx).into_any()
+            if self.history_open() {
+                // Blueprint D10: History is a page of the same surface.
+                self.history_surface(window, cx).into_any_element()
+            } else {
+                self.library_surface(&theme, window, cx).into_any()
+            }
         } else if let Some(spec) = self.active_error_surface_spec() {
             // The surface replaces the active view's native slot (the view
             // was hidden by `sync_error_surface_visibility`; never

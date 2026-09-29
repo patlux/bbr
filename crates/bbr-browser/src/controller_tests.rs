@@ -788,6 +788,32 @@ fn reorder_keeps_the_selected_tab_selected() {
 }
 
 #[test]
+fn history_reopens_an_older_closed_tab_by_identity() {
+    let (c, _h) = wired();
+    let mut c = c.borrow_mut();
+    open(&mut c, "https://a");
+    open(&mut c, "https://b");
+    open(&mut c, "https://c");
+    c.close_tab(2).unwrap();
+    c.close_tab(1).unwrap();
+    // Blueprint D10: most recent first.
+    let closed = c.recently_closed();
+    assert_eq!(
+        closed.iter().map(|e| e.url.as_str()).collect::<Vec<_>>(),
+        ["https://b", "https://c"]
+    );
+    assert_eq!(
+        c.reopen_closed_tab(closed[1].tab).unwrap(),
+        ControllerEvent::TabReopened {
+            index: 1,
+            url: "https://c".into()
+        }
+    );
+    assert_eq!(c.recently_closed().len(), 1);
+    assert_eq!(c.snapshot().tabs.len(), 2);
+}
+
+#[test]
 fn reopen_restores_identity_with_a_fresh_session() {
     // `wired()` routes engine events through `apply_event` exactly like the
     // composition root; `plain()` has no sink, so emitted title/loading

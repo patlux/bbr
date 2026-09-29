@@ -78,6 +78,10 @@ pub(crate) struct LibraryState {
     pub editing_row: Option<u64>,
     /// The staged rename draft label (empty at rest).
     pub rename_draft: String,
+    /// Blueprint D10: which page the surface shows (Saved Pages or
+    /// History) and History's own state.
+    pub page: crate::app::history_page::LibraryPage,
+    pub history: crate::app::history_page::HistoryPageState,
     /// Native views hidden by the open Library (exact restore on close).
     hidden: HashSet<WebViewId>,
 }
@@ -114,8 +118,15 @@ impl BbrApp {
     /// the Library, and present.
     pub fn open_saved_pages_library(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.library.open {
+            // Blueprint D10: ⌘⇧L over History switches the page.
+            if self.library.page != crate::app::history_page::LibraryPage::SavedPages {
+                self.library.page = crate::app::history_page::LibraryPage::SavedPages;
+                self.library.history.clear = None;
+                cx.notify();
+            }
             return;
         }
+        self.library.page = crate::app::history_page::LibraryPage::SavedPages;
         // §11.4 mutual exclusion (the settled find/download surface shape):
         // opening the Library dismisses any open command portal, cancels
         // the ranking generation, and resets the mode and the captured
@@ -158,6 +169,8 @@ impl BbrApp {
             return;
         }
         self.library.open = false;
+        self.library.page = crate::app::history_page::LibraryPage::SavedPages;
+        self.library.history = Default::default();
         self.library.remove_confirm = false;
         self.library.remove_targets.clear();
         self.library.collection_action = None;

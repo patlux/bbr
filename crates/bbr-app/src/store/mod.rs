@@ -18,7 +18,8 @@
 //!   authority);
 //! - a recorded activation either bumps the existing entry (visit count and
 //!   recency) or appends a new one with `visit_count = 1` and the next
-//!   monotonic recency marker;
+//!   monotonic recency marker — since blueprint D10 the wall-clock time in
+//!   milliseconds, never below the previous marker (`history_ops`);
 //! - every accepted record is persisted: this slice introduces **no
 //!   retention cap**. The unbounded-retention question is deferred in
 //!   Phase 7 (see the phase checklist); no product bound is invented here.
@@ -64,6 +65,7 @@ use self::saved_pages::{provider_order, SavedPagesProvider};
 pub(crate) mod appearance;
 pub(crate) mod browser;
 pub(crate) mod browser_writer;
+pub(crate) mod history_ops;
 pub(crate) mod saved_pages;
 pub(crate) mod saved_pages_policy;
 pub(crate) mod saved_pages_store;
@@ -384,6 +386,9 @@ impl AppStore {
         if normalized.is_empty() {
             return;
         }
+        // Blueprint D10: the recency marker is the visit's wall-clock time
+        // (never below the next monotonic marker).
+        self.stamp_now();
         let mut history = self.history.lock().expect("history provider lock");
         record_visit_into(
             &mut history,

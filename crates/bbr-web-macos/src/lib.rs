@@ -95,6 +95,13 @@ pub mod menu_adapter;
 #[cfg(target_os = "macos")]
 mod navigation_cover;
 
+/// Blueprint D10: the local time zone's current offset from UTC in
+/// seconds (the History page's day boundaries and times).
+#[cfg(target_os = "macos")]
+pub fn local_utc_offset_seconds() -> i64 {
+    objc2_foundation::NSTimeZone::localTimeZone().secondsFromGMT() as i64
+}
+
 #[cfg(target_os = "macos")]
 mod card_clip;
 

@@ -83,6 +83,20 @@ pub(super) fn dispatch_portal(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // Blueprint D10: History and Clear Browsing Data.
+        Request::OpenHistory => with_app(window, app, cx, |view, window, cx| {
+            view.open_history(window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::HistoryInput { input } => with_app(window, app, cx, |view, window, cx| {
+            if view.history_input(input.clone(), window, cx) {
+                Response::Ok
+            } else {
+                Response::Error(Error::new("no_history", "History is not open"))
+            }
+        })
+        .unwrap_or_else(err_response),
         // Blueprint D16: the Settings window.
         Request::OpenSettings => with_app(window, app, cx, |view, _window, cx| {
             view.show_settings(cx);

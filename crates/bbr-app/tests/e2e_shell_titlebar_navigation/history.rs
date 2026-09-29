@@ -145,6 +145,28 @@ fn back_and_forward_list_the_session_history_and_jump_in_one_step() {
         wait_title(&mut client, view, PAGE_TWO_TITLE, since);
         assert!(menu(&mut client).is_none(), "a click never opens the menu");
 
+        // Blueprint D10: the last row, Show Full History, opens History.
+        client
+            .send_ok(&bbr_testkit::Request::RightClickTitlebarControl {
+                control: "back".into(),
+                x: 200.0,
+                y: 30.0,
+            })
+            .expect("right-click back again");
+        let back = menu(&mut client).expect("back menu open");
+        assert!(
+            back.show_full_history,
+            "Show Full History follows the entries"
+        );
+        client
+            .send_ok(&bbr_testkit::Request::NavHistoryActivate {
+                index: back.labels.len(),
+            })
+            .expect("show full history");
+        assert!(menu(&mut client).is_none(), "the row closes the menu");
+        let history = client.snapshot().expect("history snapshot").history;
+        assert!(history.is_some(), "Show Full History opens History");
+
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
         assert!(status.success(), "app exit: {status}");

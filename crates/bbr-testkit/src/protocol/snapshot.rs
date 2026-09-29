@@ -1626,6 +1626,9 @@ pub struct Snapshot {
     /// Blueprint D16: the Settings window while it is open.
     #[serde(default)]
     pub settings: Option<SettingsSnapshot>,
+    /// Blueprint D10: the History page while it is open.
+    #[serde(default)]
+    pub history: Option<super::HistorySnapshot>,
     /// Blueprint D08: the live zoom readout's percent (`None` at rest).
     #[serde(default)]
     pub zoom_readout: Option<u32>,
