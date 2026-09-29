@@ -28,6 +28,7 @@ mod performance;
 // The general Portal API (deferred host, anchored placement, escape
 // dismissal) awaits the U1 palette migration; the production probe consumes
 // the native-host path, so the remaining surface is allowed until U1 lands.
+mod certificate_choices;
 #[allow(dead_code)]
 mod portal;
 mod preferences;
@@ -627,6 +628,7 @@ fn main() {
         let _ = with_app(&window, &app, cx, |view, _w, cx| {
             view.browser_window = Some(window);
             view.load_site_permissions(site_permissions::path_in(&cli.profile_dir));
+            view.load_certificate_choices(certificate_choices::path_in(&cli.profile_dir));
             view.load_preferences(preferences::path_in(&cli.profile_dir), cx)
         });
         // Native portal host (task packet native-portal-host): exactly one

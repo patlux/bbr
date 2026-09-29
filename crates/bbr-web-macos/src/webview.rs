@@ -76,6 +76,8 @@ pub struct WebEngineWk {
     pub(crate) favicon_acquisition: crate::favicon_acquisition::FaviconAcquisitionHost,
     /// Blueprint D11: the open camera/microphone requests.
     permissions: crate::permission_requests::PermissionRequests,
+    /// Blueprint D12: the open client-certificate requests.
+    client_certificates: crate::client_identities::ClientCertificateRequests,
 }
 
 impl WebEngineWk {
@@ -117,6 +119,7 @@ impl WebEngineWk {
             probe,
             favicon_acquisition,
             permissions: Default::default(),
+            client_certificates: Default::default(),
         }
     }
 
@@ -386,6 +389,7 @@ impl WebEngine for WebEngineWk {
                 new_window: self.new_window.clone(),
                 favicon_acquisition: self.favicon_acquisition.clone(),
                 permissions: self.permissions.clone(),
+                client_certificates: self.client_certificates.clone(),
             },
         );
         unsafe {
@@ -436,6 +440,7 @@ impl WebEngine for WebEngineWk {
         self.favicon_acquisition.forget(id);
         // Blueprint D11: WebKit expects every permission handler answered.
         self.permissions.borrow_mut().deny_view(id);
+        self.client_certificates.borrow_mut().cancel_view(id);
         if let Some(session) = self.sessions.remove(&id) {
             session.teardown();
         } else {
@@ -563,6 +568,16 @@ impl WebEngine for WebEngineWk {
 
     fn decide_permission(&mut self, request: u64, allow: bool) {
         self.permissions.borrow_mut().decide(request, allow);
+    }
+
+    fn answer_client_certificate(
+        &mut self,
+        request: u64,
+        answer: bbr_web::client_certificates::ClientCertificateAnswer,
+    ) {
+        self.client_certificates
+            .borrow_mut()
+            .answer(request, &answer);
     }
 
     fn clear_site_data(&mut self, profile: ProfileId, host: &str) {

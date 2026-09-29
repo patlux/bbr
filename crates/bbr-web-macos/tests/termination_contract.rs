@@ -81,6 +81,7 @@ fn build_delegate(
                 Rc::new(RefCell::new(None)),
             ),
             permissions: Default::default(),
+            client_certificates: Default::default(),
         },
     );
     (delegate, probe)

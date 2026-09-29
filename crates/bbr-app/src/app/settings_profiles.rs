@@ -412,6 +412,9 @@ impl BbrApp {
                         // Blueprint D11: its site permissions go with it.
                         self.permissions.policies.forget_profile(profile);
                         self.save_site_permissions();
+                        // Blueprint D12: and its certificate choices.
+                        self.certificates.choices.forget_profile(profile);
+                        self.save_certificate_choices();
                         self.emit_browser(&event);
                         if let bbr_browser::ControllerEvent::ProfileDeleted {
                             fallback,

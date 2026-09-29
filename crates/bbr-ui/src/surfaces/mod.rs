@@ -7,6 +7,7 @@
 //! and recorder callbacks, never gallery-local presentation copies.
 
 pub mod auth;
+pub mod client_certificate;
 pub mod command;
 pub mod downloads;
 pub mod error;

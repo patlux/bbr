@@ -143,6 +143,19 @@ impl BbrApp {
         // Blueprint D11: permission requests, capture state, and the
         // navigation that ends a site's pending requests.
         self.permission_web_event(&event, cx);
+        // Blueprint D12: a server asks for a client certificate.
+        if let WebEvent::ClientCertificateRequested {
+            view,
+            request,
+            host,
+            identities,
+        } = &event
+        {
+            self.on_client_certificate_request(*view, *request, host, identities, window, cx);
+        }
+        if let WebEvent::UrlChanged(view, url) = &event {
+            self.certificate_navigation(*view, url, window, cx);
+        }
         // D5: when this event ends the active tab's load (commit, finish,
         // failure or crash all clear the flag), the address line plays its
         // fill-and-fade after the state is applied.
@@ -445,6 +458,15 @@ impl BbrApp {
     /// actions first and actions stop propagation, so this route is the
     /// panel's primary Escape dismissal).
     pub fn cancel_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Blueprint D12: Escape cancels the client-certificate request.
+        if self.certificate_sheet_open() {
+            self.on_client_certificate_event(
+                bbr_ui::surfaces::client_certificate::ClientCertificateEvent::Cancel,
+                window,
+                cx,
+            );
+            return;
+        }
         // Blueprint D11: Escape closes site settings first.
         if self.site_settings_open() {
             self.close_site_settings(cx);
@@ -682,6 +704,11 @@ impl BbrApp {
         // the merged auth contract).
         if self.auth_sheet_is_presented() {
             self.on_auth_key_down(event, window, cx);
+            return;
+        }
+        // Blueprint D12: the client-certificate sheet owns the keyboard.
+        if self.certificate_sheet_open() {
+            self.on_certificate_key_down(event, window, cx);
             return;
         }
         // Blueprint D05: the Delete Space sheet owns the keyboard while it

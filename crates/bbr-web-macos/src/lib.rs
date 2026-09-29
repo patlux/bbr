@@ -95,6 +95,10 @@ pub mod menu_adapter;
 #[cfg(target_os = "macos")]
 mod navigation_cover;
 
+/// Blueprint D12: client-certificate requests and Keychain identities.
+#[cfg(target_os = "macos")]
+pub mod client_identities;
+
 /// Blueprint D11: WebKit's camera/microphone requests and capture state.
 #[cfg(target_os = "macos")]
 pub mod permission_requests;

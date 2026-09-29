@@ -111,6 +111,7 @@ mod settings_testkit;
 pub(crate) mod nav_history_ids {
     pub const BACKDROP: &str = super::nav_history::NAV_HISTORY_BACKDROP_ID;
 }
+pub(crate) mod client_certificates;
 mod menu_sync;
 mod motion;
 mod new_window;
@@ -229,6 +230,8 @@ pub struct BbrApp {
     pub(crate) transient: transient::TransientOverlays,
     /// Blueprint D11: permission prompts, device marks, site settings.
     pub(crate) permissions: permissions::PermissionsState,
+    /// Blueprint D12: client-certificate requests and remembered choices.
+    pub(crate) certificates: client_certificates::CertificateState,
     /// Blueprint D19: the spaces the installed menu bar and Dock menu list
     /// (`None` until the first render installs them).
     pub(crate) menu_spaces: Option<Vec<crate::menus::MenuSpace>>,
@@ -676,6 +679,7 @@ impl BbrApp {
             native_portal: None,
             transient: transient::TransientOverlays::default(),
             permissions: permissions::PermissionsState::default(),
+            certificates: client_certificates::CertificateState::default(),
             menu_spaces: None,
             recovery_dismissed: false,
             about_window: None,

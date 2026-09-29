@@ -103,6 +103,23 @@ pub(super) fn dispatch_portal(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // Blueprint D12: the client-certificate sheet.
+        Request::ClientCertificateInput { input } => {
+            with_app(window, app, cx, |view, window, cx| {
+                use bbr_testkit::protocol::ClientCertificateInput as I;
+                use bbr_ui::surfaces::client_certificate::ClientCertificateEvent as E;
+                let event = match input {
+                    I::Select { index } => E::Select(*index),
+                    I::Remember => E::Remember,
+                    I::DontSend => E::DontSend,
+                    I::Cancel => E::Cancel,
+                    I::Continue => E::Continue,
+                };
+                view.on_client_certificate_event(event, window, cx);
+                Response::Ok
+            })
+            .unwrap_or_else(err_response)
+        }
         // Blueprint D16: the Settings window.
         Request::OpenSettings => with_app(window, app, cx, |view, _window, cx| {
             view.show_settings(cx);

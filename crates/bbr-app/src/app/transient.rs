@@ -341,6 +341,7 @@ impl BbrApp {
         let showing = self.transient.showing()
             || self.rail_floating()
             || self.permission_prompt_model().is_some()
+            || self.certificate_sheet_open()
             || self.site_settings_open();
         #[cfg(target_os = "macos")]
         {

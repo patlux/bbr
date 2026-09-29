@@ -76,6 +76,7 @@ raw-window-handle = "0.6"
 objc2-foundation = { version = "0.3.2", default-features = false }
 objc2-app-kit = { version = "0.3.2", default-features = false }
 objc2-web-kit = { version = "0.3.2", default-features = false }
+objc2-security = { version = "0.3.2", default-features = false }
 
 # One gpui source/type world: crates.io `gpui` requirements (gpui-component
 # and gpui-component-macros declare `gpui = "0.2.2"`) are patched to the

@@ -36,7 +36,8 @@ pub use history::{
     HistorySnapshot,
 };
 pub use permissions::{
-    PermissionInput, PermissionPromptSnapshot, PermissionsSnapshot, SiteSettingsSnapshot,
+    ClientCertificateInput, ClientCertificateSnapshot, ClientCertificatesSnapshot, PermissionInput,
+    PermissionPromptSnapshot, PermissionsSnapshot, SiteSettingsSnapshot,
 };
 pub use request::{Request, SavedPagesLibraryCollectionOp, SettingsInput, TextInputOp};
 pub use snapshot::{

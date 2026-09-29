@@ -377,6 +377,8 @@ impl BbrApp {
                     },
                 );
                 ids.extend(self.tab_menu_visible_ids());
+                // Blueprint D11/D12: the Portal overlays over the card.
+                ids.extend(self.permission_visible_ids());
                 // §2: the content card always frames the content area; the
                 // draggable chassis band exists while the card has a top
                 // inset (never in full screen).
@@ -667,6 +669,7 @@ impl BbrApp {
             settings: self.settings_snapshot(),
             history: self.history_snapshot(window),
             permissions: self.permissions_snapshot(),
+            client_certificates: self.client_certificates_snapshot(),
             about: self.about_window.is_some().then(crate::about::version_line),
             restore_notice: self
                 .transient

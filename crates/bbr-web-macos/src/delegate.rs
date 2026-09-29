@@ -98,6 +98,8 @@ pub struct DelegateHandles {
     pub favicon_acquisition: crate::favicon_acquisition::FaviconAcquisitionHost,
     /// Blueprint D11: the open camera/microphone requests.
     pub permissions: crate::permission_requests::PermissionRequests,
+    /// Blueprint D12: the open client-certificate requests.
+    pub client_certificates: crate::client_identities::ClientCertificateRequests,
 }
 
 /// Instance variables for the navigation delegate.
@@ -120,6 +122,8 @@ pub struct WebViewDelegateIvars {
     pub(crate) favicon_acquisition: crate::favicon_acquisition::FaviconAcquisitionHost,
     /// Blueprint D11: the open camera/microphone requests.
     pub(crate) permissions: crate::permission_requests::PermissionRequests,
+    /// Blueprint D12: the open client-certificate requests.
+    pub(crate) client_certificates: crate::client_identities::ClientCertificateRequests,
 }
 
 define_class!(
@@ -225,6 +229,56 @@ define_class!(
             error: &objc2_foundation::NSError,
         ) {
             self.did_fail(web_view, error);
+        }
+
+        // Blueprint D12: a server asks for a client certificate. The
+        // matching Keychain identities (metadata only) go to the app, which
+        // answers through the engine; every other challenge keeps WebKit's
+        // behaviour without this method (reject the protection space, so
+        // the next one — or the default evaluation — applies).
+        #[unsafe(method(webView:didReceiveAuthenticationChallenge:completionHandler:))]
+        fn did_receive_authentication_challenge(
+            &self,
+            _web_view: &WKWebView,
+            challenge: &objc2_foundation::NSURLAuthenticationChallenge,
+            completion_handler: &block2::DynBlock<
+                dyn Fn(
+                    objc2_foundation::NSURLSessionAuthChallengeDisposition,
+                    *mut objc2_foundation::NSURLCredential,
+                ),
+            >,
+        ) {
+            use objc2_foundation::NSURLSessionAuthChallengeDisposition as Disposition;
+            let space = challenge.protectionSpace();
+            // SAFETY: a static NSString exported by Foundation.
+            let client_certificate =
+                unsafe { objc2_foundation::NSURLAuthenticationMethodClientCertificate };
+            if space.authenticationMethod().to_string() != client_certificate.to_string() {
+                completion_handler.call((Disposition::RejectProtectionSpace, std::ptr::null_mut()));
+                return;
+            }
+            let (infos, identities) =
+                crate::client_identities::identities_for_challenge(space.distinguishedNames());
+            if infos.is_empty() {
+                // Nothing in the Keychain matches: continue without one.
+                completion_handler.call((Disposition::UseCredential, std::ptr::null_mut()));
+                return;
+            }
+            let host = match space.port() {
+                0 | 443 => space.host().to_string(),
+                port => format!("{}:{port}", space.host()),
+            };
+            let request = self.ivars().client_certificates.borrow_mut().register(
+                self.id(),
+                completion_handler.copy(),
+                identities,
+            );
+            self.emit(WebEvent::ClientCertificateRequested {
+                view: self.id(),
+                request,
+                host,
+                identities: infos,
+            });
         }
 
         #[unsafe(method(webViewWebContentProcessDidTerminate:))]
@@ -376,6 +430,7 @@ impl WebViewDelegate {
             new_window: handles.new_window,
             favicon_acquisition: handles.favicon_acquisition,
             permissions: handles.permissions,
+            client_certificates: handles.client_certificates,
         });
         // SAFETY: `init` is the NSObject initializer; we are on the main thread.
         unsafe { msg_send![super(this), init] }

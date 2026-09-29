@@ -241,6 +241,33 @@ impl BbrApp {
                 .detail(detail)
             })
             .collect();
+        // Blueprint D12: remembered client-certificate choices.
+        let certificates: Vec<SettingsRow> = self
+            .certificates
+            .choices
+            .hosts(profile)
+            .into_iter()
+            .enumerate()
+            .map(|(index, (host, choice))| {
+                SettingsRow::new(
+                    &format!("privacy-certificate-{index}"),
+                    host,
+                    SettingsControl::Button {
+                        label: "Forget".into(),
+                        destructive: false,
+                    },
+                )
+                .detail(match choice {
+                    crate::certificate_choices::CertificateChoice::Identity { name, .. } => name,
+                    crate::certificate_choices::CertificateChoice::None => {
+                        "Don’t send a certificate".to_string()
+                    }
+                })
+            })
+            .collect();
+        if !certificates.is_empty() {
+            sections.push(section("Client certificates", certificates));
+        }
         sections.push(section(
             "Site permissions",
             if rows.is_empty() {
@@ -408,6 +435,15 @@ impl BbrApp {
                     crate::app::downloads_history::downloads_clear(self, cx)
                 }
                 "privacy-clear-data" => self.clear_data_in_browser(cx),
+                row if row.starts_with("privacy-certificate-") => {
+                    let profile = self.controller.active_profile();
+                    let index = row["privacy-certificate-".len()..].parse::<usize>().ok();
+                    let hosts = self.certificates.choices.hosts(profile);
+                    if let Some((host, _)) = index.and_then(|index| hosts.get(index)) {
+                        self.certificates.choices.forget(profile, host);
+                        self.save_certificate_choices();
+                    }
+                }
                 row if row.starts_with("privacy-site-") => {
                     let profile = self.controller.active_profile();
                     let index = row["privacy-site-".len()..].parse::<usize>().ok();

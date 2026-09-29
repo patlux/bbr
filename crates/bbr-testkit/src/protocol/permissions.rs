@@ -68,3 +68,35 @@ pub enum PermissionInput {
         y: f32,
     },
 }
+
+/// Blueprint D12: the client-certificate sheet shown for the active page.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ClientCertificateSnapshot {
+    pub request: u64,
+    pub message: String,
+    /// `(name, detail, expired)` per identity.
+    pub rows: Vec<(String, String, bool)>,
+    pub selected: Option<usize>,
+    pub remember: bool,
+    /// Requests waiting behind it.
+    pub queued: usize,
+}
+
+/// Blueprint D12: the sheet and every answer handed to the engine
+/// (`identity:<fingerprint>`, `none`, `cancel`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ClientCertificatesSnapshot {
+    pub sheet: Option<ClientCertificateSnapshot>,
+    pub answers: Vec<(u64, String)>,
+}
+
+/// Blueprint D12: one sheet interaction through the method its control
+/// calls.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ClientCertificateInput {
+    Select { index: usize },
+    Remember,
+    DontSend,
+    Cancel,
+    Continue,
+}

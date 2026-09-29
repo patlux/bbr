@@ -300,6 +300,10 @@ impl BbrApp {
     /// The Portal hit regions of the prompt and the popover (measured).
     pub(crate) fn permission_hit_rects(&self) -> Vec<[f32; 4]> {
         let mut rects = Vec::new();
+        // Blueprint D12: the certificate sheet's veil blocks the card.
+        if self.certificate_sheet_open() {
+            rects.extend(self.transient.card);
+        }
         if self.permission_prompt_model().is_some() {
             rects.extend(self.permissions.prompt_bounds.get());
         }

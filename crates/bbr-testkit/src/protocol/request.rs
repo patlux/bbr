@@ -787,6 +787,10 @@ pub enum Request {
     PermissionInput {
         input: super::PermissionInput,
     },
+    /// Blueprint D12: one client-certificate sheet interaction.
+    ClientCertificateInput {
+        input: super::ClientCertificateInput,
+    },
     /// Blueprint D19: invoke the menu item `menu › item` (`menu` = "Dock"
     /// for the Dock menu) through the same action dispatch an `NSMenuItem`
     /// click takes.

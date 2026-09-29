@@ -370,6 +370,7 @@ impl BrowserController {
             | WebEvent::ContextMenuRequested(v, _)
             | WebEvent::FaviconChanged(v, _)
             | WebEvent::PermissionRequested { view: v, .. }
+            | WebEvent::ClientCertificateRequested { view: v, .. }
             | WebEvent::MediaCaptureChanged { view: v, .. } => *v,
         };
         let is_preview = self

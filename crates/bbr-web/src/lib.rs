@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 pub mod auth_challenges;
+pub mod client_certificates;
 pub mod content_gesture;
 pub mod external_urls;
 pub mod favicon;
@@ -239,6 +240,17 @@ pub enum WebEvent {
         origin: String,
         capabilities: Vec<permissions::PermissionCapability>,
     },
+    /// Blueprint D12: a site asks for a client certificate. The engine
+    /// holds the request until [`WebEngine::answer_client_certificate`]
+    /// answers `request`; destroying the view cancels it.
+    ClientCertificateRequested {
+        view: WebViewId,
+        request: u64,
+        /// `host` or `host:port` of the server that asks.
+        host: String,
+        /// The matching Keychain identities (metadata only).
+        identities: Vec<client_certificates::ClientIdentityInfo>,
+    },
     /// Blueprint D11: the view's camera / microphone capture is live
     /// (active or muted) or not.
     MediaCaptureChanged {
@@ -335,6 +347,15 @@ pub trait WebEngine {
     /// Blueprint D11: answer a [`WebEvent::PermissionRequested`]. Unknown
     /// or already answered requests are no-ops.
     fn decide_permission(&mut self, _request: u64, _allow: bool) {}
+
+    /// Blueprint D12: answer a [`WebEvent::ClientCertificateRequested`].
+    /// Unknown or already answered requests are no-ops.
+    fn answer_client_certificate(
+        &mut self,
+        _request: u64,
+        _answer: client_certificates::ClientCertificateAnswer,
+    ) {
+    }
 
     /// Blueprint D11: remove every kind of `profile`'s website data that
     /// belongs to `host` (cookies, storage, caches).

@@ -293,6 +293,8 @@ pub struct TestSnapshot {
     pub history: Option<bbr_testkit::protocol::HistorySnapshot>,
     /// Blueprint D11: the permission prompt, site settings and marks.
     pub permissions: bbr_testkit::protocol::PermissionsSnapshot,
+    /// Blueprint D12: the client-certificate sheet and answers.
+    pub client_certificates: bbr_testkit::protocol::ClientCertificatesSnapshot,
     pub zoom_readout: Option<u32>,
     /// Native z-order evidence: while a preview is open the preview
     /// WKWebView's subview index must exceed its covered origin's (the

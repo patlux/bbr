@@ -74,6 +74,14 @@ objc2-foundation = { workspace = true, features = [
     "NSDate",
     # Blueprint D10: the History page's local day boundaries.
     "NSTimeZone",
+    # Blueprint D12: the client-certificate challenge and its answer.
+    "NSURLAuthenticationChallenge",
+    "NSURLCredential",
+    "NSURLProtectionSpace",
+    "NSArray",
+    "NSDictionary",
+    "NSEnumerator",
+    "NSValue",
     # Favicon acquisition (task packet `real-favicon-pipeline.md`): the
     # bounded, profile-isolated download runs through an `NSURLSession`
     # whose private cookie storage is seeded from the owning profile's
@@ -133,6 +141,21 @@ objc2-app-kit = { workspace = true, features = [
 objc2-core-foundation = { version = "0.3.2", default-features = false, features = [
     "CFBundle",
     "CFString",
+    "std",
+] }
+
+# objc2-security (blueprint D12): the Keychain identities a site's client
+# certificate request can accept — SecItemCopyMatching for identities of
+# the server's issuers, the certificate's subject, issuer and expiry, and
+# the identity handed back in an NSURLCredential. Metadata only; no key
+# material is read.
+objc2-security = { workspace = true, features = [
+    "SecBase",
+    "SecCertificate",
+    "SecCertificateOIDs",
+    "SecIdentity",
+    "SecItem",
+    "objc2",
     "std",
 ] }
 

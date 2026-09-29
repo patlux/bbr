@@ -73,6 +73,7 @@ impl NavState {
             // Blueprint D11: permission requests and capture state are the
             // app's site-permission state, not navigation state.
             bbr_web::WebEvent::PermissionRequested { .. }
+            | bbr_web::WebEvent::ClientCertificateRequested { .. }
             | bbr_web::WebEvent::MediaCaptureChanged { .. } => {}
         }
     }

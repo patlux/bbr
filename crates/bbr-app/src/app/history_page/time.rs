@@ -102,6 +102,16 @@ impl Clock {
     }
 }
 
+impl Clock {
+    /// "3 Mar 2027" for a Unix time in seconds (blueprint D12's
+    /// certificate expiry).
+    pub(crate) fn short_date(&self, unix_seconds: i64) -> String {
+        let day = (unix_seconds + self.offset_s).div_euclid(DAY_S);
+        let (year, month, dom) = civil_from_days(day);
+        format!("{dom} {} {year}", &MONTHS[(month - 1) as usize][..3])
+    }
+}
+
 /// Days since 1970-01-01 to `(year, month 1–12, day 1–31)` (Howard
 /// Hinnant's civil-from-days).
 fn civil_from_days(days: i64) -> (i64, u32, u32) {
@@ -149,6 +159,16 @@ mod tests {
         };
         assert_eq!(east.time_label(NOON), "01:00");
         assert_eq!(east.day(NOON), utc.day(NOON) + 1);
+    }
+
+    #[test]
+    fn short_dates_name_day_month_and_year() {
+        let utc = Clock {
+            now_ms: NOON,
+            offset_s: 0,
+        };
+        assert_eq!(utc.short_date(2_106_063_227), "26 Sep 2036");
+        assert_eq!(utc.short_date(0), "1 Jan 1970");
     }
 
     #[test]

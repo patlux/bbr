@@ -104,6 +104,7 @@ fn event_view(event: &WebEvent) -> WebViewId {
         WebEvent::ContextMenuRequested(v, _) => *v,
         WebEvent::FaviconChanged(v, _) => *v,
         WebEvent::PermissionRequested { view, .. } => *view,
+        WebEvent::ClientCertificateRequested { view, .. } => *view,
         WebEvent::MediaCaptureChanged { view, .. } => *view,
     }
 }

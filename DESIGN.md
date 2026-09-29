@@ -2349,6 +2349,29 @@ Footer glyphs render at 16 pt; the Space strip starts at its leading edge (§11.
 - **Blocking sheets dim the card:** the credential sheet and the Delete
   Space sheet sit over a `wash.active` veil over the content card only
   (answer 9; `bbr-auth-veil`, `bbr-space-delete-veil`).
+- **Client certificates (blueprint D12, board M-11):** when a server asks
+  for a client certificate, WebKit's navigation delegate looks up the
+  Keychain identities issued by one of the server's accepted issuers and
+  hands the app metadata only — the certificate's subject, its issuer's
+  common name, its expiry and a SHA-256 fingerprint; no key material or
+  certificate bytes reach the chrome, logs or the testkit. No matching
+  identity continues without one (WebKit's behaviour before); every other
+  challenge keeps WebKit's own handling. Otherwise a 440 pt sheet
+  (`bbr-client-certificate`) sits over the card's veil in the Portal
+  overlay layer: "Choose a certificate", "vpn.corp.example asks for a
+  certificate to identify you. Profile · Work.", one row per identity
+  (`bbr-client-certificate-row-<n>`: name, then "Corp Issuing CA 2 ·
+  expires 3 Mar 2027"; an expired one stays visible at `ink.faint`,
+  "expired 2 Feb 2026", and cannot be chosen), "Remember for this site"
+  (`-remember`), then Don't Send (`-none`, continues without a
+  certificate), Cancel (`-cancel`, cancels the request) and the primary
+  Continue (`-continue`). The first valid identity is selected; the sheet
+  takes the keyboard (↑↓ over the valid rows, Return continues, Escape
+  cancels). One sheet shows at a time for the active page; others wait. A
+  remembered choice per profile and server (`client-certificates.txt` next
+  to the store) answers without the sheet while that identity is offered
+  and valid; Settings › Privacy lists and forgets it. Leaving the server
+  cancels its waiting request; closing the tab cancels it in the engine.
 
 ### 18.5 Motion (supersedes the listed parts of §6/§10)
 
@@ -2424,7 +2447,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D09 | Peek presentation | G-8 PR-04 | §11.17 | implemented | [blueprint-peek-presentation](docs/roadmap/tasks/blueprint-peek-presentation.md) |
 | D10 | History and Clear Browsing Data | M-6 M-7 PR-22 | §11.16 | implemented with global visits (answer 5's profile filter needs a store schema change); downloads and Saved Pages clear only with All time | [blueprint-history-clear-data](docs/roadmap/tasks/blueprint-history-clear-data.md) |
 | D11 | Site settings and permission prompts | M-8 M-9 L-6 PR-14 | §11.5 | implemented for camera and microphone (WebKit asks for nothing else); requests reach E2E through the engine's event transport, the native delegate is checked by hand | [blueprint-site-settings-permissions](docs/roadmap/tasks/blueprint-site-settings-permissions.md) |
-| D12 | Client certificate chooser | M-11 PR-15 | §18.4 | adopted | [blueprint-client-certificates](docs/roadmap/tasks/blueprint-client-certificates.md) |
+| D12 | Client certificate chooser | M-11 PR-15 | §18.4 | implemented; the Keychain enumeration is contract-tested against a real certificate, the live TLS path is checked by hand | [blueprint-client-certificates](docs/roadmap/tasks/blueprint-client-certificates.md) |
 | D13 | Open-in-app, pop-up and link-routing UI | M-12 M-13 PR-04 PR-20 | §11.13 §18.4 | adopted | [blueprint-link-destinations](docs/roadmap/tasks/blueprint-link-destinations.md) |
 | D14 | Back / Forward history menu | W-7 M-3 | §11.14 §11.13 | implemented | [blueprint-navigation-history-menu](docs/roadmap/tasks/blueprint-navigation-history-menu.md) |
 | D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | adopted | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |

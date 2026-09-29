@@ -68,6 +68,44 @@ impl BbrApp {
         }
     }
 
+    /// The §15 ids of the prompt, the site settings and the certificate
+    /// sheet while they show.
+    pub(crate) fn permission_visible_ids(&self) -> Vec<String> {
+        let mut ids = Vec::new();
+        if let Some(model) = self.client_certificate_model() {
+            ids.push(bbr_ui::surfaces::client_certificate::CLIENT_CERTIFICATE_ID.to_string());
+            ids.extend((0..model.rows.len()).map(|i| format!("bbr-client-certificate-row-{i}")));
+            ids.extend(
+                ["remember", "none", "cancel", "continue"]
+                    .map(|control| format!("bbr-client-certificate-{control}")),
+            );
+        }
+        if self.permission_prompt_model().is_some() {
+            ids.push(bbr_ui::surfaces::permissions::PERMISSION_PROMPT_ID.to_string());
+            ids.extend(
+                ["remember", "deny", "allow"].map(|control| format!("bbr-permission-{control}")),
+            );
+        } else if let Some(model) = self.site_settings_model() {
+            ids.push(bbr_ui::surfaces::permissions::SITE_SETTINGS_ID.to_string());
+            for row in &model.rows {
+                ids.push(format!("bbr-site-settings-{}", row.key));
+                ids.extend((0..3).map(|value| format!("bbr-site-settings-{}-{value}", row.key)));
+            }
+            if model.zoom.is_some() {
+                ids.push("bbr-site-settings-zoom".into());
+                ids.push("bbr-site-settings-zoom-reset".into());
+            }
+            if model.clear_confirm {
+                ids.push("bbr-site-settings-clear-cancel".into());
+                ids.push("bbr-site-settings-clear-confirm".into());
+            } else {
+                ids.push("bbr-site-settings-clear".into());
+                ids.push("bbr-site-settings-all".into());
+            }
+        }
+        ids
+    }
+
     pub(crate) fn permission_input(&mut self, input: PermissionInput, cx: &mut Context<Self>) {
         match input {
             PermissionInput::Remember => self.toggle_permission_remember(cx),

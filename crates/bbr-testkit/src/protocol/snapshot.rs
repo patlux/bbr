@@ -1632,6 +1632,9 @@ pub struct Snapshot {
     /// Blueprint D11: the permission prompt, site settings and marks.
     #[serde(default)]
     pub permissions: super::PermissionsSnapshot,
+    /// Blueprint D12: the client-certificate sheet and answers.
+    #[serde(default)]
+    pub client_certificates: super::ClientCertificatesSnapshot,
     /// Blueprint D08: the live zoom readout's percent (`None` at rest).
     #[serde(default)]
     pub zoom_readout: Option<u32>,

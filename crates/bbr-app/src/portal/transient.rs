@@ -191,6 +191,33 @@ fn render_permission_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -
     };
     let browser_window = root.browser_window;
     let mut overlays = Vec::new();
+    // Blueprint D12: the client-certificate sheet blocks the card.
+    let (certificate, card) = {
+        let app = app.read(cx);
+        (app.client_certificate_model(), app.transient.card)
+    };
+    if let (Some(model), Some(card)) = (certificate, card) {
+        let events_app = app.clone();
+        overlays.push(
+            bbr_ui::surfaces::client_certificate::client_certificate_sheet(
+                &theme,
+                &model,
+                card,
+                std::rc::Rc::new(move |event, _window, cx| {
+                    let app = events_app.clone();
+                    cx.defer(move |cx| {
+                        let _ = crate::window_seam::with_app(
+                            &browser_window,
+                            &app,
+                            cx,
+                            |view, window, cx| view.on_client_certificate_event(event, window, cx),
+                        );
+                    });
+                }),
+            )
+            .into_any_element(),
+        );
+    }
     // The popover and the prompt share the anchor; the prompt (a page
     // waiting for an answer) wins.
     if let Some(model) = prompt {
