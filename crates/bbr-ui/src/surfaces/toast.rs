@@ -105,6 +105,13 @@ pub fn banner_slot(card: [f32; 4]) -> [f32; 3] {
     [x + side, y + top, (w - 2.0 * side).max(0.0)]
 }
 
+/// One quiet banner action: its id, its label and its press.
+pub struct BannerAction {
+    pub id: SharedString,
+    pub label: SharedString,
+    pub on_press: PressFn,
+}
+
 /// Blueprint D17 (boards B-7, L-10): the info banner over the card top —
 /// the `status.info` mark, the `type:label` message and one quiet action,
 /// on the `tint.accent` wash over an opaque overlay surface (the page
@@ -115,9 +122,55 @@ pub fn info_banner(
     action: SharedString,
     on_action: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> AnyElement {
+    banner(
+        theme,
+        [
+            RESTORE_NOTICE_ID,
+            RESTORE_NOTICE_MESSAGE_ID,
+            "bbr-restore-notice-appear",
+        ],
+        message,
+        vec![BannerAction {
+            id: RESTORE_NOTICE_DISMISS_ID.into(),
+            label: action,
+            on_press: Box::new(on_action),
+        }],
+    )
+}
+
+/// The info banner with its own ids (`[root, message, appear key]`) and any
+/// number of quiet actions (blueprint D13's blocked pop-up: Open, Always
+/// Allow).
+pub fn banner(
+    theme: &Theme,
+    ids: [&'static str; 3],
+    message: SharedString,
+    actions: Vec<BannerAction>,
+) -> AnyElement {
     let p = theme.palette;
+    let [root, message_id, appear] = ids;
+    let buttons = actions.into_iter().map(|action| {
+        let on_press = action.on_press;
+        div()
+            .id(action.id)
+            .h(px(28.0))
+            .px(crate::theme::Spacing::sp2())
+            .flex()
+            .items_center()
+            .rounded(theme.radius.small())
+            .text_size(theme.type_.label.size)
+            .font_weight(gpui::FontWeight::MEDIUM)
+            .text_color(p.accent_ink)
+            .hover(move |style| style.bg(p.wash_hover))
+            .cursor_pointer()
+            .on_mouse_down(MouseButton::Left, move |event, window, cx| {
+                cx.stop_propagation();
+                on_press(event, window, cx);
+            })
+            .child(action.label)
+    });
     let banner = div()
-        .id(RESTORE_NOTICE_ID)
+        .id(root)
         .w_full()
         .rounded(theme.radius.medium())
         .bg(p.surface_overlay)
@@ -137,34 +190,16 @@ pub fn info_banner(
                 .child(Icon::Info.canvas_with(theme, px(16.0), p.status_info))
                 .child(
                     div()
-                        .id(RESTORE_NOTICE_MESSAGE_ID)
+                        .id(message_id)
                         .flex_1()
                         .min_w_0()
                         .text_size(theme.type_.label.size)
                         .text_color(p.ink)
                         .child(message),
                 )
-                .child(
-                    div()
-                        .id(RESTORE_NOTICE_DISMISS_ID)
-                        .h(px(28.0))
-                        .px(crate::theme::Spacing::sp2())
-                        .flex()
-                        .items_center()
-                        .rounded(theme.radius.small())
-                        .text_size(theme.type_.label.size)
-                        .font_weight(gpui::FontWeight::MEDIUM)
-                        .text_color(p.accent_ink)
-                        .hover(move |style| style.bg(p.wash_hover))
-                        .cursor_pointer()
-                        .on_mouse_down(MouseButton::Left, move |event, window, cx| {
-                            cx.stop_propagation();
-                            on_action(event, window, cx);
-                        })
-                        .child(action),
-                ),
+                .children(buttons),
         );
-    crate::surfaces::floating::appear(theme, "bbr-restore-notice-appear", banner)
+    crate::surfaces::floating::appear(theme, appear, banner)
 }
 
 /// The zoom readout's rect inside the card inner box (top-centre).
@@ -175,7 +210,7 @@ pub fn zoom_readout_rect(card: [f32; 4]) -> [f32; 4] {
 }
 
 /// A pointer-press callback.
-type PressFn = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App)>;
+pub type PressFn = Box<dyn Fn(&MouseDownEvent, &mut Window, &mut App)>;
 
 /// The quiet small action button (text in `accent.ink`, hover wash).
 fn quiet_button(

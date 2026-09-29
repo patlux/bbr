@@ -231,6 +231,45 @@ define_class!(
             self.did_fail(web_view, error);
         }
 
+        // Blueprint D13: the main frame may only go to schemes BBR renders;
+        // any other (`mailto:`, `zoom:`…) is cancelled and handed to the app,
+        // which asks before another app opens it. Subframes never trigger
+        // it (their other-scheme loads are cancelled quietly).
+        #[unsafe(method(webView:decidePolicyForNavigationAction:decisionHandler:))]
+        fn decide_policy_for_navigation_action(
+            &self,
+            _web_view: &WKWebView,
+            action: &objc2_web_kit::WKNavigationAction,
+            decision_handler: &block2::DynBlock<dyn Fn(objc2_web_kit::WKNavigationActionPolicy)>,
+        ) {
+            use objc2_web_kit::{WKNavigationActionPolicy as Policy, WKNavigationType};
+            // SAFETY: WebKit delivered a live action for the call.
+            let (url, main_frame, link) = unsafe {
+                let request = action.request();
+                let url = request
+                    .URL()
+                    .and_then(|url| url.absoluteString())
+                    .map(|url| url.to_string())
+                    .unwrap_or_default();
+                let main_frame = action
+                    .targetFrame()
+                    .is_none_or(|frame| frame.isMainFrame());
+                (url, main_frame, action.navigationType() == WKNavigationType::LinkActivated)
+            };
+            if crate::external_schemes::renders_in_browser(&url) {
+                decision_handler.call((Policy::Allow,));
+                return;
+            }
+            decision_handler.call((Policy::Cancel,));
+            if main_frame {
+                self.emit(WebEvent::ExternalSchemeRequested {
+                    view: self.id(),
+                    url,
+                    user_initiated: link,
+                });
+            }
+        }
+
         // Blueprint D12: a server asks for a client certificate. The
         // matching Keychain identities (metadata only) go to the app, which
         // answers through the engine; every other challenge keeps WebKit's

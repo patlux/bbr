@@ -104,6 +104,10 @@ impl BbrApp {
             rows: DECIDABLE
                 .iter()
                 .map(|capability| {
+                    let values = SitePolicy::ALL
+                        .iter()
+                        .map(|policy| SharedString::from(policy.label()))
+                        .collect();
                     let policy =
                         self.permissions
                             .policies
@@ -117,12 +121,30 @@ impl BbrApp {
                             }
                             _ => bbr_ui::icons::Icon::Microphone { blocked: false },
                         },
+                        values,
                         value: SitePolicy::ALL
                             .iter()
                             .position(|p| *p == policy)
                             .unwrap_or(1),
                     }
                 })
+                // Blueprint D13: pop-ups without a gesture — Allow, or
+                // Block with the quiet notice (the default).
+                .chain(std::iter::once(SiteSettingsRow {
+                    key: "popups".into(),
+                    label: "Pop-ups".into(),
+                    icon: bbr_ui::icons::Icon::Document,
+                    values: vec!["Allow".into(), "Block".into()],
+                    value: if self
+                        .permissions
+                        .policies
+                        .popups_allowed(state.profile, &state.origin)
+                    {
+                        0
+                    } else {
+                        1
+                    },
+                }))
                 .collect(),
             zoom: bbr_ui::components::address::zoom_accessory(self.address_zoom_level()),
             clear_confirm: state.clear_confirm,
@@ -139,6 +161,13 @@ impl BbrApp {
             return;
         };
         match event {
+            SiteSettingsEvent::Set(row, value) if row == DECIDABLE.len() => {
+                self.permissions
+                    .policies
+                    .set_popups(state.profile, &state.origin, value == 0);
+                self.save_site_permissions();
+                self.publish_popup_views();
+            }
             SiteSettingsEvent::Set(row, value) => {
                 if let (Some(capability), Some(policy)) =
                     (DECIDABLE.get(row), SitePolicy::ALL.get(value))

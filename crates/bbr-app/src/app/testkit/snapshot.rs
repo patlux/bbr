@@ -670,6 +670,7 @@ impl BbrApp {
             history: self.history_snapshot(window),
             permissions: self.permissions_snapshot(),
             client_certificates: self.client_certificates_snapshot(),
+            open_app: self.open_app_snapshot(),
             about: self.about_window.is_some().then(crate::about::version_line),
             restore_notice: self
                 .transient

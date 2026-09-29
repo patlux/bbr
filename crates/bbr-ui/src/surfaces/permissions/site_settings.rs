@@ -18,7 +18,9 @@ pub struct SiteSettingsRow {
     pub key: SharedString,
     pub label: SharedString,
     pub icon: Icon,
-    /// 0 Allow, 1 Ask, 2 Block.
+    /// The segment labels (Allow / Ask / Block; pop-ups: Allow / Block).
+    pub values: Vec<SharedString>,
+    /// The chosen segment.
     pub value: usize,
 }
 
@@ -38,7 +40,7 @@ pub struct SiteSettingsModel {
 /// The popover's controls.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SiteSettingsEvent {
-    /// Row index, value (0 Allow, 1 Ask, 2 Block).
+    /// Row index, segment index.
     Set(usize, usize),
     ResetZoom,
     Clear,
@@ -48,8 +50,6 @@ pub enum SiteSettingsEvent {
 }
 
 pub type SiteSettingsCallback = Rc<dyn Fn(SiteSettingsEvent, &mut Window, &mut App)>;
-
-const VALUES: [&str; 3] = ["Allow", "Ask", "Block"];
 
 fn send(
     events: &SiteSettingsCallback,
@@ -71,7 +71,7 @@ fn segmented(
         .rounded(px(7.0))
         .bg(p.wash_hover)
         .flex()
-        .children(VALUES.iter().enumerate().map(|(value, label)| {
+        .children(row.values.iter().enumerate().map(|(value, label)| {
             let selected = value == row.value;
             let events = events.clone();
             div()
@@ -93,7 +93,7 @@ fn segmented(
                     cx.stop_propagation();
                     events(SiteSettingsEvent::Set(index, value), window, cx);
                 })
-                .child(label.to_string())
+                .child(label.clone())
         }))
         .into_any_element()
 }

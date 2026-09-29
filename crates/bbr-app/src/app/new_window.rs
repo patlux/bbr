@@ -111,6 +111,8 @@ impl BbrApp {
             }
             NewWindowOutcome::Blocked => {
                 self.new_window.blocked_reported += 1;
+                // Blueprint D13: say so, with Open and Always Allow.
+                self.popup_blocked(delivery.request.clone(), cx);
                 log::info!(
                     "blocked script-created new-window request from {:?}",
                     delivery.request.source

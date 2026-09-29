@@ -1635,6 +1635,9 @@ pub struct Snapshot {
     /// Blueprint D12: the client-certificate sheet and answers.
     #[serde(default)]
     pub client_certificates: super::ClientCertificatesSnapshot,
+    /// Blueprint D13: links to other apps.
+    #[serde(default)]
+    pub open_app: super::OpenAppSnapshot,
     /// Blueprint D08: the live zoom readout's percent (`None` at rest).
     #[serde(default)]
     pub zoom_readout: Option<u32>,

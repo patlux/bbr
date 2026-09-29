@@ -126,6 +126,116 @@ pub(super) fn render_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -
                 .into_any_element(),
         );
     }
+    // Blueprint D13: the blocked pop-up notice, under the restore notice
+    // when both show.
+    let (popup_message, popup_bounds, notice_shown) = {
+        let app = app.read(cx);
+        (
+            app.popup_notice_message(),
+            app.permissions.popup_bounds.clone(),
+            app.transient.notice.is_some(),
+        )
+    };
+    if let Some(message) = popup_message {
+        let [x, y, width] = bbr_ui::surfaces::toast::banner_slot(card);
+        let y = if notice_shown { y + 52.0 } else { y };
+        let action = |app: gpui::Entity<crate::app::BbrApp>, allow: bool| {
+            Box::new(
+                move |_event: &gpui::MouseDownEvent,
+                      _window: &mut gpui::Window,
+                      cx: &mut gpui::App| {
+                    let app = app.clone();
+                    cx.defer(move |cx| {
+                        let _ = crate::window_seam::with_app(
+                            &browser_window,
+                            &app,
+                            cx,
+                            |view, window, cx| {
+                                if allow {
+                                    view.popup_always_allow(window, cx)
+                                } else {
+                                    view.popup_open(window, cx)
+                                }
+                            },
+                        );
+                    });
+                },
+            ) as bbr_ui::surfaces::toast::PressFn
+        };
+        let banner = bbr_ui::surfaces::toast::banner(
+            &theme,
+            [
+                "bbr-popup-blocked",
+                "bbr-popup-blocked-message",
+                "bbr-popup-blocked-appear",
+            ],
+            message.into(),
+            vec![
+                bbr_ui::surfaces::toast::BannerAction {
+                    id: "bbr-popup-blocked-open".into(),
+                    label: "Open".into(),
+                    on_press: action(app.clone(), false),
+                },
+                bbr_ui::surfaces::toast::BannerAction {
+                    id: "bbr-popup-blocked-allow".into(),
+                    label: "Always Allow".into(),
+                    on_press: action(app.clone(), true),
+                },
+            ],
+        );
+        overlays.push(
+            div()
+                .absolute()
+                .left(px(x))
+                .top(px(y))
+                .w(px(width))
+                .child(div().relative().child(banner).child(bounds_recorder(
+                    popup_bounds,
+                    app.clone(),
+                    browser_window,
+                )))
+                .into_any_element(),
+        );
+    }
+    // Blueprint D13: the no-app banner.
+    let (no_app, no_app_bounds, popup_shown) = {
+        let app = app.read(cx);
+        (
+            app.open_app
+                .banner
+                .as_ref()
+                .map(|(message, _)| message.clone()),
+            app.open_app.banner_bounds.clone(),
+            app.popup_notice_visible().is_some(),
+        )
+    };
+    if let Some(message) = no_app {
+        let [x, y, width] = bbr_ui::surfaces::toast::banner_slot(card);
+        let stacked = usize::from(notice_shown) + usize::from(popup_shown);
+        let banner = bbr_ui::surfaces::toast::banner(
+            &theme,
+            [
+                "bbr-external-no-app",
+                "bbr-external-no-app-message",
+                "bbr-external-no-app-appear",
+            ],
+            message.into(),
+            Vec::new(),
+        );
+        overlays.push(
+            div()
+                .absolute()
+                .left(px(x))
+                .top(px(y + 52.0 * stacked as f32))
+                .w(px(width))
+                .child(div().relative().child(banner).child(bounds_recorder(
+                    no_app_bounds,
+                    app.clone(),
+                    browser_window,
+                )))
+                .into_any_element(),
+        );
+    }
     if let Some(readout) = readout {
         let [x, y, _, _] = zoom_readout_rect(card);
         let minus_app = app.clone();
@@ -191,6 +301,64 @@ fn render_permission_overlays(root: &PortalRoot, cx: &mut Context<PortalRoot>) -
     };
     let browser_window = root.browser_window;
     let mut overlays = Vec::new();
+    // Blueprint D13: the space chooser for a link from another app, at the
+    // palette's place (top-centre of the card).
+    let chooser = app.read(cx).space_chooser_model();
+    if let (Some(model), Some([cx0, cy0, cw, _])) = (chooser, app.read(cx).transient.card) {
+        let events_app = app.clone();
+        let card = bbr_ui::surfaces::space_chooser::space_chooser(
+            &theme,
+            &model,
+            std::rc::Rc::new(move |index, _window, cx| {
+                let app = events_app.clone();
+                cx.defer(move |cx| {
+                    let _ = crate::window_seam::with_app(
+                        &browser_window,
+                        &app,
+                        cx,
+                        |view, window, cx| view.space_chooser_choose(index, window, cx),
+                    );
+                });
+            }),
+        );
+        let width = bbr_ui::surfaces::space_chooser::SPACE_CHOOSER_WIDTH;
+        overlays.push(
+            div()
+                .absolute()
+                .left(px(cx0 + (cw - width) / 2.0))
+                .top(px(cy0 + 72.0))
+                .child(bbr_ui::surfaces::floating::appear(
+                    &theme,
+                    "bbr-space-chooser-appear",
+                    card,
+                ))
+                .into_any_element(),
+        );
+    }
+    // Blueprint D13: the open-in-app sheet blocks the card.
+    let open_app = app.read(cx).open_app_model();
+    if let (Some(model), Some(card)) = (open_app, app.read(cx).transient.card) {
+        let events_app = app.clone();
+        overlays.push(
+            bbr_ui::surfaces::open_app::open_app_sheet(
+                &theme,
+                &model,
+                card,
+                std::rc::Rc::new(move |event, _window, cx| {
+                    let app = events_app.clone();
+                    cx.defer(move |cx| {
+                        let _ = crate::window_seam::with_app(
+                            &browser_window,
+                            &app,
+                            cx,
+                            |view, window, cx| view.on_open_app_event(event, window, cx),
+                        );
+                    });
+                }),
+            )
+            .into_any_element(),
+        );
+    }
     // Blueprint D12: the client-certificate sheet blocks the card.
     let (certificate, card) = {
         let app = app.read(cx);

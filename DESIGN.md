@@ -1656,6 +1656,42 @@ authorities; it does not copy Zen/Firefox features or styling.
   The About menu item brings an open window forward. It states no update
   status: BBR has no update channel, and the background download and
   relaunch install of board L-12 wait for §19 question 14.
+- **Blocked pop-ups (blueprint D13, board M-13):** a page's pop-up
+  without a user gesture stays blocked, but not silently: an info banner
+  over the card top (`bbr-popup-blocked`, the §18.4 banner anatomy; below
+  the restore notice when both show) says "A pop-up from example-shop.com
+  was blocked." with the quiet actions Open (`bbr-popup-blocked-open`,
+  this pop-up as a tab in the page's profile) and Always Allow
+  (`bbr-popup-blocked-allow`, also opens it). The banner belongs to the
+  page: it shows while that page is active and leaves after 12 s, when the
+  page goes to another site or when a newer pop-up replaces it. An allowed
+  site's pop-ups open as tabs through the WebKit delegate directly
+  (per profile and origin, `site-permissions.txt`); the site-settings
+  Pop-ups row (Allow / Block) changes it. The board's small pop-up window
+  for sized sign-in pop-ups is not built: WebKit links a pop-up to its
+  opener only when the browser returns a web view created from WebKit's
+  configuration, and BBR's sessions are controller-owned tabs in one
+  window (§19 D13).
+- **Links to other apps (blueprint D13, board M-12):** the page's main
+  frame loads only the schemes a browser renders (http, https, about,
+  data, blob, file); a link to any other scheme is cancelled in WebKit's
+  navigation policy and asks first. When no app on the Mac opens the
+  scheme, a banner says "No app on this Mac opens “foo:” links."
+  (`bbr-external-no-app`, 8 s). Otherwise a sheet over the card's veil
+  (`bbr-external-open`, 440 pt): "Open in Zoom?", "zoom.us wants to open
+  the Zoom app.", "Always allow zoom.us to open Zoom links"
+  (`-remember`, only when a site asked), Cancel (`-cancel`) and the
+  primary "Open Zoom" (`-confirm`); Return opens, Escape cancels. The app
+  name is the one macOS would open the link with. An allowed site and
+  scheme (per profile) opens without the sheet. Subframes never ask.
+- **Links from other apps (blueprint D13, board PR-20, answer 6):** a link
+  from another app opens in the last active space. With Settings ›
+  General › "Open links from other apps in" set to "Ask each time" (and
+  more than one space), a small palette at the palette's place asks
+  first (`bbr-space-chooser`, 480 pt): "Open example.com in…", one row per
+  space ("Open in Work · Profile Work", `bbr-space-chooser-row-<n>`) with
+  the last active space selected; ↑↓ move, Return or a press opens it
+  there, Escape drops the link.
 - **Stable family ids:** `bbr-tab-menu`, `bbr-favorite-menu`,
   `bbr-folder-menu`, `bbr-space-menu`, `bbr-page-menu`, and
   `bbr-nav-history-menu` (§11.14), with action/submenu ids owned by their
@@ -1941,7 +1977,8 @@ button — and the app preferences live in `preferences.txt` beside the store
 Rows exist only where BBR has the behaviour behind them. General: Default
 browser (DEFAULT badge, or Make Default), and Open links that ask for a new
 window as Peek (off opens one ordinary tab instead; blocking and background
-tabs are unchanged). Profiles: every profile with its chip, space count
+tabs are unchanged), and Open links from other apps in (Last active space /
+Ask each time, §11.13, blueprint D13). Profiles: every profile with its chip, space count
 and Edit…, Add a profile (New Profile…), Delete “name”… for the selected
 profile, then the selected profile's spaces with their paper (§12). Search: the engine and
 Show tabs from all spaces in ⌘T (off keeps the palette to the active
@@ -1951,7 +1988,7 @@ Off); the density cards (Small / Normal / Large pin the §8 density —
 choosing the pinned card again returns to the automatic, collection-sized
 density); the default paper for new spaces. Shortcuts: the bound keys,
 grouped, read from the keymap. Board rows without behaviour behind them
-(startup behaviour, the target space for links from other apps, tab
+(startup behaviour, tab
 suspension and auto-close, search suggestions and keywords, the cookie
 policy, a save prompt per download, history retention, and per-site
 settings beyond the permissions below) are not drawn. Privacy holds Clear browsing data (Clear…), which brings
@@ -2448,7 +2485,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D10 | History and Clear Browsing Data | M-6 M-7 PR-22 | §11.16 | implemented with global visits (answer 5's profile filter needs a store schema change); downloads and Saved Pages clear only with All time | [blueprint-history-clear-data](docs/roadmap/tasks/blueprint-history-clear-data.md) |
 | D11 | Site settings and permission prompts | M-8 M-9 L-6 PR-14 | §11.5 | implemented for camera and microphone (WebKit asks for nothing else); requests reach E2E through the engine's event transport, the native delegate is checked by hand | [blueprint-site-settings-permissions](docs/roadmap/tasks/blueprint-site-settings-permissions.md) |
 | D12 | Client certificate chooser | M-11 PR-15 | §18.4 | implemented; the Keychain enumeration is contract-tested against a real certificate, the live TLS path is checked by hand | [blueprint-client-certificates](docs/roadmap/tasks/blueprint-client-certificates.md) |
-| D13 | Open-in-app, pop-up and link-routing UI | M-12 M-13 PR-04 PR-20 | §11.13 §18.4 | adopted | [blueprint-link-destinations](docs/roadmap/tasks/blueprint-link-destinations.md) |
+| D13 | Open-in-app, pop-up and link-routing UI | M-12 M-13 PR-04 PR-20 | §11.13 §18.4 | implemented without the sign-in pop-up window (needs opener-linked sessions in a second window) | [blueprint-link-destinations](docs/roadmap/tasks/blueprint-link-destinations.md) |
 | D14 | Back / Forward history menu | W-7 M-3 | §11.14 §11.13 | implemented | [blueprint-navigation-history-menu](docs/roadmap/tasks/blueprint-navigation-history-menu.md) |
 | D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | adopted | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |
 | D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 §11.18 | implemented (§11.18: rows without behaviour behind them are omitted) | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |

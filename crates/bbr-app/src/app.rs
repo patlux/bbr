@@ -115,6 +115,7 @@ pub(crate) mod client_certificates;
 mod menu_sync;
 mod motion;
 mod new_window;
+pub(crate) mod open_app;
 pub(crate) mod palette;
 pub(crate) mod peek;
 #[cfg(feature = "testkit")]
@@ -128,6 +129,7 @@ mod saved_pages;
 mod saved_pages_benchmarks;
 mod sidebar;
 mod sidebar_view;
+pub(crate) mod space_chooser;
 mod space_config;
 mod space_delete;
 mod spaces;
@@ -232,6 +234,10 @@ pub struct BbrApp {
     pub(crate) permissions: permissions::PermissionsState,
     /// Blueprint D12: client-certificate requests and remembered choices.
     pub(crate) certificates: client_certificates::CertificateState,
+    /// Blueprint D13: links to other apps' schemes.
+    pub(crate) open_app: open_app::OpenAppState,
+    /// Blueprint D13: the space chooser for a link from another app.
+    pub(crate) space_chooser: Option<space_chooser::SpaceChooserState>,
     /// Blueprint D19: the spaces the installed menu bar and Dock menu list
     /// (`None` until the first render installs them).
     pub(crate) menu_spaces: Option<Vec<crate::menus::MenuSpace>>,
@@ -680,6 +686,8 @@ impl BbrApp {
             transient: transient::TransientOverlays::default(),
             permissions: permissions::PermissionsState::default(),
             certificates: client_certificates::CertificateState::default(),
+            open_app: open_app::OpenAppState::default(),
+            space_chooser: None,
             menu_spaces: None,
             recovery_dismissed: false,
             about_window: None,

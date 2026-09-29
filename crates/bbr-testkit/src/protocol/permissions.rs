@@ -39,6 +39,9 @@ pub struct PermissionsSnapshot {
     pub address_mark: Option<String>,
     /// Every decision handed to the engine: `(request, allowed)`.
     pub decisions: Vec<(u64, bool)>,
+    /// Blueprint D13: the blocked pop-up notice's message while it shows.
+    #[serde(default)]
+    pub popup_notice: Option<String>,
 }
 
 /// One permission interaction through the method its control calls.
@@ -67,6 +70,9 @@ pub enum PermissionInput {
         x: f32,
         y: f32,
     },
+    /// Blueprint D13: the blocked pop-up notice's Open / Always Allow.
+    PopupOpen,
+    PopupAlwaysAllow,
 }
 
 /// Blueprint D12: the client-certificate sheet shown for the active page.
@@ -99,4 +105,40 @@ pub enum ClientCertificateInput {
     DontSend,
     Cancel,
     Continue,
+}
+
+/// Blueprint D13: the open-in-app sheet shown for the active page.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OpenAppSheetSnapshot {
+    pub title: String,
+    pub message: String,
+    pub remember_label: Option<String>,
+    pub remember: bool,
+    pub confirm: String,
+}
+
+/// Blueprint D13: links to other apps — the sheet, the no-app banner and
+/// every link handed to macOS (recorded, never launched, in testkit
+/// builds).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct OpenAppSnapshot {
+    pub sheet: Option<OpenAppSheetSnapshot>,
+    pub no_app_banner: Option<String>,
+    pub opened: Vec<String>,
+    /// The space chooser for a link from another app: `(title, rows,
+    /// selected)`.
+    #[serde(default)]
+    pub space_chooser: Option<(String, Vec<String>, usize)>,
+}
+
+/// Blueprint D13: one open-in-app sheet interaction.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum OpenAppInput {
+    Remember,
+    Cancel,
+    Open,
+    /// The space chooser's row press.
+    ChooseSpace {
+        index: usize,
+    },
 }

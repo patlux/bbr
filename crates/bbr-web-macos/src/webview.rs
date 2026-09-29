@@ -570,6 +570,14 @@ impl WebEngine for WebEngineWk {
         self.permissions.borrow_mut().decide(request, allow);
     }
 
+    fn external_app_name(&self, url: &str) -> Option<String> {
+        crate::external_schemes::app_name_for(url)
+    }
+
+    fn open_external(&mut self, url: &str) -> bool {
+        crate::external_schemes::open(url)
+    }
+
     fn answer_client_certificate(
         &mut self,
         request: u64,

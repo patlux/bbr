@@ -24,7 +24,12 @@ impl BbrApp {
     /// macOS-only: delivery arrives through the AppKit delegate path. The
     /// pump calls this only under `target_os = "macos"`.
     #[cfg(target_os = "macos")]
-    pub fn on_external_url(&mut self, raw_url: String, cx: &mut Context<Self>) {
+    pub fn on_external_url(
+        &mut self,
+        raw_url: String,
+        window: &mut gpui::Window,
+        cx: &mut Context<Self>,
+    ) {
         let snapshot = self.controller.snapshot();
         // The one browser window: always eligible (BBR has no private or
         // utility windows), presenting the controller's active space in its
@@ -57,7 +62,7 @@ impl BbrApp {
         {
             Ok(ExternalUrlOutcome::Routed { request, decision }) => {
                 log::info!("external url routed (request {request:?}): {decision:?}");
-                self.execute_external_decision(decision, &raw_url, cx);
+                self.execute_external_decision(decision, &raw_url, window, cx);
             }
             Ok(ExternalUrlOutcome::Deduplicated {
                 request,
@@ -94,6 +99,7 @@ impl BbrApp {
         &mut self,
         decision: RoutingDecision,
         url: &str,
+        window: &mut gpui::Window,
         cx: &mut Context<Self>,
     ) {
         match decision {
@@ -118,7 +124,8 @@ impl BbrApp {
                     "the routed profile is the profile the window presents"
                 );
                 let _ = (profile, space);
-                let _ = self.open_tab(url, cx);
+                // Blueprint D13: the last active space, or the chooser.
+                self.route_external_link(url, window, cx);
             }
             RoutingDecision::NewWindow { profile, space } => {
                 // Unreachable: the one browser window is always eligible, so

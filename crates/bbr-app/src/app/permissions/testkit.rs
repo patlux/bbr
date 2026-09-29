@@ -40,7 +40,10 @@ impl BbrApp {
                     .map(|row| {
                         (
                             row.key.to_string(),
-                            ["Allow", "Ask", "Block"][row.value.min(2)].to_string(),
+                            row.values
+                                .get(row.value)
+                                .map(|v| v.to_string())
+                                .unwrap_or_default(),
                         )
                     })
                     .collect(),
@@ -61,6 +64,7 @@ impl BbrApp {
                 .to_string()
             });
         PermissionsSnapshot {
+            popup_notice: self.popup_notice_message(),
             prompt,
             site_settings,
             address_mark,
@@ -80,6 +84,24 @@ impl BbrApp {
                     .map(|control| format!("bbr-client-certificate-{control}")),
             );
         }
+        if self.open_app_sheet_open() {
+            ids.extend(
+                ["", "-remember", "-cancel", "-confirm"]
+                    .map(|part| format!("{}{part}", bbr_ui::surfaces::open_app::OPEN_APP_ID)),
+            );
+        }
+        if self.open_app.banner.is_some() {
+            ids.push("bbr-external-no-app".into());
+        }
+        if let Some(model) = self.space_chooser_model() {
+            ids.push(bbr_ui::surfaces::space_chooser::SPACE_CHOOSER_ID.to_string());
+            ids.extend((0..model.rows.len()).map(|i| format!("bbr-space-chooser-row-{i}")));
+        }
+        if self.popup_notice_visible().is_some() {
+            ids.extend(
+                ["", "-message", "-open", "-allow"].map(|part| format!("bbr-popup-blocked{part}")),
+            );
+        }
         if self.permission_prompt_model().is_some() {
             ids.push(bbr_ui::surfaces::permissions::PERMISSION_PROMPT_ID.to_string());
             ids.extend(
@@ -89,7 +111,10 @@ impl BbrApp {
             ids.push(bbr_ui::surfaces::permissions::SITE_SETTINGS_ID.to_string());
             for row in &model.rows {
                 ids.push(format!("bbr-site-settings-{}", row.key));
-                ids.extend((0..3).map(|value| format!("bbr-site-settings-{}-{value}", row.key)));
+                ids.extend(
+                    (0..row.values.len())
+                        .map(|value| format!("bbr-site-settings-{}-{value}", row.key)),
+                );
             }
             if model.zoom.is_some() {
                 ids.push("bbr-site-settings-zoom".into());
@@ -128,6 +153,8 @@ impl BbrApp {
                 self.on_site_settings_event(SiteSettingsEvent::AllSettings, cx)
             }
             PermissionInput::PointerDown { x, y } => self.site_settings_pointer_down(x, y, cx),
+            // Routed with the window by the dispatcher.
+            PermissionInput::PopupOpen | PermissionInput::PopupAlwaysAllow => {}
         }
         cx.notify();
     }

@@ -8,8 +8,9 @@
 //! not parse are skipped, so an older or newer file never blocks startup.
 //! Writes replace the file atomically (temporary file, then rename).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use bbr_web::permissions::PermissionCapability;
 use bbr_web::ProfileId;
@@ -43,6 +44,28 @@ pub const DECIDABLE: [PermissionCapability; 2] = [
     PermissionCapability::Camera,
     PermissionCapability::Microphone,
 ];
+
+/// Blueprint D13: the live views whose page's site may open pop-ups
+/// without a gesture, read by the synchronous new-window handler (the
+/// WebKit delegate answers in the same turn, before the app could look the
+/// page up). The app republishes it when a page or a setting changes.
+static POPUP_VIEWS: Mutex<Option<HashSet<u64>>> = Mutex::new(None);
+
+/// Publish the views whose site may open pop-ups.
+pub fn publish_popup_views(views: HashSet<u64>) {
+    if let Ok(mut published) = POPUP_VIEWS.lock() {
+        *published = Some(views);
+    }
+}
+
+/// Whether `view`'s site may open pop-ups.
+pub fn popups_allowed_for_view(view: bbr_web::WebViewId) -> bool {
+    POPUP_VIEWS
+        .lock()
+        .ok()
+        .and_then(|views| views.as_ref().map(|views| views.contains(&view.0)))
+        .unwrap_or(false)
+}
 
 /// The wire key of a capability.
 pub fn capability_key(capability: PermissionCapability) -> &'static str {
@@ -103,6 +126,11 @@ type Key = (u64, String, &'static str);
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SitePermissions {
     entries: BTreeMap<Key, bool>,
+    /// Blueprint D13: sites that may open pop-ups without a gesture.
+    popups: BTreeSet<(u64, String)>,
+    /// Blueprint D13: sites that may open links of a scheme in its app
+    /// without asking (`(profile, origin, scheme)`).
+    apps: BTreeSet<(u64, String, String)>,
 }
 
 impl SitePermissions {
@@ -146,15 +174,58 @@ impl SitePermissions {
         }
     }
 
+    /// Blueprint D13: whether the site may open pop-ups without a gesture.
+    pub fn popups_allowed(&self, profile: ProfileId, origin: &str) -> bool {
+        self.popups.contains(&(profile.0, origin.to_string()))
+    }
+
+    /// Blueprint D13: allow or block (the default) the site's pop-ups.
+    pub fn set_popups(&mut self, profile: ProfileId, origin: &str, allow: bool) {
+        let key = (profile.0, origin.to_string());
+        if allow {
+            self.popups.insert(key);
+        } else {
+            self.popups.remove(&key);
+        }
+    }
+
+    /// Blueprint D13: whether the site may open `scheme` links in their app
+    /// without asking.
+    pub fn app_allowed(&self, profile: ProfileId, origin: &str, scheme: &str) -> bool {
+        self.apps
+            .contains(&(profile.0, origin.to_string(), scheme.to_string()))
+    }
+
+    /// Blueprint D13: always allow the site to open `scheme` links.
+    pub fn allow_app(&mut self, profile: ProfileId, origin: &str, scheme: &str) {
+        self.apps
+            .insert((profile.0, origin.to_string(), scheme.to_string()));
+    }
+
+    /// Blueprint D13: the schemes the site may open without asking.
+    pub fn allowed_apps(&self, profile: ProfileId, origin: &str) -> Vec<String> {
+        self.apps
+            .iter()
+            .filter(|(p, o, _)| *p == profile.0 && o == origin)
+            .map(|(_, _, scheme)| scheme.clone())
+            .collect()
+    }
+
     /// Forget every decision of a site in a profile.
     pub fn forget_site(&mut self, profile: ProfileId, origin: &str) {
+        self.apps
+            .retain(|(p, o, _)| !(*p == profile.0 && o == origin));
         self.entries
             .retain(|(p, o, _), _| !(*p == profile.0 && o == origin));
+        self.popups
+            .retain(|(p, o)| !(*p == profile.0 && o == origin));
     }
 
     /// Forget every decision of a deleted profile.
     pub fn forget_profile(&mut self, profile: ProfileId) {
         self.entries.retain(|(p, _, _), _| *p != profile.0);
+        self.popups.retain(|(p, _)| *p != profile.0);
+        self.apps.retain(|(p, _, _)| *p != profile.0);
     }
 
     /// The sites of `profile` with at least one decision, in order.
@@ -164,7 +235,20 @@ impl SitePermissions {
             .keys()
             .filter(|(p, _, _)| *p == profile.0)
             .map(|(_, origin, _)| origin.clone())
+            .chain(
+                self.popups
+                    .iter()
+                    .filter(|(p, _)| *p == profile.0)
+                    .map(|(_, origin)| origin.clone()),
+            )
+            .chain(
+                self.apps
+                    .iter()
+                    .filter(|(p, _, _)| *p == profile.0)
+                    .map(|(_, origin, _)| origin.clone()),
+            )
             .collect();
+        sites.sort();
         sites.dedup();
         sites
     }
@@ -183,14 +267,31 @@ impl SitePermissions {
             ) else {
                 continue;
             };
-            let (Ok(profile), Some(capability)) =
-                (profile.parse::<u64>(), parse_capability(capability))
-            else {
+            let Ok(profile) = profile.parse::<u64>() else {
                 continue;
             };
             if origin_of(origin).as_deref() != Some(origin) {
                 continue;
             }
+            if let Some(scheme) = capability.strip_prefix("app:") {
+                let valid = !scheme.is_empty()
+                    && scheme
+                        .chars()
+                        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'));
+                if valid && value == "allow" {
+                    permissions.allow_app(ProfileId(profile), origin, &scheme.to_ascii_lowercase());
+                }
+                continue;
+            }
+            if capability == "popups" {
+                if value == "allow" {
+                    permissions.set_popups(ProfileId(profile), origin, true);
+                }
+                continue;
+            }
+            let Some(capability) = parse_capability(capability) else {
+                continue;
+            };
             let policy = match value {
                 "allow" => SitePolicy::Allow,
                 "block" => SitePolicy::Block,
@@ -209,6 +310,14 @@ impl SitePermissions {
                 let value = if *allow { "allow" } else { "block" };
                 format!("{profile}\t{origin}\t{capability}\t{value}\n")
             })
+            .chain(
+                self.popups
+                    .iter()
+                    .map(|(profile, origin)| format!("{profile}\t{origin}\tpopups\tallow\n")),
+            )
+            .chain(self.apps.iter().map(|(profile, origin, scheme)| {
+                format!("{profile}\t{origin}\tapp:{scheme}\tallow\n")
+            }))
             .collect()
     }
 }
@@ -303,7 +412,24 @@ mod tests {
             PermissionCapability::Microphone,
             SitePolicy::Block,
         );
+        permissions.set_popups(ProfileId(1), "https://shop.example", true);
+        permissions.allow_app(ProfileId(1), "https://zoom.example", "zoommtg");
         assert_eq!(SitePermissions::parse(&permissions.render()), permissions);
+        assert!(SitePermissions::parse(&permissions.render())
+            .popups_allowed(ProfileId(1), "https://shop.example"));
+        assert_eq!(
+            permissions.sites(ProfileId(1)),
+            vec![
+                SITE.to_string(),
+                "https://shop.example".to_string(),
+                "https://zoom.example".to_string()
+            ]
+        );
+        assert!(SitePermissions::parse(&permissions.render()).app_allowed(
+            ProfileId(1),
+            "https://zoom.example",
+            "zoommtg"
+        ));
         let tolerant = SitePermissions::parse(
             "1\thttps://a.example\tcamera\tallow\nx\thttps://b.example\tcamera\tallow\n1\tnot an origin\tcamera\tallow\n1\thttps://c.example\tteleport\tallow\n1\thttps://d.example\tcamera\tmaybe\n",
         );

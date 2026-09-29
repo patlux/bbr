@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>BBR External Scheme</title>
+    <script>
+      // Blueprint D13 fixture: go to the `to` query parameter (a link to
+      // another app's scheme) once loaded.
+      window.addEventListener("load", () => {
+        const to = new URLSearchParams(location.search).get("to");
+        if (to) {
+          location.href = to;
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <main>
+      <h1>External scheme</h1>
+    </main>
+  </body>
+</html>

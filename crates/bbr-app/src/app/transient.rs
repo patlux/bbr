@@ -342,6 +342,10 @@ impl BbrApp {
             || self.rail_floating()
             || self.permission_prompt_model().is_some()
             || self.certificate_sheet_open()
+            || self.popup_notice_visible().is_some()
+            || self.open_app_sheet_open()
+            || self.open_app.banner.is_some()
+            || self.space_chooser.is_some()
             || self.site_settings_open();
         #[cfg(target_os = "macos")]
         {

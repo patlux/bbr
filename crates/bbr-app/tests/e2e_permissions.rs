@@ -191,7 +191,10 @@ fn permissions_prompt_remember_and_site_settings() {
             settings.rows,
             [
                 ("camera".to_string(), "Block".to_string()),
-                ("microphone".to_string(), "Ask".to_string())
+                ("microphone".to_string(), "Ask".to_string()),
+                // Blueprint D13: pop-ups are blocked (with a notice) by
+                // default.
+                ("popups".to_string(), "Block".to_string())
             ]
         );
         // Camera → Ask applies at once and ends the blocked mark.

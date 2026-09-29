@@ -21,6 +21,7 @@ use gpui::Context;
 use super::BbrApp;
 use crate::site_permissions::{self, SitePermissions, SitePolicy};
 
+pub(crate) mod popups;
 pub(crate) mod site_settings;
 #[cfg(feature = "testkit")]
 pub(crate) mod testkit;
@@ -61,6 +62,11 @@ pub(crate) struct PermissionsState {
     /// recorded by the Portal render.
     pub prompt_bounds: Rc<Cell<Option<[f32; 4]>>>,
     pub popover_bounds: Rc<Cell<Option<[f32; 4]>>>,
+    /// Blueprint D13: the blocked pop-up notice, its bounds and timer.
+    pub popup: Option<popups::PopupNotice>,
+    pub popup_generation: u64,
+    pub popup_bounds: Rc<Cell<Option<[f32; 4]>>>,
+    pub popup_task: Option<gpui::Task<()>>,
     /// Every decision handed to the engine (testkit evidence).
     #[cfg(feature = "testkit")]
     pub decisions: Vec<(u64, bool)>,
@@ -142,9 +148,15 @@ impl BbrApp {
                 cx.notify();
             }
             // A navigation to another site ends that view's pending
-            // requests and its blocked mark.
+            // requests, its blocked mark and its pop-up notice.
             WebEvent::UrlChanged(view, url) => {
                 let origin = site_permissions::origin_of(url);
+                self.publish_popup_views();
+                if self.permissions.popup.as_ref().is_some_and(|n| {
+                    n.request.source == *view && Some(&n.origin) != origin.as_ref()
+                }) {
+                    self.dismiss_popup_notice(cx);
+                }
                 let stale: Vec<u64> = self
                     .permissions
                     .pending
@@ -300,6 +312,21 @@ impl BbrApp {
     /// The Portal hit regions of the prompt and the popover (measured).
     pub(crate) fn permission_hit_rects(&self) -> Vec<[f32; 4]> {
         let mut rects = Vec::new();
+        if self.popup_notice_visible().is_some() {
+            rects.extend(self.permissions.popup_bounds.get());
+        }
+        // Blueprint D13: the open-in-app sheet blocks the card; the no-app
+        // banner captures its own box.
+        if self.open_app_sheet_open() {
+            rects.extend(self.transient.card);
+        }
+        if self.open_app.banner.is_some() {
+            rects.extend(self.open_app.banner_bounds.get());
+        }
+        // Blueprint D13: the space chooser takes the card while it asks.
+        if self.space_chooser.is_some() {
+            rects.extend(self.transient.card);
+        }
         // Blueprint D12: the certificate sheet's veil blocks the card.
         if self.certificate_sheet_open() {
             rects.extend(self.transient.card);

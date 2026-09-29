@@ -251,6 +251,16 @@ pub enum WebEvent {
         /// The matching Keychain identities (metadata only).
         identities: Vec<client_certificates::ClientIdentityInfo>,
     },
+    /// Blueprint D13: the page's main frame asked to go to a URL of a
+    /// scheme BBR does not render (`mailto:`, `zoom:`…). The engine
+    /// cancelled the navigation; the app decides whether another app opens
+    /// it.
+    ExternalSchemeRequested {
+        view: WebViewId,
+        url: String,
+        /// The navigation came from a link the user activated.
+        user_initiated: bool,
+    },
     /// Blueprint D11: the view's camera / microphone capture is live
     /// (active or muted) or not.
     MediaCaptureChanged {
@@ -347,6 +357,18 @@ pub trait WebEngine {
     /// Blueprint D11: answer a [`WebEvent::PermissionRequested`]. Unknown
     /// or already answered requests are no-ops.
     fn decide_permission(&mut self, _request: u64, _allow: bool) {}
+
+    /// Blueprint D13: the display name of the app macOS would open `url`
+    /// with (`None`: no app handles it).
+    fn external_app_name(&self, _url: &str) -> Option<String> {
+        None
+    }
+
+    /// Blueprint D13: hand `url` to the app macOS opens it with. Returns
+    /// whether an app took it.
+    fn open_external(&mut self, _url: &str) -> bool {
+        false
+    }
 
     /// Blueprint D12: answer a [`WebEvent::ClientCertificateRequested`].
     /// Unknown or already answered requests are no-ops.

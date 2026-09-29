@@ -95,6 +95,10 @@ pub mod menu_adapter;
 #[cfg(target_os = "macos")]
 mod navigation_cover;
 
+/// Blueprint D13: links to schemes BBR does not render.
+#[cfg(target_os = "macos")]
+pub mod external_schemes;
+
 /// Blueprint D12: client-certificate requests and Keychain identities.
 #[cfg(target_os = "macos")]
 pub mod client_identities;

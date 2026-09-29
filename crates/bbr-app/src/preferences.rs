@@ -29,6 +29,13 @@ pub fn new_window_decision(
     intent: bbr_web::NewWindowIntent,
 ) -> bbr_web::NewWindowDecision {
     let decision = bbr_web::decision_for_intent(request, intent);
+    // Blueprint D13: a site the user always allows opens its pop-ups as a
+    // tab instead of the blocked notice.
+    if decision == bbr_web::NewWindowDecision::Block
+        && crate::site_permissions::popups_allowed_for_view(request.source)
+    {
+        return bbr_web::NewWindowDecision::OpenTab;
+    }
     if intent == bbr_web::NewWindowIntent::Default
         && decision == bbr_web::NewWindowDecision::Preview
         && !PEEK_NEW_WINDOWS.load(Ordering::Relaxed)
@@ -117,6 +124,9 @@ pub struct Preferences {
     pub peek_new_windows: bool,
     /// ⌘T lists tabs from every space (else only the active space's).
     pub palette_all_spaces: bool,
+    /// Blueprint D13: links from other apps ask which space opens them
+    /// (else they open in the last active space).
+    pub external_links_ask: bool,
 }
 
 impl Default for Preferences {
@@ -129,6 +139,7 @@ impl Default for Preferences {
             default_paper: PaperChoice::Standard,
             peek_new_windows: true,
             palette_all_spaces: true,
+            external_links_ask: false,
         }
     }
 }
@@ -194,6 +205,11 @@ impl Preferences {
                         prefs.palette_all_spaces = flag;
                     }
                 }
+                "external_links" => match value {
+                    "ask" => prefs.external_links_ask = true,
+                    "last_space" => prefs.external_links_ask = false,
+                    _ => {}
+                },
                 _ => {}
             }
         }
@@ -220,11 +236,17 @@ impl Preferences {
         };
         format!(
             "appearance={appearance}\nincrease_contrast={}\nreduce_motion={}\ndensity={density}\n\
-             default_paper={paper}\npeek_new_windows={}\npalette_all_spaces={}\n",
+             default_paper={paper}\npeek_new_windows={}\npalette_all_spaces={}\n\
+             external_links={}\n",
             self.increase_contrast.key(),
             self.reduce_motion.key(),
             self.peek_new_windows,
             self.palette_all_spaces,
+            if self.external_links_ask {
+                "ask"
+            } else {
+                "last_space"
+            },
         )
     }
 }
@@ -265,6 +287,7 @@ mod tests {
             default_paper: PaperChoice::Rich,
             peek_new_windows: false,
             palette_all_spaces: false,
+            external_links_ask: true,
         };
         assert_eq!(Preferences::parse(&prefs.render()), prefs);
         let tolerant = Preferences::parse("appearance=purple\nfuture=1\ndensity=small\nnonsense");

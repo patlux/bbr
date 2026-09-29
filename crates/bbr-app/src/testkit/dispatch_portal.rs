@@ -98,8 +98,31 @@ pub(super) fn dispatch_portal(
         })
         .unwrap_or_else(err_response),
         // Blueprint D11: the permission prompt and site settings.
-        Request::PermissionInput { input } => with_app(window, app, cx, |view, _window, cx| {
-            view.permission_input(input.clone(), cx);
+        Request::PermissionInput { input } => with_app(window, app, cx, |view, window, cx| {
+            match input {
+                bbr_testkit::protocol::PermissionInput::PopupOpen => view.popup_open(window, cx),
+                bbr_testkit::protocol::PermissionInput::PopupAlwaysAllow => {
+                    view.popup_always_allow(window, cx)
+                }
+                other => view.permission_input(other.clone(), cx),
+            }
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        // Blueprint D13: the open-in-app sheet.
+        Request::OpenAppInput { input } => with_app(window, app, cx, |view, window, cx| {
+            use bbr_testkit::protocol::OpenAppInput as I;
+            use bbr_ui::surfaces::open_app::OpenAppEvent as E;
+            let event = match input {
+                I::Remember => E::Remember,
+                I::Cancel => E::Cancel,
+                I::Open => E::Open,
+                I::ChooseSpace { index } => {
+                    view.space_chooser_choose(*index, window, cx);
+                    return Response::Ok;
+                }
+            };
+            view.on_open_app_event(event, window, cx);
             Response::Ok
         })
         .unwrap_or_else(err_response),

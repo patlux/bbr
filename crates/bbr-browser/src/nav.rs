@@ -74,6 +74,7 @@ impl NavState {
             // app's site-permission state, not navigation state.
             bbr_web::WebEvent::PermissionRequested { .. }
             | bbr_web::WebEvent::ClientCertificateRequested { .. }
+            | bbr_web::WebEvent::ExternalSchemeRequested { .. }
             | bbr_web::WebEvent::MediaCaptureChanged { .. } => {}
         }
     }

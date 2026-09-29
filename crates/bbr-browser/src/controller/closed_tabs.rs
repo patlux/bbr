@@ -30,6 +30,38 @@ impl BrowserController {
         Some(self.browser.space(space)?.profile)
     }
 
+    /// Blueprint D13: every live view with its profile and current URL
+    /// (the session's live URL, else its tab's).
+    pub fn live_view_urls(&self) -> Vec<(bbr_web::WebViewId, bbr_web::ProfileId, String)> {
+        let mut views: Vec<(bbr_web::WebViewId, bbr_web::ProfileId, String)> = self
+            .registry
+            .views()
+            .filter_map(|view| {
+                let profile = self.profile_of_view(view)?;
+                let tab_url = self
+                    .registry
+                    .tab_for_view(view)
+                    .and_then(|tab| self.browser.tab(tab))
+                    .map(|tab| tab.url.clone());
+                let url = self
+                    .nav
+                    .get(&view)
+                    .and_then(|nav| nav.url.clone())
+                    .or(tab_url)?;
+                Some((view, profile, url))
+            })
+            .collect();
+        if let Some(preview) = self.preview.as_ref() {
+            let url = self
+                .nav
+                .get(&preview.view)
+                .and_then(|nav| nav.url.clone())
+                .unwrap_or_else(|| preview.url.clone());
+            views.push((preview.view, preview.profile, url));
+        }
+        views
+    }
+
     /// The active space's recently closed tabs, most recent first.
     pub fn recently_closed(&self) -> Vec<ClosedTabEntry> {
         self.browser

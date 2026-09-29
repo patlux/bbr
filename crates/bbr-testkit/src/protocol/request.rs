@@ -791,6 +791,10 @@ pub enum Request {
     ClientCertificateInput {
         input: super::ClientCertificateInput,
     },
+    /// Blueprint D13: one open-in-app sheet interaction.
+    OpenAppInput {
+        input: super::OpenAppInput,
+    },
     /// Blueprint D19: invoke the menu item `menu › item` (`menu` = "Dock"
     /// for the Dock menu) through the same action dispatch an `NSMenuItem`
     /// click takes.

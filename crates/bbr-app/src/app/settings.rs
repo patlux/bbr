@@ -149,12 +149,23 @@ impl BbrApp {
             section("Browser", vec![browser]),
             section(
                 "Tabs",
-                vec![SettingsRow::new(
-                    "general-peek",
-                    "Open links that ask for a new window as Peek",
-                    SettingsControl::Toggle(self.preferences.peek_new_windows),
-                )
-                .detail("Preview over the current tab; promote with Open as Tab")],
+                vec![
+                    SettingsRow::new(
+                        "general-peek",
+                        "Open links that ask for a new window as Peek",
+                        SettingsControl::Toggle(self.preferences.peek_new_windows),
+                    )
+                    .detail("Preview over the current tab; promote with Open as Tab"),
+                    // Blueprint D13 (answer 6): links from other apps.
+                    SettingsRow::new(
+                        "general-external-links",
+                        "Open links from other apps in",
+                        SettingsControl::Select {
+                            value: usize::from(self.preferences.external_links_ask),
+                            options: vec!["Last active space".into(), "Ask each time".into()],
+                        },
+                    ),
+                ],
             ),
         ]
     }
@@ -228,6 +239,17 @@ impl BbrApp {
                             )
                         })
                     })
+                    .chain(
+                        policies
+                            .popups_allowed(profile, origin)
+                            .then(|| "Pop-ups: Allow".to_string()),
+                    )
+                    .chain(
+                        policies
+                            .allowed_apps(profile, origin)
+                            .into_iter()
+                            .map(|scheme| format!("Opens {scheme}: links")),
+                    )
                     .collect::<Vec<_>>()
                     .join(" · ");
                 SettingsRow::new(
@@ -451,6 +473,7 @@ impl BbrApp {
                     if let Some(origin) = index.and_then(|index| sites.get(index)) {
                         self.permissions.policies.forget_site(profile, origin);
                         self.save_site_permissions();
+                        self.publish_popup_views();
                     }
                 }
                 _ => {}
@@ -461,6 +484,9 @@ impl BbrApp {
 
     fn settings_choose(&mut self, row: &str, index: usize, cx: &mut Context<Self>) {
         match row {
+            "general-external-links" => {
+                self.update_preferences(|p| p.external_links_ask = index == 1, cx);
+            }
             "search-engine" => {
                 if let Some(engine) = ENGINES.get(index) {
                     self.store.set_search_engine(engine.clone());

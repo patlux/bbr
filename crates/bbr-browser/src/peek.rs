@@ -371,6 +371,7 @@ impl BrowserController {
             | WebEvent::FaviconChanged(v, _)
             | WebEvent::PermissionRequested { view: v, .. }
             | WebEvent::ClientCertificateRequested { view: v, .. }
+            | WebEvent::ExternalSchemeRequested { view: v, .. }
             | WebEvent::MediaCaptureChanged { view: v, .. } => *v,
         };
         let is_preview = self

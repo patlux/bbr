@@ -656,8 +656,8 @@ pub(crate) fn spawn_event_pump(
                 // before the app finished launching are drained here, in
                 // order, so a cold-start link lands exactly once.
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
-                        view.on_external_url(url, cx)
+                    let _ = with_app(&window, &app, cx, |view, w, cx| {
+                        view.on_external_url(url, w, cx)
                     });
                 });
             }
