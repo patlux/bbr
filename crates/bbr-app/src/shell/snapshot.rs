@@ -297,6 +297,8 @@ pub struct TestSnapshot {
     pub client_certificates: bbr_testkit::protocol::ClientCertificatesSnapshot,
     /// Blueprint D13: links to other apps.
     pub open_app: bbr_testkit::protocol::OpenAppSnapshot,
+    /// Blueprint D15: the first run while it shows.
+    pub onboarding: Option<bbr_testkit::protocol::OnboardingSnapshot>,
     pub zoom_readout: Option<u32>,
     /// Native z-order evidence: while a preview is open the preview
     /// WKWebView's subview index must exceed its covered origin's (the

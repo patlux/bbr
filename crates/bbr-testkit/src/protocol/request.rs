@@ -795,6 +795,10 @@ pub enum Request {
     OpenAppInput {
         input: super::OpenAppInput,
     },
+    /// Blueprint D15: one first-run control.
+    WelcomeInput {
+        input: super::WelcomeInput,
+    },
     /// Blueprint D19: invoke the menu item `menu › item` (`menu` = "Dock"
     /// for the Dock menu) through the same action dispatch an `NSMenuItem`
     /// click takes.

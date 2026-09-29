@@ -127,6 +127,8 @@ pub struct Preferences {
     /// Blueprint D13: links from other apps ask which space opens them
     /// (else they open in the last active space).
     pub external_links_ask: bool,
+    /// Blueprint D15: the first-run welcome was shown (it never returns).
+    pub welcomed: bool,
 }
 
 impl Default for Preferences {
@@ -140,6 +142,7 @@ impl Default for Preferences {
             peek_new_windows: true,
             palette_all_spaces: true,
             external_links_ask: false,
+            welcomed: false,
         }
     }
 }
@@ -205,6 +208,11 @@ impl Preferences {
                         prefs.palette_all_spaces = flag;
                     }
                 }
+                "welcomed" => {
+                    if let Ok(flag) = value.parse() {
+                        prefs.welcomed = flag;
+                    }
+                }
                 "external_links" => match value {
                     "ask" => prefs.external_links_ask = true,
                     "last_space" => prefs.external_links_ask = false,
@@ -237,7 +245,7 @@ impl Preferences {
         format!(
             "appearance={appearance}\nincrease_contrast={}\nreduce_motion={}\ndensity={density}\n\
              default_paper={paper}\npeek_new_windows={}\npalette_all_spaces={}\n\
-             external_links={}\n",
+             external_links={}\nwelcomed={}\n",
             self.increase_contrast.key(),
             self.reduce_motion.key(),
             self.peek_new_windows,
@@ -247,6 +255,7 @@ impl Preferences {
             } else {
                 "last_space"
             },
+            self.welcomed,
         )
     }
 }
@@ -288,6 +297,7 @@ mod tests {
             peek_new_windows: false,
             palette_all_spaces: false,
             external_links_ask: true,
+            welcomed: true,
         };
         assert_eq!(Preferences::parse(&prefs.render()), prefs);
         let tolerant = Preferences::parse("appearance=purple\nfuture=1\ndensity=small\nnonsense");

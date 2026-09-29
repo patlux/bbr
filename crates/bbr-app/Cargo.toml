@@ -19,7 +19,6 @@ default = []
 testkit = [
     "dep:bbr-testkit",
     "dep:mach2",
-    "dep:serde_json",
     "bbr-web-macos/testkit",
 ]
 # Visual-evidence-only extension. GPUI's test-support feature changes executor
@@ -50,7 +49,11 @@ smol.workspace = true
 
 # Test-support crates (portable; only the gateway under `testkit`).
 bbr-testkit = { workspace = true, optional = true }
-serde_json = { workspace = true, optional = true }
+# Blueprint D15: Chrome's bookmarks (JSON) and Safari's/Chrome's history
+# (SQLite) for the first-run import; both crates are already in the
+# workspace (the testkit wire format and the persistence store).
+serde_json.workspace = true
+rusqlite.workspace = true
 
 # macOS: native WebKit engine + raw window handle to attach it to the GPUI
 # root view. On other targets the app uses a portable null engine so the
@@ -73,6 +76,4 @@ bbr-persistence.workspace = true
 bbr-testkit.workspace = true
 mach2 = "0.4"
 image = "0.25"
-rusqlite.workspace = true
 serde.workspace = true
-serde_json.workspace = true

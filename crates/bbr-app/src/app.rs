@@ -115,6 +115,7 @@ pub(crate) mod client_certificates;
 mod menu_sync;
 mod motion;
 mod new_window;
+pub(crate) mod onboarding;
 pub(crate) mod open_app;
 pub(crate) mod palette;
 pub(crate) mod peek;
@@ -238,6 +239,10 @@ pub struct BbrApp {
     pub(crate) open_app: open_app::OpenAppState,
     /// Blueprint D13: the space chooser for a link from another app.
     pub(crate) space_chooser: Option<space_chooser::SpaceChooserState>,
+    /// Blueprint D15: the first run while it shows, and where the import
+    /// looks (a fixture home under test; the user's home otherwise).
+    pub(crate) onboarding: Option<onboarding::OnboardingState>,
+    pub(crate) import_home: Option<std::path::PathBuf>,
     /// Blueprint D19: the spaces the installed menu bar and Dock menu list
     /// (`None` until the first render installs them).
     pub(crate) menu_spaces: Option<Vec<crate::menus::MenuSpace>>,
@@ -688,6 +693,8 @@ impl BbrApp {
             certificates: client_certificates::CertificateState::default(),
             open_app: open_app::OpenAppState::default(),
             space_chooser: None,
+            onboarding: None,
+            import_home: None,
             menu_spaces: None,
             recovery_dismissed: false,
             about_window: None,

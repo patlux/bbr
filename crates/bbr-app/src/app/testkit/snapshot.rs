@@ -379,6 +379,25 @@ impl BbrApp {
                 ids.extend(self.tab_menu_visible_ids());
                 // Blueprint D11/D12: the Portal overlays over the card.
                 ids.extend(self.permission_visible_ids());
+                // Blueprint D15: the welcome takes the empty space's card.
+                if let Some(step) = self
+                    .onboarding_visible()
+                    .then(|| self.welcome_step())
+                    .flatten()
+                {
+                    ids.retain(|id| !id.starts_with("bbr-empty-new-tab"));
+                    ids.push(bbr_ui::surfaces::welcome::ONBOARDING_ID.to_string());
+                    if step == bbr_ui::surfaces::welcome::WelcomeStep::Welcome {
+                        ids.extend(
+                            ["bbr-welcome", "bbr-welcome-start", "bbr-welcome-import"]
+                                .map(String::from),
+                        );
+                    } else {
+                        ids.extend(
+                            ["bbr-onboarding-skip", "bbr-onboarding-next"].map(String::from),
+                        );
+                    }
+                }
                 // §2: the content card always frames the content area; the
                 // draggable chassis band exists while the card has a top
                 // inset (never in full screen).
@@ -671,6 +690,7 @@ impl BbrApp {
             permissions: self.permissions_snapshot(),
             client_certificates: self.client_certificates_snapshot(),
             open_app: self.open_app_snapshot(),
+            onboarding: self.onboarding_snapshot(),
             about: self.about_window.is_some().then(crate::about::version_line),
             restore_notice: self
                 .transient

@@ -4,7 +4,7 @@ Parents: [Phase 9](../phases/09-quality-release.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.8, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 21 of 24. Paper boards: L-1 · First run — welcome, L-2 · First run — import, default browser, first space, PR-01 · First run & onboarding (file
+Status: implemented 2026-09-30 (DESIGN §19); position 21 of 24. Paper boards: L-1 · First run — welcome, L-2 · First run — import, default browser, first space, PR-01 · First run & onboarding (file
 “BBR — Browser Shell”).
 
 ## Outcome
@@ -43,23 +43,22 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Portable model / controller / component tests for the new behaviour
-      and its states.
+- [x] Unit/contract: `import` counts and spans, Chrome bookmarks JSON, `store::history_ops` import merge, `plist_bookmarks` XML plist through Foundation, `onboarding` toast copy, preferences welcomed/external links round trip.
 
 ### Real-app E2E
 
-- [ ] `just e2e-smoke` covers the flow drawn on the boards through the
-      production path with semantic ids and typed snapshots.
+- [x] `just e2e-first-run` (`e2e_first_run.rs`): a fresh launch without an address shows the welcome in the empty space (ids, no empty pane), the import step reads a fixture home (Chrome profile with Local State name, Bookmarks, History; Safari Bookmarks.plist and History.db) with counts, Import lands 3 Saved Pages and 2 history entries with the toast, default browser skipped, typed first-space name, the welcome never returns on relaunch; Get Started opens the palette.
 
 ### Performance
 
-- [ ] Add the optimized presentation scenario for the new user-visible interaction, or record why none applies (performance contract).
+- [ ] Extend `just e2e-perf` with the welcome presentation scenario (deferred).
 
 ## Completion gates
 
 ```bash
 just verify
 cargo clippy -p bbr --features testkit --all-targets -- -D warnings
+just e2e-first-run
 just e2e-smoke
 just e2e-perf
 just e2e
@@ -81,12 +80,12 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                First-run welcome in the empty space, three skippable steps (import from Safari and Chrome, default browser, first space name).
+Commits:                see git log (feat/fix commit carrying this packet)
+Functional evidence:    Unit/contract: `import` counts and spans, Chrome bookmarks JSON, `store::history_ops` import merge, `plist_bookmarks` XML plist through Foundation, `onboarding` toast copy, preferences welcomed/external links round trip.
+Real-app E2E:           `just e2e-first-run` (`e2e_first_run.rs`): a fresh launch without an address shows the welcome in the empty space (ids, no empty pane), the import step reads a fixture home (Chrome profile with Local State name, Bookmarks, History; Safari Bookmarks.plist and History.db) with counts, Import lands 3 Saved Pages and 2 history entries with the toast, default browser skipped, typed first-space name, the welcome never returns on relaunch; Get Started opens the palette.
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §11.8 First run, §19 D15 row.
+Open blockers and non-goals: the welcome is the empty space's card, not a first tab (BBR has no web session for internal pages); import progress shows as a toast when done, not in a Downloads-style panel; reading the real Safari library needs Full Disk Access and is checked by hand; performance scenario deferred
+Worktree state:         main, clean after commit
 ```

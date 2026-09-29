@@ -142,3 +142,27 @@ pub enum OpenAppInput {
         index: usize,
     },
 }
+
+/// Blueprint D15: the first run while it shows.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OnboardingSnapshot {
+    /// `welcome`, `import`, `default-browser`, `first-space`.
+    pub step: String,
+    /// Import sources `(label, detail, checked, enabled)`; `None` while
+    /// they are read.
+    pub sources: Option<Vec<(String, String, bool, bool)>>,
+    /// The first space's name draft.
+    pub name: String,
+}
+
+/// Blueprint D15: one first-run control.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum WelcomeInput {
+    GetStarted,
+    StartImport,
+    ToggleSource { index: usize },
+    Skip,
+    Import,
+    FocusName,
+    Done,
+}

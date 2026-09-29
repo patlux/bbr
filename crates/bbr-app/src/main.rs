@@ -21,6 +21,7 @@ mod command_bar;
 mod components;
 mod dense;
 mod engine;
+mod import;
 mod inject;
 mod menus;
 #[cfg(feature = "testkit")]
@@ -55,6 +56,12 @@ use window_seam::{
 /// Parsed command-line flags (all `--bbr-*` are test/injection knobs).
 struct Cli {
     initial_url: String,
+    /// Blueprint D15: an address was asked for (no first-run welcome).
+    initial_url_given: bool,
+    /// Blueprint D15 (testkit): where the first-run import looks instead of
+    /// the user's home.
+    #[cfg(feature = "testkit")]
+    import_home: Option<PathBuf>,
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
     profile_dir: PathBuf,
     test_token: Option<String>,
@@ -84,6 +91,9 @@ enum ClockMode {
 impl Cli {
     fn parse() -> Self {
         let mut initial_url = "about:blank".to_string();
+        let mut initial_url_given = false;
+        #[cfg(feature = "testkit")]
+        let mut import_home: Option<PathBuf> = None;
         let mut profile_dir: Option<PathBuf> = None;
         let mut test_token: Option<String> = None;
         let mut hidden = false;
@@ -105,7 +115,12 @@ impl Cli {
                     .clone()
             };
             match key {
-                "--bbr-initial-url" => initial_url = take(&mut value_opt),
+                "--bbr-initial-url" => {
+                    initial_url = take(&mut value_opt);
+                    initial_url_given = true;
+                }
+                #[cfg(feature = "testkit")]
+                "--bbr-import-home" => import_home = Some(PathBuf::from(take(&mut value_opt))),
                 "--bbr-profile-dir" => {
                     profile_dir = Some(PathBuf::from(take(&mut value_opt)));
                 }
@@ -144,6 +159,9 @@ impl Cli {
 
         Cli {
             initial_url,
+            initial_url_given,
+            #[cfg(feature = "testkit")]
+            import_home,
             profile_dir,
             test_token,
             hidden,
@@ -617,7 +635,13 @@ fn main() {
         // already owns a hydrated model: the active space's visible set has
         // its session and every other tab is deferred (session-less until
         // activation), so no initial tab may be added on top.
-        if !matches!(restore_evidence, app::RestoreEvidence::Restored { .. }) {
+        // Blueprint D15: the very first launch (a fresh store, no address
+        // asked for, never welcomed) opens one empty space with the welcome
+        // instead of a blank tab.
+        let first_run = !cli.initial_url_given
+            && matches!(restore_evidence, app::RestoreEvidence::Fresh)
+            && !preferences::load(&preferences::path_in(&cli.profile_dir)).welcomed;
+        if !matches!(restore_evidence, app::RestoreEvidence::Restored { .. }) && !first_run {
             let _ = with_app(&window, &app, cx, |view, _w, _cx| {
                 view.open_initial_tab(&cli.initial_url)
             });
@@ -629,7 +653,14 @@ fn main() {
             view.browser_window = Some(window);
             view.load_site_permissions(site_permissions::path_in(&cli.profile_dir));
             view.load_certificate_choices(certificate_choices::path_in(&cli.profile_dir));
-            view.load_preferences(preferences::path_in(&cli.profile_dir), cx)
+            view.load_preferences(preferences::path_in(&cli.profile_dir), cx);
+            #[cfg(feature = "testkit")]
+            {
+                view.import_home = cli.import_home.clone();
+            }
+            if first_run {
+                view.start_welcome(cx);
+            }
         });
         // Native portal host (task packet native-portal-host): exactly one
         // transparent, non-activating portal window per browser window,

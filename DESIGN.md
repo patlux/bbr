@@ -1306,6 +1306,34 @@ of problem instead of styling it.
   policy: they are discarded without a copy or a pane. Profile data (the
   WebKit stores with cookies and logins) is never touched. Snapshot:
   `recovery` (`unreadable`, `unreadable-kept`, `newer`).
+- **First run (blueprint D15, boards L-1 L-2 PR-01):** the very first
+  launch — a fresh store, no address asked for, never welcomed — opens one
+  empty space and shows the welcome in its card instead of the empty-space
+  pane (`bbr-onboarding`, `bbr-welcome`, 440 pt column centred in the
+  card): "Welcome to BBR", "A fast browser for many contexts at once.",
+  three things to know (⌘T opens anything; Spaces keep contexts apart;
+  Profiles keep logins apart, each on a 32 pt `tint.accent` tile), the
+  primary Get Started (`bbr-welcome-start`, ends it and opens the ⌘T palette
+  in New Tab mode) and "Import from Safari or Chrome…"
+  (`bbr-welcome-import`). No account, no tour overlay; nothing blocks the
+  browser, and opening any tab ends it. The preferences remember it at
+  once, so it never returns. The board draws the welcome as the first
+  tab's internal page; BBR has no web session for internal pages, so it is
+  the empty space's card and closing it leaves that empty space. The
+  import link leads through three skippable steps in the same place, each
+  with Skip (`bbr-onboarding-skip`) and its action (`bbr-onboarding-next`):
+  **Bring your things over** lists Safari and each Google Chrome profile
+  found ("Google Chrome · Patrick", "1 204 bookmarks · 18 months of
+  history"; answer 12: no other browsers) with a checkbox
+  (`bbr-onboarding-source-<n>`); sources are read in the background from
+  copies (a running browser's lock never matters, nothing of theirs is
+  written); Safari's files need Full Disk Access and the row says so.
+  Import lands bookmarks as Saved Pages (deduplicated by canonical URL) and
+  history in History (merged by URL, keeping counts and the later time),
+  then a toast counts what came over. **Open links in BBR?** says whether
+  BBR is the default browser; Make Default asks macOS through the
+  default-browser contract. **Name your first space** renames the empty
+  space as you type (Return or Done).
 - **Restore notice (blueprint D17, implemented):** a launch that restored a
   session says what came back, once: "Restored 3 spaces and 42 tabs from
   your last session." The info banner (`bbr-restore-notice`: the
@@ -2487,7 +2515,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D12 | Client certificate chooser | M-11 PR-15 | §18.4 | implemented; the Keychain enumeration is contract-tested against a real certificate, the live TLS path is checked by hand | [blueprint-client-certificates](docs/roadmap/tasks/blueprint-client-certificates.md) |
 | D13 | Open-in-app, pop-up and link-routing UI | M-12 M-13 PR-04 PR-20 | §11.13 §18.4 | implemented without the sign-in pop-up window (needs opener-linked sessions in a second window) | [blueprint-link-destinations](docs/roadmap/tasks/blueprint-link-destinations.md) |
 | D14 | Back / Forward history menu | W-7 M-3 | §11.14 §11.13 | implemented | [blueprint-navigation-history-menu](docs/roadmap/tasks/blueprint-navigation-history-menu.md) |
-| D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | adopted | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |
+| D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | implemented; the welcome is the empty space's card (no internal-page sessions) | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |
 | D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 §11.18 | implemented (§11.18: rows without behaviour behind them are omitted) | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |
 | D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | implemented (partial-restore banner omitted: no lost-tab report exists) | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
 | D18 | About and updates | L-12 | §1 §7 | About window implemented; no update channel while BBR is built locally (answer 14) | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |

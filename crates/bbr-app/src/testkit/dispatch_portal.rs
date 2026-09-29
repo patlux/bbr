@@ -109,6 +109,23 @@ pub(super) fn dispatch_portal(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // Blueprint D15: the first run.
+        Request::WelcomeInput { input } => with_app(window, app, cx, |view, window, cx| {
+            use bbr_testkit::protocol::WelcomeInput as I;
+            use bbr_ui::surfaces::welcome::WelcomeEvent as E;
+            let event = match input {
+                I::GetStarted => E::GetStarted,
+                I::StartImport => E::StartImport,
+                I::ToggleSource { index } => E::ToggleSource(*index),
+                I::Skip => E::Skip,
+                I::Import => E::Import,
+                I::FocusName => E::FocusName,
+                I::Done => E::Done,
+            };
+            view.on_welcome_event(event, window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
         // Blueprint D13: the open-in-app sheet.
         Request::OpenAppInput { input } => with_app(window, app, cx, |view, window, cx| {
             use bbr_testkit::protocol::OpenAppInput as I;

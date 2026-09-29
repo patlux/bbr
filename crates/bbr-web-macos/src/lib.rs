@@ -95,6 +95,10 @@ pub mod menu_adapter;
 #[cfg(target_os = "macos")]
 mod navigation_cover;
 
+/// Blueprint D15: Safari's bookmarks for the first-run import.
+#[cfg(target_os = "macos")]
+pub mod plist_bookmarks;
+
 /// Blueprint D13: links to schemes BBR does not render.
 #[cfg(target_os = "macos")]
 pub mod external_schemes;

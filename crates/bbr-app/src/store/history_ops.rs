@@ -53,6 +53,46 @@ impl AppStore {
         })
     }
 
+    /// Blueprint D15: merge imported visits (normalized URL, title, visit
+    /// count, time in ms) — an existing URL adds the count and keeps the
+    /// later time; a new one is appended. Returns how many URLs were new.
+    pub fn import_history(&mut self, visits: &[(String, String, u64, u64)]) -> usize {
+        let mut history = self.history.lock().expect("history provider lock");
+        let mut added = 0;
+        let mut latest = 0;
+        for (url, title, count, at) in visits {
+            let normalized = bbr_web::normalize_url(url);
+            let web = normalized.starts_with("https://") || normalized.starts_with("http://");
+            if !web || normalized.contains(char::is_whitespace) {
+                continue;
+            }
+            latest = latest.max(*at);
+            if let Some(entry) = history.iter_mut().find(|entry| entry.url == normalized) {
+                entry.visit_count = entry.visit_count.saturating_add(*count);
+                entry.last_visited = entry.last_visited.max(*at);
+                if entry.title.is_empty() {
+                    entry.title = title.trim().to_string();
+                }
+            } else {
+                let id = self.next_id;
+                self.next_id += 1;
+                history.push(bbr_command::corpus::HistoryEntry::new(
+                    bbr_command::id::HistoryId(id),
+                    title.trim().to_string(),
+                    normalized,
+                    (*count).max(1),
+                    *at,
+                ));
+                added += 1;
+            }
+        }
+        drop(history);
+        // New visits stay more recent than anything imported.
+        self.next_recency = self.next_recency.max(latest + 1);
+        let _ = self.write_tx.try_send(());
+        added
+    }
+
     fn retain_history(&mut self, keep: impl Fn(&HistoryEntry) -> bool) -> usize {
         let mut history = self.history.lock().expect("history provider lock");
         let before = history.len();
@@ -85,6 +125,28 @@ mod tests {
         store.with_history(|history| {
             assert!(history[0].last_visited >= before);
             assert!(history[1].last_visited > history[0].last_visited);
+        });
+    }
+
+    #[test]
+    fn imports_merge_by_url_and_keep_later_times() {
+        let mut store = store_with(&["https://a.example/"]);
+        let before: u64 = store.with_history(|h| h[0].last_visited);
+        let added = store.import_history(&[
+            ("https://a.example/".into(), "A".into(), 5, 1_000),
+            ("https://b.example/".into(), "B".into(), 2, 2_000),
+            ("not a url at all".into(), String::new(), 1, 3_000),
+        ]);
+        assert_eq!(added, 1, "a known URL merges; a malformed one is skipped");
+        store.with_history(|h| {
+            let a = h.iter().find(|e| e.url == "https://a.example/").unwrap();
+            assert_eq!(a.visit_count, 6);
+            assert_eq!(a.last_visited, before, "the later time stays");
+            let b = h.iter().find(|e| e.url == "https://b.example/").unwrap();
+            assert_eq!(
+                (b.visit_count, b.last_visited, b.title.as_str()),
+                (2, 2_000, "B")
+            );
         });
     }
 

@@ -355,7 +355,24 @@ impl Render for BbrApp {
                 }),
             )
             .into_any()
+        } else if self.onboarding_visible() {
+            // Blueprint D15: the first run's welcome takes the empty
+            // space's card.
+            let step = self.welcome_step().expect("onboarding is visible");
+            let entity = cx.entity();
+            bbr_ui::surfaces::welcome::welcome_surface(
+                &theme,
+                &step,
+                std::rc::Rc::new(move |event, window, cx| {
+                    entity.update(cx, |app, cx| app.on_welcome_event(event, window, cx));
+                }),
+            )
+            .into_any_element()
         } else {
+            if self.onboarding.is_some() && !browser.tabs.is_empty() {
+                // A tab opened: the first run is over for good.
+                self.onboarding = None;
+            }
             components::empty_space_pane(
                 &theme,
                 &crate::shell::profile_line(

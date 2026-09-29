@@ -715,6 +715,7 @@ pub(crate) fn dispatch(
         | Request::PermissionInput { .. }
         | Request::ClientCertificateInput { .. }
         | Request::OpenAppInput { .. }
+        | Request::WelcomeInput { .. }
         | Request::CloseSettings
         | Request::ToastAction
         | Request::InvokeMenuItem { .. }

@@ -720,6 +720,10 @@ impl BbrApp {
             self.on_auth_key_down(event, window, cx);
             return;
         }
+        // Blueprint D15: the first space's name field.
+        if self.onboarding_visible() && self.on_onboarding_key_down(event, window, cx) {
+            return;
+        }
         // Blueprint D12: the client-certificate sheet owns the keyboard.
         if self.certificate_sheet_open() {
             self.on_certificate_key_down(event, window, cx);

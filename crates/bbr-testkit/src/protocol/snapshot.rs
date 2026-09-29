@@ -1638,6 +1638,9 @@ pub struct Snapshot {
     /// Blueprint D13: links to other apps.
     #[serde(default)]
     pub open_app: super::OpenAppSnapshot,
+    /// Blueprint D15: the first run while it shows.
+    #[serde(default)]
+    pub onboarding: Option<super::OnboardingSnapshot>,
     /// Blueprint D08: the live zoom readout's percent (`None` at rest).
     #[serde(default)]
     pub zoom_readout: Option<u32>,

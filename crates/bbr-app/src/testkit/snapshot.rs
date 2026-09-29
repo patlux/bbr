@@ -321,6 +321,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             permissions: self.permissions.clone(),
             client_certificates: self.client_certificates.clone(),
             open_app: self.open_app.clone(),
+            onboarding: self.onboarding.clone(),
             recovery: self.recovery.clone(),
             restore_notice: self.restore_notice.clone(),
             about: self.about.clone(),
