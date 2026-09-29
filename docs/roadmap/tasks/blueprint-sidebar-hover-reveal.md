@@ -37,6 +37,19 @@ floating docks it at the remembered width (yes); a fullscreen hotspot
 (narrow native-observed edge); dismissal on deactivate/minimize (yes).
 Full review: session artifact `/private/tmp/bbr-d02-astra-review.md`.
 
+**Trigger decision (Patrick, 2026-09-29):** the rail appears at once when
+the pointer reaches the left edge moving fast and mostly leftward. A slow
+arrival keeps the 300 ms dwell, so a careful click near the page's left edge
+does not open it. Proposed values: at least 600 pt/s of horizontal speed
+over the last ~80 ms of pointer samples, with the horizontal component
+dominant. There is no trigger while a mouse button is held or while a menu
+or the palette is open. When a fast pointer overshoots a window that is
+not at the screen edge, the rail appears and waits about 1.2 s for the
+pointer to come back. Detection needs the pointer samples over the web
+view, too; a local mouse-moved monitor (like `portal_hit`) sees them without
+taking events from the page. Patrick can try the threshold in the
+explainer `~/Downloads/bbr-d02-schwebende-leiste.html`.
+
 ## Outcome
 
 A 300 ms dwell at the left edge reveals the rail as a floating panel over the card (elev:2), without reflowing the card; leaving or Escape hides it.

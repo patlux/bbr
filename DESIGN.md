@@ -2256,7 +2256,11 @@ preference on 13 and 14, so the recommendations were adopted: 13 keeps
 both rows omitted (the 2026-09-27 settlement: no folder row closes tabs;
 Open All Tabs has no BBR meaning), and 14 ships no update channel while
 BBR is built locally (revisit when BBR is distributed; Sparkle with a
-signed appcast is the default candidate then).
+signed appcast is the default candidate then). D02 (Patrick, 2026-09-29):
+the floating rail must work exactly like the docked rail (no click-only
+variant). It also appears at once when the pointer reaches the left edge
+moving fast and mostly leftward (proposed threshold 600 pt/s over the last
+~80 ms). A slow arrival keeps the 300 ms dwell.
 
 | # | Question | Delta |
 |---|---|---|
