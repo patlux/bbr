@@ -193,6 +193,7 @@ pub fn build_sidebar_fixture_with_theme(
                     expanded: case.folder_members > 0,
                     reveal_count: case.folders_focused,
                     rename: None,
+                    drop_target: false,
                 })
                 .collect(),
             members: (0..case.folder_members)

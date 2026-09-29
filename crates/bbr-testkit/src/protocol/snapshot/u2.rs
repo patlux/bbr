@@ -158,7 +158,7 @@ pub struct FavoriteTileSnapshot {
 /// One folder row on the wire (DESIGN.md §11.11): the creation-order index
 /// (the `bbr-folder-row-<n>` identity), the title, the member-tab count, and
 /// the app-local expanded/collapsed value (snap semantics asserted by E2E).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FolderRowSnapshot {
     /// Position in creation order — the `bbr-folder-row-<n>` id.
     pub index: usize,
@@ -189,6 +189,12 @@ pub struct FolderRowSnapshot {
     /// character replaces it). `false` at rest.
     #[serde(default)]
     pub rename_selected: bool,
+    /// Blueprint D02: a dragged tab is over this row (§10.9 drag-target).
+    #[serde(default)]
+    pub drag_target: bool,
+    /// The row's rendered window rect `[x, y, w, h]` (its drop rect).
+    #[serde(default)]
+    pub rect: Option<[f32; 4]>,
 }
 
 /// DESIGN.md §11.3 sidebar-swipe evidence on the wire (F2a swipe kernel):

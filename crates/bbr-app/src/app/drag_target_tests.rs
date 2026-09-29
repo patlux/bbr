@@ -15,8 +15,21 @@ fn geometry<'a>(pinned: usize, len: usize, chips: &'a [ChipSpan]) -> DragGeometr
         pitch: 40.0,
         favorites_band: None,
         pin_offer: None,
+        folders: &[],
+        rail: None,
         chips,
         loose: None,
+    }
+}
+
+/// A rail-wide region spanning window y `top..bottom` (the rail is
+/// 0..300 pt wide in these tests).
+fn band(top: f32, bottom: f32) -> DropRect {
+    DropRect {
+        x: 0.0,
+        y: top,
+        width: 300.0,
+        height: bottom - top,
     }
 }
 
@@ -33,8 +46,10 @@ fn geometry_with_favorites<'a>(
         pinned,
         len,
         pitch: 40.0,
-        favorites_band: Some(favorites_band),
+        favorites_band: Some(band(favorites_band.0, favorites_band.1)),
         pin_offer: None,
+        folders: &[],
+        rail: None,
         chips,
         loose: None,
     }
@@ -282,8 +297,10 @@ fn the_ghost_row_is_a_region_offer_hit_by_its_rendered_span() {
         pinned: 1,
         len: 4,
         pitch: 40.0,
-        favorites_band: Some((100.0, 160.0)),
-        pin_offer: Some((220.0, 256.0)),
+        favorites_band: Some(band(100.0, 160.0)),
+        pin_offer: Some(band(220.0, 256.0)),
+        folders: &[],
+        rail: None,
         chips: &chips,
         loose: None,
     };
@@ -335,4 +352,58 @@ fn loose_pinned_rows_resolve_in_rendered_row_space() {
     let (target, valid) = resolve_target(3, 10.0, 18.0, -40.0, center_press(), &g);
     assert_eq!(target, Some(DragTarget::Tab { slot: 0 }));
     assert!(valid);
+}
+
+/// Blueprint D02: a folder row is a 2-D drop target, the Favorites band and
+/// the ghost row are hit in x as well as y, and the page beside the rail
+/// is no target at all.
+#[test]
+fn region_targets_are_hit_in_two_dimensions_inside_the_rail() {
+    let folders = [(
+        FolderId(7),
+        DropRect {
+            x: 8.0,
+            y: 300.0,
+            width: 200.0,
+            height: 36.0,
+        },
+    )];
+    let favorites = DropRect {
+        x: 8.0,
+        y: 100.0,
+        width: 200.0,
+        height: 60.0,
+    };
+    let g = DragGeometry {
+        favorites_band: Some(favorites),
+        pin_offer: Some(DropRect {
+            x: 8.0,
+            y: 220.0,
+            width: 200.0,
+            height: 36.0,
+        }),
+        folders: &folders,
+        rail: Some((0.0, 240.0)),
+        ..geometry(1, 6, &[])
+    };
+    // Over the folder row: the folder.
+    let (target, valid) = resolve_target(3, 50.0, 318.0, 0.0, center_press(), &g);
+    assert_eq!(
+        target,
+        Some(DragTarget::Folder {
+            folder: FolderId(7)
+        })
+    );
+    assert!(valid);
+    // At the band's height but right of its rect (still inside the rail):
+    // not the Favorites target.
+    let (target, _) = resolve_target(3, 220.0, 130.0, -190.0, center_press(), &g);
+    assert_ne!(target, Some(DragTarget::Favorites));
+    // Left of the ghost row's rect: not the pin offer.
+    let (target, _) = resolve_target(3, 4.0, 238.0, -80.0, center_press(), &g);
+    assert_ne!(target, Some(DragTarget::PinOffer));
+    // Beside the rail, at a row's height: no target.
+    let (target, valid) = resolve_target(3, 400.0, 318.0, 0.0, center_press(), &g);
+    assert_eq!(target, None);
+    assert!(!valid);
 }

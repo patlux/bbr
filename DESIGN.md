@@ -693,7 +693,11 @@ the user never saw.
 the same time because each names a different destination, but only the one
 under the pointer takes the `drag-target` language; the others stay in
 their offered (dashed) state. Region offers are hit through the rects their
-anchors recorded in the last frame — never a parallel layout model.
+anchors recorded in the last frame — never a parallel layout model — in
+both axes (blueprint D02): the Favorites band, the ghost row, the space
+chips and every folder row are rects, and a pointer outside the rail's
+horizontal span (over the page beside a row) is no target, so the docked
+and the floating rail resolve drops the same way.
 
 **Assert:** `dragging`, `drag-target`, `bbr-tab-drag-proxy` (present only
 during an active drag), `bbr-drag-tick-<n>` (present only when a concrete
@@ -1391,8 +1395,11 @@ pinned, the expanded folders' members, then the regular region.
   keeps the committed title. At most one folder is in rename. The typed
   snapshot reports `rename_draft`/`rename_selected` per folder row.
 - **Drag:** dragging a tab over a folder row renders the folder as a
-  `drag-target` (§10.9); a drop routes through the move-into-folder
-  command of the favorites/folders domain slice, and keyboard staging
+  `drag-target` (§10.9: the 1 pt `accent` outline on the `tint.accent`
+  fill, no insertion tick) and the row reports `drag-target` in the
+  semantic tree; a drop routes through the move-into-folder command of
+  the favorites/folders domain slice (a regular tab is pinned by the same
+  transition; identity and the live session stay), and keyboard staging
   (`Cmd-Shift-M`) covers folders per the interaction contract.
 - **States:** folder rows take `default`/`hover`/`active`/`focused` plus an
   expanded/collapsed value in the semantic tree; nested rows take the full

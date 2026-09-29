@@ -437,14 +437,15 @@ impl BbrApp {
     /// pinned tabs, so a regular tab is pinned by the same transition; its
     /// identity, space membership, selection, and live session are
     /// untouched.
-    #[cfg_attr(not(feature = "testkit"), allow(dead_code))] // testkit gateway seam
+    /// Returns whether the move was committed. Reached by the §11.11 folder
+    /// drop target (blueprint D02) and the testkit gateway seam.
     pub fn move_tab_into_folder(
         &mut self,
         index: usize,
         folder: FolderId,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) {
+    ) -> bool {
         match self
             .organization
             .move_tab_into_folder(&mut self.controller, index, folder)
@@ -452,8 +453,12 @@ impl BbrApp {
             Ok(event) => {
                 self.apply_grouping(&event, cx);
                 self.focus_tab_list(window, cx);
+                true
             }
-            Err(error) => log::error!("could not move tab into folder: {error}"),
+            Err(error) => {
+                log::error!("could not move tab into folder: {error}");
+                false
+            }
         }
     }
 

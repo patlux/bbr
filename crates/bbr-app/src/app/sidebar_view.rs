@@ -51,6 +51,20 @@ impl BbrApp {
         let drag_proxy_anchor = Some(
             crate::app::favorites_band::rect_anchor(self.drag_offer_rects.proxy.clone()).into_any(),
         );
+        // Blueprint D02: one rect recorder per folder row (refilled every
+        // frame the folders render), the rows' 2-D drop rects.
+        self.drag_offer_rects.folders.borrow_mut().clear();
+        let folder_anchors = model
+            .folders
+            .as_ref()
+            .map(|folders| {
+                folders
+                    .rows
+                    .iter()
+                    .map(|row| (row.id, self.folder_rect_anchor(row.id)))
+                    .collect()
+            })
+            .unwrap_or_default();
         let command_results = self
             .command_result_surface(theme)
             .map(|surface| surface.into_any());
@@ -69,11 +83,26 @@ impl BbrApp {
                 favorites_band_anchor,
                 pin_offer_anchor,
                 drag_proxy_anchor,
+                folder_anchors,
                 command_results,
                 downloads_panel,
                 space_config_panel,
             },
         )
+    }
+
+    /// The rect recorder of folder row `folder` (blueprint D02): publishes
+    /// the row's window rect into `drag_offer_rects.folders`.
+    fn folder_rect_anchor(&self, folder: bbr_domain::FolderId) -> gpui::AnyElement {
+        let rects = self.drag_offer_rects.folders.clone();
+        crate::app::favorites_band::RectAnchor::new(move |rect| {
+            let mut rects = rects.borrow_mut();
+            match rects.iter_mut().find(|(id, _)| *id == folder) {
+                Some(entry) => entry.1 = rect,
+                None => rects.push((folder, rect)),
+            }
+        })
+        .into_any()
     }
 
     /// The §11.10 favorites-band anchor element: the invisible rect

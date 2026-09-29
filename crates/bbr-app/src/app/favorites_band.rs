@@ -22,6 +22,15 @@ pub struct RectAnchor {
     publish: Rc<dyn Fn(WebRect)>,
 }
 
+impl RectAnchor {
+    /// A rect anchor that hands every measured rect to `publish`.
+    pub(crate) fn new(publish: impl Fn(WebRect) + 'static) -> Self {
+        Self {
+            publish: Rc::new(publish),
+        }
+    }
+}
+
 /// Build a rect anchor wired to an app-owned measured-rect cell.
 pub(crate) fn rect_anchor(rect: Rc<std::cell::RefCell<Option<WebRect>>>) -> RectAnchor {
     RectAnchor {

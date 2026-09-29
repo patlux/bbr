@@ -105,6 +105,7 @@ pub fn folders_surface(
     model: &SidebarModel,
     folders: &FoldersModel,
     callbacks: &Callbacks,
+    mut anchors: Vec<(bbr_domain::FolderId, gpui::AnyElement)>,
 ) -> Stateful<Div> {
     let p = theme.palette;
     let focused = folders.focused;
@@ -114,6 +115,11 @@ pub fn folders_surface(
     let mut children: Vec<gpui::AnyElement> = Vec::new();
     for row in &folders.rows {
         let id = row.id;
+        // Blueprint D02: the app's rect recorder for this row's drop rect.
+        let anchor = anchors
+            .iter()
+            .position(|(folder, _)| *folder == id)
+            .map(|at| anchors.swap_remove(at).1);
         children.push(
             components::folder_row(
                 theme,
@@ -121,6 +127,8 @@ pub fn folders_surface(
                 callbacks::folder_hover(&callbacks.on_hover_folder, id),
                 callbacks::folder(&callbacks.on_toggle_folder, id),
             )
+            .relative()
+            .children(anchor)
             .on_mouse_down(
                 MouseButton::Left,
                 callbacks::folder(&callbacks.on_focus_folder, id),

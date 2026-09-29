@@ -17,7 +17,7 @@
 //! `super::drag_chip`.
 
 pub use super::drag_state::TabDrag;
-use super::drag_target::{splice_index, tab_pitch, DragGeometry, DragTarget};
+use super::drag_target::{splice_index, tab_pitch, DragGeometry, DragTarget, DropRect};
 use super::BbrApp;
 use bbr_web::WebRect;
 use gpui::{Context, Window};
@@ -32,6 +32,9 @@ use std::rc::Rc;
 pub(crate) struct DragOfferRects {
     pub pin_offer: Rc<RefCell<Option<WebRect>>>,
     pub proxy: Rc<RefCell<Option<WebRect>>>,
+    /// Blueprint D02: every rendered §11.11 folder row's rect, keyed by the
+    /// folder's domain id (refilled each frame the folders render).
+    pub folders: Rc<RefCell<Vec<(bbr_domain::FolderId, WebRect)>>>,
 }
 
 impl BbrApp {
@@ -96,7 +99,7 @@ impl BbrApp {
     pub fn on_tab_drag_move(
         &mut self,
         event: &gpui::MouseMoveEvent,
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         if !self.tab_drag.is_active() && !self.tab_drag.is_armed() {
@@ -124,7 +127,7 @@ impl BbrApp {
             cx.notify();
             return;
         }
-        self.resolve_tab_drag(x, y);
+        self.resolve_tab_drag(x, y, window);
         cx.notify();
     }
 
@@ -163,7 +166,7 @@ impl BbrApp {
     /// the list is not droppable, and the §11.3 strip chips below it are
     /// hit through their rendered spans (the same canonical chip visuals
     /// the render uses).
-    pub(crate) fn resolve_tab_drag(&mut self, position_x: f32, position_y: f32) {
+    pub(crate) fn resolve_tab_drag(&mut self, position_x: f32, position_y: f32, window: &Window) {
         let browser = self.controller.snapshot();
         let theme = self.theme();
         if !self.tab_drag.is_active() {
@@ -174,10 +177,7 @@ impl BbrApp {
         // by the production band anchor during the last render (the exact
         // geometry the pointer enters — never a parallel layout model).
         // `None` while no band renders (no tiles and no in-flight drag).
-        let favorites_band = self
-            .favorites_band_rect
-            .borrow()
-            .map(|rect| (rect.y, rect.y + rect.height));
+        let favorites_band = self.favorites_band_rect.borrow().map(DropRect::from);
         // §11.3: the rendered strip chips' visual spans, derived from the
         // production strip layout (the same `space_chip_visuals` order the
         // render, the snapshot, and the semantic tree consume).
@@ -185,10 +185,7 @@ impl BbrApp {
         // §11.2: the ghost row's recorded span, only while it offers pinning
         // to this drag's (unpinned) source.
         let pin_offer = if self.drag_source_unpinned() {
-            self.drag_offer_rects
-                .pin_offer
-                .borrow()
-                .map(|rect| (rect.y, rect.y + rect.height))
+            self.drag_offer_rects.pin_offer.borrow().map(DropRect::from)
         } else {
             None
         };
@@ -196,6 +193,16 @@ impl BbrApp {
         let organization = self.organization.organization_snapshot(&self.controller);
         let grouped = crate::shell::organized::grouped_indices(&organization.folders, &browser);
         let loose = crate::shell::organized::loose_pinned(pinned, &grouped);
+        // §11.11: the folder rows' recorded rects (blueprint D02 2-D
+        // targets), and the rail's x-span — the page beside it is no target.
+        let folders: Vec<_> = self
+            .drag_offer_rects
+            .folders
+            .borrow()
+            .iter()
+            .map(|(folder, rect)| (*folder, DropRect::from(*rect)))
+            .collect();
+        let rail = Some(self.rail_span(window));
         let geometry = DragGeometry {
             loose: Some(&loose),
             pinned,
@@ -203,9 +210,22 @@ impl BbrApp {
             pitch: tab_pitch(&theme),
             favorites_band,
             pin_offer,
+            folders: &folders,
+            rail,
             chips: &chips,
         };
         self.tab_drag.move_to(position_x, position_y, &geometry);
+    }
+
+    /// The rail's horizontal span `(x_left, x_right)` in window points —
+    /// the tab drag's drop surface (blueprint D02). The docked rail spans
+    /// the window's leading edge to its effective width.
+    pub(crate) fn rail_span(&self, window: &Window) -> (f32, f32) {
+        if !self.sidebar_visible {
+            return (0.0, 0.0);
+        }
+        let width = f32::from(window.bounds().size.width);
+        (0.0, self.sidebar.effective_width(width))
     }
 
     /// Production drag-end: mouse-up anywhere in the window (or, via the
@@ -313,6 +333,12 @@ impl BbrApp {
                 }
                 self.focus_tab_list(window, cx);
                 true
+            }
+            DragTarget::Folder { folder } => {
+                // §11.11: the one move-into-folder authority (a regular tab
+                // is pinned by the same transition; identity, space,
+                // selection and the live session are untouched).
+                self.move_tab_into_folder(source, folder, window, cx)
             }
             DragTarget::Chip { space } => {
                 // Dropping on the dragged tab's own space is a no-op: the

@@ -173,6 +173,15 @@ impl TabDrag {
         }
     }
 
+    /// The §11.11 folder target, when the drag currently targets a folder
+    /// row.
+    pub fn folder_target(&self) -> Option<bbr_domain::FolderId> {
+        match self.target {
+            Some(DragTarget::Folder { folder }) => Some(folder),
+            _ => None,
+        }
+    }
+
     /// Whether the current target is a legal drop.
     pub fn valid(&self) -> bool {
         self.valid
@@ -216,7 +225,7 @@ impl TabDrag {
 #[cfg(test)]
 mod tests {
     use super::TabDrag;
-    use crate::app::drag_target::{ChipSpan, DragGeometry, DragTarget};
+    use crate::app::drag_target::{ChipSpan, DragGeometry, DragTarget, DropRect};
     use bbr_browser::SpaceId;
 
     fn chip(space: u64, x_left: f32, x_right: f32, y_top: f32, y_bottom: f32) -> ChipSpan {
@@ -234,12 +243,20 @@ mod tests {
         pin_offer: Option<(f32, f32)>,
         chips: &'a [ChipSpan],
     ) -> DragGeometry<'a> {
+        let band = |(top, bottom): (f32, f32)| DropRect {
+            x: 0.0,
+            y: top,
+            width: 300.0,
+            height: bottom - top,
+        };
         DragGeometry {
             pinned: 0,
             len: 3,
             pitch: 40.0,
-            favorites_band,
-            pin_offer,
+            favorites_band: favorites_band.map(band),
+            pin_offer: pin_offer.map(band),
+            folders: &[],
+            rail: None,
             chips,
             loose: None,
         }

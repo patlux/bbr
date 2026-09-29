@@ -109,6 +109,10 @@ pub struct FolderRowSpec {
     /// rest). The row paints as a focused field and its name slot shows
     /// the draft instead of the committed title.
     pub rename: Option<FolderRenameField>,
+    /// §10.9/§11.11: a dragged tab is over this row — it takes the
+    /// `drag-target` language (1 pt accent outline on `tint.accent`) and a
+    /// drop moves the tab into the folder.
+    pub drop_target: bool,
 }
 
 /// One nested §11.1 row's rendered identity inside an expanded folder:
@@ -259,6 +263,11 @@ pub fn folder_row(
     // a focused field — the `field` surface, a 1 pt accent edge and the
     // `tint-accent` halo — so the rename is never color-only (the caret
     // and the field shape carry it too).
+    if spec.drop_target {
+        // §10.9 drag-target: the accent outline on the `tint.accent` drop
+        // fill (§18.2), the same language as every drop region.
+        return row.bg(p.tint_accent).border_1().border_color(p.accent);
+    }
     if spec.rename.is_some() {
         row.bg(p.surface_field)
             .border_1()

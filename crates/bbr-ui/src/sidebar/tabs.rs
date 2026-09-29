@@ -49,6 +49,7 @@ pub fn tab_surface(
     model: &SidebarModel,
     callbacks: &Callbacks,
     pin_offer_anchor: Option<gpui::AnyElement>,
+    folder_anchors: Vec<(bbr_domain::FolderId, gpui::AnyElement)>,
 ) -> Stateful<Div> {
     let tabs = &model.tabs;
     let list_focused = tabs.list_focused;
@@ -78,7 +79,7 @@ pub fn tab_surface(
     // organized-regions hairline (hidden entirely while no folder exists).
     let has_folders = model.folders.is_some();
     if let Some(folders) = model.folders.as_ref() {
-        children.push(folders_surface(theme, model, folders, callbacks).into_any());
+        children.push(folders_surface(theme, model, folders, callbacks, folder_anchors).into_any());
     }
     // §11.2 drag offer: while an unpinned tab is dragged, the organized
     // area appends one "Pin tab here" ghost row (one pitch tall). The

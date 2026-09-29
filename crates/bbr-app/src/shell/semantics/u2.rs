@@ -316,7 +316,7 @@ pub fn folders_node(
                 enabled: true,
                 selected: false,
                 focused: false,
-                drag_target: false,
+                drag_target: row.drop_target,
                 children: node_children,
             }
         })

@@ -122,12 +122,16 @@ impl BbrApp {
                 .then_some(self.u2.folder_focus)
                 .flatten()
         });
-        let folder_rows = crate::app::ui_adapters::folder_row_specs(
+        let mut folder_rows = crate::app::ui_adapters::folder_row_specs(
             &organization.folders,
             &self.u2.folder_presentation,
             revealed_folder,
             self.folder_rename_view(),
         );
+        let drop_folder = self.tab_drag.folder_target();
+        for row in &mut folder_rows {
+            row.drop_target = drop_folder == Some(row.id);
+        }
         let folder_members = crate::app::ui_adapters::folder_member_visuals(
             &folder_rows,
             &organization.folders,
@@ -544,6 +548,14 @@ impl BbrApp {
                         .unwrap_or_default(),
                     rename_draft: row.rename.as_ref().map(|field| field.draft.clone()),
                     rename_selected: row.rename.as_ref().is_some_and(|field| field.selected),
+                    drag_target: row.drop_target,
+                    rect: self
+                        .drag_offer_rects
+                        .folders
+                        .borrow()
+                        .iter()
+                        .find(|(folder, _)| *folder == row.id)
+                        .map(|(_, rect)| [rect.x, rect.y, rect.width, rect.height]),
                 })
                 .collect(),
             download_rows,

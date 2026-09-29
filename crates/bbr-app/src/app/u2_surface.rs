@@ -40,12 +40,18 @@ impl BbrApp {
         // the focused half is applied by `folders_model` with the live
         // window (the region must genuinely own chrome focus for the
         // keyboard anchor to reveal). At rest every count stays quiet.
-        let folder_rows = ui_adapters::folder_row_specs(
+        let mut folder_rows = ui_adapters::folder_row_specs(
             &organization.folders,
             &self.u2.folder_presentation,
             self.hovered_folder,
             self.folder_rename_view(),
         );
+        // §10.9/§11.11: the folder row under a dragged tab is the one live
+        // drop target (blueprint D02).
+        let drop_folder = self.tab_drag.folder_target();
+        for row in &mut folder_rows {
+            row.drop_target = drop_folder == Some(row.id);
+        }
         let folder_members = ui_adapters::folder_member_visuals(
             &folder_rows,
             &organization.folders,

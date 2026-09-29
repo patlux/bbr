@@ -22,8 +22,42 @@
 //! entering a rendered chip targets that exact persistent chip, never a
 //! render index. Outside the chips, the tab list, and the favorites grid
 //! there is no drop target (an invalid no-target state).
+//!
+//! Blueprint D02: every region target is hit in two dimensions — the
+//! Favorites band, the ghost row and the folder rows through the rects
+//! their anchors recorded, the list only inside the rail's x-span — so the
+//! same resolver serves the docked and the floating rail, and a pointer
+//! over the page beside a row never drops onto it.
 
 use bbr_browser::SpaceId;
+use bbr_domain::FolderId;
+
+/// A rendered drop region in window points (top-left origin).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DropRect {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+impl DropRect {
+    /// Whether `(x, y)` lies inside the rect (half-open on the far edges).
+    pub fn contains(&self, x: f32, y: f32) -> bool {
+        x >= self.x && x < self.x + self.width && y >= self.y && y < self.y + self.height
+    }
+}
+
+impl From<bbr_web::WebRect> for DropRect {
+    fn from(rect: bbr_web::WebRect) -> Self {
+        Self {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+        }
+    }
+}
 
 /// §8 normal-density row pitch the drag resolution uses. Derived from the
 /// same theme token the shell renders with, so a density change is picked
@@ -54,6 +88,9 @@ pub enum DragTarget {
     /// A §11.3 identity chip in the permanent footer strip: move the
     /// dragged tab into that exact persistent space.
     Chip { space: SpaceId },
+    /// A §11.11 folder row: move the dragged tab into that folder (a
+    /// regular tab is pinned by the same transition).
+    Folder { folder: FolderId },
 }
 
 /// One rendered space chip's visual span inside the strip (DESIGN.md
@@ -108,15 +145,21 @@ pub struct DragGeometry<'a> {
     /// on, so pointer-to-slot resolution lands on the exact slot the render
     /// shows (§11.6).
     pub pitch: f32,
-    /// The §11.10 favorites region's rendered drop band in absolute window
-    /// coordinates `(y_top, y_bottom)` (recorded by the production band
-    /// anchor, never a parallel layout model). `None` when the region does
-    /// not render (no tiles and no in-flight drag — no droppable band).
-    pub favorites_band: Option<(f32, f32)>,
-    /// The §11.2 ghost row's rendered span `(y_top, y_bottom)` in window
-    /// coordinates (recorded by its anchor). `None` while no ghost row
-    /// renders or it does not offer pinning to this source.
-    pub pin_offer: Option<(f32, f32)>,
+    /// The §11.10 favorites region's rendered drop band in window
+    /// coordinates (recorded by the production band anchor, never a
+    /// parallel layout model). `None` when the region does not render (no
+    /// tiles and no in-flight drag — no droppable band).
+    pub favorites_band: Option<DropRect>,
+    /// The §11.2 ghost row's rendered rect (recorded by its anchor). `None`
+    /// while no ghost row renders or it does not offer pinning to this
+    /// source.
+    pub pin_offer: Option<DropRect>,
+    /// The §11.11 folder rows' rendered rects (recorded by their anchors).
+    pub folders: &'a [(FolderId, DropRect)],
+    /// The rail's horizontal span `(x_left, x_right)` in window points: a
+    /// pointer outside it has no target. `None` skips the check (pure
+    /// list-math tests).
+    pub rail: Option<(f32, f32)>,
     /// The §11.3 strip chips' visual spans, in canonical display order
     /// (empty when the strip layout has not run yet — no chip targets).
     pub chips: &'a [ChipSpan],
@@ -151,6 +194,9 @@ pub struct DragGeometry<'a> {
 ///   strip chips — so it never drifts from the rendered region.
 /// - The pointer over the §11.2 ghost row's recorded span targets the pin
 ///   offer (a drop pins the dragged tab).
+/// - The pointer over a §11.11 folder row's recorded rect targets that
+///   folder (a drop moves the dragged tab into it).
+/// - A pointer outside the rail's x-span has no target.
 /// - The pointer over the tab list resolves to an insertion slot inside the
 ///   source region. A slot outside the region (the pinned/regular boundary
 ///   crossing) is illegal: the target clamps to the region edge so the tick
@@ -177,9 +223,18 @@ pub fn resolve_target(
         pitch,
         favorites_band,
         pin_offer,
+        folders,
+        rail,
         chips,
         loose,
     } = *geometry;
+    // Blueprint D02: the rail is the drop surface; the page beside it is
+    // not (a pointer over the web view at a row's height drops nothing).
+    if let Some((left, right)) = rail {
+        if pointer_x < left || pointer_x >= right {
+            return (None, false);
+        }
+    }
     // §11.3 drag-to-chip: the strip sits below the tab list in the footer;
     // a pointer inside a rendered chip's span targets that exact persistent
     // chip. The chip hit is absolute (window position), independent of the
@@ -209,19 +264,23 @@ pub fn resolve_target(
     // absolute position, independent of the press anchor, so it lines up
     // exactly with the rendered region (labels/gaps above the list never
     // mis-target it).
-    if let Some((band_top, band_bottom)) = favorites_band {
-        if pointer_y >= band_top && pointer_y < band_bottom {
-            return (Some(DragTarget::Favorites), true);
-        }
+    if favorites_band.is_some_and(|band| band.contains(pointer_x, pointer_y)) {
+        return (Some(DragTarget::Favorites), true);
     }
     // §11.2 drag-to-pin: the ghost row the organized area appends while an
     // unpinned tab is dragged, hit by its recorded absolute span. It is a
     // region-level offer: a drop pins the tab at the end of the pinned
     // block.
-    if let Some((row_top, row_bottom)) = pin_offer {
-        if pointer_y >= row_top && pointer_y < row_bottom {
-            return (Some(DragTarget::PinOffer), true);
-        }
+    if pin_offer.is_some_and(|row| row.contains(pointer_x, pointer_y)) {
+        return (Some(DragTarget::PinOffer), true);
+    }
+    // §11.11 drag-to-folder: a pointer over a rendered folder row targets
+    // that folder; a drop moves the dragged tab into it.
+    if let Some((folder, _)) = folders
+        .iter()
+        .find(|(_, row)| row.contains(pointer_x, pointer_y))
+    {
+        return (Some(DragTarget::Folder { folder: *folder }), true);
     }
     // §11.11: a pinned source resolves among the rendered (loose) pinned
     // rows — grouped tabs render inside their folders — and the slot maps

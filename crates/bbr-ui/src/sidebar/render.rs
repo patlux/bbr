@@ -51,13 +51,17 @@ use super::tabs::tab_surface;
 /// surface; `space_config_panel` is the app-owned §11.3 rename/identity
 /// configuration surface; `pin_offer_anchor` and `drag_proxy_anchor` are
 /// the app-owned rect recorders inside the §11.2 ghost row and the §10.9
-/// drag proxy (only used while those render). All are app-owned elements
+/// drag proxy (only used while those render); `folder_anchors` record the
+/// folder rows' rects. All are app-owned elements
 /// grouped at the composition boundary — the model itself stays plain data.
 pub struct SidebarChildren {
     pub command_field_anchor: AnyElement,
     pub favorites_band_anchor: AnyElement,
     pub pin_offer_anchor: Option<AnyElement>,
     pub drag_proxy_anchor: Option<AnyElement>,
+    /// Blueprint D02: one app-owned rect recorder per rendered folder row,
+    /// keyed by the folder's domain id (the rows' drop rects).
+    pub folder_anchors: Vec<(bbr_domain::FolderId, AnyElement)>,
     pub command_results: Option<AnyElement>,
     pub downloads_panel: Option<AnyElement>,
     pub space_config_panel: Option<AnyElement>,
@@ -74,6 +78,7 @@ pub fn sidebar_surface(
         favorites_band_anchor,
         pin_offer_anchor,
         drag_proxy_anchor,
+        folder_anchors,
         command_results,
         downloads_panel,
         space_config_panel,
@@ -90,7 +95,7 @@ pub fn sidebar_surface(
             plus_menu_surface(theme, model, plus_menu, callbacks),
         )
     });
-    let tabs = tab_surface(theme, model, callbacks, pin_offer_anchor);
+    let tabs = tab_surface(theme, model, callbacks, pin_offer_anchor, folder_anchors);
     // §10.9: the lifted row follows the pointer above the whole rail (the
     // rail's origin is the window origin, so the proxy rect is in window
     // coordinates).

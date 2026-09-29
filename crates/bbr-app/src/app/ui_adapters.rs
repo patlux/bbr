@@ -77,6 +77,7 @@ pub fn folder_row_specs(
                         selected,
                     },
                 ),
+            drop_target: false,
         })
         .collect()
 }

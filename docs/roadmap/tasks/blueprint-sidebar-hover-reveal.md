@@ -41,6 +41,12 @@ from the current text. Remaining order: (2) a 2-D drag-target model with a
 folder target, (3) the interactive key-capable Portal host, (4) the
 floating rail with the velocity/dwell trigger.
 
+**Step 2 landed (2026-09-29): 2-D drag targets.** The resolver hits the
+Favorites band, the ghost row, the chips and the new folder-row target as
+rects recorded by their anchors, and treats a pointer outside the rail's
+horizontal span as no target. A drop on a folder row moves the tab into
+the folder through the one move-into-folder command.
+
 Decided 2026-09-29: Patrick adopted every recommendation below, and the
 sidebar toggle moved from ⌘B to ⌘S. The former open decisions (recommendations in brackets): what counts as
 leaving the rail (the rail and its menus, panels and drags form one
@@ -137,8 +143,10 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome: in progress — step 1 of 4 (shared command editor: selection, IME).
-Commits: feat(app): make the command field a platform text-input client.
+Outcome: in progress — steps 1–2 of 4 (shared command editor with
+  selection and IME; 2-D drag targets with a folder target).
+Commits: 4658c62f feat(app): make the command field a platform text-input
+  client; feat(app): resolve tab drops in two dimensions with folder rows.
 Functional evidence: command_text + command_text_ime (UTF-16 mapping,
   compose/refine/commit/cancel, anchored ⇧ motions, word stops at URL
   punctuation), edit_line (caret scroll, offset/point mapping, underlined
@@ -146,7 +154,12 @@ Functional evidence: command_text + command_text_ime (UTF-16 mapping,
 Real-app E2E: e2e_shell_command::ime drives the root view's real
   NSTextInputClient (setMarkedText/insertText/unmarkText, markedRange,
   selectedRange, firstRectForCharacterRange) in the ⌘T palette and the ⌘L
-  overlay; just e2e-shell-command 28/28.
+  overlay; just e2e-shell-command 28/28. e2e_shell_drag_offers::
+  a_tab_dropped_on_a_folder_row_joins_the_folder (drag-target state, the
+  page beside the rail drops nothing, the exact tab joins pinned with its
+  session); just e2e-shell-organize, e2e-shell-sidebar (one geometry-wait
+  flake in collapse_reopen…, green in isolation and on rerun),
+  e2e-shell-hover, e2e-shell-dense.
 Performance evidence: deferred with the other blueprint deltas (Patrick).
 Roadmap/documentation updates: DESIGN §11.4 field editing;
   E2E_ARCHITECTURE CommandTextInput seam.

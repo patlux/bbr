@@ -9,6 +9,7 @@ fn rows() -> Vec<FolderRowSpec> {
             expanded: false,
             reveal_count: false,
             rename: None,
+            drop_target: false,
         },
         FolderRowSpec {
             index: 1,
@@ -18,6 +19,7 @@ fn rows() -> Vec<FolderRowSpec> {
             expanded: false,
             reveal_count: false,
             rename: None,
+            drop_target: false,
         },
     ]
 }

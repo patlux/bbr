@@ -229,6 +229,7 @@ pub fn build_folders_fixture(
                         selected: false,
                     },
                 ),
+            drop_target: false,
         })
         .collect();
     let mut members = Vec::new();

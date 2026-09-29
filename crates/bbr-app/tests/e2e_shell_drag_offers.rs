@@ -16,9 +16,11 @@
 #![cfg(target_os = "macos")]
 
 mod e2e_common;
+mod e2e_semantics_common;
 
 use bbr_testkit::protocol::{dsl, BrowserChange, DragOffersSnapshot, Snapshot};
 use e2e_common::*;
+use e2e_semantics_common::find;
 
 /// §8 normal-density row surface; the press anchors at its center.
 const ROW_H: f32 = 36.0;
@@ -371,6 +373,99 @@ fn drop_cell_grows_once_at_activation_and_favorites_the_tab() {
         assert!(has(&dropped, "bbr-favorites-empty"));
         assert_eq!(dropped.favorites_rect, Some(grown));
         assert_region_height(&dropped);
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+
+    finish(result, &mut harness, &socket, &token);
+}
+
+/// Blueprint D02 (§10.9, §11.11): a folder row is a drop target in two
+/// dimensions — the row under the pointer takes the drag-target state, the
+/// page beside the rail at the same height is no target, and a drop moves
+/// the exact dragged tab into the folder (pinned, same live session).
+#[test]
+#[ignore]
+fn a_tab_dropped_on_a_folder_row_joins_the_folder() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+
+    let (_fixtures, page_one, page_two) = fixtures();
+    let (mut harness, socket, token) = spawn_harness("drag-offers-folder", &page_one);
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let replay = client.attach(None).expect("attach");
+        let mut since = replay.iter().map(|(seq, _)| *seq).max().unwrap_or(0);
+        let settled = wait_for_window_settled(&mut client, deadline());
+        let first_view = settled.active_web_view.expect("first view");
+        if settled.title.as_deref() != Some(PAGE_ONE_TITLE) {
+            since = wait_title(&mut client, first_view, PAGE_ONE_TITLE, since);
+        }
+        open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
+        open_tab(&mut client, &mut since, &page_one, Some(PAGE_ONE_TITLE));
+
+        // An empty folder, committed with its default name.
+        client
+            .send_ok(&dsl::click_footer_plus())
+            .expect("plus menu");
+        client
+            .send_ok(&dsl::click_plus_menu_item(1))
+            .expect("New Folder");
+        client
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "enter".into(),
+            })
+            .expect("commit the name");
+        flush(&mut client);
+        let rest = client.snapshot().expect("rest snapshot");
+        assert_eq!(rest.folders.len(), 1);
+        let folder = rest.folders[0].id;
+        assert!(rest.folders[0].members.is_empty());
+        let sessions = rest.engine_sessions;
+        let dragged = id_at(&rest, 2);
+
+        let active = activate_drag(&mut client, 2);
+        let row = active.folders[0]
+            .rect
+            .expect("the folder row records its rect");
+        let (row_x, row_y) = (row[0] + row[2] / 2.0, center_y(row));
+
+        // Over the folder row: the folder is the one live target.
+        let over = move_to(&mut client, row_x, row_y);
+        assert!(over.folders[0].drag_target, "the folder row is the target");
+        assert!(over.drag_valid);
+        assert_eq!(over.drag_slot, None);
+        assert!(!over.drag_favorites);
+        assert!(!over.drag_offers.pin_offer_targeted);
+        let node = find(&over.semantics, "bbr-folder-row-0").expect("folder node");
+        assert!(node.drag_target, "the semantic row carries drag-target");
+
+        // Beside the rail at the same height: the page is no target.
+        let beside = move_to(&mut client, over.sidebar_width + 40.0, row_y);
+        assert!(!beside.folders[0].drag_target);
+        assert_eq!(beside.drag_slot, None);
+        assert!(!beside.drag_valid, "the page beside the rail drops nothing");
+
+        // Back over the row and drop: the exact tab joins the folder.
+        move_to(&mut client, row_x, row_y);
+        client
+            .send_ok(&dsl::end_tab_drag())
+            .expect("drop on the folder");
+        flush(&mut client);
+        let dropped = client.snapshot().expect("dropped snapshot");
+        assert_eq!(dropped.folders[0].id, folder);
+        assert_eq!(dropped.folders[0].members, vec![dragged]);
+        assert!(!dropped.folders[0].drag_target, "the target clears on drop");
+        assert_eq!(dropped.pinned_count, 1, "a folder member is pinned");
+        assert_eq!(dropped.tabs.len(), 3, "a drop never copies a tab");
+        assert_eq!(dropped.engine_sessions, sessions, "same live session");
+        assert_no_offers(&dropped);
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
