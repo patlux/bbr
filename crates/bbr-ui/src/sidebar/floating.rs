@@ -7,8 +7,10 @@
 //! rail material. The native traffic lights stay visible and clickable: the
 //! panel leaves a notch around them (the Portal draws nothing there, so the
 //! browser window's own lights and chassis show through). The entrance
-//! slides in from the edge over `dur:fine` with the decelerate curve;
-//! Reduce Motion fades only.
+//! slides in from the edge over `dur:fine` with the decelerate curve; the
+//! exit slides back out and fades over `dur:fine` with the accelerate
+//! curve (the panel no longer takes the pointer meanwhile). Reduce Motion
+//! fades only.
 
 use gpui::{
     canvas, div, point, prelude::*, px, Animation, AnimationExt, AnyElement, Bounds, PathBuilder,
@@ -121,6 +123,29 @@ pub fn floating_rail(
     tint: Rgba,
     entrance: u64,
 ) -> AnyElement {
+    animated_panel(theme, rail, geometry, tint, entrance, false)
+}
+
+/// The panel leaving (blueprint D02 exit): the same panel sliding back out
+/// and fading; `key` keys the exit (one per hide).
+pub fn floating_rail_leaving(
+    theme: &Theme,
+    rail: AnyElement,
+    geometry: FloatingRailGeometry,
+    tint: Rgba,
+    key: u64,
+) -> AnyElement {
+    animated_panel(theme, rail, geometry, tint, key, true)
+}
+
+fn animated_panel(
+    theme: &Theme,
+    rail: AnyElement,
+    geometry: FloatingRailGeometry,
+    tint: Rgba,
+    key: u64,
+    leaving: bool,
+) -> AnyElement {
     let [x, y, w, h] = geometry.rect;
     let notch = geometry.notch;
     let background = canvas(
@@ -150,16 +175,23 @@ pub fn floating_rail(
         .child(background)
         .child(div().absolute().inset_0().child(rail));
     let reduce = theme.motion_mode.is_reduced();
+    let (name, easing) = if leaving {
+        ("bbr-floating-rail-exit", Easing::Accelerate)
+    } else {
+        ("bbr-floating-rail-entrance", Easing::Decelerate)
+    };
     panel
         .with_animation(
-            ("bbr-floating-rail-entrance", entrance),
-            Animation::new(Motion::fine()).with_easing(|t| Easing::Decelerate.apply(t)),
+            (name, key),
+            Animation::new(Motion::fine()).with_easing(move |t| easing.apply(t)),
             move |panel, delta| {
-                let panel = panel.opacity(delta);
+                // Shown share: 0 → 1 on the way in, 1 → 0 on the way out.
+                let shown = if leaving { 1.0 - delta } else { delta };
+                let panel = panel.opacity(shown);
                 if reduce {
                     panel
                 } else {
-                    panel.left(px(x - FLOATING_SLIDE * (1.0 - delta)))
+                    panel.left(px(x - FLOATING_SLIDE * (1.0 - shown)))
                 }
             },
         )

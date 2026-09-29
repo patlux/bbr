@@ -1623,6 +1623,12 @@ pub struct Snapshot {
     /// Blueprint D02: the floating rail while it shows.
     #[serde(default)]
     pub floating_rail: Option<FloatingRailSnapshot>,
+    /// Blueprint D02: whether the hidden panel is sliding out, and how
+    /// many exits have started.
+    #[serde(default)]
+    pub floating_rail_leaving: bool,
+    #[serde(default)]
+    pub floating_rail_exits: u64,
     /// Blueprint D16: the Settings window while it is open.
     #[serde(default)]
     pub settings: Option<SettingsSnapshot>,

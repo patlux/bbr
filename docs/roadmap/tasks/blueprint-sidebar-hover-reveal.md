@@ -55,9 +55,17 @@ handles. A pure reveal model takes samples from a local AppKit pointer
 monitor (and the testkit `RailPointer` seam): fast leftward arrival reveals
 at once, a slow one after the 300 ms dwell. The panel is notched around the
 native traffic lights, the card never reflows, and ⌥⌘S/⌘L float the hidden
-rail while ⌘S docks it. Not done: the exit fade (the rail hides at once),
-a performance scenario for the reveal (performance evidence is deferred
-with the other blueprint deltas), and a shown-window native-routing suite.
+rail while ⌘S docks it. Not done: a performance scenario for the reveal
+(performance evidence is deferred with the other blueprint deltas) and a
+shown-window native-routing suite.
+
+**Exit fade landed (2026-09-30):** leaving or Escape slides the panel back
+out and fades it over `dur:fine` (accelerate; Reduce Motion fades only).
+The Portal keeps drawing the leaving panel without capture regions, so the
+page has the pointer at once, and lets go after the exit; docking,
+deactivation and minimize still end it without the exit. Evidence: the
+floating-rail E2E checks the exit counter, the uncaptured pointer over the
+leaving panel and the Portal hiding afterwards.
 
 Decided 2026-09-29: Patrick adopted every recommendation below, and the
 sidebar toggle moved from ⌘B to ⌘S. The former open decisions (recommendations in brackets): what counts as
@@ -186,7 +194,7 @@ Real-app E2E: e2e_shell_command::ime drives the root view's real
 Performance evidence: deferred with the other blueprint deltas (Patrick).
 Roadmap/documentation updates: DESIGN §11.4 field editing;
   E2E_ARCHITECTURE CommandTextInput seam.
-Open blockers and non-goals: exit fade, reveal performance scenario
+Open blockers and non-goals: reveal performance scenario
   (deferred), shown-window native-routing evidence.
 Worktree state: main.
 ```

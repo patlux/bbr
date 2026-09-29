@@ -160,6 +160,27 @@ impl BbrApp {
         )
     }
 
+    /// The panel sliding out after a hide (blueprint D02 exit): the same
+    /// rail inside the leaving panel, with no listeners — the Portal no
+    /// longer captures the pointer there, so the page has it.
+    pub(crate) fn floating_rail_leaving_layer(
+        &mut self,
+        browser: Browser,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<AnyElement> {
+        let (geometry, key) = self.floating_rail.leaving?;
+        let theme = self.theme();
+        let rail = self.rail_surface(&theme, geometry.rect[2], false, Some(browser), window, cx);
+        Some(bbr_ui::sidebar::floating::floating_rail_leaving(
+            &theme,
+            rail.into_any_element(),
+            geometry,
+            self.active_chrome_tint(),
+            key,
+        ))
+    }
+
     /// The browser-window keyboard twin while the rail floats: the rail's
     /// focus handles, tracked with the same key listeners, so a focused tab
     /// list, folder list, strip, plus menu or divider takes the keys the

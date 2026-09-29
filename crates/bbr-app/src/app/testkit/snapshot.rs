@@ -693,6 +693,8 @@ impl BbrApp {
             text_input: self.text_input_readback,
             rail_reveal: self.rail_reveal_label().into(),
             floating_rail: self.floating_rail_snapshot(),
+            floating_rail_leaving: self.floating_rail.leaving.is_some(),
+            floating_rail_exits: self.floating_rail.exits,
             settings: self.settings_snapshot(),
             history: self.history_snapshot(window),
             permissions: self.permissions_snapshot(),

@@ -316,6 +316,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             text_input: self.text_input,
             rail_reveal: self.rail_reveal.clone(),
             floating_rail: self.floating_rail.clone(),
+            floating_rail_leaving: self.floating_rail_leaving,
+            floating_rail_exits: self.floating_rail_exits,
             settings: self.settings.clone(),
             history: self.history.clone(),
             permissions: self.permissions.clone(),

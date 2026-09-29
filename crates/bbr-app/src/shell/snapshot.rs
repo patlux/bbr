@@ -288,6 +288,8 @@ pub struct TestSnapshot {
     pub text_input: Option<bbr_testkit::protocol::TextInputReadback>,
     pub rail_reveal: String,
     pub floating_rail: Option<bbr_testkit::protocol::FloatingRailSnapshot>,
+    pub floating_rail_leaving: bool,
+    pub floating_rail_exits: u64,
     pub settings: Option<bbr_testkit::protocol::SettingsSnapshot>,
     /// Blueprint D10: the History page while it is open.
     pub history: Option<bbr_testkit::protocol::HistorySnapshot>,

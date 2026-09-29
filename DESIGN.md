@@ -991,7 +991,10 @@ using the IDs of §15. All rows use `density` geometry from §8.
   lights so they stay visible and clickable. The one Portal draws it, so
   the card and every web view keep their collapsed geometry (nothing
   reflows); it slides in 16 pt over `dur:fine` with the decelerate curve
-  (Reduce Motion: fade only). It is the docked rail's exact composition
+  and, when the pointer leaves or Escape hides it, slides back out and fades
+  over `dur:fine` with the accelerate curve — the leaving panel no longer
+  takes the pointer, so the page has it at once (Reduce Motion: fades
+  only). Docking, deactivation and minimize end it without the exit. It is the docked rail's exact composition
   and works the same way — rows, favorites, folders, the footer, menus,
   drags (a drag that starts in it keeps the pointer until it ends), its
   field — while the keyboard stays in the browser window. The rail, its
@@ -2528,7 +2531,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | Delta | Target | Boards | Sections | Status | Packet |
 |---|---|---|---|---|---|
 | D01 | Footer chips start after Downloads | S-7 W-1 | §11.3 §11.4 §18.3 | implemented | [blueprint-footer-strip-leading](docs/roadmap/tasks/blueprint-footer-strip-leading.md) |
-| D02 | Hover reveal of a hidden rail | W-3 V-6 | §2 §11.4 §11.14 | implemented; the rail hides without an exit fade | [blueprint-sidebar-hover-reveal](docs/roadmap/tasks/blueprint-sidebar-hover-reveal.md) |
+| D02 | Hover reveal of a hidden rail | W-3 V-6 | §2 §11.4 §11.14 | implemented | [blueprint-sidebar-hover-reveal](docs/roadmap/tasks/blueprint-sidebar-hover-reveal.md) |
 | D03 | Address control states | S-1 M-8 | §11.5 §17.13 | implemented | [blueprint-address-states](docs/roadmap/tasks/blueprint-address-states.md) |
 | D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | §11.4 | implemented | [blueprint-palette-recents-actions](docs/roadmap/tasks/blueprint-palette-recents-actions.md) |
 | D05 | Space menu and delete confirmation | P-4 PR-07 | §11.3 §11.13 | implemented | [blueprint-space-menu-delete](docs/roadmap/tasks/blueprint-space-menu-delete.md) |

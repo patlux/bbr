@@ -30,6 +30,12 @@ pub(crate) struct FloatingRail {
     pub entrance: u64,
     dwell: Option<Task<()>>,
     overshoot: Option<Task<()>>,
+    /// The panel sliding out after a hide (its geometry and exit key); it
+    /// takes no pointer and lasts `dur:fine`.
+    pub leaving: Option<(FloatingRailGeometry, u64)>,
+    leave: Option<Task<()>>,
+    /// Exits started (diagnostics and E2E).
+    pub exits: u64,
     /// The native pointer observer, kept alive for the window's lifetime.
     pub observer: Option<Box<dyn std::any::Any>>,
 }
@@ -172,11 +178,13 @@ impl BbrApp {
                     });
                 }));
             }
-            RevealAction::Hide => self.withdraw_floating_rail(window, cx),
+            RevealAction::Hide => self.withdraw_floating_rail(true, window, cx),
         }
     }
 
     fn present_floating_rail(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.floating_rail.leaving = None;
+        self.floating_rail.leave = None;
         self.floating_rail.entrance = self.floating_rail.reveal.generation();
         self.record_floating_rail(window, cx);
         self.sync_portal_overlays(cx);
@@ -184,11 +192,30 @@ impl BbrApp {
     }
 
     /// The rail went away: keyboard focus inside it returns to the page,
-    /// and the Portal lets go of its regions.
-    fn withdraw_floating_rail(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    /// and the Portal lets go of its regions. With `exit`, the panel slides
+    /// out over `dur:fine` first (drawn, but no longer taking the pointer).
+    fn withdraw_floating_rail(&mut self, exit: bool, window: &mut Window, cx: &mut Context<Self>) {
         self.floating_rail.dwell = None;
         self.floating_rail.overshoot = None;
-        self.floating_rail.geometry = None;
+        let geometry = self.floating_rail.geometry.take();
+        self.floating_rail.leave = None;
+        self.floating_rail.leaving = None;
+        if let Some(geometry) = geometry.filter(|_| exit) {
+            let key = self.floating_rail.reveal.generation();
+            self.floating_rail.leaving = Some((geometry, key));
+            self.floating_rail.exits += 1;
+            self.floating_rail.leave = Some(cx.spawn_in(window, async move |this, cx| {
+                cx.background_executor()
+                    .timer(bbr_ui::theme::Motion::fine())
+                    .await;
+                let _ = this.update(cx, |view, cx| {
+                    if view.floating_rail.leaving.is_some_and(|(_, k)| k == key) {
+                        view.floating_rail.leaving = None;
+                        view.sync_portal_overlays(cx);
+                    }
+                });
+            }));
+        }
         let rail_focused = self.tab_list_handle.is_focused(window)
             || self.u2.folders_handle.is_focused(window)
             || self.u2.plus_menu_handle.is_focused(window)
@@ -227,10 +254,14 @@ impl BbrApp {
     pub(crate) fn end_floating_rail(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.rail_floating() {
             self.floating_rail.reveal.reset();
-            self.withdraw_floating_rail(window, cx);
+            self.withdraw_floating_rail(false, window, cx);
         } else {
             self.floating_rail.reveal.reset();
             self.floating_rail.dwell = None;
+            if self.floating_rail.leaving.take().is_some() {
+                self.floating_rail.leave = None;
+                self.sync_portal_overlays(cx);
+            }
         }
     }
 }

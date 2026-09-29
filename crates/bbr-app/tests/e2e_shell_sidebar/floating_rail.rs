@@ -151,11 +151,17 @@ fn the_hidden_rail_floats_over_the_card_and_works_like_the_docked_rail() {
         since = wait_browser_change(&mut client, BrowserChange::TabSelected { index: 0 }, since);
 
         // Leaving the panel hides it and hands the keyboard to the page.
+        // The panel slides out over `dur:fine` without taking the pointer,
+        // then the Portal lets go.
+        let exits = focused.floating_rail_exits;
         pointer(&mut client, 400.0, 1000.0);
         let left = flushed(&mut client);
         assert_eq!(left.rail_reveal, "idle");
         assert!(left.floating_rail.is_none());
-        wait_portal_shown(&mut client, false);
+        assert_eq!(left.floating_rail_exits, exits + 1, "the exit plays");
+        assert!(!route(&mut client, rail.rect[0] + 120.0, 300.0));
+        let gone = wait_portal_shown(&mut client, false);
+        assert!(!gone.floating_rail_leaving);
         let _ = wait_chrome_focus(&mut client, false, since);
 
         // A fast arrival floats at once, without the dwell.

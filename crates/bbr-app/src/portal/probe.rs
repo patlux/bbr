@@ -611,12 +611,17 @@ impl PortalRoot {
     /// focus the rail reflects and whose keyboard it keeps).
     fn render_floating_rail(&mut self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
         let app = self.app.clone()?;
-        if !app.read(cx).rail_floating() {
+        let floating = app.read(cx).rail_floating();
+        if !floating && app.read(cx).floating_rail.leaving.is_none() {
             return None;
         }
         let browser = self.browser_window;
         crate::window_seam::with_app(&browser, &app, cx, |view, window, cx| {
-            view.floating_rail_layer(browser, window, cx)
+            if floating {
+                view.floating_rail_layer(browser, window, cx)
+            } else {
+                view.floating_rail_leaving_layer(browser, window, cx)
+            }
         })
         .ok()
         .flatten()
