@@ -78,6 +78,7 @@ pub(crate) fn retarget(mut c: Callbacks, b: Browser) -> Callbacks {
     via_browser!(c.on_space_strip_key_down, b; e: &KeyDownEvent);
     via_browser!(c.on_divider_mouse_down, b; e: &MouseDownEvent);
     via_browser!(c.on_divider_key_down, b; e: &KeyDownEvent);
+    via_browser!(c.on_media, b; a: bbr_ui::components::media_card::MediaCardAction);
     c
 }
 
