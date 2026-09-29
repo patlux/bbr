@@ -125,6 +125,9 @@ pub enum ControllerEvent {
     SplitOpened { primary: usize, secondary: usize },
     /// The active space's split was closed.
     SplitClosed,
+    /// Blueprint D23: a split group of the active space changed (a pane
+    /// joined, left, moved or was replaced, or a divider moved).
+    SplitChanged,
     /// A navigation action was issued against the focused session.
     NavigationRouted { view: WebViewId },
     /// One committed logical content gesture dispatched exactly one real

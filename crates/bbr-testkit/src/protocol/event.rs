@@ -87,6 +87,8 @@ pub enum BrowserChange {
     },
     /// The active space's split layout was closed (both tabs stay open).
     SplitClosed,
+    /// Blueprint D23: a split group of the active space changed.
+    SplitChanged,
     TabMoved {
         to_space: TestSpaceId,
         recreated: bool,

@@ -32,6 +32,7 @@ mod responsiveness;
 mod session;
 mod setup;
 mod snapshot;
+mod split_groups;
 
 pub use closed_tabs::ClosedTabEntry;
 

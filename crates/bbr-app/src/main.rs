@@ -39,6 +39,7 @@ mod settings_window;
 mod shell;
 mod site_permissions;
 mod slot;
+mod split_layouts;
 mod store;
 #[cfg(feature = "testkit")]
 mod testkit;
@@ -440,6 +441,11 @@ fn main() {
                                     &mut controller,
                                     &restored_browser.profiles,
                                 );
+                                // Blueprint D23: the split groups.
+                                split_layouts::restore(
+                                    &mut controller,
+                                    &split_layouts::path_in(&cli.profile_dir),
+                                );
                                 controller
                             }
                             Err(error) => {
@@ -652,6 +658,7 @@ fn main() {
         let _ = with_app(&window, &app, cx, |view, _w, cx| {
             view.browser_window = Some(window);
             view.load_site_permissions(site_permissions::path_in(&cli.profile_dir));
+            view.set_split_layouts_path(split_layouts::path_in(&cli.profile_dir));
             view.load_certificate_choices(certificate_choices::path_in(&cli.profile_dir));
             view.load_preferences(preferences::path_in(&cli.profile_dir), cx);
             #[cfg(feature = "testkit")]

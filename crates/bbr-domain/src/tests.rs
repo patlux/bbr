@@ -636,7 +636,7 @@ fn insert_tab_at_position_without_changing_selection() {
         active,
         "insertion never changes the selection"
     );
-    assert_eq!(b.space(s).unwrap().split, None, "no split invented");
+    assert!(b.space(s).unwrap().splits.is_empty(), "no split invented");
     assert!(b.space(s).unwrap().pinned_count == 0);
     b.check_invariants().unwrap();
 }

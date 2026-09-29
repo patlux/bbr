@@ -46,6 +46,7 @@ mod saved_pages;
 mod space_appearance;
 mod space_lifecycle;
 mod split;
+mod split_groups;
 pub mod tiling;
 
 #[cfg(test)]
@@ -64,6 +65,8 @@ mod tests_restore;
 mod tests_saved_pages;
 #[cfg(test)]
 mod tests_space_lifecycle;
+#[cfg(test)]
+mod tests_split_groups;
 
 pub use browser::Browser;
 pub use error::{DomainError, InvariantViolation};

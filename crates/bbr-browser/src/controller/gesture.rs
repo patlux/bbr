@@ -180,20 +180,49 @@ impl BrowserController {
     /// what the preview covers (blueprint D09 keeps these warm origin panes
     /// framed under the inset preview). Equal to [`Self::pane_layout`]
     /// while no preview is open.
+    /// Blueprint D23: the visible split group with every pane's view
+    /// (`None` without a group, while a preview is open, or while a pane
+    /// has no live session yet).
+    pub fn split_layout(&self) -> Option<crate::pane::SplitLayout> {
+        if self.preview.is_some() {
+            return None;
+        }
+        let space = self.browser.space(self.active_space)?;
+        let group = space.visible_group()?;
+        let focused = space
+            .active_tab
+            .and_then(|tab| self.registry.view_for_tab(tab))?;
+        let views = group
+            .members()
+            .into_iter()
+            .map(|tab| Some((tab, self.registry.view_for_tab(tab)?)))
+            .collect::<Option<Vec<_>>>()?;
+        Some(crate::pane::SplitLayout {
+            group: group.clone(),
+            views,
+            focused,
+        })
+    }
+
     pub fn covered_pane_layout(&self) -> Option<PaneLayout> {
         let space = self.browser.space(self.active_space)?;
         let focused = space
             .active_tab
             .and_then(|tab| self.registry.view_for_tab(tab))?;
-        match space.split {
-            Some(split) => Some(PaneLayout {
-                primary: self.registry.view_for_tab(split.primary)?,
-                // A split must own **both** live sessions: a missing
-                // secondary never degrades the split into a false single
-                // pane — the honest answer is no pane layout at all.
-                secondary: Some(self.registry.view_for_tab(split.secondary)?),
-                focused,
-            }),
+        match space.visible_group() {
+            // Blueprint D23: the first two panes stand for the group here;
+            // `split_layout` carries every pane.
+            Some(group) => {
+                let members = group.members();
+                Some(PaneLayout {
+                    primary: self.registry.view_for_tab(members[0])?,
+                    // A split must own **every** live session: a missing
+                    // pane never degrades the split into a false single
+                    // pane — the honest answer is no pane layout at all.
+                    secondary: Some(self.registry.view_for_tab(members[1])?),
+                    focused,
+                })
+            }
             None => Some(PaneLayout {
                 primary: focused,
                 secondary: None,

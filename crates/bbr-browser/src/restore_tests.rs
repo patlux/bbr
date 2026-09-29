@@ -329,8 +329,18 @@ fn intent_export_round_trips_the_live_model() {
     // session/deferred split (the persist → restore direction is one
     // shape). The live intent carries the hydrated tabs' urls.
     let exported = controller.intent();
-    assert_eq!(exported, dense_intent());
-    let plan = HydrationPolicy::plan(&exported, bbr_domain::SpaceId(10)).unwrap();
+    // Blueprint D23: split groups persist beside the store (the two-pane
+    // table cannot hold a tree), so the exported intent carries none; the
+    // restored legacy split lives on as a group.
+    let mut expected = dense_intent();
+    for profile in &mut expected.profiles {
+        for space in &mut profile.spaces {
+            space.split = None;
+        }
+    }
+    assert_eq!(exported, expected);
+    assert_eq!(controller.split_groups().len(), 1);
+    let plan = HydrationPolicy::plan(&dense_intent(), bbr_domain::SpaceId(10)).unwrap();
     assert_eq!(plan.sessions.len(), 2);
     assert_eq!(plan.deferred.len(), 502);
 }

@@ -1,6 +1,6 @@
 //! Core persistent objects: [`Profile`], [`Space`], [`Tab`], [`ClosedTab`].
 
-use crate::split::Split;
+use crate::tiling::SplitGroup;
 use crate::{ProfileId, SpaceId, TabId, TabLifecycle};
 
 /// The six DESIGN.md §12 profile hues.
@@ -85,11 +85,30 @@ pub struct Space {
     pub active_tab: Option<TabId>,
     /// Recently closed tabs, most recent last ([`Space::reopen_tab`] pops).
     pub recently_closed: Vec<ClosedTab>,
-    /// The two-pane split of this space. v1 supports at most one split.
-    pub split: Option<Split>,
+    /// Blueprint D23: the split groups of this space (each tab in at most
+    /// one). The active tab's group, if any, is the visible layout.
+    pub splits: Vec<SplitGroup>,
 }
 
 impl Space {
+    /// The split group `tab` belongs to.
+    pub fn group_of(&self, tab: TabId) -> Option<&SplitGroup> {
+        self.splits.iter().find(|group| group.contains(tab))
+    }
+
+    /// The visible split group: the active tab's.
+    pub fn visible_group(&self) -> Option<&SplitGroup> {
+        self.active_tab.and_then(|tab| self.group_of(tab))
+    }
+
+    /// The tabs on screen: the visible group's panes, else the active tab.
+    pub fn visible_tabs(&self) -> Vec<TabId> {
+        match self.visible_group() {
+            Some(group) => group.members(),
+            None => self.active_tab.into_iter().collect(),
+        }
+    }
+
     pub fn new(id: SpaceId, profile: ProfileId, title: impl Into<String>) -> Self {
         Self {
             id,
@@ -99,7 +118,7 @@ impl Space {
             pinned_count: 0,
             active_tab: None,
             recently_closed: Vec::new(),
-            split: None,
+            splits: Vec::new(),
         }
     }
 

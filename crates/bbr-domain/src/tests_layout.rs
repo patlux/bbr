@@ -127,8 +127,7 @@ fn set_then_close_split() {
     b.set_split(s, a, b_id).unwrap();
     assert!(b.split_of(s).is_some());
     let split = b.close_split(s).unwrap().unwrap();
-    assert_eq!(split.primary, a);
-    assert_eq!(split.secondary, b_id);
+    assert_eq!(split.members(), [a, b_id]);
     assert!(b.split_of(s).is_none());
     b.check_invariants().unwrap();
 }

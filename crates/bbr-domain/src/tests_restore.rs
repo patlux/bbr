@@ -76,11 +76,11 @@ fn restore_preserves_ids_order_pins_active_split_and_closed() {
     assert_eq!(space.pinned_count, 1, "the pinned prefix is restored");
     assert_eq!(space.active_tab, Some(TabId(101)));
     assert_eq!(
-        space.split,
-        Some(Split {
-            primary: TabId(101),
-            secondary: TabId(102),
-        })
+        space.splits,
+        vec![
+            crate::tiling::SplitGroup::pair(TabId(101), TabId(102), crate::tiling::Axis::Row)
+                .unwrap()
+        ]
     );
     assert_eq!(space.recently_closed.len(), 1);
     assert_eq!(space.recently_closed[0].tab.id, TabId(900));
@@ -194,7 +194,7 @@ fn restored_tabs_are_session_less_until_hydration_activates_them() {
     );
     // The active-tab and split fields are untouched by activation.
     assert_eq!(b.space(SpaceId(10)).unwrap().active_tab, Some(TabId(101)));
-    assert!(b.space(SpaceId(10)).unwrap().split.is_some());
+    assert!(!b.space(SpaceId(10)).unwrap().splits.is_empty());
     // Unknown activation is rejected.
     assert!(matches!(
         b.restore_activate_tab(TabId(777)),
@@ -229,7 +229,7 @@ fn split_with_outside_active_tab_reconciles_active_into_panes() {
     )
     .unwrap();
     assert_eq!(b.space(SpaceId(10)).unwrap().active_tab, Some(TabId(100)));
-    assert!(b.space(SpaceId(10)).unwrap().split.is_some());
+    assert!(!b.space(SpaceId(10)).unwrap().splits.is_empty());
     // Tab 102 is still a member identity of the space.
     assert!(b.space(SpaceId(10)).unwrap().tabs.contains(&TabId(102)));
     // Visibility follows `is_visible`: split precedence means the panes are
@@ -284,7 +284,7 @@ fn restore_split_rejects_duplicates_and_existing_split() {
     ));
     // Clearing an existing split is legal and idempotent.
     b.restore_split(SpaceId(10), None).unwrap();
-    assert!(b.space(SpaceId(10)).unwrap().split.is_none());
+    assert!(b.space(SpaceId(10)).unwrap().splits.is_empty());
 }
 
 #[test]

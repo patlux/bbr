@@ -1226,6 +1226,23 @@ of problem instead of styling it.
 
 ### 11.7 Split preview
 
+- **Split groups (blueprint D23, model implemented):** a split is a group
+  of tabs of one space tiled in rows and columns (any number of panes,
+  side by side and stacked); a space may hold several groups and a tab is
+  a pane of at most one. The active tab's group is the visible layout:
+  selecting a tab outside it shows that tab alone and keeps the group,
+  selecting any member brings the group back, and every pane of the shown
+  group is live. Closing a pane's tab removes the pane — the pane at its
+  place takes the focus — and a group left with one pane dissolves; moving
+  a pane's tab to another space takes it out of the group. Each group is a
+  normalized tree whose branch shares are exact integers (10 000 per
+  branch); the groups persist in `splits.txt` in the profile directory
+  (`R(…)`/`C(…)` rows and columns of `weight:tab` children), not in the
+  store's two-pane table, which now only feeds older saved splits in as a
+  two-pane group. The composition, commands, rail block and drop zones
+  below follow in the [split tiling packet](docs/roadmap/tasks/split-tiling.md);
+  until then the shell frames the first two panes of a group.
+
 - **Invocation:** dragging a tab toward the glass area; the drop zone strips
   are the edges (top / bottom / left / right) at 24% of the pane dimension,
   center = positional move. (V1 supports exactly one two-pane split;

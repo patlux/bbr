@@ -85,6 +85,8 @@ mod controller_profile_tests;
 #[cfg(test)]
 mod controller_responsiveness_tests;
 #[cfg(test)]
+mod controller_split_group_tests;
+#[cfg(test)]
 mod controller_tests;
 #[cfg(test)]
 mod hydration_tests;
@@ -118,7 +120,7 @@ pub use organization::{
     OrganizationSnapshot, SpaceDeleteSummary,
 };
 pub use outcome::ControllerEvent;
-pub use pane::PaneLayout;
+pub use pane::{PaneLayout, SplitLayout};
 pub use responsiveness::{
     Clock, RendererAvailability, ResponsivenessConfig, ResponsivenessMonitor,
 };

@@ -2,7 +2,6 @@
 //! domain invariants through every mutation.
 
 use crate::model::{ClosedTab, Profile, Space, Tab};
-use crate::split::Split;
 use crate::{DomainError, ProfileId, SpaceId, TabId, TabLifecycle};
 
 /// Owning container for all persistent browser objects.
@@ -53,7 +52,7 @@ impl Browser {
     /// Mark `tab` as the most recently used identity (monotonic, no wall
     /// clock). Used by every mutation that makes a tab the user's current
     /// focus: open, select, reopen, and destination activation of a move.
-    fn touch(&mut self, tab: TabId) {
+    pub(crate) fn touch(&mut self, tab: TabId) {
         self.last_used_seq += 1;
         if let Some(state) = self.tabs.iter_mut().find(|state| state.id == tab) {
             state.last_used = self.last_used_seq;
@@ -153,9 +152,9 @@ impl Browser {
         self.spaces.iter_mut().find(|s| s.id == id)
     }
 
-    /// The split currently set on `space`, if any.
-    pub fn split_of(&self, id: SpaceId) -> Option<&Split> {
-        self.space(id).and_then(|s| s.split.as_ref())
+    /// The visible split group of `space` (the active tab's), if any.
+    pub fn split_of(&self, id: SpaceId) -> Option<&crate::tiling::SplitGroup> {
+        self.space(id).and_then(|s| s.visible_group())
     }
 
     // ---- Lookup helpers --------------------------------------------------
@@ -180,22 +179,16 @@ impl Browser {
         let Some(space) = self.space(tab_state.space) else {
             return false;
         };
-        space.split.is_some_and(|split| split.contains(tab))
-            || (space.split.is_none() && space.active_tab == Some(tab))
+        space.visible_tabs().contains(&tab)
     }
 
     /// Synchronize resource policy with the tabs currently visible in a
     /// space. Newly visible tabs reactivate; tabs that stop being visible stay
     /// live but become warm. Suspended/discarded background tabs remain so.
-    fn sync_lifecycles(&mut self, space: SpaceId) {
+    pub(crate) fn sync_lifecycles(&mut self, space: SpaceId) {
         let visible: Vec<TabId> = self
             .space(space)
-            .map(|state| {
-                state
-                    .split
-                    .map(|split| vec![split.primary, split.secondary])
-                    .unwrap_or_else(|| state.active_tab.into_iter().collect())
-            })
+            .map(|state| state.visible_tabs())
             .unwrap_or_default();
         let members = self
             .space(space)
@@ -274,7 +267,6 @@ impl Browser {
         let sp = self.space_mut(space).expect("checked above");
         sp.tabs.push(id);
         sp.active_tab = Some(id);
-        sp.split = None;
         self.touch(id);
         self.sync_lifecycles(space);
         Ok(id)
@@ -318,16 +310,24 @@ impl Browser {
 
     /// Close `tab`, remembering it for [`Browser::reopen_tab`]. The active
     /// tab moves to the closed tab's next sibling (else previous, else
-    /// `None`); closing the last tab leaves the space empty. If the tab was
-    /// part of a split, the split is dissolved (both panes die, matching the
-    /// two-pane v1 teardown rule).
+    /// `None`); closing the last tab leaves the space empty. Blueprint
+    /// D23: a tab in a split group leaves its pane (the group keeps the
+    /// others, or dissolves when one is left), and an active pane hands the
+    /// focus to the pane at its place in the group.
     pub fn close_tab(&mut self, space: SpaceId, tab: TabId) -> Result<(), DomainError> {
         // Validate and compute focus before any mutation (the neighborhood
         // must be read against the pre-removal ordering).
         let index = self.tab_index_in(space, tab)?;
-        let focus_after = self
-            .space(space)
-            .and_then(|s| s.neighbor_after_removal(index));
+        let group_heir = self.space(space).and_then(|s| {
+            let members = s.group_of(tab)?.members();
+            let at = members.iter().position(|member| *member == tab)?;
+            let rest: Vec<TabId> = members.into_iter().filter(|m| *m != tab).collect();
+            rest.get(at.min(rest.len().saturating_sub(1))).copied()
+        });
+        let focus_after = group_heir.or_else(|| {
+            self.space(space)
+                .and_then(|s| s.neighbor_after_removal(index))
+        });
         let was_active = self.space(space).is_some_and(|s| s.active_tab == Some(tab));
 
         // Drop the tab from the global table (looked up by id, not by the
@@ -348,7 +348,7 @@ impl Browser {
             tab: closed_tab,
             index,
         });
-        sp.split = sp.split.filter(|s| !s.contains(tab));
+        crate::split_groups::leave_group(sp, tab);
         if was_active {
             sp.active_tab = focus_after;
         }
@@ -399,7 +399,6 @@ impl Browser {
             sp.pinned_count += 1;
         }
         sp.active_tab = Some(id);
-        sp.split = None;
         self.touch(id);
         self.sync_lifecycles(space);
         Ok(id)
@@ -412,10 +411,9 @@ impl Browser {
         if !sp.tabs.contains(&tab) {
             return Err(DomainError::TabNotInSpace { tab, space });
         }
+        // Blueprint D23: a tab outside a split keeps the split as a group;
+        // selecting a member brings it back.
         sp.active_tab = Some(tab);
-        if sp.split.is_some_and(|split| !split.contains(tab)) {
-            sp.split = None;
-        }
         // Selection reactivates a suspended/discarded tab: the orchestration
         // layer recreates its session (lifecycle drives session policy).
         if let Some(state) = self.tabs.iter_mut().find(|state| state.id == tab) {
@@ -546,46 +544,6 @@ impl Browser {
             sp.active_tab = Some(tab);
         } else {
             sp.active_tab = None;
-        }
-        Ok(())
-    }
-
-    /// Restore (or clear) a space's two-pane split verbatim: both panes must
-    /// be distinct members of the space, and the space must not already own
-    /// a split. Like [`Browser::set_split`], an active tab outside the panes
-    /// is reconciled to the primary pane (the domain invariant requires a
-    /// split space's active tab to be a member; the outside tab stays a
-    /// member identity of the space, never dropped). No other lifecycle/
-    /// selection side effects — visibility follows the policy's split
-    /// precedence through [`Browser::is_visible`].
-    pub fn restore_split(
-        &mut self,
-        space: SpaceId,
-        split: Option<Split>,
-    ) -> Result<(), DomainError> {
-        let sp = self
-            .space_mut(space)
-            .ok_or(DomainError::UnknownSpace(space))?;
-        match split {
-            Some(split) => {
-                if split.primary == split.secondary {
-                    return Err(DomainError::SplitRequiresDistinctTabs);
-                }
-                if sp.split.is_some() {
-                    return Err(DomainError::SplitAlreadyExists(space));
-                }
-                for pane in [split.primary, split.secondary] {
-                    if !sp.tabs.contains(&pane) {
-                        return Err(DomainError::TabNotInSpace { tab: pane, space });
-                    }
-                }
-                sp.split = Some(split);
-                if !matches!(sp.active_tab, Some(active) if active == split.primary || active == split.secondary)
-                {
-                    sp.active_tab = Some(split.primary);
-                }
-            }
-            None => sp.split = None,
         }
         Ok(())
     }
@@ -785,59 +743,6 @@ impl Browser {
         Ok(())
     }
 
-    /// Set the two-pane split of `space`. Both tabs must belong to the space
-    /// and must differ from each other.
-    pub fn set_split(
-        &mut self,
-        space: SpaceId,
-        primary: TabId,
-        secondary: TabId,
-    ) -> Result<(), DomainError> {
-        let sp = self
-            .space_mut(space)
-            .ok_or(DomainError::UnknownSpace(space))?;
-        if primary == secondary {
-            return Err(DomainError::SplitRequiresDistinctTabs);
-        }
-        if sp.split.is_some() {
-            return Err(DomainError::SplitAlreadyExists(space));
-        }
-        let member = |t: TabId| sp.tabs.contains(&t);
-        if !member(primary) || !member(secondary) {
-            return Err(DomainError::TabNotInSpace {
-                tab: if !member(primary) { primary } else { secondary },
-                space,
-            });
-        }
-        sp.split = Some(Split::new(primary, secondary));
-        if !matches!(sp.active_tab, Some(active) if active == primary || active == secondary) {
-            sp.active_tab = Some(primary);
-        }
-        // Both panes must own live sessions: reactivate discarded/suspended
-        // members when the split is opened.
-        for pane in [primary, secondary] {
-            if let Some(state) = self.tabs.iter_mut().find(|state| state.id == pane) {
-                if state.lifecycle != TabLifecycle::Active {
-                    state.lifecycle = TabLifecycle::Active;
-                }
-            }
-        }
-        self.sync_lifecycles(space);
-        Ok(())
-    }
-
-    /// Remove the split of `space`; both tabs stay open and pinned state is
-    /// untouched.
-    pub fn close_split(&mut self, space: SpaceId) -> Result<Option<Split>, DomainError> {
-        let split = self
-            .space_mut(space)
-            .ok_or(DomainError::UnknownSpace(space))?
-            .split
-            .take();
-        self.sync_lifecycles(space);
-        Ok(split)
-    }
-
     /// Move `tab` into `to_space`. The tab keeps its pinned state; the source
     /// space's active tab and split are repaired, and `to_space` activates
     /// the moved tab. Profiles may differ — the domain allows the move and
@@ -872,7 +777,7 @@ impl Browser {
         if sp_from.active_tab == Some(tab) {
             sp_from.active_tab = focus_after;
         }
-        sp_from.split = sp_from.split.filter(|s| !s.contains(tab));
+        crate::split_groups::leave_group(sp_from, tab);
 
         // Destination: honor pinned ordering, activate the moved tab.
         let sp_to = self.space_mut(to_space).expect("checked above");
@@ -886,7 +791,6 @@ impl Browser {
             sp_to.pinned_count += 1;
         }
         sp_to.active_tab = Some(tab);
-        sp_to.split = None;
 
         if let Some(t) = self.tabs.iter_mut().find(|t| t.id == tab) {
             t.space = to_space;

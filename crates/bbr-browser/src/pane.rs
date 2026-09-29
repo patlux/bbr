@@ -25,3 +25,31 @@ pub struct PaneLayout {
     pub secondary: Option<WebViewId>,
     pub focused: WebViewId,
 }
+
+/// Blueprint D23: the visible split group of the active space with the live
+/// view of every pane (tree leaves are tabs). Read with
+/// [`crate::BrowserController::split_layout`]; `None` without a visible
+/// group or while a preview covers the space.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SplitLayout {
+    pub group: bbr_domain::tiling::SplitGroup,
+    /// Every pane's tab and view, in reading order.
+    pub views: Vec<(bbr_domain::TabId, WebViewId)>,
+    pub focused: WebViewId,
+}
+
+impl SplitLayout {
+    pub fn view_of(&self, tab: bbr_domain::TabId) -> Option<WebViewId> {
+        self.views
+            .iter()
+            .find(|(pane, _)| *pane == tab)
+            .map(|(_, view)| *view)
+    }
+
+    pub fn tab_of(&self, view: WebViewId) -> Option<bbr_domain::TabId> {
+        self.views
+            .iter()
+            .find(|(_, pane)| *pane == view)
+            .map(|(tab, _)| *tab)
+    }
+}

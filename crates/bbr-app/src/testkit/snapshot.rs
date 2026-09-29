@@ -98,6 +98,7 @@ pub(crate) fn browser_change(outcome: &ControllerEvent) -> Option<BrowserChange>
             secondary: *secondary,
         }),
         ControllerEvent::SplitClosed => Some(BrowserChange::SplitClosed),
+        ControllerEvent::SplitChanged => Some(BrowserChange::SplitChanged),
         ControllerEvent::GestureHistoryRouted { view } => {
             Some(BrowserChange::GestureHistoryRouted { view: *view })
         }

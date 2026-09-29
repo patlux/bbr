@@ -237,6 +237,9 @@ pub struct BbrApp {
     pub(crate) permissions: permissions::PermissionsState,
     /// Blueprint D24: the media sessions behind the sidebar media card.
     pub(crate) media: media::MediaState,
+    /// Blueprint D23: `splits.txt` and the groups last written there.
+    split_layouts_path: Option<std::path::PathBuf>,
+    split_layouts_saved: std::cell::RefCell<Option<crate::split_layouts::SpaceGroups>>,
     /// Blueprint D12: client-certificate requests and remembered choices.
     pub(crate) certificates: client_certificates::CertificateState,
     /// Blueprint D13: links to other apps' schemes.
@@ -695,6 +698,8 @@ impl BbrApp {
             transient: transient::TransientOverlays::default(),
             permissions: permissions::PermissionsState::default(),
             media: media::MediaState::default(),
+            split_layouts_path: None,
+            split_layouts_saved: std::cell::RefCell::new(None),
             certificates: client_certificates::CertificateState::default(),
             open_app: open_app::OpenAppState::default(),
             space_chooser: None,
@@ -930,6 +935,29 @@ impl BbrApp {
     /// model. Off the render path; never blocks.
     pub fn persist_structure(&self) {
         self.store.poke_browser_state(self.current_browser_state());
+        self.persist_split_layouts();
+    }
+
+    /// Blueprint D23: where the split groups are kept.
+    pub(crate) fn set_split_layouts_path(&mut self, path: std::path::PathBuf) {
+        self.split_layouts_path = Some(path);
+        *self.split_layouts_saved.borrow_mut() = Some(self.controller.split_groups());
+    }
+
+    /// Write `splits.txt` when the groups changed since the last write.
+    fn persist_split_layouts(&self) {
+        let Some(path) = self.split_layouts_path.as_ref() else {
+            return;
+        };
+        let groups = self.controller.split_groups();
+        if self.split_layouts_saved.borrow().as_ref() == Some(&groups) {
+            return;
+        }
+        if let Err(error) = crate::split_layouts::save(path, &groups) {
+            log::warn!("split layouts not saved: {error}");
+            return;
+        }
+        *self.split_layouts_saved.borrow_mut() = Some(groups);
     }
 
     /// The production quit flush: refresh the slot from the current model

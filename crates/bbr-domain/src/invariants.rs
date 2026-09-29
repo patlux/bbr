@@ -1,6 +1,6 @@
 //! Structural invariant validation for the browser model.
 
-use crate::{Browser, InvariantViolation, TabLifecycle};
+use crate::{Browser, InvariantViolation, TabId, TabLifecycle};
 
 impl Browser {
     /// Public invariant checker (see crate docs). Every mutation keeps these
@@ -69,8 +69,7 @@ impl Browser {
             }
             for tid in &space.tabs {
                 let tab = self.tab(*tid).expect("membership checked above");
-                let visible = space.split.is_some_and(|split| split.contains(*tid))
-                    || (space.split.is_none() && space.active_tab == Some(*tid));
+                let visible = space.visible_tabs().contains(tid);
                 // A visible tab is either actively served (Active) or is a
                 // crashed/recoverable entry (Discarded); it must never be
                 // Suspended or Warm while shown. A hidden tab must never be
@@ -90,26 +89,24 @@ impl Browser {
                     )));
                 }
             }
-            if let Some(split) = &space.split {
-                if !matches!(space.active_tab, Some(active) if split.contains(active)) {
+            // Blueprint D23: every group is a valid tree over member tabs,
+            // and no tab is a pane of two groups.
+            let mut panes: Vec<TabId> = Vec::new();
+            for group in &space.splits {
+                if crate::tiling::SplitGroup::from_root(group.root().clone()).is_err() {
                     return Err(fail(format!(
-                        "space {:?} active tab {:?} is outside its split",
-                        space.id, space.active_tab
-                    )));
-                }
-                if split.primary == split.secondary {
-                    return Err(fail(format!(
-                        "space {:?} split panes are identical",
+                        "space {:?} has a malformed split group",
                         space.id
                     )));
                 }
-                for pane in [split.primary, split.secondary] {
-                    if !space.tabs.contains(&pane) {
+                for pane in group.members() {
+                    if !space.tabs.contains(&pane) || panes.contains(&pane) {
                         return Err(fail(format!(
-                            "space {:?} split pane {:?} is not a member tab",
+                            "space {:?} split pane {:?} is not a member tab or is shared",
                             space.id, pane
                         )));
                     }
+                    panes.push(pane);
                 }
             }
             for closed in &space.recently_closed {

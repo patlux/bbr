@@ -29,6 +29,8 @@ pub enum DomainError {
     },
     SplitRequiresDistinctTabs,
     SplitAlreadyExists(SpaceId),
+    /// Blueprint D23: a split-group operation was refused.
+    Tiling(crate::tiling::TilingError),
     NothingToReopen(SpaceId),
     IllegalLifecycleTransition {
         tab: TabId,
@@ -73,6 +75,7 @@ impl std::fmt::Display for DomainError {
             ),
             Self::SplitRequiresDistinctTabs => write!(f, "a split requires two distinct tabs"),
             Self::SplitAlreadyExists(id) => write!(f, "space {id:?} already has a split"),
+            Self::Tiling(error) => write!(f, "split layout: {error:?}"),
             Self::NothingToReopen(id) => write!(f, "space {id:?} has no tabs to reopen"),
             Self::IllegalLifecycleTransition { tab, from, to } => {
                 write!(f, "tab {tab:?} cannot transition from {from:?} to {to:?}")

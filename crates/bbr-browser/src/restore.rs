@@ -113,10 +113,10 @@ impl BrowserController {
                                     former_position: closed.index as u64,
                                 })
                                 .collect(),
-                            split: space.split.map(|split| crate::hydration::IntentSplit {
-                                primary_tab: split.primary.0,
-                                secondary_tab: split.secondary.0,
-                            }),
+                            // Blueprint D23: split groups persist in the
+                            // app's `splits.txt` (a tree the two-pane
+                            // table cannot hold).
+                            split: None,
                         })
                         .collect(),
                 })

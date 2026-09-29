@@ -97,8 +97,12 @@ Not parallelized.
       with 6 tests — projection in whole points, the 320 × 200 fit,
       ⌃⌘+arrow neighbours, the 24 % drop zones, divider drags clamped to the
       minimum.)*
-- [ ] Controller pane layout, selection keeping a group, lifecycle of
-      members, close/move removing panes; persistence round trip.
+- [x] Controller pane layout, selection keeping a group, lifecycle of
+      members, close/move removing panes; persistence round trip. *(Slices
+      2–3, 2026-09-30: `Space.splits`, `split_groups` domain ops with 7
+      tests, controller `split_*` commands and `split_layout()` with 3
+      tests, `splits.txt` codec with 2 tests; the legacy two-pane restore
+      E2E and the split-geometry E2E stay green.)*
 
 ### Real-app E2E
 
