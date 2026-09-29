@@ -29,6 +29,7 @@ use support::*;
 mod cross_profile;
 mod invariants;
 mod noops;
+mod profile_feedback;
 mod same_profile;
 mod support;
 

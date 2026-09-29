@@ -210,6 +210,9 @@ pub struct SidebarModel {
     pub tabs: TabsModel,
     /// The §10.9 drag proxy while a tab drag is active (`None` at rest).
     pub drag_proxy: Option<DragProxyModel>,
+    /// Blueprint D07: the destination-profile label while a drag targets a
+    /// chip of another profile (`None` otherwise).
+    pub drag_destination: Option<crate::state::DragDestination>,
     /// The §11.4 status line model.
     pub status: StatusModel,
     /// Whether the transient status line is visible. Ordinary settled page

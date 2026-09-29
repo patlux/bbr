@@ -76,6 +76,8 @@ pub struct TestSnapshot {
     /// during a drag-to-chip. `None` outside the chips (tab slot, favorites
     /// grid, or an invalid no-target zone).
     pub drag_chip: Option<bbr_testkit::protocol::TestSpaceId>,
+    /// Blueprint D07: the destination-profile label text.
+    pub drag_destination: Option<String>,
     pub drag_valid: bool,
     /// §11.3 permanent space strip: one chip per space in canonical display
     /// order (the vector order is display order; the chip/identity ids

@@ -73,6 +73,8 @@ mod controller_favicon_tests;
 #[cfg(test)]
 mod controller_gesture_tests;
 #[cfg(test)]
+mod controller_move_tests;
+#[cfg(test)]
 mod controller_pane_tests;
 #[cfg(test)]
 mod controller_peek_stale_tests;

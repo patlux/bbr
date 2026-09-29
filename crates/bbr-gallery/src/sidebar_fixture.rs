@@ -315,6 +315,7 @@ pub fn build_sidebar_fixture_with_theme(
         // The proxy is window-positioned; the rail story shows the in-list
         // `dragging` row instead.
         drag_proxy: None,
+        drag_destination: None,
         status,
         status_visible: false,
         titlebar,

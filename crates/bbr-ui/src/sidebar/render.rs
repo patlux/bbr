@@ -201,6 +201,13 @@ pub fn sidebar_surface(
             callbacks::key(&callbacks.on_divider_key_down),
         ))
         .when_some(drag_proxy, |rail, proxy| rail.child(proxy))
+        // Blueprint D07: the destination-profile label above the footer.
+        .when_some(model.drag_destination.as_ref(), |rail, destination| {
+            rail.child(components::drag_offer::drag_destination_label(
+                theme,
+                destination,
+            ))
+        })
 }
 
 /// The active Space title — the primary list heading in the reference

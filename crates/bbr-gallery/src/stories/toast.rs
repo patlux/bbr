@@ -45,6 +45,7 @@ pub fn render_toast(ctx: &StoryContext) -> AnyElement {
             let model = ToastModel {
                 generation: index as u64,
                 icon: *icon,
+                profile: None,
                 tone: *tone,
                 message: (*message).into(),
                 action: action.map(Into::into),

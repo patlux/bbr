@@ -310,6 +310,7 @@ impl BbrApp {
             drag_source,
             drag_slot,
             drag_chip: drag_chip.map(|space| bbr_testkit::protocol::TestSpaceId(space.0)),
+            drag_destination: self.drag_destination().map(|destination| destination.text),
             drag_favorites: self.tab_drag.target()
                 == Some(crate::app::drag_target::DragTarget::Favorites),
             favorites_rect: self

@@ -1207,6 +1207,11 @@ pub struct Snapshot {
     /// position.
     #[serde(default)]
     pub drag_chip: Option<TestSpaceId>,
+    /// Blueprint D07: the destination-profile label while the drag targets
+    /// a chip of another profile ("Move to Work · Profile Work"); `None`
+    /// otherwise (`bbr-drag-destination`).
+    #[serde(default)]
+    pub drag_destination: Option<String>,
     /// Whether the current drag target is a legal drop (a boundary crossing
     /// or a non-droppable zone reports `false` and renders the muted tick).
     pub drag_valid: bool,

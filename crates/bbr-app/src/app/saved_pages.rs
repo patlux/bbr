@@ -155,6 +155,7 @@ impl BbrApp {
         if let ToggleOutcome::Saved(id) = command.toggle(self, &url, &title) {
             self.show_toast(
                 bbr_ui::icons::Icon::Bookmark,
+                None,
                 bbr_ui::surfaces::toast::ToastTone::Accent,
                 "Saved to Library",
                 Some((

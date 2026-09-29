@@ -58,6 +58,9 @@ pub struct ToastModel {
     /// Identity of this appearance (a new toast replays its entrance).
     pub generation: u64,
     pub icon: Icon,
+    /// Blueprint D07: a profile chip leads instead of the icon (the page
+    /// reloaded in that profile).
+    pub profile: Option<crate::state::ProfileCompanion>,
     pub tone: ToastTone,
     pub message: SharedString,
     /// The one action (e.g. "Undo"), if the confirmed action is reversible.
@@ -147,11 +150,21 @@ pub fn toast(
         .border_1()
         .border_color(p.hairline)
         .shadow(elev2(theme))
-        .child(
-            model
+        .child(match &model.profile {
+            Some(companion) => crate::components::profile_chip(
+                theme,
+                companion.profile_index,
+                &crate::components::ProfileChipSpec {
+                    letter: companion.letter.clone(),
+                    hue: companion.hue,
+                },
+            )
+            .into_any_element(),
+            None => model
                 .icon
-                .canvas_with(theme, px(16.0), tone_color(theme, model.tone)),
-        )
+                .canvas_with(theme, px(16.0), tone_color(theme, model.tone))
+                .into_any_element(),
+        })
         .child(
             div()
                 .id(TOAST_MESSAGE_ID)

@@ -161,6 +161,53 @@ pub fn tab_drag_proxy(theme: &Theme, row: &RowVisuals, rect: [f32; 4]) -> Statef
         .child(surface)
 }
 
+/// The §15 id of the blueprint D07 destination-profile label.
+pub const DRAG_DESTINATION_ID: &str = "bbr-drag-destination";
+
+/// Blueprint D07 (board P-7): while a drag targets a chip of another
+/// profile, a label above the footer names the destination — the profile
+/// chip plus "Move to Work · Profile Work" — before the drop recreates the
+/// page. `material:overlay`, hairline + `elev:2`, 28 pt tall.
+pub fn drag_destination_label(
+    theme: &Theme,
+    destination: &crate::state::DragDestination,
+) -> Stateful<Div> {
+    let p = theme.palette;
+    let spec = crate::components::ProfileChipSpec {
+        letter: destination.companion.letter.clone(),
+        hue: destination.companion.hue,
+    };
+    div()
+        .id(DRAG_DESTINATION_ID)
+        .absolute()
+        .left(crate::theme::Spacing::sp3())
+        .bottom(theme.density.row() + crate::theme::Spacing::sp2())
+        .h(px(28.0))
+        .pl(px(4.0))
+        .pr(px(10.0))
+        .gap(px(6.0))
+        .flex()
+        .flex_row()
+        .items_center()
+        .rounded(px(8.0))
+        .bg(p.surface_overlay)
+        .border_1()
+        .border_color(p.hairline)
+        .shadow(crate::theme::elevation::elev2(theme))
+        .child(crate::components::profile_chip(
+            theme,
+            destination.companion.profile_index,
+            &spec,
+        ))
+        .child(
+            div()
+                .text_size(theme.type_.meta.size)
+                .text_color(p.ink)
+                .whitespace_nowrap()
+                .child(destination.text.clone()),
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

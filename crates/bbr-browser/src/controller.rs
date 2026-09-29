@@ -290,7 +290,26 @@ impl BrowserController {
         to_space: bbr_domain::SpaceId,
     ) -> Result<ControllerEvent, ControllerError> {
         let tab = self.tab_at(index)?;
-        let from_profile = self.active_profile();
+        self.move_tab_id(tab, to_space)
+    }
+
+    /// Move the tab `tab` (in any space) into `to_space` — the identity form
+    /// of [`Self::move_tab`] (blueprint D07: Undo moves a tab back from a
+    /// space that is not active). Across profiles the session is recreated
+    /// in the destination profile's store.
+    pub fn move_tab_id(
+        &mut self,
+        tab: bbr_domain::TabId,
+        to_space: bbr_domain::SpaceId,
+    ) -> Result<ControllerEvent, ControllerError> {
+        let from_profile = self
+            .browser
+            .tab(tab)
+            .and_then(|t| self.browser.space(t.space))
+            .map(|space| space.profile)
+            .ok_or(ControllerError::Domain(
+                bbr_domain::DomainError::UnknownTab(tab),
+            ))?;
         let to_profile = self
             .browser
             .space(to_space)

@@ -1757,6 +1757,17 @@ is stable for the profile's lifetime.
   appears on every space row and whenever tabs/spaces cross contexts (move
   previews, space switching per §11.3); at most one profile's identity is
   "loud" at a time (the active space's chip), the rest stay at rest.
+- **Cross-profile move feedback (blueprint D07, implemented):** a tab moved
+  to a space of another profile cannot keep its session, so the move names
+  the profile on both sides of the drop. While a drag targets a chip of
+  another profile, a label above the footer shows the destination profile
+  chip and "Move to Clients · Profile Work" (`bbr-drag-destination`,
+  `material:overlay`, 28 pt, hairline + `elev:2`; a same-profile chip shows
+  none). After the drop — and after the staged move command — the §18.4
+  toast leads with the destination profile chip: "Reloaded in Profile ·
+  Work — sign-ins may differ", with Undo. Undo moves the tab back by
+  identity and recreates it once more, in the source profile's store; it
+  shows no second toast.
 - **Assert ids:** `bbr-profile-chip-<n>` with a `profile_hue` snapshot value
   (allowed values = the six hue names).
 
@@ -2162,7 +2173,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | §11.4 | implemented | [blueprint-palette-recents-actions](docs/roadmap/tasks/blueprint-palette-recents-actions.md) |
 | D05 | Space menu and delete confirmation | P-4 PR-07 | §11.3 §11.13 | implemented | [blueprint-space-menu-delete](docs/roadmap/tasks/blueprint-space-menu-delete.md) |
 | D06 | Create, edit and delete profiles | P-6 L-4 PR-08 | §12 | adopted | [blueprint-profile-management](docs/roadmap/tasks/blueprint-profile-management.md) |
-| D07 | Cross-profile move feedback | P-7 PR-08 | §11.3 §12 §10.9 | adopted | [blueprint-cross-profile-move-feedback](docs/roadmap/tasks/blueprint-cross-profile-move-feedback.md) |
+| D07 | Cross-profile move feedback | P-7 PR-08 | §11.3 §12 §10.9 | implemented | [blueprint-cross-profile-move-feedback](docs/roadmap/tasks/blueprint-cross-profile-move-feedback.md) |
 | D08 | Toasts and uniform surface transitions | B-7 G-7 V-6 PR-12 | §6 §18.4 §18.5 | implemented | [blueprint-feedback-toasts](docs/roadmap/tasks/blueprint-feedback-toasts.md) |
 | D09 | Peek presentation | G-8 PR-04 | §11.17 | implemented | [blueprint-peek-presentation](docs/roadmap/tasks/blueprint-peek-presentation.md) |
 | D10 | History and Clear Browsing Data | M-6 M-7 PR-22 | §11.16 | adopted | [blueprint-history-clear-data](docs/roadmap/tasks/blueprint-history-clear-data.md) |

@@ -152,6 +152,7 @@ impl BbrApp {
             folders,
             tabs,
             drag_proxy,
+            drag_destination: self.drag_destination(),
             status,
             status_visible,
             // §11.14: the titlebar row is the rail's top strip — the

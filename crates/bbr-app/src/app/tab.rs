@@ -468,6 +468,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
+        let from_space = self.controller.snapshot().active_space;
         let result = self
             .controller
             .move_tab(index, space)
@@ -476,6 +477,16 @@ impl BbrApp {
                 error
             })
             .ok();
+        // Blueprint D07: a cross-profile move recreated the page; a toast
+        // says so, with Undo.
+        if let Some(ControllerEvent::TabMoved {
+            tab,
+            to_space,
+            recreated: true,
+        }) = &result
+        {
+            self.announce_profile_move(*tab, from_space, *to_space, cx);
+        }
         if let Some(outcome) = &result {
             self.clear_command_profile_hint();
             self.sync_command_bar();

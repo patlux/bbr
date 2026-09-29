@@ -27,6 +27,12 @@ use bbr_command::id::BookmarkId;
 pub enum ToastAction {
     /// ⌘D saved this page; Undo removes the record again.
     UndoSavePage(BookmarkId),
+    /// Blueprint D07: a cross-profile move recreated `tab`; Undo moves it
+    /// back to `space` (recreating it in the source profile).
+    UndoProfileMove {
+        tab: bbr_domain::TabId,
+        space: bbr_browser::SpaceId,
+    },
 }
 
 /// One live toast.
@@ -96,6 +102,7 @@ impl BbrApp {
     pub(crate) fn show_toast(
         &mut self,
         icon: Icon,
+        profile: Option<bbr_ui::state::ProfileCompanion>,
         tone: ToastTone,
         message: impl Into<SharedString>,
         action: Option<(SharedString, ToastAction)>,
@@ -107,6 +114,7 @@ impl BbrApp {
             model: ToastModel {
                 generation,
                 icon,
+                profile,
                 tone,
                 message: message.into(),
                 action: action.as_ref().map(|(label, _)| label.clone()),
@@ -167,6 +175,9 @@ impl BbrApp {
             ToastAction::UndoSavePage(id) => {
                 let command = self.saved_pages;
                 command.remove(self, id);
+            }
+            ToastAction::UndoProfileMove { tab, space } => {
+                self.undo_profile_move(tab, space, cx);
             }
         }
         self.dismiss_toast(toast.model.generation, cx);
@@ -263,6 +274,108 @@ impl BbrApp {
     }
 }
 
+/// Blueprint D07: the cross-profile move feedback.
+impl BbrApp {
+    /// The §12 companion of `profile` (monogram + hue + chip index).
+    fn profile_companion(
+        &self,
+        profile: bbr_web::ProfileId,
+    ) -> Option<(String, bbr_ui::state::ProfileCompanion)> {
+        let browser = self.controller.snapshot();
+        browser
+            .profiles
+            .iter()
+            .find(|candidate| candidate.id == profile)
+            .map(|found| {
+                (
+                    found.title.clone(),
+                    bbr_ui::state::ProfileCompanion {
+                        profile_index: found.index,
+                        letter: crate::shell::space::profile_monogram(&found.title),
+                        hue: found.hue,
+                    },
+                )
+            })
+    }
+
+    /// The drag names the destination profile before a cross-profile drop
+    /// ("Move to Work · Profile Work"); `None` over a same-profile chip or
+    /// with no chip target.
+    pub(crate) fn drag_destination(&self) -> Option<bbr_ui::state::DragDestination> {
+        let space = self.tab_drag.chip_target()?;
+        let browser = self.controller.snapshot();
+        let target = browser.spaces.iter().find(|s| s.id == space)?;
+        if target.profile == browser.active_profile {
+            return None;
+        }
+        let (profile_title, companion) = self.profile_companion(target.profile)?;
+        Some(bbr_ui::state::DragDestination {
+            text: format!("Move to {} · Profile {profile_title}", target.title),
+            companion,
+        })
+    }
+
+    /// A cross-profile move recreated `tab` in `to_space`: the toast names
+    /// the destination profile and offers Undo back to `from_space`.
+    pub(crate) fn announce_profile_move(
+        &mut self,
+        tab: bbr_domain::TabId,
+        from_space: bbr_browser::SpaceId,
+        to_space: bbr_browser::SpaceId,
+        cx: &mut Context<Self>,
+    ) {
+        let browser = self.controller.snapshot();
+        let Some(profile) = browser
+            .spaces
+            .iter()
+            .find(|s| s.id == to_space)
+            .map(|s| s.profile)
+        else {
+            return;
+        };
+        let Some((title, companion)) = self.profile_companion(profile) else {
+            return;
+        };
+        self.show_toast(
+            Icon::Check,
+            Some(companion),
+            ToastTone::Neutral,
+            format!("Reloaded in Profile · {title} — sign-ins may differ"),
+            Some((
+                "Undo".into(),
+                ToastAction::UndoProfileMove {
+                    tab,
+                    space: from_space,
+                },
+            )),
+            cx,
+        );
+    }
+
+    /// Undo a cross-profile move: move `tab` back to `space` by identity
+    /// (it lives in a space that is not active), recreating it in the
+    /// source profile's store. No second toast.
+    fn undo_profile_move(
+        &mut self,
+        tab: bbr_domain::TabId,
+        space: bbr_browser::SpaceId,
+        cx: &mut Context<Self>,
+    ) {
+        match self.controller.move_tab_id(tab, space) {
+            Ok(outcome) => {
+                self.clear_command_profile_hint();
+                self.sync_command_bar();
+                self.find_discard_if_unbound(cx);
+                self.emit_browser(&outcome);
+                self.sync_peek_surface(cx);
+                self.ensure_active_visible();
+                self.persist_structure();
+            }
+            Err(error) => log::error!("could not undo the profile move: {error}"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -277,6 +390,7 @@ mod tests {
             model: ToastModel {
                 generation: 1,
                 icon: Icon::Bookmark,
+                profile: None,
                 tone: ToastTone::Accent,
                 message: "Saved to Library".into(),
                 action: Some("Undo".into()),

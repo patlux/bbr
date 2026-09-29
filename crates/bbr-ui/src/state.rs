@@ -65,6 +65,14 @@ pub struct ProfileCompanion {
     pub hue: ProfileHue,
 }
 
+/// Blueprint D07 (§12): the drag names the destination profile before a
+/// cross-profile drop — "Move to Work · Profile Work" with the profile chip.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DragDestination {
+    pub text: String,
+    pub companion: ProfileCompanion,
+}
+
 /// One rendered space chip's identity, derived from the controller snapshot
 /// plus the effective space appearance (the portable appearance contract's
 /// validated identity) and the app's drag state. The render, the snapshot,
