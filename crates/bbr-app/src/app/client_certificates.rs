@@ -39,6 +39,8 @@ pub(crate) struct CertificateState {
     pub pending: VecDeque<PendingCertificate>,
     pub selected: Option<usize>,
     pub remember: bool,
+    /// Views that started a load since their last URL report.
+    pub loading: std::collections::BTreeSet<WebViewId>,
     /// Every answer handed to the engine (testkit evidence).
     #[cfg(feature = "testkit")]
     pub answers: Vec<(u64, ClientCertificateAnswer)>,
@@ -125,9 +127,33 @@ impl BbrApp {
             .answer_client_certificate(request, answer);
     }
 
+    /// The engine events that end waiting requests: a URL report is a
+    /// navigation only when the URL is new or the view started a load since
+    /// its last report — WebKit re-sends the same URL when a title lands,
+    /// and that must not cancel a request.
+    pub(crate) fn certificate_web_event(
+        &mut self,
+        event: &bbr_web::WebEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        match event {
+            bbr_web::WebEvent::LoadingChanged(view, true) => {
+                self.certificates.loading.insert(*view);
+            }
+            bbr_web::WebEvent::UrlChanged(view, url) => {
+                let started = self.certificates.loading.remove(view);
+                if started || self.controller.view_url(*view) != Some(url.as_str()) {
+                    self.certificate_navigation(*view, url, window, cx);
+                }
+            }
+            _ => {}
+        }
+    }
+
     /// A navigation of `view` to another server cancels its waiting
     /// requests (their load is gone).
-    pub(crate) fn certificate_navigation(
+    fn certificate_navigation(
         &mut self,
         view: WebViewId,
         url: &str,

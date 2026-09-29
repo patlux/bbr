@@ -155,9 +155,9 @@ impl BbrApp {
         {
             self.on_client_certificate_request(*view, *request, host, identities, window, cx);
         }
-        if let WebEvent::UrlChanged(view, url) = &event {
-            self.certificate_navigation(*view, url, window, cx);
-        }
+        // A navigation ends waiting certificate requests (applied before
+        // the controller takes the event, so it still knows the old URL).
+        self.certificate_web_event(&event, window, cx);
         // Blueprint D13: a link to another app's scheme.
         if let WebEvent::ExternalSchemeRequested { view, url, .. } = &event {
             self.on_external_scheme(*view, url, window, cx);

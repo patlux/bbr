@@ -62,6 +62,14 @@ impl BrowserController {
         views
     }
 
+    /// The URL the engine last reported for the live `view` (`None`
+    /// before its first report). Blueprint D12: a repeated report of the
+    /// same URL (WebKit re-sends it when the title lands) is not a
+    /// navigation.
+    pub fn view_url(&self, view: bbr_web::WebViewId) -> Option<&str> {
+        self.nav.get(&view).and_then(|nav| nav.url.as_deref())
+    }
+
     /// The active space's recently closed tabs, most recent first.
     pub fn recently_closed(&self) -> Vec<ClosedTabEntry> {
         self.browser

@@ -105,9 +105,20 @@ fn client_certificate_sheet_chooses_remembers_and_forgets() {
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
         client.hello(&token).expect("hello");
-        let _ = client.attach(None).expect("attach");
+        let since = client
+            .attach(None)
+            .expect("attach")
+            .iter()
+            .map(|(seq, _)| *seq)
+            .max()
+            .unwrap_or(0);
         let settled = wait_for_window_settled(&mut client, deadline());
         let view = settled.active_web_view.expect("view");
+        // The page's own load reports its URL; a request injected before
+        // that report would meet it as a navigation to another server.
+        if settled.title.as_deref() != Some(PAGE_ONE_TITLE) {
+            wait_title(&mut client, view, PAGE_ONE_TITLE, since);
+        }
 
         // The sheet names the server and the profile and lists every
         // identity; the expired one is dimmed and the first valid one is
@@ -135,6 +146,18 @@ fn client_certificate_sheet_chooses_remembers_and_forgets() {
         ] {
             assert!(open.visible_ids.iter().any(|v| v == id), "{id}");
         }
+
+        // WebKit re-sends the page's URL when its title lands: that is no
+        // navigation, so the request keeps waiting.
+        let current_url = open.tabs[open.active_tab_index.unwrap()].url.clone();
+        client
+            .send_ok(&Request::InjectWebEvent {
+                event: WebEvent::UrlChanged(view, current_url),
+            })
+            .expect("inject same URL");
+        let kept = snapshot(&mut client);
+        assert!(kept.client_certificates.sheet.is_some(), "still asking");
+        assert!(kept.client_certificates.answers.is_empty());
 
         // The expired identity cannot be chosen; ↓/↑ move over the valid
         // rows only.
