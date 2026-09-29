@@ -506,8 +506,8 @@ monogram above as the unchanged fallback:
 
 ## 8. Density — small / normal / very large collections
 
-Three fixed densities, chosen by the shell from tab-collection size (and
-user override later; open decision). Geometry is per-density; **states and
+Three fixed densities, chosen by the shell from tab-collection size, or
+pinned by the user in Settings › Appearance (blueprint D16, §11.18). Geometry is per-density; **states and
 semantics are identical across densities.**
 
 **S1 scale pass — settled from the preserved user reference (2026-08-08).**
@@ -1829,6 +1829,45 @@ destroyed first).
 
 Canonical packet: [Link Preview / Peek](docs/roadmap/tasks/link-preview-peek.md).
 
+### 11.18 Settings window (blueprint D16)
+
+`⌘,` and BBR › Settings… open a fixed 780 × 620 pt macOS preferences window
+(`bbr-settings`), one per app; a second `⌘,` brings it forward. Its toolbar
+band (`surface.sidebar`, a hairline below) carries the pane title centered
+in the titlebar and seven pane buttons (`bbr-settings-tab-<key>`: General,
+Profiles, Search, Privacy, Downloads, Appearance, Shortcuts — gear, person,
+magnifier, shield, download arrow, eye, keyboard), the chosen one on a
+`wash.active` pill with an `accent` glyph. The content (`surface.canvas`,
+40 pt side margins, scrolling) groups rows into sections: an uppercase
+`type:badge` label in `ink.faint`, then one `surface.field` card with a
+hairline edge and `radius` 12, rows (`bbr-settings-row-<id>`) separated by
+hairlines, each `[title / meta detail] … [control]`. Controls: a switch
+(`accent` when on), a pop-up choice (a bordered field with a chevron that
+opens a small `elev:2` menu with a check on the current option; a press
+outside closes it), a segmented choice (the chosen segment on
+`surface.field` with `elev:lift`), a push button (destructive labels in
+`status.error`), keycaps, a `tint.accent` status badge, three density cards
+and the profile chip. Every change applies at once — there is no Save
+button — and the app preferences live in `preferences.txt` beside the store
+(never in the browser store's schema).
+
+Rows exist only where BBR has the behaviour behind them. General: Default
+browser (DEFAULT badge, or Make Default), and Open links that ask for a new
+window as Peek (off opens one ordinary tab instead; blocking and background
+tabs are unchanged). Profiles: every profile with its chip and space count,
+then the active profile's spaces with their paper. Search: the engine and
+Show tabs from all spaces in ⌘T (off keeps the palette to the active
+space's tabs). Downloads: Clear download history. Appearance: System /
+Light / Dark; Increase contrast and Reduce motion (Follow system / On /
+Off); the density cards (Small / Normal / Large pin the §8 density —
+choosing the pinned card again returns to the automatic, collection-sized
+density); the default paper for new spaces. Shortcuts: the bound keys,
+grouped, read from the keymap. Board rows without behaviour behind them
+(startup behaviour, the target space for links from other apps, tab
+suspension and auto-close, search suggestions and keywords, the cookie
+policy, a save prompt per download, history retention, per-site settings
+and Clear Browsing Data before D10/D11) are not drawn.
+
 ## 12. Profile identity
 
 - **Chip:** 24 pt square (20 at S, 28 at XL), `radius:sm`, filled with the profile's
@@ -2281,7 +2320,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D13 | Open-in-app, pop-up and link-routing UI | M-12 M-13 PR-04 PR-20 | §11.13 §18.4 | adopted | [blueprint-link-destinations](docs/roadmap/tasks/blueprint-link-destinations.md) |
 | D14 | Back / Forward history menu | W-7 M-3 | §11.14 §11.13 | implemented | [blueprint-navigation-history-menu](docs/roadmap/tasks/blueprint-navigation-history-menu.md) |
 | D15 | First run and onboarding | L-1 L-2 PR-01 | §11.8 | adopted | [blueprint-first-run](docs/roadmap/tasks/blueprint-first-run.md) |
-| D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 | adopted | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |
+| D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 §11.18 | implemented (§11.18: rows without behaviour behind them are omitted) | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |
 | D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | implemented (partial-restore banner omitted: no lost-tab report exists) | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
 | D18 | About and updates | L-12 | §1 §7 | About window implemented; no update channel while BBR is built locally (answer 14) | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
 | D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | menus implemented; window reopen and cross-window drag open | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |

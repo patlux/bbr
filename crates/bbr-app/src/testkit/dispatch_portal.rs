@@ -83,6 +83,32 @@ pub(super) fn dispatch_portal(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // Blueprint D16: the Settings window.
+        Request::OpenSettings => with_app(window, app, cx, |view, _window, cx| {
+            view.show_settings(cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::SettingsInput { input } => with_app(window, app, cx, |view, window, cx| {
+            if view.settings_input(input.clone(), window, cx) {
+                Response::Ok
+            } else {
+                Response::Error(Error::new("bad_settings_input", "unknown pane"))
+            }
+        })
+        .unwrap_or_else(err_response),
+        Request::CloseSettings => {
+            let handle = with_app(window, app, cx, |view, _window, _cx| view.settings.window)
+                .ok()
+                .flatten();
+            match handle {
+                Some(handle) => {
+                    let _ = handle.update(cx, |_view, window, _cx| window.remove_window());
+                    Response::Ok
+                }
+                None => Response::Error(Error::new("no_settings", "Settings is not open")),
+            }
+        }
         // Blueprint D17: the recovery pane's action.
         Request::RecoveryAction => with_app(window, app, cx, |view, _window, cx| {
             if view.recovery_action(cx) {

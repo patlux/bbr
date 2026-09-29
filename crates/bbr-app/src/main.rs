@@ -30,8 +30,10 @@ mod performance;
 // the native-host path, so the remaining surface is allowed until U1 lands.
 #[allow(dead_code)]
 mod portal;
+mod preferences;
 #[cfg(target_os = "macos")]
 mod rail_observer;
+mod settings_window;
 mod shell;
 mod slot;
 mod store;
@@ -500,7 +502,9 @@ fn main() {
         if let Some(native) = native_engine.clone() {
             let delivery_tx = new_windows_tx.clone();
             let mut engine = native.borrow_mut();
-            engine.set_new_window_handler(Box::new(|request| bbr_web::default_decision(&request)));
+            engine.set_new_window_handler(Box::new(|request| {
+                preferences::new_window_decision(&request, bbr_web::NewWindowIntent::Default)
+            }));
             engine.set_new_window_delivery(Box::new(move |delivery| {
                 let _ = delivery_tx.try_send(delivery);
             }));
@@ -617,6 +621,11 @@ fn main() {
             });
         }
 
+        // Blueprint D16: the Settings window's preferences (apart from the
+        // store; defaults when absent).
+        let _ = with_app(&window, &app, cx, |view, _w, cx| {
+            view.load_preferences(preferences::path_in(&cli.profile_dir), cx)
+        });
         // Native portal host (task packet native-portal-host): exactly one
         // transparent, non-activating portal window per browser window,
         // created hidden at window construction and attached above the

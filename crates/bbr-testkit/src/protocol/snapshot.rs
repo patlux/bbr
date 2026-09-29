@@ -1118,6 +1118,26 @@ pub struct TextInputReadback {
     pub window_frame: [f64; 4],
 }
 
+/// Blueprint D16: the open Settings window — the pane and its rows as
+/// drawn (row ids without the `bbr-settings-row-` prefix).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SettingsSnapshot {
+    pub pane: String,
+    pub rows: Vec<SettingsRowSnapshot>,
+    /// The row whose pop-up choice is open.
+    pub open_select: Option<String>,
+}
+
+/// One Settings row: `value` is what its control shows (a toggle `on` /
+/// `off`, the chosen option, a button or badge label, the keycaps).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SettingsRowSnapshot {
+    pub id: String,
+    pub title: String,
+    pub detail: Option<String>,
+    pub value: String,
+}
+
 /// Blueprint D02: the floating rail panel (window points).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FloatingRailSnapshot {
@@ -1588,6 +1608,9 @@ pub struct Snapshot {
     /// Blueprint D02: the floating rail while it shows.
     #[serde(default)]
     pub floating_rail: Option<FloatingRailSnapshot>,
+    /// Blueprint D16: the Settings window while it is open.
+    #[serde(default)]
+    pub settings: Option<SettingsSnapshot>,
     /// Blueprint D08: the live zoom readout's percent (`None` at rest).
     #[serde(default)]
     pub zoom_readout: Option<u32>,

@@ -33,6 +33,8 @@ gpui::actions!(
         MinimizeWindow,
         /// Blueprint D18: open the About BBR window.
         ShowAbout,
+        /// Blueprint D16: `Cmd-,` opens the Settings window.
+        ShowSettings,
     ]
 );
 
@@ -107,6 +109,7 @@ fn bar(spaces: &[MenuSpace]) -> Vec<(&'static str, Vec<Entry>)> {
             "BBR",
             vec![
                 item("About BBR", ShowAbout),
+                item("Settings…", ShowSettings),
                 Entry::Separator,
                 item("Hide BBR", HideApp),
                 Entry::Separator,

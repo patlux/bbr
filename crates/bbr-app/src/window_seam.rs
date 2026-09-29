@@ -412,6 +412,17 @@ pub(crate) fn install_actions(
     cx.on_action(|_: &crate::menus::HideApp, cx| cx.hide());
     cx.on_action({
         let app = app.clone();
+        move |_: &crate::menus::ShowSettings, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, _window, cx| {
+                    view.show_settings(cx)
+                });
+            });
+        }
+    });
+    cx.on_action({
+        let app = app.clone();
         move |_: &crate::menus::ShowAbout, cx| {
             let app = app.clone();
             cx.defer(move |cx| {
@@ -443,49 +454,7 @@ pub(crate) fn install_actions(
         }
     });
 
-    cx.bind_keys([
-        KeyBinding::new("cmd-q", crate::menus::Quit, None),
-        KeyBinding::new("cmd-h", crate::menus::HideApp, None),
-        KeyBinding::new("cmd-m", crate::menus::MinimizeWindow, None),
-        KeyBinding::new("cmd-f", FindInPage, None),
-        KeyBinding::new("alt-cmd-s", FocusRail, None),
-        KeyBinding::new("cmd-l", OpenOverlay, None),
-        KeyBinding::new("escape", FocusWeb, None),
-        KeyBinding::new("cmd-[", Back, None),
-        KeyBinding::new("cmd-]", Forward, None),
-        KeyBinding::new("cmd-r", Reload, None),
-        KeyBinding::new("cmd-s", ToggleSidebar, None),
-        KeyBinding::new("cmd-t", OpenPalette, None),
-        KeyBinding::new("cmd-shift-n", NewSpace, None),
-        KeyBinding::new("cmd-shift-p", PinTab, None),
-        KeyBinding::new("cmd-shift-up", ReorderTabUp, None),
-        KeyBinding::new("cmd-shift-down", ReorderTabDown, None),
-        KeyBinding::new("cmd-shift-m", MoveTab, None),
-        KeyBinding::new("cmd-w", CloseTab, None),
-        KeyBinding::new("cmd-shift-t", ReopenTab, None),
-        // Zoom (queue item 11, part A): `cmd-+` is the literal Cmd-Plus on
-        // the US layout (and the shifted-plus layouts GPUI resolves to the
-        // `+` key); `cmd-=` is the equals-key alias browsers ship; `cmd--`
-        // is Cmd-Minus; `cmd-0` resets.
-        KeyBinding::new("cmd-+", ZoomIn, None),
-        KeyBinding::new("cmd-=", ZoomIn, None),
-        KeyBinding::new("cmd--", ZoomOut, None),
-        KeyBinding::new("cmd-0", ZoomReset, None),
-        // Cmd-D toggles the active page's saved state (B2 packet
-        // `saved-pages-actions-command`; conventional macOS bookmark
-        // shortcut).
-        KeyBinding::new("cmd-d", ToggleBookmark, None),
-        // Cmd-Shift-L opens the Saved Pages Library (B3 packet
-        // `saved-pages-library`; DESIGN.md §11.16).
-        KeyBinding::new("cmd-shift-l", OpenSavedPagesLibrary, None),
-        // App-wide (context-less) bindings resolve at the deepest depth, so
-        // they outrank gpui-component `Root`'s element-scoped `tab`/`shift-tab`
-        // focus-traversal bindings: Tab moves the credential sheet's field
-        // cursor while the sheet is open (the handler consumes it) and falls
-        // through to focus traversal otherwise (the no-op contract).
-        KeyBinding::new("tab", AuthSheetFieldTab, None),
-        KeyBinding::new("shift-tab", AuthSheetFieldTab, None),
-    ]);
+    cx.bind_keys(keybindings());
 }
 
 /// The bounded renderer-availability cadence (renderer-isolation lane): a
@@ -708,6 +677,55 @@ pub(crate) fn spawn_event_pump(
         }
     })
     .detach();
+}
+
+/// The browser's key bindings (one list: the keymap and the Settings ›
+/// Shortcuts pane's check read it).
+pub(crate) fn keybindings() -> Vec<KeyBinding> {
+    vec![
+        KeyBinding::new("cmd-q", crate::menus::Quit, None),
+        KeyBinding::new("cmd-h", crate::menus::HideApp, None),
+        KeyBinding::new("cmd-m", crate::menus::MinimizeWindow, None),
+        KeyBinding::new("cmd-f", FindInPage, None),
+        KeyBinding::new("alt-cmd-s", FocusRail, None),
+        KeyBinding::new("cmd-l", OpenOverlay, None),
+        KeyBinding::new("escape", FocusWeb, None),
+        KeyBinding::new("cmd-[", Back, None),
+        KeyBinding::new("cmd-]", Forward, None),
+        KeyBinding::new("cmd-r", Reload, None),
+        KeyBinding::new("cmd-s", ToggleSidebar, None),
+        KeyBinding::new("cmd-t", OpenPalette, None),
+        KeyBinding::new("cmd-shift-n", NewSpace, None),
+        KeyBinding::new("cmd-shift-p", PinTab, None),
+        KeyBinding::new("cmd-shift-up", ReorderTabUp, None),
+        KeyBinding::new("cmd-shift-down", ReorderTabDown, None),
+        KeyBinding::new("cmd-shift-m", MoveTab, None),
+        KeyBinding::new("cmd-w", CloseTab, None),
+        KeyBinding::new("cmd-shift-t", ReopenTab, None),
+        // Zoom (queue item 11, part A): `cmd-+` is the literal Cmd-Plus on
+        // the US layout (and the shifted-plus layouts GPUI resolves to the
+        // `+` key); `cmd-=` is the equals-key alias browsers ship; `cmd--`
+        // is Cmd-Minus; `cmd-0` resets.
+        KeyBinding::new("cmd-+", ZoomIn, None),
+        KeyBinding::new("cmd-=", ZoomIn, None),
+        KeyBinding::new("cmd--", ZoomOut, None),
+        KeyBinding::new("cmd-0", ZoomReset, None),
+        // Cmd-D toggles the active page's saved state (B2 packet
+        // `saved-pages-actions-command`; conventional macOS bookmark
+        // shortcut).
+        KeyBinding::new("cmd-d", ToggleBookmark, None),
+        // Cmd-Shift-L opens the Saved Pages Library (B3 packet
+        // `saved-pages-library`; DESIGN.md §11.16).
+        KeyBinding::new("cmd-shift-l", OpenSavedPagesLibrary, None),
+        // App-wide (context-less) bindings resolve at the deepest depth, so
+        // they outrank gpui-component `Root`'s element-scoped `tab`/`shift-tab`
+        // focus-traversal bindings: Tab moves the credential sheet's field
+        // cursor while the sheet is open (the handler consumes it) and falls
+        // through to focus traversal otherwise (the no-op contract).
+        KeyBinding::new("tab", AuthSheetFieldTab, None),
+        KeyBinding::new("shift-tab", AuthSheetFieldTab, None),
+        KeyBinding::new("cmd-,", crate::menus::ShowSettings, None),
+    ]
 }
 
 #[cfg(test)]

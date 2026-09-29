@@ -101,6 +101,7 @@ mod nav_history;
 pub(crate) mod rail_float;
 mod rail_float_view;
 pub(crate) mod rail_reveal;
+pub(crate) mod settings;
 /// Blueprint D14 portal ids shared with the portal render.
 pub(crate) mod nav_history_ids {
     pub const BACKDROP: &str = super::nav_history::NAV_HISTORY_BACKDROP_ID;
@@ -510,6 +511,10 @@ pub struct BbrApp {
     pub(crate) command_line: bbr_ui::components::EditLineSink,
     /// Blueprint D02: the floating rail (reveal state, panel geometry).
     pub(crate) floating_rail: rail_float::FloatingRail,
+    /// Blueprint D16: the Settings window's preferences and their file.
+    pub(crate) preferences: crate::preferences::Preferences,
+    pub(crate) preferences_path: Option<std::path::PathBuf>,
+    pub(crate) settings: settings::SettingsState,
     /// Blueprint D02 testkit evidence: the native text-input client's last
     /// readback after a driven input-method message.
     #[cfg(feature = "testkit")]
@@ -722,6 +727,9 @@ impl BbrApp {
             command_text: CommandText::new(),
             command_line: bbr_ui::components::EditLineSink::new(),
             floating_rail: rail_float::FloatingRail::default(),
+            preferences: crate::preferences::Preferences::default(),
+            preferences_path: None,
+            settings: settings::SettingsState::default(),
             #[cfg(feature = "testkit")]
             text_input_readback: None,
             command_ranking: CommandRanking::default(),

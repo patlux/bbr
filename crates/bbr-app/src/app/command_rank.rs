@@ -244,7 +244,13 @@ impl BbrApp {
             self.command_ranking.close();
             return;
         }
-        let snapshot = self.controller.snapshot();
+        let mut snapshot = self.controller.snapshot();
+        // Blueprint D16: Settings › Search › "Show tabs from all spaces in
+        // ⌘T" off keeps the palette to the active space's tabs.
+        if !self.preferences.palette_all_spaces {
+            let active = snapshot.active_space;
+            snapshot.all_tabs.retain(|tab| tab.space == active);
+        }
         let text = self.command_text.text.clone();
         // Blueprint D04: an empty ⌘T ranks its recents; the other surfaces
         // stay empty until the user types.

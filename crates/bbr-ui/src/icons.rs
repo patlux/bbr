@@ -21,6 +21,7 @@ mod address_marks;
 pub mod bbr;
 pub mod glyphs;
 mod paint;
+mod settings_marks;
 mod shapes;
 pub mod spinner;
 
@@ -113,6 +114,14 @@ pub enum Icon {
     /// Blueprint D03 §11.5: the local-file address mark (a page with a
     /// folded corner).
     Document,
+    /// Blueprint D16 Settings toolbar: Profiles.
+    Person,
+    /// Blueprint D16 Settings toolbar: Privacy.
+    Shield,
+    /// Blueprint D16 Settings toolbar: Appearance.
+    Eye,
+    /// Blueprint D16 Settings toolbar: Shortcuts.
+    Keyboard,
 }
 
 impl Icon {
@@ -173,6 +182,10 @@ impl Icon {
             Icon::Gear => "gear",
             Icon::Info => "info",
             Icon::Document => "document",
+            Icon::Person => "person",
+            Icon::Shield => "shield",
+            Icon::Eye => "eye",
+            Icon::Keyboard => "keyboard",
         }
     }
 
@@ -202,6 +215,7 @@ impl Icon {
             Icon::Warning => palette.status_attention,
             Icon::Info => palette.status_info,
             Icon::Gear | Icon::Document => palette.ink_secondary,
+            Icon::Person | Icon::Shield | Icon::Eye | Icon::Keyboard => palette.ink_secondary,
         }
     }
 
@@ -352,6 +366,10 @@ impl Icon {
                 paint_path(window, path, color);
             }
             Icon::Document => address_marks::paint_document(window, stroke, color, cx, cy, size),
+            Icon::Person => settings_marks::paint_person(window, stroke, color, cx, cy, size),
+            Icon::Shield => settings_marks::paint_shield(window, stroke, color, cx, cy, size),
+            Icon::Eye => settings_marks::paint_eye(window, stroke, color, cx, cy, size),
+            Icon::Keyboard => settings_marks::paint_keyboard(window, stroke, color, cx, cy, size),
             Icon::Disclosure { expanded } => {
                 let arm = disclosure_arm(size);
                 let mut path = PathBuilder::stroke(stroke);

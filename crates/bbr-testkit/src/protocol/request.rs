@@ -764,6 +764,16 @@ pub enum Request {
         time_ms: f64,
         pressed: bool,
     },
+    /// Blueprint D16: open the Settings window through its production
+    /// method (the ⌘, action and the BBR menu item call it too).
+    OpenSettings,
+    /// Blueprint D16: one Settings interaction through the method the
+    /// window's controls call.
+    SettingsInput {
+        input: SettingsInput,
+    },
+    /// Blueprint D16: close the Settings window (its close button path).
+    CloseSettings,
     /// Blueprint D19: invoke the menu item `menu › item` (`menu` = "Dock"
     /// for the Dock menu) through the same action dispatch an `NSMenuItem`
     /// click takes.
@@ -1675,4 +1685,16 @@ pub enum TextInputOp {
     Unmark,
     /// Only read the client back.
     Probe,
+}
+
+/// Blueprint D16: one Settings interaction (row ids without the
+/// `bbr-settings-row-` prefix; panes by key).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SettingsInput {
+    Pane { pane: String },
+    Toggle { row: String },
+    Choose { row: String, index: usize },
+    Press { row: String },
+    OpenSelect { row: String },
+    Dismiss,
 }

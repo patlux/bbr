@@ -236,7 +236,7 @@ pub(crate) fn dispatch(
                 input,
                 features: bbr_web::NewWindowFeatures::default(),
             };
-            let decision = bbr_web::decision_for_intent(&request, intent);
+            let decision = crate::preferences::new_window_decision(&request, intent);
             let delivery = bbr_web::NewWindowDelivery {
                 outcome: bbr_web::decide(&request, decision),
                 request,
@@ -708,6 +708,9 @@ pub(crate) fn dispatch(
         | Request::PortalOutsideDismiss
         | Request::PortalRoutePointer { .. }
         | Request::RailPointer { .. }
+        | Request::OpenSettings
+        | Request::SettingsInput { .. }
+        | Request::CloseSettings
         | Request::ToastAction
         | Request::InvokeMenuItem { .. }
         | Request::RecoveryAction

@@ -153,7 +153,9 @@ pub use downloads_adapter::{
 pub use external_urls_adapter::{ExternalUrlAdapterCore, DECLARED_URL_SCHEMES};
 
 #[cfg(target_os = "macos")]
-pub use external_urls_launch_services::{request_default_browser, DefaultBrowserError};
+pub use external_urls_launch_services::{
+    is_default_browser, request_default_browser, DefaultBrowserError,
+};
 
 #[cfg(target_os = "macos")]
 pub use downloads_destination::{destination_plan, uniquify_name, DestinationPlan};

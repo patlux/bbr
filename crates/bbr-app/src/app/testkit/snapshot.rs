@@ -644,6 +644,7 @@ impl BbrApp {
             text_input: self.text_input_readback,
             rail_reveal: self.rail_reveal_label().into(),
             floating_rail: self.floating_rail_snapshot(),
+            settings: self.settings_snapshot(),
             about: self.about_window.is_some().then(crate::about::version_line),
             restore_notice: self
                 .transient

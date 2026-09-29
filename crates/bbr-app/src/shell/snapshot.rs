@@ -288,6 +288,7 @@ pub struct TestSnapshot {
     pub text_input: Option<bbr_testkit::protocol::TextInputReadback>,
     pub rail_reveal: String,
     pub floating_rail: Option<bbr_testkit::protocol::FloatingRailSnapshot>,
+    pub settings: Option<bbr_testkit::protocol::SettingsSnapshot>,
     pub zoom_readout: Option<u32>,
     /// Native z-order evidence: while a preview is open the preview
     /// WKWebView's subview index must exceed its covered origin's (the

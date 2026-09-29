@@ -112,25 +112,47 @@ impl BbrApp {
     /// (system appearance, testkit-overridable) — never a hardcoded
     /// value (task packet `system-appearance-theme`).
     pub fn theme(&self) -> Theme {
+        use crate::preferences::DensityChoice;
+        use bbr_ui::theme::Density;
         let browser = self.controller.snapshot();
         let pinned = crate::shell::pinned_count(&browser.tabs);
         let regular = browser.tabs.len().saturating_sub(pinned);
         let (contrast, motion) = theme_modes_for(self.effective_accessibility());
-        Theme::for_collection(self.effective_theme_mode(), contrast, regular)
-            .with_motion_mode(motion)
+        let theme = Theme::for_collection(self.effective_theme_mode(), contrast, regular);
+        // Blueprint D16: a density pinned in Settings wins over the
+        // collection-size choice (DESIGN §8).
+        let theme = match self.preferences.density {
+            DensityChoice::Automatic => theme,
+            DensityChoice::Small => Theme::new(theme.mode, contrast, Density::Small),
+            DensityChoice::Normal => Theme::new(theme.mode, contrast, Density::Normal),
+            DensityChoice::Large => Theme::new(theme.mode, contrast, Density::ExtraLarge),
+        };
+        theme.with_motion_mode(motion)
     }
 
     /// The effective accessibility display options: a testkit override
     /// per option wins over the observed macOS value (task packet
     /// `v2-system-prefs`).
     pub(crate) fn effective_accessibility(&self) -> AccessibilityPrefs {
+        // Blueprint D16: the Settings choice (follow macOS, on, off) applies
+        // to the system value first; a testkit override still wins.
+        let system = AccessibilityPrefs {
+            increase_contrast: self
+                .preferences
+                .increase_contrast
+                .resolve(self.system_accessibility.increase_contrast),
+            reduce_motion: self
+                .preferences
+                .reduce_motion
+                .resolve(self.system_accessibility.reduce_motion),
+        };
         #[cfg(feature = "testkit")]
         {
-            effective_accessibility(self.system_accessibility, self.accessibility_override)
+            effective_accessibility(system, self.accessibility_override)
         }
         #[cfg(not(feature = "testkit"))]
         {
-            effective_accessibility(self.system_accessibility, AccessibilityOverride::default())
+            effective_accessibility(system, AccessibilityOverride::default())
         }
     }
 
@@ -207,13 +229,19 @@ impl BbrApp {
     /// (when present) wins over the observed macOS system appearance
     /// (task packet `system-appearance-theme`).
     pub fn effective_theme_mode(&self) -> ThemeMode {
+        // Blueprint D16: Settings › Appearance (System follows macOS).
+        let system = match self.preferences.appearance {
+            crate::preferences::AppearanceChoice::System => self.system_appearance,
+            crate::preferences::AppearanceChoice::Light => ThemeMode::Light,
+            crate::preferences::AppearanceChoice::Dark => ThemeMode::Dark,
+        };
         #[cfg(feature = "testkit")]
         {
-            effective_theme_mode(self.system_appearance, self.appearance_override)
+            effective_theme_mode(system, self.appearance_override)
         }
         #[cfg(not(feature = "testkit"))]
         {
-            effective_theme_mode(self.system_appearance, None)
+            effective_theme_mode(system, None)
         }
     }
 

@@ -56,6 +56,29 @@ impl std::error::Error for DefaultBrowserError {}
 #[link(name = "ApplicationServices", kind = "framework")]
 unsafe extern "C" {
     fn LSSetDefaultHandlerForURLScheme(scheme: *const c_void, bundle_id: *const c_void) -> i32;
+    fn LSCopyDefaultHandlerForURLScheme(scheme: *const c_void) -> *mut c_void;
+}
+
+/// Blueprint D16 (Settings › General): whether BBR's bundle is the default
+/// handler of `https`. `false` outside a bundle (a development build is
+/// never the default browser).
+pub fn is_default_browser() -> bool {
+    let Some(identifier) = CFBundle::main_bundle().and_then(|bundle| bundle.identifier()) else {
+        return false;
+    };
+    let scheme = CFString::from_str("https");
+    // SAFETY: the scheme is a live CFString for the call; the function
+    // returns a +1 CFStringRef (or null), toll-free bridged to NSString and
+    // released by `Retained`.
+    let handler = unsafe {
+        let raw = LSCopyDefaultHandlerForURLScheme(&*scheme as *const _ as *const c_void);
+        objc2::rc::Retained::from_raw(raw.cast::<objc2_foundation::NSString>())
+    };
+    handler.is_some_and(|handler| {
+        handler
+            .to_string()
+            .eq_ignore_ascii_case(&identifier.to_string())
+    })
 }
 
 /// Request default-handler status for every declared scheme (`http`,

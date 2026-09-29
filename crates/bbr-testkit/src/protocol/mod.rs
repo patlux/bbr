@@ -29,7 +29,7 @@ mod snapshot;
 
 pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
-pub use request::{Request, SavedPagesLibraryCollectionOp, TextInputOp};
+pub use request::{Request, SavedPagesLibraryCollectionOp, SettingsInput, TextInputOp};
 pub use snapshot::{
     AddressRestFill, AuthSnapshot, ChipCompanionSnapshot, CommandInputSnapshot,
     CommandResultSnapshot, CommandResultState, CommandSurface, ContentCardSnapshot,
@@ -42,11 +42,11 @@ pub use snapshot::{
     PaneLayoutSnapshot, PaneRectSnapshot, PeekFrameSnapshot, PortalSnapshot, PreviewSnapshot,
     PreviewZOrder, ProfileSnapshot, ReloadRestSurface, RestoreDisposition,
     SavedPagesCollectionSnapshot, SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot,
-    SemanticNode, SemanticRole, Snapshot, SpaceAppearanceSnapshot, SpaceChipSnapshot,
-    SpaceConfigSnapshot, SpaceDeleteSnapshot, SpaceSnapshot, SpaceStripScrollSnapshot,
-    StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, SwipeSnapshot,
-    TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState, TextInputReadback,
-    TitlebarSnapshot, ToastSnapshot, WebContentProbe, ZoomSnapshot,
+    SemanticNode, SemanticRole, SettingsRowSnapshot, SettingsSnapshot, Snapshot,
+    SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot,
+    SpaceSnapshot, SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
+    StoreSnapshot, SwipeSnapshot, TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState,
+    TextInputReadback, TitlebarSnapshot, ToastSnapshot, WebContentProbe, ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.

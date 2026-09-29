@@ -338,6 +338,14 @@ impl AppStore {
         }
     }
 
+    /// Blueprint D16 (Settings › Search): choose the search engine; the
+    /// effective settings change at once and the row is written when a
+    /// repository exists (an ephemeral store keeps the choice in memory).
+    pub fn set_search_engine(&mut self, engine: SearchEngine) {
+        self.settings = SearchSettingsV1::with_engine(engine);
+        let _ = self.store_settings(self.settings.clone());
+    }
+
     /// The effective global search settings (defaults on a fresh store or
     /// on the ephemeral fallback).
     pub fn effective_settings(&self) -> &SearchSettingsV1 {

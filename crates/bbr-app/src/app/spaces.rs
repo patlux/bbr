@@ -416,6 +416,21 @@ impl BbrApp {
         // emits SpaceCreated; the keyboard path must emit the same event so
         // E2E and future consumers can distinguish creation from activation).
         self.emit_browser(&outcome);
+        // Blueprint D16: Settings › Appearance › Default paper.
+        let intensity = match self.preferences.default_paper {
+            crate::preferences::PaperChoice::Subtle => bbr_domain::TintIntensity::Subtle,
+            crate::preferences::PaperChoice::Standard => bbr_domain::TintIntensity::Standard,
+            crate::preferences::PaperChoice::Rich => bbr_domain::TintIntensity::Rich,
+        };
+        if intensity != bbr_domain::TintIntensity::Standard {
+            let _ = self.controller.set_space_paper(
+                space,
+                bbr_domain::SpacePaper {
+                    intensity,
+                    ..Default::default()
+                },
+            );
+        }
         self.activate_space(space, window, cx);
         // §11.3 create→activate→configure: the new Space is active and
         // usable before its optional name/icon configuration surface opens
