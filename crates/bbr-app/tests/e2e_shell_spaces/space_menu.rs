@@ -206,7 +206,18 @@ fn delete_space_asks_once_and_closes_its_tabs_into_the_fallback() {
         // Delete Space… opens the blocking sheet over the card.
         open_menu(&mut client, doomed);
         activate_row(&mut client, DELETE);
-        let asking = client.snapshot().expect("sheet snapshot");
+        // The portal orders in on a deferred AppKit turn: wait for the
+        // native evidence under the deadline instead of racing it.
+        let until = deadline();
+        let asking = loop {
+            client
+                .send_ok(&bbr_testkit::Request::FlushFrame)
+                .expect("flush");
+            let snapshot = client.snapshot().expect("sheet snapshot");
+            if snapshot.portal.native_visible || Instant::now() >= until {
+                break snapshot;
+            }
+        };
         assert!(!asking.tab_menu.open, "the menu hands off to the sheet");
         let sheet = asking.space_delete.as_ref().expect("sheet open");
         assert_eq!(sheet.space, doomed.0);
