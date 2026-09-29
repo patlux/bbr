@@ -25,6 +25,13 @@ gpui::actions!(
         ReorderTabUp,
         /// `Cmd-Shift-↓`: move the active tab one step down within its region.
         ReorderTabDown,
+        /// Blueprint D19: open a copy of the active tab below it.
+        DuplicateTab,
+        /// Blueprint D19 `Ctrl-Tab`: select the next tab of the space
+        /// (wrapping).
+        SelectNextTab,
+        /// Blueprint D19 `Ctrl-Shift-Tab`: select the previous tab.
+        SelectPreviousTab,
         /// `Cmd-Shift-M`: stage a destination space for the active tab;
         /// Enter commits the move, Escape cancels it.
         MoveTab,

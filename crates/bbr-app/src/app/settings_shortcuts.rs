@@ -6,11 +6,13 @@ use gpui::SharedString;
 
 /// The shortcut list: `(group, title, keystroke)`, the keystroke exactly as
 /// bound (a unit test checks every one against the keymap).
-pub(crate) const SHORTCUTS: [(&str, &str, &str); 19] = [
+pub(crate) const SHORTCUTS: [(&str, &str, &str); 21] = [
     ("Tabs", "New tab", "cmd-t"),
     ("Tabs", "Close tab", "cmd-w"),
     ("Tabs", "Reopen closed tab", "cmd-shift-t"),
     ("Tabs", "Pin / unpin", "cmd-shift-p"),
+    ("Tabs", "Next tab", "ctrl-tab"),
+    ("Tabs", "Previous tab", "ctrl-shift-tab"),
     ("Spaces", "New space", "cmd-shift-n"),
     ("Spaces", "Move tab to space", "cmd-shift-m"),
     ("Navigation", "Edit address", "cmd-l"),
@@ -44,6 +46,7 @@ pub(crate) fn keycaps(keystroke: &str) -> Vec<SharedString> {
     }
     caps.push(SharedString::from(match key {
         "backspace" => "⌫".to_string(),
+        "tab" => "⇥".to_string(),
         key => key.to_uppercase(),
     }));
     caps
@@ -84,6 +87,7 @@ mod tests {
         assert_eq!(caps("alt-cmd-s"), ["⌥", "⌘", "S"]);
         assert_eq!(caps("cmd-["), ["⌘", "["]);
         assert_eq!(caps("cmd-,"), ["⌘", ","]);
+        assert_eq!(caps("ctrl-shift-tab"), ["⌃", "⇧", "⇥"]);
     }
 
     #[test]

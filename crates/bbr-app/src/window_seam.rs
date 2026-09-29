@@ -15,10 +15,11 @@ use smol::channel::Receiver;
 use smol::prelude::*;
 
 use crate::actions::{
-    AuthSheetFieldTab, Back, ClearBrowsingData, CloseTab, FindInPage, FocusCommandBar, FocusRail,
-    FocusWeb, Forward, MoveTab, NewSpace, NewTab, OpenOverlay, OpenPalette, OpenSavedPagesLibrary,
-    PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp, ShowHistory, ToggleBookmark,
-    ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
+    AuthSheetFieldTab, Back, ClearBrowsingData, CloseTab, DuplicateTab, FindInPage,
+    FocusCommandBar, FocusRail, FocusWeb, Forward, MoveTab, NewSpace, NewTab, OpenOverlay,
+    OpenPalette, OpenSavedPagesLibrary, PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp,
+    SelectNextTab, SelectPreviousTab, ShowHistory, ToggleBookmark, ToggleSidebar, ZoomIn, ZoomOut,
+    ZoomReset,
 };
 use crate::app::BbrApp;
 /// Root-window + app-entity seam: run an update against the separately
@@ -382,6 +383,34 @@ pub(crate) fn install_actions(
             });
         }
     });
+    // Blueprint D19: Duplicate Tab and Select Next/Previous Tab.
+    cx.on_action({
+        let app = app.clone();
+        move |_: &DuplicateTab, cx| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                    let _ = view.duplicate_active_tab(cx);
+                });
+            });
+        }
+    });
+    for (delta, next) in [(1isize, true), (-1, false)] {
+        let app = app.clone();
+        let run = move |cx: &mut App| {
+            let app = app.clone();
+            cx.defer(move |cx| {
+                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                    let _ = view.select_adjacent_tab(delta, cx);
+                });
+            });
+        };
+        if next {
+            cx.on_action(move |_: &SelectNextTab, cx| run(cx));
+        } else {
+            cx.on_action(move |_: &SelectPreviousTab, cx| run(cx));
+        }
+    }
     cx.on_action({
         let app = app.clone();
         move |_: &MoveTab, cx| {
@@ -721,6 +750,8 @@ pub(crate) fn keybindings() -> Vec<KeyBinding> {
         KeyBinding::new("cmd-shift-p", PinTab, None),
         KeyBinding::new("cmd-shift-up", ReorderTabUp, None),
         KeyBinding::new("cmd-shift-down", ReorderTabDown, None),
+        KeyBinding::new("ctrl-tab", SelectNextTab, None),
+        KeyBinding::new("ctrl-shift-tab", SelectPreviousTab, None),
         KeyBinding::new("cmd-shift-m", MoveTab, None),
         KeyBinding::new("cmd-w", CloseTab, None),
         KeyBinding::new("cmd-shift-t", ReopenTab, None),

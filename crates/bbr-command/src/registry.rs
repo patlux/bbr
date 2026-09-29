@@ -236,6 +236,28 @@ impl CommandRegistry {
                 ActionCategory::View,
                 None,
             ),
+            // Blueprint D19: the Tab menu's tab commands.
+            Action::new(
+                ActionId(20),
+                "Duplicate Tab",
+                ["duplicate", "copy", "clone", "tab"],
+                ActionCategory::Tab,
+                None,
+            ),
+            Action::new(
+                ActionId(21),
+                "Select Next Tab",
+                ["next", "tab", "switch", "cycle"],
+                ActionCategory::Tab,
+                Some("⌃⇥"),
+            ),
+            Action::new(
+                ActionId(22),
+                "Select Previous Tab",
+                ["previous", "tab", "switch", "cycle"],
+                ActionCategory::Tab,
+                Some("⌃⇧⇥"),
+            ),
         ];
         CommandRegistry { actions }
     }
@@ -292,6 +314,9 @@ mod tests {
                 Some("⇧⌘⌫"),
             ),
             (19, "Site Settings…", ActionCategory::View, None),
+            (20, "Duplicate Tab", ActionCategory::Tab, None),
+            (21, "Select Next Tab", ActionCategory::Tab, Some("⌃⇥")),
+            (22, "Select Previous Tab", ActionCategory::Tab, Some("⌃⇧⇥")),
         ];
         let registry = CommandRegistry::builtin();
         let actual: Vec<_> = registry

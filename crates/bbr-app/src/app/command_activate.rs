@@ -429,6 +429,22 @@ impl BbrApp {
                 }
                 true
             }
+            // Blueprint D19: Duplicate Tab, Select Next / Previous Tab.
+            20 => {
+                let duplicated = self.duplicate_active_tab(cx).is_some();
+                if duplicated {
+                    self.finish_action_activation(window, cx);
+                }
+                duplicated
+            }
+            21 | 22 => {
+                let delta = if action.0 == 21 { 1 } else { -1 };
+                let selected = self.select_adjacent_tab(delta, cx).is_some();
+                if selected {
+                    self.finish_action_activation(window, cx);
+                }
+                selected
+            }
             _ => false,
         }
     }

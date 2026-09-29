@@ -13,10 +13,21 @@ View, History, Spaces, Tab, Window) and the Dock menu with the spaces
 action; Quit BBR (⌘Q) flushes and exits; Hide ⌘H and Minimize ⌘M are new.
 Evidence: `menus` unit tests; `e2e_shell_menus` (in `just e2e-shell-spaces`)
 invokes items through the NSMenuItem action dispatch, checks that the menus
-follow a new space and the active space, and quits cleanly. Still open in
-this packet: ⇧⌘W window close with a reopen toast, New Window, Duplicate
-Tab, Select Next/Previous Tab and dragging tabs between windows. BBR has no
-window or tab commands for these yet.
+follow a new space and the active space, and quits cleanly.
+
+**Second slice implemented 2026-09-30 (tab commands):** Tab › Duplicate Tab
+(the copy lands below its source), Select Next Tab ⌃⇥ and Select Previous
+Tab ⌃⇧⇥ (wrapping), also as ⌘T actions 20–22. Evidence: `tab_commands`
+unit tests, the registry catalog test, `e2e_shell_menus`
+`tab_menu_duplicates_and_cycles_tabs`.
+
+Still open: ⇧⌘W window close with a reopen toast, New Window (menu and
+Dock) and dragging tabs between windows. They need several browser windows
+over the shared browser state (board W-9: one full shell per window with
+its own active space, rail and Portal; a tab lives in one window at a
+time); BBR runs one window, and PRODUCT.md places every profile and space
+in it. This is an architecture decision for Patrick (explainer:
+`~/Downloads/bbr-d19-mehrere-fenster.html`), not a slice of this packet.
 
 ## Outcome
 

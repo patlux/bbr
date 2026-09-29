@@ -3,8 +3,10 @@
 //! Window) and a Dock menu that list the spaces; every item dispatches the
 //! same action as its shortcut. Items are invoked through the action
 //! dispatch an `NSMenuItem` click takes; the menus follow a new space and
-//! the active space; Quit BBR exits cleanly. Every step waits on typed
-//! snapshot state or browser events under a deadline.
+//! the active space; Quit BBR exits cleanly. Tab › Duplicate Tab opens the
+//! page below its source; Select Next / Previous Tab (and `Ctrl-Tab`) walk
+//! the space's tabs with wrap-around. Every step waits on typed snapshot
+//! state or browser events under a deadline.
 
 #![cfg(target_os = "macos")]
 
@@ -150,6 +152,71 @@ fn menu_bar_and_dock_menu_dispatch_the_shortcut_actions_and_follow_the_spaces() 
 
         // BBR › Quit BBR flushes and exits cleanly.
         invoke(&mut client, "BBR", "Quit BBR");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+    finish(result, &mut harness, &socket, &token);
+}
+
+#[test]
+#[ignore]
+fn tab_menu_duplicates_and_cycles_tabs() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+    let (_fixtures, page_one, page_two) = fixtures();
+    let (mut harness, socket, token) = spawn_harness("menus-tabs", &page_one);
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        client.attach(None).expect("attach");
+        settle(&mut client, "menus", |s| !s.menu_bar.is_empty());
+        client
+            .send_ok(&bbr_testkit::protocol::dsl::open_tab(&page_two))
+            .expect("open two");
+        settle(&mut client, "two tabs", |s| s.tabs.len() == 2);
+        client
+            .send_ok(&bbr_testkit::protocol::dsl::select_tab(0))
+            .expect("select one");
+        settle(&mut client, "one active", |s| s.active_tab_index == Some(0));
+
+        // Duplicate Tab: the copy lands below its source and is selected.
+        invoke(&mut client, "Tab", "Duplicate Tab");
+        let duplicated = settle(&mut client, "the duplicate", |s| s.tabs.len() == 3);
+        let urls: Vec<&str> = duplicated.tabs.iter().map(|t| t.url.as_str()).collect();
+        assert_eq!(
+            urls,
+            [page_one.as_str(), page_one.as_str(), page_two.as_str()]
+        );
+        assert_eq!(duplicated.active_tab_index, Some(1));
+        assert_ne!(duplicated.tabs[0].web_view, duplicated.tabs[1].web_view);
+
+        // Select Next wraps; Select Previous and Ctrl-Tab walk back.
+        invoke(&mut client, "Tab", "Select Next Tab");
+        settle(&mut client, "third", |s| s.active_tab_index == Some(2));
+        invoke(&mut client, "Tab", "Select Next Tab");
+        settle(&mut client, "wrapped", |s| s.active_tab_index == Some(0));
+        invoke(&mut client, "Tab", "Select Previous Tab");
+        settle(&mut client, "back to third", |s| {
+            s.active_tab_index == Some(2)
+        });
+        client
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "ctrl-tab".into(),
+            })
+            .expect("ctrl-tab");
+        settle(&mut client, "ctrl-tab", |s| s.active_tab_index == Some(0));
+        client
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "ctrl-shift-tab".into(),
+            })
+            .expect("ctrl-shift-tab");
+        settle(&mut client, "ctrl-shift-tab", |s| {
+            s.active_tab_index == Some(2)
+        });
+
+        client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
         assert!(status.success(), "app exit: {status}");
     }));

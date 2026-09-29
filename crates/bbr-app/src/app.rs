@@ -139,6 +139,7 @@ mod swipe;
 #[cfg(feature = "testkit")]
 mod swipe_benchmarks;
 mod tab;
+mod tab_commands;
 pub(crate) mod tab_menu;
 #[cfg(feature = "testkit")]
 mod tab_menu_benchmarks;
