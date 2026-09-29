@@ -324,3 +324,101 @@ fn split_right_takes_the_palette_commit_and_survives_a_restart() {
     }));
     finish(result, &mut harness, &socket, &token);
 }
+
+#[test]
+#[ignore]
+fn dropping_rail_tabs_on_the_card_splits_and_the_rail_keeps_the_block() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+    let (fixtures, page_one, page_two) = fixtures();
+    let page_three = fixtures.url("/long-title.html");
+    let (mut harness, socket, token) = spawn_harness("split-drop", &page_one);
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        client.attach(None).expect("attach");
+        wait_for_window_settled(&mut client, deadline());
+        client.send_ok(&dsl::open_tab(&page_two)).expect("two");
+        client.send_ok(&dsl::open_tab(&page_three)).expect("three");
+        wait(&mut client, "three tabs", |s| s.tabs.len() == 3);
+        client.send_ok(&dsl::select_tab(0)).expect("one");
+        let single = wait(&mut client, "one shown", |s| {
+            s.active_tab_index == Some(0) && s.content_rect[2] > 0.0
+        });
+        let card = single.content_rect;
+        let (start_x, start_y) = (130.0, 400.0);
+        let drag_to = |client: &mut Client, x: f32, y: f32| {
+            client
+                .send_ok(&dsl::move_tab_drag(x - start_x, y - start_y))
+                .expect("move drag");
+        };
+
+        // Tab three over the right edge of the single pane: the right zone
+        // is previewed; the drop pairs the two, and three joins one's block.
+        client
+            .send_ok(&dsl::begin_tab_drag(2, start_x, start_y, 16.0))
+            .expect("begin drag");
+        drag_to(&mut client, start_x + 20.0, start_y + 5.0);
+        drag_to(
+            &mut client,
+            card[0] + card[2] - 20.0,
+            card[1] + card[3] / 2.0,
+        );
+        let hovering = snapshot(&mut client);
+        let zone = hovering.split_drop.expect("a previewed zone");
+        assert_eq!(zone.zone, "right");
+        assert!((zone.rect[0] - (card[0] + card[2] * 0.76)).abs() < 1.0);
+        client.send_ok(&dsl::end_tab_drag()).expect("drop");
+        let paired = wait(&mut client, "the pair", |s| {
+            framed(s) && s.split.as_ref().is_some_and(|g| g.panes.len() == 2)
+        });
+        let urls: Vec<&str> = paired.tabs.iter().map(|t| t.url.as_str()).collect();
+        assert_eq!(
+            urls,
+            [page_one.as_str(), page_three.as_str(), page_two.as_str()]
+        );
+        assert_eq!(paired.split_rows, [0, 1], "one bracketed block");
+        assert!(paired.split_drop.is_none());
+
+        // Tab two onto the centre of the right pane replaces it.
+        let right = shown(&paired).panes[1].rect;
+        client
+            .send_ok(&dsl::begin_tab_drag(2, start_x, start_y, 16.0))
+            .expect("begin drag");
+        drag_to(&mut client, start_x + 20.0, start_y + 5.0);
+        drag_to(
+            &mut client,
+            right[0] + right[2] / 2.0,
+            right[1] + right[3] / 2.0,
+        );
+        assert_eq!(
+            snapshot(&mut client).split_drop.map(|d| d.zone).as_deref(),
+            Some("center")
+        );
+        client.send_ok(&dsl::end_tab_drag()).expect("drop");
+        let replaced = wait(&mut client, "the replacement", |s| {
+            framed(s) && s.split_rows == [0, 1] && s.tabs[1].url == page_two
+        });
+        assert_eq!(
+            shown(&replaced).panes[1].view,
+            replaced.tabs[1].web_view.unwrap()
+        );
+        assert_eq!(
+            replaced.tabs[2].url, page_three,
+            "the replaced tab stays open"
+        );
+
+        // Moving a pane's row out of the block leaves the split.
+        key(&mut client, "cmd-shift-down");
+        let left = wait(&mut client, "out of the block", |s| s.split.is_none());
+        assert!(left.split_rows.is_empty());
+        assert_eq!(left.tabs.len(), 3);
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+    finish(result, &mut harness, &socket, &token);
+}

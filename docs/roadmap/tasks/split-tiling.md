@@ -6,8 +6,10 @@ Parents: [Phase 6](../phases/06-split-view.md) ·
 [portable split core](split-core.md) ·
 [DESIGN.md](../../../DESIGN.md) §11.7, §19 (D23).
 
-Status: adopted 2026-09-29 (DESIGN §19, D23; Split block lifted by
-Patrick). Supersedes the two-pane constraints of the split packets above.
+Status: implemented 2026-09-30 (DESIGN §19, D23; Split block lifted by
+Patrick 2026-09-29). Supersedes the two-pane constraints of the split
+packets above. Open: the focused pane's quiet inset outline (board G-9).
+Performance deferred.
 Paper boards: G-9, G-10, PR-09 (file “BBR — Browser Shell”); explainers
 `~/Downloads/bbr-d23-split-entscheidungen.html` and
 `~/Downloads/bbr-d23-mehrere-seiten.html`.
@@ -106,15 +108,16 @@ Not parallelized.
 
 ### Real-app E2E
 
-- [ ] `just e2e-split` covers creation from the keyboard and by drop, focus
+- [x] `just e2e-split` covers creation from the keyboard and by drop, focus
       movement, divider resize and equalize, collapse under the minimum,
       dissolve, ⌘W, the rail block and restore, over real WKWebViews.
       *(Slices 4–5, 2026-09-30: `e2e_split` — a three-pane row/column framed
       at the projection, ⌃⌘← and a pane press focus, divider drag and
       double-click, a tab outside keeping the group, the collapsed chip and
       its list, ⇧⌃⌘S, ⌃⌘S with the palette commit, restore of the group and
-      its share after a restart. Open: creation by drop and the rail block
-      (slice 6).)*
+      its share after a restart. Slice 6: rail tabs dropped on a pane's edge
+      and centre, the previewed zone, the bracketed rail block and a row
+      moved out of it leaving the split.)*
 
 ### Performance
 
@@ -145,12 +148,19 @@ guessing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                split groups of any shape, several per space: keyboard
+                        and drop creation, tiling with dividers, focus,
+                        collapse chip, dissolve, rail block, persistence
+Commits:                see git log (feat(domain) tiling contract,
+                        feat(browser) groups + persistence, feat(app) tiling
+                        + commands, feat(app) drop zones + rail block)
+Functional evidence:    bbr-domain tiling/split_groups, bbr-split tiling,
+                        controller split-group, splits.txt codec tests
+Real-app E2E:           just e2e-split (3 tests), e2e_shell_split_geometry
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §11.7 and §19 D23, ARCHITECTURE
+                        composition note, Phase 6 checklist, this packet
+Open blockers and non-goals: the focused pane's inset outline; the 2 pt
+                        divider is the only grab area (no wider Portal strip)
+Worktree state:         main, clean after commit
 ```

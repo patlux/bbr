@@ -298,6 +298,8 @@ pub struct TestSnapshot {
     /// Blueprint D24: the media card and sessions.
     pub media: bbr_testkit::protocol::MediaSnapshot,
     pub split: Option<bbr_testkit::protocol::SplitSnapshot>,
+    pub split_drop: Option<bbr_testkit::protocol::SplitDropSnapshot>,
+    pub split_rows: Vec<usize>,
     /// Blueprint D12: the client-certificate sheet and answers.
     pub client_certificates: bbr_testkit::protocol::ClientCertificatesSnapshot,
     /// Blueprint D13: links to other apps.

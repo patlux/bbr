@@ -62,7 +62,7 @@ pub use snapshot::{
     StoreSnapshot, SwipeSnapshot, TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState,
     TextInputReadback, TitlebarSnapshot, ToastSnapshot, WebContentProbe, ZoomSnapshot,
 };
-pub use split::{SplitInput, SplitPaneSnapshot, SplitSnapshot};
+pub use split::{SplitDropSnapshot, SplitInput, SplitPaneSnapshot, SplitSnapshot};
 
 /// Current protocol version understood by this crate.
 pub const PROTOCOL_VERSION: u32 = 7;

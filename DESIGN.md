@@ -1261,26 +1261,28 @@ of problem instead of styling it.
   new tab, or an existing tab picked there — becomes a pane at that edge of
   the focused pane and takes the focus. ⇧⌃⌘S (Close Split) dissolves the
   shown group and keeps its tabs; ⌘W closes the focused pane's tab. All
-  three are Tab menu items, ⌘T actions and Settings › Shortcuts rows. The
-  rail block with its accent bracket and the drop zones below follow in
-  the [split tiling packet](docs/roadmap/tasks/split-tiling.md).
+  three are Tab menu items, ⌘T actions and Settings › Shortcuts rows.
 
-- **Invocation:** dragging a tab toward the glass area; the drop zone strips
-  are the edges (top / bottom / left / right) at 24% of the pane dimension,
-  center = positional move. (V1 supports exactly one two-pane split;
-  keyboard split creation is a Phase-6 open decision.)
-- **Preview rendering:** the target zone gets a 2 pt `accent` inner frame at
-  `radius:lg` + 12% accent fill + a corner glyph ("split"); the rest of the
-  glass shows no overlay. `drag-target` remains at the row list for the
-  positional tick. Preview snaps; no animation.
-- **Commit:** opening the split keeps the pre-drag selected tab as the
-  focused pane and shows the dropped tab in the second pane (contract);
-  both pane slots render chrome frame hairlines on the shared edge only
-  (2 pt divider with `hairline` etch), and the focused pane's chrome frame
-  shows a quiet 2 pt inset outline in `hairline` → `accent` only when it
-  receives command focus (Pane-6 polish).
-- **Assert ids:** `bbr-split-zone-<top|right|bottom|left>`,
-  `bbr-pane-<0|1>`, `bbr-split-divider`.
+- **Drop zones (blueprint D23, implemented):** dragging a rail tab over the
+  card previews where it lands on the pane under the pointer: its outer
+  24 % strips are its edges (the nearest edge wins in a corner), the rest
+  its centre. The zone gets a 2 pt `accent` frame at `radius:lg`, a 12 %
+  `accent` fill and the split mark in `accent`, drawn by the Portal over
+  the page (it never takes the pointer); nothing else in the card changes
+  and the preview snaps without animation. A drop on an edge places the tab
+  beside that pane (the group forms or grows), a drop on the centre of a
+  group's pane shows the tab in its place (the replaced tab stays open); a
+  single shown pane offers only its edges. The dropped tab takes the focus.
+- **Rail block:** a group's tabs sit together in the rail as a block with a
+  2 pt `accent` bracket at the rail's leading edge, rounded where the block
+  opens and closes and reaching across the row gaps. A tab that joins a
+  group moves next to its block (within its pinned or regular region); a
+  pane whose row is moved out of the block (dragged or ⇧⌘↑/↓) leaves the
+  split.
+- **Assert ids:** `bbr-split`, `bbr-pane-<n>`, `bbr-split-divider-<n>`,
+  `bbr-split-chip`, `bbr-split-list`, `bbr-split-zone` (Portal); the typed
+  snapshot carries the projection (`split`), the previewed drop
+  (`split_drop`) and the bracketed rows (`split_rows`).
 
 ### 11.8 Empty and crash states (glass panes)
 
@@ -2591,7 +2593,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D20 | New folders open in rename | S-4 PR-06 | §11.11 | implemented | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |
 | D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | implemented | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
 | D22 | Full-screen card rules under test | W-5 | §2 | implemented | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
-| D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted; Split block lifted by Patrick 2026-09-29; tiling contract implemented (slice 1 of 6) | [split-tiling](docs/roadmap/tasks/split-tiling.md) |
+| D23 | Split view | G-9 G-10 PR-09 | §11.7 | implemented (groups of any shape, several per space; no focused-pane outline) | [split-tiling](docs/roadmap/tasks/split-tiling.md) |
 | D24 | Sidebar media card | S-8 PR-17 | §11.15 | implemented without Previous/Next (no public source proves them) and without keyboard traversal into the card | [sidebar-media-control](docs/roadmap/tasks/sidebar-media-control.md) |
 | D25 | Folder context menu (ledger correction: M-2 was marked Shipped, but no folder menu exists) | M-2 S-4 | §11.13 §11.11 | implemented without Open All Tabs and the closing row (question 13) | [folder-context-menu](docs/roadmap/tasks/folder-context-menu.md) |
 

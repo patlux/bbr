@@ -87,6 +87,9 @@ impl BbrApp {
                 match self.controller.split_insert(beside, new, edge) {
                     Ok(event) => {
                         self.emit_browser(&event);
+                        if let Some(tab) = self.tab_id_at(new) {
+                            self.keep_split_block(tab, cx);
+                        }
                         self.persist_structure();
                         cx.notify();
                         true

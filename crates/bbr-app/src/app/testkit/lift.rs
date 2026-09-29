@@ -48,6 +48,7 @@ mod tests {
             pinned: false,
             show_close: true,
             reveal_close: false,
+            split: None,
         }
     }
 

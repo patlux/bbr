@@ -1644,6 +1644,12 @@ pub struct Snapshot {
     /// Blueprint D23: the shown split group.
     #[serde(default)]
     pub split: Option<super::SplitSnapshot>,
+    /// Blueprint D23: the card drop under a rail tab drag.
+    #[serde(default)]
+    pub split_drop: Option<super::SplitDropSnapshot>,
+    /// Blueprint D23: the active-space rows drawn in a split block.
+    #[serde(default)]
+    pub split_rows: Vec<usize>,
     /// Blueprint D12: the client-certificate sheet and answers.
     #[serde(default)]
     pub client_certificates: super::ClientCertificatesSnapshot,

@@ -343,6 +343,7 @@ impl BbrApp {
             || self.rail_floating()
             || self.floating_rail.leaving.is_some()
             || self.split_collapsed().is_some()
+            || self.split_view.drop.is_some()
             || self.permission_prompt_model().is_some()
             || self.certificate_sheet_open()
             || self.popup_notice_visible().is_some()

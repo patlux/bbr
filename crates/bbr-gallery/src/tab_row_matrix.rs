@@ -251,6 +251,7 @@ pub fn build_tab_row_fixture(case: &TabRowCase) -> Option<RowVisuals> {
         pinned: case.pinned,
         show_close: true,
         reveal_close: case.reveal_close,
+        split: None,
     })
 }
 

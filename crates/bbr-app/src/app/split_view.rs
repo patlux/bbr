@@ -24,6 +24,31 @@ use gpui::{div, prelude::*, px, AnyElement, Context, CursorStyle, MouseButton, W
 
 use super::BbrApp;
 
+/// Where a rail tab dragged over the card would land: at an edge of the
+/// pane of `beside` (or in its place), previewed over `rect`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct SplitDrop {
+    pub beside: bbr_domain::TabId,
+    pub zone: bbr_split::tiling::DropZone,
+    /// The previewed zone (window points).
+    pub rect: [f32; 4],
+}
+
+/// The zone strip of `pane` for `zone` (window points).
+fn zone_rect(pane: WebRect, zone: bbr_split::tiling::DropZone) -> [f32; 4] {
+    use bbr_split::tiling::{DropZone, DROP_EDGE_SHARE};
+    let (x, y, w, h) = (pane.x, pane.y, pane.width, pane.height);
+    match zone {
+        DropZone::Edge(Edge::Left) => [x, y, w * DROP_EDGE_SHARE, h],
+        DropZone::Edge(Edge::Right) => [x + w * (1.0 - DROP_EDGE_SHARE), y, w * DROP_EDGE_SHARE, h],
+        DropZone::Edge(Edge::Top) => [x, y, w, h * DROP_EDGE_SHARE],
+        DropZone::Edge(Edge::Bottom) => {
+            [x, y + h * (1.0 - DROP_EDGE_SHARE), w, h * DROP_EDGE_SHARE]
+        }
+        DropZone::Center => [x, y, w, h],
+    }
+}
+
 /// The split view's app state.
 #[derive(Default)]
 pub(crate) struct SplitView {
@@ -34,6 +59,8 @@ pub(crate) struct SplitView {
     /// Pane views hidden while the group rests on its focused pane.
     pub(crate) hidden: Vec<WebViewId>,
     /// The chip's rendered rect (window points) for the Portal regions.
+    /// The card drop a rail tab drag would make now.
+    pub(crate) drop: Option<SplitDrop>,
     /// ⌃⌘S / ⌃⌥⌘S: the pane the palette's commit joins, and where.
     pub(crate) pending: Option<(bbr_domain::TabId, Edge)>,
     pub(crate) chip_bounds: std::rc::Rc<Cell<Option<[f32; 4]>>>,
@@ -382,6 +409,9 @@ impl BbrApp {
         match self.controller.split_insert(beside_index, new_index, edge) {
             Ok(event) => {
                 self.emit_browser(&event);
+                if let Some(tab) = self.tab_id_at(new_index) {
+                    self.keep_split_block(tab, cx);
+                }
                 self.persist_structure();
                 cx.notify();
             }
@@ -402,6 +432,219 @@ impl BbrApp {
                 true
             }
             Err(_) => false,
+        }
+    }
+
+    /// Blueprint D23: each active-space row's place in a split block (by
+    /// row index): consecutive rows of one group share a bracket.
+    pub(crate) fn split_marks(
+        &self,
+        rows: usize,
+    ) -> Vec<Option<bbr_ui::components::tab_row::SplitMark>> {
+        let snapshot = self.controller.snapshot();
+        let groups = self
+            .controller
+            .split_groups()
+            .into_iter()
+            .find(|(space, _)| *space == snapshot.active_space)
+            .map(|(_, groups)| groups)
+            .unwrap_or_default();
+        if groups.is_empty() {
+            return vec![None; rows];
+        }
+        let mut ids = vec![None; rows];
+        for tab in snapshot
+            .all_tabs
+            .iter()
+            .filter(|tab| tab.space == snapshot.active_space)
+        {
+            if let Some(slot) = ids.get_mut(tab.index) {
+                *slot = Some(tab.id);
+            }
+        }
+        let group_of = |index: usize| -> Option<usize> {
+            let id = (*ids.get(index)?)?;
+            groups.iter().position(|group| group.contains(id))
+        };
+        (0..rows)
+            .map(|index| {
+                let group = group_of(index)?;
+                let before = index.checked_sub(1).and_then(group_of);
+                let after = group_of(index + 1);
+                Some(bbr_ui::components::tab_row::SplitMark {
+                    first: before != Some(group),
+                    last: after != Some(group),
+                })
+            })
+            .collect()
+    }
+
+    /// The id of the active-space tab at `index`.
+    pub(crate) fn tab_id_at(&self, index: usize) -> Option<bbr_domain::TabId> {
+        let snapshot = self.controller.snapshot();
+        snapshot
+            .all_tabs
+            .iter()
+            .find(|tab| tab.space == snapshot.active_space && tab.index == index)
+            .map(|tab| tab.id)
+    }
+
+    fn index_of_tab(&self, tab: bbr_domain::TabId) -> Option<usize> {
+        let snapshot = self.controller.snapshot();
+        snapshot
+            .all_tabs
+            .iter()
+            .find(|entry| entry.id == tab && entry.space == snapshot.active_space)
+            .map(|entry| entry.index)
+    }
+
+    /// Blueprint D23: the card drop under a rail tab drag at (`x`, `y`) —
+    /// an edge of a shown group's pane (or its place), or an edge of the
+    /// single shown pane. Never the dragged tab's own pane.
+    pub(crate) fn update_split_drop(&mut self, source: usize, x: f32, y: f32) {
+        let dragged = self.tab_id_at(source);
+        let drop = self.split_card().and_then(|card| {
+            let inside =
+                x >= card.x && x < card.x + card.width && y >= card.y && y < card.y + card.height;
+            if !inside {
+                return None;
+            }
+            match self.split_projection() {
+                Some((_, tiling)) if tiling.fits() => {
+                    let (tab, zone) = tiling.drop_target(x, y)?;
+                    let pane = tiling.pane(tab)?.rect;
+                    (Some(tab) != dragged).then_some(SplitDrop {
+                        beside: tab,
+                        zone,
+                        rect: zone_rect(pane, zone),
+                    })
+                }
+                Some(_) => None,
+                None => {
+                    // The single shown pane: its edges pair it with the
+                    // dragged tab.
+                    let active = self.controller.snapshot().active_index?;
+                    let beside = self.tab_id_at(active)?;
+                    if Some(beside) == dragged {
+                        return None;
+                    }
+                    let single = bbr_split::tiling::Tiling {
+                        panes: vec![bbr_split::tiling::TiledPane {
+                            tab: beside,
+                            rect: card,
+                        }],
+                        dividers: Vec::new(),
+                    };
+                    match single.drop_target(x, y)? {
+                        (_, bbr_split::tiling::DropZone::Center) => None,
+                        (_, zone) => Some(SplitDrop {
+                            beside,
+                            zone,
+                            rect: zone_rect(card, zone),
+                        }),
+                    }
+                }
+            }
+        });
+        self.split_view.drop = drop;
+    }
+
+    /// Drop the dragged tab at the previewed zone: beside that pane (the
+    /// group forms or grows), or in its place. The tab joins its group's
+    /// block in the rail and takes the focus.
+    pub(crate) fn commit_split_drop(
+        &mut self,
+        source: usize,
+        drop: SplitDrop,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let Some(beside) = self.index_of_tab(drop.beside) else {
+            return false;
+        };
+        let result = match drop.zone {
+            bbr_split::tiling::DropZone::Edge(edge) => {
+                self.controller.split_insert(beside, source, edge)
+            }
+            bbr_split::tiling::DropZone::Center => self.controller.split_replace(beside, source),
+        };
+        match result {
+            Ok(event) => {
+                self.emit_browser(&event);
+                if let Some(tab) = self.tab_id_at(source) {
+                    self.keep_split_block(tab, cx);
+                }
+                self.persist_structure();
+                self.sync_portal_overlays(cx);
+                cx.notify();
+                true
+            }
+            Err(error) => {
+                log::warn!("split drop refused: {error}");
+                false
+            }
+        }
+    }
+
+    /// Keep `tab`'s group a contiguous block in the rail: move it right
+    /// after the group's last other row (within its pinned/regular
+    /// region).
+    pub(crate) fn keep_split_block(&mut self, tab: bbr_domain::TabId, cx: &mut Context<Self>) {
+        let Some(from) = self.index_of_tab(tab) else {
+            return;
+        };
+        let members = self
+            .controller
+            .split_layout()
+            .filter(|layout| layout.group.contains(tab))
+            .map(|layout| layout.group.members())
+            .unwrap_or_default();
+        let others: Vec<usize> = members
+            .iter()
+            .filter(|member| **member != tab)
+            .filter_map(|member| self.index_of_tab(*member))
+            .collect();
+        let (Some(&low), Some(&high)) = (others.iter().min(), others.iter().max()) else {
+            return;
+        };
+        if from + 1 >= low && from <= high + 1 {
+            return;
+        }
+        let to = if from < low { high } else { high + 1 };
+        if let Some(event) = self.reorder_tab_at(from, to, cx) {
+            log::debug!("split block kept together: {event:?}");
+        }
+    }
+
+    /// After a rail reorder of the row now at `index`: a pane dragged out
+    /// of its block (no longer next to another pane of its group) leaves
+    /// the split.
+    pub(crate) fn split_reorder_left_block(&mut self, index: usize, cx: &mut Context<Self>) {
+        let Some(tab) = self.tab_id_at(index) else {
+            return;
+        };
+        let snapshot = self.controller.snapshot();
+        let groups = self
+            .controller
+            .split_groups()
+            .into_iter()
+            .find(|(space, _)| *space == snapshot.active_space)
+            .map(|(_, groups)| groups)
+            .unwrap_or_default();
+        let Some(group) = groups.iter().find(|group| group.contains(tab)) else {
+            return;
+        };
+        let near = [index.checked_sub(1), Some(index + 1)]
+            .into_iter()
+            .flatten()
+            .filter_map(|i| self.tab_id_at(i))
+            .any(|neighbour| group.contains(neighbour));
+        if near {
+            return;
+        }
+        if let Ok(event) = self.controller.split_remove(index) {
+            self.emit_browser(&event);
+            self.persist_structure();
+            cx.notify();
         }
     }
 

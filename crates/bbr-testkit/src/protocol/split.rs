@@ -49,3 +49,12 @@ pub enum SplitInput {
     /// The collapsed chip, or one row of its list.
     Chip { row: Option<usize> },
 }
+
+/// Blueprint D23: the card drop a rail tab drag would make now.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SplitDropSnapshot {
+    /// `left`, `right`, `top`, `bottom` or `center`.
+    pub zone: String,
+    /// The previewed zone (window points).
+    pub rect: [f32; 4],
+}

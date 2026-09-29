@@ -40,15 +40,15 @@ rail and drag) and supersedes the two-pane constraints below.
 ## Checklist
 
 - [x] Extend the WebEngine geometry contract to address each WebViewId independently. *(Proven by the keyed `set_web_view_rect` contract on null/fake/macOS engines, the controller pane-layout tests, and the real-app split-geometry suite.)*
-- [ ] Split the active tab left or right with an existing or new secondary tab.
-- [ ] Show and clip two native WKWebViews simultaneously.
-- [ ] Add a resizable divider without continuous idle invalidation.
+- [x] Split the active tab left or right with an existing or new secondary tab. *(Blueprint D23, 2026-09-30: [split tiling](../tasks/split-tiling.md), `just e2e-split`.)*
+- [x] Show and clip two native WKWebViews simultaneously. *(Blueprint D23, 2026-09-30: [split tiling](../tasks/split-tiling.md), `just e2e-split`.)*
+- [x] Add a resizable divider without continuous idle invalidation. *(Blueprint D23, 2026-09-30: [split tiling](../tasks/split-tiling.md), `just e2e-split`.)*
 - [ ] Track and render the focused pane.
 - [ ] Route navigation and command-bar actions to the focused pane.
-- [ ] Close one pane without closing its tab unless explicitly requested.
-- [ ] Dissolve splits safely when a pane tab closes or moves.
-- [ ] Persist split composition later through the Phase 7 repository contract.
-- [ ] Add split controller tests and real-WKWebView E2E.
+- [x] Close one pane without closing its tab unless explicitly requested. *(Blueprint D23, 2026-09-30: [split tiling](../tasks/split-tiling.md), `just e2e-split`.)*
+- [x] Dissolve splits safely when a pane tab closes or moves. *(Blueprint D23, 2026-09-30: [split tiling](../tasks/split-tiling.md), `just e2e-split`.)*
+- [x] Persist split composition later through the Phase 7 repository contract. *(Blueprint D23: in `splits.txt` beside the store — the repository's two-pane table cannot hold a tree; see [split tiling](../tasks/split-tiling.md).)*
+- [x] Add split controller tests and real-WKWebView E2E. *(Blueprint D23, 2026-09-30: [split tiling](../tasks/split-tiling.md), `just e2e-split`.)*
 - [ ] Polish divider, focus affordance, hover states, keyboard movement, and compact-window behavior.
 
 ## Phase exit

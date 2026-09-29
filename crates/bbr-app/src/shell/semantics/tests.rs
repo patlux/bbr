@@ -61,6 +61,7 @@ fn row(index: usize, state: TabVisualState) -> RowVisuals {
         pinned: false,
         show_close: true,
         reveal_close: true,
+        split: None,
     }
 }
 

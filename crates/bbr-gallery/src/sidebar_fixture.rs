@@ -375,5 +375,6 @@ fn row_visual(case: &SidebarCase, index: usize) -> RowVisuals {
         reveal_close: case.hovered_row == Some(index)
             || case.pressed_row == Some(index)
             || index == 0,
+        split: None,
     }
 }

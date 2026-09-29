@@ -41,6 +41,36 @@ pub struct RowVisuals {
     /// the row is being dragged — never at rest, so the row stays quiet
     /// until interaction.
     pub reveal_close: bool,
+    /// Blueprint D23: the row's place in a split block (the tabs of one
+    /// split group, drawn with a thin accent bracket).
+    pub split: Option<SplitMark>,
+}
+
+/// Blueprint D23: a row of a split block — whether it opens or closes the
+/// bracket.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SplitMark {
+    pub first: bool,
+    pub last: bool,
+}
+
+/// The split-block bracket beside a row: a 2 pt `accent` bar at the rail's
+/// leading edge, rounded where the block opens and closes, reaching across
+/// the gap to the next row of the block.
+fn split_bracket(theme: &Theme, mark: SplitMark) -> Div {
+    let inset = 6.0;
+    div()
+        .absolute()
+        .left(px(2.0))
+        .w(px(2.0))
+        .top(px(if mark.first { inset } else { 0.0 }))
+        .bottom(if mark.last {
+            px(inset)
+        } else {
+            -theme.density.gap()
+        })
+        .rounded(px(1.0))
+        .bg(theme.palette.accent)
 }
 
 /// §11.1 row title: one line, end-ellipsis, `type:title`; the §11.9 fallback
@@ -234,6 +264,9 @@ pub fn tab_row(
                     el.border_1().border_color(p.accent)
                 }),
         )
+        .when_some(visuals.split, |row, mark| {
+            row.child(split_bracket(theme, mark))
+        })
         .child(favicon_tile(
             theme,
             visuals.index,
@@ -350,6 +383,7 @@ mod tests {
             pinned: true,
             show_close: true,
             reveal_close: true,
+            split: None,
         };
         assert_eq!(visuals.index, 3);
         assert_eq!(visuals.title, "Example");
@@ -381,6 +415,7 @@ mod tests {
                 pinned: true,
                 show_close: true,
                 reveal_close: true,
+                split: None,
             }
         );
     }

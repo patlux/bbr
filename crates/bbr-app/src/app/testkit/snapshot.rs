@@ -737,6 +737,26 @@ impl BbrApp {
             permissions: self.permissions_snapshot(),
             media: self.media_snapshot(),
             split: self.split_snapshot(),
+            split_drop: self.split_view.drop.map(|drop| {
+                use bbr_split::tiling::DropZone;
+                bbr_testkit::protocol::SplitDropSnapshot {
+                    zone: match drop.zone {
+                        DropZone::Center => "center",
+                        DropZone::Edge(bbr_domain::tiling::Edge::Left) => "left",
+                        DropZone::Edge(bbr_domain::tiling::Edge::Right) => "right",
+                        DropZone::Edge(bbr_domain::tiling::Edge::Top) => "top",
+                        DropZone::Edge(bbr_domain::tiling::Edge::Bottom) => "bottom",
+                    }
+                    .to_string(),
+                    rect: drop.rect,
+                }
+            }),
+            split_rows: self
+                .split_marks(self.controller.snapshot().tabs.len())
+                .iter()
+                .enumerate()
+                .filter_map(|(index, mark)| mark.map(|_| index))
+                .collect(),
             client_certificates: self.client_certificates_snapshot(),
             open_app: self.open_app_snapshot(),
             onboarding: self.onboarding_snapshot(),

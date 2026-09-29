@@ -253,6 +253,8 @@ impl BbrApp {
         // controller's tab operations target it), so every row's favicon
         // image resolves from that profile's bounded host-keyed store.
         let profile = self.controller.snapshot().active_profile;
+        // Blueprint D23: the rows of a split group form a bracketed block.
+        let marks = self.split_marks(tabs.len());
         tabs.iter()
             .map(|tab| {
                 let host = bbr_ui::text::host_of(&tab.url);
@@ -287,6 +289,7 @@ impl BbrApp {
                     show_close: true,
                     reveal_close: self.hovered_row == Some(tab.index)
                         || self.pressed_row == Some(tab.index),
+                    split: marks.get(tab.index).copied().flatten(),
                 }
             })
             .collect()

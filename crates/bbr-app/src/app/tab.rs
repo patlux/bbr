@@ -459,6 +459,8 @@ impl BbrApp {
             self.clear_command_profile_hint();
             self.sync_command_bar();
             self.emit_browser(outcome);
+            // Blueprint D23: a pane moved out of its block leaves the split.
+            self.split_reorder_left_block(to, cx);
             // The tab order is part of the persisted model: poke the one
             // browser-state writer so a force quit recovers the reordered
             // order.

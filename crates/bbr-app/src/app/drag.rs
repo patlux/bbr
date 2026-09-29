@@ -128,6 +128,14 @@ impl BbrApp {
             return;
         }
         self.resolve_tab_drag(x, y, window);
+        // Blueprint D23: over the card the drag previews a split drop.
+        if let Some(source) = self.tab_drag.source() {
+            let had = self.split_view.drop.is_some();
+            self.update_split_drop(source, x, y);
+            if had != self.split_view.drop.is_some() {
+                self.sync_portal_overlays(cx);
+            }
+        }
         cx.notify();
     }
 
@@ -262,6 +270,11 @@ impl BbrApp {
         let valid = self.tab_drag.valid();
         let source = self.tab_drag.source().expect("active drag has a source");
         self.tab_drag.clear();
+        // Blueprint D23: a drop on the card splits.
+        if let Some(drop) = self.split_view.drop.take() {
+            self.sync_portal_overlays(cx);
+            return self.commit_split_drop(source, drop, cx);
+        }
         if valid {
             if let Some(target) = target {
                 return self.commit_tab_drop(source, target, window, cx);
@@ -276,6 +289,9 @@ impl BbrApp {
     pub fn cancel_tab_drag(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.tab_drag.is_active() || self.tab_drag.is_armed() {
             self.tab_drag.clear();
+            if self.split_view.drop.take().is_some() {
+                self.sync_portal_overlays(cx);
+            }
             self.focus_tab_list(window, cx);
             cx.notify();
         }

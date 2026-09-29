@@ -89,3 +89,34 @@ pub(super) fn render(root: &PortalRoot, cx: &mut Context<PortalRoot>) -> Option<
             .into_any_element(),
     )
 }
+
+/// The drop preview while a rail tab drag hovers a zone of the card: a 2 pt
+/// `accent` frame with a 12 % `accent` fill and the split mark (board G-10).
+/// It never takes the pointer (the drag belongs to the browser window).
+pub(super) fn render_drop(root: &PortalRoot, cx: &mut Context<PortalRoot>) -> Option<AnyElement> {
+    let app = root.app.clone()?;
+    let app = app.read(cx);
+    let drop = app.split_view.drop?;
+    let theme = app.theme();
+    let [x, y, w, h] = drop.rect;
+    let mut fill = theme.palette.accent;
+    fill.a = 0.12;
+    Some(
+        div()
+            .id("bbr-split-zone")
+            .absolute()
+            .left(px(x))
+            .top(px(y))
+            .w(px(w))
+            .h(px(h))
+            .rounded(px(12.0))
+            .border_2()
+            .border_color(theme.palette.accent)
+            .bg(fill)
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(bbr_ui::icons::Icon::Split.canvas_with(&theme, px(20.0), theme.palette.accent))
+            .into_any_element(),
+    )
+}
