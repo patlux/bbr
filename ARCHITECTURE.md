@@ -294,6 +294,22 @@ The card and the web views keep the collapsed geometry; nothing reflows. The
 one window-state API in the composition (the downloads fade) is primed in the
 browser window's render, because the Portal builds the rail outside it.
 
+### App preferences and the Settings window
+
+Blueprint D16: user preferences (appearance, contrast and motion overrides,
+a pinned density, the default paper for new spaces, Peek for new-window
+links, the ⌘T space scope) live in `preferences.txt` in the profile
+directory (`bbr-app::preferences`), a plain `key=value` file written
+atomically; unknown keys and bad values fall back to the defaults. They are
+not browser state, so they never enter the SQLite store, whose schema stamp
+has no migrations (a bump would discard the store). The search engine stays
+in the store's settings row. The Settings window (`settings_window`) is a
+separate GPUI window that observes `BbrApp` and renders
+`BbrApp::settings_model`; every control reports one `SettingsEvent`
+applied by `BbrApp::on_settings_event`, the one authority. The Peek choice
+also reaches the native new-window handler, installed before the app entity
+exists, through `preferences::new_window_decision`.
+
 ### WebKit find adapter (content-world isolated, non-destructive)
 
 The portable `bbr-web::find_in_page` session owns the L7 request/result
@@ -1208,10 +1224,20 @@ just run
 ```
 
 `just run` invokes `mbx run -p bbr`, so development builds use the host's
-managed, self-pruning Rust target storage. For an explicit initial URL, use:
+managed, self-pruning Rust target storage. The recipe sets
+`scripts/package/dev_app.py` as Cargo's runner: it wraps the debug binary in
+`target/debug/BBR.app` (bundle id `dev.patwoz.bbr.dev`) and execs the bundle
+executable in the terminal's foreground. A bare Mach-O has no bundle
+identity: macOS shows a generic Dock icon, names the app menu `bbr` and, since
+GPUI makes the process a regular app only in `didFinishLaunching`, does not
+activate it when launched from a terminal, so the terminal keeps the menu
+bar. The bundle supplies the name, the Phosphor-b icon and the BBR menu bar.
+The first bundled launch copies the bare binary's WebKit site data
+(`~/Library/WebKit/bbr`) to the new identifier once and refuses to start while
+another `bbr` process could still be writing it. Extra arguments pass through:
 
 ```bash
-mbx run -p bbr -- --bbr-initial-url https://example.com
+just run --bbr-initial-url https://example.com
 ```
 
 ---

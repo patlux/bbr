@@ -71,7 +71,7 @@ def workspace_version() -> str:
     return match.group(1) if match else "0.1.0"
 
 
-def _render_plist(bundle_id: str, version: str) -> str:
+def render_plist(bundle_id: str, version: str) -> str:
     text = TEMPLATE.read_text(encoding="utf-8")
     tokens = {
         "__EXECUTABLE__": EXECUTABLE,
@@ -150,7 +150,7 @@ def build_app(binary: Path, output: Path, *, bundle_id: str = DEFAULT_BUNDLE_ID,
     _set_mtime(executable, mtime)
 
     plist = contents / "Info.plist"
-    plist.write_text(_render_plist(bundle_id, version), encoding="utf-8")
+    plist.write_text(render_plist(bundle_id, version), encoding="utf-8")
     os.chmod(plist, 0o644)
     _set_mtime(plist, mtime)
 

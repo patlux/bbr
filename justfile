@@ -28,11 +28,17 @@ export CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER := CC
 export CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER := CC
 gui_gate := "python3 scripts/with_gui_lock.py --"
 
-# Launch the development build through mbx-managed build storage. Override
-# BBR_RUN_TIMEOUT for longer sessions. Keep mbx in the terminal foreground:
-# its interactive startup otherwise receives a job-control stop from the TTY.
-run:
-    DEVELOPER_DIR="{{xcode_developer_dir}}" timeout --foreground --kill-after=10s {{run_timeout}} mbx run -p bbr
+# Launch the development build as a real macOS app through mbx-managed build
+# storage. Cargo hands the built binary to the dev_app.py runner, which wraps
+# it in target/debug/BBR.app (bundle identity, Phosphor-b Dock icon, BBR menu
+# bar; a bare binary gets none of these) and execs the bundle executable, so
+# logs and Ctrl-C stay in this terminal. Extra arguments reach the app:
+# `just run --bbr-initial-url https://example.com`. Override BBR_RUN_TIMEOUT
+# for longer sessions. Keep mbx in the terminal foreground: its interactive
+# startup otherwise receives a job-control stop from the TTY.
+dev_runner := "python3 " + justfile_directory() + "/scripts/package/dev_app.py --exec"
+run *args:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" CARGO_TARGET_AARCH64_APPLE_DARWIN_RUNNER="{{dev_runner}}" CARGO_TARGET_X86_64_APPLE_DARWIN_RUNNER="{{dev_runner}}" timeout --foreground --kill-after=10s {{run_timeout}} mbx run -p bbr {{ if args == "" { "" } else { "-- " + args } }}
 
 fmt:
     timeout --kill-after=10s {{check_timeout}} cargo fmt --all -- --check
@@ -114,6 +120,11 @@ e2e-shell-hover:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_semantics -- --ignored --nocapture
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_hover -- --ignored --nocapture
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_semantic_branches -- --ignored --nocapture
+
+# Blueprint D16: the Settings window (⌘,), its rows applied at once, the
+# preferences file and a relaunch.
+e2e-shell-settings:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_settings -- --ignored --nocapture
 
 e2e-shell-command:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_shell_command -- --ignored --nocapture
@@ -278,7 +289,7 @@ gallery-capture story="all":
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-favicons e2e-shell-titlebar-navigation e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-background-links e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-shell-responsiveness e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-shell-tab-menu e2e-web-navigation-gestures e2e-auth e2e-perf
+e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-favicons e2e-shell-titlebar-navigation e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-settings e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-background-links e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-shell-responsiveness e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-shell-tab-menu e2e-web-navigation-gestures e2e-auth e2e-perf
 
 verify: fmt check test clippy roadmap ui-deps script-tests
 
@@ -323,7 +334,7 @@ package_smoke_timeout := env_var_or_default("BBR_PACKAGE_SMOKE_TIMEOUT", "90s")
 
 # Non-GUI contract tests for the packaging scripts (icon, bundle, smoke probe).
 package-test:
-    timeout --kill-after=10s {{test_timeout}} python3 -m unittest scripts/tests/test_packaging.py -v
+    timeout --kill-after=10s {{test_timeout}} python3 -m unittest scripts/tests/test_packaging.py scripts/tests/test_dev_app.py -v
 
 # Build the release binary once, then assemble + ad-hoc sign the .app bundle.
 package:

@@ -16,6 +16,20 @@ any app code: it consumes the already-built `bbr` Mach-O binary generically.
   Contents/_CodeSignature/         ad-hoc signature (unless --skip-codesign)
 ```
 
+## Development bundle (`just run`)
+
+`just run` sets `scripts/package/dev_app.py --exec` as Cargo's runner. It
+wraps the debug binary in `target/debug/BBR.app`, then execs the bundle
+executable. The bundle uses the same Info.plist template, PkgInfo and icon
+renderer, but under its own bundle id `dev.patwoz.bbr.dev` so it never shares
+LaunchServices, TCC or WebKit state with a release bundle. It is incremental
+rather than deterministic: the binary is an APFS clone, the icon renders once
+per renderer change, and LaunchServices is refreshed only when the plist or
+icon changed. It is not signed beyond the linker's ad-hoc signature. On the
+first bundled launch it copies `~/Library/WebKit/bbr` (the bare binary's site
+data) to `~/Library/WebKit/dev.patwoz.bbr.dev` once, and exits 3 instead of
+launching while a `bbr` process may still be writing it.
+
 ## Determinism
 
 Identical input binary → byte-identical bundle:
