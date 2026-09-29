@@ -1777,7 +1777,7 @@ inside the actual macOS safe titlebar layout guide.
 
 Canonical packets: [Unified titlebar navigation controls](docs/roadmap/tasks/titlebar-navigation-controls.md) and the superseding visual authority [reference-faithful production shell](docs/roadmap/tasks/visual-shell-reference.md).
 
-### 11.15 Sidebar media control (Planned; capability-first)
+### 11.15 Sidebar media control (Implemented; blueprint D24, capability-first)
 
 The media card is conditional ordinary GPUI sidebar chrome above the footer
 hairline and therefore above `[Downloads] [Space strip] [+]`. It consumes no
@@ -1808,9 +1808,31 @@ HTML heuristics alone.
   honors Reduced Motion and never hides static state.
 - **Stable ids:** `bbr-media-card`, `-title`, `-source`, `-progress`,
   `-elapsed`, `-duration`, `-previous`, `-play-pause`, `-next`, `-mute`,
-  `-dismiss`, `-session-count`.
+  `-dismiss`, `-session-count`, and `-live` for a stream.
 - **Gallery:** static capability/state stories use the same production card;
   they never claim real WebKit control or replace the deterministic media E2E.
+- **Implemented (blueprint D24, board S-8):** the engine asks WebKit for each
+  live view's playback state once a second (`requestMediaPlaybackState`);
+  only a view WebKit reports media for (or had media) runs the probe in BBR's
+  client content world, which reads the page's current `<audio>`/`<video>`
+  element and the Media Session title/artist. The element proves Play, Pause
+  and Mute, and Seek only with a known length; Previous/Next are never
+  advertised (the page's Media Session action handlers live in the page's
+  world), so the card draws `[Play/Pause] … [Mute]`. A navigation commit, a
+  crash or a closed tab ends the session; the next report starts a new
+  generation, so an old identity is `Ended`/`Stale`. The card sits in the
+  rail column above the footer's panels and the footer row: 22-pt source
+  tile (the tab's favicon or monogram), `type:label` title, `type:key`
+  "site · Profile" line, dismiss cross at `ink.faint`; elapsed · 3-pt
+  `wash.active` track with the `accent` fill (a knob on hover) · total at
+  `ink.faint`, or a `status.error` dot and "Live", or nothing for an unknown
+  length; 28-pt transport buttons with the drawn §7 marks (Previous, Play,
+  Pause, Next, Speaker with waves or the cross). `material:field`,
+  hairline ring, `radius:lg`, 10-pt inset, 8-pt gaps, 8-pt side and bottom
+  margins. The `+N` pill (`wash.active`) cycles the shown session; the card
+  shows the last controlled session while it lives, else the newest.
+  Keyboard traversal into the card waits for the rail's footer focus order
+  (the footer controls take focus only as return targets today).
 
 Canonical UI packet: [Sidebar media control](docs/roadmap/tasks/sidebar-media-control.md).
 
@@ -2524,7 +2546,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | implemented | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
 | D22 | Full-screen card rules under test | W-5 | §2 | implemented | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |
 | D23 | Split view | G-9 G-10 PR-09 | §11.7 | adopted; Split block lifted by Patrick 2026-09-29 | [split-app-composition](docs/roadmap/tasks/split-app-composition.md) |
-| D24 | Sidebar media card | S-8 PR-17 | §11.15 | adopted | [sidebar-media-control](docs/roadmap/tasks/sidebar-media-control.md) |
+| D24 | Sidebar media card | S-8 PR-17 | §11.15 | implemented without Previous/Next (no public source proves them) and without keyboard traversal into the card | [sidebar-media-control](docs/roadmap/tasks/sidebar-media-control.md) |
 | D25 | Folder context menu (ledger correction: M-2 was marked Shipped, but no folder menu exists) | M-2 S-4 | §11.13 §11.11 | implemented without Open All Tabs and the closing row (question 13) | [folder-context-menu](docs/roadmap/tasks/folder-context-menu.md) |
 
 Questions raised by the blueprint (board D-1), answered by the adoption as

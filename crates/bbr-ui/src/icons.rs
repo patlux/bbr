@@ -20,6 +20,7 @@
 mod address_marks;
 pub mod bbr;
 pub mod glyphs;
+mod media_marks;
 mod paint;
 mod permission_marks;
 mod settings_marks;
@@ -128,6 +129,17 @@ pub enum Icon {
     Camera { blocked: bool },
     /// Blueprint D11: the microphone permission mark.
     Microphone { blocked: bool },
+    /// Blueprint D24 media card: Previous (a triangle against a bar).
+    MediaPrevious,
+    /// Blueprint D24 media card: Play (a filled triangle).
+    MediaPlay,
+    /// Blueprint D24 media card: Pause (two bars).
+    MediaPause,
+    /// Blueprint D24 media card: Next (a triangle against a bar).
+    MediaNext,
+    /// Blueprint D24 media card: the speaker — sound waves, or the §7
+    /// cross when `muted`.
+    Speaker { muted: bool },
 }
 
 impl Icon {
@@ -196,6 +208,12 @@ impl Icon {
             Icon::Camera { blocked: true } => "camera-blocked",
             Icon::Microphone { blocked: false } => "microphone",
             Icon::Microphone { blocked: true } => "microphone-blocked",
+            Icon::MediaPrevious => "media-previous",
+            Icon::MediaPlay => "media-play",
+            Icon::MediaPause => "media-pause",
+            Icon::MediaNext => "media-next",
+            Icon::Speaker { muted: false } => "speaker",
+            Icon::Speaker { muted: true } => "speaker-muted",
         }
     }
 
@@ -227,6 +245,8 @@ impl Icon {
             Icon::Gear | Icon::Document => palette.ink_secondary,
             Icon::Person | Icon::Shield | Icon::Eye | Icon::Keyboard => palette.ink_secondary,
             Icon::Camera { .. } | Icon::Microphone { .. } => palette.ink_secondary,
+            Icon::MediaPrevious | Icon::MediaNext | Icon::Speaker { .. } => palette.ink_secondary,
+            Icon::MediaPlay | Icon::MediaPause => palette.ink,
         }
     }
 
@@ -392,6 +412,13 @@ impl Icon {
                 if blocked {
                     permission_marks::paint_slash(window, stroke, color, cx, cy, size);
                 }
+            }
+            Icon::MediaPrevious => media_marks::paint_previous(window, stroke, color, cx, cy, size),
+            Icon::MediaNext => media_marks::paint_next(window, stroke, color, cx, cy, size),
+            Icon::MediaPlay => media_marks::paint_play(window, color, cx, cy, size),
+            Icon::MediaPause => media_marks::paint_pause(window, stroke, color, cx, cy, size),
+            Icon::Speaker { muted } => {
+                media_marks::paint_speaker(window, stroke, color, cx, cy, size, muted)
             }
             Icon::Disclosure { expanded } => {
                 let arm = disclosure_arm(size);

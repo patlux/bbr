@@ -123,14 +123,22 @@ No concurrent writer may own the same `bbr-web` event/action envelope,
 
 ### Real native integration
 
-- [ ] Deterministic local media fixture reports an actual session through the
-      production WKWebView path.
-- [ ] Supported play/pause/mute/seek commands affect only the bound session;
-      unsupported previous/next remain unavailable.
-- [ ] Navigation, reload, crash, close, and teardown remove/invalidate the
-      session without observer/bridge leaks.
-- [ ] Content-world isolation test proves no BBR globals or control channel are
-      visible in page world when that bridge is used.
+- [x] Deterministic local media fixture reports an actual session through the
+      production WKWebView path. *(Blueprint D24: `bbr-web-macos`
+      `media_adapter` — `requestMediaPlaybackState` gates a probe in
+      `WKContentWorld::defaultClientWorld`; `just e2e-media`.)*
+- [x] Supported play/pause/mute/seek commands affect only the bound session;
+      unsupported previous/next remain unavailable. *(E2E: pausing one of two
+      playing tabs leaves the other playing; Next is `Unsupported`.)*
+- [x] Navigation, reload, crash, close, and teardown remove/invalidate the
+      session without observer/bridge leaks. *(The app invalidates on
+      `DidCommitNavigation`/`PageCrashed` and drops sessions whose view left;
+      the adapter forgets a destroyed view. The probe is a one-shot
+      evaluation — no observer or message handler is installed.)*
+- [x] Content-world isolation test proves no BBR globals or control channel are
+      visible in page world when that bridge is used. *(The fixture page
+      retitles itself if the probe's `__bbrMedia` ever appears in its world;
+      the E2E asserts the title after probes and commands.)*
 
 ### Performance
 

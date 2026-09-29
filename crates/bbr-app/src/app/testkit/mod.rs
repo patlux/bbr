@@ -12,6 +12,7 @@ use gpui::Context;
 use super::{BbrApp, BrowserSink, FocusSink};
 
 mod lift;
+mod media;
 mod motion;
 mod snapshot;
 

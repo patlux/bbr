@@ -11,6 +11,7 @@ fn observation(playback: MediaPlayback, capabilities: MediaCapabilities) -> Medi
         timing: MediaTiming {
             elapsed: Some(12.0),
             duration: Some(300.0),
+            live: false,
         },
         metadata: MediaMetadata {
             title: Some("Track".into()),

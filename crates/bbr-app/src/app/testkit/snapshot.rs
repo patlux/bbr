@@ -377,6 +377,14 @@ impl BbrApp {
                     },
                 );
                 ids.extend(self.tab_menu_visible_ids());
+                // Blueprint D24: the media card above the footer.
+                if self.sidebar_visible {
+                    if let Some(media) = self.media_card_model() {
+                        ids.extend(bbr_ui::components::media_card::media_card_visible_ids(
+                            &media,
+                        ));
+                    }
+                }
                 // Blueprint D11/D12: the Portal overlays over the card.
                 ids.extend(self.permission_visible_ids());
                 // Blueprint D15: the welcome takes the empty space's card.
@@ -688,6 +696,7 @@ impl BbrApp {
             settings: self.settings_snapshot(),
             history: self.history_snapshot(window),
             permissions: self.permissions_snapshot(),
+            media: self.media_snapshot(),
             client_certificates: self.client_certificates_snapshot(),
             open_app: self.open_app_snapshot(),
             onboarding: self.onboarding_snapshot(),

@@ -9,8 +9,13 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [Gallery browser components](component-gallery-browser-components.md) ·
 [Gallery compositions](component-gallery-compositions.md).
 
-Activation condition: complete F2a and G1a plus the integrated media capability
-contract.** Documentation only today. It must not interrupt
+Status: implemented 2026-09-30 as blueprint delta D24 (DESIGN §19, board
+S-8), together with the native adapter of the
+[media capability contract](media-session-capability-contract.md). Open: the
+keyboard traversal into the card and the performance scenarios (below).
+
+Activation condition (historical): complete F2a and G1a plus the integrated media capability
+contract.** Documentation only at the time. It must not interrupt
 F2c → F2b → fresh F2a or start before the settled G1a `bbr-ui` anchor.
 
 Stable composition reference, not a feature or visual copy:
@@ -122,37 +127,50 @@ media app presentation state, or their Gallery stories.
 
 ### Unit and contract
 
-- [ ] Model/visibility matrix covers playing/paused, seekable/not seekable,
+- [x] Model/visibility matrix covers playing/paused, seekable/not seekable,
       previous/next/mute subsets, unknown/live duration, ended/stale session,
-      one/multiple sessions, and dismissed identity.
-- [ ] Unsupported controls cannot dispatch; stale identity produces typed
-      rejection without affecting another tab/session.
-- [ ] Multi-session recency and session-count/switch behavior are deterministic.
-- [ ] Source activation resolves exact TabId/SpaceId/ProfileId and commands do
+      one/multiple sessions, and dismissed identity. *(`bbr-ui`
+      `media_card` tests: the drawn ids per timing/control subset and `+N`;
+      `bbr_web::media` registry tests: ended/stale; Gallery story 52 draws
+      the six board fragments from the production card; dismissal in the
+      E2E.)*
+- [x] Unsupported controls cannot dispatch; stale identity produces typed
+      rejection without affecting another tab/session. *(Registry
+      `authorize` before every engine command; E2E: `Unsupported` for Next,
+      `Ended` then `Stale` for the old identity while the new page plays.)*
+- [x] Multi-session recency and session-count/switch behavior are deterministic.
+- [x] Source activation resolves exact TabId/SpaceId/ProfileId and commands do
       not otherwise change selection or focus.
 - [ ] Card removal restores footer geometry exactly; absent card reserves no
-      semantic node or layout height.
+      semantic node or layout height. *(No semantic node: E2E `visible_ids`;
+      no layout height by construction — the column adds the card only when
+      the model exists. The footer geometry is not measured.)*
 
 ### Real-app E2E
 
-- [ ] Deterministic local media fixture causes the card to appear only after an
-      actual reported session.
-- [ ] Play/Pause, Mute, and Seek work only when supported; unsupported Previous/
+- [x] Deterministic local media fixture causes the card to appear only after an
+      actual reported session. *(`just e2e-media`, fixture `media.html`: a
+      silent 60-s track built in the page.)*
+- [x] Play/Pause, Mute, and Seek work only when supported; unsupported Previous/
       Next are omitted/disabled and no-op.
-- [ ] Cross-space/profile source activation selects the exact tab and preserves
+- [x] Cross-space/profile source activation selects the exact tab and preserves
       profile isolation; ordinary media commands do not activate it.
-- [ ] Dismiss hides until media identity changes; navigation/reload/end/crash/
-      close teardown removes or invalidates the card.
-- [ ] Multiple sessions show one current card and a count/switch affordance,
+- [x] Dismiss hides until media identity changes; navigation/reload/end/crash/
+      close teardown removes or invalidates the card. *(E2E: navigation and
+      close; crash and reload invalidate through the same
+      `PageCrashed`/`DidCommitNavigation` wiring.)*
+- [x] Multiple sessions show one current card and a count/switch affordance,
       never a vertical stack.
 - [ ] Keyboard focus order reaches the card before Downloads; semantic names
-      expose source and profile/space identity.
+      expose source and profile/space identity. *(Open: the rail has no
+      footer focus order yet; the source line names site and profile.)*
 
 ### Performance
 
 - [ ] Seed/enforce `media_control_present` and `media_play_pause_commit`, each
       with at least 30 accepted full-gate samples. Timings start at the app
       command/observation boundary and exclude fixture/network latency.
+      *(Unpassed — performance execution deferred, Patrick 2026-09-27.)*
 
 ## Completion gates
 
@@ -198,14 +216,21 @@ SPI, DOM heuristics alone, or decorative controls to match the reference.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                one media card above the footer for the most recently
+                        controlled (else newest) playing tab; Play/Pause, Seek,
+                        Mute, Dismiss, `+N` cycle, source activation
+Commits:                see git log (feat commit carrying this packet)
+Functional evidence:    bbr-web media registry tests, bbr-web-macos
+                        media_adapter probe/command tests, bbr-ui media_card
+                        tests, Gallery story 52
+Real-app E2E:           just e2e-media (2 tests, real WKWebView)
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §11.15 and §19 D24, this packet, the
+                        media contract packet
+Open blockers and non-goals: keyboard traversal into the card; Previous/Next
+                        (the page's Media Session handlers are not reachable
+                        from BBR's content world); footer geometry measurement
+Worktree state:         main, clean after commit
 
 Planning/read-only:
 Implementation:

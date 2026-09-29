@@ -182,6 +182,15 @@ pub fn sidebar_surface(
                 .when(model.status_visible, |column| {
                     column.child(components::status_line(theme, &model.status))
                 })
+                // §11.15: the media card sits above the footer's panels
+                // and the footer row; absent, it takes no space.
+                .when_some(model.media.as_ref(), |column, media| {
+                    column.child(components::media_card::media_card(
+                        theme,
+                        media,
+                        callbacks.on_media.clone(),
+                    ))
+                })
                 // §11.12: the anchored downloads panel is the footer's
                 // direct predecessor in the column (its bottom edge is
                 // flush with the footer control's top edge); the §11.3

@@ -323,6 +323,7 @@ pub fn build_sidebar_fixture_with_theme(
         drag_destination: None,
         status,
         status_visible: false,
+        media: None,
         titlebar,
         plus_menu,
         footer,

@@ -25,6 +25,7 @@ mod benchmark;
 pub mod dsl;
 mod event;
 mod history;
+mod media;
 mod permissions;
 mod request;
 mod snapshot;
@@ -35,6 +36,7 @@ pub use history::{
     ClearDataSnapshot, ClearOptionSnapshot, HistoryGroupSnapshot, HistoryInput, HistoryRowSnapshot,
     HistorySnapshot,
 };
+pub use media::{MediaCardSnapshot, MediaInput, MediaSessionEntry, MediaSnapshot};
 pub use permissions::{
     ClientCertificateInput, ClientCertificateSnapshot, ClientCertificatesSnapshot,
     OnboardingSnapshot, OpenAppInput, OpenAppSheetSnapshot, OpenAppSnapshot, PermissionInput,

@@ -96,6 +96,10 @@ impl MediaCapabilities {
 pub struct MediaTiming {
     pub elapsed: Option<f64>,
     pub duration: Option<f64>,
+    /// Blueprint D24: the source is a live stream (its length is endless,
+    /// not merely unknown); the card says "Live" instead of a total.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub live: bool,
 }
 
 /// Display metadata the source reported (title, subtitle/site).

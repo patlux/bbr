@@ -78,6 +78,8 @@ pub struct WebEngineWk {
     permissions: crate::permission_requests::PermissionRequests,
     /// Blueprint D12: the open client-certificate requests.
     client_certificates: crate::client_identities::ClientCertificateRequests,
+    /// Blueprint D24: the per-view media probes.
+    media: crate::media_adapter::MediaHost,
 }
 
 impl WebEngineWk {
@@ -103,6 +105,7 @@ impl WebEngineWk {
         let probe = crate::responsiveness::RendererProbeHost::new(sink.clone());
         let favicon_acquisition =
             crate::favicon_acquisition::FaviconAcquisitionHost::new(sink.clone());
+        let media = crate::media_adapter::MediaHost::new(sink.clone());
         Self {
             host,
             options,
@@ -118,6 +121,7 @@ impl WebEngineWk {
             content_gesture,
             probe,
             favicon_acquisition,
+            media,
             permissions: Default::default(),
             client_certificates: Default::default(),
         }
@@ -441,6 +445,7 @@ impl WebEngine for WebEngineWk {
         // Blueprint D11: WebKit expects every permission handler answered.
         self.permissions.borrow_mut().deny_view(id);
         self.client_certificates.borrow_mut().cancel_view(id);
+        self.media.forget(id);
         if let Some(session) = self.sessions.remove(&id) {
             session.teardown();
         } else {
@@ -568,6 +573,24 @@ impl WebEngine for WebEngineWk {
 
     fn decide_permission(&mut self, request: u64, allow: bool) {
         self.permissions.borrow_mut().decide(request, allow);
+    }
+
+    fn probe_media(&mut self) {
+        let Some(mtm) = MainThreadMarker::new() else {
+            return;
+        };
+        for (id, session) in &self.sessions {
+            self.media.probe(mtm, *id, &session.web_view);
+        }
+    }
+
+    fn media_command(&mut self, view: WebViewId, command: bbr_web::media::MediaCommand) {
+        let Some(mtm) = MainThreadMarker::new() else {
+            return;
+        };
+        if let Some(session) = self.sessions.get(&view) {
+            self.media.command(mtm, &session.web_view, command);
+        }
     }
 
     fn external_app_name(&self, url: &str) -> Option<String> {

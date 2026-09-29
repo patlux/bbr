@@ -112,6 +112,7 @@ pub(crate) mod nav_history_ids {
     pub const BACKDROP: &str = super::nav_history::NAV_HISTORY_BACKDROP_ID;
 }
 pub(crate) mod client_certificates;
+pub(crate) mod media;
 mod menu_sync;
 mod motion;
 mod new_window;
@@ -233,6 +234,8 @@ pub struct BbrApp {
     pub(crate) transient: transient::TransientOverlays,
     /// Blueprint D11: permission prompts, device marks, site settings.
     pub(crate) permissions: permissions::PermissionsState,
+    /// Blueprint D24: the media sessions behind the sidebar media card.
+    pub(crate) media: media::MediaState,
     /// Blueprint D12: client-certificate requests and remembered choices.
     pub(crate) certificates: client_certificates::CertificateState,
     /// Blueprint D13: links to other apps' schemes.
@@ -690,6 +693,7 @@ impl BbrApp {
             native_portal: None,
             transient: transient::TransientOverlays::default(),
             permissions: permissions::PermissionsState::default(),
+            media: media::MediaState::default(),
             certificates: client_certificates::CertificateState::default(),
             open_app: open_app::OpenAppState::default(),
             space_chooser: None,

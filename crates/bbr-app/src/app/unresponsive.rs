@@ -172,6 +172,8 @@ impl BbrApp {
         cx: &mut Context<Self>,
     ) {
         let transitions = self.controller.pump_responsiveness();
+        // Blueprint D24: the media probe rides the same cadence.
+        self.pump_media();
         let active_view = self.controller.snapshot().active_view;
         let became_unresponsive = transitions.iter().any(|event| {
             matches!(

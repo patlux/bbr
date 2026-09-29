@@ -293,6 +293,8 @@ pub struct TestSnapshot {
     pub history: Option<bbr_testkit::protocol::HistorySnapshot>,
     /// Blueprint D11: the permission prompt, site settings and marks.
     pub permissions: bbr_testkit::protocol::PermissionsSnapshot,
+    /// Blueprint D24: the media card and sessions.
+    pub media: bbr_testkit::protocol::MediaSnapshot,
     /// Blueprint D12: the client-certificate sheet and answers.
     pub client_certificates: bbr_testkit::protocol::ClientCertificatesSnapshot,
     /// Blueprint D13: links to other apps.

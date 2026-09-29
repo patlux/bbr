@@ -372,7 +372,8 @@ impl BrowserController {
             | WebEvent::PermissionRequested { view: v, .. }
             | WebEvent::ClientCertificateRequested { view: v, .. }
             | WebEvent::ExternalSchemeRequested { view: v, .. }
-            | WebEvent::MediaCaptureChanged { view: v, .. } => *v,
+            | WebEvent::MediaCaptureChanged { view: v, .. }
+            | WebEvent::MediaObserved { view: v, .. } => *v,
         };
         let is_preview = self
             .preview

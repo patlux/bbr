@@ -111,6 +111,10 @@ pub mod client_identities;
 #[cfg(target_os = "macos")]
 pub mod permission_requests;
 
+/// Blueprint D24: the media probes behind the sidebar media card.
+#[cfg(target_os = "macos")]
+mod media_adapter;
+
 /// Blueprint D10: the local time zone's current offset from UTC in
 /// seconds (the History page's day boundaries and times).
 #[cfg(target_os = "macos")]

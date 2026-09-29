@@ -415,6 +415,8 @@ impl SidebarObserver {
             on_space_strip_key_down: Rc::clone(&self.on_space_strip_key_down),
             on_divider_mouse_down: Rc::clone(&self.on_divider_mouse_down),
             on_divider_key_down: Rc::clone(&self.on_divider_key_down),
+            // Blueprint D24: the gallery rail shows no media card.
+            on_media: Rc::new(|_action, _window, _cx| {}),
         }
     }
 }

@@ -268,6 +268,14 @@ pub enum WebEvent {
         camera: bool,
         microphone: bool,
     },
+    /// Blueprint D24: the view's media, as the adapter observed it (sent
+    /// while media exists, and once with [`media::MediaPlayback::None`] when
+    /// it went away). The app's [`media::MediaSessionRegistry`] turns these
+    /// into sessions.
+    MediaObserved {
+        view: WebViewId,
+        observation: media::MediaObservation,
+    },
 }
 
 /// The seam between chrome and engine.
@@ -357,6 +365,15 @@ pub trait WebEngine {
     /// Blueprint D11: answer a [`WebEvent::PermissionRequested`]. Unknown
     /// or already answered requests are no-ops.
     fn decide_permission(&mut self, _request: u64, _allow: bool) {}
+
+    /// Blueprint D24: observe every live view's media now; changes arrive
+    /// as [`WebEvent::MediaObserved`]. The app calls this on a slow timer
+    /// and right after a media command.
+    fn probe_media(&mut self) {}
+
+    /// Blueprint D24: apply `command` to `view`'s media. The app authorizes
+    /// it against its [`media::MediaSessionRegistry`] first.
+    fn media_command(&mut self, _view: WebViewId, _command: media::MediaCommand) {}
 
     /// Blueprint D13: the display name of the app macOS would open `url`
     /// with (`None`: no app handles it).

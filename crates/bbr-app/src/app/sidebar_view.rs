@@ -214,6 +214,7 @@ impl BbrApp {
             drag_destination: self.drag_destination(),
             status,
             status_visible,
+            media: self.media_card_model(),
             // §11.14: the titlebar row is the rail's top strip — the
             // safe-area geometry (native), the sidebar toggle, and the
             // Back/Forward/Reload cluster. The toggle uses the identical

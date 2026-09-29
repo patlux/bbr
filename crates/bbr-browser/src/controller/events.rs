@@ -107,5 +107,6 @@ fn event_view(event: &WebEvent) -> WebViewId {
         WebEvent::ClientCertificateRequested { view, .. } => *view,
         WebEvent::ExternalSchemeRequested { view, .. } => *view,
         WebEvent::MediaCaptureChanged { view, .. } => *view,
+        WebEvent::MediaObserved { view, .. } => *view,
     }
 }

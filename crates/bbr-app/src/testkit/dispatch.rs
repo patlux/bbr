@@ -713,6 +713,7 @@ pub(crate) fn dispatch(
         | Request::OpenHistory
         | Request::HistoryInput { .. }
         | Request::PermissionInput { .. }
+        | Request::MediaInput { .. }
         | Request::ClientCertificateInput { .. }
         | Request::OpenAppInput { .. }
         | Request::WelcomeInput { .. }

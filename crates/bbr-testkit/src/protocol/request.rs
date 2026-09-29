@@ -787,6 +787,11 @@ pub enum Request {
     PermissionInput {
         input: super::PermissionInput,
     },
+    /// Blueprint D24: one media-card press (or a raw command for an
+    /// explicit session identity).
+    MediaInput {
+        input: super::MediaInput,
+    },
     /// Blueprint D12: one client-certificate sheet interaction.
     ClientCertificateInput {
         input: super::ClientCertificateInput,

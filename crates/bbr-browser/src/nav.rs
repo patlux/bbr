@@ -75,7 +75,8 @@ impl NavState {
             bbr_web::WebEvent::PermissionRequested { .. }
             | bbr_web::WebEvent::ClientCertificateRequested { .. }
             | bbr_web::WebEvent::ExternalSchemeRequested { .. }
-            | bbr_web::WebEvent::MediaCaptureChanged { .. } => {}
+            | bbr_web::WebEvent::MediaCaptureChanged { .. }
+            | bbr_web::WebEvent::MediaObserved { .. } => {}
         }
     }
 }

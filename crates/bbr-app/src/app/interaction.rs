@@ -143,6 +143,8 @@ impl BbrApp {
         // Blueprint D11: permission requests, capture state, and the
         // navigation that ends a site's pending requests.
         self.permission_web_event(&event, cx);
+        // Blueprint D24: media reports and the navigations that end them.
+        self.media_web_event(&event, cx);
         // Blueprint D12: a server asks for a client certificate.
         if let WebEvent::ClientCertificateRequested {
             view,

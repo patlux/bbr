@@ -222,6 +222,9 @@ pub struct SidebarModel {
     /// title/URL text is already represented by the address and tab row and
     /// stays hidden; loading, crash and unresponsive states remain visible.
     pub status_visible: bool,
+    /// §11.15 / blueprint D24: the media card above the footer (`None`:
+    /// no card and no reserved space).
+    pub media: Option<crate::components::media_card::MediaCardModel>,
     /// The §11.14 titlebar row (the top strip of the expanded full-height
     /// rail): the safe-area geometry, the sidebar toggle, and the
     /// Back/Forward/Reload cluster. The row disappears with the rail on
@@ -345,6 +348,8 @@ pub struct Callbacks {
     pub on_divider_mouse_down: MouseCallback,
     /// §9: the focused divider's keyboard equivalents (`←`/`→`/`0`).
     pub on_divider_key_down: KeyCallback,
+    /// §11.15: a press on the media card.
+    pub on_media: crate::components::media_card::MediaCardCallback,
 }
 
 impl Callbacks {
@@ -399,6 +404,7 @@ impl Callbacks {
             on_space_strip_key_down: noop_key.clone(),
             on_divider_mouse_down: noop_mouse.clone(),
             on_divider_key_down: noop_key,
+            on_media: std::rc::Rc::new(|_action, _window, _cx| {}),
         }
     }
 }

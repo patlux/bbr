@@ -1632,6 +1632,9 @@ pub struct Snapshot {
     /// Blueprint D11: the permission prompt, site settings and marks.
     #[serde(default)]
     pub permissions: super::PermissionsSnapshot,
+    /// Blueprint D24: the media card and sessions.
+    #[serde(default)]
+    pub media: super::MediaSnapshot,
     /// Blueprint D12: the client-certificate sheet and answers.
     #[serde(default)]
     pub client_certificates: super::ClientCertificatesSnapshot,

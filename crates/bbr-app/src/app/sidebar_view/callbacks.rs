@@ -385,7 +385,15 @@ impl BbrApp {
             });
         });
 
+        // §11.15 / blueprint D24: the media card's presses.
+        let entity = cx.entity();
+        let on_media: bbr_ui::components::media_card::MediaCardCallback =
+            Rc::new(move |action, window, cx| {
+                entity.update(cx, |view, cx| view.on_media_card(action, window, cx));
+            });
+
         Callbacks {
+            on_media,
             on_rail_mouse_down,
             on_rail_scroll_wheel,
             titlebar,

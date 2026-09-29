@@ -109,6 +109,12 @@ pub(super) fn dispatch_portal(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // Blueprint D24: the media card.
+        Request::MediaInput { input } => with_app(window, app, cx, |view, window, cx| {
+            view.media_input(input.clone(), window, cx);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
         // Blueprint D15: the first run.
         Request::WelcomeInput { input } => with_app(window, app, cx, |view, window, cx| {
             use bbr_testkit::protocol::WelcomeInput as I;

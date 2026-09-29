@@ -30,6 +30,7 @@ pub mod folders;
 pub mod footer;
 pub mod foundations;
 pub mod library_composition;
+pub mod media_card;
 pub mod menu;
 pub mod page_menu;
 pub mod peek;
@@ -308,6 +309,11 @@ pub fn catalog() -> CatalogRegistry {
     registry.add_group(
         "Feedback overlays",
         vec![story("Toast and zoom readout", toast::render_toast, &[])],
+    );
+    // Blueprint D24: the sidebar media card appends at StoryId 52.
+    registry.add_group(
+        "Media",
+        vec![story("Media card", media_card::render_media_card, &[])],
     );
     registry
 }
