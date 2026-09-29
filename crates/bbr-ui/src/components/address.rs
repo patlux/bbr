@@ -154,9 +154,14 @@ pub struct StagingModel {
     pub text: String,
     /// The §11.3 hint suffix, if any.
     pub hint: Option<SharedString>,
-    /// Whether the block cursor renders — `chrome_focused && mode.is_active()`
+    /// Whether the caret renders — `chrome_focused && mode.is_active()`
     /// resolved by the caller.
     pub show_cursor: bool,
+    /// Blueprint D02: the caret, the selection and the IME composition over
+    /// `text` (byte offsets; the app's editing model owns them).
+    pub edit: super::EditState,
+    /// Where the app learns the laid-out line; `None` in static renders.
+    pub line_sink: Option<super::EditLineSink>,
     /// The §11.3 cross-context profile hint; `None` at rest.
     pub profile_hint: Option<AddressProfileHint>,
 }
@@ -444,23 +449,24 @@ pub fn staging_surface(
             div()
                 .id("bbr-command-text")
                 .flex_1()
+                .min_w_0()
+                .h(theme.type_.mono.size * 1.5)
                 .text_size(theme.type_.mono.size)
-                .text_color(p.ink)
-                .child(if model.text.is_empty() {
-                    SharedString::from("Type a URL…")
-                } else {
-                    SharedString::from(model.text.clone())
-                }),
+                .overflow_hidden()
+                .child(super::edit_line(
+                    &model.text,
+                    model.edit,
+                    SharedString::from("Type a URL…"),
+                    super::EditLineColors {
+                        text: p.ink,
+                        placeholder: p.ink_faint,
+                        selection: p.tint_accent,
+                        caret: p.accent,
+                    },
+                    model.show_cursor,
+                    model.line_sink.clone(),
+                )),
         )
-        .when(model.show_cursor, |el| {
-            el.child(
-                div()
-                    .id("bbr-command-cursor")
-                    .w(px(2.0))
-                    .h_full()
-                    .bg(p.accent),
-            )
-        })
         .when(model.hint.is_some(), |el| {
             el.child(
                 div()
@@ -476,6 +482,7 @@ pub fn staging_surface(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::components::EditState;
 
     #[test]
     fn the_zoom_chip_shows_only_off_one_hundred_percent() {
@@ -532,6 +539,8 @@ mod tests {
             text: "Reading".into(),
             hint: Some("New Space".into()),
             show_cursor: true,
+            edit: EditState::end_of("Reading"),
+            line_sink: None,
             profile_hint: None,
         };
         assert!(model.focused);

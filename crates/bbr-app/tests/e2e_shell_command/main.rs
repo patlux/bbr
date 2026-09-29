@@ -41,6 +41,7 @@ mod history;
 mod history_global;
 mod history_support;
 mod identity;
+mod ime;
 mod moments;
 mod moved;
 mod navigation;

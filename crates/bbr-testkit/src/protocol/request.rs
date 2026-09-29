@@ -748,6 +748,13 @@ pub enum Request {
         x: f32,
         y: f32,
     },
+    /// Blueprint D02: drive the key window's `NSTextInputClient` exactly as
+    /// an input method does (compose, commit, unmark) and read back the
+    /// client's ranges and candidate-window rect into the snapshot's
+    /// `command_input.native`. Runs outside any app borrow, on the pump.
+    CommandTextInput {
+        op: TextInputOp,
+    },
     /// Blueprint D19: invoke the menu item `menu › item` (`menu` = "Dock"
     /// for the Dock menu) through the same action dispatch an `NSMenuItem`
     /// click takes.
@@ -1644,4 +1651,19 @@ pub enum SavedPagesLibraryCollectionOp {
     Create { title: String },
     Rename { id: u64, title: String },
     Remove { id: u64 },
+}
+
+/// Blueprint D02: one input-method message to the command field
+/// (UTF-16 ranges as `[start, end]`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TextInputOp {
+    /// `setMarkedText:selectedRange:replacementRange:` with `selected`
+    /// relative to `text`.
+    SetMarked { text: String, selected: [usize; 2] },
+    /// `insertText:replacementRange:`.
+    Insert { text: String },
+    /// `unmarkText`.
+    Unmark,
+    /// Only read the client back.
+    Probe,
 }

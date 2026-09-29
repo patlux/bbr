@@ -29,23 +29,23 @@ mod snapshot;
 
 pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
-pub use request::{Request, SavedPagesLibraryCollectionOp};
+pub use request::{Request, SavedPagesLibraryCollectionOp, TextInputOp};
 pub use snapshot::{
-    AddressRestFill, AuthSnapshot, ChipCompanionSnapshot, CommandResultSnapshot,
-    CommandResultState, CommandSurface, ContentCardSnapshot, ContentGestureSnapshot,
-    ContextMenuItemSnapshot, ContextMenuNativeSnapshot, ContextMenuSnapshot, DenseListSnapshot,
-    DownloadGroup, DownloadMachineState, DownloadRowAction, DownloadRowSnapshot,
-    DownloadsPanelSnapshot, DragOffersSnapshot, ErrorSurfaceCategory, ErrorSurfaceSnapshot,
-    FavoriteTileSnapshot, FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot, IllustrationSnapshot,
-    LifecycleCounts, MenuItemSnapshot, MenuSnapshot, MotionMomentSnapshot, MotionSnapshot,
-    NavHistorySnapshot, NewWindowSnapshot, PaneLayoutSnapshot, PaneRectSnapshot, PeekFrameSnapshot,
-    PortalSnapshot, PreviewSnapshot, PreviewZOrder, ProfileSnapshot, ReloadRestSurface,
-    RestoreDisposition, SavedPagesCollectionSnapshot, SavedPagesLibraryRowSnapshot,
-    SavedPagesLibrarySnapshot, SemanticNode, SemanticRole, Snapshot, SpaceAppearanceSnapshot,
-    SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot, SpaceSnapshot,
-    SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot,
-    SwipeSnapshot, TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState,
-    TitlebarSnapshot, ToastSnapshot, WebContentProbe, ZoomSnapshot,
+    AddressRestFill, AuthSnapshot, ChipCompanionSnapshot, CommandInputSnapshot,
+    CommandResultSnapshot, CommandResultState, CommandSurface, ContentCardSnapshot,
+    ContentGestureSnapshot, ContextMenuItemSnapshot, ContextMenuNativeSnapshot,
+    ContextMenuSnapshot, DenseListSnapshot, DownloadGroup, DownloadMachineState, DownloadRowAction,
+    DownloadRowSnapshot, DownloadsPanelSnapshot, DragOffersSnapshot, ErrorSurfaceCategory,
+    ErrorSurfaceSnapshot, FavoriteTileSnapshot, FindSnapshot, FolderRowSnapshot, GlobalTabSnapshot,
+    IllustrationSnapshot, LifecycleCounts, MenuItemSnapshot, MenuSnapshot, MotionMomentSnapshot,
+    MotionSnapshot, NavHistorySnapshot, NewWindowSnapshot, PaneLayoutSnapshot, PaneRectSnapshot,
+    PeekFrameSnapshot, PortalSnapshot, PreviewSnapshot, PreviewZOrder, ProfileSnapshot,
+    ReloadRestSurface, RestoreDisposition, SavedPagesCollectionSnapshot,
+    SavedPagesLibraryRowSnapshot, SavedPagesLibrarySnapshot, SemanticNode, SemanticRole, Snapshot,
+    SpaceAppearanceSnapshot, SpaceChipSnapshot, SpaceConfigSnapshot, SpaceDeleteSnapshot,
+    SpaceSnapshot, SpaceStripScrollSnapshot, StoreDiscardReasonSnapshot, StoreLoadSnapshot,
+    StoreSnapshot, SwipeSnapshot, TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState,
+    TextInputReadback, TitlebarSnapshot, ToastSnapshot, WebContentProbe, ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.

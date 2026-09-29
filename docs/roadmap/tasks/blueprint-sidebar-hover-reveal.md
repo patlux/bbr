@@ -29,6 +29,18 @@ match on y alone. "Works exactly the same" therefore first needs a shared
 command editor with IME/selection and a 2-D drag-target model with a folder
 target, implemented once for both rails.
 
+**Step 1 landed (2026-09-29): shared command editor.** The palette, the ⌘L
+overlay and the in-rail staging field share one editable line
+(`bbr_ui::components::edit_line`: selection wash, underlined marked text,
+caret at the insertion point, horizontal scroll) and one editing model
+with word/line motions and ⇧ extension. `BbrApp` implements GPUI's
+`EntityInputHandler` over that model and registers it for the chrome focus
+handle while the command field owns the keyboard, so input methods, dead
+keys and the accent menu reach the field; the candidate rect is shaped
+from the current text. Remaining order: (2) a 2-D drag-target model with a
+folder target, (3) the interactive key-capable Portal host, (4) the
+floating rail with the velocity/dwell trigger.
+
 Decided 2026-09-29: Patrick adopted every recommendation below, and the
 sidebar toggle moved from ⌘B to ⌘S. The former open decisions (recommendations in brackets): what counts as
 leaving the rail (the rail and its menus, panels and drags form one
@@ -125,12 +137,20 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome: in progress — step 1 of 4 (shared command editor: selection, IME).
+Commits: feat(app): make the command field a platform text-input client.
+Functional evidence: command_text + command_text_ime (UTF-16 mapping,
+  compose/refine/commit/cancel, anchored ⇧ motions, word stops at URL
+  punctuation), edit_line (caret scroll, offset/point mapping, underlined
+  composition run).
+Real-app E2E: e2e_shell_command::ime drives the root view's real
+  NSTextInputClient (setMarkedText/insertText/unmarkText, markedRange,
+  selectedRange, firstRectForCharacterRange) in the ⌘T palette and the ⌘L
+  overlay; just e2e-shell-command 28/28.
+Performance evidence: deferred with the other blueprint deltas (Patrick).
+Roadmap/documentation updates: DESIGN §11.4 field editing;
+  E2E_ARCHITECTURE CommandTextInput seam.
+Open blockers and non-goals: steps 2–4 above; the D02 rail itself is not
+  implemented yet.
+Worktree state: main.
 ```

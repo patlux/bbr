@@ -50,10 +50,12 @@ mod command_benchmark_history;
 #[cfg(feature = "testkit")]
 mod command_benchmarks;
 mod command_corpus;
+mod command_input;
 pub(crate) mod command_rank;
 mod command_result;
 mod command_surface;
 mod command_text;
+mod command_text_ime;
 mod content_card;
 pub(crate) mod content_gesture;
 pub(crate) mod context_menu;
@@ -500,6 +502,13 @@ pub struct BbrApp {
     /// typing, backspace, and horizontal cursor movement. The text mirrors
     /// the live URL when not editing.
     pub command_text: CommandText,
+    /// Blueprint D02: where the command field's line was last laid out
+    /// (IME candidate placement, point-to-character hits).
+    pub(crate) command_line: bbr_ui::components::EditLineSink,
+    /// Blueprint D02 testkit evidence: the native text-input client's last
+    /// readback after a driven input-method message.
+    #[cfg(feature = "testkit")]
+    pub(crate) text_input_readback: Option<bbr_testkit::protocol::TextInputReadback>,
     /// The cancellable, nonblocking ranking orchestration of the §11.5
     /// result surface (state machine + debounce handle). Inactive unless a
     /// location/new-tab mode is open.
@@ -706,6 +715,9 @@ impl BbrApp {
             favorites_band_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
             drag_offer_rects: drag::DragOfferRects::default(),
             command_text: CommandText::new(),
+            command_line: bbr_ui::components::EditLineSink::new(),
+            #[cfg(feature = "testkit")]
+            text_input_readback: None,
             command_ranking: CommandRanking::default(),
             saved_pages: saved_pages::SavedPageCommand,
             library: crate::app::library::LibraryState::default(),

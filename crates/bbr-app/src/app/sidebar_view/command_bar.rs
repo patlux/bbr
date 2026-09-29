@@ -117,6 +117,8 @@ impl BbrApp {
             text: self.command_text.text.clone(),
             hint: hint.map(Into::into),
             show_cursor: chrome_focused && self.command_bar_mode.is_active(),
+            edit: self.command_text.edit_state(),
+            line_sink: Some(self.command_line.clone()),
             profile_hint,
         }
     }

@@ -1087,6 +1087,37 @@ pub struct MenuItemSnapshot {
     pub checked: bool,
 }
 
+/// Blueprint D02: the command field's editing model in UTF-16 code units
+/// (the platform text-input protocol's unit; ranges as `[start, end]`) and
+/// where its line was laid out.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CommandInputSnapshot {
+    pub text: String,
+    pub cursor: usize,
+    pub selection: Option<[usize; 2]>,
+    /// The IME composition.
+    pub marked: Option<[usize; 2]>,
+    /// The laid-out line box `[x, y, w, h]` (window points) once painted.
+    pub line: Option<[f32; 4]>,
+    /// The window rect `[x, y, w, h]` of the composition (else the
+    /// selection or the caret) — what the input handler answers for
+    /// `bounds_for_range`.
+    pub range_rect: Option<[f32; 4]>,
+}
+
+/// Blueprint D02: what the native `NSTextInputClient` reported after the
+/// last driven input-method message.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct TextInputReadback {
+    pub marked: Option<[usize; 2]>,
+    pub selected: Option<[usize; 2]>,
+    /// `firstRectForCharacterRange:` of the composition (else the
+    /// selection): screen points, bottom-left origin.
+    pub first_rect: Option<[f64; 4]>,
+    /// The window frame, screen points, bottom-left origin.
+    pub window_frame: [f64; 4],
+}
+
 /// Blueprint D08: one live toast.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ToastSnapshot {
@@ -1529,6 +1560,14 @@ pub struct Snapshot {
     /// Blueprint D08: the live toast (`None` at rest).
     #[serde(default)]
     pub toast: Option<ToastSnapshot>,
+    /// Blueprint D02: the command field as a text-input client while it
+    /// owns the keyboard (`None` otherwise).
+    #[serde(default)]
+    pub command_input: Option<CommandInputSnapshot>,
+    /// Blueprint D02: the native text-input client's readback after the
+    /// last `CommandTextInput` message (`None` before the first).
+    #[serde(default)]
+    pub text_input: Option<TextInputReadback>,
     /// Blueprint D08: the live zoom readout's percent (`None` at rest).
     #[serde(default)]
     pub zoom_readout: Option<u32>,

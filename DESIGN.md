@@ -1032,6 +1032,21 @@ using the IDs of §15. All rows use `density` geometry from §8.
     the §11.5 ids (`bbr-command-result-<k>`). The overlay's own field
     (`bbr-command-overlay-field` / `-text` / `-cursor`) opens with the
     **full current URL selected**, so one keystroke replaces it.
+  - **Field editing (blueprint D02 prerequisite):** both fields (and the
+    in-rail staging field) are one editable line: the query shaped once,
+    the selection a `tint.accent` wash behind the text, the caret (2 pt
+    `accent`, the query's text height) at the real insertion point and
+    hidden while text is selected, and the line scrolls horizontally so
+    the caret stays visible in a long URL. ←/→ move a character, ⌥ a word
+    (URL punctuation ends a word), ⌘ or Home/End the line's edge; ⇧ with
+    any of them extends the selection from its anchor, otherwise a
+    selection collapses in the direction of travel. The field is the
+    window's text-input client while it owns the keyboard: input methods,
+    dead keys and the accent menu compose **marked text** (underlined
+    1.5 pt in the text colour) that each refinement replaces and the
+    commit turns into typed text; every other edit or caret motion commits
+    a composition as typed text. The candidate window opens on the
+    composition. Typing and composing restart ranking alike.
   - Both open with an opacity fade `dur:fine` only — never translate or
     scale — close on Escape/commit/outside press (one pointer action,
     §13), and are the only chrome allowed to overlap the glass (§13). At

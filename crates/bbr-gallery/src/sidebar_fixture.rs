@@ -144,6 +144,8 @@ pub fn build_sidebar_fixture_with_theme(
             text: "New Space".into(),
             hint: Some("Name the space".into()),
             show_cursor: true,
+            edit: bbr_ui::components::EditState::end_of("New Space"),
+            line_sink: None,
             profile_hint: None,
         }),
     };

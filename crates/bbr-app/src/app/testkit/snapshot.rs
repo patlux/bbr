@@ -628,6 +628,8 @@ impl BbrApp {
                 }
             }),
             zoom_readout: self.transient.zoom_readout.map(|readout| readout.percent),
+            command_input: self.command_input_snapshot(window),
+            text_input: self.text_input_readback,
             about: self.about_window.is_some().then(crate::about::version_line),
             restore_notice: self
                 .transient

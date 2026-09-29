@@ -695,8 +695,9 @@ pub(crate) fn dispatch(
             Response::Error(Error::new("server_only", "handled by gateway server"))
         }
 
-        // Handled by the pump before dispatch (rides the real event transport).
-        Request::InjectWebEvent { .. } => {
+        // Handled by the pump before dispatch (rides the real event transport;
+        // the text-input client must run outside the app borrow).
+        Request::InjectWebEvent { .. } | Request::CommandTextInput { .. } => {
             Response::Error(Error::new("pump_only", "handled by the event pump"))
         }
 

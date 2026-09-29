@@ -465,6 +465,9 @@ impl Render for BbrApp {
             .on_mouse_up_out(MouseButton::Left, cx.listener(Self::end_tab_drag))
             .when(self.sidebar_visible, |root| root.child(sidebar))
             .child(self.seated_content(&theme, card, content, cx))
+            // Blueprint D02: the command field's platform text-input client
+            // (IME, dead keys) while the field owns the keyboard.
+            .children(self.command_input_registration(cx))
             // §11.13: the open Tab/Favorite menu overlay — ordinary GPUI
             // chrome at the resolved clamped placement, drawn above the
             // sidebar and the web content slot (the caller owns the

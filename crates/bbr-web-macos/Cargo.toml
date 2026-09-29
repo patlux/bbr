@@ -8,6 +8,9 @@ description = "WKWebView + AppKit bridge for BBR (macOS only; empty crate on oth
 
 [features]
 default = []
+# Test-only drivers (blueprint D02: the NSTextInputClient driver the
+# real-app IME E2E uses). Enabled by `bbr`'s `testkit` feature only.
+testkit = []
 
 [[test]]
 # A2 adapter contract tests (renderer lifecycle acceptance decision). The

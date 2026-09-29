@@ -287,6 +287,8 @@ pub fn build_staging_fixture(case: &StagingCase) -> StagingModel {
         text: case.text.to_string(),
         hint: case.hint.map(SharedString::from),
         show_cursor: case.show_cursor,
+        edit: bbr_ui::components::EditState::end_of(case.text),
+        line_sink: None,
         profile_hint: if case.profile_hint {
             Some(profile_hint_fixture())
         } else {

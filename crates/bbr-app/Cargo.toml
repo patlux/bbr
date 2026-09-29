@@ -20,6 +20,7 @@ testkit = [
     "dep:bbr-testkit",
     "dep:mach2",
     "dep:serde_json",
+    "bbr-web-macos/testkit",
 ]
 # Visual-evidence-only extension. GPUI's test-support feature changes executor
 # and leak-detection behavior, so it must never leak into ordinary real-app

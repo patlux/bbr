@@ -133,6 +133,12 @@ pub struct CommandModel {
     pub theme: Theme,
     pub chrome_focused: bool,
     pub text: String,
+    /// Blueprint D02: the caret, the selection and the IME composition over
+    /// `text` (byte offsets; the app's editing model owns them).
+    pub edit: crate::components::EditState,
+    /// Where the app learns the laid-out line (IME candidate placement and
+    /// pointer hits); `None` in static renders such as the gallery.
+    pub line_sink: Option<crate::components::EditLineSink>,
     pub state: CommandResultState,
     pub results: Vec<CommandResultRow>,
     pub selected: usize,

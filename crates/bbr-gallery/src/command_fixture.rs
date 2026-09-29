@@ -69,6 +69,8 @@ pub fn build_command_fixture(case: &CommandCase, theme: &Theme) -> Option<Comman
         theme: fixture_theme(case, theme),
         chrome_focused: case.chrome_focused,
         text: case.text.to_string(),
+        edit: bbr_ui::components::EditState::end_of(case.text),
+        line_sink: None,
         state: case.state,
         results,
         selected: case.selected,

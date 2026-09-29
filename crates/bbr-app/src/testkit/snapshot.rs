@@ -312,6 +312,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             peek_theme: self.peek_theme.clone(),
             peek_frame: self.peek_frame,
             toast: self.toast.clone(),
+            command_input: self.command_input.clone(),
+            text_input: self.text_input,
             recovery: self.recovery.clone(),
             restore_notice: self.restore_notice.clone(),
             about: self.about.clone(),

@@ -22,6 +22,7 @@ pub mod address;
 mod attention;
 pub mod drag_offer;
 pub mod drag_tick;
+pub mod edit_line;
 pub mod favicon;
 pub mod favorites;
 pub mod folders;
@@ -44,6 +45,7 @@ pub use address::{
     StagingModel,
 };
 pub use drag_tick::{drag_tick, drag_tick_bottom, DRAG_TICK_ID};
+pub use edit_line::{edit_line, EditLineColors, EditLineLayout, EditLineSink, EditState};
 pub use favicon::{favicon_tile, FaviconSpec};
 pub use favorites::{
     favorite_tile, favorite_tile_icon_id, favorite_tile_id, favorites_grid, FavoriteTileSpec,

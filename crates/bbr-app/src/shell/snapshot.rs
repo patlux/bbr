@@ -283,6 +283,9 @@ pub struct TestSnapshot {
     pub about: Option<String>,
     /// Blueprint D08 overlays.
     pub toast: Option<bbr_testkit::protocol::ToastSnapshot>,
+    /// Blueprint D02: the command field as a text-input client.
+    pub command_input: Option<bbr_testkit::protocol::CommandInputSnapshot>,
+    pub text_input: Option<bbr_testkit::protocol::TextInputReadback>,
     pub zoom_readout: Option<u32>,
     /// Native z-order evidence: while a preview is open the preview
     /// WKWebView's subview index must exceed its covered origin's (the

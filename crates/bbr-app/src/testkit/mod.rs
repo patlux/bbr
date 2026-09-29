@@ -56,6 +56,7 @@ mod dispatch_u2;
 mod dispatch_util;
 mod dispatch_zoom;
 mod snapshot;
+mod text_input;
 pub(crate) use snapshot::browser_change;
 
 /// A gateway command forwarded to the main-thread pump.
@@ -384,6 +385,11 @@ async fn handle_command(
     server: &Option<Arc<GatewayServer>>,
     async_cx: &mut gpui::AsyncApp,
 ) -> Response {
+    // Blueprint D02: the native text-input client re-enters the app, so the
+    // message is sent between updates, never inside `dispatch`.
+    if let Request::CommandTextInput { op } = req {
+        return text_input::drive(op, window, app, async_cx);
+    }
     let server = server.clone();
     // GPUI-CE `AsyncApp::update` is infallible (no `.unwrap_or_else`); the
     // dispatch itself returns the `Response` for every request.

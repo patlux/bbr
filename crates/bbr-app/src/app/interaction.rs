@@ -728,14 +728,22 @@ impl BbrApp {
                 self.command_move_selection(delta, cx);
                 cx.stop_propagation();
             }
-            // Horizontal cursor movement (UTF-8-safe; collapses any
-            // selection in the direction of movement).
-            "left" | "right" => {
-                if ks.key == "left" {
-                    self.command_text.move_left();
-                } else {
-                    self.command_text.move_right();
-                }
+            // Horizontal caret movement (UTF-8-safe): a character, ⌥ a
+            // word, ⌘ / Home / End the line's edge; ⇧ extends the selection
+            // from its anchor, otherwise a selection collapses in the
+            // direction of travel (blueprint D02).
+            "left" | "right" | "home" | "end" => {
+                use super::command_text::Motion;
+                let m = &ks.modifiers;
+                let motion = match (ks.key.as_str(), m.platform, m.alt) {
+                    ("home", ..) | ("left", true, _) => Motion::LineStart,
+                    ("end", ..) | ("right", true, _) => Motion::LineEnd,
+                    ("left", false, true) => Motion::WordLeft,
+                    ("right", false, true) => Motion::WordRight,
+                    ("left", ..) => Motion::CharLeft,
+                    _ => Motion::CharRight,
+                };
+                self.command_text.move_to(motion, m.shift);
                 cx.stop_propagation();
             }
             _ => {

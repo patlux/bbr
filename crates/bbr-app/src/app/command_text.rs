@@ -5,7 +5,9 @@
 //! character is never split. The command field owns one of these; the
 //! key handlers (`Cmd-L` select-all, replace-selection typing, backspace,
 //! horizontal cursor movement) all route through this model, and the render
-//! derives the block cursor position from `cursor`.
+//! derives the caret position from `cursor`. Blueprint D02: the model also
+//! carries the IME composition (`marked`) and the platform text-input
+//! protocol's UTF-16 view of all three ranges (`command_text_ime`).
 
 /// The command field's text plus its cursor/selection, in byte offsets.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,6 +18,9 @@ pub struct CommandText {
     /// Selected byte range `[start, end)` when non-empty; `None` when the
     /// field has no selection.
     pub selection: Option<(usize, usize)>,
+    /// The IME composition (marked text) byte range while an input method
+    /// is composing; every non-IME mutation commits it as plain text.
+    pub marked: Option<(usize, usize)>,
 }
 
 impl Default for CommandText {
@@ -30,6 +35,16 @@ impl CommandText {
             text: String::new(),
             cursor: 0,
             selection: None,
+            marked: None,
+        }
+    }
+
+    /// The presentation view of the caret, selection and composition.
+    pub fn edit_state(&self) -> bbr_ui::components::EditState {
+        bbr_ui::components::EditState {
+            cursor: self.cursor,
+            selection: self.selection,
+            marked: self.marked,
         }
     }
 
@@ -41,6 +56,7 @@ impl CommandText {
         self.text = text;
         self.cursor = cursor;
         self.selection = None;
+        self.marked = None;
     }
 
     /// Select the whole text, leaving the cursor at the end (`Cmd-L`).
@@ -48,6 +64,7 @@ impl CommandText {
         let len = self.text.len();
         self.selection = Some((0, len));
         self.cursor = len;
+        self.marked = None;
     }
 
     /// The selected byte range, or the cursor position as an empty range.
@@ -64,11 +81,13 @@ impl CommandText {
         let cursor = start + input.len();
         self.cursor = cursor;
         self.selection = None;
+        self.marked = None;
     }
 
     /// Backspace: delete the selection when non-empty, otherwise delete the
     /// character before the cursor. Never crosses a UTF-8 boundary.
     pub fn backspace(&mut self) {
+        self.marked = None;
         let (start, end) = self.selected_range();
         if start != end {
             self.text.replace_range(start..end, "");
@@ -83,31 +102,35 @@ impl CommandText {
         }
     }
 
-    /// Move the cursor one character left, collapsing any selection to its
-    /// start. Stays on a UTF-8 char boundary; no-op at the start.
-    pub fn move_left(&mut self) {
+    /// Move the cursor by `motion`. Without `extend` a non-empty selection
+    /// collapses in the direction of travel (a character step stops at the
+    /// selection edge); with `extend` the selection grows or shrinks from
+    /// its anchor — the edge the cursor is not on.
+    pub fn move_to(&mut self, motion: Motion, extend: bool) {
+        self.marked = None;
         let (start, end) = self.selected_range();
+        let selected = start != end;
+        if extend {
+            // The anchor is the selection edge the cursor is not on.
+            let anchor = match (selected, self.cursor == start) {
+                (true, true) => end,
+                (true, false) => start,
+                (false, _) => self.cursor,
+            };
+            let target = motion.target(&self.text, self.cursor);
+            self.cursor = target;
+            self.selection = (anchor != target).then(|| (anchor.min(target), anchor.max(target)));
+            return;
+        }
         self.selection = None;
-        // A non-empty selection collapses to its start (already a char
-        // boundary); without a selection the cursor moves one char left.
-        self.cursor = if start != end {
-            start
-        } else {
-            previous_char_boundary(&self.text, start)
-        };
-    }
-
-    /// Move the cursor one character right, collapsing any selection to its
-    /// end. Stays on a UTF-8 char boundary; no-op at the end.
-    pub fn move_right(&mut self) {
-        let (start, end) = self.selected_range();
-        self.selection = None;
-        // A non-empty selection collapses to its end (already a char
-        // boundary); without a selection the cursor moves one char right.
-        self.cursor = if start != end {
-            end
-        } else {
-            next_char_boundary(&self.text, end)
+        self.cursor = match (selected, motion) {
+            // A character step collapses a selection to the edge it moves
+            // toward (the selection edges are already char boundaries).
+            (true, Motion::CharLeft) => start,
+            (true, Motion::CharRight) => end,
+            (true, motion) if motion.is_leftward() => motion.target(&self.text, start),
+            (true, motion) => motion.target(&self.text, end),
+            (false, motion) => motion.target(&self.text, self.cursor),
         };
     }
 
@@ -120,6 +143,63 @@ impl CommandText {
     pub fn is_empty(&self) -> bool {
         self.text.is_empty()
     }
+}
+
+/// A caret motion (§11.5 field keys): one character, one word (⌥), or to
+/// the line's edge (⌘ / Home / End).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Motion {
+    CharLeft,
+    CharRight,
+    WordLeft,
+    WordRight,
+    LineStart,
+    LineEnd,
+}
+
+impl Motion {
+    fn is_leftward(self) -> bool {
+        matches!(
+            self,
+            Motion::CharLeft | Motion::WordLeft | Motion::LineStart
+        )
+    }
+
+    fn target(self, text: &str, from: usize) -> usize {
+        match self {
+            Motion::CharLeft => previous_char_boundary(text, from),
+            Motion::CharRight => next_char_boundary(text, from),
+            Motion::WordLeft => previous_word_start(text, from),
+            Motion::WordRight => next_word_end(text, from),
+            Motion::LineStart => 0,
+            Motion::LineEnd => text.len(),
+        }
+    }
+}
+
+/// The start of the word before `pos` (a word is a run of alphanumerics,
+/// so `⌥←` stops at URL punctuation like a native text field).
+fn previous_word_start(text: &str, pos: usize) -> usize {
+    let before: Vec<(usize, char)> = text[..pos.min(text.len())].char_indices().collect();
+    let mut index = before.len();
+    while index > 0 && !before[index - 1].1.is_alphanumeric() {
+        index -= 1;
+    }
+    while index > 0 && before[index - 1].1.is_alphanumeric() {
+        index -= 1;
+    }
+    before.get(index).map_or(0, |(offset, _)| *offset)
+}
+
+/// The end of the word after `pos`.
+fn next_word_end(text: &str, pos: usize) -> usize {
+    let start = pos.min(text.len());
+    let mut chars = text[start..].char_indices().peekable();
+    while chars.next_if(|(_, ch)| !ch.is_alphanumeric()).is_some() {}
+    while chars.next_if(|(_, ch)| ch.is_alphanumeric()).is_some() {}
+    chars
+        .peek()
+        .map_or(text.len(), |(offset, _)| start + offset)
 }
 
 /// The char-boundary index before `pos` (`0` at the start; `pos` unchanged
@@ -185,7 +265,7 @@ mod tests {
     fn typing_inserts_at_the_cursor_without_a_selection() {
         let mut model = CommandText::new();
         model.set_text("ab");
-        model.move_left();
+        model.move_to(Motion::CharLeft, false);
         model.replace_selection("X");
         assert_eq!(model.text, "aXb");
         assert_eq!(model.cursor, 2);
@@ -228,11 +308,11 @@ mod tests {
         let mut model = CommandText::new();
         model.set_text("h\u{1F600}x");
         model.cursor = 1; // start of the emoji
-        model.move_left();
+        model.move_to(Motion::CharLeft, false);
         assert_eq!(model.cursor, 0);
-        model.move_right();
+        model.move_to(Motion::CharRight, false);
         assert_eq!(model.cursor, 1, "cursor stays on the char boundary");
-        model.move_right();
+        model.move_to(Motion::CharRight, false);
         assert_eq!(model.cursor, 5, "the emoji is one step");
         model.backspace();
         assert_eq!(model.text, "hx");
@@ -254,11 +334,11 @@ mod tests {
         let mut model = CommandText::new();
         model.set_text("abcd");
         model.selection = Some((1, 3));
-        model.move_left();
+        model.move_to(Motion::CharLeft, false);
         assert_eq!(model.cursor, 1, "left collapses to the selection start");
         assert_eq!(model.selection, None);
         model.selection = Some((1, 3));
-        model.move_right();
+        model.move_to(Motion::CharRight, false);
         assert_eq!(model.cursor, 3, "right collapses to the selection end");
         assert_eq!(model.selection, None);
     }
@@ -268,8 +348,8 @@ mod tests {
         let mut model = CommandText::new();
         assert!(model.is_empty());
         model.backspace();
-        model.move_left();
-        model.move_right();
+        model.move_to(Motion::CharLeft, false);
+        model.move_to(Motion::CharRight, false);
         assert_eq!(model.text, "");
         assert_eq!(model.cursor, 0);
         model.replace_selection("x");

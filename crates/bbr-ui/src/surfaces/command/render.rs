@@ -15,15 +15,15 @@ use gpui::{
     Pixels, SharedString, Stateful,
 };
 
+use crate::components::{edit_line, EditLineColors};
 use crate::icons::Icon;
 use crate::theme::elevation::elev2;
 use crate::theme::{Motion, Radius, Spacing, Theme};
 
 use super::geometry::CommandRect;
 use super::ids::{
-    OVERLAY_CURSOR_ID, OVERLAY_FADE_ELEMENT_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_TEXT_ID,
-    PALETTE_CURSOR_ID, PALETTE_FIELD_ID, PALETTE_ID, PALETTE_MODE_ID, PALETTE_RESULT_PREFIX,
-    PALETTE_TEXT_ID,
+    OVERLAY_FADE_ELEMENT_ID, OVERLAY_FIELD_ID, OVERLAY_ID, OVERLAY_TEXT_ID, PALETTE_FIELD_ID,
+    PALETTE_ID, PALETTE_MODE_ID, PALETTE_RESULT_PREFIX, PALETTE_TEXT_ID,
 };
 use super::model::{CommandModel, CommandPresentation};
 
@@ -125,7 +125,6 @@ fn palette_card(model: &CommandModel, rect: CommandRect) -> Stateful<Div> {
             anatomy,
             PALETTE_FIELD_ID,
             PALETTE_TEXT_ID,
-            PALETTE_CURSOR_ID,
             // Blueprint D04: a leading `>` switches the palette to actions.
             Some(if has_actions_prefix(&model.text) {
                 "Actions"
@@ -142,59 +141,43 @@ fn palette_card(model: &CommandModel, rect: CommandRect) -> Stateful<Div> {
 }
 
 /// The §11.4 field row shared by both command-surface presentations: the
-/// search glyph, the query (`<text_id>`) with the caret (`<cursor_id>`) at
-/// the insertion point while the surface owns chrome focus, and an
-/// optional mode chip (the centered palette only). The centered Cmd-T palette and the
-/// field-anchored Cmd-L/click overlay are the same §11.5 engine and input
-/// component; the overlay opens with the full current URL selected, so one
-/// keystroke replaces it.
+/// search glyph, the editable query line (`<text_id>`) and an optional mode
+/// chip (the centered palette only). The line draws the selection wash, the
+/// IME composition underline and — while the surface owns chrome focus and
+/// nothing is selected — the caret (the logical `…-cursor` id) at the real
+/// insertion point, scrolling horizontally to keep it visible. The centered
+/// Cmd-T palette and the field-anchored Cmd-L/click overlay are the same
+/// §11.5 engine and input component; the overlay opens with the full
+/// current URL selected, so one keystroke replaces it.
 fn field_row(
     model: &CommandModel,
     anatomy: CommandAnatomy,
     field_id: &'static str,
     text_id: &'static str,
-    cursor_id: &'static str,
     mode_chip: Option<&'static str>,
 ) -> Stateful<Div> {
     let theme = &model.theme;
     let p = theme.palette;
-    let empty = model.text.is_empty();
-    let text = if empty {
-        SharedString::from("Type a URL…")
-    } else {
-        SharedString::from(model.text.clone())
-    };
-    // S12: the caret sits at the insertion point — after the query (before
-    // the placeholder while empty) — at the query's text height, never as a
-    // full-height bar at the end of the row.
-    let caret = model.chrome_focused.then(|| {
-        div()
-            .id(cursor_id)
-            .flex_shrink_0()
-            .w(px(2.0))
-            .h(anatomy.query_size * 1.25)
-            .rounded(px(1.0))
-            .bg(p.accent)
-    });
-    let query = div()
-        .text_size(anatomy.query_size)
-        .text_color(if empty { p.ink_faint } else { p.ink })
-        .overflow_hidden()
-        .text_ellipsis()
-        .child(text);
     let line = div()
         .id(text_id)
         .flex_1()
         .min_w_0()
-        .flex()
-        .flex_row()
-        .items_center()
-        .gap(px(1.0));
-    let line = match (empty, caret) {
-        (true, Some(caret)) => line.child(caret).child(query),
-        (false, Some(caret)) => line.child(query).child(caret),
-        (_, None) => line.child(query),
-    };
+        .h(anatomy.query_size * 1.5)
+        .text_size(anatomy.query_size)
+        .overflow_hidden()
+        .child(edit_line(
+            &model.text,
+            model.edit,
+            SharedString::from("Type a URL…"),
+            EditLineColors {
+                text: p.ink,
+                placeholder: p.ink_faint,
+                selection: p.tint_accent,
+                caret: p.accent,
+            },
+            model.chrome_focused,
+            model.line_sink.clone(),
+        ));
     div()
         .id(field_id)
         .debug_selector(|| field_id.to_string())
@@ -259,7 +242,6 @@ fn overlay_card(model: &CommandModel, rect: CommandRect) -> AnyElement {
             anatomy,
             OVERLAY_FIELD_ID,
             OVERLAY_TEXT_ID,
-            OVERLAY_CURSOR_ID,
             None,
         ))
         .child(super::rows::result_list(

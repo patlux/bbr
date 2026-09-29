@@ -343,6 +343,8 @@ impl BbrApp {
             theme: self.theme(),
             chrome_focused: surface.is_open(),
             text: self.command_text.text.clone(),
+            edit: self.command_text.edit_state(),
+            line_sink: Some(self.command_line.clone()),
             state: match self.command_ranking.state {
                 CommandResultState::Inactive => {
                     bbr_ui::surfaces::command::CommandResultState::Inactive

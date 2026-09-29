@@ -124,6 +124,10 @@ pub mod portal_hit;
 #[cfg(target_os = "macos")]
 pub mod responsiveness;
 
+/// Blueprint D02: the `NSTextInputClient` test driver (testkit only).
+#[cfg(all(target_os = "macos", feature = "testkit"))]
+pub mod text_input_client;
+
 #[cfg(target_os = "macos")]
 pub mod titlebar_geometry;
 
