@@ -696,6 +696,13 @@ pub struct PortalSnapshot {
     /// backing pixels).
     #[serde(default)]
     pub portal_scale_factor: f64,
+    /// Blueprint D08 hit-region mode: the capture regions `[x, y, w, h]`
+    /// (window points); `None` captures every pointer event.
+    #[serde(default)]
+    pub hit_regions: Option<Vec<[f64; 4]>>,
+    /// The panel currently lets the pointer through (`ignoresMouseEvents`).
+    #[serde(default)]
+    pub ignores_mouse_events: bool,
 }
 
 /// Typed credential-sheet presentation state (queue item 10, P8c
@@ -1062,6 +1069,20 @@ pub struct PreviewSnapshot {
     /// The preview's web process terminated; only a live session can be
     /// promoted without recreation.
     pub crashed: bool,
+}
+
+/// Blueprint D08: one live toast.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ToastSnapshot {
+    pub generation: u64,
+    pub message: String,
+    /// The action label (e.g. "Undo"), if any.
+    pub action: Option<String>,
+    /// The exit fade plays; the toast no longer takes input.
+    pub leaving: bool,
+    /// The toast's rendered bounds `[x, y, w, h]` (window points) once laid
+    /// out — its Portal hit region.
+    pub rect: Option<[f32; 4]>,
 }
 
 /// Blueprint D09: the Peek presentation geometry, `[x, y, width, height]`
@@ -1468,6 +1489,12 @@ pub struct Snapshot {
     /// preview's native slot (`content_rect`) equals `preview`.
     #[serde(default)]
     pub peek_frame: Option<PeekFrameSnapshot>,
+    /// Blueprint D08: the live toast (`None` at rest).
+    #[serde(default)]
+    pub toast: Option<ToastSnapshot>,
+    /// Blueprint D08: the live zoom readout's percent (`None` at rest).
+    #[serde(default)]
+    pub zoom_readout: Option<u32>,
     /// Truthful native z-order evidence (Link Preview / Peek packet): while
     /// a preview is open the preview WKWebView's subview index must exceed
     /// its covered origin's. `None` at rest.

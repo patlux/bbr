@@ -705,6 +705,8 @@ pub(crate) fn dispatch(
         Request::PortalOpenProbe
         | Request::PortalCloseProbe
         | Request::PortalOutsideDismiss
+        | Request::PortalRoutePointer { .. }
+        | Request::ToastAction
         | Request::PortalTeardown
         | Request::PortalSetFullscreen { .. }
         | Request::PortalSetMinimized { .. }

@@ -80,6 +80,11 @@ pub(super) fn render(root: &PortalRoot, rect: Rect, cx: &mut Context<PortalRoot>
                 this.nav_history_call(cx, |view, window, cx| view.nav_history_close(window, cx));
             }),
         )
-        .child(card)
+        // V-6: the menu fades in over dur:fine.
+        .child(bbr_ui::surfaces::floating::appear(
+            &theme,
+            "bbr-nav-history-appear",
+            card,
+        ))
         .into_any()
 }

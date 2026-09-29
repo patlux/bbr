@@ -181,6 +181,7 @@ pub fn all_icons() -> Vec<Icon> {
         Icon::Lifering,
         Icon::ChassisMark,
         Icon::Plus,
+        Icon::Minus,
         Icon::Downloads,
         Icon::Check,
         Icon::Stopped,

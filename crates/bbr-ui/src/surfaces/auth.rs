@@ -46,6 +46,9 @@ pub const AUTH_USERNAME_ID: &str = "bbr-auth-username";
 pub const AUTH_PASSWORD_ID: &str = "bbr-auth-password";
 pub const AUTH_SUBMIT_ID: &str = "bbr-auth-submit";
 pub const AUTH_CANCEL_ID: &str = "bbr-auth-cancel";
+/// Blueprint D08 (answer 9): the `wash.active` veil over the content card
+/// under the blocking credential sheet.
+pub const AUTH_VEIL_ID: &str = "bbr-auth-veil";
 
 /// Which field of the credential sheet owns the keyboard cursor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

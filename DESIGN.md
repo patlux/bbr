@@ -2063,6 +2063,30 @@ Footer glyphs render at 16 pt; the Space strip starts at its leading edge (§11.
   40 pt, result rows 36 pt, radius 10; the query stays `type:mono`.
 - **Library selection:** `tint.accent` with `ink` text (fixes the accent-fill
   contrast deviation).
+- **Toast (blueprint D08, implemented):** confirms a reversible action for
+  4 s, bottom-centre of the content card 24 pt above its bottom edge: 40 pt
+  tall, `material:overlay`, `radius:lg`, hairline + `elev:2`, a 16 pt
+  leading glyph (`status.ok` done, `accent.ink` saved, `ink.secondary`
+  notice), the `type:label` message and at most one quiet action in
+  `accent.ink` (Undo, Reopen). One toast at a time; a newer one replaces it.
+  First use: ⌘D shows "Saved to Library" with Undo, which removes the record
+  again. Ids `bbr-toast`, `bbr-toast-message`, `bbr-toast-action`.
+- **Zoom readout (blueprint D08, implemented):** each ⌘+ / ⌘− / ⌘0 step shows
+  `[−] 140% [+]` top-centre of the card, 24 pt below its top edge, 120 × 32 pt
+  in the same anatomy; the minus and plus step the zoom through the same
+  app methods as the keys. It leaves 1.2 s after the last step; the address
+  chip (§11.5) stays. Ids `bbr-zoom-readout`, `-level`, `-minus`, `-plus`.
+- **Overlays never block the page:** the toast and the readout overlap web
+  content, so the one native Portal draws them as an overlay layer above any
+  presentation. With no presentation active, the Portal runs in its
+  hit-region mode: it captures the pointer only over the overlays and lets
+  it through to the page everywhere else (a local pointer monitor toggles
+  the panel's `ignoresMouseEvents`). Modal presentations still capture
+  everything. The snapshot reports the regions and the routing decision
+  (`portal.hit_regions`, `portal.ignores_mouse_events`).
+- **Blocking sheets dim the card:** the credential sheet and the Delete
+  Space sheet sit over a `wash.active` veil over the content card only
+  (answer 9; `bbr-auth-veil`, `bbr-space-delete-veil`).
 
 ### 18.5 Motion (supersedes the listed parts of §6/§10)
 
@@ -2082,6 +2106,9 @@ shell requests **no animation frames** (asserted).
 | ⌘T results | results fade in with a 20 ms stagger (each `dur:fine`, 4 pt rise); the cursor highlight glides between rows in `dur:micro` while the selected result is committed immediately | opacity only, no rise; the cursor snaps |
 | Space switch (D4) | chrome tint cross-fade, `dur:standard`, `ease:standard` | instant |
 | Empty states (D10) | three drawn illustrations — empty space, crashed page, offline — play two cycles, then rest | final frame only |
+| Appearing surfaces (D08, board V-6) | every surface that appears — palette, menus, popovers, sheets with their veil — fades in over `dur:fine` (linear); nothing scales or slides, and the committed state is on screen first | shown at once |
+| Toast (D08) | `dur:fine` fade in with a 4 pt rise; after 4 s a `dur:fine` fade out | fade only, no rise |
+| Zoom readout (D08) | `dur:fine` fade in on the first step of a burst; leaves 1.2 s after the last step | no fade |
 
 The §10.5 content-pane progress bar and the “one-frame amber surface flash”
 of §10.6 are withdrawn (the first cannot paint above native glass; the
@@ -2131,7 +2158,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D05 | Space menu and delete confirmation | P-4 PR-07 | §11.3 §11.13 | implemented | [blueprint-space-menu-delete](docs/roadmap/tasks/blueprint-space-menu-delete.md) |
 | D06 | Create, edit and delete profiles | P-6 L-4 PR-08 | §12 | adopted | [blueprint-profile-management](docs/roadmap/tasks/blueprint-profile-management.md) |
 | D07 | Cross-profile move feedback | P-7 PR-08 | §11.3 §12 §10.9 | adopted | [blueprint-cross-profile-move-feedback](docs/roadmap/tasks/blueprint-cross-profile-move-feedback.md) |
-| D08 | Toasts and uniform surface transitions | B-7 G-7 V-6 PR-12 | §6 §18.4 §18.5 | adopted | [blueprint-feedback-toasts](docs/roadmap/tasks/blueprint-feedback-toasts.md) |
+| D08 | Toasts and uniform surface transitions | B-7 G-7 V-6 PR-12 | §6 §18.4 §18.5 | implemented | [blueprint-feedback-toasts](docs/roadmap/tasks/blueprint-feedback-toasts.md) |
 | D09 | Peek presentation | G-8 PR-04 | §11.17 | implemented | [blueprint-peek-presentation](docs/roadmap/tasks/blueprint-peek-presentation.md) |
 | D10 | History and Clear Browsing Data | M-6 M-7 PR-22 | §11.16 | adopted | [blueprint-history-clear-data](docs/roadmap/tasks/blueprint-history-clear-data.md) |
 | D11 | Site settings and permission prompts | M-8 M-9 L-6 PR-14 | §11.5 | adopted | [blueprint-site-settings-permissions](docs/roadmap/tasks/blueprint-site-settings-permissions.md) |

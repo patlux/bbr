@@ -84,7 +84,11 @@ pub(super) fn render(root: &PortalRoot, rect: Rect, cx: &mut Context<PortalRoot>
                 cx.stop_propagation();
             }),
         )
-        .child(veil)
-        .child(sheet)
+        // V-6: the veil and the sheet appear together over dur:fine.
+        .child(bbr_ui::surfaces::floating::appear(
+            &theme,
+            "bbr-space-delete-appear",
+            div().absolute().inset_0().child(veil).child(sheet),
+        ))
         .into_any()
 }

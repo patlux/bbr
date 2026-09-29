@@ -150,7 +150,20 @@ impl BbrApp {
         };
         let title = snapshot.nav.title.clone().unwrap_or_default();
         let command = self.saved_pages;
-        command.toggle(self, &url, &title);
+        // Blueprint D08 (board PR-12): a save is confirmed by a toast whose
+        // Undo removes the record again.
+        if let ToggleOutcome::Saved(id) = command.toggle(self, &url, &title) {
+            self.show_toast(
+                bbr_ui::icons::Icon::Bookmark,
+                bbr_ui::surfaces::toast::ToastTone::Accent,
+                "Saved to Library",
+                Some((
+                    "Undo".into(),
+                    crate::app::transient::ToastAction::UndoSavePage(id),
+                )),
+                cx,
+            );
+        }
         cx.notify();
     }
 }

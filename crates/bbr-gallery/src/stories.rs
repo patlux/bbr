@@ -40,6 +40,7 @@ pub mod sidebar;
 pub mod space_config;
 pub mod space_delete;
 pub mod tab_menu;
+pub mod toast;
 
 use gpui::{div, prelude::*, px, AnyElement, Rgba, SharedString};
 
@@ -302,6 +303,11 @@ pub fn catalog() -> CatalogRegistry {
     registry.add_group(
         "Peek",
         vec![story("Peek presentation", peek::render_peek, &[])],
+    );
+    // Blueprint D08: the toast and the zoom readout append at StoryId 51.
+    registry.add_group(
+        "Feedback overlays",
+        vec![story("Toast and zoom readout", toast::render_toast, &[])],
     );
     registry
 }

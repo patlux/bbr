@@ -349,6 +349,9 @@ impl super::BbrApp {
         change(&mut self.zoom, view, profile, &url);
         #[cfg(feature = "testkit")]
         self.observe_zoom_presentation();
+        // Blueprint D08: a transient readout confirms each step.
+        let percent = u32::from(self.address_zoom_level());
+        self.show_zoom_readout(percent, cx);
         cx.notify();
     }
 

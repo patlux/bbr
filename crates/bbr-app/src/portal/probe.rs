@@ -202,6 +202,7 @@ impl PortalProbeState {
                 AUTH_PASSWORD_ID.into(),
                 AUTH_SUBMIT_ID.into(),
                 AUTH_CANCEL_ID.into(),
+                bbr_ui::surfaces::auth::AUTH_VEIL_ID.into(),
             ],
             Some(PortalContent::Peek) => vec![
                 crate::app::peek::PEEK_BAR_ID.into(),
@@ -589,6 +590,20 @@ impl PortalRoot {
 
 impl Render for PortalRoot {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // Blueprint D08: the toast/zoom-readout overlays sit above any
+        // active presentation.
+        let presentation = self.render_presentation(cx);
+        let overlays = super::transient::render_overlays(self, cx);
+        div()
+            .relative()
+            .size_full()
+            .child(presentation)
+            .children(overlays)
+    }
+}
+
+impl PortalRoot {
+    fn render_presentation(&mut self, cx: &mut Context<Self>) -> gpui::AnyElement {
         let probe = self.probe.borrow();
         let Some(content) = probe.content().cloned() else {
             return div().size_full().bg(transparent_black()).into_any();
@@ -751,7 +766,11 @@ impl Render for PortalRoot {
                             this.dismiss_context_menu_surface(cx);
                         }),
                     )
-                    .child(card)
+                    .child(bbr_ui::surfaces::floating::appear(
+                        &surface.theme,
+                        "bbr-page-menu-appear",
+                        card,
+                    ))
                     .into_any()
             }
             PortalContent::Auth => {
@@ -775,6 +794,18 @@ impl Render for PortalRoot {
                 // (absolute rect) and the backdrop policy — no outside
                 // dismissal for credentials.
                 let model = surface.model(theme);
+                // Blueprint D08 (answer 9): a blocking sheet dims the card
+                // under `wash.active`, like the Delete Space sheet.
+                let veil = app.read(cx).transient.card.map(|[x, y, w, h]| {
+                    div()
+                        .absolute()
+                        .left(px(x))
+                        .top(px(y))
+                        .w(px(w))
+                        .h(px(h))
+                        .rounded(px(bbr_ui::card::CARD_RADIUS))
+                        .bg(theme.palette.wash_active)
+                });
                 let card = div()
                     .absolute()
                     .left(px(rect.x))
@@ -800,7 +831,18 @@ impl Render for PortalRoot {
                             cx.stop_propagation();
                         }),
                     )
-                    .child(card)
+                    // V-6: the veil and the sheet appear over dur:fine.
+                    .child(bbr_ui::surfaces::floating::appear(
+                        &theme,
+                        "bbr-auth-appear",
+                        div()
+                            .absolute()
+                            .inset_0()
+                            .children(
+                                veil.map(|veil| veil.id(bbr_ui::surfaces::auth::AUTH_VEIL_ID)),
+                            )
+                            .child(card),
+                    ))
                     .into_any()
             }
             PortalContent::SpaceDelete => {

@@ -740,6 +740,17 @@ pub enum Request {
     /// active presentation's `DismissalPolicy` allows outside-pointer
     /// dismissal.
     PortalOutsideDismiss,
+    /// Blueprint D08: route a pointer at `(x, y)` (window points) through
+    /// the Portal's hit-region decision — the exact path a real pointer
+    /// move takes — without moving the user's cursor. The snapshot's
+    /// `portal.ignores_mouse_events` reports the result.
+    PortalRoutePointer {
+        x: f32,
+        y: f32,
+    },
+    /// Blueprint D08: press the toast's action (e.g. Undo) through the
+    /// production method its button calls.
+    ToastAction,
     /// Deterministically tear down the one native portal host (task packet
     /// teardown evidence): `BbrApp::portal_teardown` removes the child
     /// relation, orders the portal window out, closes it, and drops the

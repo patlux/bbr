@@ -45,7 +45,7 @@ pub use snapshot::{
     SpaceConfigSnapshot, SpaceDeleteSnapshot, SpaceSnapshot, SpaceStripScrollSnapshot,
     StoreDiscardReasonSnapshot, StoreLoadSnapshot, StoreSnapshot, SwipeSnapshot,
     TabMenuRowSnapshot, TabMenuSnapshot, TabSnapshot, TabVisualState, TitlebarSnapshot,
-    WebContentProbe, ZoomSnapshot,
+    ToastSnapshot, WebContentProbe, ZoomSnapshot,
 };
 
 /// Current protocol version understood by this crate.
@@ -528,6 +528,8 @@ mod tests {
             parent_on_active_space: true,
             portal_on_active_space: true,
             portal_scale_factor: 2.0,
+            hit_regions: None,
+            ignores_mouse_events: false,
         };
         assert_eq!(
             serde_json::to_value(&active).unwrap(),
@@ -553,7 +555,9 @@ mod tests {
                 "parent_minimized": false,
                 "parent_on_active_space": true,
                 "portal_on_active_space": true,
-                "portal_scale_factor": 2.0
+                "portal_scale_factor": 2.0,
+                "hit_regions": null,
+                "ignores_mouse_events": false
             })
         );
         let decoded: PortalSnapshot =

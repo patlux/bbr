@@ -17,6 +17,7 @@ pub mod peek_wash;
 pub mod space_config;
 pub mod space_delete;
 pub mod tab_menu;
+pub mod toast;
 
 pub use auth::{
     auth_sheet, AuthField, AuthSheetModel, AUTH_CANCEL_ID, AUTH_HEADER_ID, AUTH_PASSWORD_ID,

@@ -135,6 +135,38 @@ mod macos {
             }
         }
 
+        /// Blueprint D08: declare the capture regions (`None` captures every
+        /// pointer event; `Some` lets it through outside the rects).
+        pub fn set_hit_regions(&mut self, regions: Option<Vec<[f32; 4]>>) {
+            if let Some(mtm) = MainThreadMarker::new() {
+                let regions = regions.map(|rects| {
+                    rects
+                        .into_iter()
+                        .map(|[x, y, w, h]| {
+                            bbr_web_macos::portal_hit::PortalHitRect::new(
+                                f64::from(x),
+                                f64::from(y),
+                                f64::from(w),
+                                f64::from(h),
+                            )
+                        })
+                        .collect()
+                });
+                self.native.set_hit_regions(mtm, regions);
+            }
+        }
+
+        /// Blueprint D08 testkit seam: route a pointer at `(x, y)` (window
+        /// points) through the monitor's decision; returns whether the panel
+        /// captures it.
+        #[cfg(feature = "testkit")]
+        pub fn route_pointer_at(&mut self, x: f32, y: f32) -> bool {
+            MainThreadMarker::new().is_some_and(|mtm| {
+                self.native
+                    .route_pointer_at(mtm, (f64::from(x), f64::from(y)))
+            })
+        }
+
         /// Narrow main-thread diagnostics snapshot (DESIGN §15 semantics;
         /// the testkit snapshot mirrors these fields). `None` when called
         /// off the main thread.

@@ -55,6 +55,26 @@ pub(super) fn dispatch_portal(
                 Err(error) => err_response(error),
             }
         }
+        // Blueprint D08: the hit-region decision at a window point, and the
+        // toast action through its production method.
+        Request::PortalRoutePointer { x, y } => with_app(window, app, cx, |view, _window, _cx| {
+            view.portal_route_pointer(*x, *y);
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
+        Request::ToastAction => match with_app(window, app, cx, |view, _window, cx| {
+            (view.toast_action(cx), view.portal_frame_handle())
+        }) {
+            Ok((acted, handle)) => {
+                flush_portal_frame(handle, cx);
+                if acted {
+                    Response::Ok
+                } else {
+                    Response::Error(Error::new("no_toast_action", "no toast action to press"))
+                }
+            }
+            Err(error) => err_response(error),
+        },
         Request::PortalTeardown => with_app(window, app, cx, |view, _window, _cx| {
             view.portal_teardown();
             Response::Ok

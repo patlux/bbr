@@ -56,6 +56,9 @@ pub enum Icon {
     ChassisMark,
     /// §11.3 New Space affordance: two crossing strokes.
     Plus,
+    /// Blueprint D08 zoom readout step-down: the horizontal stroke of
+    /// [`Icon::Plus`].
+    Minus,
     /// §11.4 footer `[Downloads]` control: an arrow dropping into an
     /// open-top tray.
     Downloads,
@@ -128,6 +131,7 @@ impl Icon {
             Icon::Clock => "clock",
             Icon::ChassisMark => "chassis-mark",
             Icon::Plus => "plus",
+            Icon::Minus => "minus",
             Icon::Downloads => "downloads",
             Icon::Check => "check",
             Icon::Stopped => "stopped",
@@ -175,6 +179,7 @@ impl Icon {
         match self {
             Icon::Close
             | Icon::Plus
+            | Icon::Minus
             | Icon::Downloads
             | Icon::Check
             | Icon::Stopped
@@ -275,6 +280,13 @@ impl Icon {
                 path.line_to(point(px(cx + arm), px(cy)));
                 path.move_to(point(px(cx), px(cy - arm)));
                 path.line_to(point(px(cx), px(cy + arm)));
+                paint_path(window, path, color);
+            }
+            Icon::Minus => {
+                let arm = plus_arm(size);
+                let mut path = PathBuilder::stroke(stroke);
+                path.move_to(point(px(cx - arm), px(cy)));
+                path.line_to(point(px(cx + arm), px(cy)));
                 paint_path(window, path, color);
             }
             Icon::Downloads => {

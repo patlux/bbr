@@ -4,9 +4,29 @@
 //! panel and field consumes these instead of authoring its own edge, so the
 //! family cannot drift apart again.
 
-use gpui::{Pixels, Rgba, Styled};
+use gpui::{AnimationExt, AnyElement, IntoElement, Pixels, Rgba, SharedString, Styled};
 
-use crate::theme::{Radius, Spacing, Theme};
+use crate::theme::{Motion, MotionMode, Radius, Spacing, Theme};
+
+/// Blueprint D08 (V-6): every appearing surface fades in over `dur:fine`
+/// (linear) and never scales or slides; Reduce Motion shows it at once.
+/// `key` names the surface; its fade plays once per appearance.
+pub fn appear(
+    theme: &Theme,
+    key: &'static str,
+    element: impl IntoElement + Styled + 'static,
+) -> AnyElement {
+    if theme.motion_mode == MotionMode::Reduced {
+        return element.into_any_element();
+    }
+    element
+        .with_animation(
+            SharedString::from(key),
+            gpui::Animation::new(Motion::fine()),
+            |el, t| el.opacity(t),
+        )
+        .into_any_element()
+}
 
 /// §18.4: the floating card's 1 pt edge colour — `hairline`, or `accent`
 /// while the surface owns keyboard focus (the §9 cue for menus).

@@ -93,6 +93,10 @@ pub struct NativePortal {
     /// Parent content rect the frame was derived from (diagnostics).
     /// `pub(crate)`: read by the `portal_frame` diagnostics impl.
     pub(crate) parent_content_rect: Option<PortalFrame>,
+    /// Hit-region mode (blueprint D08): the pointer monitor and the
+    /// declared capture regions; `None` until a surface first declares
+    /// regions. `pub(crate)`: owned by the `portal_hit` impl block.
+    pub(crate) hit: Option<crate::portal_hit::PortalHitMonitor>,
 }
 
 impl NativePortal {
@@ -144,6 +148,7 @@ impl NativePortal {
             torn_down: false,
             frame: None,
             parent_content_rect: None,
+            hit: None,
         });
         portal.configure(mtm);
         // Defer the child attachment to a bare main run-loop turn:
@@ -371,6 +376,7 @@ impl NativePortal {
         }
         self.torn_down = true;
         self.remove_observer(mtm);
+        self.remove_hit_monitor();
         self.hide(mtm);
         if self.attached {
             if let Some(portal) = self.portal_window.as_deref() {

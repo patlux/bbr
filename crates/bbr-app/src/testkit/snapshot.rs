@@ -310,6 +310,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             peek_presented: self.peek_presented,
             peek_theme: self.peek_theme.clone(),
             peek_frame: self.peek_frame,
+            toast: self.toast.clone(),
+            zoom_readout: self.zoom_readout,
             preview_z_order: self.preview_z_order,
             library: self.library.clone(),
         }

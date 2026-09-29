@@ -525,16 +525,20 @@ impl BbrApp {
                     view.on_tab_menu_submenu_press(index, window, cx)
                 });
             };
-        bbr_ui::surfaces::tab_menu::tab_menu_card(
+        // V-6: the menu fades in over dur:fine.
+        bbr_ui::surfaces::floating::appear(
             theme,
-            &model,
-            anchor,
-            submenu_rect,
-            on_row_hover,
-            on_row_press,
-            on_submenu_hover,
-            on_submenu_press,
+            "bbr-tab-menu-appear",
+            bbr_ui::surfaces::tab_menu::tab_menu_card(
+                theme,
+                &model,
+                anchor,
+                submenu_rect,
+                on_row_hover,
+                on_row_press,
+                on_submenu_hover,
+                on_submenu_press,
+            ),
         )
-        .into_any()
     }
 }

@@ -123,11 +123,14 @@ impl BbrApp {
         window: &Window,
         cx: &mut Context<Self>,
     ) {
-        let inner = self.controller.preview_open().then(|| {
-            let size = window.viewport_size();
-            let rect = card.inner_rect([f32::from(size.width), f32::from(size.height)], rail_width);
-            (rect, card.radius)
-        });
+        let size = window.viewport_size();
+        let rect = card.inner_rect([f32::from(size.width), f32::from(size.height)], rail_width);
+        // Blueprint D08: the toast and the zoom readout sit in the card too.
+        self.record_overlay_card(rect, cx);
+        let inner = self
+            .controller
+            .preview_open()
+            .then_some((rect, card.radius));
         if self.peek.card != inner {
             self.peek.card = inner;
             if inner.is_some() {

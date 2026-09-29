@@ -196,6 +196,11 @@ pub struct PortalNativeDiagnostics {
     /// point-based, so a display with a different scale factor keeps the
     /// portal pinned in points (scale only changes the backing pixels).
     pub portal_scale_factor: f64,
+    /// Hit-region mode (blueprint D08): the declared capture regions as
+    /// `[x, y, width, height]` in portal points; `None` captures everything.
+    pub hit_regions: Option<Vec<[f64; 4]>>,
+    /// The panel currently lets the pointer through (`ignoresMouseEvents`).
+    pub ignores_mouse_events: bool,
 }
 
 /// The native-side diagnostics builder for the one portal host.
@@ -309,6 +314,13 @@ impl crate::portal::NativePortal {
             parent_on_active_space,
             portal_on_active_space,
             portal_scale_factor,
+            hit_regions: self.hit_regions().map(|regions| {
+                regions
+                    .iter()
+                    .map(|r| [r.x, r.y, r.width, r.height])
+                    .collect()
+            }),
+            ignores_mouse_events: self.ignores_mouse_events(),
         }
     }
 }
@@ -433,6 +445,8 @@ mod tests {
             parent_on_active_space: true,
             portal_on_active_space: true,
             portal_scale_factor: 2.0,
+            hit_regions: None,
+            ignores_mouse_events: false,
         };
         assert!(diagnostics.child_attached);
         assert!(!diagnostics.visible);

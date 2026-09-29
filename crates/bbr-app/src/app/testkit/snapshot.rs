@@ -617,6 +617,16 @@ impl BbrApp {
             }),
             peek_presented: self.peek_presented(),
             peek_theme: self.peek_presented_theme.get().map(theme_label),
+            toast: self.transient.toast.as_ref().map(|toast| {
+                bbr_testkit::protocol::ToastSnapshot {
+                    generation: toast.model.generation,
+                    message: toast.model.message.to_string(),
+                    action: toast.model.action.as_ref().map(|label| label.to_string()),
+                    leaving: toast.model.leaving,
+                    rect: self.transient.toast_bounds.get(),
+                }
+            }),
+            zoom_readout: self.transient.zoom_readout.map(|readout| readout.percent),
             peek_frame: self
                 .peek_presented()
                 .then(|| self.peek_presented_frame.get())
@@ -958,6 +968,39 @@ impl BbrApp {
             portal.parent_on_active_space = native.parent_on_active_space;
             portal.portal_on_active_space = native.portal_on_active_space;
             portal.portal_scale_factor = native.portal_scale_factor;
+            portal.hit_regions = native.hit_regions;
+            portal.ignores_mouse_events = native.ignores_mouse_events;
+        }
+        // Blueprint D08: the overlay layer's ids while it shows.
+        if self.transient.toast.is_some() {
+            portal.ids.extend(
+                [
+                    bbr_ui::surfaces::toast::TOAST_ID,
+                    bbr_ui::surfaces::toast::TOAST_MESSAGE_ID,
+                ]
+                .map(String::from),
+            );
+            if self
+                .transient
+                .toast
+                .as_ref()
+                .is_some_and(|toast| toast.model.action.is_some())
+            {
+                portal
+                    .ids
+                    .push(bbr_ui::surfaces::toast::TOAST_ACTION_ID.into());
+            }
+        }
+        if self.transient.zoom_readout.is_some() {
+            portal.ids.extend(
+                [
+                    bbr_ui::surfaces::toast::ZOOM_READOUT_ID,
+                    bbr_ui::surfaces::toast::ZOOM_READOUT_LEVEL_ID,
+                    bbr_ui::surfaces::toast::ZOOM_READOUT_MINUS_ID,
+                    bbr_ui::surfaces::toast::ZOOM_READOUT_PLUS_ID,
+                ]
+                .map(String::from),
+            );
         }
         portal
     }

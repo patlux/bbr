@@ -126,6 +126,7 @@ mod tab_menu_benchmarks;
 #[cfg(feature = "testkit")]
 mod testkit;
 mod titlebar;
+pub(crate) mod transient;
 mod u2;
 mod u2_surface;
 mod unresponsive;
@@ -210,6 +211,8 @@ pub struct BbrApp {
     /// composition root attaches it (macOS only; portable no-op elsewhere).
     #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     native_portal: Option<crate::portal::native::NativePortalBridge>,
+    /// Blueprint D08: the toast and zoom-readout overlays over the card.
+    pub(crate) transient: transient::TransientOverlays,
     /// The one-active portal state for this browser window (task packet
     /// `native-portal-host`): exactly one presentation, deterministic
     /// dismissal, stable ids.
@@ -630,6 +633,7 @@ impl BbrApp {
             sidebar: bbr_ui::sidebar::SidebarGeometry::new(),
             tab_drag: drag::TabDrag::default(),
             native_portal: None,
+            transient: transient::TransientOverlays::default(),
             portal: PortalState::new(crate::portal::probe::PORTAL_ID),
             portal_probe: Rc::new(RefCell::new(PortalProbeState::new())),
             hovered_row: None,

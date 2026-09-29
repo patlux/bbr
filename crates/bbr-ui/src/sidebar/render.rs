@@ -82,10 +82,14 @@ pub fn sidebar_surface(
     let favorites = model.favorites.as_ref().map(|favorites| {
         favorites_surface(theme, model, favorites, callbacks, favorites_band_anchor)
     });
-    let plus_menu = model
-        .plus_menu
-        .as_ref()
-        .map(|plus_menu| plus_menu_surface(theme, model, plus_menu, callbacks));
+    let plus_menu = model.plus_menu.as_ref().map(|plus_menu| {
+        // V-6 (blueprint D08): the menu fades in over dur:fine.
+        crate::surfaces::floating::appear(
+            theme,
+            "bbr-plus-menu-appear",
+            plus_menu_surface(theme, model, plus_menu, callbacks),
+        )
+    });
     let tabs = tab_surface(theme, model, callbacks, pin_offer_anchor);
     // §10.9: the lifted row follows the pointer above the whole rail (the
     // rail's origin is the window origin, so the proxy rect is in window

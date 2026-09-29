@@ -37,6 +37,17 @@ impl BbrApp {
             .and_then(crate::portal::native::NativePortalBridge::diagnostics)
     }
 
+    /// Blueprint D08 testkit seam: route a pointer at `(x, y)` through the
+    /// Portal's hit-region decision (no cursor movement).
+    #[cfg(feature = "testkit")]
+    pub fn portal_route_pointer(&mut self, x: f32, y: f32) {
+        #[cfg(target_os = "macos")]
+        if let Some(bridge) = self.native_portal.as_mut() {
+            bridge.route_pointer_at(x, y);
+        }
+        let _ = (x, y);
+    }
+
     /// The shared portal render state (the composition root passes a clone
     /// into the native bridge so the portal window renders exactly the
     /// active probe or product presentation commanded by the app).
@@ -96,8 +107,13 @@ impl BbrApp {
         self.portal_probe.borrow_mut().clear();
         #[cfg(target_os = "macos")]
         {
+            // Blueprint D08: the Portal stays up (in its hit-region mode)
+            // while a toast or the zoom readout still shows.
+            let overlays = self.transient.showing();
+            let regions = self.transient.hit_rects();
             if let Some(bridge) = self.native_portal.as_mut() {
-                bridge.set_visible(false);
+                bridge.set_visible(overlays);
+                bridge.set_hit_regions(Some(regions));
             }
             // Re-render the portal root so the dismissed surface is cleared.
             // Deferred: dismissal can run inside the portal window's own
@@ -134,6 +150,9 @@ impl BbrApp {
     fn drive_native_present(&mut self, cx: &mut Context<Self>) {
         if let Some(bridge) = self.native_portal.as_mut() {
             bridge.set_visible(true);
+            // A presentation captures every pointer event (menus and sheets
+            // dismiss on an outside press).
+            bridge.set_hit_regions(None);
         }
         if let Some(handle) = self
             .native_portal

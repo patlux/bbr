@@ -29,13 +29,14 @@ pub(super) const AUTH_SHEET_HEIGHT: f32 = 236.0;
 pub(super) const AUTH_MARGIN: f32 = 8.0;
 /// The stable §15 ids the credential sheet renders (DESIGN.md §15;
 /// registered in `crate::portal::probe::PortalProbeState::ids`).
-pub(super) const AUTH_IDS: [&str; 6] = [
+pub(super) const AUTH_IDS: [&str; 7] = [
     "bbr-auth-sheet",
     "bbr-auth-header",
     "bbr-auth-username",
     "bbr-auth-password",
     "bbr-auth-submit",
     "bbr-auth-cancel",
+    "bbr-auth-veil",
 ];
 
 /// The deterministic challenge fixture the suites present: an HTTPS origin
