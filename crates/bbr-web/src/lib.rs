@@ -308,6 +308,30 @@ pub trait WebEngine {
     /// Used by the controller and E2E snapshots as native destruction
     /// evidence.
     fn live_session_count(&self) -> usize;
+
+    /// Blueprint D06: delete the website data store of a deleted profile
+    /// (cookies, site data, caches). Its sessions are already destroyed.
+    /// The default suits engines without persistent stores.
+    fn delete_profile_store(&mut self, _profile: ProfileId) {}
+
+    /// Blueprint D10: remove `profile`'s website data of `kinds` modified
+    /// since `since_unix_seconds` (`None`: all of it).
+    fn clear_profile_data(
+        &mut self,
+        _profile: ProfileId,
+        _kinds: WebsiteDataKinds,
+        _since_unix_seconds: Option<f64>,
+    ) {
+    }
+}
+
+/// Blueprint D10: which website data a clear removes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct WebsiteDataKinds {
+    /// Cookies and site data (local storage, IndexedDB, service workers).
+    pub cookies_and_site_data: bool,
+    /// Cached files (memory, disk, fetch caches).
+    pub caches: bool,
 }
 
 /// Default the scheme on user-typed URLs.

@@ -24,6 +24,10 @@ pub(crate) struct SettingsState {
     pub pane: SettingsPane,
     pub open_select: Option<SharedString>,
     pub window: Option<gpui::WindowHandle<crate::settings_window::SettingsView>>,
+    /// Blueprint D06: the profile Settings › Profiles refers to.
+    pub selected_profile: Option<bbr_web::ProfileId>,
+    /// Blueprint D06: the open profile sheet.
+    pub sheet: Option<super::settings_profiles::ProfileSheet>,
 }
 
 /// The curated engines in Settings order.
@@ -36,46 +40,6 @@ const ENGINES: [SearchEngine; 5] = [
 ];
 
 const FOLLOW: [Follow; 3] = [Follow::System, Follow::On, Follow::Off];
-
-/// The shortcut list: `(group, title, keystroke)`, the keystroke exactly as
-/// bound (a unit test checks every one against the keymap).
-pub(crate) const SHORTCUTS: [(&str, &str, &str); 17] = [
-    ("Tabs", "New tab", "cmd-t"),
-    ("Tabs", "Close tab", "cmd-w"),
-    ("Tabs", "Reopen closed tab", "cmd-shift-t"),
-    ("Tabs", "Pin / unpin", "cmd-shift-p"),
-    ("Spaces", "New space", "cmd-shift-n"),
-    ("Spaces", "Move tab to space", "cmd-shift-m"),
-    ("Navigation", "Edit address", "cmd-l"),
-    ("Navigation", "Find in page", "cmd-f"),
-    ("Navigation", "Back", "cmd-["),
-    ("Navigation", "Forward", "cmd-]"),
-    ("Navigation", "Reload", "cmd-r"),
-    ("Sidebar", "Toggle sidebar", "cmd-s"),
-    ("Sidebar", "Focus sidebar", "alt-cmd-s"),
-    ("Library", "Save page to Library", "cmd-d"),
-    ("Library", "Saved Pages Library", "cmd-shift-l"),
-    ("Zoom", "Actual size", "cmd-0"),
-    ("App", "Settings", "cmd-,"),
-];
-
-/// The keycaps of a bound keystroke, in the macOS modifier order.
-pub(crate) fn keycaps(keystroke: &str) -> Vec<SharedString> {
-    let parts: Vec<&str> = keystroke.split('-').collect();
-    let (key, modifiers) = match parts.split_last() {
-        Some((key, modifiers)) if !key.is_empty() => (*key, modifiers.to_vec()),
-        // `cmd--` style: the key itself is "-".
-        _ => ("-", parts[..parts.len().saturating_sub(2)].to_vec()),
-    };
-    let mut caps = Vec::new();
-    for (name, glyph) in [("ctrl", "⌃"), ("alt", "⌥"), ("shift", "⇧"), ("cmd", "⌘")] {
-        if modifiers.contains(&name) {
-            caps.push(SharedString::from(glyph));
-        }
-    }
-    caps.push(SharedString::from(key.to_uppercase()));
-    caps
-}
 
 fn options(labels: &[&str]) -> Vec<SharedString> {
     labels
@@ -135,6 +99,7 @@ impl BbrApp {
     pub(crate) fn settings_closed(&mut self) {
         self.settings.window = None;
         self.settings.open_select = None;
+        self.settings.sheet = None;
     }
 
     /// The Settings model for the current pane.
@@ -146,13 +111,14 @@ impl BbrApp {
             SettingsPane::Privacy => self.privacy_sections(),
             SettingsPane::Downloads => self.download_sections(),
             SettingsPane::Appearance => self.appearance_sections(),
-            SettingsPane::Shortcuts => shortcut_sections(),
+            SettingsPane::Shortcuts => super::settings_shortcuts::shortcut_sections(),
         };
         SettingsModel {
             theme: self.theme(),
             pane: self.settings.pane,
             sections,
             open_select: self.settings.open_select.clone(),
+            sheet: self.profile_sheet_model(),
         }
     }
 
@@ -191,66 +157,6 @@ impl BbrApp {
                 .detail("Preview over the current tab; promote with Open as Tab")],
             ),
         ]
-    }
-
-    fn profile_sections(&self) -> Vec<SettingsSection> {
-        let browser = self.controller.snapshot();
-        let theme = self.theme();
-        let rows = browser
-            .profiles
-            .iter()
-            .map(|profile| {
-                let spaces = browser
-                    .spaces
-                    .iter()
-                    .filter(|space| space.profile == profile.id)
-                    .count();
-                let letter = crate::shell::space::profile_monogram(&profile.title)
-                    .chars()
-                    .next()
-                    .unwrap_or('P');
-                SettingsRow::new(
-                    &format!("profile-{}", profile.index),
-                    profile.title.clone(),
-                    SettingsControl::Chip {
-                        letter,
-                        hue: bbr_ui::palette::ProfileHueRamp::tile(profile.hue, theme.mode).tile,
-                    },
-                )
-                .detail(if spaces == 1 {
-                    "1 space".to_string()
-                } else {
-                    format!("{spaces} spaces")
-                })
-            })
-            .collect();
-        let active = browser
-            .profiles
-            .iter()
-            .find(|profile| profile.id == browser.active_profile);
-        let spaces = browser
-            .spaces
-            .iter()
-            .filter(|space| space.profile == browser.active_profile)
-            .map(|space| {
-                let paper = self
-                    .controller
-                    .space_appearance(space.id)
-                    .map(|appearance| appearance.paper.intensity)
-                    .unwrap_or_default();
-                SettingsRow::new(
-                    &format!("space-{}", space.id.0),
-                    space.title.clone(),
-                    SettingsControl::None,
-                )
-                .detail(paper.label())
-            })
-            .collect();
-        let mut sections = vec![section("Profiles", rows)];
-        if let Some(active) = active {
-            sections.push(section(&format!("Spaces in {}", active.title), spaces));
-        }
-        sections
     }
 
     fn search_sections(&self) -> Vec<SettingsSection> {
@@ -396,6 +302,10 @@ impl BbrApp {
         _window: Option<&mut Window>,
         cx: &mut Context<Self>,
     ) {
+        if self.on_profile_settings_event(&event, cx) {
+            cx.notify();
+            return;
+        }
         match event {
             SettingsEvent::Pane(pane) => {
                 self.settings.pane = pane;
@@ -409,6 +319,16 @@ impl BbrApp {
                 };
             }
             SettingsEvent::Dismiss => self.settings.open_select = None,
+            SettingsEvent::Key { key, .. } => {
+                if key.as_ref() == "escape" {
+                    self.settings.open_select = None;
+                }
+            }
+            SettingsEvent::Select(_)
+            | SettingsEvent::SheetField(_)
+            | SettingsEvent::SheetSwatch(_)
+            | SettingsEvent::SheetCancel
+            | SettingsEvent::SheetConfirm => {}
             SettingsEvent::Toggle(row) => match row.as_ref() {
                 "general-peek" => {
                     self.update_preferences(|p| p.peek_new_windows = !p.peek_new_windows, cx)
@@ -491,135 +411,6 @@ impl BbrApp {
                 }
             }
             _ => {}
-        }
-    }
-}
-
-/// The testkit view of the open Settings window.
-#[cfg(feature = "testkit")]
-impl BbrApp {
-    pub(crate) fn settings_snapshot(&self) -> Option<bbr_testkit::protocol::SettingsSnapshot> {
-        self.settings.window?;
-        let model = self.settings_model();
-        let rows = model
-            .sections
-            .iter()
-            .flat_map(|section| section.rows.iter())
-            .map(|row| bbr_testkit::protocol::SettingsRowSnapshot {
-                id: row.id.to_string(),
-                title: row.title.to_string(),
-                detail: row.detail.as_ref().map(|detail| detail.to_string()),
-                value: control_value(&row.control),
-            })
-            .collect();
-        Some(bbr_testkit::protocol::SettingsSnapshot {
-            pane: model.pane.key().to_string(),
-            rows,
-            open_select: model.open_select.map(|row| row.to_string()),
-        })
-    }
-
-    /// One testkit Settings input through the controls' method.
-    pub(crate) fn settings_input(
-        &mut self,
-        input: bbr_testkit::protocol::SettingsInput,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> bool {
-        use bbr_testkit::protocol::SettingsInput;
-        let event = match input {
-            SettingsInput::Pane { pane } => match SettingsPane::parse(&pane) {
-                Some(pane) => SettingsEvent::Pane(pane),
-                None => return false,
-            },
-            SettingsInput::Toggle { row } => SettingsEvent::Toggle(row.into()),
-            SettingsInput::Choose { row, index } => SettingsEvent::Choose(row.into(), index),
-            SettingsInput::Press { row } => SettingsEvent::Press(row.into()),
-            SettingsInput::OpenSelect { row } => SettingsEvent::OpenSelect(row.into()),
-            SettingsInput::Dismiss => SettingsEvent::Dismiss,
-        };
-        self.on_settings_event(event, Some(window), cx);
-        true
-    }
-}
-
-/// What a control shows, on the wire.
-#[cfg(feature = "testkit")]
-fn control_value(control: &SettingsControl) -> String {
-    match control {
-        SettingsControl::None => String::new(),
-        SettingsControl::Badge(text) => text.to_string(),
-        SettingsControl::Toggle(on) => if *on { "on" } else { "off" }.to_string(),
-        SettingsControl::Select { value, options }
-        | SettingsControl::Segmented { value, options } => options
-            .get(*value)
-            .map(|o| o.to_string())
-            .unwrap_or_default(),
-        SettingsControl::Button { label, .. } | SettingsControl::Link(label) => label.to_string(),
-        SettingsControl::Keys(keys) => keys
-            .iter()
-            .map(|k| k.to_string())
-            .collect::<Vec<_>>()
-            .join(" "),
-        SettingsControl::Density(value) => match value {
-            None => "automatic".to_string(),
-            Some(0) => "small".to_string(),
-            Some(1) => "normal".to_string(),
-            Some(_) => "large".to_string(),
-        },
-        SettingsControl::Chip { letter, .. } => letter.to_string(),
-        SettingsControl::ChipButton { letter, label, .. } => format!("{letter} {label}"),
-    }
-}
-
-fn shortcut_sections() -> Vec<SettingsSection> {
-    let mut sections: Vec<SettingsSection> = Vec::new();
-    for (group, title, keystroke) in SHORTCUTS {
-        let row = SettingsRow::new(
-            &format!("shortcut-{keystroke}"),
-            title,
-            SettingsControl::Keys(keycaps(keystroke)),
-        );
-        match sections.last_mut() {
-            Some(last) if last.title.as_deref() == Some(group) => last.rows.push(row),
-            _ => sections.push(section(group, vec![row])),
-        }
-    }
-    sections
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn keycaps_follow_the_macos_modifier_order() {
-        let caps = |keystroke| {
-            keycaps(keystroke)
-                .iter()
-                .map(|cap| cap.to_string())
-                .collect::<Vec<_>>()
-        };
-        assert_eq!(caps("cmd-shift-t"), ["⇧", "⌘", "T"]);
-        assert_eq!(caps("alt-cmd-s"), ["⌥", "⌘", "S"]);
-        assert_eq!(caps("cmd-["), ["⌘", "["]);
-        assert_eq!(caps("cmd-,"), ["⌘", ","]);
-    }
-
-    #[test]
-    fn every_listed_shortcut_is_bound() {
-        let bound: Vec<gpui::Keystroke> = crate::window_seam::keybindings()
-            .iter()
-            .flat_map(|binding| binding.keystrokes().iter().map(|k| k.inner().clone()))
-            .collect();
-        for (_, title, keystroke) in SHORTCUTS {
-            let parsed = gpui::Keystroke::parse(keystroke).expect("parses");
-            assert!(
-                bound
-                    .iter()
-                    .any(|b| b.key == parsed.key && b.modifiers == parsed.modifiers),
-                "{title}: {keystroke} is not bound"
-            );
         }
     }
 }

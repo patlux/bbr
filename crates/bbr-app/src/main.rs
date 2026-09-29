@@ -624,6 +624,7 @@ fn main() {
         // Blueprint D16: the Settings window's preferences (apart from the
         // store; defaults when absent).
         let _ = with_app(&window, &app, cx, |view, _w, cx| {
+            view.browser_window = Some(window);
             view.load_preferences(preferences::path_in(&cli.profile_dir), cx)
         });
         // Native portal host (task packet native-portal-host): exactly one

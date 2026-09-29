@@ -41,6 +41,7 @@ mod folders;
 mod invariants;
 mod lifecycle;
 mod model;
+mod profile_lifecycle;
 mod saved_pages;
 mod space_appearance;
 mod space_lifecycle;
@@ -54,6 +55,8 @@ mod tests_dense;
 mod tests_folders;
 #[cfg(test)]
 mod tests_layout;
+#[cfg(test)]
+mod tests_profile_lifecycle;
 #[cfg(test)]
 mod tests_restore;
 #[cfg(test)]
@@ -69,6 +72,7 @@ pub use folders::{
 };
 pub use lifecycle::{LifecycleError, TabLifecycle};
 pub use model::{ClosedTab, Profile, ProfileHue, Space, Tab};
+pub use profile_lifecycle::DeletedProfile;
 pub use saved_pages::{
     canonical_url, deterministic_order, validate_collection, BookmarkId, CanonicalUrl, Collection,
     CollectionId, SavedPage, SavedPageError, MAX_CAPTURED_TITLE_LEN, MAX_COLLECTION_TITLE_LEN,

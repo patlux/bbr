@@ -313,6 +313,32 @@ impl OrganizationController {
         })
     }
 
+    /// Blueprint D06: delete `profile` through the controller and drop the
+    /// folders of its spaces (favorites of its tabs reconcile away).
+    pub fn delete_profile(
+        &mut self,
+        controller: &mut BrowserController,
+        profile: bbr_domain::ProfileId,
+    ) -> Result<ControllerEvent, OrganizationError> {
+        let spaces: Vec<SpaceId> = controller
+            .snapshot()
+            .spaces
+            .iter()
+            .filter(|space| space.profile == profile)
+            .map(|space| space.id)
+            .collect();
+        let event = controller
+            .delete_profile(profile)
+            .map_err(OrganizationError::Controller)?;
+        for space in spaces {
+            self.store.remove_folders_in(space);
+        }
+        self.reconcile(controller);
+        self.check_invariants(controller)
+            .expect("organization invariants hold after a profile deletion");
+        Ok(event)
+    }
+
     /// `UnpackFolder` command (blueprint D25, the folder menu's "Delete
     /// Folder — keep its tabs"): the folder goes, every member stays a loose
     /// pinned tab; no tab closes and no session changes. Unknown folders are

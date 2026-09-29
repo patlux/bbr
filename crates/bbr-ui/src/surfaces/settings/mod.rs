@@ -8,6 +8,7 @@
 
 mod controls;
 mod render;
+mod sheet;
 
 use std::rc::Rc;
 
@@ -17,6 +18,7 @@ use crate::icons::Icon;
 use crate::theme::Theme;
 
 pub use render::settings_surface;
+pub use sheet::SETTINGS_SHEET_ID;
 
 /// The §15 id of the Settings root.
 pub const SETTINGS_ID: &str = "bbr-settings";
@@ -162,6 +164,41 @@ pub struct SettingsSection {
     pub rows: Vec<SettingsRow>,
 }
 
+/// A text field of a sheet.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SheetField {
+    pub label: SharedString,
+    pub value: SharedString,
+    pub focused: bool,
+}
+
+/// The identity preview at the top of a profile sheet.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SheetPreview {
+    pub letter: char,
+    pub hue: Rgba,
+    pub name: SharedString,
+    pub note: SharedString,
+}
+
+/// A modal sheet over the Settings content (blueprint D06: New Profile,
+/// Edit Profile, Delete Profile).
+#[derive(Debug, Clone, PartialEq)]
+pub struct SettingsSheet {
+    pub title: SharedString,
+    pub preview: Option<SheetPreview>,
+    /// Text fields; the first may be followed by the colour swatches.
+    pub fields: Vec<SheetField>,
+    /// The colour choice `(swatch hues, chosen index)`, drawn after the
+    /// first field.
+    pub swatches: Option<(Vec<Rgba>, usize)>,
+    pub message: Option<SharedString>,
+    pub cancel: SharedString,
+    pub confirm: SharedString,
+    pub destructive: bool,
+    pub confirm_enabled: bool,
+}
+
 /// The whole window.
 #[derive(Debug, Clone)]
 pub struct SettingsModel {
@@ -170,6 +207,8 @@ pub struct SettingsModel {
     pub sections: Vec<SettingsSection>,
     /// The row whose pop-up choice is open.
     pub open_select: Option<SharedString>,
+    /// The open sheet, if any.
+    pub sheet: Option<SettingsSheet>,
 }
 
 /// Every interaction, keyed by the row id.
@@ -184,6 +223,19 @@ pub enum SettingsEvent {
     OpenSelect(SharedString),
     /// A press outside an open pop-up.
     Dismiss,
+    /// A press on a row (not on its control).
+    Select(SharedString),
+    /// Sheet: a field took the keyboard.
+    SheetField(usize),
+    /// Sheet: a colour swatch.
+    SheetSwatch(usize),
+    SheetCancel,
+    SheetConfirm,
+    /// A key in the window (`text` for printable input).
+    Key {
+        key: SharedString,
+        text: Option<SharedString>,
+    },
 }
 
 /// The one event sink.

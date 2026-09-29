@@ -1691,10 +1691,38 @@ pub enum TextInputOp {
 /// `bbr-settings-row-` prefix; panes by key).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SettingsInput {
-    Pane { pane: String },
-    Toggle { row: String },
-    Choose { row: String, index: usize },
-    Press { row: String },
-    OpenSelect { row: String },
+    Pane {
+        pane: String,
+    },
+    Toggle {
+        row: String,
+    },
+    Choose {
+        row: String,
+        index: usize,
+    },
+    Press {
+        row: String,
+    },
+    OpenSelect {
+        row: String,
+    },
     Dismiss,
+    /// Blueprint D06: a press on a row, and the profile sheet.
+    Select {
+        row: String,
+    },
+    SheetField {
+        index: usize,
+    },
+    SheetSwatch {
+        index: usize,
+    },
+    SheetCancel,
+    SheetConfirm,
+    /// A key in the Settings window (`text` for printable input).
+    Key {
+        key: String,
+        text: Option<String>,
+    },
 }

@@ -13,7 +13,11 @@ use super::{row_id, tab_id, SettingsCallback, SettingsEvent, SettingsModel, SETT
 pub const TOOLBAR_HEIGHT: f32 = 96.0;
 
 /// The whole Settings window content.
-pub fn settings_surface(model: &SettingsModel, events: SettingsCallback) -> impl IntoElement {
+pub fn settings_surface(
+    model: &SettingsModel,
+    focus: &gpui::FocusHandle,
+    events: SettingsCallback,
+) -> impl IntoElement {
     let theme = &model.theme;
     let p = theme.palette;
     let dismiss = {
@@ -79,8 +83,16 @@ pub fn settings_surface(model: &SettingsModel, events: SettingsCallback) -> impl
         let rows = section.rows.iter().enumerate().map(|(index, row)| {
             let id = row_id(&row.id);
             let open = model.open_select.as_ref() == Some(&row.id);
+            let select = {
+                let events = events.clone();
+                let row = row.id.clone();
+                move |_e: &gpui::MouseDownEvent, window: &mut gpui::Window, cx: &mut gpui::App| {
+                    events(SettingsEvent::Select(row.clone()), window, cx)
+                }
+            };
             div()
                 .id(id)
+                .on_mouse_down(MouseButton::Left, select)
                 .min_h(px(44.0))
                 .px(px(14.0))
                 .py(px(8.0))
@@ -139,12 +151,38 @@ pub fn settings_surface(model: &SettingsModel, events: SettingsCallback) -> impl
                     .children(rows),
             )
     });
+    let keys = {
+        let events = events.clone();
+        move |event: &gpui::KeyDownEvent, window: &mut gpui::Window, cx: &mut gpui::App| {
+            let keystroke = &event.keystroke;
+            let text = keystroke
+                .key_char
+                .clone()
+                .filter(|_| !keystroke.modifiers.platform && !keystroke.modifiers.control)
+                .map(SharedString::from);
+            events(
+                SettingsEvent::Key {
+                    key: SharedString::from(keystroke.key.clone()),
+                    text,
+                },
+                window,
+                cx,
+            )
+        }
+    };
+    let sheet = model
+        .sheet
+        .as_ref()
+        .map(|sheet| super::sheet::sheet(theme, sheet, &events));
     div()
         .id(SETTINGS_ID)
+        .relative()
         .size_full()
         .flex()
         .flex_col()
         .bg(p.surface_canvas)
+        .track_focus(focus)
+        .on_key_down(keys)
         .on_mouse_down(MouseButton::Left, dismiss)
         .child(toolbar)
         .child(
@@ -160,4 +198,5 @@ pub fn settings_surface(model: &SettingsModel, events: SettingsCallback) -> impl
                 .gap(px(18.0))
                 .children(sections),
         )
+        .children(sheet)
 }

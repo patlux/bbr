@@ -48,6 +48,8 @@ pub enum DomainError {
     LastSpaceOfProfile(SpaceId),
     /// Blueprint D05: a space move past the edge of its profile group.
     SpaceMoveOutOfRange(SpaceId),
+    /// Blueprint D06: the last profile cannot be deleted.
+    LastProfile(ProfileId),
 }
 
 impl std::fmt::Display for DomainError {
@@ -88,6 +90,7 @@ impl std::fmt::Display for DomainError {
             Self::SpaceMoveOutOfRange(id) => {
                 write!(f, "space {id:?} has no neighbor in that direction")
             }
+            Self::LastProfile(id) => write!(f, "the last profile {id:?} cannot be deleted"),
         }
     }
 }

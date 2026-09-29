@@ -224,7 +224,7 @@ fn empty_location_yields_nothing() {
 fn empty_action_lists_all_actions_in_registry_order() {
     let corpus = fixture_corpus();
     let results = rank_all(&corpus, "", Mode::Action);
-    let expected: Vec<String> = (1..=14).map(|id| format!("action:{id}")).collect();
+    let expected: Vec<String> = (1..=16).map(|id| format!("action:{id}")).collect();
     assert_eq!(keys(&results), expected);
     assert!(results.iter().all(|r| r.group == ResultGroup::Action));
 }
@@ -464,7 +464,8 @@ fn action_keyword_match_ranks_exact() {
 fn action_mode_restricts_to_actions_without_fallback() {
     let corpus = fixture_corpus();
     let results = rank_all(&corpus, "new", Mode::Action);
-    assert_eq!(keys(&results), ["action:1", "action:6"]);
+    // Blueprint D06: New Profile… is the third "new" action.
+    assert_eq!(keys(&results), ["action:1", "action:6", "action:15"]);
 }
 
 #[test]

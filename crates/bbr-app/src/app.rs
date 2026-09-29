@@ -102,6 +102,10 @@ pub(crate) mod rail_float;
 mod rail_float_view;
 pub(crate) mod rail_reveal;
 pub(crate) mod settings;
+mod settings_profiles;
+mod settings_shortcuts;
+#[cfg(feature = "testkit")]
+mod settings_testkit;
 /// Blueprint D14 portal ids shared with the portal render.
 pub(crate) mod nav_history_ids {
     pub const BACKDROP: &str = super::nav_history::NAV_HISTORY_BACKDROP_ID;
@@ -515,6 +519,9 @@ pub struct BbrApp {
     pub(crate) preferences: crate::preferences::Preferences,
     pub(crate) preferences_path: Option<std::path::PathBuf>,
     pub(crate) settings: settings::SettingsState,
+    /// The browser window this app renders into (set by the composition
+    /// root; Settings actions that present in the browser use it).
+    pub(crate) browser_window: Option<gpui::WindowHandle<gpui_component::Root>>,
     /// Blueprint D02 testkit evidence: the native text-input client's last
     /// readback after a driven input-method message.
     #[cfg(feature = "testkit")]
@@ -730,6 +737,7 @@ impl BbrApp {
             preferences: crate::preferences::Preferences::default(),
             preferences_path: None,
             settings: settings::SettingsState::default(),
+            browser_window: None,
             #[cfg(feature = "testkit")]
             text_input_readback: None,
             command_ranking: CommandRanking::default(),

@@ -1854,8 +1854,9 @@ button — and the app preferences live in `preferences.txt` beside the store
 Rows exist only where BBR has the behaviour behind them. General: Default
 browser (DEFAULT badge, or Make Default), and Open links that ask for a new
 window as Peek (off opens one ordinary tab instead; blocking and background
-tabs are unchanged). Profiles: every profile with its chip and space count,
-then the active profile's spaces with their paper. Search: the engine and
+tabs are unchanged). Profiles: every profile with its chip, space count
+and Edit…, Add a profile (New Profile…), Delete “name”… for the selected
+profile, then the selected profile's spaces with their paper (§12). Search: the engine and
 Show tabs from all spaces in ⌘T (off keeps the palette to the active
 space's tabs). Downloads: Clear download history. Appearance: System /
 Light / Dark; Increase contrast and Reduce motion (Follow system / On /
@@ -1870,6 +1871,22 @@ and Clear Browsing Data before D10/D11) are not drawn.
 
 ## 12. Profile identity
 
+- **Create, edit, delete (blueprint D06, boards P-6 L-4 PR-08):** a profile
+  is created from Settings › Profiles › New Profile… or the command bar's
+  New Profile… action, which opens Settings › Profiles with the New Profile
+  sheet (`bbr-settings-sheet`): the chip preview with the name and what a
+  profile separates, Name, Colour (the six hues as swatches; the next hue
+  round-robin is chosen), First space (it follows the name until typed),
+  Cancel and Create Profile (disabled without a name). Return confirms,
+  Escape cancels, Tab moves between the fields. Creating makes the profile
+  and its first space, empty, and activates that space. Each profile row
+  offers Edit… (name and colour). Delete “name”… acts on the selected
+  profile (a click on its row; the active one by default), is absent for
+  the last profile, and asks first — naming the spaces and tabs that go
+  with its cookies and site data; confirming removes the profile, its
+  spaces and their tabs (nothing is kept to reopen), deletes its website
+  data store, and activates the first space of the first remaining profile
+  when the active space was among them.
 - **Chip:** 24 pt square (20 at S, 28 at XL), `radius:sm`, filled with the profile's
   hue tile, containing a 1–2 character monogram (`type:badge`, white or
   near-black letter per tile). Static — no glow, no animation, no gradient.
@@ -2310,7 +2327,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D03 | Address control states | S-1 M-8 | §11.5 §17.13 | implemented | [blueprint-address-states](docs/roadmap/tasks/blueprint-address-states.md) |
 | D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | §11.4 | implemented | [blueprint-palette-recents-actions](docs/roadmap/tasks/blueprint-palette-recents-actions.md) |
 | D05 | Space menu and delete confirmation | P-4 PR-07 | §11.3 §11.13 | implemented | [blueprint-space-menu-delete](docs/roadmap/tasks/blueprint-space-menu-delete.md) |
-| D06 | Create, edit and delete profiles | P-6 L-4 PR-08 | §12 | adopted | [blueprint-profile-management](docs/roadmap/tasks/blueprint-profile-management.md) |
+| D06 | Create, edit and delete profiles | P-6 L-4 PR-08 | §12 §11.18 | implemented (the sheet opens in Settings, also from the command bar) | [blueprint-profile-management](docs/roadmap/tasks/blueprint-profile-management.md) |
 | D07 | Cross-profile move feedback | P-7 PR-08 | §11.3 §12 §10.9 | implemented | [blueprint-cross-profile-move-feedback](docs/roadmap/tasks/blueprint-cross-profile-move-feedback.md) |
 | D08 | Toasts and uniform surface transitions | B-7 G-7 V-6 PR-12 | §6 §18.4 §18.5 | implemented | [blueprint-feedback-toasts](docs/roadmap/tasks/blueprint-feedback-toasts.md) |
 | D09 | Peek presentation | G-8 PR-04 | §11.17 | implemented | [blueprint-peek-presentation](docs/roadmap/tasks/blueprint-peek-presentation.md) |

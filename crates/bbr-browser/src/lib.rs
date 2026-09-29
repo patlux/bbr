@@ -81,6 +81,8 @@ mod controller_peek_stale_tests;
 #[cfg(test)]
 mod controller_peek_tests;
 #[cfg(test)]
+mod controller_profile_tests;
+#[cfg(test)]
 mod controller_responsiveness_tests;
 #[cfg(test)]
 mod controller_tests;

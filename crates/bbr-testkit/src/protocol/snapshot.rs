@@ -1126,6 +1126,21 @@ pub struct SettingsSnapshot {
     pub rows: Vec<SettingsRowSnapshot>,
     /// The row whose pop-up choice is open.
     pub open_select: Option<String>,
+    /// Blueprint D06: the open sheet.
+    #[serde(default)]
+    pub sheet: Option<SettingsSheetSnapshot>,
+}
+
+/// Blueprint D06: the open profile sheet.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SettingsSheetSnapshot {
+    pub title: String,
+    pub fields: Vec<String>,
+    pub focused: Option<usize>,
+    pub swatch: Option<usize>,
+    pub message: Option<String>,
+    pub confirm: String,
+    pub confirm_enabled: bool,
 }
 
 /// One Settings row: `value` is what its control shows (a toggle `on` /

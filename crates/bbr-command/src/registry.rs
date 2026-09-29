@@ -188,6 +188,22 @@ impl CommandRegistry {
                 ActionCategory::View,
                 None,
             ),
+            // Blueprint D06: a profile can be created from the command bar.
+            Action::new(
+                ActionId(15),
+                "New Profile…",
+                ["new", "profile", "create", "account", "separate"],
+                ActionCategory::Space,
+                None,
+            ),
+            // Blueprint D16: the Settings window.
+            Action::new(
+                ActionId(16),
+                "Settings…",
+                ["settings", "preferences", "options"],
+                ActionCategory::View,
+                Some("⌘,"),
+            ),
         ];
         CommandRegistry { actions }
     }
@@ -234,6 +250,8 @@ mod tests {
             (12, "Reorder Tab Up", ActionCategory::Tab, Some("⇧⌘↑")),
             (13, "Reorder Tab Down", ActionCategory::Tab, Some("⇧⌘↓")),
             (14, "Set as Default Browser", ActionCategory::View, None),
+            (15, "New Profile…", ActionCategory::Space, None),
+            (16, "Settings…", ActionCategory::View, Some("⌘,")),
         ];
         let registry = CommandRegistry::builtin();
         let actual: Vec<_> = registry

@@ -554,6 +554,28 @@ impl WebEngine for WebEngineWk {
             .map(|session| crate::session_history::read(&session.web_view))
     }
 
+    fn delete_profile_store(&mut self, profile: ProfileId) {
+        crate::profile_data::delete_store(profile, self.options.non_persistent, &mut self.stores);
+    }
+
+    fn clear_profile_data(
+        &mut self,
+        profile: ProfileId,
+        kinds: bbr_web::WebsiteDataKinds,
+        since_unix_seconds: Option<f64>,
+    ) {
+        let Some(mtm) = MainThreadMarker::new() else {
+            return;
+        };
+        let store = native_session::data_store_for_profile(
+            mtm,
+            profile,
+            self.options.non_persistent,
+            &mut self.stores,
+        );
+        crate::profile_data::clear_data(&store, kinds, since_unix_seconds);
+    }
+
     fn live_session_count(&self) -> usize {
         self.sessions.len()
     }

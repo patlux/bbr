@@ -398,6 +398,19 @@ impl BbrApp {
                 self.finish_action_activation(window, cx);
                 true
             }
+            15 => {
+                // Blueprint D06: New Profile… opens Settings › Profiles with
+                // the New Profile sheet.
+                self.finish_action_activation(window, cx);
+                self.open_profile_sheet_new(cx);
+                self.show_settings(cx);
+                true
+            }
+            16 => {
+                self.finish_action_activation(window, cx);
+                self.show_settings(cx);
+                true
+            }
             _ => false,
         }
     }

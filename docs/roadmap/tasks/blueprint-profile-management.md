@@ -4,7 +4,7 @@ Parents: [Phase 8](../phases/08-daily-driver.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §12, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 14 of 24. Paper boards: P-6 · Profiles — create & edit, L-4 · Settings — Profiles & spaces, PR-08 · Profiles — create, assign, move a tab (file
+Status: implemented 2026-09-29 (DESIGN §19); position 14 of 24. Paper boards: P-6 · Profiles — create & edit, L-4 · Settings — Profiles & spaces, PR-08 · Profiles — create, assign, move a tab (file
 “BBR — Browser Shell”).
 
 ## Outcome
@@ -43,17 +43,15 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Portable model / controller / component tests for the new behaviour
-      and its states.
+- [x] bbr-domain tests_profile_lifecycle (delete with spaces/tabs, last profile kept, rename/recolour), bbr-browser controller_profile_tests (sessions destroyed, fallback activated), bbr-command registry catalogue (New Profile…, Settings…).
 
 ### Real-app E2E
 
-- [ ] `just e2e-profiles` covers the flow drawn on the boards through the
-      production path with semantic ids and typed snapshots.
+- [x] `just e2e-profiles` (e2e_profile_management: ⌘T › New Profile… opens the sheet; typed name mirrors the first space; swatch; Return creates and activates the empty space; Edit renames/recolours; Delete names what goes and returns to the remaining profile; no Delete for the last profile).
 
 ### Performance
 
-- [ ] Add the optimized presentation scenario for the new user-visible interaction, or record why none applies (performance contract).
+- [ ] Performance scenario for the profile sheet: deferred with the other blueprint deltas (Patrick, 2026-09-27).
 
 ## Completion gates
 
@@ -81,12 +79,12 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals:
-Worktree state:
+Outcome:                Profiles are created, edited and deleted from Settings › Profiles (sheet also from the command bar); the deleted profile's WebKit store is removed.
+Commits:                see git log (feat/fix commit carrying this packet)
+Functional evidence:    bbr-domain tests_profile_lifecycle (delete with spaces/tabs, last profile kept, rename/recolour), bbr-browser controller_profile_tests (sessions destroyed, fallback activated), bbr-command registry catalogue (New Profile…, Settings…).
+Real-app E2E:           just e2e-profiles (e2e_profile_management: ⌘T › New Profile… opens the sheet; typed name mirrors the first space; swatch; Return creates and activates the empty space; Edit renames/recolours; Delete names what goes and returns to the remaining profile; no Delete for the last profile).
+Performance evidence:   unpassed — execution deferred (Patrick, 2026-09-27)
+Roadmap/documentation updates: DESIGN §11.18 §12 §19 D06; justfile e2e-profiles
+Open blockers and non-goals: none
+Worktree state:         main, clean after commit
 ```

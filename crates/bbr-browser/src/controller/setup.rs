@@ -144,6 +144,79 @@ impl BrowserController {
         })
     }
 
+    /// Blueprint D06: rename `profile` (an empty title is ignored).
+    pub fn rename_profile(
+        &mut self,
+        profile: ProfileId,
+        title: &str,
+    ) -> Result<(), ControllerError> {
+        self.browser.rename_profile(profile, title)?;
+        Ok(())
+    }
+
+    /// Blueprint D06: give `profile` another identity hue.
+    pub fn set_profile_hue(
+        &mut self,
+        profile: ProfileId,
+        hue: bbr_domain::ProfileHue,
+    ) -> Result<(), ControllerError> {
+        self.browser.set_profile_hue(profile, hue)?;
+        Ok(())
+    }
+
+    pub fn can_delete_profile(&self, profile: ProfileId) -> bool {
+        self.browser.can_delete_profile(profile)
+    }
+
+    /// Blueprint D06 (Settings › Profiles › Delete…): delete `profile` with
+    /// its spaces and tabs. Every session of those tabs is destroyed and
+    /// their appearance records dropped; when the active space belonged to
+    /// the profile, the first space of the first remaining profile becomes
+    /// active. The last profile is rejected whole. The caller removes the
+    /// profile's website data store.
+    pub fn delete_profile(
+        &mut self,
+        profile: ProfileId,
+    ) -> Result<ControllerEvent, ControllerError> {
+        if !self.browser.can_delete_profile(profile) {
+            self.browser.delete_profile(profile)?;
+        }
+        let spaces: Vec<SpaceId> = self
+            .browser
+            .spaces()
+            .filter(|space| space.profile == profile)
+            .map(|space| space.id)
+            .collect();
+        for space in &spaces {
+            let members = self
+                .browser
+                .space(*space)
+                .map(|state| state.tabs.clone())
+                .unwrap_or_default();
+            for tab in &members {
+                self.destroy_session_of(*tab);
+                self.provenance.invalidate_for(*tab);
+            }
+            let _ = self.appearances.reset(&self.browser, *space);
+        }
+        let deleted = self.browser.delete_profile(profile)?;
+        let activated = spaces.contains(&self.active_space);
+        if activated {
+            self.active_space = deleted.fallback;
+            self.browser.wake_visible(deleted.fallback)?;
+        }
+        self.close_preview_if_stale();
+        self.sync_views();
+        self.check_invariants();
+        Ok(ControllerEvent::ProfileDeleted {
+            profile,
+            fallback: deleted.fallback,
+            spaces: deleted.spaces.len(),
+            closed_tabs: deleted.tabs.len(),
+            activated,
+        })
+    }
+
     /// Whether `space` can move `direction` / be deleted (the space menu's
     /// availability).
     pub fn can_move_space(&self, space: SpaceId, direction: SpaceMove) -> bool {

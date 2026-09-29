@@ -29,6 +29,14 @@ pub enum ControllerEvent {
         closed_tabs: usize,
         activated: bool,
     },
+    /// Blueprint D06: a profile was deleted with its spaces and tabs.
+    ProfileDeleted {
+        profile: ProfileId,
+        fallback: SpaceId,
+        spaces: usize,
+        closed_tabs: usize,
+        activated: bool,
+    },
     /// A tab was opened at `index` in the active space.
     TabOpened { index: usize, url: String },
     /// A user-initiated new-window request opened one regular tab in the

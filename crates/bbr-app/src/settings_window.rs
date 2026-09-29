@@ -19,6 +19,7 @@ pub const SETTINGS_SIZE: [f32; 2] = [780.0, 620.0];
 /// The Settings window's root view.
 pub struct SettingsView {
     app: Entity<BbrApp>,
+    focus: gpui::FocusHandle,
     _observe: Subscription,
 }
 
@@ -32,7 +33,7 @@ impl Render for SettingsView {
                 view.on_settings_event(event, Some(window), cx)
             });
         });
-        settings_surface(&model, events)
+        settings_surface(&model, &self.focus, events)
     }
 }
 
@@ -67,11 +68,14 @@ pub fn open(
         ..WindowOptions::default()
     };
     let handle = cx
-        .open_window(options, |_window, cx| {
+        .open_window(options, |window, cx| {
             cx.new(|cx| {
                 let observe = cx.observe(&app, |_view, _app, cx| cx.notify());
+                let focus = cx.focus_handle();
+                window.focus(&focus, cx);
                 SettingsView {
                     app: app.clone(),
+                    focus,
                     _observe: observe,
                 }
             })
