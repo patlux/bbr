@@ -304,8 +304,17 @@ impl BbrApp {
     /// the Peek shows (its preview and the chrome outside the card take the
     /// pointer); everything (`None`) for any other presentation.
     pub(crate) fn portal_hit_regions(&self) -> Option<Vec<[f32; 4]>> {
+        // Blueprint D02: a drag or divider drag that began in the floating
+        // rail keeps the whole pointer until it ends.
+        if self.rail_floating()
+            && (self.tab_drag.is_active() || self.tab_drag.is_armed() || self.sidebar.is_dragging())
+        {
+            return None;
+        }
         if self.portal.active().is_none() {
-            return Some(self.transient.hit_rects());
+            let mut rects = self.transient.hit_rects();
+            rects.extend(self.floating_rail_regions());
+            return Some(rects);
         }
         let peek = matches!(
             self.portal_probe.borrow().content(),
@@ -327,7 +336,7 @@ impl BbrApp {
     /// [`Self::portal_hit_regions`].
     pub(crate) fn sync_portal_overlays(&mut self, cx: &mut Context<Self>) {
         let presentation = self.portal.active().is_some();
-        let showing = self.transient.showing();
+        let showing = self.transient.showing() || self.rail_floating();
         #[cfg(target_os = "macos")]
         {
             let regions = self.portal_hit_regions();

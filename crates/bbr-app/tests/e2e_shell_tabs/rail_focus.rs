@@ -61,7 +61,8 @@ fn option_command_s_moves_focus_into_the_rail_and_return_goes_back_to_the_page()
         assert_eq!(back.active_web_view, Some(first_view));
         assert_eq!(back.engine_sessions, 2, "no session was recreated");
 
-        // With the rail hidden, ⌥⌘S shows it and focuses the selected row.
+        // With the rail hidden, ⌥⌘S floats it (blueprint D02: it never
+        // docks) and focuses the selected row.
         keystroke(&mut client, "cmd-s");
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
@@ -70,7 +71,11 @@ fn option_command_s_moves_focus_into_the_rail_and_return_goes_back_to_the_page()
         keystroke(&mut client, "alt-cmd-s");
         let _ = wait_chrome_focus(&mut client, true, since);
         let shown = client.snapshot().expect("shown snapshot");
-        assert!(shown.sidebar_visible, "the rail shows to take focus");
+        assert!(!shown.sidebar_visible, "the rail floats, it does not dock");
+        assert_eq!(
+            shown.rail_reveal, "floating",
+            "the rail floats to take focus"
+        );
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

@@ -20,7 +20,7 @@ impl BbrApp {
     /// Fill the one sidebar [`Callbacks`] set with the production app
     /// methods. Every slot re-enters the app entity on the real event; the
     /// rail never invents behavior.
-    pub(super) fn sidebar_callbacks(&mut self, cx: &mut Context<Self>) -> Callbacks {
+    pub(crate) fn sidebar_callbacks(&mut self, cx: &mut Context<Self>) -> Callbacks {
         let entity = cx.entity();
 
         // §11.4: a pointer press on the rail body focuses the chrome domain.

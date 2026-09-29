@@ -4,7 +4,7 @@ Parents: [Phase 4](../phases/04-ui-shell.md) ·
 [complete browser blueprint](paper-browser-blueprint.md) ·
 [DESIGN.md](../../../DESIGN.md) §2 §11.4 §11.14, §19.
 
-Status: adopted 2026-09-28 (DESIGN §19); implementation position 9 of 24. Paper boards: W-3 · Shell — sidebar hidden ⌘S & hover reveal, V-6 · Motion — transitions (file
+Status: implemented 2026-09-29 (DESIGN §19 D02); adopted 2026-09-28, implementation position 9 of 24. Paper boards: W-3 · Shell — sidebar hidden ⌘S & hover reveal, V-6 · Motion — transitions (file
 “BBR — Browser Shell”).
 
 **Decision and review 2026-09-29.** Patrick rejected a click-only floating
@@ -46,6 +46,18 @@ Favorites band, the ghost row, the chips and the new folder-row target as
 rects recorded by their anchors, and treats a pointer outside the rail's
 horizontal span as no target. A drop on a folder row moves the tab into
 the folder through the one move-into-folder command.
+
+**Steps 3–4 landed (2026-09-29): the floating rail.** The one Portal hosts
+the rail as its interactive layer (below any presentation it opens); the
+Portal stays non-key and every rail callback is retargeted to the browser
+window, which keeps the keyboard through a twin of the rail's focus
+handles. A pure reveal model takes samples from a local AppKit pointer
+monitor (and the testkit `RailPointer` seam): fast leftward arrival reveals
+at once, a slow one after the 300 ms dwell. The panel is notched around the
+native traffic lights, the card never reflows, and ⌥⌘S/⌘L float the hidden
+rail while ⌘S docks it. Not done: the exit fade (the rail hides at once),
+a performance scenario for the reveal (performance evidence is deferred
+with the other blueprint deltas), and a shown-window native-routing suite.
 
 Decided 2026-09-29: Patrick adopted every recommendation below, and the
 sidebar toggle moved from ⌘B to ⌘S. The former open decisions (recommendations in brackets): what counts as
@@ -105,13 +117,18 @@ Not parallelized.
 
 ### Unit and contract
 
-- [ ] Portable model / controller / component tests for the new behaviour
-      and its states.
+- [x] Portable model / controller / component tests for the new behaviour
+      and its states. *(`app::rail_reveal`, `bbr_ui::sidebar::floating`,
+      `command_text_ime`, `edit_line`, `drag_target` 2-D targets.)*
 
 ### Real-app E2E
 
-- [ ] `just e2e-shell-sidebar` covers the flow drawn on the boards through the
+- [x] `just e2e-shell-sidebar` covers the flow drawn on the boards through the
       production path with semantic ids and typed snapshots.
+      *(`floating_rail::the_hidden_rail_floats_over_the_card_and_works_like_the_docked_rail`;
+      the canonical e2e suites ran green on 2026-09-29 except the known
+      `nav_clicks_match_keyboard_shortcuts` reload-availability flake,
+      green on rerun.)*
 
 ### Performance
 
@@ -143,10 +160,11 @@ decision needed, and update the §19 row instead of implementing.
 ## Delivery ledger
 
 ```text
-Outcome: in progress — steps 1–2 of 4 (shared command editor with
-  selection and IME; 2-D drag targets with a folder target).
+Outcome: implemented — shared command editor (selection, IME), 2-D drag
+  targets with a folder target, and the floating rail in the Portal.
 Commits: 4658c62f feat(app): make the command field a platform text-input
-  client; feat(app): resolve tab drops in two dimensions with folder rows.
+  client; c1d55876 feat(app): resolve tab drops in two dimensions with
+  folder rows; feat(app): float the hidden rail over the card.
 Functional evidence: command_text + command_text_ime (UTF-16 mapping,
   compose/refine/commit/cancel, anchored ⇧ motions, word stops at URL
   punctuation), edit_line (caret scroll, offset/point mapping, underlined
@@ -159,11 +177,16 @@ Real-app E2E: e2e_shell_command::ime drives the root view's real
   page beside the rail drops nothing, the exact tab joins pinned with its
   session); just e2e-shell-organize, e2e-shell-sidebar (one geometry-wait
   flake in collapse_reopen…, green in isolation and on rerun),
-  e2e-shell-hover, e2e-shell-dense.
+  e2e-shell-hover, e2e-shell-dense. e2e_shell_sidebar::floating_rail (slow
+  dwell and fast reveal through RailPointer, notched panel at the
+  remembered width, unchanged card geometry and sessions, Portal capture
+  over the panel only, keyboard parity through the twin, leave/Escape
+  hide with no re-reveal at rest, ⌘L anchored overlay, ⌘S docking);
+  e2e_shell_tabs::rail_focus updated (⌥⌘S floats a hidden rail).
 Performance evidence: deferred with the other blueprint deltas (Patrick).
 Roadmap/documentation updates: DESIGN §11.4 field editing;
   E2E_ARCHITECTURE CommandTextInput seam.
-Open blockers and non-goals: steps 2–4 above; the D02 rail itself is not
-  implemented yet.
+Open blockers and non-goals: exit fade, reveal performance scenario
+  (deferred), shown-window native-routing evidence.
 Worktree state: main.
 ```

@@ -314,6 +314,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             toast: self.toast.clone(),
             command_input: self.command_input.clone(),
             text_input: self.text_input,
+            rail_reveal: self.rail_reveal.clone(),
+            floating_rail: self.floating_rail.clone(),
             recovery: self.recovery.clone(),
             restore_notice: self.restore_notice.clone(),
             about: self.about.clone(),

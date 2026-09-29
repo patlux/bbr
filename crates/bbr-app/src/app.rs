@@ -98,6 +98,9 @@ mod interaction;
 pub(crate) mod library;
 mod moments;
 mod nav_history;
+pub(crate) mod rail_float;
+mod rail_float_view;
+pub(crate) mod rail_reveal;
 /// Blueprint D14 portal ids shared with the portal render.
 pub(crate) mod nav_history_ids {
     pub const BACKDROP: &str = super::nav_history::NAV_HISTORY_BACKDROP_ID;
@@ -505,6 +508,8 @@ pub struct BbrApp {
     /// Blueprint D02: where the command field's line was last laid out
     /// (IME candidate placement, point-to-character hits).
     pub(crate) command_line: bbr_ui::components::EditLineSink,
+    /// Blueprint D02: the floating rail (reveal state, panel geometry).
+    pub(crate) floating_rail: rail_float::FloatingRail,
     /// Blueprint D02 testkit evidence: the native text-input client's last
     /// readback after a driven input-method message.
     #[cfg(feature = "testkit")]
@@ -716,6 +721,7 @@ impl BbrApp {
             drag_offer_rects: drag::DragOfferRects::default(),
             command_text: CommandText::new(),
             command_line: bbr_ui::components::EditLineSink::new(),
+            floating_rail: rail_float::FloatingRail::default(),
             #[cfg(feature = "testkit")]
             text_input_readback: None,
             command_ranking: CommandRanking::default(),
@@ -1210,6 +1216,9 @@ impl BbrApp {
     /// commit); it is otherwise just threaded through for caller symmetry.
     #[cfg_attr(not(feature = "testkit"), allow(unused_variables))]
     pub fn toggle_sidebar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Blueprint D02: ⌘S while the rail floats docks it at the remembered
+        // width (the floating panel gives way to the docked rail).
+        self.end_floating_rail(window, cx);
         if self.sidebar_visible {
             self.sidebar.collapse();
         } else {

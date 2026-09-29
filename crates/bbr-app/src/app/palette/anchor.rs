@@ -17,8 +17,12 @@ use gpui::{
 /// field), so the overlay placement never duplicates the chrome layout math.
 /// Occupies no layout space (absolute inset-0 within the `relative` command
 /// bar) and paints nothing.
+/// Hands the measured field rect to the app (with the app context, so a
+/// moved field can re-anchor an open overlay).
+type Publish = Rc<dyn Fn(WebRect, &mut App)>;
+
 pub struct CommandFieldAnchor {
-    publish: Rc<dyn Fn(WebRect)>,
+    publish: Publish,
 }
 
 /// Build the field anchor wired to the app's measured-rect cell.
@@ -26,8 +30,31 @@ pub(crate) fn command_field_anchor(
     rect: std::rc::Rc<std::cell::RefCell<Option<WebRect>>>,
 ) -> CommandFieldAnchor {
     CommandFieldAnchor {
-        publish: Rc::new(move |measured| {
+        publish: Rc::new(move |measured, _cx| {
             *rect.borrow_mut() = Some(measured);
+        }),
+    }
+}
+
+/// Blueprint D02: the anchor inside the floating rail — a field that moved
+/// (the rail just floated in for ⌘L) re-anchors an open overlay once.
+pub(crate) fn command_field_anchor_following(
+    rect: std::rc::Rc<std::cell::RefCell<Option<WebRect>>>,
+    app: gpui::Entity<crate::app::BbrApp>,
+    browser: gpui::WindowHandle<gpui_component::Root>,
+) -> CommandFieldAnchor {
+    CommandFieldAnchor {
+        publish: Rc::new(move |measured, cx| {
+            let moved = *rect.borrow() != Some(measured);
+            *rect.borrow_mut() = Some(measured);
+            if moved {
+                let app = app.clone();
+                cx.defer(move |cx| {
+                    let _ = crate::window_seam::with_app(&browser, &app, cx, |view, window, cx| {
+                        view.reanchor_command_overlay(window, cx)
+                    });
+                });
+            }
         }),
     }
 }
@@ -74,14 +101,17 @@ impl Element for CommandFieldAnchor {
         bounds: Bounds<Pixels>,
         _request_layout: &mut Self::RequestLayoutState,
         _window: &mut Window,
-        _cx: &mut App,
+        cx: &mut App,
     ) -> Self::PrepaintState {
-        (self.publish)(WebRect::new(
-            f32::from(bounds.origin.x),
-            f32::from(bounds.origin.y),
-            f32::from(bounds.size.width),
-            f32::from(bounds.size.height),
-        ));
+        (self.publish)(
+            WebRect::new(
+                f32::from(bounds.origin.x),
+                f32::from(bounds.origin.y),
+                f32::from(bounds.size.width),
+                f32::from(bounds.size.height),
+            ),
+            cx,
+        );
     }
 
     fn paint(

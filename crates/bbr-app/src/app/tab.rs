@@ -49,12 +49,12 @@ impl BbrApp {
     /// selected row — the tab list takes chrome focus with its ring on the
     /// selected tab, scrolled into view; ↑↓ move and Return selects and
     /// returns focus to the page (the existing tab-list keyboard). An open
-    /// command surface closes first; a hidden rail shows (it cannot take
-    /// focus while collapsed).
+    /// command surface closes first; a hidden rail floats (blueprint D02).
     pub fn focus_rail(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.dismiss_command_portal(cx);
+        // Blueprint D02: a hidden rail floats to take the focus (⌘S docks).
         if !self.sidebar_visible {
-            self.toggle_sidebar(window, cx);
+            self.float_rail(window, cx);
         }
         self.focus_tab_list(window, cx);
         self.ensure_active_visible();

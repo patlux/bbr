@@ -109,7 +109,8 @@ impl BbrApp {
         {
             // Blueprint D08: the Portal stays up (in its hit-region mode)
             // while a toast or the zoom readout still shows.
-            let overlays = self.transient.showing();
+            // Blueprint D02: and while the floating rail shows.
+            let overlays = self.transient.showing() || self.rail_floating();
             let regions = self.portal_hit_regions();
             if let Some(bridge) = self.native_portal.as_mut() {
                 bridge.set_visible(overlays);

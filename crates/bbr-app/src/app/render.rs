@@ -104,6 +104,14 @@ impl Render for BbrApp {
         } else {
             0.0
         };
+        // Blueprint D02: the floating rail's geometry for this frame, the
+        // downloads fade primed in this window's render (the Portal builds
+        // the floating rail outside it), and the keyboard twin.
+        self.record_floating_rail(window, cx);
+        self.prime_downloads_fade(window, cx);
+        let rail_keyboard = self
+            .rail_floating()
+            .then(|| self.floating_rail_keyboard(cx));
         let sidebar = self.sidebar_surface(&theme, sidebar_width, chrome_focused, window, cx);
         // §2 seated content card: one frame for the chassis, the card and
         // every native slot's clip.
@@ -468,11 +476,13 @@ impl Render for BbrApp {
             // Blueprint D02: the command field's platform text-input client
             // (IME, dead keys) while the field owns the keyboard.
             .children(self.command_input_registration(cx))
+            .children(rail_keyboard)
             // §11.13: the open Tab/Favorite menu overlay — ordinary GPUI
             // chrome at the resolved clamped placement, drawn above the
             // sidebar and the web content slot (the caller owns the
             // outside-press dismissal; the card does not stop propagation).
-            .when(self.tab_menu.state.open, |root| {
+            // (While the rail floats the menu sits in the Portal with it.)
+            .when(self.tab_menu.state.open && !self.rail_floating(), |root| {
                 root.child(self.tab_menu_overlay(&theme, window, cx))
             })
     }
@@ -484,7 +494,7 @@ impl BbrApp {
     /// `bbr-ui` card at the resolved clamped placement with the row
     /// callbacks re-entering the app entity (the established sidebar
     /// wrapper pattern). `None` while the menu is closed.
-    fn tab_menu_overlay(
+    pub(super) fn tab_menu_overlay(
         &mut self,
         theme: &Theme,
         _window: &mut Window,

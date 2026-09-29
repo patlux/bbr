@@ -30,6 +30,8 @@ mod performance;
 // the native-host path, so the remaining surface is allowed until U1 lands.
 #[allow(dead_code)]
 mod portal;
+#[cfg(target_os = "macos")]
+mod rail_observer;
 mod shell;
 mod slot;
 mod store;
@@ -654,6 +656,12 @@ fn main() {
                 }
             });
         }
+        // Blueprint D02: the floating rail's pointer observer — a local
+        // monitor that sees the pointer over the page too; samples reach
+        // `BbrApp::on_rail_pointer` through a channel (never re-entering
+        // GPUI from inside AppKit's dispatch).
+        #[cfg(target_os = "macos")]
+        rail_observer::install(cx, &window, &app);
         // Keyboard actions (fire even while the WKWebView is first responder,
         // via the macOS performKeyEquivalent path).
         install_actions(cx, window, app.clone());

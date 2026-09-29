@@ -179,6 +179,23 @@ impl BbrApp {
     /// evidence recording, and the production listener bundle; the `bbr-ui`
     /// surface owns the anatomy. `None` while closed and the fade-out has
     /// completed.
+    /// Create the panel's fade in the browser window's render (blueprint
+    /// D02: the floating rail builds the panel outside that render, where
+    /// window state cannot be created).
+    pub(crate) fn prime_downloads_fade(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.downloads.opacity.is_none() {
+            let transition =
+                window.use_transition(cx, bbr_ui::theme::Motion::fine(), |_, _| 0.0_f32);
+            if self.downloads.open {
+                transition.update(cx, |value, cx| {
+                    *value = 1.0;
+                    cx.notify();
+                });
+            }
+            self.downloads.opacity = Some(transition);
+        }
+    }
+
     pub(crate) fn downloads_panel_surface(
         &mut self,
         theme: &bbr_ui::theme::Theme,

@@ -588,8 +588,8 @@ unchanged; only the inter-row pitch grew.
 - **Keyboard entry into the rail (blueprint D21):** `⌥⌘S` moves keyboard
   focus from anywhere into the rail on the selected tab row (the ring shows,
   the row scrolls into view, an open command surface closes, a hidden rail
-  shows first); `↑`/`↓` move the selection and `Return` selects and hands
-  focus back to the page.
+  floats first — blueprint D02, it never docks); `↑`/`↓` move the selection
+  and `Return` selects and hands focus back to the page.
 - **Focus after tab mutation:** governed by the browser interaction contract;
   the visual system only guarantees the ring lands on the correct control in
   the same presentation frame as the selection change.
@@ -979,6 +979,30 @@ using the IDs of §15. All rows use `density` geometry from §8.
   an open decision (§17). Divider keyboard focus provides `←`/`→` resize
   and `0` reset (DESIGN §9 pointer/keyboard parity). Resize commits
   geometry on the next frame; drag previews no intermediate chrome states.
+- **Floating rail (blueprint D02, board W-3):** while the rail is hidden,
+  the pointer at the window's leading edge (the 10 pt chassis strip; a
+  3 pt edge in fullscreen) floats the whole rail over the card
+  (`bbr-floating-rail`): at once when it arrives fast and mostly leftward
+  (≥ 600 pt/s over the last ~80 ms), after a 300 ms dwell otherwise; never
+  while a mouse button is held, a menu or the palette is open, or the rail
+  is docked. The panel is inset 8 pt from the leading, top and bottom
+  edges at the remembered rail width, `radius:lg` with `elev:2`, on the
+  space's rail material, and leaves a notch around the native traffic
+  lights so they stay visible and clickable. The one Portal draws it, so
+  the card and every web view keep their collapsed geometry (nothing
+  reflows); it slides in 16 pt over `dur:fine` with the decelerate curve
+  (Reduce Motion: fade only). It is the docked rail's exact composition
+  and works the same way — rows, favorites, folders, the footer, menus,
+  drags (a drag that starts in it keeps the pointer until it ends), its
+  field — while the keyboard stays in the browser window. The rail, its
+  menus, panels, drags and field form one domain: leaving that domain
+  hides the rail, unless an interaction holds it; a fast arrival that
+  overshoots a window not at the screen edge waits 1.2 s for the pointer
+  to return. Escape cancels an IME composition first, then the open menu
+  or field, then hides the rail, and the pointer must leave the edge
+  before it reveals again. ⌥⌘S and ⌘L on a hidden rail float it (⌘L
+  anchors the overlay to the floating field); ⌘S while it floats docks it
+  at the remembered width; switching apps or windows hides it.
 - **Command surface launch:** the command field owns two presentations of
   the same §11.5 engine:
   - **Cmd-T → centered palette** (`bbr-palette`): `elev:2`
@@ -2243,7 +2267,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | Delta | Target | Boards | Sections | Status | Packet |
 |---|---|---|---|---|---|
 | D01 | Footer chips start after Downloads | S-7 W-1 | §11.3 §11.4 §18.3 | implemented | [blueprint-footer-strip-leading](docs/roadmap/tasks/blueprint-footer-strip-leading.md) |
-| D02 | Hover reveal of a hidden rail | W-3 V-6 | §2 §11.4 §11.14 | adopted | [blueprint-sidebar-hover-reveal](docs/roadmap/tasks/blueprint-sidebar-hover-reveal.md) |
+| D02 | Hover reveal of a hidden rail | W-3 V-6 | §2 §11.4 §11.14 | implemented; the rail hides without an exit fade | [blueprint-sidebar-hover-reveal](docs/roadmap/tasks/blueprint-sidebar-hover-reveal.md) |
 | D03 | Address control states | S-1 M-8 | §11.5 §17.13 | implemented | [blueprint-address-states](docs/roadmap/tasks/blueprint-address-states.md) |
 | D04 | ⌘T recents and the > actions mode | C-1 C-4 L-9 | §11.4 | implemented | [blueprint-palette-recents-actions](docs/roadmap/tasks/blueprint-palette-recents-actions.md) |
 | D05 | Space menu and delete confirmation | P-4 PR-07 | §11.3 §11.13 | implemented | [blueprint-space-menu-delete](docs/roadmap/tasks/blueprint-space-menu-delete.md) |

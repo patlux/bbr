@@ -124,15 +124,18 @@ pub fn sidebar_surface(
         // No right hairline (DESIGN §2 rule 4): the seated content card's
         // edge and shadow are the boundary; painting both is a double
         // border.
-        .bg(model.chrome_tint)
+        // Blueprint D02: the floating panel paints the material itself (the
+        // notch around the traffic lights stays clear).
+        .when(!model.floating, |el| el.bg(model.chrome_tint))
         // D4: the source tint fades out above the committed paint and
         // beneath every child.
         .when_some(
-            crate::components::tint_fade::tint_fade_layer(theme, "rail", model.tint_fade),
+            crate::components::tint_fade::tint_fade_layer(theme, "rail", model.tint_fade)
+                .filter(|_| !model.floating),
             |el, layer| el.child(layer),
         )
         // D6: the static grain sits on the tint, beneath every child.
-        .when(model.grain, |el| {
+        .when(model.grain && !model.floating, |el| {
             el.child(crate::components::grain::grain_layer(theme))
         })
         .on_scroll_wheel(callbacks::wheel(&callbacks.on_rail_scroll_wheel))

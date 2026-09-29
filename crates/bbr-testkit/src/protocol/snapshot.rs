@@ -1118,6 +1118,19 @@ pub struct TextInputReadback {
     pub window_frame: [f64; 4],
 }
 
+/// Blueprint D02: the floating rail panel (window points).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FloatingRailSnapshot {
+    pub rect: [f32; 4],
+    /// The notch left open for the native traffic lights (panel-local
+    /// width and height; zero without lights).
+    pub notch: [f32; 2],
+    /// The Portal capture regions the panel adds.
+    pub capture: Vec<[f32; 4]>,
+    /// The entrance key (a new reveal replays the slide-in).
+    pub entrance: u64,
+}
+
 /// Blueprint D08: one live toast.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ToastSnapshot {
@@ -1568,6 +1581,13 @@ pub struct Snapshot {
     /// last `CommandTextInput` message (`None` before the first).
     #[serde(default)]
     pub text_input: Option<TextInputReadback>,
+    /// Blueprint D02: the rail's reveal phase (`idle`, `dwelling`,
+    /// `floating`).
+    #[serde(default)]
+    pub rail_reveal: String,
+    /// Blueprint D02: the floating rail while it shows.
+    #[serde(default)]
+    pub floating_rail: Option<FloatingRailSnapshot>,
     /// Blueprint D08: the live zoom readout's percent (`None` at rest).
     #[serde(default)]
     pub zoom_readout: Option<u32>,

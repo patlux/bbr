@@ -62,6 +62,27 @@ pub(super) fn dispatch_portal(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // Blueprint D02: one pointer sample into the floating rail's reveal
+        // model, the method the native observer feeds.
+        Request::RailPointer {
+            x,
+            y,
+            time_ms,
+            pressed,
+        } => with_app(window, app, cx, |view, window, cx| {
+            view.on_rail_pointer(
+                crate::app::rail_reveal::PointerSample {
+                    x: *x,
+                    y: *y,
+                    time_ms: *time_ms,
+                    pressed: *pressed,
+                },
+                window,
+                cx,
+            );
+            Response::Ok
+        })
+        .unwrap_or_else(err_response),
         // Blueprint D17: the recovery pane's action.
         Request::RecoveryAction => with_app(window, app, cx, |view, _window, cx| {
             if view.recovery_action(cx) {

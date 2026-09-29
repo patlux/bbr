@@ -180,6 +180,11 @@ impl BbrApp {
     /// overwriting the original return point, so Escape still restores the
     /// original web/chrome origin (not an intermediate edit state).
     pub fn activate_command_bar(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // Blueprint D02: ⌘L on a hidden rail floats it; the overlay anchors
+        // to the floating field.
+        if !self.sidebar_visible {
+            self.float_rail(window, cx);
+        }
         // A rail-mode entry replaces any open find presentation (exactly one
         // active portal surface per window); the command surface owns the
         // focus afterwards.
@@ -536,7 +541,9 @@ impl BbrApp {
                 | CommandBarMode::MoveTab
         ) {
             // No open command surface: the Escape binding still hands focus
-            // to the page (the pre-composition behavior).
+            // to the page (the pre-composition behavior) and hides a floating
+            // rail (blueprint D02: after IME, menus and the command field).
+            self.escape_floating_rail(window, cx);
             self.focus_web(window, cx);
             return;
         }

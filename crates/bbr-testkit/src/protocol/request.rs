@@ -755,6 +755,15 @@ pub enum Request {
     CommandTextInput {
         op: TextInputOp,
     },
+    /// Blueprint D02: one pointer sample into the floating rail's reveal
+    /// model — the exact method the native pointer observer feeds (window
+    /// points; `time_ms` is the event time the velocity is measured on).
+    RailPointer {
+        x: f32,
+        y: f32,
+        time_ms: f64,
+        pressed: bool,
+    },
     /// Blueprint D19: invoke the menu item `menu › item` (`menu` = "Dock"
     /// for the Dock menu) through the same action dispatch an `NSMenuItem`
     /// click takes.

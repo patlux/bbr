@@ -27,6 +27,7 @@
 //! ranking/lifecycle stay in `bbr-app`.
 
 pub mod callbacks;
+pub mod floating;
 pub mod geometry;
 pub mod model;
 pub mod regions;

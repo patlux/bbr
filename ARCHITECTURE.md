@@ -277,6 +277,23 @@ over the live `WKWebView`, and the `find_open`/`find_query_result`/`find_step`
 performance scenarios measure the warm presentation path against the
 command-surface budget.
 
+The floating rail (blueprint D02) is the Portal's interactive layer, beneath
+any foreground presentation and the transient overlays. `PortalRoot` builds
+the unchanged rail composition through `BbrApp::floating_rail_layer`, inside a
+`with_app` update of the **browser** window, so the rail model reads that
+window's focus. Every rail callback is retargeted to the browser window
+(`rail_float_view::retarget`); the Portal only delivers the pointer. The
+Portal stays non-key: the browser window keeps the keyboard, and a keyboard
+twin there tracks the rail's focus handles with the same key listeners. The
+Portal captures the pointer over the panel minus the notch around the native
+traffic lights, and over the whole window while a drag that began in the rail
+runs. The reveal is a pure model (`app::rail_reveal`) fed by a local AppKit
+pointer monitor (`bbr-web-macos::pointer_observer`, observe-only, drained
+through a channel by `rail_observer`) and by the testkit `RailPointer` seam.
+The card and the web views keep the collapsed geometry; nothing reflows. The
+one window-state API in the composition (the downloads fade) is primed in the
+browser window's render, because the Portal builds the rail outside it.
+
 ### WebKit find adapter (content-world isolated, non-destructive)
 
 The portable `bbr-web::find_in_page` session owns the L7 request/result

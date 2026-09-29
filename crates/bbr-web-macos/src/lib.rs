@@ -121,6 +121,10 @@ pub mod portal_frame;
 #[cfg(target_os = "macos")]
 pub mod portal_hit;
 
+/// Blueprint D02: the floating rail's pointer observer.
+#[cfg(target_os = "macos")]
+pub mod pointer_observer;
+
 #[cfg(target_os = "macos")]
 pub mod responsiveness;
 

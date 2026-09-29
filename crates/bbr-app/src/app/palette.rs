@@ -56,7 +56,7 @@ use super::BbrApp;
 /// The §11.4 field-anchor element and the command-surface unit tests live in
 /// submodules of this presentation module.
 mod anchor;
-pub(crate) use anchor::command_field_anchor;
+pub(crate) use anchor::{command_field_anchor, command_field_anchor_following};
 #[cfg(all(test, feature = "testkit"))]
 mod tests;
 
@@ -317,6 +317,14 @@ impl BbrApp {
             .borrow_mut()
             .present_command(request, viewport, surface);
         self.activate_portal_request(request, cx);
+    }
+
+    /// Blueprint D02: the field under an open overlay moved (the floating
+    /// rail slid in for ⌘L): place the overlay over it again.
+    pub(crate) fn reanchor_command_overlay(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.command_surface == CommandSurface::Overlay {
+            self.present_command_portal(CommandSurface::Overlay, window, cx);
+        }
     }
 
     pub(crate) fn dismiss_command_portal(&mut self, cx: &mut Context<Self>) {

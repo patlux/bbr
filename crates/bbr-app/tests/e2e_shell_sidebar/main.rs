@@ -493,6 +493,7 @@ mod appearance;
 mod composition;
 mod composition_geometry;
 mod content_card;
+mod floating_rail;
 mod lift;
 mod moments;
 mod motion;

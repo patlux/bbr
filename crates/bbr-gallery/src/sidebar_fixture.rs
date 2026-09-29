@@ -310,6 +310,7 @@ pub fn build_sidebar_fixture_with_theme(
         chrome_tint,
         tint_fade: None,
         grain: false,
+        floating: false,
         active_space_title: SharedString::from("Default"),
         command,
         favorites,

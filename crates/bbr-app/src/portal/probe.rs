@@ -592,17 +592,36 @@ impl Render for PortalRoot {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // Blueprint D08: the toast/zoom-readout overlays sit above any
         // active presentation.
+        // Blueprint D02: the floating rail lies under any presentation it
+        // opened (⌘L anchors to its field), the overlays above both.
+        let rail = self.render_floating_rail(cx);
         let presentation = self.render_presentation(cx);
         let overlays = super::transient::render_overlays(self, cx);
         div()
             .relative()
             .size_full()
+            .children(rail)
             .child(presentation)
             .children(overlays)
     }
 }
 
 impl PortalRoot {
+    /// The floating rail layer, built against the browser window (whose
+    /// focus the rail reflects and whose keyboard it keeps).
+    fn render_floating_rail(&mut self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        let app = self.app.clone()?;
+        if !app.read(cx).rail_floating() {
+            return None;
+        }
+        let browser = self.browser_window;
+        crate::window_seam::with_app(&browser, &app, cx, |view, window, cx| {
+            view.floating_rail_layer(browser, window, cx)
+        })
+        .ok()
+        .flatten()
+    }
+
     fn render_presentation(&mut self, cx: &mut Context<Self>) -> gpui::AnyElement {
         let probe = self.probe.borrow();
         let Some(content) = probe.content().cloned() else {

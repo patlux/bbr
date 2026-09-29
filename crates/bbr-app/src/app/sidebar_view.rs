@@ -38,9 +38,38 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
-        let model = self.sidebar_model(theme, sidebar_width, chrome_focused, window);
-        let callbacks = self.sidebar_callbacks(cx);
-        let field_anchor = self.command_field_anchor_element();
+        self.rail_surface(theme, sidebar_width, chrome_focused, None, window, cx)
+    }
+
+    /// The rail composition, docked (`floating: None`) or inside the
+    /// floating panel (blueprint D02): then the rail root stays transparent
+    /// (the panel paints the material) and every callback runs against the
+    /// browser window, which keeps the keyboard, whatever window delivered
+    /// the pointer event.
+    pub(crate) fn rail_surface(
+        &mut self,
+        theme: &Theme,
+        sidebar_width: f32,
+        chrome_focused: bool,
+        floating: Option<gpui::WindowHandle<gpui_component::Root>>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
+        let mut model = self.sidebar_model(theme, sidebar_width, chrome_focused, window);
+        model.floating = floating.is_some();
+        let mut callbacks = self.sidebar_callbacks(cx);
+        let field_anchor = match floating {
+            Some(browser) => {
+                callbacks = super::rail_float_view::retarget(callbacks, browser);
+                crate::app::palette::command_field_anchor_following(
+                    self.command_field_rect.clone(),
+                    cx.entity(),
+                    browser,
+                )
+                .into_any()
+            }
+            None => self.command_field_anchor_element(),
+        };
         let favorites_band_anchor = self.favorites_band_anchor_element();
         // §11.2/§10.9: the ghost-row and drag-proxy rect recorders (placed
         // by the rail only while those render).
@@ -175,6 +204,7 @@ impl BbrApp {
             chrome_tint,
             tint_fade: self.tint_fade(),
             grain: self.active_space_appearance().paper.grain,
+            floating: false,
             active_space_title: SharedString::from(active_space_title),
             command,
             favorites,
