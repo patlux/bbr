@@ -2,6 +2,20 @@
 
 Parents: [Phase 6](../phases/06-split-view.md) · [split shared contract](split-shared-contract.md) · [portable split core](split-core.md) · [browser interactions](../../product/browser-interactions.md) · [Design §11.7](../../../DESIGN.md) · [performance contract](../../product/performance-contract.md).
 
+**Blueprint D23 decisions (Patrick, 2026-09-29), superseding parts of this
+packet:** drop zones on all four edges; ⌃⌘S opens the ⌘T palette in split
+mode; ⌃⌘S again dissolves the split and keeps its tabs, and ⌘W closes the
+focused pane's tab; selecting an outside tab keeps the split as a group; a
+drop may replace a pane; below 320 pt per pane the split collapses to its
+focused pane with an "n of N" chip; the divider ratio persists, and a
+double-click resets it. A split may hold **any number of panes, side by
+side and stacked**, and a space may hold several split groups. The "exactly
+two panes", "horizontal only", "no persistence of the ratio", "no creation
+by drag or keyboard" and "no close action" constraints below are therefore
+superseded. The domain split, `bbr-split` geometry, persistence and
+`PaneLayout` need a tiling-tree contract first. Follow-up decisions:
+explainer `~/Downloads/bbr-d23-mehrere-seiten.html`.
+
 ## Outcome
 
 Productionize the existing controller-owned two-pane layout without inventing split creation or close commands: consume `bbr-split` to project two real native WKWebViews around the settled 2 pt divider, derive focused-pane presentation from `BrowserController::pane_layout()`, add pointer divider resizing with no idle invalidation, expose typed semantic/snapshot evidence, and prove the production path through real-app E2E plus optimized presentation measurements.
@@ -62,6 +76,21 @@ Do not invent keyboard resize steps, hit-target expansion, snap points, a larger
 - No top/bottom or vertical split, tiling tree, third pane, nesting, persistence, or compatibility layer.
 - No change to `bbr-browser`, `bbr-domain`, `bbr-web`, `bbr-web-macos`, `bbr-split`, command composition, URL input, or persistence behavior.
 - No screenshots/textures of webpages and no WebKit-rendered browser chrome.
+
+## Constraints
+
+- GPUI owns the chrome and the dividers; every pane is a real native
+  WKWebView; web content is never sampled, textured or drawn over outside
+  the Portal.
+- `BrowserController` stays the single authority for which tabs form a
+  split, their layout and the focused pane; app state holds only
+  presentation (divider drags).
+- The D23 decisions above supersede the two-pane, horizontal-only and
+  no-invocation limits of this packet; a tiling-tree contract lands in the
+  domain, `bbr-split`, persistence and `PaneLayout` before the app
+  composition.
+- Files stay below ~500 lines; no weakened tests, budgets or acceptance
+  criteria.
 
 ## Parallel-lane contract
 

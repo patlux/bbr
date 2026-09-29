@@ -2269,7 +2269,19 @@ native-observed edge; switching apps or minimizing closes the floating
 rail. The sidebar toggle moves from ⌘B to **⌘S** (Patrick, 2026-09-29):
 ⌘B reaches web pages again (bold in web editors), while ⌘S no longer does
 (save in web editors). The Paper boards W-3, C-4 and V-6 still draw ⌘B;
-this document is authoritative.
+this document is authoritative. D23 Split (Patrick, 2026-09-29): drop
+zones on all four edges; ⌃⌘S opens the ⌘T palette in split mode (recents
+first, or a typed address); ⌃⌘S again dissolves a split and keeps its tabs,
+⌘W closes only the focused pane's tab; selecting a tab outside a split
+keeps the split as a group, and selecting any member brings it back; a tab
+dropped onto a split may replace the pane under the pointer; a pane below
+320 pt collapses the split to its focused pane with an "n of N" chip whose
+click cycles the panes; the divider ratio survives a restart, and a
+double-click resets it. **Beyond the board:** a split is not limited to two
+panes. It may hold any number of panes, side by side and stacked (a tiling
+layout of rows and columns), and a space may hold several split groups.
+This replaces the "exactly one two-pane split" contract of §11.7 and the
+split packets; the follow-up decisions it raises are open.
 
 | # | Question | Delta |
 |---|---|---|
