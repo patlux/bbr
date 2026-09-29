@@ -134,7 +134,9 @@ impl BbrApp {
         if self.peek.card != inner {
             self.peek.card = inner;
             if inner.is_some() {
-                cx.notify();
+                // The preview frame moved: re-sync the Portal's regions
+                // (and notify, so the portal redraws the wash).
+                self.sync_portal_overlays(cx);
             }
         }
     }

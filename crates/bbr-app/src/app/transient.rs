@@ -212,15 +212,38 @@ impl BbrApp {
         }
     }
 
+    /// The Portal's capture regions: only the overlays with no
+    /// presentation; the washed origin and the bar plus the overlays while
+    /// the Peek shows (its preview and the chrome outside the card take the
+    /// pointer); everything (`None`) for any other presentation.
+    pub(crate) fn portal_hit_regions(&self) -> Option<Vec<[f32; 4]>> {
+        if self.portal.active().is_none() {
+            return Some(self.transient.hit_rects());
+        }
+        let peek = matches!(
+            self.portal_probe.borrow().content(),
+            Some(crate::portal::probe::PortalContent::Peek)
+        );
+        let frame = self.peek_surface().and_then(|surface| surface.frame);
+        match (peek, frame) {
+            (true, Some(frame)) => {
+                let mut rects = frame.capture_rects().to_vec();
+                rects.extend(self.transient.hit_rects());
+                Some(rects)
+            }
+            _ => None,
+        }
+    }
+
     /// Converge the native Portal with the overlay state: visible while a
-    /// presentation or an overlay shows; with no presentation active the
-    /// Portal captures the pointer only over the overlays.
+    /// presentation or an overlay shows, capturing the pointer over
+    /// [`Self::portal_hit_regions`].
     pub(crate) fn sync_portal_overlays(&mut self, cx: &mut Context<Self>) {
         let presentation = self.portal.active().is_some();
         let showing = self.transient.showing();
         #[cfg(target_os = "macos")]
         {
-            let regions = (!presentation).then(|| self.transient.hit_rects());
+            let regions = self.portal_hit_regions();
             if let Some(bridge) = self.native_portal.as_mut() {
                 bridge.set_visible(presentation || showing);
                 bridge.set_hit_regions(regions);

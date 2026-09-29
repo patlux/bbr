@@ -136,6 +136,21 @@ impl PeekFrame {
         }
     }
 
+    /// The Portal capture regions while the Peek shows (the washed origin
+    /// around the preview, bar included): the card minus the preview frame
+    /// as four strips. The preview and the chrome outside the card take
+    /// the pointer themselves.
+    pub fn capture_rects(&self) -> [[f32; 4]; 4] {
+        let [cx, cy, cw, ch] = self.card;
+        let [px, py, pw, ph] = self.preview;
+        [
+            [cx, cy, cw, (py - cy).max(0.0)],
+            [cx, py + ph, cw, (cy + ch - py - ph).max(0.0)],
+            [cx, py, (px - cx).max(0.0), ph],
+            [px + pw, py, (cx + cw - px - pw).max(0.0), ph],
+        ]
+    }
+
     /// The preview slot's insets inside the card `(top, right, bottom,
     /// left)` — what the app's layout applies around the preview slot.
     pub fn preview_insets(bar_height: f32) -> [f32; 4] {
@@ -195,6 +210,10 @@ mod tests {
             assert_eq!(frame.preview[0] + frame.preview[2], 260.0 + 900.0 - right);
             assert_eq!(frame.preview[1] + frame.preview[3], 10.0 + 700.0 - bottom);
         }
+        // The capture strips tile the card minus the preview exactly.
+        let frame = PeekFrame::resolve([260.0, 10.0, 900.0, 700.0], CARD_RADIUS, 36.0);
+        let area: f32 = frame.capture_rects().iter().map(|r| r[2] * r[3]).sum();
+        assert_eq!(area, 900.0 * 700.0 - frame.preview[2] * frame.preview[3]);
         // A tiny card never yields negative geometry.
         let tiny = PeekFrame::resolve([0.0, 0.0, 20.0, 30.0], 0.0, 36.0);
         assert!(tiny.bar[2] >= 0.0 && tiny.preview[2] >= 0.0 && tiny.preview[3] >= 0.0);

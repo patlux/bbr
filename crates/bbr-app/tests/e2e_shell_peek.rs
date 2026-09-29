@@ -555,6 +555,34 @@ fn peek_sits_inset_under_its_bar_over_a_washed_origin() {
         assert_eq!(cy + ch - (py + ph), 16.0);
         assert!(bh > 0.0 && ph > 0.0);
 
+        // The Portal captures the washed origin and the bar only: the
+        // preview and the chrome outside the card take the pointer (the
+        // hit-region decision, routed without moving the user's cursor).
+        let mut captures = |x: f32, y: f32| {
+            client
+                .send_ok(&Request::PortalRoutePointer { x, y })
+                .expect("route pointer");
+            !client
+                .snapshot()
+                .expect("routed snapshot")
+                .portal
+                .ignores_mouse_events
+        };
+        assert!(
+            !captures(px + pw / 2.0, py + ph / 2.0),
+            "the preview takes input"
+        );
+        assert!(captures(bx + bw / 2.0, by + bh / 2.0), "the bar captures");
+        assert!(
+            captures(cx + 8.0, py + ph / 2.0),
+            "the washed origin is blocked"
+        );
+        assert!(
+            captures(px + pw / 2.0, cy + ch - 8.0),
+            "below the preview too"
+        );
+        assert!(!captures(cx / 2.0, cy + ch / 2.0), "the rail takes input");
+
         client
             .send_ok(&Request::DispatchKeystroke {
                 keystroke: "escape".into(),

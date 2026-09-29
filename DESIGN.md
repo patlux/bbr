@@ -1708,6 +1708,11 @@ destroyed first).
 - **Focus:** while open, the preview owns browser-command focus; Back /
   Forward / Reload / Stop / Navigate route to the preview session. Dismissal
   restores focus to the exact warm origin control/web view.
+- **Pointer:** the Portal runs in its hit-region mode (§18.4) while the Peek
+  shows: it captures the pointer over the bar and the washed origin (the
+  covered origin never receives input), and lets it through to the preview
+  and to the chrome outside the card. Selecting another tab in the rail
+  ends the preview through the controller's origin-removal path.
 - **Motion:** present and dismiss land in one frame with the portal — the
   wash, the inset preview and the bar appear together; no transition (V-6),
   reduced-motion safe by construction.
@@ -2082,7 +2087,7 @@ Footer glyphs render at 16 pt; the Space strip starts at its leading edge (§11.
   hit-region mode: it captures the pointer only over the overlays and lets
   it through to the page everywhere else (a local pointer monitor toggles
   the panel's `ignoresMouseEvents`). Modal presentations still capture
-  everything. The snapshot reports the regions and the routing decision
+  everything; the Peek captures only its bar and washed origin (§11.17). The snapshot reports the regions and the routing decision
   (`portal.hit_regions`, `portal.ignores_mouse_events`).
 - **Blocking sheets dim the card:** the credential sheet and the Delete
   Space sheet sit over a `wash.active` veil over the content card only

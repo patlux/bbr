@@ -110,10 +110,10 @@ impl BbrApp {
             // Blueprint D08: the Portal stays up (in its hit-region mode)
             // while a toast or the zoom readout still shows.
             let overlays = self.transient.showing();
-            let regions = self.transient.hit_rects();
+            let regions = self.portal_hit_regions();
             if let Some(bridge) = self.native_portal.as_mut() {
                 bridge.set_visible(overlays);
-                bridge.set_hit_regions(Some(regions));
+                bridge.set_hit_regions(regions);
             }
             // Re-render the portal root so the dismissed surface is cleared.
             // Deferred: dismissal can run inside the portal window's own
@@ -148,11 +148,13 @@ impl BbrApp {
     /// Deferred to avoid re-entering another window during an app update.
     #[cfg(target_os = "macos")]
     fn drive_native_present(&mut self, cx: &mut Context<Self>) {
+        // A presentation captures every pointer event (menus and sheets
+        // dismiss on an outside press); the Peek captures only its washed
+        // origin and bar (see `portal_hit_regions`).
+        let regions = self.portal_hit_regions();
         if let Some(bridge) = self.native_portal.as_mut() {
             bridge.set_visible(true);
-            // A presentation captures every pointer event (menus and sheets
-            // dismiss on an outside press).
-            bridge.set_hit_regions(None);
+            bridge.set_hit_regions(regions);
         }
         if let Some(handle) = self
             .native_portal
