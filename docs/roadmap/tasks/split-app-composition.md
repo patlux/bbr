@@ -13,8 +13,12 @@ side and stacked**, and a space may hold several split groups. The "exactly
 two panes", "horizontal only", "no persistence of the ratio", "no creation
 by drag or keyboard" and "no close action" constraints below are therefore
 superseded. The domain split, `bbr-split` geometry, persistence and
-`PaneLayout` need a tiling-tree contract first. Follow-up decisions:
-explainer `~/Downloads/bbr-d23-mehrere-seiten.html`.
+`PaneLayout` need a tiling-tree contract first. Follow-up decisions
+(all recommendations adopted, DESIGN §19): ⌃⌘S appends right, ⌃⌥⌘S below,
+⇧⌃⌘S dissolves; ⌃⌘+arrow moves focus; 320 × 200 pt minimum with an
+"n of N" list chip; rail block with an accent bracket; neighbour-only
+divider drags with row/column equalize; rearrange by dropping a rail tab on
+a pane edge. Explainer: `~/Downloads/bbr-d23-mehrere-seiten.html`.
 
 ## Outcome
 

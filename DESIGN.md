@@ -2281,7 +2281,18 @@ double-click resets it. **Beyond the board:** a split is not limited to two
 panes. It may hold any number of panes, side by side and stacked (a tiling
 layout of rows and columns), and a space may hold several split groups.
 This replaces the "exactly one two-pane split" contract of §11.7 and the
-split packets; the follow-up decisions it raises are open.
+split packets. Its follow-up decisions (Patrick, 2026-09-29, all
+recommendations): ⌃⌘S appends a pane to the right of the focused pane,
+⌃⌥⌘S below it (the palette asks which page), ⇧⌃⌘S dissolves the whole
+split and keeps its tabs (replacing "⌃⌘S again dissolves"), ⌘W closes the
+focused pane; ⌃⌘+arrow moves pane focus to the neighbour; panes keep at
+least 320 × 200 pt, and a split that no longer fits collapses to its
+focused pane with an "n of N" chip that opens a list of the panes; a
+split's tabs form a block with a thin accent bracket in the rail, and
+dragging a tab out of the block leaves the split; dragging a divider
+resizes only its two neighbours, and a double-click equalizes the row or
+column; panes are rearranged by dragging their tab from the rail onto
+another pane's edge (no pane title bars).
 
 | # | Question | Delta |
 |---|---|---|
