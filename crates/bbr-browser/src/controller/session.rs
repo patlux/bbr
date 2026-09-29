@@ -20,19 +20,42 @@ impl BrowserController {
     /// Domain order is used everywhere so the recorded engine op log stays
     /// deterministic (map iteration order is not).
     pub(crate) fn sync_views(&mut self) {
+        // Blueprint D19: what the other windows select and show.
+        let elsewhere = self.reconcile_windows();
         let tabs: Vec<TabId> = self.browser.tabs().map(|t| t.id).collect();
         for tab in tabs.iter().copied() {
             let _ = self.ensure_session(tab);
         }
+        let current = self.windows.current;
+        let here: Vec<TabId> = self
+            .browser
+            .space(self.active_space)
+            .map(|space| space.visible_tabs())
+            .unwrap_or_default();
         for tab in tabs {
             let Some(view) = self.registry.view_for_tab(tab) else {
                 continue;
             };
-            let in_active_space = self
-                .browser
-                .tab(tab)
-                .is_some_and(|state| state.space == self.active_space);
-            let want = in_active_space && self.browser.is_visible(tab);
+            let holder = if here.contains(&tab) {
+                Some(current)
+            } else {
+                elsewhere.get(&tab).copied()
+            };
+            let want = holder.is_some();
+            // The session sits in the root of the window that shows it
+            // (re-parented, never reloaded, when it moves).
+            if let Some(window) = holder {
+                let placed = self
+                    .windows
+                    .placement
+                    .get(&view)
+                    .copied()
+                    .unwrap_or_default();
+                if placed != window {
+                    self.engine.borrow_mut().place_web_view(view, window.0);
+                    self.windows.placement.insert(view, window);
+                }
+            }
             if self.visibility.get(&view) != Some(&want) {
                 self.engine.borrow_mut().show(view, want);
                 self.visibility.insert(view, want);
@@ -97,6 +120,12 @@ impl BrowserController {
         let view = WebViewId((self.allocate_view)());
         self.engine.borrow_mut().create_web_view(view, profile, url);
         self.visibility.insert(view, false);
+        // Blueprint D19: a new session starts in the current window's root.
+        let current = self.windows.current;
+        if current != crate::WindowKey::default() {
+            self.engine.borrow_mut().place_web_view(view, current.0);
+        }
+        self.windows.placement.insert(view, current);
         self.session_profiles.insert(view, profile);
         self.registry
             .insert(tab, view)
@@ -110,6 +139,7 @@ impl BrowserController {
         if let Some(view) = self.registry.remove_tab(tab) {
             self.engine.borrow_mut().destroy_web_view(view);
             self.visibility.remove(&view);
+            self.windows.placement.remove(&view);
             self.session_profiles.remove(&view);
             self.nav.remove(&view);
             // The session's availability record (and any in-flight probe or

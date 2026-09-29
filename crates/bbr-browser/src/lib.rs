@@ -89,6 +89,8 @@ mod controller_split_group_tests;
 #[cfg(test)]
 mod controller_tests;
 #[cfg(test)]
+mod controller_window_tests;
+#[cfg(test)]
 mod hydration_tests;
 #[cfg(test)]
 mod organization_pin_tests;
@@ -103,7 +105,7 @@ pub use bbr_domain::{
     FolderId, ProfileHue, SpaceAppearance, SpaceId, SpacePaper, SpaceTheme, TabLifecycle,
     TintIntensity,
 };
-pub use controller::{BrowserController, ClosedTabEntry};
+pub use controller::{BrowserController, ClosedTabEntry, WindowKey};
 pub use downloads::{
     display_filename, url_filename, ApplyOutcome, DownloadActionSink, DownloadController,
     DownloadError, DownloadRecord, RestoredTerminal,

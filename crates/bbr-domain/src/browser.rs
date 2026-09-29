@@ -24,6 +24,11 @@ pub struct Browser {
     pub(crate) profiles: Vec<Profile>,
     pub(crate) spaces: Vec<Space>,
     pub(crate) tabs: Vec<Tab>,
+    /// Blueprint D19 (several windows): the tabs other windows select (and
+    /// their split panes). The model's own selections are the current
+    /// window's; these count as visible too, so no window's page is warmed
+    /// or suspended by another window's operations.
+    pub(crate) elsewhere: std::collections::BTreeSet<TabId>,
 }
 
 impl Default for Browser {
@@ -40,6 +45,7 @@ impl Browser {
             profiles: Vec::new(),
             spaces: Vec::new(),
             tabs: Vec::new(),
+            elsewhere: std::collections::BTreeSet::new(),
         }
     }
 
@@ -179,7 +185,7 @@ impl Browser {
         let Some(space) = self.space(tab_state.space) else {
             return false;
         };
-        space.visible_tabs().contains(&tab)
+        space.visible_tabs().contains(&tab) || self.elsewhere.contains(&tab)
     }
 
     /// Synchronize resource policy with the tabs currently visible in a
@@ -188,7 +194,11 @@ impl Browser {
     pub(crate) fn sync_lifecycles(&mut self, space: SpaceId) {
         let visible: Vec<TabId> = self
             .space(space)
-            .map(|state| state.visible_tabs())
+            .map(|state| {
+                let mut visible = state.visible_tabs();
+                visible.extend(state.tabs.iter().filter(|t| self.elsewhere.contains(t)));
+                visible
+            })
             .unwrap_or_default();
         let members = self
             .space(space)
@@ -208,6 +218,24 @@ impl Browser {
                 }
             }
         }
+    }
+
+    /// Blueprint D19: the tabs other windows select. Every space's
+    /// lifecycles follow at once.
+    pub fn set_selected_elsewhere(&mut self, tabs: std::collections::BTreeSet<TabId>) {
+        if self.elsewhere == tabs {
+            return;
+        }
+        self.elsewhere = tabs;
+        let spaces: Vec<SpaceId> = self.spaces.iter().map(|space| space.id).collect();
+        for space in spaces {
+            self.sync_lifecycles(space);
+        }
+    }
+
+    /// Blueprint D19: the tabs other windows select.
+    pub fn selected_elsewhere(&self) -> &std::collections::BTreeSet<TabId> {
+        &self.elsewhere
     }
 
     // ---- Mutations -------------------------------------------------------

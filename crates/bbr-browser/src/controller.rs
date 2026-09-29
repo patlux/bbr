@@ -33,8 +33,10 @@ mod session;
 mod setup;
 mod snapshot;
 mod split_groups;
+mod windows;
 
 pub use closed_tabs::ClosedTabEntry;
+pub use windows::WindowKey;
 
 use crate::nav::NavState;
 use crate::outcome::ControllerEvent;
@@ -87,6 +89,8 @@ pub struct BrowserController {
     /// (tab rows, Favorites tiles, folder items derive from this same
     /// store).
     pub(crate) favicons: crate::favicon::FaviconStore,
+    /// Blueprint D19: the open windows' contexts (see `controller/windows`).
+    pub(crate) windows: windows::Windows,
 }
 
 impl std::fmt::Debug for BrowserController {
@@ -123,6 +127,7 @@ impl BrowserController {
             next_preview_id: 0,
             responsiveness: ResponsivenessMonitor::new(),
             favicons: crate::favicon::FaviconStore::default(),
+            windows: windows::Windows::default(),
         }
     }
 

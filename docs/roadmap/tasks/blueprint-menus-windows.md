@@ -26,8 +26,9 @@ Dock) and dragging tabs between windows. They need several browser windows
 over the shared browser state (board W-9: one full shell per window with
 its own active space, rail and Portal; a tab lives in one window at a
 time); BBR runs one window, and PRODUCT.md places every profile and space
-in it. This is an architecture decision for Patrick (explainer:
-`~/Downloads/bbr-d19-mehrere-fenster.html`), not a slice of this packet.
+in it. Patrick decided on 2026-09-30: several windows, and tabs move
+between windows by drag and drop (answer A). The work moved to the
+serial [several windows packet](multi-window.md).
 
 ## Outcome
 

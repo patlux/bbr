@@ -42,6 +42,8 @@ pub enum ControllerError {
     /// currently reported unresponsive (recovery is closed to the
     /// Wait/Reload/Close set).
     NotUnresponsive(WebViewId),
+    /// Blueprint D19: no open window has this key.
+    UnknownWindow(crate::WindowKey),
 }
 
 impl std::fmt::Display for ControllerError {
@@ -68,6 +70,7 @@ impl std::fmt::Display for ControllerError {
             Self::NotUnresponsive(view) => {
                 write!(f, "session {view:?} is not reported unresponsive")
             }
+            Self::UnknownWindow(window) => write!(f, "unknown window {window:?}"),
         }
     }
 }

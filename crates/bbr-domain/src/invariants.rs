@@ -69,7 +69,7 @@ impl Browser {
             }
             for tid in &space.tabs {
                 let tab = self.tab(*tid).expect("membership checked above");
-                let visible = space.visible_tabs().contains(tid);
+                let visible = space.visible_tabs().contains(tid) || self.elsewhere.contains(tid);
                 // A visible tab is either actively served (Active) or is a
                 // crashed/recoverable entry (Discarded); it must never be
                 // Suspended or Warm while shown. A hidden tab must never be

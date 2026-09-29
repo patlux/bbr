@@ -52,6 +52,11 @@ pub enum EngineOp {
     Probe {
         view: WebViewId,
     },
+    /// Blueprint D19: the session moved to another window's root.
+    Place {
+        view: WebViewId,
+        window: u64,
+    },
 }
 
 /// Fake per-session web state.
@@ -66,6 +71,8 @@ pub struct FakeSession {
     pub can_go_forward: bool,
     /// Blueprint D14: the scripted session history a test installs.
     pub history: bbr_web::SessionHistory,
+    /// Blueprint D19: the window root the session sits in.
+    pub window: u64,
 }
 
 impl FakeSession {
@@ -79,6 +86,7 @@ impl FakeSession {
             can_go_back: false,
             can_go_forward: false,
             history: bbr_web::SessionHistory::default(),
+            window: 0,
         }
     }
 }
@@ -243,6 +251,15 @@ impl WebEngine for FakeEngine {
         }
         self.geometry.remove(&id);
         self.ops.borrow_mut().push(EngineOp::Destroy { view: id });
+    }
+
+    fn place_web_view(&mut self, id: WebViewId, window: u64) {
+        if let Some(session) = self.sessions.get_mut(&id) {
+            session.window = window;
+        }
+        self.ops
+            .borrow_mut()
+            .push(EngineOp::Place { view: id, window });
     }
 
     fn show(&mut self, id: WebViewId, visible: bool) {

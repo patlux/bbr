@@ -314,6 +314,12 @@ pub trait WebEngine {
     /// focus held by the view).
     fn show(&mut self, id: WebViewId, visible: bool);
 
+    /// Blueprint D19 (several windows): host the session in the root view
+    /// of window `window` (the app's window key) — re-parented, never
+    /// reloaded. Window 0 is the first window's root. The default suits
+    /// single-window engines.
+    fn place_web_view(&mut self, _id: WebViewId, _window: u64) {}
+
     /// Raise `id` to the top of the native z-order above every other web
     /// view (the transient Peek preview above its warm covered origin).
     /// Unknown ids are no-ops; the implementation must keep the view's
