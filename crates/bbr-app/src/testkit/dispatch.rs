@@ -706,6 +706,7 @@ pub(crate) fn dispatch(
         Request::InjectWebEvent { .. }
         | Request::CommandTextInput { .. }
         | Request::RealMouse { .. }
+        | Request::RealClick { .. }
         | Request::RealKey { .. }
         | Request::SelectWindow { .. }
         | Request::MoveWindowBy { .. } => {

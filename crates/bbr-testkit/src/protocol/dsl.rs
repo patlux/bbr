@@ -475,6 +475,21 @@ pub fn real_mouse(
     }
 }
 
+/// Reality gaps (item C): one real click (move, down, up as one gesture).
+pub fn real_click(
+    button: super::RealMouseButton,
+    x: f64,
+    y: f64,
+    modifiers: Vec<super::RealModifier>,
+) -> Request {
+    Request::RealClick {
+        button,
+        x,
+        y,
+        modifiers,
+    }
+}
+
 /// Reality gaps (item C): one real key press (down + up).
 pub fn real_key(keystroke: impl Into<String>) -> Request {
     Request::RealKey {

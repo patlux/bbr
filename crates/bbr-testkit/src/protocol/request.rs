@@ -767,6 +767,18 @@ pub enum Request {
         #[serde(default = "one")]
         click_count: i64,
     },
+    /// Reality gaps (item C): one real click — the pointer arrives, the
+    /// button goes down and comes up — as one gesture: the app checks once
+    /// that the window is key and sends the three events in the same
+    /// main-thread turn, so no activation change can land inside the click.
+    RealClick {
+        #[serde(default)]
+        button: super::RealMouseButton,
+        x: f64,
+        y: f64,
+        #[serde(default)]
+        modifiers: Vec<super::RealModifier>,
+    },
     /// Reality gaps (item C): one real key press — key down, then key up —
     /// for a keystroke in the `DispatchKeystroke` spelling (`"cmd-l"`,
     /// `"shift-cmd-t"`, `"a"`, `"enter"`), delivered through

@@ -55,6 +55,35 @@ pub(super) fn drive(
                     )
                 }
             }
+            Request::RealClick {
+                button,
+                x,
+                y,
+                modifiers,
+            } => {
+                let button = mouse_button(*button);
+                let modifiers = modifier_set(modifiers);
+                // SAFETY: as above. `send_mouse` refuses a window that is
+                // not key before sending; within this turn nothing else
+                // runs between the three events.
+                unsafe {
+                    input::send_mouse(view, input::Phase::Moved, button, *x, *y, modifiers, 1)
+                        .and_then(|_| {
+                            input::send_mouse(
+                                view,
+                                input::Phase::Down,
+                                button,
+                                *x,
+                                *y,
+                                modifiers,
+                                1,
+                            )
+                        })
+                        .and_then(|_| {
+                            input::send_mouse(view, input::Phase::Up, button, *x, *y, modifiers, 1)
+                        })
+                }
+            }
             Request::RealKey { keystroke } => match gpui::Keystroke::parse(keystroke) {
                 Ok(parsed) => {
                     let modifiers = input::Modifiers {

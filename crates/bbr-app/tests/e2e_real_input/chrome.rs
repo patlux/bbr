@@ -149,6 +149,32 @@ fn a_real_drag_moves_a_tab_row() {
                 &[],
             );
         }
+        // Release only once the insertion mark shows the drop before row 0,
+        // as a hand does: the target resolves against the rows the last
+        // frame drew, so the pointer keeps moving there until it shows.
+        let until = deadline();
+        let mut nudge = 0.0;
+        loop {
+            let shown = drawn(&mut client);
+            if shown.drag_slot == Some(0) && shown.drag_valid {
+                break;
+            }
+            assert!(
+                Instant::now() < until,
+                "the drag never showed slot 0: slot {:?}, valid {}, rows {:?}",
+                shown.drag_slot,
+                shown.drag_valid,
+                shown.tab_row_rects
+            );
+            nudge = if nudge == 0.0 { 1.0 } else { 0.0 };
+            real_mouse(
+                &mut client,
+                RealMousePhase::Dragged,
+                RealMouseButton::Left,
+                (to.0, to.1 + nudge),
+                &[],
+            );
+        }
         real_mouse(
             &mut client,
             RealMousePhase::Up,

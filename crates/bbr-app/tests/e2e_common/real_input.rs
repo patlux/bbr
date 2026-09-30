@@ -98,6 +98,7 @@ fn send_real(client: &mut Client, request: &bbr_testkit::Request) {
             Ok(()) => break,
             Err(error) if error.code == "not_key" => {
                 assert!(Instant::now() < until, "the window never stayed key");
+                eprintln!("real input: another app took the key window; resending {request:?}");
                 make_key(client);
             }
             Err(error) => panic!("real input refused: {error:?}"),
@@ -132,16 +133,12 @@ pub fn real_click_at(
     button: RealMouseButton,
     modifiers: &[RealModifier],
 ) {
-    // The pointer arrives before it presses, as a hand's would.
-    real_mouse(
+    // One gesture: the pointer arrives, presses and releases in one app
+    // turn, so another app taking the key window cannot split the click.
+    send_real(
         client,
-        RealMousePhase::Moved,
-        RealMouseButton::Left,
-        point,
-        &[],
+        &bbr_testkit::protocol::dsl::real_click(button, point.0, point.1, modifiers.to_vec()),
     );
-    real_mouse(client, RealMousePhase::Down, button, point, modifiers);
-    real_mouse(client, RealMousePhase::Up, button, point, modifiers);
 }
 
 /// A real left click at the center of the drawn control `id`.

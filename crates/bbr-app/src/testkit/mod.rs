@@ -474,7 +474,10 @@ async fn handle_command(
     }
     // Reality gaps (item C): real AppKit events re-enter GPUI and WebKit, so
     // they are sent between updates as well.
-    if matches!(req, Request::RealMouse { .. } | Request::RealKey { .. }) {
+    if matches!(
+        req,
+        Request::RealMouse { .. } | Request::RealClick { .. } | Request::RealKey { .. }
+    ) {
         return real_input::drive(&req, window, app, async_cx);
     }
     let server = server.clone();

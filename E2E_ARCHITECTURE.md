@@ -1285,7 +1285,11 @@ scenarios take the production path instead:
   window, WebKit and the main menu, and gives the rest to the first
   responder. Nothing is posted to the OS; no permission is involved; a
   middle button takes one in-process CoreGraphics round trip for its button
-  number. AppKit gives an inactive window's first click to activation and
+  number. `RealClick` sends move, down and up as one gesture in one app
+  turn (a click's parts cannot be split by another app taking the key
+  window); drags use step-wise `RealMouse` and release only once the
+  snapshot shows the intended drop slot, as a hand waits for the insertion
+  mark. AppKit gives an inactive window's first click to activation and
   keys only to the key window, so these suites run a shown window made key
   (`make_key`); an event for a window that lost key status to another app
   is refused (`not_key`) before anything is sent, and the helper makes the

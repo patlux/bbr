@@ -234,7 +234,18 @@ Roadmap/documentation updates: ARCHITECTURE §8 (--bbr-profile-dir default),
                  corrected claims: native-integration track, testing track
                  and phase 8 (the credential sheet was a testkit seam only);
                  E2E_ARCHITECTURE §7s real input, ARCHITECTURE §7.
-Open blockers and non-goals: see Non-goals.
+Open blockers and non-goals: see Non-goals. Intermittent, cause open: in
+                 the canonical run of 2026-09-30 on 307fe1d the real-input
+                 chrome test's real click on Back once did not go back, and
+                 in a later suite run the real drag once released before
+                 its drop slot showed. A click's parts now go in one app
+                 turn (`RealClick`), so another app taking the key window
+                 cannot split it, and a drag releases only once the drop
+                 slot shows; 5/5 suite runs green after that. The shell
+                 command suite's `palette_is_window_server_frontmost_over_the_real_webview`
+                 failed once in the first canonical run (closed portal
+                 still reported ids) and passed 3/3 on rerun: intermittent,
+                 cause open.
 Worktree state:  main; another writer's uncommitted tab-row pin-control
                  change was present during A and is not part of this packet.
 ```
