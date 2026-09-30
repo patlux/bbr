@@ -405,8 +405,10 @@ impl Render for BbrApp {
         };
 
         // Blueprint D19: the shared state this frame drew (the other
-        // windows' changes re-render this one only when it moved).
+        // windows' changes re-render this one only when it moved), and
+        // this window's row for every window's save.
         self.mark_generation_drawn();
+        self.publish_window_row();
         div()
             .id("bbr-root")
             .relative()

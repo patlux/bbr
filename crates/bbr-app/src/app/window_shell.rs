@@ -5,7 +5,6 @@
 use bbr_browser::WindowKey;
 use gpui::{Context, Entity};
 
-use super::construct::SharedParts;
 use super::BbrApp;
 use crate::browser_windows::{Registry, Target};
 use crate::shared::Shared;
@@ -27,25 +26,26 @@ impl BbrApp {
     }
 
     /// ⌘N: a new window's context on this window's space (nothing
-    /// selected), its shell's shared parts, and where to open it (this
-    /// window's content rect, cascaded).
-    pub(crate) fn prepare_window(
+    /// selected).
+    pub(crate) fn prepare_window(&mut self) -> WindowKey {
+        self.controller.get().open_window()
+    }
+
+    /// A window saved at quit: its context on its saved space and
+    /// selections (its sessions move once it has its root).
+    pub(crate) fn restore_window_context(
         &mut self,
-        #[cfg(target_os = "macos")] find_tx: smol::channel::Sender<
-            bbr_web_macos::find_mapping::FindCompletion,
-        >,
-    ) -> (WindowKey, SharedParts, Option<[f64; 4]>) {
-        let key = self.controller.get().open_window();
-        let parts = self.sibling_parts(
-            key,
-            #[cfg(target_os = "macos")]
-            find_tx,
-        );
-        let rect = self
-            .window_geometry
-            .borrow()
-            .map(|[x, y, width, height]| [x + 24.0, y + 24.0, width, height]);
-        (key, parts, rect)
+        layout: &crate::window_layouts::WindowLayout,
+    ) -> WindowKey {
+        self.controller
+            .get()
+            .restore_window(layout.active_space, layout.selections.iter().copied())
+    }
+
+    /// Reconcile the sessions with every window (a restored window got its
+    /// native root).
+    pub(crate) fn refresh_window_sessions(&mut self) {
+        self.controller.get().refresh_sessions();
     }
 
     /// Re-render when `other` changed shared state this window draws (its
@@ -155,6 +155,11 @@ impl BbrApp {
                 });
                 #[cfg(not(target_os = "macos"))]
                 let selected_root = None;
+                let row = if key == self.window_key() {
+                    Some(self.window_row())
+                } else {
+                    self.windows.read().row(key)
+                };
                 bbr_testkit::protocol::WindowEntry {
                     window: key.0,
                     current: key == current,
@@ -162,6 +167,9 @@ impl BbrApp {
                     selected_index: selected.map(|(index, _)| index),
                     selected_view,
                     selected_root,
+                    content_rect: row.and_then(|row| row.geometry),
+                    sidebar_visible: row.is_some_and(|row| !row.sidebar.collapsed),
+                    sidebar_width: row.map_or(0.0, |row| row.sidebar.width),
                 }
             })
             .collect()

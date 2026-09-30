@@ -37,6 +37,8 @@ pub(crate) struct WindowRoots {
     /// The window whose chrome takes the keyboard back
     /// (`focus_host_chrome`).
     pub(crate) key_window: u64,
+    /// Sessions placed in a window whose root is not attached yet.
+    pub(crate) pending: HashMap<WebViewId, u64>,
 }
 
 impl WindowRoots {
@@ -71,6 +73,7 @@ impl WindowRoots {
     /// Forget a closed window (its sessions were moved or hidden first).
     pub(crate) fn detach(&mut self, window: u64) {
         self.roots.remove(&window);
+        self.pending.retain(|_, target| *target != window);
         if self.key_window == window {
             self.key_window = 0;
         }

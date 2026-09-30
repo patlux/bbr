@@ -45,6 +45,7 @@ mod split_layouts;
 mod store;
 #[cfg(feature = "testkit")]
 mod testkit;
+mod window_layouts;
 mod window_seam;
 
 use app::BbrApp;
@@ -275,23 +276,36 @@ fn main() {
 
         // Phase-7 chrome-first warm-restore plan: the composition reads the
         // repository-restored browser snapshot ONCE here (before the store
-        // moves into the app), maps it through the app-owned portable
-        // mapping, and selects the deterministic default active space (the
-        // policy default: first space with an active tab, else the first
-        // space — the pre-quit showing space is not persisted). The window
-        // presentation rows (geometry + sidebar) compose through the
-        // production window options and the app's restore seam below.
+        // moves into the app) and maps it through the app-owned portable
+        // mapping. Blueprint D19: `windows.txt` names every window's active
+        // space and selections; the first window's replace the model's
+        // per-space active tabs and choose the hydrated space. Without it
+        // (a store written before several windows, or a seeded store) the
+        // policy default applies: the first space with an active tab, else
+        // the first space. The window presentation rows (geometry + sidebar)
+        // compose through the production window options and the app's
+        // restore seam below.
         let restored_browser = store.restored_browser().clone();
-        let restore_intent = if restored_browser.profiles.is_empty() {
+        let mut saved_windows = window_layouts::load(&window_layouts::path_in(&cli.profile_dir));
+        let mut restore_intent = if restored_browser.profiles.is_empty() {
             None
         } else {
             Some(store::browser::persisted_to_intent(
                 &restored_browser.profiles,
             ))
         };
-        let restore_active_space = restore_intent
-            .as_ref()
-            .and_then(store::browser::default_active_space);
+        if restore_intent.is_none() {
+            saved_windows.clear();
+        }
+        let saved_space = match (restore_intent.as_mut(), saved_windows.first()) {
+            (Some(intent), Some(first)) => window_layouts::apply_first(intent, first),
+            _ => None,
+        };
+        let restore_active_space = saved_space.or_else(|| {
+            restore_intent
+                .as_ref()
+                .and_then(store::browser::default_active_space)
+        });
         let window_row = restored_browser.windows.first();
         let window_geometry = window_row.and_then(|window| window.geometry);
         let sidebar_state = window_row.map(|window| window.sidebar);
@@ -658,6 +672,7 @@ fn main() {
             view.browser_window = Some(window);
             view.load_site_permissions(site_permissions::path_in(&cli.profile_dir));
             view.set_split_layouts_path(split_layouts::path_in(&cli.profile_dir));
+            view.set_window_layouts_path(window_layouts::path_in(&cli.profile_dir));
             view.load_certificate_choices(certificate_choices::path_in(&cli.profile_dir));
             view.load_preferences(preferences::path_in(&cli.profile_dir), cx);
             #[cfg(feature = "testkit")]
@@ -723,6 +738,35 @@ fn main() {
         // Runs in every build (testkit and release): a real hang is
         // detected through the production monitor path in both.
         window_seam::spawn_responsiveness_cadence(cx, &windows);
+
+        // Blueprint D19: the windows after the first come back on their
+        // saved spaces and selections, at their saved rects and rails (the
+        // store rows by position). A failed or fresh restore has none.
+        if matches!(restore_evidence, app::RestoreEvidence::Restored { .. }) {
+            let further: Vec<_> = saved_windows
+                .iter()
+                .enumerate()
+                .skip(1)
+                .map(|(index, layout)| {
+                    let row = restored_browser.windows.get(index).map(|window| {
+                        browser_windows::WindowRow {
+                            geometry: window.geometry.and_then(|g| {
+                                (g.width.is_finite()
+                                    && g.width > 0.0
+                                    && g.height.is_finite()
+                                    && g.height > 0.0)
+                                    .then_some([g.x, g.y, g.width, g.height])
+                            }),
+                            sidebar: window.sidebar,
+                        }
+                    });
+                    (layout.clone(), row)
+                })
+                .collect();
+            if !further.is_empty() {
+                browser_windows::restore_windows(cx, &windows, &further);
+            }
+        }
 
         // Test gateway (only under the `testkit` feature).
         #[cfg(feature = "testkit")]

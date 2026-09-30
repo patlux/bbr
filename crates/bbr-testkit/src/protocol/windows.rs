@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Blueprint D19: one open browser window.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WindowEntry {
     /// The window's key (the first window is 0).
     pub window: u64,
@@ -17,4 +17,13 @@ pub struct WindowEntry {
     /// The window whose native root hosts that session (the engine's own
     /// bookkeeping; macOS only).
     pub selected_root: Option<u64>,
+    /// The window's content rect `[x, y, width, height]` as it last drew
+    /// (what a save writes).
+    #[serde(default)]
+    pub content_rect: Option<[f64; 4]>,
+    /// The window's rail: shown, and its requested width.
+    #[serde(default)]
+    pub sidebar_visible: bool,
+    #[serde(default)]
+    pub sidebar_width: f64,
 }

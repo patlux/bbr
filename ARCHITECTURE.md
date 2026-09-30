@@ -684,6 +684,22 @@ guards out of `if let`/`match` scrutinees. The controller is reached through
 access names its window. A changing borrow bumps the shared generation the
 other windows re-render from.
 
+Window persistence (blueprint D19): each shell publishes its presentation
+row (content rect, rail) to the `browser_windows::Registry` when it draws;
+any window's save writes every open window's row to the store's `windows`
+table by position (ids above every domain id), and every window's active
+space and per-space selections to `windows.txt` beside the store
+(`crate::window_layouts`; no schema change). At launch the first saved
+window's selections replace the model's per-space active tabs in the
+restore intent and its space is the hydrated one (the policy default only
+without the file); `browser_windows::restore_windows` then reopens the
+others through `BrowserController::restore_window`, giving each its native
+root before `refresh_sessions` moves its pages in (the engine also parks a
+page placed in a root that is not attached yet until it is). The file is
+written synchronously and the store in the background, so a selection the
+store never committed keeps the store's own active tab. The last window's
+close flushes while it is still registered, so its row is written.
+
 The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs` + the split
 `app/sidebar.rs`/`app/sidebar_view.rs`/`app/spaces.rs`/`app/tab.rs`/
 `app/interaction.rs` + the `shell/` presentation modules) renders the

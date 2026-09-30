@@ -156,6 +156,17 @@ impl WebEngineWk {
                 self.gesture_sink.clone(),
             )
         };
+        // Pages placed in this window before its root existed move in now.
+        let waiting: Vec<WebViewId> = self
+            .roots
+            .pending
+            .iter()
+            .filter(|(_, target)| **target == window)
+            .map(|(view, _)| *view)
+            .collect();
+        for view in waiting {
+            self.place_web_view(view, window);
+        }
     }
 
     /// Blueprint D19: forget a closed window's root (its sessions moved or
@@ -513,6 +524,7 @@ impl WebEngine for WebEngineWk {
         }
         let window = self.roots.window_of(id);
         self.roots.session_window.remove(&id);
+        self.roots.pending.remove(&id);
         if let Some(mtm) = MainThreadMarker::new() {
             match self.roots.root(window) {
                 Some(root) => {
@@ -643,7 +655,14 @@ impl WebEngine for WebEngineWk {
             return;
         };
         let from = self.roots.window_of(id);
-        if from == window || (window != 0 && self.roots.root(window).is_none()) {
+        if window != 0 && self.roots.root(window).is_none() {
+            // The window's root is not attached yet: the page moves in when
+            // it is.
+            self.roots.pending.insert(id, window);
+            return;
+        }
+        self.roots.pending.remove(&id);
+        if from == window {
             return;
         }
         let Some(session) = self.sessions.get(&id) else {

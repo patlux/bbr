@@ -331,3 +331,131 @@ fn a_window_redraws_for_another_windows_change_and_stays_quiet_when_idle() {
     }));
     finish(result, &mut harness, &socket, &token);
 }
+
+fn close(a: Option<[f64; 4]>, b: Option<[f64; 4]>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => a.iter().zip(b).all(|(x, y)| (x - y).abs() <= 1.0),
+        _ => false,
+    }
+}
+
+#[test]
+#[ignore]
+fn every_window_comes_back_after_a_restart() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+    let (fixtures, _page_one, page_two, mut harness, socket, token) = start("windows-restore");
+    let marker = fixtures.url("/window-marker.html");
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        let mut since = ready(&mut client, &token);
+        // The first window: two tabs on the default space, the first one
+        // selected.
+        open_tab(&mut client, &mut since, &page_two, None);
+        client
+            .send_ok(&bbr_testkit::protocol::dsl::select_tab(0))
+            .expect("select page one");
+        let first = settle(&mut client, "page one", |s| s.active_tab_index == Some(0));
+        let home = first.active_space;
+        let profile = first.active_profile;
+
+        // The second window: its own space with its own tab, rail hidden.
+        let (second, _) = new_window(&mut client);
+        client
+            .send_ok(&bbr_testkit::protocol::dsl::create_space(profile, "Work"))
+            .expect("create Work");
+        let work = settle(&mut client, "Work", |s| {
+            s.spaces.iter().any(|space| space.title == "Work")
+        })
+        .spaces
+        .iter()
+        .find(|space| space.title == "Work")
+        .unwrap()
+        .space;
+        client
+            .send_ok(&bbr_testkit::protocol::dsl::activate_space(work))
+            .expect("activate Work");
+        settle(&mut client, "Work active", |s| s.active_space == work);
+        open_tab(&mut client, &mut since, &marker, None);
+        keystroke(&mut client, "cmd-s");
+        let saved = settle(&mut client, "the second window's rail hidden", |s| {
+            !entry(s, second).sidebar_visible && entry(s, second).selected_index == Some(0)
+        });
+        let saved_first = entry(&saved, 0);
+        let saved_second = entry(&saved, second);
+        assert_eq!(saved_first.active_space, Some(home.0));
+        assert_eq!(saved_first.selected_index, Some(0));
+        assert!(saved_first.sidebar_visible);
+        assert_eq!(saved_second.active_space, Some(work.0));
+        assert!(saved_first.content_rect.is_some() && saved_second.content_rect.is_some());
+        assert!(
+            !close(saved_first.content_rect, saved_second.content_rect),
+            "the windows sit apart"
+        );
+
+        // One window's save writes every window.
+        client
+            .send_ok(&bbr_testkit::Request::FlushBrowserState)
+            .expect("flush");
+        (saved_first, saved_second)
+    }));
+    let (saved_first, saved_second) = match result {
+        Ok(saved) => {
+            harness.success = false;
+            saved
+        }
+        Err(panic) => {
+            harness.diagnostics(&socket, &token);
+            std::panic::resume_unwind(panic);
+        }
+    };
+    drop(harness);
+
+    let (mut harness, socket, token) =
+        spawn_harness("windows-restore", &fixtures.url("/page1.html"));
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        client.attach(None).expect("attach");
+        let restored = settle(&mut client, "both windows", |s| {
+            s.windows.len() == 2 && s.windows.iter().all(|w| w.selected_view.is_some())
+        });
+        assert_eq!(current(&restored), 0, "the first window is current");
+        let first = entry(&restored, 0);
+        let second = restored
+            .windows
+            .iter()
+            .find(|w| w.window != 0)
+            .cloned()
+            .unwrap();
+        assert_eq!(first.active_space, saved_first.active_space);
+        assert_eq!(first.selected_index, saved_first.selected_index);
+        assert!(first.sidebar_visible);
+        assert!(
+            close(first.content_rect, saved_first.content_rect),
+            "{:?} vs {:?}",
+            first.content_rect,
+            saved_first.content_rect
+        );
+        assert_eq!(second.active_space, saved_second.active_space);
+        assert_eq!(second.selected_index, saved_second.selected_index);
+        assert!(!second.sidebar_visible, "its own rail came back");
+        assert_eq!(
+            second.selected_root,
+            Some(second.window),
+            "its page is in its root"
+        );
+        assert!(
+            close(second.content_rect, saved_second.content_rect),
+            "{:?} vs {:?}",
+            second.content_rect,
+            saved_second.content_rect
+        );
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+    finish(result, &mut harness, &socket, &token);
+}

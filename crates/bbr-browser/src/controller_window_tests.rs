@@ -310,3 +310,53 @@ fn a_repeated_engine_report_leaves_the_drawn_state_alone() {
     let _ = c.apply_event(WebEvent::TitleChanged(one, "Two".into()));
     assert_ne!(c.view_fingerprint(one), before, "a new title is drawn");
 }
+
+#[test]
+fn a_saved_window_comes_back_with_its_space_and_selections() {
+    let (mut c, h) = three();
+    let first = c.current_window();
+    let home = c.snapshot().active_space;
+    let profile = c.snapshot().active_profile;
+    let work = c.create_space(profile, "Work").unwrap();
+    let one = c.tab_at(0).unwrap();
+    let before = h.ops().len();
+    let second = c.restore_window(work, [(home, Some(one)), (work, None)]);
+    assert_eq!(h.ops().len(), before, "no session moves before the refresh");
+    c.refresh_sessions();
+    assert_eq!(c.window_space(second), Some(work));
+    let layouts = c.window_layouts();
+    assert_eq!(layouts.len(), 2);
+    assert_eq!(layouts[0].0, first);
+    assert_eq!(layouts[0].1, home);
+    assert_eq!(
+        layouts[1],
+        (second, work, vec![(home, Some(one)), (work, None)])
+    );
+    // The saved selection of home is kept for when the window shows home.
+    c.view_window(second).unwrap();
+    c.activate_space(home).unwrap();
+    assert_eq!(c.snapshot().active_index, Some(0));
+    assert_eq!(window_of(&h, view(&c, 0)), second.0);
+    c.check_invariants();
+}
+
+#[test]
+fn a_saved_window_drops_what_is_gone() {
+    let (mut c, _h) = three();
+    let home = c.snapshot().active_space;
+    let key = c.restore_window(
+        bbr_domain::SpaceId(9_999),
+        [
+            (home, Some(bbr_domain::TabId(9_998))),
+            (bbr_domain::SpaceId(9_997), None),
+        ],
+    );
+    c.refresh_sessions();
+    assert_eq!(
+        c.window_space(key),
+        Some(home),
+        "an unknown space falls back"
+    );
+    assert_eq!(c.window_selection(key), None, "an unknown tab is dropped");
+    c.check_invariants();
+}

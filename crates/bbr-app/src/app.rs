@@ -152,6 +152,7 @@ pub(crate) mod transient;
 mod u2;
 mod u2_surface;
 mod unresponsive;
+mod window_persist;
 mod window_shell;
 // App-owned snapshot → bbr-ui DTO adapters (Favorite/Folder/browser
 // snapshot conversions stay in bbr-app; the DTOs and rendering live in
@@ -256,6 +257,8 @@ pub struct BbrApp {
     /// Blueprint D23: `splits.txt` and the groups last written there.
     split_layouts_path: Option<std::path::PathBuf>,
     split_layouts_saved: crate::shared::Shared<Option<crate::split_layouts::SpaceGroups>>,
+    /// Blueprint D19: `windows.txt` and the windows last written there.
+    window_layouts: crate::shared::Shared<window_persist::WindowLayoutsFile>,
     /// Blueprint D12: client-certificate requests and remembered choices.
     pub(crate) certificates: client_certificates::CertificateState,
     /// Blueprint D13: links to other apps' schemes.
@@ -725,32 +728,14 @@ impl BbrApp {
     /// row. Appearance values are the controller's effective per-space
     /// appearance (schema v4 persists theme, identity and paper).
     fn current_browser_state(&self) -> bbr_persistence::BrowserState {
-        use bbr_persistence::{SidebarState, WindowGeometry, WindowState};
         let intent = self.controller.read().intent();
         let profiles = crate::store::browser::intent_to_persisted(&intent, |space| {
             self.controller.read().space_appearance(space)
         });
         let window_id = crate::store::browser::derived_window_id(&profiles);
-        let geometry = self
-            .window_geometry
-            .borrow()
-            .map(|[x, y, width, height]| WindowGeometry {
-                x,
-                y,
-                width,
-                height,
-            });
         bbr_persistence::BrowserState {
             profiles,
-            windows: vec![WindowState {
-                id: window_id,
-                geometry,
-                sidebar: SidebarState {
-                    width: f64::from(self.sidebar.requested()),
-                    collapsed: !self.sidebar_visible,
-                    last_expanded_width: f64::from(self.sidebar.last_expanded()),
-                },
-            }],
+            windows: self.persisted_windows(window_id),
         }
     }
 
@@ -764,6 +749,7 @@ impl BbrApp {
             .read()
             .poke_browser_state(self.current_browser_state());
         self.persist_split_layouts();
+        self.persist_window_layouts();
     }
 
     /// Blueprint D23: where the split groups are kept.

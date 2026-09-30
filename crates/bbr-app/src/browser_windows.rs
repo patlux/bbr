@@ -27,11 +27,21 @@ struct BrowserWindow {
     app: Entity<BbrApp>,
 }
 
-/// Every open browser window and the one that last took input.
+/// One window's presentation as the store keeps it: its content rect
+/// (`[x, y, width, height]`, points) and its rail.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct WindowRow {
+    pub(crate) geometry: Option<[f64; 4]>,
+    pub(crate) sidebar: bbr_persistence::SidebarState,
+}
+
+/// Every open browser window, the one that last took input, and each
+/// window's presentation row (published when it draws).
 #[derive(Default)]
 pub(crate) struct Registry {
     windows: BTreeMap<WindowKey, BrowserWindow>,
     current: WindowKey,
+    rows: BTreeMap<WindowKey, WindowRow>,
 }
 
 /// A window's handle and shell.
@@ -48,6 +58,7 @@ impl Registry {
     }
 
     fn remove(&mut self, key: WindowKey) -> Option<BrowserWindow> {
+        self.rows.remove(&key);
         let removed = self.windows.remove(&key);
         if self.current == key {
             if let Some(next) = self.windows.keys().next() {
@@ -95,6 +106,20 @@ impl Registry {
     /// Every open window, in key order.
     pub(crate) fn keys(&self) -> Vec<WindowKey> {
         self.windows.keys().copied().collect()
+    }
+
+    /// `key`'s presentation row as it last drew.
+    pub(crate) fn row(&self, key: WindowKey) -> Option<WindowRow> {
+        self.rows.get(&key).copied()
+    }
+
+    pub(crate) fn set_row(&mut self, key: WindowKey, row: WindowRow) {
+        self.rows.insert(key, row);
+    }
+
+    /// Every window's presentation row, in window order.
+    pub(crate) fn rows(&self) -> Vec<WindowRow> {
+        self.rows.values().copied().collect()
     }
 
     /// Every open window's shell.
@@ -155,23 +180,27 @@ pub(crate) fn install_lifecycle(
         let Some(key) = key else {
             return;
         };
+        if windows.read().keys() == [key] {
+            // The last browser window: it stays registered for the save
+            // (its row and selections are written), the app entity outlives
+            // its window (held here), and the structural model and the
+            // Saved Page provider are each persisted in one synchronous
+            // transaction before the quit.
+            let target = windows.read().target(key);
+            if let Some((_, app)) = target {
+                app.update(cx, |view, _cx| {
+                    view.flush_browser_state();
+                    view.flush_saved_pages();
+                });
+            }
+            cx.quit();
+            return;
+        }
         let removed = windows.get().remove(key);
         let Some(closed_window) = removed else {
             return;
         };
         let remaining = windows.read().shells();
-        if remaining.is_empty() {
-            // The last browser window: the app entity outlives its window
-            // (held here), so the structural model and the Saved Page
-            // provider are each persisted in one synchronous transaction
-            // before the quit.
-            closed_window.app.update(cx, |view, _cx| {
-                view.flush_browser_state();
-                view.flush_saved_pages();
-            });
-            cx.quit();
-            return;
-        }
         let successor = windows.read().current_target();
         closed_window
             .app
@@ -206,15 +235,82 @@ pub(crate) fn new_window(cx: &mut App, windows: &Shared<Registry>) {
     let Some((_, source)) = source else {
         return;
     };
+    let key = source.update(cx, |view, _cx| view.prepare_window());
+    let rect = source
+        .read(cx)
+        .window_row()
+        .geometry
+        .map(|[x, y, width, height]| [x + 24.0, y + 24.0, width, height]);
+    let Some((handle, app)) = open_shell(cx, windows, &source, key, rect) else {
+        source.update(cx, |view, _cx| view.abandon_window(key));
+        return;
+    };
+    let _ = with_app(&handle, &app, cx, |view, window, cx| {
+        view.window_activated(cx);
+        view.open_palette(window, cx);
+    });
+}
+
+/// Blueprint D19: bring back the windows after the first one saved at
+/// quit (`windows.txt` with their store rows by position): each on its
+/// saved space and selections, at its saved content rect with its saved
+/// rail. The first window stays the current one.
+pub(crate) fn restore_windows(
+    cx: &mut App,
+    windows: &Shared<Registry>,
+    saved: &[(crate::window_layouts::WindowLayout, Option<WindowRow>)],
+) {
+    let source = windows.read().current_target();
+    let Some((first_handle, source)) = source else {
+        return;
+    };
+    let first = windows.read().current();
+    for (layout, row) in saved {
+        let key = source.update(cx, |view, _cx| view.restore_window_context(layout));
+        let rect = row.and_then(|row| row.geometry);
+        let Some((handle, app)) = open_shell(cx, windows, &source, key, rect) else {
+            source.update(cx, |view, _cx| view.abandon_window(key));
+            continue;
+        };
+        let _ = with_app(&handle, &app, cx, |view, _window, cx| {
+            if let Some(row) = row {
+                view.restore_window_state(&row.sidebar);
+            }
+            // Its root is attached: its pages move in now.
+            view.refresh_window_sessions();
+            cx.notify();
+        });
+    }
+    let _ = windows.bookkeep().set_current(first);
+    let hidden = source.read(cx).windows_hidden;
+    let _ = with_app(&first_handle, &source, cx, |view, window, cx| {
+        if !hidden {
+            window.activate_window();
+        }
+        view.window_activated(cx);
+    });
+}
+
+/// Open window `key`'s shell (its context already exists in the
+/// controller) at the content rect `rect` (centered when unknown): its
+/// Root, its native root, Portal and pointer observer, its find pump, and
+/// the watches between it and every other window. The new window becomes
+/// the current one.
+fn open_shell(
+    cx: &mut App,
+    windows: &Shared<Registry>,
+    source: &Entity<BbrApp>,
+    key: WindowKey,
+    rect: Option<[f64; 4]>,
+) -> Option<Target> {
     #[cfg(target_os = "macos")]
     let (find_tx, find_rx) =
         smol::channel::unbounded::<bbr_web_macos::find_mapping::FindCompletion>();
-    let (key, parts, rect) = source.update(cx, |view, _cx| {
-        view.prepare_window(
-            #[cfg(target_os = "macos")]
-            find_tx,
-        )
-    });
+    let parts = source.read(cx).sibling_parts(
+        key,
+        #[cfg(target_os = "macos")]
+        find_tx,
+    );
     let hidden = source.read(cx).windows_hidden;
     let bounds = match rect {
         Some([x, y, width, height]) if width > 0.0 && height > 0.0 => Bounds {
@@ -234,8 +330,7 @@ pub(crate) fn new_window(cx: &mut App, windows: &Shared<Registry>) {
     });
     let (Ok(handle), Some(app)) = (opened, shell) else {
         log::error!("could not open a browser window");
-        source.update(cx, |view, _cx| view.abandon_window(key));
-        return;
+        return None;
     };
     let others = windows.read().shells();
     windows.get().insert(key, handle, app.clone());
@@ -254,9 +349,8 @@ pub(crate) fn new_window(cx: &mut App, windows: &Shared<Registry>) {
     let _ = with_app(&handle, &app, cx, |view, window, cx| {
         view.observe_system_appearance(window, cx);
         view.observe_system_accessibility(cx);
-        view.window_activated(cx);
-        view.open_palette(window, cx);
     });
+    Some((handle, app))
 }
 
 /// The new window's native parts: its root in the engine, its Portal host

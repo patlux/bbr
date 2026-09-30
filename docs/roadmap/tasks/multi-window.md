@@ -162,6 +162,20 @@ Not parallelized.
       close quitting, menu bar and Dock, a quiet idle window and a
       redraw on another window's change) — 6/6 idle-test reruns green after
       the fingerprint fix.)*
+- [x] Restore of every window (slice 4): store window rows by position
+      from every window's published row, `windows.txt` with every window's
+      active space and selections (`window_layouts`), the first window's
+      selections and space applied to the restore intent, further windows
+      through `BrowserController::restore_window` + `refresh_sessions`, and
+      an engine that parks a page placed before its window's root exists.
+      This supersedes the persistence-hydration rule that a relaunch shows
+      the policy default space: with `windows.txt` each window's pre-quit
+      space returns (DESIGN §11.13). *(2026-09-30: `controller_window_tests`
+      (restore/drop-gone), `window_layouts` unit tests (round trip, malformed
+      lines, first-window intent incl. a selection the store never
+      committed), `e2e_windows::every_window_comes_back_after_a_restart`;
+      `e2e_shell_persistence::force_quit_recovers_exactly_the_committed_state`
+      caught the uncommitted-selection case during this slice.)*
 
 ### Real-app E2E
 
@@ -169,8 +183,8 @@ Not parallelized.
       selections, a tab moving by selection, ⇧⌘W and Reopen, last-window
       behavior, drag between windows (rail and card), restore of every
       window after a restart. *(Slice 3b covers ⌘N, separate selections, a
-      tab moving by selection, ⇧⌘W, last-window quit and the menus; Reopen,
-      drag and restore follow with slices 4–6.)*
+      tab moving by selection, ⇧⌘W, last-window quit and the menus; slice 4
+      the restart; Reopen and drag follow with slices 5–6.)*
 
 ### Performance
 
@@ -199,14 +213,19 @@ with the evidence and the question (HTML explainer in `~/Downloads`).
 ## Delivery ledger
 
 ```text
-Outcome:         slices 1–3 implemented (several windows over shared state);
-                 slices 4–6 (restore of every window, reopen toast/⇧⌘T,
-                 drag between windows) open.
+Outcome:         slices 1–4 implemented (several windows over shared state,
+                 every window restored after a relaunch); slices 5–6
+                 (reopen toast/⇧⌘T, drag between windows) open.
 Commits:         89a78c75 (controller window contexts), 676e3c45 (engine
                  roots), 68be5cef (window view + previews per window),
-                 4e596c99 (shared handles), slice 3b (this commit).
+                 4e596c99 (shared handles), 0bb37a8b (several windows),
+                 slice 4 (this commit: restore of every window).
 Functional evidence: unit/contract tests per slice (see Evidence).
-Real-app E2E:    just e2e-windows (4); affected suites green on the 3b tree:
+Real-app E2E:    slice 4: just e2e-windows (5), e2e-shell-persistence,
+                 e2e-shutdown, e2e-split, e2e-first-run, e2e-profiles,
+                 e2e-shell-saved-pages-library, e2e-shell-spaces green on the
+                 slice-4 tree.
+                 Slice 3b: just e2e-windows (4); affected suites green on the 3b tree:
                  e2e-shell-spaces (incl. e2e_shell_menus), e2e-shutdown,
                  e2e-shell-settings, e2e-shell-command. e2e-shell-portal 6/7:
                  hardening::host_hides_on_minimize_and_restores fails at the
@@ -220,6 +239,6 @@ Roadmap/documentation updates: PRODUCT (several windows), DESIGN §11.13 and
                  §19 D19, ARCHITECTURE (windows, shared handles, lifecycle).
 Open blockers and non-goals: restore of every window, Reopen, drag between
                  windows (slices 4–6); tear-off is a non-goal.
-Worktree state:  /tmp/bbr-base is a detached comparison worktree
-                 (4e596c99) created for the perf/portal comparisons.
+Worktree state:  clean on main; the comparison worktree /tmp/bbr-base was
+                 removed 2026-09-30 (Patrick).
 ```

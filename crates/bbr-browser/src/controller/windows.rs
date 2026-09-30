@@ -26,6 +26,10 @@ use crate::ControllerError;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct WindowKey(pub u64);
 
+/// One window as persistence keeps it: its key, active space and the
+/// selection of every space.
+pub type WindowLayout = (WindowKey, SpaceId, Vec<(SpaceId, Option<TabId>)>);
+
 /// A window's waiting context.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub(crate) struct WindowContext {
@@ -87,6 +91,85 @@ impl BrowserController {
             },
         );
         key
+    }
+
+    /// Blueprint D19: re-open a window saved at quit, on `active_space` with
+    /// its per-space `selections` (a space or tab that is gone is dropped;
+    /// the window then shows that space's empty state). The current window
+    /// stays current, and no session moves until [`Self::refresh_sessions`]
+    /// runs — the caller first gives the window its native root.
+    pub fn restore_window(
+        &mut self,
+        active_space: SpaceId,
+        selections: impl IntoIterator<Item = (SpaceId, Option<TabId>)>,
+    ) -> WindowKey {
+        let active_space = if self.browser.space(active_space).is_some() {
+            active_space
+        } else {
+            self.active_space
+        };
+        let selections = selections
+            .into_iter()
+            .filter_map(|(space, tab)| {
+                let state = self.browser.space(space)?;
+                Some((space, tab.filter(|tab| state.tabs.contains(tab))))
+            })
+            .collect();
+        self.windows.next = self.windows.next.max(self.windows.current.0) + 1;
+        let key = WindowKey(self.windows.next);
+        self.windows.waiting.insert(
+            key,
+            WindowContext {
+                active_space: Some(active_space),
+                selections,
+                preview: None,
+            },
+        );
+        key
+    }
+
+    /// Reconcile every session with the windows (after a restored window
+    /// got its native root).
+    pub fn refresh_sessions(&mut self) {
+        self.sync_views();
+        self.check_invariants();
+    }
+
+    /// Every open window's active space and per-space selections (window
+    /// order: by key), for persistence.
+    pub fn window_layouts(&self) -> Vec<WindowLayout> {
+        let mut out: Vec<_> = self
+            .windows
+            .waiting
+            .iter()
+            .map(|(key, context)| {
+                let space = context.active_space.unwrap_or(self.active_space);
+                let selections = self
+                    .browser
+                    .spaces()
+                    .map(|state| {
+                        let tab = context
+                            .selections
+                            .get(&state.id)
+                            .copied()
+                            .flatten()
+                            .filter(|tab| state.tabs.contains(tab));
+                        (state.id, tab)
+                    })
+                    .collect();
+                (*key, space, selections)
+            })
+            .collect();
+        out.push((
+            self.windows.current,
+            self.active_space,
+            self.browser
+                .spaces()
+                .map(|space| (space.id, space.active_tab))
+                .collect(),
+        ));
+        out.sort_by_key(|(key, _, _)| *key);
+        out
     }
 
     /// Make `window` current: stash the current context, load its own.
