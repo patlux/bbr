@@ -33,7 +33,10 @@
 //! - activating a restored (session-less) space hydrates exactly its tab
 //!   ([`space_activation`](e2e_shell_persistence/space_activation.rs));
 //! - a deleted space stays deleted and its closed tabs stay reopenable
-//!   ([`space_delete`](e2e_shell_persistence/space_delete.rs)).
+//!   ([`space_delete`](e2e_shell_persistence/space_delete.rs));
+//! - a launch without `--bbr-profile-dir` keeps its profile in
+//!   `~/Library/Application Support/<bundle id>` and restores from it
+//!   ([`default_location`](e2e_shell_persistence/default_location.rs)).
 //!
 //! No sleeps: every step synchronizes on typed snapshot state or semantic
 //! events under an explicit deadline. GUI suites must not run in parallel
@@ -61,6 +64,9 @@ mod space_activation;
 
 #[path = "e2e_shell_persistence/space_delete.rs"]
 mod space_delete;
+
+#[path = "e2e_shell_persistence/default_location.rs"]
+mod default_location;
 
 pub use bbr_testkit::protocol::{RestoreDisposition, StoreLoadSnapshot};
 pub use e2e_common::*;

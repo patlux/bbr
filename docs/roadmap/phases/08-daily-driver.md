@@ -38,6 +38,7 @@ BBR covers the workflows required for a credible macOS alpha rather than only ta
 - [ ] Harden all empty, loading, error, cancellation, and destructive states.
 - [ ] Deliver several browser windows over the shared model, with tabs moving between windows by drag and drop, through the serial [several windows packet](../tasks/multi-window.md) (blueprint D19, Patrick 2026-09-30).
 - [ ] Harden the one-per-window native Portal lifecycle, focus, multi-window ownership, display geometry, and teardown through the bounded [Portal host hardening packet](../tasks/native-portal-hardening.md).
+- [ ] Close the gaps where tests simulate what users run (default profile directory, native HTTP authentication, real input events, background links, pop-ups from script clicks, persistent website data) through the serial [reality gaps packet](../tasks/reality-gaps.md) (Patrick 2026-09-30).
 
 ## Deferred architecture options
 

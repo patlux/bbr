@@ -82,6 +82,8 @@ objc2-foundation = { workspace = true, features = [
     "NSDictionary",
     "NSEnumerator",
     "NSValue",
+    # The default profile directory is named after the running bundle.
+    "NSBundle",
     # Favicon acquisition (task packet `real-favicon-pipeline.md`): the
     # bounded, profile-isolated download runs through an `NSURLSession`
     # whose private cookie storage is seeded from the owning profile's

@@ -34,6 +34,7 @@ mod certificate_choices;
 #[allow(dead_code)]
 mod portal;
 mod preferences;
+mod profile_location;
 #[cfg(target_os = "macos")]
 mod rail_observer;
 mod settings_window;
@@ -155,9 +156,14 @@ impl Cli {
             }
         }
 
-        let profile_dir = profile_dir.unwrap_or_else(|| {
-            std::env::temp_dir().join(format!("bbr-profile-{}", std::process::id()))
-        });
+        // Without the flag: `~/Library/Application Support/<bundle id>`.
+        // Only a process without `$HOME` falls back to a per-process
+        // temporary directory (it still persists for this session).
+        let profile_dir = profile_dir
+            .or_else(profile_location::current_default_profile_dir)
+            .unwrap_or_else(|| {
+                std::env::temp_dir().join(format!("bbr-profile-{}", std::process::id()))
+            });
 
         Cli {
             initial_url,
@@ -193,6 +199,16 @@ fn main() {
     let (external_url_tx, external_url_rx) = smol::channel::unbounded::<String>();
 
     stderr_logger::init();
+
+    // The profile directory exists before anything opens a file in it: the
+    // store, the gateway socket and the text files beside the store.
+    if let Err(error) = std::fs::create_dir_all(&cli.profile_dir) {
+        log::error!(
+            "could not create the profile directory {}: {error}",
+            cli.profile_dir.display()
+        );
+    }
+    log::info!("profile directory: {}", cli.profile_dir.display());
 
     let idgen = std::rc::Rc::new(std::cell::RefCell::new(match cli.ids {
         IdMode::Sequential => Box::new(SequentialIdGen::default()) as Box<dyn IdGen>,
@@ -774,7 +790,6 @@ fn main() {
             let (cmd_tx, cmd_rx) = smol::channel::unbounded();
             let server: Option<Arc<bbr_testkit::GatewayServer>> =
                 if let Some(token) = &cli.test_token {
-                    std::fs::create_dir_all(&cli.profile_dir).ok();
                     let server = testkit::start(
                         &cli.profile_dir,
                         token,

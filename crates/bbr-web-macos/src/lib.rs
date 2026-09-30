@@ -123,6 +123,10 @@ mod media_adapter;
 #[cfg(target_os = "macos")]
 mod window_roots;
 
+/// The running app's bundle identifier (the default profile directory).
+#[cfg(target_os = "macos")]
+pub mod app_identity;
+
 /// Blueprint D10: the local time zone's current offset from UTC in
 /// seconds (the History page's day boundaries and times).
 #[cfg(target_os = "macos")]
