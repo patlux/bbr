@@ -216,6 +216,13 @@ impl TabDrag {
         self.valid = valid;
     }
 
+    /// Blueprint D19: the pointer is over another window (or outside every
+    /// window): no target in this one.
+    pub fn clear_target(&mut self) {
+        self.target = None;
+        self.valid = false;
+    }
+
     /// Clear the drag state (commit already happened or was cancelled).
     pub fn clear(&mut self) {
         *self = Self::default();

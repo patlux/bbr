@@ -33,6 +33,7 @@ mod session;
 mod setup;
 mod snapshot;
 mod split_groups;
+mod window_drop;
 mod windows;
 
 pub use closed_tabs::ClosedTabEntry;

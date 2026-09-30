@@ -94,6 +94,16 @@ impl BbrApp {
                     .collect()
             })
             .unwrap_or_default();
+        // Blueprint D19: one rect recorder per rendered tab row (a drop from
+        // another window resolves its slot against them).
+        self.drag_offer_rects.rows.borrow_mut().clear();
+        let row_anchors = model
+            .tabs
+            .pinned
+            .iter()
+            .chain(model.tabs.window.iter())
+            .map(|row| (row.index, self.tab_row_anchor(row.index)))
+            .collect();
         let command_results = self
             .command_result_surface(theme)
             .map(|surface| surface.into_any());
@@ -113,11 +123,25 @@ impl BbrApp {
                 pin_offer_anchor,
                 drag_proxy_anchor,
                 folder_anchors,
+                row_anchors,
                 command_results,
                 downloads_panel,
                 space_config_panel,
             },
         )
+    }
+
+    /// The rect recorder of tab row `index` (blueprint D19).
+    fn tab_row_anchor(&self, index: usize) -> gpui::AnyElement {
+        let rects = self.drag_offer_rects.rows.clone();
+        crate::app::favorites_band::RectAnchor::new(move |rect| {
+            let mut rects = rects.borrow_mut();
+            match rects.iter_mut().find(|(row, _)| *row == index) {
+                Some(entry) => entry.1 = rect,
+                None => rects.push((index, rect)),
+            }
+        })
+        .into_any()
     }
 
     /// The rect recorder of folder row `folder` (blueprint D02): publishes

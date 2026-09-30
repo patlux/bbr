@@ -1649,6 +1649,10 @@ pub struct Snapshot {
     /// re-rendered the current window.
     #[serde(default)]
     pub window_refreshes: u64,
+    /// Blueprint D19: every rendered tab row's window rect, by tab index
+    /// (the rows a drop from another window resolves its slot against).
+    #[serde(default)]
+    pub tab_row_rects: Vec<(usize, [f32; 4])>,
     /// Blueprint D23: the shown split group.
     #[serde(default)]
     pub split: Option<super::SplitSnapshot>,

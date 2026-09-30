@@ -62,6 +62,10 @@ pub struct SidebarChildren {
     /// Blueprint D02: one app-owned rect recorder per rendered folder row,
     /// keyed by the folder's domain id (the rows' drop rects).
     pub folder_anchors: Vec<(bbr_domain::FolderId, AnyElement)>,
+    /// Blueprint D19: one app-owned rect recorder per rendered tab row,
+    /// keyed by the row's tab index (a drop from another window resolves
+    /// its slot against them).
+    pub row_anchors: Vec<(usize, AnyElement)>,
     pub command_results: Option<AnyElement>,
     pub downloads_panel: Option<AnyElement>,
     pub space_config_panel: Option<AnyElement>,
@@ -79,6 +83,7 @@ pub fn sidebar_surface(
         pin_offer_anchor,
         drag_proxy_anchor,
         folder_anchors,
+        row_anchors,
         command_results,
         downloads_panel,
         space_config_panel,
@@ -95,7 +100,14 @@ pub fn sidebar_surface(
             plus_menu_surface(theme, model, plus_menu, callbacks),
         )
     });
-    let tabs = tab_surface(theme, model, callbacks, pin_offer_anchor, folder_anchors);
+    let tabs = tab_surface(
+        theme,
+        model,
+        callbacks,
+        pin_offer_anchor,
+        folder_anchors,
+        row_anchors,
+    );
     // §10.9: the lifted row follows the pointer above the whole rail (the
     // rail's origin is the window origin, so the proxy rect is in window
     // coordinates).

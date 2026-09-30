@@ -409,6 +409,7 @@ impl Render for BbrApp {
         // this window's row for every window's save.
         self.mark_generation_drawn();
         self.publish_window_row();
+        self.publish_window_frame(window);
         div()
             .id("bbr-root")
             .relative()

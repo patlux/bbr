@@ -705,6 +705,17 @@ Reopen toast, and `browser_windows::reopen_window` brings it back through
 the same `restore_window` path. ⇧⌘T reopens that window only while the
 domain's monotonic `closed_tab_count` has not moved since it closed.
 
+A tab drag stays with the window it began in (the pointer events keep
+coming to it, in its coordinates). `app::window_drag` turns every move into
+a screen point and hit-tests the browser windows front to back (the window
+server's stack, else the order they last took input): over another window
+the source drops its own target and that window previews the drop — a rail
+slot resolved against its rendered tab rows (one rect recorder per row) or
+a D23 split zone over its card — and the release commits there through
+`BrowserController::drop_tab_here` (move into that window's active space,
+cross-profile recreation included, then the slot and the selection), plus
+the split insert for a card zone.
+
 The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs` + the split
 `app/sidebar.rs`/`app/sidebar_view.rs`/`app/spaces.rs`/`app/tab.rs`/
 `app/interaction.rs` + the `shell/` presentation modules) renders the

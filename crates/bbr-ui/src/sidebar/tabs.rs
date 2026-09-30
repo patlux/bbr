@@ -50,8 +50,16 @@ pub fn tab_surface(
     callbacks: &Callbacks,
     pin_offer_anchor: Option<gpui::AnyElement>,
     folder_anchors: Vec<(bbr_domain::FolderId, gpui::AnyElement)>,
+    row_anchors: Vec<(usize, gpui::AnyElement)>,
 ) -> Stateful<Div> {
     let tabs = &model.tabs;
+    let mut row_anchors = row_anchors;
+    let mut anchor_of = |index: usize| {
+        row_anchors
+            .iter()
+            .position(|(row, _)| *row == index)
+            .map(|position| row_anchors.remove(position).1)
+    };
     let list_focused = tabs.list_focused;
     let p = theme.palette;
 
@@ -67,7 +75,7 @@ pub fn tab_surface(
                         .into_any(),
                 );
             }
-            children.push(render_row(theme, row, callbacks).into_any());
+            children.push(render_row(theme, row, callbacks, anchor_of(row.index)).into_any());
         }
         if tabs.tick == Some(tabs.pinned_end) {
             children.push(
@@ -157,7 +165,7 @@ pub fn tab_surface(
             scroll_children
                 .push(components::drag_tick(theme, row.index, !tabs.tick_valid, first).into_any());
         }
-        scroll_children.push(render_row(theme, row, callbacks).into_any());
+        scroll_children.push(render_row(theme, row, callbacks, anchor_of(row.index)).into_any());
     }
     if bottom > 0.0 {
         scroll_children.push(div().h(px(bottom)).into_any());
@@ -200,7 +208,12 @@ pub fn tab_surface(
 /// pin controls stop propagation in the production component (their
 /// handlers run first in the bubble phase), so a press on a control never
 /// selects the row or starts a drag.
-fn render_row(theme: &Theme, row: &RowVisuals, callbacks: &Callbacks) -> Stateful<Div> {
+fn render_row(
+    theme: &Theme,
+    row: &RowVisuals,
+    callbacks: &Callbacks,
+    anchor: Option<gpui::AnyElement>,
+) -> Stateful<Div> {
     let index = row.index;
     components::tab_row(
         theme,
@@ -230,4 +243,6 @@ fn render_row(theme: &Theme, row: &RowVisuals, callbacks: &Callbacks) -> Statefu
         callbacks::row(&callbacks.on_context_menu_row, index),
     )
     .on_hover(callbacks::hover(&callbacks.on_hover_row, index))
+    // Blueprint D19: the app's rect recorder (absolute, paints nothing).
+    .children(anchor)
 }

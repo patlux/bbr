@@ -209,3 +209,20 @@ impl HostBridge {
         }
     }
 }
+
+/// Blueprint D19 (test harness): move the window of a GPUI root view by
+/// `(dx, dy)` points, `dy` downwards as in GPUI's screen coordinates.
+///
+/// # Safety
+///
+/// `ns_view` must be a live `NSView*`, used on the main thread.
+pub unsafe fn move_window_by(ns_view: *mut std::ffi::c_void, dx: f64, dy: f64) {
+    // SAFETY: the caller promises a live NSView* on the main thread.
+    let Some(view) = (unsafe { ns_view.cast::<NSView>().as_ref() }) else {
+        return;
+    };
+    if let Some(window) = view.window() {
+        let frame = window.frame();
+        window.setFrameOrigin(NSPoint::new(frame.origin.x + dx, frame.origin.y - dy));
+    }
+}

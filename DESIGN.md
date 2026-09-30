@@ -1722,8 +1722,7 @@ authorities; it does not copy Zen/Firefox features or styling.
   `>` action names. There is no Edit menu: page text editing keeps
   WebKit's own key handling. Quit flushes the browser state and exits
   without asking; everything restores.
-- **Several windows (blueprint D19, boards L-14 and W-9; implemented without
-  dragging between windows):**
+- **Several windows (blueprint D19, boards L-14 and W-9; implemented):**
   New Window (⌘N, File menu, Dock menu, ⌘T `>` action) opens a browser
   window on the current window's space with nothing selected — the space's
   empty state — and the ⌘T palette open. Every window is a full shell with
@@ -1748,7 +1747,17 @@ authorities; it does not copy Zen/Firefox features or styling.
   of the space that was showing). A selection or space that did not reach
   the saved browser state (a force quit right after opening a tab) falls
   back to what the saved state holds. Menu and keyboard commands act in the
-  key window.
+  key window. A tab row dragged out of one window's rail onto another
+  window moves the tab there: over that window's rail it shows the §10.9
+  insertion tick at the slot it would take (against that window's rendered
+  rows; the chrome above the list takes no drop) and lands there in that
+  window's active space, keeping its pinned or regular region; over its
+  card it shows the D23 split zones and joins that page's group. The tab
+  shows in that window, which takes over; the source window falls back to
+  the space's empty state or its next tab. A tab from another profile is
+  recreated in the destination store (the D07 toast says so, with Undo); a
+  same-profile tab keeps its page. Released outside every window, nothing
+  happens (no tear-off into a new window).
 - **About BBR (blueprint D18, window implemented):** a 340 × 380 pt window
   with a transparent titlebar (`bbr-about`). It shows the brand mark (the
   §7 chassis glyph on an 88 pt `accent` tile), "BBR" in `type:display`
@@ -2616,7 +2625,7 @@ describe the running app. Implementation order: D01 → D20 → D05 → D14 → 
 | D16 | Settings window | L-3 L-4 L-5 L-6 L-7 L-8 L-9 PR-23 | §3.4 §6 §8 §9 §11.18 | implemented (§11.18: rows without behaviour behind them are omitted) | [blueprint-settings-window](docs/roadmap/tasks/blueprint-settings-window.md) |
 | D17 | Restore notice and recovery panes | L-10 L-11 PR-18 | §11.8 | implemented (partial-restore banner omitted: no lost-tab report exists) | [blueprint-restore-recovery-ui](docs/roadmap/tasks/blueprint-restore-recovery-ui.md) |
 | D18 | About and updates | L-12 | §1 §7 | About window implemented; no update channel while BBR is built locally (answer 14) | [blueprint-about-updates](docs/roadmap/tasks/blueprint-about-updates.md) |
-| D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | menus, tab commands and several windows implemented (New Window, Close Window with the Reopen toast and ⇧⌘T, a page moving between windows, shared state, every window restored after a relaunch; `just e2e-windows`); dragging tabs between windows open in [multi-window](docs/roadmap/tasks/multi-window.md) | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |
+| D19 | Menu bar, Dock menu and window lifecycle | L-13 L-14 W-9 PR-21 | §11.13 | menus, tab commands and several windows implemented (New Window, Close Window with the Reopen toast and ⇧⌘T, a page moving between windows, shared state, every window restored after a relaunch, tabs dragged between windows onto the rail or the card; `just e2e-windows`; [multi-window](docs/roadmap/tasks/multi-window.md)) | [blueprint-menus-windows](docs/roadmap/tasks/blueprint-menus-windows.md) |
 | D20 | New folders open in rename | S-4 PR-06 | §11.11 | implemented | [blueprint-folder-rename-on-create](docs/roadmap/tasks/blueprint-folder-rename-on-create.md) |
 | D21 | Keyboard entry into the rail | PR-19 B-2 | §9 | implemented | [blueprint-rail-focus-shortcut](docs/roadmap/tasks/blueprint-rail-focus-shortcut.md) |
 | D22 | Full-screen card rules under test | W-5 | §2 | implemented | [blueprint-fullscreen-evidence](docs/roadmap/tasks/blueprint-fullscreen-evidence.md) |

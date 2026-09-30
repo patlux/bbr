@@ -744,6 +744,17 @@ impl BbrApp {
             media: self.media_snapshot(),
             windows: self.window_entries(),
             window_refreshes: self.window_refreshes(),
+            tab_row_rects: {
+                let mut rows: Vec<(usize, [f32; 4])> = self
+                    .drag_offer_rects
+                    .rows
+                    .borrow()
+                    .iter()
+                    .map(|(index, rect)| (*index, [rect.x, rect.y, rect.width, rect.height]))
+                    .collect();
+                rows.sort_by_key(|(index, _)| *index);
+                rows
+            },
             split: self.split_snapshot(),
             split_drop: self.split_view.drop.map(|drop| {
                 use bbr_split::tiling::DropZone;

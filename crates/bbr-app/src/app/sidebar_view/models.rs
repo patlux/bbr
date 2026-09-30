@@ -105,8 +105,11 @@ impl BbrApp {
                 .collect();
         let pinned_rows = self.row_visuals(&loose, drag_source);
         let window_rows = self.row_visuals(&regular[row_window.clone()], drag_source);
-        let tick = self.tab_drag.tab_slot();
-        let tick_valid = self.tab_drag.valid();
+        // Blueprint D19: a tab dragged in from another window shows its
+        // landing slot here.
+        let incoming = self.incoming_rail_slot();
+        let tick = self.tab_drag.tab_slot().or(incoming);
+        let tick_valid = self.tab_drag.valid() || incoming.is_some();
         // §11.2: the ghost row is offered to an active drag of an unpinned
         // tab; it is the live target while the pointer is over it.
         let pin_offer = self.tab_drag.is_active() && self.drag_source_unpinned();

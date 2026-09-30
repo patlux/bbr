@@ -184,15 +184,22 @@ Not parallelized.
       `controller_window_tests::closing_a_tab_moves_the_closed_count…`,
       `browser_windows` registry test,
       `e2e_windows::a_closed_window_comes_back_from_its_toast_or_cmd_shift_t`.)*
+- [x] Drag between windows (slice 6): the source window's drag hit-tests
+      the other windows (`app::window_drag`), the window under the pointer
+      previews a rail slot against its rendered rows or a D23 card zone, and
+      the release lands the tab through `BrowserController::drop_tab_here`.
+      *(2026-09-30: `controller_window_tests` (slot + show, splice within a
+      space, cross-profile recreation), `window_drag::slot_at` unit test,
+      `e2e_windows::drag` (rail with the drop outside every window doing
+      nothing, card split, other profile recreated).)*
 
 ### Real-app E2E
 
-- [ ] `just e2e-windows`: ⌘N, two windows on one space with separate
+- [x] `just e2e-windows`: ⌘N, two windows on one space with separate
       selections, a tab moving by selection, ⇧⌘W and Reopen, last-window
       behavior, drag between windows (rail and card), restore of every
-      window after a restart. *(Slice 3b covers ⌘N, separate selections, a
-      tab moving by selection, ⇧⌘W, last-window quit and the menus; slice 4
-      the restart; slice 5 Reopen and ⇧⌘T; drag follows with slice 6.)*
+      window after a restart. *(Slices 3b–6: 9 tests in
+      `tests/e2e_windows/`.)*
 
 ### Performance
 
@@ -221,16 +228,25 @@ with the evidence and the question (HTML explainer in `~/Downloads`).
 ## Delivery ledger
 
 ```text
-Outcome:         slices 1–5 implemented (several windows over shared state,
+Outcome:         slices 1–6 implemented (several windows over shared state,
                  every window restored after a relaunch, Reopen toast and
-                 ⇧⌘T); slice 6 (drag between windows) open.
+                 ⇧⌘T, tabs dragged between windows).
 Commits:         89a78c75 (controller window contexts), 676e3c45 (engine
                  roots), 68be5cef (window view + previews per window),
                  4e596c99 (shared handles), 0bb37a8b (several windows),
-                 5b8532be (restore of every window), slice 5 (this commit:
-                 Reopen toast and ⇧⌘T).
+                 5b8532be (restore of every window), 08b37f43 (Reopen toast
+                 and ⇧⌘T), slice 6 (this commit: drag between windows).
 Functional evidence: unit/contract tests per slice (see Evidence).
-Real-app E2E:    slice 5: just e2e-windows (6), e2e-shell-tabs, e2e-tabs,
+Real-app E2E:    slice 6: just e2e-windows (9), e2e-shell-organize,
+                 e2e-shell-sidebar, e2e-split, e2e-shell-tabs,
+                 e2e-shell-dense, e2e-shell-split-geometry,
+                 e2e-shell-persistence green on the slice-6 tree. During the
+                 slice, e2e-shell-sidebar's
+                 composition::full_rail_composition_region_and_semantic_ordering
+                 failed once ("settled rail omits standalone brand and
+                 redundant status") and passed in the 2 later runs:
+                 intermittent, cause open.
+                 slice 5: just e2e-windows (6), e2e-shell-tabs, e2e-tabs,
                  e2e-shell-command, e2e-shell-spaces, e2e-shell-saved-pages,
                  e2e-shell-portal (7/7 — the foreign frontmost window of the
                  3b run was gone) green on the slice-5 tree.
@@ -250,8 +266,7 @@ Performance evidence: deferred (Patrick). e2e-perf fails in the context-menu
                  e2e-perf had not run during the blueprint wave; cause open.
 Roadmap/documentation updates: PRODUCT (several windows), DESIGN §11.13 and
                  §19 D19, ARCHITECTURE (windows, shared handles, lifecycle).
-Open blockers and non-goals: restore of every window, Reopen, drag between
-                 windows (slices 4–6); tear-off is a non-goal.
+Open blockers and non-goals: tear-off is a non-goal.
 Worktree state:  clean on main; the comparison worktree /tmp/bbr-base was
                  removed 2026-09-30 (Patrick).
 ```

@@ -208,6 +208,8 @@ impl BbrApp {
                     content_rect: row.and_then(|row| row.geometry),
                     sidebar_visible: row.is_some_and(|row| !row.sidebar.collapsed),
                     sidebar_width: row.map_or(0.0, |row| row.sidebar.width),
+                    frame: self.windows.read().frame(key),
+                    incoming_drop: self.windows.read().incoming(key),
                 }
             })
             .collect()

@@ -279,6 +279,9 @@ pub fn spawn_pump(
                     // window (as input in it would make it current).
                     Request::SelectWindow { window } => async_cx
                         .update(|cx| select_window(&windows, bbr_browser::WindowKey(*window), cx)),
+                    Request::MoveWindowBy { window, dx, dy } => async_cx.update(|cx| {
+                        move_window_by(&windows, bbr_browser::WindowKey(*window), *dx, *dy, cx)
+                    }),
                     _ => {
                         let target = windows.read().current_target();
                         match target {
@@ -410,6 +413,45 @@ fn select_window(
     match with_app(&window, &app, cx, |view, _window, cx| {
         view.window_activated(cx)
     }) {
+        Ok(()) => Response::Ok,
+        Err(error) => Response::Error(Error::new("app_error", error.to_string())),
+    }
+}
+
+/// Blueprint D19: move browser window `key` by `(dx, dy)` screen points,
+/// then draw it (its frame is published when it draws).
+fn move_window_by(
+    windows: &crate::shared::Shared<crate::browser_windows::Registry>,
+    key: bbr_browser::WindowKey,
+    dx: f64,
+    dy: f64,
+    cx: &mut App,
+) -> Response {
+    let target = windows.read().target(key);
+    let Some((window, _app)) = target else {
+        return Response::Error(Error::new("unknown_window", format!("{key:?}")));
+    };
+    #[cfg(target_os = "macos")]
+    {
+        let moved = window.update(cx, |_root, window, _cx| {
+            let ns_view = crate::extract_ns_view(window);
+            if !ns_view.is_null() {
+                // SAFETY: the window's live GPUI root view, on the main
+                // thread.
+                unsafe { bbr_web_macos::host::move_window_by(ns_view, dx, dy) };
+            }
+        });
+        if let Err(error) = moved {
+            return Response::Error(Error::new("app_error", error.to_string()));
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = (dx, dy);
+    let drawn = (*window).update(cx, |_root, window, cx| {
+        let app: &mut App = cx;
+        let _clear = window.draw(app);
+    });
+    match drawn {
         Ok(()) => Response::Ok,
         Err(error) => Response::Error(Error::new("app_error", error.to_string())),
     }

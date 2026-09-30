@@ -84,6 +84,7 @@ pub fn render_sidebar(ctx: &StoryContext) -> AnyElement {
         &model,
         &callbacks,
         bbr_ui::sidebar::SidebarChildren {
+            row_anchors: Vec::new(),
             command_field_anchor: field_anchor,
             favorites_band_anchor,
             // The ghost-row and proxy rect recorders are app-owned.

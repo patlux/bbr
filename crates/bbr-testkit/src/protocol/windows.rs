@@ -26,4 +26,12 @@ pub struct WindowEntry {
     pub sidebar_visible: bool,
     #[serde(default)]
     pub sidebar_width: f64,
+    /// The window's frame `[x, y, width, height]` in screen points as it
+    /// last drew (a drag between windows hit-tests against it).
+    #[serde(default)]
+    pub frame: Option<[f32; 4]>,
+    /// What a tab dragged in from another window would do here:
+    /// `rail:<slot>` or `card:<zone>`.
+    #[serde(default)]
+    pub incoming_drop: Option<String>,
 }

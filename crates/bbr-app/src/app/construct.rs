@@ -284,6 +284,7 @@ impl BbrApp {
             windows: parts.windows,
             seen_generation: 0,
             window_watch: Vec::new(),
+            window_drag: Default::default(),
             #[cfg(feature = "testkit")]
             window_refreshes: 0,
             engine: parts.engine,

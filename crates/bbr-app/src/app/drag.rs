@@ -35,6 +35,9 @@ pub(crate) struct DragOfferRects {
     /// Blueprint D02: every rendered §11.11 folder row's rect, keyed by the
     /// folder's domain id (refilled each frame the folders render).
     pub folders: Rc<RefCell<Vec<(bbr_domain::FolderId, WebRect)>>>,
+    /// Blueprint D19: every rendered tab row's rect, keyed by tab index
+    /// (refilled each frame the rows render).
+    pub rows: Rc<RefCell<Vec<(usize, WebRect)>>>,
 }
 
 impl BbrApp {
@@ -129,12 +132,18 @@ impl BbrApp {
         }
         self.resolve_tab_drag(x, y, window);
         // Blueprint D23: over the card the drag previews a split drop.
+        let had = self.split_view.drop.is_some();
         if let Some(source) = self.tab_drag.source() {
-            let had = self.split_view.drop.is_some();
             self.update_split_drop(source, x, y);
-            if had != self.split_view.drop.is_some() {
-                self.sync_portal_overlays(cx);
-            }
+        }
+        // Blueprint D19: over another window (or over none) this window
+        // targets nothing; the window under the pointer previews the drop.
+        if self.route_window_drag(x, y, window, cx) {
+            self.tab_drag.clear_target();
+            self.split_view.drop = None;
+        }
+        if had != self.split_view.drop.is_some() {
+            self.sync_portal_overlays(cx);
         }
         cx.notify();
     }
@@ -274,6 +283,13 @@ impl BbrApp {
         let valid = self.tab_drag.valid();
         let source = self.tab_drag.source().expect("active drag has a source");
         self.tab_drag.clear();
+        // Blueprint D19: released over another window — the drop is there.
+        if let Some(committed) = self.finish_window_drag(cx) {
+            if self.split_view.drop.take().is_some() {
+                self.sync_portal_overlays(cx);
+            }
+            return committed;
+        }
         // Blueprint D23: a drop on the card splits.
         if let Some(drop) = self.split_view.drop.take() {
             self.sync_portal_overlays(cx);
@@ -293,6 +309,7 @@ impl BbrApp {
     pub fn cancel_tab_drag(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.tab_drag.is_active() || self.tab_drag.is_armed() {
             self.tab_drag.clear();
+            self.cancel_window_drag(cx);
             if self.split_view.drop.take().is_some() {
                 self.sync_portal_overlays(cx);
             }

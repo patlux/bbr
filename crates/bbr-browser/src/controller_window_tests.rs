@@ -370,3 +370,81 @@ fn closing_a_tab_moves_the_closed_count_and_reopening_does_not() {
     c.reopen_tab().unwrap();
     assert_eq!(c.closed_tab_count(), 1, "a reopen closes nothing");
 }
+
+#[test]
+fn a_tab_dropped_from_another_window_lands_at_its_slot_and_shows_here() {
+    let (mut c, h) = three();
+    let first = c.current_window();
+    let home = c.snapshot().active_space;
+    let profile = c.snapshot().active_profile;
+    let work = c.create_space(profile, "Work").unwrap();
+    let second = c.open_window();
+    c.view_window(second).unwrap();
+    c.activate_space(work).unwrap();
+    c.open_tab("w1").unwrap();
+    c.open_tab("w2").unwrap();
+    // The first window's page (index 2 of home) dropped between w1 and w2.
+    c.view_window(first).unwrap();
+    let dragged = c.tab_at(2).unwrap();
+    let view_before = view(&c, 2);
+    c.view_window(second).unwrap();
+    c.drop_tab_here(dragged, Some(1)).unwrap();
+    let snapshot = c.snapshot();
+    assert_eq!(snapshot.tabs.len(), 3);
+    assert_eq!(snapshot.tabs[1].url, "u3");
+    assert_eq!(snapshot.active_index, Some(1), "shown here");
+    assert_eq!(view(&c, 1), view_before, "same profile: the same session");
+    assert_eq!(window_of(&h, view_before), second.0);
+    assert_eq!(c.space_of_tab(dragged), Some(work));
+    // The first window lost it.
+    assert_eq!(c.window_space(first), Some(home));
+    assert_ne!(c.window_selection(first), Some(dragged));
+    c.check_invariants();
+}
+
+#[test]
+fn a_drop_within_the_same_space_reorders_by_splice() {
+    let (mut c, _h) = three();
+    let second = c.open_window();
+    c.view_window(second).unwrap();
+    let first_tab = c.tab_at(0).unwrap();
+    // Slot 2 (between u2 and u3) for u1: splice → index 1.
+    c.drop_tab_here(first_tab, Some(2)).unwrap();
+    let urls: Vec<_> = c.snapshot().tabs.iter().map(|t| t.url.clone()).collect();
+    assert_eq!(urls, ["u2", "u1", "u3"]);
+    assert_eq!(c.snapshot().active_index, Some(1));
+    c.check_invariants();
+}
+
+#[test]
+fn a_drop_into_another_profile_recreates_the_session_there() {
+    let (mut c, h) = three();
+    let first = c.current_window();
+    let event = c.create_profile_space("Private", "Home").unwrap();
+    let crate::ControllerEvent::ProfileCreated { space, .. } = event else {
+        panic!("profile created: {event:?}");
+    };
+    let second = c.open_window();
+    c.view_window(second).unwrap();
+    c.activate_space(space).unwrap();
+    c.view_window(first).unwrap();
+    let dragged = c.tab_at(0).unwrap();
+    let old = view(&c, 0);
+    c.view_window(second).unwrap();
+    let outcome = c.drop_tab_here(dragged, Some(0)).unwrap();
+    assert!(
+        matches!(
+            outcome,
+            crate::ControllerEvent::TabMoved {
+                recreated: true,
+                ..
+            }
+        ),
+        "{outcome:?}"
+    );
+    assert!(h.ops().contains(&EngineOp::Destroy { view: old }));
+    let new = view(&c, 0);
+    assert_ne!(new, old, "a fresh session in the destination store");
+    assert_eq!(window_of(&h, new), second.0);
+    c.check_invariants();
+}

@@ -9,172 +9,19 @@
 //! window (its close button or ⇧⌘W) keeps every tab; closing the last one
 //! saves everything and quits, and a relaunch restores it.
 
-use std::collections::BTreeMap;
-
 use bbr_browser::WindowKey;
 use gpui::{
     prelude::*, px, size, App, Bounds, Entity, TitlebarOptions, WindowBounds, WindowHandle,
-    WindowId, WindowOptions,
+    WindowOptions,
 };
 
 use crate::app::BbrApp;
 use crate::shared::Shared;
 use crate::window_seam::with_app;
 
-/// One open browser window.
-struct BrowserWindow {
-    handle: WindowHandle<gpui_component::Root>,
-    app: Entity<BbrApp>,
-}
+mod registry;
 
-/// One window's presentation as the store keeps it: its content rect
-/// (`[x, y, width, height]`, points) and its rail.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct WindowRow {
-    pub(crate) geometry: Option<[f64; 4]>,
-    pub(crate) sidebar: bbr_persistence::SidebarState,
-}
-
-/// A window closed while others stayed open, kept for Reopen and ⇧⌘T.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct ClosedWindow {
-    pub(crate) id: u64,
-    pub(crate) layout: crate::window_layouts::WindowLayout,
-    pub(crate) row: Option<WindowRow>,
-    /// The controller's closed-tab count when it closed.
-    pub(crate) tab_closes: u64,
-}
-
-/// Every open browser window, the one that last took input, each window's
-/// presentation row (published when it draws), and the closed windows,
-/// most recent last.
-#[derive(Default)]
-pub(crate) struct Registry {
-    windows: BTreeMap<WindowKey, BrowserWindow>,
-    current: WindowKey,
-    rows: BTreeMap<WindowKey, WindowRow>,
-    closed: Vec<ClosedWindow>,
-    next_closed: u64,
-}
-
-/// A window's handle and shell.
-pub(crate) type Target = (WindowHandle<gpui_component::Root>, Entity<BbrApp>);
-
-impl Registry {
-    pub(crate) fn insert(
-        &mut self,
-        key: WindowKey,
-        handle: WindowHandle<gpui_component::Root>,
-        app: Entity<BbrApp>,
-    ) {
-        self.windows.insert(key, BrowserWindow { handle, app });
-    }
-
-    fn remove(&mut self, key: WindowKey) -> Option<BrowserWindow> {
-        self.rows.remove(&key);
-        let removed = self.windows.remove(&key);
-        if self.current == key {
-            if let Some(next) = self.windows.keys().next() {
-                self.current = *next;
-            }
-        }
-        removed
-    }
-
-    /// The window that last took input.
-    pub(crate) fn current(&self) -> WindowKey {
-        self.current
-    }
-
-    /// Make `key` the window engine events, timers and the testkit act in
-    /// (false for an unknown window).
-    pub(crate) fn set_current(&mut self, key: WindowKey) -> bool {
-        if !self.windows.contains_key(&key) {
-            return false;
-        }
-        self.current = key;
-        true
-    }
-
-    pub(crate) fn target(&self, key: WindowKey) -> Option<Target> {
-        let window = self.windows.get(&key)?;
-        Some((window.handle, window.app.clone()))
-    }
-
-    /// The current window (the first open one if the current one is gone).
-    pub(crate) fn current_target(&self) -> Option<Target> {
-        self.target(self.current).or_else(|| {
-            let window = self.windows.values().next()?;
-            Some((window.handle, window.app.clone()))
-        })
-    }
-
-    pub(crate) fn key_of(&self, id: WindowId) -> Option<WindowKey> {
-        self.windows
-            .iter()
-            .find(|(_, window)| window.handle.window_id() == id)
-            .map(|(key, _)| *key)
-    }
-
-    /// Every open window, in key order.
-    pub(crate) fn keys(&self) -> Vec<WindowKey> {
-        self.windows.keys().copied().collect()
-    }
-
-    /// `key`'s presentation row as it last drew.
-    pub(crate) fn row(&self, key: WindowKey) -> Option<WindowRow> {
-        self.rows.get(&key).copied()
-    }
-
-    pub(crate) fn set_row(&mut self, key: WindowKey, row: WindowRow) {
-        self.rows.insert(key, row);
-    }
-
-    /// Every window's presentation row, in window order.
-    pub(crate) fn rows(&self) -> Vec<WindowRow> {
-        self.rows.values().copied().collect()
-    }
-
-    /// Keep a closed window for Reopen; returns its id.
-    pub(crate) fn push_closed(
-        &mut self,
-        layout: crate::window_layouts::WindowLayout,
-        row: Option<WindowRow>,
-        tab_closes: u64,
-    ) -> u64 {
-        self.next_closed += 1;
-        let id = self.next_closed;
-        self.closed.push(ClosedWindow {
-            id,
-            layout,
-            row,
-            tab_closes,
-        });
-        id
-    }
-
-    /// The most recently closed window.
-    pub(crate) fn last_closed(&self) -> Option<&ClosedWindow> {
-        self.closed.last()
-    }
-
-    /// Take closed window `id` (the most recent one for `None`).
-    pub(crate) fn take_closed(&mut self, id: Option<u64>) -> Option<ClosedWindow> {
-        let index = match id {
-            Some(id) => self.closed.iter().position(|closed| closed.id == id)?,
-            None => self.closed.len().checked_sub(1)?,
-        };
-        Some(self.closed.remove(index))
-    }
-
-    /// Every open window's shell.
-    pub(crate) fn shells(&self) -> Vec<Entity<BbrApp>> {
-        self.windows
-            .values()
-            .map(|window| window.app.clone())
-            .collect()
-    }
-}
+pub(crate) use registry::{Registry, Target, WindowRow};
 
 /// A browser window's options at `bounds` (its content rect).
 pub(crate) fn browser_window_options(bounds: Bounds<gpui::Pixels>, hidden: bool) -> WindowOptions {
@@ -506,45 +353,5 @@ pub(crate) fn close_window(cx: &mut App, windows: &Shared<Registry>) {
     let target = windows.read().current_target();
     if let Some((handle, _)) = target {
         let _ = handle.update(cx, |_root, window, _cx| window.remove_window());
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn layout(space: u64) -> crate::window_layouts::WindowLayout {
-        crate::window_layouts::WindowLayout {
-            active_space: bbr_domain::SpaceId(space),
-            selections: Vec::new(),
-        }
-    }
-
-    #[test]
-    fn closed_windows_come_back_most_recent_first_or_by_id() {
-        let mut registry = Registry::default();
-        let first = registry.push_closed(layout(1), None, 0);
-        let second = registry.push_closed(layout(2), None, 3);
-        assert_eq!(registry.last_closed().map(|closed| closed.id), Some(second));
-        assert_eq!(
-            registry
-                .take_closed(Some(first))
-                .map(|closed| closed.layout),
-            Some(layout(1))
-        );
-        assert_eq!(registry.take_closed(Some(first)), None, "taken once");
-        assert_eq!(
-            registry.take_closed(None).map(|closed| closed.id),
-            Some(second)
-        );
-        assert_eq!(registry.take_closed(None), None);
-    }
-
-    #[test]
-    fn an_empty_registry_has_no_window_to_act_in() {
-        let registry = Registry::default();
-        assert!(registry.current_target().is_none());
-        assert!(registry.keys().is_empty());
-        assert!(registry.key_of(WindowId::from(7)).is_none());
     }
 }

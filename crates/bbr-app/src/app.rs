@@ -152,6 +152,7 @@ pub(crate) mod transient;
 mod u2;
 mod u2_surface;
 mod unresponsive;
+mod window_drag;
 mod window_persist;
 mod window_shell;
 // App-owned snapshot → bbr-ui DTO adapters (Favorite/Folder/browser
@@ -201,6 +202,8 @@ pub struct BbrApp {
     windows: crate::shared::Shared<crate::browser_windows::Registry>,
     seen_generation: u64,
     window_watch: Vec<gpui::Subscription>,
+    /// Blueprint D19: this window's part in a drag between windows.
+    window_drag: window_drag::WindowDrag,
     /// Testkit evidence: how often another window's change re-rendered
     /// this one.
     #[cfg(feature = "testkit")]

@@ -787,6 +787,14 @@ pub enum Request {
     PermissionInput {
         input: super::PermissionInput,
     },
+    /// Blueprint D19: move browser window `window` by `(dx, dy)` screen
+    /// points (the harness's windows are never shown, so they cascade on
+    /// top of each other; a drag between them needs them apart).
+    MoveWindowBy {
+        window: u64,
+        dx: f64,
+        dy: f64,
+    },
     /// Blueprint D19: make `window` the current window (as input in it
     /// does): later requests, engine events and timers act in it.
     SelectWindow {

@@ -34,6 +34,19 @@ pub(crate) struct SplitDrop {
     pub rect: [f32; 4],
 }
 
+/// A drop zone's name (`center`, `left`, `right`, `top`, `bottom`).
+pub(crate) fn zone_name(zone: bbr_split::tiling::DropZone) -> &'static str {
+    use bbr_domain::tiling::Edge;
+    use bbr_split::tiling::DropZone;
+    match zone {
+        DropZone::Center => "center",
+        DropZone::Edge(Edge::Left) => "left",
+        DropZone::Edge(Edge::Right) => "right",
+        DropZone::Edge(Edge::Top) => "top",
+        DropZone::Edge(Edge::Bottom) => "bottom",
+    }
+}
+
 /// The zone strip of `pane` for `zone` (window points).
 fn zone_rect(pane: WebRect, zone: bbr_split::tiling::DropZone) -> [f32; 4] {
     use bbr_split::tiling::{DropZone, DROP_EDGE_SHARE};
@@ -497,7 +510,7 @@ impl BbrApp {
             .map(|tab| tab.id)
     }
 
-    fn index_of_tab(&self, tab: bbr_domain::TabId) -> Option<usize> {
+    pub(crate) fn index_of_tab(&self, tab: bbr_domain::TabId) -> Option<usize> {
         let snapshot = self.controller.read().snapshot();
         snapshot
             .all_tabs
@@ -511,7 +524,18 @@ impl BbrApp {
     /// single shown pane. Never the dragged tab's own pane.
     pub(crate) fn update_split_drop(&mut self, source: usize, x: f32, y: f32) {
         let dragged = self.tab_id_at(source);
-        let drop = self.split_card().and_then(|card| {
+        self.split_view.drop = self.split_drop_at(dragged, x, y);
+    }
+
+    /// Where `dragged` would land if dropped at window point `(x, y)` over
+    /// the card (blueprint D19: also a tab dragged in from another window).
+    pub(crate) fn split_drop_at(
+        &self,
+        dragged: Option<bbr_domain::TabId>,
+        x: f32,
+        y: f32,
+    ) -> Option<SplitDrop> {
+        self.split_card().and_then(|card| {
             let inside =
                 x >= card.x && x < card.x + card.width && y >= card.y && y < card.y + card.height;
             if !inside {
@@ -553,8 +577,7 @@ impl BbrApp {
                     }
                 }
             }
-        });
-        self.split_view.drop = drop;
+        })
     }
 
     /// Drop the dragged tab at the previewed zone: beside that pane (the

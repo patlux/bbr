@@ -300,6 +300,7 @@ pub struct TestSnapshot {
     /// Blueprint D19: every open browser window.
     pub windows: Vec<bbr_testkit::protocol::WindowEntry>,
     pub window_refreshes: u64,
+    pub tab_row_rects: Vec<(usize, [f32; 4])>,
     pub split: Option<bbr_testkit::protocol::SplitSnapshot>,
     pub split_drop: Option<bbr_testkit::protocol::SplitDropSnapshot>,
     pub split_rows: Vec<usize>,

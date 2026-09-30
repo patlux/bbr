@@ -42,6 +42,21 @@ impl BbrApp {
         }
     }
 
+    /// Publish this window's frame (screen points) for the testkit.
+    pub(crate) fn publish_window_frame(&self, window: &gpui::Window) {
+        let bounds = window.bounds();
+        let frame = [
+            f32::from(bounds.origin.x),
+            f32::from(bounds.origin.y),
+            f32::from(bounds.size.width),
+            f32::from(bounds.size.height),
+        ];
+        let key = self.window_key();
+        if self.windows.read().frame(key) != Some(frame) {
+            self.windows.bookkeep().set_frame(key, frame);
+        }
+    }
+
     /// Every open window's store row in window order, ids from `first_id`
     /// upward (above every domain id). This window's row is taken as it
     /// stands; the others as they last drew.
