@@ -38,6 +38,8 @@ pub struct BuiltEngine {
 pub struct EngineConfig {
     /// Use hermetic non-persistent website data stores (E2E mode).
     pub non_persistent: bool,
+    /// Reality gaps (item F): persistent stores in a test run's namespace.
+    pub test_store_run: Option<u16>,
 }
 
 /// Build the platform engine for the current process, returning the portable
@@ -64,6 +66,7 @@ pub(crate) unsafe fn build_engine(
                 ns_view,
                 bbr_web_macos::EngineOptions {
                     non_persistent: config.non_persistent,
+                    test_store_run: config.test_store_run,
                 },
             )
         }));

@@ -1312,6 +1312,21 @@ scenarios take the production path instead:
   (`BbrApp::begin_root_press`), and the footer and outside-press seams take
   the same path as the listeners.
 
+- **Persistent website data** (`e2e_web_data.rs`, `just e2e-web-data`):
+  launched with `--bbr-web-data-run <hex>`, each profile gets an
+  identifier-backed store in the run's namespace (WebKit's container of the
+  unbundled test binary; never a production identifier). A day-long cookie
+  (`/__fx/cookie/keep-<value>`) set in one profile is not seen by another;
+  after a quit and relaunch each profile still reads its own;
+  `ListWebDataStores` (`fetchAllDataStoreIdentifiers:`) shows both stores,
+  and deleting the second profile in Settings removes its store while the
+  Default's stays. A final ordinary launch sends
+  `RemoveTestWebDataStores`, which removes every store with the test prefix
+  — this run's and any an interrupted earlier run left — and the listing
+  shows none. The first run found that the deleted profile's store stayed
+  on disk ("Data store is in use"): the removal now retries until WebKit
+  has released the closed views.
+
 ## 8. Security & release exclusion
 
 - The gateway module compiles **only** under `bbr-app`'s `testkit` feature

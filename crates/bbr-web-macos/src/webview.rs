@@ -31,6 +31,22 @@ pub struct EngineOptions {
     /// Use a non-persistent `WKWebsiteDataStore` per profile (E2E hermeticity).
     /// When false, each profile maps to a deterministic persistent store id.
     pub non_persistent: bool,
+    /// Reality gaps (item F): identifier-backed persistent stores in this
+    /// test run's namespace instead (E2E that proves persistence); wins
+    /// over `non_persistent`.
+    pub test_store_run: Option<u16>,
+}
+
+impl EngineOptions {
+    /// The kind of store every profile gets.
+    pub fn store_kind(&self) -> crate::store_kind::StoreKind {
+        use crate::store_kind::StoreKind;
+        match (self.test_store_run, self.non_persistent) {
+            (Some(run), _) => StoreKind::TestRun(run),
+            (None, true) => StoreKind::NonPersistent,
+            (None, false) => StoreKind::Persistent,
+        }
+    }
 }
 
 /// The macOS WebKit engine.
@@ -429,7 +445,7 @@ impl WebEngine for WebEngineWk {
         let store = native_session::data_store_for_profile(
             mtm,
             profile,
-            self.options.non_persistent,
+            self.options.store_kind(),
             &mut self.stores,
         );
         let config = unsafe { WKWebViewConfiguration::new(mtm) };
@@ -778,14 +794,14 @@ impl WebEngine for WebEngineWk {
         let store = native_session::data_store_for_profile(
             mtm,
             profile,
-            self.options.non_persistent,
+            self.options.store_kind(),
             &mut self.stores,
         );
         crate::profile_data::clear_site(&store, host);
     }
 
     fn delete_profile_store(&mut self, profile: ProfileId) {
-        crate::profile_data::delete_store(profile, self.options.non_persistent, &mut self.stores);
+        crate::profile_data::delete_store(profile, self.options.store_kind(), &mut self.stores);
     }
 
     fn clear_profile_data(
@@ -800,7 +816,7 @@ impl WebEngine for WebEngineWk {
         let store = native_session::data_store_for_profile(
             mtm,
             profile,
-            self.options.non_persistent,
+            self.options.store_kind(),
             &mut self.stores,
         );
         crate::profile_data::clear_data(&store, kinds, since_unix_seconds);

@@ -205,6 +205,20 @@ fn cookie_routes_reflect_only_the_supplied_cookie_jar() {
 }
 
 #[test]
+fn the_keep_route_sets_a_cookie_that_outlives_the_session() {
+    let sb = Sandbox::new();
+    let server = FixtureServer::start(sb.dir.clone()).unwrap();
+    let raw = String::from_utf8(raw_get(&server.url("/__fx/cookie/keep-alpha")).unwrap()).unwrap();
+    assert!(raw.starts_with("HTTP/1.1 200 OK\r\n"), "{raw}");
+    assert!(
+        raw.contains("\r\nSet-Cookie: bbr_profile=alpha; Path=/; Max-Age=86400; SameSite=Lax\r\n")
+    );
+    assert!(raw.contains("<title>Cookie Kept alpha</title>"));
+    let (code, _) = get(&server.url("/__fx/cookie/keep-a/b")).unwrap();
+    assert_eq!(code, 404, "only a plain value");
+}
+
+#[test]
 fn dynamic_routes_are_deterministic() {
     let sb = Sandbox::new();
     let server = FixtureServer::start(sb.dir.clone()).unwrap();

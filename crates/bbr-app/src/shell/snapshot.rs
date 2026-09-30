@@ -292,6 +292,8 @@ pub struct TestSnapshot {
     pub element_rects: Vec<(String, [f32; 4])>,
     /// Reality gaps (item C): the window is the key window.
     pub window_key: bool,
+    /// Reality gaps (item F): the latest website-data store listing.
+    pub web_data_stores: bbr_testkit::protocol::WebDataStoresSnapshot,
     pub rail_reveal: String,
     pub floating_rail: Option<bbr_testkit::protocol::FloatingRailSnapshot>,
     pub floating_rail_leaving: bool,

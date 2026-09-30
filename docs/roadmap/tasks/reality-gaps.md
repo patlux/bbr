@@ -140,14 +140,32 @@ Not parallelized (serial on `main`).
       waiting for the blocked pop-up notice"). Script-created `window.open`
       from a click handler stays blocked as before (it is not a link
       activation; the D13 packet owns sign-in pop-ups).
-- [ ] F: persistent per-run WebKit stores: cookie survives a restart, stays
-      isolated, is removed with its profile; no leftover stores.
+- [x] F: `just e2e-web-data` (`--bbr-web-data-run`, identifier-backed
+      stores in the run's namespace `42425e57-<run>-4000-…`): a day-long
+      cookie set in the Default profile is not seen by a second profile;
+      after a quit and relaunch each profile reads its own cookie;
+      `fetchAllDataStoreIdentifiers:` lists both stores; deleting the second
+      profile in Settings removes its store, the Default's stays; a final
+      ordinary launch removes every test-prefixed store and the listing
+      shows none (3/3 runs green). Found a real bug: deleting a profile left
+      its store — cookies and storage — on disk; red in the first run ("the
+      deleted profile's store stayed", log "Data store is in use", WebKit
+      releases the closed views' pages asynchronously). The removal now
+      retries on that error (DESIGN §12 already promised the deletion).
+      `store_kind` unit tests (production identifiers unchanged, a test run
+      has its own namespace); fixture test for `/__fx/cookie/keep-<value>`.
+      Observed but not ours: WebKit's container of the unbundled `bbr`
+      binary also holds a production-namespace store for profile 1 and one
+      random-UUID store from earlier non-test launches; left untouched.
 
 ### Performance
 
-- [ ] Not applicable to A (no interaction timing). Items B–F name their
-      scenario or why none applies; `e2e-perf` execution stays deferred
-      (Patrick, 2026-09-27).
+- [x] No item changes interaction timing: A (startup directory), B (a
+      sheet that already had its presentation benchmark), C (test
+      harness), D and E (link policy), F (website-data stores). The
+      invisible `rect-probes` canvases exist only in testkit builds; their
+      cost in the testkit perf build is a layout node per probed control.
+      `e2e-perf` execution stays deferred (Patrick, 2026-09-27).
 
 ## Completion gates
 
@@ -184,13 +202,14 @@ missing: record the evidence and attempts here, write an HTML explainer to
 ## Delivery ledger
 
 ```text
-Outcome:         A, B, C, D and E implemented.
+Outcome:         A–F implemented.
 Commits:         A fc00be97 + 3bc8fb08 (a concurrent commit in the same
                  worktree, 3fd97e37, re-staged two shared files between my
                  staging and commit; 3bc8fb08 adds the dropped hunks);
                  B 48699c2a (native HTTP authentication); C 40c48600 (real
-                 input events); D 200c1943 (background links); E (this
-                 commit: pop-ups from script clicks).
+                 input events); D 200c1943 (background links); E 82d8ca9
+                 (pop-ups from script clicks); F (this commit: persistent
+                 website data).
 Functional evidence: profile_location unit tests; a one-off dev bundle with
                  bundle id dev.patwoz.bbr.probe under an isolated HOME
                  created ~/Library/Application Support/dev.patwoz.bbr.probe

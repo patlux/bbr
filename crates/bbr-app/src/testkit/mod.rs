@@ -58,6 +58,7 @@ mod dispatch_zoom;
 mod real_input;
 mod snapshot;
 mod text_input;
+mod web_data;
 pub(crate) use snapshot::browser_change;
 
 /// A gateway command forwarded to the main-thread pump.

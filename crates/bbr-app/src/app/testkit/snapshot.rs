@@ -737,6 +737,7 @@ impl BbrApp {
             real_input: self.real_input_readback.clone(),
             element_rects: Vec::new(),
             window_key: false,
+            web_data_stores: Default::default(),
             rail_reveal: self.rail_reveal_label().into(),
             floating_rail: self.floating_rail_snapshot(),
             floating_rail_leaving: self.floating_rail.leaving.is_some(),

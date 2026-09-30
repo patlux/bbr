@@ -77,6 +77,10 @@ struct Cli {
     /// only from `--bbr-bench-inject-delay-ms`; impossible without `testkit`.
     #[cfg(feature = "testkit")]
     bench_inject_delay_ms: Option<u64>,
+    /// Reality gaps (item F, testkit only): persistent website-data stores
+    /// in this test run's namespace (`--bbr-web-data-run <hex>`).
+    #[cfg(feature = "testkit")]
+    web_data_run: Option<u16>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -105,6 +109,8 @@ impl Cli {
         let mut window_size = app::DEFAULT_WINDOW_SIZE;
         #[cfg(feature = "testkit")]
         let mut bench_inject_delay_ms = None;
+        #[cfg(feature = "testkit")]
+        let mut web_data_run = None;
 
         let mut args = std::env::args();
         let _bin = args.next();
@@ -152,6 +158,10 @@ impl Cli {
                 "--bbr-bench-inject-delay-ms" => {
                     bench_inject_delay_ms = take(&mut value_opt).parse::<u64>().ok();
                 }
+                #[cfg(feature = "testkit")]
+                "--bbr-web-data-run" => {
+                    web_data_run = u16::from_str_radix(&take(&mut value_opt), 16).ok();
+                }
                 _ => {}
             }
         }
@@ -178,6 +188,8 @@ impl Cli {
             window_size,
             #[cfg(feature = "testkit")]
             bench_inject_delay_ms,
+            #[cfg(feature = "testkit")]
+            web_data_run,
         }
     }
 }
@@ -440,6 +452,10 @@ fn main() {
                 let ns_view = extract_ns_view(&*window);
                 let config = EngineConfig {
                     non_persistent: cli.test_token.as_ref().is_some(),
+                    #[cfg(feature = "testkit")]
+                    test_store_run: cli.web_data_run,
+                    #[cfg(not(feature = "testkit"))]
+                    test_store_run: None,
                 };
                 // SAFETY: `ns_view` is the live GPUI root view on the main thread.
                 let built = unsafe { build_engine(ns_view, &config, engine_kind) };

@@ -775,6 +775,14 @@ pub enum Request {
     RealKey {
         keystroke: String,
     },
+    /// Reality gaps (item F): list every identifier-backed website-data
+    /// store WebKit keeps for the app into the snapshot's `web_data_stores`
+    /// (asynchronous; `identifiers` is `None` until WebKit answers).
+    ListWebDataStores,
+    /// Reality gaps (item F): remove every test run's website-data stores
+    /// (identifiers with the test prefix, this run's and any earlier run's);
+    /// `web_data_stores.removed` reports the count when WebKit is done.
+    RemoveTestWebDataStores,
     /// Blueprint D02: one pointer sample into the floating rail's reveal
     /// model — the exact method the native pointer observer feeds (window
     /// points; `time_ms` is the event time the velocity is measured on).

@@ -155,6 +155,10 @@ e2e-split:
 e2e-windows:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_windows -- --ignored --nocapture
 
+# Reality gaps (item F): persistent website-data stores per profile.
+e2e-web-data:
+    DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_web_data -- --ignored --nocapture
+
 # Reality gaps (item C): real AppKit events into a shown key window.
 e2e-real-input:
     DEVELOPER_DIR="{{xcode_developer_dir}}" {{gui_gate}} timeout --kill-after=10s {{e2e_timeout}} cargo test -p bbr --features testkit --test e2e_real_input -- --ignored --nocapture
@@ -326,7 +330,7 @@ gallery-capture story="all":
 
 # GUI suites must stay sequential: parallel AppKit window resizing can make
 # one suite observe another suite's screen-clamped geometry.
-e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-favicons e2e-shell-titlebar-navigation e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-settings e2e-history e2e-permissions e2e-client-certificates e2e-link-destinations e2e-first-run e2e-media e2e-split e2e-windows e2e-real-input e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-background-links e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-shell-responsiveness e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-shell-tab-menu e2e-web-navigation-gestures e2e-auth e2e-perf
+e2e: e2e-smoke e2e-shutdown e2e-tabs e2e-profiles e2e-shell-tabs e2e-shell-spaces e2e-shell-sidebar e2e-shell-favicons e2e-shell-titlebar-navigation e2e-shell-split-geometry e2e-shell-organize e2e-shell-hover e2e-shell-command e2e-shell-settings e2e-history e2e-permissions e2e-client-certificates e2e-link-destinations e2e-first-run e2e-media e2e-split e2e-windows e2e-real-input e2e-web-data e2e-shell-saved-pages e2e-shell-saved-pages-library e2e-shell-new-window e2e-background-links e2e-shell-persistence e2e-shell-portal e2e-shell-find e2e-shell-dense e2e-shell-downloads e2e-shell-errors e2e-shell-responsiveness e2e-external-url e2e-shell-zoom e2e-shell-context-menu e2e-shell-tab-menu e2e-web-navigation-gestures e2e-auth e2e-perf
 
 verify: fmt check test clippy roadmap ui-deps script-tests
 

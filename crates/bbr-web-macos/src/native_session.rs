@@ -71,35 +71,30 @@ pub(crate) fn load_url(web_view: &WKWebView, url: &str) {
     }
 }
 
-/// Stable UUID namespace for a persistent WebKit data store.
-pub(crate) fn profile_store_uuid(profile: ProfileId) -> String {
-    let upper = (profile.0 >> 48) as u16;
-    let lower = profile.0 & 0x0000_ffff_ffff_ffff;
-    format!("42425200-0000-4000-{upper:04x}-{lower:012x}")
-}
-
 /// Resolve (and cache) the website-data store for a profile: the
 /// identifier-backed persistent store in production, the non-persistent
-/// store under E2E (`--bbr-test-token`). Stores are cached per profile and
+/// store under E2E (`--bbr-test-token`), or a test run's persistent store
+/// (`crate::store_kind`). Stores are cached per profile and
 /// outlive individual views. Extracted from `webview.rs` so the engine
 /// module stays within its audited 530-line budget (the renderer-isolation
 /// lane added the probe field and wiring without growing it).
 pub(crate) fn data_store_for_profile(
     mtm: MainThreadMarker,
     profile: ProfileId,
-    non_persistent: bool,
+    kind: crate::store_kind::StoreKind,
     stores: &mut HashMap<ProfileId, Retained<WKWebsiteDataStore>>,
 ) -> Retained<WKWebsiteDataStore> {
     if let Some(store) = stores.get(&profile) {
         return store.clone();
     }
-    let store = if non_persistent {
-        unsafe { WKWebsiteDataStore::nonPersistentDataStore(mtm) }
-    } else {
-        let uuid_string = NSString::from_str(&profile_store_uuid(profile));
-        let uuid = NSUUID::initWithUUIDString(NSUUID::alloc(), &uuid_string)
-            .expect("generated profile UUID is valid");
-        unsafe { WKWebsiteDataStore::dataStoreForIdentifier(&uuid, mtm) }
+    let store = match crate::store_kind::store_identifier(kind, profile) {
+        None => unsafe { WKWebsiteDataStore::nonPersistentDataStore(mtm) },
+        Some(identifier) => {
+            let uuid_string = NSString::from_str(&identifier);
+            let uuid = NSUUID::initWithUUIDString(NSUUID::alloc(), &uuid_string)
+                .expect("generated profile UUID is valid");
+            unsafe { WKWebsiteDataStore::dataStoreForIdentifier(&uuid, mtm) }
+        }
     };
     stores.insert(profile, store.clone());
     store
@@ -154,26 +149,5 @@ pub(crate) fn emit_state(sink: &EventSink, session: &NativeWebSession, id: WebVi
         sink(WebEvent::CanGoBackChanged(id, can_back));
         sink(WebEvent::CanGoForwardChanged(id, can_forward));
         sink(WebEvent::LoadingChanged(id, false));
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn profile_store_uuid_is_stable_and_unique() {
-        assert_eq!(
-            profile_store_uuid(ProfileId(1)),
-            "42425200-0000-4000-0000-000000000001"
-        );
-        assert_eq!(
-            profile_store_uuid(ProfileId(u64::MAX)),
-            "42425200-0000-4000-ffff-ffffffffffff"
-        );
-        assert_ne!(
-            profile_store_uuid(ProfileId(1)),
-            profile_store_uuid(ProfileId(2))
-        );
     }
 }

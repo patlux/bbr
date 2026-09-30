@@ -1629,6 +1629,10 @@ pub struct Snapshot {
     /// (real keyboard input reaches only the key window).
     #[serde(default)]
     pub window_key: bool,
+    /// Reality gaps (item F): the latest website-data store listing and
+    /// test-store removal.
+    #[serde(default)]
+    pub web_data_stores: super::WebDataStoresSnapshot,
     /// Blueprint D02: the rail's reveal phase (`idle`, `dwelling`,
     /// `floating`).
     #[serde(default)]

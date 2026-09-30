@@ -131,6 +131,15 @@ mod window_roots;
 #[cfg(target_os = "macos")]
 pub mod app_identity;
 
+/// Which website-data store a profile uses (production, non-persistent, or
+/// a test run's namespace).
+#[cfg(target_os = "macos")]
+pub mod store_kind;
+
+/// Listing and removing test-run website-data stores (`testkit` only).
+#[cfg(all(target_os = "macos", feature = "testkit"))]
+pub mod test_stores;
+
 /// Real AppKit input events for the test harness (`testkit` only).
 #[cfg(all(target_os = "macos", feature = "testkit"))]
 pub mod input_events;

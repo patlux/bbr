@@ -470,6 +470,14 @@ fn route(
         "/__fx/cookie/set-beta" => {
             return Ok(cookie_set_route("beta"));
         }
+        // A cookie that outlives the session (a day): the persistent
+        // website-data E2E proves it survives a restart.
+        _ if path.starts_with("/__fx/cookie/keep-") => {
+            let value = &path["/__fx/cookie/keep-".len()..];
+            if !value.is_empty() && value.chars().all(|ch| ch.is_ascii_alphanumeric()) {
+                return Ok(cookie_keep_route(value));
+            }
+        }
         "/__fx/cookie/read" => {
             let value = cookie_value(request_headers.get("cookie"), "bbr_profile")
                 .unwrap_or_else(|| "none".into());
@@ -555,6 +563,20 @@ fn cookie_set_route(value: &str) -> Route {
             (
                 "Set-Cookie".into(),
                 format!("bbr_profile={value}; Path=/; SameSite=Lax"),
+            ),
+        ],
+    }
+}
+
+fn cookie_keep_route(value: &str) -> Route {
+    Route::Dynamic {
+        body: format!("<html><title>Cookie Kept {value}</title><body>{value}</body></html>")
+            .into_bytes(),
+        headers: vec![
+            ("Content-Type".into(), "text/html; charset=utf-8".into()),
+            (
+                "Set-Cookie".into(),
+                format!("bbr_profile={value}; Path=/; Max-Age=86400; SameSite=Lax"),
             ),
         ],
     }

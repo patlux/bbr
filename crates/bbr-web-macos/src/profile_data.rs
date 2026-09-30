@@ -8,36 +8,76 @@ use std::collections::HashMap;
 use block2::RcBlock;
 use objc2::rc::Retained;
 use objc2::{AnyThread, MainThreadMarker};
-use objc2_foundation::{NSDate, NSError, NSSet, NSString, NSUUID};
+use std::ptr::NonNull;
+
+use objc2_foundation::{NSDate, NSError, NSSet, NSString, NSTimer, NSUUID};
 use objc2_web_kit::WKWebsiteDataStore;
 
 use bbr_web::{ProfileId, WebsiteDataKinds};
 
-use crate::native_session::profile_store_uuid;
+use crate::store_kind::{store_identifier, StoreKind};
 
 /// Forget the cached store and, when persistent, delete it on disk.
 pub(crate) fn delete_store(
     profile: ProfileId,
-    non_persistent: bool,
+    kind: StoreKind,
     stores: &mut HashMap<ProfileId, Retained<WKWebsiteDataStore>>,
 ) {
     stores.remove(&profile);
-    if non_persistent {
-        return;
-    }
-    let Some(mtm) = MainThreadMarker::new() else {
+    let Some(identifier) = store_identifier(kind, profile) else {
         return;
     };
-    let uuid_string = NSString::from_str(&profile_store_uuid(profile));
+    let uuid_string = NSString::from_str(&identifier);
     let Some(uuid) = NSUUID::initWithUUIDString(NSUUID::alloc(), &uuid_string) else {
         return;
     };
+    remove_store(uuid, profile, 0);
+}
+
+/// How often a removal is tried while WebKit reports the store in use,
+/// and the pause between tries (10 s in all).
+const REMOVE_ATTEMPTS: u32 = 40;
+const REMOVE_RETRY_SECONDS: f64 = 0.25;
+
+/// `WKWebsiteDataStore`'s error while a web view of the store is alive.
+const STORE_IN_USE: isize = 1;
+
+/// Remove a deleted profile's store. The profile's web views are closed
+/// first, but WebKit releases their pages asynchronously and reports the
+/// store "in use" until then — the first try right after the close always
+/// failed, leaving the deleted profile's cookies and storage on disk
+/// (found by the persistent website-data E2E, reality-gaps item F). WebKit
+/// has no public "released" signal, so the removal is tried again on that
+/// error, from the main run loop, up to [`REMOVE_ATTEMPTS`] times.
+fn remove_store(uuid: Retained<NSUUID>, profile: ProfileId, attempt: u32) {
+    let Some(mtm) = MainThreadMarker::new() else {
+        return;
+    };
+    let retry = uuid.clone();
     let done = RcBlock::new(move |error: *mut NSError| {
-        if !error.is_null() {
-            // SAFETY: WebKit hands a valid NSError when non-null.
-            let error = unsafe { &*error };
-            log::warn!("could not delete the store of {profile:?}: {error:?}");
+        if error.is_null() {
+            log::info!("removed the website data of {profile:?}");
+            return;
         }
+        // SAFETY: WebKit hands a valid NSError when non-null.
+        let error = unsafe { &*error };
+        if error.code() == STORE_IN_USE && attempt + 1 < REMOVE_ATTEMPTS {
+            let uuid = retry.clone();
+            let again = RcBlock::new(move |_timer: NonNull<NSTimer>| {
+                remove_store(uuid.clone(), profile, attempt + 1);
+            });
+            // SAFETY: main thread; the block is non-Send (main-thread
+            // delivery) and the timer is non-repeating.
+            let _ = unsafe {
+                NSTimer::scheduledTimerWithTimeInterval_repeats_block(
+                    REMOVE_RETRY_SECONDS,
+                    false,
+                    &again,
+                )
+            };
+            return;
+        }
+        log::warn!("could not delete the store of {profile:?}: {error:?}");
     });
     // SAFETY: main thread; the identifier and the block live for the call
     // (WebKit copies the block).

@@ -504,9 +504,16 @@ src/
   created view starts with a zero/default frame until its keyed slot
   publishes. Never frames a sibling view; the y-flip math is unchanged.
 - **Profile stores:** `dataStoreForIdentifier` uses a stable UUID derived from
-  `ProfileId`, or `nonPersistentDataStore` when `EngineOptions.non_persistent`
-  is set — the app enables non-persistent mode whenever a `--bbr-test-token`
-  is present (E2E hermeticity). Stores are cached per profile and outlive views.
+  `ProfileId` (`store_kind`: `42425200-0000-4000-…`), or
+  `nonPersistentDataStore` when `EngineOptions.non_persistent` is set — the
+  app enables non-persistent mode whenever a `--bbr-test-token` is present
+  (E2E hermeticity). A testkit run with `--bbr-web-data-run <hex>` gets
+  identifier-backed stores in its own namespace (`42425e57-<run>-4000-…`)
+  instead, so E2E can prove persistence without touching a production
+  identifier. Stores are cached per profile and outlive views. Deleting a
+  profile removes its store after its views are closed; WebKit reports the
+  store in use until it has released their pages, so the removal is retried
+  on that error from the main run loop (40 × 250 ms).
 - **WebView creation:** `initWithFrame_configuration`, per-view delegate
   (`WKNavigationDelegate` + `WKUIDelegate`), KVO `title` observation
   (`observe_title` registers with `Initial` so the shell learns startup state

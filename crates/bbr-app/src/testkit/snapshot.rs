@@ -318,6 +318,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             real_input: self.real_input.clone(),
             element_rects: self.element_rects.clone(),
             window_key: self.window_key,
+            web_data_stores: self.web_data_stores.clone(),
             rail_reveal: self.rail_reveal.clone(),
             floating_rail: self.floating_rail.clone(),
             floating_rail_leaving: self.floating_rail_leaving,

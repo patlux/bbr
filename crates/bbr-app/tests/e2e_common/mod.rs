@@ -258,6 +258,15 @@ pub fn fixtures() -> (FixtureServer, String, String) {
 }
 
 pub fn spawn_harness(root_tag: &str, page_one: &str) -> (Harness, PathBuf, String) {
+    spawn_harness_with(root_tag, page_one, &[])
+}
+
+/// [`spawn_harness`] with extra flags (e.g. `--bbr-web-data-run`).
+pub fn spawn_harness_with(
+    root_tag: &str,
+    page_one: &str,
+    extra: &[&str],
+) -> (Harness, PathBuf, String) {
     // Keep the root under the fixed short `/tmp` prefix: the gateway socket
     // must stay strictly below macOS's 104-byte `sun_path` limit, and
     // `$TMPDIR` alone is 49+ bytes on standard macOS (longer under direnv).
@@ -268,20 +277,18 @@ pub fn spawn_harness(root_tag: &str, page_one: &str) -> (Harness, PathBuf, Strin
     let socket = harness_socket_path(root_tag, pid);
     let token = format!("shell-{root_tag}-{pid}");
     let bin = env!("CARGO_BIN_EXE_bbr");
-    let harness = Harness::spawn(
-        bin,
-        &[
-            "--bbr-initial-url",
-            page_one,
-            "--bbr-profile-dir",
-            profile.to_str().unwrap(),
-            "--bbr-test-token",
-            &token,
-            "--bbr-ids=sequential",
-            "--bbr-hidden",
-        ],
-        &root,
-    );
+    let mut args = vec![
+        "--bbr-initial-url",
+        page_one,
+        "--bbr-profile-dir",
+        profile.to_str().unwrap(),
+        "--bbr-test-token",
+        &token,
+        "--bbr-ids=sequential",
+        "--bbr-hidden",
+    ];
+    args.extend_from_slice(extra);
+    let harness = Harness::spawn(bin, &args, &root);
     (harness, socket, token)
 }
 

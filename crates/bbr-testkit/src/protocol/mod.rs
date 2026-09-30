@@ -31,6 +31,7 @@ mod real_input;
 mod request;
 mod snapshot;
 mod split;
+mod web_data;
 mod windows;
 
 pub use benchmark::{BenchmarkKind, PresentationMeasurement};
@@ -66,6 +67,7 @@ pub use snapshot::{
     TextInputReadback, TitlebarSnapshot, ToastSnapshot, WebContentProbe, ZoomSnapshot,
 };
 pub use split::{SplitDropSnapshot, SplitInput, SplitPaneSnapshot, SplitSnapshot};
+pub use web_data::WebDataStoresSnapshot;
 pub use windows::WindowEntry;
 
 /// Current protocol version understood by this crate.

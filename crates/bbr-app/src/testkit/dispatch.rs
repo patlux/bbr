@@ -146,6 +146,9 @@ pub(crate) fn dispatch(
     }
     // The real WebKit content/liveness probes route separately (same
     // bounded-router reason); non-probe requests fall through.
+    if let Some(response) = super::web_data::dispatch(&req) {
+        return response;
+    }
     if let Some(response) = dispatch_probe(&req, window, app, cx) {
         return response;
     }
@@ -580,6 +583,7 @@ pub(crate) fn dispatch(
                 .map(|rects| rects.for_window(window.window_handle().window_id().as_u64()))
                 .unwrap_or_default();
             snapshot.window_key = window.is_window_active();
+            snapshot.web_data_stores = super::web_data::current();
             snapshot.to_protocol()
         })
         .map(Response::Snapshot)
@@ -834,6 +838,9 @@ pub(crate) fn dispatch(
         | Request::ClickUnresponsiveClose
         | Request::ProbeWebContent { .. } => {
             unreachable!("probe requests route through dispatch_probe")
+        }
+        Request::ListWebDataStores | Request::RemoveTestWebDataStores => {
+            unreachable!("website-data store requests route through web_data")
         }
         // Routed by `dispatch_auth` before this match (queue item 10);
         // reaching one here is a routing bug.
