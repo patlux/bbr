@@ -176,6 +176,14 @@ Not parallelized.
       committed), `e2e_windows::every_window_comes_back_after_a_restart`;
       `e2e_shell_persistence::force_quit_recovers_exactly_the_committed_state`
       caught the uncommitted-selection case during this slice.)*
+- [x] Reopen (slice 5): a closed window is kept with its layout and row
+      (`browser_windows::Registry::push_closed`), the window that takes over
+      shows "Window closed" with Reopen, ⇧⌘T / Reopen Closed Tab bring back
+      the most recently closed window while the domain's closed-tab count
+      has not moved since it closed, otherwise a tab. *(2026-09-30:
+      `controller_window_tests::closing_a_tab_moves_the_closed_count…`,
+      `browser_windows` registry test,
+      `e2e_windows::a_closed_window_comes_back_from_its_toast_or_cmd_shift_t`.)*
 
 ### Real-app E2E
 
@@ -184,7 +192,7 @@ Not parallelized.
       behavior, drag between windows (rail and card), restore of every
       window after a restart. *(Slice 3b covers ⌘N, separate selections, a
       tab moving by selection, ⇧⌘W, last-window quit and the menus; slice 4
-      the restart; Reopen and drag follow with slices 5–6.)*
+      the restart; slice 5 Reopen and ⇧⌘T; drag follows with slice 6.)*
 
 ### Performance
 
@@ -213,15 +221,20 @@ with the evidence and the question (HTML explainer in `~/Downloads`).
 ## Delivery ledger
 
 ```text
-Outcome:         slices 1–4 implemented (several windows over shared state,
-                 every window restored after a relaunch); slices 5–6
-                 (reopen toast/⇧⌘T, drag between windows) open.
+Outcome:         slices 1–5 implemented (several windows over shared state,
+                 every window restored after a relaunch, Reopen toast and
+                 ⇧⌘T); slice 6 (drag between windows) open.
 Commits:         89a78c75 (controller window contexts), 676e3c45 (engine
                  roots), 68be5cef (window view + previews per window),
                  4e596c99 (shared handles), 0bb37a8b (several windows),
-                 slice 4 (this commit: restore of every window).
+                 5b8532be (restore of every window), slice 5 (this commit:
+                 Reopen toast and ⇧⌘T).
 Functional evidence: unit/contract tests per slice (see Evidence).
-Real-app E2E:    slice 4: just e2e-windows (5), e2e-shell-persistence,
+Real-app E2E:    slice 5: just e2e-windows (6), e2e-shell-tabs, e2e-tabs,
+                 e2e-shell-command, e2e-shell-spaces, e2e-shell-saved-pages,
+                 e2e-shell-portal (7/7 — the foreign frontmost window of the
+                 3b run was gone) green on the slice-5 tree.
+                 slice 4: just e2e-windows (5), e2e-shell-persistence,
                  e2e-shutdown, e2e-split, e2e-first-run, e2e-profiles,
                  e2e-shell-saved-pages-library, e2e-shell-spaces green on the
                  slice-4 tree.

@@ -107,11 +107,40 @@ impl BbrApp {
     }
 
     /// This window closed: its context goes (its tabs stay in their
-    /// spaces), its engine root is released, and a Settings window opened
-    /// from it follows `successor`.
-    pub(crate) fn window_closed(&mut self, successor: Option<Target>, cx: &mut Context<Self>) {
+    /// spaces) and is kept with its presentation `row` for Reopen, the
+    /// window that takes over says so with a toast, its engine root is
+    /// released, and a Settings window opened from it follows `successor`.
+    pub(crate) fn window_closed(
+        &mut self,
+        successor: Option<Target>,
+        row: Option<crate::browser_windows::WindowRow>,
+        cx: &mut Context<Self>,
+    ) {
         let key = self.window_key();
+        let layout = self
+            .controller
+            .read()
+            .window_layouts()
+            .into_iter()
+            .find(|(window, _, _)| *window == key)
+            .map(
+                |(_, active_space, selections)| crate::window_layouts::WindowLayout {
+                    active_space,
+                    selections,
+                },
+            );
+        let tab_closes = self.controller.read().closed_tab_count();
         let _ = self.controller.get().close_window(key);
+        if let Some(layout) = layout {
+            let id = self.windows.get().push_closed(layout, row, tab_closes);
+            if let Some((handle, app)) = successor.clone() {
+                cx.defer(move |cx| {
+                    let _ = crate::window_seam::with_app(&handle, &app, cx, |view, _w, cx| {
+                        view.show_window_closed_toast(id, cx)
+                    });
+                });
+            }
+        }
         // Window 0 is the engine's base root; the others were attached.
         #[cfg(target_os = "macos")]
         if key != WindowKey::default() {
@@ -124,6 +153,15 @@ impl BbrApp {
             cx.defer(move |cx| crate::settings_window::rebind(settings, successor, cx));
         }
         self.persist_structure();
+    }
+
+    /// ⇧⌘T: the closed window to bring back instead of a tab — the most
+    /// recently closed one, when no tab was closed after it.
+    pub(crate) fn window_to_reopen(&self) -> Option<u64> {
+        let tab_closes = self.controller.read().closed_tab_count();
+        let registry = self.windows.read();
+        let last = registry.last_closed()?;
+        (last.tab_closes == tab_closes).then_some(last.id)
     }
 
     /// A window that could not be opened: drop the context prepared for it.

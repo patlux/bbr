@@ -360,3 +360,13 @@ fn a_saved_window_drops_what_is_gone() {
     assert_eq!(c.window_selection(key), None, "an unknown tab is dropped");
     c.check_invariants();
 }
+
+#[test]
+fn closing_a_tab_moves_the_closed_count_and_reopening_does_not() {
+    let (mut c, _h) = three();
+    assert_eq!(c.closed_tab_count(), 0);
+    c.close_tab(0).unwrap();
+    assert_eq!(c.closed_tab_count(), 1);
+    c.reopen_tab().unwrap();
+    assert_eq!(c.closed_tab_count(), 1, "a reopen closes nothing");
+}

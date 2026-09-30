@@ -128,6 +128,12 @@ impl BrowserController {
         key
     }
 
+    /// How many tabs were closed so far (never decreases): a closed window
+    /// is the most recently closed thing while this has not moved.
+    pub fn closed_tab_count(&self) -> u64 {
+        self.browser.closed_tab_count()
+    }
+
     /// Reconcile every session with the windows (after a restored window
     /// got its native root).
     pub fn refresh_sessions(&mut self) {

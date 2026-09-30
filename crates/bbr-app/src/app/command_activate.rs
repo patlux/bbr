@@ -306,6 +306,15 @@ impl BbrApp {
                 }
                 closed
             }
+            // Blueprint D19: the most recently closed window first, when no
+            // tab was closed after it.
+            3 if self.window_to_reopen().is_some() => {
+                self.finish_action_activation(window, cx);
+                let windows = self.window_registry();
+                let id = self.window_to_reopen();
+                cx.defer(move |cx| crate::browser_windows::reopen_window(cx, &windows, id));
+                true
+            }
             3 => {
                 let reopened = self.reopen_tab(window, cx).is_some();
                 if reopened {

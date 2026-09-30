@@ -29,6 +29,9 @@ pub struct Browser {
     /// window's; these count as visible too, so no window's page is warmed
     /// or suspended by another window's operations.
     pub(crate) elsewhere: std::collections::BTreeSet<TabId>,
+    /// Blueprint D19: how many tabs were closed so far (monotonic): ⇧⌘T
+    /// reopens a closed window only when no tab was closed after it.
+    closed_tabs: u64,
 }
 
 impl Default for Browser {
@@ -42,6 +45,7 @@ impl Browser {
         Self {
             next_id: 1,
             last_used_seq: 0,
+            closed_tabs: 0,
             profiles: Vec::new(),
             spaces: Vec::new(),
             tabs: Vec::new(),
@@ -233,6 +237,11 @@ impl Browser {
         }
     }
 
+    /// Blueprint D19: how many tabs were closed so far (never decreases).
+    pub fn closed_tab_count(&self) -> u64 {
+        self.closed_tabs
+    }
+
     /// Blueprint D19: the tabs other windows select.
     pub fn selected_elsewhere(&self) -> &std::collections::BTreeSet<TabId> {
         &self.elsewhere
@@ -380,6 +389,7 @@ impl Browser {
         if was_active {
             sp.active_tab = focus_after;
         }
+        self.closed_tabs += 1;
         self.sync_lifecycles(space);
         Ok(())
     }

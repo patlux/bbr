@@ -507,6 +507,16 @@ pub(crate) fn install_actions(cx: &mut App, windows: Shared<Registry>) {
         move |_: &ReopenTab, cx| {
             let windows = windows.clone();
             cx.defer(move |cx| {
+                // Blueprint D19: the most recently closed window comes back
+                // when no tab was closed after it; otherwise a tab.
+                let window =
+                    with_key_window(&windows, cx, |view, _window, _cx| view.window_to_reopen())
+                        .ok()
+                        .flatten();
+                if let Some(id) = window {
+                    crate::browser_windows::reopen_window(cx, &windows, Some(id));
+                    return;
+                }
                 let _ = with_key_window(&windows, cx, |view, window, cx| {
                     let _ = view.reopen_tab(window, cx);
                 });

@@ -699,6 +699,11 @@ page placed in a root that is not attached yet until it is). The file is
 written synchronously and the store in the background, so a selection the
 store never committed keeps the store's own active tab. The last window's
 close flushes while it is still registered, so its row is written.
+A window closed while others stay open is kept in the registry with its
+layout and row (`push_closed`); the window that takes over shows the
+Reopen toast, and `browser_windows::reopen_window` brings it back through
+the same `restore_window` path. ⇧⌘T reopens that window only while the
+domain's monotonic `closed_tab_count` has not moved since it closed.
 
 The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs` + the split
 `app/sidebar.rs`/`app/sidebar_view.rs`/`app/spaces.rs`/`app/tab.rs`/

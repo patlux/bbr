@@ -33,6 +33,9 @@ pub enum ToastAction {
         tab: bbr_domain::TabId,
         space: bbr_browser::SpaceId,
     },
+    /// Blueprint D19: another window closed; Reopen brings back closed
+    /// window `0` (its registry id).
+    ReopenWindow(u64),
 }
 
 /// One live toast.
@@ -215,10 +218,40 @@ impl BbrApp {
             ToastAction::UndoProfileMove { tab, space } => {
                 self.undo_profile_move(tab, space, cx);
             }
+            ToastAction::ReopenWindow(id) => {
+                let windows = self.window_registry();
+                cx.defer(move |cx| crate::browser_windows::reopen_window(cx, &windows, Some(id)));
+            }
         }
         self.dismiss_toast(toast.model.generation, cx);
         cx.notify();
         true
+    }
+
+    /// Blueprint D19 (board L-14): a window closed while this one stays
+    /// open; Reopen brings it back.
+    pub(crate) fn show_window_closed_toast(&mut self, id: u64, cx: &mut Context<Self>) {
+        self.show_toast(
+            Icon::Close,
+            None,
+            ToastTone::Neutral,
+            "Window closed",
+            Some(("Reopen".into(), ToastAction::ReopenWindow(id))),
+            cx,
+        );
+    }
+
+    /// Blueprint D19: closed window `id` is back — its toast goes.
+    pub(crate) fn dismiss_reopen_toast(&mut self, id: u64, cx: &mut Context<Self>) {
+        let generation = self
+            .transient
+            .toast
+            .as_ref()
+            .filter(|toast| toast.action == Some(ToastAction::ReopenWindow(id)))
+            .map(|toast| toast.model.generation);
+        if let Some(generation) = generation {
+            self.dismiss_toast(generation, cx);
+        }
     }
 
     /// Blueprint D17: after a restore, say what came back (once per launch).

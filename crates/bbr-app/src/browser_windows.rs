@@ -35,13 +35,26 @@ pub(crate) struct WindowRow {
     pub(crate) sidebar: bbr_persistence::SidebarState,
 }
 
-/// Every open browser window, the one that last took input, and each
-/// window's presentation row (published when it draws).
+/// A window closed while others stayed open, kept for Reopen and ⇧⌘T.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ClosedWindow {
+    pub(crate) id: u64,
+    pub(crate) layout: crate::window_layouts::WindowLayout,
+    pub(crate) row: Option<WindowRow>,
+    /// The controller's closed-tab count when it closed.
+    pub(crate) tab_closes: u64,
+}
+
+/// Every open browser window, the one that last took input, each window's
+/// presentation row (published when it draws), and the closed windows,
+/// most recent last.
 #[derive(Default)]
 pub(crate) struct Registry {
     windows: BTreeMap<WindowKey, BrowserWindow>,
     current: WindowKey,
     rows: BTreeMap<WindowKey, WindowRow>,
+    closed: Vec<ClosedWindow>,
+    next_closed: u64,
 }
 
 /// A window's handle and shell.
@@ -122,6 +135,38 @@ impl Registry {
         self.rows.values().copied().collect()
     }
 
+    /// Keep a closed window for Reopen; returns its id.
+    pub(crate) fn push_closed(
+        &mut self,
+        layout: crate::window_layouts::WindowLayout,
+        row: Option<WindowRow>,
+        tab_closes: u64,
+    ) -> u64 {
+        self.next_closed += 1;
+        let id = self.next_closed;
+        self.closed.push(ClosedWindow {
+            id,
+            layout,
+            row,
+            tab_closes,
+        });
+        id
+    }
+
+    /// The most recently closed window.
+    pub(crate) fn last_closed(&self) -> Option<&ClosedWindow> {
+        self.closed.last()
+    }
+
+    /// Take closed window `id` (the most recent one for `None`).
+    pub(crate) fn take_closed(&mut self, id: Option<u64>) -> Option<ClosedWindow> {
+        let index = match id {
+            Some(id) => self.closed.iter().position(|closed| closed.id == id)?,
+            None => self.closed.len().checked_sub(1)?,
+        };
+        Some(self.closed.remove(index))
+    }
+
     /// Every open window's shell.
     pub(crate) fn shells(&self) -> Vec<Entity<BbrApp>> {
         self.windows
@@ -196,6 +241,7 @@ pub(crate) fn install_lifecycle(
             cx.quit();
             return;
         }
+        let row = windows.read().row(key);
         let removed = windows.get().remove(key);
         let Some(closed_window) = removed else {
             return;
@@ -204,7 +250,7 @@ pub(crate) fn install_lifecycle(
         let successor = windows.read().current_target();
         closed_window
             .app
-            .update(cx, |view, cx| view.window_closed(successor, cx));
+            .update(cx, |view, cx| view.window_closed(successor, row, cx));
         for shell in remaining {
             shell.update(cx, |_view, cx| cx.notify());
         }
@@ -289,6 +335,39 @@ pub(crate) fn restore_windows(
         }
         view.window_activated(cx);
     });
+}
+
+/// Blueprint D19: Reopen (the toast) and ⇧⌘T: bring back closed window
+/// `id` (the most recently closed one for `None`) on its space and
+/// selections, at its place with its rail; it becomes the current window.
+pub(crate) fn reopen_window(cx: &mut App, windows: &Shared<Registry>, id: Option<u64>) {
+    let source = windows.read().current_target();
+    let Some((_, source)) = source else {
+        return;
+    };
+    let closed = windows.get().take_closed(id);
+    let Some(closed) = closed else {
+        return;
+    };
+    let key = source.update(cx, |view, _cx| view.restore_window_context(&closed.layout));
+    let rect = closed.row.and_then(|row| row.geometry);
+    let Some((handle, app)) = open_shell(cx, windows, &source, key, rect) else {
+        source.update(cx, |view, _cx| view.abandon_window(key));
+        return;
+    };
+    let _ = with_app(&handle, &app, cx, |view, _window, cx| {
+        if let Some(row) = closed.row {
+            view.restore_window_state(&row.sidebar);
+        }
+        view.refresh_window_sessions();
+        view.window_activated(cx);
+        cx.notify();
+    });
+    // The toast that offered it has done its part.
+    let shells = windows.read().shells();
+    for shell in shells {
+        shell.update(cx, |view, cx| view.dismiss_reopen_toast(closed.id, cx));
+    }
 }
 
 /// Open window `key`'s shell (its context already exists in the
@@ -433,6 +512,33 @@ pub(crate) fn close_window(cx: &mut App, windows: &Shared<Registry>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn layout(space: u64) -> crate::window_layouts::WindowLayout {
+        crate::window_layouts::WindowLayout {
+            active_space: bbr_domain::SpaceId(space),
+            selections: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn closed_windows_come_back_most_recent_first_or_by_id() {
+        let mut registry = Registry::default();
+        let first = registry.push_closed(layout(1), None, 0);
+        let second = registry.push_closed(layout(2), None, 3);
+        assert_eq!(registry.last_closed().map(|closed| closed.id), Some(second));
+        assert_eq!(
+            registry
+                .take_closed(Some(first))
+                .map(|closed| closed.layout),
+            Some(layout(1))
+        );
+        assert_eq!(registry.take_closed(Some(first)), None, "taken once");
+        assert_eq!(
+            registry.take_closed(None).map(|closed| closed.id),
+            Some(second)
+        );
+        assert_eq!(registry.take_closed(None), None);
+    }
 
     #[test]
     fn an_empty_registry_has_no_window_to_act_in() {

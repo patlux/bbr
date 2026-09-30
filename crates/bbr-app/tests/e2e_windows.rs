@@ -459,3 +459,87 @@ fn every_window_comes_back_after_a_restart() {
     }));
     finish(result, &mut harness, &socket, &token);
 }
+
+#[test]
+#[ignore]
+fn a_closed_window_comes_back_from_its_toast_or_cmd_shift_t() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+    let (_fixtures, _page_one, page_two, mut harness, socket, token) = start("windows-reopen");
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        let mut since = ready(&mut client, &token);
+        let (second, _) = new_window(&mut client);
+        let view = open_tab(&mut client, &mut since, &page_two, None);
+        let before = settle(&mut client, "the second window's page", |s| {
+            entry(s, second).selected_view == Some(view)
+        });
+        let rect = entry(&before, second).content_rect;
+
+        // ⇧⌘W: the window closes, the first window says so and offers
+        // Reopen.
+        keystroke(&mut client, "cmd-shift-w");
+        let closed = settle(&mut client, "the toast", |s| {
+            s.windows.len() == 1
+                && s.toast
+                    .as_ref()
+                    .is_some_and(|t| t.message == "Window closed" && !t.leaving)
+        });
+        assert_eq!(closed.toast.unwrap().action.as_deref(), Some("Reopen"));
+        assert_eq!(closed.tabs.len(), 2, "no tab closed");
+
+        // Reopen: the same page in a new window at the old place.
+        client
+            .send_ok(&bbr_testkit::Request::ToastAction)
+            .expect("Reopen");
+        let back = settle(&mut client, "the reopened window", |s| {
+            s.windows.len() == 2 && s.windows.iter().any(|w| w.selected_view == Some(view))
+        });
+        let reopened = back
+            .windows
+            .iter()
+            .find(|w| w.selected_view == Some(view))
+            .cloned()
+            .unwrap();
+        assert!(reopened.current, "the reopened window takes over");
+        assert_eq!(
+            reopened.selected_root,
+            Some(reopened.window),
+            "never reloaded, moved in"
+        );
+        assert!(
+            close(reopened.content_rect, rect),
+            "{:?} vs {rect:?}",
+            reopened.content_rect
+        );
+        assert!(back.toast.is_none(), "the toast has done its part");
+
+        // ⇧⌘W then ⇧⌘T: nothing was closed after the window, so the window
+        // comes back.
+        keystroke(&mut client, "cmd-shift-w");
+        settle(&mut client, "closed again", |s| s.windows.len() == 1);
+        keystroke(&mut client, "cmd-shift-t");
+        settle(&mut client, "back by cmd-shift-t", |s| {
+            s.windows.len() == 2 && s.windows.iter().any(|w| w.selected_view == Some(view))
+        });
+
+        // ⇧⌘W, then a tab closes: ⇧⌘T reopens the tab, not the window.
+        keystroke(&mut client, "cmd-shift-w");
+        let one = settle(&mut client, "closed a third time", |s| s.windows.len() == 1);
+        let tabs = one.tabs.len();
+        client
+            .send_ok(&bbr_testkit::protocol::dsl::close_tab(1))
+            .expect("close a tab");
+        settle(&mut client, "a tab closed", |s| s.tabs.len() == tabs - 1);
+        keystroke(&mut client, "cmd-shift-t");
+        let reopened_tab = settle(&mut client, "the tab back", |s| s.tabs.len() == tabs);
+        assert_eq!(reopened_tab.windows.len(), 1, "the tab, not the window");
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+    finish(result, &mut harness, &socket, &token);
+}
