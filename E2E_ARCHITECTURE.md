@@ -655,7 +655,8 @@ like the sidebar-divider drag seam) — never a direct reorder or move command:
    neighbor), and a cross-profile move destroys + recreates the session
    exactly once in the destination store — proven by cookie isolation (the
    recreated tab reads the destination store's cookie, never the source's).
-2. **Pointer suite**: the row pin control through the production listener,
+2. **Pointer suite**: pinning through the Tab menu's pointer path (rows carry
+   no pin control),
    drag reorder within the pinned and regular regions with the typed
    `drag_source`/`drag_slot`/`drag_valid` snapshot fields and the §15
    `bbr-drag-tick-<n>` id (accent when legal, muted at the clamped region

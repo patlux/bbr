@@ -283,8 +283,10 @@ fn dragged_row_disables_its_controls() {
     let tree = semantic_tree(&input);
     let close = find(&tree, "bbr-tab-close-0").expect("close control");
     assert!(!close.enabled, "a dragged row's controls are disabled");
-    let pin = find(&tree, "bbr-tab-pin-0").expect("pin control");
-    assert!(!pin.enabled);
+    assert!(
+        find(&tree, "bbr-tab-pin-0").is_none(),
+        "rows carry no pin control (DESIGN §11.1)"
+    );
 }
 
 #[test]

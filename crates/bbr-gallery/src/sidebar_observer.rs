@@ -49,8 +49,6 @@ pub struct SidebarObserver {
     pub on_select_row: RowCallback,
     /// §11.1 row close (stops propagation).
     pub on_close_row: RowCallback,
-    /// §11.2 pin control (stops propagation).
-    pub on_toggle_pin: RowCallback,
     /// §10.9 drag begin.
     pub on_begin_drag: RowCallback,
     /// §10.3 press down.
@@ -215,7 +213,6 @@ pub fn build_sidebar_observer(
         on_address_site: mouse(SidebarObservation::AddressSite, true),
         on_select_row: row(SidebarObservation::SelectRow, false),
         on_close_row: row(SidebarObservation::CloseRow, true),
-        on_toggle_pin: row(SidebarObservation::TogglePin, true),
         on_begin_drag: row(SidebarObservation::BeginDrag, false),
         on_press_row: row(SidebarObservation::PressRow, false),
         on_release_row: {
@@ -386,7 +383,6 @@ impl SidebarObserver {
             on_address_site: Rc::clone(&self.on_address_site),
             on_select_row: Rc::clone(&self.on_select_row),
             on_close_row: Rc::clone(&self.on_close_row),
-            on_toggle_pin: Rc::clone(&self.on_toggle_pin),
             on_begin_drag: Rc::clone(&self.on_begin_drag),
             on_press_row: Rc::clone(&self.on_press_row),
             on_release_row: Rc::clone(&self.on_release_row),
@@ -447,7 +443,6 @@ mod tests {
         let _ = &callbacks.on_address_site;
         let _ = &callbacks.on_select_row;
         let _ = &callbacks.on_close_row;
-        let _ = &callbacks.on_toggle_pin;
         let _ = &callbacks.on_begin_drag;
         let _ = &callbacks.on_press_row;
         let _ = &callbacks.on_release_row;

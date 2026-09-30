@@ -399,17 +399,6 @@ impl BbrApp {
         self.toggle_pin(index, cx)
     }
 
-    /// Pointer pin control of a visible tab row: chrome focus domain
-    /// preserved (pointer interaction with sidebar controls gives focus to
-    /// browser chrome), then toggled through the same controller mutation the
-    /// keyboard command uses.
-    pub fn toggle_row_pin(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
-        self.focus_tab_list(window, cx);
-        if self.toggle_pin(index, cx).is_some() {
-            cx.notify();
-        }
-    }
-
     /// `Cmd-Shift-↑`/`Cmd-Shift-↓`: move the active tab one step within its
     /// current region. A step that would cross the pinned/regular boundary is
     /// rejected whole (no partial mutation; the order and sessions stay

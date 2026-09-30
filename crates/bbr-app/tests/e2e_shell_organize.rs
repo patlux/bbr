@@ -412,14 +412,14 @@ fn keyboard_pins_unpins_reorders_and_moves_tabs() {
     finish(result, &mut harness, &socket, &token);
 }
 
-/// Pointer tab organization: the row pin control through the production
-/// mouse-down listener path, drag reorder within a region through the
+/// Pointer tab organization: pinning through the Tab menu's pointer path
+/// (rows carry no pin control, DESIGN §11.1), drag reorder within a region through the
 /// production press/move/release listeners with the §10.9 insertion tick and
 /// its legality, an illegal boundary drop that is rejected whole, and Escape
 /// cancellation. Every committed move keeps the live session.
 #[test]
 #[ignore]
-fn pointer_pin_control_and_drag_reorder_respect_regions() {
+fn pointer_pin_and_drag_reorder_respect_regions() {
     let _serial = serial_gui();
     if !allow_gui() {
         return;
@@ -452,21 +452,24 @@ fn pointer_pin_control_and_drag_reorder_respect_regions() {
         // for the pin/reorder pointers).
         strip_presence(&mut client);
 
-        // Seed the pinned region through the visible pin controls: two tabs,
-        // both pinned via `bbr-tab-pin-<n>` on the production listener path.
+        // Seed the pinned region through the Tab menu's pointer path: two
+        // tabs, both pinned by the menu's Pin Tab row. The rows expose no
+        // pin control (DESIGN §11.1).
         open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
-        client
-            .send_ok(&dsl::click_tab_pin(1))
-            .expect("pin second row");
+        toggle_pin_via_tab_menu(&mut client, 1);
         since = wait_browser_change(&mut client, BrowserChange::TabPinned { index: 0 }, since);
-        client
-            .send_ok(&dsl::click_tab_pin(1))
-            .expect("pin first row (now index 1)");
+        toggle_pin_via_tab_menu(&mut client, 1);
         since = wait_browser_change(&mut client, BrowserChange::TabPinned { index: 1 }, since);
         let pinned_two = client.snapshot().expect("two pinned snapshot");
         assert_tab_order(&pinned_two, &[&page_two, &page_one], 2);
         assert_eq!(pinned_two.engine_sessions, 2);
-        assert_ids(&pinned_two, &["bbr-tab-pin-0", "bbr-tab-pin-1"]);
+        assert!(
+            !pinned_two
+                .visible_ids
+                .iter()
+                .any(|id| id.starts_with("bbr-tab-pin-")),
+            "rows render no pin control"
+        );
 
         // A regular region below: two more tabs.
         open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));

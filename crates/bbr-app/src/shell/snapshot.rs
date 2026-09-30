@@ -559,7 +559,6 @@ pub fn visible_ids_u2(
         ids.push(format!("bbr-tab-favicon-{index}"));
         ids.push(format!("bbr-tab-state-{index}"));
         ids.push(format!("bbr-tab-close-{index}"));
-        ids.push(format!("bbr-tab-pin-{index}"));
     }
     if let Some(slot) = drag_slot {
         ids.push(format!("bbr-drag-tick-{slot}"));

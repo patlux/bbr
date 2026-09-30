@@ -1,9 +1,9 @@
 //! Tab Row interaction scenarios (packet
 //! `component-gallery-browser-components.md`): the story renders every
 //! valid matrix family through the production `bbr-ui::components::tab_row`
-//! with recorder callbacks. Real pointer clicks on the close control, the
-//! pin control, and the row body prove which production callback fired
-//! (the recorder path); the §10.9 drag ticks (legal vs clamped-invalid)
+//! with recorder callbacks. Real pointer clicks on the close control and
+//! the row body prove which production callback fired (the recorder path);
+//! the row carries no pin control (DESIGN §11.1); the §10.9 drag ticks (legal vs clamped-invalid)
 //! render with their stable ids. No product behavior is asserted here —
 //! the gallery proves renderability and callback wiring only.
 
@@ -13,8 +13,8 @@ use gpui::{point, px, Entity, VisualTestContext};
 use crate::app::GalleryApp;
 use crate::harness::{bounds_of, click_selector, flush, move_to_story, run_scenario, snapshot};
 use crate::tab_row_matrix::{
-    DRAG_TICK_INVALID_ID, DRAG_TICK_LEGAL_ID, PINNED_N_PIN_ID, PINNED_S_ROW_ID,
-    REVEAL_CLOSE_CLOSE_ID, TAB_ROW_REJECTED, TAB_ROW_VALID,
+    DRAG_TICK_INVALID_ID, DRAG_TICK_LEGAL_ID, PINNED_S_ROW_ID, REVEAL_CLOSE_CLOSE_ID,
+    TAB_ROW_REJECTED, TAB_ROW_VALID,
 };
 
 /// Navigate to the Tab Row story (found by its stable label).
@@ -41,7 +41,6 @@ fn tab_row_story_renders_the_matrix_families_with_stable_ids() {
         let snap = snapshot(window, app);
         assert_eq!(snap.selected_story_label, "Tab Row");
         assert_eq!(snap.tab_closes, 0);
-        assert_eq!(snap.tab_pins, 0);
         assert_eq!(snap.tab_selects, 0);
         assert_eq!(snap.tab_drag_begins, 0);
         // Every valid family is registered — the story renders them all.
@@ -55,7 +54,6 @@ fn tab_row_story_renders_the_matrix_families_with_stable_ids() {
         assert!(bounds_of(window, "bbr-tab-favicon-0").size.width > px(0.0));
         assert!(bounds_of(window, "bbr-tab-state-0").size.width > px(0.0));
         assert!(bounds_of(window, "bbr-tab-close-0").size.width > px(0.0));
-        assert!(bounds_of(window, "bbr-tab-pin-0").size.width > px(0.0));
         // The pinned-S family (icon-only) and the drag-tick families render
         // at their own stable ids.
         assert!(bounds_of(window, PINNED_S_ROW_ID).size.height > px(0.0));
@@ -73,7 +71,7 @@ fn tab_row_story_renders_the_matrix_families_with_stable_ids() {
 
 #[test]
 #[ignore]
-fn real_close_pin_and_row_press_report_through_the_recorder() {
+fn real_close_and_row_press_report_through_the_recorder() {
     run_scenario(|window, app| {
         open_tab_row(window, app);
         flush(window);
@@ -86,18 +84,8 @@ fn real_close_pin_and_row_press_report_through_the_recorder() {
         assert_eq!(snap.tab_closes, 1, "real close click recorded");
         assert_eq!(snap.tab_selects, 0, "close stops propagation (§11.1)");
         assert_eq!(snap.tab_drag_begins, 0);
-        assert_eq!(snap.tab_pins, 0);
-        // A real pointer click on the pin control of the pinned family:
-        // on_pin fires alone.
-        click_selector(window, PINNED_N_PIN_ID);
-        flush(window);
-        let snap = snapshot(window, app);
-        assert_eq!(snap.tab_pins, 1, "real pin click recorded");
-        assert_eq!(snap.tab_closes, 1);
-        assert_eq!(snap.tab_selects, 0);
-        assert_eq!(snap.tab_drag_begins, 0);
         // A real press on the first family's row body (the favicon tile
-        // area, left of the pin): on_select AND on_begin_drag both fire —
+        // area): on_select AND on_begin_drag both fire —
         // the production two-listener path — and no control fires.
         let row = bounds_of(window, "bbr-tab-row-0");
         let body = point(row.origin.x + px(8.0), row.center().y);
@@ -107,6 +95,5 @@ fn real_close_pin_and_row_press_report_through_the_recorder() {
         assert_eq!(snap.tab_selects, 1, "row press records select");
         assert_eq!(snap.tab_drag_begins, 1, "row press records drag begin");
         assert_eq!(snap.tab_closes, 1, "row press records no close");
-        assert_eq!(snap.tab_pins, 1, "row press records no pin");
     });
 }

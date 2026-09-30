@@ -53,12 +53,11 @@ impl TabRowAppState {
     }
 
     /// The recorded interaction counts in snapshot order (selects,
-    /// closes, pins, drag-begins).
-    pub fn counts(&self) -> (u32, u32, u32, u32) {
+    /// closes, drag-begins).
+    pub fn counts(&self) -> (u32, u32, u32) {
         (
             self.recorder.selects,
             self.recorder.closes,
-            self.recorder.pins,
             self.recorder.drag_begins,
         )
     }

@@ -69,7 +69,6 @@ pub struct GallerySnapshot {
     /// The observed Tab Row state through the production recorder path.
     pub tab_selects: u32,
     pub tab_closes: u32,
-    pub tab_pins: u32,
     pub tab_drag_begins: u32,
     /// The observed Saved Pages Library state: what real Library events
     /// (close, sort, select, rename, remove, collection, open) reported

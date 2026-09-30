@@ -129,7 +129,6 @@ fn visible_ids_mirror_the_render_for_each_pane_branch() {
         "bbr-tab-favicon-1",
         "bbr-tab-state-1",
         "bbr-tab-close-1",
-        "bbr-tab-pin-1",
         "bbr-empty-new-tab",
     ] {
         assert!(

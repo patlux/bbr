@@ -21,8 +21,8 @@ use crate::registry::StoryContext;
 use crate::stories::{section_heading, story_page, value_row};
 use crate::tab_row_matrix::{
     build_tab_row_fixture, tab_row_case_valid, DRAG_TICK_INVALID_ID, DRAG_TICK_INVALID_INDEX,
-    DRAG_TICK_LEGAL_ID, DRAG_TICK_LEGAL_INDEX, PINNED_N_PIN_ID, PINNED_S_ROW_ID,
-    REVEAL_CLOSE_CLOSE_ID, TAB_ROW_REJECTED, TAB_ROW_VALID,
+    DRAG_TICK_LEGAL_ID, DRAG_TICK_LEGAL_INDEX, PINNED_S_ROW_ID, REVEAL_CLOSE_CLOSE_ID,
+    TAB_ROW_REJECTED, TAB_ROW_VALID,
 };
 
 /// §11.4 status line: the production `bbr-ui` component with fixture
@@ -73,7 +73,6 @@ pub fn render_tab_row(ctx: &StoryContext) -> AnyElement {
         .expect("Tab Row story renders with the recorder");
     let on_select = Rc::clone(&tab.observer.on_select);
     let on_close = Rc::clone(&tab.observer.on_close);
-    let on_pin = Rc::clone(&tab.observer.on_pin);
     let on_begin_drag = Rc::clone(&tab.observer.on_begin_drag);
 
     let families: Vec<AnyElement> = TAB_ROW_VALID
@@ -93,10 +92,6 @@ pub fn render_tab_row(ctx: &StoryContext) -> AnyElement {
                 },
                 {
                     let on = Rc::clone(&on_close);
-                    move |e, w, a| on(e, w, a)
-                },
-                {
-                    let on = Rc::clone(&on_pin);
                     move |e, w, a| on(e, w, a)
                 },
                 {
@@ -221,7 +216,6 @@ pub fn render_tab_row(ctx: &StoryContext) -> AnyElement {
         "close (selected family)",
         REVEAL_CLOSE_CLOSE_ID,
     ));
-    children.push(value_row(theme, "pin (pinned-N family)", PINNED_N_PIN_ID));
     children.push(value_row(theme, "pinned-S icon-only row", PINNED_S_ROW_ID));
     children.push(section_heading(
         theme,

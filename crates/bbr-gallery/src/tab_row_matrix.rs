@@ -265,12 +265,11 @@ pub const DRAG_TICK_LEGAL_ID: &str = "bbr-drag-tick-100";
 pub const DRAG_TICK_INVALID_ID: &str = "bbr-drag-tick-101";
 
 /// The stable §15 ids of the interaction-target families the E2E clicks
-/// (the close of the selected family — visible, §10.2 — the pin of the
-/// pinned-N family, and the icon-only pinned-S row). Pinned by the matrix
-/// test at the declared positions (3/12/13) and rendered by the story's
-/// id contract rows, so the E2E targets never drift from the declaration.
+/// (the close of the selected family — visible, §10.2 — and the icon-only
+/// pinned-S row). Pinned by the matrix test at the declared positions
+/// (3/13) and rendered by the story's id contract rows, so the E2E targets
+/// never drift from the declaration.
 pub const REVEAL_CLOSE_CLOSE_ID: &str = "bbr-tab-close-3";
-pub const PINNED_N_PIN_ID: &str = "bbr-tab-pin-12";
 pub const PINNED_S_ROW_ID: &str = "bbr-tab-row-13";
 
 #[cfg(test)]
@@ -354,7 +353,6 @@ mod tests {
         assert_eq!(TAB_ROW_VALID[12].label, "pinned (N anatomy)");
         assert_eq!(TAB_ROW_VALID[13].label, "pinned icon-only (S)");
         assert_eq!(REVEAL_CLOSE_CLOSE_ID, "bbr-tab-close-3");
-        assert_eq!(PINNED_N_PIN_ID, "bbr-tab-pin-12");
         assert_eq!(PINNED_S_ROW_ID, "bbr-tab-row-13");
     }
 

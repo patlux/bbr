@@ -233,9 +233,9 @@ Additional rules:
   controller's move policy (same-profile keeps the live session; cross-profile
   recreates it once in the destination store). Dropping on the tab's own space
   is a no-op.
-- Every pointer operation above has a keyboard equivalent: the row pin control
-  ↔ `Cmd-Shift-P`, drag reorder ↔ `Cmd-Shift-↑/↓`, drag-into-space ↔ staged
-  `Cmd-Shift-M` + Enter.
+- Every pointer operation above has a keyboard equivalent: the Tab menu's
+  Pin/Unpin row and the Pinned ghost row ↔ `Cmd-Shift-P`, drag reorder ↔
+  `Cmd-Shift-↑/↓`, drag-into-space ↔ staged `Cmd-Shift-M` + Enter.
 
 ## Web-content navigation gestures — Planned contract
 
@@ -533,8 +533,9 @@ visible UI slices land.
   remain open above.**
 - `Cmd-Shift-P` — pin or unpin the active tab (the pinned/regular boundary
   toggle). The selected tab stays selected and its live session is preserved;
-  the invoking focus domain is untouched. **Contract** (the row pin control is
-  the pointer equivalent).
+  the invoking focus domain is untouched. **Contract** (the Tab menu's
+  Pin/Unpin row and the Pinned ghost-row drag offer are the pointer
+  equivalents; rows carry no pin control).
 - `Cmd-Shift-↑` / `Cmd-Shift-↓` — move the active tab one step within its
   current pinned or regular region. A step that would cross the boundary is
   rejected whole (no partial mutation); the session and selection stay

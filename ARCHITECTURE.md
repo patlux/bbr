@@ -791,8 +791,9 @@ acceptance are Phase 9.
 
 Tab organization (the Phase-4 drag/reorder slice) is routed through the same
 controller mutations as every other input path. `Cmd-Shift-P` toggles the
-active tab's pin state (the row's `bbr-tab-pin-<n>` control is the pointer
-half), `Cmd-Shift-↑/↓` step the active tab within its region (a boundary
+active tab's pin state (the Tab menu's Pin/Unpin row and the §11.2 drag
+offers are the pointer halves; rows carry no pin control),
+`Cmd-Shift-↑/↓` step the active tab within its region (a boundary
 crossing is refused before the controller rejects it — the pinned-first
 invariant stays domain-owned), and `Cmd-Shift-M` stages a destination space
 name in the command bar (`CommandBarMode::MoveTab`; exact-title match then
@@ -915,8 +916,8 @@ compact-window clamping that keeps the native WKWebView geometry strictly
 positive — proven by `just e2e-shell-sidebar` and the `sidebar_resize` /
 `sidebar_restore` performance scenarios. The tab-organization slice adds the
 keyboard commands (`Cmd-Shift-P` pin toggle, `Cmd-Shift-↑/↓` region-bounded
-reorder, staged `Cmd-Shift-M` move), the visible pin control and §10.9 drag
-tick, real pointer drag through the production press/move/release listeners,
+reorder, staged `Cmd-Shift-M` move), the Tab menu's Pin/Unpin row and §10.9
+drag tick, real pointer drag through the production press/move/release listeners,
 illegal boundary drops rejected whole, same-profile moves that keep the
 WebViewId and warm session, cross-profile moves that recreate exactly once in
 the destination store with cookie isolation, and pin/reorder/move

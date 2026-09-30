@@ -139,15 +139,9 @@ fn shell_semantic_tree_and_fallbacks() {
             true,
             false,
         );
-        assert_node(
-            &initial.semantics,
-            "bbr-tab-pin-0",
-            SemanticRole::Button,
-            Some("Pin tab"),
-            None,
-            true,
-            false,
-            false,
+        assert!(
+            find(&initial.semantics, "bbr-tab-pin-0").is_none(),
+            "rows carry no pin control (DESIGN §11.1)"
         );
         assert_node(
             &initial.semantics,

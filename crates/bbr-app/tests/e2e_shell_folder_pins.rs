@@ -5,7 +5,7 @@
 //! and keyboard submenu commit) pins a regular tab in the same transition
 //! and reports the pin as an ordinary `TabPinned` browser change; ungrouping
 //! leaves a loose pinned tab; unpinning a member through the keyboard
-//! command (`Cmd-Shift-P`) or the row pin control ends its membership;
+//! command (`Cmd-Shift-P`) or the Tab menu's pointer path ends its membership;
 //! rejected groupings (unknown folder, a tab of another space) change
 //! neither the pin nor the membership. Every step keeps the exact `TabId`,
 //! the live `WebViewId`, the selection, and the owning space/profile.
@@ -218,7 +218,7 @@ fn folder_membership_pins_tabs_through_the_production_paths() {
             "the member stays selected"
         );
 
-        // Re-group, then unpin through the pointer pin control.
+        // Re-group, then unpin through the Tab menu's pointer path.
         client
             .send_ok(&dsl::move_tab_into_folder(2, folder))
             .expect("re-group");
@@ -230,9 +230,7 @@ fn folder_membership_pins_tabs_through_the_production_paths() {
             &[b, a, c],
             2,
         );
-        client
-            .send_ok(&dsl::click_tab_pin(1))
-            .expect("pointer unpin");
+        toggle_pin_via_tab_menu(&mut client, 1);
         since = wait_browser_change(&mut client, BrowserChange::TabUnpinned { index: 2 }, since);
         flush_frame(&mut client);
         let pointer_unpin = client.snapshot().expect("pointer unpin snapshot");

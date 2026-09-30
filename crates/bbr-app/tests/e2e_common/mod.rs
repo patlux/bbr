@@ -469,6 +469,47 @@ pub fn assert_ids(snapshot: &bbr_testkit::protocol::Snapshot, required: &[&str])
     }
 }
 
+/// Pin or unpin the active space's row at `index` through the production
+/// pointer path: a secondary click opens the Tab menu bound to that row's
+/// `TabId`, and a press on its `bbr-tab-menu-pin` row toggles the pin
+/// (DESIGN §11.13). Rows carry no pin control of their own (§11.1), so this
+/// is the pointer half of `Cmd-Shift-P`. Returns once the menu is closed;
+/// the caller synchronizes on the resulting `TabPinned`/`TabUnpinned`.
+pub fn toggle_pin_via_tab_menu(client: &mut Client, index: usize) {
+    client
+        .send_ok(&bbr_testkit::Request::RightClickRow {
+            index,
+            x: 140.0,
+            y: 240.0,
+        })
+        .expect("right click row");
+    let menu_deadline = deadline();
+    let pin_row = loop {
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush frame");
+        let snapshot = client.snapshot().expect("menu snapshot");
+        if snapshot.tab_menu.open {
+            break snapshot
+                .tab_menu
+                .rows
+                .iter()
+                .position(|row| row.id == "bbr-tab-menu-pin")
+                .expect("the Tab menu offers Pin/Unpin");
+        }
+        assert!(Instant::now() < menu_deadline, "tab menu never opened");
+        std::thread::yield_now();
+    };
+    client
+        .send_ok(&bbr_testkit::Request::TabMenuActivate { index: pin_row })
+        .expect("activate Pin/Unpin");
+    let closed_deadline = deadline();
+    while client.snapshot().expect("menu snapshot").tab_menu.open {
+        assert!(Instant::now() < closed_deadline, "tab menu never closed");
+        std::thread::yield_now();
+    }
+}
+
 /// Skip GUI tests on headless CI (matches the other real-app suites).
 pub fn allow_gui() -> bool {
     !std::env::var("BBR_SKIP_GUI_TESTS").is_ok_and(|value| value != "0" && value != "false")

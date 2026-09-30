@@ -309,12 +309,6 @@ pub(crate) fn dispatch(
         })
         .unwrap_or_else(err_response),
 
-        Request::ClickTabPin { index } => with_app(window, app, cx, |view, window, cx| {
-            view.toggle_row_pin(index, window, cx);
-            Response::Ok
-        })
-        .unwrap_or_else(err_response),
-
         // Pointer hover/press state through the production listener methods
         // (the exact app handlers the row's `on_hover` and mouse-down/up
         // element listeners call): the row renders the §10.2 hover wash +

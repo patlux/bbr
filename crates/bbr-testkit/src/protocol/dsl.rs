@@ -69,10 +69,6 @@ pub fn reorder_tab(from: usize, to: usize) -> Request {
     Request::ReorderTab { from, to }
 }
 
-pub fn click_tab_pin(index: usize) -> Request {
-    Request::ClickTabPin { index }
-}
-
 /// §11.14 titlebar toggle click (the `Cmd-S` pointer entry through the
 /// production toggle path).
 pub fn click_titlebar_toggle() -> Request {

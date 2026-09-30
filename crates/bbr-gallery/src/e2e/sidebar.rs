@@ -226,17 +226,6 @@ fn real_pointer_presses_report_through_the_sidebar_recorders() {
             "close never reaches the rail"
         );
 
-        // §11.2 pin control: stops propagation — only the pin fires.
-        click_selector(window, "bbr-tab-pin-1");
-        flush(window);
-        let snap = snapshot(window, app);
-        assert_eq!(snap.sidebar.toggle_pins, vec![1], "pin toggle");
-        assert_eq!(snap.sidebar.select_rows, vec![1], "pin stops propagation");
-        assert_eq!(
-            snap.sidebar.rail_mouse_downs, 1,
-            "pin never reaches the rail"
-        );
-
         // §11.10 favorites tile: the activation fires and the rail chrome
         // entry follows (no stop-propagation).
         click_selector(window, "bbr-fav-0");

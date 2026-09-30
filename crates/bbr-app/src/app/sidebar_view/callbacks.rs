@@ -163,14 +163,6 @@ impl BbrApp {
             entity.update(cx, |view, cx| view.close_row_via_pointer(index, window, cx));
         });
 
-        // §11.2: the pin control toggles the row's pin state (stops
-        // propagation).
-        let entity = cx.entity();
-        let on_toggle_pin: RowCallback = Rc::new(move |index, _e, window, cx| {
-            cx.stop_propagation();
-            entity.update(cx, |view, cx| view.toggle_row_pin(index, window, cx));
-        });
-
         // §10.9: pressing the row begins a pointer drag of that row.
         let entity = cx.entity();
         let on_begin_drag: RowCallback = Rc::new(move |index, event, window, cx| {
@@ -403,7 +395,6 @@ impl BbrApp {
             on_address_site,
             on_select_row,
             on_close_row,
-            on_toggle_pin,
             on_begin_drag,
             on_press_row,
             on_release_row,

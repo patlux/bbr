@@ -375,16 +375,6 @@ fn tab_row_node(row: &RowVisuals, list_focused: bool) -> SemanticNode {
     let selected = row.state == TabVisualState::Selected;
     let dragging = row.state == TabVisualState::Dragging;
     let controls_enabled = !(dragging || row.state == TabVisualState::Disabled);
-    let mut pin = node(
-        format!("bbr-tab-pin-{}", row.index),
-        SemanticRole::Button,
-        Some(if row.pinned { "Unpin tab" } else { "Pin tab" }.into()),
-        None,
-        false,
-        false,
-        vec![],
-    );
-    pin.enabled = controls_enabled;
     let mut close = node(
         format!("bbr-tab-close-{}", row.index),
         SemanticRole::Button,
@@ -414,7 +404,6 @@ fn tab_row_node(row: &RowVisuals, list_focused: bool) -> SemanticNode {
             false,
             vec![],
         ),
-        pin,
         node(
             format!("bbr-tab-state-{}", row.index),
             SemanticRole::State,

@@ -1,6 +1,7 @@
 //! §11.1/§11.2 vertical tab row anatomy and its controls: favicon tile
-//! (monogram fallback), row title, state slot, close control, pin control,
-//! and the §10.9 drag insertion tick.
+//! (monogram fallback), row title, state slot, close control, and the
+//! §10.9 drag insertion tick. The row has no pin control: pinning goes
+//! through `Cmd-Shift-P`, the Tab menu and the drag offers (§11.2).
 
 use gpui::{
     div, prelude::*, px, App, Div, MouseButton, MouseDownEvent, Rgba, SharedString, Stateful,
@@ -23,7 +24,6 @@ pub const TAB_ROW_ID: &str = "bbr-tab-row";
 pub const TAB_TITLE_ID: &str = "bbr-tab-title";
 pub const TAB_CLOSE_ID: &str = "bbr-tab-close";
 pub const TAB_STATE_ID: &str = "bbr-tab-state";
-pub const TAB_PIN_ID: &str = "bbr-tab-pin";
 
 /// One row's rendered identity, derived from the controller snapshot.
 #[derive(Debug, Clone, PartialEq)]
@@ -32,8 +32,7 @@ pub struct RowVisuals {
     pub title: SharedString,
     pub state: TabVisualState,
     pub favicon: Option<FaviconSpec>,
-    /// §11.2: whether the row is in the pinned region (drives the pin
-    /// control's region identity).
+    /// §11.2: whether the row is in the pinned region.
     pub pinned: bool,
     pub show_close: bool,
     /// §10.2 hover-reveal: the close control is visible when the pointer
@@ -135,53 +134,23 @@ pub fn close_control(theme: &Theme, index: usize) -> Stateful<Div> {
         .child(Icon::Close.canvas(theme, theme.density.icon()))
 }
 
-/// §11.2 pin control: the pointer half of the pin/unpin command (`Cmd-Shift-P`).
-/// A pinned row renders the §7 filled dot in `accent`; an unpinned row the
-/// hollow ring in `ink.secondary`; `disabled` drops the glyph to `ink.faint`
-/// (e.g. while the row is being dragged). `pinned` is the row's current
-/// region identity.
-pub fn pin_control(theme: &Theme, index: usize, pinned: bool, disabled: bool) -> Stateful<Div> {
-    let color = if disabled {
-        theme.palette.ink_faint
-    } else if pinned {
-        theme.palette.accent
-    } else {
-        theme.palette.ink_secondary
-    };
-    div()
-        .id((TAB_PIN_ID, index))
-        .debug_selector(move || format!("{TAB_PIN_ID}-{index}"))
-        .size(theme.density.icon())
-        .rounded(Radius.small())
-        .flex()
-        .items_center()
-        .justify_center()
-        .cursor(if disabled {
-            gpui::CursorStyle::Arrow
-        } else {
-            gpui::CursorStyle::PointingHand
-        })
-        .child(Icon::Pin { pinned }.canvas_with(theme, theme.density.icon(), color))
-}
-
 /// §11.1 vertical tab row anatomy (the §10.9 drag insertion tick lives in
 /// its own component module [`crate::components::drag_tick`] so this row
 /// anatomy stays under the ~500-line budget):
-/// `[favicon 18] · [title flex, trunc] · [pin] · [state slot 10] ·
+/// `[favicon 18] · [title flex, trunc] · [state slot 10] ·
 /// [close hit-min.close]`, tile per §8. The §10.2–§10.4 hover/active/selected
 /// wash paints an inset rounded surface (`density:row-inset` from the rail
 /// edges, `density:radius`) behind the content; the selected surface carries
 /// the static `elev:lift` ([`row_lift`], D2) and the rest state paints
 /// nothing so the (space-tinted) rail shows through.
 ///
-/// `on_select`/`on_close`/`on_pin` are the production view listeners (built
-/// with `cx.listener` in the sidebar surface), so the pointer path stays in
-/// the app layer. The close and pin controls are frontmost child hitboxes:
-/// in the bubble phase their handlers run before the row's and stop
-/// propagation, so a click on a control does not first select the row.
-/// `on_begin_drag` is the pointer-drag entry (DESIGN.md §10.9): pressing the
-/// row starts the drag; the controls' stop-propagation means a press on them
-/// never drags.
+/// `on_select`/`on_close` are the production view listeners (built with
+/// `cx.listener` in the sidebar surface), so the pointer path stays in the
+/// app layer. The close control is a frontmost child hitbox: in the bubble
+/// phase its handler runs before the row's and stops propagation, so a
+/// click on it does not first select the row. `on_begin_drag` is the
+/// pointer-drag entry (DESIGN.md §10.9): pressing the row starts the drag;
+/// the control's stop-propagation means a press on it never drags.
 ///
 /// Drag states: a `Dragging` row renders at 92% opacity with an elev:2
 /// shadow and a strong outline (§10.9) and disables its controls; a
@@ -193,7 +162,6 @@ pub fn tab_row(
     visuals: &RowVisuals,
     on_select: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
     on_close: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
-    on_pin: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
     on_begin_drag: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let p = theme.palette;
@@ -208,11 +176,6 @@ pub fn tab_row(
         // §10.2 hover-reveal: the close control fades in on interaction and
         // fades out at rest (transient indication; the row keeps its hit
         // square so the id and the pointer path are stable).
-        .opacity(if visuals.reveal_close { 1.0 } else { 0.0 });
-    let pin = pin_control(theme, visuals.index, visuals.pinned, controls_disabled)
-        .on_mouse_down(MouseButton::Left, on_pin)
-        // Pin is an interaction affordance, not persistent row noise. It
-        // appears with the close control on hover/selection/focus paths.
         .opacity(if visuals.reveal_close { 1.0 } else { 0.0 });
     div()
         .id((TAB_ROW_ID, visuals.index))
@@ -279,7 +242,6 @@ pub fn tab_row(
             &visuals.title,
             visuals.state,
         ))
-        .child(pin)
         .child(row_state_slot(theme, visuals.index, visuals.state))
         .child(close)
         .on_mouse_down(MouseButton::Left, on_select)
@@ -366,7 +328,6 @@ mod tests {
         assert_eq!(TAB_FAVICON_ID, "bbr-tab-favicon");
         assert_eq!(TAB_CLOSE_ID, "bbr-tab-close");
         assert_eq!(TAB_STATE_ID, "bbr-tab-state");
-        assert_eq!(TAB_PIN_ID, "bbr-tab-pin");
     }
 
     #[test]

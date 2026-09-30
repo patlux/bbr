@@ -203,11 +203,11 @@ pub fn tab_surface(
 }
 
 /// One §11.1 row: the production `tab_row` component wired to the callback
-/// slots — select/close/pin/drag through the row listeners, the §10.2
-/// hover wash + close reveal, and the §10.3 pressed wash. The close and
-/// pin controls stop propagation in the production component (their
-/// handlers run first in the bubble phase), so a press on a control never
-/// selects the row or starts a drag.
+/// slots — select/close/drag through the row listeners, the §10.2 hover
+/// wash + close reveal, and the §10.3 pressed wash. The close control
+/// stops propagation in the production component (its handler runs first
+/// in the bubble phase), so a press on it never selects the row or starts
+/// a drag.
 fn render_row(
     theme: &Theme,
     row: &RowVisuals,
@@ -220,7 +220,6 @@ fn render_row(
         row,
         callbacks::row(&callbacks.on_select_row, index),
         callbacks::row(&callbacks.on_close_row, index),
-        callbacks::row(&callbacks.on_toggle_pin, index),
         callbacks::row(&callbacks.on_begin_drag, index),
     )
     // §8 pitch: every row surface steps on `surface + gap`, so the

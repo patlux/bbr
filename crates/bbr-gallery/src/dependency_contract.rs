@@ -124,7 +124,6 @@ fn bbr_app_defines_no_migrated_presentation_duplicate_or_reexport_alias() {
         "fn row_title(",
         "fn row_state_slot(",
         "fn close_control(",
-        "fn pin_control(",
         "fn row_wash(",
         "pub fn address_control(",
         "pub fn staging_surface(",

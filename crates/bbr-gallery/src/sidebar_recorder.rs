@@ -60,8 +60,6 @@ pub enum SidebarObservation {
     SelectRow(usize),
     /// §11.1: row close (`on_close_row`), payload = the row index.
     CloseRow(usize),
-    /// §11.2: the pin control (`on_toggle_pin`), payload = the row index.
-    TogglePin(usize),
     /// §10.9: pointer drag begin (`on_begin_drag`), payload = the row index.
     BeginDrag(usize),
     /// §10.3: primary-button down (`on_press_row`), payload = the row index.
@@ -151,8 +149,6 @@ pub struct SidebarRecorder {
     pub select_rows: Vec<usize>,
     /// `on_close_row` row indexes, in dispatch order.
     pub close_rows: Vec<usize>,
-    /// `on_toggle_pin` row indexes, in dispatch order.
-    pub toggle_pins: Vec<usize>,
     /// `on_begin_drag` row indexes, in dispatch order.
     pub drag_begins: Vec<usize>,
     /// `on_press_row` row indexes, in dispatch order.
@@ -223,7 +219,6 @@ impl SidebarRecorder {
             SidebarObservation::AddressSite => {}
             SidebarObservation::SelectRow(index) => self.select_rows.push(index),
             SidebarObservation::CloseRow(index) => self.close_rows.push(index),
-            SidebarObservation::TogglePin(index) => self.toggle_pins.push(index),
             SidebarObservation::BeginDrag(index) => self.drag_begins.push(index),
             SidebarObservation::PressRow(index) => self.press_rows.push(index),
             SidebarObservation::ReleaseRow(index) => self.release_rows.push(index),
@@ -271,7 +266,6 @@ mod tests {
         recorder.observe(SidebarObservation::CommandOpen);
         recorder.observe(SidebarObservation::SelectRow(3));
         recorder.observe(SidebarObservation::CloseRow(3));
-        recorder.observe(SidebarObservation::TogglePin(3));
         recorder.observe(SidebarObservation::BeginDrag(3));
         recorder.observe(SidebarObservation::PressRow(3));
         recorder.observe(SidebarObservation::ReleaseRow(3));
@@ -299,7 +293,6 @@ mod tests {
         assert_eq!(recorder.command_opens, 1);
         assert_eq!(recorder.select_rows, vec![3]);
         assert_eq!(recorder.close_rows, vec![3]);
-        assert_eq!(recorder.toggle_pins, vec![3]);
         assert_eq!(recorder.drag_begins, vec![3]);
         assert_eq!(recorder.press_rows, vec![3]);
         assert_eq!(recorder.release_rows, vec![3]);
@@ -336,7 +329,6 @@ mod tests {
         assert_eq!(recorder.command_opens, 0);
         assert!(recorder.select_rows.is_empty());
         assert!(recorder.close_rows.is_empty());
-        assert!(recorder.toggle_pins.is_empty());
         assert!(recorder.drag_begins.is_empty());
         assert!(recorder.press_rows.is_empty());
         assert!(recorder.release_rows.is_empty());

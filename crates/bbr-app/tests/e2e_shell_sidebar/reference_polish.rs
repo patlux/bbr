@@ -115,15 +115,13 @@ fn rest_states_hairline_and_glyph_chips_in_both_appearance_modes() {
         );
 
         // An organized region appears: open a second tab so a regular row
-        // remains after New Tab, then pin the first tab through the
-        // production pointer path. The hairline renders exactly then —
+        // remains after New Tab, then pin the first tab through the Tab
+        // menu's pointer path. The hairline renders exactly then —
         // visible id and semantic Separator node — between the organized
         // Pinned area and the New Tab row, keeping the settled
         // Pinned → Folders → hairline → New Tab → Tabs order.
         let _second_view = open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
-        client
-            .send_ok(&dsl::click_tab_pin(0))
-            .expect("pin first tab");
+        toggle_pin_via_tab_menu(&mut client, 0);
         since = wait_browser_change(&mut client, BrowserChange::TabPinned { index: 0 }, since);
         flush_frame(&mut client);
         let pinned = client.snapshot().expect("pinned snapshot");

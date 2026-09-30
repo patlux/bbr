@@ -86,14 +86,13 @@ pub struct ControlObserver {
 }
 
 /// What a Tab Row interaction reports back to the gallery (packet
-/// `component-gallery-browser-components.md`): the §11.1 select/close, the
-/// §11.2 pin, and the §10.9 drag entry (a row-body press). The recorder
-/// proves which production callback fired.
+/// `component-gallery-browser-components.md`): the §11.1 select/close and
+/// the §10.9 drag entry (a row-body press). The recorder proves which
+/// production callback fired.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TabRowObservation {
     Select,
     Close,
-    Pin,
     BeginDrag,
 }
 
@@ -103,7 +102,6 @@ pub enum TabRowObservation {
 pub struct TabRowRecorder {
     pub selects: u32,
     pub closes: u32,
-    pub pins: u32,
     pub drag_begins: u32,
 }
 
@@ -113,7 +111,6 @@ impl TabRowRecorder {
         match event {
             TabRowObservation::Select => self.selects += 1,
             TabRowObservation::Close => self.closes += 1,
-            TabRowObservation::Pin => self.pins += 1,
             TabRowObservation::BeginDrag => self.drag_begins += 1,
         }
     }
@@ -126,25 +123,23 @@ pub type TabRowObserverFn = Rc<dyn Fn(&MouseDownEvent, &mut Window, &mut App)>;
 
 /// The callback bundle the Tab Row story routes the production
 /// `tab_row` callbacks through. Each callback records its interaction;
-/// only the close/pin callbacks stop propagation, exactly like the app's
-/// production listeners (a close or pin press never also selects or drags
-/// the row, §11.1/§11.2 — while a row-body press fires both `select` and
-/// `begin_drag`, the production two-listener path, DESIGN.md §11.1/§10.9).
+/// only the close callback stops propagation, exactly like the app's
+/// production listener (a close press never also selects or drags the row,
+/// §11.1 — while a row-body press fires both `select` and `begin_drag`,
+/// the production two-listener path, DESIGN.md §11.1/§10.9).
 pub struct TabRowObserver {
     pub on_select: TabRowObserverFn,
     pub on_close: TabRowObserverFn,
-    pub on_pin: TabRowObserverFn,
     pub on_begin_drag: TabRowObserverFn,
 }
 
 /// Build the production `tab_row` observer callbacks from one record
 /// action. `record` re-enters the app's production record path (the
 /// app-owned entity upgrade); this constructor owns the production
-/// **propagation contract**: only the close/pin listeners stop
-/// propagation, so a close or pin press never also selects or drags the
-/// row, while a row-body press fires both `select` and `begin_drag` — the
-/// exact production wiring the app's `sidebar_view` uses (DESIGN.md
-/// §11.1/§11.2/§10.9).
+/// **propagation contract**: only the close listener stops propagation,
+/// so a close press never also selects or drags the row, while a row-body
+/// press fires both `select` and `begin_drag` — the exact production
+/// wiring the app's `sidebar_view` uses (DESIGN.md §11.1/§10.9).
 pub fn build_tab_row_observer(
     record: impl Fn(TabRowObservation, &mut App) + 'static,
 ) -> TabRowObserver {
@@ -163,7 +158,6 @@ pub fn build_tab_row_observer(
     TabRowObserver {
         on_select: make(TabRowObservation::Select, false),
         on_close: make(TabRowObservation::Close, true),
-        on_pin: make(TabRowObservation::Pin, true),
         on_begin_drag: make(TabRowObservation::BeginDrag, false),
     }
 }
@@ -207,14 +201,11 @@ mod tests {
         recorder.observe(TabRowObservation::Select);
         assert_eq!(recorder.selects, 2);
         assert_eq!(recorder.closes, 0);
-        assert_eq!(recorder.pins, 0);
         assert_eq!(recorder.drag_begins, 0);
         recorder.observe(TabRowObservation::Close);
-        recorder.observe(TabRowObservation::Pin);
         recorder.observe(TabRowObservation::BeginDrag);
         assert_eq!(recorder.selects, 2);
         assert_eq!(recorder.closes, 1);
-        assert_eq!(recorder.pins, 1);
         assert_eq!(recorder.drag_begins, 1);
     }
 
@@ -223,7 +214,6 @@ mod tests {
         let recorder = TabRowRecorder::default();
         assert_eq!(recorder.selects, 0);
         assert_eq!(recorder.closes, 0);
-        assert_eq!(recorder.pins, 0);
         assert_eq!(recorder.drag_begins, 0);
     }
 }

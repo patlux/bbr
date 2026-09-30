@@ -286,9 +286,6 @@ pub struct Callbacks {
     /// §11.1: row close through the production pointer path (stops
     /// propagation).
     pub on_close_row: RowCallback,
-    /// §11.2: the pin control toggles the row's pin state (stops
-    /// propagation).
-    pub on_toggle_pin: RowCallback,
     /// §10.9: pressing the row begins a pointer drag of that row.
     pub on_begin_drag: RowCallback,
     /// §10.3: the primary button down paints the pressed wash.
@@ -377,7 +374,6 @@ impl Callbacks {
             on_address_site: noop_mouse.clone(),
             on_select_row: noop_row.clone(),
             on_close_row: noop_row.clone(),
-            on_toggle_pin: noop_row.clone(),
             on_begin_drag: noop_row.clone(),
             on_press_row: noop_row.clone(),
             on_release_row: noop_row_up,

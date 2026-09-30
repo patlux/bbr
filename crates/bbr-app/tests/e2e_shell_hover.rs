@@ -274,12 +274,6 @@ fn shell_hover_press_focus_and_drag_semantics() {
                 .enabled,
             "a dragged row's close is disabled"
         );
-        assert!(
-            !find(&dragging.semantics, "bbr-tab-pin-0")
-                .expect("pin node")
-                .enabled,
-            "a dragged row's pin is disabled"
-        );
         client
             .send_ok(&dsl::cancel_tab_drag())
             .expect("cancel drag");

@@ -102,11 +102,6 @@ pub enum Request {
     ClickTabClose {
         index: usize,
     },
-    /// Toggle the visible tab row's pin control through the production
-    /// pointer path (the pointer half of the pin/unpin command).
-    ClickTabPin {
-        index: usize,
-    },
     /// Pointer hover over a visible tab row through the production `on_hover`
     /// listener path (the exact app method the element handler calls): the
     /// row renders the DESIGN §10.2 hover wash and reveals its close control.
