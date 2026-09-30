@@ -457,6 +457,31 @@ pub fn keystroke(keystroke: impl Into<String>) -> Request {
     }
 }
 
+/// Reality gaps (item C): one real mouse event at a window content point.
+pub fn real_mouse(
+    phase: super::RealMousePhase,
+    button: super::RealMouseButton,
+    x: f64,
+    y: f64,
+    modifiers: Vec<super::RealModifier>,
+) -> Request {
+    Request::RealMouse {
+        phase,
+        button,
+        x,
+        y,
+        modifiers,
+        click_count: 1,
+    }
+}
+
+/// Reality gaps (item C): one real key press (down + up).
+pub fn real_key(keystroke: impl Into<String>) -> Request {
+    Request::RealKey {
+        keystroke: keystroke.into(),
+    }
+}
+
 /// Present a deterministic authentication challenge through the production
 /// challenge-arrival seam (`BbrApp::auth_on_challenge`, queue item 10): the
 /// sheet opens over the active window. The fixture is an HTTPS origin Basic

@@ -59,13 +59,22 @@ impl U2State {
 }
 
 impl BbrApp {
-    /// §11.4 footer `[Downloads]` control: toggles the §11.12 anchored
-    /// downloads panel (pointer or keyboard activation; a second activation
-    /// dismisses it). The panel is the Phase-8 surface; the controller and
-    /// native adapter are installed by the composition root.
-    #[cfg(feature = "testkit")]
-    pub fn activate_downloads(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    /// §11.4 footer `[Downloads]` press: toggles the §11.12 anchored
+    /// downloads panel (a second press dismisses it). The press marks
+    /// itself inside and its listener stops propagation, so the root's
+    /// outside-press handler never dismisses the freshly opened panel. The
+    /// footer listener and the testkit seam both call this.
+    pub fn footer_downloads_press(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.mark_downloads_press_inside();
         crate::app::downloads_behavior::toggle_downloads(self, window, cx);
+    }
+
+    /// §11.4 footer `[+]` press: toggles the plus menu, marked inside like
+    /// the Downloads press. The footer listener and the testkit seam both
+    /// call this.
+    pub fn footer_plus_press(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.u2.plus_menu_press_inside = true;
+        self.toggle_plus_menu(window, cx);
     }
 
     /// §11.4 footer `[+]` control: open the plus menu, or close it on a

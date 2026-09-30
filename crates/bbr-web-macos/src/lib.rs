@@ -131,6 +131,10 @@ mod window_roots;
 #[cfg(target_os = "macos")]
 pub mod app_identity;
 
+/// Real AppKit input events for the test harness (`testkit` only).
+#[cfg(all(target_os = "macos", feature = "testkit"))]
+pub mod input_events;
+
 /// Blueprint D10: the local time zone's current offset from UTC in
 /// seconds (the History page's day boundaries and times).
 #[cfg(target_os = "macos")]

@@ -317,10 +317,7 @@ impl BbrApp {
         // outside-press handler never dismisses the freshly opened panel).
         let entity = cx.entity();
         let on_downloads: MouseCallback = Rc::new(move |_e, window, cx| {
-            entity.update(cx, |view, cx| {
-                view.mark_downloads_press_inside();
-                crate::app::downloads_behavior::toggle_downloads(view, window, cx);
-            });
+            entity.update(cx, |view, cx| view.footer_downloads_press(window, cx));
             cx.stop_propagation();
         });
 
@@ -328,10 +325,7 @@ impl BbrApp {
         // inside press and stops propagation).
         let entity = cx.entity();
         let on_plus: MouseCallback = Rc::new(move |_e, window, cx| {
-            entity.update(cx, |view, cx| {
-                view.u2.plus_menu_press_inside = true;
-                view.toggle_plus_menu(window, cx);
-            });
+            entity.update(cx, |view, cx| view.footer_plus_press(window, cx));
             cx.stop_propagation();
         });
 

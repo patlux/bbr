@@ -63,7 +63,7 @@ pub(super) fn drive(
 }
 
 #[cfg(target_os = "macos")]
-fn root_view(window: &gpui::Window) -> Option<*mut std::ffi::c_void> {
+pub(super) fn root_view(window: &gpui::Window) -> Option<*mut std::ffi::c_void> {
     use raw_window_handle::{HasWindowHandle, RawWindowHandle};
     match HasWindowHandle::window_handle(window).ok()?.as_raw() {
         RawWindowHandle::AppKit(handle) => Some(handle.ns_view.as_ptr()),

@@ -75,7 +75,8 @@ fn control_button(
         .justify_center()
         .rounded(theme.radius.small())
         .bg(wash)
-        .child(icon.canvas_with(theme, px(TITLEBAR_GLYPH), glyph_color));
+        .child(icon.canvas_with(theme, px(TITLEBAR_GLYPH), glyph_color))
+        .children(crate::rect_probe::rect_probe(control.id()));
     if enabled {
         let activation = match control {
             TitlebarControl::Toggle => &callbacks.on_toggle_sidebar,

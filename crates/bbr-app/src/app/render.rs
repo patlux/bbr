@@ -27,6 +27,10 @@ impl Render for BbrApp {
         #[cfg(feature = "testkit")]
         {
             self.motion.root_renders += 1;
+            // Reality gaps (item C): this frame's probes record afresh.
+            if let Some(rects) = cx.try_global::<bbr_ui::rect_probe::ElementRects>() {
+                rects.begin_frame(window.window_handle().window_id().as_u64());
+            }
         }
         let theme = self.theme();
         let p = theme.palette;
@@ -463,6 +467,11 @@ impl Render for BbrApp {
             // the divider) both performs its normal action and dismisses the
             // open surface. Clicks on the native web view are platform
             // child-view events and never reach GPUI's tree.
+            // Every press starts without the previous press's inside marks
+            // (capture runs before the controls' own listeners).
+            .capture_any_mouse_down(cx.listener(|this, _e: &MouseDownEvent, _window, _cx| {
+                this.begin_root_press();
+            }))
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, _e: &MouseDownEvent, window, cx| {

@@ -24,21 +24,22 @@ pub(crate) fn dispatch_u2(
     cx: &mut App,
 ) -> Option<Response> {
     let response = match req {
-        // §11.4 footer controls through the production pointer paths: the
-        // exact app methods the footer row's mouse-down listeners call.
-        // There is no `[Spaces]` toggle — the §11.3 space strip is always
-        // part of the rail and space activation routes through `ClickSpace`
-        // (the chip pointer path). `[+]` marks its press inside (like the
-        // render listener) so the root outside-press handler never dismisses
-        // the freshly opened menu.
+        // §11.4 footer controls through the production pointer paths: a
+        // press starts (the root's capture phase), then the exact method
+        // the footer listener calls; the listener stops propagation, so the
+        // root's bubble handler does not run. There is no `[Spaces]` toggle
+        // — the §11.3 space strip is always part of the rail and space
+        // activation routes through `ClickSpace` (the chip pointer path).
         Request::ClickFooterDownloads => with_app(window, app, cx, |view, window, cx| {
-            view.activate_downloads(window, cx);
+            view.begin_root_press();
+            view.footer_downloads_press(window, cx);
             Response::Ok
         })
         .unwrap_or_else(err_response),
 
         Request::ClickFooterPlus => with_app(window, app, cx, |view, window, cx| {
-            view.toggle_plus_menu(window, cx);
+            view.begin_root_press();
+            view.footer_plus_press(window, cx);
             Response::Ok
         })
         .unwrap_or_else(err_response),
@@ -156,12 +157,16 @@ pub(crate) fn dispatch_u2(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // An outside press: the root's capture phase starts it, then its
+        // bubble handler dismisses.
         Request::SpaceConfigPressOutside => with_app(window, app, cx, |view, window, cx| {
+            view.begin_root_press();
             view.dismiss_space_config_on_outside_press(window, cx);
             Response::Ok
         })
         .unwrap_or_else(err_response),
         Request::ChromeBackgroundPress => with_app(window, app, cx, |view, window, cx| {
+            view.begin_root_press();
             view.on_root_left_press(window, cx);
             Response::Ok
         })

@@ -249,6 +249,9 @@ fn main() {
     let application = gpui_platform::application();
     application.run(move |cx: &mut App| {
         gpui_component::init(cx);
+        // Reality gaps (item C): probed controls record where they drew.
+        #[cfg(feature = "testkit")]
+        cx.set_global(bbr_ui::rect_probe::ElementRects::default());
         install_sigint_shutdown(cx);
 
         // App-owned persistence composition (Phase 7, command-history

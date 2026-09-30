@@ -134,6 +134,7 @@ pub(crate) fn dispatch_downloads(
         // pointer press outside the open panel dismisses it and returns
         // focus to the footer control.
         Request::ClickDownloadsOutside => with_app(window, app, cx, |view, window, cx| {
+            view.begin_root_press();
             view.dismiss_downloads_on_outside_press(window, cx);
             Response::Ok
         })

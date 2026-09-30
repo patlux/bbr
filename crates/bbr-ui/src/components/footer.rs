@@ -182,6 +182,7 @@ pub fn footer_control(
         .font_weight(theme.type_.meta.weight)
         .text_color(theme.palette.ink_secondary)
         .child(glyph)
+        .children(crate::rect_probe::rect_probe(control.id()))
         .on_mouse_down(MouseButton::Left, on_select)
 }
 

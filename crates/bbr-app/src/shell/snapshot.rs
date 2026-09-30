@@ -286,6 +286,12 @@ pub struct TestSnapshot {
     /// Blueprint D02: the command field as a text-input client.
     pub command_input: Option<bbr_testkit::protocol::CommandInputSnapshot>,
     pub text_input: Option<bbr_testkit::protocol::TextInputReadback>,
+    /// Reality gaps (item C): where AppKit took the last real input event.
+    pub real_input: Option<bbr_testkit::protocol::RealInputReadback>,
+    /// Reality gaps (item C): each probed control's drawn rect by id.
+    pub element_rects: Vec<(String, [f32; 4])>,
+    /// Reality gaps (item C): the window is the key window.
+    pub window_key: bool,
     pub rail_reveal: String,
     pub floating_rail: Option<bbr_testkit::protocol::FloatingRailSnapshot>,
     pub floating_rail_leaving: bool,

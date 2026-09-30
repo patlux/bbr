@@ -54,6 +54,7 @@ pub mod card;
 pub mod components;
 pub mod icons;
 pub mod palette;
+pub mod rect_probe;
 pub mod sidebar;
 pub mod state;
 pub mod surfaces;

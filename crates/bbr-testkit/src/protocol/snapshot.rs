@@ -1616,6 +1616,19 @@ pub struct Snapshot {
     /// last `CommandTextInput` message (`None` before the first).
     #[serde(default)]
     pub text_input: Option<TextInputReadback>,
+    /// Reality gaps (item C): where AppKit took the last `RealMouse` /
+    /// `RealKey` event (`None` before the first).
+    #[serde(default)]
+    pub real_input: Option<super::RealInputReadback>,
+    /// Reality gaps (item C): the window rect (content points, top-left
+    /// origin) each probed control drew at, by its semantic id — the target
+    /// a real click aims at. Only controls that were drawn are listed.
+    #[serde(default)]
+    pub element_rects: Vec<(String, [f32; 4])>,
+    /// Reality gaps (item C): the window is the application's key window
+    /// (real keyboard input reaches only the key window).
+    #[serde(default)]
+    pub window_key: bool,
     /// Blueprint D02: the rail's reveal phase (`idle`, `dwelling`,
     /// `floating`).
     #[serde(default)]

@@ -84,6 +84,8 @@ objc2-foundation = { workspace = true, features = [
     "NSValue",
     # The default profile directory is named after the running bundle.
     "NSBundle",
+    # Real input events (testkit): the event timestamp.
+    "NSProcessInfo",
     # Favicon acquisition (task packet `real-favicon-pipeline.md`): the
     # bounded, profile-isolated download runs through an `NSURLSession`
     # whose private cookie storage is seeded from the owning profile's
@@ -132,6 +134,9 @@ objc2-app-kit = { workspace = true, features = [
     "NSPasteboard",
     "NSMenu",
     "NSMenuItem",
+    # Real input events (testkit): the NSEvent constructors take an
+    # (unused) graphics context argument.
+    "NSGraphicsContext",
     "block2",
 ] }
 

@@ -575,6 +575,9 @@ pub struct BbrApp {
     /// readback after a driven input-method message.
     #[cfg(feature = "testkit")]
     pub(crate) text_input_readback: Option<bbr_testkit::protocol::TextInputReadback>,
+    /// Reality gaps (item C): where AppKit took the last real input event.
+    #[cfg(feature = "testkit")]
+    pub(crate) real_input_readback: Option<bbr_testkit::protocol::RealInputReadback>,
     /// The cancellable, nonblocking ranking orchestration of the §11.5
     /// result surface (state machine + debounce handle). Inactive unless a
     /// location/new-tab mode is open.

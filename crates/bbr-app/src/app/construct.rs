@@ -381,6 +381,8 @@ impl BbrApp {
             browser_window: None,
             #[cfg(feature = "testkit")]
             text_input_readback: None,
+            #[cfg(feature = "testkit")]
+            real_input_readback: None,
             command_ranking: CommandRanking::default(),
             saved_pages: parts.saved_pages,
             library: crate::app::library::LibraryState::default(),

@@ -15,6 +15,7 @@ use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 
+pub mod real_input;
 mod u2;
 
 #[allow(unused_imports)] // each suite uses a subset of the shared helpers

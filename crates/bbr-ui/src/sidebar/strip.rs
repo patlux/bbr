@@ -176,6 +176,7 @@ pub fn space_chip(
         // Test-support only (a release no-op): the chip as a geometry
         // target for the §11.4 leading-strip evidence.
         .debug_selector(move || space_chip_id(space).to_string())
+        .children(crate::rect_probe::rect_probe(space_chip_id(space)))
         .flex_shrink_0()
         .size(theme.density.row() - px(4.0))
         .px(Spacing::sp1())

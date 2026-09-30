@@ -11,6 +11,13 @@ rust-version = "1.89"
 license = "MIT OR Apache-2.0"
 description = "BBR portable presentation crate: Chassis design tokens (Theme/Palette/Density), the §15 state vocabulary, and plain (Model, Theme, Callbacks) components. Exact direct dependencies: gpui + bbr-domain only."
 
+[features]
+default = []
+# Reality gaps (item C): controls record the rect they drew at under their
+# semantic id, so the real-input harness can aim a real click. Enabled by
+# `bbr`'s `testkit` feature only; without it no probe element exists.
+rect-probes = []
+
 [dependencies]
 # GPUI-CE at the exact upstream commit the workspace pins (see the root
 # [workspace.dependencies] + [patch.crates-io]); `default-features = false`

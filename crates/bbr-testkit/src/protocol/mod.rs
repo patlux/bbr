@@ -27,6 +27,7 @@ mod event;
 mod history;
 mod media;
 mod permissions;
+mod real_input;
 mod request;
 mod snapshot;
 mod split;
@@ -44,6 +45,7 @@ pub use permissions::{
     OnboardingSnapshot, OpenAppInput, OpenAppSheetSnapshot, OpenAppSnapshot, PermissionInput,
     PermissionPromptSnapshot, PermissionsSnapshot, SiteSettingsSnapshot, WelcomeInput,
 };
+pub use real_input::{RealInputReadback, RealModifier, RealMouseButton, RealMousePhase};
 pub use request::{Request, SavedPagesLibraryCollectionOp, SettingsInput, TextInputOp};
 pub use snapshot::{
     AddressRestFill, AuthSnapshot, ChipCompanionSnapshot, CommandInputSnapshot,

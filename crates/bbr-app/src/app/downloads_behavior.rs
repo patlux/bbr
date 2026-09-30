@@ -492,4 +492,9 @@ impl BbrApp {
     pub(crate) fn mark_downloads_press_inside(&mut self) {
         self.downloads_press_inside.set(true);
     }
+
+    /// Forget the inside-press marker (a new press begins).
+    pub(crate) fn clear_downloads_press_inside(&mut self) {
+        self.downloads_press_inside.set(false);
+    }
 }

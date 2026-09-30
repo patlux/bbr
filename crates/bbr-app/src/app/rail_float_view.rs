@@ -139,6 +139,14 @@ impl BbrApp {
                 });
             }
         };
+        let on_capture = {
+            let app = app.clone();
+            move |_e: &MouseDownEvent, _w: &mut Window, cx: &mut App| {
+                let _ = with_app(&browser, &app, cx, |view, _window, _cx| {
+                    view.begin_root_press();
+                });
+            }
+        };
         let on_down = move |_e: &MouseDownEvent, _w: &mut Window, cx: &mut App| {
             let _ = with_app(&browser, &app, cx, |view, window, cx| {
                 view.on_root_left_press(window, cx);
@@ -149,6 +157,7 @@ impl BbrApp {
                 .id("bbr-floating-rail-layer")
                 .absolute()
                 .inset_0()
+                .capture_any_mouse_down(on_capture)
                 .on_mouse_down(MouseButton::Left, on_down)
                 .on_mouse_move(on_move)
                 .on_mouse_up(MouseButton::Left, on_up.clone())

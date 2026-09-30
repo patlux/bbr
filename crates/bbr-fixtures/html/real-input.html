@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>BBR Real Input</title>
+    <style>
+      /* Fixed link geometry: the real-input E2E aims real clicks at these
+         page points (content-rect origin + offset), never at the DOM. */
+      html, body { margin: 0; padding: 0; }
+      a { position: absolute; left: 40px; width: 240px; height: 40px;
+          display: block; line-height: 40px; background: #eef; }
+      #plain { top: 40px; }
+      #blank { top: 120px; }
+    </style>
+  </head>
+  <body>
+    <a id="plain" href="/page2.html">Plain link</a>
+    <a id="blank" href="/page2.html" target="_blank">New-window link</a>
+  </body>
+</html>

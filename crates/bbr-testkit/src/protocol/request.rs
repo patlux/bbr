@@ -750,6 +750,31 @@ pub enum Request {
     CommandTextInput {
         op: TextInputOp,
     },
+    /// Reality gaps (item C): one real AppKit mouse event at the current
+    /// window's content point `(x, y)` (points, top-left origin — the
+    /// snapshot's rect space), delivered through `NSApplication.sendEvent:`
+    /// on the pump outside any app borrow. The snapshot's `real_input`
+    /// reports where AppKit took it.
+    RealMouse {
+        phase: super::RealMousePhase,
+        #[serde(default)]
+        button: super::RealMouseButton,
+        x: f64,
+        y: f64,
+        #[serde(default)]
+        modifiers: Vec<super::RealModifier>,
+        /// 1 for a single click, 2 for the second click of a double click.
+        #[serde(default = "one")]
+        click_count: i64,
+    },
+    /// Reality gaps (item C): one real key press — key down, then key up —
+    /// for a keystroke in the `DispatchKeystroke` spelling (`"cmd-l"`,
+    /// `"shift-cmd-t"`, `"a"`, `"enter"`), delivered through
+    /// `NSApplication.sendEvent:` (menu key equivalents, the first
+    /// responder — the web page when it has focus).
+    RealKey {
+        keystroke: String,
+    },
     /// Blueprint D02: one pointer sample into the floating rail's reveal
     /// model — the exact method the native pointer observer feeds (window
     /// points; `time_ms` is the event time the velocity is measured on).
@@ -1767,4 +1792,9 @@ pub enum SettingsInput {
         key: String,
         text: Option<String>,
     },
+}
+
+/// Serde default for a single click.
+fn one() -> i64 {
+    1
 }

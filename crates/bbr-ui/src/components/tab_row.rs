@@ -132,6 +132,9 @@ pub fn close_control(theme: &Theme, index: usize) -> Stateful<Div> {
         .items_center()
         .justify_center()
         .child(Icon::Close.canvas(theme, theme.density.icon()))
+        .children(crate::rect_probe::rect_probe(format!(
+            "{TAB_CLOSE_ID}-{index}"
+        )))
 }
 
 /// §11.1 vertical tab row anatomy (the §10.9 drag insertion tick lives in
@@ -180,6 +183,10 @@ pub fn tab_row(
     div()
         .id((TAB_ROW_ID, visuals.index))
         .debug_selector(move || format!("{TAB_ROW_ID}-{}", visuals.index))
+        .children(crate::rect_probe::rect_probe(format!(
+            "{TAB_ROW_ID}-{}",
+            visuals.index
+        )))
         .h(theme.density.row())
         .relative()
         .px(theme.density.row_padding_x())

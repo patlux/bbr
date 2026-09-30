@@ -127,7 +127,9 @@ pub(crate) fn dispatch_tab_menu(
             Response::Ok
         })
         .unwrap_or_else(err_response),
+        // An outside press: capture starts it, the root bubble dismisses.
         Request::TabMenuOutsideClick => with_app(window, app, cx, |view, window, cx| {
+            view.begin_root_press();
             view.dismiss_tab_menu_on_outside_press(window, cx);
             Response::Ok
         })

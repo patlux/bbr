@@ -1276,6 +1276,35 @@ scenarios take the production path instead:
   challenged again by the server, the right one loads the protected page and
   appears in no snapshot, the same profile's next tab is not asked, another
   profile is, and Cancel shows the server's 401 page.
+- **Real input** (`e2e_real_input/`, `just e2e-real-input`): `RealMouse`
+  (down, up, dragged, moved; left, right, middle; modifiers; click count)
+  and `RealKey` (the `DispatchKeystroke` spelling) make
+  `bbr_web_macos::input_events` build the `NSEvent` a device produces and
+  hand it to `NSApplication.sendEvent:` inside the app, on the pump outside
+  any app borrow — AppKit hit-tests the view, offers key equivalents to the
+  window, WebKit and the main menu, and gives the rest to the first
+  responder. Nothing is posted to the OS; no permission is involved; a
+  middle button takes one in-process CoreGraphics round trip for its button
+  number. AppKit gives an inactive window's first click to activation and
+  keys only to the key window, so these suites run a shown window made key
+  (`make_key`); an event for a window that lost key status to another app
+  is refused (`not_key`) before anything is sent, and the helper makes the
+  window key and resends it. Targets come from `element_rects`: with
+  `bbr-ui`'s `rect-probes` feature (on under `testkit` only) the tab rows,
+  tab close controls, titlebar controls, footer controls and space chips
+  carry an invisible probe that records the rect they drew at in the
+  `ElementRects` global; page targets are fixed points of
+  `real-input.html`. The snapshot reports `real_input` (routing, key
+  status, first responder) and `window_key`. Scenarios: tab row select,
+  hover + close, titlebar Back, footer Downloads (and a press outside
+  dismissing it), footer `+`, a space chip, a real drag reordering rows, a
+  page link click, and ⌘L / ⌘T / ⌘W / ⇧⌘T with the page focused. The first
+  run found that a Downloads panel opened from the footer ignored the next
+  outside press: the footer and panel listeners mark their press inside
+  and stop propagation, so the mark outlived the press. The root now starts
+  every press in its capture phase with the marks cleared
+  (`BbrApp::begin_root_press`), and the footer and outside-press seams take
+  the same path as the listeners.
 
 ## 8. Security & release exclusion
 

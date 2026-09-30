@@ -79,6 +79,9 @@ Not parallelized (serial on `main`).
       and it leaves memory; cancel and supersession answer without one; a
       seam challenge owes nothing); `bbr-web` redacted `HttpCredential`;
       fixture tests for `/__fx/auth/basic`.
+- [x] C: `input_events` tests (US-layout key codes and shifted characters,
+      AppKit event types per phase and button, modifier flags);
+      `rect_probe` test (a new frame forgets only its own window).
 
 ### Real-app E2E
 
@@ -97,9 +100,22 @@ Not parallelized (serial on `main`).
       `e2e_client_certificates` test that asserted the default handling
       (`be35936c`) is replaced by these, which keep the debug-build proxy
       regression covered.
-- [ ] C: real events select and close tab rows, open Downloads and `+`, press
-      a titlebar control, click the space strip, click a web link, and run
-      ⌘L/⌘T/⌘W/⇧⌘T with the page focused.
+- [x] C: `just e2e-real-input` (4 tests, shown key window, real AppKit
+      events through `NSApplication.sendEvent:`): tab row select, hover and
+      close, titlebar Back, footer Downloads and a press outside dismissing
+      it, footer `+` and Escape, a space chip, a real drag reordering rows,
+      a page link click, and ⌘L / ⌘T / ⌘W / ⇧⌘T with the page focused (the
+      menu key-equivalent path through WebKit). Found a real bug: a
+      Downloads panel opened from the footer ignored the next outside press
+      (the inside mark outlived the press because the listener stops
+      propagation); red in the first run ("timed out waiting for downloads
+      closed"), fixed by clearing the marks in the root's capture phase
+      for every surface with that pattern (Downloads, `+`, space
+      configuration, Tab menu). The footer and outside-press seams now take
+      the listeners' path (`footer_downloads_press`, `begin_root_press`).
+      Blocker found and settled: the hidden harness window is never key, so
+      AppKit gives its first click to activation and its keys to nobody —
+      real input needs a shown window made key.
 - [ ] D: a real ⌘-click and middle-click on an ordinary link open one
       background child after the opener.
 - [ ] E: script click vs real click on a `target=_blank` link, fixed or
@@ -148,11 +164,12 @@ missing: record the evidence and attempts here, write an HTML explainer to
 ## Delivery ledger
 
 ```text
-Outcome:         A and B implemented.
+Outcome:         A, B and C implemented.
 Commits:         A fc00be97 + 3bc8fb08 (a concurrent commit in the same
                  worktree, 3fd97e37, re-staged two shared files between my
                  staging and commit; 3bc8fb08 adds the dropped hunks);
-                 B (this commit: native HTTP authentication).
+                 B 48699c2a (native HTTP authentication); C (this commit:
+                 real input events).
 Functional evidence: profile_location unit tests; a one-off dev bundle with
                  bundle id dev.patwoz.bbr.probe under an isolated HOME
                  created ~/Library/Application Support/dev.patwoz.bbr.probe
@@ -164,11 +181,19 @@ Real-app E2E:    A: default_location red before the fix, green after;
                  debug-build load of https://example.com (network, not
                  committed) still passes server trust with the default
                  handling.
+                 C: e2e-real-input 4/4; affected suites green on the C
+                 tree: e2e-shell-downloads (12), e2e-shell-sidebar (21),
+                 e2e-shell-tab-menu (12), e2e-shell-spaces (27),
+                 e2e-shell-context-menu (11), e2e-shell-tabs (4),
+                 e2e-shell-organize (13), e2e-shell-titlebar-navigation (7),
+                 e2e-shell-hover (4), e2e-windows (9), e2e-shell-command
+                 (28), e2e-split (3), e2e-shell-saved-pages-library (12).
 Performance evidence: not applicable to A.
 Roadmap/documentation updates: ARCHITECTURE §8 (--bbr-profile-dir default),
                  §7 (authentication challenges); E2E_ARCHITECTURE §7s;
                  corrected claims: native-integration track, testing track
-                 and phase 8 (the credential sheet was a testkit seam only).
+                 and phase 8 (the credential sheet was a testkit seam only);
+                 E2E_ARCHITECTURE §7s real input, ARCHITECTURE §7.
 Open blockers and non-goals: see Non-goals.
 Worktree state:  main; another writer's uncommitted tab-row pin-control
                  change was present during A and is not part of this packet.

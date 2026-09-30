@@ -536,6 +536,10 @@ src/
   `canGoForward`), `reload`, `stopLoading` + explicit state re-emit (`Stop`).
 - **Main thread:** all entry points re-assert with `MainThreadMarker`; the
   `MainThreadOnly` thread-kind is enforced at bind time.
+- **Real input (testkit only):** `input_events` builds real mouse and key
+  `NSEvent`s for the harness and sends them through
+  `NSApplication.sendEvent:` (never to the OS), refusing a window that is
+  not key; see E2E_ARCHITECTURE §7s.
 - **Accessibility display options** (`accessibility_display.rs`, v2 S1):
   `current_options()` reads `NSWorkspace`'s public Increase Contrast and
   Reduce Motion values; `AccessibilityDisplayObserver` registers one

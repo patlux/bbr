@@ -571,8 +571,16 @@ pub(crate) fn dispatch(
                 .unwrap_or_else(|e| Response::Error(Error::new("app_error", e.to_string())))
         }
 
-        Request::GetSnapshot => with_app(window, app, cx, |view, window, _cx| {
-            view.snapshot(window).to_protocol()
+        Request::GetSnapshot => with_app(window, app, cx, |view, window, cx| {
+            let mut snapshot = view.snapshot(window);
+            // Reality gaps (item C): the probed controls of this window's
+            // latest frame, and whether the window is key.
+            snapshot.element_rects = cx
+                .try_global::<bbr_ui::rect_probe::ElementRects>()
+                .map(|rects| rects.for_window(window.window_handle().window_id().as_u64()))
+                .unwrap_or_default();
+            snapshot.window_key = window.is_window_active();
+            snapshot.to_protocol()
         })
         .map(Response::Snapshot)
         .unwrap_or_else(err_response),
@@ -693,6 +701,8 @@ pub(crate) fn dispatch(
         // the text-input client must run outside the app borrow).
         Request::InjectWebEvent { .. }
         | Request::CommandTextInput { .. }
+        | Request::RealMouse { .. }
+        | Request::RealKey { .. }
         | Request::SelectWindow { .. }
         | Request::MoveWindowBy { .. } => {
             Response::Error(Error::new("pump_only", "handled by the event pump"))

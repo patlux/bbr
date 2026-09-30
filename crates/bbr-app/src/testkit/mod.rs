@@ -55,6 +55,7 @@ mod dispatch_titlebar;
 mod dispatch_u2;
 mod dispatch_util;
 mod dispatch_zoom;
+mod real_input;
 mod snapshot;
 mod text_input;
 pub(crate) use snapshot::browser_change;
@@ -469,6 +470,11 @@ async fn handle_command(
     // message is sent between updates, never inside `dispatch`.
     if let Request::CommandTextInput { op } = req {
         return text_input::drive(op, window, app, async_cx);
+    }
+    // Reality gaps (item C): real AppKit events re-enter GPUI and WebKit, so
+    // they are sent between updates as well.
+    if matches!(req, Request::RealMouse { .. } | Request::RealKey { .. }) {
+        return real_input::drive(&req, window, app, async_cx);
     }
     let server = server.clone();
     // GPUI-CE `AsyncApp::update` is infallible (no `.unwrap_or_else`); the

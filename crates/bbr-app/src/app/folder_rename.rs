@@ -76,6 +76,19 @@ impl FolderRename {
 }
 
 impl BbrApp {
+    /// A new press begins (the root's capture phase, before any control's
+    /// listener): forget the inside marks of the previous press. A surface
+    /// and its owning control mark their own press inside and stop its
+    /// propagation, so the root's bubble handler never consumes that mark;
+    /// kept, it made the next press outside count as inside and left the
+    /// surface open (found by the real-input E2E, reality-gaps item C).
+    pub fn begin_root_press(&mut self) {
+        self.clear_downloads_press_inside();
+        self.u2.plus_menu_press_inside = false;
+        self.space_config.press_inside = false;
+        self.tab_menu.state.press_inside = false;
+    }
+
     /// The root left-press handler: every open chrome surface that a press
     /// outside dismisses (§13 one pointer action). The render's root
     /// listener and the testkit's outside-press seam share this method.
