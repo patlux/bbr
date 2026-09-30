@@ -48,6 +48,7 @@ Not parallelized.
 ### Real-app E2E
 
 - [x] `just e2e-client-certificates` (`e2e_client_certificates.rs`): sheet names server and profile, expired identity dimmed and unselectable, keyboard over valid rows, Remember + Return answers the engine and writes `client-certificates.txt`, remembered answer without a sheet, queue, Don't Send and Escape, navigation cancels, Settings › Privacy list and Forget; errors, auth, permissions and settings suites green.
+- [x] Regression 2026-09-30: every debug build aborted on the first HTTPS page (and any Basic challenge) in the delegate method. WebKit's `WKNSURLAuthenticationChallenge` is an `NSProxy` (`WKObject`) that forwards to the real challenge, and objc2's debug message check found no `protectionSpace` on the proxy class. The injected requests above never reached the native method, and no fixture was served with a challenge. The delegate now messages the forwarding target (`auth_challenge::real_challenge`); `a_native_authentication_challenge_keeps_the_default_handling` loads the fixture server's Basic challenge (`/__fx/auth/basic`) through the real delegate. It failed with the reported panic before the fix. A one-off check against `https://example.com` (server trust, network, not committed) loaded in a debug build.
 
 ### Performance
 

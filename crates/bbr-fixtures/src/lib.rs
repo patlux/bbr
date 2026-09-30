@@ -16,6 +16,7 @@ use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
+mod auth;
 mod hang;
 
 /// An HTTP/1.1 GET-only fixture server on 127.0.0.1.
@@ -141,6 +142,13 @@ fn handle_connection(
     if let Some(response) = download_fixture(path) {
         record_hit(hits, path);
         response.respond(&mut stream)?;
+        return Ok(());
+    }
+    // The Basic-auth challenge route (a native WebKit authentication
+    // challenge without TLS or the network).
+    if path == auth::BASIC_PATH {
+        record_hit(hits, path);
+        auth::respond_basic(&mut stream)?;
         return Ok(());
     }
     // Deterministic error fixtures (the Phase-8 web-error E2E): the raw

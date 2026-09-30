@@ -89,6 +89,61 @@ fn request(client: &mut Client, view: WebViewId, request: u64, host: &str) {
         .expect("inject");
 }
 
+/// Regression (2026-09-30): WebKit hands the navigation delegate its own
+/// challenge wrapper, an `NSProxy` (`WKObject`) that forwards to the real
+/// challenge. Messaging the wrapper directly aborted debug builds —
+/// objc2's message check finds no `protectionSpace` on the proxy class —
+/// on the first HTTPS page or Basic challenge, and the injected requests
+/// above never reach the native method. A real Basic challenge from the
+/// fixture server now goes through the delegate, which keeps WebKit's
+/// default for everything but client certificates: no sheet, no answer,
+/// and the server's 401 page loads.
+#[test]
+#[ignore]
+fn a_native_authentication_challenge_keeps_the_default_handling() {
+    let _serial = serial_gui();
+    if !allow_gui() {
+        return;
+    }
+    let (fixtures, page_one, _page_two) = fixtures();
+    let (mut harness, socket, token) = spawn_harness("client-certs-native", &page_one);
+
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut client = connect(&socket);
+        client.hello(&token).expect("hello");
+        let mut since = client
+            .attach(None)
+            .expect("attach")
+            .iter()
+            .map(|(seq, _)| *seq)
+            .max()
+            .unwrap_or(0);
+        let settled = wait_for_window_settled(&mut client, deadline());
+        let view = settled.active_web_view.expect("view");
+        if settled.title.as_deref() != Some(PAGE_ONE_TITLE) {
+            since = wait_title(&mut client, view, PAGE_ONE_TITLE, since);
+        }
+
+        client
+            .send_ok(&dsl::navigate(fixtures.url("/__fx/auth/basic")))
+            .expect("navigate");
+        wait_title(&mut client, view, "BBR Auth Required", since);
+        assert!(
+            fixtures.hits("/__fx/auth/basic") >= 1,
+            "the server challenged"
+        );
+        let after = snapshot(&mut client);
+        assert!(after.client_certificates.sheet.is_none(), "no sheet");
+        assert!(after.client_certificates.answers.is_empty(), "no answer");
+        assert_eq!(after.active_web_view, Some(view), "the same page");
+
+        client.quit().expect("quit");
+        let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));
+        assert!(status.success(), "app exit: {status}");
+    }));
+    finish(result, &mut harness, &socket, &token);
+}
+
 #[test]
 #[ignore]
 fn client_certificate_sheet_chooses_remembers_and_forgets() {

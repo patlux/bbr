@@ -288,6 +288,8 @@ define_class!(
             >,
         ) {
             use objc2_foundation::NSURLSessionAuthChallengeDisposition as Disposition;
+            // WebKit's challenge is a forwarding proxy; message the real one.
+            let challenge = crate::auth_challenge::real_challenge(challenge);
             let space = challenge.protectionSpace();
             // SAFETY: a static NSString exported by Foundation.
             let client_certificate =

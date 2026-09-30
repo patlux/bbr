@@ -75,6 +75,19 @@ fn raw_get(url: &str) -> std::io::Result<Vec<u8>> {
 }
 
 #[test]
+fn basic_auth_fixture_challenges_every_request() {
+    let sb = Sandbox::new();
+    let server = FixtureServer::start(sb.dir.clone()).unwrap();
+    for _ in 0..2 {
+        let raw = String::from_utf8(raw_get(&server.url("/__fx/auth/basic")).unwrap()).unwrap();
+        assert!(raw.starts_with("HTTP/1.1 401 Unauthorized\r\n"), "{raw}");
+        assert!(raw.contains("\r\nWWW-Authenticate: Basic realm=\"BBR Fixture\"\r\n"));
+        assert!(raw.contains("<title>BBR Auth Required</title>"));
+    }
+    assert_eq!(server.hits("/__fx/auth/basic"), 2);
+}
+
+#[test]
 fn error_fixtures_are_deterministic() {
     let sb = Sandbox::new();
     let server = FixtureServer::start(sb.dir.clone()).unwrap();

@@ -107,6 +107,10 @@ pub mod external_schemes;
 #[cfg(target_os = "macos")]
 pub mod client_identities;
 
+/// The real challenge behind WebKit's forwarding challenge proxy.
+#[cfg(target_os = "macos")]
+mod auth_challenge;
+
 /// Blueprint D11: WebKit's camera/microphone requests and capture state.
 #[cfg(target_os = "macos")]
 pub mod permission_requests;
