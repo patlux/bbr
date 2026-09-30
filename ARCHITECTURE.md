@@ -584,7 +584,11 @@ tab.
 ```text
 1. Parse CLI flags (--bbr-*):
      --bbr-initial-url    initial load (default "about:blank")
-     --bbr-profile-dir    per-test profile dir (default temp/pid)
+     --bbr-profile-dir    profile dir; default ~/Library/Application Support/
+                          <bundle id> ($HOME, then the main bundle's id;
+                          an unbundled binary takes dev.patwoz.bbr.dev in a
+                          debug build, dev.patwoz.bbr otherwise), created
+                          before the store opens (`profile_location`)
      --bbr-test-token     secret; presence ALSO enables non-persistent stores
                           and (with the testkit feature) starts the gateway
      --bbr-hidden         E2E: never show, focus, or activate the window

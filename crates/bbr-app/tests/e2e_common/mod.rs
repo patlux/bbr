@@ -62,8 +62,14 @@ pub struct Harness {
 
 impl Harness {
     pub fn spawn(bin: &str, args: &[&str], root: &Path) -> Self {
+        Self::spawn_with_env(bin, args, &[], root)
+    }
+
+    /// Spawn with extra environment variables (e.g. an isolated `HOME`).
+    pub fn spawn_with_env(bin: &str, args: &[&str], env: &[(&str, &Path)], root: &Path) -> Self {
         let mut child = Command::new(bin)
             .args(args)
+            .envs(env.iter().map(|(key, value)| (*key, *value)))
             .stdout(Stdio::null())
             .stderr(Stdio::piped())
             .spawn()
