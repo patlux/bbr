@@ -202,19 +202,32 @@ missing: record the evidence and attempts here, write an HTML explainer to
 ## Delivery ledger
 
 ```text
-Outcome:         A–F implemented.
+Outcome:         A–F implemented and functionally verified. The phase-8
+                 roll-up stays open: this packet's `just e2e` gate ends in
+                 `e2e-perf`, which stops at the startup ceiling under host
+                 load (performance execution deferred, Patrick 2026-09-27).
 Commits:         A fc00be97 + 3bc8fb08 (a concurrent commit in the same
                  worktree, 3fd97e37, re-staged two shared files between my
                  staging and commit; 3bc8fb08 adds the dropped hunks);
                  B 48699c2a (native HTTP authentication); C 40c48600 (real
                  input events); D 200c1943 (background links); E 82d8ca9
-                 (pop-ups from script clicks); F (this commit: persistent
-                 website data).
+                 (pop-ups from script clicks); F 307fe1d (persistent
+                 website data); ffd7c3d (one-gesture real clicks, drop on a
+                 shown slot); the canonical-run record after it.
 Functional evidence: profile_location unit tests; a one-off dev bundle with
                  bundle id dev.patwoz.bbr.probe under an isolated HOME
                  created ~/Library/Application Support/dev.patwoz.bbr.probe
                  (the id comes from the main bundle, not the build fallback).
-Real-app E2E:    A: default_location red before the fix, green after;
+Real-app E2E:    canonical BBR_E2E_TIMEOUT=15m just e2e on the committed
+                 clean tree ffd7c3d (2026-09-30, 22:00–22:12): all 55
+                 functional test binaries green (281 tests, e2e-smoke
+                 through e2e-auth incl. e2e-real-input 6 and e2e-web-data
+                 1; one real event was refused for a non-key window and
+                 resent); the run then stopped in e2e-perf at the startup
+                 ceiling (868 ms > 750 ms, load average 43; a rerun 883 ms).
+                 Not green: performance deferred; the renderer-
+                 responsiveness scenario has never run.
+                 A: default_location red before the fix, green after;
                  e2e-shell-persistence green.
                  B: e2e_shell_auth::native red with the old delegate
                  (reject every HTTP challenge), green after; a one-off
