@@ -227,6 +227,16 @@ fn classify_plain_primary_click_is_primary() {
 }
 
 #[test]
+fn only_a_link_activation_with_a_button_is_the_users() {
+    // A click (any button) or WebKit's own click for Enter on a focused
+    // link carries a button; a script's `click()` carries none.
+    assert!(bbr_web_macos::user_activation(true, LEFT));
+    assert!(bbr_web_macos::user_activation(true, MIDDLE));
+    assert!(!bbr_web_macos::user_activation(true, 0));
+    assert!(!bbr_web_macos::user_activation(false, LEFT));
+}
+
+#[test]
 fn classify_right_button_is_not_a_middle_click() {
     assert_eq!(
         bbr_web_macos::classify_input(0, RIGHT),

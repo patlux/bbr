@@ -248,8 +248,14 @@ define_class!(
         ) {
             use objc2_web_kit::{WKNavigationActionPolicy as Policy, WKNavigationType};
             // SAFETY: WebKit delivered a live action for the call.
-            let input = unsafe {
-                crate::new_window::classify_input(action.modifierFlags().0, action.buttonNumber())
+            let (input, button) = unsafe {
+                (
+                    crate::new_window::classify_input(
+                        action.modifierFlags().0,
+                        action.buttonNumber(),
+                    ),
+                    action.buttonNumber(),
+                )
             };
             // SAFETY: WebKit delivered a live action for the call.
             let (url, main_frame, link) = unsafe {
@@ -277,7 +283,7 @@ define_class!(
                     source: self.id(),
                     source_profile: self.ivars().profile,
                     url,
-                    user_initiated: true,
+                    user_initiated: crate::new_window::user_activation(link, button),
                     input,
                     features: Default::default(),
                 };

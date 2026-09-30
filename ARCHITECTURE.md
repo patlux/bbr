@@ -465,7 +465,9 @@ framework types.
 
 The productive new-window seam is also portable. `NewWindowRequest` carries the
 exact source `WebViewId`, source `ProfileId`, verbatim URL, user-activation
-classification, explicit input disposition, target, and window-feature
+classification (a link activation with a nonzero `buttonNumber`: WebKit
+fills it only from a trusted click or its own click for Enter, so a script's
+`click()` on a `target=_blank` link is not the user's), explicit input disposition, target, and window-feature
 metadata. `default_decision` is the single MVP policy: a background input
 (Command-primary / middle click; `WKNavigationAction.buttonNumber` is WebKit's
 button mask, middle `4`) becomes `OpenBackgroundTab` for a direct

@@ -126,8 +126,20 @@ Not parallelized (serial on `main`).
       NSEvent button number, so the classifier never saw a real middle
       click; its tests now use the mask (`new_window` integration tests,
       incl. right button stays primary). Background-link packet corrected.
-- [ ] E: script click vs real click on a `target=_blank` link, fixed or
-      recorded as a framework limit.
+- [x] E: public metadata tells them apart. Logged from real events:
+      a script's `click()` on a `target=_blank` link and a dispatched
+      `MouseEvent` report `LinkActivated` with `buttonNumber` 0 and no
+      modifier flags; a real click reports the button mask (1) and so does
+      a real Enter on a focused link (WebKit's own click is trusted). Every
+      `LinkActivated` counted as the user's before, so a script clicking
+      such a link got past the pop-up blocker (it opened a preview). Now a
+      link activation is the user's only with a nonzero button
+      (`user_activation`, unit-tested). `e2e_real_input::web::a_script_click_on_a_new_window_link_is_blocked_and_a_real_one_opens`:
+      the script click is blocked with the notice and opens nothing, a real
+      click and a real Enter open the link; red before the fix ("timed out
+      waiting for the blocked pop-up notice"). Script-created `window.open`
+      from a click handler stays blocked as before (it is not a link
+      activation; the D13 packet owns sign-in pop-ups).
 - [ ] F: persistent per-run WebKit stores: cookie survives a restart, stays
       isolated, is removed with its profile; no leftover stores.
 
@@ -172,12 +184,13 @@ missing: record the evidence and attempts here, write an HTML explainer to
 ## Delivery ledger
 
 ```text
-Outcome:         A, B, C and D implemented.
+Outcome:         A, B, C, D and E implemented.
 Commits:         A fc00be97 + 3bc8fb08 (a concurrent commit in the same
                  worktree, 3fd97e37, re-staged two shared files between my
                  staging and commit; 3bc8fb08 adds the dropped hunks);
                  B 48699c2a (native HTTP authentication); C 40c48600 (real
-                 input events); D (this commit: background links).
+                 input events); D 200c1943 (background links); E (this
+                 commit: pop-ups from script clicks).
 Functional evidence: profile_location unit tests; a one-off dev bundle with
                  bundle id dev.patwoz.bbr.probe under an isolated HOME
                  created ~/Library/Application Support/dev.patwoz.bbr.probe

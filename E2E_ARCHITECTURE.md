@@ -1300,7 +1300,10 @@ scenarios take the production path instead:
   dismissing it), footer `+`, a space chip, a real drag reordering rows, a
   page link click, ⌘-click and middle click on ordinary links and ⌘-click
   on a `target=_blank` link (item D: one background child each, after the
-  opener, in click order), and ⌘L / ⌘T / ⌘W / ⇧⌘T with the page focused.
+  opener, in click order), a script's click on a `target=_blank` link
+  blocked with the notice while a real click and a real Enter on the
+  focused link open it (item E), and ⌘L / ⌘T / ⌘W / ⇧⌘T with the page
+  focused.
   The first
   run found that a Downloads panel opened from the footer ignored the next
   outside press: the footer and panel listeners mark their press inside

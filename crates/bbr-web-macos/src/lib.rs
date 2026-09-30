@@ -235,7 +235,7 @@ pub use menu_adapter::{
 pub use content_gesture::{ContentGestureNativeDiagnostics, NativeContentGestureBridge};
 
 #[cfg(target_os = "macos")]
-pub use new_window::{classify_input, NewWindowContext, NewWindowCoordinator};
+pub use new_window::{classify_input, user_activation, NewWindowContext, NewWindowCoordinator};
 
 #[cfg(target_os = "macos")]
 pub use portal::NativePortal;

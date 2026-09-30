@@ -229,22 +229,36 @@ pub fn classify_input(modifier_flags: usize, button_number: isize) -> NewWindowI
     }
 }
 
-/// Best-effort user-gesture classification from supported WebKit metadata.
+/// Whether a link activation came from the user.
 ///
-/// `WKNavigationAction.isUserInitiated` is not declared by the installed
-/// `objc2-web-kit 0.3.2` bindings and is not messaged here: an undocumented
-/// selector could terminate the app with an unrecognized-selector exception.
-/// `LinkActivated` is the supported navigation metadata that proves a direct
-/// link activation; script-created `window.open` requests remain false unless
-/// a later binding exposes a documented gesture signal.
+/// `WKNavigationAction.isUserInitiated` is SPI and is not messaged. The
+/// public metadata that separates the user from a script is the button:
+/// WebKit fills `buttonNumber` only from a trusted mouse event — a click
+/// (left `1`, right `2`, middle `4`) or the click WebKit itself makes for
+/// Enter on a focused link — and reports `0` when a script clicked the
+/// link (`element.click()`, a dispatched `MouseEvent`). Measured with real
+/// AppKit events (reality-gaps packet, item E). Before, every
+/// `LinkActivated` counted, so a script clicking a `target=_blank` link got
+/// past the pop-up blocker. Script-created `window.open` is not a link
+/// activation and stays false.
+pub fn user_activation(link_activated: bool, button_number: isize) -> bool {
+    link_activated && button_number != 0
+}
+
+/// [`user_activation`] of a live navigation action.
 ///
 /// # Safety
 ///
 /// Live `action` on the main thread, as delivered by WebKit.
 #[cfg(target_os = "macos")]
 unsafe fn extract_user_initiated(action: &objc2_web_kit::WKNavigationAction) -> bool {
-    // SAFETY: main thread, live object; this accessor is declared by WebKit.
-    (unsafe { action.navigationType() }) == objc2_web_kit::WKNavigationType::LinkActivated
+    // SAFETY: main thread, live object; these accessors are declared by WebKit.
+    unsafe {
+        user_activation(
+            action.navigationType() == objc2_web_kit::WKNavigationType::LinkActivated,
+            action.buttonNumber(),
+        )
+    }
 }
 
 /// WebKit window-features metadata for a new-window call.

@@ -1766,7 +1766,10 @@ authorities; it does not copy Zen/Firefox features or styling.
   status: BBR has no update channel, and the background download and
   relaunch install of board L-12 wait for §19 question 14.
 - **Blocked pop-ups (blueprint D13, board M-13):** a page's pop-up
-  without a user gesture stays blocked, but not silently: an info banner
+  without a user gesture stays blocked — a script clicking a link that
+  opens a new window counts as no gesture (WebKit reports no mouse button
+  for it, while a click or Enter on a focused link carries one) — but not
+  silently: an info banner
   over the card top (`bbr-popup-blocked`, the §18.4 banner anatomy; below
   the restore notice when both show) says "A pop-up from example-shop.com
   was blocked." with the quiet actions Open (`bbr-popup-blocked-open`,
