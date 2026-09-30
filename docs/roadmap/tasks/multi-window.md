@@ -142,13 +142,15 @@ Not parallelized.
       2/2 on `89c97cdf`, so it predates this work; its cause is open and
       tracked below — and in the startup ceiling under a host load average
       of 30–130.)*
-- [ ] Multi-root engine: sessions re-parent between roots without reload;
+- [x] Multi-root engine: sessions re-parent between roots without reload;
       per-root geometry.
       *(Slice 2, 2026-09-30: `bbr-web-macos` `window_roots.rs` — further
       windows' roots with their own menu and gesture bridges,
       `place_web_view` re-parents the page and its cover, geometry and
-      focus use the session's own root. Proven by `just e2e-windows` in
-      slice 3.)*
+      focus use the session's own root. Proven by `just e2e-windows`
+      (a page moved between windows without reload into the other root;
+      a card split in the other window) and the canonical `just e2e` on
+      `49c87250`.)*
 - [x] Several windows (slice 3b): ⌘N / New Window (File, Dock, ⌘T action
       26), ⇧⌘W / Close Window (action 27), per-window shells over the
       shared handles (`BbrApp::assemble`, `browser_windows::Registry`),
@@ -235,9 +237,16 @@ Commits:         89a78c75 (controller window contexts), 676e3c45 (engine
                  roots), 68be5cef (window view + previews per window),
                  4e596c99 (shared handles), 0bb37a8b (several windows),
                  5b8532be (restore of every window), 08b37f43 (Reopen toast
-                 and ⇧⌘T), slice 6 (this commit: drag between windows).
+                 and ⇧⌘T), 22e3b03d (drag between windows), 49c87250
+                 (e2e-perf bookmark and dense-stage fixes).
 Functional evidence: unit/contract tests per slice (see Evidence).
-Real-app E2E:    slice 6: just e2e-windows (9), e2e-shell-organize,
+Real-app E2E:    canonical BBR_E2E_TIMEOUT=15m just e2e on the committed clean
+                 tree 49c87250 (2026-09-30, 15:30–15:42): all 53 functional
+                 test binaries green (271 tests, e2e-smoke through e2e-auth,
+                 incl. e2e_windows); the run then stopped in e2e-perf at the
+                 startup ceiling (3691 ms > 750 ms, host load average 74),
+                 as did a single e2e-perf rerun (3771 ms, load 75).
+                 slice 6: just e2e-windows (9), e2e-shell-organize,
                  e2e-shell-sidebar, e2e-split, e2e-shell-tabs,
                  e2e-shell-dense, e2e-shell-split-geometry,
                  e2e-shell-persistence green on the slice-6 tree. During the
