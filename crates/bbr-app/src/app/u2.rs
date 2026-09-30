@@ -303,9 +303,10 @@ impl BbrApp {
 
     /// §11.10 favorites add/remove path: toggle the active space's concrete
     /// tab at `index` in the window-global favorites grid through the L5
-    /// command. Toggling never changes the tab's space membership, order,
-    /// selection, or live session (interaction contract). The drag-into-
-    /// grid drop commits through this path.
+    /// command. The tile is the tab: adding pins a regular tab (it leaves
+    /// the tab list for the grid) and leaves its folder; the space
+    /// membership, selection and live session never change. The
+    /// drag-into-grid drop commits through this path.
     pub fn favorite_toggle_tab(
         &mut self,
         index: usize,
@@ -315,27 +316,65 @@ impl BbrApp {
         let result = self
             .organization
             .get()
-            .favorite_toggle(&self.controller.read(), index);
+            .favorite_toggle(&mut self.controller.get(), index);
         match result {
-            Ok(OrganizationEvent::FavoriteToggled {
-                added,
-                tab,
-                space,
-                profile,
-            }) => {
-                log::debug!(
-                    "favorite {}: tab {tab:?} of space {space:?} (profile {profile:?})",
-                    if added { "added" } else { "removed" }
-                );
-                if added {
-                    self.start_favorite_pop(tab, cx);
-                }
+            Ok(event) => {
+                self.apply_favorite_toggle(&event, cx);
                 self.focus_tab_list(window, cx);
                 cx.notify();
             }
-            Ok(other) => unreachable!("favorite_toggle only emits FavoriteToggled, got {other:?}"),
             Err(error) => log::error!("could not toggle favorite at {index}: {error}"),
         }
+    }
+
+    /// Mirror a favorite toggle: the §18.5 pop for an added tile, and a
+    /// regular tab pinned by the same transition reported and persisted
+    /// like every other pin (the grouping rule of [`Self::apply_grouping`]).
+    pub(crate) fn apply_favorite_toggle(
+        &mut self,
+        event: &OrganizationEvent,
+        cx: &mut Context<Self>,
+    ) {
+        let OrganizationEvent::FavoriteToggled {
+            added,
+            tab,
+            space,
+            profile,
+            pinned_index,
+        } = event
+        else {
+            unreachable!("favorite toggles only emit FavoriteToggled, got {event:?}")
+        };
+        log::debug!(
+            "favorite {}: tab {tab:?} of space {space:?} (profile {profile:?})",
+            if *added { "added" } else { "removed" }
+        );
+        if *added {
+            self.start_favorite_pop(*tab, cx);
+        }
+        if let Some(index) = pinned_index {
+            self.report_organizing_pin(*tab, *index);
+        }
+        cx.notify();
+    }
+
+    /// A regular tab pinned by an organizing transition (grouping or
+    /// favoriting) is a structural browser mutation: it is observable like
+    /// every other pin (`TabPinned`) and must survive a force quit.
+    /// `TabPinned` carries an active-space index, so a pin in another space
+    /// (a Favorite's own space) is persisted but not reported.
+    fn report_organizing_pin(&mut self, tab: bbr_domain::TabId, index: usize) {
+        self.clear_command_profile_hint();
+        self.sync_command_bar();
+        let snapshot = self.controller.read().snapshot();
+        let in_active_space = snapshot
+            .all_tabs
+            .iter()
+            .any(|t| t.id == tab && t.space == snapshot.active_space);
+        if in_active_space {
+            self.emit_browser(&bbr_browser::ControllerEvent::TabPinned { index });
+        }
+        self.persist_structure();
     }
 
     /// §11.11 folder disclosure: expand/collapse the folder with domain id
@@ -519,23 +558,7 @@ impl BbrApp {
             } => {
                 log::debug!("tab {tab:?} moved into folder {folder:?}");
                 if let Some(index) = pinned_index {
-                    self.clear_command_profile_hint();
-                    self.sync_command_bar();
-                    // `TabPinned` carries an active-space index, like every
-                    // other pin. A Favorite groups into its tab's own space,
-                    // which may not be the active one: that pin is persisted
-                    // but not reported, because the active list is unchanged.
-                    let snapshot = self.controller.read().snapshot();
-                    let in_active_space = snapshot
-                        .all_tabs
-                        .iter()
-                        .any(|t| t.id == *tab && t.space == snapshot.active_space);
-                    if in_active_space {
-                        self.emit_browser(&bbr_browser::ControllerEvent::TabPinned {
-                            index: *index,
-                        });
-                    }
-                    self.persist_structure();
+                    self.report_organizing_pin(*tab, *index);
                 }
                 cx.notify();
             }

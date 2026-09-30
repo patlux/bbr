@@ -169,9 +169,9 @@ fn new_folder_uses_the_active_space_across_switches() {
 
 #[test]
 fn favorite_toggle_adds_then_removes_the_concrete_tab() {
-    let (c, space, tabs) = populated();
+    let (mut c, space, tabs) = populated();
     let mut org = OrganizationController::new();
-    let on = org.favorite_toggle(&c, 0).unwrap();
+    let on = org.favorite_toggle(&mut c, 0).unwrap();
     assert_eq!(
         on,
         OrganizationEvent::FavoriteToggled {
@@ -179,6 +179,7 @@ fn favorite_toggle_adds_then_removes_the_concrete_tab() {
             tab: tabs[0],
             space,
             profile: ProfileId(1),
+            pinned_index: Some(0),
         }
     );
     let snap = org.organization_snapshot(&c);
@@ -186,7 +187,7 @@ fn favorite_toggle_adds_then_removes_the_concrete_tab() {
     assert_eq!(snap.favorites[0].space, space);
     assert_eq!(snap.favorites[0].profile, ProfileId(1));
     assert_eq!(snap.favorites[0].url, "https://a.example");
-    let off = org.favorite_toggle(&c, 0).unwrap();
+    let off = org.favorite_toggle(&mut c, 0).unwrap();
     assert_eq!(
         off,
         OrganizationEvent::FavoriteToggled {
@@ -194,25 +195,30 @@ fn favorite_toggle_adds_then_removes_the_concrete_tab() {
             tab: tabs[0],
             space,
             profile: ProfileId(1),
+            pinned_index: None,
         }
     );
     assert!(org.organization_snapshot(&c).favorites.is_empty());
+    assert!(
+        c.snapshot().tabs[0].pinned,
+        "Remove from Favorites leaves a loose pinned tab"
+    );
 }
 
 #[test]
 fn favorite_toggle_dedups_by_tab_and_keeps_insertion_order() {
-    let (c, _space, tabs) = populated();
+    let (mut c, _space, tabs) = populated();
     let mut org = OrganizationController::new();
-    org.favorite_toggle(&c, 0).unwrap();
-    org.favorite_toggle(&c, 1).unwrap();
-    org.favorite_toggle(&c, 2).unwrap();
-    org.favorite_toggle(&c, 0).unwrap();
+    org.favorite_toggle(&mut c, 0).unwrap();
+    org.favorite_toggle(&mut c, 1).unwrap();
+    org.favorite_toggle(&mut c, 2).unwrap();
+    org.favorite_toggle(&mut c, 0).unwrap();
     let snap = org.organization_snapshot(&c);
     assert_eq!(
         snap.favorites.iter().map(|f| f.tab).collect::<Vec<_>>(),
         vec![tabs[1], tabs[2]]
     );
-    org.favorite_toggle(&c, 0).unwrap();
+    org.favorite_toggle(&mut c, 0).unwrap();
     let snap = org.organization_snapshot(&c);
     assert_eq!(
         snap.favorites.iter().map(|f| f.tab).collect::<Vec<_>>(),
@@ -222,31 +228,58 @@ fn favorite_toggle_dedups_by_tab_and_keeps_insertion_order() {
 
 #[test]
 fn favorite_toggle_rejects_out_of_bounds_indices() {
-    let (c, _space, _) = populated();
+    let (mut c, _space, _) = populated();
     let mut org = OrganizationController::new();
     assert_eq!(
-        org.favorite_toggle(&c, 3),
+        org.favorite_toggle(&mut c, 3),
         Err(OrganizationError::IndexOutOfBounds { index: 3, len: 3 })
     );
     assert!(org.organization_snapshot(&c).favorites.is_empty());
 }
 
 #[test]
-fn closing_the_favorited_tab_removes_its_tile() {
+fn closing_a_favorite_keeps_its_tile_closed_and_activation_reopens_it() {
+    // DESIGN.md §10.12: the tile is the tab. Closing it closes it in place
+    // (no session, pinned page), the tile stays closed, and activating it
+    // opens the pinned page again in a fresh session.
     let (mut c, _space, tabs) = populated();
     let mut org = OrganizationController::new();
-    org.favorite_toggle(&c, 0).unwrap();
-    assert_eq!(org.organization_snapshot(&c).favorites[0].tab, tabs[0]);
-    c.close_tab(0).unwrap();
-    assert!(org.organization_snapshot(&c).favorites.is_empty());
+    org.favorite_toggle(&mut c, 1).unwrap();
+    let index = c
+        .snapshot()
+        .all_tabs
+        .iter()
+        .find(|tab| tab.id == tabs[1])
+        .unwrap()
+        .index;
+    assert_eq!(index, 0, "favoriting pinned the tab");
+    let sessions = c.snapshot().engine_sessions;
+    c.close_tab(index).unwrap();
+    let snap = org.organization_snapshot(&c);
+    assert_eq!(snap.favorites.len(), 1);
+    assert_eq!(snap.favorites[0].tab, tabs[1]);
+    assert!(snap.favorites[0].closed);
+    assert_eq!(snap.favorites[0].url, "https://b.example");
+    let browser = c.snapshot();
+    assert_eq!(browser.engine_sessions, sessions - 1, "the session is gone");
+    assert_eq!(browser.lifecycle_counts.closed, 1);
     org.check_invariants(&c).unwrap();
+
+    org.activate_favorite(&mut c, 0).unwrap();
+    let snap = org.organization_snapshot(&c);
+    assert!(!snap.favorites[0].closed);
+    let browser = c.snapshot();
+    assert_eq!(browser.active_index, Some(0));
+    assert!(browser.tabs[0].web_view.is_some(), "a fresh session");
+    assert_eq!(browser.tabs[0].url, "https://b.example");
+    assert_eq!(browser.engine_sessions, sessions);
 }
 
 #[test]
 fn favorite_follows_the_same_tab_when_it_moves_across_profiles() {
     let (mut c, original_space, tabs) = populated();
     let mut org = OrganizationController::new();
-    org.favorite_toggle(&c, 0).unwrap();
+    org.favorite_toggle(&mut c, 0).unwrap();
     let profile = c.create_profile("Personal");
     let destination = c.create_space(profile, "Personal").unwrap();
     c.move_tab(0, destination).unwrap();
@@ -263,7 +296,7 @@ fn activating_a_cross_profile_favorite_switches_inside_the_same_window() {
     let (mut c, work_space, tabs) = populated();
     let work_view = c.snapshot().tabs[0].web_view.expect("favorite has session");
     let mut org = OrganizationController::new();
-    org.favorite_toggle(&c, 0).unwrap();
+    org.favorite_toggle(&mut c, 0).unwrap();
 
     let personal = c.create_profile("Personal");
     let personal_space = c.create_space(personal, "Private").unwrap();
@@ -288,13 +321,41 @@ fn activating_a_cross_profile_favorite_switches_inside_the_same_window() {
 }
 
 #[test]
-fn favorite_toggle_never_moves_or_copies_the_tab() {
-    let (c, _space, _) = populated();
+fn favorite_toggle_pins_without_copying_the_tab_or_its_session() {
+    let (mut c, space, tabs) = populated();
     let mut org = OrganizationController::new();
     let before = c.snapshot();
-    org.favorite_toggle(&c, 0).unwrap();
+    let view = before.tabs[1].web_view;
+    let on = org.favorite_toggle(&mut c, 1).unwrap();
+    assert_eq!(
+        on,
+        OrganizationEvent::FavoriteToggled {
+            added: true,
+            tab: tabs[1],
+            space,
+            profile: ProfileId(1),
+            pinned_index: Some(0),
+        }
+    );
     let after = c.snapshot();
-    assert_eq!(before, after, "favorite toggle only changes presentation");
+    // The one change: the tab moved to the end of the pinned region.
+    assert_eq!(
+        after
+            .tabs
+            .iter()
+            .map(|t| t.url.as_str())
+            .collect::<Vec<_>>(),
+        vec![
+            "https://b.example",
+            "https://a.example",
+            "https://c.example"
+        ]
+    );
+    assert!(after.tabs[0].pinned);
+    assert_eq!(after.tabs[0].web_view, view, "same live session");
+    assert_eq!(after.all_tabs.len(), before.all_tabs.len(), "no copy");
+    assert_eq!(after.engine_sessions, before.engine_sessions);
+    assert_eq!(after.active_index, Some(2), "selection unchanged");
 }
 
 // ---- MoveTabIntoFolder ----------------------------------------------------
@@ -399,7 +460,7 @@ fn move_tab_into_folder_rejects_cross_space_tabs() {
 // ---- Reconciliation -------------------------------------------------------
 
 #[test]
-fn commands_reconcile_memberships_after_close_and_move() {
+fn commands_reconcile_memberships_after_close_and_unpin() {
     let (mut c, _space, tabs) = populated();
     let mut org = OrganizationController::new();
     let folder = match org.new_folder(&c, "Work").unwrap() {
@@ -408,19 +469,26 @@ fn commands_reconcile_memberships_after_close_and_move() {
     };
     org.move_tab_into_folder(&mut c, 0, folder).unwrap();
     org.move_tab_into_folder(&mut c, 1, folder).unwrap();
-    // Close the first tab (a controller mutation the store cannot observe).
-    c.close_tab(0).unwrap();
-    // Another command must not observe or keep the stale membership.
-    org.favorite_toggle(&c, 0).unwrap();
-    let snap = org.organization_snapshot(&c);
-    assert_eq!(
-        snap.folders
+    let members = |org: &mut OrganizationController, c: &crate::BrowserController| {
+        org.organization_snapshot(c)
+            .folders
             .iter()
             .find(|f| f.id == folder)
             .unwrap()
-            .members,
+            .members
+            .clone()
+    };
+    // A member is pinned, so closing it closes it in place: it stays.
+    c.close_tab(0).unwrap();
+    assert_eq!(members(&mut org, &c), vec![tabs[0], tabs[1]]);
+    // Unpinning (a controller mutation the store cannot observe) ends the
+    // membership; the next command must not keep it.
+    c.unpin_tab(0).unwrap();
+    org.new_folder(&c, "Other").unwrap();
+    assert_eq!(
+        members(&mut org, &c),
         vec![tabs[1]],
-        "closed tab membership was reconciled away"
+        "the unpinned membership was reconciled away"
     );
 }
 
@@ -470,7 +538,11 @@ fn reconcile_returns_the_number_of_removed_memberships() {
     };
     org.move_tab_into_folder(&mut c, 0, folder).unwrap();
     org.move_tab_into_folder(&mut c, 1, folder).unwrap();
+    // Closing a member closes it in place: nothing to reconcile.
     c.close_tab(0).unwrap();
+    assert_eq!(org.reconcile(&c), 0);
+    // Unpinning ends the membership.
+    c.unpin_tab(0).unwrap();
     assert_eq!(org.reconcile(&c), 1);
     assert_eq!(org.reconcile(&c), 0, "second reconcile is a no-op");
 }
@@ -485,12 +557,14 @@ fn invariants_hold_across_command_sequences() {
     let folder = org.organization_snapshot(&c).folders.first().unwrap().id;
     org.move_tab_into_folder(&mut c, 0, folder).unwrap();
     org.move_tab_into_folder(&mut c, 1, folder).unwrap();
-    org.favorite_toggle(&c, 2).unwrap();
+    org.favorite_toggle(&mut c, 2).unwrap();
     org.check_invariants(&c).unwrap();
-    // Closing a tab makes membership stale; a command reconciles, so the
-    // checker passes again afterwards.
+    // Closing a member keeps it (closed in place); unpinning makes the
+    // membership stale; a command reconciles, so the checker passes again.
     c.close_tab(0).unwrap();
-    org.favorite_toggle(&c, 0).unwrap();
+    org.check_invariants(&c).unwrap();
+    c.unpin_tab(0).unwrap();
+    org.favorite_toggle(&mut c, 0).unwrap();
     org.check_invariants(&c).unwrap();
 }
 
@@ -500,8 +574,9 @@ fn snapshot_exposes_stable_index_identities() {
     let mut org = OrganizationController::new();
     org.new_folder(&c, "Work").unwrap();
     org.new_folder(&c, "Docs").unwrap();
-    org.favorite_toggle(&c, 1).unwrap();
-    org.favorite_toggle(&c, 0).unwrap();
+    // Favoriting pins: b moves to index 0, so a is then at index 1.
+    org.favorite_toggle(&mut c, 1).unwrap();
+    org.favorite_toggle(&mut c, 1).unwrap();
     let snap = org.organization_snapshot(&c);
     assert_eq!(
         snap.folders
@@ -526,8 +601,8 @@ fn snapshot_exposes_stable_index_identities() {
 
 #[test]
 fn organization_controller_is_a_plain_value() {
-    let (c, _space, _) = populated();
+    let (mut c, _space, _) = populated();
     let mut org = OrganizationController::new();
-    org.favorite_toggle(&c, 0).unwrap();
+    org.favorite_toggle(&mut c, 0).unwrap();
     assert_eq!(org.clone(), org);
 }

@@ -18,8 +18,9 @@ pub struct U2Rail {
     pub favorite_tiles: Vec<ui::FavoriteTileSpec>,
     pub folder_rows: Vec<ui::FolderRowSpec>,
     pub folder_members: Vec<ui::FolderMemberVisual>,
-    /// §11.11: the active-space tab indices grouped into a folder (they
-    /// render inside the folder only, never as loose pinned rows).
+    /// §11.10/§11.11: the active-space pinned tab indices grouped into a
+    /// folder or kept as a Favorite (they render inside the folder or as
+    /// their tile only, never as loose pinned rows).
     pub grouped: Vec<usize>,
 }
 
@@ -61,8 +62,10 @@ impl BbrApp {
             &self.controller.read().snapshot(),
             &self.favicon_images.read(),
         );
-        let grouped = crate::shell::organized::grouped_indices(
+        // §11.10/§11.11: folder members and Favorites leave the loose block.
+        let grouped = crate::shell::organized::hidden_pinned(
             &organization.folders,
+            &organization.favorites,
             &self.controller.read().snapshot(),
         );
         U2Rail {

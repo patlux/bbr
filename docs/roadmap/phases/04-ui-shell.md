@@ -40,6 +40,15 @@ performance gate waits for the performance-execution override to lift.
 - [x] Present real site favicons in every favicon slot via the [real favicon pipeline](../tasks/real-favicon-pipeline.md).
 - [x] Match the reference row pitch, folder anatomy, rest states and identity-glyph catalog via the [sidebar reference polish](../tasks/sidebar-reference-polish.md). *(Integrated through merge `35c91189`; Sidebar 15/15, Dense 3/3, Organize 2/2 plus Drag-Chip 4/4, Spaces 21/21, Gallery 45/45, and the packet's non-GUI gates passed on the final tree. The later folder/pinned domain invariant is a separate open slice.)*
 
+## Kept places: closed pins and Favorites (2026-09-30)
+
+Patrick's decision: pinned tabs and Favorites are kept places, not open
+pages. A closed pinned tab stays greyed in place and reopens its pinned URL;
+a Favorite leaves the tab list (the tile is the tab) and greys out when
+closed; the unplanned row pin control is removed.
+
+- [ ] Deliver [closed pinned tabs and Favorites that leave the list](../tasks/closed-pins-and-favorites.md).
+
 ## v2 visual refresh and motion (2026-09-28)
 
 After the Arc study in Paper, Patrick adopted DESIGN §18 (decisions D1–D11):

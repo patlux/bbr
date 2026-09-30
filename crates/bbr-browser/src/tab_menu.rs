@@ -145,7 +145,8 @@ pub struct TabMenuAvailability {
     pub move_to_end: bool,
     /// The source is a favorite (the row reads `Remove from Favorites`).
     pub favorite: bool,
-    /// `Close Tab` — enabled for any valid source.
+    /// `Close Tab` — enabled unless the source is already a closed pinned
+    /// tab (DESIGN.md §10.12).
     pub close: bool,
     /// `Reopen Closed Tab` — legal only when the source's space has a
     /// recently-closed tab.
@@ -271,7 +272,7 @@ impl TabMenuController {
             move_to_start,
             move_to_end,
             favorite: source.favorite,
-            close: true,
+            close: source.lifecycle != TabLifecycle::Closed,
             reopen: source.reopen_legal,
             folders: folders.to_vec(),
             spaces,

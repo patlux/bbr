@@ -15,6 +15,11 @@ pub enum TabLifecycle {
     /// Recoverable navigation entry after process termination or explicit
     /// resource discard.
     Discarded,
+    /// The user closed a pinned tab (DESIGN.md §10.12): the identity keeps
+    /// its place in the pinned region at its pinned page, owns no session,
+    /// and only an explicit selection reopens it. Entered only through
+    /// [`crate::Browser::close_tab`], never through the resource policy.
+    Closed,
 }
 
 impl TabLifecycle {
@@ -23,7 +28,9 @@ impl TabLifecycle {
     /// The explicit resource-policy transitions stay gradual (`Warm` must
     /// pass through `Suspended` before `Discarded`); a process crash is not a
     /// gradual move and is applied directly by [`crate::Browser::discard_tab`],
-    /// which bypasses the matrix and the visibility guard.
+    /// which bypasses the matrix and the visibility guard. `Closed` is a
+    /// user decision, not a resource step: only closing enters it, and only
+    /// activation leaves it.
     pub fn can_transition_to(self, next: Self) -> bool {
         self == next
             || matches!(
@@ -32,7 +39,13 @@ impl TabLifecycle {
                     | (Self::Warm, Self::Active | Self::Suspended)
                     | (Self::Suspended, Self::Active | Self::Discarded)
                     | (Self::Discarded, Self::Active)
+                    | (Self::Closed, Self::Active)
             )
+    }
+
+    /// Whether the tab owns (or should own) a live native session.
+    pub fn is_live(self) -> bool {
+        matches!(self, Self::Active | Self::Warm)
     }
 
     /// Apply one legal lifecycle transition.

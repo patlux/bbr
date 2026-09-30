@@ -186,6 +186,8 @@ pub fn build_favorites_fixture(case: &FavoriteCase) -> Option<Vec<FavoriteTileSp
             letter,
             hue: tile % 6,
             image: None,
+            closed: false,
+            selected: false,
         });
     }
     Some(tiles)

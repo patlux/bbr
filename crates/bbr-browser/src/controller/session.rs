@@ -84,7 +84,7 @@ impl BrowserController {
         };
         let (lifecycle, url, profile) = info;
         match lifecycle {
-            TabLifecycle::Suspended | TabLifecycle::Discarded => {
+            TabLifecycle::Suspended | TabLifecycle::Discarded | TabLifecycle::Closed => {
                 self.destroy_session_of(tab);
                 Ok(None)
             }

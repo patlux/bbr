@@ -1,7 +1,7 @@
 //! The [`Browser`] container: owns profiles/spaces/tabs and enforces the
 //! domain invariants through every mutation.
 
-use crate::model::{ClosedTab, Profile, Space, Tab};
+use crate::model::{ClosedTab, PinnedPage, Profile, Space, Tab};
 use crate::{DomainError, ProfileId, SpaceId, TabId, TabLifecycle};
 
 /// Owning container for all persistent browser objects.
@@ -92,7 +92,9 @@ impl Browser {
             .map(|state| state.id)
             .collect();
         for state in &self.tabs {
-            if !kept.contains(&state.id) && state.pinned {
+            // A closed pinned tab owns no session and never takes budget.
+            if !kept.contains(&state.id) && state.pinned && state.lifecycle != TabLifecycle::Closed
+            {
                 kept.push(state.id);
             }
         }
@@ -177,6 +179,25 @@ impl Browser {
             .iter()
             .position(|t| *t == tab)
             .ok_or(DomainError::TabNotInSpace { tab, space })
+    }
+
+    /// The tab that takes the selection when the tab at `index` of `space`
+    /// leaves the open set: its next open sibling, else its previous open
+    /// sibling, else `None`. Closed pinned tabs are skipped — selecting one
+    /// would reopen it (DESIGN.md §10.12). Read against the pre-removal
+    /// ordering (the leaving tab is still at `index`).
+    fn open_neighbor(&self, space: SpaceId, index: usize) -> Option<TabId> {
+        let sp = self.space(space)?;
+        let open = |id: &&TabId| {
+            self.tab(**id)
+                .is_some_and(|tab| tab.lifecycle != TabLifecycle::Closed)
+        };
+        sp.tabs
+            .iter()
+            .skip(index + 1)
+            .find(open)
+            .or_else(|| sp.tabs[..index.min(sp.tabs.len())].iter().rev().find(open))
+            .copied()
     }
 
     /// Whether `tab` is currently visible (selected single pane, or either
@@ -345,9 +366,12 @@ impl Browser {
         Ok(id)
     }
 
-    /// Close `tab`, remembering it for [`Browser::reopen_tab`]. The active
-    /// tab moves to the closed tab's next sibling (else previous, else
-    /// `None`); closing the last tab leaves the space empty. Blueprint
+    /// Close `tab`. A regular tab is removed and remembered for
+    /// [`Browser::reopen_tab`]; a pinned tab closes in place (DESIGN.md
+    /// §10.12): it keeps its index as [`TabLifecycle::Closed`] at its pinned
+    /// page and leaves no recently-closed record. The active tab moves to
+    /// the next open sibling (else the previous one, else `None`); closing
+    /// the last open tab leaves the space without a selection. Blueprint
     /// D23: a tab in a split group leaves its pane (the group keeps the
     /// others, or dissolves when one is left), and an active pane hands the
     /// focus to the pane at its place in the group.
@@ -361,11 +385,11 @@ impl Browser {
             let rest: Vec<TabId> = members.into_iter().filter(|m| *m != tab).collect();
             rest.get(at.min(rest.len().saturating_sub(1))).copied()
         });
-        let focus_after = group_heir.or_else(|| {
-            self.space(space)
-                .and_then(|s| s.neighbor_after_removal(index))
-        });
+        let focus_after = group_heir.or_else(|| self.open_neighbor(space, index));
         let was_active = self.space(space).is_some_and(|s| s.active_tab == Some(tab));
+        if self.space(space).is_some_and(|s| index < s.pinned_count) {
+            return self.close_pinned_in_place(space, tab, focus_after, was_active);
+        }
 
         // Drop the tab from the global table (looked up by id, not by the
         // space-local index).
@@ -378,9 +402,6 @@ impl Browser {
 
         let sp = self.space_mut(space).expect("checked above");
         sp.tabs.remove(index);
-        if index < sp.pinned_count {
-            sp.pinned_count -= 1;
-        }
         sp.recently_closed.push(ClosedTab {
             tab: closed_tab,
             index,
@@ -390,6 +411,39 @@ impl Browser {
             sp.active_tab = focus_after;
         }
         self.closed_tabs += 1;
+        self.sync_lifecycles(space);
+        Ok(())
+    }
+
+    /// DESIGN.md §10.12: a pinned tab is a kept place, so closing it keeps
+    /// the identity at its index. It resets to its pinned page, owns no
+    /// session ([`TabLifecycle::Closed`]) and leaves no recently-closed
+    /// record (the row itself reopens it). Closing a closed tab is a no-op.
+    fn close_pinned_in_place(
+        &mut self,
+        space: SpaceId,
+        tab: TabId,
+        focus_after: Option<TabId>,
+        was_active: bool,
+    ) -> Result<(), DomainError> {
+        let state = self
+            .tabs
+            .iter_mut()
+            .find(|state| state.id == tab)
+            .expect("ordered tab must exist in the global table");
+        if state.lifecycle == TabLifecycle::Closed {
+            return Ok(());
+        }
+        if let Some(page) = state.pinned_page.clone() {
+            state.url = page.url;
+            state.title = page.title;
+        }
+        state.lifecycle = TabLifecycle::Closed;
+        let sp = self.space_mut(space).expect("checked above");
+        crate::split_groups::leave_group(sp, tab);
+        if was_active {
+            sp.active_tab = focus_after;
+        }
         self.sync_lifecycles(space);
         Ok(())
     }
@@ -422,7 +476,16 @@ impl Browser {
             Some(id) => closed.iter().position(|entry| entry.tab.id == id),
         }
         .ok_or(DomainError::NothingToReopen(space))?;
-        let ClosedTab { tab, index } = closed.remove(position);
+        let ClosedTab { mut tab, index } = closed.remove(position);
+        // A pinned record restored from the store (or left by a space
+        // deletion) carries no pinned page yet: its URL is the page it was
+        // pinned at from now on.
+        tab.pinned_page = tab.pinned.then(|| {
+            tab.pinned_page.clone().unwrap_or_else(|| PinnedPage {
+                url: tab.url.clone(),
+                title: tab.title.clone(),
+            })
+        });
         let (len, pinned_count) = {
             let s = self.space(space).expect("validated above");
             (s.tabs.len(), s.pinned_count)
@@ -536,7 +599,9 @@ impl Browser {
     /// validation guarantees a pinned prefix). Imported tabs are
     /// **session-less** (`Suspended`) by design: the chrome-first restore
     /// hydrates only the visible set, and every other restored tab must
-    /// stay without a session until a later activation recreates it.
+    /// stay without a session until a later activation recreates it. The
+    /// pinned page is not persisted (task packet `closed-pins-and-favorites`):
+    /// a restored pinned tab takes its restored URL as its pinned page.
     pub fn restore_tab(
         &mut self,
         id: TabId,
@@ -551,6 +616,10 @@ impl Browser {
         self.reserve_id(id.0)?;
         let mut tab = Tab::new(id, space, title, url);
         tab.pinned = pinned;
+        tab.pinned_page = pinned.then(|| PinnedPage {
+            url: url.to_string(),
+            title: title.to_string(),
+        });
         tab.lifecycle = TabLifecycle::Suspended;
         self.tabs.push(tab);
         let sp = self.space_mut(space).expect("validated above");
@@ -737,7 +806,8 @@ impl Browser {
         Ok(())
     }
 
-    /// Pin `tab`: move it to the end of the pinned region.
+    /// Pin `tab`: move it to the end of the pinned region. Its current URL
+    /// and title become its pinned page (DESIGN.md §11.2).
     pub fn pin_tab(&mut self, space: SpaceId, tab: TabId) -> Result<(), DomainError> {
         let sp = self
             .space_mut(space)
@@ -755,11 +825,17 @@ impl Browser {
         sp.pinned_count += 1;
         if let Some(t) = self.tabs.iter_mut().find(|t| t.id == tab) {
             t.pinned = true;
+            t.pinned_page = Some(PinnedPage {
+                url: t.url.clone(),
+                title: t.title.clone(),
+            });
         }
         Ok(())
     }
 
-    /// Unpin `tab`: move it to the end of the unpinned region.
+    /// Unpin `tab`: move it to the end of the unpinned region. It forgets
+    /// its pinned page; a closed pinned tab becomes an unloaded (suspended)
+    /// regular tab, because only a pinned tab can stay closed in place.
     pub fn unpin_tab(&mut self, space: SpaceId, tab: TabId) -> Result<(), DomainError> {
         let sp = self
             .space_mut(space)
@@ -777,6 +853,10 @@ impl Browser {
         sp.tabs.push(tab);
         if let Some(t) = self.tabs.iter_mut().find(|t| t.id == tab) {
             t.pinned = false;
+            t.pinned_page = None;
+            if t.lifecycle == TabLifecycle::Closed {
+                t.lifecycle = TabLifecycle::Suspended;
+            }
         }
         Ok(())
     }
@@ -802,9 +882,7 @@ impl Browser {
         let pinned = self
             .space(from_space)
             .is_some_and(|s| index < s.pinned_count);
-        let focus_after = self
-            .space(from_space)
-            .and_then(|s| s.neighbor_after_removal(index));
+        let focus_after = self.open_neighbor(from_space, index);
 
         // Source bookkeeping.
         let sp_from = self.space_mut(from_space).expect("checked above");

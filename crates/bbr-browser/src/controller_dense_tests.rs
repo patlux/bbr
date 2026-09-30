@@ -69,6 +69,7 @@ fn dense_seed_keeps_exactly_the_live_cap_with_a_bounded_transient_peak() {
             warm: 49,
             suspended: 450,
             discarded: 0,
+            closed: 0,
         }
     );
     // Session identity: exactly the kept 50 tabs own a view, the active and

@@ -172,6 +172,8 @@ fn u2_ids_compose_the_footer_favorites_folders_and_menu_contracts() {
         profile: bbr_web::ProfileId(1),
         title: "Example".into(),
         url: "https://example.com".into(),
+        closed: false,
+        selected: false,
     }];
     let folders = vec![FolderSnapshot {
         index: 0,

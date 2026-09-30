@@ -554,8 +554,9 @@ pub fn visible_ids_u2(
     // into the empty pane) is never exposed by a stale window.
     let total = browser.tabs.len();
     let pinned = crate::shell::pinned_count(&browser.tabs);
-    // §11.11: grouped pinned tabs render inside their folder only.
-    let grouped = crate::shell::organized::grouped_indices(u2.folders, browser);
+    // §11.10/§11.11: grouped pinned tabs render inside their folder only,
+    // Favorites in their tile only.
+    let grouped = crate::shell::organized::hidden_pinned(u2.folders, u2.favorites, browser);
     let mut rendered = crate::shell::organized::loose_pinned(pinned.min(total), &grouped);
     rendered.extend(
         (dense.first_rendered..dense.first_rendered + dense.rendered_rows)
@@ -566,7 +567,14 @@ pub fn visible_ids_u2(
         ids.push(format!("bbr-tab-title-{index}"));
         ids.push(format!("bbr-tab-favicon-{index}"));
         ids.push(format!("bbr-tab-state-{index}"));
-        ids.push(format!("bbr-tab-close-{index}"));
+        // §10.12: a closed pinned row renders no close control.
+        if browser
+            .tabs
+            .get(index)
+            .is_none_or(|tab| tab.lifecycle != bbr_browser::TabLifecycle::Closed)
+        {
+            ids.push(format!("bbr-tab-close-{index}"));
+        }
     }
     if let Some(slot) = drag_slot {
         ids.push(format!("bbr-drag-tick-{slot}"));

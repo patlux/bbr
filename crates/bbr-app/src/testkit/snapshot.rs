@@ -164,6 +164,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
                         bbr_browser::TabLifecycle::Warm => "warm".into(),
                         bbr_browser::TabLifecycle::Suspended => "suspended".into(),
                         bbr_browser::TabLifecycle::Discarded => "discarded".into(),
+                        bbr_browser::TabLifecycle::Closed => "closed".into(),
                     },
                     last_used: tab.last_used,
                     favicon: match tab.favicon {
@@ -256,6 +257,7 @@ impl SnapshotExt for crate::shell::TestSnapshot {
                         bbr_browser::TabLifecycle::Warm => "warm".into(),
                         bbr_browser::TabLifecycle::Suspended => "suspended".into(),
                         bbr_browser::TabLifecycle::Discarded => "discarded".into(),
+                        bbr_browser::TabLifecycle::Closed => "closed".into(),
                     },
                     last_used: tab.last_used,
                 })

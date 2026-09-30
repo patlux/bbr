@@ -262,8 +262,7 @@ impl BbrApp {
     /// Map a tab slice to per-row visuals for the current theme. The §4
     /// one-line title truncation is applied here so the snapshot's row
     /// titles and the rendered rows share one source. `drag_source` marks
-    /// the row currently being dragged (§10.9 `dragging` state); the row's
-    /// `pinned` region identity drives the pin control. The pointer-state
+    /// the row currently being dragged (§10.9 `dragging` state). The pointer-state
     /// fields (hover/press) and the §10.2 close-reveal derive from the same
     /// app state the production listeners mutate, so the snapshot's
     /// `tab_states` always match the render.
@@ -282,6 +281,7 @@ impl BbrApp {
         tabs.iter()
             .map(|tab| {
                 let host = bbr_ui::text::host_of(&tab.url);
+                let closed = tab.lifecycle == bbr_browser::TabLifecycle::Closed;
                 RowVisuals {
                     index: tab.index,
                     title: SharedString::from(bbr_ui::text::truncate_title(
@@ -310,9 +310,13 @@ impl BbrApp {
                         image: self.favicon_image(profile, &host),
                     }),
                     pinned: tab.pinned,
-                    show_close: true,
-                    reveal_close: self.hovered_row == Some(tab.index)
-                        || self.pressed_row == Some(tab.index),
+                    // §10.12: a closed pinned row greys out and offers no
+                    // close control.
+                    closed,
+                    show_close: !closed,
+                    reveal_close: !closed
+                        && (self.hovered_row == Some(tab.index)
+                            || self.pressed_row == Some(tab.index)),
                     split: marks.get(tab.index).copied().flatten(),
                 }
             })

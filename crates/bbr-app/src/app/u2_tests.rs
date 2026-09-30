@@ -76,7 +76,7 @@ fn favorites_stay_identical_across_same_profile_space_switches() {
     let default_space = c.snapshot().active_space;
     let default_profile = c.snapshot().active_profile;
     let tabs = open_tabs(&mut c, 3);
-    org.favorite_toggle(&c, 1).unwrap(); // favorite the second tab
+    org.favorite_toggle(&mut c, 1).unwrap(); // favorite the second tab
     let before = org.organization_snapshot(&c);
 
     // Switch to another space of the same profile: the grid keeps the exact
@@ -98,7 +98,7 @@ fn favorites_stay_identical_across_cross_profile_space_switches() {
     let (mut c, mut org) = harness();
     let default_space = c.snapshot().active_space;
     open_tabs(&mut c, 2);
-    org.favorite_toggle(&c, 0).unwrap();
+    org.favorite_toggle(&mut c, 0).unwrap();
     let before = org.organization_snapshot(&c);
 
     // A second profile: activating one of its spaces must never filter or
@@ -123,7 +123,8 @@ fn favorite_activation_switches_space_and_selects_the_exact_tab_without_copy_or_
     let (mut c, mut org) = harness();
     let default_space = c.snapshot().active_space;
     open_tabs(&mut c, 3);
-    org.favorite_toggle(&c, 2).unwrap(); // favorite tab 2 (the last tab)
+    // Favorite tab 2 (the last tab): favoriting pins it to index 0.
+    org.favorite_toggle(&mut c, 2).unwrap();
     let favorite = org.organization_snapshot(&c).favorites[0].clone();
 
     // Leave the owning space and make it non-trivial to return to.
@@ -144,7 +145,7 @@ fn favorite_activation_switches_space_and_selects_the_exact_tab_without_copy_or_
             tab: favorite.tab,
             space: default_space,
             profile: default_profile,
-            index: 2,
+            index: 0,
         }
     );
     let after = c.snapshot();
@@ -156,7 +157,7 @@ fn favorite_activation_switches_space_and_selects_the_exact_tab_without_copy_or_
         "activation never copies, moves, or recreates a tab"
     );
     // The selected tab is exactly the favorite's concrete tab, unchanged.
-    assert_eq!(after.active_index, Some(2));
+    assert_eq!(after.active_index, Some(0));
     let selected = after
         .all_tabs
         .iter()
@@ -168,18 +169,19 @@ fn favorite_activation_switches_space_and_selects_the_exact_tab_without_copy_or_
 }
 
 #[test]
-fn closing_the_concrete_tab_removes_its_favorite_tile() {
+fn closing_the_concrete_tab_keeps_its_favorite_tile_closed() {
+    // DESIGN.md §10.12: the tile is the tab; closing it closes it in place.
     let (mut c, mut org) = harness();
     open_tabs(&mut c, 2);
-    org.favorite_toggle(&c, 0).unwrap();
+    org.favorite_toggle(&mut c, 0).unwrap();
     assert_eq!(org.organization_snapshot(&c).favorites.len(), 1);
+    assert!(!org.organization_snapshot(&c).favorites[0].closed);
 
     c.close_tab(0).unwrap();
     let after = org.organization_snapshot(&c);
-    assert!(
-        after.favorites.is_empty(),
-        "closing the concrete tab drops the tile (reconciled on read)"
-    );
+    assert_eq!(after.favorites.len(), 1, "the tile stays");
+    assert!(after.favorites[0].closed, "and greys out");
+    assert!(!after.favorites[0].selected);
 }
 
 #[test]
@@ -187,7 +189,7 @@ fn moving_the_tab_makes_the_favorite_follow_its_stable_tab_id() {
     let (mut c, mut org) = harness();
     let default_space = c.snapshot().active_space;
     open_tabs(&mut c, 2);
-    org.favorite_toggle(&c, 0).unwrap();
+    org.favorite_toggle(&mut c, 0).unwrap();
     let tab = org.organization_snapshot(&c).favorites[0].tab;
 
     // Move the favorited tab into another space of a second profile: the
@@ -211,7 +213,7 @@ fn moving_the_tab_makes_the_favorite_follow_its_stable_tab_id() {
 fn favorite_toggle_adds_then_removes_without_touching_the_tab() {
     let (mut c, mut org) = harness();
     let tabs = open_tabs(&mut c, 2);
-    let add = org.favorite_toggle(&c, 0).unwrap();
+    let add = org.favorite_toggle(&mut c, 0).unwrap();
     assert!(matches!(
         add,
         OrganizationEvent::FavoriteToggled { added: true, .. }
@@ -219,7 +221,7 @@ fn favorite_toggle_adds_then_removes_without_touching_the_tab() {
     assert_eq!(org.organization_snapshot(&c).favorites.len(), 1);
 
     // Toggling again removes; the tab's identity and membership are intact.
-    let remove = org.favorite_toggle(&c, 0).unwrap();
+    let remove = org.favorite_toggle(&mut c, 0).unwrap();
     assert!(matches!(
         remove,
         OrganizationEvent::FavoriteToggled { added: false, .. }

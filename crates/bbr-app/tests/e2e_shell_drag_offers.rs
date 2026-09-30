@@ -366,7 +366,14 @@ fn drop_cell_grows_once_at_activation_and_favorites_the_tab() {
         );
         assert_eq!(dropped.tabs.len(), 5, "a drop never copies a tab");
         assert_eq!(dropped.engine_sessions, sessions, "no session change");
-        assert_eq!(dropped.pinned_count, 0, "a favorite drop never pins");
+        // DESIGN §11.10: the tile is the tab — a Favorite is pinned (the drop
+        // pins the dragged tab by the same transition) and leaves the list.
+        assert_eq!(dropped.pinned_count, 5, "every Favorite is pinned");
+        assert_eq!(id_at(&dropped, 4), dragged_id, "pinned at the region end");
+        assert!(
+            !has(&dropped, "bbr-tab-row-4"),
+            "the dropped tab leaves the tab list"
+        );
         assert_no_offers(&dropped);
         // At rest again: five tiles wrap into two rows with the glyph slot
         // in the next free cell — the height the drag already reserved.

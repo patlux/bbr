@@ -256,6 +256,7 @@ pub fn build_folders_fixture(
             hue: member_pos % 6,
             image: None,
             selected: false,
+            closed: false,
         });
     }
     Some((rows, members))

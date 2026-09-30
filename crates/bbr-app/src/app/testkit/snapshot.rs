@@ -153,8 +153,13 @@ impl BbrApp {
             &browser,
             &self.favicon_images.read(),
         );
-        // §11.11: grouped pinned tabs render inside their folder only.
-        let grouped = crate::shell::organized::grouped_indices(&organization.folders, &browser);
+        // §11.10/§11.11: grouped pinned tabs render inside their folder
+        // only, Favorites in their tile only.
+        let grouped = crate::shell::organized::hidden_pinned(
+            &organization.folders,
+            &organization.favorites,
+            &browser,
+        );
         let loose_rows: Vec<bbr_ui::components::RowVisuals> = rows
             .iter()
             .filter(|row| !grouped.contains(&row.index))
@@ -258,6 +263,7 @@ impl BbrApp {
                 warm: browser.lifecycle_counts.warm,
                 suspended: browser.lifecycle_counts.suspended,
                 discarded: browser.lifecycle_counts.discarded,
+                closed: browser.lifecycle_counts.closed,
             },
             dense: self.dense_snapshot(&browser),
             shell_modes: bbr_testkit::protocol::ShellModes {
@@ -621,6 +627,8 @@ impl BbrApp {
                     } else {
                         "monogram".to_string()
                     },
+                    closed: tile.closed,
+                    selected: tile.selected,
                 })
                 .collect(),
             folders: folder_rows

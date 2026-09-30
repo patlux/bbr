@@ -171,23 +171,6 @@ fn close_last_tab_leaves_space_empty() {
 }
 
 #[test]
-fn close_pinned_active_focuses_sibling() {
-    let mut b = populated();
-    let s = b.spaces().next().unwrap().id;
-    let [t1, t2, t3] = ids(&b, s)[..] else {
-        unreachable!()
-    };
-    b.pin_tab(s, t1).unwrap();
-    select(&mut b, s, t1);
-    b.close_tab(s, t1).unwrap();
-    let sp = b.space(s).unwrap();
-    assert_eq!(sp.active_tab, Some(t2));
-    assert_eq!(sp.tabs, vec![t2, t3]);
-    assert_eq!(sp.pinned_count, 0);
-    b.check_invariants().unwrap();
-}
-
-#[test]
 fn closing_unknown_or_wrong_space_fails() {
     let mut b = populated();
     let s = b.spaces().next().unwrap().id;
@@ -254,16 +237,25 @@ fn reopen_pinned_tab_lands_in_pinned_region() {
     };
     b.pin_tab(s, t1).unwrap();
     b.pin_tab(s, t3).unwrap();
-    // Order: [t1, t3, t2] pinned = 2.
+    // Order: [t1, t3, t2] pinned = 2. Closing a pinned tab closes it in
+    // place (tests_closed_pins), so a pinned recently-closed record comes
+    // from a deleted space or the store: forge one as the store restores it.
     assert_eq!(ids(&b, s), vec![t1, t3, t2]);
-    b.close_tab(s, t3).unwrap();
-    // Order: [t1, t2] pinned = 1.
+    let mut record = crate::Tab::new(TabId(900), s, "Kept", "https://kept.example");
+    record.pinned = true;
+    b.restore_recently_closed(s, record, 1).unwrap();
     let reopened = b.reopen_tab(s).unwrap();
-    assert_eq!(reopened, t3);
+    assert_eq!(reopened, TabId(900));
     // Former index 1 is inside the pinned region.
-    assert_eq!(ids(&b, s), vec![t1, t3, t2]);
-    assert_eq!(b.space(s).unwrap().pinned_count, 2);
-    assert!(b.tab(t3).unwrap().pinned);
+    assert_eq!(ids(&b, s), vec![t1, TabId(900), t3, t2]);
+    assert_eq!(b.space(s).unwrap().pinned_count, 3);
+    let tab = b.tab(TabId(900)).unwrap();
+    assert!(tab.pinned);
+    assert_eq!(
+        tab.pinned_page.as_ref().map(|page| page.url.as_str()),
+        Some("https://kept.example"),
+        "a reopened pinned record takes its URL as its pinned page"
+    );
     b.check_invariants().unwrap();
 }
 

@@ -182,9 +182,11 @@ pub fn favorites_node(
             id: bbr_ui::components::favorite_tile_id(tile.index).to_string(),
             role: SemanticRole::Tile,
             name: Some(favorite_tile_name(tile, browser)),
-            value: None,
+            // §10.12: a closed tile says so (the grey icon is not color-only
+            // evidence); §11.10: the selected tile carries the selection.
+            value: tile.closed.then(|| "closed".to_string()),
             enabled: true,
-            selected: false,
+            selected: tile.selected,
             focused: false,
             drag_target: false,
             children: vec![node(
@@ -305,6 +307,7 @@ pub fn folders_node(
                         member.member,
                         &member.title,
                         member.letter,
+                        member.closed,
                     )
                 },
             ));
@@ -336,46 +339,56 @@ pub fn folders_node(
 
 /// One nested §11.1 row node inside an expanded folder (`bbr-folder-item-\
 /// <n>-<m>` + `-title`/`-favicon`/`-close`): the member's rendered identity
-/// as the semantic row, so the nested tree mirrors the render.
-pub fn folder_item_node(folder: usize, member: usize, title: &str, letter: char) -> SemanticNode {
+/// as the semantic row, so the nested tree mirrors the render. A closed
+/// member (§10.12) carries the value `closed` and no close control.
+pub fn folder_item_node(
+    folder: usize,
+    member: usize,
+    title: &str,
+    letter: char,
+    closed: bool,
+) -> SemanticNode {
+    let mut children = vec![
+        node(
+            bbr_ui::components::folder_item_favicon_id(folder, member),
+            SemanticRole::Favicon,
+            Some(letter.to_string()),
+            None,
+            false,
+            false,
+            vec![],
+        ),
+        node(
+            bbr_ui::components::folder_item_title_id(folder, member),
+            SemanticRole::Title,
+            Some(title.to_string()),
+            None,
+            false,
+            false,
+            vec![],
+        ),
+    ];
+    if !closed {
+        children.push(node(
+            bbr_ui::components::folder_item_close_id(folder, member),
+            SemanticRole::Button,
+            Some("Close tab".into()),
+            None,
+            false,
+            false,
+            vec![],
+        ));
+    }
     SemanticNode {
         id: bbr_ui::components::folder_item_id(folder, member).to_string(),
         role: SemanticRole::Row,
         name: Some(title.to_string()),
-        value: None,
+        value: closed.then(|| "closed".to_string()),
         enabled: true,
         selected: false,
         focused: false,
         drag_target: false,
-        children: vec![
-            node(
-                bbr_ui::components::folder_item_favicon_id(folder, member),
-                SemanticRole::Favicon,
-                Some(letter.to_string()),
-                None,
-                false,
-                false,
-                vec![],
-            ),
-            node(
-                bbr_ui::components::folder_item_title_id(folder, member),
-                SemanticRole::Title,
-                Some(title.to_string()),
-                None,
-                false,
-                false,
-                vec![],
-            ),
-            node(
-                bbr_ui::components::folder_item_close_id(folder, member),
-                SemanticRole::Button,
-                Some("Close tab".into()),
-                None,
-                false,
-                false,
-                vec![],
-            ),
-        ],
+        children,
     }
 }
 

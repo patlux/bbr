@@ -202,16 +202,29 @@ fn dense_edge_states_stay_usable() {
             "the dragged row landed one slot down (insert before slot 12)"
         );
 
-        // Empty space: closing every tab lands on the DESIGN §11.8 pane.
-        while !client.snapshot().expect("closing snapshot").tabs.is_empty() {
+        // Closing every open tab lands on the DESIGN §11.8 pane: regular
+        // tabs go, the 10 pinned tabs close in place (§10.12) and stay as
+        // closed rows without a session.
+        loop {
+            let open = client
+                .snapshot()
+                .expect("closing snapshot")
+                .tabs
+                .iter()
+                .position(|tab| tab.lifecycle != "closed");
+            let Some(index) = open else { break };
             client
-                .send_ok(&Request::CloseTab { index: 0 })
+                .send_ok(&Request::CloseTab { index })
                 .expect("close tab");
         }
         flush(&mut client);
         let empty = client.snapshot().expect("empty snapshot");
         assert_ids(&empty, &["bbr-empty-new-tab"]);
         assert_eq!(empty.engine_sessions, 0, "all sessions destroyed");
+        assert_eq!(empty.active_tab_index, None, "no closed row is selected");
+        assert_eq!(empty.tabs.len(), 10, "the pinned rows are kept");
+        assert!(empty.tabs.iter().all(|tab| tab.lifecycle == "closed"));
+        assert_eq!(empty.lifecycle_counts.closed, 10);
         assert_eq!(empty.dense.item_count, 0, "dense region reports empty");
 
         client.send_ok(&Request::Quit).expect("quit");

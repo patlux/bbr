@@ -6,9 +6,11 @@
 //! targets the grid through the typed during-drag state (`drag_favorites` +
 //! the region's recorded `favorites_rect`), a drop toggles the exact pressed
 //! `TabId` through the canonical Favorite command — one tile, no copy, no
-//! session recreation, the tab stays open and selected — a repeated drop
-//! toggles it back off, a pointer over the fixed chrome above the region is
-//! rejected whole, and Escape cancels a targeted drag without committing.
+//! session recreation; the tab is pinned and leaves the tab list (the tile
+//! is the tab, DESIGN §11.10) while the selection stays — a populated grid
+//! offers its drop cell, Remove from Favorites returns a loose pinned row, a
+//! pointer over the fixed chrome above the region is rejected whole, and
+//! Escape cancels a targeted drag without committing.
 //! Every drag runs through the production request/handler path
 //! (`BeginTabDrag`/`MoveTabDrag`/`EndTabDrag`/`CancelTabDrag`) — never a
 //! direct controller mutation.
@@ -134,6 +136,12 @@ fn drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session() {
         assert_eq!(two.engine_sessions, 2);
         assert!(two.favorites.is_empty(), "no favorites before the drag");
         assert!(!two.visible_ids.iter().any(|id| id == "bbr-favorites"));
+        let pressed_id = two
+            .all_tabs
+            .iter()
+            .find(|tab| tab.space == default_space && tab.index == 1)
+            .expect("pressed row in the global model")
+            .id;
 
         // Begin a drag on row 1 (the non-active second tab): the empty grid
         // renders as the compact drop band and the production band anchor
@@ -183,7 +191,8 @@ fn drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session() {
         assert!(section.drag_target, "the section reports the drag target");
 
         // Drop: one tile for the exact pressed TabId, no copy, no session
-        // recreation, the tab stays open and selected.
+        // recreation; the tab is pinned and leaves the list, the selection
+        // stays on the other tab.
         let sessions_before = targeted.engine_sessions;
         let tabs_before = targeted.all_tabs.len();
         client.send_ok(&dsl::end_tab_drag()).expect("end drag");
@@ -194,12 +203,7 @@ fn drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session() {
         assert_eq!(dropped.favorites.len(), 1, "one tile after the drop");
         let tile = &dropped.favorites[0];
         assert_eq!(tile.index, 0, "insertion order index");
-        let pressed = dropped
-            .all_tabs
-            .iter()
-            .find(|tab| tab.space == default_space && tab.index == 1)
-            .expect("pressed row in the global model");
-        assert_eq!(tile.tab, pressed.id, "the exact pressed TabId");
+        assert_eq!(tile.tab, pressed_id, "the exact pressed TabId");
         assert_eq!(tile.space, default_space.0, "canonical owning space");
         assert_eq!(tile.profile, default_profile.0, "profile from the space");
         assert!(!tile.letter.is_empty(), "§7.2 monogram fallback letter");
@@ -212,21 +216,28 @@ fn drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session() {
             dropped.engine_sessions, sessions_before,
             "a drop never recreates a session"
         );
-        assert_eq!(dropped.active_tab_index, Some(0), "selection untouched");
+        // The favorite is pinned to index 0, so the selected tab moves to
+        // index 1 — the same tab and session.
+        assert_eq!(dropped.active_tab_index, Some(1), "selection untouched");
         assert_eq!(
             dropped.active_web_view,
             Some(first_view),
             "the selected session is untouched"
         );
         assert_eq!(dropped.tabs.len(), 2, "both tabs still open");
-        assert_eq!(dropped.tabs[1].web_view, Some(second_view));
+        assert_eq!(dropped.pinned_count, 1, "a Favorite is pinned");
+        assert_eq!(dropped.tabs[0].web_view, Some(second_view));
         assert_ids(
             &dropped,
             &["bbr-section-favorites", "bbr-favorites", "bbr-fav-0"],
         );
+        assert!(
+            !dropped.visible_ids.iter().any(|id| id == "bbr-tab-row-0"),
+            "the favorite leaves the tab list"
+        );
 
-        // Repeated drop on the same tab: the canonical Favorite command
-        // toggles the tile back off; the tab stays open with its session.
+        // A second drag (the other tab's row) over the populated grid: the
+        // drop cell is offered; Escape cancels it.
         let during_again = begin_drag_and_band(&mut client, 1);
         let band_again = during_again.favorites_rect.expect("band rect recorded");
         // §11.10: a populated grid offers the drop cell in the next free
@@ -243,19 +254,27 @@ fn drag_tab_into_favorites_band_toggles_exact_tab_without_copy_or_session() {
         let targeted_again = client.snapshot().expect("second targeted snapshot");
         assert!(targeted_again.drag_favorites, "targeted again");
         client
-            .send_ok(&dsl::end_tab_drag())
-            .expect("end second drag");
+            .send_ok(&dsl::cancel_tab_drag())
+            .expect("cancel the second drag");
+
+        // Remove from Favorites (the canonical Favorite command) takes the
+        // tile off; the tab stays a loose pinned row with its session.
+        client
+            .send_ok(&dsl::toggle_favorite_tab(0))
+            .expect("remove from favorites");
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
-            .expect("flush after second drop");
+            .expect("flush after removing the favorite");
         let toggled_off = client.snapshot().expect("toggled-off snapshot");
-        assert!(
-            toggled_off.favorites.is_empty(),
-            "repeated drop toggles the tile off"
-        );
+        assert!(toggled_off.favorites.is_empty(), "the tile is off");
         assert_eq!(toggled_off.tabs.len(), 2, "the tab is never closed");
+        assert!(toggled_off.tabs[0].pinned, "it stays pinned");
+        assert!(toggled_off
+            .visible_ids
+            .iter()
+            .any(|id| id == "bbr-tab-row-0"));
         assert_eq!(
-            toggled_off.tabs[1].web_view,
+            toggled_off.tabs[0].web_view,
             Some(second_view),
             "the tab's live session is untouched"
         );

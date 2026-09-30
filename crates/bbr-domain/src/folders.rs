@@ -26,11 +26,15 @@
 //!   from its folder leaves it a loose pinned tab; unpinning a member ends
 //!   its membership (reconciliation drops every unpinned member, because the
 //!   pinned flag is owned by the [`Browser`]).
-//! - Favorites are global secondary presentations of concrete [`TabId`]s.
-//!   They remain visible in every space of the browser window while the tab
-//!   itself keeps exactly one owning space and derives its profile from it.
-//!   Closing the tab removes the favorite; moving the tab updates the
-//!   favorite's effective space/profile without creating another owner.
+//! - Favorites are global presentations of concrete [`TabId`]s: the tile
+//!   *is* the tab, so a favorite leaves the tab list (DESIGN.md §11.10).
+//!   The tab keeps exactly one owning space and derives its profile from
+//!   it; moving the tab updates the favorite's effective space/profile.
+//!   A favorite is a kept place like a pinned row: `favorite => pinned`
+//!   (favoriting pins a regular tab in the same transition, so closing it
+//!   closes it in place and the tile greys out) and `favorite => no
+//!   folder` (favoriting leaves the folder, grouping ends the favorite).
+//!   Unpinning a favorite through any path ends it at the next reconcile.
 //!
 //! # Invariants enforced by [`FolderStore`]
 //!
@@ -42,6 +46,7 @@
 //! 6. Every folder member tab is pinned.
 //! 7. Every favorite references an existing tab and each tab appears at most
 //!    once in the global favorites grid.
+//! 8. Every favorite tab is pinned and belongs to no folder.
 //!
 //! Mutations reject invalid input **whole** (before any mutation); the
 //! invariant checker is public and unit-tested so tampering is detectable.
@@ -119,6 +124,8 @@ pub struct FavoriteToggle {
     /// `true` when the tab was added to the grid, `false` when removed.
     pub added: bool,
     pub tab: TabId,
+    /// Adding pinned a regular tab in the same transition.
+    pub newly_pinned: bool,
 }
 
 /// Errors returned by folder/favorites operations.
@@ -356,6 +363,9 @@ impl FolderStore {
         if target.tabs.contains(&tab) {
             return Ok(()); // already a member: no-op, like pinning a pinned tab
         }
+        // A grouped tab lists inside its folder, so it stops being a
+        // favorite (invariant 8).
+        self.favorites.retain(|favorite| favorite.tab != tab);
         // Leave any other folder (deterministic: folder creation order).
         for f in &mut self.folders {
             if f.id != folder {
@@ -390,36 +400,49 @@ impl FolderStore {
 
     // ---- Favorites --------------------------------------------------------
 
-    /// Toggle a concrete tab in the global favorites grid. The browser is
-    /// consulted only to reject unknown tabs; the favorite stores the stable
-    /// tab identity and never copies space/profile ownership.
+    /// Toggle a concrete tab in the global favorites grid: the one domain
+    /// transition that adds or removes a favorite. Adding pins a regular tab
+    /// in the live browser (it moves to the end of the pinned region and
+    /// takes its current page as its pinned page) and leaves its folder;
+    /// removing leaves a loose pinned tab. Unknown tabs are rejected whole.
+    /// The favorite stores the stable tab identity and never copies
+    /// space/profile ownership.
     pub fn favorite_toggle(
         &mut self,
-        browser: &Browser,
+        browser: &mut Browser,
         tab: TabId,
     ) -> Result<FavoriteToggle, FolderError> {
-        if browser.tab(tab).is_none() {
-            return Err(FolderError::UnknownTab(tab));
-        }
-        Ok(self.favorite_toggle_tab(tab))
-    }
-
-    /// Validated-facts primitive for orchestration layers that already proved
-    /// the tab exists through a public read model.
-    pub fn favorite_toggle_tab(&mut self, tab: TabId) -> FavoriteToggle {
+        let facts = TabFacts::of(browser, tab).ok_or(FolderError::UnknownTab(tab))?;
         if let Some(pos) = self.favorites.iter().position(|f| f.tab == tab) {
             self.favorites.remove(pos);
-            return FavoriteToggle { added: false, tab };
+            return Ok(FavoriteToggle {
+                added: false,
+                tab,
+                newly_pinned: false,
+            });
+        }
+        let newly_pinned = !facts.pinned;
+        if newly_pinned {
+            browser
+                .pin_tab(facts.space, tab)
+                .expect("a validated tab belongs to its own space");
+        }
+        for folder in &mut self.folders {
+            folder.tabs.retain(|member| *member != tab);
         }
         self.favorites.push(Favorite { tab });
-        FavoriteToggle { added: true, tab }
+        Ok(FavoriteToggle {
+            added: true,
+            tab,
+            newly_pinned,
+        })
     }
 
     // ---- Reconciliation ---------------------------------------------------
 
     /// Deterministically drop folder memberships for tabs that no longer
     /// exist, changed space, or were unpinned, and favorites whose concrete
-    /// tab was closed. The browser owns these mutations and cannot notify
+    /// tab is gone or was unpinned (a closed pinned tab stays a favorite). The browser owns these mutations and cannot notify
     /// this store. Returns the total number of stale memberships/favorites
     /// removed.
     pub fn reconcile(&mut self, browser: &Browser) -> usize {
@@ -444,7 +467,7 @@ impl FolderStore {
         }
         let before = self.favorites.len();
         self.favorites
-            .retain(|favorite| tab_facts(favorite.tab).is_some());
+            .retain(|favorite| tab_facts(favorite.tab).is_some_and(|facts| facts.pinned));
         removed + before - self.favorites.len()
     }
 
@@ -537,9 +560,24 @@ impl FolderStore {
 
         let mut favorite_tabs: HashSet<TabId> = HashSet::new();
         for favorite in &self.favorites {
-            if tab_facts(favorite.tab).is_none() {
+            match tab_facts(favorite.tab) {
+                None => {
+                    return Err(fail(format!(
+                        "favorite references missing tab {:?}",
+                        favorite.tab
+                    )))
+                }
+                Some(facts) if !facts.pinned => {
+                    return Err(fail(format!(
+                        "favorite tab {:?} is not pinned",
+                        favorite.tab
+                    )))
+                }
+                Some(_) => {}
+            }
+            if members.contains(&favorite.tab) {
                 return Err(fail(format!(
-                    "favorite references missing tab {:?}",
+                    "favorite tab {:?} is also a folder member",
                     favorite.tab
                 )));
             }

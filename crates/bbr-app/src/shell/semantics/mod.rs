@@ -413,13 +413,18 @@ fn tab_row_node(row: &RowVisuals, list_focused: bool) -> SemanticNode {
             false,
             vec![],
         ),
-        close,
     ];
+    // §10.12: a closed pinned row is already closed — it renders no close
+    // control and says `closed` (the grey is not color-only evidence).
+    let mut children = children;
+    if !row.closed {
+        children.push(close);
+    }
     SemanticNode {
         id: format!("bbr-tab-row-{}", row.index),
         role: SemanticRole::Row,
         name: Some(row.title.to_string()),
-        value: None,
+        value: row.closed.then(|| "closed".to_string()),
         enabled: true,
         selected,
         focused: list_focused && selected,

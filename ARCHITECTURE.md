@@ -920,9 +920,20 @@ survives; profile-crossing is a domain-level no-op — the engine layer recreate
 the web view in the destination store), and `transition_tab_lifecycle` for the
 explicit `Active → Warm → Suspended → Discarded` resource policy. Selecting a
 tab or showing it in either split pane reactivates it; hidden active tabs become
-warm. A public `check_invariants()` verifies profile/space/tab cross-references,
-pinned ordering, active-tab and lifecycle visibility agreement, split
-membership and distinctness, recently-closed exclusion, and unique ids.
+warm. Pinned tabs are kept places (DESIGN §10.12): `pin_tab` captures the
+tab's `PinnedPage` (URL and title), and `close_tab` on a pinned tab closes it
+in place as `TabLifecycle::Closed` — same index, no session, URL/title reset to
+the pinned page, no recently-closed record — which only a selection leaves;
+neighbor selection skips closed tabs and the session budget never counts them;
+`unpin_tab` forgets the pinned page and turns a closed tab into a suspended
+regular one. A public `check_invariants()` verifies profile/space/tab
+cross-references, pinned ordering, active-tab and lifecycle visibility
+agreement, `closed => pinned`, `pinned page <=> pinned`, split membership and
+distinctness, recently-closed exclusion, and unique ids. The companion
+`FolderStore` keeps folders and the Favorites grid beside the `Browser` with
+`folder member => pinned`, `favorite => pinned` and `favorite => no folder`:
+favoriting pins a regular tab and ungroups a member in one transition, so the
+presentation lists a Favorite as its tile only.
 
 `DomainError` is a typed error enum (`UnknownProfile/Space/Tab`,
 `TabNotInSpace`, `IndexOutOfBounds`, `ReorderAcrossPinnedBoundary`,
@@ -995,7 +1006,8 @@ Ownership shape:
 Session policy (the crate's core invariant):
 
 - Every `Active`/`Warm` tab owns exactly one live session in its profile;
-  `Suspended`/`Discarded` tabs own none and recreate one on activation.
+  `Suspended`/`Discarded`/`Closed` tabs own none and recreate one on
+  activation (a closed pinned tab at its pinned URL).
 - Closing, suspending, or crashing a tab destroys its session; moving across
   profiles destroys and recreates it in the destination profile's store, while
   same-profile moves keep it.

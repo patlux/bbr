@@ -482,12 +482,11 @@ pub fn build_rows(
         availability.move_to_end,
         TabMenuAction::MoveToEnd,
     ));
-    // Close: Close Tab (danger) and Reopen Closed Tab where legal.
-    rows.push(TabMenuRow::danger(
-        "bbr-tab-menu-close-tab",
-        "Close Tab",
-        TabMenuAction::Close,
-    ));
+    // Close: Close Tab (danger; disabled on a closed pinned row, DESIGN.md
+    // §10.12) and Reopen Closed Tab where legal.
+    let mut close = TabMenuRow::danger("bbr-tab-menu-close-tab", "Close Tab", TabMenuAction::Close);
+    close.enabled = availability.close;
+    rows.push(close);
     rows.push(TabMenuRow::action(
         "bbr-tab-menu-reopen",
         "Reopen Closed Tab",

@@ -43,6 +43,8 @@ pub fn favorite_tiles(
                 letter: monogram_letter(&favorite.url),
                 hue: monogram_hue(&favorite.url),
                 image: mirror.get(&(favorite.profile, host)).cloned(),
+                closed: favorite.closed,
+                selected: favorite.selected,
             }
         })
         .collect()
@@ -124,6 +126,7 @@ pub fn folder_member_visuals(
                 // space's active index) — the nested row then lifts.
                 selected: tab.space == browser.active_space
                     && Some(tab.index) == browser.active_index,
+                closed: tab.lifecycle == bbr_browser::TabLifecycle::Closed,
             });
         }
     }

@@ -114,6 +114,7 @@ fn folders_ids_hide_the_empty_region_and_mirror_expansion() {
             hue: 0,
             image: None,
             selected: false,
+            closed: false,
         },
         FolderMemberVisual {
             folder: bbr_domain::FolderId(1),
@@ -124,6 +125,7 @@ fn folders_ids_hide_the_empty_region_and_mirror_expansion() {
             hue: 1,
             image: None,
             selected: false,
+            closed: false,
         },
     ];
     let ids = folders_ids(&rows, &members);
@@ -160,6 +162,7 @@ fn member_visuals_accept_the_shared_resolved_image_record() {
         hue: 0,
         image: Some(image.clone()),
         selected: false,
+        closed: false,
     };
     assert!(member
         .image
@@ -179,6 +182,7 @@ fn member_visuals_carry_folder_order_identity() {
             hue: 0,
             image: None,
             selected: false,
+            closed: false,
         },
         FolderMemberVisual {
             folder: bbr_domain::FolderId(1),
@@ -189,6 +193,7 @@ fn member_visuals_carry_folder_order_identity() {
             hue: 1,
             image: None,
             selected: false,
+            closed: false,
         },
     ];
     assert_eq!(members[0].folder, bbr_domain::FolderId(1));

@@ -28,10 +28,13 @@
 //!   it stays pinned as a loose pinned tab. Unpinning a member through any
 //!   controller path ends its membership at the next reconcile.
 //! - [`OrganizationController::favorite_toggle`] toggles the active space's
-//!   concrete tab at `index` in the window-global favorites grid. A favorite
-//!   is another presentation of the same `TabId`; its owning space/profile
-//!   are derived from the controller read model. Closing the tab drops the
-//!   tile, while moving it keeps the favorite attached to the moved tab.
+//!   concrete tab at `index` in the window-global favorites grid. The tile
+//!   *is* the tab (DESIGN.md §11.10): a favorite is pinned (a regular tab is
+//!   pinned by the same transition) and leaves its folder, so it lists in
+//!   the grid only; closing it closes it in place and the tile greys out;
+//!   Remove from Favorites leaves a loose pinned tab. Its owning
+//!   space/profile are derived from the controller read model, and moving
+//!   the tab keeps the favorite attached to the moved tab.
 //! - [`OrganizationController::activate_favorite`] activates the favorite's
 //!   owning space (and therefore its profile/container) in the same browser
 //!   window, then selects that exact tab without copying or moving it.
@@ -106,12 +109,15 @@ pub enum OrganizationEvent {
         folder: bbr_domain::FolderId,
     },
     /// The favorites grid changed: `added` tells whether the concrete tab was
-    /// inserted or removed.
+    /// inserted or removed. Adding a regular tab pinned it by the same
+    /// transition: `pinned_index` is its new space-local index then, `None`
+    /// when it was already pinned (or on removal).
     FavoriteToggled {
         added: bool,
         tab: TabId,
         space: SpaceId,
         profile: ProfileId,
+        pinned_index: Option<usize>,
     },
     /// A global favorite activated its owning space/profile and exact tab.
     FavoriteActivated {
@@ -459,7 +465,7 @@ impl OrganizationController {
     /// removes it; re-adding appends it at the end.
     pub fn favorite_toggle(
         &mut self,
-        controller: &BrowserController,
+        controller: &mut BrowserController,
         index: usize,
     ) -> Result<OrganizationEvent, OrganizationError> {
         self.reconcile(controller);
@@ -469,20 +475,7 @@ impl OrganizationController {
             index,
             len: tabs.len(),
         })?;
-        let global = snapshot
-            .all_tabs
-            .iter()
-            .find(|candidate| candidate.id == tab)
-            .expect("active-space tab exists in global snapshot");
-        let outcome = self.store.favorite_toggle_tab(tab);
-        self.check_invariants(controller)
-            .expect("organization invariants hold after reconcile");
-        Ok(OrganizationEvent::FavoriteToggled {
-            added: outcome.added,
-            tab,
-            space: global.space,
-            profile: global.profile,
-        })
+        self.toggle_favorite(controller, tab)
     }
 
     /// Whether `tab` is currently a favorite (the favorites-grid membership
@@ -495,29 +488,46 @@ impl OrganizationController {
     /// Toggle a favorite by its exact persistent `TabId` from any current
     /// space (the tab/favorite context-menu authority; task packet
     /// `tab-favorite-context-menus`). The owning space/profile are derived
-    /// from the controller read model — the active space is never switched
-    /// and the tab's space membership, order, selection, and live session
-    /// are untouched. Unknown tabs reject whole.
+    /// from the controller read model — the active space is never switched,
+    /// and the tab's space membership, selection and live session are
+    /// untouched; only a regular tab's region changes (it is pinned).
+    /// Unknown tabs reject whole.
     pub fn favorite_toggle_id(
         &mut self,
-        controller: &BrowserController,
+        controller: &mut BrowserController,
         tab: TabId,
     ) -> Result<OrganizationEvent, OrganizationError> {
         self.reconcile(controller);
+        self.toggle_favorite(controller, tab)
+    }
+
+    /// The one favorite transition: the domain store validates the tab,
+    /// pins a regular tab in the browser and leaves its folder when adding;
+    /// the controller then re-syncs its views.
+    fn toggle_favorite(
+        &mut self,
+        controller: &mut BrowserController,
+        tab: TabId,
+    ) -> Result<OrganizationEvent, OrganizationError> {
+        let outcome = self.store.favorite_toggle(&mut controller.browser, tab)?;
+        if outcome.newly_pinned {
+            controller.sync_views();
+            controller.check_invariants();
+        }
         let snapshot = controller.snapshot();
         let global = snapshot
             .all_tabs
             .iter()
             .find(|candidate| candidate.id == tab)
-            .ok_or(OrganizationError::Folder(FolderError::UnknownTab(tab)))?;
-        let outcome = self.store.favorite_toggle_tab(tab);
+            .expect("a toggled favorite keeps its tab");
         self.check_invariants(controller)
-            .expect("organization invariants hold after reconcile");
+            .expect("organization invariants hold after a favorite toggle");
         Ok(OrganizationEvent::FavoriteToggled {
             added: outcome.added,
             tab,
             space: global.space,
             profile: global.profile,
+            pinned_index: outcome.newly_pinned.then_some(global.index),
         })
     }
 
@@ -624,6 +634,9 @@ impl OrganizationController {
                     profile: tab.profile,
                     title: tab.title.clone(),
                     url: tab.url.clone(),
+                    closed: tab.lifecycle == bbr_domain::TabLifecycle::Closed,
+                    selected: tab.space == snapshot.active_space
+                        && snapshot.active_index == Some(tab.index),
                 }
             })
             .collect();

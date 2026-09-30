@@ -58,6 +58,17 @@ impl Browser {
                         tid, tab.pinned, space.pinned_count
                     )));
                 }
+                // DESIGN.md §10.12: only a pinned tab stays closed in place,
+                // and exactly the pinned tabs remember their pinned page.
+                if tab.lifecycle == TabLifecycle::Closed && !tab.pinned {
+                    return Err(fail(format!("tab {tid:?} is closed but not pinned")));
+                }
+                if tab.pinned_page.is_some() != tab.pinned {
+                    return Err(fail(format!(
+                        "tab {tid:?} pinned={} disagrees with its pinned page",
+                        tab.pinned
+                    )));
+                }
             }
             if let Some(active_tab) = space.active_tab {
                 if !space.tabs.contains(&active_tab) {
@@ -72,8 +83,9 @@ impl Browser {
                 let visible = space.visible_tabs().contains(tid) || self.elsewhere.contains(tid);
                 // A visible tab is either actively served (Active) or is a
                 // crashed/recoverable entry (Discarded); it must never be
-                // Suspended or Warm while shown. A hidden tab must never be
-                // Active. Discarded hidden tabs are valid (recoverable).
+                // Suspended, Warm or Closed while shown. A hidden tab must
+                // never be Active. Discarded hidden tabs are valid
+                // (recoverable).
                 let agreement = if visible {
                     matches!(
                         tab.lifecycle,

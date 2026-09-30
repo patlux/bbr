@@ -102,13 +102,18 @@ impl BbrApp {
                     // §11.11: traversal follows the rendered rows — loose
                     // pinned, expanded folders' members, then the regular
                     // region (a member of a collapsed folder keeps the
-                    // index-order step).
+                    // index-order step). Favorites render as tiles only
+                    // (§11.10) and closed rows are skipped: stepping onto
+                    // one would reopen it (§10.12).
                     let organization = self
                         .organization
                         .bookkeep()
                         .organization_snapshot(&self.controller.read());
-                    let grouped =
-                        crate::shell::organized::grouped_indices(&organization.folders, &snapshot);
+                    let grouped = crate::shell::organized::hidden_pinned(
+                        &organization.folders,
+                        &organization.favorites,
+                        &snapshot,
+                    );
                     let presentation = &self.u2.folder_presentation;
                     let expanded = crate::shell::organized::expanded_member_indices(
                         &organization.folders,
@@ -116,17 +121,35 @@ impl BbrApp {
                         |id| presentation.is_expanded(id),
                     );
                     let pinned = crate::shell::pinned_count(&snapshot.tabs);
-                    let order =
+                    let mut order =
                         crate::shell::organized::traversal_order(len, pinned, &grouped, &expanded);
-                    let stepped = crate::shell::organized::step(&order, active, delta, !dense);
-                    let next = stepped.unwrap_or(if dense {
-                        // Dense: clamp at the edges (no wrap across the
-                        // collection).
-                        (active as isize + delta).clamp(0, len as isize - 1) as usize
-                    } else {
-                        (active as isize + delta).rem_euclid(len as isize) as usize
+                    order.retain(|index| {
+                        snapshot
+                            .tabs
+                            .get(*index)
+                            .is_some_and(|tab| tab.lifecycle != bbr_browser::TabLifecycle::Closed)
                     });
-                    if self.select_tab(next, cx).is_some() {
+                    let stepped = crate::shell::organized::step(&order, active, delta, !dense);
+                    // An active row outside the rendered order (a collapsed
+                    // member or a Favorite) keeps the index-order step,
+                    // still past closed rows.
+                    let next = stepped.or_else(|| {
+                        let mut index = active;
+                        for _ in 0..len {
+                            index = if dense {
+                                // Dense: clamp at the edges (no wrap across
+                                // the collection).
+                                (index as isize + delta).clamp(0, len as isize - 1) as usize
+                            } else {
+                                (index as isize + delta).rem_euclid(len as isize) as usize
+                            };
+                            if snapshot.tabs[index].lifecycle != bbr_browser::TabLifecycle::Closed {
+                                return Some(index);
+                            }
+                        }
+                        None
+                    });
+                    if next.is_some_and(|next| self.select_tab(next, cx).is_some()) {
                         self.ensure_active_visible();
                         cx.notify();
                     }

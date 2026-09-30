@@ -258,7 +258,8 @@ pub struct TabSnapshot {
     pub active: bool,
     pub web_view: Option<WebViewId>,
     /// Resource policy state of the tab's disposable session (the dense-list
-    /// lifecycle contract): "active" | "warm" | "suspended" | "discarded".
+    /// lifecycle contract): "active" | "warm" | "suspended" | "discarded" |
+    /// "closed" (a pinned tab closed in place, DESIGN.md §10.12).
     pub lifecycle: String,
     /// Deterministic recency stamp (the session-budget policy's "recently
     /// used" order).
@@ -273,13 +274,16 @@ pub struct TabSnapshot {
 
 /// Lifecycle population counts of the active space (the dense-list
 /// session-budget evidence): `active + warm` is the live-session population,
-/// `suspended + discarded` own no session.
+/// `suspended + discarded + closed` own no session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LifecycleCounts {
     pub active: usize,
     pub warm: usize,
     pub suspended: usize,
     pub discarded: usize,
+    /// Pinned tabs closed in place (DESIGN.md §10.12).
+    #[serde(default)]
+    pub closed: usize,
 }
 
 /// The dense-list render contract (DESIGN.md §11.6): total row counts, the

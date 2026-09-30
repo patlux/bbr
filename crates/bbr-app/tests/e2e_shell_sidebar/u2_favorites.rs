@@ -4,9 +4,11 @@ use bbr_testkit::protocol::dsl;
 /// tile order across same-profile and cross-profile space switches; each tile
 /// carries the exact `TabId + SpaceId + ProfileId`; clicking a tile from
 /// another profile switches inside the same window and selects the exact
-/// existing tab/session (no copy, move, or recreation); closing the concrete
-/// tab removes the tile; moving the tab makes the favorite follow its stable
-/// `TabId` to the new space/profile.
+/// existing tab/session (no copy, move, or recreation); the favorite leaves
+/// the tab list (it is pinned; the tile is the tab); closing the concrete tab
+/// greys the tile in place (DESIGN §10.12) and Remove from Favorites returns
+/// the drop band; moving the tab makes the favorite follow its stable `TabId`
+/// to the new space/profile.
 #[test]
 #[ignore]
 fn favorites_grid_stays_global_and_activates_the_exact_tab_across_profiles() {
@@ -37,6 +39,13 @@ fn favorites_grid_stays_global_and_activates_the_exact_tab_across_profiles() {
         // drop commits through).
         let second_view = open_tab(&mut client, &mut since, &page_two, Some(PAGE_TWO_TITLE));
         let _third_view = open_tab(&mut client, &mut since, &page_one, Some(PAGE_ONE_TITLE));
+        let before_favorite = client.snapshot().expect("three-tab snapshot");
+        let middle = before_favorite
+            .all_tabs
+            .iter()
+            .find(|tab| tab.space == default_space && tab.index == 1)
+            .expect("middle tab in global model")
+            .clone();
         client
             .send_ok(&dsl::toggle_favorite_tab(1))
             .expect("favorite the middle tab");
@@ -48,11 +57,6 @@ fn favorites_grid_stays_global_and_activates_the_exact_tab_across_profiles() {
         let tile = &with_favorite.favorites[0];
         assert_eq!(tile.index, 0, "insertion order index");
         // The tile resolves the exact concrete tab + its canonical owner.
-        let middle = with_favorite
-            .all_tabs
-            .iter()
-            .find(|tab| tab.space == default_space && tab.index == 1)
-            .expect("middle tab in global model");
         assert_eq!(tile.tab, middle.id, "the exact concrete TabId");
         assert_eq!(tile.space, default_space.0, "canonical owning space");
         assert_eq!(
@@ -90,9 +94,15 @@ fn favorites_grid_stays_global_and_activates_the_exact_tab_across_profiles() {
             assert_eq!(resized.favorites_columns, 4, "never a fifth column");
             assert_eq!(resized.favorites_tile_size, [expected_tile(rail), 44.0]);
         }
-        // The favorited tab's identity is untouched.
+        // The favorited tab keeps its identity and session; it is pinned
+        // (index 0) and leaves the tab list — the tile is the tab.
         assert_eq!(with_favorite.tabs.len(), 3);
-        assert_eq!(with_favorite.tabs[1].web_view, Some(second_view));
+        assert_eq!(with_favorite.pinned_count, 1);
+        assert_eq!(with_favorite.tabs[0].web_view, Some(second_view));
+        assert!(!with_favorite
+            .visible_ids
+            .iter()
+            .any(|id| id == "bbr-tab-row-0"));
         assert_eq!(with_favorite.active_tab_index, Some(2));
 
         // Same-profile space switch: the grid keeps the exact same tile
@@ -175,9 +185,10 @@ fn favorites_grid_stays_global_and_activates_the_exact_tab_across_profiles() {
         );
         assert_eq!(
             activated.active_tab_index,
-            Some(1),
+            Some(0),
             "the exact favorited tab is selected"
         );
+        assert!(activated.favorites[0].selected, "the tile carries it");
         assert_eq!(
             activated.active_web_view,
             Some(second_view),
@@ -195,26 +206,39 @@ fn favorites_grid_stays_global_and_activates_the_exact_tab_across_profiles() {
         assert!(activated.chrome_focused);
         assert_eq!(activated.favorites.len(), 1, "the tile stays");
 
-        // Closing the concrete tab removes its tile.
+        // Closing the concrete tab (Cmd-W) closes it in place: the tile
+        // stays, greyed (DESIGN §10.12).
         client
-            .send_ok(&dsl::click_tab_close(1))
+            .send_ok(&bbr_testkit::Request::DispatchKeystroke {
+                keystroke: "cmd-w".into(),
+            })
             .expect("close the favorited tab");
         client
             .send_ok(&bbr_testkit::Request::FlushFrame)
             .expect("flush after closing favorite");
-        let closed = client.snapshot().expect("favorite removed snapshot");
-        assert!(
-            closed.favorites.is_empty(),
-            "closing the concrete tab removes the tile"
-        );
-        // Back to zero favorites: the grid goes, the drop band returns.
-        assert!(!closed.visible_ids.iter().any(|id| id == "bbr-favorites"));
+        let closed = client.snapshot().expect("favorite closed snapshot");
+        assert_eq!(closed.favorites.len(), 1, "the tile stays");
+        assert!(closed.favorites[0].closed, "greyed in place");
+        assert_eq!(closed.tabs[0].lifecycle, "closed");
+        assert_ids(&closed, &["bbr-favorites", "bbr-fav-0"]);
+        // Remove from Favorites: back to zero favorites, the grid goes and
+        // the drop band returns; the tab stays a (closed) pinned row.
+        client
+            .send_ok(&dsl::toggle_favorite_tab(0))
+            .expect("remove from favorites");
+        client
+            .send_ok(&bbr_testkit::Request::FlushFrame)
+            .expect("flush after removing the favorite");
+        let removed = client.snapshot().expect("favorite removed snapshot");
+        assert!(removed.favorites.is_empty());
+        assert!(!removed.visible_ids.iter().any(|id| id == "bbr-favorites"));
         assert_ids(
-            &closed,
+            &removed,
             &[
                 "bbr-section-favorites",
                 "bbr-favorites-empty",
                 "bbr-favorites-empty-label",
+                "bbr-tab-row-0",
             ],
         );
 

@@ -52,6 +52,8 @@ pub mod tiling;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
+mod tests_closed_pins;
+#[cfg(test)]
 mod tests_dense;
 #[cfg(test)]
 mod tests_folders;
@@ -75,7 +77,7 @@ pub use folders::{
     TabFacts,
 };
 pub use lifecycle::{LifecycleError, TabLifecycle};
-pub use model::{ClosedTab, Profile, ProfileHue, Space, Tab};
+pub use model::{ClosedTab, PinnedPage, Profile, ProfileHue, Space, Tab};
 pub use profile_lifecycle::DeletedProfile;
 pub use saved_pages::{
     canonical_url, deterministic_order, validate_collection, BookmarkId, CanonicalUrl, Collection,

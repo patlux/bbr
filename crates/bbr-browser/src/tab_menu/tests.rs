@@ -160,6 +160,14 @@ fn availability_covers_favorite_and_lifecycle_states() {
         !suspended.copy_link,
         "a suspended tab owns no live session to copy a link from"
     );
+    assert!(suspended.close, "a suspended tab still closes");
+    // DESIGN.md §10.12: a closed pinned row is already closed.
+    c.pin_tab(index).expect("pin");
+    c.close_tab(index).expect("close in place");
+    let closed = availability(&c, index, false);
+    assert!(!closed.close, "a closed pinned tab cannot close again");
+    assert!(!closed.reload && !closed.copy_link && !closed.suspend);
+    assert!(closed.pinned, "it can still be unpinned");
 }
 
 #[test]

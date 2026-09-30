@@ -240,7 +240,7 @@ impl BrowserController {
         let needs_reactivate = match self.browser.tab(tab) {
             Some(state) => matches!(
                 state.lifecycle,
-                TabLifecycle::Suspended | TabLifecycle::Discarded
+                TabLifecycle::Suspended | TabLifecycle::Discarded | TabLifecycle::Closed
             ),
             None => {
                 return Err(ControllerError::Domain(

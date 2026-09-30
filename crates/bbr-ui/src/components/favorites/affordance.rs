@@ -201,6 +201,8 @@ mod tests {
                 letter: 'T',
                 hue: index % 6,
                 image: None,
+                closed: false,
+                selected: false,
             })
             .collect()
     }

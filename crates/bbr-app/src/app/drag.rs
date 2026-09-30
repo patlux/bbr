@@ -207,13 +207,18 @@ impl BbrApp {
         } else {
             None
         };
-        // §11.11: the pinned region's rendered rows exclude grouped tabs.
+        // §11.10/§11.11: the pinned region's rendered rows exclude grouped
+        // tabs and Favorites.
         let organization = self
             .organization
             .bookkeep()
             .organization_snapshot(&self.controller.read());
-        let grouped = crate::shell::organized::grouped_indices(&organization.folders, &browser);
-        let loose = crate::shell::organized::loose_pinned(pinned, &grouped);
+        let hidden = crate::shell::organized::hidden_pinned(
+            &organization.folders,
+            &organization.favorites,
+            &browser,
+        );
+        let loose = crate::shell::organized::loose_pinned(pinned, &hidden);
         // §11.11: the folder rows' recorded rects (blueprint D02 2-D
         // targets), and the rail's x-span — the page beside it is no target.
         let folders: Vec<_> = self

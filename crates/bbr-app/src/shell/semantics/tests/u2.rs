@@ -91,6 +91,8 @@ fn favorites_node_mirrors_the_grid_and_hides_when_empty() {
             profile: bbr_web::ProfileId(1),
             title: "Example".into(),
             url: "https://example.com".into(),
+            closed: false,
+            selected: false,
         }],
         &crate::app::favicon_presentation::FaviconImageMirror::default(),
     );
@@ -154,6 +156,8 @@ fn favorite_tile_name_includes_the_owner_context_when_it_differs() {
             profile: bbr_web::ProfileId(2),
             title: "Workmail".into(),
             url: "https://mail.example".into(),
+            closed: false,
+            selected: false,
         }],
         &crate::app::favicon_presentation::FaviconImageMirror::default(),
     );
@@ -256,8 +260,19 @@ fn folders_node_mirrors_expansion_values_and_nested_items() {
 }
 
 #[test]
+fn a_closed_folder_member_says_closed_and_offers_no_close() {
+    // DESIGN.md §10.12: the member is already closed.
+    let item = super::super::u2::folder_item_node(0, 1, "Example", 'E', true);
+    assert_eq!(item.value.as_deref(), Some("closed"));
+    assert!(!item
+        .children
+        .iter()
+        .any(|node| node.id == "bbr-folder-item-0-1-close"));
+}
+
+#[test]
 fn folder_item_node_exposes_the_nested_row_anatomy() {
-    let item = super::super::u2::folder_item_node(0, 1, "Example", 'E');
+    let item = super::super::u2::folder_item_node(0, 1, "Example", 'E', false);
     assert_eq!(item.id, "bbr-folder-item-0-1");
     assert_eq!(item.role, SemanticRole::Row);
     assert_eq!(item.name.as_deref(), Some("Example"));
@@ -310,6 +325,8 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
             profile: bbr_web::ProfileId(1),
             title: "Example".into(),
             url: "https://example.com".into(),
+            closed: false,
+            selected: false,
         }],
         &crate::app::favicon_presentation::FaviconImageMirror::default(),
     );
@@ -335,6 +352,7 @@ fn sidebar_tree_composes_the_u2_footer_favorites_folders_and_plus_menu() {
         hue: 0,
         image: None,
         selected: false,
+        closed: false,
     }];
     input.folder_members = &folder_members;
     input.plus_menu = bbr_ui::components::menu::PlusMenuState {

@@ -548,14 +548,9 @@ impl BbrApp {
                 let toggled = self
                     .organization
                     .get()
-                    .favorite_toggle_id(&self.controller.read(), tab);
+                    .favorite_toggle_id(&mut self.controller.get(), tab);
                 match toggled {
-                    Ok(bbr_browser::OrganizationEvent::FavoriteToggled {
-                        added: true,
-                        tab,
-                        ..
-                    }) => self.start_favorite_pop(tab, cx),
-                    Ok(_) => {}
+                    Ok(event) => self.apply_favorite_toggle(&event, cx),
                     Err(error) => log::error!("tab menu favorite toggle failed: {error}"),
                 }
             }

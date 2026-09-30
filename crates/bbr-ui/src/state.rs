@@ -6,6 +6,11 @@
 
 use bbr_domain::{ProfileHue, SpaceId, SpaceTheme};
 
+/// DESIGN.md §10.12 `closed`: a closed pinned row, folder member or
+/// Favorite tile draws its favicon/monogram at this opacity (its title
+/// takes `ink.faint`), so the kept place reads as greyed out.
+pub const CLOSED_ICON_OPACITY: f32 = 0.4;
+
 /// §10 row states the shell renders and E2E asserts. The full §15
 /// vocabulary; hover/active/focused/attention are derived from render
 /// state the polish passes introduce, so they legitimately stay

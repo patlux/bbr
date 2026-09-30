@@ -163,6 +163,8 @@ pub fn build_sidebar_fixture_with_theme(
                     letter: (b'A' + i as u8) as char,
                     hue: i % 6,
                     image: None,
+                    closed: false,
+                    selected: false,
                 })
                 .collect(),
             targeted: false,
@@ -207,6 +209,7 @@ pub fn build_sidebar_fixture_with_theme(
                     hue: m % 6,
                     image: None,
                     selected: false,
+                    closed: false,
                 })
                 .collect(),
             focused: case.folders_focused,
@@ -371,6 +374,7 @@ fn row_visual(case: &SidebarCase, index: usize) -> RowVisuals {
             })
         },
         pinned: index < case.pinned_count,
+        closed: false,
         show_close: true,
         reveal_close: case.hovered_row == Some(index)
             || case.pressed_row == Some(index)

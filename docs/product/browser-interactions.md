@@ -101,7 +101,7 @@ The request/disposition authority remains owned by
 
 ### Close a tab — Contract
 
-Closing an inactive tab:
+Closing an inactive regular tab:
 
 - removes only that tab;
 - preserves the currently selected tab;
@@ -137,8 +137,15 @@ After:  empty space
 
 Additional rules:
 
-- Pinned and regular tabs follow the same neighbor-selection algorithm.
-- Closing a pinned tab also removes it from the pinned region.
+- Pinned and regular tabs follow the same neighbor-selection algorithm, over
+  **open** tabs: a closed pinned tab is never selected as the neighbor
+  (selecting it would reopen it).
+- Closing a pinned tab — a loose pinned row, a folder member or a Favorite —
+  closes it **in place** (DESIGN.md §10.12): it keeps its identity and index,
+  its native session is destroyed, its URL and title reset to its pinned page
+  (the page it had when it became pinned), and no recently-closed record is
+  written. Selecting it opens the pinned page in a fresh session. Closing a
+  closed tab is a no-op; its Tab-menu Close row is disabled.
 - Closing either member of a split dissolves the split.
 - The surviving split member remains open; no unrelated tab or native session
   is orphaned.
@@ -168,7 +175,9 @@ Additional rules:
 
 ### Reopen a closed tab — Contract
 
-- Recently closed tabs are stored per space.
+- Recently closed tabs are stored per space. Pinned tabs close in place and
+  are not recently closed; `Cmd-Shift-T` therefore never restores the last
+  page of a closed pinned tab (its row reopens the pinned page).
 - Reopen uses last-in, first-out order.
 - The tab keeps its persistent identity, URL, title, and pinned state.
 - It returns as close as possible to its former index.
@@ -187,6 +196,9 @@ Additional rules:
 - Reordering cannot silently cross the pinned/regular boundary; pin or unpin is
   the explicit operation for crossing it.
 - Pinned status does not guarantee a permanently live native session.
+- Pinning captures the tab's current URL and title as its pinned page;
+  unpinning forgets it. Unpinning a closed pinned tab leaves an unloaded
+  (suspended) regular tab.
 
 ### Reorder — Contract
 
@@ -349,8 +361,14 @@ Canonical packet:
 
 - The favorites grid is global across every space and profile represented in
   the browser window; changing spaces never filters or replaces its tiles.
-- A favorite is an additional presentation of one concrete persistent
-  `TabId`, not a URL shortcut, copied tab, or independent web session.
+- A favorite is the presentation of one concrete persistent `TabId` — the
+  tile *is* the tab, so the tab leaves the tab list — not a URL shortcut,
+  copied tab, or independent web session.
+- `favorite => pinned` and `favorite => no folder`: favoriting pins a
+  regular tab by the same transition (it moves to the end of the pinned
+  region, reported as an ordinary pin) and takes a folder member out of its
+  folder; grouping a Favorite or unpinning it ends the favorite; Remove from
+  Favorites leaves a loose pinned tab.
 - Its owning `SpaceId` and `ProfileId` are recorded/exposed with the favorite
   and remain consistent with the tab's canonical owner. If the tab moves, the
   favorite follows the same `TabId` and resolves the new space/profile.
@@ -358,9 +376,10 @@ Canonical packet:
   therefore to that space's profile/container), then selects that exact tab.
   It does not open, copy, or move a tab and never reuses the tab's session in a
   different profile.
-- Closing the concrete tab removes its favorite tile. Toggling the tab into or
-  out of Favorites never changes its space membership, order, selection, or
-  live session.
+- Closing the concrete tab closes it in place: the tile stays, greyed, and
+  activating it reopens the pinned page. Toggling the tab into or out of
+  Favorites never changes its space membership, selection, or live session;
+  only a regular tab's region changes (it is pinned).
 
 ### Saved Pages — Planned contract
 
@@ -369,8 +388,10 @@ Canonical packet:
   member, native session, cookie/data-store container, history record, or page
   snapshot.
 - Pin, Favorite, and Saved Page have different lifetimes: a pin and Favorite
-  die with their concrete tab; a Saved Page survives closing tabs, spaces,
-  windows, and restarting the browser.
+  keep their concrete tab (closing it closes it in place) and end when the tab
+  is unpinned or its space or profile is deleted; a Favorite also ends with a
+  restart for now (Favorites are session-local). A Saved Page survives
+  closing tabs, spaces, windows, and restarting the browser.
 - Saving a tab, Favorite, or focused page captures only its current canonical
   navigable URL and title as an independent record. No `TabId`/session link is
   required afterward. Canonical-URL save is idempotent.

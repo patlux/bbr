@@ -249,6 +249,7 @@ pub fn build_tab_row_fixture(case: &TabRowCase) -> Option<RowVisuals> {
         state: case.state,
         favicon: case.favicon.clone(),
         pinned: case.pinned,
+        closed: false,
         show_close: true,
         reveal_close: case.reveal_close,
         split: None,

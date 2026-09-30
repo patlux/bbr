@@ -153,6 +153,12 @@ pub struct FavoriteTileSnapshot {
     /// bounded host-keyed store holds resolved bytes for the tile's host,
     /// then `"image"` — the same record the tab row derives from.
     pub favicon: String,
+    /// §10.12: the tile's tab is closed in place (the icon greys out).
+    #[serde(default)]
+    pub closed: bool,
+    /// §11.10: the tile's tab is the window's selected tab (accent edge).
+    #[serde(default)]
+    pub selected: bool,
 }
 
 /// One folder row on the wire (DESIGN.md §11.11): the creation-order index

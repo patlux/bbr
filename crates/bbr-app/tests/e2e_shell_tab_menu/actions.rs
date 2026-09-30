@@ -282,10 +282,15 @@ fn pin_suspend_and_favorite_target_the_source_tab() {
         );
 
         // Favorite toggle through the menu: the source becomes a favorite
-        // (the grid tile resolves the exact same TabId) and the tab/session
-        // stay untouched. The suspended source's Copy Link row is disabled:
+        // (the grid tile resolves the exact same TabId); a Favorite is
+        // pinned, so the source moves to the pinned region and leaves the
+        // tab list (DESIGN §11.10). The suspended source's Copy Link row is disabled:
         // a session-less tab cannot dispatch the pasteboard command.
         let source_row = active_space_row_of(&suspended, source_tab);
+        let selected_tab = active_space_tab_id(
+            &suspended,
+            suspended.active_tab_index.expect("a selected tab"),
+        );
         let open = open_menu(
             &mut client,
             source_row,
@@ -319,9 +324,15 @@ fn pin_suspend_and_favorite_target_the_source_tab() {
             "the favorite tile resolves the exact source TabId"
         );
         assert_eq!(
+            active_space_row_of(&favorited, source_tab),
+            0,
+            "favoriting pinned the source to the front"
+        );
+        assert_eq!(favorited.pinned_count, 1);
+        assert_eq!(
             favorited.active_tab_index,
-            Some(1),
-            "the neighbor stays selected (index shifted with the unpin)"
+            Some(active_space_row_of(&favorited, selected_tab)),
+            "the selected tab stays selected (its index shifted with the pin)"
         );
     }));
 

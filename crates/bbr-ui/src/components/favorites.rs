@@ -26,6 +26,7 @@ use gpui::{
 use std::sync::Arc;
 
 use crate::palette::FaviconSlate;
+use crate::state::CLOSED_ICON_OPACITY;
 use crate::theme::{Radius, Spacing, Theme, ThemeMode};
 
 /// The §15 id of the favorites grid container.
@@ -101,6 +102,13 @@ pub struct FavoriteTileSpec {
     /// monogram — the same record the tab row derives from, one
     /// acquisition, every presentation.
     pub image: Option<Arc<Image>>,
+    /// §10.12: the tab is closed in place — the icon greys out and
+    /// activating the tile reopens its pinned page.
+    pub closed: bool,
+    /// §11.10 `selected`: the tile's tab is the window's selected tab (a
+    /// Favorite leaves the tab list, so the tile carries the selection):
+    /// a 1.5 pt `accent` edge on the tile.
+    pub selected: bool,
 }
 
 /// The favorites grid anatomy: a `flex_wrap` grid of pre-built tiles at the
@@ -144,6 +152,11 @@ pub fn favorite_tile(
     let badge_weight = theme.type_.badge.weight;
     let glass = FaviconSlate::letter(theme.mode);
     let letter = tile.letter;
+    let icon_opacity = if tile.closed {
+        CLOSED_ICON_OPACITY
+    } else {
+        1.0
+    };
     let monogram = div()
         .id(favorite_tile_icon_id(tile.index))
         .debug_selector(move || favorite_tile_icon_id(tile.index).to_string())
@@ -156,6 +169,7 @@ pub fn favorite_tile(
         .text_size(badge_size)
         .font_weight(badge_weight)
         .text_color(glass)
+        .opacity(icon_opacity)
         .child(SharedString::from(tile.letter.to_string()));
     // The tile's inner icon slot: the §7.2 monogram, or the resolved
     // favicon image when the owning profile's store holds one (the same
@@ -167,6 +181,7 @@ pub fn favorite_tile(
             .size(size)
             .rounded(radius)
             .object_fit(ObjectFit::Contain)
+            .opacity(icon_opacity)
             .with_fallback(move || {
                 div()
                     .size(size)
@@ -178,6 +193,7 @@ pub fn favorite_tile(
                     .text_size(badge_size)
                     .font_weight(badge_weight)
                     .text_color(glass)
+                    .opacity(icon_opacity)
                     .child(SharedString::from(letter.to_string()))
                     .into_any()
             })
@@ -187,6 +203,8 @@ pub fn favorite_tile(
     div()
         .id(favorite_tile_id(tile.index))
         .debug_selector(move || favorite_tile_id(tile.index).to_string())
+        // Real-input E2E aims at the rect the tile drew at (testkit only).
+        .children(crate::rect_probe::rect_probe(favorite_tile_id(tile.index)))
         .w(width)
         .h(height)
         .relative()
@@ -203,6 +221,21 @@ pub fn favorite_tile(
             pop,
         ))
         .child(icon_slot)
+        // §11.10 selected: the tile carries the selection with a 1.5 pt
+        // `accent` edge drawn over the veil (the box never moves).
+        .when(tile.selected, |el| {
+            el.child(
+                div()
+                    .absolute()
+                    .top(gpui::px(0.0))
+                    .left(gpui::px(0.0))
+                    .right(gpui::px(0.0))
+                    .bottom(gpui::px(0.0))
+                    .rounded(favorite_tile_radius(theme.density))
+                    .border(gpui::px(1.5))
+                    .border_color(theme.palette.accent),
+            )
+        })
         .when_some(
             pop::speck_layer(theme, favorite_tile_radius(theme.density), pop),
             |el, specks| el.child(specks),
@@ -275,6 +308,8 @@ mod tests {
                 letter: 'E',
                 hue: 0,
                 image: None,
+                closed: false,
+                selected: false,
             },
             FavoriteTileSpec {
                 index: 1,
@@ -286,6 +321,8 @@ mod tests {
                 letter: 'L',
                 hue: 1,
                 image: None,
+                closed: false,
+                selected: false,
             },
         ]
     }
@@ -306,6 +343,8 @@ mod tests {
             letter: 'E',
             hue: 0,
             image: Some(image.clone()),
+            closed: false,
+            selected: false,
         };
         assert!(tile
             .image

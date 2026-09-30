@@ -104,7 +104,7 @@ impl BrowserController {
         let opener_profile = self.browser.space(opener_space)?.profile;
         let recreated = matches!(
             opener_state.lifecycle,
-            TabLifecycle::Suspended | TabLifecycle::Discarded
+            TabLifecycle::Suspended | TabLifecycle::Discarded | TabLifecycle::Closed
         );
 
         // Mutation 1: close the child through the normal close path (the

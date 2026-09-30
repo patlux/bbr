@@ -40,7 +40,7 @@ fn deleting_the_active_space_destroys_its_sessions_and_activates_the_fallback() 
     };
     org.move_tab_into_folder_id(&mut c, doomed_tabs[0], folder)
         .unwrap();
-    org.favorite_toggle_id(&c, doomed_tabs[1]).unwrap();
+    org.favorite_toggle_id(&mut c, doomed_tabs[1]).unwrap();
 
     let summary = org.space_delete_summary(&c, doomed).unwrap();
     assert_eq!(summary.title, "Doomed");

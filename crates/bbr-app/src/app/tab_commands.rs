@@ -29,16 +29,24 @@ pub(crate) fn duplicate_slot(source: usize, pinned: usize) -> usize {
 }
 
 impl BbrApp {
-    /// Select the tab `delta` steps from the active one (wrapping through
-    /// pinned and regular tabs alike).
+    /// Select the open tab `delta` steps from the active one (wrapping
+    /// through pinned and regular tabs alike). Closed pinned tabs are
+    /// skipped: stepping past one must not reopen it (DESIGN.md §10.12).
     pub fn select_adjacent_tab(
         &mut self,
         delta: isize,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
         let snapshot = self.controller.read().snapshot();
-        let index = adjacent_index(snapshot.active_index?, snapshot.tabs.len(), delta)?;
-        self.select_tab(index, cx)
+        let len = snapshot.tabs.len();
+        let mut index = snapshot.active_index?;
+        for _ in 0..len {
+            index = adjacent_index(index, len, delta)?;
+            if snapshot.tabs[index].lifecycle != bbr_browser::TabLifecycle::Closed {
+                return self.select_tab(index, cx);
+            }
+        }
+        None
     }
 
     /// Open the active tab's page in a new tab directly below it (the new

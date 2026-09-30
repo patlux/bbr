@@ -104,7 +104,8 @@ into a duplicate execution queue:
   → [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md)
   → adopted design-branch direction: [seated content card](docs/roadmap/tasks/seated-content-card.md)
   → [address field and space identity](docs/roadmap/tasks/address-field-space-identity.md)
-  → [Favorites grid and drag offers](docs/roadmap/tasks/favorites-drag-offers.md);
+  → [Favorites grid and drag offers](docs/roadmap/tasks/favorites-drag-offers.md)
+  → [closed pinned tabs and Favorites that leave the list](docs/roadmap/tasks/closed-pins-and-favorites.md);
   separately, the prioritized [media-session capability contract](docs/roadmap/tasks/media-session-capability-contract.md)
   → [sidebar media control](docs/roadmap/tasks/sidebar-media-control.md)
 - **Daily-driver Sidebar:** [full-height titlebar navigation](docs/roadmap/tasks/titlebar-navigation-controls.md)

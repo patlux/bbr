@@ -144,6 +144,9 @@ pub struct FolderMemberVisual {
     /// presents the §10.4 selected surface with the static `elev:lift` (D2),
     /// exactly like the tab row it mirrors.
     pub selected: bool,
+    /// §10.12: the member is closed in place — favicon and title grey out
+    /// and the row offers no close control; a press reopens it.
+    pub closed: bool,
 }
 
 /// The session-local folder presentation state the app layer owns
@@ -307,7 +310,9 @@ pub fn folders_ids(rows: &[FolderRowSpec], members: &[FolderMemberVisual]) -> Ve
         ids.push(folder_item_id(member.folder_index, member.member).to_string());
         ids.push(folder_item_title_id(member.folder_index, member.member).to_string());
         ids.push(folder_item_favicon_id(member.folder_index, member.member).to_string());
-        ids.push(folder_item_close_id(member.folder_index, member.member).to_string());
+        if !member.closed {
+            ids.push(folder_item_close_id(member.folder_index, member.member).to_string());
+        }
     }
     ids
 }
@@ -363,6 +368,16 @@ pub fn folder_item_row(
             .into_any(),
         None => folder_item_monogram(folder_index, member, monogram_style, letter).into_any(),
     };
+    let closed = visual.closed;
+    // §10.12: a closed member's favicon greys out.
+    let favicon_slot = div()
+        .flex_none()
+        .opacity(if closed {
+            crate::state::CLOSED_ICON_OPACITY
+        } else {
+            1.0
+        })
+        .child(favicon_slot);
     div()
         .id(folder_item_id(visual.folder_index, visual.member))
         .debug_selector(move || folder_item_id(visual.folder_index, visual.member).to_string())
@@ -408,30 +423,33 @@ pub fn folder_item_row(
                 .text_ellipsis()
                 .text_size(theme.type_.title.size)
                 .font_weight(theme.type_.title.weight)
-                .text_color(p.ink)
+                .text_color(if closed { p.ink_faint } else { p.ink })
                 .child(visual.title.clone()),
         )
-        .child(
-            div()
-                .id(folder_item_close_id(visual.folder_index, visual.member))
-                .debug_selector(move || {
-                    folder_item_close_id(visual.folder_index, visual.member).to_string()
-                })
-                .size(theme.density.hit_min_close())
-                .flex()
-                .items_center()
-                .justify_center()
-                .on_mouse_down(MouseButton::Left, on_close)
-                // S12 (Paper): the close control is revealed while the row
-                // is hovered or selected, like a tab row; at rest it keeps
-                // its id and hit square at zero opacity.
-                .opacity(if visual.selected { 1.0 } else { 0.0 })
-                .group_hover(
-                    folder_item_id(visual.folder_index, visual.member),
-                    |style| style.opacity(1.0),
-                )
-                .child(Icon::Close.canvas(theme, theme.density.icon())),
-        )
+        // §10.12: a closed member is already closed — no close control.
+        .when(!closed, |row| {
+            row.child(
+                div()
+                    .id(folder_item_close_id(visual.folder_index, visual.member))
+                    .debug_selector(move || {
+                        folder_item_close_id(visual.folder_index, visual.member).to_string()
+                    })
+                    .size(theme.density.hit_min_close())
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .on_mouse_down(MouseButton::Left, on_close)
+                    // S12 (Paper): the close control is revealed while the row
+                    // is hovered or selected, like a tab row; at rest it keeps
+                    // its id and hit square at zero opacity.
+                    .opacity(if visual.selected { 1.0 } else { 0.0 })
+                    .group_hover(
+                        folder_item_id(visual.folder_index, visual.member),
+                        |style| style.opacity(1.0),
+                    )
+                    .child(Icon::Close.canvas(theme, theme.density.icon())),
+            )
+        })
 }
 
 /// The §7.2 monogram tile geometry + palette inputs of one folder-member

@@ -171,8 +171,8 @@ fn folders_region_disclosure_and_nested_rows() {
             "collapse removes the nested rows"
         );
 
-        // Nested close removes the member row (the folder row survives with
-        // the reconciled count).
+        // Nested close closes the member in place (DESIGN §10.12): it stays
+        // in its folder, greyed, without a close control or a session.
         client
             .send_ok(&dsl::click_folder_toggle(folder_id))
             .expect("expand again");
@@ -183,9 +183,26 @@ fn folders_region_disclosure_and_nested_rows() {
             .send_ok(&bbr_testkit::Request::FlushFrame)
             .expect("flush after member close");
         let after_close = client.snapshot().expect("member closed snapshot");
-        assert_eq!(after_close.folders[0].tab_count, 0, "count reconciled");
-        assert_eq!(after_close.tabs.len(), 1, "the member tab closed");
-        assert_eq!(after_close.engine_sessions, 1);
+        assert_eq!(after_close.folders[0].tab_count, 1, "the member stays");
+        assert_eq!(after_close.tabs.len(), 2, "the row is kept");
+        assert_eq!(after_close.engine_sessions, 1, "its session is gone");
+        let member = after_close
+            .tabs
+            .iter()
+            .find(|tab| tab.pinned)
+            .expect("the pinned member");
+        assert_eq!(member.lifecycle, "closed");
+        assert_ids(&after_close, &["bbr-folder-item-0-0"]);
+        assert!(
+            !after_close
+                .visible_ids
+                .iter()
+                .any(|id| id == "bbr-folder-item-0-0-close"),
+            "a closed member offers no close control"
+        );
+        let item = e2e_semantics_common::find(&after_close.semantics, "bbr-folder-item-0-0")
+            .expect("member node");
+        assert_eq!(item.value.as_deref(), Some("closed"));
 
         client.quit().expect("quit");
         let status = wait_for_exit(&mut harness.child, Instant::now() + Duration::from_secs(10));

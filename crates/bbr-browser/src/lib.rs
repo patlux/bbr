@@ -65,6 +65,8 @@ mod testing;
 #[cfg(test)]
 mod controller_background_link_tests;
 #[cfg(test)]
+mod controller_closed_pin_tests;
+#[cfg(test)]
 mod controller_dense_tests;
 #[cfg(test)]
 mod controller_event_tests;

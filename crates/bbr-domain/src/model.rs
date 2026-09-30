@@ -121,18 +121,16 @@ impl Space {
             splits: Vec::new(),
         }
     }
+}
 
-    /// The tab that would take focus after the tab at `index` is removed:
-    /// its next sibling, else its previous sibling, else `None`.
-    ///
-    /// Must be called against the **pre-removal** ordering (the tab is still
-    /// at `index`), which is the invariant [`crate::Browser`] relies on.
-    pub(crate) fn neighbor_after_removal(&self, index: usize) -> Option<TabId> {
-        self.tabs
-            .get(index + 1)
-            .copied()
-            .or_else(|| index.checked_sub(1).and_then(|i| self.tabs.get(i)).copied())
-    }
+/// The page a tab was pinned at (DESIGN.md §11.2): closing the pinned tab
+/// resets it here, and reopening loads this URL. Captured when the tab
+/// becomes pinned — directly, by folder grouping or by favoriting — and
+/// dropped when it is unpinned.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PinnedPage {
+    pub url: String,
+    pub title: String,
 }
 
 /// A persistent page identity attached to exactly one space.
@@ -145,6 +143,8 @@ pub struct Tab {
     pub url: String,
     /// Pinned tabs always sort before unpinned ones in their space.
     pub pinned: bool,
+    /// The page the tab was pinned at; `Some` exactly while `pinned`.
+    pub pinned_page: Option<PinnedPage>,
     /// Policy state for the disposable native web session.
     pub lifecycle: TabLifecycle,
     /// Monotonic recency stamp (the dense-list resource policy's "recently
@@ -168,6 +168,7 @@ impl Tab {
             title: title.into(),
             url: url.into(),
             pinned: false,
+            pinned_page: None,
             lifecycle: TabLifecycle::Active,
             last_used: 0,
         }

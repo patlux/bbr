@@ -7,13 +7,16 @@ use crate::nav::NavState;
 
 /// Per-tab lifecycle counts of the active model (the dense-list session
 /// budget evidence): `active + warm` is the live-session population and must
-/// never exceed the enforced budget; `suspended + discarded` own no session.
+/// never exceed the enforced budget; `suspended + discarded + closed` own no
+/// session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct LifecycleCounts {
     pub active: usize,
     pub warm: usize,
     pub suspended: usize,
     pub discarded: usize,
+    /// Closed pinned tabs (DESIGN.md §10.12): kept rows without a session.
+    pub closed: usize,
 }
 
 impl LifecycleCounts {
@@ -26,6 +29,7 @@ impl LifecycleCounts {
                 TabLifecycle::Warm => counts.warm += 1,
                 TabLifecycle::Suspended => counts.suspended += 1,
                 TabLifecycle::Discarded => counts.discarded += 1,
+                TabLifecycle::Closed => counts.closed += 1,
             }
         }
         counts

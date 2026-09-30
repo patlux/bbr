@@ -717,6 +717,25 @@ and the active slot is replaced by §11.8a. A completing probe clears the state
 immediately; a crash takes precedence and uses §10.7/§11.8. **Assert:**
 `unresponsive`.
 
+### 10.12 `closed` (pinned rows, folder members, Favorite tiles)
+A pinned tab is a kept place, not an open page (Patrick, 2026-09-30):
+closing it keeps its row — or its Favorite tile — where it is. The tab owns
+no native session and shows its **pinned page**, the URL and title it had
+when it became pinned (directly, by folder grouping or by favoriting).
+Visuals: the favicon/monogram draws at 40 % opacity
+(`CLOSED_ICON_OPACITY`) and the title in `ink.faint`; the row offers no
+close control (it is already closed) and hover/press keep the §10.2/§10.3
+washes. Selecting it — pointer, keyboard, Favorite activation or a command
+result — opens the pinned page in a fresh session. Selection never lands on
+a closed row by itself: closing picks the next *open* neighbor, and ↑/↓ and
+⌃⇥ step past closed rows. A closed tab is not an asleep (suspended) tab,
+which keeps its live URL and is not greyed; unpinning a closed tab leaves an
+unloaded regular tab. The state is session-local (task packet
+`closed-pins-and-favorites`): after a relaunch a closed row restores asleep
+at its pinned URL. **Assert:** typed `lifecycle == "closed"`,
+`lifecycle_counts.closed`, `favorites[n].closed`, and the semantic row/tile
+value `closed` (never color-only).
+
 ## 11. Component behavior specifications
 
 Each spec is precise enough to implement and to assert with real-app E2E
@@ -751,9 +770,14 @@ using the IDs of §15. All rows use `density` geometry from §8.
   separate ordering-model decision says otherwise. S density: icon-only
   32×32 loose rows with 4 pt gap. N/XL: same row anatomy as regular rows.
 - **Behavior:** pinned rows never shift order on selection; close is
-  hover-reveal only; drag within the pinned region reorders; dragging to the
-  regular region unpins (contract); a drag from the regular region into
-  pinned pins it through the ghost row below.
+  hover-reveal only and closes the tab **in place** (§10.12: the row stays,
+  greyed, at its pinned page; selecting it reopens that page); drag within
+  the pinned region reorders; dragging to the regular region unpins
+  (contract; a closed row becomes an unloaded regular tab); a drag from the
+  regular region into pinned pins it through the ghost row below. Rows carry
+  no pin control: `Cmd-Shift-P`, the Tab menu's Pin/Unpin row and the ghost
+  row are the pin paths. A pinned tab that is a Favorite renders as its tile
+  only (§11.10), a grouped one inside its folder only (§11.11).
 - **Drag offer (`bbr-pinned-drop-row`):** pinning is only discoverable by
   dragging, so once a drag of an **unpinned** tab passes the 4 pt activation
   distance (§10.9) the organized area appends one ghost row after its loose
@@ -1464,16 +1488,28 @@ scheme; a title consisting only of whitespace is treated as empty.
   copy, navigate a different tab, or move the tab. Hover/active washes
   follow §10.2/§10.3; keyboard traversal follows the §9 order row-major;
   tiles never reorder during selection.
-- **States:** `default`, `hover`, `active`, `focused` (§10). A favorite is an
-  additional global presentation of a concrete tab, so its title/favicon and
-  lifecycle availability mirror that tab; the tile's semantic name includes
-  the owning space/profile when they differ from the current context.
+- **The tile is the tab (Patrick, 2026-09-30):** a Favorite leaves the tab
+  list — it renders as its tile only, never also as a pinned, folder or
+  regular row. A Favorite is a kept place like a pinned row: favoriting pins
+  a regular tab by the same transition (its pinned page is captured then)
+  and takes a folder member out of its folder; grouping a Favorite or
+  unpinning it ends the favorite; **Remove from Favorites** leaves a loose
+  pinned row at the end of the pinned block.
+- **States:** `default`, `hover`, `active`, `focused` (§10), plus
+  `selected` — the tile's tab is the window's selected tab: a 1.5 pt
+  `accent` edge over the veil (the tile carries the selection because the
+  tab has no row) — and §10.12 `closed`: closing the tab (`Cmd-W`, Tab
+  menu) closes it in place; the tile stays with its icon at 40 % opacity and
+  activating it reopens the pinned page. Title/favicon mirror the tab; the
+  tile's semantic name includes the owning space/profile when they differ
+  from the current context.
 - **Data source:** favorites are global across all spaces and profiles in the
   browser window. Each tile resolves `TabId + SpaceId + ProfileId`; the tab
   remains canonically owned by one space and derives its profile from that
-  space. Dragging a tab into the grid toggles that same tab as a favorite;
-  closing it removes the tile, and moving it makes the favorite follow its
-  stable `TabId` to the new space/profile. No second web session is created.
+  space. Dragging a tab into the grid toggles that same tab as a favorite
+  (pinning it); closing it greys the tile, and moving it makes the favorite
+  follow its stable `TabId` to the new space/profile. No second web session
+  is created.
 - **Assert ids:** `bbr-section-favorites`, `bbr-favorites`,
   `bbr-fav-<n>`, `bbr-fav-icon-<n>`, `bbr-favorites-empty` (+ `-label`/
   `-hint` in the zero-favorites band), and `bbr-favorites-drop-cell` while a
@@ -1509,7 +1545,10 @@ pinned, the expanded folders' members, then the regular region.
   expands/collapses the nested row list and snaps (`dur:instant`). Nested
   rows reuse the §11.1 row anatomy and the full §10 vocabulary; index
   `<m>` is the nested position within folder `<n>` (0-based,
-  deterministic). A folder whose tabs were all closed remains as an empty
+  deterministic). Closing a member closes it in place (§10.12): it stays in
+  its folder, greyed, without a close control, and selecting it reopens its
+  pinned page. A folder empties only when its members leave it (ungroup,
+  unpin, favorite, move to another space); an empty folder remains as a
   collapsible row.
 - **Count reveal:** the `type:meta` count paints only while the pointer
   hovers the row or the row is the keyboard focus anchor while the folders
@@ -2247,6 +2286,8 @@ semantically — never by pixel comparison.
 - **State vocabulary:** snapshot field `tab_states: Vec<VisualState>` with
   `VisualState ∈ {default, hover, active, selected, loading, attention,
   error, disabled, dragging, drag-target, focused}` — exactly the §10 names.
+  §10.12 `closed` composes with them and is reported through the tab's
+  typed `lifecycle` and the semantic row/tile value instead.
   During a drag report both the source row (`dragging`) and any target
   (`drag-target`); `lifted_ids` lists the §15 ids of the surfaces painted
   with `elev:lift` (the selected tab's row and nested folder row, then the

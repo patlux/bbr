@@ -10,7 +10,7 @@ use gpui::{
 
 use crate::icons::Icon;
 use crate::palette::Palette;
-use crate::state::TabVisualState;
+use crate::state::{TabVisualState, CLOSED_ICON_OPACITY};
 use crate::theme::{elevation, Radius, Spacing, Theme, ThemeMode};
 
 use super::attention::attention_dot;
@@ -34,6 +34,10 @@ pub struct RowVisuals {
     pub favicon: Option<FaviconSpec>,
     /// §11.2: whether the row is in the pinned region.
     pub pinned: bool,
+    /// §10.12: the pinned tab is closed in place — its favicon and title
+    /// grey out and the row offers no close control (it is already
+    /// closed); a press reopens it at its pinned page.
+    pub closed: bool,
     pub show_close: bool,
     /// §10.2 hover-reveal: the close control is visible when the pointer
     /// hovers or presses the row, the row is selected (keyboard users), or
@@ -180,6 +184,7 @@ pub fn tab_row(
         // fades out at rest (transient indication; the row keeps its hit
         // square so the id and the pointer path are stable).
         .opacity(if visuals.reveal_close { 1.0 } else { 0.0 });
+    let closed = visuals.closed;
     div()
         .id((TAB_ROW_ID, visuals.index))
         .debug_selector(move || format!("{TAB_ROW_ID}-{}", visuals.index))
@@ -237,20 +242,17 @@ pub fn tab_row(
         .when_some(visuals.split, |row, mark| {
             row.child(split_bracket(theme, mark))
         })
-        .child(favicon_tile(
-            theme,
-            visuals.index,
-            visuals.favicon.clone(),
-            visuals.state,
-        ))
-        .child(row_title(
-            theme,
-            visuals.index,
-            &visuals.title,
-            visuals.state,
-        ))
+        .child(
+            favicon_tile(theme, visuals.index, visuals.favicon.clone(), visuals.state)
+                .when(closed, |icon| icon.opacity(CLOSED_ICON_OPACITY)),
+        )
+        .child(
+            row_title(theme, visuals.index, &visuals.title, visuals.state)
+                .when(closed, |title| title.text_color(p.ink_faint)),
+        )
         .child(row_state_slot(theme, visuals.index, visuals.state))
-        .child(close)
+        // §10.12: a closed row is already closed — no close control.
+        .when(!closed, |row| row.child(close))
         .on_mouse_down(MouseButton::Left, on_select)
         .on_mouse_down(MouseButton::Left, on_begin_drag)
 }
@@ -349,6 +351,7 @@ mod tests {
                 image: None,
             }),
             pinned: true,
+            closed: false,
             show_close: true,
             reveal_close: true,
             split: None,
@@ -381,6 +384,7 @@ mod tests {
                     image: None
                 }),
                 pinned: true,
+                closed: false,
                 show_close: true,
                 reveal_close: true,
                 split: None,

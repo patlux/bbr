@@ -37,6 +37,13 @@ pub struct FavoriteSnapshot {
     /// Current live tab metadata, never a copied destination identity.
     pub title: String,
     pub url: String,
+    /// The tab is closed in place (DESIGN.md §10.12): the tile greys out
+    /// and activating it reopens the pinned page.
+    pub closed: bool,
+    /// The tab is the window's selected tab (its space is the active space
+    /// and it is that space's active tab): the tile is the only place the
+    /// selection shows, because a Favorite leaves the tab list.
+    pub selected: bool,
 }
 
 /// Read-only snapshot of the session-local organization state.

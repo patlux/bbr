@@ -99,6 +99,7 @@ pub fn assert_dense_contract(snap: &Snapshot, total: usize, pinned: usize, live_
             warm: live_cap - 1,
             suspended: total - live_cap,
             discarded: 0,
+            closed: 0,
         },
         "one active + (cap − 1) warm live, the rest suspended"
     );

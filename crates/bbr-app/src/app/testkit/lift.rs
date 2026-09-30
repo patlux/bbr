@@ -46,6 +46,7 @@ mod tests {
             state,
             favicon: None,
             pinned: false,
+            closed: false,
             show_close: true,
             reveal_close: false,
             split: None,
@@ -62,6 +63,7 @@ mod tests {
             hue: 0,
             image: None,
             selected,
+            closed: false,
         }
     }
 

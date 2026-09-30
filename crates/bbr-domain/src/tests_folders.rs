@@ -58,12 +58,13 @@ fn create_folder_in_unknown_space_is_rejected_whole() {
 fn folders_touch_the_browser_only_by_pinning() {
     let (mut b, s, tabs) = populated();
     b.pin_tab(s, tabs[0]).unwrap();
+    b.pin_tab(s, tabs[1]).unwrap();
     let mut store = FolderStore::new();
     let before = b.clone();
     let f = store.create_folder(&b, s, "Work").unwrap();
-    // Grouping an already pinned tab needs no browser change.
+    // Grouping or favoriting an already pinned tab needs no browser change.
     assert_eq!(store.move_tab_into_folder(&mut b, f, tabs[0]), Ok(false));
-    store.favorite_toggle(&b, tabs[1]).unwrap();
+    assert!(!store.favorite_toggle(&mut b, tabs[1]).unwrap().newly_pinned);
     // The browser state is byte-for-byte untouched by folder operations.
     assert_eq!(b, before);
     store.check_invariants(&b).unwrap();
@@ -253,10 +254,10 @@ fn remove_tab_from_folder_is_idempotent() {
 
 #[test]
 fn favorites_keep_deterministic_tab_insertion_order() {
-    let (b, _s, tabs) = populated();
+    let (mut b, _s, tabs) = populated();
     let mut store = FolderStore::new();
     for tab in &tabs {
-        store.favorite_toggle(&b, *tab).unwrap();
+        store.favorite_toggle(&mut b, *tab).unwrap();
     }
     let actual: Vec<TabId> = store.favorites().map(|f| f.tab).collect();
     assert_eq!(actual, tabs, "fav grid renders tab ids in insertion order");
@@ -265,29 +266,35 @@ fn favorites_keep_deterministic_tab_insertion_order() {
 
 #[test]
 fn toggling_removes_and_readd_appends_the_same_tab() {
-    let (b, _s, tabs) = populated();
+    let (mut b, _s, tabs) = populated();
     let mut store = FolderStore::new();
     for tab in &tabs {
-        store.favorite_toggle(&b, *tab).unwrap();
+        assert!(store.favorite_toggle(&mut b, *tab).unwrap().newly_pinned);
     }
-    let outcome = store.favorite_toggle(&b, tabs[0]).unwrap();
+    let outcome = store.favorite_toggle(&mut b, tabs[0]).unwrap();
     assert_eq!(
         outcome,
         crate::FavoriteToggle {
             added: false,
-            tab: tabs[0]
+            tab: tabs[0],
+            newly_pinned: false,
         }
+    );
+    assert!(
+        b.tab(tabs[0]).unwrap().pinned,
+        "Remove from Favorites leaves a loose pinned tab"
     );
     assert_eq!(
         store.favorites().map(|f| f.tab).collect::<Vec<_>>(),
         vec![tabs[1], tabs[2]]
     );
-    let outcome = store.favorite_toggle(&b, tabs[0]).unwrap();
+    let outcome = store.favorite_toggle(&mut b, tabs[0]).unwrap();
     assert_eq!(
         outcome,
         crate::FavoriteToggle {
             added: true,
-            tab: tabs[0]
+            tab: tabs[0],
+            newly_pinned: false,
         }
     );
     assert_eq!(
@@ -303,8 +310,8 @@ fn favorite_identity_is_the_tab_not_its_url() {
     let mut store = FolderStore::new();
     let first = b.open_tab(s, "A", "https://same.example").unwrap();
     let second = b.open_tab(s, "A copy", "https://same.example").unwrap();
-    store.favorite_toggle(&b, first).unwrap();
-    store.favorite_toggle(&b, second).unwrap();
+    store.favorite_toggle(&mut b, first).unwrap();
+    store.favorite_toggle(&mut b, second).unwrap();
     assert_eq!(
         store.favorites().map(|f| f.tab).collect::<Vec<_>>(),
         vec![first, second],
@@ -320,7 +327,7 @@ fn favorite_identity_is_the_tab_not_its_url() {
 fn favorite_follows_its_tab_across_spaces_and_profiles() {
     let (mut b, _s, tabs) = populated();
     let mut store = FolderStore::new();
-    store.favorite_toggle(&b, tabs[0]).unwrap();
+    store.favorite_toggle(&mut b, tabs[0]).unwrap();
     let destination = other_space(&mut b);
     b.move_tab(tabs[0], destination).unwrap();
     assert_eq!(store.reconcile(&b), 0, "moving a tab keeps its favorite");
@@ -329,39 +336,92 @@ fn favorite_follows_its_tab_across_spaces_and_profiles() {
 }
 
 #[test]
-fn closing_the_concrete_tab_removes_its_favorite() {
+fn closing_a_favorite_keeps_its_tile_closed() {
+    // DESIGN.md §10.12: a favorite is a kept place; closing its tab closes
+    // it in place and the tile stays (greyed by the presentation).
     let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     for tab in &tabs {
-        store.favorite_toggle(&b, *tab).unwrap();
+        store.favorite_toggle(&mut b, *tab).unwrap();
     }
     b.close_tab(s, tabs[1]).unwrap();
-    assert_eq!(store.reconcile(&b), 1);
+    assert_eq!(store.reconcile(&b), 0);
     assert_eq!(
         store.favorites().map(|f| f.tab).collect::<Vec<_>>(),
-        vec![tabs[0], tabs[2]]
+        tabs.to_vec()
     );
+    assert_eq!(
+        b.tab(tabs[1]).unwrap().lifecycle,
+        crate::TabLifecycle::Closed
+    );
+    store.check_invariants(&b).unwrap();
+}
+
+#[test]
+fn favoriting_pins_a_regular_tab_and_leaves_its_folder() {
+    let (mut b, s, tabs) = populated();
+    let mut store = FolderStore::new();
+    let f = store.create_folder(&b, s, "Work").unwrap();
+    store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
+    // A folder member becomes a favorite: it lists in the grid only.
+    let grouped = store.favorite_toggle(&mut b, tabs[0]).unwrap();
+    assert!(grouped.added && !grouped.newly_pinned);
+    assert!(store.folder(f).unwrap().tabs.is_empty());
+    // A regular tab is pinned by the same transition, at the end of the
+    // pinned region, with its current page as its pinned page.
+    let regular = store.favorite_toggle(&mut b, tabs[2]).unwrap();
+    assert!(regular.added && regular.newly_pinned);
+    let space = b.space(s).unwrap();
+    assert_eq!(space.tabs, vec![tabs[0], tabs[2], tabs[1]]);
+    assert_eq!(space.pinned_count, 2);
+    let pinned_page = b.tab(tabs[2]).unwrap().pinned_page.clone().unwrap();
+    assert_eq!(pinned_page.url, b.tab(tabs[2]).unwrap().url);
+    store.check_invariants(&b).unwrap();
+}
+
+#[test]
+fn grouping_or_unpinning_a_favorite_ends_it() {
+    let (mut b, s, tabs) = populated();
+    let mut store = FolderStore::new();
+    let f = store.create_folder(&b, s, "Work").unwrap();
+    store.favorite_toggle(&mut b, tabs[0]).unwrap();
+    store.favorite_toggle(&mut b, tabs[1]).unwrap();
+    // Grouping lists the tab in its folder, so it leaves the grid.
+    store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
+    assert_eq!(
+        store.favorites().map(|f| f.tab).collect::<Vec<_>>(),
+        vec![tabs[1]]
+    );
+    store.check_invariants(&b).unwrap();
+    // Unpinning ends the favorite at the next reconcile.
+    b.unpin_tab(s, tabs[1]).unwrap();
+    assert!(
+        store.check_invariants(&b).is_err(),
+        "detected until reconciled"
+    );
+    assert_eq!(store.reconcile(&b), 1);
+    assert!(store.favorites().next().is_none());
     store.check_invariants(&b).unwrap();
 }
 
 // ---- Reconciliation -------------------------------------------------------
 
 #[test]
-fn reconcile_drops_memberships_for_closed_tabs() {
+fn closing_a_member_keeps_it_closed_in_its_folder() {
+    // A member is pinned, so closing it closes it in place (DESIGN.md
+    // §10.12): it stays in the folder as a closed row.
     let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
     store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
     store.move_tab_into_folder(&mut b, f, tabs[1]).unwrap();
     b.close_tab(s, tabs[0]).unwrap();
+    assert_eq!(store.reconcile(&b), 0);
+    assert_eq!(store.folder(f).unwrap().tabs, vec![tabs[0], tabs[1]]);
     assert_eq!(
-        store.folder(f).unwrap().tabs.len(),
-        2,
-        "the store cannot observe the close"
+        b.tab(tabs[0]).unwrap().lifecycle,
+        crate::TabLifecycle::Closed
     );
-    let removed = store.reconcile(&b);
-    assert_eq!(removed, 1);
-    assert_eq!(store.folder(f).unwrap().tabs, vec![tabs[1]]);
     store.check_invariants(&b).unwrap();
 }
 
@@ -418,10 +478,10 @@ fn invariants_reject_duplicate_membership_across_folders() {
 
 #[test]
 fn invariants_detect_unknown_space_and_duplicate_favorite_tabs() {
-    let (b, s, tabs) = populated();
+    let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     store.create_folder(&b, s, "Work").unwrap();
-    store.favorite_toggle(&b, tabs[0]).unwrap();
+    store.favorite_toggle(&mut b, tabs[0]).unwrap();
     // Forge an unknown-space folder and a duplicate favorite tab.
     store.folders[0].space = SpaceId(999);
     store
@@ -431,12 +491,33 @@ fn invariants_detect_unknown_space_and_duplicate_favorite_tabs() {
 }
 
 #[test]
+fn invariants_detect_a_grouped_or_unpinned_favorite() {
+    let (mut b, s, tabs) = populated();
+    let mut store = FolderStore::new();
+    let f = store.create_folder(&b, s, "Work").unwrap();
+    store.favorite_toggle(&mut b, tabs[0]).unwrap();
+    store.check_invariants(&b).unwrap();
+    // Forge: the favorite is also a folder member.
+    let mut grouped = store.clone();
+    grouped.folders[0].tabs.push(tabs[0]);
+    assert_eq!(grouped.folders[0].id, f);
+    assert!(grouped.check_invariants(&b).is_err());
+    // Forge: a regular tab in the grid.
+    let mut unpinned = store.clone();
+    unpinned
+        .favorites
+        .push(crate::folders::Favorite { tab: tabs[1] });
+    assert!(unpinned.check_invariants(&b).is_err());
+}
+
+#[test]
 fn invariants_detect_stale_membership_without_reconcile() {
     let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
     store.move_tab_into_folder(&mut b, f, tabs[0]).unwrap();
-    b.close_tab(s, tabs[0]).unwrap();
+    let s2 = other_space(&mut b);
+    b.move_tab(tabs[0], s2).unwrap();
     assert!(
         store.check_invariants(&b).is_err(),
         "checker is a detector: stale memberships must fail until reconciled"
@@ -447,7 +528,7 @@ fn invariants_detect_stale_membership_without_reconcile() {
 
 #[test]
 fn store_is_a_plain_value() {
-    let (b, s, tabs) = populated();
+    let (mut b, s, tabs) = populated();
     let mut store = FolderStore::new();
     let f = store.create_folder(&b, s, "Work").unwrap();
     store
@@ -460,7 +541,7 @@ fn store_is_a_plain_value() {
             },
         )
         .unwrap();
-    store.favorite_toggle(&b, tabs[1]).unwrap();
+    store.favorite_toggle(&mut b, tabs[1]).unwrap();
     assert_eq!(store.clone(), store);
 }
 

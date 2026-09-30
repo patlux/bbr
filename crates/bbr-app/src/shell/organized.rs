@@ -1,12 +1,13 @@
-//! The organized area's row derivation (DESIGN.md §11.2/§11.11): a folder is
-//! the grouped presentation of pinned tabs, so a grouped (folder-member)
-//! pinned tab renders inside its folder only and the loose pinned block lists
-//! the remaining pinned tabs. Drag slots and keyboard traversal follow the
+//! The organized area's row derivation (DESIGN.md §11.2/§11.10/§11.11): a
+//! folder is the grouped presentation of pinned tabs, so a grouped
+//! (folder-member) pinned tab renders inside its folder only; a Favorite is
+//! a pinned tab whose tile is its only presentation, so it renders in the
+//! grid only; the loose pinned block lists the remaining pinned tabs. Drag slots and keyboard traversal follow the
 //! rendered rows. Pure functions over the controller and organization read
 //! models, shared by the render, the drag resolver, the keyboard seam and the
 //! testkit evidence.
 
-use bbr_browser::{ControllerSnapshot, FolderSnapshot};
+use bbr_browser::{ControllerSnapshot, FavoriteSnapshot, FolderSnapshot};
 
 /// The active-space tab indices that are members of a folder, in folder
 /// order (members of other spaces are skipped).
@@ -22,6 +23,25 @@ pub fn grouped_indices(folders: &[FolderSnapshot], browser: &ControllerSnapshot)
                 .map(|tab| tab.index)
         })
         .collect()
+}
+
+/// The active-space pinned tab indices the loose pinned block does not list:
+/// folder members (in folder order), then Favorites (in grid order) — each
+/// presented only in its folder or its tile (DESIGN.md §11.10/§11.11).
+pub fn hidden_pinned(
+    folders: &[FolderSnapshot],
+    favorites: &[FavoriteSnapshot],
+    browser: &ControllerSnapshot,
+) -> Vec<usize> {
+    let mut hidden = grouped_indices(folders, browser);
+    hidden.extend(favorites.iter().filter_map(|favorite| {
+        browser
+            .all_tabs
+            .iter()
+            .find(|tab| tab.id == favorite.tab && tab.space == browser.active_space)
+            .map(|tab| tab.index)
+    }));
+    hidden
 }
 
 /// The active-space tab indices of the members of expanded folders, in
@@ -40,7 +60,7 @@ pub fn expanded_member_indices(
 }
 
 /// The loose pinned rows: the pinned indices `0..pinned` that are not
-/// grouped, in tab order.
+/// hidden (grouped or favorite), in tab order.
 pub fn loose_pinned(pinned: usize, grouped: &[usize]) -> Vec<usize> {
     (0..pinned)
         .filter(|index| !grouped.contains(index))
