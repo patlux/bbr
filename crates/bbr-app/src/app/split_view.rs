@@ -77,7 +77,7 @@ impl BbrApp {
 
     /// The shown group projected onto the card (window points).
     pub(crate) fn split_projection(&self) -> Option<(SplitLayout, Tiling)> {
-        let layout = self.controller.split_layout()?;
+        let layout = self.controller.read().split_layout()?;
         let card = self.split_card()?;
         let tiling = project(layout.group.root(), card, TILING_DIVIDER);
         Some((layout, tiling))
@@ -99,8 +99,8 @@ impl BbrApp {
     /// Hide the unfocused panes of a collapsed group natively (and show
     /// them again once it fits); runs before each frame's content.
     pub(crate) fn sync_split_collapse(&mut self, cx: &mut Context<Self>) {
-        let wanted: Vec<WebViewId> = match (self.split_collapsed(), self.controller.split_layout())
-        {
+        let layout = self.controller.read().split_layout();
+        let wanted: Vec<WebViewId> = match (self.split_collapsed(), layout) {
             (Some(_), Some(layout)) => layout
                 .views
                 .iter()
@@ -218,6 +218,7 @@ impl BbrApp {
         let leading = drag_weight(&divider, along, min, TILING_DIVIDER);
         if self
             .controller
+            .get()
             .split_set_divider(&divider.path, divider.index, leading)
             .is_ok()
         {
@@ -251,7 +252,7 @@ impl BbrApp {
 
     /// Even out the row or column at `path`.
     pub(crate) fn split_equalize(&mut self, path: &[usize], cx: &mut Context<Self>) {
-        if self.controller.split_equalize(path).is_ok() {
+        if self.controller.get().split_equalize(path).is_ok() {
             self.persist_structure();
             cx.notify();
         }
@@ -300,8 +301,8 @@ impl BbrApp {
     pub(crate) fn split_chip_model(&self) -> Option<bbr_ui::surfaces::split_chip::SplitChipModel> {
         let (at, total) = self.split_collapsed()?;
         let list = self.split_view.list_open.then(|| {
-            let layout = self.controller.split_layout();
-            let tabs = self.controller.snapshot().all_tabs;
+            let layout = self.controller.read().split_layout();
+            let tabs = self.controller.read().snapshot().all_tabs;
             layout
                 .map(|layout| {
                     layout
@@ -336,6 +337,7 @@ impl BbrApp {
                 self.split_view.list_open = false;
                 let tab = self
                     .controller
+                    .read()
                     .split_layout()
                     .and_then(|layout| layout.views.get(index).map(|(tab, _)| *tab));
                 if let Some(tab) = tab {
@@ -370,7 +372,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let Some(beside) = snapshot.active_index.and_then(|index| {
             snapshot
                 .all_tabs
@@ -391,7 +393,7 @@ impl BbrApp {
         let Some((beside, edge)) = self.split_view.pending.take() else {
             return;
         };
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let index_of = |tab: bbr_domain::TabId| {
             snapshot
                 .all_tabs
@@ -406,7 +408,11 @@ impl BbrApp {
         if beside_index == new_index {
             return;
         }
-        match self.controller.split_insert(beside_index, new_index, edge) {
+        let inserted = self
+            .controller
+            .get()
+            .split_insert(beside_index, new_index, edge);
+        match inserted {
             Ok(event) => {
                 self.emit_browser(&event);
                 if let Some(tab) = self.tab_id_at(new_index) {
@@ -421,10 +427,11 @@ impl BbrApp {
 
     /// ⇧⌃⌘S: dissolve the shown group (every tab stays open).
     pub(crate) fn dissolve_shown_split(&mut self, cx: &mut Context<Self>) -> bool {
-        if self.controller.split_layout().is_none() {
+        if self.controller.read().split_layout().is_none() {
             return false;
         }
-        match self.controller.close_split() {
+        let closed = self.controller.get().close_split();
+        match closed {
             Ok(event) => {
                 self.emit_browser(&event);
                 self.persist_structure();
@@ -441,9 +448,10 @@ impl BbrApp {
         &self,
         rows: usize,
     ) -> Vec<Option<bbr_ui::components::tab_row::SplitMark>> {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let groups = self
             .controller
+            .read()
             .split_groups()
             .into_iter()
             .find(|(space, _)| *space == snapshot.active_space)
@@ -481,7 +489,7 @@ impl BbrApp {
 
     /// The id of the active-space tab at `index`.
     pub(crate) fn tab_id_at(&self, index: usize) -> Option<bbr_domain::TabId> {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         snapshot
             .all_tabs
             .iter()
@@ -490,7 +498,7 @@ impl BbrApp {
     }
 
     fn index_of_tab(&self, tab: bbr_domain::TabId) -> Option<usize> {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         snapshot
             .all_tabs
             .iter()
@@ -523,7 +531,7 @@ impl BbrApp {
                 None => {
                     // The single shown pane: its edges pair it with the
                     // dragged tab.
-                    let active = self.controller.snapshot().active_index?;
+                    let active = self.controller.read().snapshot().active_index?;
                     let beside = self.tab_id_at(active)?;
                     if Some(beside) == dragged {
                         return None;
@@ -563,9 +571,11 @@ impl BbrApp {
         };
         let result = match drop.zone {
             bbr_split::tiling::DropZone::Edge(edge) => {
-                self.controller.split_insert(beside, source, edge)
+                self.controller.get().split_insert(beside, source, edge)
             }
-            bbr_split::tiling::DropZone::Center => self.controller.split_replace(beside, source),
+            bbr_split::tiling::DropZone::Center => {
+                self.controller.get().split_replace(beside, source)
+            }
         };
         match result {
             Ok(event) => {
@@ -594,6 +604,7 @@ impl BbrApp {
         };
         let members = self
             .controller
+            .read()
             .split_layout()
             .filter(|layout| layout.group.contains(tab))
             .map(|layout| layout.group.members())
@@ -622,9 +633,10 @@ impl BbrApp {
         let Some(tab) = self.tab_id_at(index) else {
             return;
         };
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let groups = self
             .controller
+            .read()
             .split_groups()
             .into_iter()
             .find(|(space, _)| *space == snapshot.active_space)
@@ -641,7 +653,8 @@ impl BbrApp {
         if near {
             return;
         }
-        if let Ok(event) = self.controller.split_remove(index) {
+        let removed = self.controller.get().split_remove(index);
+        if let Ok(event) = removed {
             self.emit_browser(&event);
             self.persist_structure();
             cx.notify();
@@ -652,6 +665,7 @@ impl BbrApp {
     pub(crate) fn split_focus_tab(&mut self, tab: bbr_domain::TabId, cx: &mut Context<Self>) {
         let index = self
             .controller
+            .read()
             .snapshot()
             .all_tabs
             .iter()

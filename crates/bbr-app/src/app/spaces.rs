@@ -39,9 +39,10 @@ impl BbrApp {
         self.cancel_swipe(cx);
         let swipe_commit = std::mem::take(&mut self.moments.swipe_commit);
         let source_tint = self.active_chrome_tint();
-        let source_profile = self.controller.active_profile();
+        let source_profile = self.controller.read().active_profile();
         let result = self
             .controller
+            .get()
             .activate_space(space)
             .map_err(|error| {
                 log::error!("could not activate space {space:?}: {error}");
@@ -65,9 +66,10 @@ impl BbrApp {
             // activation announces the destination profile at the top of the
             // command field for one interaction; same-profile switching must
             // never misleadingly announce a profile transition.
-            if self.controller.active_profile() != source_profile {
+            if self.controller.read().active_profile() != source_profile {
                 let title = self
                     .controller
+                    .read()
                     .snapshot()
                     .active_profile_title
                     .clone()
@@ -146,8 +148,9 @@ impl BbrApp {
     /// effective appearance (explicit record or profile-hue default) is
     /// authoritative for every real space.
     pub(crate) fn active_space_appearance(&self) -> SpaceAppearance {
-        let active = self.controller.snapshot().active_space;
+        let active = self.controller.read().snapshot().active_space;
         self.controller
+            .read()
             .space_appearance(active)
             .unwrap_or_else(|| SpaceAppearance::default_for(active))
     }
@@ -169,6 +172,7 @@ impl BbrApp {
             .copied()
             .ok_or_else(|| format!("unknown theme {theme:?}"))?;
         self.controller
+            .get()
             .set_space_theme(space, token)
             .map_err(|error| error.to_string())?;
         cx.notify();
@@ -183,7 +187,7 @@ impl BbrApp {
     /// semantic tree all call this same method so the chip ids and states
     /// can never drift.
     pub(crate) fn space_chip_visuals(&self) -> Vec<bbr_ui::state::SpaceChipVisuals> {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let budget = crate::shell::space_title_budget_chars(&self.theme());
         // The one drag-state source: the exact persistent chip the pointer
         // currently hovers (None at rest / over another zone).
@@ -199,6 +203,7 @@ impl BbrApp {
                     .expect("space row derives from the snapshot");
                 let appearance = self
                     .controller
+                    .read()
                     .space_appearance(space.id)
                     .expect("space exists");
                 let targeted = drag_chip == Some(space.id);
@@ -256,7 +261,7 @@ impl BbrApp {
         if self.command_bar_mode.is_active() {
             return;
         }
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         if snapshot.spaces.is_empty() {
             return;
         }
@@ -372,7 +377,7 @@ impl BbrApp {
         #[cfg(feature = "testkit")]
         {
             self.performance.expect_state(
-                self.controller.snapshot().active_view,
+                self.controller.read().snapshot().active_view,
                 self.sidebar_visible,
                 true,
                 self.command_bar_mode.into(),
@@ -394,9 +399,10 @@ impl BbrApp {
         if name.is_empty() {
             return None;
         }
-        let profile = self.controller.active_profile();
+        let profile = self.controller.read().active_profile();
         let result = self
             .controller
+            .get()
             .create_space_event(profile, name)
             .map_err(|error| {
                 log::error!("could not create space {name:?}: {error}");
@@ -417,13 +423,14 @@ impl BbrApp {
         // E2E and future consumers can distinguish creation from activation).
         self.emit_browser(&outcome);
         // Blueprint D16: Settings › Appearance › Default paper.
-        let intensity = match self.preferences.default_paper {
+        let default_paper = self.preferences.read().default_paper;
+        let intensity = match default_paper {
             crate::preferences::PaperChoice::Subtle => bbr_domain::TintIntensity::Subtle,
             crate::preferences::PaperChoice::Standard => bbr_domain::TintIntensity::Standard,
             crate::preferences::PaperChoice::Rich => bbr_domain::TintIntensity::Rich,
         };
         if intensity != bbr_domain::TintIntensity::Standard {
-            let _ = self.controller.set_space_paper(
+            let _ = self.controller.get().set_space_paper(
                 space,
                 bbr_domain::SpacePaper {
                     intensity,
@@ -471,7 +478,7 @@ impl BbrApp {
             self.performance.cancel();
             return false;
         }
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let active_space = bbr_testkit::protocol::TestSpaceId(snapshot.active_space.0);
         self.performance.observe_active_space(active_space);
         self.performance.expect_space(active_space);

@@ -46,12 +46,13 @@ impl BbrApp {
         let changed = match event {
             WebEvent::MediaObserved { view, observation } => self
                 .media
+                .get()
                 .registry
                 .observe(*view, observation.clone())
                 .is_some(),
             // A new document or a crashed page ends the view's session.
             WebEvent::DidCommitNavigation(view) | WebEvent::PageCrashed(view) => {
-                self.media.registry.invalidate(*view).is_some()
+                self.media.get().registry.invalidate(*view).is_some()
             }
             _ => false,
         };
@@ -63,8 +64,9 @@ impl BbrApp {
 
     /// The periodic probe (driven by the responsiveness cadence).
     pub(crate) fn pump_media(&mut self) {
-        self.media.ticks = (self.media.ticks + 1) % PROBE_EVERY_TICKS;
-        if self.media.ticks == 0 {
+        let ticks = (self.media.read().ticks + 1) % PROBE_EVERY_TICKS;
+        self.media.get().ticks = ticks;
+        if self.media.read().ticks == 0 {
             self.prune_media();
             self.engine.borrow_mut().probe_media();
         }
@@ -75,6 +77,7 @@ impl BbrApp {
     fn prune_media(&mut self) {
         let gone: Vec<WebViewId> = self
             .media
+            .read()
             .registry
             .ordered()
             .iter()
@@ -82,17 +85,21 @@ impl BbrApp {
             .filter(|view| self.media_owner(*view).is_none())
             .collect();
         for view in gone {
-            self.media.registry.invalidate(view);
+            self.media.get().registry.invalidate(view);
         }
-        let registry = &self.media.registry;
-        self.media
-            .dismissed
-            .retain(|id| registry.session(id.view).is_some_and(|s| s.id == *id));
+        let mut media = self.media.get();
+        let MediaState {
+            registry,
+            dismissed,
+            ..
+        } = &mut *media;
+        dismissed.retain(|id| registry.session(id.view).is_some_and(|s| s.id == *id));
     }
 
     /// The tab a view belongs to.
     fn media_owner(&self, view: WebViewId) -> Option<GlobalTabSnapshot> {
         self.controller
+            .read()
             .snapshot()
             .all_tabs
             .into_iter()
@@ -103,10 +110,11 @@ impl BbrApp {
     /// without a tab left out).
     fn media_sessions(&self) -> Vec<MediaSession> {
         self.media
+            .read()
             .registry
             .ordered()
             .into_iter()
-            .filter(|session| !self.media.dismissed.contains(&session.id))
+            .filter(|session| !self.media.read().dismissed.contains(&session.id))
             .filter(|session| self.media_owner(session.id.view).is_some())
             .cloned()
             .collect()
@@ -117,6 +125,7 @@ impl BbrApp {
         let sessions = self.media_sessions();
         let shown = self
             .media
+            .read()
             .current
             .and_then(|id| sessions.iter().find(|s| s.id == id))
             .or(sessions.first())?
@@ -128,7 +137,7 @@ impl BbrApp {
     pub(crate) fn media_card_model(&self) -> Option<MediaCardModel> {
         let (session, others) = self.media_shown()?;
         let owner = self.media_owner(session.id.view)?;
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let profile = snapshot
             .profiles
             .iter()
@@ -190,14 +199,14 @@ impl BbrApp {
         };
         let command = match action {
             MediaCardAction::Source => {
-                self.media.current = Some(session.id);
+                self.media.get().current = Some(session.id);
                 self.media_show_source(session.id.view, window, cx);
                 return;
             }
             MediaCardAction::Dismiss => {
-                self.media.dismissed.insert(session.id);
-                if self.media.current == Some(session.id) {
-                    self.media.current = None;
+                self.media.get().dismissed.insert(session.id);
+                if self.media.read().current == Some(session.id) {
+                    self.media.get().current = None;
                 }
                 cx.notify();
                 return;
@@ -205,7 +214,7 @@ impl BbrApp {
             MediaCardAction::Cycle => {
                 let sessions = self.media_sessions();
                 if let Some(at) = sessions.iter().position(|s| s.id == session.id) {
-                    self.media.current = Some(sessions[(at + 1) % sessions.len()].id);
+                    self.media.get().current = Some(sessions[(at + 1) % sessions.len()].id);
                 }
                 cx.notify();
                 return;
@@ -231,14 +240,14 @@ impl BbrApp {
                     .floor(),
             },
         };
-        self.media.current = Some(session.id);
+        self.media.get().current = Some(session.id);
         self.media_command(session.id, command);
         cx.notify();
     }
 
     /// Authorize `command` for `id` and hand it to the engine.
     pub(crate) fn media_command(&mut self, id: MediaSessionId, command: MediaCommand) {
-        let outcome = match self.media.registry.authorize(id, &command) {
+        let outcome = match self.media.read().registry.authorize(id, &command) {
             Err(refusal) => refusal,
             Ok(_) if self.media_owner(id.view).is_none() => MediaCommandOutcome::Ended,
             Ok(_) => {
@@ -249,7 +258,7 @@ impl BbrApp {
                 MediaCommandOutcome::Applied
             }
         };
-        self.media.last_outcome = Some(outcome);
+        self.media.get().last_outcome = Some(outcome);
     }
 
     /// Show the playing tab: its space (and profile) and the exact tab.
@@ -257,13 +266,13 @@ impl BbrApp {
         let Some(owner) = self.media_owner(view) else {
             return;
         };
-        if self.controller.snapshot().active_space != owner.space {
-            if self.controller.activate_space(owner.space).is_err() {
+        if self.controller.read().snapshot().active_space != owner.space {
+            if self.controller.get().activate_space(owner.space).is_err() {
                 return;
             }
             self.emit_browser(&bbr_browser::ControllerEvent::SpaceActivated { space: owner.space });
         }
-        if self.controller.select_tab(owner.index).is_ok() {
+        if self.controller.get().select_tab(owner.index).is_ok() {
             self.emit_browser(&bbr_browser::ControllerEvent::TabSelected { index: owner.index });
         }
         self.clear_command_profile_hint();

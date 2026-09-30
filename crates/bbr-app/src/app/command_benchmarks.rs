@@ -78,7 +78,7 @@ impl BbrApp {
             .expect_state(expected_view, self.sidebar_visible, false, expected_mode);
         // Production Enter path (the exact `on_chrome_key_down` handler).
         self.submit_command(window, cx);
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let chrome_focused = self.chrome_focused(window);
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         // Fast-but-wrong guard: the destination view, focus domain, and mode
@@ -103,7 +103,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        let before = self.controller.snapshot();
+        let before = self.controller.read().snapshot();
         if self
             .performance
             .begin(operation_id, BenchmarkKind::CommandActivateNewTab)
@@ -113,7 +113,7 @@ impl BbrApp {
         }
         // Production Cmd-Enter path (the exact `on_chrome_key_down` handler).
         self.submit_command_new_tab(window, cx);
-        let after = self.controller.snapshot();
+        let after = self.controller.read().snapshot();
         // Fast-but-wrong guard: exactly one new tab and one new live
         // session, a fresh active view (never the pre-activation view), and
         // the surface closed in web focus.
@@ -162,13 +162,13 @@ impl BbrApp {
         // Production Cmd-T entry: the exact seam the `OpenPalette` action
         // routes to (window_seam → `open_palette`), same engine as the
         // in-rail command bar.
-        let before = self.controller.snapshot();
+        let before = self.controller.read().snapshot();
         self.open_palette(window, cx);
         // Fast-but-wrong guard: the centered palette is actually open in New
         // Tab staging with chrome focus, and the staged semantics hold — the
         // active view is unchanged and no tab/session was created before
         // Enter.
-        let after = self.controller.snapshot();
+        let after = self.controller.read().snapshot();
         if self.command_surface != CommandSurface::Palette
             || self.command_bar_mode != CommandBarMode::NewTab
             || !self.chrome_focused(window)
@@ -275,14 +275,14 @@ impl BbrApp {
         }
         // Production Cmd-L entry: the exact seam Cmd-L and the address-pill
         // pointer press route to (same §11.5 engine as the in-rail bar).
-        let before = self.controller.snapshot();
+        let before = self.controller.read().snapshot();
         self.open_overlay(window, cx);
         // Fast-but-wrong guard: the overlay is actually open in Location
         // mode with chrome focus, the full current URL is present and
         // preselected (the §11.4 open contract — one keystroke replaces
         // it), and the staged semantics hold — the active view is unchanged
         // and no tab/session was created before Enter.
-        let after = self.controller.snapshot();
+        let after = self.controller.read().snapshot();
         let url = self.active_url();
         if self.command_surface != CommandSurface::Overlay
             || self.command_bar_mode != CommandBarMode::Location

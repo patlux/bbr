@@ -149,7 +149,7 @@ impl BbrApp {
         // result, the selected row, the typed state, mode, and focus. The
         // commit predicate only accepts the render carrying this identity.
         let expected_generation = self.command_ranking.generation;
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         self.performance
             .expect_state(active_view, self.sidebar_visible, true, mode);

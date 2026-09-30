@@ -15,7 +15,7 @@ impl BbrApp {
     pub(super) fn motion_snapshot(&self, rows: &[RowVisuals]) -> MotionSnapshot {
         let mode = self.theme().motion_mode;
         let dense = self.dense_window.get();
-        let pinned = crate::shell::pinned_count(&self.controller.snapshot().tabs);
+        let pinned = crate::shell::pinned_count(&self.controller.read().snapshot().tabs);
         let rendered = |index: usize| {
             index < pinned
                 || (dense.first_rendered..dense.first_rendered + dense.rendered_rows)

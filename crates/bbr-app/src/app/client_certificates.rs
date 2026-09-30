@@ -34,16 +34,18 @@ pub(crate) struct PendingCertificate {
 /// The app's client-certificate state.
 #[derive(Default)]
 pub(crate) struct CertificateState {
-    pub choices: CertificateChoices,
+    // Blueprint D19: the remembered choices, requests and load marks are
+    // shared by every window; the sheet's selection is this window's.
+    pub choices: crate::shared::Shared<CertificateChoices>,
     pub path: Option<std::path::PathBuf>,
-    pub pending: VecDeque<PendingCertificate>,
+    pub pending: crate::shared::Shared<VecDeque<PendingCertificate>>,
     pub selected: Option<usize>,
     pub remember: bool,
     /// Views that started a load since their last URL report.
-    pub loading: std::collections::BTreeSet<WebViewId>,
+    pub loading: crate::shared::Shared<std::collections::BTreeSet<WebViewId>>,
     /// Every answer handed to the engine (testkit evidence).
     #[cfg(feature = "testkit")]
-    pub answers: Vec<(u64, ClientCertificateAnswer)>,
+    pub answers: crate::shared::Shared<Vec<(u64, ClientCertificateAnswer)>>,
 }
 
 fn now_unix() -> i64 {
@@ -74,13 +76,16 @@ pub(crate) fn remembered_answer(
 
 impl BbrApp {
     pub(crate) fn load_certificate_choices(&mut self, path: std::path::PathBuf) {
-        self.certificates.choices = certificate_choices::load(&path);
+        self.certificates
+            .choices
+            .set(certificate_choices::load(&path));
         self.certificates.path = Some(path);
     }
 
     pub(crate) fn save_certificate_choices(&self) {
         if let Some(path) = self.certificates.path.as_ref() {
-            if let Err(error) = certificate_choices::save(path, &self.certificates.choices) {
+            let saved = certificate_choices::save(path, &self.certificates.choices.read());
+            if let Err(error) = saved {
                 log::warn!("client-certificate choices not saved: {error}");
             }
         }
@@ -96,12 +101,12 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(profile) = self.controller.profile_of_view(view) else {
+        let Some(profile) = self.controller.read().profile_of_view(view) else {
             self.answer_certificate_engine(request, ClientCertificateAnswer::Cancel);
             return;
         };
         let remembered = remembered_answer(
-            self.certificates.choices.get(profile, host),
+            self.certificates.choices.read().get(profile, host),
             identities,
             now_unix(),
         );
@@ -109,19 +114,25 @@ impl BbrApp {
             self.answer_certificate_engine(request, answer);
             return;
         }
-        self.certificates.pending.push_back(PendingCertificate {
-            request,
-            view,
-            profile,
-            host: host.to_string(),
-            identities: identities.to_vec(),
-        });
+        self.certificates
+            .pending
+            .get()
+            .push_back(PendingCertificate {
+                request,
+                view,
+                profile,
+                host: host.to_string(),
+                identities: identities.to_vec(),
+            });
         self.sync_certificate_sheet(window, cx);
     }
 
     fn answer_certificate_engine(&mut self, request: u64, answer: ClientCertificateAnswer) {
         #[cfg(feature = "testkit")]
-        self.certificates.answers.push((request, answer.clone()));
+        self.certificates
+            .answers
+            .get()
+            .push((request, answer.clone()));
         self.engine
             .borrow_mut()
             .answer_client_certificate(request, answer);
@@ -139,11 +150,11 @@ impl BbrApp {
     ) {
         match event {
             bbr_web::WebEvent::LoadingChanged(view, true) => {
-                self.certificates.loading.insert(*view);
+                self.certificates.loading.get().insert(*view);
             }
             bbr_web::WebEvent::UrlChanged(view, url) => {
-                let started = self.certificates.loading.remove(view);
-                if started || self.controller.view_url(*view) != Some(url.as_str()) {
+                let started = self.certificates.loading.get().remove(view);
+                if started || self.controller.read().view_url(*view) != Some(url.as_str()) {
                     self.certificate_navigation(*view, url, window, cx);
                 }
             }
@@ -169,6 +180,7 @@ impl BbrApp {
         let stale: Vec<u64> = self
             .certificates
             .pending
+            .read()
             .iter()
             .filter(|p| p.view == view && Some(&p.host) != authority.as_ref())
             .map(|p| p.request)
@@ -177,7 +189,10 @@ impl BbrApp {
             return;
         }
         for request in stale {
-            self.certificates.pending.retain(|p| p.request != request);
+            self.certificates
+                .pending
+                .get()
+                .retain(|p| p.request != request);
             self.answer_certificate_engine(request, ClientCertificateAnswer::Cancel);
         }
         self.certificates.selected = None;
@@ -187,12 +202,14 @@ impl BbrApp {
     /// The request the sheet shows now (the first one of the active page;
     /// requests of views that are gone are dropped — the engine cancelled
     /// them).
-    pub(crate) fn current_certificate_request(&self) -> Option<&PendingCertificate> {
-        let active = self.controller.snapshot().active_view?;
+    pub(crate) fn current_certificate_request(&self) -> Option<PendingCertificate> {
+        let active = self.controller.read().snapshot().active_view?;
         self.certificates
             .pending
+            .read()
             .iter()
-            .find(|p| p.view == active && self.controller.profile_of_view(p.view).is_some())
+            .find(|p| p.view == active && self.controller.read().profile_of_view(p.view).is_some())
+            .cloned()
     }
 
     /// A sheet that just became current takes the keyboard (the page loses
@@ -227,7 +244,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(current) = self.current_certificate_request().cloned() else {
+        let Some(current) = self.current_certificate_request() else {
             return;
         };
         let now = now_unix();
@@ -258,7 +275,7 @@ impl BbrApp {
                     return;
                 };
                 if self.certificates.remember {
-                    self.certificates.choices.set(
+                    self.certificates.choices.get().set(
                         current.profile,
                         &current.host,
                         CertificateChoice::Identity {
@@ -271,7 +288,7 @@ impl BbrApp {
             }
             ClientCertificateEvent::DontSend => {
                 if self.certificates.remember {
-                    self.certificates.choices.set(
+                    self.certificates.choices.get().set(
                         current.profile,
                         &current.host,
                         CertificateChoice::None,
@@ -286,6 +303,7 @@ impl BbrApp {
         }
         self.certificates
             .pending
+            .get()
             .retain(|p| p.request != current.request);
         self.certificates.selected = None;
         self.certificates.remember = false;
@@ -345,6 +363,7 @@ impl BbrApp {
         let current = self.current_certificate_request()?;
         let profile = self
             .controller
+            .read()
             .snapshot()
             .profiles
             .iter()
@@ -408,7 +427,7 @@ impl BbrApp {
                     .collect(),
                 selected: model.selected,
                 remember: model.remember,
-                queued: self.certificates.pending.len() - 1,
+                queued: self.certificates.pending.read().len() - 1,
             })
         });
         bbr_testkit::protocol::ClientCertificatesSnapshot {
@@ -416,6 +435,7 @@ impl BbrApp {
             answers: self
                 .certificates
                 .answers
+                .read()
                 .iter()
                 .map(|(request, answer)| {
                     let answer = match answer {

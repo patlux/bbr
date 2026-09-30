@@ -33,9 +33,10 @@ impl BbrApp {
     /// Republish which live pages may open pop-ups (the synchronous
     /// new-window handler reads it).
     pub(crate) fn publish_popup_views(&self) {
-        let policies = &self.permissions.policies;
+        let policies = self.permissions.policies.read();
         let views = self
             .controller
+            .read()
             .live_view_urls()
             .into_iter()
             .filter(|(_, profile, url)| {
@@ -51,6 +52,7 @@ impl BbrApp {
     pub(crate) fn popup_blocked(&mut self, request: NewWindowRequest, cx: &mut Context<Self>) {
         let Some((_, profile, url)) = self
             .controller
+            .read()
             .live_view_urls()
             .into_iter()
             .find(|(view, _, _)| *view == request.source)
@@ -96,7 +98,8 @@ impl BbrApp {
     /// The notice shows while its page is the active one.
     pub(crate) fn popup_notice_visible(&self) -> Option<&PopupNotice> {
         let notice = self.permissions.popup.as_ref()?;
-        (self.controller.snapshot().active_view == Some(notice.request.source)).then_some(notice)
+        (self.controller.read().snapshot().active_view == Some(notice.request.source))
+            .then_some(notice)
     }
 
     /// The notice's message.
@@ -130,7 +133,10 @@ impl BbrApp {
             return;
         };
         let (profile, origin) = (notice.profile, notice.origin.clone());
-        self.permissions.policies.set_popups(profile, &origin, true);
+        self.permissions
+            .policies
+            .get()
+            .set_popups(profile, &origin, true);
         self.save_site_permissions();
         self.publish_popup_views();
         self.popup_open(window, cx);

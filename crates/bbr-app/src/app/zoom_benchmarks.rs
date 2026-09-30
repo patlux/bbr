@@ -47,7 +47,7 @@ impl BbrApp {
         // routes to (`window_seam` → `zoom_in`). The mutation records the
         // observed zoom state (level/applied/pending) on the way out.
         self.zoom_in(cx);
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         // Fast-but-wrong guard: the same active view stays selected, the

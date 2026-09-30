@@ -82,7 +82,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         if snapshot.active_space == to_space {
             return false;
         }
@@ -112,7 +112,7 @@ impl BbrApp {
     /// post-mutation snapshot (active view, focus, mode), like the other
     /// interaction benchmarks.
     pub(crate) fn commit_organize_benchmark(&self, window: &Window) {
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(
@@ -151,7 +151,7 @@ impl BbrApp {
             // the authoritative post-mutation controller snapshot so the
             // presentation commit sees the real state and cannot silently drop
             // a sample when the selection changes views.
-            let active_view = self.controller.snapshot().active_view;
+            let active_view = self.controller.read().snapshot().active_view;
             let chrome_focused = self.chrome_focused(window);
             let mode = self.command_bar_mode.into();
             self.performance.observe_render_state(
@@ -192,7 +192,7 @@ impl BbrApp {
         // selects. The benchmark commits synchronously from the authoritative
         // post-mutation snapshot (same rationale as `benchmark_select_tab`).
         self.select_row_via_pointer(index, window, cx);
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(
@@ -233,7 +233,7 @@ impl BbrApp {
             self.performance.cancel();
             return false;
         }
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(
@@ -282,7 +282,7 @@ impl BbrApp {
         // only return through engine callbacks), so a frame-dependent commit
         // silently dropped interaction samples. The semantic state check inside
         // `commit_current_presentation` still rejects fast-but-wrong results.
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(
@@ -356,7 +356,7 @@ impl BbrApp {
         let window_width = f32::from(window.bounds().size.width);
         let expected = bbr_ui::sidebar::SidebarGeometry::effective_width_for(width, window_width);
         self.performance
-            .expect_browser_state(self.controller.snapshot().active_view, true);
+            .expect_browser_state(self.controller.read().snapshot().active_view, true);
         self.performance.expect_sidebar_width(expected);
         // The production mutation; its synchronous commit observes the armed
         // expectations and rejects a wrong geometry.
@@ -394,7 +394,7 @@ impl BbrApp {
             window_width,
         );
         self.performance
-            .expect_browser_state(self.controller.snapshot().active_view, true);
+            .expect_browser_state(self.controller.read().snapshot().active_view, true);
         self.performance.expect_sidebar_width(expected);
         // The measured expand; the toggle auto-commits the restored
         // presentation synchronously.
@@ -419,7 +419,7 @@ impl BbrApp {
         window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> bool {
-        let before = self.controller.snapshot();
+        let before = self.controller.read().snapshot();
         // The genuine availability precondition: a disabled control's
         // listener never fires and the production method is a no-op — the
         // benchmark refuses to measure a dispatch that cannot navigate.
@@ -460,7 +460,7 @@ impl BbrApp {
             "reload" => self.reload(),
             _ => unreachable!("precondition match already rejected unknown controls"),
         }
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(

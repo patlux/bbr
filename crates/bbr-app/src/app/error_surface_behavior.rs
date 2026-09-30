@@ -44,7 +44,7 @@ impl BbrApp {
         incident: bbr_web_macos::error_mapping::ClassifiedIncident,
         cx: &mut Context<Self>,
     ) {
-        self.error_surface.present(
+        self.error_surface.get().present(
             incident.profile,
             incident.web_view,
             incident.reason,
@@ -64,22 +64,28 @@ impl BbrApp {
     /// presented by the §11.8 crash panel, so its `Restore` never routes
     /// through this button in v1 (handled defensively anyway).
     pub fn error_recover(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
-        let Some(view) = self.controller.snapshot().active_view else {
+        let Some(view) = self.controller.read().snapshot().active_view else {
             return;
         };
-        let Some(spec) = self.error_surface.spec_for(view) else {
+        let Some(spec) = self.error_surface.read().spec_for(view) else {
             return;
         };
         let action = spec.action;
-        if self.error_surface.request_recovery(view, action).is_none() {
+        if self
+            .error_surface
+            .get()
+            .request_recovery(view, action)
+            .is_none()
+        {
             return;
         }
         match action {
             RecoveryAction::Retry => {
                 // Re-attempt the failed navigation to the same URL (the
                 // app-side retry target captured from the engine report).
-                if let Some(url) = self.error_surface.retry_url(view) {
-                    let _ = self.controller.navigate(WebAction::Load { url });
+                let retry = self.error_surface.read().retry_url(view);
+                if let Some(url) = retry {
+                    let _ = self.controller.get().navigate(WebAction::Load { url });
                 }
             }
             RecoveryAction::Restore => {
@@ -98,10 +104,10 @@ impl BbrApp {
     /// lifecycle event — identity is never touched. The native view is
     /// restored (it was only hidden while the surface replaced it).
     pub fn error_dismiss(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
-        let Some(view) = self.controller.snapshot().active_view else {
+        let Some(view) = self.controller.read().snapshot().active_view else {
             return;
         };
-        if !self.error_surface.dismiss(view) {
+        if !self.error_surface.get().dismiss(view) {
             return;
         }
         self.sync_error_surface_visibility();
@@ -125,19 +131,20 @@ impl BbrApp {
         if self.library.open {
             return;
         }
-        let Some(view) = self.controller.snapshot().active_view else {
+        let Some(view) = self.controller.read().snapshot().active_view else {
             return;
         };
         let surface_visible = self
             .error_surface
+            .read()
             .spec_for(view)
             .is_some_and(|spec| spec.incident.reason.category() != IncidentCategory::ProcessCrash);
         if surface_visible {
-            if !self.error_surface.is_hidden(view) {
+            if !self.error_surface.read().is_hidden(view) {
                 self.engine.borrow_mut().show(view, false);
-                self.error_surface.mark_hidden(view);
+                self.error_surface.get().mark_hidden(view);
             }
-        } else if self.error_surface.take_hidden(view) {
+        } else if self.error_surface.get().take_hidden(view) {
             self.engine.borrow_mut().show(view, true);
         }
     }
@@ -148,8 +155,8 @@ impl BbrApp {
     pub(super) fn active_error_surface_spec(
         &self,
     ) -> Option<super::error_surface::ErrorSurfaceSpec> {
-        let view = self.controller.snapshot().active_view?;
-        let spec = self.error_surface.spec_for(view)?;
+        let view = self.controller.read().snapshot().active_view?;
+        let spec = self.error_surface.read().spec_for(view)?;
         if spec.incident.reason.category() == IncidentCategory::ProcessCrash {
             return None;
         }

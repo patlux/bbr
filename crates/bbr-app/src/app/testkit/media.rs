@@ -52,6 +52,7 @@ impl BbrApp {
             card,
             sessions: self
                 .media
+                .read()
                 .registry
                 .ordered()
                 .into_iter()
@@ -66,7 +67,12 @@ impl BbrApp {
                     .to_string(),
                 })
                 .collect(),
-            last_outcome: self.media.last_outcome.as_ref().map(|o| format!("{o:?}")),
+            last_outcome: self
+                .media
+                .read()
+                .last_outcome
+                .as_ref()
+                .map(|o| format!("{o:?}")),
         }
     }
 

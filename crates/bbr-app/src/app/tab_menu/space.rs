@@ -63,14 +63,18 @@ impl BbrApp {
         cx: &mut Context<Self>,
     ) {
         cx.stop_propagation();
-        if self.controller.space_title(space).is_none() {
+        if self.controller.read().space_title(space).is_none() {
             log::debug!("space menu requested for an unknown space {space:?}; ignored");
             return;
         }
         let rows = build_space_rows(
-            self.controller.can_move_space(space, SpaceMove::Earlier),
-            self.controller.can_move_space(space, SpaceMove::Later),
-            self.controller.can_delete_space(space),
+            self.controller
+                .read()
+                .can_move_space(space, SpaceMove::Earlier),
+            self.controller
+                .read()
+                .can_move_space(space, SpaceMove::Later),
+            self.controller.read().can_delete_space(space),
         );
         let point = [f32::from(event.position.x), f32::from(event.position.y)];
         let window_size = [
@@ -115,7 +119,7 @@ impl BbrApp {
                 self.open_space_config(space, window, cx);
             }
             TabMenuAction::NewTabInSpace => {
-                if self.controller.snapshot().active_space != space {
+                if self.controller.read().snapshot().active_space != space {
                     self.activate_space(space, window, cx);
                 }
                 self.activate_new_tab(window, cx);
@@ -126,7 +130,8 @@ impl BbrApp {
                 } else {
                     SpaceMove::Later
                 };
-                match self.controller.move_space(space, direction) {
+                let moved = self.controller.get().move_space(space, direction);
+                match moved {
                     Ok(event) => {
                         self.emit_browser(&event);
                         self.persist_structure();

@@ -73,7 +73,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.controller.snapshot().active_view != Some(view) {
+        if self.controller.read().snapshot().active_view != Some(view) {
             log::debug!("context menu requested for a non-active view {view:?}; ignored");
             return;
         }
@@ -91,7 +91,7 @@ impl BbrApp {
         self.find_discard(cx);
         self.dismiss_command_portal(cx);
         self.tab_menu_discard(cx);
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let url = snapshot.nav.url.clone();
         let title = snapshot.nav.title.clone();
         // The B2 bookmark gate (the one app-owned Saved Page authority):

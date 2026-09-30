@@ -60,8 +60,9 @@ fn count(n: usize, one: &str, many: &str) -> String {
 impl BbrApp {
     /// The profile Delete…, Spaces in and the selection refer to.
     fn selected_profile(&self) -> Option<ProfileId> {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         self.settings
+            .read()
             .selected_profile
             .filter(|id| browser.profiles.iter().any(|profile| profile.id == *id))
             .or(Some(browser.active_profile))
@@ -69,10 +70,10 @@ impl BbrApp {
 
     /// Open the New Profile sheet on Settings › Profiles.
     pub(crate) fn open_profile_sheet_new(&mut self, cx: &mut Context<Self>) {
-        let profiles = self.controller.snapshot().profiles.len();
-        self.settings.pane = bbr_ui::surfaces::settings::SettingsPane::Profiles;
-        self.settings.open_select = None;
-        self.settings.sheet = Some(ProfileSheet {
+        let profiles = self.controller.read().snapshot().profiles.len();
+        self.settings.get().pane = bbr_ui::surfaces::settings::SettingsPane::Profiles;
+        self.settings.get().open_select = None;
+        self.settings.get().sheet = Some(ProfileSheet {
             mode: ProfileSheetMode::New,
             name: String::new(),
             hue: profiles % ProfileHue::ALL.len(),
@@ -84,7 +85,7 @@ impl BbrApp {
     }
 
     pub(crate) fn profile_sections(&self) -> Vec<SettingsSection> {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let theme = self.theme();
         let selected = self.selected_profile();
         let rows = browser
@@ -122,7 +123,8 @@ impl BbrApp {
         .detail(NOTE)];
         let selected_profile =
             selected.and_then(|id| browser.profiles.iter().find(|profile| profile.id == id));
-        if let Some(profile) = selected_profile.filter(|p| self.controller.can_delete_profile(p.id))
+        if let Some(profile) =
+            selected_profile.filter(|p| self.controller.read().can_delete_profile(p.id))
         {
             manage.push(
                 SettingsRow::new(
@@ -154,6 +156,7 @@ impl BbrApp {
                 .map(|space| {
                     let paper = self
                         .controller
+                        .read()
                         .space_appearance(space.id)
                         .map(|appearance| appearance.paper.intensity)
                         .unwrap_or_default();
@@ -175,9 +178,9 @@ impl BbrApp {
 
     /// The open sheet as the window draws it.
     pub(crate) fn profile_sheet_model(&self) -> Option<SettingsSheet> {
-        let sheet = self.settings.sheet.as_ref()?;
+        let sheet = self.settings.read().sheet.clone()?;
         let theme = self.theme();
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let hues: Vec<gpui::Rgba> = ProfileHue::ALL
             .iter()
             .map(|hue| bbr_ui::palette::ProfileHueRamp::tile(*hue, theme.mode).tile)
@@ -264,15 +267,18 @@ impl BbrApp {
         event: &SettingsEvent,
         cx: &mut Context<Self>,
     ) -> bool {
-        if let Some(sheet) = self.settings.sheet.as_mut() {
+        let open_sheet = self.settings.read().sheet.clone();
+        if let Some(mut sheet) = open_sheet {
+            let mut close = false;
+            let mut confirm = false;
             match event {
                 SettingsEvent::SheetField(index) => sheet.focus = *index,
                 SettingsEvent::SheetSwatch(index) => sheet.hue = *index % ProfileHue::ALL.len(),
-                SettingsEvent::SheetCancel => self.settings.sheet = None,
-                SettingsEvent::SheetConfirm => self.confirm_profile_sheet(cx),
+                SettingsEvent::SheetCancel => close = true,
+                SettingsEvent::SheetConfirm => confirm = true,
                 SettingsEvent::Key { key, text } => match key.as_ref() {
-                    "escape" => self.settings.sheet = None,
-                    "enter" => self.confirm_profile_sheet(cx),
+                    "escape" => close = true,
+                    "enter" => confirm = true,
                     "tab" => {
                         if sheet.mode == ProfileSheetMode::New {
                             sheet.focus = 1 - sheet.focus.min(1);
@@ -300,10 +306,12 @@ impl BbrApp {
                 // A sheet is modal: nothing behind it reacts.
                 _ => {}
             }
-            if let Some(sheet) = self.settings.sheet.as_mut() {
-                if !sheet.space_edited {
-                    sheet.first_space = sheet.name.clone();
-                }
+            if !sheet.space_edited {
+                sheet.first_space = sheet.name.clone();
+            }
+            self.settings.get().sheet = (!close).then_some(sheet);
+            if confirm {
+                self.confirm_profile_sheet(cx);
             }
             return true;
         }
@@ -313,8 +321,9 @@ impl BbrApp {
                     .strip_prefix("profile-")
                     .and_then(|i| i.parse::<usize>().ok())
                 {
-                    self.settings.selected_profile = self
+                    self.settings.get().selected_profile = self
                         .controller
+                        .read()
                         .snapshot()
                         .profiles
                         .iter()
@@ -331,7 +340,7 @@ impl BbrApp {
                 }
                 if row.as_ref() == "profile-delete" {
                     if let Some(profile) = self.selected_profile() {
-                        self.settings.sheet = Some(ProfileSheet {
+                        self.settings.get().sheet = Some(ProfileSheet {
                             mode: ProfileSheetMode::Delete(profile),
                             name: String::new(),
                             hue: 0,
@@ -348,10 +357,10 @@ impl BbrApp {
                 else {
                     return false;
                 };
-                let browser = self.controller.snapshot();
+                let browser = self.controller.read().snapshot();
                 if let Some(profile) = browser.profiles.iter().find(|p| p.index == index) {
-                    self.settings.selected_profile = Some(profile.id);
-                    self.settings.sheet = Some(ProfileSheet {
+                    self.settings.get().selected_profile = Some(profile.id);
+                    self.settings.get().sheet = Some(ProfileSheet {
                         mode: ProfileSheetMode::Edit(profile.id),
                         name: profile.title.clone(),
                         hue: hue_index(profile.hue),
@@ -367,7 +376,7 @@ impl BbrApp {
     }
 
     fn confirm_profile_sheet(&mut self, cx: &mut Context<Self>) {
-        let Some(sheet) = self.settings.sheet.clone() else {
+        let Some(sheet) = self.settings.read().sheet.clone() else {
             return;
         };
         let hue = ProfileHue::ALL[sheet.hue % ProfileHue::ALL.len()];
@@ -381,13 +390,14 @@ impl BbrApp {
                     "" => name.clone(),
                     space => space.to_string(),
                 };
-                match self.controller.create_profile_space(name, space_name) {
+                let created = self.controller.get().create_profile_space(name, space_name);
+                match created {
                     Ok(event) => {
                         if let bbr_browser::ControllerEvent::ProfileCreated { profile, space } =
                             event
                         {
-                            let _ = self.controller.set_profile_hue(profile, hue);
-                            self.settings.selected_profile = Some(profile);
+                            let _ = self.controller.get().set_profile_hue(profile, hue);
+                            self.settings.get().selected_profile = Some(profile);
                             self.emit_browser(&event);
                             self.activate_space_in_browser(space, cx);
                         }
@@ -399,21 +409,22 @@ impl BbrApp {
                 if sheet.name.trim().is_empty() {
                     return;
                 }
-                let _ = self.controller.rename_profile(profile, &sheet.name);
-                let _ = self.controller.set_profile_hue(profile, hue);
+                let _ = self.controller.get().rename_profile(profile, &sheet.name);
+                let _ = self.controller.get().set_profile_hue(profile, hue);
             }
             ProfileSheetMode::Delete(profile) => {
-                match self
+                let deleted = self
                     .organization
-                    .delete_profile(&mut self.controller, profile)
-                {
+                    .get()
+                    .delete_profile(&mut self.controller.get(), profile);
+                match deleted {
                     Ok(event) => {
                         self.engine.borrow_mut().delete_profile_store(profile);
                         // Blueprint D11: its site permissions go with it.
-                        self.permissions.policies.forget_profile(profile);
+                        self.permissions.policies.get().forget_profile(profile);
                         self.save_site_permissions();
                         // Blueprint D12: and its certificate choices.
-                        self.certificates.choices.forget_profile(profile);
+                        self.certificates.choices.get().forget_profile(profile);
                         self.save_certificate_choices();
                         self.emit_browser(&event);
                         if let bbr_browser::ControllerEvent::ProfileDeleted {
@@ -424,13 +435,13 @@ impl BbrApp {
                         {
                             self.activate_space_in_browser(fallback, cx);
                         }
-                        self.settings.selected_profile = None;
+                        self.settings.get().selected_profile = None;
                     }
                     Err(error) => log::error!("could not delete the profile: {error}"),
                 }
             }
         }
-        self.settings.sheet = None;
+        self.settings.get().sheet = None;
         self.persist_structure();
         cx.notify();
     }

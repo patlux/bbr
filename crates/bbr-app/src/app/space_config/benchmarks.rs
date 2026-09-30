@@ -55,7 +55,7 @@ impl BbrApp {
             return false;
         };
         let created = bbr_testkit::protocol::TestSpaceId(space.0);
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         self.performance.observe_active_space(created);
         self.performance.expect_space(created);
         self.performance.expect_state(
@@ -110,7 +110,7 @@ impl BbrApp {
         self.space_config_select_identity(resolved, cx);
         self.space_config_done(window, cx);
         let bound = bbr_testkit::protocol::TestSpaceId(space.0);
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         self.performance.observe_active_space(bound);
         self.performance.expect_space(bound);
         self.performance.expect_state(

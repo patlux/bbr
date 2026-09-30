@@ -62,7 +62,7 @@ impl BbrApp {
         // Production footer activation (the exact seam `ClickFooterDownloads`
         // and the pointer/keyboard listeners route to).
         downloads_open(self, window, cx);
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         let chrome_focused = self.chrome_focused(window);
         // Fast-but-wrong guard: the same active view stays selected, the
@@ -127,7 +127,7 @@ impl BbrApp {
         // total change, or terminal record) when the record is not Running
         // at the armed received/total.
         let applied = matches!(
-            self.downloads.controller.record(attempt).map(|r| &r.state),
+            self.downloads.controller.read().record(attempt).map(|r| &r.state),
             Some(bbr_web::downloads::DownloadState::Running { progress, .. })
                 if progress.received() == received && progress.total() == Some(total)
         );
@@ -135,7 +135,7 @@ impl BbrApp {
             self.performance.cancel();
             return false;
         }
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         let chrome_focused = self.chrome_focused(window);
         self.performance.observe_render_state(
@@ -191,7 +191,7 @@ impl BbrApp {
         // state the render commits from.
         #[cfg(target_os = "macos")]
         self.download_web_view.set(None);
-        let Ok(fresh) = self.downloads.controller.retry(old_id) else {
+        let Ok(fresh) = self.downloads.controller.get().retry(old_id) else {
             self.performance.cancel();
             return false;
         };
@@ -216,7 +216,7 @@ impl BbrApp {
                 gpui::px(-(anchor as f32 * row_h)),
             ));
         }
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         let chrome_focused = self.chrome_focused(window);
         self.performance.observe_render_state(
@@ -265,7 +265,7 @@ impl BbrApp {
         let old_id = DownloadId(target.id);
         #[cfg(target_os = "macos")]
         self.download_web_view.set(None);
-        let Ok(fresh) = self.downloads.controller.retry(old_id) else {
+        let Ok(fresh) = self.downloads.controller.get().retry(old_id) else {
             self.performance.cancel();
             return false;
         };
@@ -282,7 +282,7 @@ impl BbrApp {
                 gpui::px(-(anchor as f32 * row_h)),
             ));
         }
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         let chrome_focused = self.chrome_focused(window);
         self.performance.observe_render_state(
@@ -329,7 +329,7 @@ impl BbrApp {
             self.performance.cancel();
             return false;
         }
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         let chrome_focused = self.chrome_focused(window);
         self.performance.observe_render_state(
@@ -362,7 +362,7 @@ impl BbrApp {
             return false;
         }
         super::downloads_history::downloads_clear(self, cx);
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         let chrome_focused = self.chrome_focused(window);
         self.performance.observe_render_state(
@@ -396,6 +396,7 @@ impl BbrApp {
         let id = self
             .downloads
             .controller
+            .get()
             .start(url, DestinationDecision::Suggested(destination.to_owned()))
             .ok()?;
         on_download_event(

@@ -120,7 +120,7 @@ pub fn download_start(
 ) -> Result<DownloadId, DownloadError> {
     #[cfg(target_os = "macos")]
     app.capture_download_web_view();
-    let id = app.downloads.controller.start(url, destination)?;
+    let id = app.downloads.controller.get().start(url, destination)?;
     app.downloads
         .scroll
         .set_offset(gpui::point(gpui::px(0.0), gpui::px(0.0)));
@@ -136,7 +136,7 @@ pub fn download_cancel(
     id: DownloadId,
     cx: &mut Context<BbrApp>,
 ) -> Result<(), DownloadError> {
-    app.downloads.controller.cancel(id)?;
+    app.downloads.controller.get().cancel(id)?;
     cx.notify();
     Ok(())
 }
@@ -152,7 +152,7 @@ pub fn download_retry(
 ) -> Result<DownloadId, DownloadError> {
     #[cfg(target_os = "macos")]
     app.capture_download_web_view();
-    let new_id = app.downloads.controller.retry(id)?;
+    let new_id = app.downloads.controller.get().retry(id)?;
     app.downloads
         .scroll
         .set_offset(gpui::point(gpui::px(0.0), gpui::px(0.0)));
@@ -198,7 +198,7 @@ pub fn download_click_row_action(
                     log::warn!("reveal in finder failed: {error:?}");
                     // A vanished file marks the action §10.8 disabled with a
                     // reason until the next successful reveal.
-                    app.downloads.reveal.insert(
+                    app.downloads.reveal.get().insert(
                         id,
                         RevealEligibility {
                             eligible: false,
@@ -223,7 +223,7 @@ pub fn download_click_row_action(
 pub fn on_download_event(app: &mut BbrApp, event: DownloadEvent, cx: &mut Context<BbrApp>) {
     let id = event_id(&event);
     let succeeded = matches!(event, DownloadEvent::Succeeded { .. });
-    let outcome = app.downloads.controller.apply(event);
+    let outcome = app.downloads.controller.get().apply(event);
     if matches!(outcome, bbr_browser::ApplyOutcome::Applied) {
         // §18.5: the check draws once the success is committed.
         if succeeded {
@@ -232,6 +232,7 @@ pub fn on_download_event(app: &mut BbrApp, event: DownloadEvent, cx: &mut Contex
         let terminal = app
             .downloads
             .controller
+            .read()
             .record(id)
             .is_some_and(|record| record.state.is_terminal());
         app.refresh_reveal_eligibility(id);
@@ -267,14 +268,14 @@ impl BbrApp {
     /// native adapter (a pure existence query — never opens Finder). Only
     /// `Succeeded` records with a resolved path are eligible.
     pub(crate) fn refresh_reveal_eligibility(&mut self, id: DownloadId) {
-        let Some(record) = self.downloads.controller.record(id) else {
+        let Some(record) = self.downloads.controller.read().record(id).cloned() else {
             return;
         };
         if !matches!(record.state, DownloadState::Succeeded) {
             return;
         }
         let Some(path) = record.resolved_path.clone() else {
-            self.downloads.reveal.insert(
+            self.downloads.reveal.get().insert(
                 id,
                 RevealEligibility {
                     eligible: false,
@@ -291,7 +292,7 @@ impl BbrApp {
             .unwrap_or(true);
         #[cfg(not(target_os = "macos"))]
         let eligible = true;
-        self.downloads.reveal.insert(
+        self.downloads.reveal.get().insert(
             id,
             RevealEligibility {
                 eligible,
@@ -332,7 +333,7 @@ impl BbrApp {
             cx.notify();
             return;
         }
-        let total = self.downloads.controller.len();
+        let total = self.downloads.controller.read().len();
         if total == 0 {
             return;
         }
@@ -404,7 +405,7 @@ impl BbrApp {
     /// view instantly when the keyboard cursor moves outside the visible
     /// viewport (the same instant scroll contract as §11.6).
     fn ensure_download_focus_visible(&mut self) {
-        let total = self.downloads.controller.len();
+        let total = self.downloads.controller.read().len();
         if total == 0 {
             return;
         }
@@ -477,7 +478,7 @@ impl BbrApp {
     /// active session.
     #[cfg(target_os = "macos")]
     pub(crate) fn capture_download_web_view(&mut self) {
-        let active = self.controller.snapshot().active_view;
+        let active = self.controller.read().snapshot().active_view;
         let web_view = self
             .download_engine
             .as_ref()

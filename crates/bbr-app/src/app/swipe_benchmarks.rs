@@ -61,7 +61,7 @@ impl BbrApp {
         // order the render, snapshot, semantics, and keyboard traversal
         // consume). Anything else is a boundary/no-op and must never be
         // measured as a commit.
-        let source = self.controller.snapshot().active_space;
+        let source = self.controller.read().snapshot().active_space;
         let order: Vec<SpaceId> = self
             .space_chip_visuals()
             .into_iter()
@@ -117,7 +117,7 @@ impl BbrApp {
         // authoritative post-switch controller state is the semantic truth
         // (a double commit or a wrong destination is rejected here, and the
         // driver re-checks the typed snapshot afterwards).
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         if snapshot.active_space != destination {
             self.performance.cancel();
             return false;

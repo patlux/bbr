@@ -83,6 +83,7 @@ impl BbrApp {
     ) -> bool {
         let _ = self
             .auth
+            .get()
             .record_challenge(
                 challenge.profile(),
                 challenge.web_view(),
@@ -107,6 +108,7 @@ impl BbrApp {
         user_initiated: bool,
     ) -> bool {
         self.auth
+            .get()
             .record_challenge(
                 profile,
                 web_view,
@@ -129,10 +131,10 @@ impl BbrApp {
     /// sheet was presented.
     pub fn auth_present_sheet(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         let origin_chrome_focused = self.chrome_focused(window);
-        let Some(_id) = self.auth.present_next() else {
+        let Some(_id) = self.auth.get().present_next() else {
             return false;
         };
-        self.auth.capture_origin_focus(origin_chrome_focused);
+        self.auth.get().capture_origin_focus(origin_chrome_focused);
         // The sheet owns the keyboard while open (the portal window is
         // never key): any other surface that held it must close.
         self.dismiss_command_portal(cx);
@@ -156,12 +158,12 @@ impl BbrApp {
         if !self.auth_sheet_is_presented() {
             return false;
         }
-        let decision = self.auth.submit();
+        let decision = self.auth.get().submit();
         if decision == ChallengeDecision::Noop {
             return false;
         }
-        let origin_chrome_focused = self.auth.origin_focus();
-        self.auth.close_sheet();
+        let origin_chrome_focused = self.auth.read().origin_focus();
+        self.auth.get().close_sheet();
         self.dismiss_auth_presentation(cx);
         self.restore_auth_focus(origin_chrome_focused, window, cx);
         cx.notify();
@@ -175,12 +177,12 @@ impl BbrApp {
         if !self.auth_sheet_is_presented() {
             return false;
         }
-        let decision = self.auth.cancel();
+        let decision = self.auth.get().cancel();
         if decision == ChallengeDecision::Noop {
             return false;
         }
-        let origin_chrome_focused = self.auth.origin_focus();
-        self.auth.close_sheet();
+        let origin_chrome_focused = self.auth.read().origin_focus();
+        self.auth.get().close_sheet();
         self.dismiss_auth_presentation(cx);
         self.restore_auth_focus(origin_chrome_focused, window, cx);
         cx.notify();
@@ -212,7 +214,7 @@ impl BbrApp {
     /// over it — reports closed, so a stale submit can never answer a sheet
     /// that is not on screen).
     pub fn auth_sheet_is_presented(&self) -> bool {
-        self.auth.presented().is_some()
+        self.auth.read().presented().is_some()
             && self
                 .portal
                 .active()
@@ -222,12 +224,12 @@ impl BbrApp {
     /// The redacted render data for the portal window; `None` when no sheet
     /// is presented.
     pub fn auth_surface(&self) -> Option<AuthSheetSurface> {
-        self.auth.surface()
+        self.auth.read().surface()
     }
 
     /// The redacted wire-visible snapshot of the credential sheet.
     pub fn auth_snapshot(&self) -> AuthSnapshotState {
-        self.auth.snapshot()
+        self.auth.read().snapshot()
     }
 
     /// Handle keystrokes while the credential sheet is open (the main-window
@@ -251,12 +253,12 @@ impl BbrApp {
             }
             "tab" => {
                 cx.stop_propagation();
-                self.auth.sheet().focus_next();
+                self.auth.get().sheet().focus_next();
                 cx.notify();
             }
             "backspace" => {
                 cx.stop_propagation();
-                self.auth.sheet().backspace();
+                self.auth.get().sheet().backspace();
                 cx.notify();
             }
             "escape" => {
@@ -270,7 +272,7 @@ impl BbrApp {
                 if let Some(ch) = ks.key_char.as_deref() {
                     if !ch.is_empty() {
                         cx.stop_propagation();
-                        self.auth.sheet().type_char(ch);
+                        self.auth.get().sheet().type_char(ch);
                         cx.notify();
                     }
                 }
@@ -291,7 +293,7 @@ impl BbrApp {
         if !self.auth_sheet_is_presented() {
             return;
         }
-        self.auth.sheet().focus_next();
+        self.auth.get().sheet().focus_next();
         cx.notify();
     }
 

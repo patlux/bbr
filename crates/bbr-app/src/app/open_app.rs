@@ -76,7 +76,7 @@ impl BbrApp {
         let Some(scheme) = scheme_of(url) else {
             return;
         };
-        let Some(profile) = self.controller.profile_of_view(view) else {
+        let Some(profile) = self.controller.read().profile_of_view(view) else {
             return;
         };
         let Some(app) = self.engine.borrow().external_app_name(url) else {
@@ -85,6 +85,7 @@ impl BbrApp {
         };
         let origin = self
             .controller
+            .read()
             .live_view_urls()
             .into_iter()
             .find(|(candidate, _, _)| *candidate == view)
@@ -92,6 +93,7 @@ impl BbrApp {
         let allowed = origin.as_ref().is_some_and(|origin| {
             self.permissions
                 .policies
+                .read()
                 .app_allowed(profile, origin, &scheme)
         });
         if allowed {
@@ -152,10 +154,9 @@ impl BbrApp {
 
     /// The sheet shows while its page is the active one.
     pub(crate) fn open_app_sheet_open(&self) -> bool {
-        self.open_app
-            .request
-            .as_ref()
-            .is_some_and(|request| self.controller.snapshot().active_view == Some(request.view))
+        self.open_app.request.as_ref().is_some_and(|request| {
+            self.controller.read().snapshot().active_view == Some(request.view)
+        })
     }
 
     /// The sheet's model.
@@ -204,7 +205,7 @@ impl BbrApp {
                 };
                 if self.open_app.remember {
                     if let Some(origin) = request.origin.as_ref() {
-                        self.permissions.policies.allow_app(
+                        self.permissions.policies.get().allow_app(
                             request.profile,
                             origin,
                             &request.scheme,

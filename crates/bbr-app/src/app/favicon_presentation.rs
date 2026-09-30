@@ -70,17 +70,18 @@ impl BbrApp {
     /// every rendered favicon slot and every snapshot reads the mirror that
     /// matches the store version.
     pub(crate) fn refresh_favicon_mirror(&mut self) {
-        let version = self.controller.favicon_version();
-        if version == self.favicon_mirror_version {
+        let version = self.controller.read().favicon_version();
+        if version == self.favicon_mirror_version.value() {
             return;
         }
-        self.favicon_mirror_version = version;
-        self.favicon_images.clear();
-        for (profile, host, bytes) in self.controller.favicon_entries_all() {
+        self.favicon_mirror_version.set(version);
+        self.favicon_images.get().clear();
+        let entries = self.controller.read().favicon_entries_all();
+        for (profile, host, bytes) in entries {
             if bytes.is_empty() {
                 continue;
             }
-            self.favicon_images.insert(
+            self.favicon_images.get().insert(
                 (profile, host),
                 Arc::new(Image::from_bytes(image_format_for(&bytes), bytes)),
             );
@@ -93,6 +94,7 @@ impl BbrApp {
     /// method is called from `&self` presentation derivations).
     pub(crate) fn favicon_image(&self, profile: ProfileId, host: &str) -> Option<Arc<Image>> {
         self.favicon_images
+            .read()
             .get(&(profile, host.to_string()))
             .cloned()
     }

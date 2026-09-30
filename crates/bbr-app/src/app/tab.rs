@@ -40,7 +40,7 @@ impl BbrApp {
     ) {
         self.focus_tab_list(window, cx);
         let closed = self.close_tab(index, cx).is_some();
-        if closed && self.controller.snapshot().active_view.is_none() {
+        if closed && self.controller.read().snapshot().active_view.is_none() {
             self.enter_empty_new_tab(window, cx);
         }
     }
@@ -89,7 +89,7 @@ impl BbrApp {
         if self.command_bar_mode.is_active() {
             return;
         }
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let Some(active) = snapshot.active_index else {
             return;
         };
@@ -103,7 +103,10 @@ impl BbrApp {
                     // pinned, expanded folders' members, then the regular
                     // region (a member of a collapsed folder keeps the
                     // index-order step).
-                    let organization = self.organization.organization_snapshot(&self.controller);
+                    let organization = self
+                        .organization
+                        .get()
+                        .organization_snapshot(&self.controller.read());
                     let grouped =
                         crate::shell::organized::grouped_indices(&organization.folders, &snapshot);
                     let presentation = &self.u2.folder_presentation;
@@ -151,12 +154,12 @@ impl BbrApp {
                 // focus moves into the page (the same outcome as a committed
                 // New-Tab command). No-op when no live view is presented
                 // (crashed tab or empty space); selection never changes here.
-                if self.controller.snapshot().active_view.is_some() {
+                if self.controller.read().snapshot().active_view.is_some() {
                     self.focus_web(window, cx);
                     #[cfg(feature = "testkit")]
                     {
                         self.performance.expect_state(
-                            self.controller.snapshot().active_view,
+                            self.controller.read().snapshot().active_view,
                             self.sidebar_visible,
                             self.chrome_focused(window),
                             self.command_bar_mode.into(),
@@ -172,7 +175,7 @@ impl BbrApp {
                 // command surface (command-bar focus, NewTab mode — the same
                 // outcome as the pointer path). Only a close that leaves tabs
                 // behind keeps the list focused so repeated keys keep working.
-                if self.controller.snapshot().active_view.is_some() {
+                if self.controller.read().snapshot().active_view.is_some() {
                     self.focus_tab_list(window, cx);
                 }
                 cx.stop_propagation();
@@ -192,7 +195,7 @@ impl BbrApp {
         if !self.sidebar_visible {
             return;
         }
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let Some(active) = browser.active_index else {
             return;
         };
@@ -249,8 +252,9 @@ impl BbrApp {
         // incident so the surface never re-presents a stale crash after the
         // session is rebuilt (the crash panel is the visible surface for
         // the process-crash class).
-        if let Some(view) = self.controller.snapshot().active_view {
-            self.error_surface.clear_view(view);
+        let active = self.controller.read().snapshot().active_view;
+        if let Some(view) = active {
+            self.error_surface.get().clear_view(view);
         }
         self.reload();
         cx.notify();
@@ -268,6 +272,7 @@ impl BbrApp {
         let chrome_focused = self.chrome_focused(window);
         let result = self
             .controller
+            .get()
             .reopen_tab()
             .map_err(|error| {
                 log::error!("could not reopen tab: {error}");
@@ -287,6 +292,7 @@ impl BbrApp {
     ) -> Option<bbr_browser::ControllerEvent> {
         let result = self
             .controller
+            .get()
             .reopen_closed_tab(tab)
             .map_err(|error| {
                 log::error!("could not reopen tab: {error}");
@@ -336,6 +342,7 @@ impl BbrApp {
     ) -> Option<bbr_browser::ControllerEvent> {
         let result = self
             .controller
+            .get()
             .pin_tab(index)
             .map_err(|error| {
                 log::error!("could not pin tab {index}: {error}");
@@ -361,12 +368,12 @@ impl BbrApp {
     /// focus domain is preserved (interaction contract: tab mutations keep
     /// the domain that initiated them).
     pub fn toggle_pin(&mut self, index: usize, cx: &mut Context<Self>) -> Option<ControllerEvent> {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let pinned = snapshot.tabs.get(index).is_some_and(|tab| tab.pinned);
         let result = if pinned {
-            self.controller.unpin_tab(index)
+            self.controller.get().unpin_tab(index)
         } else {
-            self.controller.pin_tab(index)
+            self.controller.get().pin_tab(index)
         }
         .map_err(|error| {
             log::error!("could not toggle pin on tab {index}: {error}");
@@ -388,7 +395,7 @@ impl BbrApp {
     /// `Cmd-Shift-P`: pin or unpin the active tab, preserving the invoking
     /// focus domain and the live session.
     pub fn pin_active_tab(&mut self, cx: &mut Context<Self>) -> Option<ControllerEvent> {
-        let index = self.controller.snapshot().active_index?;
+        let index = self.controller.read().snapshot().active_index?;
         self.toggle_pin(index, cx)
     }
 
@@ -413,7 +420,7 @@ impl BbrApp {
         delta: isize,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let from = self.controller.snapshot().active_index?;
+        let from = self.controller.read().snapshot().active_index?;
         let to = (from as isize + delta).max(0) as usize;
         self.reorder_tab_at(from, to, cx)
     }
@@ -430,7 +437,7 @@ impl BbrApp {
         to: usize,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let len = snapshot.tabs.len();
         if len < 2 {
             return None;
@@ -449,6 +456,7 @@ impl BbrApp {
         }
         let result = self
             .controller
+            .get()
             .reorder_tab(from, to)
             .map_err(|error| {
                 log::error!("could not reorder tab {from} -> {to}: {error}");
@@ -482,7 +490,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let index = self.controller.snapshot().active_index?;
+        let index = self.controller.read().snapshot().active_index?;
         self.move_tab_to_space_at(index, space, window, cx)
     }
 
@@ -499,9 +507,10 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let from_space = self.controller.snapshot().active_space;
+        let from_space = self.controller.read().snapshot().active_space;
         let result = self
             .controller
+            .get()
             .move_tab(index, space)
             .map_err(|error| {
                 log::error!("could not move tab {index} to {space:?}: {error}");
@@ -550,6 +559,7 @@ impl BbrApp {
     ) -> Option<bbr_browser::ControllerEvent> {
         let result = self
             .controller
+            .get()
             .unpin_tab(index)
             .map_err(|error| {
                 log::error!("could not unpin tab {index}: {error}");
@@ -580,6 +590,7 @@ impl BbrApp {
     ) -> Option<bbr_browser::ControllerEvent> {
         let result = self
             .controller
+            .get()
             .reorder_tab(from, to)
             .map_err(|error| {
                 log::error!("could not reorder tab {from} -> {to}: {error}");

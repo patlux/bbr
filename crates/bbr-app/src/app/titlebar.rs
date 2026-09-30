@@ -63,7 +63,7 @@ impl BbrApp {
     /// the focused pane — all plain presentation data for the `bbr-ui`
     /// row. No browser/navigation authority lives here.
     pub fn titlebar_model(&self, window: &Window) -> TitlebarModel {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         TitlebarModel {
             safe_area: self.safe_area(window),
             sidebar_collapsed: !self.sidebar_visible,

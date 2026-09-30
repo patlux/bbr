@@ -56,6 +56,7 @@ fn zoom_in_steps_the_contract_ladder_and_applies_natively() {
     assert!(!zoom.snapshot(view).pending);
     assert_eq!(
         zoom.store
+            .get()
             .get(&ZoomController::resolve_key(ProfileId(1), &url(8123, "/")).unwrap())
             .unwrap()
             .and_then(SiteSettingsOverrides::zoom)
@@ -108,6 +109,7 @@ fn reset_returns_default_and_removes_the_override() {
     // The override record is gone (reset removed it).
     assert_eq!(
         zoom.store
+            .get()
             .get(&ZoomController::resolve_key(ProfileId(1), &url(8123, "/")).unwrap())
             .unwrap(),
         None
@@ -184,15 +186,15 @@ fn defaults_never_create_records() {
     let view = WebViewId(1);
     // Loading a site with no record performs no store write.
     zoom.on_navigation(view, ProfileId(1), &url(8123, "/"));
-    assert!(zoom.store.records.is_empty());
+    assert!(zoom.store.get().records.is_empty());
     assert_eq!(zoom.snapshot(view).level, 100);
     // Zoom in then back to the default via reset: the record is removed,
     // never set to the default value.
     zoom.zoom_in(view, ProfileId(1), &url(8123, "/")).unwrap();
-    assert!(!zoom.store.records.is_empty());
+    assert!(!zoom.store.get().records.is_empty());
     zoom.zoom_reset(view, ProfileId(1), &url(8123, "/"))
         .unwrap();
-    assert!(zoom.store.records.is_empty());
+    assert!(zoom.store.get().records.is_empty());
 }
 
 #[test]
@@ -208,7 +210,7 @@ fn profiles_are_isolated() {
 
 #[test]
 fn memory_store_port_contract() {
-    let mut store = MemorySiteSettingsStore::new();
+    let mut store = MemorySiteSettingsStore::default();
     let key = ZoomController::resolve_key(ProfileId(1), "http://example.com:443").unwrap();
     let overrides = SiteSettingsOverrides::from_zoom(ZoomPercent::new(175).unwrap());
     assert_eq!(store.get(&key), Ok(None));

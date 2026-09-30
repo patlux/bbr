@@ -63,7 +63,8 @@ impl BbrApp {
         cx.stop_propagation();
         let Some(tab) = self
             .organization
-            .organization_snapshot(&self.controller)
+            .get()
+            .organization_snapshot(&self.controller.read())
             .favorites
             .get(index)
             .map(|favorite| favorite.tab)
@@ -90,16 +91,23 @@ impl BbrApp {
     ) {
         let point = [f32::from(event.position.x), f32::from(event.position.y)];
         let Some(source) = bbr_browser::TabMenuController::resolve(
-            &self.controller,
-            |candidate| self.organization.is_favorite(candidate),
+            &self.controller.read(),
+            |candidate| self.organization.read().is_favorite(candidate),
             tab,
         ) else {
             log::debug!("tab menu requested for an unknown tab {tab:?}; ignored");
             return;
         };
-        let folders = source_folders(&mut self.organization, &self.controller, source.space);
-        let availability =
-            bbr_browser::TabMenuController::availability(&self.controller, &source, &folders);
+        let folders = source_folders(
+            &mut self.organization.get(),
+            &self.controller.read(),
+            source.space,
+        );
+        let availability = bbr_browser::TabMenuController::availability(
+            &self.controller.read(),
+            &source,
+            &folders,
+        );
         let bookmark_save = {
             let command = self.saved_pages;
             command.can_save(self, &source.url)
@@ -526,16 +534,22 @@ impl BbrApp {
                 self.dispatch_browser(tab, BrowserTabMenuAction::MoveToSpace(space))
             }
             TabMenuAction::MoveToFolder(folder) => {
-                match self
-                    .organization
-                    .move_tab_into_folder_id(&mut self.controller, tab, folder)
-                {
+                let moved = self.organization.get().move_tab_into_folder_id(
+                    &mut self.controller.get(),
+                    tab,
+                    folder,
+                );
+                match moved {
                     Ok(event) => self.apply_grouping(&event, cx),
                     Err(error) => log::error!("tab menu folder move failed: {error}"),
                 }
             }
             TabMenuAction::ToggleFavorite => {
-                match self.organization.favorite_toggle_id(&self.controller, tab) {
+                let toggled = self
+                    .organization
+                    .get()
+                    .favorite_toggle_id(&self.controller.read(), tab);
+                match toggled {
                     Ok(bbr_browser::OrganizationEvent::FavoriteToggled {
                         added: true,
                         tab,
@@ -557,9 +571,14 @@ impl BbrApp {
                     return;
                 };
                 if let Ok(canonical) = bbr_domain::canonical_url(&source.url) {
-                    if let Some(record) = self.store.saved_page_by_url(&canonical) {
+                    let saved = self
+                        .store
+                        .read()
+                        .saved_page_by_url(&canonical)
+                        .map(|record| record.id);
+                    if let Some(id) = saved {
                         let command = self.saved_pages;
-                        command.remove(self, bbr_command::id::BookmarkId(record.id));
+                        command.remove(self, bbr_command::id::BookmarkId(id));
                     }
                 }
             }
@@ -582,7 +601,9 @@ impl BbrApp {
     /// controller and broadcast its typed event (the E2E change stream and
     /// the UI share one sink).
     fn dispatch_browser(&mut self, tab: TabId, action: BrowserTabMenuAction) {
-        match bbr_browser::TabMenuController::dispatch(&mut self.controller, tab, action) {
+        let dispatched =
+            bbr_browser::TabMenuController::dispatch(&mut self.controller.get(), tab, action);
+        match dispatched {
             Ok(event) => self.emit_browser(&event),
             Err(error) => log::error!("tab menu command failed: {error}"),
         }
@@ -592,13 +613,13 @@ impl BbrApp {
     /// snapshot).
     fn live_tab_menu_source(&self) -> Option<bbr_browser::TabMenuSource> {
         let tab = self.tab_menu.state.bound_tab?;
-        bbr_browser::TabMenuController::resolve(&self.controller, |_| false, tab)
+        bbr_browser::TabMenuController::resolve(&self.controller.read(), |_| false, tab)
     }
 
     /// The exact `TabId` of the active space's tab at `index` (the tab row
     /// the right-click opened on).
     fn active_space_tab_id(&self, index: usize) -> Option<TabId> {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         snapshot
             .all_tabs
             .iter()

@@ -58,7 +58,7 @@ impl BbrApp {
     pub fn commit_dense_select_benchmark(&self, window: &Window, index: usize) -> bool {
         let dense = self.dense_window.get();
         let window_range = dense.first_rendered..dense.first_rendered + dense.rendered_rows;
-        let pinned = crate::shell::pinned_count(&self.controller.snapshot().tabs);
+        let pinned = crate::shell::pinned_count(&self.controller.read().snapshot().tabs);
         if index >= pinned && !window_range.contains(&index) {
             self.performance.cancel();
             return false;
@@ -72,7 +72,7 @@ impl BbrApp {
     /// benchmarks. The last draw refreshed the probe's native slot rect, so
     /// the presentation commits against fresh geometry.
     fn commit_dense_benchmark(&self, window: &Window) {
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(

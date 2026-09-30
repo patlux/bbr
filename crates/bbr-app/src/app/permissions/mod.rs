@@ -47,16 +47,18 @@ pub(crate) struct SiteSettingsState {
 /// The app's permission state.
 #[derive(Default)]
 pub(crate) struct PermissionsState {
-    pub policies: SitePermissions,
+    // Blueprint D19: the policies, requests and per-view marks are shared
+    // by every window; the prompt, popover and notice are this window's.
+    pub policies: crate::shared::Shared<SitePermissions>,
     pub path: Option<std::path::PathBuf>,
-    pub pending: VecDeque<PendingRequest>,
+    pub pending: crate::shared::Shared<VecDeque<PendingRequest>>,
     /// "Remember for this site" on the prompt shown now.
     pub remember: bool,
     /// Live capture per view: (camera, microphone).
-    pub capture: HashMap<WebViewId, (bool, bool)>,
+    pub capture: crate::shared::Shared<HashMap<WebViewId, (bool, bool)>>,
     /// A remembered Block refused this view's request for the origin
     /// (the camera was among the refused capabilities).
-    pub blocked: HashMap<WebViewId, (String, bool)>,
+    pub blocked: crate::shared::Shared<HashMap<WebViewId, (String, bool)>>,
     pub site_settings: Option<SiteSettingsState>,
     /// The prompt's and the popover's rendered bounds (their hit regions),
     /// recorded by the Portal render.
@@ -69,7 +71,7 @@ pub(crate) struct PermissionsState {
     pub popup_task: Option<gpui::Task<()>>,
     /// Every decision handed to the engine (testkit evidence).
     #[cfg(feature = "testkit")]
-    pub decisions: Vec<(u64, bool)>,
+    pub decisions: crate::shared::Shared<Vec<(u64, bool)>>,
 }
 
 /// "your camera", "your camera and microphone".
@@ -112,13 +114,14 @@ pub(crate) fn remembered_decision(
 impl BbrApp {
     /// Load the remembered decisions (none when the file is missing).
     pub(crate) fn load_site_permissions(&mut self, path: std::path::PathBuf) {
-        self.permissions.policies = site_permissions::load(&path);
+        self.permissions.policies.set(site_permissions::load(&path));
         self.permissions.path = Some(path);
     }
 
     pub(crate) fn save_site_permissions(&self) {
         if let Some(path) = self.permissions.path.as_ref() {
-            if let Err(error) = site_permissions::save(path, &self.permissions.policies) {
+            let saved = site_permissions::save(path, &self.permissions.policies.read());
+            if let Err(error) = saved {
                 log::warn!("site permissions not saved: {error}");
             }
         }
@@ -141,9 +144,10 @@ impl BbrApp {
                 if *camera || *microphone {
                     self.permissions
                         .capture
+                        .get()
                         .insert(*view, (*camera, *microphone));
                 } else {
-                    self.permissions.capture.remove(view);
+                    self.permissions.capture.get().remove(view);
                 }
                 cx.notify();
             }
@@ -160,6 +164,7 @@ impl BbrApp {
                 let stale: Vec<u64> = self
                     .permissions
                     .pending
+                    .read()
                     .iter()
                     .filter(|p| p.view == *view && Some(&p.origin) != origin.as_ref())
                     .map(|p| p.request)
@@ -170,10 +175,11 @@ impl BbrApp {
                 if self
                     .permissions
                     .blocked
+                    .read()
                     .get(view)
                     .is_some_and(|(blocked, _)| Some(blocked) != origin.as_ref())
                 {
-                    self.permissions.blocked.remove(view);
+                    self.permissions.blocked.get().remove(view);
                 }
                 self.sync_portal_overlays(cx);
             }
@@ -189,15 +195,21 @@ impl BbrApp {
         capabilities: &[PermissionCapability],
         cx: &mut Context<Self>,
     ) {
-        let Some(profile) = self.controller.profile_of_view(view) else {
+        let Some(profile) = self.controller.read().profile_of_view(view) else {
             self.answer_engine(request, false);
             return;
         };
-        match remembered_decision(&self.permissions.policies, profile, origin, capabilities) {
+        let remembered = remembered_decision(
+            &self.permissions.policies.read(),
+            profile,
+            origin,
+            capabilities,
+        );
+        match remembered {
             Some(true) => self.answer_engine(request, true),
             Some(false) => {
                 self.answer_engine(request, false);
-                self.permissions.blocked.insert(
+                self.permissions.blocked.get().insert(
                     view,
                     (
                         origin.to_string(),
@@ -206,10 +218,10 @@ impl BbrApp {
                 );
             }
             None => {
-                if self.permissions.pending.is_empty() {
+                if self.permissions.pending.read().is_empty() {
                     self.permissions.remember = false;
                 }
-                self.permissions.pending.push_back(PendingRequest {
+                self.permissions.pending.get().push_back(PendingRequest {
                     request,
                     view,
                     profile,
@@ -224,30 +236,35 @@ impl BbrApp {
     fn answer_engine(&mut self, request: u64, allow: bool) {
         self.engine.borrow_mut().decide_permission(request, allow);
         #[cfg(feature = "testkit")]
-        self.permissions.decisions.push((request, allow));
+        self.permissions.decisions.get().push((request, allow));
     }
 
     /// Answer a pending request (and drop it from the queue).
     fn answer(&mut self, request: u64, allow: bool) {
-        self.permissions.pending.retain(|p| p.request != request);
+        self.permissions
+            .pending
+            .get()
+            .retain(|p| p.request != request);
         self.answer_engine(request, allow);
     }
 
     /// The request the prompt shows now: the first one of the active page
     /// (requests of views that are gone are dropped; the engine denied
     /// them when it destroyed the view).
-    pub(crate) fn current_permission_request(&self) -> Option<&PendingRequest> {
-        let active = self.controller.snapshot().active_view?;
+    pub(crate) fn current_permission_request(&self) -> Option<PendingRequest> {
+        let active = self.controller.read().snapshot().active_view?;
         self.permissions
             .pending
+            .read()
             .iter()
-            .find(|p| p.view == active && self.controller.profile_of_view(p.view).is_some())
+            .find(|p| p.view == active && self.controller.read().profile_of_view(p.view).is_some())
+            .cloned()
     }
 
     /// The prompt's buttons: Allow or Don't Allow the current request,
     /// remembering the decision for the site when asked to.
     pub(crate) fn decide_current_permission(&mut self, allow: bool, cx: &mut Context<Self>) {
-        let Some(current) = self.current_permission_request().cloned() else {
+        let Some(current) = self.current_permission_request() else {
             return;
         };
         if self.permissions.remember {
@@ -257,7 +274,7 @@ impl BbrApp {
                 SitePolicy::Block
             };
             for capability in &current.capabilities {
-                self.permissions.policies.set(
+                self.permissions.policies.get().set(
                     current.profile,
                     &current.origin,
                     *capability,
@@ -287,6 +304,7 @@ impl BbrApp {
         let current = self.current_permission_request()?;
         let profile = self
             .controller
+            .read()
             .snapshot()
             .profiles
             .iter()
@@ -305,7 +323,7 @@ impl BbrApp {
                 .capabilities
                 .contains(&PermissionCapability::Microphone),
             remember: self.permissions.remember,
-            queued: self.permissions.pending.len() - 1,
+            queued: self.permissions.pending.read().len() - 1,
         })
     }
 
@@ -356,13 +374,14 @@ impl BbrApp {
     pub(crate) fn address_site(&self, url: &str) -> bbr_ui::components::address::AddressSite {
         use bbr_ui::components::address::{AddressSite, SiteIndicator};
         let origin = site_permissions::origin_of(url);
-        let view = self.controller.snapshot().active_view;
+        let view = self.controller.read().snapshot().active_view;
         let indicator = view.and_then(|view| {
-            if let Some((camera, _)) = self.permissions.capture.get(&view) {
+            if let Some((camera, _)) = self.permissions.capture.read().get(&view) {
                 return Some(SiteIndicator::Live { camera: *camera });
             }
             self.permissions
                 .blocked
+                .read()
                 .get(&view)
                 .filter(|(blocked, _)| Some(blocked) == origin.as_ref())
                 .map(|(_, camera)| SiteIndicator::Blocked { camera: *camera })

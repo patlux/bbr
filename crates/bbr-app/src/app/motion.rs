@@ -45,10 +45,10 @@ impl BbrApp {
                 == bbr_web::web_errors::IncidentCategory::Offline)
                 .then_some(Illustration::Offline);
         }
-        if self.controller.pane_layout().is_some() {
+        if self.controller.read().pane_layout().is_some() {
             return None;
         }
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let crashed = browser
             .active_index
             .and_then(|index| browser.tabs.get(index))
@@ -94,10 +94,8 @@ impl BbrApp {
         if self.active_load().is_some() {
             return AddressProgress::Loading;
         }
-        match (
-            self.motion.finishing,
-            self.controller.snapshot().active_view,
-        ) {
+        let active = self.controller.read().snapshot().active_view;
+        match (self.motion.finishing, active) {
             (Some((view, until)), Some(active)) if view == active && Instant::now() < until => {
                 AddressProgress::Finishing
             }
@@ -129,7 +127,7 @@ impl BbrApp {
     /// engine event, so the event that ends the load is recognised whatever
     /// its kind).
     pub(crate) fn active_load(&self) -> Option<WebViewId> {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         snapshot
             .active_index
             .and_then(|index| snapshot.tabs.get(index))
@@ -144,7 +142,7 @@ impl BbrApp {
         let Some(plan) = Moment::AddressProgressFinish.plan(self.theme().motion_mode) else {
             return;
         };
-        if self.controller.snapshot().active_view != Some(view) {
+        if self.controller.read().snapshot().active_view != Some(view) {
             return;
         }
         let until = Instant::now() + plan.duration;

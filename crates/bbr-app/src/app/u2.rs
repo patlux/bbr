@@ -194,10 +194,11 @@ impl BbrApp {
         let mut created_folder = None;
         match selected.id {
             bbr_ui::components::menu::PLUS_NEW_SPACE_ID => {
-                match self
+                let created = self
                     .organization
-                    .new_space(&mut self.controller, PLUS_NEW_SPACE_TITLE)
-                {
+                    .get()
+                    .new_space(&mut self.controller.get(), PLUS_NEW_SPACE_TITLE);
+                match created {
                     Ok(OrganizationEvent::SpaceCreated { profile, space }) => {
                         // The creation is a semantic browser mutation and
                         // must be observable like every other path (the
@@ -223,10 +224,11 @@ impl BbrApp {
                 }
             }
             bbr_ui::components::menu::PLUS_NEW_FOLDER_ID => {
-                match self
+                let folder = self
                     .organization
-                    .new_folder(&self.controller, PLUS_NEW_FOLDER_TITLE)
-                {
+                    .get()
+                    .new_folder(&self.controller.read(), PLUS_NEW_FOLDER_TITLE);
+                match folder {
                     Ok(OrganizationEvent::FolderCreated { id, .. }) => {
                         created_folder = Some(id);
                         cx.notify();
@@ -255,7 +257,8 @@ impl BbrApp {
     pub fn activate_favorite(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
         let result = self
             .organization
-            .activate_favorite(&mut self.controller, index);
+            .get()
+            .activate_favorite(&mut self.controller.get(), index);
         match result {
             Ok(OrganizationEvent::FavoriteActivated {
                 tab,
@@ -300,7 +303,10 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let result = self.organization.favorite_toggle(&self.controller, index);
+        let result = self
+            .organization
+            .get()
+            .favorite_toggle(&self.controller.read(), index);
         match result {
             Ok(OrganizationEvent::FavoriteToggled {
                 added,
@@ -364,7 +370,10 @@ impl BbrApp {
         if self.on_folder_rename_key_down(event, window, cx) {
             return;
         }
-        let organization = self.organization.organization_snapshot(&self.controller);
+        let organization = self
+            .organization
+            .get()
+            .organization_snapshot(&self.controller.read());
         let count = organization.folders.len();
         if count == 0 {
             return;
@@ -446,10 +455,11 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        match self
-            .organization
-            .move_tab_into_folder(&mut self.controller, index, folder)
-        {
+        let moved =
+            self.organization
+                .get()
+                .move_tab_into_folder(&mut self.controller.get(), index, folder);
+        match moved {
             Ok(event) => {
                 self.apply_grouping(&event, cx);
                 self.focus_tab_list(window, cx);
@@ -474,10 +484,11 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        match self
-            .organization
-            .remove_tab_from_folder(&self.controller, index, folder)
-        {
+        let removed =
+            self.organization
+                .get()
+                .remove_tab_from_folder(&self.controller.read(), index, folder);
+        match removed {
             Ok(event) => {
                 log::debug!("{event:?}");
                 self.focus_tab_list(window, cx);
@@ -505,7 +516,7 @@ impl BbrApp {
                     // other pin. A Favorite groups into its tab's own space,
                     // which may not be the active one: that pin is persisted
                     // but not reported, because the active list is unchanged.
-                    let snapshot = self.controller.snapshot();
+                    let snapshot = self.controller.read().snapshot();
                     let in_active_space = snapshot
                         .all_tabs
                         .iter()
@@ -527,10 +538,14 @@ impl BbrApp {
     /// the L5 read model (membership reconciles on read, so the member
     /// always exists). The folder is resolved by its stable domain id.
     fn folder_member_tab_index(&mut self, folder: FolderId, member: usize) -> Option<usize> {
-        let organization = self.organization.organization_snapshot(&self.controller);
+        let organization = self
+            .organization
+            .get()
+            .organization_snapshot(&self.controller.read());
         let folder_snapshot = organization.folders.iter().find(|f| f.id == folder)?;
         let tab_id = *folder_snapshot.members.get(member)?;
         self.controller
+            .read()
             .snapshot()
             .all_tabs
             .iter()

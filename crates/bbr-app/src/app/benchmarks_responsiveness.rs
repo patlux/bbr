@@ -26,9 +26,9 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        let before = self.controller.snapshot();
+        let before = self.controller.read().snapshot();
         if before.active_view != Some(source)
-            || self.controller.renderer_state(source) != RendererAvailability::Unresponsive
+            || self.controller.read().renderer_state(source) != RendererAvailability::Unresponsive
             || before.engine_sessions != expected_sessions + usize::from(close)
             || before.tabs.get(neighbor_index).and_then(|tab| tab.web_view)
                 != Some(expected_neighbor)
@@ -46,7 +46,7 @@ impl BbrApp {
         } else {
             self.select_tab(neighbor_index, cx).is_some()
         };
-        let after = self.controller.snapshot();
+        let after = self.controller.read().snapshot();
         if !changed
             || after.active_view != Some(expected_neighbor)
             || after.engine_sessions != expected_sessions
@@ -76,8 +76,8 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        let before = self.controller.snapshot();
-        let state_before = self.controller.renderer_state(view);
+        let before = self.controller.read().snapshot();
+        let state_before = self.controller.read().renderer_state(view);
         let focus_before = self.chrome_focused(window);
         if before.active_view != Some(view)
             || before.engine_sessions != expected_sessions
@@ -89,10 +89,10 @@ impl BbrApp {
             return false;
         }
         self.pump_responsiveness_cadence(window, cx);
-        let after = self.controller.snapshot();
+        let after = self.controller.read().snapshot();
         if after.active_view != Some(view)
             || after.engine_sessions != expected_sessions
-            || self.controller.renderer_state(view) != state_before
+            || self.controller.read().renderer_state(view) != state_before
             || self.chrome_focused(window) != focus_before
         {
             self.performance.cancel();

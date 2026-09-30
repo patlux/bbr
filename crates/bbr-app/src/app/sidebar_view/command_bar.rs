@@ -70,7 +70,7 @@ impl BbrApp {
         // only ever set to the active profile and any context mutation
         // clears it, so the invariant holds by construction.
         let profile_chip = if profile_hint.is_some() {
-            crate::shell::space::active_profile_chip(&self.controller.snapshot())
+            crate::shell::space::active_profile_chip(&self.controller.read().snapshot())
         } else {
             None
         };
@@ -101,7 +101,7 @@ impl BbrApp {
         let hint = self.command_bar_hint();
         let profile_hint = self.command_profile_hint.clone();
         let profile_chip = if profile_hint.is_some() {
-            crate::shell::space::active_profile_chip(&self.controller.snapshot())
+            crate::shell::space::active_profile_chip(&self.controller.read().snapshot())
         } else {
             None
         };

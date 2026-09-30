@@ -68,7 +68,7 @@ impl BbrApp {
             prompt,
             site_settings,
             address_mark,
-            decisions: self.permissions.decisions.clone(),
+            decisions: self.permissions.decisions.read().clone(),
         }
     }
 

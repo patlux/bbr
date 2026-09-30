@@ -14,19 +14,18 @@ use bbr_ui::surfaces::downloads::{
 };
 use bbr_web::downloads::{DownloadFailure, DownloadId, DownloadState};
 
-use super::DownloadsState;
+use super::{DownloadsState, RevealEligibility};
 
 /// The derive the render/snapshot consume: map every controller record to
 /// its deterministic row model. `focus`, `hovered_row`, `pressed_row`, and
 /// the reveal cache are app presentation state.
 pub fn row_visuals(state: &DownloadsState, focus: Option<usize>) -> Vec<DownloadRowModel> {
-    state
-        .row_ids()
-        .into_iter()
+    let ids = state.row_ids();
+    let controller = state.controller.read();
+    ids.into_iter()
         .enumerate()
         .map(|(index, id)| {
-            let record = state
-                .controller
+            let record = controller
                 .record(id)
                 .expect("row ids derive from the controller");
             let (machine, group) = match &record.state {
@@ -91,6 +90,11 @@ pub fn row_visuals(state: &DownloadsState, focus: Option<usize>) -> Vec<Download
         .collect()
 }
 
+/// The cached Reveal-in-Finder eligibility of a row.
+fn reveal_eligibility(state: &DownloadsState, id: DownloadId) -> Option<RevealEligibility> {
+    state.reveal.read().get(&id).cloned()
+}
+
 /// The exactly-one contextual primary action of a row (DESIGN.md §11.12):
 /// active → Cancel, failed → Retry, succeeded → Reveal-in-Finder (enabled
 /// only when the resolved path exists, §10.8 `disabled` with a reason
@@ -107,7 +111,7 @@ fn row_action(
         }
         DownloadState::Failed { .. } => (DownloadActionKind::Retry, true, None),
         DownloadState::Cancelled => (DownloadActionKind::Restart, true, None),
-        DownloadState::Succeeded => match state.reveal.get(&id) {
+        DownloadState::Succeeded => match reveal_eligibility(state, id) {
             Some(eligibility) => (
                 DownloadActionKind::Reveal,
                 eligibility.eligible,

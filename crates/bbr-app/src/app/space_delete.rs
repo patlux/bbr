@@ -54,7 +54,8 @@ impl BbrApp {
     ) {
         let Some(summary) = self
             .organization
-            .space_delete_summary(&self.controller, space)
+            .get()
+            .space_delete_summary(&self.controller.read(), space)
         else {
             return;
         };
@@ -151,10 +152,11 @@ impl BbrApp {
             return;
         };
         self.portal_dismiss(cx);
-        match self
+        let outcome = self
             .organization
-            .delete_space(&mut self.controller, state.space)
-        {
+            .get()
+            .delete_space(&mut self.controller.get(), state.space);
+        match outcome {
             Ok(bbr_browser::OrganizationEvent::SpaceDeleted {
                 space,
                 fallback,

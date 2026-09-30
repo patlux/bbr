@@ -51,7 +51,8 @@ impl BbrApp {
         cx.stop_propagation();
         let known = self
             .organization
-            .organization_snapshot(&self.controller)
+            .get()
+            .organization_snapshot(&self.controller.read())
             .folders
             .iter()
             .any(|f| f.id == folder);
@@ -100,7 +101,8 @@ impl BbrApp {
             TabMenuAction::NewTabInFolder => {
                 let space = self
                     .organization
-                    .organization_snapshot(&self.controller)
+                    .get()
+                    .organization_snapshot(&self.controller.read())
                     .folders
                     .iter()
                     .find(|f| f.id == folder)
@@ -108,7 +110,7 @@ impl BbrApp {
                 let Some(space) = space else {
                     return;
                 };
-                if self.controller.snapshot().active_space != space {
+                if self.controller.read().snapshot().active_space != space {
                     self.activate_space(space, window, cx);
                 }
                 self.activate_new_tab(window, cx);
@@ -116,7 +118,11 @@ impl BbrApp {
                 self.u2.new_tab_folder = Some(folder);
             }
             TabMenuAction::UnpackFolder => {
-                match self.organization.unpack_folder(&self.controller, folder) {
+                let unpacked = self
+                    .organization
+                    .get()
+                    .unpack_folder(&self.controller.read(), folder);
+                match unpacked {
                     Ok(event) => log::debug!("folder unpacked: {event:?}"),
                     Err(error) => log::error!("could not unpack folder: {error}"),
                 }
@@ -133,7 +139,7 @@ impl BbrApp {
         let Some(folder) = self.u2.new_tab_folder.take() else {
             return;
         };
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let Some(tab) = snapshot
             .all_tabs
             .iter()
@@ -144,10 +150,12 @@ impl BbrApp {
         else {
             return;
         };
-        match self
-            .organization
-            .move_tab_into_folder_id(&mut self.controller, tab, folder)
-        {
+        let moved = self.organization.get().move_tab_into_folder_id(
+            &mut self.controller.get(),
+            tab,
+            folder,
+        );
+        match moved {
             Ok(event) => self.apply_grouping(&event, cx),
             Err(error) => log::error!("new tab could not join its folder: {error}"),
         }

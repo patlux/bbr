@@ -45,6 +45,7 @@ impl BbrApp {
     ) -> Option<ControllerEvent> {
         let result = self
             .controller
+            .get()
             .create_profile_space(profile_title, space_title);
         let outcome = self.apply_mutation(result, cx);
         if outcome.is_some() {
@@ -62,7 +63,7 @@ impl BbrApp {
         title: &str,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let result = self.controller.create_space_event(profile, title);
+        let result = self.controller.get().create_space_event(profile, title);
         let outcome = self.apply_mutation(result, cx);
         if outcome.is_some() {
             self.persist_structure();
@@ -78,7 +79,7 @@ impl BbrApp {
         to_space: SpaceId,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let result = self.controller.move_tab(index, to_space);
+        let result = self.controller.get().move_tab(index, to_space);
         let outcome = self.apply_mutation(result, cx);
         if outcome.is_some() {
             // The tab changed space: a structural mutation that must survive
@@ -90,7 +91,7 @@ impl BbrApp {
 
     /// Suspend a tab's native session (E2E seam).
     pub fn suspend_tab(&mut self, index: usize, cx: &mut Context<Self>) -> Option<ControllerEvent> {
-        let result = self.controller.suspend_tab(index);
+        let result = self.controller.get().suspend_tab(index);
         self.apply_mutation(result, cx)
     }
 
@@ -103,7 +104,7 @@ impl BbrApp {
         secondary: usize,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let result = self.controller.open_split(primary, secondary);
+        let result = self.controller.get().open_split(primary, secondary);
         let outcome = self.apply_mutation(result, cx);
         if outcome.is_some() {
             // The split layout is part of the persisted model: poke the one
@@ -116,7 +117,7 @@ impl BbrApp {
     /// Close the active space's split layout; both tabs and their warm
     /// sessions stay (E2E seam into the production controller path).
     pub fn close_split(&mut self, cx: &mut Context<Self>) -> Option<ControllerEvent> {
-        let result = self.controller.close_split();
+        let result = self.controller.get().close_split();
         let outcome = self.apply_mutation(result, cx);
         if outcome.is_some() {
             self.persist_structure();
@@ -147,13 +148,13 @@ impl BbrApp {
         url: &str,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let start = self.controller.snapshot().tabs.len();
+        let start = self.controller.read().snapshot().tabs.len();
         // Pin existing leading identities that belong in the pinned region
         // (the app's initial tab sits at global index 0 when `pinned_count`
         // > 0). Pinning appends at the end of the pinned region, so it never
         // shifts later identities.
         for global in 0..pinned_count.min(start) {
-            let tab = self.controller.snapshot().tabs.get(global).cloned();
+            let tab = self.controller.read().snapshot().tabs.get(global).cloned();
             if tab.is_some_and(|tab| !tab.pinned) {
                 self.pin_tab(global, cx);
             }
@@ -194,19 +195,20 @@ impl BbrApp {
         cap: usize,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let result = self.controller.enforce_session_budget(cap);
+        let result = self.controller.get().enforce_session_budget(cap);
         self.apply_mutation(result, cx)
     }
 
     /// Explicitly refresh one live view's renderer-liveness probe through
     /// the same controller/adapter seam the production cadence uses.
     pub fn probe_renderer_responsiveness(&mut self, view: bbr_web::WebViewId) -> bool {
-        self.controller.probe_view(view)
+        self.controller.get().probe_view(view)
     }
 
     /// Route a generic [`WebAction`] through the focused controller session.
     pub fn web_action(&mut self, action: WebAction) -> Option<ControllerEvent> {
         self.controller
+            .get()
             .navigate(action)
             .map_err(|error| {
                 log::error!("could not route web action: {error}");

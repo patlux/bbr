@@ -63,11 +63,12 @@ impl BbrApp {
         if self.active_error_surface_spec().is_some() {
             return false;
         }
-        let snap = self.controller.snapshot();
+        let snap = self.controller.read().snapshot();
         snap.active_view == Some(view)
-            && self.controller.renderer_state(view) == RendererAvailability::Unresponsive
+            && self.controller.read().renderer_state(view) == RendererAvailability::Unresponsive
             && self
                 .controller
+                .read()
                 .pane_layout()
                 .is_some_and(|layout| layout.primary == view || layout.secondary == Some(view))
     }
@@ -82,19 +83,24 @@ impl BbrApp {
     /// events, tab actions, the cadence pump, surface lifecycle), so the
     /// visible state never lags the drawn surface.
     pub(crate) fn sync_unresponsive_visibility(&mut self) {
-        let Some(view) = self.controller.snapshot().active_view else {
+        let Some(view) = self.controller.read().snapshot().active_view else {
             return;
         };
-        let error_hides = self.error_surface.spec_for(view).is_some_and(|spec| {
-            spec.incident.reason.category() != bbr_web::web_errors::IncidentCategory::ProcessCrash
-        });
+        let error_hides = self
+            .error_surface
+            .read()
+            .spec_for(view)
+            .is_some_and(|spec| {
+                spec.incident.reason.category()
+                    != bbr_web::web_errors::IncidentCategory::ProcessCrash
+            });
         if self.unresponsive_pane_over(view) {
             // Always re-assert the hide (idempotent): the controller's
             // visibility sync re-shows the view when the user switches back
             // to a hung tab, so the stale frame can never cover the pane.
             self.engine.borrow_mut().show(view, false);
-            self.unresponsive.hidden.insert(view);
-        } else if self.unresponsive.hidden.remove(&view) {
+            self.unresponsive.get().hidden.insert(view);
+        } else if self.unresponsive.get().hidden.remove(&view) {
             // Restore only when no other surface is the current hider (the
             // error surface and the Library win while drawn; the three
             // hidden trackers never fight).
@@ -108,7 +114,7 @@ impl BbrApp {
     /// recovery-rebuilt session): the hidden tracker must not outlive the
     /// session it names.
     pub(crate) fn unresponsive_forget_view(&mut self, view: WebViewId) {
-        self.unresponsive.hidden.remove(&view);
+        self.unresponsive.get().hidden.remove(&view);
     }
 
     /// The Wait recovery action (§11.8a): keep monitoring the unresponsive
@@ -116,10 +122,10 @@ impl BbrApp {
     /// busy→alive page clears it). Routes through the sole controller
     /// authority.
     pub(crate) fn wait_unresponsive_active(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(view) = self.controller.snapshot().active_view else {
+        let Some(view) = self.controller.read().snapshot().active_view else {
             return;
         };
-        let _outcome = self.controller.wait_unresponsive(view);
+        let _outcome = self.controller.get().wait_unresponsive(view);
         self.sync_unresponsive_visibility();
         cx.notify();
         self.emit_focus(window);
@@ -136,10 +142,11 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(view) = self.controller.snapshot().active_view else {
+        let Some(view) = self.controller.read().snapshot().active_view else {
             return;
         };
-        match self.controller.recover_unresponsive(view) {
+        let recovered = self.controller.get().recover_unresponsive(view);
+        match recovered {
             Ok(outcome) => {
                 // The hung session is gone: its pane bookkeeping dies with
                 // it. The fresh session is responsive and shown.
@@ -171,10 +178,10 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let transitions = self.controller.pump_responsiveness();
+        let transitions = self.controller.get().pump_responsiveness();
         // Blueprint D24: the media probe rides the same cadence.
         self.pump_media();
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let became_unresponsive = transitions.iter().any(|event| {
             matches!(
                 event,

@@ -33,9 +33,12 @@ impl BbrApp {
         // presentation derives from it (the mirror is keyed by the same
         // `(profile, host)` records the controller's bounded store holds).
         self.refresh_favicon_mirror();
-        let organization = self.organization.organization_snapshot(&self.controller);
+        let organization = self
+            .organization
+            .get()
+            .organization_snapshot(&self.controller.read());
         let favorite_tiles =
-            ui_adapters::favorite_tiles(&organization.favorites, &self.favicon_images);
+            ui_adapters::favorite_tiles(&organization.favorites, &self.favicon_images.read());
         // §11.11 hover-reveal: the pointer-hovered folder's count paints;
         // the focused half is applied by `folders_model` with the live
         // window (the region must genuinely own chrome focus for the
@@ -55,12 +58,12 @@ impl BbrApp {
         let folder_members = ui_adapters::folder_member_visuals(
             &folder_rows,
             &organization.folders,
-            &self.controller.snapshot(),
-            &self.favicon_images,
+            &self.controller.read().snapshot(),
+            &self.favicon_images.read(),
         );
         let grouped = crate::shell::organized::grouped_indices(
             &organization.folders,
-            &self.controller.snapshot(),
+            &self.controller.read().snapshot(),
         );
         U2Rail {
             favorite_tiles,
@@ -75,7 +78,7 @@ impl BbrApp {
     /// **only in-flight (active) attempts** — it returns to zero when
     /// nothing is transferring, terminal history never inflates the badge.
     pub(crate) fn downloads_controller_active_count(&self) -> Option<usize> {
-        let count = self.downloads.controller.active_ids().len();
+        let count = self.downloads.controller.read().active_ids().len();
         (count > 0).then_some(count)
     }
 }

@@ -36,6 +36,7 @@ mod preferences;
 #[cfg(target_os = "macos")]
 mod rail_observer;
 mod settings_window;
+mod shared;
 mod shell;
 mod site_permissions;
 mod slot;

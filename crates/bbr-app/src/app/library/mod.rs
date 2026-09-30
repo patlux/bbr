@@ -234,7 +234,7 @@ impl BbrApp {
             cx.notify();
             return;
         }
-        self.store.remove_saved_pages(&targets);
+        self.store.get().remove_saved_pages(&targets);
         self.library.selected.retain(|id| !targets.contains(id));
         cx.notify();
     }
@@ -249,7 +249,7 @@ impl BbrApp {
     /// Rename one record's user label through the one AppStore authority
     /// (the B3 Library rename; invalid labels are a no-op at the store).
     pub fn library_rename(&mut self, id: u64, label: &str, cx: &mut Context<Self>) {
-        self.store.rename_saved_page(id, label);
+        self.store.get().rename_saved_page(id, label);
         cx.notify();
     }
 
@@ -283,7 +283,7 @@ impl BbrApp {
     /// every controller mutation that re-syncs view visibility — the same
     /// authority shape as [`super::error_surface_behavior::BbrApp::sync_error_surface_visibility`].
     pub(crate) fn sync_library_visibility(&mut self) {
-        let Some(view) = self.controller.snapshot().active_view else {
+        let Some(view) = self.controller.read().snapshot().active_view else {
             return;
         };
         if self.library.open {
@@ -304,6 +304,7 @@ impl BbrApp {
     pub(crate) fn library_model(&self) -> bbr_ui::components::SavedPagesLibraryModel {
         let (pages, collections) = self
             .store
+            .read()
             .with_saved_pages(|pages, collections| (pages.to_vec(), collections.to_vec()));
         let view = LibraryStateView {
             search: &self.library.search,

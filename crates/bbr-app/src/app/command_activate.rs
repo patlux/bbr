@@ -124,7 +124,7 @@ impl BbrApp {
                 // the tab moved spaces between ranking and Enter, so it is
                 // never used to route (selecting the stale numeric index in
                 // the old space could activate an unrelated tab).
-                let snapshot = self.controller.snapshot();
+                let snapshot = self.controller.read().snapshot();
                 let Some(global) = snapshot.all_tabs.iter().find(|global| global.id.0 == tab.0)
                 else {
                     return false;
@@ -164,7 +164,7 @@ impl BbrApp {
                     if self.activate_space(global.space, window, cx).is_none() {
                         return false;
                     }
-                    let snapshot = self.controller.snapshot();
+                    let snapshot = self.controller.read().snapshot();
                     let current = snapshot.all_tabs.iter().find(|global| global.id.0 == tab.0);
                     match current {
                         Some(current)
@@ -193,7 +193,8 @@ impl BbrApp {
                 // URL is looked up in the in-memory provider (never SQLite)
                 // and opened like any other destination; an unavailable
                 // record is rejected truthfully.
-                match self.store.history_entry(history) {
+                let entry = self.store.read().history_entry(history);
+                match entry {
                     Some((url, title)) => self.open_destination(&url, &title, new_tab, window, cx),
                     None => false,
                 }
@@ -226,7 +227,7 @@ impl BbrApp {
                 // default DuckDuckGo settings render the settled command-bar
                 // endpoint byte-identically, and a custom template is
                 // constructor-validated.
-                let url = search_url(self.store.effective_settings(), &terms);
+                let url = search_url(self.store.read().effective_settings(), &terms);
                 self.open_destination(&url, "", new_tab, window, cx)
             }
         };
@@ -265,7 +266,7 @@ impl BbrApp {
             true
         };
         if accepted {
-            self.store.record_visit(&url, title);
+            self.store.get().record_visit(&url, title);
         }
         accepted
     }
@@ -294,7 +295,7 @@ impl BbrApp {
                 // result surface is dismissed — re-ranking for the closed
                 // context is never a thing.
                 let closed = self.close_active_tab(window, cx).is_some();
-                if closed && self.controller.snapshot().active_view.is_some() {
+                if closed && self.controller.read().snapshot().active_view.is_some() {
                     // Non-empty aftermath: the palette closes and the chrome
                     // domain keeps focus in the tab list (the initiating
                     // focus domain was chrome/command).
@@ -332,7 +333,7 @@ impl BbrApp {
             7 => {
                 // Back: rejected truthfully when the active session has no
                 // back history (the nav flags are engine-authoritative).
-                if self.controller.snapshot().nav.can_go_back {
+                if self.controller.read().snapshot().nav.can_go_back {
                     self.go_back();
                     self.finish_web_activation(window, cx);
                     true
@@ -343,7 +344,7 @@ impl BbrApp {
             8 => {
                 // Forward: rejected truthfully when there is no forward
                 // history.
-                if self.controller.snapshot().nav.can_go_forward {
+                if self.controller.read().snapshot().nav.can_go_forward {
                     self.go_forward();
                     self.finish_web_activation(window, cx);
                     true
@@ -354,7 +355,7 @@ impl BbrApp {
             9 => {
                 // Reload: the controller's navigate result governs success
                 // (no active tab/session → rejected, never a silent no-op).
-                if self.controller.navigate(WebAction::Reload).is_ok() {
+                if self.controller.get().navigate(WebAction::Reload).is_ok() {
                     self.finish_web_activation(window, cx);
                     true
                 } else {
@@ -363,7 +364,7 @@ impl BbrApp {
             }
             10 => {
                 // Stop: the controller's navigate result governs success.
-                if self.controller.navigate(WebAction::Stop).is_ok() {
+                if self.controller.get().navigate(WebAction::Stop).is_ok() {
                     self.finish_web_activation(window, cx);
                     true
                 } else {
@@ -485,7 +486,7 @@ impl BbrApp {
             // validation; with no pending benchmark the normal path stays.
             if !self.performance.command_benchmark_pending() {
                 self.performance.expect_state(
-                    self.controller.snapshot().active_view,
+                    self.controller.read().snapshot().active_view,
                     self.sidebar_visible,
                     false,
                     self.command_bar_mode.into(),
@@ -503,7 +504,7 @@ impl BbrApp {
         #[cfg(feature = "testkit")]
         {
             self.performance.expect_state(
-                self.controller.snapshot().active_view,
+                self.controller.read().snapshot().active_view,
                 self.sidebar_visible,
                 self.chrome_focused(window),
                 self.command_bar_mode.into(),

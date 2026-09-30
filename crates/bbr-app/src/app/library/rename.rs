@@ -60,6 +60,7 @@ impl BbrApp {
         self.library.collection_draft.clear();
         let current = self
             .store
+            .read()
             .saved_page_by_id(id)
             .and_then(|page| page.user_label)
             .unwrap_or_default();

@@ -47,11 +47,11 @@ impl BbrApp {
             self.performance.cancel();
             return false;
         }
-        let Some(challenge) = self.auth.presented().map(|id| id.0) else {
+        let Some(challenge) = self.auth.read().presented().map(|id| id.0) else {
             self.performance.cancel();
             return false;
         };
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         // Fast-but-wrong guard: the same active view stays selected, the
         // sidebar stays visible, the sheet owns focus (chrome released), and
@@ -144,7 +144,7 @@ impl BbrApp {
         self.auth_presented_theme.set(Some(mode));
         self.performance.observe_auth_sheet(
             true,
-            self.auth.presented().map(|id| id.0),
+            self.auth.read().presented().map(|id| id.0),
             Some(surface.focused.label()),
             surface.username_entered(),
             surface.password_entered,

@@ -645,6 +645,24 @@ plus app-entity contract (`crate::with_app`): the root type is
 testkit keystroke/draw arms still use the untyped `(**window).update` path
 because a forced draw re-borrows the Root entity during the render.
 
+Shared state (blueprint D19, task packet `multi-window`): `BbrApp` is a
+window's shell. Everything that belongs to the browser rather than to one
+window — the controller, organization, store, media, error surfaces,
+unresponsive panes, auth challenges, preferences and Settings state, menu
+state, favicon mirror, external-URL adapter, and the shared parts of
+downloads (attempt store, reveal cache), permissions (policies, requests,
+per-view marks), client certificates (choices, requests, load marks) and
+zoom (site levels, applied levels) — sits behind a `crate::shared::Shared`
+handle that every window's shell clones. `read()` borrows for reading (reads
+may overlap), `get()` for changing (exclusive for the statement); a guard
+lives to the end of its statement, so a statement that changes a handle
+never touches it again, and Clippy's `significant_drop_in_scrutinee` keeps
+guards out of `if let`/`match` scrutinees. The controller is reached through
+`ControllerHandle`, which switches the controller to its window's context
+(`BrowserController::view_window`) before each borrow, so every controller
+access names its window. A changing borrow bumps a shared generation; the
+window-opening slice of the packet re-renders the other windows from it.
+
 The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs` + the split
 `app/sidebar.rs`/`app/sidebar_view.rs`/`app/spaces.rs`/`app/tab.rs`/
 `app/interaction.rs` + the `shell/` presentation modules) renders the

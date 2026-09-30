@@ -50,11 +50,11 @@ impl BbrApp {
         {
             return false;
         }
-        let Some(view) = self.controller.snapshot().active_view else {
+        let Some(view) = self.controller.read().snapshot().active_view else {
             self.performance.cancel();
             return false;
         };
-        if self.error_surface.spec_for(view).is_some() {
+        if self.error_surface.read().spec_for(view).is_some() {
             self.performance.cancel();
             return false;
         }
@@ -62,8 +62,8 @@ impl BbrApp {
         // delegate's incident sink drives (`on_incident` calls this same
         // `present`). A deterministic navigation failure on the active view;
         // the contract derives the category, copy, and legal recovery.
-        self.error_surface.present(
-            self.controller.active_profile(),
+        self.error_surface.get().present(
+            self.controller.read().active_profile(),
             view,
             IncidentSubReason::Navigation(NavigationReason::ConnectionRefused),
             IncidentContext::from_url("https://example.com/"),
@@ -71,7 +71,7 @@ impl BbrApp {
         );
         // The surface replaces the native view (identity untouched).
         self.sync_error_surface_visibility();
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         let chrome_focused = self.chrome_focused(window);
         // Fast-but-wrong guard: the same active view stays selected, the

@@ -27,7 +27,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Option<bbr_browser::ControllerEvent> {
-        self.new_window.requests += 1;
+        self.new_window.get().requests += 1;
         match delivery.outcome {
             NewWindowOutcome::CreateSession { session } => {
                 match session.disposition() {
@@ -38,6 +38,7 @@ impl BbrApp {
                         // The preview owns browser-command focus while open.
                         let result = self
                             .controller
+                            .get()
                             .open_preview_from_new_window(delivery.request.source, &session)
                             .map_err(|error| {
                                 log::warn!("peek request rejected: {error}");
@@ -55,6 +56,7 @@ impl BbrApp {
                     bbr_web::new_window::NewWindowDisposition::OpenTab => {
                         let result = self
                             .controller
+                            .get()
                             .open_tab_from_new_window(delivery.request.source, &session)
                             .map_err(|error| {
                                 log::warn!("new-window request rejected: {error}");
@@ -62,7 +64,7 @@ impl BbrApp {
                             })
                             .ok();
                         if let Some(outcome) = &result {
-                            self.new_window.created_tabs += 1;
+                            self.new_window.get().created_tabs += 1;
                             self.clear_command_profile_hint();
                             self.sync_command_bar();
                             self.find_discard_if_unbound(cx);
@@ -90,6 +92,7 @@ impl BbrApp {
                         // selection never moved.
                         let result = self
                             .controller
+                            .get()
                             .open_background_tab_from_new_window(delivery.request.source, &session)
                             .map_err(|error| {
                                 log::warn!("background new-window request rejected: {error}");
@@ -97,8 +100,8 @@ impl BbrApp {
                             })
                             .ok();
                         if let Some(outcome) = &result {
-                            self.new_window.created_tabs += 1;
-                            self.new_window.created_background_tabs += 1;
+                            self.new_window.get().created_tabs += 1;
+                            self.new_window.get().created_background_tabs += 1;
                             self.clear_command_profile_hint();
                             self.find_discard_if_unbound(cx);
                             self.emit_browser(outcome);
@@ -110,7 +113,7 @@ impl BbrApp {
                 }
             }
             NewWindowOutcome::Blocked => {
-                self.new_window.blocked_reported += 1;
+                self.new_window.get().blocked_reported += 1;
                 // Blueprint D13: say so, with Open and Always Allow.
                 self.popup_blocked(delivery.request.clone(), cx);
                 log::info!(
@@ -132,6 +135,6 @@ impl BbrApp {
 
     #[cfg(feature = "testkit")]
     pub(crate) fn new_window_state(&self) -> NewWindowState {
-        self.new_window
+        self.new_window.value()
     }
 }

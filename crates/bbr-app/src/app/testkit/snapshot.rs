@@ -34,7 +34,7 @@ impl BbrApp {
         // the same `favicon ∈ {monogram, image}` presentation the render
         // derives (task packet `real-favicon-pipeline.md`).
         self.refresh_favicon_mirror();
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let theme = self.theme();
         let drag_source = self.tab_drag.source();
         let rows = self.row_visuals(&browser.tabs, drag_source);
@@ -80,7 +80,7 @@ impl BbrApp {
         // iteration or creation order. The keyed observation is pruned to
         // the current panes each render, so destroyed/hidden panes leave no
         // orphan geometry evidence.
-        let pane_layout = self.controller.pane_layout();
+        let pane_layout = self.controller.read().pane_layout();
         let pane_rects = self.performance.pane_rects();
         let pane_rect_snapshots = match pane_layout {
             Some(layout) => {
@@ -101,7 +101,8 @@ impl BbrApp {
                     });
                 }
                 // Blueprint D23: the shown group's further panes.
-                if let Some(split) = self.controller.split_layout() {
+                let split = self.controller.read().split_layout();
+                if let Some(split) = split {
                     for (_, view) in split.views.iter().skip(2) {
                         rects.push(bbr_testkit::protocol::PaneRectSnapshot {
                             view: *view,
@@ -117,9 +118,14 @@ impl BbrApp {
         // app-local presentation state: the typed U2 snapshot fields. The
         // folder member rows resolve through the controller's global read
         // model (deterministic nested positions within expanded folders).
-        let organization = self.organization.organization_snapshot(&self.controller);
-        let favorite_tiles =
-            crate::app::ui_adapters::favorite_tiles(&organization.favorites, &self.favicon_images);
+        let organization = self
+            .organization
+            .get()
+            .organization_snapshot(&self.controller.read());
+        let favorite_tiles = crate::app::ui_adapters::favorite_tiles(
+            &organization.favorites,
+            &self.favicon_images.read(),
+        );
         // §11.11 hover/focus-reveal: the count paints while the pointer
         // hovers the row, or while the folders region genuinely owns chrome
         // focus and the row is the keyboard anchor; at rest every count
@@ -145,7 +151,7 @@ impl BbrApp {
             &folder_rows,
             &organization.folders,
             &browser,
-            &self.favicon_images,
+            &self.favicon_images.read(),
         );
         // §11.11: grouped pinned tabs render inside their folder only.
         let grouped = crate::shell::organized::grouped_indices(&organization.folders, &browser);
@@ -688,7 +694,7 @@ impl BbrApp {
             },
             content_gesture: {
                 let state = self.content_gesture_state();
-                let relations = self.controller.opener_pairs();
+                let relations = self.controller.read().opener_pairs();
                 bbr_testkit::protocol::ContentGestureSnapshot {
                     commits: state.commits,
                     history_routed: state.history_routed,
@@ -700,7 +706,7 @@ impl BbrApp {
                         .collect(),
                 }
             },
-            preview: self.controller.snapshot().preview.map(|preview| {
+            preview: self.controller.read().snapshot().preview.map(|preview| {
                 bbr_testkit::protocol::PreviewSnapshot {
                     id: preview.id,
                     view: preview.view,
@@ -752,7 +758,7 @@ impl BbrApp {
                 }
             }),
             split_rows: self
-                .split_marks(self.controller.snapshot().tabs.len())
+                .split_marks(self.controller.read().snapshot().tabs.len())
                 .iter()
                 .enumerate()
                 .filter_map(|(index, mark)| mark.map(|_| index))
@@ -760,7 +766,11 @@ impl BbrApp {
             client_certificates: self.client_certificates_snapshot(),
             open_app: self.open_app_snapshot(),
             onboarding: self.onboarding_snapshot(),
-            about: self.about_window.is_some().then(crate::about::version_line),
+            about: self
+                .about_window
+                .read()
+                .is_some()
+                .then(crate::about::version_line),
             restore_notice: self
                 .transient
                 .notice
@@ -778,14 +788,14 @@ impl BbrApp {
                 }
                 .to_string()
             }),
-            menu_bar: crate::menus::menu_bar_spec(self.menu_spaces())
+            menu_bar: crate::menus::menu_bar_spec(&self.menu_spaces())
                 .into_iter()
                 .map(|menu| bbr_testkit::protocol::MenuSnapshot {
                     name: menu.name,
                     items: menu.items.into_iter().map(menu_item_snapshot).collect(),
                 })
                 .collect(),
-            dock_menu: crate::menus::dock_menu_spec(self.menu_spaces())
+            dock_menu: crate::menus::dock_menu_spec(&self.menu_spaces())
                 .into_iter()
                 .map(menu_item_snapshot)
                 .collect(),
@@ -806,7 +816,7 @@ impl BbrApp {
                 // preview is raised above the warm origin by
                 // `raise_web_view`. `None` at rest or when the native
                 // engine is unavailable.
-                let snapshot = self.controller.snapshot();
+                let snapshot = self.controller.read().snapshot();
                 match (snapshot.preview, self.find_engine.as_ref()) {
                     (Some(preview), Some(engine)) => {
                         let engine = engine.borrow();
@@ -838,7 +848,7 @@ impl BbrApp {
     /// provider population ranking consumes.
     fn store_snapshot(&self) -> bbr_testkit::protocol::StoreSnapshot {
         use bbr_testkit::protocol::{StoreDiscardReasonSnapshot, StoreLoadSnapshot};
-        let store_load = match self.store.store_load.as_ref() {
+        let store_load = match self.store.read().store_load.as_ref() {
             Some(bbr_persistence::StoreLoad::Loaded) => StoreLoadSnapshot::Loaded,
             Some(bbr_persistence::StoreLoad::Discarded { reason }) => {
                 let reason = match reason {
@@ -858,11 +868,17 @@ impl BbrApp {
             }
             None => StoreLoadSnapshot::Unavailable,
         };
-        let history_count = self.store.with_history(|history| history.len());
-        let saved_pages_count = self.store.saved_pages_count();
+        let history_count = self.store.read().with_history(|history| history.len());
+        let saved_pages_count = self.store.read().saved_pages_count();
         bbr_testkit::protocol::StoreSnapshot {
             store_load,
-            search_engine: self.store.effective_settings().engine().id().to_string(),
+            search_engine: self
+                .store
+                .read()
+                .effective_settings()
+                .engine()
+                .id()
+                .to_string(),
             history_count,
             saved_pages_count,
         }
@@ -885,6 +901,7 @@ impl BbrApp {
         }
         let native_view_hidden = self
             .controller
+            .read()
             .snapshot()
             .active_view
             .is_some_and(|view| self.library.is_hidden(view));
@@ -935,7 +952,7 @@ impl BbrApp {
             editing_row: self.library.editing_row,
             rename_draft: self.library.rename_draft.clone(),
             native_view_hidden,
-            saved_pages_count: self.store.saved_pages_count(),
+            saved_pages_count: self.store.read().saved_pages_count(),
         }
     }
 
@@ -946,10 +963,10 @@ impl BbrApp {
     /// class — the DESIGN §11.8 crash panel is its surface). The empty
     /// default means no error surface is shown.
     fn error_surface_snapshot(&self) -> bbr_testkit::protocol::ErrorSurfaceSnapshot {
-        let Some(view) = self.controller.snapshot().active_view else {
+        let Some(view) = self.controller.read().snapshot().active_view else {
             return bbr_testkit::protocol::ErrorSurfaceSnapshot::default();
         };
-        let Some(spec) = self.error_surface.spec_for(view) else {
+        let Some(spec) = self.error_surface.read().spec_for(view) else {
             return bbr_testkit::protocol::ErrorSurfaceSnapshot::default();
         };
         if spec.incident.reason.category() == bbr_web::web_errors::IncidentCategory::ProcessCrash {

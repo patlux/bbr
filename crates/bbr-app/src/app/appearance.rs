@@ -114,14 +114,15 @@ impl BbrApp {
     pub fn theme(&self) -> Theme {
         use crate::preferences::DensityChoice;
         use bbr_ui::theme::Density;
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let pinned = crate::shell::pinned_count(&browser.tabs);
         let regular = browser.tabs.len().saturating_sub(pinned);
         let (contrast, motion) = theme_modes_for(self.effective_accessibility());
         let theme = Theme::for_collection(self.effective_theme_mode(), contrast, regular);
         // Blueprint D16: a density pinned in Settings wins over the
         // collection-size choice (DESIGN §8).
-        let theme = match self.preferences.density {
+        let density = self.preferences.read().density;
+        let theme = match density {
             DensityChoice::Automatic => theme,
             DensityChoice::Small => Theme::new(theme.mode, contrast, Density::Small),
             DensityChoice::Normal => Theme::new(theme.mode, contrast, Density::Normal),
@@ -139,16 +140,18 @@ impl BbrApp {
         let system = AccessibilityPrefs {
             increase_contrast: self
                 .preferences
+                .read()
                 .increase_contrast
-                .resolve(self.system_accessibility.increase_contrast),
+                .resolve(self.system_accessibility.read().increase_contrast),
             reduce_motion: self
                 .preferences
+                .read()
                 .reduce_motion
-                .resolve(self.system_accessibility.reduce_motion),
+                .resolve(self.system_accessibility.read().reduce_motion),
         };
         #[cfg(feature = "testkit")]
         {
-            effective_accessibility(system, self.accessibility_override)
+            effective_accessibility(system, self.accessibility_override.value())
         }
         #[cfg(not(feature = "testkit"))]
         {
@@ -169,7 +172,8 @@ impl BbrApp {
             let Some(mtm) = objc2::MainThreadMarker::new() else {
                 return;
             };
-            self.system_accessibility = prefs_from(display::current_options());
+            self.system_accessibility
+                .set(prefs_from(display::current_options()));
             let (tx, rx) = smol::channel::unbounded::<()>();
             self.accessibility_observer = Some(display::AccessibilityDisplayObserver::install(
                 mtm,
@@ -201,8 +205,8 @@ impl BbrApp {
         prefs: AccessibilityPrefs,
         cx: &mut Context<Self>,
     ) {
-        if self.system_accessibility != prefs {
-            self.system_accessibility = prefs;
+        if self.system_accessibility.value() != prefs {
+            self.system_accessibility.set(prefs);
             cx.notify();
         }
     }
@@ -218,10 +222,10 @@ impl BbrApp {
         reduce_motion: Option<bool>,
         cx: &mut Context<Self>,
     ) {
-        self.accessibility_override = AccessibilityOverride {
+        self.accessibility_override.set(AccessibilityOverride {
             increase_contrast,
             reduce_motion,
-        };
+        });
         cx.notify();
     }
 
@@ -230,14 +234,15 @@ impl BbrApp {
     /// (task packet `system-appearance-theme`).
     pub fn effective_theme_mode(&self) -> ThemeMode {
         // Blueprint D16: Settings › Appearance (System follows macOS).
-        let system = match self.preferences.appearance {
+        let appearance = self.preferences.read().appearance;
+        let system = match appearance {
             crate::preferences::AppearanceChoice::System => self.system_appearance,
             crate::preferences::AppearanceChoice::Light => ThemeMode::Light,
             crate::preferences::AppearanceChoice::Dark => ThemeMode::Dark,
         };
         #[cfg(feature = "testkit")]
         {
-            effective_theme_mode(system, self.appearance_override)
+            effective_theme_mode(system, self.appearance_override.value())
         }
         #[cfg(not(feature = "testkit"))]
         {
@@ -275,7 +280,7 @@ impl BbrApp {
     /// the effective mode (task packet `system-appearance-theme`).
     #[cfg(feature = "testkit")]
     pub fn set_appearance_override(&mut self, mode: Option<ThemeMode>, cx: &mut Context<Self>) {
-        self.appearance_override = mode;
+        self.appearance_override.set(mode);
         cx.notify();
     }
 }

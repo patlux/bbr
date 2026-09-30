@@ -38,8 +38,9 @@ impl BbrApp {
         let (layout, tiling) = self.split_projection()?;
         let rect = |r: bbr_web::WebRect| [r.x, r.y, r.width, r.height];
         let groups = {
-            let snapshot = self.controller.snapshot();
+            let snapshot = self.controller.read().snapshot();
             self.controller
+                .read()
                 .split_groups()
                 .into_iter()
                 .find(|(space, _)| *space == snapshot.active_space)
@@ -84,7 +85,8 @@ impl BbrApp {
                 let Some(edge) = edge(&name) else {
                     return false;
                 };
-                match self.controller.split_insert(beside, new, edge) {
+                let inserted = self.controller.get().split_insert(beside, new, edge);
+                match inserted {
                     Ok(event) => {
                         self.emit_browser(&event);
                         if let Some(tab) = self.tab_id_at(new) {

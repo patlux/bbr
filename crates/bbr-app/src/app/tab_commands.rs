@@ -36,7 +36,7 @@ impl BbrApp {
         delta: isize,
         cx: &mut Context<Self>,
     ) -> Option<ControllerEvent> {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let index = adjacent_index(snapshot.active_index?, snapshot.tabs.len(), delta)?;
         self.select_tab(index, cx)
     }
@@ -44,12 +44,12 @@ impl BbrApp {
     /// Open the active tab's page in a new tab directly below it (the new
     /// tab is selected; the source keeps its own history and session).
     pub fn duplicate_active_tab(&mut self, cx: &mut Context<Self>) -> Option<ControllerEvent> {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let source = snapshot.active_index?;
         let url = snapshot.tabs.get(source)?.url.clone();
         let pinned = crate::shell::pinned_count(&snapshot.tabs);
         let opened = self.open_tab(&url, cx)?;
-        let from = self.controller.snapshot().active_index?;
+        let from = self.controller.read().snapshot().active_index?;
         let to = duplicate_slot(source, pinned);
         if from != to {
             self.reorder_tab_at(from, to, cx);

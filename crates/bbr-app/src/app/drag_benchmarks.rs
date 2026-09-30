@@ -49,7 +49,7 @@ impl BbrApp {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         if snapshot.active_space == to_space || from_index >= snapshot.tabs.len() {
             return false;
         }

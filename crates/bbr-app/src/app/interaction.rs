@@ -17,6 +17,7 @@ impl BbrApp {
         }
         if self
             .controller
+            .get()
             .navigate(WebAction::Load { url: url.clone() })
             .is_err()
         {
@@ -51,7 +52,7 @@ impl BbrApp {
                     #[cfg(feature = "testkit")]
                     {
                         self.performance.expect_state(
-                            self.controller.snapshot().active_view,
+                            self.controller.read().snapshot().active_view,
                             self.sidebar_visible,
                             true,
                             self.command_bar_mode.into(),
@@ -75,7 +76,7 @@ impl BbrApp {
                     #[cfg(feature = "testkit")]
                     {
                         self.performance.expect_state(
-                            self.controller.snapshot().active_view,
+                            self.controller.read().snapshot().active_view,
                             self.sidebar_visible,
                             self.chrome_focused(window),
                             self.command_bar_mode.into(),
@@ -88,15 +89,15 @@ impl BbrApp {
     }
 
     pub fn go_back(&mut self) {
-        let _ = self.controller.navigate(WebAction::Back);
+        let _ = self.controller.get().navigate(WebAction::Back);
     }
 
     pub fn go_forward(&mut self) {
-        let _ = self.controller.navigate(WebAction::Forward);
+        let _ = self.controller.get().navigate(WebAction::Forward);
     }
 
     pub fn reload(&mut self) {
-        let _ = self.controller.navigate(WebAction::Reload);
+        let _ = self.controller.get().navigate(WebAction::Reload);
     }
 
     /// Apply an engine event to the owning controller tab and refresh chrome.
@@ -115,8 +116,10 @@ impl BbrApp {
             // the surface clears, and the native view we hid is restored
             // (identity untouched). If the retry fails again, the adapter
             // reports a fresh incident that supersedes this one.
-            if let Some(action) = self.error_surface.recovery_in_flight(*view) {
-                if self.error_surface.recovered(*view, action) {
+            let in_flight = self.error_surface.read().recovery_in_flight(*view);
+            if let Some(action) = in_flight {
+                let recovered = self.error_surface.get().recovered(*view, action);
+                if recovered {
                     self.sync_error_surface_visibility();
                     // The incident cleared: the active view may now be
                     // reported unresponsive, so the §11.8a pane
@@ -166,7 +169,7 @@ impl BbrApp {
         // failure or crash all clear the flag), the address line plays its
         // fill-and-fade after the state is applied.
         let loading_before = self.active_load();
-        let _ = self.controller.apply_event(event.clone());
+        let _ = self.controller.get().apply_event(event.clone());
         if let Some(view) = loading_before {
             if self.active_load().is_none() {
                 self.note_load_finished(view, cx);
@@ -181,7 +184,7 @@ impl BbrApp {
         // active view hands focus to the pane's Wait control only when the
         // user is not operating chrome (the sidebar / command bar stay
         // usable while the page hangs).
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         if let WebEvent::UnresponsiveChanged(view, true) = &event {
             if active_view == Some(*view) && !self.chrome_focused(window) {
                 window.focus(&self.unresponsive_wait_handle, cx);
@@ -257,7 +260,7 @@ impl BbrApp {
         #[cfg(feature = "testkit")]
         {
             self.performance.expect_state(
-                self.controller.snapshot().active_view,
+                self.controller.read().snapshot().active_view,
                 self.sidebar_visible,
                 true,
                 self.command_bar_mode.into(),
@@ -271,7 +274,7 @@ impl BbrApp {
     /// against space titles; Escape restores the previous command-bar state
     /// and focus domain exactly like the other staged modes.
     pub fn activate_move_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if self.controller.snapshot().active_index.is_none() {
+        if self.controller.read().snapshot().active_index.is_none() {
             return;
         }
         // A rail mode entry replaces any open find presentation.
@@ -296,7 +299,7 @@ impl BbrApp {
         #[cfg(feature = "testkit")]
         {
             self.performance.expect_state(
-                self.controller.snapshot().active_view,
+                self.controller.read().snapshot().active_view,
                 self.sidebar_visible,
                 true,
                 self.command_bar_mode.into(),
@@ -316,7 +319,7 @@ impl BbrApp {
         if needle.is_empty() {
             return None;
         }
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let exact = snapshot
             .spaces
             .iter()
@@ -346,10 +349,10 @@ impl BbrApp {
             return None;
         }
         let (_, title, profile) = self.resolve_move_space(&self.command_text.text)?;
-        if profile == self.controller.active_profile() {
+        if profile == self.controller.read().active_profile() {
             Some(format!("→ {title}"))
         } else {
-            let snapshot = self.controller.snapshot();
+            let snapshot = self.controller.read().snapshot();
             let profile_title = snapshot
                 .profiles
                 .iter()
@@ -535,7 +538,7 @@ impl BbrApp {
         // preview session is destroyed and focus returns to the exact warm
         // origin (the global `escape → FocusWeb` binding routes here; the
         // preview owns browser-command focus while open).
-        if self.controller.preview_open() {
+        if self.controller.read().preview_open() {
             self.peek_close(window, cx);
             return;
         }
@@ -630,7 +633,7 @@ impl BbrApp {
             } else {
                 self.focus_web(window, cx);
             }
-        } else if self.controller.snapshot().active_view.is_some() {
+        } else if self.controller.read().snapshot().active_view.is_some() {
             self.sync_command_bar();
             self.focus_web(window, cx);
         }
@@ -647,10 +650,11 @@ impl BbrApp {
         window.blur();
         let target = self
             .controller
+            .read()
             .snapshot()
             .preview
             .map(|preview| preview.view)
-            .or_else(|| self.controller.snapshot().active_view);
+            .or_else(|| self.controller.read().snapshot().active_view);
         if let Some(view) = target {
             self.engine.borrow_mut().focus_native_web(view);
         }
@@ -688,7 +692,7 @@ impl BbrApp {
     /// of the active session, falling back to the active tab's URL (the
     /// same single source `sync_command_bar` mirrors into the input model).
     pub(super) fn active_url(&self) -> String {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         snapshot
             .nav
             .url

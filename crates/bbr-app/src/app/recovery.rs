@@ -11,21 +11,26 @@ use crate::store::StoreRecovery;
 impl BbrApp {
     /// The pane to show in place of the empty state, if any.
     pub(crate) fn recovery_pane_kind(&self) -> Option<RecoveryKind> {
-        if self.recovery_dismissed {
+        if self.recovery_dismissed.value() {
             return None;
         }
-        self.store.recovery.as_ref().map(|recovery| match recovery {
-            StoreRecovery::Unreadable { kept } => RecoveryKind::Unreadable {
-                kept: kept.is_some(),
-            },
-            StoreRecovery::Newer { .. } => RecoveryKind::Newer,
-        })
+        self.store
+            .read()
+            .recovery
+            .as_ref()
+            .map(|recovery| match recovery {
+                StoreRecovery::Unreadable { kept } => RecoveryKind::Unreadable {
+                    kept: kept.is_some(),
+                },
+                StoreRecovery::Newer { .. } => RecoveryKind::Newer,
+            })
     }
 
     /// The pane's action (its button and the testkit seam): reveal the kept
     /// session file in Finder, or continue with the fresh session.
     pub fn recovery_action(&mut self, cx: &mut Context<Self>) -> bool {
-        match self.store.recovery.clone() {
+        let recovery = self.store.read().recovery.clone();
+        match recovery {
             Some(StoreRecovery::Unreadable { kept: Some(path) }) => {
                 #[cfg(target_os = "macos")]
                 if let Some(adapter) = self.downloads_adapter.as_ref() {
@@ -37,7 +42,7 @@ impl BbrApp {
                 true
             }
             Some(StoreRecovery::Newer { .. }) => {
-                self.recovery_dismissed = true;
+                self.recovery_dismissed.set(true);
                 cx.notify();
                 true
             }
@@ -51,6 +56,8 @@ impl BbrApp {
     /// Open About BBR (the menu item's action).
     pub fn show_about(&mut self, cx: &mut Context<Self>) {
         let theme = self.theme();
-        self.about_window = crate::about::open(self.about_window, theme, !self.windows_hidden, cx);
+        let about = self.about_window.value();
+        self.about_window
+            .set(crate::about::open(about, theme, !self.windows_hidden, cx));
     }
 }

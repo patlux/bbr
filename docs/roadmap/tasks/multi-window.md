@@ -132,6 +132,16 @@ Not parallelized.
       sessions (`view_window`), a window's selection, Peek previews per
       window. *(2026-09-30: `controller_window_tests` (10), full
       `bbr-browser` suite.)*
+- [x] Shared state behind window-scoped handles (slice 3a, one window, no
+      behavior change): `crate::shared` (`Shared`, `ControllerHandle`),
+      shared parts of downloads, permissions, certificates and zoom.
+      *(2026-09-30: clippy with `significant_drop_in_scrutinee` and a
+      statement-level guard audit clean; all 52 functional real-app suites
+      of `just e2e` green on the committed tree. `e2e-perf` failed in the
+      context-menu bookmark benchmark — reproduced 5/5 on `68be5cef` and
+      2/2 on `89c97cdf`, so it predates this work; its cause is open and
+      tracked below — and in the startup ceiling under a host load average
+      of 30–130.)*
 - [ ] Multi-root engine: sessions re-parent between roots without reload;
       per-root geometry.
       *(Slice 2, 2026-09-30: `bbr-web-macos` `window_roots.rs` — further
@@ -180,6 +190,7 @@ Functional evidence:
 Real-app E2E:
 Performance evidence:
 Roadmap/documentation updates:
-Open blockers and non-goals:
+Open blockers and non-goals: e2e-perf context-menu bookmark benchmark times
+  out (pre-existing, reproduced on 89c97cdf; cause open, investigated next).
 Worktree state:
 ```

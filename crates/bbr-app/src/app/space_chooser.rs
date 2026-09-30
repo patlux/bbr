@@ -23,8 +23,8 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let snapshot = self.controller.snapshot();
-        if !self.preferences.external_links_ask || snapshot.spaces.len() < 2 {
+        let snapshot = self.controller.read().snapshot();
+        if !self.preferences.read().external_links_ask || snapshot.spaces.len() < 2 {
             let _ = self.open_tab(url, cx);
             return;
         }
@@ -46,7 +46,7 @@ impl BbrApp {
     /// The chooser's model.
     pub(crate) fn space_chooser_model(&self) -> Option<SpaceChooserModel> {
         let state = self.space_chooser.as_ref()?;
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let first_profile = snapshot.profiles.first().map(|p| p.id);
         let host = crate::site_permissions::origin_of(&state.url)
             .map(|origin| crate::site_permissions::origin_host(&origin).to_string())
@@ -81,7 +81,13 @@ impl BbrApp {
         let Some(state) = self.space_chooser.take() else {
             return;
         };
-        let space = self.controller.snapshot().spaces.get(index).map(|s| s.id);
+        let space = self
+            .controller
+            .read()
+            .snapshot()
+            .spaces
+            .get(index)
+            .map(|s| s.id);
         if let Some(space) = space {
             let _ = self.activate_space(space, window, cx);
             if self.open_tab(&state.url, cx).is_some() {
@@ -107,7 +113,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let count = self.controller.snapshot().spaces.len();
+        let count = self.controller.read().snapshot().spaces.len();
         let Some(state) = self.space_chooser.as_mut() else {
             return;
         };

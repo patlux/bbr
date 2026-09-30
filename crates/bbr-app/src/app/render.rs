@@ -31,7 +31,7 @@ impl Render for BbrApp {
         let theme = self.theme();
         let p = theme.palette;
         let chrome_focused = self.chrome_handle.is_focused(window);
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         #[cfg(feature = "testkit")]
         self.performance.observe_render_state(
             browser.active_view,
@@ -82,6 +82,7 @@ impl Render for BbrApp {
                 {
                     self.geometry_engine.as_ref().and_then(|engine| {
                         self.controller
+                            .read()
                             .snapshot()
                             .active_view
                             .and_then(|view| engine.borrow().window_content_rect(view))
@@ -176,6 +177,9 @@ impl Render for BbrApp {
         self.sync_split_collapse(cx);
         let illustration_kind = self.content_illustration();
         let illustration = self.observe_pane_illustration(illustration_kind);
+        // One controller borrow per statement: the pane layout is read
+        // before the content chain whose branches borrow again.
+        let pane_layout = self.controller.read().pane_layout();
         let content: gpui::AnyElement = if self.library.open {
             // The Saved Pages Library is an internal chrome surface: it
             // replaces the active view's native slot (the view was hidden
@@ -204,7 +208,7 @@ impl Render for BbrApp {
                 cx.listener(|this, _e, window, cx| this.error_dismiss(window, cx)),
             )
             .into_any()
-        } else if let Some(layout) = self.controller.pane_layout() {
+        } else if let Some(layout) = pane_layout {
             // The authoritative pane layout drives the native surface:
             // one slot per visible pane, each addressing its own
             // `WebViewId`. Single-pane geometry is exactly the previous
@@ -218,7 +222,8 @@ impl Render for BbrApp {
                     keep.push(secondary);
                 }
                 // Blueprint D23: every pane of the shown group.
-                if let Some(split) = self.controller.split_layout() {
+                let split = self.controller.read().split_layout();
+                if let Some(split) = split {
                     keep.extend(split.views.iter().map(|(_, view)| *view));
                 }
                 self.performance.prune_pane_rects(&keep);
@@ -269,6 +274,7 @@ impl Render for BbrApp {
             };
             let peek_open = self
                 .controller
+                .read()
                 .preview()
                 .is_some_and(|preview| preview.view == layout.primary);
             match layout.secondary {
@@ -280,7 +286,7 @@ impl Render for BbrApp {
                     let bar_height = f32::from(theme.density.row());
                     let [top, right, bottom, left] =
                         bbr_ui::card::PeekFrame::preview_insets(bar_height);
-                    let covered = self.controller.covered_pane_layout().map(|covered| {
+                    let covered = self.controller.read().covered_pane_layout().map(|covered| {
                         let slot = |id| {
                             NativeWebViewSlot::new(self.engine.clone(), id)
                                 .corner_radius(card.radius)
@@ -315,7 +321,7 @@ impl Render for BbrApp {
                         .into_any()
                 }
                 // Blueprint D23: the shown group tiles the card.
-                Some(_) if self.controller.split_layout().is_some() => self
+                Some(_) if self.controller.read().split_layout().is_some() => self
                     .split_content(
                         &|this: &BbrApp, id, focused| build_slot(this, id, focused, card.radius),
                         cx,

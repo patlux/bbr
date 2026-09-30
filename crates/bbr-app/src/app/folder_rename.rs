@@ -97,7 +97,10 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let organization = self.organization.organization_snapshot(&self.controller);
+        let organization = self
+            .organization
+            .get()
+            .organization_snapshot(&self.controller.read());
         let Some(title) = organization
             .folders
             .iter()
@@ -182,16 +185,18 @@ impl BbrApp {
         };
         let current = self
             .organization
-            .organization_snapshot(&self.controller)
+            .get()
+            .organization_snapshot(&self.controller.read())
             .folders
             .iter()
             .find(|f| f.id == rename.folder)
             .map(|f| f.title.clone());
         if current.as_deref() != Some(rename.draft.trim()) && !rename.draft.trim().is_empty() {
-            match self
+            let renamed = self
                 .organization
-                .rename_folder(rename.folder, &rename.draft)
-            {
+                .get()
+                .rename_folder(rename.folder, &rename.draft);
+            match renamed {
                 Ok(event) => log::debug!("folder renamed: {event:?}"),
                 Err(error) => log::error!("could not rename folder: {error}"),
             }

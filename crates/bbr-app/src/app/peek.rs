@@ -91,7 +91,7 @@ impl BbrApp {
 
     /// The live Peek surface model, when a preview is open.
     pub fn peek_surface(&self) -> Option<PeekSurface> {
-        let preview = self.controller.snapshot().preview?;
+        let preview = self.controller.read().snapshot().preview?;
         Some(PeekSurface {
             id: preview.id,
             view: preview.view,
@@ -129,6 +129,7 @@ impl BbrApp {
         self.record_overlay_card(rect, cx);
         let inner = self
             .controller
+            .read()
             .preview_open()
             .then_some((rect, card.radius));
         if self.peek.card != inner {
@@ -189,6 +190,7 @@ impl BbrApp {
     pub fn peek_close(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         let Some(outcome) = self
             .controller
+            .get()
             .close_preview()
             .map_err(|error| log::warn!("peek close rejected: {error}"))
             .ok()
@@ -206,6 +208,7 @@ impl BbrApp {
     pub fn peek_promote(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         let Some(outcome) = self
             .controller
+            .get()
             .promote_preview()
             .map_err(|error| log::warn!("peek promote rejected: {error}"))
             .ok()
@@ -220,7 +223,7 @@ impl BbrApp {
     /// Route one browser navigation action to the preview session (it owns
     /// browser-command focus while open). Back/Forward/Reload/Stop/Navigate.
     pub(crate) fn peek_action(&mut self, action: WebAction) {
-        let _ = self.controller.preview_action(action);
+        let _ = self.controller.get().preview_action(action);
     }
 
     /// Handle one controller outcome that names the transient preview:
@@ -234,7 +237,7 @@ impl BbrApp {
     ) -> bool {
         match outcome {
             bbr_browser::ControllerEvent::PreviewOpened { view, .. } => {
-                self.peek.source_view = self.controller.snapshot().preview.map(|p| p.source);
+                self.peek.source_view = self.controller.read().snapshot().preview.map(|p| p.source);
                 self.present_peek(*view, window, cx);
                 self.emit_browser(outcome);
                 // The preview covers the origin view: the §11.8a pane is no
@@ -260,7 +263,7 @@ impl BbrApp {
                 let source = self.peek.source_view;
                 self.peek.source_view = None;
                 if let Some(source) = source {
-                    if self.controller.snapshot().active_view == Some(source) {
+                    if self.controller.read().snapshot().active_view == Some(source) {
                         self.focus_web_view(source, window, cx);
                     }
                 }
@@ -298,7 +301,7 @@ impl BbrApp {
         if !self.peek.presented {
             return;
         }
-        if self.controller.preview_open() {
+        if self.controller.read().preview_open() {
             // Still open (e.g. a same-space tab list refresh): refresh.
             cx.notify();
             return;

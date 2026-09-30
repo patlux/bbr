@@ -68,7 +68,7 @@ impl BbrApp {
             return false;
         };
         let source_key = self.tab_menu.state.source_key.clone();
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         let chrome_focused = self.chrome_focused(window);
         // Fast-but-wrong guard: the same active view stays selected, the
@@ -94,7 +94,7 @@ impl BbrApp {
     /// false and cancels when the render omitted the menu or the identity
     /// was wrong — a truthful rejection, never a fast-but-wrong pass.
     pub fn commit_tab_menu_open_benchmark(&self, window: &Window) -> bool {
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(
             active_view,
@@ -148,7 +148,7 @@ impl BbrApp {
         // submenu-bearing row's `on_hover` listener routes to): entering
         // the row opens its one-level submenu card.
         self.tab_menu_select(parent_row, true, window, cx);
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         let chrome_focused = self.chrome_focused(window);
         self.performance.observe_render_state(
@@ -169,7 +169,7 @@ impl BbrApp {
     /// against the observation the render recorded. Returns false and
     /// cancels when the submenu card was not drawn.
     pub fn commit_tab_menu_submenu_commit_benchmark(&self, window: &Window) -> bool {
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(
             active_view,

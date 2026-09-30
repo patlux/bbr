@@ -85,7 +85,7 @@ impl BbrApp {
         window: &Window,
         grouped: &[usize],
     ) -> TabsModel {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let pinned = crate::shell::pinned_count(&browser.tabs);
         let regular = &browser.tabs[pinned..];
         // §8 pitch: the regular region's rows render at surface + gap
@@ -145,7 +145,7 @@ impl BbrApp {
     ) -> Option<DragProxyModel> {
         let (dx, pointer_y, press_in_row) = self.tab_drag.proxy_anchor()?;
         let source = self.tab_drag.source()?;
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let row = self
             .row_visuals(browser.tabs.get(source..=source)?, None)
             .into_iter()

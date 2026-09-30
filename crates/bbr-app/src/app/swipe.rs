@@ -421,7 +421,7 @@ impl BbrApp {
             .into_iter()
             .map(|visual| visual.space)
             .collect();
-        let source = self.controller.snapshot().active_space;
+        let source = self.controller.read().snapshot().active_space;
         let direction = if normalized_delta_x(&event.delta) >= 0.0 {
             SwipeDirection::Next
         } else {
@@ -456,6 +456,7 @@ impl BbrApp {
         let resolve = |space: SpaceId| {
             let (token, intensity) = self
                 .controller
+                .read()
                 .space_appearance(space)
                 .map(|appearance| (appearance.theme, appearance.paper.intensity))
                 .unwrap_or((SpaceTheme::Ink, bbr_ui::theme::TintIntensity::Standard));
@@ -489,7 +490,7 @@ impl BbrApp {
         let gesture = self.swipe.gesture();
         let tint = self.swipe_tint();
         bbr_testkit::protocol::SwipeSnapshot {
-            active: TestSpaceId(self.controller.snapshot().active_space.0),
+            active: TestSpaceId(self.controller.read().snapshot().active_space.0),
             phase: gesture
                 .map_or("idle", |gesture| gesture.phase().name())
                 .to_string(),

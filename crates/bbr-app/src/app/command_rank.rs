@@ -244,10 +244,10 @@ impl BbrApp {
             self.command_ranking.close();
             return;
         }
-        let mut snapshot = self.controller.snapshot();
+        let mut snapshot = self.controller.read().snapshot();
         // Blueprint D16: Settings › Search › "Show tabs from all spaces in
         // ⌘T" off keeps the palette to the active space's tabs.
-        if !self.preferences.palette_all_spaces {
+        if !self.preferences.read().palette_all_spaces {
             let active = snapshot.active_space;
             snapshot.all_tabs.retain(|tab| tab.space == active);
         }
@@ -262,18 +262,20 @@ impl BbrApp {
             self.command_ranking.activation_error = None;
             return;
         }
-        let (rows, total) = self.store.with_history(|history| {
-            self.store.with_saved_pages(|saved_pages, collections| {
-                rank_text(
-                    &snapshot,
-                    history,
-                    saved_pages,
-                    collections,
-                    self.command_bar_mode,
-                    &text,
-                    self.controller.can_reopen_tab(),
-                )
-            })
+        let (rows, total) = self.store.read().with_history(|history| {
+            self.store
+                .read()
+                .with_saved_pages(|saved_pages, collections| {
+                    rank_text(
+                        &snapshot,
+                        history,
+                        saved_pages,
+                        collections,
+                        self.command_bar_mode,
+                        &text,
+                        self.controller.read().can_reopen_tab(),
+                    )
+                })
         });
         // Typed Location/NewTab text always carries the navigate/search
         // fallback row; an empty ⌘T with nothing recent and an actions

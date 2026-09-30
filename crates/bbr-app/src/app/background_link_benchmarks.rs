@@ -46,11 +46,11 @@ impl BbrApp {
         // decides it for a Command-primary / middle click: default intent,
         // background input disposition, from the current active view. The
         // request URL passes verbatim (never normalized).
-        let Some(opener) = self.controller.snapshot().active_view else {
+        let Some(opener) = self.controller.read().snapshot().active_view else {
             self.performance.cancel();
             return false;
         };
-        let opener_profile = self.controller.snapshot().active_profile;
+        let opener_profile = self.controller.read().snapshot().active_profile;
         let request = bbr_web::NewWindowRequest {
             source: opener,
             source_profile: opener_profile,
@@ -79,7 +79,7 @@ impl BbrApp {
         // session at the insertion index directly after the opener — the
         // semantic fast-but-wrong guard (a foreground activation, a
         // selection move, or a missing/misplaced session rejects).
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let child_ok = snapshot
             .tabs
             .get(index)

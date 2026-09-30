@@ -25,8 +25,8 @@ use super::BbrApp;
 /// store. Live (non-terminal) attempts are kept. The panel's focus, scroll,
 /// hover/press state, and the reveal cache reset with the rows.
 pub fn downloads_clear(app: &mut BbrApp, cx: &mut Context<BbrApp>) {
-    app.downloads.controller.clear_history();
-    app.downloads.reveal.clear();
+    app.downloads.controller.get().clear_history();
+    app.downloads.reveal.get().clear();
     app.downloads.focus = 0;
     app.downloads.hovered_row = None;
     app.downloads.pressed_row = None;
@@ -47,8 +47,8 @@ pub fn download_delete_row(
     id: DownloadId,
     cx: &mut Context<BbrApp>,
 ) -> Result<(), DownloadError> {
-    app.downloads.controller.delete_history(id)?;
-    app.downloads.reveal.remove(&id);
+    app.downloads.controller.get().delete_history(id)?;
+    app.downloads.reveal.get().remove(&id);
     app.persist_downloads();
     cx.notify();
     Ok(())
@@ -64,8 +64,8 @@ impl BbrApp {
     /// download terminal transitions are rare, so the write is
     /// synchronous and deterministic, never a second authority).
     pub(crate) fn persist_downloads(&self) {
-        let terminal = self.downloads.controller.terminal_history();
+        let terminal = self.downloads.controller.read().terminal_history();
         let records = crate::store::downloads::to_persisted(&terminal);
-        self.store.replace_downloads(&records);
+        self.store.read().replace_downloads(&records);
     }
 }

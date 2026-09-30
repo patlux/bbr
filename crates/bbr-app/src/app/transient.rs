@@ -223,7 +223,7 @@ impl BbrApp {
 
     /// Blueprint D17: after a restore, say what came back (once per launch).
     pub(crate) fn show_restore_notice(&mut self) {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let tabs = browser.all_tabs.len();
         if tabs == 0 {
             return;
@@ -380,7 +380,7 @@ impl BbrApp {
         &self,
         profile: bbr_web::ProfileId,
     ) -> Option<(String, bbr_ui::state::ProfileCompanion)> {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         browser
             .profiles
             .iter()
@@ -402,7 +402,7 @@ impl BbrApp {
     /// with no chip target.
     pub(crate) fn drag_destination(&self) -> Option<bbr_ui::state::DragDestination> {
         let space = self.tab_drag.chip_target()?;
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let target = browser.spaces.iter().find(|s| s.id == space)?;
         if target.profile == browser.active_profile {
             return None;
@@ -423,7 +423,7 @@ impl BbrApp {
         to_space: bbr_browser::SpaceId,
         cx: &mut Context<Self>,
     ) {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let Some(profile) = browser
             .spaces
             .iter()
@@ -460,7 +460,8 @@ impl BbrApp {
         space: bbr_browser::SpaceId,
         cx: &mut Context<Self>,
     ) {
-        match self.controller.move_tab_id(tab, space) {
+        let moved = self.controller.get().move_tab_id(tab, space);
+        match moved {
             Ok(outcome) => {
                 self.clear_command_profile_hint();
                 self.sync_command_bar();

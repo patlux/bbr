@@ -142,7 +142,7 @@ impl BbrApp {
     /// Whether the pressed row (armed or active) is an unpinned tab — the
     /// only kind the §11.2 ghost row offers pinning to.
     pub(crate) fn drag_source_unpinned(&self) -> bool {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         self.tab_drag
             .pressed_row()
             .and_then(|row| browser.tabs.get(row))
@@ -156,7 +156,8 @@ impl BbrApp {
     fn drag_activation_growth(&mut self) -> f32 {
         let favorites = self
             .organization
-            .organization_snapshot(&self.controller)
+            .get()
+            .organization_snapshot(&self.controller.read())
             .favorites
             .len();
         bbr_ui::components::drag_offer::activation_growth(
@@ -175,7 +176,7 @@ impl BbrApp {
     /// hit through their rendered spans (the same canonical chip visuals
     /// the render uses).
     pub(crate) fn resolve_tab_drag(&mut self, position_x: f32, position_y: f32, window: &Window) {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let theme = self.theme();
         if !self.tab_drag.is_active() {
             return;
@@ -198,7 +199,10 @@ impl BbrApp {
             None
         };
         // §11.11: the pinned region's rendered rows exclude grouped tabs.
-        let organization = self.organization.organization_snapshot(&self.controller);
+        let organization = self
+            .organization
+            .get()
+            .organization_snapshot(&self.controller.read());
         let grouped = crate::shell::organized::grouped_indices(&organization.folders, &browser);
         let loose = crate::shell::organized::loose_pinned(pinned, &grouped);
         // §11.11: the folder rows' recorded rects (blueprint D02 2-D
@@ -340,6 +344,7 @@ impl BbrApp {
                 // is never offered the row, so this never unpins.
                 let pinned = self
                     .controller
+                    .read()
                     .snapshot()
                     .tabs
                     .get(source)
@@ -360,7 +365,7 @@ impl BbrApp {
                 // Dropping on the dragged tab's own space is a no-op: the
                 // dragged row lives in the active space, so the destination
                 // equals the source exactly when it is the active space.
-                if self.controller.snapshot().active_space == space {
+                if self.controller.read().snapshot().active_space == space {
                     return false;
                 }
                 if self

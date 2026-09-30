@@ -58,9 +58,9 @@ fn section(title: &str, rows: Vec<SettingsRow>) -> SettingsSection {
 impl BbrApp {
     /// Load the preferences file (defaults when missing).
     pub(crate) fn load_preferences(&mut self, path: std::path::PathBuf, cx: &mut Context<Self>) {
-        self.preferences = crate::preferences::load(&path);
+        self.preferences.set(crate::preferences::load(&path));
         self.preferences_path = Some(path);
-        crate::preferences::set_peek_new_windows(self.preferences.peek_new_windows);
+        crate::preferences::set_peek_new_windows(self.preferences.read().peek_new_windows);
         cx.notify();
     }
 
@@ -70,10 +70,11 @@ impl BbrApp {
         change: impl FnOnce(&mut Preferences),
         cx: &mut Context<Self>,
     ) {
-        change(&mut self.preferences);
-        crate::preferences::set_peek_new_windows(self.preferences.peek_new_windows);
+        change(&mut self.preferences.get());
+        crate::preferences::set_peek_new_windows(self.preferences.read().peek_new_windows);
         if let Some(path) = self.preferences_path.as_ref() {
-            if let Err(error) = crate::preferences::save(path, &self.preferences) {
+            let saved = crate::preferences::save(path, &self.preferences.read());
+            if let Err(error) = saved {
                 log::warn!("could not write preferences: {error}");
             }
         }
@@ -84,12 +85,12 @@ impl BbrApp {
     /// Deferred: the new window's first render reads this entity.
     pub fn show_settings(&mut self, cx: &mut Context<Self>) {
         let app = cx.entity();
-        let existing = self.settings.window;
+        let existing = self.settings.read().window;
         let visible = !self.windows_hidden;
         cx.defer(move |cx| {
             let handle = crate::settings_window::open(existing, app.clone(), visible, cx);
             app.update(cx, |view, cx| {
-                view.settings.window = handle;
+                view.settings.get().window = handle;
                 cx.notify();
             });
         });
@@ -97,14 +98,15 @@ impl BbrApp {
 
     /// The Settings window closed.
     pub(crate) fn settings_closed(&mut self) {
-        self.settings.window = None;
-        self.settings.open_select = None;
-        self.settings.sheet = None;
+        self.settings.get().window = None;
+        self.settings.get().open_select = None;
+        self.settings.get().sheet = None;
     }
 
     /// The Settings model for the current pane.
     pub(crate) fn settings_model(&self) -> SettingsModel {
-        let sections = match self.settings.pane {
+        let pane = self.settings.read().pane;
+        let sections = match pane {
             SettingsPane::General => self.general_sections(),
             SettingsPane::Profiles => self.profile_sections(),
             SettingsPane::Search => self.search_sections(),
@@ -115,9 +117,9 @@ impl BbrApp {
         };
         SettingsModel {
             theme: self.theme(),
-            pane: self.settings.pane,
+            pane: self.settings.read().pane,
             sections,
-            open_select: self.settings.open_select.clone(),
+            open_select: self.settings.read().open_select.clone(),
             sheet: self.profile_sheet_model(),
         }
     }
@@ -153,7 +155,7 @@ impl BbrApp {
                     SettingsRow::new(
                         "general-peek",
                         "Open links that ask for a new window as Peek",
-                        SettingsControl::Toggle(self.preferences.peek_new_windows),
+                        SettingsControl::Toggle(self.preferences.read().peek_new_windows),
                     )
                     .detail("Preview over the current tab; promote with Open as Tab"),
                     // Blueprint D13 (answer 6): links from other apps.
@@ -161,7 +163,7 @@ impl BbrApp {
                         "general-external-links",
                         "Open links from other apps in",
                         SettingsControl::Select {
-                            value: usize::from(self.preferences.external_links_ask),
+                            value: usize::from(self.preferences.read().external_links_ask),
                             options: vec!["Last active space".into(), "Ask each time".into()],
                         },
                     ),
@@ -171,7 +173,7 @@ impl BbrApp {
     }
 
     fn search_sections(&self) -> Vec<SettingsSection> {
-        let engine = self.store.effective_settings().engine();
+        let engine = self.store.read().effective_settings().engine().clone();
         let mut labels: Vec<SharedString> = ENGINES
             .iter()
             .map(|engine| SharedString::from(engine.display_name()))
@@ -197,7 +199,7 @@ impl BbrApp {
                 SettingsRow::new(
                     "search-all-spaces",
                     "Show tabs from all spaces in ⌘T",
-                    SettingsControl::Toggle(self.preferences.palette_all_spaces),
+                    SettingsControl::Toggle(self.preferences.read().palette_all_spaces),
                 ),
             ],
         )]
@@ -220,8 +222,8 @@ impl BbrApp {
         )];
         // Blueprint D11 (board L-6): the active profile's sites with a
         // remembered permission; Forget returns them to Ask.
-        let profile = self.controller.active_profile();
-        let policies = &self.permissions.policies;
+        let profile = self.controller.read().active_profile();
+        let policies = self.permissions.policies.read();
         let rows: Vec<SettingsRow> = policies
             .sites(profile)
             .iter()
@@ -267,6 +269,7 @@ impl BbrApp {
         let certificates: Vec<SettingsRow> = self
             .certificates
             .choices
+            .read()
             .hosts(profile)
             .into_iter()
             .enumerate()
@@ -306,7 +309,7 @@ impl BbrApp {
     }
 
     fn download_sections(&self) -> Vec<SettingsSection> {
-        let history = self.downloads.controller.history_ids().len();
+        let history = self.downloads.controller.read().history_ids().len();
         vec![section(
             "List",
             vec![SettingsRow::new(
@@ -326,7 +329,7 @@ impl BbrApp {
     }
 
     fn appearance_sections(&self) -> Vec<SettingsSection> {
-        let prefs = &self.preferences;
+        let prefs = self.preferences.read().clone();
         let theme = match prefs.appearance {
             AppearanceChoice::System => 0,
             AppearanceChoice::Light => 1,
@@ -417,20 +420,17 @@ impl BbrApp {
         }
         match event {
             SettingsEvent::Pane(pane) => {
-                self.settings.pane = pane;
-                self.settings.open_select = None;
+                self.settings.get().pane = pane;
+                self.settings.get().open_select = None;
             }
             SettingsEvent::OpenSelect(row) => {
-                self.settings.open_select = if self.settings.open_select.as_ref() == Some(&row) {
-                    None
-                } else {
-                    Some(row)
-                };
+                let reopen = self.settings.read().open_select.as_ref() == Some(&row);
+                self.settings.get().open_select = (!reopen).then_some(row);
             }
-            SettingsEvent::Dismiss => self.settings.open_select = None,
+            SettingsEvent::Dismiss => self.settings.get().open_select = None,
             SettingsEvent::Key { key, .. } => {
                 if key.as_ref() == "escape" {
-                    self.settings.open_select = None;
+                    self.settings.get().open_select = None;
                 }
             }
             SettingsEvent::Select(_)
@@ -448,7 +448,7 @@ impl BbrApp {
                 _ => {}
             },
             SettingsEvent::Choose(row, index) => {
-                self.settings.open_select = None;
+                self.settings.get().open_select = None;
                 self.settings_choose(row.as_ref(), index, cx);
             }
             SettingsEvent::Press(row) => match row.as_ref() {
@@ -458,20 +458,20 @@ impl BbrApp {
                 }
                 "privacy-clear-data" => self.clear_data_in_browser(cx),
                 row if row.starts_with("privacy-certificate-") => {
-                    let profile = self.controller.active_profile();
+                    let profile = self.controller.read().active_profile();
                     let index = row["privacy-certificate-".len()..].parse::<usize>().ok();
-                    let hosts = self.certificates.choices.hosts(profile);
+                    let hosts = self.certificates.choices.read().hosts(profile);
                     if let Some((host, _)) = index.and_then(|index| hosts.get(index)) {
-                        self.certificates.choices.forget(profile, host);
+                        self.certificates.choices.get().forget(profile, host);
                         self.save_certificate_choices();
                     }
                 }
                 row if row.starts_with("privacy-site-") => {
-                    let profile = self.controller.active_profile();
+                    let profile = self.controller.read().active_profile();
                     let index = row["privacy-site-".len()..].parse::<usize>().ok();
-                    let sites = self.permissions.policies.sites(profile);
+                    let sites = self.permissions.policies.read().sites(profile);
                     if let Some(origin) = index.and_then(|index| sites.get(index)) {
-                        self.permissions.policies.forget_site(profile, origin);
+                        self.permissions.policies.get().forget_site(profile, origin);
                         self.save_site_permissions();
                         self.publish_popup_views();
                     }
@@ -489,7 +489,7 @@ impl BbrApp {
             }
             "search-engine" => {
                 if let Some(engine) = ENGINES.get(index) {
-                    self.store.set_search_engine(engine.clone());
+                    self.store.get().set_search_engine(engine.clone());
                 }
             }
             "appearance-theme" => {

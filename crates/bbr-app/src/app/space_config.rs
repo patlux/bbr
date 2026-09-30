@@ -78,12 +78,13 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        let Some(title) = self.controller.space_title(space) else {
+        let Some(title) = self.controller.read().space_title(space) else {
             log::error!("could not open space config for unknown space {space:?}");
             return false;
         };
         let appearance = self
             .controller
+            .read()
             .space_appearance(space)
             .expect("space exists");
         if self.u2.plus_menu.open {
@@ -99,6 +100,7 @@ impl BbrApp {
             title,
             name: self
                 .controller
+                .read()
                 .space_title(space)
                 .expect("space exists")
                 .clone(),
@@ -189,28 +191,39 @@ impl BbrApp {
             return;
         };
         let draft_name = self.space_config.model.name.trim().to_string();
-        let current = self.controller.space_title(space).unwrap_or_default();
+        let current = self
+            .controller
+            .read()
+            .space_title(space)
+            .unwrap_or_default();
         if !draft_name.is_empty() && draft_name != current {
-            if let Err(error) = self.controller.rename_space(space, draft_name.clone()) {
+            let renamed = self
+                .controller
+                .get()
+                .rename_space(space, draft_name.clone());
+            if let Err(error) = renamed {
                 log::error!("could not rename space {space:?}: {error}");
             }
         }
-        if let Err(error) = self
+        let themed = self
             .controller
-            .set_space_theme(space, self.space_config.model.theme)
-        {
+            .get()
+            .set_space_theme(space, self.space_config.model.theme);
+        if let Err(error) = themed {
             log::error!("could not set space theme {space:?}: {error}");
         }
-        if let Err(error) = self
+        let identified = self
             .controller
-            .set_space_identity(space, self.space_config.model.identity.clone())
-        {
+            .get()
+            .set_space_identity(space, self.space_config.model.identity.clone());
+        if let Err(error) = identified {
             log::error!("could not set space identity {space:?}: {error}");
         }
-        if let Err(error) = self
+        let papered = self
             .controller
-            .set_space_paper(space, self.space_config.model.paper)
-        {
+            .get()
+            .set_space_paper(space, self.space_config.model.paper);
+        if let Err(error) = papered {
             log::error!("could not set space paper {space:?}: {error}");
         }
         // The rename + appearance are structural browser mutations: poke the

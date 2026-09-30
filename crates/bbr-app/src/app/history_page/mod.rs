@@ -93,10 +93,11 @@ impl BbrApp {
     pub(crate) fn history_rows(&self) -> HistoryRows {
         let state = &self.library.history;
         if state.view == 1 {
-            closed_rows(&self.controller.recently_closed(), &state.search)
+            closed_rows(&self.controller.read().recently_closed(), &state.search)
         } else {
             let clock = time::Clock::system();
             self.store
+                .read()
                 .with_history(|entries| visit_rows(entries, &state.search, state.range, &clock))
         }
     }
@@ -119,7 +120,7 @@ impl BbrApp {
             search: SharedString::from(state.search.clone()),
             range: state.range,
             view: state.view,
-            closed_count: self.controller.recently_closed().len(),
+            closed_count: self.controller.read().recently_closed().len(),
             groups: rows.groups,
             selected: state.selected,
             empty,
@@ -211,12 +212,16 @@ impl BbrApp {
             self.reopen_closed_tab(bbr_domain::TabId(id), window, cx);
             return;
         }
-        let Some((url, title)) = self.store.history_entry(bbr_command::id::HistoryId(id)) else {
+        let Some((url, title)) = self
+            .store
+            .read()
+            .history_entry(bbr_command::id::HistoryId(id))
+        else {
             return;
         };
         self.close_saved_pages_library(window, cx);
         if self.open_tab(&url, cx).is_some() {
-            self.store.record_visit(&url, &title);
+            self.store.get().record_visit(&url, &title);
             self.finish_web_activation(window, cx);
         }
     }
@@ -229,7 +234,7 @@ impl BbrApp {
         }
         let ids = self.history_rows().ids();
         let position = ids.iter().position(|row| *row == id);
-        if self.store.remove_history(&[id]) > 0 {
+        if self.store.get().remove_history(&[id]) > 0 {
             // The keyboard row moves to the next one (or the previous one
             // at the end).
             self.library.history.selected = position.and_then(|at| {

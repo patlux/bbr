@@ -33,8 +33,10 @@ impl BbrApp {
         cx.notify();
         #[cfg(feature = "testkit")]
         {
-            self.performance
-                .arm_browser_state_if_pending(self.controller.snapshot().active_view, visible);
+            self.performance.arm_browser_state_if_pending(
+                self.controller.read().snapshot().active_view,
+                visible,
+            );
             if self.performance.presentation_pending()() {
                 self.commit_benchmark_sync(window);
             }

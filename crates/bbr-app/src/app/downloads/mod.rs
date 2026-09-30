@@ -90,7 +90,8 @@ pub struct RevealEligibility {
 /// authority; this struct owns only presentation state (open, focus, scroll,
 /// hover/press, reveal cache, last render state).
 pub struct DownloadsState {
-    pub controller: DownloadController,
+    /// Shared by every window (blueprint D19); the rest is this window's.
+    pub controller: crate::shared::Shared<DownloadController>,
     /// The anchored popover is open.
     pub open: bool,
     /// The keyboard-cursor row (no persistent selection — focus is the
@@ -105,7 +106,7 @@ pub struct DownloadsState {
     pub render_state: DownloadsRenderState,
     /// Reveal eligibility cache keyed by attempt id (computed through the
     /// native adapter at success time and on panel open).
-    pub reveal: HashMap<DownloadId, RevealEligibility>,
+    pub reveal: crate::shared::Shared<HashMap<DownloadId, RevealEligibility>>,
     /// The §11.12 open/close opacity fade (`dur:fine` only — never translate
     /// or scale). Created lazily on the first render that needs it; the goal
     /// is `1.0` while open and `0.0` on dismissal, and the render keeps the
@@ -122,14 +123,14 @@ impl Default for DownloadsState {
 impl DownloadsState {
     pub fn new() -> Self {
         Self {
-            controller: DownloadController::new(),
+            controller: crate::shared::Shared::new(DownloadController::new()),
             open: false,
             focus: 0,
             hovered_row: None,
             pressed_row: None,
             scroll: ScrollHandle::new(),
             render_state: DownloadsRenderState::default(),
-            reveal: HashMap::new(),
+            reveal: Default::default(),
             opacity: None,
         }
     }
@@ -137,13 +138,13 @@ impl DownloadsState {
     /// The full deterministic row list (active ascending `DownloadId`, then
     /// history most-recent-terminal first) — `row index <n>` is stable.
     pub fn row_ids(&self) -> Vec<DownloadId> {
-        self.controller.rows()
+        self.controller.read().rows()
     }
 
     /// The scroll anchor derived from the production scroll offset (negative
     /// as the user scrolls down), clamped to the deterministic row list.
     pub fn anchor_from_offset(&self, row_h: f32) -> usize {
-        let total = self.controller.len();
+        let total = self.controller.read().len();
         if total == 0 {
             return 0;
         }
@@ -156,7 +157,7 @@ impl DownloadsState {
 
     /// The bounded render window over the combined row list.
     pub fn window_for(&self, anchor: usize) -> std::ops::Range<usize> {
-        let total = self.controller.len();
+        let total = self.controller.read().len();
         if total == 0 {
             return 0..0;
         }
@@ -231,13 +232,19 @@ impl BbrApp {
         let row_h = f32::from(theme.density.row());
         let label_h = f32::from(theme.type_.badge.size) * theme.type_.badge.leading
             + 2.0 * f32::from(bbr_ui::theme::Spacing::sp1());
-        let controller = &self.downloads.controller;
-        let total = controller.len();
+        let (total, active_count, history_count) = {
+            let controller = self.downloads.controller.read();
+            (
+                controller.len(),
+                controller.active_ids().len(),
+                controller.history_ids().len(),
+            )
+        };
         let layout = PanelLayout {
             label_h,
             row_h,
-            active_count: controller.active_ids().len(),
-            history_count: controller.history_ids().len(),
+            active_count,
+            history_count,
             hairline: 1.0,
         };
         let anchor = self.downloads.anchor_from_offset(row_h);
@@ -374,8 +381,8 @@ impl BbrApp {
             label_h: f32::from(theme.type_.badge.size) * theme.type_.badge.leading
                 + 2.0 * f32::from(bbr_ui::theme::Spacing::sp1()),
             row_h: f32::from(theme.density.row()),
-            active_count: self.downloads.controller.active_ids().len(),
-            history_count: self.downloads.controller.history_ids().len(),
+            active_count: self.downloads.controller.read().active_ids().len(),
+            history_count: self.downloads.controller.read().history_ids().len(),
             hairline: 1.0,
         }
     }

@@ -186,7 +186,7 @@ impl BbrApp {
         if drag_proxy.is_none() {
             *self.drag_offer_rects.proxy.borrow_mut() = None;
         }
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let status = crate::shell::status_model(&browser);
         let status_visible = crate::shell::status_visible(&browser);
         let active_space_title = browser
@@ -252,7 +252,7 @@ impl BbrApp {
         // The active-space tab rows belong to the active profile (the
         // controller's tab operations target it), so every row's favicon
         // image resolves from that profile's bounded host-keyed store.
-        let profile = self.controller.snapshot().active_profile;
+        let profile = self.controller.read().snapshot().active_profile;
         // Blueprint D23: the rows of a split group form a bracketed block.
         let marks = self.split_marks(tabs.len());
         tabs.iter()

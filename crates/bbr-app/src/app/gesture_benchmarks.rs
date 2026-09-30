@@ -55,7 +55,7 @@ impl BbrApp {
         {
             return false;
         }
-        let before = self.controller.snapshot();
+        let before = self.controller.read().snapshot();
         if before.active_view != Some(view) || !before.nav.can_go_back {
             self.performance.cancel();
             return false;
@@ -72,7 +72,7 @@ impl BbrApp {
             self.performance.cancel();
             return false;
         }
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(
@@ -121,7 +121,7 @@ impl BbrApp {
         {
             return false;
         }
-        let before = self.controller.snapshot();
+        let before = self.controller.read().snapshot();
         if before.active_view != Some(child_view) || before.nav.can_go_back {
             self.performance.cancel();
             return false;
@@ -143,7 +143,7 @@ impl BbrApp {
         };
         // Fast-but-wrong guard: the child's view is gone from the live
         // presentation and the opener's view is the presented active view.
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         if snapshot.active_view != Some(presented_view) {
             self.performance.cancel();
             return false;

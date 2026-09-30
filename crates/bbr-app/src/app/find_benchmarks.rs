@@ -51,7 +51,7 @@ impl BbrApp {
         // Production Cmd-F entry: the exact seam the `FindInPage` action
         // routes to (`window_seam` → `find_open`).
         self.find_open(window, cx);
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         // Fast-but-wrong guard: the same active view stays selected, the
         // sidebar stays visible, the find field owns focus (chrome released),
@@ -97,7 +97,7 @@ impl BbrApp {
         // portable session start → the native adapter → the content-world
         // strategy). The completion lands asynchronously on a later update.
         self.find_set_query(query, cx);
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         // The query never changes view/sidebar/focus/mode: the find field
         // keeps focus, the bar stays over the same active view.
@@ -139,7 +139,7 @@ impl BbrApp {
         } else {
             self.find_previous(cx);
         }
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         self.performance
             .observe_render_state(active_view, self.sidebar_visible, false, mode);

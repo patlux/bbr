@@ -77,12 +77,12 @@ impl ClearDataState {
 impl BbrApp {
     /// The sheet's presentation model.
     pub(crate) fn clear_data_model(&self, state: &ClearDataState) -> ClearDataModel {
-        let snapshot = self.controller.snapshot();
-        let active = self.controller.active_profile();
+        let snapshot = self.controller.read().snapshot();
+        let active = self.controller.read().active_profile();
         let profile = snapshot.profiles.iter().find(|p| p.id == active);
         let title = profile.map(|p| p.title.clone()).unwrap_or_default();
         let theme = self.theme();
-        let visits = self.store.history_count(state.since_ms(now_ms()));
+        let visits = self.store.read().history_count(state.since_ms(now_ms()));
         let labels = [
             match visits {
                 1 => "Browsing history · 1 page".to_string(),
@@ -140,7 +140,7 @@ impl BbrApp {
         }
         let since = state.since_ms(now_ms());
         if state.effective(OPTION_HISTORY) {
-            self.store.clear_history(since);
+            self.store.get().clear_history(since);
             self.library.history.selected = None;
         }
         let kinds = bbr_web::WebsiteDataKinds {
@@ -148,7 +148,7 @@ impl BbrApp {
             caches: state.effective(OPTION_CACHES),
         };
         if kinds.cookies_and_site_data || kinds.caches {
-            let profile = self.controller.active_profile();
+            let profile = self.controller.read().active_profile();
             self.engine.borrow_mut().clear_profile_data(
                 profile,
                 kinds,
@@ -161,13 +161,15 @@ impl BbrApp {
         if state.effective(OPTION_SAVED_PAGES) {
             let ids: Vec<u64> = self
                 .store
+                .read()
                 .with_saved_pages(|pages, _| pages.iter().map(|page| page.id).collect());
-            self.store.remove_saved_pages(&ids);
+            self.store.get().remove_saved_pages(&ids);
         }
         // Board PR-12: "Cleared 24 hours of data from Default".
-        let profile = self.controller.active_profile();
+        let profile = self.controller.read().active_profile();
         let name = self
             .controller
+            .read()
             .snapshot()
             .profiles
             .iter()

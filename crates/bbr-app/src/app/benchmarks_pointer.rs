@@ -79,7 +79,7 @@ impl BbrApp {
     /// the render and the snapshot use, so the benchmark guard cannot drift
     /// from the shell.
     fn row_state_of(&self, index: usize) -> Option<TabVisualState> {
-        let browser = self.controller.snapshot();
+        let browser = self.controller.read().snapshot();
         let rows = self.row_visuals(&browser.tabs, self.tab_drag.source());
         rows.iter()
             .find(|row| row.index == index)
@@ -90,7 +90,7 @@ impl BbrApp {
     /// post-mutation state (active view, focus, mode), like the other
     /// interaction benchmarks.
     fn commit_pointer_benchmark(&self, window: &Window) {
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(

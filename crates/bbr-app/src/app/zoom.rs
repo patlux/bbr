@@ -63,12 +63,6 @@ pub struct MemorySiteSettingsStore {
     records: BTreeMap<ProfileSiteKey, SiteSettingsOverrides>,
 }
 
-impl MemorySiteSettingsStore {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
 impl SiteSettingsStore for MemorySiteSettingsStore {
     fn get(&mut self, key: &ProfileSiteKey) -> Result<Option<SiteSettingsOverrides>, StoreError> {
         Ok(self.records.get(key).copied())
@@ -115,10 +109,12 @@ pub struct ZoomSnapshotState {
 
 /// The app-side per-site zoom authority.
 pub struct ZoomController {
-    store: MemorySiteSettingsStore,
-    lifecycles: BTreeMap<ProfileSiteKey, SiteZoomLifecycle>,
+    // Blueprint D19: the site levels are shared by every window; the
+    // active site is this window's.
+    store: crate::shared::Shared<MemorySiteSettingsStore>,
+    lifecycles: crate::shared::Shared<BTreeMap<ProfileSiteKey, SiteZoomLifecycle>>,
     /// Level actually applied to each live view (the native `pageZoom`).
-    applied: BTreeMap<WebViewId, ZoomPercent>,
+    applied: crate::shared::Shared<BTreeMap<WebViewId, ZoomPercent>>,
     /// The profile + origin of the active view (resolved from the last
     /// navigation event).
     active_key: Option<ProfileSiteKey>,
@@ -128,7 +124,7 @@ pub struct ZoomController {
 impl std::fmt::Debug for ZoomController {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ZoomController")
-            .field("lifecycles", &self.lifecycles.len())
+            .field("lifecycles", &self.lifecycles.read().len())
             .field("applied", &self.applied)
             .field("active_key", &self.active_key)
             .finish_non_exhaustive()
@@ -139,9 +135,9 @@ impl ZoomController {
     /// A fresh controller with the native application target.
     pub fn new(target: ZoomTarget) -> Self {
         Self {
-            store: MemorySiteSettingsStore::new(),
-            lifecycles: BTreeMap::new(),
-            applied: BTreeMap::new(),
+            store: Default::default(),
+            lifecycles: Default::default(),
+            applied: Default::default(),
             active_key: None,
             target,
         }
@@ -169,10 +165,11 @@ impl ZoomController {
         self.ensure_loaded(&key);
         let level = self
             .lifecycles
+            .read()
             .get(&key)
             .map(SiteZoomLifecycle::effective_zoom)
             .unwrap_or_default();
-        if self.applied.get(&view) != Some(&level) {
+        if self.applied.read().get(&view) != Some(&level) {
             self.apply(view, level);
         }
     }
@@ -188,10 +185,11 @@ impl ZoomController {
         self.ensure_loaded(&key);
         let level = self
             .lifecycles
+            .read()
             .get(&key)
             .map(SiteZoomLifecycle::effective_zoom)
             .unwrap_or_default();
-        if self.applied.get(&view) != Some(&level) {
+        if self.applied.read().get(&view) != Some(&level) {
             self.apply(view, level);
         }
     }
@@ -220,8 +218,12 @@ impl ZoomController {
     pub fn active_level(&self) -> u16 {
         self.active_key
             .as_ref()
-            .and_then(|key| self.lifecycles.get(key))
-            .map(SiteZoomLifecycle::effective_zoom)
+            .and_then(|key| {
+                self.lifecycles
+                    .read()
+                    .get(key)
+                    .map(SiteZoomLifecycle::effective_zoom)
+            })
             .unwrap_or_default()
             .as_u16()
     }
@@ -232,19 +234,31 @@ impl ZoomController {
         let level = self
             .active_key
             .as_ref()
-            .and_then(|key| self.lifecycles.get(key))
-            .map(SiteZoomLifecycle::effective_zoom)
+            .and_then(|key| {
+                self.lifecycles
+                    .read()
+                    .get(key)
+                    .map(SiteZoomLifecycle::effective_zoom)
+            })
             .unwrap_or_default();
         ZoomSnapshotState {
             level: level.as_u16(),
             site: self.active_key.as_ref().map(|key| key.to_string()),
             view: Some(view),
-            applied: self.applied.get(&view).map(|applied| applied.as_u16()),
+            applied: self
+                .applied
+                .read()
+                .get(&view)
+                .map(|applied| applied.as_u16()),
             pending: self
                 .active_key
                 .as_ref()
-                .and_then(|key| self.lifecycles.get(key))
-                .map(SiteZoomLifecycle::has_pending)
+                .and_then(|key| {
+                    self.lifecycles
+                        .read()
+                        .get(key)
+                        .map(SiteZoomLifecycle::has_pending)
+                })
                 .unwrap_or(false),
         }
     }
@@ -252,12 +266,12 @@ impl ZoomController {
     /// Load the lifecycle for `key` from the store when not already loaded.
     /// Absent records load the documented default; loading never writes.
     fn ensure_loaded(&mut self, key: &ProfileSiteKey) {
-        if self.lifecycles.contains_key(key) {
+        if self.lifecycles.read().contains_key(key) {
             return;
         }
-        let stored = self.store.get(key).ok().flatten();
+        let stored = self.store.get().get(key).ok().flatten();
         let lifecycle = SiteZoomLifecycle::load(key.clone(), stored);
-        self.lifecycles.insert(key.clone(), lifecycle);
+        self.lifecycles.get().insert(key.clone(), lifecycle);
     }
 
     /// One user zoom change: mutate the lifecycle, flush the pending write
@@ -272,13 +286,15 @@ impl ZoomController {
         let key = Self::resolve_key(profile, url)?;
         self.active_key = Some(key.clone());
         self.ensure_loaded(&key);
-        let lifecycle = self.lifecycles.get_mut(&key).expect("just ensured");
+        let mut lifecycles = self.lifecycles.get();
+        let lifecycle = lifecycles.get_mut(&key).expect("just ensured");
         let level = change(lifecycle);
         // Flush the pending write through the portable store port and
         // acknowledge it. A store failure leaves the pending write intact
         // (the contract's retry path); the effective level is still applied
         // because it is the user-visible truth.
-        match lifecycle.persist(&mut self.store) {
+        let persisted = lifecycle.persist(&mut *self.store.get());
+        match persisted {
             Ok(Some(version)) => {
                 let _ = lifecycle.ack(version);
             }
@@ -287,6 +303,7 @@ impl ZoomController {
                 log::warn!("zoom persistence failed, write stays pending: {error}");
             }
         }
+        drop(lifecycles);
         self.apply(view, level);
         Some(level.as_u16())
     }
@@ -297,7 +314,7 @@ impl ZoomController {
     /// backing.
     fn apply(&mut self, view: WebViewId, level: ZoomPercent) {
         if (self.target)(view, level) {
-            self.applied.insert(view, level);
+            self.applied.get().insert(view, level);
         }
     }
 }
@@ -361,6 +378,7 @@ impl super::BbrApp {
     pub(crate) fn zoom_navigation(&mut self, view: bbr_web::WebViewId, url: &str) {
         let Some(profile) = self
             .controller
+            .read()
             .snapshot()
             .all_tabs
             .iter()
@@ -451,7 +469,7 @@ impl super::BbrApp {
     /// Resolve the active view, its profile, and its tab URL — the address
     /// zoom acts on. `None` when no active native view exists.
     fn zoom_active(&self) -> Option<(bbr_web::WebViewId, bbr_web::ProfileId, String)> {
-        let snap = self.controller.snapshot();
+        let snap = self.controller.read().snapshot();
         let view = snap.active_view?;
         let tab = snap.tabs.get(snap.active_index?)?;
         Some((view, snap.active_profile, tab.url.clone()))

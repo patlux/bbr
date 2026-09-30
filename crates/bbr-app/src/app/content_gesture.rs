@@ -39,20 +39,20 @@ impl BbrApp {
         commit: ContentGestureCommit,
         cx: &mut Context<Self>,
     ) -> Option<bbr_browser::ControllerEvent> {
-        self.content_gesture.commits += 1;
-        let outcome = self.controller.on_content_gesture(commit);
+        self.content_gesture.get().commits += 1;
+        let outcome = self.controller.get().on_content_gesture(commit);
         let is_opener_return = matches!(
             outcome,
             Some(bbr_browser::ControllerEvent::OpenerReturn { .. })
         );
         match &outcome {
             Some(bbr_browser::ControllerEvent::GestureHistoryRouted { .. }) => {
-                self.content_gesture.history_routed += 1;
+                self.content_gesture.get().history_routed += 1;
             }
             Some(bbr_browser::ControllerEvent::OpenerReturn { .. }) => {
-                self.content_gesture.opener_returns += 1;
+                self.content_gesture.get().opener_returns += 1;
             }
-            Some(_) | None => self.content_gesture.no_ops += 1,
+            Some(_) | None => self.content_gesture.get().no_ops += 1,
         }
         if let Some(outcome) = &outcome {
             self.emit_browser(outcome);
@@ -80,6 +80,6 @@ impl BbrApp {
 
     #[cfg(feature = "testkit")]
     pub(crate) fn content_gesture_state(&self) -> ContentGestureState {
-        self.content_gesture
+        self.content_gesture.value()
     }
 }

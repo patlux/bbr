@@ -9,7 +9,7 @@ use super::BbrApp;
 /// The testkit view of the open Settings window.
 impl BbrApp {
     pub(crate) fn settings_snapshot(&self) -> Option<bbr_testkit::protocol::SettingsSnapshot> {
-        self.settings.window?;
+        self.settings.read().window?;
         let model = self.settings_model();
         let rows = model
             .sections

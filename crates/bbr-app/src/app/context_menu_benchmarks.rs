@@ -48,7 +48,7 @@ impl BbrApp {
         // coordinates, points, top-left origin).
         let rect = bbr_web::WebRect::new(point[0], point[1], 0.0, 0.0);
         self.menu_open_from_event(view, rect, window, cx);
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         // Fast-but-wrong guard: the same active view stays selected, the
         // sidebar stays visible, the menu focus is a non-chrome domain (so
@@ -198,7 +198,7 @@ impl BbrApp {
         // CLOSED. Arming clears the open observation, so the pre-activation
         // open state can never commit the sample.
         self.performance.expect_context_menu_bookmark_commit();
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let mode: bbr_testkit::protocol::CommandBarMode = self.command_bar_mode.into();
         // Production activation: the exact seam the row's mouse-down
         // listener calls — toggle through B2, dismiss the menu, restore the

@@ -193,7 +193,9 @@ pub enum RestoreEvidence {
 /// The root view of the browser window.
 pub struct BbrApp {
     engine: EngineRef,
-    controller: BrowserController,
+    /// Blueprint D19: the shared controller, borrowed in this window's
+    /// context (`self.controller.read()`).
+    controller: crate::shared::ControllerHandle,
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
     engine_kind: &'static str,
     /// GPUI focus handle for the chrome (sidebar/command bar).
@@ -237,12 +239,12 @@ pub struct BbrApp {
     /// Blueprint D11: permission prompts, device marks, site settings.
     pub(crate) permissions: permissions::PermissionsState,
     /// Blueprint D24: the media sessions behind the sidebar media card.
-    pub(crate) media: media::MediaState,
+    pub(crate) media: crate::shared::Shared<media::MediaState>,
     /// Blueprint D23: the shown group's divider drag and collapse state.
     pub(crate) split_view: split_view::SplitView,
     /// Blueprint D23: `splits.txt` and the groups last written there.
     split_layouts_path: Option<std::path::PathBuf>,
-    split_layouts_saved: std::cell::RefCell<Option<crate::split_layouts::SpaceGroups>>,
+    split_layouts_saved: crate::shared::Shared<Option<crate::split_layouts::SpaceGroups>>,
     /// Blueprint D12: client-certificate requests and remembered choices.
     pub(crate) certificates: client_certificates::CertificateState,
     /// Blueprint D13: links to other apps' schemes.
@@ -255,12 +257,13 @@ pub struct BbrApp {
     pub(crate) import_home: Option<std::path::PathBuf>,
     /// Blueprint D19: the spaces the installed menu bar and Dock menu list
     /// (`None` until the first render installs them).
-    pub(crate) menu_spaces: Option<Vec<crate::menus::MenuSpace>>,
+    pub(crate) menu_spaces: crate::shared::Shared<Option<Vec<crate::menus::MenuSpace>>>,
     /// Blueprint D17: the recovery pane was dismissed (Continue).
-    pub(crate) recovery_dismissed: bool,
+    pub(crate) recovery_dismissed: crate::shared::Shared<bool>,
     /// Blueprint D18: the About window, once opened; and whether windows
     /// open hidden (the test harness).
-    pub(crate) about_window: Option<gpui::WindowHandle<crate::about::AboutView>>,
+    pub(crate) about_window:
+        crate::shared::Shared<Option<gpui::WindowHandle<crate::about::AboutView>>>,
     pub(crate) windows_hidden: bool,
     /// The one-active portal state for this browser window (task packet
     /// `native-portal-host`): exactly one presentation, deterministic
@@ -337,13 +340,13 @@ pub struct BbrApp {
     /// per-view incident lifecycles, the classified presentation the content
     /// area renders for TLS/navigation/offline failures, the contract-derived
     /// recovery routing, and the native-view hide/restore bookkeeping.
-    pub(crate) error_surface: crate::app::error_surface::ErrorSurfaceState,
+    pub(crate) error_surface: crate::shared::Shared<crate::app::error_surface::ErrorSurfaceState>,
     /// Authentication challenge sheet composition (queue item 10): the
     /// coordinator (challenge records, contract lifecycle, redacted
     /// credential store) and the sheet's edit state. The sheet itself holds
     /// no authority over the challenge lifecycle; every decision routes
     /// through the merged portable contract.
-    auth: crate::app::auth::AuthCoordinator,
+    auth: crate::shared::Shared<crate::app::auth::AuthCoordinator>,
     /// GPUI focus handle of the credential sheet (main-window focus; the
     /// portal window is never key, so keystrokes route through the root
     /// listener while the sheet is open).
@@ -411,7 +414,8 @@ pub struct BbrApp {
     /// per OS delivery through the AppKit delegate path (or the testkit
     /// seam); the decision is always the merged portable contract's.
     #[cfg(target_os = "macos")]
-    external_urls: bbr_web_macos::external_urls_adapter::ExternalUrlAdapterCore,
+    external_urls:
+        crate::shared::Shared<bbr_web_macos::external_urls_adapter::ExternalUrlAdapterCore>,
     /// Per-site zoom composition (queue item 11, part A): the app-side
     /// authority for the active view's zoom level — profile-scoped
     /// lifecycles over the merged `site_settings` contract, an in-memory
@@ -450,7 +454,7 @@ pub struct BbrApp {
     /// provider slice): the shared `bbr-app -> bbr-persistence` bootstrap
     /// that owns the truthful store disposition, the global search
     /// settings, and the in-memory history provider ranking consumes.
-    store: crate::store::AppStore,
+    store: crate::shared::Shared<crate::store::AppStore>,
     /// The Phase-7 startup restore outcome (see [`RestoreEvidence`]).
     restore_evidence: RestoreEvidence,
     /// The last observed macOS system appearance mapped to a production
@@ -465,16 +469,16 @@ pub struct BbrApp {
     /// observed system appearance so real-app E2E can force light and dark
     /// regardless of the host. `None` follows the system.
     #[cfg(feature = "testkit")]
-    appearance_override: Option<bbr_ui::theme::ThemeMode>,
+    appearance_override: crate::shared::Shared<Option<bbr_ui::theme::ThemeMode>>,
     /// The observed macOS Increase Contrast / Reduce Motion options (task
     /// packet `v2-system-prefs`); corrected by `observe_system_accessibility`
     /// before the first presented frame and kept live by the native
     /// workspace notification.
-    system_accessibility: appearance::AccessibilityPrefs,
+    system_accessibility: crate::shared::Shared<appearance::AccessibilityPrefs>,
     /// Testkit-only per-option accessibility override (`None` follows the
     /// system).
     #[cfg(feature = "testkit")]
-    accessibility_override: appearance::AccessibilityOverride,
+    accessibility_override: crate::shared::Shared<appearance::AccessibilityOverride>,
     /// Keeps the native accessibility-display registration alive; dropping
     /// it removes the observer.
     #[cfg(target_os = "macos")]
@@ -544,9 +548,9 @@ pub struct BbrApp {
     /// Blueprint D02: the floating rail (reveal state, panel geometry).
     pub(crate) floating_rail: rail_float::FloatingRail,
     /// Blueprint D16: the Settings window's preferences and their file.
-    pub(crate) preferences: crate::preferences::Preferences,
+    pub(crate) preferences: crate::shared::Shared<crate::preferences::Preferences>,
     pub(crate) preferences_path: Option<std::path::PathBuf>,
-    pub(crate) settings: settings::SettingsState,
+    pub(crate) settings: crate::shared::Shared<settings::SettingsState>,
     /// The browser window this app renders into (set by the composition
     /// root; Settings actions that present in the browser use it).
     pub(crate) browser_window: Option<gpui::WindowHandle<gpui_component::Root>>,
@@ -578,7 +582,7 @@ pub struct BbrApp {
     /// §11.8a unresponsive-pane composition (renderer-isolation lane): the
     /// native-view hide/restore bookkeeping for the pane over the exact
     /// active view (the session stays alive).
-    unresponsive: unresponsive::UnresponsiveState,
+    unresponsive: crate::shared::Shared<unresponsive::UnresponsiveState>,
     /// GPUI focus handles of the §11.8a recovery buttons in tab order
     /// Wait → Reload → Close tab (the sidebar follows in the global tab
     /// order).
@@ -591,7 +595,7 @@ pub struct BbrApp {
     /// snapshot report. Commands (NewFolder/NewSpace/FavoriteToggle/
     /// MoveIntoFolder) wire into the plus menu / command bar in
     /// `app::u2`; the read model is consumed as-is.
-    organization: bbr_browser::OrganizationController,
+    organization: crate::shared::Shared<bbr_browser::OrganizationController>,
     /// U2 sidebar presentation/focus state; organization authority stays in
     /// the controller above, while this group owns only local UI state.
     u2: u2::U2State,
@@ -611,12 +615,12 @@ pub struct BbrApp {
     browser_sink: Rc<RefCell<Option<BrowserSink>>>,
     /// Productive new-window seam diagnostics (requests, created regular tabs,
     /// reported blocks). Updated only by `on_new_window_request`.
-    new_window: new_window::NewWindowState,
+    new_window: crate::shared::Shared<new_window::NewWindowState>,
     /// Web-content gesture diagnostics (task packet
     /// `web-content-navigation-gestures`): how each committed logical
     /// gesture was classified (history dispatch / opener return / no-op).
     /// Updated only by `on_content_gesture_commit`.
-    content_gesture: content_gesture::ContentGestureState,
+    content_gesture: crate::shared::Shared<content_gesture::ContentGestureState>,
     /// Transient Peek presentation state (Link Preview / Peek packet): the
     /// bar presentation and the captured warm-origin focus target. The
     /// preview *session* state lives in the controller snapshot.
@@ -627,10 +631,10 @@ pub struct BbrApp {
     /// on every insert/eviction), so every presentation decodes each
     /// acquired record exactly once. Presentation-only; acquisition
     /// authority stays in the controller's bounded store.
-    favicon_images: favicon_presentation::FaviconImageMirror,
+    favicon_images: crate::shared::Shared<favicon_presentation::FaviconImageMirror>,
     /// The controller store version [`Self::favicon_images`] was last
     /// rebuilt for.
-    favicon_mirror_version: u64,
+    favicon_mirror_version: crate::shared::Shared<u64>,
     #[cfg(feature = "testkit")]
     performance: PerformanceProbe,
 }
@@ -670,14 +674,18 @@ impl BbrApp {
         // from the first user-observable paint. Live attempts are never
         // persisted and never resurrected; the repository validates outcomes
         // on load, so a non-terminal record cannot reach the restore seam.
-        let mut downloads_state = downloads::DownloadsState::new();
+        let downloads_state = downloads::DownloadsState::new();
         match crate::store::downloads::from_persisted(store.restored_downloads())
             .into_iter()
             .map(bbr_browser::DownloadRecord::restored_terminal)
             .collect::<Result<Vec<_>, _>>()
         {
             Ok(records) => {
-                if let Err(error) = downloads_state.controller.restore_terminal_history(records) {
+                let restored = downloads_state
+                    .controller
+                    .get()
+                    .restore_terminal_history(records);
+                if let Err(error) = restored {
                     log::warn!("downloads history restore failed: {error:?}");
                 }
             }
@@ -686,7 +694,7 @@ impl BbrApp {
 
         BbrApp {
             engine: engine.clone(),
-            controller,
+            controller: crate::shared::ControllerHandle::new(controller),
             engine_kind,
             chrome_handle: cx.focus_handle(),
             space_strip_handle: cx.focus_handle(),
@@ -700,18 +708,18 @@ impl BbrApp {
             native_portal: None,
             transient: transient::TransientOverlays::default(),
             permissions: permissions::PermissionsState::default(),
-            media: media::MediaState::default(),
+            media: Default::default(),
             split_view: split_view::SplitView::default(),
             split_layouts_path: None,
-            split_layouts_saved: std::cell::RefCell::new(None),
+            split_layouts_saved: Default::default(),
             certificates: client_certificates::CertificateState::default(),
             open_app: open_app::OpenAppState::default(),
             space_chooser: None,
             onboarding: None,
             import_home: None,
-            menu_spaces: None,
-            recovery_dismissed: false,
-            about_window: None,
+            menu_spaces: Default::default(),
+            recovery_dismissed: Default::default(),
+            about_window: Default::default(),
             windows_hidden: false,
             portal: PortalState::new(crate::portal::probe::PORTAL_ID),
             portal_probe: Rc::new(RefCell::new(PortalProbeState::new())),
@@ -734,9 +742,9 @@ impl BbrApp {
                 #[cfg(target_os = "macos")]
                 find_tx,
             ),
-            error_surface: crate::app::error_surface::ErrorSurfaceState::default(),
+            error_surface: Default::default(),
             find_handle: cx.focus_handle(),
-            auth: crate::app::auth::AuthCoordinator::new(),
+            auth: crate::shared::Shared::new(crate::app::auth::AuthCoordinator::new()),
             auth_handle: cx.focus_handle(),
             space_delete: None,
             space_delete_handle: cx.focus_handle(),
@@ -755,7 +763,9 @@ impl BbrApp {
             #[cfg(all(target_os = "macos", feature = "testkit"))]
             web_content_probe: std::rc::Rc::new(std::cell::RefCell::new(None)),
             #[cfg(target_os = "macos")]
-            external_urls: bbr_web_macos::external_urls_adapter::ExternalUrlAdapterCore::new(),
+            external_urls: crate::shared::Shared::new(
+                bbr_web_macos::external_urls_adapter::ExternalUrlAdapterCore::new(),
+            ),
             zoom: crate::app::zoom::ZoomController::new(crate::app::zoom::noop_target()),
             #[cfg(target_os = "macos")]
             zoom_engine: None,
@@ -772,9 +782,9 @@ impl BbrApp {
             command_text: CommandText::new(),
             command_line: bbr_ui::components::EditLineSink::new(),
             floating_rail: rail_float::FloatingRail::default(),
-            preferences: crate::preferences::Preferences::default(),
+            preferences: Default::default(),
             preferences_path: None,
-            settings: settings::SettingsState::default(),
+            settings: Default::default(),
             browser_window: None,
             #[cfg(feature = "testkit")]
             text_input_readback: None,
@@ -782,12 +792,12 @@ impl BbrApp {
             saved_pages: saved_pages::SavedPageCommand,
             library: crate::app::library::LibraryState::default(),
             library_handle: cx.focus_handle(),
-            unresponsive: unresponsive::UnresponsiveState::new(),
+            unresponsive: crate::shared::Shared::new(unresponsive::UnresponsiveState::new()),
             unresponsive_wait_handle: cx.focus_handle(),
             unresponsive_reload_handle: cx.focus_handle(),
             unresponsive_close_handle: cx.focus_handle(),
             command_profile_hint: None,
-            store,
+            store: crate::shared::Shared::new(store),
             restore_evidence: RestoreEvidence::Fresh,
             // The observed system appearance is corrected by
             // `observe_system_appearance` at composition (before the first
@@ -795,10 +805,10 @@ impl BbrApp {
             // default.
             system_appearance: bbr_ui::theme::ThemeMode::Light,
             #[cfg(feature = "testkit")]
-            appearance_override: None,
-            system_accessibility: appearance::AccessibilityPrefs::default(),
+            appearance_override: Default::default(),
+            system_accessibility: Default::default(),
             #[cfg(feature = "testkit")]
-            accessibility_override: appearance::AccessibilityOverride::default(),
+            accessibility_override: Default::default(),
             #[cfg(target_os = "macos")]
             accessibility_observer: None,
             accessibility_task: None,
@@ -813,17 +823,17 @@ impl BbrApp {
             appearance_subscription: None,
             window_geometry: std::cell::RefCell::new(None),
             sidebar_visible: true,
-            organization,
+            organization: crate::shared::Shared::new(organization),
             u2: u2::U2State::new(cx),
             space_config: space_config::SpaceConfigState::new(cx),
             swipe: swipe::SwipeState::new(),
             focus_sink: Rc::new(RefCell::new(None)),
             browser_sink: Rc::new(RefCell::new(None)),
-            new_window: new_window::NewWindowState::default(),
-            content_gesture: content_gesture::ContentGestureState::default(),
+            new_window: Default::default(),
+            content_gesture: Default::default(),
             peek: peek::PeekState::default(),
-            favicon_images: favicon_presentation::FaviconImageMirror::default(),
-            favicon_mirror_version: 0,
+            favicon_images: Default::default(),
+            favicon_mirror_version: Default::default(),
             #[cfg(feature = "testkit")]
             performance,
         }
@@ -853,7 +863,7 @@ impl BbrApp {
     /// repository write.
     #[cfg(feature = "testkit")]
     pub(crate) fn flush_persistence(&self) {
-        self.store.flush_persistence();
+        self.store.read().flush_persistence();
     }
 
     /// The production Saved Page quit flush: synchronously persists the
@@ -863,7 +873,7 @@ impl BbrApp {
     /// committed save; the deterministic testkit seam and the background
     /// writer use the identical repository write.
     pub(crate) fn flush_saved_pages(&self) {
-        self.store.flush_saved_pages();
+        self.store.read().flush_saved_pages();
     }
 
     /// The one app-owned Saved Page command authority (B2 packet
@@ -904,9 +914,9 @@ impl BbrApp {
     /// appearance (schema v4 persists theme, identity and paper).
     fn current_browser_state(&self) -> bbr_persistence::BrowserState {
         use bbr_persistence::{SidebarState, WindowGeometry, WindowState};
-        let intent = self.controller.intent();
+        let intent = self.controller.read().intent();
         let profiles = crate::store::browser::intent_to_persisted(&intent, |space| {
-            self.controller.space_appearance(space)
+            self.controller.read().space_appearance(space)
         });
         let window_id = crate::store::browser::derived_window_id(&profiles);
         let geometry = self
@@ -938,14 +948,17 @@ impl BbrApp {
     /// the write, so a force quit recovers the last structurally persisted
     /// model. Off the render path; never blocks.
     pub fn persist_structure(&self) {
-        self.store.poke_browser_state(self.current_browser_state());
+        self.store
+            .read()
+            .poke_browser_state(self.current_browser_state());
         self.persist_split_layouts();
     }
 
     /// Blueprint D23: where the split groups are kept.
     pub(crate) fn set_split_layouts_path(&mut self, path: std::path::PathBuf) {
         self.split_layouts_path = Some(path);
-        *self.split_layouts_saved.borrow_mut() = Some(self.controller.split_groups());
+        let groups = self.controller.read().split_groups();
+        self.split_layouts_saved.set(Some(groups));
     }
 
     /// Write `splits.txt` when the groups changed since the last write.
@@ -953,15 +966,15 @@ impl BbrApp {
         let Some(path) = self.split_layouts_path.as_ref() else {
             return;
         };
-        let groups = self.controller.split_groups();
-        if self.split_layouts_saved.borrow().as_ref() == Some(&groups) {
+        let groups = self.controller.read().split_groups();
+        if self.split_layouts_saved.read().as_ref() == Some(&groups) {
             return;
         }
         if let Err(error) = crate::split_layouts::save(path, &groups) {
             log::warn!("split layouts not saved: {error}");
             return;
         }
-        *self.split_layouts_saved.borrow_mut() = Some(groups);
+        self.split_layouts_saved.set(Some(groups));
     }
 
     /// The production quit flush: refresh the slot from the current model
@@ -969,7 +982,7 @@ impl BbrApp {
     /// same repository write the background writer uses).
     pub fn flush_browser_state(&self) {
         self.persist_structure();
-        self.store.flush_browser_state();
+        self.store.read().flush_browser_state();
     }
 
     /// Restore the persisted window presentation state (sidebar geometry +
@@ -1062,6 +1075,7 @@ impl BbrApp {
         // real WKDownload lifecycle with the active session's view.
         self.downloads
             .controller
+            .get()
             .set_action_sink(Box::new(move |action| {
                 if let Err(error) = bbr_web_macos::downloads_adapter::dispatch_action(
                     &action_adapter,
@@ -1079,10 +1093,11 @@ impl BbrApp {
     pub fn open_initial_tab(&mut self, initial_url: &str) {
         // Blueprint D17: a session that did not come back starts with an
         // empty space whose empty state explains why (the recovery pane).
-        if self.store.recovery.is_some() {
+        if self.store.read().recovery.is_some() {
             return;
         }
-        if let Err(error) = self.controller.open_tab(initial_url) {
+        let opened = self.controller.get().open_tab(initial_url);
+        if let Err(error) = opened {
             log::error!("could not open initial tab: {error}");
         }
     }
@@ -1098,6 +1113,7 @@ impl BbrApp {
     pub fn open_tab(&mut self, url: &str, cx: &mut Context<Self>) -> Option<ControllerEvent> {
         let result = self
             .controller
+            .get()
             .open_tab(url)
             .map_err(|error| {
                 log::error!("could not open tab: {error}");
@@ -1138,6 +1154,7 @@ impl BbrApp {
     pub fn select_tab(&mut self, index: usize, cx: &mut Context<Self>) -> Option<ControllerEvent> {
         let result = self
             .controller
+            .get()
             .select_tab(index)
             .map_err(|error| {
                 log::error!("could not select tab {index}: {error}");
@@ -1179,12 +1196,14 @@ impl BbrApp {
         // index): its error-surface presentation must be dropped with it.
         let closed_view = self
             .controller
+            .read()
             .snapshot()
             .tabs
             .get(index)
             .and_then(|tab| tab.web_view);
         let result = self
             .controller
+            .get()
             .close_tab(index)
             .map_err(|error| {
                 log::error!("could not close tab {index}: {error}");
@@ -1200,7 +1219,7 @@ impl BbrApp {
             // presentation entirely (no native restore is needed — the
             // view id is released with the tab).
             if let Some(view) = closed_view {
-                self.error_surface.forget_view(view);
+                self.error_surface.get().forget_view(view);
                 // The closed view's session is gone: drop the Library's
                 // hide bookkeeping too (no native restore is needed).
                 self.library.forget_view(view);
@@ -1225,14 +1244,11 @@ impl BbrApp {
     ) -> Option<ControllerEvent> {
         let chrome_focused = self.chrome_focused(window);
         let prior_mode = self.command_bar_mode;
-        let outcome = self
-            .controller
-            .snapshot()
-            .active_index
-            .and_then(|index| self.close_tab(index, cx));
+        let active = self.controller.read().snapshot().active_index;
+        let outcome = active.and_then(|index| self.close_tab(index, cx));
         outcome.as_ref()?;
 
-        if self.controller.snapshot().active_view.is_none() {
+        if self.controller.read().snapshot().active_view.is_none() {
             self.enter_empty_new_tab(window, cx);
         } else if chrome_focused {
             self.command_bar_mode = if prior_mode.is_active() {
@@ -1249,7 +1265,7 @@ impl BbrApp {
         #[cfg(feature = "testkit")]
         {
             self.performance.expect_state(
-                self.controller.snapshot().active_view,
+                self.controller.read().snapshot().active_view,
                 self.sidebar_visible,
                 self.chrome_focused(window),
                 self.command_bar_mode.into(),
@@ -1311,7 +1327,7 @@ impl BbrApp {
         #[cfg(feature = "testkit")]
         {
             self.performance.arm_browser_state_if_pending(
-                self.controller.snapshot().active_view,
+                self.controller.read().snapshot().active_view,
                 self.sidebar_visible,
             );
             // A benchmark keystroke path arms a pending here and relies on a

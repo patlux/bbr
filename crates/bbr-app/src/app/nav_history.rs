@@ -131,7 +131,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(history) = self.controller.session_history() else {
+        let Some(history) = self.controller.read().session_history() else {
             return;
         };
         let entries = match direction {
@@ -238,7 +238,8 @@ impl BbrApp {
             return;
         };
         if index < self.nav_history.rows.len() {
-            match self.controller.go_to_history(direction.offset(index)) {
+            let jumped = self.controller.get().go_to_history(direction.offset(index));
+            match jumped {
                 Ok(_) => {}
                 Err(error) => log::error!("history jump failed: {error}"),
             }

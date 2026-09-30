@@ -135,7 +135,7 @@ impl BbrApp {
     /// snapshot (the fast-but-wrong guard rejects a sample that touched the
     /// session, sidebar, focus domain, or command surface).
     fn observe_library_browser_state(&self, window: &Window) {
-        let active_view = self.controller.snapshot().active_view;
+        let active_view = self.controller.read().snapshot().active_view;
         let chrome_focused = self.chrome_focused(window);
         let mode = self.command_bar_mode.into();
         self.performance.observe_render_state(

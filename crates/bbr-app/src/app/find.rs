@@ -159,7 +159,7 @@ impl BbrApp {
             self.find_focus_field(window, cx);
             return;
         }
-        let Some(view) = self.controller.snapshot().active_view else {
+        let Some(view) = self.controller.read().snapshot().active_view else {
             log::info!("find open: no active native view");
             return;
         };
@@ -234,7 +234,7 @@ impl BbrApp {
         if !self.find.state.open {
             return;
         }
-        if self.find.bound_view != self.controller.snapshot().active_view {
+        if self.find.bound_view != self.controller.read().snapshot().active_view {
             self.find_discard(cx);
         }
     }

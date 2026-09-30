@@ -14,7 +14,7 @@ impl BbrApp {
     /// The active page's origin and profile (`None` off http(s)).
     fn active_site(&self) -> Option<(String, bbr_web::ProfileId)> {
         let origin = site_permissions::origin_of(&self.active_url())?;
-        Some((origin, self.controller.active_profile()))
+        Some((origin, self.controller.read().active_profile()))
     }
 
     /// Whether the popover shows (open, and still the active page's site).
@@ -87,6 +87,7 @@ impl BbrApp {
         );
         let profile = self
             .controller
+            .read()
             .snapshot()
             .profiles
             .iter()
@@ -108,10 +109,11 @@ impl BbrApp {
                         .iter()
                         .map(|policy| SharedString::from(policy.label()))
                         .collect();
-                    let policy =
-                        self.permissions
-                            .policies
-                            .policy(state.profile, &state.origin, *capability);
+                    let policy = self.permissions.policies.read().policy(
+                        state.profile,
+                        &state.origin,
+                        *capability,
+                    );
                     SiteSettingsRow {
                         key: capability_key(*capability).into(),
                         label: capability_label(*capability).into(),
@@ -138,6 +140,7 @@ impl BbrApp {
                     value: if self
                         .permissions
                         .policies
+                        .read()
                         .popups_allowed(state.profile, &state.origin)
                     {
                         0
@@ -162,9 +165,11 @@ impl BbrApp {
         };
         match event {
             SiteSettingsEvent::Set(row, value) if row == DECIDABLE.len() => {
-                self.permissions
-                    .policies
-                    .set_popups(state.profile, &state.origin, value == 0);
+                self.permissions.policies.get().set_popups(
+                    state.profile,
+                    &state.origin,
+                    value == 0,
+                );
                 self.save_site_permissions();
                 self.publish_popup_views();
             }
@@ -172,7 +177,7 @@ impl BbrApp {
                 if let (Some(capability), Some(policy)) =
                     (DECIDABLE.get(row), SitePolicy::ALL.get(value))
                 {
-                    self.permissions.policies.set(
+                    self.permissions.policies.get().set(
                         state.profile,
                         &state.origin,
                         *capability,
@@ -180,8 +185,9 @@ impl BbrApp {
                     );
                     self.save_site_permissions();
                     // A changed decision ends the quiet blocked mark.
-                    if let Some(view) = self.controller.snapshot().active_view {
-                        self.permissions.blocked.remove(&view);
+                    let active = self.controller.read().snapshot().active_view;
+                    if let Some(view) = active {
+                        self.permissions.blocked.get().remove(&view);
                     }
                 }
             }
@@ -214,7 +220,7 @@ impl BbrApp {
             }
             SiteSettingsEvent::AllSettings => {
                 self.close_site_settings(cx);
-                self.settings.pane = SettingsPane::Privacy;
+                self.settings.get().pane = SettingsPane::Privacy;
                 self.show_settings(cx);
                 return;
             }

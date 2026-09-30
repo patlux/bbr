@@ -83,7 +83,7 @@ impl BbrApp {
 
     /// Whether the card shows the first run (the space is still empty).
     pub(crate) fn onboarding_visible(&self) -> bool {
-        self.onboarding.is_some() && self.controller.snapshot().tabs.is_empty()
+        self.onboarding.is_some() && self.controller.read().snapshot().tabs.is_empty()
     }
 
     /// The page for the card.
@@ -192,8 +192,9 @@ impl BbrApp {
                 let name = state.name.trim().to_string();
                 self.onboarding = None;
                 if !name.is_empty() {
-                    let space = self.controller.snapshot().active_space;
-                    match self.controller.rename_space(space, name) {
+                    let space = self.controller.read().snapshot().active_space;
+                    let renamed = self.controller.get().rename_space(space, name);
+                    match renamed {
                         Ok(_) => self.persist_structure(),
                         Err(error) => log::warn!("the first space kept its name: {error}"),
                     }
@@ -234,6 +235,7 @@ impl BbrApp {
             if let Ok(canonical) = bbr_domain::canonical_url(&bookmark.url) {
                 if !self
                     .store
+                    .get()
                     .save_saved_page(&canonical, &bookmark.title)
                     .existed
                 {
@@ -253,7 +255,7 @@ impl BbrApp {
                 )
             })
             .collect();
-        let history = self.store.import_history(&visits);
+        let history = self.store.get().import_history(&visits);
         self.show_toast(
             bbr_ui::icons::Icon::Check,
             None,

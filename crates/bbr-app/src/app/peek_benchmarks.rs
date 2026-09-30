@@ -54,11 +54,11 @@ impl BbrApp {
         // the current active view, default (empty) window features — the
         // portable `peek_eligible`/`decision_for_intent` policy decides
         // Preview. The request URL passes verbatim (never normalized).
-        let Some(source) = self.controller.snapshot().active_view else {
+        let Some(source) = self.controller.read().snapshot().active_view else {
             self.performance.cancel();
             return false;
         };
-        let source_profile = self.controller.snapshot().active_profile;
+        let source_profile = self.controller.read().snapshot().active_profile;
         let request = bbr_web::NewWindowRequest {
             source,
             source_profile,
@@ -116,7 +116,7 @@ impl BbrApp {
         {
             return false;
         }
-        let Some(source) = self.controller.snapshot().preview.map(|p| p.source) else {
+        let Some(source) = self.controller.read().snapshot().preview.map(|p| p.source) else {
             self.performance.cancel();
             return false;
         };
@@ -126,7 +126,7 @@ impl BbrApp {
             self.performance.cancel();
             return false;
         }
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         if snapshot.preview.is_some() || snapshot.active_view != Some(source) {
             // The preview is gone but the origin is not the active view: a
             // truthful rejection (the warm origin must be presented again).
@@ -164,7 +164,7 @@ impl BbrApp {
         {
             return false;
         }
-        let Some(preview_view) = self.controller.snapshot().preview.map(|p| p.view) else {
+        let Some(preview_view) = self.controller.read().snapshot().preview.map(|p| p.view) else {
             self.performance.cancel();
             return false;
         };
@@ -174,7 +174,7 @@ impl BbrApp {
             self.performance.cancel();
             return false;
         }
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let promoted = snapshot
             .tabs
             .iter()
@@ -275,7 +275,8 @@ impl BbrApp {
         self.peek_presented_theme.set(Some(mode));
         self.peek_presented_frame.set(frame);
         let presented = self.peek_presented();
-        let (view, source) = match self.controller.snapshot().preview {
+        let preview = self.controller.read().snapshot().preview;
+        let (view, source) = match preview {
             Some(preview) => (Some(preview.view), Some(preview.source)),
             None => (None, None),
         };

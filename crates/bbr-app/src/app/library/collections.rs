@@ -115,6 +115,7 @@ impl BbrApp {
             return;
         }
         self.store
+            .get()
             .move_saved_pages_to_collection(&selected, collection);
         cx.notify();
     }
@@ -127,7 +128,7 @@ impl BbrApp {
         title: &str,
         cx: &mut Context<Self>,
     ) -> Option<u64> {
-        let created = self.store.create_saved_collection(title);
+        let created = self.store.get().create_saved_collection(title);
         cx.notify();
         created
     }
@@ -135,7 +136,7 @@ impl BbrApp {
     /// Rename one flat collection through the one AppStore authority (an
     /// unknown identity or an invalid title is a no-op at the store).
     pub fn library_rename_collection(&mut self, id: u64, title: &str, cx: &mut Context<Self>) {
-        self.store.rename_saved_collection(id, title);
+        self.store.get().rename_saved_collection(id, title);
         cx.notify();
     }
 
@@ -144,7 +145,7 @@ impl BbrApp {
     /// removed (the strict foreign key stays satisfied). An unknown
     /// identity is a no-op at the store.
     pub fn library_remove_collection(&mut self, id: u64, cx: &mut Context<Self>) {
-        self.store.remove_saved_collection(id);
+        self.store.get().remove_saved_collection(id);
         cx.notify();
     }
 
@@ -209,7 +210,11 @@ impl BbrApp {
         ) {
             // Seed the staged rename draft with the current title so the
             // inline input starts from the visible label.
-            let title = self.store.saved_collection_title(id).unwrap_or_default();
+            let title = self
+                .store
+                .read()
+                .saved_collection_title(id)
+                .unwrap_or_default();
             self.library.collection_draft = title;
         } else if self.library.collection_action.is_none() {
             self.library.collection_draft.clear();

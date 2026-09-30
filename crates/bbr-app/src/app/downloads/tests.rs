@@ -104,8 +104,8 @@ fn row_order_is_active_ascending_then_history_most_recent_terminal_first() {
     // The combined rows mirror that order, with the L6 groups.
     let state = crate::app::downloads::DownloadsState::new();
     // Replace the controller to keep the reveal cache untouched (empty).
-    let mut state = state;
-    state.controller = controller;
+    let state = state;
+    state.controller.set(controller);
     let rows = row_visuals(&state, None);
     assert_eq!(rows.len(), 3);
     assert_eq!(rows[0].id, active.0);
@@ -160,8 +160,8 @@ fn row_model_maps_the_l6_machine_states_exactly() {
         .expect("cancelled");
     cancel(&mut controller, cancelled);
 
-    let mut state = crate::app::downloads::DownloadsState::new();
-    state.controller = controller;
+    let state = crate::app::downloads::DownloadsState::new();
+    state.controller.set(controller);
     let rows = row_visuals(&state, None);
     // Active ascending: waiting, running. History most-recent-terminal
     // first: cancelled (seq 3), failed (seq 2), succeeded (seq 1).
@@ -221,8 +221,8 @@ fn reveal_action_uses_the_eligibility_cache() {
     succeed(&mut controller, id);
 
     // No cache entry: disabled with a neutral reason.
-    let mut state = crate::app::downloads::DownloadsState::new();
-    state.controller = controller;
+    let state = crate::app::downloads::DownloadsState::new();
+    state.controller.set(controller);
     let rows = row_visuals(&state, None);
     let row = rows.iter().find(|row| row.id == id.0).expect("row");
     assert_eq!(row.action, DownloadActionKind::Reveal);
@@ -230,7 +230,7 @@ fn reveal_action_uses_the_eligibility_cache() {
     assert_eq!(row.action_reason.as_deref(), Some("not checked"));
 
     // Eligible cache entry: enabled.
-    state.reveal.insert(
+    state.reveal.get().insert(
         id,
         crate::app::downloads::RevealEligibility {
             eligible: true,

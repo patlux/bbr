@@ -57,7 +57,7 @@ impl SavedPageCommand {
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
     pub fn can_save(&self, app: &BbrApp, url: &str) -> bool {
         match canonical_url(url) {
-            Ok(canonical) => app.store.saved_page_by_url(&canonical).is_none(),
+            Ok(canonical) => app.store.read().saved_page_by_url(&canonical).is_none(),
             Err(_) => false,
         }
     }
@@ -70,7 +70,7 @@ impl SavedPageCommand {
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
     pub fn can_remove(&self, app: &BbrApp, url: &str) -> bool {
         match canonical_url(url) {
-            Ok(canonical) => app.store.saved_page_by_url(&canonical).is_some(),
+            Ok(canonical) => app.store.read().saved_page_by_url(&canonical).is_some(),
             Err(_) => false,
         }
     }
@@ -84,7 +84,7 @@ impl SavedPageCommand {
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
     pub fn save(&self, app: &mut BbrApp, url: &str, title: &str) -> Option<BookmarkId> {
         let canonical = canonical_url(url).ok()?;
-        let outcome = app.store.save_saved_page(&canonical, title);
+        let outcome = app.store.get().save_saved_page(&canonical, title);
         Some(BookmarkId(outcome.id))
     }
 
@@ -94,7 +94,7 @@ impl SavedPageCommand {
     /// when they integrate.
     #[cfg_attr(not(feature = "testkit"), allow(dead_code))]
     pub fn remove(&self, app: &mut BbrApp, id: BookmarkId) {
-        app.store.remove_saved_page(id.0);
+        app.store.get().remove_saved_page(id.0);
     }
 
     /// Cmd-D toggle: save when the canonical URL has no active record,
@@ -103,11 +103,16 @@ impl SavedPageCommand {
         let Ok(canonical) = canonical_url(url) else {
             return ToggleOutcome::Rejected;
         };
-        if let Some(existing) = app.store.saved_page_by_url(&canonical) {
-            app.store.remove_saved_page(existing.id);
-            ToggleOutcome::Removed(BookmarkId(existing.id))
+        let existing = app
+            .store
+            .read()
+            .saved_page_by_url(&canonical)
+            .map(|record| record.id);
+        if let Some(id) = existing {
+            app.store.get().remove_saved_page(id);
+            ToggleOutcome::Removed(BookmarkId(id))
         } else {
-            let outcome = app.store.save_saved_page(&canonical, title);
+            let outcome = app.store.get().save_saved_page(&canonical, title);
             ToggleOutcome::Saved(BookmarkId(outcome.id))
         }
     }
@@ -126,7 +131,7 @@ impl SavedPageCommand {
         window: &mut Window,
         cx: &mut Context<BbrApp>,
     ) -> bool {
-        let Some(page) = app.store.saved_page_by_id(id.0) else {
+        let Some(page) = app.store.read().saved_page_by_id(id.0) else {
             return false;
         };
         if app.open_tab(&page.canonical_url, cx).is_some() {
@@ -144,7 +149,7 @@ impl BbrApp {
     /// (the same source the address control mirrors); a missing or
     /// non-navigable URL omits the action with the deterministic reason.
     pub fn toggle_bookmark(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         let Some(url) = snapshot.nav.url.clone() else {
             return;
         };

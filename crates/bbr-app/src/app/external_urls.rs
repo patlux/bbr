@@ -30,7 +30,7 @@ impl BbrApp {
         window: &mut gpui::Window,
         cx: &mut Context<Self>,
     ) {
-        let snapshot = self.controller.snapshot();
+        let snapshot = self.controller.read().snapshot();
         // The one browser window: always eligible (BBR has no private or
         // utility windows), presenting the controller's active space in its
         // own profile — frontmost by construction.
@@ -56,10 +56,13 @@ impl BbrApp {
             .map(|space| ExternalSpaceId(space.id.0))
             .unwrap_or(ExternalSpaceId(snapshot.active_space.0));
 
-        match self
-            .external_urls
-            .handle(raw_url.clone(), &windows, default_profile, default_space)
-        {
+        let handled = self.external_urls.get().handle(
+            raw_url.clone(),
+            &windows,
+            default_profile,
+            default_space,
+        );
+        match handled {
             Ok(ExternalUrlOutcome::Routed { request, decision }) => {
                 log::info!("external url routed (request {request:?}): {decision:?}");
                 self.execute_external_decision(decision, &raw_url, window, cx);
@@ -114,7 +117,7 @@ impl BbrApp {
                 // change, no reordering of existing tabs. The assertions
                 // pin the single-window invariant; the open itself runs
                 // through the existing `open_tab` controller path.
-                let snapshot = self.controller.snapshot();
+                let snapshot = self.controller.read().snapshot();
                 debug_assert_eq!(
                     space.0, snapshot.active_space.0,
                     "the routed space is the space the window presents"

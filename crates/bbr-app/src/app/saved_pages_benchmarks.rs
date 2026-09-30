@@ -68,7 +68,7 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
-        let before = self.controller.snapshot();
+        let before = self.controller.read().snapshot();
         if self
             .performance
             .begin(operation_id, BenchmarkKind::SavedPageOpen)
@@ -82,7 +82,7 @@ impl BbrApp {
         // existing matching tab).
         let command = self.saved_pages;
         let opened = command.open(self, bbr_command::id::BookmarkId(bookmark_id), window, cx);
-        let after = self.controller.snapshot();
+        let after = self.controller.read().snapshot();
         // Fast-but-wrong guard: exactly one new tab and one new live
         // session, a fresh active view (never the pre-activation view), and
         // the surface closed in web focus. A stale/deleted record or a

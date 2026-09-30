@@ -190,9 +190,11 @@ pub(super) fn dispatch_portal(
         })
         .unwrap_or_else(err_response),
         Request::CloseSettings => {
-            let handle = with_app(window, app, cx, |view, _window, _cx| view.settings.window)
-                .ok()
-                .flatten();
+            let handle = with_app(window, app, cx, |view, _window, _cx| {
+                view.settings.read().window
+            })
+            .ok()
+            .flatten();
             match handle {
                 Some(handle) => {
                     let _ = handle.update(cx, |_view, window, _cx| window.remove_window());

@@ -40,13 +40,15 @@ impl BbrApp {
         self.toggle_plus_menu(window, cx);
         self.performance.observe_plus_menu(self.u2.plus_menu.open);
         self.performance.observe_render_state(
-            self.controller.snapshot().active_view,
+            self.controller.read().snapshot().active_view,
             self.sidebar_visible,
             self.chrome_focused(window),
             self.command_bar_mode.into(),
         );
-        self.performance
-            .expect_browser_state(self.controller.snapshot().active_view, self.sidebar_visible);
+        self.performance.expect_browser_state(
+            self.controller.read().snapshot().active_view,
+            self.sidebar_visible,
+        );
         self.performance.commit_current_presentation();
         true
     }
@@ -72,7 +74,7 @@ impl BbrApp {
         {
             return false;
         }
-        let before = self.controller.snapshot();
+        let before = self.controller.read().snapshot();
         let active_tab = before
             .all_tabs
             .iter()
@@ -81,20 +83,23 @@ impl BbrApp {
             .map(|tab| tab.id);
         let already_favorite = active_tab.is_some_and(|tab| {
             self.organization
-                .organization_snapshot(&self.controller)
+                .get()
+                .organization_snapshot(&self.controller.read())
                 .favorites
                 .iter()
                 .any(|f| f.tab == tab)
         });
         let expected_len = if already_favorite {
             self.organization
-                .organization_snapshot(&self.controller)
+                .get()
+                .organization_snapshot(&self.controller.read())
                 .favorites
                 .len()
                 .saturating_sub(1)
         } else {
             self.organization
-                .organization_snapshot(&self.controller)
+                .get()
+                .organization_snapshot(&self.controller.read())
                 .favorites
                 .len()
                 + 1
@@ -104,7 +109,8 @@ impl BbrApp {
         self.favorite_toggle_tab(index, window, cx);
         let favorites_len = self
             .organization
-            .organization_snapshot(&self.controller)
+            .get()
+            .organization_snapshot(&self.controller.read())
             .favorites
             .len();
         if favorites_len != expected_len {
@@ -114,13 +120,15 @@ impl BbrApp {
         self.performance.expect_favorites_len(favorites_len);
         self.performance.observe_favorites(favorites_len);
         self.performance.observe_render_state(
-            self.controller.snapshot().active_view,
+            self.controller.read().snapshot().active_view,
             self.sidebar_visible,
             self.chrome_focused(window),
             self.command_bar_mode.into(),
         );
-        self.performance
-            .expect_browser_state(self.controller.snapshot().active_view, self.sidebar_visible);
+        self.performance.expect_browser_state(
+            self.controller.read().snapshot().active_view,
+            self.sidebar_visible,
+        );
         self.performance.commit_current_presentation();
         true
     }
@@ -158,13 +166,15 @@ impl BbrApp {
         self.performance.expect_folder_expanded(expanded);
         self.performance.observe_folder_expanded(expanded);
         self.performance.observe_render_state(
-            self.controller.snapshot().active_view,
+            self.controller.read().snapshot().active_view,
             self.sidebar_visible,
             self.chrome_focused(window),
             self.command_bar_mode.into(),
         );
-        self.performance
-            .expect_browser_state(self.controller.snapshot().active_view, self.sidebar_visible);
+        self.performance.expect_browser_state(
+            self.controller.read().snapshot().active_view,
+            self.sidebar_visible,
+        );
         self.performance.commit_current_presentation();
         true
     }
