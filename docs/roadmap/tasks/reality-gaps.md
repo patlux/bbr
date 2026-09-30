@@ -116,8 +116,16 @@ Not parallelized (serial on `main`).
       Blocker found and settled: the hidden harness window is never key, so
       AppKit gives its first click to activation and its keys to nobody —
       real input needs a shown window made key.
-- [ ] D: a real ⌘-click and middle-click on an ordinary link open one
-      background child after the opener.
+- [x] D: `e2e_real_input::web::command_and_middle_clicks_on_a_link_open_background_tabs`:
+      a real ⌘-click and a real middle click on an ordinary link each open
+      one background child after the opener, in click order, with the
+      opener active; a ⌘-click on a `target=_blank` link opens exactly one,
+      no preview. Red before the fix (the ⌘-click navigated in place).
+      Found on the way: `WKNavigationAction.buttonNumber` is WebKit's button
+      mask (left 1, right 2, middle 4, logged from real clicks), not an
+      NSEvent button number, so the classifier never saw a real middle
+      click; its tests now use the mask (`new_window` integration tests,
+      incl. right button stays primary). Background-link packet corrected.
 - [ ] E: script click vs real click on a `target=_blank` link, fixed or
       recorded as a framework limit.
 - [ ] F: persistent per-run WebKit stores: cookie survives a restart, stays
@@ -164,12 +172,12 @@ missing: record the evidence and attempts here, write an HTML explainer to
 ## Delivery ledger
 
 ```text
-Outcome:         A, B and C implemented.
+Outcome:         A, B, C and D implemented.
 Commits:         A fc00be97 + 3bc8fb08 (a concurrent commit in the same
                  worktree, 3fd97e37, re-staged two shared files between my
                  staging and commit; 3bc8fb08 adds the dropped hunks);
-                 B 48699c2a (native HTTP authentication); C (this commit:
-                 real input events).
+                 B 48699c2a (native HTTP authentication); C 40c48600 (real
+                 input events); D (this commit: background links).
 Functional evidence: profile_location unit tests; a one-off dev bundle with
                  bundle id dev.patwoz.bbr.probe under an isolated HOME
                  created ~/Library/Application Support/dev.patwoz.bbr.probe

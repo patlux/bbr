@@ -467,8 +467,11 @@ The productive new-window seam is also portable. `NewWindowRequest` carries the
 exact source `WebViewId`, source `ProfileId`, verbatim URL, user-activation
 classification, explicit input disposition, target, and window-feature
 metadata. `default_decision` is the single MVP policy: a background input
-(Command-primary / middle click) becomes `OpenBackgroundTab` for a direct
-activation; an eligible direct activation becomes `OpenTab` (or `Preview` for
+(Command-primary / middle click; `WKNavigationAction.buttonNumber` is WebKit's
+button mask, middle `4`) becomes `OpenBackgroundTab` for a direct
+activation — for a link that asks for a new window and, through the
+navigation-action policy, for any other link, whose own navigation is then
+cancelled; an eligible direct activation becomes `OpenTab` (or `Preview` for
 the Peek policy); script-created requests become `Block`. `decide` produces a
 typed `NewWindowOutcome`, and `NewWindowDelivery` keeps the request beside that
 outcome so the app/controller can fail closed on stale source identity or

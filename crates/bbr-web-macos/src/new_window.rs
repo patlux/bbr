@@ -205,17 +205,23 @@ pub unsafe fn extract_context(
 ///
 /// Pure integer classification (no AppKit objects, no main thread): the
 /// Command bit of the event modifier flags (`1 << 20`, the AppKit
-/// `NSEventModifierFlagCommand` constant) and the middle mouse button
-/// (`buttonNumber == 2`) both mean the user asked for a background child;
-/// everything else is a plain primary activation. Command-middle and
+/// `NSEventModifierFlagCommand` constant) and the middle mouse button both
+/// mean the user asked for a background child; everything else is a plain
+/// primary activation. `WKNavigationAction.buttonNumber` is not an
+/// `NSEvent` button number but WebKit's button mask — left `1`, right `2`,
+/// middle `4`, observed on real clicks (reality-gaps packet, item D); the
+/// earlier `== 2` read a right-button navigation as middle and never saw a
+/// real middle click. Command-middle and
 /// Command-plus-other modifiers stay `Background` because the Command bit is
 /// present; Shift alone (no Command, primary button) is deliberately NOT
 /// classified here — Shift-modified link behavior is a separate product
 /// decision. The integer widths mirror the AppKit metadata types
 /// (`NSUInteger`/`NSInteger`).
 pub fn classify_input(modifier_flags: usize, button_number: isize) -> NewWindowInput {
+    /// The middle button in `WKNavigationAction.buttonNumber`'s mask.
+    const MIDDLE_BUTTON: isize = 1 << 2;
     let command = modifier_flags & (1 << 20) != 0;
-    let middle = button_number == 2;
+    let middle = button_number & MIDDLE_BUTTON != 0;
     if command || middle {
         NewWindowInput::Background
     } else {

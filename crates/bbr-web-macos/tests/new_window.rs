@@ -211,17 +211,33 @@ fn set_handler_replaces_the_previous_handler() {
 // ---------------------------------------------------------------------------
 
 const COMMAND_FLAG: usize = 1 << 20; // NSEventModifierFlagCommand
+                                     // `WKNavigationAction.buttonNumber` is WebKit's button mask (observed on
+                                     // real clicks): left 1, right 2, middle 4.
+const LEFT: isize = 1;
+const RIGHT: isize = 2;
+const MIDDLE: isize = 4;
 
 #[test]
 fn classify_plain_primary_click_is_primary() {
     assert_eq!(bbr_web_macos::classify_input(0, 0), NewWindowInput::Primary);
-    assert_eq!(bbr_web_macos::classify_input(0, 1), NewWindowInput::Primary);
+    assert_eq!(
+        bbr_web_macos::classify_input(0, LEFT),
+        NewWindowInput::Primary
+    );
+}
+
+#[test]
+fn classify_right_button_is_not_a_middle_click() {
+    assert_eq!(
+        bbr_web_macos::classify_input(0, RIGHT),
+        NewWindowInput::Primary
+    );
 }
 
 #[test]
 fn classify_command_primary_click_is_background() {
     assert_eq!(
-        bbr_web_macos::classify_input(COMMAND_FLAG, 1),
+        bbr_web_macos::classify_input(COMMAND_FLAG, LEFT),
         NewWindowInput::Background
     );
 }
@@ -229,7 +245,7 @@ fn classify_command_primary_click_is_background() {
 #[test]
 fn classify_middle_click_is_background() {
     assert_eq!(
-        bbr_web_macos::classify_input(0, 2),
+        bbr_web_macos::classify_input(0, MIDDLE),
         NewWindowInput::Background
     );
 }
@@ -237,7 +253,7 @@ fn classify_middle_click_is_background() {
 #[test]
 fn classify_command_middle_click_is_background() {
     assert_eq!(
-        bbr_web_macos::classify_input(COMMAND_FLAG, 2),
+        bbr_web_macos::classify_input(COMMAND_FLAG, MIDDLE),
         NewWindowInput::Background
     );
 }

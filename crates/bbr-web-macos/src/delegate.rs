@@ -248,6 +248,10 @@ define_class!(
         ) {
             use objc2_web_kit::{WKNavigationActionPolicy as Policy, WKNavigationType};
             // SAFETY: WebKit delivered a live action for the call.
+            let input = unsafe {
+                crate::new_window::classify_input(action.modifierFlags().0, action.buttonNumber())
+            };
+            // SAFETY: WebKit delivered a live action for the call.
             let (url, main_frame, link) = unsafe {
                 let request = action.request();
                 let url = request
@@ -260,6 +264,26 @@ define_class!(
                     .is_none_or(|frame| frame.isMainFrame());
                 (url, main_frame, action.navigationType() == WKNavigationType::LinkActivated)
             };
+            // A ⌘-click or middle click on any link asks for a background
+            // tab after this one — the same request a link that opens a new
+            // window makes (`createWebView…` below), so it takes the same
+            // coordinator; the page itself stays.
+            if link
+                && input == bbr_web::new_window::NewWindowInput::Background
+                && crate::external_schemes::renders_in_browser(&url)
+            {
+                decision_handler.call((Policy::Cancel,));
+                let context = crate::new_window::NewWindowContext {
+                    source: self.id(),
+                    source_profile: self.ivars().profile,
+                    url,
+                    user_initiated: true,
+                    input,
+                    features: Default::default(),
+                };
+                let _ = self.ivars().new_window.handle(&context);
+                return;
+            }
             if crate::external_schemes::renders_in_browser(&url) {
                 decision_handler.call((Policy::Allow,));
                 return;

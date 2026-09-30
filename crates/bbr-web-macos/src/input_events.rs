@@ -70,10 +70,23 @@ pub struct KeySpec {
     pub key_code: u16,
 }
 
+/// CoreGraphics' opaque event object (`CGEventRef` points at it), encoded
+/// the way AppKit declares it so objc2's message check accepts it.
+#[repr(C)]
+struct CGEvent {
+    _private: [u8; 0],
+}
+
+// SAFETY: `CGEventRef` is `struct __CGEvent *`.
+unsafe impl objc2::encode::RefEncode for CGEvent {
+    const ENCODING_REF: objc2::encode::Encoding =
+        objc2::encode::Encoding::Pointer(&objc2::encode::Encoding::Struct("__CGEvent", &[]));
+}
+
 extern "C" {
     /// CoreGraphics (linked through AppKit): set one integer field of an
     /// event object. Used on the in-process copy only; never posted.
-    fn CGEventSetIntegerValueField(event: *mut c_void, field: u32, value: i64);
+    fn CGEventSetIntegerValueField(event: *mut CGEvent, field: u32, value: i64);
 }
 
 /// The error of an event refused because its window is not key.
@@ -315,7 +328,7 @@ fn window_point(view: &NSView, x: f64, y: f64) -> NSPoint {
 unsafe fn with_button_number(event: &NSEvent, button: i64) -> Result<Retained<NSEvent>, String> {
     // SAFETY: `-[NSEvent CGEvent]` returns the event's CGEventRef (owned by
     // the event, alive while it is); the field write edits that object only.
-    let cg: *mut c_void = unsafe { msg_send![event, CGEvent] };
+    let cg: *mut CGEvent = unsafe { msg_send![event, CGEvent] };
     if cg.is_null() {
         return Err("the event has no CGEvent".into());
     }

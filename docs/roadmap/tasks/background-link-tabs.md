@@ -54,6 +54,18 @@ Integration order:       first product merge in the Daily-driver wave
 - [x] Real link fixture: Cmd-click opens X after opener B while B remains visible/focused and X loads in the background.
 - [x] Repeated X/Y/Z opens remain ordered `[B, X, Y, Z]`; unrelated C remains after the child group.
 - [x] Middle-click is behaviorally identical.
+- [x] Correction 2026-09-30 ([reality gaps](reality-gaps.md), item D): the
+      items above injected the classified request; no real click reached
+      the classifier. With real AppKit clicks only a Command-click on a link
+      that asks for a new window worked. An ordinary link navigated in place
+      on ⌘-click and middle-click, and `classify_input` read NSEvent button
+      numbers (middle `== 2`) while `WKNavigationAction.buttonNumber` is
+      WebKit's button mask (left 1, right 2, middle 4), so a real middle
+      click never classified and a right-button navigation would have. The
+      navigation-action policy now sends a background link activation to
+      the same coordinator, and the classifier tests the mask;
+      `e2e_real_input::web::command_and_middle_clicks_on_a_link_open_background_tabs`
+      proves both with real clicks.
 - [x] Child activation later reuses its already-created session; Back-at-root returns to the exact opener.
 - [x] Same-profile/profile-isolation, stale source, Peek, new-window, gestures, and Tabs regressions remain green.
 - [x] Portal is outside this lane's scope: the lane does not touch the Portal suite, and the locked host proves only 6/7 for `e2e-shell-portal` under the already committed environmental console blocker, so no Portal-green claim is made.

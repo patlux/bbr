@@ -1298,7 +1298,10 @@ scenarios take the production path instead:
   status, first responder) and `window_key`. Scenarios: tab row select,
   hover + close, titlebar Back, footer Downloads (and a press outside
   dismissing it), footer `+`, a space chip, a real drag reordering rows, a
-  page link click, and ⌘L / ⌘T / ⌘W / ⇧⌘T with the page focused. The first
+  page link click, ⌘-click and middle click on ordinary links and ⌘-click
+  on a `target=_blank` link (item D: one background child each, after the
+  opener, in click order), and ⌘L / ⌘T / ⌘W / ⇧⌘T with the page focused.
+  The first
   run found that a Downloads panel opened from the footer ignored the next
   outside press: the footer and panel listeners mark their press inside
   and stop propagation, so the mark outlived the press. The root now starts
