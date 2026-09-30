@@ -1341,7 +1341,10 @@ fn drive_matrix_inner(
             "dense render stays bounded after seeding"
         );
         // A live warm regular row (the recency keep set) is the warm-select
-        // target; pinned tab 0 is the always-on-screen target.
+        // target; the first loose pinned row is the always-on-screen target
+        // (DESIGN §11.11: an earlier scenario grouped a pinned tab into a
+        // collapsed folder, and a grouped tab renders inside its folder
+        // only).
         let dense_warm_index = dense_seeded
             .tabs
             .iter()
@@ -1350,7 +1353,12 @@ fn drive_matrix_inner(
         let dense_warm_view = dense_seeded.tabs[dense_warm_index]
             .web_view
             .expect("warm dense view");
-        let dense_pinned_view = dense_seeded.tabs[0].web_view.expect("pinned dense view");
+        let dense_pinned_index = *super::benchmarks::loose_pinned(&dense_seeded)
+            .first()
+            .expect("the dense fixture keeps loose pinned rows");
+        let dense_pinned_view = dense_seeded.tabs[dense_pinned_index]
+            .web_view
+            .expect("pinned dense view");
         let dense_sessions = dense_seeded.engine_sessions;
 
         // Unmeasured setup: scroll to the top so the alternating deltas move
@@ -1378,7 +1386,7 @@ fn drive_matrix_inner(
         let mut dense_select_samples = Vec::with_capacity(config.interaction_samples);
         for sample in 0..config.interaction_samples {
             let (index, expected_view) = if sample % 2 == 0 {
-                (0, dense_pinned_view)
+                (dense_pinned_index, dense_pinned_view)
             } else {
                 (dense_warm_index, dense_warm_view)
             };

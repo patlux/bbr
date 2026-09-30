@@ -1155,6 +1155,25 @@ pub(crate) fn benchmark_press(
     measured
 }
 
+/// The active space's loose pinned rows (DESIGN §11.11): the pinned tabs
+/// that are not grouped in a folder — the rows the pinned block renders.
+pub(crate) fn loose_pinned(snapshot: &bbr_testkit::protocol::Snapshot) -> Vec<usize> {
+    let grouped: Vec<u64> = snapshot
+        .folders
+        .iter()
+        .flat_map(|folder| folder.members.iter().copied())
+        .collect();
+    let mut loose: Vec<usize> = snapshot
+        .all_tabs
+        .iter()
+        .filter(|tab| tab.space == snapshot.active_space && tab.pinned)
+        .filter(|tab| !grouped.contains(&tab.id))
+        .map(|tab| tab.index)
+        .collect();
+    loose.sort_unstable();
+    loose
+}
+
 /// A dense-list scroll through the production scroll state
 /// (`BenchmarkDenseScroll`): the tracked offset the
 /// native wheel listener mutates is moved by `delta_px`, the resulting frame
@@ -1196,10 +1215,23 @@ pub(crate) fn benchmark_dense_scroll(
         snapshot.engine_sessions, sessions_before,
         "scrolling the dense list never touches sessions"
     );
+    // DESIGN §11.11: a grouped pinned tab renders inside its folder only;
+    // the loose pinned block lists every other pinned tab.
+    let loose = loose_pinned(&snapshot);
     assert!(
-        snapshot.visible_ids.iter().any(|id| id == "bbr-tab-row-0"),
-        "the pinned block stays rendered above the scroll view"
+        !loose.is_empty(),
+        "the dense fixture keeps loose pinned rows"
     );
+    for index in &loose {
+        assert!(
+            snapshot
+                .visible_ids
+                .iter()
+                .any(|id| *id == format!("bbr-tab-row-{index}")),
+            "the pinned block stays rendered above the scroll view (loose \
+             pinned row {index} missing; loose {loose:?})"
+        );
+    }
     measured
 }
 

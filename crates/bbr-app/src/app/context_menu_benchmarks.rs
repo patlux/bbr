@@ -223,6 +223,50 @@ impl BbrApp {
             self.performance.cancel();
             return false;
         }
+        // Render-inclusive commit: the harness's browser window is never
+        // shown, so it draws only when asked (no display link); a forced
+        // draw renders the closed menu and the slot paint commits the
+        // sample when the armed state matches.
+        self.schedule_bookmark_render_commit(cx);
+        true
+    }
+
+    /// Schedule the render-inclusive commit for a pending bookmark sample:
+    /// a bounded forced draw of this browser window after this update
+    /// completes (outside the mutable `BbrApp` lease), then the explicit
+    /// commit, which cancels truthfully when the render did not present the
+    /// closed menu over the armed state (no observation → no commit).
+    fn schedule_bookmark_render_commit(&self, cx: &mut Context<Self>) {
+        let Some(window) = self.browser_window else {
+            return;
+        };
+        let weak = cx.weak_entity();
+        cx.spawn(async move |_, async_cx: &mut AsyncApp| {
+            // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).
+            async_cx.update(|cx| {
+                let _ = (*window).update(cx, |_root, window, cx| {
+                    let app: &mut App = cx;
+                    let _ = window.draw(app);
+                });
+                let _: bool = weak
+                    .update(cx, |this, _cx| this.commit_bookmark_benchmark())
+                    .unwrap_or(false);
+            });
+        })
+        .detach();
+    }
+
+    /// Commit the pending bookmark sample from the render milestone; false
+    /// (and cancelled) when the render did not present the closed menu.
+    fn commit_bookmark_benchmark(&self) -> bool {
+        if self.performance.pending_kind() != Some(BenchmarkKind::ContextMenuBookmarkCommit) {
+            return true;
+        }
+        self.performance.commit_current_presentation();
+        if self.performance.pending_kind() == Some(BenchmarkKind::ContextMenuBookmarkCommit) {
+            self.performance.cancel();
+            return false;
+        }
         true
     }
 }

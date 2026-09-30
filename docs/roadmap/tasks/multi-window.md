@@ -261,9 +261,21 @@ Real-app E2E:    slice 6: just e2e-windows (9), e2e-shell-organize,
                  AppKit hit-test probe because a foreign window (id 53534)
                  is frontmost there; the same failure reproduces on 4e596c99
                  (host GUI state, owner not identified).
-Performance evidence: deferred (Patrick). e2e-perf fails in the context-menu
-                 bookmark-commit benchmark on 89c97cdf, 68be5cef and later;
-                 e2e-perf had not run during the blueprint wave; cause open.
+Performance evidence: deferred (Patrick). e2e-perf failed in the context-menu
+                 bookmark-commit benchmark on 89c97cdf, 68be5cef and later.
+                 Cause (2026-09-30): the harness window is never shown, so
+                 it has no display link and the bookmark sample, unlike the
+                 other context-menu samples, never forced a draw; it now
+                 schedules a bounded draw and commits from that render.
+                 The next stage, dense scroll/select, still expected pinned
+                 tab 0 in the pinned block, but the earlier U2 drive groups
+                 a pinned tab into a collapsed folder and a grouped tab
+                 renders inside its folder only (DESIGN §11.11); the
+                 scenarios now target the loose pinned rows. e2e-perf then
+                 stops in the renderer-responsiveness scenario
+                 (engine_sessions 20, expected 2): that scenario was added
+                 under the performance-execution override (b6ffee56) and
+                 has never run after the dense block; not fixed here.
 Roadmap/documentation updates: PRODUCT (several windows), DESIGN §11.13 and
                  §19 D19, ARCHITECTURE (windows, shared handles, lifecycle).
 Open blockers and non-goals: tear-off is a non-goal.
