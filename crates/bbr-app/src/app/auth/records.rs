@@ -26,21 +26,19 @@ use bbr_web::WebViewId;
 pub(crate) struct AuthRecord {
     pub(crate) challenge: AuthChallenge,
     pub(crate) state: AuthState,
+    /// The engine request that waits for this challenge's answer (a
+    /// challenge from WebKit); taken once the answer is handed out.
+    pub(crate) native: Option<u64>,
 }
 
 /// One raw credential retained in memory under its opaque handle key.
 ///
-/// The future native adapter resolves the handle back to this credential at
-/// the boundary; until then it lives only here. `Debug` is redacted and the
-/// type is deliberately never serialized, so no observable shape can
-/// contain it (module invariant). The unit tests prove the capture path
-/// through the coordinator's `stored` accessor; the fields are read by the
-/// future adapter only (contract packet non-goals: native credential
-/// enumeration/storage remain later adapter work).
+/// It lives here from submit until the coordinator hands it to the engine
+/// for the waiting WebKit request (`take_native_answers`), which removes it.
+/// `Debug` is redacted and the type is deliberately never serialized, so no
+/// observable shape can contain it (module invariant).
 pub(crate) struct StoredCredential {
-    #[cfg_attr(not(test), allow(dead_code))]
     pub(crate) username: String,
-    #[cfg_attr(not(test), allow(dead_code))]
     pub(crate) password: String,
 }
 

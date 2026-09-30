@@ -111,6 +111,10 @@ pub mod client_identities;
 #[cfg(target_os = "macos")]
 mod auth_challenge;
 
+/// HTTP authentication requests (Basic, Digest, NTLM; origin and proxy).
+#[cfg(target_os = "macos")]
+pub mod http_auth;
+
 /// Blueprint D11: WebKit's camera/microphone requests and capture state.
 #[cfg(target_os = "macos")]
 pub mod permission_requests;

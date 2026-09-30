@@ -19,6 +19,7 @@ use bbr_web::auth_challenges::{
     apply_event, AuthChallenge, AuthEvent, AuthFailure, AuthResponse, AuthState, ChallengeId,
     ChallengeKind, ChallengeRejection, CredentialHandle, ProtectionSpace,
 };
+use bbr_web::http_auth::{HttpAuthAnswer, HttpCredential};
 use bbr_web::{ProfileId, WebViewId};
 
 use super::records::{AuthRecord, StoredCredential};
@@ -105,8 +106,55 @@ impl AuthCoordinator {
         self.records.push(AuthRecord {
             challenge,
             state: AuthState::Pending,
+            native: None,
         });
         Ok(id)
+    }
+
+    /// Bind a recorded challenge to the engine request that waits for its
+    /// answer (a challenge that came from WebKit).
+    pub fn bind_native(&mut self, id: ChallengeId, request: u64) {
+        if let Some(record) = self
+            .records
+            .iter_mut()
+            .find(|record| record.challenge.id() == id)
+        {
+            record.native = Some(request);
+        }
+    }
+
+    /// The answers the engine is owed for decided challenges, each handed
+    /// out once. A credential response hands over the stored credential,
+    /// which leaves memory here; cancel, supersession and failure answer
+    /// without a credential, so the server's own answer loads and the
+    /// request is never retried with credentials.
+    pub fn take_native_answers(&mut self) -> Vec<(u64, HttpAuthAnswer)> {
+        let mut answers = Vec::new();
+        for record in &mut self.records {
+            if !record.state.is_terminal() {
+                continue;
+            }
+            let Some(request) = record.native.take() else {
+                continue;
+            };
+            let credential = match &record.state {
+                AuthState::Resolved {
+                    response: AuthResponse::UseCredential(handle),
+                } => self.credentials.remove(&handle.id()),
+                _ => None,
+            };
+            answers.push((
+                request,
+                match credential {
+                    Some(stored) => HttpAuthAnswer::Credential(HttpCredential::new(
+                        stored.username,
+                        stored.password,
+                    )),
+                    None => HttpAuthAnswer::WithoutCredential,
+                },
+            ));
+        }
+        answers
     }
 
     /// The challenge currently presented, if any.
@@ -398,9 +446,8 @@ impl AuthCoordinator {
     }
 
     /// The raw credential stored under an opaque handle key (unit tests
-    /// only): the future adapter resolves the handle back to this value at
-    /// the boundary; until then it lives only here and never in any
-    /// observable shape.
+    /// only): it lives only here, never in any observable shape, until
+    /// `take_native_answers` hands it to the engine.
     #[cfg(test)]
     fn stored(&self, handle: u64) -> Option<(&str, &str)> {
         self.credentials

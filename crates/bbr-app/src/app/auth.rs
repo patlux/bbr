@@ -45,7 +45,9 @@ mod sheet;
 
 pub use coordinator::{AuthCoordinator, AuthSheetSurface, AuthSnapshotState, ChallengeDecision};
 
-use bbr_web::auth_challenges::{AuthChallenge, AuthScheme, ChallengeKind};
+use bbr_web::auth_challenges::{AuthChallenge, AuthScheme, ChallengeKind, ProtectionSpace};
+use bbr_web::http_auth::HttpAuthAnswer;
+use bbr_web::WebViewId;
 use gpui::{Context, KeyDownEvent, Window};
 
 use crate::portal::geometry::{Edges, Sz};
@@ -71,10 +73,11 @@ pub const AUTH_SHEET_WIDTH: f32 = 360.0;
 pub const AUTH_SHEET_HEIGHT: f32 = 236.0;
 
 impl BbrApp {
-    /// The production challenge-arrival seam: a challenge from a web view is
-    /// recorded and its credential sheet is presented immediately (the path
-    /// a future WebKit delegate and the testkit fixture both drive). The
-    /// sheet shows the realm and host of the protection space that asked.
+    /// The testkit challenge-arrival seam: a challenge for a web view is
+    /// recorded and its credential sheet is presented immediately (WebKit's
+    /// challenges take [`Self::on_http_auth_request`], which records the
+    /// same way and binds the engine request). The sheet shows the realm and
+    /// host of the protection space that asked.
     pub fn auth_on_challenge(
         &mut self,
         challenge: AuthChallenge,
@@ -93,6 +96,55 @@ impl BbrApp {
             )
             .map_err(|error| log::warn!("auth challenge rejected: {error}"));
         self.auth_present_sheet(window, cx)
+    }
+
+    /// A challenge from WebKit (`WebEvent::HttpAuthRequested`): recorded
+    /// with the engine request that waits for it and presented at once. A
+    /// view that is already gone, or a challenge the contract rejects, is
+    /// answered without a credential (WebKit waits for every answer).
+    pub(crate) fn on_http_auth_request(
+        &mut self,
+        view: WebViewId,
+        request: u64,
+        space: &ProtectionSpace,
+        scheme: AuthScheme,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(profile) = self.controller.read().profile_of_view(view) else {
+            self.engine
+                .borrow_mut()
+                .answer_http_auth(request, HttpAuthAnswer::WithoutCredential);
+            return;
+        };
+        let recorded = self.auth.get().record_challenge(
+            profile,
+            view,
+            space.clone(),
+            ChallengeKind::HttpAuth(scheme),
+            false,
+        );
+        match recorded {
+            Ok(id) => self.auth.bookkeep().bind_native(id, request),
+            Err(error) => {
+                log::warn!("auth challenge rejected: {error}");
+                self.engine
+                    .borrow_mut()
+                    .answer_http_auth(request, HttpAuthAnswer::WithoutCredential);
+                return;
+            }
+        }
+        self.auth_present_sheet(window, cx);
+    }
+
+    /// Hand the engine the answers its decided challenges are owed: the
+    /// credential of a submitted sheet, or none for a cancelled,
+    /// superseded or failed one.
+    fn answer_auth_engine(&mut self) {
+        let answers = self.auth.bookkeep().take_native_answers();
+        for (request, answer) in answers {
+            self.engine.borrow_mut().answer_http_auth(request, answer);
+        }
     }
 
     /// Testkit-only deterministic seeding: record a challenge WITHOUT
@@ -131,9 +183,12 @@ impl BbrApp {
     /// sheet was presented.
     pub fn auth_present_sheet(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         let origin_chrome_focused = self.chrome_focused(window);
-        let Some(_id) = self.auth.get().present_next() else {
+        let presented = self.auth.get().present_next();
+        // A superseded or unpresentable challenge from WebKit is answered.
+        self.answer_auth_engine();
+        if presented.is_none() {
             return false;
-        };
+        }
         self.auth.get().capture_origin_focus(origin_chrome_focused);
         // The sheet owns the keyboard while open (the portal window is
         // never key): any other surface that held it must close.
@@ -162,6 +217,7 @@ impl BbrApp {
         if decision == ChallengeDecision::Noop {
             return false;
         }
+        self.answer_auth_engine();
         let origin_chrome_focused = self.auth.read().origin_focus();
         self.auth.get().close_sheet();
         self.dismiss_auth_presentation(cx);
@@ -181,6 +237,7 @@ impl BbrApp {
         if decision == ChallengeDecision::Noop {
             return false;
         }
+        self.answer_auth_engine();
         let origin_chrome_focused = self.auth.read().origin_focus();
         self.auth.get().close_sheet();
         self.dismiss_auth_presentation(cx);

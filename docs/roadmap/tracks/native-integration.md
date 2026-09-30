@@ -33,7 +33,7 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 - [x] Complete the [find-in-page WebKit adapter and Portal bar](../tasks/find-in-page-portal-bar.md). *(Phase 8; real-app and performance evidence in the packet.)*
 - [x] Route [BBR-owned context menus over web content](../tasks/bbr-context-menus-over-web.md) without replacing WebKit-owned page menus. *(Integrated at `1d35693`; richer Page-background actions remain a separate follow-up.)*
 - [x] Complete the [downloads adapter and sidebar panel](../tasks/downloads-sidebar-panel.md). *(Phase 8; terminal-history follow-up integrated at `cd1bc65`.)*
-- [x] Map HTTP origin/proxy authentication after the portable [authentication challenges contract](../tasks/auth-challenges-contract.md). *(Credential sheet/delegate integrated at `53a9590`.)*
+- [x] Map HTTP origin/proxy authentication after the portable [authentication challenges contract](../tasks/auth-challenges-contract.md). *(The credential sheet was integrated at `53a9590` behind a testkit seam only; the WebKit delegate rejected every HTTP challenge until the [reality gaps packet](../tasks/reality-gaps.md) connected it 2026-09-30, proven by `e2e_shell_auth::native`.)*
 - [ ] Implement supported client-certificate native enumeration and selection using the same portable authentication contract.
 - [ ] Implement AppKit/WebKit upload/save orchestration after the portable [file upload/save-panel contract](../tasks/file-panels-contract.md). *(Phase 8)*
 - [x] Apply page zoom through the portable [per-site settings and zoom contract](../tasks/site-settings-zoom-contract.md). *(Command ladder/native WebKit wiring integrated at `1d35693`; settings UI remains separately open.)*

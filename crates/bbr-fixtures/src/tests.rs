@@ -88,6 +88,38 @@ fn basic_auth_fixture_challenges_every_request() {
 }
 
 #[test]
+fn basic_auth_fixture_signs_in_only_with_the_right_credentials() {
+    let sb = Sandbox::new();
+    let server = FixtureServer::start(sb.dir.clone()).unwrap();
+    let get_with = |authorization: &str| {
+        let url = server.url("/__fx/auth/basic");
+        let authority = url
+            .trim_start_matches("http://")
+            .split('/')
+            .next()
+            .unwrap()
+            .to_string();
+        let mut stream = TcpStream::connect(&authority).unwrap();
+        let req = format!(
+            "GET /__fx/auth/basic HTTP/1.1\r\nHost: {authority}\r\nAuthorization: {authorization}\r\nConnection: close\r\n\r\n"
+        );
+        stream.write_all(req.as_bytes()).unwrap();
+        let mut bytes = Vec::new();
+        stream.read_to_end(&mut bytes).unwrap();
+        String::from_utf8(bytes).unwrap()
+    };
+    let signed_in = get_with("Basic YmJyOnNlY3JldA==");
+    assert!(signed_in.starts_with("HTTP/1.1 200 OK\r\n"), "{signed_in}");
+    assert!(signed_in.contains("<title>BBR Auth Signed In</title>"));
+    // `bbr:wrong`.
+    let wrong = get_with("Basic YmJyOndyb25n");
+    assert!(
+        wrong.starts_with("HTTP/1.1 401 Unauthorized\r\n"),
+        "{wrong}"
+    );
+}
+
+#[test]
 fn error_fixtures_are_deterministic() {
     let sb = Sandbox::new();
     let server = FixtureServer::start(sb.dir.clone()).unwrap();

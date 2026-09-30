@@ -217,7 +217,7 @@ fn submit_stores_the_typed_credential_only_under_the_opaque_handle_key() {
     assert_eq!(coordinator.submit(), ChallengeDecision::Resolved);
     // The opaque handle the contract response carries is the only key;
     // the raw values exist nowhere else (snapshot Debug already proven
-    // redacted). The future adapter resolves the handle here.
+    // redacted). `take_native_answers` resolves the handle here.
     assert_eq!(coordinator.stored(1), Some(("alice", "s3cr3t")));
     assert_eq!(coordinator.stored(2), None);
     // After close the sheet values are gone; the store keeps the
@@ -334,4 +334,75 @@ fn non_http_challenge_is_failed_deterministically_at_present_time() {
         ),
         "unpresentable challenges fail deterministically"
     );
+}
+
+fn type_credentials(coordinator: &mut AuthCoordinator, user: &str, password: &str) {
+    for ch in user.chars() {
+        coordinator.sheet().type_char(&ch.to_string());
+    }
+    coordinator.sheet().focus_next();
+    for ch in password.chars() {
+        coordinator.sheet().type_char(&ch.to_string());
+    }
+}
+
+#[test]
+fn a_submitted_webkit_challenge_hands_its_credential_to_the_engine_once() {
+    let mut coordinator = AuthCoordinator::new();
+    let id = record_basic(&mut coordinator, 1, "intranet.example");
+    coordinator.bind_native(id, 41);
+    coordinator.present_next().expect("present");
+    assert!(
+        coordinator.take_native_answers().is_empty(),
+        "nothing is owed while the sheet asks"
+    );
+    type_credentials(&mut coordinator, "bbr", "secret");
+    assert_eq!(coordinator.submit(), ChallengeDecision::Resolved);
+    let answers = coordinator.take_native_answers();
+    assert_eq!(
+        answers,
+        [(
+            41,
+            HttpAuthAnswer::Credential(HttpCredential::new("bbr".into(), "secret".into()))
+        )]
+    );
+    assert!(
+        coordinator.stored(1).is_none(),
+        "the credential left memory"
+    );
+    assert!(
+        coordinator.take_native_answers().is_empty(),
+        "answered once"
+    );
+}
+
+#[test]
+fn cancel_and_supersession_answer_webkit_without_a_credential() {
+    let mut coordinator = AuthCoordinator::new();
+    let first = record_basic(&mut coordinator, 1, "intranet.example");
+    coordinator.bind_native(first, 7);
+    coordinator.present_next().expect("present first");
+    let second = record_basic(&mut coordinator, 2, "intranet.example");
+    coordinator.bind_native(second, 8);
+    coordinator.present_next().expect("present second");
+    assert_eq!(
+        coordinator.take_native_answers(),
+        [(7, HttpAuthAnswer::WithoutCredential)],
+        "the superseded request is answered"
+    );
+    assert_eq!(coordinator.cancel(), ChallengeDecision::Cancelled);
+    assert_eq!(
+        coordinator.take_native_answers(),
+        [(8, HttpAuthAnswer::WithoutCredential)]
+    );
+}
+
+#[test]
+fn a_challenge_without_an_engine_request_owes_no_answer() {
+    let mut coordinator = AuthCoordinator::new();
+    record_basic(&mut coordinator, 1, "intranet.example");
+    coordinator.present_next().expect("present");
+    type_credentials(&mut coordinator, "u", "p");
+    assert_eq!(coordinator.submit(), ChallengeDecision::Resolved);
+    assert!(coordinator.take_native_answers().is_empty());
 }

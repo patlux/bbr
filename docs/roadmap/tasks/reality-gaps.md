@@ -72,6 +72,13 @@ Not parallelized (serial on `main`).
 
 - [x] A: `profile_location` unit tests (bundles keep separate directories;
       an unbundled or unusable id takes the build's id).
+- [x] B: `bbr-web-macos` `http_auth` tests (Basic/Default, Digest, NTLM map;
+      server trust, Negotiate, HTML form and client certificates stay
+      default; origin and proxy spaces, FTP not mapped); coordinator tests
+      (a submitted WebKit challenge hands its credential to the engine once
+      and it leaves memory; cancel and supersession answer without one; a
+      seam challenge owes nothing); `bbr-web` redacted `HttpCredential`;
+      fixture tests for `/__fx/auth/basic`.
 
 ### Real-app E2E
 
@@ -81,8 +88,15 @@ Not parallelized (serial on `main`).
       relaunches and gets the open tab back. Before the fix it failed: the
       gateway was not there and the store log read "persistence store open
       failed … continuing ephemeral" (the line from Patrick's `just run`).
-- [ ] B: real challenge → sheet → correct credentials load the page; wrong
-      credentials challenge again; cancel shows the 401 page.
+- [x] B: `e2e_shell_auth::native` (2 tests): a real challenge opens the
+      sheet for the asking view (host, realm, scheme, authority); a wrong
+      password is challenged again; the right one loads the protected page
+      and appears in no snapshot; the same profile's next tab is not asked;
+      another profile is, and Cancel shows the server's 401 page. Both
+      failed before the fix ("no new credential sheet"). The earlier
+      `e2e_client_certificates` test that asserted the default handling
+      (`be35936c`) is replaced by these, which keep the debug-build proxy
+      regression covered.
 - [ ] C: real events select and close tab rows, open Downloads and `+`, press
       a titlebar control, click the space strip, click a web link, and run
       ⌘L/⌘T/⌘W/⇧⌘T with the page focused.
@@ -134,16 +148,27 @@ missing: record the evidence and attempts here, write an HTML explainer to
 ## Delivery ledger
 
 ```text
-Outcome:         A implemented.
-Commits:         A (this commit: default profile directory).
+Outcome:         A and B implemented.
+Commits:         A fc00be97 + 3bc8fb08 (a concurrent commit in the same
+                 worktree, 3fd97e37, re-staged two shared files between my
+                 staging and commit; 3bc8fb08 adds the dropped hunks);
+                 B (this commit: native HTTP authentication).
 Functional evidence: profile_location unit tests; a one-off dev bundle with
                  bundle id dev.patwoz.bbr.probe under an isolated HOME
                  created ~/Library/Application Support/dev.patwoz.bbr.probe
                  (the id comes from the main bundle, not the build fallback).
 Real-app E2E:    A: default_location red before the fix, green after;
                  e2e-shell-persistence green.
+                 B: e2e_shell_auth::native red with the old delegate
+                 (reject every HTTP challenge), green after; a one-off
+                 debug-build load of https://example.com (network, not
+                 committed) still passes server trust with the default
+                 handling.
 Performance evidence: not applicable to A.
-Roadmap/documentation updates: ARCHITECTURE §8 (--bbr-profile-dir default).
+Roadmap/documentation updates: ARCHITECTURE §8 (--bbr-profile-dir default),
+                 §7 (authentication challenges); E2E_ARCHITECTURE §7s;
+                 corrected claims: native-integration track, testing track
+                 and phase 8 (the credential sheet was a testkit seam only).
 Open blockers and non-goals: see Non-goals.
 Worktree state:  main; another writer's uncommitted tab-row pin-control
                  change was present during A and is not part of this packet.

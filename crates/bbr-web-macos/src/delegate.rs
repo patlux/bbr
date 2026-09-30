@@ -100,6 +100,8 @@ pub struct DelegateHandles {
     pub permissions: crate::permission_requests::PermissionRequests,
     /// Blueprint D12: the open client-certificate requests.
     pub client_certificates: crate::client_identities::ClientCertificateRequests,
+    /// The open HTTP authentication requests.
+    pub http_auth: crate::http_auth::HttpAuthRequests,
 }
 
 /// Instance variables for the navigation delegate.
@@ -124,6 +126,8 @@ pub struct WebViewDelegateIvars {
     pub(crate) permissions: crate::permission_requests::PermissionRequests,
     /// Blueprint D12: the open client-certificate requests.
     pub(crate) client_certificates: crate::client_identities::ClientCertificateRequests,
+    /// The open HTTP authentication requests.
+    pub(crate) http_auth: crate::http_auth::HttpAuthRequests,
 }
 
 define_class!(
@@ -272,9 +276,10 @@ define_class!(
 
         // Blueprint D12: a server asks for a client certificate. The
         // matching Keychain identities (metadata only) go to the app, which
-        // answers through the engine; every other challenge keeps WebKit's
-        // behaviour without this method (reject the protection space, so
-        // the next one — or the default evaluation — applies).
+        // answers through the engine. HTTP Basic/Digest/NTLM (origin or
+        // proxy) go to the credential sheet (`http_auth`); every other
+        // challenge — server trust above all — keeps WebKit's default
+        // handling.
         #[unsafe(method(webView:didReceiveAuthenticationChallenge:completionHandler:))]
         fn did_receive_authentication_challenge(
             &self,
@@ -295,7 +300,17 @@ define_class!(
             let client_certificate =
                 unsafe { objc2_foundation::NSURLAuthenticationMethodClientCertificate };
             if space.authenticationMethod().to_string() != client_certificate.to_string() {
-                completion_handler.call((Disposition::RejectProtectionSpace, std::ptr::null_mut()));
+                let event = crate::http_auth::request(
+                    &challenge,
+                    self.id(),
+                    &self.ivars().http_auth,
+                    completion_handler.copy(),
+                );
+                match event {
+                    Some(event) => self.emit(event),
+                    None => completion_handler
+                        .call((Disposition::PerformDefaultHandling, std::ptr::null_mut())),
+                }
                 return;
             }
             let (infos, identities) =
@@ -472,6 +487,7 @@ impl WebViewDelegate {
             favicon_acquisition: handles.favicon_acquisition,
             permissions: handles.permissions,
             client_certificates: handles.client_certificates,
+            http_auth: handles.http_auth,
         });
         // SAFETY: `init` is the NSObject initializer; we are on the main thread.
         unsafe { msg_send![super(this), init] }

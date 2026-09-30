@@ -18,7 +18,11 @@
 //! - a challenge belongs to its originating web view: a second tab's
 //!   challenge can never be answered on behalf of its tab, and cancel fails
 //!   the request rather than silently retrying;
-//! - no tab/session/WebView identity, profile, or space changes.
+//! - no tab/session/WebView identity, profile, or space changes;
+//! - a real WebKit challenge from the fixture server opens the sheet, and
+//!   the answer reaches the server through the engine; another profile is
+//!   asked again, and Cancel shows the server's 401 page
+//!   ([`native`](native.rs)).
 //!
 //! No sleeps/pixels: every step synchronizes on typed snapshot state or
 //! semantic events under a deadline. The suite is split into focused
@@ -34,5 +38,6 @@ mod e2e_semantics_common;
 
 mod fallthrough;
 mod flow;
+mod native;
 mod support;
 mod theme;

@@ -132,6 +132,7 @@ fn event_view(event: &WebEvent) -> WebViewId {
         WebEvent::FaviconChanged(v, _) => *v,
         WebEvent::PermissionRequested { view, .. } => *view,
         WebEvent::ClientCertificateRequested { view, .. } => *view,
+        WebEvent::HttpAuthRequested { view, .. } => *view,
         WebEvent::ExternalSchemeRequested { view, .. } => *view,
         WebEvent::MediaCaptureChanged { view, .. } => *view,
         WebEvent::MediaObserved { view, .. } => *view,

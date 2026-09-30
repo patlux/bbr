@@ -334,8 +334,10 @@ termination remains). `--bbr-clock` is parsed but a no-op until the
 - 3 unit tests (static serving + hits, 404/traversal, deterministic routes).
 
 FUTURE: upstream of `bbr-fixtures` into a hyper/axum server with `redirect/`,
-`slow?ms=`, `setcookie`, `auth/basic`, `form`, `popup`, `iframe`, `ws` routes
-is not needed by the smoke and was not built.
+`slow?ms=`, `setcookie`, `form`, `popup`, `iframe`, `ws` routes is not needed
+by the smoke and was not built. The std server does serve
+`/__fx/auth/basic` (HTTP Basic, realm `BBR Fixture`; `bbr` / `secret` signs
+in, anything else gets the 401 challenge) for the native authentication E2E.
 
 ---
 
@@ -1253,6 +1255,27 @@ output through the upstream CLI. Neither path establishes all supported interact
 states, nested/shadow framing, accepted baselines, native-browser behavior or
 locked-session support.
 Those open gates remain in the [Gallery coverage packet](docs/roadmap/tasks/gallery-visual-coverage.md).
+
+## 7s. Reality gaps: what users run, not a seam
+
+Task packet [`reality-gaps`](docs/roadmap/tasks/reality-gaps.md). A test that
+injects the event a native method emits never runs that method; these
+scenarios take the production path instead:
+
+- **Default profile directory**
+  (`e2e_shell_persistence/default_location.rs`): the app is launched without
+  `--bbr-profile-dir`, with only `HOME` pointed at an isolated directory
+  (`Harness::spawn_with_env`), so no test touches the user's real profile.
+  The gateway socket and the store must appear in
+  `$HOME/Library/Application Support/<bundle id>` (the unbundled debug
+  binary takes `dev.patwoz.bbr.dev`), and a second launch restores the tab
+  opened before quitting.
+- **HTTP authentication** (`e2e_shell_auth/native.rs`): the fixture server's
+  Basic route challenges a real WKWebView; the production delegate maps the
+  challenge, the sheet opens for the asking view, a wrong password is
+  challenged again by the server, the right one loads the protected page and
+  appears in no snapshot, the same profile's next tab is not asked, another
+  profile is, and Cancel shows the server's 401 page.
 
 ## 8. Security & release exclusion
 

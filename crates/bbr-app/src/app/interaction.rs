@@ -158,6 +158,17 @@ impl BbrApp {
         {
             self.on_client_certificate_request(*view, *request, host, identities, window, cx);
         }
+        // A site or a proxy asks for a user name and password.
+        if let WebEvent::HttpAuthRequested {
+            view,
+            request,
+            space,
+            scheme,
+            ..
+        } = &event
+        {
+            self.on_http_auth_request(*view, *request, space, *scheme, window, cx);
+        }
         // A navigation ends waiting certificate requests (applied before
         // the controller takes the event, so it still knows the old URL).
         self.certificate_web_event(&event, window, cx);

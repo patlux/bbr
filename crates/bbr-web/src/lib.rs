@@ -30,6 +30,7 @@ pub mod external_urls;
 pub mod favicon;
 pub mod file_panels;
 pub mod find_in_page;
+pub mod http_auth;
 pub mod media;
 pub mod new_window;
 pub mod permissions;
@@ -251,6 +252,20 @@ pub enum WebEvent {
         /// The matching Keychain identities (metadata only).
         identities: Vec<client_certificates::ClientIdentityInfo>,
     },
+    /// A site or a proxy asks for a user name and password (HTTP Basic,
+    /// Digest or NTLM). The engine holds the request until
+    /// [`WebEngine::answer_http_auth`] answers `request`; destroying the
+    /// view answers it without a credential.
+    HttpAuthRequested {
+        view: WebViewId,
+        request: u64,
+        /// The protection space that asks (origin or proxy).
+        space: auth_challenges::ProtectionSpace,
+        scheme: auth_challenges::AuthScheme,
+        /// Earlier answers for this request that failed (a wrong password
+        /// asks again with a higher count).
+        previous_failures: u32,
+    },
     /// Blueprint D13: the page's main frame asked to go to a URL of a
     /// scheme BBR does not render (`mailto:`, `zoom:`…). The engine
     /// cancelled the navigation; the app decides whether another app opens
@@ -295,6 +310,7 @@ impl WebEvent {
             | WebEvent::FaviconChanged(v, _)
             | WebEvent::PermissionRequested { view: v, .. }
             | WebEvent::ClientCertificateRequested { view: v, .. }
+            | WebEvent::HttpAuthRequested { view: v, .. }
             | WebEvent::ExternalSchemeRequested { view: v, .. }
             | WebEvent::MediaCaptureChanged { view: v, .. }
             | WebEvent::MediaObserved { view: v, .. } => *v,
@@ -425,6 +441,10 @@ pub trait WebEngine {
         _answer: client_certificates::ClientCertificateAnswer,
     ) {
     }
+
+    /// Answer a [`WebEvent::HttpAuthRequested`]. Unknown or already
+    /// answered requests are no-ops.
+    fn answer_http_auth(&mut self, _request: u64, _answer: http_auth::HttpAuthAnswer) {}
 
     /// Blueprint D11: remove every kind of `profile`'s website data that
     /// belongs to `host` (cookies, storage, caches).

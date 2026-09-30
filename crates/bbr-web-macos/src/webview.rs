@@ -78,6 +78,8 @@ pub struct WebEngineWk {
     permissions: crate::permission_requests::PermissionRequests,
     /// Blueprint D12: the open client-certificate requests.
     client_certificates: crate::client_identities::ClientCertificateRequests,
+    /// The open HTTP authentication requests.
+    http_auth: crate::http_auth::HttpAuthRequests,
     /// Blueprint D24: the per-view media probes.
     media: crate::media_adapter::MediaHost,
     /// Blueprint D19: the further windows' roots and each session's window.
@@ -131,6 +133,7 @@ impl WebEngineWk {
             gesture_sink,
             permissions: Default::default(),
             client_certificates: Default::default(),
+            http_auth: Default::default(),
         }
     }
 
@@ -465,6 +468,7 @@ impl WebEngine for WebEngineWk {
                 favicon_acquisition: self.favicon_acquisition.clone(),
                 permissions: self.permissions.clone(),
                 client_certificates: self.client_certificates.clone(),
+                http_auth: self.http_auth.clone(),
             },
         );
         unsafe {
@@ -516,6 +520,7 @@ impl WebEngine for WebEngineWk {
         // Blueprint D11: WebKit expects every permission handler answered.
         self.permissions.borrow_mut().deny_view(id);
         self.client_certificates.borrow_mut().cancel_view(id);
+        self.http_auth.borrow_mut().cancel_view(id);
         self.media.forget(id);
         if let Some(session) = self.sessions.remove(&id) {
             session.teardown();
@@ -760,6 +765,10 @@ impl WebEngine for WebEngineWk {
         self.client_certificates
             .borrow_mut()
             .answer(request, &answer);
+    }
+
+    fn answer_http_auth(&mut self, request: u64, answer: bbr_web::http_auth::HttpAuthAnswer) {
+        self.http_auth.borrow_mut().answer(request, &answer);
     }
 
     fn clear_site_data(&mut self, profile: ProfileId, host: &str) {

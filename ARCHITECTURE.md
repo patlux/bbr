@@ -515,6 +515,23 @@ src/
   the app. It still always returns `None`: neither the delegate nor WebKit
   creates an untracked BBR session. The coordinator reports blocked outcomes
   and delivers every request/outcome pair exactly once.
+- **Authentication challenges:** WebKit hands the delegate a
+  `WKNSURLAuthenticationChallenge`, an `NSProxy` that forwards to the real
+  challenge; `auth_challenge::real_challenge` messages the forwarding target
+  (objc2's debug message check finds no methods on the proxy class). A
+  client-certificate request goes to `client_identities` (blueprint D12).
+  HTTP Basic, Digest and NTLM for an HTTP(S) origin or proxy go to
+  `http_auth`: the handler waits in the shared `HttpAuthTable`, and
+  `WebEvent::HttpAuthRequested` carries the portable `ProtectionSpace`,
+  scheme and failure count. The app records the challenge in its
+  `AuthCoordinator` bound to that request, presents the credential sheet,
+  and answers through `WebEngine::answer_http_auth`: the submitted
+  credential leaves the app's memory with the answer
+  (`NSURLCredentialPersistence::ForSession`, kept by the profile's own
+  network session, so another profile is asked again); Cancel, a superseded
+  challenge and a destroyed view answer without a credential, so the
+  server's 401 page loads. Every other challenge — server trust above all,
+  Negotiate, HTML forms — keeps WebKit's default handling.
 - **Actions:** `loadRequest`, `goBack`/`goForward` (guarded by `canGoBack`/
   `canGoForward`), `reload`, `stopLoading` + explicit state re-emit (`Stop`).
 - **Main thread:** all entry points re-assert with `MainThreadMarker`; the

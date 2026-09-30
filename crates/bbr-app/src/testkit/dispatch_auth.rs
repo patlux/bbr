@@ -42,8 +42,9 @@ pub(crate) fn dispatch_auth(
     let response = match req {
         // The production challenge-arrival seam: build the validated
         // contract challenge from the fixture's authority metadata and
-        // present its sheet (the exact path a future WebKit delegate
-        // drives). Credentials are never part of this request.
+        // present its sheet (a real WebKit challenge records the same way
+        // through `on_http_auth_request`, bound to its engine request).
+        // Credentials are never part of this request.
         Request::AuthPresentChallenge {
             profile,
             web_view,

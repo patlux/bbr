@@ -144,11 +144,11 @@ fn handle_connection(
         response.respond(&mut stream)?;
         return Ok(());
     }
-    // The Basic-auth challenge route (a native WebKit authentication
-    // challenge without TLS or the network).
+    // The Basic-auth route: a native WebKit authentication challenge
+    // without TLS or the network; `bbr` / `secret` signs in.
     if path == auth::BASIC_PATH {
         record_hit(hits, path);
-        auth::respond_basic(&mut stream)?;
+        auth::respond_basic(&mut stream, &headers)?;
         return Ok(());
     }
     // Deterministic error fixtures (the Phase-8 web-error E2E): the raw

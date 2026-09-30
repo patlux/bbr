@@ -82,6 +82,7 @@ fn build_delegate(
             ),
             permissions: Default::default(),
             client_certificates: Default::default(),
+            http_auth: Default::default(),
         },
     );
     (delegate, probe)
