@@ -297,6 +297,9 @@ pub struct TestSnapshot {
     pub permissions: bbr_testkit::protocol::PermissionsSnapshot,
     /// Blueprint D24: the media card and sessions.
     pub media: bbr_testkit::protocol::MediaSnapshot,
+    /// Blueprint D19: every open browser window.
+    pub windows: Vec<bbr_testkit::protocol::WindowEntry>,
+    pub window_refreshes: u64,
     pub split: Option<bbr_testkit::protocol::SplitSnapshot>,
     pub split_drop: Option<bbr_testkit::protocol::SplitDropSnapshot>,
     pub split_rows: Vec<usize>,

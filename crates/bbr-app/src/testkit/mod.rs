@@ -21,7 +21,7 @@ use bbr_testkit::GatewayServer;
 use gpui::{App, Entity, WindowHandle};
 
 use crate::app::BbrApp;
-use crate::window_seam::with_app;
+use crate::window_seam::{with_app, with_current, with_key_window, with_view_window, with_window};
 
 mod dispatch;
 mod dispatch_auth;
@@ -125,8 +125,7 @@ fn dispatch_from_worker(req: Request, cmd_tx: &smol::channel::Sender<GatewayComm
 #[allow(clippy::too_many_arguments)] // the pump wiring: channels, handles, server
 pub fn spawn_pump(
     cx: &App,
-    window: &WindowHandle<gpui_component::Root>,
-    app: &Entity<BbrApp>,
+    windows: &crate::shared::Shared<crate::browser_windows::Registry>,
     evt_rx: smol::channel::Receiver<bbr_web::WebEvent>,
     inject_tx: smol::channel::Sender<bbr_web::WebEvent>,
     #[cfg(target_os = "macos")] find_rx: smol::channel::Receiver<
@@ -159,8 +158,7 @@ pub fn spawn_pump(
     cmd_rx: smol::channel::Receiver<GatewayCommand>,
     server: Option<Arc<GatewayServer>>,
 ) {
-    let window = *window;
-    let app = app.clone();
+    let windows = windows.clone();
     let server = server.clone();
     cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
         enum Incoming {
@@ -239,7 +237,8 @@ pub fn spawn_pump(
                 #[cfg(target_os = "macos")]
                 while let Ok(commit) = gestures_rx.try_recv() {
                     async_cx.update(|cx| {
-                        let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                        let view = Some(commit.view);
+                        let _ = with_view_window(&windows, view, cx, |view, _w, cx| {
                             view.on_content_gesture_commit(commit, cx)
                         });
                     });
@@ -276,7 +275,19 @@ pub fn spawn_pump(
                         });
                         Response::Ok
                     }
-                    _ => handle_command(msg.req, &window, &app, &server, async_cx).await,
+                    // Blueprint D19: later requests act in the selected
+                    // window (as input in it would make it current).
+                    Request::SelectWindow { window } => async_cx
+                        .update(|cx| select_window(&windows, bbr_browser::WindowKey(*window), cx)),
+                    _ => {
+                        let target = windows.read().current_target();
+                        match target {
+                            Some((window, app)) => {
+                                handle_command(msg.req, &window, &app, &server, async_cx).await
+                            }
+                            None => Response::Error(Error::new("no_window", "no browser window")),
+                        }
+                    }
                 };
                 let _ = msg.reply_tx.send(resp).await;
                 // `Quit` has already broadcast `Quitting`, called the real
@@ -295,7 +306,7 @@ pub fn spawn_pump(
                     if let Some(server) = &server {
                         server.broadcast(Event::Web(ev.clone()));
                     }
-                    let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    let _ = with_view_window(&windows, Some(ev.view()), cx, |view, window, cx| {
                         view.on_web_event(ev, window, cx)
                     });
                 });
@@ -306,9 +317,14 @@ pub fn spawn_pump(
                 // route them through the same main-thread app update path
                 // as engine events (`BbrApp::on_find_completion`).
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
-                        view.on_find_completion(completion, cx)
-                    });
+                    // The first window's find channel (every further window
+                    // pumps its own).
+                    let _ = with_window(
+                        &windows,
+                        Some(bbr_browser::WindowKey::default()),
+                        cx,
+                        |view, _w, cx| view.on_find_completion(completion, cx),
+                    );
                 });
             }
             #[cfg(target_os = "macos")]
@@ -318,7 +334,7 @@ pub fn spawn_pump(
                 // (the portable controller applies them — the first terminal
                 // event wins).
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                    let _ = with_current(&windows, cx, |view, _w, cx| {
                         crate::app::downloads_behavior::on_download_event(view, event, cx)
                     });
                 });
@@ -330,7 +346,7 @@ pub fn spawn_pump(
                 // update path as engine events. URLs buffered before the app
                 // finished launching are drained here, in order.
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, w, cx| {
+                    let _ = with_key_window(&windows, cx, |view, w, cx| {
                         view.on_external_url(url, w, cx)
                     });
                 });
@@ -343,7 +359,8 @@ pub fn spawn_pump(
                 // presents the classified incident without touching tab,
                 // session, profile, or space identity).
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                    let view = Some(incident.web_view);
+                    let _ = with_view_window(&windows, view, cx, |view, _w, cx| {
                         view.on_incident(incident, cx)
                     });
                 });
@@ -351,7 +368,8 @@ pub fn spawn_pump(
             #[cfg(target_os = "macos")]
             Incoming::NewWindow(Ok(delivery)) => {
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    let view = Some(delivery.request.source);
+                    let _ = with_view_window(&windows, view, cx, |view, window, cx| {
                         view.on_new_window_request(delivery, window, cx)
                     });
                 });
@@ -359,7 +377,8 @@ pub fn spawn_pump(
             #[cfg(target_os = "macos")]
             Incoming::ContentGesture(Ok(commit)) => {
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                    let view = Some(commit.view);
+                    let _ = with_view_window(&windows, view, cx, |view, _w, cx| {
                         view.on_content_gesture_commit(commit, cx)
                     });
                 });
@@ -375,6 +394,25 @@ pub fn spawn_pump(
         }
     })
     .detach();
+}
+
+/// Blueprint D19: make `key` the current window.
+fn select_window(
+    windows: &crate::shared::Shared<crate::browser_windows::Registry>,
+    key: bbr_browser::WindowKey,
+    cx: &mut App,
+) -> Response {
+    let target = windows.read().target(key);
+    let Some((window, app)) = target else {
+        return Response::Error(Error::new("unknown_window", format!("{key:?}")));
+    };
+    let _ = windows.bookkeep().set_current(key);
+    match with_app(&window, &app, cx, |view, _window, cx| {
+        view.window_activated(cx)
+    }) {
+        Ok(()) => Response::Ok,
+        Err(error) => Response::Error(Error::new("app_error", error.to_string())),
+    }
 }
 
 /// Handle one gateway command on the main thread and return its response.

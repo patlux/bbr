@@ -169,7 +169,18 @@ impl BbrApp {
         // failure or crash all clear the flag), the address line plays its
         // fill-and-fade after the state is applied.
         let loading_before = self.active_load();
-        let _ = self.controller.get().apply_event(event.clone());
+        // Blueprint D19: WebKit repeats reports (URL, title, history flags,
+        // probe answers); only one that changes what the windows draw asks
+        // them to re-render.
+        let drawn_before = self.controller.read().view_fingerprint(event.view());
+        let applied = self.controller.bookkeep().apply_event(event.clone());
+        let visible = matches!(
+            applied,
+            bbr_browser::ControllerEvent::RendererStateChanged { .. }
+        ) || self.controller.read().view_fingerprint(event.view()) != drawn_before;
+        if visible {
+            crate::shared::bump();
+        }
         if let Some(view) = loading_before {
             if self.active_load().is_none() {
                 self.note_load_finished(view, cx);

@@ -99,8 +99,11 @@ impl BbrApp {
             // visibility sync re-shows the view when the user switches back
             // to a hung tab, so the stale frame can never cover the pane.
             self.engine.borrow_mut().show(view, false);
-            self.unresponsive.get().hidden.insert(view);
-        } else if self.unresponsive.get().hidden.remove(&view) {
+            if !self.unresponsive.read().hidden.contains(&view) {
+                self.unresponsive.get().hidden.insert(view);
+            }
+        } else if self.unresponsive.read().hidden.contains(&view) {
+            self.unresponsive.get().hidden.remove(&view);
             // Restore only when no other surface is the current hider (the
             // error surface and the Library win while drawn; the three
             // hidden trackers never fight).
@@ -178,7 +181,12 @@ impl BbrApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let transitions = self.controller.get().pump_responsiveness();
+        // The cadence is bookkeeping; only a transition is something the
+        // other windows draw.
+        let transitions = self.controller.bookkeep().pump_responsiveness();
+        if !transitions.is_empty() {
+            crate::shared::bump();
+        }
         // Blueprint D24: the media probe rides the same cadence.
         self.pump_media();
         let active_view = self.controller.read().snapshot().active_view;

@@ -457,6 +457,21 @@ impl BbrApp {
                 }
                 dissolved
             }
+            // Blueprint D19: New Window / Close Window (after this window's
+            // palette closed).
+            26 | 27 => {
+                self.finish_action_activation(window, cx);
+                let windows = self.window_registry();
+                let open = action.0 == 26;
+                cx.defer(move |cx| {
+                    if open {
+                        crate::browser_windows::new_window(cx, &windows);
+                    } else {
+                        crate::browser_windows::close_window(cx, &windows);
+                    }
+                });
+                true
+            }
             21 | 22 => {
                 let delta = if action.0 == 21 { 1 } else { -1 };
                 let selected = self.select_adjacent_tab(delta, cx).is_some();

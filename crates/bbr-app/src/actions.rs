@@ -47,6 +47,12 @@ gpui::actions!(
         /// `Cmd-Shift-M`: stage a destination space for the active tab;
         /// Enter commits the move, Escape cancels it.
         MoveTab,
+        /// Blueprint D19: `Cmd-N` opens a browser window on the current
+        /// space, New Tab ready.
+        NewWindow,
+        /// Blueprint D19: `Cmd-Shift-W` closes the key browser window (its
+        /// tabs stay in their spaces; the last window quits).
+        CloseWindow,
         /// `Cmd-W`: close the active tab.
         CloseTab,
         /// `Cmd-Shift-T`: reopen the most recently closed tab.

@@ -135,6 +135,21 @@ impl DownloadsState {
         }
     }
 
+    /// Blueprint D19: another window's panel over the same downloads.
+    pub fn sibling(&self) -> Self {
+        Self {
+            controller: self.controller.clone(),
+            open: false,
+            focus: 0,
+            hovered_row: None,
+            pressed_row: None,
+            scroll: ScrollHandle::new(),
+            render_state: DownloadsRenderState::default(),
+            reveal: self.reveal.clone(),
+            opacity: None,
+        }
+    }
+
     /// The full deterministic row list (active ascending `DownloadId`, then
     /// history most-recent-terminal first) — `row index <n>` is stable.
     pub fn row_ids(&self) -> Vec<DownloadId> {

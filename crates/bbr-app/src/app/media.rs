@@ -46,7 +46,7 @@ impl BbrApp {
         let changed = match event {
             WebEvent::MediaObserved { view, observation } => self
                 .media
-                .get()
+                .bookkeep()
                 .registry
                 .observe(*view, observation.clone())
                 .is_some(),
@@ -57,6 +57,9 @@ impl BbrApp {
             _ => false,
         };
         if changed {
+            // A new report or an ended session is what the cards draw; a
+            // repeated probe answer is bookkeeping.
+            crate::shared::bump();
             self.prune_media();
             cx.notify();
         }
@@ -65,7 +68,7 @@ impl BbrApp {
     /// The periodic probe (driven by the responsiveness cadence).
     pub(crate) fn pump_media(&mut self) {
         let ticks = (self.media.read().ticks + 1) % PROBE_EVERY_TICKS;
-        self.media.get().ticks = ticks;
+        self.media.bookkeep().ticks = ticks;
         if self.media.read().ticks == 0 {
             self.prune_media();
             self.engine.borrow_mut().probe_media();
@@ -87,13 +90,26 @@ impl BbrApp {
         for view in gone {
             self.media.get().registry.invalidate(view);
         }
-        let mut media = self.media.get();
-        let MediaState {
-            registry,
-            dismissed,
-            ..
-        } = &mut *media;
-        dismissed.retain(|id| registry.session(id.view).is_some_and(|s| s.id == *id));
+        let ended = |media: &MediaState, id: &MediaSessionId| {
+            !media
+                .registry
+                .session(id.view)
+                .is_some_and(|session| session.id == *id)
+        };
+        let stale = {
+            let media = self.media.read();
+            media.dismissed.iter().any(|id| ended(&media, id))
+        };
+        if stale {
+            let mut media = self.media.get();
+            let kept: BTreeSet<MediaSessionId> = media
+                .dismissed
+                .iter()
+                .filter(|id| !ended(&media, id))
+                .copied()
+                .collect();
+            media.dismissed = kept;
+        }
     }
 
     /// The tab a view belongs to.

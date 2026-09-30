@@ -52,6 +52,33 @@ impl BrowserController {
     }
 }
 
+/// Blueprint D19: what the windows draw of one view — its navigation
+/// state, its tab's title and URL, the favicons and the crash mark — so an
+/// engine report that repeats the known state (WebKit re-sends URL, title
+/// and history flags) is told apart from a change.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ViewFingerprint {
+    nav: Option<crate::nav::NavState>,
+    tab: Option<(String, String)>,
+    favicons: u64,
+    crashed: bool,
+}
+
+impl BrowserController {
+    /// The drawn state of `view` (see [`ViewFingerprint`]).
+    pub fn view_fingerprint(&self, view: WebViewId) -> ViewFingerprint {
+        let tab = self.registry.tab_for_view(view);
+        ViewFingerprint {
+            nav: self.nav.get(&view).cloned(),
+            tab: tab
+                .and_then(|tab| self.browser.tab(tab))
+                .map(|state| (state.title.clone(), state.url.clone())),
+            favicons: self.favicons.version(),
+            crashed: tab.is_some_and(|tab| self.crashed_tabs.contains(&tab)),
+        }
+    }
+}
+
 impl BrowserController {
     /// Store one acquired favicon observation for `tab`'s current host in
     /// the owning profile's bounded store (task packet

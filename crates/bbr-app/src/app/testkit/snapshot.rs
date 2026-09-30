@@ -120,7 +120,7 @@ impl BbrApp {
         // model (deterministic nested positions within expanded folders).
         let organization = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read());
         let favorite_tiles = crate::app::ui_adapters::favorite_tiles(
             &organization.favorites,
@@ -742,6 +742,8 @@ impl BbrApp {
             history: self.history_snapshot(window),
             permissions: self.permissions_snapshot(),
             media: self.media_snapshot(),
+            windows: self.window_entries(),
+            window_refreshes: self.window_refreshes(),
             split: self.split_snapshot(),
             split_drop: self.split_view.drop.map(|drop| {
                 use bbr_split::tiling::DropZone;

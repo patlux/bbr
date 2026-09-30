@@ -365,24 +365,7 @@ impl BrowserController {
     /// crash) and the event is passed through for E2E. Returns `true` when
     /// the event named the open preview session.
     pub(crate) fn apply_preview_event(&mut self, event: &WebEvent) -> bool {
-        let view = match event {
-            WebEvent::UrlChanged(v, _)
-            | WebEvent::TitleChanged(v, _)
-            | WebEvent::LoadingChanged(v, _)
-            | WebEvent::CanGoBackChanged(v, _)
-            | WebEvent::CanGoForwardChanged(v, _)
-            | WebEvent::DidCommitNavigation(v)
-            | WebEvent::PageCrashed(v)
-            | WebEvent::NavigationFailed(v, _)
-            | WebEvent::UnresponsiveChanged(v, _)
-            | WebEvent::ContextMenuRequested(v, _)
-            | WebEvent::FaviconChanged(v, _)
-            | WebEvent::PermissionRequested { view: v, .. }
-            | WebEvent::ClientCertificateRequested { view: v, .. }
-            | WebEvent::ExternalSchemeRequested { view: v, .. }
-            | WebEvent::MediaCaptureChanged { view: v, .. }
-            | WebEvent::MediaObserved { view: v, .. } => *v,
-        };
+        let view = event.view();
         // Any window's preview (its events reach the controller whichever
         // window is current).
         let is_preview = self.previews().any(|preview| preview.view == view);

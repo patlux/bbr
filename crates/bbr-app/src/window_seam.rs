@@ -15,67 +15,16 @@ use smol::channel::Receiver;
 use smol::prelude::*;
 
 use crate::actions::{
-    AuthSheetFieldTab, Back, ClearBrowsingData, CloseSplit, CloseTab, DuplicateTab, FindInPage,
-    FocusCommandBar, FocusPaneDown, FocusPaneLeft, FocusPaneRight, FocusPaneUp, FocusRail,
-    FocusWeb, Forward, MoveTab, NewSpace, NewTab, OpenOverlay, OpenPalette, OpenSavedPagesLibrary,
-    PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp, SelectNextTab, SelectPreviousTab,
-    ShowHistory, SplitBelow, SplitRight, ToggleBookmark, ToggleSidebar, ZoomIn, ZoomOut, ZoomReset,
+    AuthSheetFieldTab, Back, ClearBrowsingData, CloseSplit, CloseTab, CloseWindow, DuplicateTab,
+    FindInPage, FocusCommandBar, FocusPaneDown, FocusPaneLeft, FocusPaneRight, FocusPaneUp,
+    FocusRail, FocusWeb, Forward, MoveTab, NewSpace, NewTab, NewWindow, OpenOverlay, OpenPalette,
+    OpenSavedPagesLibrary, PinTab, Reload, ReopenTab, ReorderTabDown, ReorderTabUp, SelectNextTab,
+    SelectPreviousTab, ShowHistory, SplitBelow, SplitRight, ToggleBookmark, ToggleSidebar, ZoomIn,
+    ZoomOut, ZoomReset,
 };
 use crate::app::BbrApp;
-/// Root-window + app-entity seam: run an update against the separately
-/// retained `Entity<BbrApp>` with `&mut Window` access through the
-/// `gpui_component::Root` window. Every action, pump, dispatch, and
-/// presentation hook routes app mutation through this single contract.
-/// Terminate BBR when its browser window closes.
-///
-/// GPUI follows the native macOS convention by keeping an application alive
-/// after its last window closes. BBR is intentionally a single-browser-window
-/// process, so closing that owning window is a full application shutdown even
-/// while implementation-owned child windows (such as the native portal host)
-/// still exist.
-///
-/// Normal-quit persistence correctness: the owning window-close seam flushes
-/// the latest structural browser model and the current Saved Page provider
-/// before the app quits (each one synchronous transaction through the
-/// identical repository write the background writer uses). This is a narrow
-/// persistence seam, not a general deterministic process-shutdown system
-/// (queue item 20 stays out of scope); the force-quit and crash paths
-/// recover exactly the last committed state.
-///
-/// True only when the closed window is BBR's owning browser window.
-///
-/// The one implementation-owned child window (the native portal host)
-/// carries a distinct [`gpui::WindowId`] and must never satisfy the
-/// process-exit rule. The find bar and auth sheet are in-window elements
-/// and never produce an independent window-closed event. Closing a child
-/// is a dismissal, closing the owning browser window is full application
-/// shutdown. The predicate is pure so the owning-window rule is
-/// unit-testable without a display server.
-pub(crate) fn is_owning_window(closed: gpui::WindowId, owning: gpui::WindowId) -> bool {
-    closed == owning
-}
-
-pub(crate) fn quit_when_browser_window_closes(
-    cx: &App,
-    browser_window: gpui::WindowHandle<gpui_component::Root>,
-    app: Entity<BbrApp>,
-) {
-    let browser_window_id = browser_window.window_id();
-    cx.on_window_closed(move |cx, closed_window_id| {
-        if is_owning_window(closed_window_id, browser_window_id) {
-            // The app entity outlives its window (retained by the
-            // composition root), so both flushes run before the quit in the
-            // same update: the structural browser model and the Saved Page
-            // provider are each persisted in one synchronous transaction.
-            app.update(cx, |view, _cx| {
-                view.flush_browser_state();
-                view.flush_saved_pages();
-            });
-            cx.quit();
-        }
-    })
-    .detach();
-}
+use crate::browser_windows::Registry;
+use crate::shared::Shared;
 
 /// Convert terminal Ctrl-C (`SIGINT`) into GPUI's graceful shutdown path.
 ///
@@ -97,6 +46,10 @@ pub(crate) fn install_sigint_shutdown(cx: &App) {
 #[cfg(not(unix))]
 pub(crate) fn install_sigint_shutdown(_cx: &App) {}
 
+/// Root-window + app-entity seam: run an update against a window's
+/// separately retained `Entity<BbrApp>` shell with `&mut Window` access
+/// through its `gpui_component::Root` window. Every action, pump, dispatch,
+/// and presentation hook routes app mutation through this single contract.
 pub(crate) fn with_app<R>(
     window: &gpui::WindowHandle<gpui_component::Root>,
     app: &Entity<BbrApp>,
@@ -108,6 +61,66 @@ pub(crate) fn with_app<R>(
     })
 }
 
+/// Blueprint D19: run an update in window `key` (`None`: the current
+/// window — the one that last took input).
+pub(crate) fn with_window<R>(
+    windows: &Shared<Registry>,
+    key: Option<bbr_browser::WindowKey>,
+    cx: &mut App,
+    f: impl FnOnce(&mut BbrApp, &mut Window, &mut gpui::Context<BbrApp>) -> R,
+) -> anyhow::Result<R> {
+    let target = match key {
+        Some(key) => windows.read().target(key),
+        None => windows.read().current_target(),
+    };
+    let (handle, app) = target.ok_or_else(|| anyhow::anyhow!("no such browser window"))?;
+    with_app(&handle, &app, cx, f)
+}
+
+/// Blueprint D19: run an update in the current window.
+pub(crate) fn with_current<R>(
+    windows: &Shared<Registry>,
+    cx: &mut App,
+    f: impl FnOnce(&mut BbrApp, &mut Window, &mut gpui::Context<BbrApp>) -> R,
+) -> anyhow::Result<R> {
+    with_window(windows, None, cx, f)
+}
+
+/// Blueprint D19: run a keyboard or menu command in the key browser window
+/// (the current one when no browser window is key, e.g. the hidden test
+/// harness); the key window becomes current, as any input in it does.
+pub(crate) fn with_key_window<R>(
+    windows: &Shared<Registry>,
+    cx: &mut App,
+    f: impl FnOnce(&mut BbrApp, &mut Window, &mut gpui::Context<BbrApp>) -> R,
+) -> anyhow::Result<R> {
+    let key = cx
+        .active_window()
+        .and_then(|active| windows.read().key_of(active.window_id()));
+    if let Some(key) = key {
+        if windows.read().current() != key {
+            let _ = windows.bookkeep().set_current(key);
+        }
+    }
+    with_current(windows, cx, f)
+}
+
+/// Blueprint D19: run an engine event's update in the window whose root
+/// holds `view` (the current window for an unknown view).
+pub(crate) fn with_view_window<R>(
+    windows: &Shared<Registry>,
+    view: Option<bbr_web::WebViewId>,
+    cx: &mut App,
+    f: impl FnOnce(&mut BbrApp, &mut Window, &mut gpui::Context<BbrApp>) -> R,
+) -> anyhow::Result<R> {
+    let key = view.and_then(|view| {
+        let (_, app) = windows.read().current_target()?;
+        app.read(cx).window_of_view(view)
+    });
+    let key = key.filter(|key| windows.read().target(*key).is_some());
+    with_window(windows, key, cx, f)
+}
+
 /// Register global action handlers (bubble phase) that reach the app view.
 ///
 /// These run while the keystroke dispatch already holds the window borrowed
@@ -116,146 +129,140 @@ pub(crate) fn with_app<R>(
 /// therefore deferred to the effect flush — the same pattern GPUI's own
 /// [`gpui::Window::dispatch_action`] uses — so the view is updated once the
 /// keystroke dispatch has released the window.
-pub(crate) fn install_actions(
-    cx: &mut App,
-    window: gpui::WindowHandle<gpui_component::Root>,
-    app: Entity<BbrApp>,
-) {
-    // The window handle is `Copy`; the app entity is cloned per listener so
-    // every `cx.on_action` closure is `'static`.
+pub(crate) fn install_actions(cx: &mut App, windows: Shared<Registry>) {
+    // The registry handle is cloned per listener so every `cx.on_action`
+    // closure is `'static`; each command runs in the key browser window.
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &FocusCommandBar, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.activate_command_bar(window, cx)
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &FocusWeb, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.cancel_command_bar(window, cx)
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &Back, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, _cx| view.go_back());
+                let _ = with_key_window(&windows, cx, |view, _w, _cx| view.go_back());
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &Forward, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, _cx| view.go_forward());
+                let _ = with_key_window(&windows, cx, |view, _w, _cx| view.go_forward());
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &Reload, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, _cx| view.reload());
+                let _ = with_key_window(&windows, cx, |view, _w, _cx| view.reload());
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &ZoomIn, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, cx| view.zoom_in(cx));
+                let _ = with_key_window(&windows, cx, |view, _w, cx| view.zoom_in(cx));
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &ZoomOut, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, cx| view.zoom_out(cx));
+                let _ = with_key_window(&windows, cx, |view, _w, cx| view.zoom_out(cx));
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &ZoomReset, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, cx| view.zoom_reset(cx));
+                let _ = with_key_window(&windows, cx, |view, _w, cx| view.zoom_reset(cx));
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &ToggleSidebar, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.toggle_sidebar(window, cx)
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &OpenPalette, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.open_palette(window, cx)
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &OpenOverlay, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.open_overlay(window, cx)
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &FocusRail, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
-                    view.focus_rail(window, cx)
-                });
+                let _ =
+                    with_key_window(&windows, cx, |view, window, cx| view.focus_rail(window, cx));
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &FindInPage, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
-                    view.find_open(window, cx)
-                });
+                let _ =
+                    with_key_window(&windows, cx, |view, window, cx| view.find_open(window, cx));
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &AuthSheetFieldTab, cx| {
             // Read the presented state synchronously: the keystroke
             // dispatch holds only the window (the app entity is not
@@ -265,6 +272,15 @@ pub(crate) fn install_actions(
             // open, so gpui-component's `Root` focus-traversal binding
             // keeps handling Tab exactly as before.
             // Blueprint D05: the Delete Space sheet shares the binding.
+            let key = cx
+                .active_window()
+                .and_then(|active| windows.read().key_of(active.window_id()));
+            let target = key
+                .and_then(|key| windows.read().target(key))
+                .or_else(|| windows.read().current_target());
+            let Some((_, app)) = target else {
+                return;
+            };
             let view = app.read(cx);
             if !view.auth_sheet_is_presented() && !view.space_delete_open() {
                 return;
@@ -276,108 +292,108 @@ pub(crate) fn install_actions(
             // window borrowed, so a direct `with_app` would re-enter the
             // window update).
             cx.stop_propagation();
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.auth_field_tab(window, cx)
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &ToggleBookmark, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.toggle_bookmark(window, cx)
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &OpenSavedPagesLibrary, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.open_saved_pages_library(window, cx)
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &ShowHistory, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.open_history(window, cx)
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &ClearBrowsingData, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.open_clear_browsing_data(window, cx)
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &NewTab, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.activate_new_tab(window, cx);
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &NewSpace, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.activate_new_space(window, cx);
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &PinTab, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                let _ = with_key_window(&windows, cx, |view, _w, cx| {
                     let _ = view.pin_active_tab(cx);
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &ReorderTabUp, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                let _ = with_key_window(&windows, cx, |view, _w, cx| {
                     let _ = view.reorder_active_tab(-1, cx);
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &ReorderTabDown, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                let _ = with_key_window(&windows, cx, |view, _w, cx| {
                     let _ = view.reorder_active_tab(1, cx);
                 });
             });
@@ -388,11 +404,11 @@ pub(crate) fn install_actions(
         (bbr_domain::tiling::Edge::Right, false),
         (bbr_domain::tiling::Edge::Bottom, true),
     ] {
-        let app = app.clone();
+        let windows = windows.clone();
         let run = move |cx: &mut App| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.begin_split_palette(edge, window, cx);
                 });
             });
@@ -404,11 +420,11 @@ pub(crate) fn install_actions(
         }
     }
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &CloseSplit, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                let _ = with_key_window(&windows, cx, |view, _w, cx| {
                     view.dissolve_shown_split(cx);
                 });
             });
@@ -420,11 +436,11 @@ pub(crate) fn install_actions(
         bbr_domain::tiling::Edge::Top,
         bbr_domain::tiling::Edge::Bottom,
     ] {
-        let app = app.clone();
+        let windows = windows.clone();
         let run = move |cx: &mut App| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                let _ = with_key_window(&windows, cx, |view, _w, cx| {
                     view.split_focus_neighbour(edge, cx);
                 });
             });
@@ -438,22 +454,22 @@ pub(crate) fn install_actions(
     }
     // Blueprint D19: Duplicate Tab and Select Next/Previous Tab.
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &DuplicateTab, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                let _ = with_key_window(&windows, cx, |view, _w, cx| {
                     let _ = view.duplicate_active_tab(cx);
                 });
             });
         }
     });
     for (delta, next) in [(1isize, true), (-1, false)] {
-        let app = app.clone();
+        let windows = windows.clone();
         let run = move |cx: &mut App| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                let _ = with_key_window(&windows, cx, |view, _w, cx| {
                     let _ = view.select_adjacent_tab(delta, cx);
                 });
             });
@@ -465,33 +481,33 @@ pub(crate) fn install_actions(
         }
     }
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &MoveTab, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     view.activate_move_tab(window, cx);
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &CloseTab, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     let _ = view.close_active_tab(window, cx);
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &ReopenTab, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     let _ = view.reopen_tab(window, cx);
                 });
             });
@@ -501,11 +517,11 @@ pub(crate) fn install_actions(
     // Blueprint D19: the menu-bar-only commands and the space activation
     // the Spaces and Dock menus dispatch.
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &crate::menus::Quit, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                app.update(cx, |view, _cx| {
+                let _ = with_current(&windows, cx, |view, _window, _cx| {
                     view.flush_browser_state();
                     view.flush_saved_pages();
                 });
@@ -514,44 +530,69 @@ pub(crate) fn install_actions(
         }
     });
     cx.on_action(|_: &crate::menus::HideApp, cx| cx.hide());
+    // Blueprint D19: several windows.
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
+        move |_: &NewWindow, cx| {
+            let windows = windows.clone();
+            cx.defer(move |cx| crate::browser_windows::new_window(cx, &windows));
+        }
+    });
+    cx.on_action({
+        let windows = windows.clone();
+        move |_: &CloseWindow, cx| {
+            let windows = windows.clone();
+            cx.defer(move |cx| {
+                // The key window closes (the current one under the hidden
+                // harness).
+                let key = cx
+                    .active_window()
+                    .and_then(|active| windows.read().key_of(active.window_id()));
+                if let Some(key) = key {
+                    if windows.read().current() != key {
+                        let _ = windows.bookkeep().set_current(key);
+                    }
+                }
+                crate::browser_windows::close_window(cx, &windows);
+            });
+        }
+    });
+    cx.on_action({
+        let windows = windows.clone();
         move |_: &crate::menus::ShowSettings, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _window, cx| {
-                    view.show_settings(cx)
-                });
+                let _ = with_key_window(&windows, cx, |view, _window, cx| view.show_settings(cx));
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &crate::menus::ShowAbout, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, _window, cx| view.show_about(cx));
+                let _ = with_key_window(&windows, cx, |view, _window, cx| view.show_about(cx));
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |_: &crate::menus::MinimizeWindow, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |_view, window, _cx| {
+                let _ = with_key_window(&windows, cx, |_view, window, _cx| {
                     window.minimize_window();
                 });
             });
         }
     });
     cx.on_action({
-        let app = app.clone();
+        let windows = windows.clone();
         move |action: &crate::menus::ActivateSpace, cx| {
-            let app = app.clone();
+            let windows = windows.clone();
             let space = bbr_browser::SpaceId(action.id);
             cx.defer(move |cx| {
-                let _ = with_app(&window, &app, cx, |view, window, cx| {
+                let _ = with_key_window(&windows, cx, |view, window, cx| {
                     let _ = view.activate_space(space, window, cx);
                 });
             });
@@ -571,25 +612,34 @@ pub(crate) fn install_actions(
 /// GPUI's platform-driven `background_executor().timer` is required (a
 /// foreground-spawned task is polled by the main-thread executor, which
 /// never drives smol's reactor — see the command-debounce precedent).
-pub(crate) fn spawn_responsiveness_cadence(
-    cx: &App,
-    window: &gpui::WindowHandle<gpui_component::Root>,
-    app: &Entity<BbrApp>,
-) {
+pub(crate) fn spawn_responsiveness_cadence(cx: &App, windows: &Shared<Registry>) {
     // The monitor's re-arm cadence is ~1 s (probe_interval) and the
     // fail-closed deadline 2 s; a 250 ms tick detects a due probe or an
     // expired deadline within a quarter second while emitting nothing on an
     // idle window.
     const TICK: std::time::Duration = std::time::Duration::from_millis(250);
-    let window = *window;
-    let app = app.clone();
+    let windows = windows.clone();
     cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
         async_cx.background_executor().timer(TICK).await;
         // GPUI-CE `AsyncApp::update` is infallible (no `.ok()`).
         async_cx.update(|cx| {
-            let _ = with_app(&window, &app, cx, |view, window, cx| {
+            // Blueprint D19: the shared probes run once, in the current
+            // window; every other window re-asserts its own pane.
+            let _ = with_current(&windows, cx, |view, window, cx| {
                 view.pump_responsiveness_cadence(window, cx)
             });
+            let current = windows.read().current();
+            let others: Vec<_> = windows
+                .read()
+                .keys()
+                .into_iter()
+                .filter(|key| *key != current)
+                .collect();
+            for key in others {
+                let _ = with_window(&windows, Some(key), cx, |view, _window, _cx| {
+                    view.sync_unresponsive_visibility()
+                });
+            }
         });
     })
     .detach();
@@ -628,12 +678,7 @@ pub(crate) struct EventPumpChannels {
 
 /// Non-testkit builds still need the event pump to keep the shell live.
 #[cfg(not(feature = "testkit"))]
-pub(crate) fn spawn_event_pump(
-    cx: &App,
-    window: &gpui::WindowHandle<gpui_component::Root>,
-    app: &Entity<BbrApp>,
-    channels: EventPumpChannels,
-) {
+pub(crate) fn spawn_event_pump(cx: &App, windows: &Shared<Registry>, channels: EventPumpChannels) {
     let evt_rx = channels.events;
     #[cfg(target_os = "macos")]
     let find_rx = channels.find;
@@ -647,8 +692,7 @@ pub(crate) fn spawn_event_pump(
     let new_windows_rx = channels.new_windows;
     #[cfg(target_os = "macos")]
     let gestures_rx = channels.gestures;
-    let window = *window;
-    let app = app.clone();
+    let windows = windows.clone();
     cx.spawn(async move |async_cx: &mut gpui::AsyncApp| loop {
         enum Incoming {
             Event(Result<WebEvent, smol::channel::RecvError>),
@@ -708,7 +752,7 @@ pub(crate) fn spawn_event_pump(
         match incoming {
             Incoming::Event(Ok(ev)) => {
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    let _ = with_view_window(&windows, Some(ev.view()), cx, |view, window, cx| {
                         view.on_web_event(ev, window, cx)
                     });
                 });
@@ -716,9 +760,14 @@ pub(crate) fn spawn_event_pump(
             #[cfg(target_os = "macos")]
             Incoming::Find(Ok(completion)) => {
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
-                        view.on_find_completion(completion, cx)
-                    });
+                    // The first window's find channel (every further window
+                    // pumps its own).
+                    let _ = with_window(
+                        &windows,
+                        Some(bbr_browser::WindowKey::default()),
+                        cx,
+                        |view, _w, cx| view.on_find_completion(completion, cx),
+                    );
                 });
             }
             #[cfg(target_os = "macos")]
@@ -726,7 +775,7 @@ pub(crate) fn spawn_event_pump(
                 // L6 download events from the native adapter: route through
                 // the same main-thread app update path as engine events.
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                    let _ = with_current(&windows, cx, |view, _w, cx| {
                         crate::app::downloads_behavior::on_download_event(view, event, cx)
                     });
                 });
@@ -738,7 +787,7 @@ pub(crate) fn spawn_event_pump(
                 // before the app finished launching are drained here, in
                 // order, so a cold-start link lands exactly once.
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, w, cx| {
+                    let _ = with_key_window(&windows, cx, |view, w, cx| {
                         view.on_external_url(url, w, cx)
                     });
                 });
@@ -749,7 +798,8 @@ pub(crate) fn spawn_event_pump(
                 // incident sink: the same main-thread app update path as
                 // engine/find/downloads events.
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                    let view = Some(incident.web_view);
+                    let _ = with_view_window(&windows, view, cx, |view, _w, cx| {
                         view.on_incident(incident, cx)
                     });
                 });
@@ -757,7 +807,8 @@ pub(crate) fn spawn_event_pump(
             #[cfg(target_os = "macos")]
             Incoming::NewWindow(Ok(delivery)) => {
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, window, cx| {
+                    let view = Some(delivery.request.source);
+                    let _ = with_view_window(&windows, view, cx, |view, window, cx| {
                         view.on_new_window_request(delivery, window, cx)
                     });
                 });
@@ -765,7 +816,8 @@ pub(crate) fn spawn_event_pump(
             #[cfg(target_os = "macos")]
             Incoming::ContentGesture(Ok(commit)) => {
                 async_cx.update(|cx| {
-                    let _ = with_app(&window, &app, cx, |view, _w, cx| {
+                    let view = Some(commit.view);
+                    let _ = with_view_window(&windows, view, cx, |view, _w, cx| {
                         view.on_content_gesture_commit(commit, cx)
                     });
                 });
@@ -815,6 +867,9 @@ pub(crate) fn keybindings() -> Vec<KeyBinding> {
         KeyBinding::new("ctrl-cmd-down", FocusPaneDown, None),
         KeyBinding::new("cmd-shift-m", MoveTab, None),
         KeyBinding::new("cmd-w", CloseTab, None),
+        // Blueprint D19: several windows.
+        KeyBinding::new("cmd-n", NewWindow, None),
+        KeyBinding::new("cmd-shift-w", CloseWindow, None),
         KeyBinding::new("cmd-shift-t", ReopenTab, None),
         // Zoom (queue item 11, part A): `cmd-+` is the literal Cmd-Plus on
         // the US layout (and the shifted-plus layouts GPUI resolves to the
@@ -843,45 +898,4 @@ pub(crate) fn keybindings() -> Vec<KeyBinding> {
         KeyBinding::new("shift-tab", AuthSheetFieldTab, None),
         KeyBinding::new("cmd-,", crate::menus::ShowSettings, None),
     ]
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use gpui::WindowId;
-
-    #[test]
-    fn owning_window_close_is_a_process_quit_signal() {
-        let owning = WindowId::from(7);
-        assert!(
-            is_owning_window(owning, owning),
-            "closing the owning browser window must satisfy the quit rule"
-        );
-    }
-
-    #[test]
-    fn portal_child_window_never_satisfies_the_quit_rule() {
-        let owning = WindowId::from(7);
-        // The one native portal host (and any other implementation-owned
-        // child window) has its own WindowId: closing it is a dismissal,
-        // never a process quit.
-        let portal_child = WindowId::from(8);
-        assert!(
-            !is_owning_window(portal_child, owning),
-            "a portal child window id must not terminate the process"
-        );
-        assert!(
-            !is_owning_window(WindowId::from(9), owning),
-            "an unrelated window id must not terminate the process"
-        );
-    }
-
-    #[test]
-    fn distinct_window_ids_never_match() {
-        let a = WindowId::from(1);
-        let b = WindowId::from(2);
-        assert_ne!(a, b);
-        assert!(!is_owning_window(b, a));
-        assert!(!is_owning_window(a, b));
-    }
 }

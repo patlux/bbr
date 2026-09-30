@@ -1641,6 +1641,14 @@ pub struct Snapshot {
     /// Blueprint D24: the media card and sessions.
     #[serde(default)]
     pub media: super::MediaSnapshot,
+    /// Blueprint D19: every open browser window (the snapshot's other
+    /// fields describe the current one).
+    #[serde(default)]
+    pub windows: Vec<super::WindowEntry>,
+    /// Blueprint D19: how often another window's change of shared state
+    /// re-rendered the current window.
+    #[serde(default)]
+    pub window_refreshes: u64,
     /// Blueprint D23: the shown split group.
     #[serde(default)]
     pub split: Option<super::SplitSnapshot>,

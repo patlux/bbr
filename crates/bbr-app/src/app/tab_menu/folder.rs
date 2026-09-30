@@ -51,7 +51,7 @@ impl BbrApp {
         cx.stop_propagation();
         let known = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read())
             .folders
             .iter()
@@ -101,7 +101,7 @@ impl BbrApp {
             TabMenuAction::NewTabInFolder => {
                 let space = self
                     .organization
-                    .get()
+                    .bookkeep()
                     .organization_snapshot(&self.controller.read())
                     .folders
                     .iter()

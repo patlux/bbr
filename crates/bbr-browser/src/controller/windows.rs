@@ -150,6 +150,29 @@ impl BrowserController {
         )
     }
 
+    /// The window whose root holds the live session `view` (its events
+    /// belong to that window's shell); `None` for an unknown view.
+    pub fn window_of_view(&self, view: bbr_web::WebViewId) -> Option<WindowKey> {
+        self.windows.placement.get(&view).copied()
+    }
+
+    /// The selected tab of `window` in its active space as its index in that
+    /// space and its live session, if any.
+    pub fn window_selected(
+        &self,
+        window: WindowKey,
+    ) -> Option<(usize, Option<bbr_web::WebViewId>)> {
+        let tab = self.window_selection(window)?;
+        let space = self.window_space(window)?;
+        let index = self
+            .browser
+            .space(space)?
+            .tabs
+            .iter()
+            .position(|t| *t == tab)?;
+        Some((index, self.registry.view_for_tab(tab)))
+    }
+
     /// The selected tab of `window` in its active space (`None`: the
     /// space's empty state).
     pub fn window_selection(&self, window: WindowKey) -> Option<TabId> {

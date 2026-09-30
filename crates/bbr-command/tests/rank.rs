@@ -464,8 +464,12 @@ fn action_keyword_match_ranks_exact() {
 fn action_mode_restricts_to_actions_without_fallback() {
     let corpus = fixture_corpus();
     let results = rank_all(&corpus, "new", Mode::Action);
-    // Blueprint D06: New Profile… is the third "new" action.
-    assert_eq!(keys(&results), ["action:1", "action:6", "action:15"]);
+    // Blueprint D06: New Profile… is the third "new" action; D19 adds
+    // New Window.
+    assert_eq!(
+        keys(&results),
+        ["action:1", "action:6", "action:15", "action:26"]
+    );
 }
 
 #[test]

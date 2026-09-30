@@ -48,6 +48,23 @@ pub(crate) struct CertificateState {
     pub answers: crate::shared::Shared<Vec<(u64, ClientCertificateAnswer)>>,
 }
 
+impl CertificateState {
+    /// Blueprint D19: another window's sheet over the same choices and
+    /// requests.
+    pub(crate) fn sibling(&self) -> Self {
+        Self {
+            choices: self.choices.clone(),
+            path: self.path.clone(),
+            pending: self.pending.clone(),
+            selected: None,
+            remember: false,
+            loading: self.loading.clone(),
+            #[cfg(feature = "testkit")]
+            answers: self.answers.clone(),
+        }
+    }
+}
+
 fn now_unix() -> i64 {
     (crate::store::history_ops::now_ms() / 1000) as i64
 }
@@ -150,10 +167,10 @@ impl BbrApp {
     ) {
         match event {
             bbr_web::WebEvent::LoadingChanged(view, true) => {
-                self.certificates.loading.get().insert(*view);
+                self.certificates.loading.bookkeep().insert(*view);
             }
             bbr_web::WebEvent::UrlChanged(view, url) => {
-                let started = self.certificates.loading.get().remove(view);
+                let started = self.certificates.loading.bookkeep().remove(view);
                 if started || self.controller.read().view_url(*view) != Some(url.as_str()) {
                     self.certificate_navigation(*view, url, window, cx);
                 }

@@ -372,7 +372,7 @@ impl BbrApp {
         }
         let organization = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read());
         let count = organization.folders.len();
         if count == 0 {
@@ -540,7 +540,7 @@ impl BbrApp {
     fn folder_member_tab_index(&mut self, folder: FolderId, member: usize) -> Option<usize> {
         let organization = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read());
         let folder_snapshot = organization.folders.iter().find(|f| f.id == folder)?;
         let tab_id = *folder_snapshot.members.get(member)?;

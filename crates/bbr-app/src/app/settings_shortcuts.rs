@@ -6,7 +6,7 @@ use gpui::SharedString;
 
 /// The shortcut list: `(group, title, keystroke)`, the keystroke exactly as
 /// bound (a unit test checks every one against the keymap).
-pub(crate) const SHORTCUTS: [(&str, &str, &str); 24] = [
+pub(crate) const SHORTCUTS: [(&str, &str, &str); 26] = [
     ("Tabs", "New tab", "cmd-t"),
     ("Tabs", "Close tab", "cmd-w"),
     ("Tabs", "Reopen closed tab", "cmd-shift-t"),
@@ -30,6 +30,8 @@ pub(crate) const SHORTCUTS: [(&str, &str, &str); 24] = [
     ("Library", "History", "cmd-y"),
     ("Library", "Clear browsing data", "cmd-shift-backspace"),
     ("Zoom", "Actual size", "cmd-0"),
+    ("App", "New window", "cmd-n"),
+    ("App", "Close window", "cmd-shift-w"),
     ("App", "Settings", "cmd-,"),
 ];
 

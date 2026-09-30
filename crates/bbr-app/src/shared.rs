@@ -28,6 +28,18 @@ thread_local! {
     static GENERATION: Cell<u64> = const { Cell::new(0) };
 }
 
+/// The current shared generation (moves whenever a window changed shared
+/// state the other windows draw).
+pub(crate) fn generation() -> u64 {
+    GENERATION.with(Cell::get)
+}
+
+/// Record a change the other windows must draw (after a bookkeeping
+/// access found one).
+pub(crate) fn bump() {
+    GENERATION.with(|generation| generation.set(generation.get().wrapping_add(1)));
+}
+
 /// A handle to state every browser window shares (see the module docs).
 pub(crate) struct Shared<T>(Rc<RefCell<T>>);
 
@@ -51,6 +63,18 @@ impl<T> Shared<T> {
         SharedMut {
             guard: self.borrow_raw(),
             mutated: false,
+            quiet: false,
+        }
+    }
+
+    /// Change bookkeeping the other windows do not draw (cadence counters,
+    /// idempotent re-assertions): no re-render is asked for. Call
+    /// [`bump`] when the change turns out to be visible.
+    pub(crate) fn bookkeep(&self) -> SharedMut<'_, T> {
+        SharedMut {
+            guard: self.borrow_raw(),
+            mutated: false,
+            quiet: true,
         }
     }
 
@@ -113,6 +137,7 @@ impl<T> Deref for SharedRef<'_, T> {
 pub(crate) struct SharedMut<'a, T> {
     guard: RefMut<'a, T>,
     mutated: bool,
+    quiet: bool,
 }
 
 impl<T> Deref for SharedMut<'_, T> {
@@ -131,8 +156,8 @@ impl<T> DerefMut for SharedMut<'_, T> {
 
 impl<T> Drop for SharedMut<'_, T> {
     fn drop(&mut self) {
-        if self.mutated {
-            GENERATION.with(|generation| generation.set(generation.get().wrapping_add(1)));
+        if self.mutated && !self.quiet {
+            bump();
         }
     }
 }
@@ -154,6 +179,26 @@ impl ControllerHandle {
             shared: Shared::new(controller),
             window,
         }
+    }
+
+    /// The same controller for another window.
+    pub(crate) fn for_window(&self, window: WindowKey) -> Self {
+        Self {
+            shared: self.shared.clone(),
+            window,
+        }
+    }
+
+    /// The window this handle acts in.
+    pub(crate) fn window(&self) -> WindowKey {
+        self.window
+    }
+
+    /// Change controller bookkeeping the other windows do not draw (see
+    /// [`Shared::bookkeep`]).
+    pub(crate) fn bookkeep(&self) -> SharedMut<'_, BrowserController> {
+        self.enter();
+        self.shared.bookkeep()
     }
 
     /// Read the controller in this window's context.

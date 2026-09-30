@@ -156,7 +156,7 @@ impl BbrApp {
     fn drag_activation_growth(&mut self) -> f32 {
         let favorites = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read())
             .favorites
             .len();
@@ -201,7 +201,7 @@ impl BbrApp {
         // §11.11: the pinned region's rendered rows exclude grouped tabs.
         let organization = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read());
         let grouped = crate::shell::organized::grouped_indices(&organization.folders, &browser);
         let loose = crate::shell::organized::loose_pinned(pinned, &grouped);

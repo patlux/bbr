@@ -172,8 +172,10 @@ impl BbrApp {
             let Some(mtm) = objc2::MainThreadMarker::new() else {
                 return;
             };
-            self.system_accessibility
-                .set(prefs_from(display::current_options()));
+            let prefs = prefs_from(display::current_options());
+            if self.system_accessibility.value() != prefs {
+                self.system_accessibility.set(prefs);
+            }
             let (tx, rx) = smol::channel::unbounded::<()>();
             self.accessibility_observer = Some(display::AccessibilityDisplayObserver::install(
                 mtm,

@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Window marker</title>
+<script>
+  // Blueprint D19: a fresh load gets a new marker, so a page moved between
+  // windows without reloading keeps its title.
+  document.title = "Window marker " + Math.random().toString(36).slice(2, 10);
+</script>
+</head>
+<body><p>Moved between windows, never reloaded.</p></body>
+</html>

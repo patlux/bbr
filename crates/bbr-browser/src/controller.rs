@@ -36,6 +36,7 @@ mod split_groups;
 mod windows;
 
 pub use closed_tabs::ClosedTabEntry;
+pub use events::ViewFingerprint;
 pub use windows::WindowKey;
 
 use crate::nav::NavState;

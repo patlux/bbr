@@ -30,6 +30,7 @@ mod permissions;
 mod request;
 mod snapshot;
 mod split;
+mod windows;
 
 pub use benchmark::{BenchmarkKind, PresentationMeasurement};
 pub use event::{BrowserChange, Event};
@@ -63,6 +64,7 @@ pub use snapshot::{
     TextInputReadback, TitlebarSnapshot, ToastSnapshot, WebContentProbe, ZoomSnapshot,
 };
 pub use split::{SplitDropSnapshot, SplitInput, SplitPaneSnapshot, SplitSnapshot};
+pub use windows::WindowEntry;
 
 /// Current protocol version understood by this crate.
 pub const PROTOCOL_VERSION: u32 = 7;

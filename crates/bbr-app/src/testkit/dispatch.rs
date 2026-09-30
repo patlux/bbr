@@ -697,7 +697,9 @@ pub(crate) fn dispatch(
 
         // Handled by the pump before dispatch (rides the real event transport;
         // the text-input client must run outside the app borrow).
-        Request::InjectWebEvent { .. } | Request::CommandTextInput { .. } => {
+        Request::InjectWebEvent { .. }
+        | Request::CommandTextInput { .. }
+        | Request::SelectWindow { .. } => {
             Response::Error(Error::new("pump_only", "handled by the event pump"))
         }
 

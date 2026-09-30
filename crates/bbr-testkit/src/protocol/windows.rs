@@ -1,0 +1,20 @@
+//! Blueprint D19: the browser windows on the wire.
+
+use serde::{Deserialize, Serialize};
+
+/// Blueprint D19: one open browser window.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WindowEntry {
+    /// The window's key (the first window is 0).
+    pub window: u64,
+    /// The snapshot's other fields describe this window.
+    pub current: bool,
+    pub active_space: Option<u64>,
+    /// The window's selected tab in its active space: its index there
+    /// (`None`: the space's empty state) and its live session.
+    pub selected_index: Option<usize>,
+    pub selected_view: Option<bbr_web::WebViewId>,
+    /// The window whose native root hosts that session (the engine's own
+    /// bookkeeping; macOS only).
+    pub selected_root: Option<u64>,
+}

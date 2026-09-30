@@ -404,6 +404,9 @@ impl Render for BbrApp {
             .into_any()
         };
 
+        // Blueprint D19: the shared state this frame drew (the other
+        // windows' changes re-render this one only when it moved).
+        self.mark_generation_drawn();
         div()
             .id("bbr-root")
             .relative()

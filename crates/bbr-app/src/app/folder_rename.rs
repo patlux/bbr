@@ -99,7 +99,7 @@ impl BbrApp {
     ) {
         let organization = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read());
         let Some(title) = organization
             .folders
@@ -185,7 +185,7 @@ impl BbrApp {
         };
         let current = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read())
             .folders
             .iter()

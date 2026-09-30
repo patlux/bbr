@@ -35,7 +35,7 @@ impl BbrApp {
         self.refresh_favicon_mirror();
         let organization = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read());
         let favorite_tiles =
             ui_adapters::favorite_tiles(&organization.favorites, &self.favicon_images.read());

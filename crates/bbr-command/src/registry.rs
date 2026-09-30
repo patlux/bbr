@@ -280,6 +280,21 @@ impl CommandRegistry {
                 ActionCategory::Tab,
                 Some("⇧⌃⌘S"),
             ),
+            // Blueprint D19: several windows.
+            Action::new(
+                ActionId(26),
+                "New Window",
+                ["new", "window", "open"],
+                ActionCategory::View,
+                Some("⌘N"),
+            ),
+            Action::new(
+                ActionId(27),
+                "Close Window",
+                ["close", "window"],
+                ActionCategory::View,
+                Some("⇧⌘W"),
+            ),
         ];
         CommandRegistry { actions }
     }
@@ -342,6 +357,8 @@ mod tests {
             (23, "Split Right", ActionCategory::Tab, Some("⌃⌘S")),
             (24, "Split Below", ActionCategory::Tab, Some("⌃⌥⌘S")),
             (25, "Close Split", ActionCategory::Tab, Some("⇧⌃⌘S")),
+            (26, "New Window", ActionCategory::View, Some("⌘N")),
+            (27, "Close Window", ActionCategory::View, Some("⇧⌘W")),
         ];
         let registry = CommandRegistry::builtin();
         let actual: Vec<_> = registry

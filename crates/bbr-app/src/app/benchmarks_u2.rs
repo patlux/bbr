@@ -83,7 +83,7 @@ impl BbrApp {
             .map(|tab| tab.id);
         let already_favorite = active_tab.is_some_and(|tab| {
             self.organization
-                .get()
+                .bookkeep()
                 .organization_snapshot(&self.controller.read())
                 .favorites
                 .iter()
@@ -91,14 +91,14 @@ impl BbrApp {
         });
         let expected_len = if already_favorite {
             self.organization
-                .get()
+                .bookkeep()
                 .organization_snapshot(&self.controller.read())
                 .favorites
                 .len()
                 .saturating_sub(1)
         } else {
             self.organization
-                .get()
+                .bookkeep()
                 .organization_snapshot(&self.controller.read())
                 .favorites
                 .len()
@@ -109,7 +109,7 @@ impl BbrApp {
         self.favorite_toggle_tab(index, window, cx);
         let favorites_len = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read())
             .favorites
             .len();

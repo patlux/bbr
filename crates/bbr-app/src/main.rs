@@ -17,6 +17,7 @@ use gpui::{px, size, App, Bounds, Entity, TitlebarOptions, Window, WindowBounds,
 mod about;
 mod actions;
 mod app;
+mod browser_windows;
 mod command_bar;
 mod components;
 mod dense;
@@ -51,9 +52,7 @@ use engine::{build_engine, EngineConfig};
 use inject::{IdGen, RandomIdGen, SequentialIdGen};
 #[cfg(not(feature = "testkit"))]
 use window_seam::spawn_event_pump;
-use window_seam::{
-    install_actions, install_sigint_shutdown, quit_when_browser_window_closes, with_app,
-};
+use window_seam::{install_actions, install_sigint_shutdown, with_app};
 
 /// Parsed command-line flags (all `--bbr-*` are test/injection knobs).
 struct Cli {
@@ -489,13 +488,12 @@ fn main() {
             })
             .expect("open window");
         let app = app_entity.expect("app entity built with the window root");
-        // Normal-quit persistence correctness: flush the latest structural
-        // browser model and the current Saved Page provider through the
-        // existing owning shutdown seam when the browser window closes (the
-        // background writers use the identical repository write). Narrow
-        // seam only — no general deterministic process-shutdown behavior is
-        // implemented here (queue item 20).
-        quit_when_browser_window_closes(cx, window, app.clone());
+        // Blueprint D19: register the first browser window. Closing a
+        // window keeps its tabs; closing the last one flushes the latest
+        // structural browser model and the Saved Page provider (the
+        // background writers use the identical repository write) and quits.
+        browser_windows::install_lifecycle(cx, window, &app);
+        let windows = app.read(cx).window_registry();
 
         // Production theme-selection authority (task packet
         // `system-appearance-theme`): the public GPUI window-appearance
@@ -717,14 +715,14 @@ fn main() {
         rail_observer::install(cx, &window, &app);
         // Keyboard actions (fire even while the WKWebView is first responder,
         // via the macOS performKeyEquivalent path).
-        install_actions(cx, window, app.clone());
+        install_actions(cx, windows.clone());
 
         // Renderer-availability cadence (renderer-isolation lane): the
         // bounded production pump that arms due liveness probes for the
         // visible sessions and applies the portable fail-closed deadline.
         // Runs in every build (testkit and release): a real hang is
         // detected through the production monitor path in both.
-        window_seam::spawn_responsiveness_cadence(cx, &window, &app);
+        window_seam::spawn_responsiveness_cadence(cx, &windows);
 
         // Test gateway (only under the `testkit` feature).
         #[cfg(feature = "testkit")]
@@ -746,8 +744,7 @@ fn main() {
                 };
             testkit::spawn_pump(
                 cx,
-                &window,
-                &app,
+                &windows,
                 evt_rx,
                 evt_tx.clone(),
                 find_rx,
@@ -800,8 +797,7 @@ fn main() {
             // Event pump so the shell stays live even without the gateway.
             spawn_event_pump(
                 cx,
-                &window,
-                &app,
+                &windows,
                 window_seam::EventPumpChannels {
                     events: evt_rx,
                     find: find_rx,

@@ -37,6 +37,17 @@ impl Render for SettingsView {
     }
 }
 
+/// Blueprint D19: the Settings window follows another browser window's
+/// shell once the one it was opened from closed (the Settings state
+/// itself is shared).
+pub fn rebind(handle: WindowHandle<SettingsView>, app: Entity<BbrApp>, cx: &mut App) {
+    let _ = handle.update(cx, |view, _window, cx| {
+        view._observe = cx.observe(&app, |_view, _app, cx| cx.notify());
+        view.app = app;
+        cx.notify();
+    });
+}
+
 /// Open the Settings window (or bring the open one forward). `visible` is
 /// false for the hidden test harness.
 pub fn open(

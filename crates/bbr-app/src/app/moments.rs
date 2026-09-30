@@ -134,7 +134,7 @@ impl BbrApp {
     pub(crate) fn start_favorite_pop(&mut self, tab: bbr_domain::TabId, cx: &mut Context<Self>) {
         let index = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read())
             .favorites
             .iter()

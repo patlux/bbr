@@ -63,7 +63,7 @@ impl BbrApp {
         cx.stop_propagation();
         let Some(tab) = self
             .organization
-            .get()
+            .bookkeep()
             .organization_snapshot(&self.controller.read())
             .favorites
             .get(index)

@@ -511,6 +511,18 @@ pub fn noop_target() -> ZoomTarget {
 }
 
 impl ZoomController {
+    /// Blueprint D19: another window's zoom over the same site levels (its
+    /// own active site).
+    pub fn sibling(&self) -> Self {
+        Self {
+            store: self.store.clone(),
+            lifecycles: self.lifecycles.clone(),
+            applied: self.applied.clone(),
+            active_key: None,
+            target: self.target.clone(),
+        }
+    }
+
     /// Replace the native application target (the composition root wires the
     /// concrete engine-bound adapter here once the engine is attached).
     pub fn set_target(&mut self, target: ZoomTarget) {

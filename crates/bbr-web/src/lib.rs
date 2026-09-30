@@ -278,6 +278,30 @@ pub enum WebEvent {
     },
 }
 
+impl WebEvent {
+    /// The web view the event is about.
+    pub fn view(&self) -> WebViewId {
+        match self {
+            WebEvent::UrlChanged(v, _)
+            | WebEvent::TitleChanged(v, _)
+            | WebEvent::LoadingChanged(v, _)
+            | WebEvent::CanGoBackChanged(v, _)
+            | WebEvent::CanGoForwardChanged(v, _)
+            | WebEvent::DidCommitNavigation(v)
+            | WebEvent::PageCrashed(v)
+            | WebEvent::NavigationFailed(v, _)
+            | WebEvent::UnresponsiveChanged(v, _)
+            | WebEvent::ContextMenuRequested(v, _)
+            | WebEvent::FaviconChanged(v, _)
+            | WebEvent::PermissionRequested { view: v, .. }
+            | WebEvent::ClientCertificateRequested { view: v, .. }
+            | WebEvent::ExternalSchemeRequested { view: v, .. }
+            | WebEvent::MediaCaptureChanged { view: v, .. }
+            | WebEvent::MediaObserved { view: v, .. } => *v,
+        }
+    }
+}
+
 /// The seam between chrome and engine.
 ///
 /// Implementations must be **main-thread only** — this trait is used from

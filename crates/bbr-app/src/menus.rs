@@ -119,9 +119,11 @@ fn bar(spaces: &[MenuSpace]) -> Vec<(&'static str, Vec<Entry>)> {
         (
             "File",
             vec![
+                item("New Window", NewWindow),
                 item("New Tab", OpenPalette),
                 item("Open Location…", OpenOverlay),
                 Entry::Separator,
+                item("Close Window", CloseWindow),
                 item("Close Tab", CloseTab),
                 item("Reopen Closed Tab", ReopenTab),
                 Entry::Separator,
@@ -180,12 +182,13 @@ fn bar(spaces: &[MenuSpace]) -> Vec<(&'static str, Vec<Entry>)> {
     ]
 }
 
-/// The Dock menu: the spaces, then New Tab.
+/// The Dock menu: the spaces, then New Window and New Tab (board L-13).
 fn dock(spaces: &[MenuSpace]) -> Vec<Entry> {
     let mut entries = space_items(spaces);
     if !entries.is_empty() {
         entries.push(Entry::Separator);
     }
+    entries.push(item("New Window", NewWindow));
     entries.push(item("New Tab", OpenPalette));
     entries
 }
@@ -329,11 +332,19 @@ mod tests {
     }
 
     #[test]
-    fn the_dock_lists_the_spaces_then_new_tab() {
+    fn the_dock_lists_the_spaces_then_new_window_and_new_tab() {
         let dock = dock_menu_spec(&spaces());
-        assert_eq!(dock.len(), 4);
+        assert_eq!(dock.len(), 5);
         assert_eq!(
             dock[3],
+            ItemSpec::Action {
+                name: "New Window".into(),
+                action: "bbr::NewWindow".into(),
+                checked: false,
+            }
+        );
+        assert_eq!(
+            dock[4],
             ItemSpec::Action {
                 name: "New Tab".into(),
                 action: "bbr::OpenPalette".into(),

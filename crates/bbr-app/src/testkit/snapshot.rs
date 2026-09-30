@@ -323,6 +323,8 @@ impl SnapshotExt for crate::shell::TestSnapshot {
             history: self.history.clone(),
             permissions: self.permissions.clone(),
             media: self.media.clone(),
+            windows: self.windows.clone(),
+            window_refreshes: self.window_refreshes,
             split: self.split.clone(),
             split_drop: self.split_drop.clone(),
             split_rows: self.split_rows.clone(),

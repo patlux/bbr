@@ -65,9 +65,14 @@ pub(crate) fn install(
         .detach();
     });
     let window = *window;
-    let app = app.clone();
+    // Weak: the observer (owned by the shell) ends the pump when the shell
+    // goes with its window (blueprint D19: windows close).
+    let app = app.downgrade();
     cx.spawn(async move |cx: &mut gpui::AsyncApp| {
         while let Ok(sample) = rx.recv().await {
+            let Some(app) = app.upgrade() else {
+                break;
+            };
             // Coalesce a burst to its latest sample: velocity needs the
             // path, so keep every sample, but in one app update.
             let mut samples = vec![sample];

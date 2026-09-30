@@ -605,22 +605,26 @@ tab.
    create `BrowserController(engine.clone(), allocator)`, create `BbrApp`,
    retain its entity, and wrap it in `Root::new`.
 5. Open the initial controller-backed tab after the window exists (via the seam).
-6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-S, Cmd-T staging, the focus-preserving Cmd-W, command-result arrows/Enter/Cmd-Enter, and the tab-organization commands (Cmd-Shift-P pin toggle, Cmd-Shift-↑/↓ reorder, Cmd-Shift-M staged move) — every handler routes through `with_app` so actions address the app entity with `&mut Window` access from the Root window.
-7. Install process-lifecycle ownership: closing the browser window triggers
-   `cx.quit()` even on macOS (where GPUI otherwise stays resident after the
-   last window), and terminal `SIGINT`/Ctrl-C is received asynchronously then
-   routed onto GPUI's foreground/main thread for graceful `cx.quit()` teardown.
+6. install_actions: bind Cmd-L/Escape/Cmd-[ /Cmd-]/Cmd-R/Cmd-S, Cmd-T staging, the focus-preserving Cmd-W, command-result arrows/Enter/Cmd-Enter, and the tab-organization commands (Cmd-Shift-P pin toggle, Cmd-Shift-↑/↓ reorder, Cmd-Shift-M staged move) — every handler routes through `with_key_window` so actions address the key window's shell with `&mut Window` access from its Root window.
+7. Install process-lifecycle ownership: closing the last browser window
+   triggers `cx.quit()` even on macOS (where GPUI otherwise stays resident
+   after the last window), and terminal `SIGINT`/Ctrl-C is received
+   asynchronously then routed onto GPUI's foreground/main thread for graceful
+   `cx.quit()` teardown.
 
-   The lifecycle seam lives in `crate::window_seam`: `is_owning_window` is the
-   pure owning-window predicate (unit-tested against portal/unrelated window
-   ids), `quit_when_browser_window_closes` flushes the latest structural
-   browser model before `cx.quit()`, and `install_sigint_shutdown` installs an
-   `async_signal` listener on GPUI's foreground executor whose handler performs
-   no direct native mutation. The one implementation-owned child window (the
-   native portal host) carries a distinct `WindowId` and never satisfies the
-   quit rule; the find bar and auth sheet are in-window elements and never
-   produce an independent window-closed event. Closing a child is a
-   dismissal, closing the owning browser window is full application shutdown.
+   Blueprint D19: `crate::browser_windows` owns the browser windows. Its
+   `Registry` (a shared handle every shell holds) maps each window's key to
+   its `WindowHandle<Root>` and `BbrApp` shell and remembers the window that
+   last took input. `install_lifecycle` registers the first window and one
+   `on_window_closed` observer: only registered browser windows count, so the
+   native Portal host, Settings and About windows never quit the app (and the
+   Portal never keeps it alive). A closed browser window's shell releases its
+   controller context (its tabs stay) and engine root; closing the last one
+   flushes the structural browser model and the Saved Page provider, then
+   quits. `install_sigint_shutdown` installs an `async_signal` listener on
+   GPUI's foreground executor whose handler performs no direct native
+   mutation; the find bar and auth sheet are in-window elements and never
+   produce an independent window-closed event.
    Under the testkit feature the gateway flushes the `Quit`/`CloseWindow`
    response through the connection's sole writer before the shutdown handler
    runs, so a successful response can never race process/socket teardown
@@ -645,6 +649,23 @@ plus app-entity contract (`crate::with_app`): the root type is
 testkit keystroke/draw arms still use the untyped `(**window).update` path
 because a forced draw re-borrows the Root entity during the render.
 
+Several windows (blueprint D19, task packet `multi-window`): every browser
+window is a `Root` over its own `BbrApp` shell, built by `BbrApp::assemble`
+from `SharedParts` (the first window from the composition root, every
+further one by `browser_windows::new_window` from the current shell's parts,
+with its own engine root, Portal host, pointer observer and find channel).
+`assemble` lists every field, so each new field decides whether it is
+shared or per window. Keyboard and menu actions run in the key window
+(`with_key_window`; the current window under the hidden harness), engine
+events in the window whose root holds their view (`with_view_window`), the
+responsiveness cadence in the current window (the others re-assert their
+unresponsive panes), and the testkit in the current window (`SelectWindow`
+changes it). Each shell observes the others and re-renders only when the
+shared generation moved since its last frame: repeated engine reports
+(URL, title, history flags, probe answers — told apart by
+`BrowserController::view_fingerprint`), cadence counters and derived-state
+repair use bookkeeping borrows that do not move it.
+
 Shared state (blueprint D19, task packet `multi-window`): `BbrApp` is a
 window's shell. Everything that belongs to the browser rather than to one
 window — the controller, organization, store, media, error surfaces,
@@ -660,8 +681,8 @@ never touches it again, and Clippy's `significant_drop_in_scrutinee` keeps
 guards out of `if let`/`match` scrutinees. The controller is reached through
 `ControllerHandle`, which switches the controller to its window's context
 (`BrowserController::view_window`) before each borrow, so every controller
-access names its window. A changing borrow bumps a shared generation; the
-window-opening slice of the packet re-renders the other windows from it.
+access names its window. A changing borrow bumps the shared generation the
+other windows re-render from.
 
 The chrome (`crates/bbr-app/src/app.rs` + `app/render.rs` + the split
 `app/sidebar.rs`/`app/sidebar_view.rs`/`app/spaces.rs`/`app/tab.rs`/

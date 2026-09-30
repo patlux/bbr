@@ -149,13 +149,28 @@ Not parallelized.
       `place_web_view` re-parents the page and its cover, geometry and
       focus use the session's own root. Proven by `just e2e-windows` in
       slice 3.)*
+- [x] Several windows (slice 3b): ⌘N / New Window (File, Dock, ⌘T action
+      26), ⇧⌘W / Close Window (action 27), per-window shells over the
+      shared handles (`BbrApp::assemble`, `browser_windows::Registry`),
+      input in the key window, engine events in the window of their view,
+      re-render on another window's change only, last-window quit.
+      *(2026-09-30: `browser_windows` registry unit test;
+      `controller_window_tests` (12) incl. `window_of_view` and the
+      repeated-report fingerprint; `just e2e-windows` (4 tests: a new
+      window on the space with New Tab ready, a page moved between windows
+      without reload into the other root, ⇧⌘W keeping tabs and the last
+      close quitting, menu bar and Dock, a quiet idle window and a
+      redraw on another window's change) — 6/6 idle-test reruns green after
+      the fingerprint fix.)*
 
 ### Real-app E2E
 
 - [ ] `just e2e-windows`: ⌘N, two windows on one space with separate
       selections, a tab moving by selection, ⇧⌘W and Reopen, last-window
       behavior, drag between windows (rail and card), restore of every
-      window after a restart.
+      window after a restart. *(Slice 3b covers ⌘N, separate selections, a
+      tab moving by selection, ⇧⌘W, last-window quit and the menus; Reopen,
+      drag and restore follow with slices 4–6.)*
 
 ### Performance
 
@@ -184,13 +199,27 @@ with the evidence and the question (HTML explainer in `~/Downloads`).
 ## Delivery ledger
 
 ```text
-Outcome:
-Commits:
-Functional evidence:
-Real-app E2E:
-Performance evidence:
-Roadmap/documentation updates:
-Open blockers and non-goals: e2e-perf context-menu bookmark benchmark times
-  out (pre-existing, reproduced on 89c97cdf; cause open, investigated next).
-Worktree state:
+Outcome:         slices 1–3 implemented (several windows over shared state);
+                 slices 4–6 (restore of every window, reopen toast/⇧⌘T,
+                 drag between windows) open.
+Commits:         89a78c75 (controller window contexts), 676e3c45 (engine
+                 roots), 68be5cef (window view + previews per window),
+                 4e596c99 (shared handles), slice 3b (this commit).
+Functional evidence: unit/contract tests per slice (see Evidence).
+Real-app E2E:    just e2e-windows (4); affected suites green on the 3b tree:
+                 e2e-shell-spaces (incl. e2e_shell_menus), e2e-shutdown,
+                 e2e-shell-settings, e2e-shell-command. e2e-shell-portal 6/7:
+                 hardening::host_hides_on_minimize_and_restores fails at the
+                 AppKit hit-test probe because a foreign window (id 53534)
+                 is frontmost there; the same failure reproduces on 4e596c99
+                 (host GUI state, owner not identified).
+Performance evidence: deferred (Patrick). e2e-perf fails in the context-menu
+                 bookmark-commit benchmark on 89c97cdf, 68be5cef and later;
+                 e2e-perf had not run during the blueprint wave; cause open.
+Roadmap/documentation updates: PRODUCT (several windows), DESIGN §11.13 and
+                 §19 D19, ARCHITECTURE (windows, shared handles, lifecycle).
+Open blockers and non-goals: restore of every window, Reopen, drag between
+                 windows (slices 4–6); tear-off is a non-goal.
+Worktree state:  /tmp/bbr-base is a detached comparison worktree
+                 (4e596c99) created for the perf/portal comparisons.
 ```

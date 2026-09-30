@@ -787,6 +787,11 @@ pub enum Request {
     PermissionInput {
         input: super::PermissionInput,
     },
+    /// Blueprint D19: make `window` the current window (as input in it
+    /// does): later requests, engine events and timers act in it.
+    SelectWindow {
+        window: u64,
+    },
     /// Blueprint D23: one split interaction.
     SplitInput {
         input: super::SplitInput,

@@ -279,3 +279,34 @@ fn a_waiting_windows_preview_closes_with_its_origin_or_window() {
     assert!(h.ops().contains(&EngineOp::Destroy { view: preview }));
     c.check_invariants();
 }
+
+#[test]
+fn a_views_window_follows_its_session() {
+    let (mut c, _h) = three();
+    let first = c.current_window();
+    let one = view(&c, 0);
+    assert_eq!(c.window_of_view(one), Some(first));
+    let second = c.open_window();
+    c.view_window(second).unwrap();
+    c.select_tab(0).unwrap();
+    assert_eq!(c.window_of_view(one), Some(second));
+    assert_eq!(c.window_of_view(WebViewId(9999)), None);
+}
+
+#[test]
+fn a_repeated_engine_report_leaves_the_drawn_state_alone() {
+    use bbr_web::WebEvent;
+    let (mut c, _h) = three();
+    let one = view(&c, 0);
+    let _ = c.apply_event(WebEvent::TitleChanged(one, "One".into()));
+    let before = c.view_fingerprint(one);
+    let _ = c.apply_event(WebEvent::TitleChanged(one, "One".into()));
+    let _ = c.apply_event(WebEvent::CanGoBackChanged(one, false));
+    assert_eq!(
+        c.view_fingerprint(one),
+        before,
+        "a repeat changes nothing drawn"
+    );
+    let _ = c.apply_event(WebEvent::TitleChanged(one, "Two".into()));
+    assert_ne!(c.view_fingerprint(one), before, "a new title is drawn");
+}

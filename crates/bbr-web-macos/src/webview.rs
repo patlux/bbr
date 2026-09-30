@@ -164,6 +164,12 @@ impl WebEngineWk {
         self.roots.detach(window);
     }
 
+    /// Blueprint D19: the window whose root hosts `view` (0: the first
+    /// window's).
+    pub fn window_of_view(&self, view: WebViewId) -> u64 {
+        self.roots.window_of(view)
+    }
+
     /// Blueprint D19: the window whose chrome `focus_host_chrome` serves.
     pub fn set_key_window(&mut self, window: u64) {
         self.roots.key_window = window;

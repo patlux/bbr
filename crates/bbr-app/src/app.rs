@@ -56,6 +56,7 @@ mod command_result;
 mod command_surface;
 mod command_text;
 mod command_text_ime;
+mod construct;
 mod content_card;
 pub(crate) mod content_gesture;
 pub(crate) mod context_menu;
@@ -151,6 +152,7 @@ pub(crate) mod transient;
 mod u2;
 mod u2_surface;
 mod unresponsive;
+mod window_shell;
 // App-owned snapshot → bbr-ui DTO adapters (Favorite/Folder/browser
 // snapshot conversions stay in bbr-app; the DTOs and rendering live in
 // bbr-ui).
@@ -193,6 +195,15 @@ pub enum RestoreEvidence {
 /// The root view of the browser window.
 pub struct BbrApp {
     engine: EngineRef,
+    /// Blueprint D19: every browser window (shared) and this window's view
+    /// of the others (it re-renders when one of them changed shared state).
+    windows: crate::shared::Shared<crate::browser_windows::Registry>,
+    seen_generation: u64,
+    window_watch: Vec<gpui::Subscription>,
+    /// Testkit evidence: how often another window's change re-rendered
+    /// this one.
+    #[cfg(feature = "testkit")]
+    window_refreshes: u64,
     /// Blueprint D19: the shared controller, borrowed in this window's
     /// context (`self.controller.read()`).
     controller: crate::shared::ControllerHandle,
@@ -640,205 +651,6 @@ pub struct BbrApp {
 }
 
 impl BbrApp {
-    /// The wiring constructor: engine, controller, organization, event
-    /// channels, native find channel (macOS), and the testkit performance
-    /// probe are all injected together.
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        engine: EngineRef,
-        controller: BrowserController,
-        organization: bbr_browser::OrganizationController,
-        engine_kind: &'static str,
-        evt_tx: smol::channel::Sender<WebEvent>,
-        #[cfg(target_os = "macos")] find_tx: smol::channel::Sender<
-            bbr_web_macos::find_mapping::FindCompletion,
-        >,
-        #[cfg(feature = "testkit")] performance: PerformanceProbe,
-        store: crate::store::AppStore,
-        cx: &mut Context<Self>,
-    ) -> Self {
-        // Engine → app events: the sink runs on the main thread (delegate
-        // callbacks); the channel is drained by the pump task that mirrors
-        // into `shell` and (under testkit) broadcasts to E2E clients.
-        let sink_tx = evt_tx.clone();
-        engine
-            .borrow_mut()
-            .set_events(Box::new(move |ev: WebEvent| {
-                let _ = sink_tx.try_send(ev);
-            }));
-
-        // Startup restore of the terminal download history (DESIGN.md §17.10
-        // settled: terminal history persists through restarts): the persisted
-        // terminal records are mapped onto the controller **before the first
-        // frame**, so the panel and the footer badge render the restored rows
-        // from the first user-observable paint. Live attempts are never
-        // persisted and never resurrected; the repository validates outcomes
-        // on load, so a non-terminal record cannot reach the restore seam.
-        let downloads_state = downloads::DownloadsState::new();
-        match crate::store::downloads::from_persisted(store.restored_downloads())
-            .into_iter()
-            .map(bbr_browser::DownloadRecord::restored_terminal)
-            .collect::<Result<Vec<_>, _>>()
-        {
-            Ok(records) => {
-                let restored = downloads_state
-                    .controller
-                    .get()
-                    .restore_terminal_history(records);
-                if let Err(error) = restored {
-                    log::warn!("downloads history restore failed: {error:?}");
-                }
-            }
-            Err(error) => log::warn!("downloads history restore failed: {error:?}"),
-        }
-
-        BbrApp {
-            engine: engine.clone(),
-            controller: crate::shared::ControllerHandle::new(controller),
-            engine_kind,
-            chrome_handle: cx.focus_handle(),
-            space_strip_handle: cx.focus_handle(),
-            tab_list_handle: cx.focus_handle(),
-            divider_handle: cx.focus_handle(),
-            dense_scroll: ScrollHandle::new(),
-            space_strip_scroll: ScrollHandle::new(),
-            dense_window: std::cell::Cell::new(crate::dense::DenseRenderState::default()),
-            sidebar: bbr_ui::sidebar::SidebarGeometry::new(),
-            tab_drag: drag::TabDrag::default(),
-            native_portal: None,
-            transient: transient::TransientOverlays::default(),
-            permissions: permissions::PermissionsState::default(),
-            media: Default::default(),
-            split_view: split_view::SplitView::default(),
-            split_layouts_path: None,
-            split_layouts_saved: Default::default(),
-            certificates: client_certificates::CertificateState::default(),
-            open_app: open_app::OpenAppState::default(),
-            space_chooser: None,
-            onboarding: None,
-            import_home: None,
-            menu_spaces: Default::default(),
-            recovery_dismissed: Default::default(),
-            about_window: Default::default(),
-            windows_hidden: false,
-            portal: PortalState::new(crate::portal::probe::PORTAL_ID),
-            portal_probe: Rc::new(RefCell::new(PortalProbeState::new())),
-            hovered_row: None,
-            hovered_folder: None,
-            pressed_row: None,
-            address_hovered: false,
-            motion: motion::MotionState::default(),
-            moments: moments::Moments::default(),
-            titlebar_hovered: None,
-            titlebar_pressed: None,
-            nav_history: Default::default(),
-            nav_press: None,
-            nav_press_generation: 0,
-            nav_hold_timer: None,
-            command_bar_mode: CommandBarMode::Inactive,
-            command_bar_return: None,
-            command_surface: CommandSurface::None,
-            find: crate::app::find::FindController::new(
-                #[cfg(target_os = "macos")]
-                find_tx,
-            ),
-            error_surface: Default::default(),
-            find_handle: cx.focus_handle(),
-            auth: crate::shared::Shared::new(crate::app::auth::AuthCoordinator::new()),
-            auth_handle: cx.focus_handle(),
-            space_delete: None,
-            space_delete_handle: cx.focus_handle(),
-            downloads: downloads_state,
-            downloads_panel_handle: cx.focus_handle(),
-            downloads_control_handle: cx.focus_handle(),
-            downloads_press_inside: std::cell::Cell::new(false),
-            #[cfg(target_os = "macos")]
-            download_web_view: bbr_web_macos::downloads_adapter::DownloadWebViewSlot::new(),
-            #[cfg(target_os = "macos")]
-            downloads_adapter: None,
-            #[cfg(target_os = "macos")]
-            download_engine: None,
-            #[cfg(target_os = "macos")]
-            find_engine: None,
-            #[cfg(all(target_os = "macos", feature = "testkit"))]
-            web_content_probe: std::rc::Rc::new(std::cell::RefCell::new(None)),
-            #[cfg(target_os = "macos")]
-            external_urls: crate::shared::Shared::new(
-                bbr_web_macos::external_urls_adapter::ExternalUrlAdapterCore::new(),
-            ),
-            zoom: crate::app::zoom::ZoomController::new(crate::app::zoom::noop_target()),
-            #[cfg(target_os = "macos")]
-            zoom_engine: None,
-            context_menu: crate::app::context_menu::ContextMenuController::new(),
-            tab_menu: crate::app::tab_menu::TabMenuController::new(),
-            menu_handle: cx.focus_handle(),
-            #[cfg(target_os = "macos")]
-            menu_engine: None,
-            #[cfg(target_os = "macos")]
-            geometry_engine: None,
-            command_field_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
-            favorites_band_rect: std::rc::Rc::new(std::cell::RefCell::new(None)),
-            drag_offer_rects: drag::DragOfferRects::default(),
-            command_text: CommandText::new(),
-            command_line: bbr_ui::components::EditLineSink::new(),
-            floating_rail: rail_float::FloatingRail::default(),
-            preferences: Default::default(),
-            preferences_path: None,
-            settings: Default::default(),
-            browser_window: None,
-            #[cfg(feature = "testkit")]
-            text_input_readback: None,
-            command_ranking: CommandRanking::default(),
-            saved_pages: saved_pages::SavedPageCommand,
-            library: crate::app::library::LibraryState::default(),
-            library_handle: cx.focus_handle(),
-            unresponsive: crate::shared::Shared::new(unresponsive::UnresponsiveState::new()),
-            unresponsive_wait_handle: cx.focus_handle(),
-            unresponsive_reload_handle: cx.focus_handle(),
-            unresponsive_close_handle: cx.focus_handle(),
-            command_profile_hint: None,
-            store: crate::shared::Shared::new(store),
-            restore_evidence: RestoreEvidence::Fresh,
-            // The observed system appearance is corrected by
-            // `observe_system_appearance` at composition (before the first
-            // presented frame); Light is the deterministic pre-observation
-            // default.
-            system_appearance: bbr_ui::theme::ThemeMode::Light,
-            #[cfg(feature = "testkit")]
-            appearance_override: Default::default(),
-            system_accessibility: Default::default(),
-            #[cfg(feature = "testkit")]
-            accessibility_override: Default::default(),
-            #[cfg(target_os = "macos")]
-            accessibility_observer: None,
-            accessibility_task: None,
-            #[cfg(feature = "testkit")]
-            full_screen_override: None,
-            #[cfg(feature = "testkit")]
-            auth_presented_theme: std::cell::Cell::new(None),
-            #[cfg(feature = "testkit")]
-            peek_presented_theme: std::cell::Cell::new(None),
-            #[cfg(feature = "testkit")]
-            peek_presented_frame: std::cell::Cell::new(None),
-            appearance_subscription: None,
-            window_geometry: std::cell::RefCell::new(None),
-            sidebar_visible: true,
-            organization: crate::shared::Shared::new(organization),
-            u2: u2::U2State::new(cx),
-            space_config: space_config::SpaceConfigState::new(cx),
-            swipe: swipe::SwipeState::new(),
-            focus_sink: Rc::new(RefCell::new(None)),
-            browser_sink: Rc::new(RefCell::new(None)),
-            new_window: Default::default(),
-            content_gesture: Default::default(),
-            peek: peek::PeekState::default(),
-            favicon_images: Default::default(),
-            favicon_mirror_version: Default::default(),
-            #[cfg(feature = "testkit")]
-            performance,
-        }
-    }
-
     /// Attach the concrete native engine handle (macOS only; the composition
     /// root passes it after construction, like the portal host). The find
     /// adapter binds a live `WKWebView` through it.

@@ -105,7 +105,7 @@ impl BbrApp {
                     // index-order step).
                     let organization = self
                         .organization
-                        .get()
+                        .bookkeep()
                         .organization_snapshot(&self.controller.read());
                     let grouped =
                         crate::shell::organized::grouped_indices(&organization.folders, &snapshot);

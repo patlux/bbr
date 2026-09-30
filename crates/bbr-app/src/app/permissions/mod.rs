@@ -74,6 +74,30 @@ pub(crate) struct PermissionsState {
     pub decisions: crate::shared::Shared<Vec<(u64, bool)>>,
 }
 
+impl PermissionsState {
+    /// Blueprint D19: another window's prompt, popover and notice over the
+    /// same policies and requests.
+    pub(crate) fn sibling(&self) -> Self {
+        Self {
+            policies: self.policies.clone(),
+            path: self.path.clone(),
+            pending: self.pending.clone(),
+            remember: false,
+            capture: self.capture.clone(),
+            blocked: self.blocked.clone(),
+            site_settings: None,
+            prompt_bounds: Default::default(),
+            popover_bounds: Default::default(),
+            popup: None,
+            popup_generation: 0,
+            popup_bounds: Default::default(),
+            popup_task: None,
+            #[cfg(feature = "testkit")]
+            decisions: self.decisions.clone(),
+        }
+    }
+}
+
 /// "your camera", "your camera and microphone".
 pub(crate) fn wants_line(host: &str, capabilities: &[PermissionCapability]) -> String {
     let camera = capabilities.contains(&PermissionCapability::Camera);
