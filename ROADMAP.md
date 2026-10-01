@@ -12,7 +12,7 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 
 - **Portal lifecycle fix:** [Portal window lifecycle](docs/roadmap/tasks/portal-window-lifecycle.md) binds the Command Palette to its owning window; locally integrated with fresh combined-tree Tart verification, including the Titlebar reload-synchronization repair.
 
-- **Visual tooling:** [Reusable visual snapshots](docs/roadmap/tasks/visual-snapshot-tooling.md) and the windowless capture/unified-command foundation of [Native Gallery visual coverage](docs/roadmap/tasks/gallery-visual-coverage.md) are locally integrated with Paper alignment. Combined-tree baseline review, Gallery supported-state/framing audit and locked-session proof remain open; see Current delivery for evidence.
+- **Visual tooling:** [Reusable visual snapshots](docs/roadmap/tasks/visual-snapshot-tooling.md) owns the active standalone GPUI Visual/Rust-consumer migration, retaining the integrated browser capture and [Native Gallery visual coverage](docs/roadmap/tasks/gallery-visual-coverage.md) foundation. Captures move to Tart; story selection, independent coverage and shared review do not imply baseline approval. Combined-tree baseline review and Gallery supported-state/framing remain open; see Current delivery for ownership and evidence.
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)
 - **Reality gaps:** the serial [reality gaps packet](docs/roadmap/tasks/reality-gaps.md) (Patrick 2026-09-30) makes the tests run what users run: default profile directory, native HTTP authentication, real input events, background links, pop-ups from script clicks, persistent website data.

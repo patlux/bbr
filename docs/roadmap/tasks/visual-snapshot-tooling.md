@@ -16,6 +16,18 @@ selective acceptance workflow, without adopting the mobile SDK's GPUI graph.
   fixtures in Light/Dark, full chrome and a precisely defined Sidebar crop.
 - Add a source/environment seal, explicit inventory, bounded recipes and
   integration tests; document native-pixel exclusions and baseline review.
+- Migrate the portable authority to an immutable standalone GPUI Visual export,
+  with complete provenance and unchanged licenses. Preserve baseline stores.
+- Replace the existing visual Python orchestration with a separate Rust consumer
+  after parity evidence, reusing the existing Gallery/browser production renderers
+  and Tart infrastructure. Never import the mobile SDK's renderer graph.
+- Provide exact producer-side story selection, independent required coverage,
+  static multi-suite Review Collections and read-only JSON discovery/inspection.
+  Selected runs are explicitly non-accepting development evidence.
+- Run all actual captures in disposable Tart guests. Record host build identity
+  separately from guest rendering environment; validate sources/artifacts before
+  and after capture and return bounded diagnostics and raw PNGs before sealing.
+  Preserve cleanup and interrupted-acceptance evidence.
 
 ## Non-goals
 
@@ -23,8 +35,12 @@ selective acceptance workflow, without adopting the mobile SDK's GPUI graph.
   pixels, AppKit traffic-light pixels, animation-frame or full UI-state matrix.
 - No renderer helper dependency, GPUI migration, registry publication, server,
   browser launch, automatic baseline acceptance, tolerance or masking.
-- No changes to the concurrent Paper-alignment lane or automatic integration
-  into its worktree. Baselines must be re-reviewed after that lane lands.
+- No changes to another writer's worktree or automatic integration of its dirty
+  state. Baselines must be re-reviewed after product changes land.
+- No baseline acceptance, environment adoption, WebP/LFS conversion, new browser
+  composition or sequence claim merely from completing the tooling migration.
+  Gallery state/framing coverage remains owned by its linked packet. New browser
+  surfaces/sequences require their own bounded follow-up contracts.
 
 ## Parallel-lane contract
 
@@ -44,8 +60,12 @@ Use the real optimized app with isolated test profiles and real WKWebViews.
 Keep capture behind visual-capture; no new runtime or testkit protocol.
 Drive readiness through typed state and deadlines, never pixel stability or
 fixed sleeps. Preserve mandatory functional E2E and performance budgets.
-All compiler commands use mbx; GUI execution takes the shared repository lock;
-long-running commands have hard deadlines with process-group cleanup.
+All compiler commands use mbx. GUI/Gallery/browser captures execute only in
+throwaway headless Tart guests, never on the user's desktop. Preserve host-wide
+GPU/compatibility exclusion where required and guest suite serialization;
+long-running commands have hard deadlines with process-group/VM cleanup.
+The existing private NAT/key-only SSH route needs the applicable network approval
+before boot; no bridge, forwarding, unrelated services or host GUI fallback.
 Source inventory is narrow and includes canonical renderer/assets/tool inputs,
 never secrets, personal browser data, generated reports or baseline images.
 
@@ -58,6 +78,25 @@ never secrets, personal browser data, generated reports or baseline images.
   fail-closed configuration/output handling.
 - [x] Source/environment mismatches and changed pixels require review; an
   explicitly selected case pair can be accepted without accepting others.
+
+### Standalone Rust migration
+
+- [ ] Complete immutable standalone import passes provenance, upstream contracts,
+  strict Clippy and formatting; old baseline readers remain compatible.
+- [ ] Rust consumer reuses the portable capture/seal/compare/collection/accept APIs;
+  replaced Python visual entrypoints are removed only after verified parity.
+- [ ] Story selection precedes rendering and preserves all appearances/pages;
+  missing/extra/duplicate or ignored selection fails without accepting baselines.
+- [ ] Independently authored coverage cannot become green by omitting cases from
+  producer output. Invalid suites remain visible beside valid siblings.
+- [ ] VM environment/build/source identity, output transfer, bounded cancellation,
+  process/VM cleanup and stale/no-write acceptance paths have direct tests.
+- [ ] Tokens, actual Checkbox pointer transitions and multipage Sidebar pilot
+  pass with production assets, not test-only substitutes.
+- [ ] Two independent complete VM captures match decoded RGBA8 exactly; actual
+  images/reports are inspected and existing eight browser cases are retained.
+- [ ] Fresh current-tree functional gates pass; reviewed baseline approval remains
+  a separate explicit user decision, never inferred from tooling success.
 
 ### Real-app E2E
 
@@ -84,7 +123,8 @@ just visual-compare <explicit-run>
 just verify
 # bounded mbx clippy -p bbr --features testkit --all-targets -- -D warnings
 # bounded mbx clippy -p bbr --features visual-capture --test e2e_visual_shell_capture -- -D warnings
-# canonical just e2e sequence excluding deferred e2e-perf, plus peek/gallery
+# standalone/consumer mbx tests --locked --offline, strict Clippy, fmt
+# canonical just e2e sequence in Tart excluding deferred e2e-perf, plus peek/gallery
 just roadmap
 ```
 
@@ -93,11 +133,15 @@ reviewed case explicitly; a fresh second run must pass against those baselines.
 
 ## Delivery sequence
 
-1. Isolated sole writer, as explicitly authorized by Patrick.
-2. Add bounded adapter and its tests, then capture and inspect actual images.
-3. Self-review source, failure modes and requirement-to-evidence mapping;
+1. Establish one exclusive writer and recorded clean base. Preserve historical
+   migration commits and stopped-owner dirty work; no silent worktree takeover.
+2. Import/verify the standalone tool before moving the consumer orchestration.
+3. Prove the bounded VM pilot, then full Gallery/browser capture and explicit
+   source/environment/coverage/selection/review parity before Python cutover.
+4. Self-review source, failure modes and requirement-to-evidence mapping;
    no subagents are authorized for this task.
-4. Commit coherent verified slices locally; integration waits for handoff.
+5. Commit coherent verified slices locally. No publication or baseline acceptance.
+   Final completion requires all migration evidence above, not an import alone.
 
 ## Iteration policy
 

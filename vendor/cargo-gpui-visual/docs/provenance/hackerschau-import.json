@@ -1,0 +1,14 @@
+{
+  "source": "hackerschau",
+  "revision": "b1528bd21a728da3a110074fb88b635a03f15c8c",
+  "license": "Proprietary; retained. No Apache grant inferred.",
+  "files": {
+    "tests/gpui-visual/visual_compare.py": "96bf544b8ffc4cc2c9908f410dc6974fce0d7f8e23276a3a80f771e361f0cd50",
+    "tests/gpui-visual/visual_store.py": "2201fe56473d9a6104975c4dac43580537acdfa36675bb8f886daefec93656ab",
+    "tests/gpui-visual/source_inventory.py": "147f05e21a6723694cca8c2962a4d6a2413829a808523bda2c9f749dabfc68f9",
+    "tests/gpui-visual/review.js": "8e4391de7f074a8d778f63254da5c63500cd1fdd55ac0c2de76e1f011b642f66",
+    "tests/gpui-visual/test_visual_store.py": "30028c27c1c12e891d9d8c13dcfc0462c5d57dc8da4569b6bae90618dfaf5084",
+    "apps/ios/crates/hackerschau-ui/src/visual_snapshots.rs": "cf3de5d2fb5b31f4d990502f7882c6e5de0cb7ba1387994ce31a343611533e35",
+    "LICENSE": "211408ae4411368e4a86c58594f58da8334ecbc0e1d8449418b4362fbd572ea9"
+  }
+}

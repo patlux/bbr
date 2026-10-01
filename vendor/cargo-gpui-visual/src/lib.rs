@@ -1,4 +1,26 @@
 pub mod accept;
+pub mod agent;
+pub mod baseline;
+pub mod capture;
+pub mod codec;
+pub mod collection;
 pub mod compare;
+mod comparison_view;
+pub mod config;
+pub mod diagnostic;
+mod gallery;
+#[cfg(unix)]
+pub mod gate;
+pub mod inspect;
+pub mod inventory;
+pub mod parallel;
+pub mod plan;
+pub mod process;
 pub mod report;
+pub mod selection;
+pub mod sequence;
+mod sequence_report;
+pub mod skill;
 pub mod store;
+pub mod terminal;
+pub mod timing;

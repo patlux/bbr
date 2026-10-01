@@ -1,13 +1,27 @@
 # Production-chrome visual snapshots
 
-BBR reuses the portable **cargo-gpui-visual 0.1.1** comparator/report from GPUI
-Mobile Kit. The unchanged source lives in `vendor/cargo-gpui-visual`, pinned to
-SDK commit `208e24eb10ff62df8ef0d78ab041512448776af2`. Its file hashes are in
-`scripts/visual/tool-source.json`; every invocation verifies them and rejects
+BBR reuses the portable **cargo-gpui-visual 0.1.1** comparator/report from the
+standalone GPUI Visual authority. The complete unchanged 83-file export lives in
+`vendor/cargo-gpui-visual`, pinned to commit
+`c2723cac924b98b8a2c8c170d580bd2e434b674a`. Its file hashes and previous SDK
+import provenance are in `scripts/visual/tool-source.json`; every invocation
+verifies them and rejects
 unexpected vendor files (excluding mbx's generated target directory). The CLI is
 Apache-2.0 with its original LICENSE/NOTICE retained. Its independent Cargo
 root never links GPUI; BBR does not depend on a developer's SDK checkout or
 on the SDK renderer helper. Nothing is installed or published.
+
+## Migration checkpoint and execution boundary
+
+The standalone import is portable-tool evidence only. The existing Python
+entrypoints below remain during migration; they have **not** become Tart-aware.
+Do not execute their Gallery/browser producers on the host. The Rust consumer
+must first prove its VM pilot and full capture parity before replacing them.
+Read-only inspection and portable fixture contracts need no native session.
+Existing eight PNG references remain untouched; Gallery baselines and combined-
+product review remain open. A new tool/source/environment seal does not authorize
+reference adoption. The current task is owned by the
+[visual tooling packet](roadmap/tasks/visual-snapshot-tooling.md).
 
 ## Capture contract
 
@@ -51,10 +65,11 @@ Use the existing macOS dev environment and Xcode/Metal toolchain:
 just visual
 ```
 
-Runs the adapter/upstream contracts, then all registered Gallery selector/theme
-pages and the existing eight browser-chrome snapshots sequentially. Gallery is
-windowless; **browser capture still opens native BBR windows** and needs an
-unlocked macOS session. This does not run unrelated functional E2E/performance.
+Historical implementation: runs the adapter/upstream contracts, then all
+registered Gallery selector/theme pages and the existing eight browser-chrome
+snapshots sequentially. Gallery is windowless; **browser capture creates native
+BBR windows** and needs a guest macOS session. Until the Tart-aware migration
+lands, this legacy producer command is not authorized for host execution. This does not run unrelated functional E2E/performance.
 Both suites run even when the first comparison needs review or fails. Exit 0
 means both pass, 1 means an upstream non-passing comparison (inspect findings and
 validation errors), 2 means invalid input or failed execution. Contract failure

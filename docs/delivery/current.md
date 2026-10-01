@@ -18,6 +18,81 @@ Start at [ROADMAP.md](../../ROADMAP.md), then read this file completely before c
 
 UI-CONFORMANCE, FOLDER-PIN-INVARIANT, DESIGN-CARD, DESIGN-ADDRESS and DESIGN-FAVORITES are integrated on `main` (2026-09-27, through `d51a4b52`), each independently reviewed with the review findings remediated. Their performance evidence is deferred with the rest of performance execution until the end of the queue (Patrick, 2026-09-27). RA-MEDIA integrated its portable `bbr-web` contract as `ec5e0bad` and is paused there (macOS adapter not started, no owner). Since 2026-09-28 the serial work on `main` is the V2 visual refresh and motion program (DESIGN §18), preflighted clean at `main@ec5e0bad368179b669983a60a22a7b47b152ebfb` with no other BBR writer process. Historical lane worktrees retain evidence or abandoned experiments but own no current queue state. The stale Split worktree remains explicitly untouched.
 
+## GPUI Visual migration activation (2026-10-01)
+
+Patrick activated the current plan as goal `1790884867215-ea6dba478fa758`.
+Session `01a0f8f4-1c46-71bf-9fae-3c394de53395` owns only this bounded visual
+migration on `/Users/patwoz/dev/Personal/macos/bbr`, branch `main`, clean
+activation base `28cea1ce03f131bcfa41e4ff1820c2521d996c1c`. The preceding Portal
+owner explicitly finished its integration; cleanup is awaiting separate worktree
+permission, and internal-pages continues only in its isolated lane. Process cwd
+alone is not treated as active write ownership. Main index/worktree were clean;
+no Git lock or holder of the repository/GPUI Visual capture locks was found.
+
+| ID | Slice | Status | Worktree | Owner | Contract | Next gate |
+|---|---|---|---|---|---|---|
+| VISUAL-RUST | Standalone GPUI Visual consumer migration | `running` | main, activation base above | session `01a0f8f4` | [visual tooling](../roadmap/tasks/visual-snapshot-tooling.md) | Immutable standalone import and portable adapter/upstream contracts first; no native capture or baseline acceptance yet |
+
+Historical reuse evidence is read-only Git/session metadata, not a takeover of
+`/Users/patwoz/dev/Personal/macos/bbr-visual-snapshots`: its five migration commits
+end at `74b94eb07120ddb62e6dda5c7a935b2deaee21b1`, while the stopped owner
+`01a0e635` explicitly preserved six uncommitted files on 2026-09-28. The old
+session's final BBR state is stopped, not finished; its later work was upstream
+story selection. No isolated working files have been inspected or modified here.
+Reuse committed implementations only after inspecting their contracts; any dirty
+handoff requires separate permission. Current main differs by 79/5 commits.
+
+Bounded scope: immutable tool import, separate Rust consumer, existing real
+Gallery/browser producers, story selection, independent coverage, Review
+Collections, read-only agent JSON and explicit-only acceptance. Shared integration
+points are the visual recipes/configs, Gallery capture support and roadmap/E2E
+contracts. No product graph/GPUI pin change, browser behavior rewrite or work in
+other lanes. Old committed work and all baselines remain preserved. Later
+internal-pages integration must retain both authorities and recapture on the
+combined tree; no stale lane pixels become combined-main acceptance.
+
+Parallelism audit: no workflow/subagent/new worktree is authorized by this goal.
+The portable import is runnable locally; VM capture waits for the current network
+exposure acknowledgement, and the actual Checkbox pilot needs the narrow real
+Gallery asset-source correction (currently `Arc::new(())`, no Check SVG provider).
+Neither is replaced by fake pixels or weakened checks. Gallery full state/framing,
+missing Gallery references and changed browser references remain open. Existing
+Tart golden image is present/stopped, observed read-only; no guest was started.
+All actual GUI/Gallery/browser gates use Tart, superseding historical host-GUI
+instructions below. Performance execution remains deferred/unpassed. Capture
+throughput is not product performance. Next actions are portable tests and a
+bounded VM adapter/pilot; no main/foreign-app launch, push or auto-acceptance.
+
+### Standalone import checkpoint
+
+The complete 83-file immutable `c2723cac924b98b8a2c8c170d580bd2e434b674a`
+export was staged and inspected at `/tmp/bbr-gpui-visual-import.vgaTth`, then
+imported without modification. The existing LICENSE is byte-identical; source
+revision/file hashes and prior SDK provenance are recorded. Normal BBR Cargo
+manifest/lock, all crates and the eight existing PNG/baseline metadata files
+have no diff. This changes only the portable tool, not a renderer or capture.
+
+Fresh bounded evidence under the existing BBR Rust 1.97.1 environment:
+- `mbx test --locked --offline --manifest-path vendor/cargo-gpui-visual/Cargo.toml`:
+  175 top-level passing tests plus 3 child-process fixture executions, no failures.
+- Same root, `mbx clippy --locked --offline --all-targets -- -D warnings` and
+  `cargo fmt -- --check`: pass.
+- `just visual-test`: 35 Python adapter tests pass (real-CLI class skipped in
+  discovery), upstream tests pass, separately executed real-CLI two-suite
+  acceptance/stale-source regression passes using disposable stores only.
+- Exact 83-file provenance check, `doctor --json` (1,413 source inputs; producer
+  and environment probe not executed), roadmap and whitespace checks pass.
+- Logs: `/tmp/bbr-visual-import-upstream-tests.log`,
+  `/tmp/bbr-visual-import-clippy.log`, `/tmp/bbr-visual-import-adapter-tests.log`,
+  `/tmp/bbr-visual-import-update-test.log`, `/tmp/bbr-visual-import-visual-test.log`.
+
+No native/GPU capture, VM boot, baseline/environment update or product gate is
+claimed. Existing Python producer commands still target host execution and must
+not be run; the documentation explicitly marks them pending Tart-aware cutover.
+The Rust-consumer/VM pilot, coverage/selection and full repeat evidence remain
+open. Self-review checked import hashes, immutable upstream authority, feature
+and dependency boundaries, old CLI adapter contracts, and no protected-file diff.
+
 ## Status vocabulary
 
 | Status | Meaning |

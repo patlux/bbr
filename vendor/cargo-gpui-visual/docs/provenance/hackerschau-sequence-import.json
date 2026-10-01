@@ -1,0 +1,27 @@
+{
+  "source": "hackerschau vendor/gpui-mobile gitlink (SDK fork, no branch ref)",
+  "revision": "0f394760926dec716a65722cc3087f7ddbb46b8f",
+  "base": "9fe5320e064e376258c02c39f0efddd18e1acf2d",
+  "consumer": "hackerschau 60a7857c4",
+  "license": "Apache-2.0 SDK-local visual tool package; unchanged terms",
+  "method": "3-way apply of 9fe5320..0f39476 tools/cargo-gpui-visual onto gpui-visual 4ca71c4, conflicts resolved by hand",
+  "files": {
+    "tools/cargo-gpui-visual/README.md": "41c6a883e711080e3e1a123316185deb1bcb85ff9aa2f33d7227bebe39e1510d",
+    "tools/cargo-gpui-visual/assets/review.css": "b5e74f07c9a0b72326c92682283b2aca07f85342f8b5570d34978727563f70a6",
+    "tools/cargo-gpui-visual/assets/review.js": "d96a6bcf39be8d2541d06669bc475d0113fcca59c983cf3e98ae964af45d9f81",
+    "tools/cargo-gpui-visual/src/accept.rs": "0c51522582c2691ec26286533d1bb938c05d67d4c82a54a464a9ecd8aa6608bd",
+    "tools/cargo-gpui-visual/src/compare.rs": "e3f9dc20ed43a3c23533adf3bfbd22f4a22437acf82e49c0cee85114c7dc08bb",
+    "tools/cargo-gpui-visual/src/comparison_view.rs": "70c4f847d457b637f6d213c670815f8e989b9d7db5fe7a6a94fdc47fcb7a9686",
+    "tools/cargo-gpui-visual/src/gallery.rs": "eed1c1713321382b8d701bbf4216a591f8eb395941358ac430e4cc56074d0a6e",
+    "tools/cargo-gpui-visual/src/lib.rs": "9a76f3e775a1a4294afc2c8c9af5869795e178b7771afbe5acf84cb638a6e23c",
+    "tools/cargo-gpui-visual/src/main.rs": "9f51da623c11b794d1cb349c6a1921a844649a6a0e6ce85106983eca8c4825a9",
+    "tools/cargo-gpui-visual/src/report.rs": "8eccbd2288b16f592a27cbd47bf2c590c639b22cf9ec4b278e35ef1b852af14b",
+    "tools/cargo-gpui-visual/src/sequence.rs": "fec0076a0d9e17cd3d730757774ffd85c15aace658d41c48164de3494b903c61",
+    "tools/cargo-gpui-visual/src/sequence_report.rs": "d9b0844b41d59bee5247a0d1cb39d396b6226a3ee51345c71a0075842cc30856",
+    "tools/cargo-gpui-visual/src/store.rs": "40ddf9745167f32e3ec70799549e890c77a885de59972adde708e9bbf7d9469e",
+    "tools/cargo-gpui-visual/src/terminal.rs": "4eb3a68cab05b350880923fcd14472ac4b3f7ad78966d03ec36d4169e532e9a9",
+    "tools/cargo-gpui-visual/tests/contract.rs": "063508a85466499717f3041ea2a83d97f52325e6105a56bd60f82056232e97f5",
+    "tools/cargo-gpui-visual/tests/support/presentation.rs": "28864163ecc930a073f00bb614c5c9fd9d54c7ced63af8a19c7686b536a8c027",
+    "tools/cargo-gpui-visual/tests/support/sequences.rs": "6db509bf7c33cc8d31574438dd77bd18a8970b28d567aff0fe12bf6798d845f8"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "source_repository": "gpui-mobile-kit",
+  "source_revision": "7263178ffcb9921990aadd34bfe8d6918426cbc7",
+  "source_path": "tools/cargo-gpui-visual",
+  "files": {
+    "Cargo.lock": "aaec127703531683e36a2ea9b0ce89b1d9677f2c7c8e672c19411fd82db504be",
+    "Cargo.toml": "f229d578d1853e146a31b9f3b23ce419c17b96afd68947e2559dd3628c7fa004",
+    "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "NOTICE": "9d9e6487e4eacef976a786fa2ebdd477725430895eca064857c677997c5d3207",
+    "README.md": "a4c51fd659643b44862eff8efd8e967b93f031e1af278a1946056af69e6439c8",
+    "assets/review.css": "4ac2d4448744f56b7bd6c12c988d7caaf5e1317ada15784cdbd56ffad6a7a3c7",
+    "assets/review.js": "3fd6a4e1106f2a0018c0fa46db9df70bce76a985e08a81b2c56526b2bdf7c087",
+    "src/accept.rs": "6e256b22ce24e7dbf0b51e495f2433f5b14558eaf0cfe4ec5704610910af3245",
+    "src/compare.rs": "ce91a9c77f9dccf6d0cf59fba29609a524b3458af86509e0d68a64ab3a435cf6",
+    "src/lib.rs": "558eea4820ad1cbde94c723cdd217f60bb9f6fd2193eec066247cba938fdc886",
+    "src/main.rs": "f0492e53fcfff02a7c4ac66e7a4af7a56accad5f5c01c75598bf877d83f6b074",
+    "src/report.rs": "1ae359921e000a979c964f39dd2bf41c0f1678ffe3a4e4736179eea928791900",
+    "src/store.rs": "1a494c2115a2738e69b0bd62e152713d19b9ed157e121a42511f85fd1056001c",
+    "tests/contract.rs": "cd8592b34d041504c7079894b1ec387e4f4c0c598b0ca25093d009ed58d42294"
+  },
+  "documentation_adapted": [
+    "README.md",
+    "NOTICE"
+  ],
+  "license": "Apache-2.0",
+  "license_approval_revision": "208e24eb10ff62df8ef0d78ab041512448776af2"
+}

@@ -1,5 +1,6 @@
 //! Sealed capture validation. Hashes guard integrity, not human authentication.
-use anyhow::{bail, ensure, Context, Result};
+pub use crate::inventory::{source_hashes, source_hashes_with};
+use anyhow::{ensure, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -7,7 +8,6 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     path::{Component, Path, PathBuf},
-    process::Command,
 };
 
 pub type Hashes = BTreeMap<String, String>;
@@ -36,6 +36,10 @@ pub struct Manifest {
     pub images: Hashes,
     pub sources: Hashes,
     pub source_policy: Policy,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selection: Option<crate::selection::Selection>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub sequences: Vec<crate::sequence::Sequence>,
 }
 pub fn digest(path: &Path) -> Result<String> {
     Ok(format!(
@@ -119,7 +123,12 @@ pub fn disjoint(paths: &[&Path]) -> Result<()> {
     }
     Ok(())
 }
+/// Candidate/report PNG path of a validated case ID.
 pub fn image_path(root: &Path, case: &str) -> Result<PathBuf> {
+    reference_path(root, case, crate::codec::Format::Png)
+}
+/// A baseline store's reference path in its declared format.
+pub fn reference_path(root: &Path, case: &str, format: crate::codec::Format) -> Result<PathBuf> {
     let (base, appearance) = case.rsplit_once("--").context("Invalid case ID")?;
     ensure!(
         !base.is_empty()
@@ -130,142 +139,23 @@ pub fn image_path(root: &Path, case: &str) -> Result<PathBuf> {
             && matches!(appearance, "light" | "dark"),
         "Invalid case ID: {case}"
     );
-    let path = root.join(format!("{case}.png"));
+    let path = root.join(format!("{case}.{}", format.extension()));
     no_symlinks(&path)?;
     Ok(path)
 }
-fn git_files(repo: &Path, scopes: &[String]) -> Result<Vec<String>> {
-    let output = Command::new("git")
-        .current_dir(repo)
-        .args([
-            "ls-files",
-            "-z",
-            "--cached",
-            "--others",
-            "--exclude-standard",
-            "--",
-        ])
-        .args(scopes)
-        .output()?;
-    ensure!(output.status.success(), "git ls-files failed");
-    Ok(String::from_utf8(output.stdout)?
-        .split('\0')
-        .filter(|x| !x.is_empty())
-        .map(str::to_owned)
-        .collect())
-}
-fn collect_sources(
-    repo: &Path,
-    root: &Path,
-    prefix: &Path,
-    scopes: &[String],
-    suffixes: &[String],
-    result: &mut Hashes,
-) -> Result<()> {
-    for name in git_files(root, scopes)? {
-        let relative = prefix.join(&name);
-        let path = repo.join(&relative);
-        if relative.components().any(|c| {
-            let n = c.as_os_str().to_string_lossy();
-            n.starts_with(".env") || n == "baselines"
-        }) {
-            continue;
-        }
-        no_symlinks(&path)?;
-        if path.is_dir() {
-            // git ls-files returns submodule entries, not their files. Include the
-            // exact revision AND working content without following arbitrary dirs.
-            let out = Command::new("git")
-                .current_dir(&path)
-                .args(["rev-parse", "--show-toplevel"])
-                .output()?;
-            if out.status.success()
-                && Path::new(String::from_utf8(out.stdout)?.trim()).canonicalize()?
-                    == path.canonicalize()?
-            {
-                let head = Command::new("git")
-                    .current_dir(&path)
-                    .args(["rev-parse", "HEAD"])
-                    .output()?;
-                ensure!(head.status.success(), "Uninitialized source submodule");
-                result.insert(
-                    format!("{}@git", relative.to_string_lossy()),
-                    String::from_utf8(head.stdout)?.trim().to_owned(),
-                );
-                collect_sources(repo, &path, &relative, &[".".into()], suffixes, result)?;
-            } else {
-                bail!("Uninitialized source submodule: {}", relative.display());
-            }
-            continue;
-        }
-        if !suffixes.iter().any(|s| name.ends_with(s)) {
-            continue;
-        }
-        no_symlinks(&path)?;
-        if path.is_file() {
-            result.insert(relative.to_string_lossy().into_owned(), digest(&path)?);
-        }
-    }
-    Ok(())
-}
-fn collect_artifact(repo: &Path, relative: &Path, result: &mut Hashes) -> Result<()> {
-    safe_relative(relative.to_str().context("Non-UTF8 artifact path")?)?;
-    ensure!(
-        !relative.components().any(|p| p.as_os_str() == "baselines"),
-        "Baseline artifact scope refused"
-    );
-    let path = repo.join(relative);
-    no_symlinks(&path)?;
-    if path.is_dir() {
-        for entry in fs::read_dir(&path)? {
-            let entry = entry?;
-            collect_artifact(repo, &relative.join(entry.file_name()), result)?;
-        }
-    } else {
-        ensure!(
-            path.is_file(),
-            "Missing or non-regular artifact: {}",
-            path.display()
-        );
-        result.insert(relative.to_string_lossy().into_owned(), digest(&path)?);
-    }
-    Ok(())
-}
-pub fn source_hashes(repo: &Path, policy: &Policy) -> Result<Hashes> {
-    ensure!(
-        !policy.scopes.is_empty()
-            && !policy.suffixes.is_empty()
-            && policy.suffixes.iter().all(|s| !s.is_empty()),
-        "Nonempty source_policy required"
-    );
-    for scope in &policy.scopes {
-        safe_relative(scope)?;
-    }
-    let mut result = Hashes::new();
-    collect_sources(
-        repo,
-        repo,
-        Path::new(""),
-        &policy.scopes,
-        &policy.suffixes,
-        &mut result,
-    )?;
-    for artifact in &policy.artifacts {
-        safe_relative(artifact)?;
-        ensure!(
-            Path::new(artifact)
-                .components()
-                .any(|p| matches!(p, Component::Normal(_))),
-            "Artifact scope must be narrow"
-        );
-        collect_artifact(repo, Path::new(artifact), &mut result)?;
-    }
-    Ok(result)
+/// A reference image file name of any supported store format.
+pub fn is_reference_file(name: &str) -> bool {
+    name.ends_with(".png") || name.ends_with(".webp")
 }
 pub fn load_manifest(run: &Path) -> Result<Manifest> {
     no_symlinks(&run.join("capture.json"))?;
     let m: Manifest = read_json(&run.join("capture.json"))?;
-    ensure!(m.schema == 1, "Unsupported capture schema");
+    // Old readers only support schema 1 and must never accept a development
+    // subset as complete evidence after silently ignoring its new scope field.
+    ensure!(
+        matches!((m.schema, m.selection.is_some()), (1, false) | (2, true)),
+        "Unsupported capture schema or selection scope"
+    );
     let cases: BTreeSet<_> = m.cases.iter().collect();
     ensure!(
         !cases.is_empty() && cases.len() == m.cases.len(),
@@ -275,10 +165,11 @@ pub fn load_manifest(run: &Path) -> Result<Manifest> {
         image_path(run, case)?;
         let (base, theme) = case.rsplit_once("--").unwrap();
         ensure!(
-            cases.contains(&format!(
-                "{base}--{}",
-                if theme == "light" { "dark" } else { "light" }
-            )),
+            case.starts_with("sequence-")
+                || cases.contains(&format!(
+                    "{base}--{}",
+                    if theme == "light" { "dark" } else { "light" }
+                )),
             "Missing appearance counterpart"
         );
     }
@@ -294,16 +185,24 @@ pub fn load_manifest(run: &Path) -> Result<Manifest> {
         m.images.keys().collect::<BTreeSet<_>>() == cases,
         "Image hashes must match complete case inventory"
     );
+    crate::sequence::validate(run, &m)?;
+    if let Some(selection) = &m.selection {
+        selection.validate_capture(&m)?;
+    }
     Ok(m)
 }
-pub fn check_sources(repo: &Path, m: &Manifest) -> Result<()> {
+pub fn check_sources(repo: &Path, m: &Manifest, baselines: Option<&Path>) -> Result<()> {
+    if let Some(selection) = &m.selection {
+        selection.check_sources(repo, &m.sources)?;
+    }
     for name in m.sources.keys() {
         safe_relative(name)?;
     }
-    ensure!(
-        source_hashes(repo, &m.source_policy)? == m.sources,
-        "Capture source inventory changed; capture again"
-    );
+    if source_hashes(repo, &m.source_policy, baselines)? != m.sources {
+        return Err(crate::diagnostic::Code::SourceChanged
+            .error("Capture source inventory changed; capture again")
+            .into());
+    }
     Ok(())
 }
 pub fn baseline_state(root: &Path) -> Result<Hashes> {
@@ -312,17 +211,25 @@ pub fn baseline_state(root: &Path) -> Result<Hashes> {
     if !root.exists() {
         return Ok(result);
     }
+    let mut paths = Vec::new();
     for entry in fs::read_dir(root)? {
         let path = entry?.path();
-        if path.extension().is_some_and(|v| v == "png")
-            || path.file_name().is_some_and(|v| v == "baseline.json")
+        if path
+            .file_name()
+            .is_some_and(|v| is_reference_file(&v.to_string_lossy()) || v == "baseline.json")
         {
-            no_symlinks(&path)?;
-            result.insert(
-                path.file_name().unwrap().to_string_lossy().into_owned(),
-                digest(&path)?,
-            );
+            paths.push(path);
         }
+    }
+    // Listing errors surface first; per-file errors keep directory order.
+    for (name, hash) in crate::parallel::map(&paths, |path| {
+        no_symlinks(path)?;
+        Ok((
+            path.file_name().unwrap().to_string_lossy().into_owned(),
+            digest(path)?,
+        ))
+    })? {
+        result.insert(name, hash);
     }
     Ok(result)
 }
@@ -337,14 +244,16 @@ pub fn validate_images(run: &Path, m: &Manifest) -> Result<()> {
         actual == m.cases.iter().cloned().collect(),
         "Incomplete capture: missing or unexpected candidate"
     );
-    for case in &m.cases {
+    // Every image is still hashed and fully decoded; only independent files overlap.
+    crate::parallel::map(&m.cases, |case| {
         let path = image_path(run, case)?;
         ensure!(
             digest(&path)? == m.images[case],
             "Candidate changed since capture: {case}"
         );
         read_png(&path)?;
-    }
+        Ok(())
+    })?;
     Ok(())
 }
 pub fn read_png(path: &Path) -> Result<image::RgbaImage> {
@@ -354,5 +263,19 @@ pub fn read_png(path: &Path) -> Result<image::RgbaImage> {
         "Expected PNG: {}",
         path.display()
     );
-    Ok(reader.decode()?.into_rgba8())
+    let image = reader.decode()?;
+    // Screenshots use at most 8 bits per channel. Do not silently quantize a
+    // higher-precision input and report unequal samples as an exact match.
+    ensure!(
+        matches!(
+            image.color(),
+            image::ColorType::L8
+                | image::ColorType::La8
+                | image::ColorType::Rgb8
+                | image::ColorType::Rgba8
+        ),
+        "16-bit PNG is unsupported; expected at most 8-bit channels: {}",
+        path.display()
+    );
+    Ok(image.into_rgba8())
 }

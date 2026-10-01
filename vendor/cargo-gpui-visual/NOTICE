@@ -17,5 +17,12 @@ GPUI Mobile Kit docs/visual-import.json; approval scope is documented
 in docs/licensing.md. Those historical import records are not the
 current license of this package.
 
+The portable CLI is now maintained in the standalone GPUI Visual repository.
+Its extraction source is GPUI Mobile Kit revision
+7263178ffcb9921990aadd34bfe8d6918426cbc7, tools/cargo-gpui-visual.
+Immutable copies of the original notice, approval scope and historical import
+record are retained under docs/provenance; the existing Apache-2.0 grant is
+unchanged. The GPUI-bound renderer helper remains outside this repository.
+
 Dependencies retain their own licenses and notices. This notice is
 informational, not a complete notice bundle for a compiled application.
