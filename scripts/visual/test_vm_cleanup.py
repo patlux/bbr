@@ -76,6 +76,26 @@ class CleanupObservationContracts(unittest.TestCase):
         self.mounts["images"] = [{"image-path": str(self.root / ".tart/vms" / self.name / "disk.img")}]
         with self.assertRaisesRegex(vm_cleanup.CleanupError, "still attached"): self.observe()
 
+    def test_independent_recheck_requires_process_absence_and_repeats_resource_audit(self):
+        with patch.object(Path, "home", return_value=self.root), \
+             patch.object(vm_cleanup.tart_vm, "run", self.command), \
+             patch.object(vm_cleanup.socket, "create_connection", side_effect=ConnectionRefusedError()), \
+             patch.object(vm_cleanup.os, "kill", side_effect=ProcessLookupError()) as observe_pid:
+            vm_cleanup.recheck(self.name, self.root, "192.168.64.9", 1234)
+        self.assertEqual(observe_pid.call_count, 2)
+        self.assertTrue(all(call.args == (1234, 0) for call in observe_pid.call_args_list))
+        for result in (None, PermissionError("unknown permission")):
+            with patch.object(vm_cleanup.os, "kill", side_effect=result), \
+                 patch.object(vm_cleanup, "_absence") as resources:
+                with self.assertRaises((vm_cleanup.CleanupError, PermissionError)):
+                    vm_cleanup.recheck(self.name, self.root, "192.168.64.9", 1234)
+            resources.assert_not_called()
+        with patch.object(vm_cleanup.os, "kill") as observe_pid:
+            for pid in (-1, 0, 1, True, 2**31):
+                with self.assertRaises(vm_cleanup.CleanupError):
+                    vm_cleanup.recheck(self.name, self.root, "192.168.64.9", pid)
+        observe_pid.assert_not_called()
+
     def test_unknown_inventory_or_network_error_cannot_prove_absence(self):
         for inventory in ({}, [{}], [self.inventory[0], self.inventory[0]]):
             with self.assertRaises(vm_cleanup.CleanupError):

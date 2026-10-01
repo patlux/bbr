@@ -14,6 +14,8 @@ import socket
 import sys
 import uuid
 
+from vm_evidence import Binding
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import tart_vm
 from vm_policy import harden_offline, validate_ip, validate_listeners, validate_sshd
@@ -81,7 +83,7 @@ def _signals():
 
 
 @contextmanager
-def session(payload: Path, artifacts: Path):
+def session(payload: Path, artifacts: Path, *, binding: Binding | None = None):
     """Own exactly one headless NAT clone. Called only after external approval.
 
     Share only the already verified immutable payload, read-only. Never accept
@@ -98,7 +100,21 @@ def session(payload: Path, artifacts: Path):
         raise tart_vm.RunnerError("fresh private diagnostics directory required")
     if not (payload / "payload.json").is_file():
         raise tart_vm.RunnerError("completed payload required before clone creation")
-    name = f"bbr-visual-{os.getpid()}-{uuid.uuid4().hex[:12]}"
+    name = binding.vm if binding else f"bbr-visual-{os.getpid()}-{uuid.uuid4().hex[:12]}"
+    if binding is not None:
+        from vm_evidence import begin
+        if binding.artifacts != artifacts:
+            raise tart_vm.RunnerError("cleanup binding diagnostics differ")
+        binding.fields()
+        import hashlib
+        import vm_install
+        handle, _ = vm_install._open(payload / "payload.json", vm_install.MANIFEST_LIMIT)
+        with handle:
+            raw = handle.read(vm_install.MANIFEST_LIMIT + 1)
+        if (len(raw) > vm_install.MANIFEST_LIMIT
+                or hashlib.sha256(raw).hexdigest() != binding.payload_sha256):
+            raise tart_vm.RunnerError("cleanup binding payload differs")
+        begin(binding)
     with _signals():
         clone, ssh, banner = tart_vm.boot(
             "macos-27-golden-gate", name, artifacts, False, "3200x1800",
@@ -108,6 +124,9 @@ def session(payload: Path, artifacts: Path):
         ip = None
         try:
             ip = validate_ip(ssh[-1].removeprefix("admin@"))
+            if binding is not None:
+                from vm_evidence import resources
+                resources(binding, clone, ip)
             # Do not inherit a personal SSH config, agent, proxy, multiplexed
             # connection or forwarding. Initial boot SSH uses the same options.
             (artifacts / "session.log").write_text(banner + "\n")
@@ -126,5 +145,9 @@ def session(payload: Path, artifacts: Path):
             if ip is None:
                 raise tart_vm.RunnerError("cleanup reachability unproven: no validated guest IP")
             cleanup = observe(clone, ip)
-            with (artifacts / "cleanup-observed.json").open("x") as handle:
-                json.dump(cleanup, handle, sort_keys=True)
+            if binding is not None:
+                from vm_evidence import complete
+                complete(binding, cleanup)
+            else:
+                with (artifacts / "cleanup-observed.json").open("x") as handle:
+                    json.dump(cleanup, handle, sort_keys=True)

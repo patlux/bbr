@@ -141,9 +141,19 @@ both leases' lifetime, including INT/TERM/HUP. These are not VM cleanup evidence
 The visual lifecycle now invokes a concrete read-only resource observer after
 cleanup: its own Popen must be reaped, key/clone path absent, clone absent from
 Tart inventory, disk image detached and guest SSH unreachable. Unknown or failed
-observations cannot publish cleanup evidence. Actual VM verification, independent
-host recheck and end-to-end adapter wiring remain required. The normal capture
-entrypoints are still unconditionally blocked.
+observations cannot publish cleanup evidence. Optional bound lifecycle records
+now link the independently expected clone, original supervision request and
+payload before boot and actual IP/Popen before producer access. A concrete Rust
+host verifier checks these records and repeats clone/key/disk/SSH/process absence
+under both leases. Existing/reused PIDs and ambiguous observations fail closed;
+only existence signal 0 is allowed, never numeric-PID termination. Record-only,
+stale, swapped or partial-boot evidence cannot release the gate. Request identity
+comes from supervisor memory, not a child-writable final file.
+
+Local contracts exercise this verifier wiring with mocked resource observations,
+including both leases' lifetime. They are not actual VM teardown evidence. Real
+VM verification and end-to-end bootstrap/SSH/return adapter wiring remain required.
+The normal capture entrypoints are still unconditionally blocked.
 
 ### Guest installation prerequisite
 

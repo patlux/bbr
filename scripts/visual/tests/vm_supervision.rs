@@ -62,6 +62,11 @@ def verify():
     if mode == 'cleanup-failed': raise RuntimeError('synthetic cleanup verification failure')
 try:
     vm_control.run(control, request, operation, verify)
+    if mode == 'mutated-request':
+        # The host callback must get the original in-memory digest, not
+        # rediscover its expected identity from this child-writable file.
+        (control/'request.json').chmod(0o600)
+        (control/'request.json').write_text('{}')
     if mode == 'signal-after-ack': os.kill(os.getpid(), signal.SIGKILL)
 except BaseException:
     sys.exit(2)
@@ -126,7 +131,11 @@ fn scenario(mode: &str, active: bool, success: bool) {
             &"a".repeat(64),
             &policy(),
             &cancelled,
-            || {
+            |request| {
+                anyhow::ensure!(
+                    request == cargo_gpui_visual::store::digest(&control.join("request.json"))?,
+                    "original request identity differs"
+                );
                 anyhow::ensure!(root.join("cleaned").is_file(), "missing resource evidence");
                 let pid: i32 = fs::read_to_string(root.join("detached"))?.parse()?;
                 anyhow::ensure!(
@@ -202,6 +211,7 @@ fn hard_kill_missing_stale_or_rejected_cleanup_keeps_unfinished_gate() {
         "host-reject",
         "invalid-cancel",
         "signal-after-ack",
+        "mutated-request",
     ] {
         scenario(mode, true, false);
     }
@@ -259,7 +269,7 @@ fn invalid_or_pre_cancelled_request_never_spawns_or_creates_control() {
                 ..policy()
             },
             &AtomicBool::new(cancelled),
-            || Ok(()),
+            |_| Ok(()),
         );
         assert!(result.is_err());
         assert!(!root.join("tripwire").exists());

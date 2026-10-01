@@ -6,6 +6,7 @@ foreign worktree or numeric-PID signaling. Unknown observations fail closed.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import plistlib
 import re
@@ -65,15 +66,41 @@ def observe(clone, ip: str) -> dict:
     process = clone.tart_process
     if process is None or process.poll() is None:
         raise CleanupError("owned Tart process not reaped")
-    key = clone.artifacts / "runner_ed25519"
+    _absence(clone.vm, clone.artifacts, ip)
+    return {"schema": 1, "vm": clone.vm, "ip": ip, "tart_pid": process.pid,
+            "tart_exit": process.returncode, "clone_absent": True, "disk_detached": True,
+            "private_key_absent": True, "owned_process_reaped": True, "ssh_unreachable": True}
+
+
+def recheck(vm: str, artifacts: Path, ip: str, pid: int) -> None:
+    """Independent observer: only read resources, never signal a recorded PID."""
+    if (not re.fullmatch(r"bbr-visual-[0-9]+-[0-9a-f]{12}", vm)
+            or type(pid) is not int or not 1 < pid <= 2**31 - 1):
+        raise CleanupError("invalid recorded resource identity")
+    ip = validate_ip(ip)
+    _process_absent(pid)
+    _absence(vm, artifacts, ip)
+    _process_absent(pid)
+
+
+def _process_absent(pid: int) -> None:
+    try:
+        os.kill(pid, 0)  # Observation only. Reused PID is ambiguity, never success.
+    except ProcessLookupError:
+        return
+    raise CleanupError("recorded Tart process still exists or PID was reused")
+
+
+def _absence(vm: str, artifacts: Path, ip: str) -> None:
+    key = artifacts / "runner_ed25519"
     if key.exists() or key.is_symlink():
         raise CleanupError("run-specific private key remains")
-    directory = Path.home() / ".tart/vms" / clone.vm
+    directory = Path.home() / ".tart/vms" / vm
     if directory.exists() or directory.is_symlink():
         raise CleanupError("owned clone directory remains")
     disk_image = directory.resolve() / "disk.img"
     inventory = tart_vm.run(["tart", "list", "--source", "local", "--format", "json"], timeout=15).stdout
-    validate_inventory(inventory, clone.vm)
+    validate_inventory(inventory, vm)
     mounts = tart_vm.run(["hdiutil", "info", "-plist"], timeout=15).stdout
     validate_mounts(mounts, disk_image)
     try:
@@ -83,6 +110,3 @@ def observe(clone, ip: str) -> dict:
         pass
     else:
         raise CleanupError("removed guest SSH still reachable")
-    return {"schema": 1, "vm": clone.vm, "ip": ip, "tart_pid": process.pid,
-            "tart_exit": process.returncode, "clone_absent": True, "disk_detached": True,
-            "private_key_absent": True, "owned_process_reaped": True, "ssh_unreachable": True}

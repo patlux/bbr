@@ -172,6 +172,20 @@ with synthetic artifacts and controlled observation hooks; do not claim pixel
 coverage, VM runtime, current catalog parity or bootstrap success. Host boot/
 SSH transport and real pilot stay guarded until the approved route is complete.
 
+### Bounded independent host-cleanup slice
+
+Bind the visual lifecycle's owned-run/resource/cleanup records to the independently
+expected clone name, supervision request and payload digest. Record ownership
+before boot and concrete IP/Popen identity before producer access. After the
+transport process exits, repeat clone/key/disk/SSH/process absence checks from the
+host before the Rust supervisor finishes either lease. Reuse the existing resource
+observer; do not add stop/delete/retry or signal a recorded numeric PID (signal 0
+is observation only). Missing, stale, ambiguous or changed records fail closed.
+Tests inject resource observations and use private fixtures only, never boot or
+probe a VM. Partial boot remains unproven; this prerequisite does not open capture,
+authorize networking or claim actual VM cleanup. Host bootstrap/SSH/return wiring
+and the approved real pilot remain separate required evidence.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and

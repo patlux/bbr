@@ -471,6 +471,62 @@ Checkbox asset approval are still pending; no native execution, actual PNG/HTML
 review, baseline acceptance, product/performance gate or migration completion
 is claimed. Implementation/review wall time was not measured.
 
+### Bound independent host-cleanup checkpoint
+
+Preflight: clean `main@ade418b`, no Git/capture lock holder or visual/Tart process;
+ordinary development app and unrelated mbx processes remain untouched. Full active
+delivery document re-read. Only this local visual writer is authorized; no new
+lane, subagent or product scope. Portable transport integration remains runnable.
+
+Before connecting bootstrap, closed the supervisor's concrete cleanup-verifier
+gap. Optional bound lifecycle records now name the independently expected clone,
+request hash and payload hash before boot, then actual IP/Popen identity before
+producer access. Completion is atomic/no-replace and follows owned cleanup and
+resource observations. The Rust host verifier validates that binding and repeats
+clone/key/disk/SSH absence plus read-only PID existence checks before either lease
+finishes. A present/reused PID, permission ambiguity, stale/missing/changed record
+or rejected observation keeps the gate unfinished; no numeric-PID termination,
+resource repair, automatic retry or key-content read. Partial boot remains
+unproven rather than manufacturing cleanup evidence.
+
+Self-review found that a callback could rediscover its expected request identity
+from a child-writable record. The supervisor now passes its original in-memory
+digest and checks the final request against it; a post-acknowledgement mutation
+regression preserves the unfinished gate. Shared Tart execution/cleanup defaults
+and immutable upstream remain unchanged. These records establish integrity and
+ordering, not authentication against malicious same-user processes.
+
+Fresh evidence:
+- Seven added Python contracts cover bound lifecycle ordering, separate resource
+  observations, stale/swapped/missing/changed records, partial boot, exact fields,
+  links/size bounds, no overwrite, PID reuse/permission ambiguity and no signals
+  other than existence-only signal 0 (mocked, never actual Tart/socket activity).
+- Three new Rust contracts validate every identity/absence field, actual verifier
+  no-record refusal before resource commands, and end-to-end supervisor/record/
+  verifier wiring with isolated observation stubs. Both private leases are asserted
+  held in child and host verifiers; successful/failed capture with proven cleanup
+  releases them, host rejection retains active evidence. Existing real local
+  cancellation fixtures still pass; no VM or native producer is involved.
+- `just visual-test`: **103 Python units**, separate real-CLI integration,
+  unchanged upstream contracts and **45 consumer tests** plus signal fixtures
+  pass. Strict consumer all-target Clippy/fmt, roadmap and whitespace pass.
+  Logs: `/tmp/bbr-visual-host-cleanup-final-visual-test.log`,
+  `/tmp/bbr-visual-host-cleanup-final-clippy.log`,
+  `/tmp/bbr-visual-host-cleanup-final-roadmap.log`.
+  An initial expanded negative fixture expected the wrong exception type for an
+  invalid IP; the evidence boundary now wraps policy errors consistently. The
+  rejection itself was never removed. Earlier diagnostic log:
+  `/tmp/bbr-visual-host-cleanup-python2.log`.
+
+No actual network probe, key operation, VM boot/teardown, image transfer, baseline
+acceptance, GUI gate or performance claim. Source changes supersede previous
+payloads for future captures. Next local work remains source-bound bootstrap,
+SSH/return integration and Gallery selection/independent coverage. Real execution
+stays guarded pending the approved route/pilot and network/Checkbox permissions.
+Parallelism audit: no other lane is authorized; those portable actions remain
+runnable. Implementation/review elapsed time was not measured; test durations
+are present in logs, not product-performance evidence.
+
 ## Status vocabulary
 
 | Status | Meaning |

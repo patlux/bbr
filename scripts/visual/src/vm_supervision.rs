@@ -91,8 +91,10 @@ fn terminal(control: &Path, expected: &str) -> Result<Terminal> {
 
 /// The caller must additionally validate its concrete owned-resource cleanup
 /// evidence (clone/key/disk/process absence), not infer cleanup from exit 0.
-/// Neither an acknowledgement nor this transport API is a capture seal.
-/// Use a fresh external control directory; no automatic gate recovery/retry.
+/// The verifier receives the original in-memory request digest, never one
+/// rediscovered from child-writable evidence after execution. Neither an
+/// acknowledgement nor this API is a capture seal. Use a fresh external control
+/// directory; no automatic gate recovery/retry.
 pub fn run(
     options: &Options,
     command: &mut Command,
@@ -100,7 +102,7 @@ pub fn run(
     payload_sha256: &str,
     policy: &Policy,
     cancelled: &AtomicBool,
-    verify_cleanup: impl FnOnce() -> Result<()>,
+    verify_cleanup: impl FnOnce(&str) -> Result<()>,
 ) -> Result<Output> {
     ensure!(
         !cancelled.load(Ordering::SeqCst),
@@ -220,8 +222,19 @@ pub fn run(
         output.status.signal().is_none(),
         "VM transport terminated by signal; cleanup unproven"
     );
+    let request_path = control.join("request.json");
+    store::no_symlinks(&request_path)?;
+    let meta = fs::symlink_metadata(&request_path)?;
+    ensure!(
+        meta.is_file() && meta.len() <= 16384,
+        "invalid final VM control request"
+    );
+    ensure!(
+        store::digest(&request_path)? == request_sha256,
+        "VM control request changed during transport"
+    );
     let terminal = terminal(control, &request_sha256)?;
-    verify_cleanup().context("VM owned-resource cleanup evidence failed")?;
+    verify_cleanup(&request_sha256).context("VM owned-resource cleanup evidence failed")?;
     gate.finish()?;
     ensure!(
         reason.is_none(),
