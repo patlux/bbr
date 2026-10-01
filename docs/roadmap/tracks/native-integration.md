@@ -26,6 +26,8 @@ Parent phases: [Phase 1](../phases/01-native-integration.md), [Phase 3](../phase
 
 ## Adapter growth
 
+Current bounded Portal work: [window lifecycle regression](../tasks/portal-window-lifecycle.md).
+
 - [x] Multi-WebView session registry.
 - [x] Deterministic persistent ProfileId → WKWebsiteDataStore mapping.
 - [ ] Popup/new-window policy, including transient native sessions for [Link Preview / Peek](../tasks/link-preview-peek.md). Requests resolved to regular tabs establish the opener provenance used by [web-content navigation gestures](../tasks/web-content-navigation-gestures.md). *(Phase 8)*

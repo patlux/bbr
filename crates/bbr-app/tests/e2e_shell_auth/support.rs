@@ -165,8 +165,7 @@ pub(super) fn assert_sheet_open(snapshot: &Snapshot, web_view: WebViewId) {
         p.ids,
         AUTH_IDS.iter().map(|s| s.to_string()).collect::<Vec<_>>()
     );
-    assert!(p.child_attached);
-    assert!(p.native_visible, "AppKit window is ordered in");
+    assert_open_portal_visibility(p);
     assert!(
         p.frame_synced,
         "portal frame pinned to the parent content rect"
@@ -212,8 +211,8 @@ pub(super) fn assert_sheet_closed(snapshot: &Snapshot) {
         p.ids
     );
     assert!(
-        p.child_attached,
-        "host stays attached to the browser window"
+        p.owner_retained,
+        "host retains the original browser owner while ordered out"
     );
     assert!(
         !p.native_visible,
@@ -264,12 +263,17 @@ pub(super) fn wait_sheet_open(
             && snapshot.auth.web_view == Some(web_view)
             && snapshot.portal.presentation == Some(AUTH_PRESENTATION_ID)
             && snapshot.portal.visible
-            && snapshot.portal.native_visible
+            && portal_visibility_settled(&snapshot.portal)
             && snapshot.portal.frame_synced
         {
             return snapshot;
         }
-        assert!(Instant::now() < deadline, "credential sheet did not open");
+        assert!(
+            Instant::now() < deadline,
+            "credential sheet did not open: auth {:?}, portal {:?}",
+            snapshot.auth,
+            snapshot.portal
+        );
         std::thread::yield_now();
     }
 }

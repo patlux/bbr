@@ -622,11 +622,28 @@ pub struct PortalSnapshot {
     /// The stable `bbr-portal-*` ids the portal surface renders while
     /// visible (DESIGN.md §15); empty while hidden.
     pub ids: Vec<String>,
-    /// The native portal window is attached as a child of the browser
-    /// window (macOS host evidence).
+    /// The bridge retains the original browser owner and reusable host.
+    #[serde(default)]
+    pub owner_retained: bool,
+    /// Measured AppKit parentWindow relation; orderOut can detach the child.
     pub child_attached: bool,
     /// The AppKit window's actual `isVisible` state.
     pub native_visible: bool,
+    /// Native lifecycle facts, not inferred from logical presentation state.
+    #[serde(default)]
+    pub parent_visible: bool,
+    #[serde(default)]
+    pub parent_is_key: bool,
+    #[serde(default)]
+    pub app_active: bool,
+    #[serde(default)]
+    pub app_hidden: bool,
+    #[serde(default)]
+    pub parent_level: i64,
+    #[serde(default)]
+    pub portal_level: i64,
+    #[serde(default)]
+    pub portal_joins_all_spaces: bool,
     /// The portal frame is pinned to the parent content rect (parent-
     /// content/portal frame synchronization evidence).
     pub frame_synced: bool,

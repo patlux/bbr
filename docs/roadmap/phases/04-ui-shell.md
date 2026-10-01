@@ -67,6 +67,9 @@ canonical owner stays Phase 8 through the
 
 ## Shell and interaction
 
+The bounded [Portal window-lifecycle regression](../tasks/portal-window-lifecycle.md)
+keeps the Command Palette attached to its owning browser window across activation.
+
 - [x] Render pinned and regular tabs for the active space. *(Visible vertical tab
       surface: pinned region above the regular region with section labels and a
       hairline separator, both driven from the controller snapshot. The pin

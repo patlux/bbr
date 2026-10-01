@@ -172,6 +172,9 @@ mod portal_deferred;
 mod portal_lifecycle;
 
 #[cfg(target_os = "macos")]
+mod portal_visibility;
+
+#[cfg(target_os = "macos")]
 pub mod portal_frame;
 
 #[cfg(target_os = "macos")]

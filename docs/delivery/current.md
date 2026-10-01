@@ -67,6 +67,171 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 
 The orchestrator (session `01a0e454`) is the product writer and runs the V2 slices serially on `main` (KEPT-PLACES ran serially from session `01a0f303` at Patrick's request while it was idle): no subagent or background workflow is authorized for this program, so the packets' parallel-capable pairs are executed in order and each slice is reviewed by a documented self-review against its packet before integration. Independent reviews use `homelab-llm/opencode-go/deepseek-v4-flash:high`: the route named in `AGENTS.md` (`homelab-llm/deepseek-v4-flash`) no longer resolves in the model registry. All historical BBR worktrees remain preserved.
 
+## Isolated Portal bug-fix lane (2026-10-01)
+
+Patrick explicitly approved a separate worktree for the Command Palette
+remaining above other apps. Sole writer: session `01a0f808-b22a-7311-8e49-dc2619e64d76`;
+branch `parallel/portal-window-lifecycle`, worktree
+`/Users/patwoz/dev/Personal/macos/bbr-portal-window-lifecycle`, clean committed
+base `32b735dcd79372b4fe9722122579959da0f39c4a`. Status: `frozen`
+(locally self-reviewed and functionally verified in Tart; serial integration
+pending, not integrated).
+Contract: [Portal window lifecycle](../roadmap/tasks/portal-window-lifecycle.md).
+
+Parallelism audit: only this bug fix is authorized in this session. Main's
+Favorites drag writer and the isolated internal-pages writer remain untouched;
+no subagent, workflow, extra lane or merge is authorized. Exclusive product
+territory is the native Portal bridge. Shared integration points are additive
+native/testkit diagnostics, Portal lifecycle requests, snapshot mapping and
+roadmap/architecture documents. Main's ongoing work lands first, this isolated
+patch follows serially through the integration owner; conflicts must preserve
+both contracts. Native GUI gates use the common-directory host lock. No Git
+index lock existed at activation; the main worktree's unrelated dirty diff
+was not copied. Performance execution remains deferred; no performance pass is
+claimed.
+
+### Portal lifecycle checkpoint and GUI blocker
+
+Implemented in the uncommitted isolated lane: current-intent deferred visibility,
+app/key-window/active-Space observers with balanced removal, parent-relative
+ordering and reattachment after AppKit detaches an ordered-out child. Native
+level/Space policy is reset at attachment. Diagnostics now distinguish retained
+ownership from actual `parentWindow()`. Hidden consumer fixtures assert logical
+presentation plus no native orphan; shown visibility checks remain mandatory.
+No dependencies, renderer or product focus authority changed.
+
+Evidence:
+- Old-code regression reproduced inactive-app visibility, standalone hidden-parent
+  visibility and independent all-Spaces policy. Initial level hypothesis was
+  corrected: GPUI creates level 101 but native attachment already lowers it.
+- Initial lifecycle regression 3/3 green: `/tmp/bbr-portal-regression4.log`.
+  After actual attachment diagnostics and the two-window test, the latter passed
+  twice (`/tmp/bbr-portal-regression5.log`, `/tmp/bbr-portal-suite2.log`). First
+  run still saw `app_active=true` after deactivate; the helper now avoids a
+  redundant pending activation before deactivation. That fix is not yet fully
+  revalidated across repeated runs.
+- Portal suite `/tmp/bbr-portal-suite2.log`: 9/11, 41.07s measured test time.
+  Failures: shown Space test did not gain native visibility; draft test received
+  unexpected suffix `es ` (`preserved draftes `). Do not classify those earlier
+  failures as lock-caused without contemporaneous evidence.
+- Latest `/tmp/bbr-portal-consumers2.log`: Portal 3/11, 247.76s measured; shown
+  owners stay `app_active=false`, `parent_is_key=false`, foreign frontmost window
+  70321. Read-only `ioreg` then confirms `CGSSessionScreenIsLocked=Yes`.
+  GUI work stopped; no lock-state changes, assertion relaxation or browser/VM
+  fallback. Later consumer recipes did not execute because Portal failed.
+- `/tmp/bbr-portal-verify3.log`: full `just verify` green, including workspace
+  check/tests/Clippy, roadmap, UI boundary and 49 script tests. Earlier attempts
+  caught missing DTO fixture fields and an untracked task link; both corrected.
+- `/tmp/bbr-portal-testkit-clippy.log`: `mbx clippy -p bbr -p bbr-web-macos
+  -p bbr-testkit --features testkit --all-targets -- -D warnings` passes.
+  Existing `block` future-incompatibility warning remains.
+- Commands use bounded `/tmp/bbr-portal-lifecycle.just`, a repository recipe
+  copy replacing compiler Cargo calls with mbx and omitting only deferred perf
+  from the aggregate. Repository justfile/targets/budgets unchanged. An earlier
+  consumer attempt received SIGTERM during a cold build; no pass claimed.
+
+Self-review checked live-intent/drop safety, observer removal from both centers,
+non-key parent-relative ordering, truthful diagnostics and preservation of hidden
+geometry coverage. Consumer E2E, full functional aggregate, Peek/Gallery and a
+fresh full Portal pass remain open. Real desktop Space switching/fullscreen are
+not proven here. No commit, merge, push, ownership transfer or completion claim.
+Only the new task packet is staged so the roadmap validator can see its link.
+Other code and documents remain unstaged. Planning/review elapsed time was not
+instrumented.
+
+### Unlocked retry and Tart-only continuation (2026-10-01)
+
+The subsequently unlocked host retry passed all four new lifecycle regressions.
+Portal minimize/restore failed once, then the focused rerun passed 1/1 (5.73s).
+The later affected-suite retry passed Portal 11/11 (15.79s), Auth 7/7 (15.55s),
+Sidebar 21/21 (122.75s), Zoom 7/7 (18.70s), the five Spaces binaries 14+4+2+5+2,
+Windows 9/9 and Shutdown 3/3. Logs: `/tmp/bbr-portal-retry1.log`,
+`/tmp/bbr-portal-minimize-retry.log`, `/tmp/bbr-portal-consumers-retry3.log`.
+Command passed 28/28 and Find 6/6 in the preceding consumer retry logs. These
+passes do not erase the earlier intermittent failures.
+
+The canonical functional attempt `/tmp/bbr-portal-functional-final.log` then
+stopped at Sidebar's fast-arrival assertion (`dwelling` instead of `floating`,
+20/21 passed). No aggregate pass. Patrick requested VM-only further GUI tests
+and approved private Tart NAT/SSH with a run-specific key, no host window,
+bridge or port forwarding, and clone/key cleanup. No further host GUI test is
+authorized or run.
+
+The lane-local temporary runner `/tmp/bbr-portal-tart/run.py` snapshots only this
+worktree's allowlisted source plus its fresh mbx `--no-run` artifacts; source
+and binaries are SHA-256 checked again in the guest at their compiled absolute
+paths. The host build passed (23.23s app test artifacts; 31.72s Gallery). A
+throwaway `macos-27-golden-gate` clone uses 3200×1800 and a read-only payload
+share, with the common host GUI gate retained. The first runner preflight found
+an unsupported generic Cargo recipe while parsing the plan and stopped before
+creating a VM; parsing now ignores recipes without an explicit test target.
+
+Two VM preparations stopped before tests: the first checked the VirtioFS tag
+instead of the mounted path, the second resolved the guest's Xcode-dependent
+Python placeholder. Both clones and temporary private keys were deleted. The
+runner now checks the mount path and realizes an explicit Darwin Python store
+path inside the disposable guest; host setup and Golden Image stay unchanged.
+
+First actual VM evidence: `/tmp/bbr-portal-tart/run-20261001-194050` verified
+1,634 source/artifact hashes; Sidebar 21/21 (39.70s), Auth 7/7 (4.85s), Portal
+10/11 (40.30s). Minimize/restore and two-window switching passed. Deactivation
+failed because `NSApplication.deactivate()` left `app_active=true` even though
+the parent lost key status and the Portal correctly hid. No assertion weakened:
+the test now activates a second real BBR process, proving cross-process switching
+rather than relying on this inconsistent driver. The unused `DeactivateApp`
+request was removed; real hide/unhide stays. Rebuilt artifacts passed.
+
+The first guest listener audit found inherited Screen Sharing/Kerberos and SSH
+password/kbd-interactive login. These were disabled only in the disposable clone,
+and subsequent fresh SSH plus listener/config checks proved key-only TCP 22,
+no forwarding and only loopback test fixtures. Later clones apply this reduction
+before tests. The first test clone/key were deleted successfully.
+
+### Verified Tart handoff checkpoint
+
+Final run `/tmp/bbr-portal-tart/run-20261001-194627` is green:
+- Focused Portal 11/11, Sidebar 21/21 and Auth 7/7: 39 tests, 54.11s summed
+  test time / 55.690s runner time. Cross-app switching uses two real processes.
+- Recipe-derived canonical functional order, excluding only deferred perf,
+  followed by Peek and Gallery: **58/58 binaries, 43 recipes, 345 tests**, zero
+  failures or ignored tests; 361.56s summed test time / 384.822s runner time.
+  Portal passes again in that sequence. All affected consumers are included.
+- This executes host-built current-worktree artifacts directly inside Tart,
+  not Cargo/`just` compilation in the guest. Each exact recipe's test flags and
+  suite order are preserved; outer command budget is 15m, in-test deadlines
+  unchanged, process-group cleanup remains bounded. No performance acceptance.
+- `/tmp/bbr-portal-tart/verify.log`: fresh mbx-equivalent `just verify` passes,
+  including 49 script contracts; testkit all-target Clippy `-D warnings` passes.
+  Existing `block` future-incompatibility and mbx cache-prediction warnings are
+  not suppressed. Formatting, roadmap and whitespace gates pass.
+- Guest macOS 27.0 build 26A5353q, 8 vCPU, 16 GiB, 3200×1800; source and test
+  artifacts verified by SHA-256. No Rust/test code changed after the VM snapshot;
+  only documentary evidence changed afterward.
+- Network probes from the host confirmed guest TCP 22 reachable and 88/5900
+  unreachable after clone-only hardening. No bridge/forward/VNC/host window;
+  test fixtures listen only on guest loopback. Cleanup records `stop_rc=0`,
+  `delete_rc=0`, `private_key=deleted`; Tart inventory has no lane clone, the
+  removed guest's SSH is unreachable, Golden Image remains stopped/unchanged.
+
+Self-review checked retained-owner versus actual-child semantics, current-intent
+coalescing, dismissal/drop supersession, removal from both notification centers,
+public AppKit APIs, parent-relative ordering, testkit feature boundaries, hidden
+fixture truth and strict shown-fixture assertions. No independent agent was
+requested or used. The failed direct-deactivate test remains in the earlier log;
+its replacement tests the actual cross-process user transition, not a relaxed
+predicate. Historical intermittent host failures remain provenance, not erased.
+
+The next local commit contains the coherent verified lifecycle fix and evidence.
+No merge, push, other-worktree modification or ownership takeover. Integration
+owner must preserve current main's additive contracts and run fresh combined-tree
+Tart gates. Performance, real desktop Space switching and native fullscreen
+completion remain unproven/deferred. Planning/review wall time was not measured;
+test times above are measured, not product performance metrics.
+
+Final parallelism audit: only this bounded lane is authorized here; main and
+other lanes remain untouched. No new workflow/subagent/worktree is activated.
+The slice is ready for serial integration, not a combined-main acceptance claim.
+
 ## Isolated visual-tooling lane (2026-09-28)
 
 Patrick initially authorized this isolated worktree alongside the product writer.

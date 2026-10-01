@@ -74,7 +74,7 @@ fn zoom_readout_and_toast_confirm_without_blocking_the_page() {
         return;
     }
     let fixtures = zoom_fixtures();
-    let (mut harness, socket, token) = spawn_harness("overlays", &fixtures.a1);
+    let (mut harness, socket, token) = spawn_visible_harness("overlays", &fixtures.a1);
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
         client.hello(&token).expect("hello");

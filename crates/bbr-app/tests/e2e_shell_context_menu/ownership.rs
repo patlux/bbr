@@ -39,7 +39,7 @@ fn native_bridge_is_installed_and_bbr_open_path_is_pure_chrome() {
     }
 
     let (_fixtures, page_one, _page_two) = fixtures();
-    let (mut harness, socket, token) = spawn_harness("menu-native", &page_one);
+    let (mut harness, socket, token) = spawn_visible_harness("menu-native", &page_one);
 
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);
@@ -426,7 +426,8 @@ fn resize_repins_the_one_host_and_close_leaves_no_orphan() {
             resized.portal.portal_window_number, portal_window_number,
             "resize reuses the same portal window, never recreates it"
         );
-        assert!(resized.portal.child_attached, "host stays attached");
+        assert!(resized.portal.owner_retained, "host retains its owner");
+        assert_open_portal_visibility(&resized.portal);
         assert!(resized.context_menu.open, "menu stays open");
         assert!(resized.context_menu.focused, "menu keeps keyboard focus");
         assert_eq!(resized.context_menu.bound_view, Some(view));

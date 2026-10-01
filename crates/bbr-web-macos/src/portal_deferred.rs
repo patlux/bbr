@@ -39,14 +39,11 @@ pub(crate) enum DeferredWindowOp {
         parent: Retained<NSWindow>,
         portal: Retained<NSWindow>,
     },
-    /// Order the portal window front after the presentation state and render
-    /// tree are ready. Ordering can synchronously post AppKit window
-    /// notifications into GPUI, so it follows the same bare-turn rule as
-    /// frame and attachment mutations.
-    Show,
-    /// Order the portal window out after dismissal or while the parent is
-    /// minimized. Deferred for the same GPUI re-entrancy boundary as Show.
-    Hide,
+    /// Reconcile current parent/application facts and the latest intent.
+    Visibility {
+        parent: Retained<NSWindow>,
+        intent: std::rc::Rc<crate::portal_visibility::VisibilityIntent>,
+    },
     /// Close the portal window. Deferred because `close:` synchronously
     /// posts `NSWindowWillCloseNotification`, which GPUI handles by removing
     /// the window from its arena — a mutation that panics while any `App`
@@ -75,6 +72,8 @@ pub(crate) enum DeferredWindowOp {
     /// window from its arena and re-borrowing the `App` (the same
     /// re-entrancy hazard as `Close`).
     CloseParent,
+    #[cfg(feature = "testkit")]
+    AppVisibility(bool),
 }
 
 /// Ivars of [`PortalDeferredWork`]: the retained window and the operation.
@@ -107,8 +106,9 @@ define_class!(
             match &ivars.op {
                 DeferredWindowOp::StyleMask(mask) => ivars.window.setStyleMask(*mask),
                 DeferredWindowOp::Frame(frame) => ivars.window.setFrame_display(*frame, false),
-                DeferredWindowOp::Show => ivars.window.orderFront(None),
-                DeferredWindowOp::Hide => ivars.window.orderOut(None),
+                DeferredWindowOp::Visibility { parent, intent } => {
+                    crate::portal_visibility::apply(self.mtm(), &ivars.window, parent, intent);
+                }
                 DeferredWindowOp::Close => ivars.window.close(),
                 DeferredWindowOp::ToggleFullscreen => {
                     // Deterministic fullscreen capability: titled windows are
@@ -131,7 +131,20 @@ define_class!(
                     ivars.window.setCollectionBehavior(*behavior);
                 }
                 DeferredWindowOp::CloseParent => ivars.window.performClose(None),
+                #[cfg(feature = "testkit")]
+                DeferredWindowOp::AppVisibility(hidden) => {
+                    let app = objc2_app_kit::NSApplication::sharedApplication(self.mtm());
+                    if *hidden {
+                        app.hide(None);
+                    } else {
+                        app.unhide(None);
+                    }
+                }
                 DeferredWindowOp::AttachChild { parent, portal } => {
+                    // GPUI PopUp defaults to level 101 and CanJoinAllSpaces.
+                    // This is browser-owned chrome, never a global popup.
+                    portal.setLevel(parent.level());
+                    portal.setCollectionBehavior(NSWindowCollectionBehavior::FullScreenAuxiliary);
                     // SAFETY: main thread; both windows are live; the
                     // child-window attachment is an AppKit main-thread API
                     // (the generated `addChildWindow:ordered:` is gated

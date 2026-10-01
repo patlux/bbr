@@ -10,6 +10,8 @@ Repository workflow and mandatory verification: [AGENTS.md](AGENTS.md).
 
 ## Current execution
 
+- **Bug fix lane:** [Portal window lifecycle](docs/roadmap/tasks/portal-window-lifecycle.md) binds the Command Palette to its owning window; isolated implementation verified in Tart, awaiting serial integration.
+
 - **Visual tooling:** [Reusable visual snapshots](docs/roadmap/tasks/visual-snapshot-tooling.md) and the windowless capture/unified-command foundation of [Native Gallery visual coverage](docs/roadmap/tasks/gallery-visual-coverage.md) are locally integrated with Paper alignment. Combined-tree baseline review, Gallery supported-state/framing audit and locked-session proof remain open; see Current delivery for evidence.
 
 - **Current delivery:** [Current delivery](docs/delivery/current.md)

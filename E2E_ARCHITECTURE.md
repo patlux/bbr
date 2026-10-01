@@ -173,7 +173,8 @@ JSON; no macOS, no GPUI, no WebKit).
 | `SetWindowSize { width, height }` | `window.resize`; native view re-framed next frame |
 | `PortalOpenProbe` / `PortalCloseProbe` / `PortalOutsideDismiss` | Drive the general production portal API and its dismissal policy over the one `NativeAboveWeb` host |
 | `PortalTeardown` | Exercise deterministic observer removal, child-window detachment, order-out, and close while preserving the browser session |
-| `ActivateApp` | Re-activate the shown browser window for native Window Server diagnostics; the portal remains non-activating |
+| `ActivateApp` | Re-activate the selected shown browser window for native Window Server diagnostics; hidden fixtures stay hidden and the portal remains non-activating |
+| `SetAppHidden { hidden }` | Deferred real AppKit hide/unhide; cross-app deactivation is exercised by activating a second real BBR process, not by synthetic notifications or a logical-state override |
 | `GetSnapshot` | Full typed `Snapshot` |
 | `Ping` | Liveness |
 | `CloseWindow` | Flush the successful response, then remove the real GPUI browser window; the production browser-window lifecycle observer calls `cx.quit()` and the process exits cleanly |
@@ -239,7 +240,9 @@ Snapshot {
   window_size: [f32; 2],     // points
   portal: PortalSnapshot {   // one per browser window; closed/open/teardown evidence
     presentation, host, visible, rect, ids,
-    child_attached, native_visible, frame_synced, nonactivating_panel,
+    owner_retained, child_attached, native_visible, frame_synced, nonactivating_panel,
+    parent_visible, parent_is_key, app_active, app_hidden,
+    parent_level, portal_level, portal_joins_all_spaces,
     parent_window_number, portal_window_number,
     frontmost_at_probe_point, below_portal_at_probe_point,
     portal_owns_probe_point, portal_is_key, portal_is_main,
@@ -807,8 +810,8 @@ split-core slice.
 `just e2e-shell-portal` launches the real app with a real WKWebView and proves
 the one-host `NativeAboveWeb` boundary through typed production seams:
 
-1. **Initially hidden:** the child panel already exists and is attached/frame-
-   synchronized, but remains ordered out, non-key, non-main, and non-activating;
+1. **Initially hidden:** the panel already exists with retained browser ownership
+   and a synchronized frame, but remains ordered out, non-key/non-main/non-activating;
    no portal presentation or `bbr-portal-*` ids are exposed.
 2. **Open over WebKit:** the production probe resolves through the general
    portal state, renders stable ids, orders the child host in, and preserves the
@@ -827,16 +830,29 @@ the one-host `NativeAboveWeb` boundary through typed production seams:
    out without browser mutation; `PortalTeardown` removes observation and the
    child relation and closes the host deterministically.
 
+The lifecycle regression group also checks inactive/hidden applications using
+two real BBR processes, two shown browser windows switching native key ownership,
+dismissal while inactive, parent-level/no-all-Spaces policy and hidden parents. Drafts and native/session
+identities must survive pause/restore. `owner_retained` is bridge ownership;
+`child_attached` reads AppKit's actual `parentWindow()` and is required on show,
+not inferred from a scheduled attachment. AppKit can detach ordered-out children.
+Shown tests still require native visibility/attachment and frontmost evidence;
+hidden geometry fixtures require logical presentation without native visibility
+or pointer ownership. Native activation requires an unlocked guest desktop;
+further lifecycle-lane GUI execution is Tart-only, never on the host desktop.
+
 The suite uses typed snapshots/deadlines, no pixel assertions or product sleeps.
-After remediation it passed three focused 3/3 runs, the command and sidebar
-regressions, and two complete sequential `just e2e` runs.
+Historical host-remediation runs passed three focused 3/3 runs, the command and
+sidebar regressions, and two sequential `just e2e` runs. Current lifecycle-lane
+acceptance remains in Current delivery; those historical passes do not prove it.
 
 ## 7j. U1 command surfaces over native WebKit
 
 `just e2e-shell-command` contains 25 real-app scenarios on the current
 integrated tree. The palette/overlay behavior tests assert from the same
 snapshots that the active command surface is hosted by `native-above-web`:
-logical/native visibility, child attachment, parent-frame synchronization,
+logical visibility, retained owner, parent-frame synchronization, native
+visibility/attachment for shown fixtures (ordered out for hidden parents),
 non-activating/non-key/non-main policy, stable portal-window reuse after
 dismissal, and unchanged `WebViewId`/session ownership. The wider suite also
 proves text/focus restoration, typed states, deterministic ranking,

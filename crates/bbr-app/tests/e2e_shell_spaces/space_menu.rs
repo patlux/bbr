@@ -177,7 +177,7 @@ fn delete_space_asks_once_and_closes_its_tabs_into_the_fallback() {
     }
     let (fixtures, page_one, page_two) = fixtures();
     let page_three = fixtures.url("/no-favicon.html");
-    let (mut harness, socket, token) = spawn_harness("space-delete", &page_one);
+    let (mut harness, socket, token) = spawn_visible_harness("space-delete", &page_one);
 
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);

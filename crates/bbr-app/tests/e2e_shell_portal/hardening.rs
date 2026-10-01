@@ -83,8 +83,8 @@ fn host_hides_on_minimize_and_restores() {
             "a minimized portal must never own hit testing over the desktop"
         );
         assert!(
-            minimized.portal.child_attached,
-            "minimize must not detach or tear down the host"
+            minimized.portal.owner_retained,
+            "minimize preserves the owner and reusable host"
         );
         assert!(!minimized.portal.portal_is_key && !minimized.portal.portal_is_main);
         assert_eq!(

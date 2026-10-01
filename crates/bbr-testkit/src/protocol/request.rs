@@ -939,6 +939,10 @@ pub enum Request {
     /// calls at startup; it activates the browser window — never the
     /// non-activating portal.
     ActivateApp,
+    /// Drive real AppKit hide/unhide without synthetic notifications.
+    SetAppHidden {
+        hidden: bool,
+    },
     /// Resize the window content area (points). Used to observe layout
     /// re-flow via the snapshot; the native view is re-framed on the next
     /// frame.

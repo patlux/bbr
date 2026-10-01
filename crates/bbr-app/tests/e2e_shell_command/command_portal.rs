@@ -28,11 +28,7 @@ pub fn assert_command_portal_open(snapshot: &Snapshot, surface: CommandSurface) 
         portal.rect.is_some(),
         "the command card has resolved geometry"
     );
-    assert!(
-        portal.child_attached,
-        "portal remains a child of the browser"
-    );
-    assert!(portal.native_visible, "AppKit orders the portal window in");
+    assert_open_portal_visibility(portal);
     assert!(portal.frame_synced, "portal frame follows parent content");
     assert!(portal.nonactivating_panel, "portal cannot activate itself");
     assert!(portal.parent_window_number > 0);
@@ -51,7 +47,7 @@ pub fn wait_command_portal_open(
         let snapshot = client.snapshot().expect("command portal open snapshot");
         if snapshot.command_surface == surface
             && snapshot.portal.visible
-            && snapshot.portal.native_visible
+            && portal_visibility_settled(&snapshot.portal)
             && snapshot.portal.frame_synced
         {
             assert_command_portal_open(&snapshot, surface);
@@ -78,8 +74,8 @@ pub fn assert_command_portal_closed(snapshot: &Snapshot, window_number: i64) {
     assert_eq!(portal.rect, None);
     assert!(portal.ids.is_empty());
     assert!(
-        portal.child_attached,
-        "the one host remains attached for reuse"
+        portal.owner_retained,
+        "the one host retains its browser owner for reuse"
     );
     assert!(!portal.native_visible, "closed portal is ordered out");
     assert!(portal.frame_synced);

@@ -14,14 +14,17 @@
 //! window/visibility fields.
 
 use objc2::rc::Retained;
-use objc2::{define_class, msg_send, DefinedClass, MainThreadMarker, MainThreadOnly};
+use objc2::{define_class, msg_send, sel, DefinedClass, MainThreadMarker, MainThreadOnly};
 use objc2_app_kit::{
-    NSWindowCollectionBehavior, NSWindowDidChangeScreenNotification,
-    NSWindowDidDeminiaturizeNotification, NSWindowDidEnterFullScreenNotification,
-    NSWindowDidExitFullScreenNotification, NSWindowDidMiniaturizeNotification, NSWindowStyleMask,
-    NSWindowWillCloseNotification,
+    NSApplication, NSApplicationDidBecomeActiveNotification, NSApplicationDidHideNotification,
+    NSApplicationDidResignActiveNotification, NSApplicationDidUnhideNotification, NSWindow,
+    NSWindowCollectionBehavior, NSWindowDidBecomeKeyNotification,
+    NSWindowDidChangeScreenNotification, NSWindowDidDeminiaturizeNotification,
+    NSWindowDidEnterFullScreenNotification, NSWindowDidExitFullScreenNotification,
+    NSWindowDidMiniaturizeNotification, NSWindowDidResignKeyNotification, NSWindowStyleMask,
+    NSWindowWillCloseNotification, NSWorkspace, NSWorkspaceActiveSpaceDidChangeNotification,
 };
-use objc2_foundation::{NSNotification, NSObject};
+use objc2_foundation::{NSNotification, NSNotificationCenter, NSObject};
 
 use crate::portal::NativePortal;
 use crate::portal_deferred::{defer_window_op, DeferredWindowOp};
@@ -61,7 +64,15 @@ define_class!(
             let portal = unsafe { &mut *self.ivars().portal };
             if let Some(mtm) = MainThreadMarker::new() {
                 portal.sync_frame(mtm);
+                portal.sync_visibility(mtm);
             }
+        }
+
+        #[unsafe(method(portalVisibility:))]
+        fn portal_visibility(&self, _notification: Option<&NSNotification>) {
+            // Pinned allocation; observer is removed before NativePortal drop.
+            let portal = unsafe { &*self.ivars().portal };
+            portal.sync_visibility(self.mtm());
         }
 
         /// Window-lifecycle hardening (task packet `native-portal-hardening`):
@@ -107,12 +118,59 @@ define_class!(
                 // scale change alone never shifts it (belt-and-braces for a
                 // content-rect change that skipped the move/resize events).
                 portal.sync_frame(mtm);
+                portal.sync_visibility(mtm);
             }
         }
     }
 );
 
 impl PortalSyncObserver {
+    pub(crate) fn observe_visibility(&self, mtm: MainThreadMarker, parent: &NSWindow) {
+        let center = NSNotificationCenter::defaultCenter();
+        let app = NSApplication::sharedApplication(mtm);
+        // Main-thread notifications; removed before the pinned owner drops.
+        unsafe {
+            for name in [
+                NSWindowDidBecomeKeyNotification,
+                NSWindowDidResignKeyNotification,
+            ] {
+                center.addObserver_selector_name_object(
+                    self,
+                    sel!(portalVisibility:),
+                    Some(name),
+                    Some(parent),
+                );
+            }
+            for name in [
+                NSApplicationDidBecomeActiveNotification,
+                NSApplicationDidResignActiveNotification,
+                NSApplicationDidHideNotification,
+                NSApplicationDidUnhideNotification,
+            ] {
+                center.addObserver_selector_name_object(
+                    self,
+                    sel!(portalVisibility:),
+                    Some(name),
+                    Some(&app),
+                );
+            }
+            center.addObserver_selector_name_object(
+                self,
+                sel!(portalLifecycle:),
+                Some(NSWindowDidExitFullScreenNotification),
+                Some(parent),
+            );
+            NSWorkspace::sharedWorkspace()
+                .notificationCenter()
+                .addObserver_selector_name_object(
+                    self,
+                    sel!(portalVisibility:),
+                    Some(NSWorkspaceActiveSpaceDidChangeNotification),
+                    None,
+                );
+        }
+    }
+
     /// Create and initialize the observer on the main thread with a raw
     /// pointer to the owning portal's boxed heap allocation.
     pub(crate) fn new(mtm: MainThreadMarker, portal: *mut NativePortal) -> Retained<Self> {
@@ -122,17 +180,23 @@ impl PortalSyncObserver {
     }
 }
 
+/// Test-only real application lifecycle driver, applied outside the GPUI borrow.
+#[cfg(feature = "testkit")]
+pub fn drive_app_visibility(mtm: MainThreadMarker, hidden: bool) {
+    let app = objc2_app_kit::NSApplication::sharedApplication(mtm);
+    if let Some(window) = app.windows().firstObject() {
+        defer_window_op(mtm, window, DeferredWindowOp::AppVisibility(hidden));
+    }
+}
+
 impl NativePortal {
     /// The parent was miniaturized (real `NSWindowDidMiniaturizeNotification`):
     /// order the portal out so it can never occlude the desktop or intercept
     /// input while the browser window is minimized. The commanded `visible`
     /// flag stays armed — the presentation is paused, not dismissed — so a
     /// restore re-shows the same presentation on the same host window.
-    pub fn parent_miniaturized(&mut self, _mtm: MainThreadMarker) {
-        let Some(portal) = self.portal_window.as_deref() else {
-            return;
-        };
-        portal.orderOut(None);
+    pub fn parent_miniaturized(&mut self, mtm: MainThreadMarker) {
+        self.sync_visibility(mtm);
     }
 
     /// The parent was restored (real `NSWindowDidDeminiaturizeNotification`):
@@ -141,12 +205,7 @@ impl NativePortal {
     /// windows, but the explicit re-show is deterministic regardless.
     pub fn parent_deminiaturized(&mut self, mtm: MainThreadMarker) {
         self.sync_frame(mtm);
-        if self.visible {
-            let Some(portal) = self.portal_window.as_deref() else {
-                return;
-            };
-            portal.orderFront(None);
-        }
+        self.sync_visibility(mtm);
     }
 
     /// The parent entered or left native fullscreen (real
@@ -158,12 +217,7 @@ impl NativePortal {
     /// orphaned.
     pub fn fullscreen_did_change(&mut self, mtm: MainThreadMarker) {
         self.sync_frame(mtm);
-        if self.visible {
-            let Some(portal) = self.portal_window.as_deref() else {
-                return;
-            };
-            portal.orderFront(None);
-        }
+        self.sync_visibility(mtm);
     }
 
     /// Drive the parent's real fullscreen transition (`toggleFullScreen:`).
