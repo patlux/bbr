@@ -1,5 +1,7 @@
 //! Host-only mbx build and immutable payload staging. Never executes a producer.
-use crate::{environment, payload, process, provenance, vm_environment::HostBuild, Suite};
+use crate::{
+    environment, payload, process, provenance, vm_environment::HostBuild, vm_runtime, Suite,
+};
 use anyhow::{ensure, Context, Result};
 use cargo_gpui_visual::{config::Config, store};
 use serde_json::Value;
@@ -95,6 +97,11 @@ pub fn prepare(
         cancelled,
     )?;
     let host = host_build(&host_before, &staged)?;
+    vm_runtime::verify(repo, suite, destination, &staged, cancelled)?;
+    ensure!(
+        payload::source_snapshot(repo, &config, cancelled)? == before,
+        "source changed during runtime preflight; rebuild before transfer"
+    );
     // Build evidence stays outside the shared payload so its exact inventory
     // remains unchanged. The caller records this typed return value explicitly.
     Ok(host)

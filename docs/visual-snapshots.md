@@ -203,13 +203,38 @@ remain open. This does not establish current Gallery applicability/page coverage
 uses the repository's existing Xcode/SDK environment and bounded `mbx build`,
 builds the separate release consumer, resolves the exact Cargo artifacts, checks
 host environment and source identity around both builds, then stages the verified
-payload. It prints typed host-build
-JSON; redirect that explicitly to diagnostics outside the payload when needed.
+payload. An offline runtime preflight is required before typed host-build JSON is
+printed; redirect that explicitly to diagnostics outside the payload when needed.
 No inventory executable, app, renderer, VM, SSH or service is started. Output
 must be fresh, absolute and outside the checkout, under an existing directory.
 An existing payload is never reused or overwritten; source changes require
 fresh preparation. This build-only command does not bypass `produce`/`check`'s
 closed native execution guard and does not make Python capture entrypoints safe.
+
+### Pinned guest-runtime prerequisite
+
+`/Users/patwoz/dev/Personal/macos/bbr/scripts/visual/guest-runtime.json` pins the
+existing Darwin arm64 Python 3.13.11 interpreter, executable hash and complete
+Nix closure (51 store paths; 1,492,264,592 NAR bytes), including current producers'
+libiconv dependency. These are reproducibility inputs, not a host package install
+or a claim that the golden image has the runtime. The full closure includes
+Python's toolchain references; no guessed smaller closure is substituted.
+
+Preparation checks every staged executable with `lipo`/`otool`, refuses unresolved
+rpath/Homebrew/unknown dylibs, compares offline Nix closure metadata with the
+source-bound lock, verifies actual store bytes with `nix-store --verify-path`,
+and checks Python's hash/version/architecture and required standard-library
+imports using isolated `-I -B`. It then repeats metadata and payload/source checks.
+Nix's optimized hardlinks are valid runtime storage; payload single-link checks
+remain unchanged. Rust bounds the complete probe group and validates the returned
+original payload/lock/executable identities. No Nix realization, repair,
+substitution, profile change or network operation is performed. Failure leaves
+staging diagnostics, never a successful preparation or capture seal.
+
+The host observations are explicitly `host-runtime-prerequisite`, not guest
+rendering evidence. Guest runtime availability/transfer, source-bound bootstrap,
+SSH execution/return and approved VM pilot remain unproven. Baseline/environment
+adoption and the native capture guard are unchanged.
 
 ## Capture contract
 

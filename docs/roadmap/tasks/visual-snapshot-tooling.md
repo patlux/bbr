@@ -186,6 +186,22 @@ probe a VM. Partial boot remains unproven; this prerequisite does not open captu
 authorize networking or claim actual VM cleanup. Host bootstrap/SSH/return wiring
 and the approved real pilot remain separate required evidence.
 
+### Bounded guest-runtime prerequisite
+
+Before host bootstrap/SSH wiring, pin the existing Darwin Python interpreter and
+its complete Nix runtime closure, including each producer's non-system dylibs.
+Use a source-bound lock containing NAR hashes, sizes and references; validate the
+actual staged Mach-O dependency lists and closure bytes with offline read-only
+Nix queries/verification. Require this preflight before `visual-prepare` returns
+host build evidence; failed staging remains diagnostics, not capture readiness. Reject unknown dylib origins, unpinned store paths,
+incomplete/changed closure metadata and changed interpreter bytes. Never resolve
+`python3` through the guest's Xcode placeholder or inherit host search paths.
+No package installation, Nix realization/repair, new network access, guest launch,
+producer execution or capture-enable flag belongs to this slice. Test rejection
+and command ordering with local fixtures; actual host checks are prerequisite
+proof only, not guest availability, pixel or teardown evidence. Runtime transfer/
+realization and source-bound bootstrap/SSH/return integration remain open.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and

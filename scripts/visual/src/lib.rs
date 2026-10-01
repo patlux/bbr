@@ -10,6 +10,7 @@ pub mod read_only;
 pub mod runner;
 pub mod vm_cleanup;
 pub mod vm_environment;
+pub mod vm_runtime;
 pub mod vm_supervision;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

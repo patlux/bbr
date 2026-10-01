@@ -527,6 +527,68 @@ Parallelism audit: no other lane is authorized; those portable actions remain
 runnable. Implementation/review elapsed time was not measured; test durations
 are present in logs, not product-performance evidence.
 
+### Source-bound guest-runtime prerequisite
+
+Preflight: clean `main@b037b54`, no Git lock or visual/Tart process; full active
+delivery contract read. This session remains the only authorized local visual
+writer; foreign worktrees, ordinary development app and unrelated builds are
+untouched. No workflow/subagent/new lane is authorized. Bootstrap integration and
+coverage are runnable; actual boot and Checkbox asset approval remain pending.
+
+Host inspection found the copied consumer/Gallery/browser link to Nix libiconv,
+and neither system nor per-user profile exports Python. Pinned the already
+installed Darwin arm64 Python 3.13.11 and its entire observed Nix closure, including
+libiconv, in a source-bound JSON lock: **51 paths / 1,492,264,592 NAR bytes**. The
+closure includes upstream Python toolchain references; no reduced/guessed runtime
+or package install. Nix query/verification are offline/read-only, not realization,
+repair, substitution, profile changes or guest availability evidence.
+
+`visual-prepare` now requires staged thin-arm64 Mach-O dependency validation,
+exact lock/closure metadata, actual NAR-byte verification, isolated interpreter
+hash/version/architecture/standard-library checks, and postchecks before it
+returns build evidence. Unknown dylib origins/store paths, incomplete or drifted
+closure, changed payload/lock and failed probes cannot pass. Rust owns the bounded
+probe group through upstream; Python read-only children do not detach. No host
+producer, native capture, seal or baseline path is enabled.
+
+Evidence:
+- **9 new Python contracts** and **2 Rust contracts** cover strict closure graph,
+  hashes/size/types, bad Mach-O records/origins, architecture and byte failures,
+  pre/post metadata drift, source-bound lock/payload/executable identity, output/
+  deadline bounds and no detached probe child. Initial red was the missing module;
+  focused fixtures pass without native/Nix/VM operations. Real direct `/bin/sleep`
+  timeout and inert `/usr/bin/printf`/`false` probes are local-only test fixtures.
+- `just visual-test`: **112 Python units** plus the separately run real-CLI
+  integration, unchanged upstream contracts and **47 consumer tests** plus signal
+  fixtures pass. Strict consumer all-target Clippy and fmt pass. Logs:
+  `/tmp/bbr-visual-runtime-focused-final.log`, `/tmp/bbr-visual-runtime-rust.log`,
+  `/tmp/bbr-visual-runtime-final-visual-test.log`,
+  `/tmp/bbr-visual-runtime-final-clippy.log`. Roadmap, whitespace and the 49 shared
+  script contracts also pass (`/tmp/bbr-visual-runtime-final-roadmap.log`,
+  `/tmp/bbr-visual-runtime-final-script-tests.log`).
+- Actual host-only integrated preparations at
+  `/private/tmp/bbr-visual-runtime-integrated.fVYUtf`: Gallery 1,471 sources + 2
+  executables (1,473 files / 43,859,980 bytes), browser 1,471 + 3 (1,474 files /
+  61,634,268 bytes). Both preparation commands pass the new mandatory runtime
+  check. Gallery manifest `09e43dddc13584c9eeee795809bcbe80e26cba854267d9122ea0a7e001b5ee75`;
+  browser `5c56bd151d8b7f7fe570b7133efac2d16ff7ceb8582d1f5176bde4130215d64b`.
+  Host-build JSON and prepare logs are alongside the payloads. No payload installed
+  on the host and no producer executed. Existing `block` warning remains.
+- Earlier read-only full runtime observations on predecessor payloads:
+  `/tmp/bbr-visual-runtime-actual.log`, 5.661s Gallery / 2.578s browser measured.
+  Those timings are prerequisite tooling, not capture/product performance.
+  Stale staging at `/private/tmp/bbr-visual-runtime-prepare.yvMS7d` is diagnostic.
+
+Self-review corrected inherited Python test-class discovery, strict metadata type
+validation, and ensured probe children stay in the upstream-owned group rather
+than escape on cancellation. Full runtime checks succeeded on actual host bytes;
+no VM, key, network probe, image return, visual review or product gate occurred.
+Documentation changes do not make these payloads capture seals; all subsequent
+source changes require fresh preparation. Next remains source-bound bootstrap/
+SSH/return wiring and independent Gallery coverage/selection. No migration or
+baseline acceptance claim; performance remains deferred. Implementation/review
+wall time was not instrumented. Parallelism audit: no additional lane authorized.
+
 ## Status vocabulary
 
 | Status | Meaning |
