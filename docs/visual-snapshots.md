@@ -86,6 +86,29 @@ actual VM transfer, guest execution/environment, post-capture source identity,
 artifact return or Tart cleanup. Those require the pending adapter and approved
 VM pilot; native producer entrypoints remain blocked.
 
+### Tart lifecycle and guest-environment prerequisites
+
+The shared Tart helper now attempts all bounded cleanup actions even after a
+failed detach/stop, reports deletion/key/log failures, and preserves successful
+cleanup evidence across repeated calls. Optional offline-clone hooks leave the
+normal E2E boot/key policy unchanged. The visual-only policy replaces inherited
+clone SSH settings and keys before boot, disables known unrelated service jobs,
+and requires observed effective key-only SSH, no forwarding, a TCP listener audit
+and host reachability checks before yielding a session. The lifecycle wrapper
+uses only the fixed golden image and a read-only payload share, restores signal
+handlers, and propagates cleanup failure. There is no runnable capture CLI yet.
+
+Host compiler/SDK identity and guest OS/model/display/font/session identity are
+separate typed records. Guest evidence must verify every staged source/executable,
+bind the exact payload hash, and match before/after observations. Binary hashes
+belong to the per-run receipt, not the rendering-environment equality key: ordinary
+code changes must not masquerade as environment adoption. Guest observations
+never fall back to host values, user fonts or a locked/missing guest session.
+All tests so far use synthetic observations and mocked Tart/SSH; no actual guest
+hardening, environment, transport, timeout or cleanup pass is claimed. The
+consumer host-capture guard remains closed pending adapter integration and the
+explicitly approved pilot.
+
 ## Capture contract
 
 `visual.toml` delegates PNG production to `scripts/visual/capture.py`. It builds

@@ -50,7 +50,10 @@ Provides/API: visual.toml plus visual-check/compare/accept recipes.
 Exclusive paths: scripts/visual/, tests/visual/, vendor/cargo-gpui-visual/,
 visual.toml, crates/bbr-app/tests/e2e_visual_shell_capture.rs.
 Shared integration points: justfile, .gitignore, E2E_ARCHITECTURE.md,
-ROADMAP.md, testing track, Phase 4 and Current delivery.
+ROADMAP.md, testing track, Phase 4 and Current delivery. The existing
+`/Users/patwoz/dev/Personal/macos/bbr/scripts/tart_vm.py` lifecycle is shared
+infrastructure: narrowly harden cleanup and add an optional offline-clone policy
+hook; preserve the E2E runner's default boot/key policy and recipe behavior.
 Integration order: Paper-alignment product changes first; snapshot tooling
 second, followed by fresh captures and an explicit baseline review.
 

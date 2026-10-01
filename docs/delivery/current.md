@@ -203,6 +203,53 @@ portable fault-injection tests, plus current coverage audit. Actual VM boot and
 Checkbox asset change still need Patrick's requested permissions. No GUI, full
 coverage, baseline acceptance, performance or stable-product completion claim.
 
+### Tart lifecycle / environment contract checkpoint
+
+Continuation preflight: clean `main@e1fc345`, no index lock or active visual/Tart
+build/capture process. Only the existing visual owner writes locally; no lane,
+subagent or foreign worktree access. Current queue still permits portable VM
+adapter work but not an actual boot or Checkbox asset modification.
+
+Direct fault injection exposed shared Tart cleanup stopping at the first failed
+detach/stop and reporting delete/log failures as success. Seven new regression
+contracts were red before the bounded repair. Cleanup now attempts every owned
+resource, preserves errors/key on failed deletion, reports missing durable
+evidence, and is idempotent after success. Optional offline-clone preparation and
+exclusive-key/isolated-SSH flags preserve the default E2E boot policy. The visual
+policy replaces clone-only SSH config before boot, disables known unrelated
+launch jobs, then requires observed effective authentication, listener and host
+port checks. Signal unwinding and cleanup propagation are exercised with mocks;
+no actual Tart, SSH, listener, key generation or mounted-volume operation ran.
+
+A separate guest observer and Rust receipt binding distinguish host build
+compiler/SDK from guest OS/model/display/font/session facts. Receipt checks bind
+all staged bytes and reject missing/swapped sources/artifacts or environment
+drift. Build hashes remain run provenance, not environment-equality keys, so
+ordinary source changes do not force environment adoption. Both visual source
+policies now include the shared Tart helper. The observer refuses a host home,
+user-font additions, symlinks, incomplete observations or a locked guest. No
+current VM/environment provenance claim follows from synthetic fixtures.
+
+Fresh gates: `just visual-test` passes 60 Python unit tests (one additional
+real-CLI class skipped in discovery then run separately), 175 upstream tests
+plus child fixtures, and **31 Rust consumer tests**. All 49 shared script tests,
+strict consumer all-target Clippy, fmt, roadmap and whitespace checks pass.
+Logs: `/tmp/bbr-visual-tart-cleanup-red.log`,
+`/tmp/bbr-visual-tart-cleanup-green.log`,
+`/tmp/bbr-visual-vm-foundation-final-visual-test.log`,
+`/tmp/bbr-visual-vm-foundation-final-script-tests.log`,
+`/tmp/bbr-visual-vm-foundation-final-clippy.log`. Test timing is in those logs;
+implementation/review wall time was not measured. Self-review checked cleanup
+failure propagation, no inherited SSH config/agent/proxy, first-boot hardening,
+private-IP validation before initial SSH, exact environment binding and no
+protected product/upstream/baseline diff. Guest policy compatibility and real
+cleanup remain pending runtime evidence; the unconditional host guard stays.
+
+Next local step is installed-payload verification / bounded artifact return and
+transport wiring, followed by current Gallery coverage selection. These remain
+runnable without VM permission; no completion, GUI gate, baseline acceptance or
+performance pass is claimed. Boot/network and Checkbox approvals remain pending.
+
 ## Status vocabulary
 
 | Status | Meaning |
