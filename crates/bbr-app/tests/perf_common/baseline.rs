@@ -137,6 +137,20 @@ pub fn contract_budget(kind: &str) -> Option<Budget> {
             p95_ms: 50.0,
             max_ms: Some(100.0),
         },
+        // DESIGN.md §10.12 (task packet `closed-pins-and-favorites`): ⌘W on
+        // a pinned tab closes it in place — the row stays, its session is
+        // destroyed and the warm neighbor is presented: the
+        // `active_tab_close` warm class. Reopening the closed row (⇧⌘T at
+        // the page it closed on, or a press at its pinned page) creates a
+        // fresh session: the `tab_reopen` session-recreation class.
+        "pinned_tab_close" => Budget {
+            p95_ms: 50.0,
+            max_ms: Some(100.0),
+        },
+        "closed_tab_reopen" | "closed_row_select" => Budget {
+            p95_ms: 100.0,
+            max_ms: Some(150.0),
+        },
         // N1 packet `web-content-navigation-gestures`: a committed logical
         // Back gesture over a deterministic already-loaded two-entry
         // history dispatches exactly one real history action and the sample
@@ -620,6 +634,9 @@ impl Baseline {
             "new_tab_command_bar",
             "new_tab_open",
             "active_tab_close",
+            "pinned_tab_close",
+            "closed_tab_reopen",
+            "closed_row_select",
             "web_history_swipe_back",
             "child_tab_swipe_return",
             "dense_scroll",

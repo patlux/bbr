@@ -10,6 +10,7 @@ mod background_links_drive;
 pub mod baseline;
 mod benchmarks;
 mod benchmarks_u2;
+mod closed_pins_drive;
 mod command;
 mod command_drive;
 mod command_full_search;

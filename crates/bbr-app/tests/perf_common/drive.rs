@@ -1461,6 +1461,23 @@ fn drive_matrix_inner(
         raw.extend(auth_samples);
         raw.extend(peek_samples);
         raw.extend(background_samples);
+        // Closed pinned tabs (task packet `closed-pins-and-favorites`,
+        // DESIGN.md §10.12): ⌘W on a pinned tab closes it in place
+        // (`pinned_tab_close`, warm class 50/100), ⇧⌘T reopens the closed
+        // row at the page it closed on (`closed_tab_reopen`) and a press on
+        // the closed row reopens it at its pinned page
+        // (`closed_row_select`), both session-recreation class 100/150. A
+        // dedicated space; the block re-activates the previous space, so the
+        // blocks below see the state they expect.
+        raw.extend(super::closed_pins_drive::drive_closed_pin_scenarios(
+            client,
+            harness,
+            &mut since,
+            config,
+            &mut operation,
+            page_one,
+            page_two,
+        ));
         // Renderer responsiveness scenarios are code-complete and compiled,
         // but this matrix is not executed while the performance override is
         // active. When un-deferred, it records 30 neighbor-selection + 30
@@ -1735,6 +1752,7 @@ fn drive_matrix_inner(
             &mut operation,
             page_two,
         ));
+
         raw
     };
     *cursor = since;

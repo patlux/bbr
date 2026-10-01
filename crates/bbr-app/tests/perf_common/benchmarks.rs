@@ -1155,13 +1155,17 @@ pub(crate) fn benchmark_press(
     measured
 }
 
-/// The active space's loose pinned rows (DESIGN §11.11): the pinned tabs
-/// that are not grouped in a folder — the rows the pinned block renders.
+/// The active space's loose pinned rows (DESIGN §11.10/§11.11): the pinned
+/// tabs that are neither grouped in a folder nor Favorites — the rows the
+/// pinned block renders.
 pub(crate) fn loose_pinned(snapshot: &bbr_testkit::protocol::Snapshot) -> Vec<usize> {
+    // DESIGN §11.10: a Favorite renders as its tile only, like a grouped
+    // member renders inside its folder.
     let grouped: Vec<u64> = snapshot
         .folders
         .iter()
         .flat_map(|folder| folder.members.iter().copied())
+        .chain(snapshot.favorites.iter().map(|favorite| favorite.tab))
         .collect();
     let mut loose: Vec<usize> = snapshot
         .all_tabs
