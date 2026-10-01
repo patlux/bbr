@@ -104,7 +104,7 @@ pub(super) fn wait_menu_open(
             && m.point == point
             && snapshot.portal.presentation == Some(MENU_PRESENTATION_ID)
             && snapshot.portal.visible
-            && snapshot.portal.native_visible
+            && portal_visibility_settled(&snapshot.portal)
             && snapshot.portal.frame_synced
         {
             assert_menu_open(&snapshot, view, point);
@@ -187,8 +187,7 @@ pub(super) fn assert_menu_open(snapshot: &Snapshot, view: WebViewId, point: [f32
     assert_eq!(p.host.as_deref(), Some("native-above-web"));
     assert!(p.visible);
     assert_eq!(p.ids, expected_menu_ids(m));
-    assert!(p.child_attached);
-    assert!(p.native_visible, "AppKit window is ordered in");
+    assert_open_portal_visibility(p);
     assert!(
         p.frame_synced,
         "portal frame pinned to the parent content rect"
@@ -228,8 +227,8 @@ pub(super) fn assert_menu_closed(snapshot: &Snapshot) {
         p.ids
     );
     assert!(
-        p.child_attached,
-        "host stays attached to the browser window"
+        p.owner_retained,
+        "host retains the original browser owner while ordered out"
     );
     assert!(
         !p.native_visible,

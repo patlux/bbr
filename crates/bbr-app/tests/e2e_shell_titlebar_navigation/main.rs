@@ -459,7 +459,7 @@ fn nav_clicks_match_keyboard_shortcuts() {
             |e| matches!(e, WebEvent::CanGoBackChanged(id, true) if *id == view),
             since,
         );
-        since = wait_web_event(
+        let _ = wait_web_event(
             &mut client,
             |e| matches!(e, WebEvent::CanGoForwardChanged(id, false) if *id == view),
             since,
@@ -471,23 +471,25 @@ fn nav_clicks_match_keyboard_shortcuts() {
         assert!(!click_forward.can_go_forward);
         assert_view_and_sessions_preserved(&click_forward, view, settled.engine_sessions);
 
-        // Reload parity: the Cmd-R shortcut and the titlebar Reload click
-        // both reload the focused page (same session, page stays). The
-        // reload re-commits the document, so the title event re-fires.
-        keystroke(&mut client, "cmd-r");
-        since = wait_title(&mut client, view, PAGE_TWO_TITLE, since);
-        flush_frame(&mut client);
-        let key_reload = client.snapshot().expect("keyboard reload snapshot");
+        // Reload parity: each action must start and commit a fresh load,
+        // then settle the title. WebKit can repeat the old title before
+        // commit; matching that event alone races the transient empty title.
+        let key_reload =
+            reload_and_wait(&mut client, view, PAGE_TWO_TITLE, dsl::keystroke("cmd-r"));
         assert_eq!(key_reload.title.as_deref(), Some(PAGE_TWO_TITLE));
+        assert!(!key_reload.loading);
+        assert_eq!(key_reload.url, click_forward.url);
         assert_view_and_sessions_preserved(&key_reload, view, settled.engine_sessions);
 
-        client
-            .send_ok(&dsl::click_titlebar_reload())
-            .expect("titlebar reload click");
-        let _ = wait_title(&mut client, view, PAGE_TWO_TITLE, since);
-        flush_frame(&mut client);
-        let click_reload = client.snapshot().expect("click reload snapshot");
+        let click_reload = reload_and_wait(
+            &mut client,
+            view,
+            PAGE_TWO_TITLE,
+            dsl::click_titlebar_reload(),
+        );
         assert_eq!(click_reload.title.as_deref(), Some(PAGE_TWO_TITLE));
+        assert!(!click_reload.loading);
+        assert_eq!(click_reload.url, key_reload.url);
         assert_eq!(
             click_reload.titlebar.can_reload, key_reload.titlebar.can_reload,
             "reload availability is identical"

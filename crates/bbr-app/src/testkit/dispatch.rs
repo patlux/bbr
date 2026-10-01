@@ -653,11 +653,22 @@ pub(crate) fn dispatch(
         // Bring the app to the foreground (testkit-only; the shown-harness
         // portal frontmost test). Activates the browser window, never the
         // non-activating portal.
-        Request::ActivateApp => with_app(window, app, cx, |_view, _window, cx| {
+        Request::ActivateApp => with_app(window, app, cx, |view, window, cx| {
             cx.activate(true);
+            if !view.windows_hidden {
+                window.activate_window();
+            }
             Response::Ok
         })
         .unwrap_or_else(err_response),
+
+        Request::SetAppHidden { hidden } => {
+            #[cfg(target_os = "macos")]
+            if let Some(mtm) = objc2::MainThreadMarker::new() {
+                bbr_web_macos::portal::drive_app_visibility(mtm, hidden);
+            }
+            Response::Ok
+        }
 
         Request::SetWindowSize { width, height } => {
             with_app(window, app, cx, |_view, window, _cx| {

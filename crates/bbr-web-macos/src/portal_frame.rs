@@ -114,12 +114,21 @@ pub fn frame_matches_content(frame: Option<PortalFrame>, content: Option<PortalF
 /// testkit snapshot mirrors these fields verbatim).
 #[derive(Debug, Clone, PartialEq)]
 pub struct PortalNativeDiagnostics {
-    /// The portal `NSWindow` is attached as a child of the browser window.
+    /// The bridge retains the original owner and reusable portal window.
+    pub owner_retained: bool,
+    /// Measured `parentWindow()` relation (AppKit may detach on orderOut).
     pub child_attached: bool,
     /// Logical visibility commanded by the app (orderFront/orderOut).
     pub visible: bool,
     /// The AppKit window's actual `isVisible` state.
     pub native_visible: bool,
+    pub parent_visible: bool,
+    pub parent_is_key: bool,
+    pub app_active: bool,
+    pub app_hidden: bool,
+    pub parent_level: i64,
+    pub portal_level: i64,
+    pub portal_joins_all_spaces: bool,
     /// Last frame synchronized to the parent content rect (screen coords).
     pub frame: Option<PortalFrame>,
     /// The parent content rect the frame was derived from (screen coords).
@@ -273,7 +282,10 @@ impl crate::portal::NativePortal {
         // Deterministic hit-test ownership: an attached, visible child
         // window pinned to the parent content rect covers the probe point,
         // and AppKit hit-tests child windows above their parent's views.
-        let portal_owns_probe_point = self.attached
+        let child_attached = portal
+            .and_then(|window| window.parentWindow())
+            .is_some_and(|owner| Some(&*owner) == parent);
+        let portal_owns_probe_point = child_attached
             && native_visible
             && frame_matches_content(self.frame, self.parent_content_rect);
         // Measured owner classification of the absolute frontmost answer:
@@ -290,9 +302,21 @@ impl crate::portal::NativePortal {
                 .any(|index| windows.objectAtIndex(index).windowNumber() as i64 == number)
         });
         PortalNativeDiagnostics {
-            child_attached: self.attached,
-            visible: self.visible,
+            owner_retained: self.attached,
+            child_attached,
+            visible: self.visibility.requested.get(),
             native_visible,
+            parent_visible: parent.is_some_and(|window| window.isVisible()),
+            parent_is_key: parent.is_some_and(|window| window.isKeyWindow()),
+            app_active: NSApplication::sharedApplication(mtm).isActive(),
+            app_hidden: NSApplication::sharedApplication(mtm).isHidden(),
+            parent_level: parent.map_or(0, |window| window.level() as i64),
+            portal_level: portal.map_or(0, |window| window.level() as i64),
+            portal_joins_all_spaces: portal.is_some_and(|window| {
+                window
+                    .collectionBehavior()
+                    .contains(objc2_app_kit::NSWindowCollectionBehavior::CanJoinAllSpaces)
+            }),
             frame: self.frame,
             parent_content_rect: self.parent_content_rect,
             synchronized: frame_matches_content(self.frame, self.parent_content_rect),
@@ -425,9 +449,17 @@ mod tests {
     #[test]
     fn diagnostics_snapshot_is_pure_data() {
         let diagnostics = PortalNativeDiagnostics {
+            owner_retained: true,
             child_attached: true,
             visible: false,
             native_visible: false,
+            parent_visible: true,
+            parent_is_key: true,
+            app_active: true,
+            app_hidden: false,
+            parent_level: 0,
+            portal_level: 0,
+            portal_joins_all_spaces: false,
             frame: Some(PortalFrame::new(0.0, 0.0, 1080.0, 700.0)),
             parent_content_rect: Some(PortalFrame::new(0.0, 0.0, 1080.0, 700.0)),
             synchronized: true,

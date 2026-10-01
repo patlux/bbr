@@ -69,6 +69,311 @@ The reference-alignment implementation wave is complete on `main`: Theme merged 
 
 The orchestrator (session `01a0e454`) is the product writer and runs the V2 slices serially on `main` (KEPT-PLACES ran serially from session `01a0f303` at Patrick's request while it was idle): no subagent or background workflow is authorized for this program, so the packets' parallel-capable pairs are executed in order and each slice is reviewed by a documented self-review against its packet before integration. Independent reviews use `homelab-llm/opencode-go/deepseek-v4-flash:high`: the route named in `AGENTS.md` (`homelab-llm/deepseek-v4-flash`) no longer resolves in the model registry. All historical BBR worktrees remain preserved.
 
+## Isolated Portal bug-fix lane (2026-10-01)
+
+Patrick explicitly approved a separate worktree for the Command Palette
+remaining above other apps. Sole writer: session `01a0f808-b22a-7311-8e49-dc2619e64d76`;
+branch `parallel/portal-window-lifecycle`, worktree
+`/Users/patwoz/dev/Personal/macos/bbr-portal-window-lifecycle`, clean committed
+base `32b735dcd79372b4fe9722122579959da0f39c4a`; frozen source commit
+`aff55e14ccc1869abcfb7545b37775ca984a12f5`. Status: `integrated` by the local
+no-ff merge after Patrick authorized the bounded Titlebar synchronization repair
+and fresh combined-tree Tart gates. Session `01a0f808` settles integration
+ownership on `/Users/patwoz/dev/Personal/macos/bbr` with this merge; no ongoing
+product ownership is claimed. Both earlier Titlebar failures remain recorded.
+Favorites drag, favicon persistence and main's VM tooling are preserved;
+internal-pages and cleanup stay outside this integration. Historical lane-only,
+no-merge and blocked checkpoints below are provenance, not current state.
+Contract: [Portal window lifecycle](../roadmap/tasks/portal-window-lifecycle.md).
+
+Parallelism audit: only this bug fix is authorized in this session. Main's
+Favorites drag writer and the isolated internal-pages writer remain untouched;
+no subagent, workflow, extra lane or merge is authorized. Exclusive product
+territory is the native Portal bridge. Shared integration points are additive
+native/testkit diagnostics, Portal lifecycle requests, snapshot mapping and
+roadmap/architecture documents. Main's ongoing work lands first, this isolated
+patch follows serially through the integration owner; conflicts must preserve
+both contracts. Native GUI gates use the common-directory host lock. No Git
+index lock existed at activation; the main worktree's unrelated dirty diff
+was not copied. Performance execution remains deferred; no performance pass is
+claimed.
+
+### Portal lifecycle checkpoint and GUI blocker
+
+Implemented in the uncommitted isolated lane: current-intent deferred visibility,
+app/key-window/active-Space observers with balanced removal, parent-relative
+ordering and reattachment after AppKit detaches an ordered-out child. Native
+level/Space policy is reset at attachment. Diagnostics now distinguish retained
+ownership from actual `parentWindow()`. Hidden consumer fixtures assert logical
+presentation plus no native orphan; shown visibility checks remain mandatory.
+No dependencies, renderer or product focus authority changed.
+
+Evidence:
+- Old-code regression reproduced inactive-app visibility, standalone hidden-parent
+  visibility and independent all-Spaces policy. Initial level hypothesis was
+  corrected: GPUI creates level 101 but native attachment already lowers it.
+- Initial lifecycle regression 3/3 green: `/tmp/bbr-portal-regression4.log`.
+  After actual attachment diagnostics and the two-window test, the latter passed
+  twice (`/tmp/bbr-portal-regression5.log`, `/tmp/bbr-portal-suite2.log`). First
+  run still saw `app_active=true` after deactivate; the helper now avoids a
+  redundant pending activation before deactivation. That fix is not yet fully
+  revalidated across repeated runs.
+- Portal suite `/tmp/bbr-portal-suite2.log`: 9/11, 41.07s measured test time.
+  Failures: shown Space test did not gain native visibility; draft test received
+  unexpected suffix `es ` (`preserved draftes `). Do not classify those earlier
+  failures as lock-caused without contemporaneous evidence.
+- Latest `/tmp/bbr-portal-consumers2.log`: Portal 3/11, 247.76s measured; shown
+  owners stay `app_active=false`, `parent_is_key=false`, foreign frontmost window
+  70321. Read-only `ioreg` then confirms `CGSSessionScreenIsLocked=Yes`.
+  GUI work stopped; no lock-state changes, assertion relaxation or browser/VM
+  fallback. Later consumer recipes did not execute because Portal failed.
+- `/tmp/bbr-portal-verify3.log`: full `just verify` green, including workspace
+  check/tests/Clippy, roadmap, UI boundary and 49 script tests. Earlier attempts
+  caught missing DTO fixture fields and an untracked task link; both corrected.
+- `/tmp/bbr-portal-testkit-clippy.log`: `mbx clippy -p bbr -p bbr-web-macos
+  -p bbr-testkit --features testkit --all-targets -- -D warnings` passes.
+  Existing `block` future-incompatibility warning remains.
+- Commands use bounded `/tmp/bbr-portal-lifecycle.just`, a repository recipe
+  copy replacing compiler Cargo calls with mbx and omitting only deferred perf
+  from the aggregate. Repository justfile/targets/budgets unchanged. An earlier
+  consumer attempt received SIGTERM during a cold build; no pass claimed.
+
+Self-review checked live-intent/drop safety, observer removal from both centers,
+non-key parent-relative ordering, truthful diagnostics and preservation of hidden
+geometry coverage. Consumer E2E, full functional aggregate, Peek/Gallery and a
+fresh full Portal pass remain open. Real desktop Space switching/fullscreen are
+not proven here. No commit, merge, push, ownership transfer or completion claim.
+Only the new task packet is staged so the roadmap validator can see its link.
+Other code and documents remain unstaged. Planning/review elapsed time was not
+instrumented.
+
+### Unlocked retry and Tart-only continuation (2026-10-01)
+
+The subsequently unlocked host retry passed all four new lifecycle regressions.
+Portal minimize/restore failed once, then the focused rerun passed 1/1 (5.73s).
+The later affected-suite retry passed Portal 11/11 (15.79s), Auth 7/7 (15.55s),
+Sidebar 21/21 (122.75s), Zoom 7/7 (18.70s), the five Spaces binaries 14+4+2+5+2,
+Windows 9/9 and Shutdown 3/3. Logs: `/tmp/bbr-portal-retry1.log`,
+`/tmp/bbr-portal-minimize-retry.log`, `/tmp/bbr-portal-consumers-retry3.log`.
+Command passed 28/28 and Find 6/6 in the preceding consumer retry logs. These
+passes do not erase the earlier intermittent failures.
+
+The canonical functional attempt `/tmp/bbr-portal-functional-final.log` then
+stopped at Sidebar's fast-arrival assertion (`dwelling` instead of `floating`,
+20/21 passed). No aggregate pass. Patrick requested VM-only further GUI tests
+and approved private Tart NAT/SSH with a run-specific key, no host window,
+bridge or port forwarding, and clone/key cleanup. No further host GUI test is
+authorized or run.
+
+The lane-local temporary runner `/tmp/bbr-portal-tart/run.py` snapshots only this
+worktree's allowlisted source plus its fresh mbx `--no-run` artifacts; source
+and binaries are SHA-256 checked again in the guest at their compiled absolute
+paths. The host build passed (23.23s app test artifacts; 31.72s Gallery). A
+throwaway `macos-27-golden-gate` clone uses 3200×1800 and a read-only payload
+share, with the common host GUI gate retained. The first runner preflight found
+an unsupported generic Cargo recipe while parsing the plan and stopped before
+creating a VM; parsing now ignores recipes without an explicit test target.
+
+Two VM preparations stopped before tests: the first checked the VirtioFS tag
+instead of the mounted path, the second resolved the guest's Xcode-dependent
+Python placeholder. Both clones and temporary private keys were deleted. The
+runner now checks the mount path and realizes an explicit Darwin Python store
+path inside the disposable guest; host setup and Golden Image stay unchanged.
+
+First actual VM evidence: `/tmp/bbr-portal-tart/run-20261001-194050` verified
+1,634 source/artifact hashes; Sidebar 21/21 (39.70s), Auth 7/7 (4.85s), Portal
+10/11 (40.30s). Minimize/restore and two-window switching passed. Deactivation
+failed because `NSApplication.deactivate()` left `app_active=true` even though
+the parent lost key status and the Portal correctly hid. No assertion weakened:
+the test now activates a second real BBR process, proving cross-process switching
+rather than relying on this inconsistent driver. The unused `DeactivateApp`
+request was removed; real hide/unhide stays. Rebuilt artifacts passed.
+
+The first guest listener audit found inherited Screen Sharing/Kerberos and SSH
+password/kbd-interactive login. These were disabled only in the disposable clone,
+and subsequent fresh SSH plus listener/config checks proved key-only TCP 22,
+no forwarding and only loopback test fixtures. Later clones apply this reduction
+before tests. The first test clone/key were deleted successfully.
+
+### Verified Tart handoff checkpoint
+
+Final run `/tmp/bbr-portal-tart/run-20261001-194627` is green:
+- Focused Portal 11/11, Sidebar 21/21 and Auth 7/7: 39 tests, 54.11s summed
+  test time / 55.690s runner time. Cross-app switching uses two real processes.
+- Recipe-derived canonical functional order, excluding only deferred perf,
+  followed by Peek and Gallery: **58/58 binaries, 43 recipes, 345 tests**, zero
+  failures or ignored tests; 361.56s summed test time / 384.822s runner time.
+  Portal passes again in that sequence. All affected consumers are included.
+- This executes host-built current-worktree artifacts directly inside Tart,
+  not Cargo/`just` compilation in the guest. Each exact recipe's test flags and
+  suite order are preserved; outer command budget is 15m, in-test deadlines
+  unchanged, process-group cleanup remains bounded. No performance acceptance.
+- `/tmp/bbr-portal-tart/verify.log`: fresh mbx-equivalent `just verify` passes,
+  including 49 script contracts; testkit all-target Clippy `-D warnings` passes.
+  Existing `block` future-incompatibility and mbx cache-prediction warnings are
+  not suppressed. Formatting, roadmap and whitespace gates pass.
+- Guest macOS 27.0 build 26A5353q, 8 vCPU, 16 GiB, 3200×1800; source and test
+  artifacts verified by SHA-256. No Rust/test code changed after the VM snapshot;
+  only documentary evidence changed afterward.
+- Network probes from the host confirmed guest TCP 22 reachable and 88/5900
+  unreachable after clone-only hardening. No bridge/forward/VNC/host window;
+  test fixtures listen only on guest loopback. Cleanup records `stop_rc=0`,
+  `delete_rc=0`, `private_key=deleted`; Tart inventory has no lane clone, the
+  removed guest's SSH is unreachable, Golden Image remains stopped/unchanged.
+
+Self-review checked retained-owner versus actual-child semantics, current-intent
+coalescing, dismissal/drop supersession, removal from both notification centers,
+public AppKit APIs, parent-relative ordering, testkit feature boundaries, hidden
+fixture truth and strict shown-fixture assertions. No independent agent was
+requested or used. The failed direct-deactivate test remains in the earlier log;
+its replacement tests the actual cross-process user transition, not a relaxed
+predicate. Historical intermittent host failures remain provenance, not erased.
+
+The next local commit contains the coherent verified lifecycle fix and evidence.
+No merge, push, other-worktree modification or ownership takeover. Integration
+owner must preserve current main's additive contracts and run fresh combined-tree
+Tart gates. Performance, real desktop Space switching and native fullscreen
+completion remain unproven/deferred. Planning/review wall time was not measured;
+test times above are measured, not product performance metrics.
+
+Final parallelism audit: only this bounded lane is authorized here; main and
+other lanes remain untouched. No new workflow/subagent/worktree is activated.
+The slice is ready for serial integration, not a combined-main acceptance claim.
+
+### Authorized Portal integration checkpoint (2026-10-01)
+
+Patrick confirmed the ordinary development app and requested the local merge.
+Main was clean at `80c56bb19361a99cb1630d3f0f64867e004db3f3`; the frozen source
+was `aff55e14ccc1869abcfb7545b37775ca984a12f5`. Session/process, worktree and lock
+preflight found no other main writer: the cleanup session awaited separate
+worktree permission, and the internal-pages writer stayed in its isolated lane.
+The no-ff merge is conflict-free and intentionally uncommitted until verification.
+Shared testkit requests/snapshots, E2E helpers and architecture/roadmap text are
+semantic unions: Favorites drag, favicon persistence and main's VM tooling remain.
+
+Fresh combined-tree non-GUI gates and host `mbx --no-run` builds use
+`/tmp/bbr-portal-merge/verify.sh` and `/tmp/bbr-portal-merge/build.sh`. The bounded
+`/tmp/bbr-portal-merge/run.py` reuses the lane's hardened, source-allowlisted,
+SHA-256-checked Tart runner with main paths and fresh manifests; it leaves the
+newer repository VM tooling unchanged. Focused Portal/Sidebar/Auth precede the
+recipe-derived functional aggregate without deferred perf, then Peek/Gallery.
+The common GUI lock is retained conservatively; all GUI execution is in the
+throwaway guest, never on Patrick's desktop.
+
+First combined-tree gate `/tmp/bbr-portal-merge/run-20261001-202551`: focused
+Portal 11/11, Sidebar 21/21 and Auth 7/7 pass (48.79s summed test time;
+49.966s runner time). The aggregate completes all 59 binaries / 43 recipes,
+including Peek/Gallery: 347 passed, one failed, no ignored tests (340.68s test
+time; 364.774s runner time). Only Titlebar reload parity fails with `Some("")`
+instead of `BBR Fixture Two`; all other binaries pass, including the new main
+Favorites-drag and favicon-restart coverage. This is not a green aggregate.
+The unchanged test and shared `wait_title` helper consume repeated title events;
+`titlebar-event-ring.txt` shows old title → empty title → completed title during
+reload, matching the previously documented pre-Portal failure. No test/source
+change or assertion relaxation: one fresh VM was scheduled to run the focused
+Titlebar suite, then the complete functional order on identical code/artifact
+hashes if the focused gate passed.
+
+Fresh `/tmp/bbr-portal-merge/verify.log` passes the full mbx-equivalent `just
+verify` and touched-crate testkit all-target Clippy `-D warnings`; 49 script
+contracts pass. Initial clone cleanup proves `stop_rc=0`, `delete_rc=0` and
+`private_key=deleted`; Golden Image remains stopped and unchanged. The first
+guest verifies 1,648 source/artifact hashes; host probes see TCP 22 only, with
+88/5900 unreachable. Source/build/tooling hashes remain unchanged after gates.
+
+Fresh recheck `/tmp/bbr-portal-merge/run-20261001-203439` reproduces the same
+Titlebar assertion at `nav_clicks_match_keyboard_shortcuts` (line 490): 6/7 pass,
+5.22s test time / 7.139s runner time. Its event ring again records completed
+`BBR Fixture Two` after the transient empty title. The focused failure correctly
+prevents another aggregate run; no blind further retry or acceptance claimed.
+Both disposable clones and private keys are deleted, removed guest SSH is
+unreachable, Golden Image unchanged, and the GUI lock is released. All 1,190
+recorded code/build/tooling hashes still match the verified build. Only this
+integration ledger changed after the runtime snapshot.
+
+Integration stops with the conflict-free merge staged and uncommitted:
+`HEAD=80c56bb19361a99cb1630d3f0f64867e004db3f3`,
+`MERGE_HEAD=aff55e14ccc1869abcfb7545b37775ca984a12f5`. Next required input is
+permission for the bounded Titlebar reload-synchronization repair and renewed
+Tart gates before committing this merge. Do not drop the test, relax its final
+title/session assertions, claim historical lane evidence as a combined pass,
+or commit the red aggregate.
+
+Integration parallelism audit: only this requested local merge was authorized;
+no new workflow, subagent or lane. Other worktrees, branches and the user's
+ordinary app are preserved. No push, branch/worktree removal, unrelated cleanup
+or performance execution. The repeated gate failure is the blocked stop condition.
+
+### Authorized Titlebar synchronization remediation
+
+Outcome: repair only the existing reload parity test's readiness boundary and
+finish the prepared local merge with fresh combined-tree functional evidence.
+The two recorded real-app failures are red regression evidence. Scope is the
+Titlebar suite's local helper/calls and integration documentation; no production
+navigation or generic testkit behavior changes. For each reload, take a fresh
+event cursor before the action, require that view's new loading/commit/completion
+sequence, then observe the exact final title with loading false. Keep all title,
+availability and session assertions and existing in-test deadlines. Verify with
+focused Titlebar E2E, the full functional order plus Peek/Gallery in disposable
+Tart, mbx-equivalent verify and testkit Clippy. Stop at a genuine failing gate;
+no sleeps, relaxed assertions, host GUI fallback, push or unrelated fixes.
+
+Parallelism audit: only this explicitly resumed integration/remediation is
+runnable here. No subagent/workflow or new lane is authorized; other writers and
+worktrees remain untouched. Performance execution remains deferred/unpassed.
+
+### Verified local Portal integration
+
+The Titlebar helper now takes the gateway's fresh event cursor before each
+reload, requires `LoadingChanged(true)` → `DidCommitNavigation` →
+`LoadingChanged(false)` for the same WebViewId, then waits for the exact title
+and loading=false snapshot within the existing 30s deadline. Both keyboard and
+click paths retain their title, availability and session assertions; URL and
+loading-state assertions are added. No production navigation, generic testkit,
+dependency, budget or timeout changes. The two earlier failing runs are the red
+regression evidence; no failing predicate was removed or weakened.
+
+Fresh combined-tree evidence:
+- `/tmp/bbr-portal-merge-titlebar/verify.log`: full mbx-equivalent `just verify`
+  and touched-crate testkit all-target Clippy `-D warnings` pass, including 49
+  script contracts. Fresh host `mbx --no-run` builds pass. The existing `block`
+  future-incompatibility warning remains unsuppressed.
+- `/tmp/bbr-portal-merge-titlebar/run-20261001-211102`: focused Titlebar 7/7,
+  Portal 11/11, Sidebar 21/21 and Auth 7/7 (46 tests; 62.65s summed test time,
+  64.777s runner time). Two additional Titlebar processes each pass 7/7
+  (4.13s / 3.52s test time; 4.298s / 3.664s runner time).
+- The complete recipe-derived functional order, omitting only deferred perf,
+  then Peek/Gallery passes **59/59 binaries, 43 recipes, 348 tests**, zero
+  failures/ignored tests; 533.75s summed test time, 569.895s runner time.
+  Titlebar passes for the fourth time; all Portal consumers, main's Favorites
+  drag and favicon persistence remain green. This is fresh combined-main
+  evidence, not reused source-lane evidence or performance acceptance.
+- All GUI execution used the disposable macOS 27 Tart guest with 3200×1800,
+  8 vCPU and 16 GiB. Source/artifact hashes were checked in the guest; all
+  1,190 code/build/tooling input hashes still match after the run. Only
+  integration documentation changed afterward. Original recipe test flags,
+  sequential order, bounded process-tree cleanup and the conservative common
+  GUI gate were retained; no host GUI test was run.
+- Clone-only listener/authentication hardening and host probes prove key-only
+  TCP 22 with 88/5900 unreachable and no forwarding. Cleanup records
+  `stop_rc=0`, `delete_rc=0`, `private_key=deleted`; removed guest SSH is
+  unreachable, Golden Image stopped/unchanged, and this run released its gate.
+
+Self-review checked fresh event correlation, same-view matching, commit-before-
+completion ordering, the final snapshot boundary, unchanged deadlines and
+session/title assertions, additive merge unions and source-hash provenance.
+No independent agent was requested or used. Final format, roadmap and whitespace
+checks pass. Test timings are measured tooling runtime, not product performance;
+implementation/review wall time was not instrumented.
+
+The local merge has parents `80c56bb19361a99cb1630d3f0f64867e004db3f3` and
+`aff55e14ccc1869abcfb7545b37775ca984a12f5`; it includes only the Portal slice,
+its authorized Titlebar test remediation and integration evidence. No push or
+branch/worktree removal. Performance execution, actual desktop Space switching
+and native fullscreen completion remain unproven/deferred. Final parallelism
+audit: no other lane or subagent authorized; other owners and worktrees remain
+untouched and no additional work is activated by this completed integration.
+
 ## Isolated visual-tooling lane (2026-09-28)
 
 Patrick initially authorized this isolated worktree alongside the product writer.

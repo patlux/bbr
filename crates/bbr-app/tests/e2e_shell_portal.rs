@@ -27,6 +27,9 @@ mod e2e_common;
 #[path = "e2e_shell_portal/support.rs"]
 mod support;
 
+#[path = "e2e_shell_portal/activation.rs"]
+mod activation;
+
 #[path = "e2e_shell_portal/hardening.rs"]
 mod hardening;
 
@@ -296,7 +299,7 @@ fn portal_follows_parent_resize_without_session_recreation() {
             let snapshot = client.snapshot().expect("resize snapshot");
             if (snapshot.window_size[0] - new_w).abs() <= 0.5
                 && snapshot.portal.frame_synced
-                && snapshot.portal.native_visible
+                && portal_visibility_settled(&snapshot.portal)
             {
                 break snapshot;
             }
@@ -352,7 +355,7 @@ fn outside_dismiss_orders_host_out_and_preserves_state() {
     }
 
     let (_fixtures, page_one, _page_two) = fixtures();
-    let (mut harness, socket, token) = spawn_harness("portal-dismiss", &page_one);
+    let (mut harness, socket, token) = spawn_harness_shown("portal-dismiss", &page_one);
 
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);

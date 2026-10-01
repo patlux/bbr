@@ -76,8 +76,8 @@ pub(super) fn assert_host_closed(snapshot: &Snapshot) {
         p.ids
     );
     assert!(
-        p.child_attached,
-        "host stays attached to the browser window"
+        p.owner_retained,
+        "host retains the original browser owner while ordered out"
     );
     assert!(
         !p.native_visible,
@@ -115,8 +115,7 @@ pub(super) fn assert_probe_open(snapshot: &Snapshot) {
             "bbr-portal-card".to_string(),
         ]
     );
-    assert!(p.child_attached);
-    assert!(p.native_visible, "AppKit window is ordered in");
+    assert_open_portal_visibility(p);
     assert!(
         p.frame_synced,
         "portal frame pinned to the parent content rect"
@@ -145,9 +144,14 @@ pub(super) fn wait_probe_open(client: &mut Client, deadline: Instant) -> Snapsho
     loop {
         let snapshot = client.snapshot().expect("probe open snapshot");
         let p = &snapshot.portal;
+        if p.parent_visible && (!p.app_active || !p.parent_is_key) {
+            client
+                .send_ok(&dsl::activate_app())
+                .expect("activate shown owner");
+        }
         if p.presentation == Some(PROBE_PRESENTATION_ID)
             && p.visible
-            && p.native_visible
+            && portal_visibility_settled(p)
             && p.frame_synced
         {
             assert_probe_open(&snapshot);
@@ -155,11 +159,7 @@ pub(super) fn wait_probe_open(client: &mut Client, deadline: Instant) -> Snapsho
         }
         assert!(
             Instant::now() < deadline,
-            "portal probe did not become natively visible; presentation {:?}, logical {}, native {}, frame_synced {}",
-            p.presentation,
-            p.visible,
-            p.native_visible,
-            p.frame_synced
+            "portal probe did not settle: {p:?}"
         );
         std::thread::yield_now();
     }
@@ -241,16 +241,8 @@ pub(super) fn wait_portal_state(
         }
         assert!(
             Instant::now() < deadline,
-            "portal lifecycle state {what:?} did not converge; last: \
-             parent_fullscreen {}, parent_minimized {}, frame_synced {}, \
-             native_visible {}, owns_probe {}, portal #{}, parent #{}",
-            snapshot.portal.parent_fullscreen,
-            snapshot.portal.parent_minimized,
-            snapshot.portal.frame_synced,
-            snapshot.portal.native_visible,
-            snapshot.portal.portal_owns_probe_point,
-            snapshot.portal.portal_window_number,
-            snapshot.portal.parent_window_number
+            "portal lifecycle state {what:?} did not converge: {:?}",
+            snapshot.portal
         );
         std::thread::yield_now();
     }

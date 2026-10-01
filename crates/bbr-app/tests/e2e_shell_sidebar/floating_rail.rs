@@ -80,7 +80,7 @@ fn the_hidden_rail_floats_over_the_card_and_works_like_the_docked_rail() {
         return;
     }
     let (_fixtures, page_one, page_two) = fixtures();
-    let (mut harness, socket, token) = spawn_harness("floating-rail", &page_one);
+    let (mut harness, socket, token) = spawn_visible_harness("floating-rail", &page_one);
 
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut client = connect(&socket);

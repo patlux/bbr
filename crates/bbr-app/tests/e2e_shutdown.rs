@@ -178,7 +178,7 @@ fn close_window_with_open_portal_child_terminates_the_process() {
             "portal probe presentation must be active"
         );
         assert!(
-            with_portal.portal.child_attached,
+            with_portal.portal.owner_retained,
             "the portal child window must be attached to the browser window"
         );
 

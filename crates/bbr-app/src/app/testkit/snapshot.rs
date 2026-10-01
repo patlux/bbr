@@ -1157,8 +1157,16 @@ impl BbrApp {
         };
         #[cfg(target_os = "macos")]
         if let Some(native) = self.native_portal_diagnostics() {
+            portal.owner_retained = native.owner_retained;
             portal.child_attached = native.child_attached;
             portal.native_visible = native.native_visible;
+            portal.parent_visible = native.parent_visible;
+            portal.parent_is_key = native.parent_is_key;
+            portal.app_active = native.app_active;
+            portal.app_hidden = native.app_hidden;
+            portal.parent_level = native.parent_level;
+            portal.portal_level = native.portal_level;
+            portal.portal_joins_all_spaces = native.portal_joins_all_spaces;
             portal.frame_synced = native.synchronized;
             portal.nonactivating_panel = native.nonactivating_panel;
             portal.parent_window_number = native.parent_window_number;

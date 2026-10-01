@@ -239,10 +239,22 @@ session, history, or independent product lifetime. GPUI renders the portal
 content; WebKit remains a real native `WKWebView` with no screenshot, texture,
 reparenting, or replacement path.
 
+Native visibility is parent-owned: an armed presentation is shown only while
+BBR is active/unhidden and its browser owner is visible, key, non-minimized and
+on the active macOS Space. The bridge resets GPUI's PopUp level to the parent's
+level and replaces independent all-Spaces behavior with `FullScreenAuxiliary`.
+App/key-window/Space/lifecycle notifications coalesce into deferred reconciliation
+that reads current facts and intent, so dismissal/drop supersedes a queued show.
+Temporary hiding keeps the logical presentation, draft and native identity.
+AppKit can remove `parentWindow()` on `orderOut`; restoration reattaches only to
+the retained original owner, then orders relative to it (never `orderFront`).
+Diagnostics distinguish retained ownership from the measured child relation.
+
 The resize/move observer stores a raw pointer to a `NativePortal` that is
 heap-pinned in a `Box` **before** observer installation. Moving the bridge moves
 only the box pointer, never the observer target. Teardown removes the observer
-and child relation, orders out the panel, and closes it on a bare run-loop turn.
+from both the application and workspace notification centers and the child
+relation, orders out the panel, and closes it on a bare run-loop turn.
 Typed diagnostics expose attachment, native visibility, frame equality,
 non-activating/key/main policy, and real Window Server hit-test queries. The
 real-app portal suite proves the child host stays above the parent's WKWebViews

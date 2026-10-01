@@ -15,8 +15,12 @@ use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 
+mod portal;
 pub mod real_input;
 mod u2;
+
+#[allow(unused_imports)]
+pub use portal::{assert_open_portal_visibility, portal_visibility_settled, spawn_visible_harness};
 
 #[allow(unused_imports)] // each suite uses a subset of the shared helpers
 pub use u2::{harness_root, harness_socket_path, strip_presence};

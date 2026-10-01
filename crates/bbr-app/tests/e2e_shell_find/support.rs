@@ -139,8 +139,7 @@ pub(super) fn assert_find_open(snapshot: &Snapshot) {
         p.ids,
         FIND_IDS.iter().map(|s| s.to_string()).collect::<Vec<_>>()
     );
-    assert!(p.child_attached);
-    assert!(p.native_visible, "AppKit window is ordered in");
+    assert_open_portal_visibility(p);
     assert!(
         p.frame_synced,
         "portal frame pinned to the parent content rect"
@@ -186,8 +185,8 @@ pub(super) fn assert_find_closed(snapshot: &Snapshot) {
         p.ids
     );
     assert!(
-        p.child_attached,
-        "host stays attached to the browser window"
+        p.owner_retained,
+        "host retains the original browser owner while ordered out"
     );
     assert!(
         !p.native_visible,
@@ -258,7 +257,7 @@ pub(super) fn wait_find_open(client: &mut Client, deadline: Instant) -> Snapshot
         if snapshot.find.open
             && snapshot.portal.presentation == Some(FIND_PRESENTATION_ID)
             && snapshot.portal.visible
-            && snapshot.portal.native_visible
+            && portal_visibility_settled(&snapshot.portal)
             && snapshot.portal.frame_synced
         {
             assert_find_open(&snapshot);

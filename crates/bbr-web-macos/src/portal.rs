@@ -31,7 +31,9 @@
 //! Windows menu, hidden when the app deactivates, and no appearance
 //! animation. It is attached as a child of the browser window ordered above,
 //! so AppKit keeps it above the parent's WKWebViews; it never becomes key or
-//! main (non-activating panel + `orderFront:` only).
+//! main (non-activating panel + parent-relative ordering only).
+
+use std::rc::Rc;
 
 use objc2::rc::Retained;
 use objc2::{class, msg_send, sel, MainThreadMarker};
@@ -46,6 +48,8 @@ use objc2_foundation::{NSNotificationCenter, NSObject};
 use crate::portal_deferred::{defer_window_op, DeferredWindowOp};
 pub use crate::portal_frame::PortalNativeDiagnostics;
 use crate::portal_frame::{should_sync_frame, PortalFrame};
+#[cfg(feature = "testkit")]
+pub use crate::portal_lifecycle::drive_app_visibility;
 use crate::portal_lifecycle::PortalSyncObserver;
 
 /// Why [`NativePortal::attach`] could not establish the portal.
@@ -79,13 +83,13 @@ pub struct NativePortal {
     /// `portal_window`.
     pub(crate) parent_window: Option<Retained<NSWindow>>,
     observer: Option<Retained<PortalSyncObserver>>,
-    /// Child-window attachment established (diagnostics evidence).
+    /// Original owner retained; native attachment is measured separately.
     /// `pub(crate)`: read by the `portal_frame` diagnostics impl.
     pub(crate) attached: bool,
     /// Commanded visibility (the presentation is armed). `pub(crate)`: read
     /// by the `portal_lifecycle` restore/re-show paths and `portal_frame`
     /// diagnostics.
-    pub(crate) visible: bool,
+    pub(crate) visibility: Rc<crate::portal_visibility::VisibilityIntent>,
     torn_down: bool,
     /// Last frame pinned to the parent content rect (idempotence cache).
     /// `pub(crate)`: read by the `portal_frame` diagnostics impl.
@@ -144,7 +148,7 @@ impl NativePortal {
             parent_window: Some(parent_window.clone()),
             observer: None,
             attached: false,
-            visible: false,
+            visibility: Rc::default(),
             torn_down: false,
             frame: None,
             parent_content_rect: None,
@@ -166,10 +170,8 @@ impl NativePortal {
                 portal: portal_window.clone(),
             },
         );
-        // The attach op is scheduled infallibly (both windows are live and
-        // retained), so the bridge records the child relation immediately;
-        // the E2E first snapshot is taken many run-loop turns later, after
-        // the deferred op has applied.
+        // Record retained ownership, not the AppKit child relation: orderOut
+        // can detach a child; visibility reconciliation reattaches on show.
         portal.attached = true;
         portal.hide(mtm);
         portal.sync_frame(mtm);
@@ -208,10 +210,8 @@ impl NativePortal {
         }
         // No shadow, non-movable, and excluded from the Windows menu:
         // implementation-owned chrome, never a user-visible window identity.
-        // NOTE: `hidesOnDeactivate` must NOT be set — empirically it prevents
-        // the panel from ever being displayed by the window server (the
-        // bridge orders the portal out itself when no presentation is
-        // active, so the setting is redundant).
+        // Visibility is reconciled explicitly on app/parent notifications;
+        // do not rely on NSPanel's independent hidesOnDeactivate restoration.
         portal.setHasShadow(false);
         portal.setMovable(false);
         portal.setExcludedFromWindowsMenu(true);
@@ -247,22 +247,19 @@ impl NativePortal {
         defer_window_op(_mtm, portal, DeferredWindowOp::Frame(content_rect.into()));
     }
 
-    /// Order the portal window front. A non-activating panel never becomes
-    /// key or main merely by showing, so focus stays in BBR's existing
+    /// Arm the portal for parent-relative display. A non-activating panel
+    /// never becomes key or main by showing, so focus stays in BBR's existing
     /// focus choreography.
     ///
     /// The commanded visibility becomes true immediately for lifecycle
     /// policy, while AppKit ordering is deferred to a bare main-run-loop turn.
-    /// `orderFront:` can synchronously notify GPUI and re-borrow its `App`,
+    /// Window ordering can synchronously notify GPUI and re-borrow its `App`,
     /// exactly like the already-deferred frame/attachment/close mutations.
     pub fn show(&mut self, mtm: MainThreadMarker) {
         // Re-pin before showing: the parent may have moved while hidden.
         self.sync_frame(mtm);
-        let Some(portal) = self.portal_window.clone() else {
-            return;
-        };
-        self.visible = true;
-        defer_window_op(mtm, portal, DeferredWindowOp::Show);
+        self.visibility.requested.set(true);
+        self.sync_visibility(mtm);
     }
 
     /// Order the portal window out (used when no native presentation is
@@ -270,11 +267,26 @@ impl NativePortal {
     /// native ordering converges on the next bare main-run-loop turn so GPUI
     /// is never re-entered while its `App` is borrowed.
     pub fn hide(&mut self, mtm: MainThreadMarker) {
-        let Some(portal) = self.portal_window.clone() else {
+        self.visibility.requested.set(false);
+        self.sync_visibility(mtm);
+    }
+
+    /// Coalesce updates; queued work reads live facts and the latest intent.
+    pub(crate) fn sync_visibility(&self, mtm: MainThreadMarker) {
+        let (Some(portal), Some(parent)) = (&self.portal_window, &self.parent_window) else {
             return;
         };
-        self.visible = false;
-        defer_window_op(mtm, portal, DeferredWindowOp::Hide);
+        if self.visibility.pending.replace(true) {
+            return;
+        }
+        defer_window_op(
+            mtm,
+            portal.clone(),
+            DeferredWindowOp::Visibility {
+                parent: parent.clone(),
+                intent: self.visibility.clone(),
+            },
+        );
     }
 
     /// Commanded visibility: `show`/`hide` on the active presentation path.
@@ -353,6 +365,7 @@ impl NativePortal {
                 Some(&*parent_ptr),
             );
         }
+        observer.observe_visibility(mtm, unsafe { &*parent_ptr });
         self.observer = Some(observer);
     }
 
@@ -363,6 +376,9 @@ impl NativePortal {
             // default center and is still alive (we hold it).
             unsafe {
                 center.removeObserver(&observer);
+                objc2_app_kit::NSWorkspace::sharedWorkspace()
+                    .notificationCenter()
+                    .removeObserver(&observer);
             }
         }
     }
@@ -412,6 +428,7 @@ impl Drop for NativePortal {
         if self.torn_down {
             return;
         }
+        self.visibility.requested.set(false);
         if let Some(mtm) = MainThreadMarker::new() {
             self.remove_observer(mtm);
         }
