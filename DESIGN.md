@@ -494,9 +494,17 @@ monogram above as the unchanged fallback:
   `WKHTTPCookieStore` seeds a private cookie storage), so the request
   carries exactly that profile's cookies and two profiles can never share a
   fetch, a cache entry, or a session. The resolved bytes land in the owning
-  profile's bounded host-keyed in-memory cache (per profile, FIFO, no disk
-  persistence); every presentation of that host derives from the same
-  record — one acquisition, every presentation.
+  profile's bounded host-keyed cache (per profile, FIFO); every
+  presentation of that host derives from the same record — one
+  acquisition, every presentation.
+- **Kept across a relaunch** (task packet `favicon-disk-cache`): the cache
+  is also written to `favicons/<profile id>/` in the profile directory and
+  seeded back at launch, so a tab that owns no session after a relaunch —
+  a deferred tab, a closed pinned row, a Favorite — shows its icon instead
+  of the monogram, without a new fetch. Deleting a profile removes its
+  records; Clear Browsing Data's "cached images and files" removes the
+  active profile's records for any range (they carry no time). A damaged
+  or missing record renders the monogram.
 - **Bounded fallback:** downloads are bounded (payload size, deadline,
   concurrent count, FIFO queue). Any failure — no resolvable candidate,
   non-2xx response, over-bound payload, timeout, destroyed or re-registered

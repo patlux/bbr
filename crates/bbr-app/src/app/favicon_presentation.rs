@@ -75,6 +75,8 @@ impl BbrApp {
             return;
         }
         self.favicon_mirror_version.set(version);
+        // The records changed: keep them for the next launch too.
+        self.sync_favicon_disk();
         self.favicon_images.get().clear();
         let entries = self.controller.read().favicon_entries_all();
         for (profile, host, bytes) in entries {
@@ -86,6 +88,39 @@ impl BbrApp {
                 Arc::new(Image::from_bytes(image_format_for(&bytes), bytes)),
             );
         }
+    }
+
+    /// Seed the controller's favicon store with the records kept in `dir`
+    /// (task packet `favicon-disk-cache`) and keep writing there. Records
+    /// of profiles that no longer exist are removed, never restored.
+    pub(crate) fn load_favicon_cache(&mut self, dir: std::path::PathBuf) {
+        let known: Vec<ProfileId> = self
+            .controller
+            .read()
+            .snapshot()
+            .profiles
+            .iter()
+            .map(|profile| profile.id)
+            .collect();
+        let (disk, loaded) = crate::favicon_cache::FaviconDisk::open(dir, &known);
+        for (profile, records) in loaded {
+            self.controller.get().restore_favicons(profile, records);
+        }
+        *self.favicon_disk.get() = disk;
+    }
+
+    /// Write the favicon records that changed since the last write (a new
+    /// acquisition, an eviction, a cleared or deleted profile).
+    pub(crate) fn sync_favicon_disk(&self) {
+        let current: Vec<_> = {
+            let controller = self.controller.read();
+            controller
+                .favicon_profiles()
+                .into_iter()
+                .map(|profile| (profile, controller.favicon_entries(profile)))
+                .collect()
+        };
+        self.favicon_disk.get().sync(&current);
     }
 
     /// The decoded favicon image for `(profile, host)` from the mirror, if

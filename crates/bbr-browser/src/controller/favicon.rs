@@ -46,4 +46,24 @@ impl BrowserController {
     pub fn favicon_entries_all(&self) -> Vec<(ProfileId, String, Vec<u8>)> {
         self.favicons.entries_all()
     }
+
+    /// The profiles holding favicon records, in id order.
+    pub fn favicon_profiles(&self) -> Vec<ProfileId> {
+        self.favicons.profiles()
+    }
+
+    /// Seed the favicon records the app kept on disk for `profile` (task
+    /// packet `favicon-disk-cache`). Records of a profile that no longer
+    /// exists are ignored, so a stale cache never resurrects one.
+    pub fn restore_favicons(&mut self, profile: ProfileId, entries: Vec<(String, Vec<u8>)>) {
+        if self.browser.profile(profile).is_some() {
+            self.favicons.restore(profile, entries);
+        }
+    }
+
+    /// Drop every favicon record of `profile` (Clear Browsing Data's
+    /// cached images and files; a deleted profile drops its own).
+    pub fn forget_favicons(&mut self, profile: ProfileId) {
+        self.favicons.forget_profile(profile);
+    }
 }

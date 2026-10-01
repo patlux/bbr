@@ -43,6 +43,7 @@ pub(crate) struct SharedParts {
     pub(crate) content_gesture: crate::shared::Shared<content_gesture::ContentGestureState>,
     pub(crate) favicon_images: crate::shared::Shared<favicon_presentation::FaviconImageMirror>,
     pub(crate) favicon_mirror_version: crate::shared::Shared<u64>,
+    pub(crate) favicon_disk: crate::shared::Shared<crate::favicon_cache::FaviconDisk>,
     pub(crate) split_layouts_path: Option<std::path::PathBuf>,
     pub(crate) window_layouts: crate::shared::Shared<super::window_persist::WindowLayoutsFile>,
     pub(crate) preferences_path: Option<std::path::PathBuf>,
@@ -168,6 +169,7 @@ impl BbrApp {
             content_gesture: Default::default(),
             favicon_images: Default::default(),
             favicon_mirror_version: Default::default(),
+            favicon_disk: Default::default(),
             split_layouts_path: None,
             window_layouts: Default::default(),
             preferences_path: None,
@@ -243,6 +245,7 @@ impl BbrApp {
             content_gesture: self.content_gesture.clone(),
             favicon_images: self.favicon_images.clone(),
             favicon_mirror_version: self.favicon_mirror_version.clone(),
+            favicon_disk: self.favicon_disk.clone(),
             split_layouts_path: self.split_layouts_path.clone(),
             window_layouts: self.window_layouts.clone(),
             preferences_path: self.preferences_path.clone(),
@@ -429,6 +432,7 @@ impl BbrApp {
             peek: peek::PeekState::default(),
             favicon_images: parts.favicon_images,
             favicon_mirror_version: parts.favicon_mirror_version,
+            favicon_disk: parts.favicon_disk,
             #[cfg(feature = "testkit")]
             performance: parts.performance,
         }

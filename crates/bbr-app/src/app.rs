@@ -656,6 +656,9 @@ pub struct BbrApp {
     /// The controller store version [`Self::favicon_images`] was last
     /// rebuilt for.
     favicon_mirror_version: crate::shared::Shared<u64>,
+    /// The favicon records kept in the profile directory across a relaunch
+    /// (task packet `favicon-disk-cache`).
+    favicon_disk: crate::shared::Shared<crate::favicon_cache::FaviconDisk>,
     #[cfg(feature = "testkit")]
     performance: PerformanceProbe,
 }
@@ -794,6 +797,7 @@ impl BbrApp {
     /// same repository write the background writer uses).
     pub fn flush_browser_state(&self) {
         self.persist_structure();
+        self.sync_favicon_disk();
         self.store.read().flush_browser_state();
     }
 

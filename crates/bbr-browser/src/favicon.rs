@@ -15,9 +15,12 @@
 //! - **Bounded:** each profile keeps at most [`FAVICON_CACHE_CAP`] records;
 //!   eviction is deterministic FIFO (insertion order), so the cache never
 //!   grows without bound and a repeated host renders instantly.
-//! - **No disk persistence:** this slice owns no favicon blob on disk
-//!   (Phase 7 owns persisted state; Saved Pages explicitly store no favicon
-//!   blob, DESIGN §11.16).
+//! - **Kept across a relaunch by the app:** the store itself does no I/O.
+//!   The app writes every profile's records to its favicon cache directory
+//!   and seeds them back at launch ([`FaviconStore::restore`]), so tabs
+//!   that own no session after a relaunch (deferred, closed, Favorites)
+//!   still show their favicon (task packet `favicon-disk-cache`). Saved
+//!   Pages still store no favicon blob (DESIGN §11.16).
 //! - **Silent fallback:** a missing entry means the §7.2 monogram renders;
 //!   acquisition failures never produce a broken row or a retry storm (the
 //!   engine emits no event on failure).
@@ -88,6 +91,42 @@ impl FaviconStore {
         record.entries.insert(host.to_string(), bytes);
         record.order.push_back(host.to_string());
         self.version += 1;
+    }
+
+    /// Seed `profile` with records kept from an earlier run, in their
+    /// insertion order (the bound and the empty-payload rule apply as for
+    /// [`Self::insert`]). An acquisition of the same host later replaces
+    /// its record.
+    pub(crate) fn restore(&mut self, profile: ProfileId, entries: Vec<(String, Vec<u8>)>) {
+        for (host, bytes) in entries {
+            if !host.is_empty() {
+                self.insert(profile, &host, bytes);
+            }
+        }
+    }
+
+    /// Drop every record of `profile` (its deletion, or its cached images
+    /// cleared). Bumps the version only when something was dropped.
+    pub(crate) fn forget_profile(&mut self, profile: ProfileId) {
+        if self
+            .profiles
+            .remove(&profile)
+            .is_some_and(|record| !record.entries.is_empty())
+        {
+            self.version += 1;
+        }
+    }
+
+    /// The profiles holding records, in id order.
+    pub(crate) fn profiles(&self) -> Vec<ProfileId> {
+        let mut profiles: Vec<ProfileId> = self
+            .profiles
+            .iter()
+            .filter(|(_, record)| !record.entries.is_empty())
+            .map(|(profile, _)| *profile)
+            .collect();
+        profiles.sort_by_key(|profile| profile.0);
+        profiles
     }
 
     /// The resolved image bytes for `(profile, host)`, if cached.
@@ -223,6 +262,37 @@ mod tests {
         );
         // Another profile is untouched.
         assert_eq!(store.entry_count(ProfileId(2)), 0);
+    }
+
+    #[test]
+    fn restore_seeds_in_order_and_forget_drops_one_profile() {
+        let mut store = FaviconStore::default();
+        store.restore(
+            ProfileId(1),
+            vec![
+                ("a.example".into(), vec![1]),
+                (String::new(), vec![7]),
+                ("b.example".into(), Vec::new()),
+                ("c.example".into(), vec![3]),
+            ],
+        );
+        store.insert(ProfileId(2), "a.example", vec![2]);
+        assert_eq!(
+            store.entries_for(ProfileId(1)),
+            vec![
+                ("a.example".to_string(), vec![1]),
+                ("c.example".to_string(), vec![3]),
+            ],
+            "empty hosts and payloads are not kept"
+        );
+        assert_eq!(store.profiles(), vec![ProfileId(1), ProfileId(2)]);
+        let version = store.version();
+        store.forget_profile(ProfileId(1));
+        assert_eq!(store.entry_count(ProfileId(1)), 0);
+        assert_eq!(store.entry_count(ProfileId(2)), 1);
+        assert_eq!(store.version(), version + 1);
+        store.forget_profile(ProfileId(1));
+        assert_eq!(store.version(), version + 1, "nothing to drop");
     }
 
     #[test]

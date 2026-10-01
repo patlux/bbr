@@ -707,7 +707,9 @@ Shared state (blueprint D19, task packet `multi-window`): `BbrApp` is a
 window's shell. Everything that belongs to the browser rather than to one
 window — the controller, organization, store, media, error surfaces,
 unresponsive panes, auth challenges, preferences and Settings state, menu
-state, favicon mirror, external-URL adapter, and the shared parts of
+state, favicon mirror and its disk cache (`crate::favicon_cache`, the
+controller's per-profile records kept in `favicons/` of the profile
+directory and seeded back at launch), external-URL adapter, and the shared parts of
 downloads (attempt store, reveal cache), permissions (policies, requests,
 per-view marks), client certificates (choices, requests, load marks) and
 zoom (site levels, applied levels) — sits behind a `crate::shared::Shared`

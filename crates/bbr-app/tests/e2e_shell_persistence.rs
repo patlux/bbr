@@ -30,6 +30,9 @@
 //! - kept places (schema v5): a closed pinned row, a pinned page, the
 //!   Favorites grid, a folder and the ⇧⌘T record of a closed pinned row
 //!   survive a restart ([`kept_places`](e2e_shell_persistence/kept_places.rs));
+//! - an acquired favicon is kept in the profile directory and shows on a
+//!   session-less Favorite after a restart without a second fetch
+//!   ([`favicons`](e2e_shell_persistence/favicons.rs));
 //! - the curated space paper (v2 S10) edits as a draft, commits, and
 //!   restores with the theme across a restart
 //!   ([`space_paper`](e2e_shell_persistence/space_paper.rs));
@@ -58,6 +61,9 @@ mod folder_pins;
 
 #[path = "e2e_shell_persistence/kept_places.rs"]
 mod kept_places;
+
+#[path = "e2e_shell_persistence/favicons.rs"]
+mod favicons;
 
 #[path = "e2e_shell_persistence/space_paper.rs"]
 mod space_paper;

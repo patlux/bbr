@@ -154,6 +154,13 @@ impl BbrApp {
                 kinds,
                 since.map(|ms| ms as f64 / 1000.0),
             );
+            if kinds.caches {
+                // The kept favicons are cached images too; they carry no
+                // time, so any range drops the profile's records (memory
+                // and disk). The next visit acquires them again.
+                self.controller.get().forget_favicons(profile);
+                self.sync_favicon_disk();
+            }
         }
         if state.effective(OPTION_DOWNLOADS) {
             crate::app::downloads_history::downloads_clear(self, cx);

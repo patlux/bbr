@@ -158,3 +158,42 @@ fn candidate_shape_never_lands_in_the_store() {
     let snap = c.borrow().snapshot();
     assert_eq!(snap.tabs[0].favicon, TabFavicon::Monogram);
 }
+
+/// Task packet `favicon-disk-cache`: records kept from an earlier run seed
+/// the store, so a tab without a session presents its image; a profile
+/// that no longer exists is never resurrected; deleting a profile and
+/// clearing its cached images drop its records.
+#[test]
+fn kept_records_restore_and_leave_with_their_profile() {
+    let (c, _h) = wired();
+    open(&mut c.borrow_mut(), "https://example.com/start");
+    let version = c.borrow().favicon_version();
+    c.borrow_mut()
+        .restore_favicons(ProfileId(1), vec![("example.com".into(), vec![7, 7])]);
+    c.borrow_mut()
+        .restore_favicons(ProfileId(99), vec![("ghost.example".into(), vec![9])]);
+    let snap = c.borrow().snapshot();
+    assert_eq!(
+        snap.tabs[snap.active_index.unwrap()].favicon,
+        TabFavicon::Image
+    );
+    assert!(c.borrow().favicon_version() > version);
+    assert_eq!(c.borrow().favicon_profiles(), vec![ProfileId(1)]);
+
+    c.borrow_mut().forget_favicons(ProfileId(1));
+    assert_eq!(c.borrow().favicon_entry_count(ProfileId(1)), 0);
+
+    let event = c
+        .borrow_mut()
+        .create_profile_space("Private", "Private")
+        .unwrap();
+    let crate::ControllerEvent::ProfileCreated { profile, .. } = event else {
+        panic!("unexpected event: {event:?}");
+    };
+    c.borrow_mut()
+        .restore_favicons(profile, vec![("private.example".into(), vec![1])]);
+    assert_eq!(c.borrow().favicon_entry_count(profile), 1);
+    c.borrow_mut().delete_profile(profile).unwrap();
+    assert_eq!(c.borrow().favicon_entry_count(profile), 0);
+    assert!(c.borrow().favicon_profiles().is_empty());
+}

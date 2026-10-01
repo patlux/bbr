@@ -22,6 +22,7 @@ mod command_bar;
 mod components;
 mod dense;
 mod engine;
+mod favicon_cache;
 mod import;
 mod inject;
 mod menus;
@@ -727,6 +728,7 @@ fn main() {
             view.browser_window = Some(window);
             view.load_site_permissions(site_permissions::path_in(&cli.profile_dir));
             view.set_split_layouts_path(split_layouts::path_in(&cli.profile_dir));
+            view.load_favicon_cache(favicon_cache::dir_in(&cli.profile_dir));
             view.set_window_layouts_path(window_layouts::path_in(&cli.profile_dir));
             view.load_certificate_choices(certificate_choices::path_in(&cli.profile_dir));
             view.load_preferences(preferences::path_in(&cli.profile_dir), cx);

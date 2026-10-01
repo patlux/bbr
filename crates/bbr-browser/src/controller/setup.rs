@@ -200,6 +200,8 @@ impl BrowserController {
             let _ = self.appearances.reset(&self.browser, *space);
         }
         let deleted = self.browser.delete_profile(profile)?;
+        // Its favicons go with its website data.
+        self.favicons.forget_profile(profile);
         let activated = spaces.contains(&self.active_space);
         if activated {
             self.active_space = deleted.fallback;

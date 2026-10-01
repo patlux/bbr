@@ -42,7 +42,8 @@ matches the reference's identity density.
 ## Non-goals
 
 - No favicon persistence across restarts (Phase 7 owns persisted state;
-  Saved Pages explicitly store no favicon blob, §11.16).
+  Saved Pages explicitly store no favicon blob, §11.16). Delivered later by
+  the [favicon disk cache](favicon-disk-cache.md).
 - No touch-icon/manifest/SVG-mask heuristics beyond the single best-candidate
   rule; no per-site overrides.
 - No page screenshotting, texture composition or private WebKit SPI.

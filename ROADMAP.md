@@ -99,6 +99,7 @@ into a duplicate execution queue:
   → S11 [closeout](docs/roadmap/tasks/v2-closeout.md) → S12 [Paper alignment](docs/roadmap/tasks/v2-paper-alignment.md)
 - **Reference-design alignment (Phase 4):** [system-appearance theme](docs/roadmap/tasks/system-appearance-theme.md)
   → [real favicon pipeline](docs/roadmap/tasks/real-favicon-pipeline.md)
+  → [favicon disk cache](docs/roadmap/tasks/favicon-disk-cache.md)
   → [sidebar reference polish](docs/roadmap/tasks/sidebar-reference-polish.md)
   → [UI contract conformance](docs/roadmap/tasks/ui-contract-conformance.md)
   → [folder membership/pinned invariant](docs/roadmap/tasks/folder-pinned-invariant.md)
