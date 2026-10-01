@@ -63,6 +63,20 @@ fn forged_completion_cannot_omit_sources_change_guest_destinations_or_change_sui
             },
         ],
     };
+    let mut original = original;
+    fs::write(root.join("executables/1"), "consumer").unwrap();
+    fs::set_permissions(
+        root.join("executables/1"),
+        fs::Permissions::from_mode(0o500),
+    )
+    .unwrap();
+    original.files.push(Entry {
+        payload: "executables/1".into(),
+        guest: guest_repo.join("scripts/visual/target/release/bbr-visual"),
+        sha256: store::digest(&root.join("executables/1")).unwrap(),
+        bytes: 8,
+        executable: true,
+    });
     store::write_json(&root.join("payload.json"), &original).unwrap();
     payload::verify(&root, &original, &AtomicBool::new(false)).unwrap();
     for mutation in [

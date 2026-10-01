@@ -414,6 +414,63 @@ Remaining runnable work: adapter bootstrap/producer/receipt/return wiring,
 independent host resource recheck, source-bound selection and coverage. No new
 lane or subagent; pending VM/network and Checkbox asset approvals are unchanged.
 
+### Fixed guest-execution prerequisite
+
+Preflight: `main@1501246`, only this session's pending guest slice, no index or
+capture-lock holder and no visual/Tart build or capture process. An ordinary
+user-owned BBR app and an unrelated mbx process remain untouched. Entire delivery
+queue re-read; only this local visual owner is authorized, no subagent or lane.
+
+Both payload suites now require the separately built release consumer at its
+compiled path. The internal Rust guest entrypoint checks actual admin/VirtualMac
+identity, fixed suite/action, bounded hash-bound manifest, compiled paths and
+installed source/executable bytes/modes before invoking the existing native
+producer through immutable upstream process cleanup. Its cleared deterministic
+environment has no arbitrary argv or host bypass. Postchecks precede inventory
+publication. Python composes observation, fresh installation, fixed Rust calls,
+rechecks, receipt and unchanged raw-byte return; it gives the owned Rust child
+bounded termination grace before declaring hard-kill cleanup unproven. No seal,
+comparison, baseline or environment acceptance authority moves into Python.
+
+Evidence:
+- **10 new Python guest contracts**, using synthetic non-executed artifacts and
+  mocked producer/environment calls, plus **3 Rust pure preflight/command tests**.
+  Both suites, receipt/return linkage, source/shared-manifest/environment drift,
+  host refusal, fresh/disjoint output and TERM-before-KILL are covered. Rust
+  adds exact flags, bounded manifest, hardlink/symlink/special-mode rejection and
+  cancellation-aware installed hashing. Real host CLI rejects guest execution.
+- `just visual-test`: **96 Python units** (one additional CLI class skipped in
+  discovery, then separately passing), unchanged upstream contracts and **42
+  consumer tests** plus existing signal fixtures pass. Strict consumer all-target
+  Clippy, fmt, roadmap and whitespace pass. Logs:
+  `/tmp/bbr-visual-guest-final-visual-test.log`,
+  `/tmp/bbr-visual-guest-final-clippy.log`,
+  `/tmp/bbr-visual-guest-final-roadmap.log`.
+- Actual host-only preparation at `/private/tmp/bbr-visual-guest-prepare.usejuP`:
+  Gallery 1,462 sources + 2 executables, 1,464 files / 43,714,894 bytes; browser
+  1,462 sources + 3 executables, 1,465 files / 61,489,182 bytes. Both complete
+  manifests independently pass the Python read-only inspector, and observed
+  artifact hashes match host-build JSON. No payload was installed on the host.
+  Consumer SHA-256: `04b8d26140a2042842dc856822edd03ac392d17f7735a058eb9b7231e9d608f7`.
+  Product artifact hashes match the preceding host-build checkpoint. Gallery
+  cached release build 1.04s, first consumer release build 9.55s; browser 0.38s,
+  cached consumer 0.05s (Cargo-reported, not overall elapsed or product timing).
+  Host remains macOS 27.0/26A428. Existing `block` warning is not suppressed.
+
+Self-review tightened fresh inventory guards, bounded manifest reads, special
+mode/hardlink checks, cancellation-aware hashing and failure diagnostics. These
+contracts prove local composition and build/staging only, not actual guest
+execution, producer pixels, full coverage or VM teardown. Old preparation
+payloads without the consumer role are superseded diagnostics, never current
+capture inputs. The new payloads are also build evidence, not capture seals.
+
+Next runnable local work: host bootstrap/SSH/return wiring with independent
+cleanup observation and supervision, then current Gallery coverage/selection.
+The normal `produce`/`check` guard remains unconditional. VM/network and legitimate
+Checkbox asset approval are still pending; no native execution, actual PNG/HTML
+review, baseline acceptance, product/performance gate or migration completion
+is claimed. Implementation/review wall time was not measured.
+
 ## Status vocabulary
 
 | Status | Meaning |

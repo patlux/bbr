@@ -70,7 +70,17 @@ pub fn prepare(
             "e2e_visual_shell_capture",
         ],
     };
-    let artifacts = process::build(repo, arguments, cancelled)?;
+    let mut artifacts = process::build(repo, arguments, cancelled)?;
+    artifacts.extend(process::build(
+        repo,
+        &[
+            "--manifest-path",
+            "scripts/visual/Cargo.toml",
+            "--bin",
+            "bbr-visual",
+        ],
+        cancelled,
+    )?);
     ensure!(
         environment::probe(repo, suite, cancelled)? == host_before,
         "host build environment changed; rebuild before transfer"

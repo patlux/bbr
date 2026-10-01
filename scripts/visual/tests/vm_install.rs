@@ -26,14 +26,18 @@ fn rust_staged_suites_install_byte_exactly_at_compiled_paths() {
         let mut artifacts = Vec::new();
         for (name, test) in [
             ("bbr-gallery", false),
+            ("bbr-visual", false),
             ("bbr", false),
             ("e2e_visual_shell_capture", true),
         ] {
             let path = repo.join(if test {
                 format!("target/release/deps/{name}-fixture")
+            } else if name == "bbr-visual" {
+                "scripts/visual/target/release/bbr-visual".into()
             } else {
                 format!("target/release/{name}")
             });
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
             fs::write(&path, "synthetic artifact, must never execute\n").unwrap();
             fs::set_permissions(&path, fs::Permissions::from_mode(0o500)).unwrap();
             artifacts

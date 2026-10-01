@@ -81,7 +81,7 @@ fn regular(path: &Path) -> Result<fs::Metadata> {
     );
     Ok(meta)
 }
-fn hash(path: &Path, cancelled: &AtomicBool) -> Result<String> {
+pub(crate) fn hash(path: &Path, cancelled: &AtomicBool) -> Result<String> {
     regular(path)?;
     let mut input = File::open(path)?;
     let mut digest = Sha256::new();
@@ -158,8 +158,12 @@ pub fn stage(
         "source changed during build; rebuild before transfer"
     );
     let required: &[(&str, bool)] = match suite {
-        Suite::Gallery => &[("bbr-gallery", false)],
-        Suite::Browser => &[("bbr", false), ("e2e_visual_shell_capture", true)],
+        Suite::Gallery => &[("bbr-gallery", false), ("bbr-visual", false)],
+        Suite::Browser => &[
+            ("bbr", false),
+            ("e2e_visual_shell_capture", true),
+            ("bbr-visual", false),
+        ],
     };
     let mut files = Vec::new();
     for (name, digest) in before_build {
@@ -180,13 +184,18 @@ pub fn stage(
     }
     for (index, (name, test)) in required.iter().enumerate() {
         let guest = process::executable(artifacts, name, *test)?;
+        let target_root = if *name == "bbr-visual" {
+            repo.join("scripts/visual/target")
+        } else {
+            repo.join("target")
+        };
         let suffix = guest
-            .strip_prefix(repo.join("target/release"))
+            .strip_prefix(target_root.join("release"))
             .context("artifact must retain its compiled repository release path")?;
         relative(suffix.to_str().context("UTF-8 artifact path")?)?;
         // A managed target root can be a symlink. Never follow a symlink file
         // or any producer-selected path outside the canonical target root.
-        let target = repo.join("target").canonicalize()?;
+        let target = target_root.canonicalize()?;
         let canonical = guest.canonicalize()?;
         ensure!(
             canonical.starts_with(&target),
@@ -348,11 +357,13 @@ fn verify_files(
             ensure!(
                 index.parse::<usize>().is_ok_and(|n| n.to_string() == index)
                     && entry.executable
-                    && guest.starts_with("target/release/"),
+                    && (guest.starts_with("target/release/")
+                        || guest == "scripts/visual/target/release/bbr-visual"),
                 "invalid executable mapping"
             );
             let role = match guest {
                 "target/release/bbr-gallery" => "gallery",
+                "scripts/visual/target/release/bbr-visual" => "consumer",
                 "target/release/bbr" => "browser",
                 path if path
                     .strip_prefix("target/release/deps/e2e_visual_shell_capture-")
@@ -387,8 +398,10 @@ fn verify_files(
         "payload does not contain exactly sealed source inputs"
     );
     let required: BTreeSet<_> = match suite {
-        Suite::Gallery => ["gallery"].into_iter().collect(),
-        Suite::Browser => ["browser", "capture-test"].into_iter().collect(),
+        Suite::Gallery => ["gallery", "consumer"].into_iter().collect(),
+        Suite::Browser => ["browser", "capture-test", "consumer"]
+            .into_iter()
+            .collect(),
     };
     ensure!(executables == required, "payload executable suite differs");
     let mut actual = BTreeSet::new();

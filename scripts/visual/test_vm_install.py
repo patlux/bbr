@@ -22,7 +22,8 @@ class InstallationContracts(unittest.TestCase):
         self.share.mkdir()
         self.repo = self.root / "compiled-repo"
         self.files = {"source/src/lib.rs": (b"// source\n", "src/lib.rs", False),
-                      "executables/0": (b"not a real executable", "target/release/bbr-gallery", True)}
+                      "executables/0": (b"not a real executable", "target/release/bbr-gallery", True),
+                      "executables/1": (b"not a real consumer", "scripts/visual/target/release/bbr-visual", True)}
         self.value = {"schema": 1, "suite": "gallery", "repo": str(self.repo), "sources": {}, "files": []}
         for name, (data, guest, executable) in self.files.items():
             path = self.share / name
@@ -61,7 +62,7 @@ class InstallationContracts(unittest.TestCase):
                          "traversal", "sensitive", "size", "executable", "unknown", "digest", "case-alias", "parent-file"]:
             with self.subTest(mutation=mutation):
                 value = copy.deepcopy(self.value)
-                source, binary = value["files"]
+                source, binary = value["files"][:2]
                 if mutation == "schema": value["schema"] = True
                 if mutation == "suite": value["suite"] = "browser"
                 if mutation == "repo": value["repo"] = str(self.root)

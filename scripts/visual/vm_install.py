@@ -165,7 +165,9 @@ def _manifest(raw: bytes, expected_repo: Path, suite: str) -> dict:
         else:
             if not re.fullmatch(r"executables/(0|[1-9][0-9]*)", name) or not entry["executable"]:
                 raise InstallError("invalid executable mapping")
-            if relative == "target/release/bbr-gallery":
+            if relative == "scripts/visual/target/release/bbr-visual":
+                role = "consumer"
+            elif relative == "target/release/bbr-gallery":
                 role = "gallery"
             elif relative == "target/release/bbr":
                 role = "browser"
@@ -176,7 +178,7 @@ def _manifest(raw: bytes, expected_repo: Path, suite: str) -> dict:
             if role in roles:
                 raise InstallError("duplicate executable role")
             roles.add(role)
-    required = {"gallery"} if suite == "gallery" else {"browser", "capture-test"}
+    required = {"gallery", "consumer"} if suite == "gallery" else {"browser", "capture-test", "consumer"}
     if mapped != sources or roles != required:
         raise InstallError("incomplete source/executable inventory")
     # APFS may be case-insensitive and normalization-insensitive. Reject aliases

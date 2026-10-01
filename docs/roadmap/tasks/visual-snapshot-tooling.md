@@ -160,6 +160,18 @@ private locks, including a detached stand-in for Tart; never boot a VM or native
 producer in these contracts. This slice does not remove the native capture guard
 or prove actual VM teardown. No new lane or subagent is authorized.
 
+### Bounded guest-execution slice
+
+Include the independent release consumer as a hash-bound payload executable so
+the guest reuses immutable upstream process-group execution instead of retaining
+a second Python process runner. Expose only fixed suite inventory/capture calls,
+with host refusal before files/processes and no arbitrary argv or environment
+bypass. Compose fresh installation, pre/post source/artifact and guest observation,
+fixed producer execution, receipt and raw return packaging. Test orchestration
+with synthetic artifacts and controlled observation hooks; do not claim pixel
+coverage, VM runtime, current catalog parity or bootstrap success. Host boot/
+SSH transport and real pilot stay guarded until the approved route is complete.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and
@@ -175,6 +187,18 @@ exact run paths, passed/failed checks and smallest needed user input. Do not
 change product rendering or weaken comparisons to obtain a pass.
 
 ## Delivery ledger
+
+**Fixed guest-execution prerequisite:** both suites now stage the separately
+built release Rust consumer, whose internal guest-only fixed commands reuse
+upstream process cleanup. Fresh installation, pre/post guest facts and installed
+bytes, receipt and raw transport are composed without producing capture seals.
+Ten new synthetic Python contracts and three pure Rust tests pass; current totals
+are 96 Python units plus separate CLI integration and 42 consumer tests, unchanged
+upstream, strict Clippy/fmt and roadmap. Actual host-only builds stage both suite
+formats and the real consumer; all hashes independently rechecked. Neither native
+producer nor VM was launched. Host bootstrap/SSH/supervision integration, current
+coverage and real pilot remain open. Old payloads without the consumer role are
+superseded diagnostics; concrete runtime evidence belongs in Current delivery.
 
 **Guest installation prerequisite:** strict bounded transport now validates the
 Rust manifest against independent host identity, installs only in a fresh tree

@@ -162,12 +162,38 @@ actual guest installation/execution and cleanup remain unverified. The real
 capture guard stays closed. Python transport helpers own neither comparison nor
 coverage/acceptance policy; those remain Rust/upstream responsibilities.
 
+### Fixed guest execution prerequisite
+
+Both suites include the independent release consumer at
+`/Users/patwoz/dev/Personal/macos/bbr/scripts/visual/target/release/bbr-visual`.
+Its internal `guest-execute` entrypoint requires actual macOS admin/VirtualMac
+identity, exact compiled paths and hash-bound shared/installed bytes. Only fixed
+Gallery inventory/capture or the existing browser capture test may run, with a
+cleared deterministic environment and immutable upstream process cleanup. No
+host override, arbitrary command, build, baseline write or capture seal exists
+in this entrypoint. The normal `produce` and `check` commands remain blocked.
+
+The guest transport composition observes the real environment, installs into a
+fresh compiled tree, invokes that consumer, rechecks sources/artifacts/environment
+and packages a bound receipt with unchanged raw output. On interruption it gives
+the Rust child bounded grace to reap its producer group; hard termination is
+unproven, never success. Host receipt validation, exact coverage checks, source
+revalidation and observed VM cleanup are still required before upstream sealing.
+
+Current evidence comprises synthetic composition/negative tests, host-refusal
+contracts and actual host-only release preparation with all staged hashes checked.
+No actual guest producer or VM was launched. Old payloads lacking the consumer
+role cannot satisfy the current inventory; preserve them as diagnostics only.
+Host bootstrap, SSH, supervision/cleanup integration and approved real capture
+remain open. This does not establish current Gallery applicability/page coverage.
+
 ### Host-only producer preparation
 
 `just visual-prepare gallery /absolute/fresh/external/payload` (or `browser`)
 uses the repository's existing Xcode/SDK environment and bounded `mbx build`,
-resolves the exact Cargo artifacts, checks host environment and source identity
-around the build, then stages the verified payload. It prints typed host-build
+builds the separate release consumer, resolves the exact Cargo artifacts, checks
+host environment and source identity around both builds, then stages the verified
+payload. It prints typed host-build
 JSON; redirect that explicitly to diagnostics outside the payload when needed.
 No inventory executable, app, renderer, VM, SSH or service is started. Output
 must be fresh, absolute and outside the checkout, under an existing directory.

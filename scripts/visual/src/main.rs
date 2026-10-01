@@ -26,6 +26,9 @@ fn run() -> Result<u8> {
         signal_hook::flag::register(signal, cancelled.clone())?;
     }
     let args: Vec<_> = std::env::args().skip(1).collect();
+    if bbr_visual::guest::dispatch(&args, &cancelled)? {
+        return Ok(0);
+    }
     let repo = std::fs::canonicalize(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."))?;
     if let Some(code) = bbr_visual::read_only::dispatch(&repo, &args)? {
         return Ok(code);

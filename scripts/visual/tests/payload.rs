@@ -43,9 +43,18 @@ impl Fixture {
         let mut artifacts = Vec::new();
         for (name, test) in [
             ("bbr-gallery", false),
+            ("bbr-visual", false),
             ("bbr", false),
             ("e2e_visual_shell_capture", true),
         ] {
+            let artifact_target = if name == "bbr-visual" {
+                let consumer_target = repo.join("scripts/visual/target");
+                fs::create_dir_all(consumer_target.parent().unwrap()).unwrap();
+                symlink(&target, &consumer_target).unwrap();
+                consumer_target
+            } else {
+                repo.join("target")
+            };
             let relative = if test {
                 format!("release/deps/{name}-fixture")
             } else {
@@ -53,7 +62,7 @@ impl Fixture {
             };
             fs::write(target.join(&relative), "#!/bin/sh\nexit 98\n").unwrap();
             fs::set_permissions(target.join(&relative), fs::Permissions::from_mode(0o700)).unwrap();
-            artifacts.push(json!({"reason":"compiler-artifact","target":{"name":name},"profile":{"test":test},"executable":repo.join("target").join(relative)}));
+            artifacts.push(json!({"reason":"compiler-artifact","target":{"name":name},"profile":{"test":test},"executable":artifact_target.join(relative)}));
         }
         let config = Config::from_toml(
             r#"schema=1
@@ -84,7 +93,7 @@ suffixes=[".rs"]
 fn copies_only_sealed_sources_and_exact_suite_artifacts_at_compiled_paths() {
     let f = Fixture::new();
     let sources = f.sources();
-    for (suite, count) in [(Suite::Gallery, 2), (Suite::Browser, 3)] {
+    for (suite, count) in [(Suite::Gallery, 3), (Suite::Browser, 4)] {
         let destination = f.root.join(suite.id());
         let manifest = payload::stage(
             &f.repo,
