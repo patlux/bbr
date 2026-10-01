@@ -352,6 +352,10 @@ visual-test:
     timeout --kill-after=10s {{test_timeout}} mbx test --locked --offline --manifest-path scripts/visual/Cargo.toml
     timeout --kill-after=10s {{visual_timeout}} python3 scripts/visual/test_update_integration.py -v
 
+# Host builds + fresh external payload only; never boots Tart or executes native producers.
+visual-prepare suite destination:
+    timeout --kill-after=30s {{visual_timeout}} mbx run --locked --offline --manifest-path scripts/visual/Cargo.toml -- prepare {{quote(suite)}} {{quote(destination)}}
+
 # All current snapshots: contracts, offscreen Gallery and native browser chrome.
 # Both reports are produced even when one suite requires visual review.
 visual: visual-test

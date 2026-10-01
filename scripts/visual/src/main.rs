@@ -34,6 +34,19 @@ fn run() -> Result<u8> {
         .first()
         .context("command required: environment, produce, check, update, doctor, list, inspect")?;
     match command.as_str() {
+        "prepare" => {
+            ensure!(
+                args.len() == 3,
+                "prepare requires suite and fresh absolute payload directory"
+            );
+            let host = bbr_visual::prepare::prepare(
+                &repo,
+                Suite::parse(&args[1])?,
+                &PathBuf::from(&args[2]),
+                &cancelled,
+            )?;
+            println!("{}", serde_json::to_string(&host)?);
+        }
         "environment" => {
             ensure!(args.len() == 2, "environment requires suite");
             println!(

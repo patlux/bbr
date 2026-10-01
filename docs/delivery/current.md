@@ -275,6 +275,40 @@ current Gallery selection/coverage audit are next non-network actions. No
 subagent, new lane, host GUI, push or expanded product scope. The requested VM
 and Checkbox permissions remain pending and do not justify a completion claim.
 
+### Actual host-build / payload preparation checkpoint
+
+Added a bounded host-only `visual-prepare` command: validate fresh external
+paths first, snapshot sources and host toolchain, invoke the existing exact
+release mbx build, recheck environment/sources and stage only suite artifacts.
+No producer/inventory executable is run. Typed host build evidence is printed
+outside the read-only payload. One new negative/pre-cancelled path contract
+passes; consumer total **32/32**. `just visual-test` (66 Python unit contracts,
+separate real CLI integration, upstream contracts and consumer), strict Clippy,
+fmt, roadmap and diff checks pass. Logs: `/tmp/bbr-visual-prepare-visual-test.log`,
+`/tmp/bbr-visual-prepare-final-clippy.log`.
+
+First actual host-only preparations:
+- `/private/tmp/bbr-visual-prepare.DW3Hlm/gallery-payload`: 1,449 sealed sources,
+  one Gallery executable, 1,450 files / 39,454,744 bytes. Release build 1m29s.
+  Gallery SHA-256 `568ce5a76d5846a0b72de8d58220162fd43504326ea03eef6fbefbd8f40f6c52`.
+- `/private/tmp/bbr-visual-prepare.DW3Hlm/browser-payload`: 1,449 sealed sources,
+  app + capture-test, 1,451 files / 57,229,032 bytes. Release build 1m40s.
+  App SHA-256 `01da59651365c823764b86caeb457df6ba1fd7ffdfe35a8efd195d85cb36c072`;
+  test SHA-256 `7ee611dcb964f785bf7eb071b97fbd113d8ef814b5a7fb207656a5c8db3e4788`.
+- All staged hashes independently rechecked after preparation. Host macOS 27.0
+  build 26A428, arm64, Rust 1.97.1, Xcode 27A5252f / SDK 27.0; GPUI exact pinned
+  revision unchanged. `host-build.json`, `browser-host-build.json`, `prepare.log`
+  and `browser-prepare.log` are under the run directory. Existing `block` future
+  incompatibility warning remains, not suppressed.
+
+These are build/staging artifacts only, not a guest receipt, image or capture
+seal. Documentation changed afterward; capture must prepare fresh current-source
+payloads, never re-seal these. No VM boot, producer execution, baseline or perf
+claim. Self-review checked host-only call graph, artifact identities, source and
+probe stability, mbx/Xcode route and fresh output guards. Parallelism remains
+single-writer; VM transport wiring and independent coverage are next runnable
+work, while actual boot and Checkbox asset permission remain pending.
+
 ## Status vocabulary
 
 | Status | Meaning |

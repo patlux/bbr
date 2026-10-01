@@ -162,6 +162,19 @@ change product rendering or weaken comparisons to obtain a pass.
 
 ## Delivery ledger
 
+**Current Rust host-preparation checkpoint:** `just visual-prepare` now builds
+and stages actual Gallery/browser payloads using bounded mbx and the existing
+Xcode route; 1,449 sealed sources plus one/two exact Cargo executables were
+independently hash-verified. Nothing was executed. Evidence under
+`/private/tmp/bbr-visual-prepare.DW3Hlm`; release builds 1m29s / 1m40s.
+32 consumer tests, 66 Python units + separate CLI integration, immutable upstream
+contracts, strict Clippy/fmt and roadmap pass. These are build/staging artifacts,
+not guest or pixel evidence, and become stale after subsequent source edits.
+Fresh preparation is required before capture; installation/supervision remain
+open. Native Rust execution guard and baseline approval boundary remain closed.
+
+**Earlier Python adapter/integration history (not Rust migration acceptance):**
+
 The adapter, unchanged portable CLI, documentation and eight reviewed baseline
 images are implemented. Fifteen adapter contracts and 29 upstream contracts
 pass, as do real optimized captures, exact independent repeat comparison,

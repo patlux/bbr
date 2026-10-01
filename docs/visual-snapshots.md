@@ -124,6 +124,19 @@ coverage and guest provenance after return and before upstream capture sealing.
 Fixture round trips and hostile archive tests are portable evidence only: real
 SSH transfer, native images and capture integration remain unverified.
 
+### Host-only producer preparation
+
+`just visual-prepare gallery /absolute/fresh/external/payload` (or `browser`)
+uses the repository's existing Xcode/SDK environment and bounded `mbx build`,
+resolves the exact Cargo artifacts, checks host environment and source identity
+around the build, then stages the verified payload. It prints typed host-build
+JSON; redirect that explicitly to diagnostics outside the payload when needed.
+No inventory executable, app, renderer, VM, SSH or service is started. Output
+must be fresh, absolute and outside the checkout, under an existing directory.
+An existing payload is never reused or overwritten; source changes require
+fresh preparation. This build-only command does not bypass `produce`/`check`'s
+closed native execution guard and does not make Python capture entrypoints safe.
+
 ## Capture contract
 
 `visual.toml` delegates PNG production to `scripts/visual/capture.py`. It builds
