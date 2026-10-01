@@ -102,6 +102,10 @@ impl Guest {
             text(value)?;
         }
         ensure!(
+            self.model.starts_with("VirtualMac"),
+            "actual VirtualMac guest model required"
+        );
+        ensure!(
             self.console_user == "admin"
                 && self.on_console
                 && !self.screen_locked

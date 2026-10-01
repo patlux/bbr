@@ -12,6 +12,7 @@ pub mod vm_cleanup;
 pub mod vm_environment;
 pub mod vm_runtime;
 pub mod vm_supervision;
+pub mod vm_transport;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Suite {

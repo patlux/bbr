@@ -137,6 +137,7 @@ fn drift_in_guest_environment_or_transfer_identity_fails_closed() {
 fn missing_or_host_substituted_guest_observations_cannot_validate() {
     for mutation in [
         "origin",
+        "model",
         "schema",
         "locked",
         "console",
@@ -153,6 +154,7 @@ fn missing_or_host_substituted_guest_observations_cannot_validate() {
         let guest = &mut receipt.environment_before;
         match mutation {
             "origin" => guest.origin = "host".into(),
+            "model" => guest.model = "Mac16,9".into(),
             "schema" => guest.schema = 2,
             "locked" => guest.screen_locked = true,
             "console" => guest.on_console = false,

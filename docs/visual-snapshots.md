@@ -259,8 +259,37 @@ its Rust consumer retains native producer process ownership.
 Local tests prove generation, shell syntax, host refusal, source/mount/path
 rejection, import ordering and frozen-byte execution using inert fixtures.
 Actual guest NAR availability, VirtioFS layout/mounting and compiled-parent setup
-remain unproven. No SSH/Tart call or capture entrypoint invokes this planner yet;
-supervised transport/return integration and network approval are still required.
+remain unproven. The internal supervised transport now calls this planner, but
+normal capture entrypoints remain blocked and no actual SSH/Tart run is claimed.
+Network approval, runtime availability and real pilot evidence are still required.
+
+### Supervised transport and return (local-fixture evidence)
+
+The internal Rust transport validates current sources, runtime prerequisite and
+host-built executable identity before acquiring the upstream supervisor's leases.
+Python composes the fixed bootstrap with the existing hardened lifecycle and
+exact isolated SSH command. Only `/usr/bin/ssh` executes, with a cleared local
+environment, no agent/proxy/forwarding/multiplexing inheritance, bounded files for
+stdout/stderr and no detached transport child. The guest's fixed `return.tar`
+path is streamed unchanged; there is no scp path selection, automatic retry or
+new native producer runner.
+
+Archive and payload checks precede teardown. Raw candidates are unpacked only
+after lifecycle cleanup and independent resource observations. The control result
+is published after another cleanup recheck; Rust repeats its original-bound host
+verification before either lease finishes. Then Rust verifies the exact returned
+file set/bytes, completion marker and hash-bound guest receipt, binding separate
+host-build and actual VirtualMac rendering identities. Operation failure with
+proven cleanup may release leases but cannot succeed; host rejection of cleanup
+retains the unfinished gate. A swapped receipt cannot become capture evidence.
+
+Tests execute the real supervisor/control/transport/return/binding chain with
+private locks and synthetic file bytes, substituting only runtime and resource/
+SSH boundaries. They prove protocol ordering, not actual network, guest teardown,
+PNG validity or full coverage. This route has no normal CLI caller yet; the
+unconditional `produce`/`check` guard remains. Source/current-catalog validation,
+approved real pilot, two exact complete captures and upstream sealing/review
+integration are still required. No baseline is changed by transport success.
 
 ## Capture contract
 

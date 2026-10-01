@@ -647,6 +647,63 @@ is proven by these local tests. Performance remains deferred; implementation/
 review wall time was not instrumented. Parallelism audit: no other lane authorized;
 portable transport and coverage work remain runnable.
 
+### Supervised transport/return integration checkpoint
+
+Preflight: clean `main@b8ec8d54`, no Git lock or visual/Tart process. Current
+activation/queue and bootstrap checkpoint reviewed; only this local visual owner
+is authorized. No subagent/workflow/new lane or foreign worktree activity. Normal
+capture remains closed and actual network/Checkbox permissions remain pending.
+
+The internal Rust transport now composes current-source/runtime/host-build checks,
+upstream supervision, fixed Python bootstrap/lifecycle/SSH exchange, bounded raw
+archive return, request-bound cleanup and independent host recheck, then returned
+file/guest-receipt validation. Native process, comparison and seal authority stay
+upstream/Rust. Python never detaches its direct SSH child or infers remote cleanup
+from SSH exit; the owned clone must be destroyed and observed absent. SSH argv is
+the exact isolated lifecycle route with absolute system executable and cleared
+local environment; returned archive path is fixed. No retry or runtime install.
+
+Archive/payload preflight precedes teardown; resource verification precedes raw
+unpacking and terminal publication. Rust repeats the original request-bound
+cleanup observation before finishing leases, checks exact returned bytes/marker,
+and parses the same bounded hash-verified receipt bytes. Source changes, swapped
+receipt/build identity, retained resources and uncertain termination prevent
+success. Receipt binding now also requires an actual VirtualMac model rather
+than accepting a host model tagged as guest. No CLI caller activates this route;
+`produce`/`check` remain unconditionally blocked.
+
+Fresh evidence:
+- **13 new Python contracts** exercise success/failure/cancellation ordering,
+  truncated/swapped archive, payload drift, rejected resource observations,
+  isolated/fixed SSH argv, direct-child TERM-before-KILL, no detached group,
+  fresh diagnostics and bounded actual local cat/printf/false/sleep fixtures.
+- **3 Rust contracts**: returned inventory/bytes/receipt rejection plus real
+  supervisor → Python transport → raw transfer → host verifier → receipt binding
+  composition. Fixture modules replace only hardware/runtime/lifecycle/SSH
+  boundaries. Both private leases are asserted held during child and host
+  observations. Operation failure with proven cleanup releases gates; host
+  rejection leaves the gate active; swapped guest receipt fails after cleanup.
+  Synthetic bytes are explicitly NOT PNG and cannot prove pixel/coverage parity.
+- `just visual-test`: **141 Python units** (one integration skip rerun separately),
+  unchanged upstream and **50 consumer tests** plus signal fixtures pass. Strict
+  all-target consumer Clippy, fmt, whitespace and 49 shared script tests pass.
+  Logs: `/tmp/bbr-visual-transport-final-visual-test.log`,
+  `/tmp/bbr-visual-transport-final-clippy.log`,
+  `/tmp/bbr-visual-transport-final-script-tests.log`,
+  `/tmp/bbr-visual-transport-chain.log`. Initial Clippy rejected an eight-argument
+  entrypoint; it now takes a typed input bundle without lint suppression.
+
+Self-review tightened independent build matching, bounded receipt hash-before-
+parse, VirtualMac validation, SSH environment inheritance and fixed return path.
+No real key/SSH/Tart/network/native producer, runtime install, returned PNG, visual
+review, baseline or product-performance gate ran. Bootstrap runtime availability
+in the golden image and actual transport/teardown remain unproven; sources require
+fresh preparation before any approved capture. Next runnable work is current
+Gallery story selection/independent coverage and guarded producer integration;
+real pilot still needs the recorded network and asset approvals. Performance
+remains deferred. Test durations are logged; implementation/review timing was not
+instrumented. Parallelism audit: no additional lane authorized.
+
 ## Status vocabulary
 
 | Status | Meaning |

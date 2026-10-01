@@ -219,6 +219,36 @@ This slice does not launch SSH/Tart, grant network permission, open capture or
 prove real guest runtime/mount compatibility. Supervised transport/return wiring
 and real pilot remain mandatory subsequent evidence.
 
+### Bounded supervised transport/return slice
+
+Compose the existing source-bound bootstrap, private hardened Tart lifecycle,
+request-bound cancellation and independent cleanup verifier. Stream only the
+fixed guest return archive through the existing isolated SSH command; preserve
+raw bytes with explicit output/log/deadline bounds and no automatic retry. Direct
+transport children must stay in upstream's owned group and be reaped before VM
+teardown. Validate archive and payload before publishing transport success; expose
+raw candidates only after observed cleanup. Rust validates the original payload,
+host build and guest receipt after supervisor success, retaining upstream as the
+sole gate/process/seal authority. Test ordering, malformed/swapped/truncated
+return, failure/cancellation and unfinished cleanup using private local fixtures
+and injected resource observers; no SSH/Tart/native operation. Normal CLI capture
+remains blocked. Actual VM runtime availability, return/pixel parity and network
+approval remain required before route activation.
+
+The internal route is now composed (still no capture CLI caller). Thirteen Python
+transport contracts and three Rust return/chain contracts pass with fixed inert
+resource/SSH fixtures; both private leases are observed held through child and
+host cleanup. Failed exchange, cancelled return, changed payload/archive, swapped
+receipt and host cleanup rejection cannot succeed. Uncertain cleanup retains the
+active gate; known-clean failed operation finishes leases without exposing raw
+candidates. Rust binds exact returned bytes and separate host/VirtualMac receipt,
+not a synthetic pixel claim. `just visual-test` (141 Python units, including one
+integration skip rerun separately, unchanged upstream, 50 consumer tests plus
+signal fixtures), strict all-target Clippy, fmt and shared script tests pass.
+Full evidence and remaining real-runtime/transport boundaries are in the delivery
+ledger. No network/native producer/acceptance action or milestone completion
+accompanies this checkpoint.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and
