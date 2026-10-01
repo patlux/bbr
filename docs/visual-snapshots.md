@@ -68,6 +68,24 @@ selection before real rendering. The historical 49-story plan is already known
 to lag the current 53-story Gallery registry; fresh plan/framing evidence is
 required before full Gallery capture can pass.
 
+### VM payload foundation (not yet executable capture)
+
+The Rust payload module stages only the configured, hashed source inventory plus
+exact Cargo-reported release executables. It snapshots sources before a future
+build, rejects drift before/after copying, preserves guest compile-time paths and
+resolves mbx's target-root symlink only for those executables. It never shares an
+entire working tree or target directory. A private fresh external directory,
+streamed bounded copies, per-file SHA-256/size/mode checks, exact inventories and
+a completion manifest make transfer mutations fail closed. A partial payload is
+not resumable or complete. No capture command uses this foundation yet.
+
+Portable fixtures prove stale sources, missing/duplicate/out-of-tree executables,
+symlinks, unexpected files, wrong permissions, changed manifests, forged guest
+mappings and already-cancelled operations are rejected. This does **not** prove
+actual VM transfer, guest execution/environment, post-capture source identity,
+artifact return or Tart cleanup. Those require the pending adapter and approved
+VM pilot; native producer entrypoints remain blocked.
+
 ## Capture contract
 
 `visual.toml` delegates PNG production to `scripts/visual/capture.py`. It builds

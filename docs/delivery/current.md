@@ -166,6 +166,43 @@ and independent coverage audit remain runnable. Boot/network and Checkbox asset
 approval remain pending; no VM, host GPU, baseline update, product gate or perf
 claim. All changes are confined to consumer diagnostics/tests and documentation.
 
+### VM payload foundation checkpoint
+
+A consumer-only transfer module now snapshots the narrow configured source
+inventory and stages source bytes plus exact suite Cargo artifacts in a fresh
+private external directory. Source identity must match before/after copying;
+byte/size/executable checks and complete source/guest-role mappings are verified
+before publishing the transfer manifest. The mbx root link is resolved only for
+named release executables, preserving their compiled guest paths. No whole-tree,
+Git metadata, report, baseline or target-directory share. Copies/hashes are
+bounded, cancellation-aware, and interrupted staging is not resumed or sealed.
+
+Six new portable tests pass (consumer **27/27**): current source policies,
+allowlisted Gallery/browser artifacts, byte identity, stale build source,
+missing/duplicate/foreign artifacts, path overlap, symlinks, mutation, unexpected
+files, permissions, changed manifests, forged source/guest/suite mappings and
+pre-cancelled no-write behavior. `mbx test --locked --offline` and strict
+all-target Clippy at the consumer root, fmt, `just visual-test`, roadmap and
+whitespace gates pass. Logs: `/tmp/bbr-visual-payload-tests3.log`,
+`/tmp/bbr-visual-payload-clippy2.log`,
+`/tmp/bbr-visual-payload-visual-test.log`. Self-review added exact manifest/source
+mapping, role checks and completion-after-validation. Timing was not instrumented.
+
+This is a portable transfer prerequisite, deliberately not connected to capture.
+No native producer or guest was started; actual build linkage, guest integrity,
+environment separation, PNG return and Tart interruption/cleanup remain unproven.
+Host capture refusal stays unconditional. Existing E2E/Tart infrastructure and
+product/baseline/upstream sources are unchanged. Read-only inspection of the
+existing Tart helper found its key injection does not itself prove password
+login disabled or unrelated listeners absent; the visual adapter must enforce
+and verify clone-only hardening before any capture, not trust SSH success alone.
+
+Parallelism audit: no additional lane/agent authorized. Next runnable local work
+is the bounded adapter using existing Tart clone/boot/cleanup infrastructure and
+portable fault-injection tests, plus current coverage audit. Actual VM boot and
+Checkbox asset change still need Patrick's requested permissions. No GUI, full
+coverage, baseline acceptance, performance or stable-product completion claim.
+
 ## Status vocabulary
 
 | Status | Meaning |
