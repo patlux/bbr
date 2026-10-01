@@ -14,11 +14,13 @@
 //! N / XL; long-title truncation; the favicon slot (monogram tile /
 //! missing-favicon host-scheme fallback / loading-arc replacement —
 //! consumed inline from the embedded G1b favicon component, never
-//! re-storied); reveal-close on hover/selected; and drag-tick legal vs
-//! clamped-invalid. Rejected: attention on a crashed row (error wins, §10
+//! re-storied); reveal-close on hover/selected; drag-tick legal vs
+//! clamped-invalid; and the §10.12 closed pinned row (greyed, no close
+//! control). Rejected: attention on a crashed row (error wins, §10
 //! composition order), selected+dragging without the drag state machine,
-//! S-density pinned with a title (icon-only, §8/§11.2), and a real favicon
-//! bitmap (the tile is monogram-or-arc today, §7.2).
+//! S-density pinned with a title (icon-only, §8/§11.2), a real favicon
+//! bitmap (the tile is monogram-or-arc today, §7.2), a closed regular row
+//! and a selected closed row (§10.12).
 
 use bbr_ui::components::{FaviconSpec, RowVisuals};
 use bbr_ui::state::TabVisualState;
@@ -65,6 +67,9 @@ pub struct TabRowCase {
     /// Matrix-only: this case claims the selected rail while dragging
     /// (§10.9: `Dragging` comes only from the drag state machine).
     pub claims_selected: bool,
+    /// §10.12: the pinned row is closed in place (maps to
+    /// `RowVisuals::closed`).
+    pub closed: bool,
 }
 
 impl TabRowCase {
@@ -94,7 +99,14 @@ impl TabRowCase {
             crashed: false,
             bitmap_favicon: false,
             claims_selected: false,
+            closed: false,
         }
+    }
+
+    /// The same family closed in place (§10.12).
+    const fn closed(mut self) -> Self {
+        self.closed = true;
+        self
     }
 }
 
@@ -129,6 +141,9 @@ pub const TAB_ROW_VALID: &[TabRowCase] = &[
     // §10.2 reveal-close on hover/selected (the selected family above
     // reveals on selection; this family on hover).
     TabRowCase::new("reveal-close (hover/selected)", TabVisualState::Hover, false, "Example", "https://example.com/", Some(MONOGRAM), true, Density::Normal),
+    // §10.12 a pinned tab closed in place: greyed favicon and title, no
+    // close control (the row itself reopens it).
+    TabRowCase::new("closed pinned (kept place)", TabVisualState::Default, true, "Pinned", "https://pinned.example/", Some(MONOGRAM), false, Density::Normal).closed(),
 ];
 
 /// A rejected combination with the exact DESIGN/packet reason (the matrix
@@ -159,6 +174,7 @@ pub const TAB_ROW_REJECTED: &[RejectedTabRow] = &[
             crashed: true,
             bitmap_favicon: false,
             claims_selected: false,
+            closed: false,
         },
         reason: "§10 composition order: a crashed row derives Error (the app's row_state), so Attention never rides a crashed row",
     },
@@ -176,6 +192,7 @@ pub const TAB_ROW_REJECTED: &[RejectedTabRow] = &[
             crashed: false,
             bitmap_favicon: false,
             claims_selected: true,
+            closed: false,
         },
         reason: "§10.9: Dragging comes only from the app's drag state machine (drag_source replaces the composed state); the row model carries exactly one §10 state",
     },
@@ -198,8 +215,19 @@ pub const TAB_ROW_REJECTED: &[RejectedTabRow] = &[
             crashed: false,
             bitmap_favicon: true,
             claims_selected: false,
+            closed: false,
         },
         reason: "§7.2: the tile is monogram-or-arc today; FaviconSpec carries only {letter, hue} and no bitmap",
+    },
+    RejectedTabRow {
+        label: "a closed regular row",
+        case: TabRowCase::new("a closed regular row", TabVisualState::Default, false, "Example", "https://example.com/", Some(MONOGRAM), false, Density::Normal).closed(),
+        reason: "§10.12: only a pinned tab closes in place; a regular tab closes away into Recently closed",
+    },
+    RejectedTabRow {
+        label: "a selected closed row",
+        case: TabRowCase::new("a selected closed row", TabVisualState::Selected, true, "Pinned", "https://pinned.example/", Some(MONOGRAM), true, Density::Normal).closed(),
+        reason: "§10.12: the selection never lands on a closed row; selecting it reopens it",
     },
 ];
 
@@ -223,6 +251,22 @@ pub fn tab_row_case_valid(case: &TabRowCase) -> bool {
     // §10.9: Dragging comes only from the drag state machine; claiming a
     // selected rail while dragging is rejected.
     if case.state == TabVisualState::Dragging && case.claims_selected {
+        return false;
+    }
+    // §10.12: only a pinned row closes in place, and a closed row owns no
+    // session and never takes the selection (no selected/active/loading/
+    // attention/error/unresponsive state).
+    if case.closed
+        && (!case.pinned
+            || !matches!(
+                case.state,
+                TabVisualState::Default
+                    | TabVisualState::Hover
+                    | TabVisualState::Focused
+                    | TabVisualState::Dragging
+                    | TabVisualState::DragTarget
+            ))
+    {
         return false;
     }
     true
@@ -249,7 +293,7 @@ pub fn build_tab_row_fixture(case: &TabRowCase) -> Option<RowVisuals> {
         state: case.state,
         favicon: case.favicon.clone(),
         pinned: case.pinned,
-        closed: false,
+        closed: case.closed,
         show_close: true,
         reveal_close: case.reveal_close,
         split: None,
@@ -272,6 +316,11 @@ pub const DRAG_TICK_INVALID_ID: &str = "bbr-drag-tick-101";
 /// never drift from the declaration.
 pub const REVEAL_CLOSE_CLOSE_ID: &str = "bbr-tab-close-3";
 pub const PINNED_S_ROW_ID: &str = "bbr-tab-row-13";
+/// The §10.12 closed pinned family: its declared position and stable row
+/// id (the E2E asserts it draws without a close control).
+#[cfg(test)]
+pub const CLOSED_PINNED_INDEX: usize = 18;
+pub const CLOSED_PINNED_ROW_ID: &str = "bbr-tab-row-18";
 
 #[cfg(test)]
 mod tests {
@@ -332,6 +381,7 @@ mod tests {
                 "long title truncation",
                 "missing favicon (host-scheme fallback)",
                 "reveal-close (hover/selected)",
+                "closed pinned (kept place)",
             ]
         );
         // Labels are unique (ids derive from position).
@@ -355,6 +405,25 @@ mod tests {
         assert_eq!(TAB_ROW_VALID[13].label, "pinned icon-only (S)");
         assert_eq!(REVEAL_CLOSE_CLOSE_ID, "bbr-tab-close-3");
         assert_eq!(PINNED_S_ROW_ID, "bbr-tab-row-13");
+        assert_eq!(
+            TAB_ROW_VALID[CLOSED_PINNED_INDEX].label,
+            "closed pinned (kept place)"
+        );
+        assert_eq!(CLOSED_PINNED_ROW_ID, "bbr-tab-row-18");
+    }
+
+    #[test]
+    fn the_closed_family_is_a_greyed_pinned_row() {
+        let closed = build_tab_row_fixture(by_label("closed pinned (kept place)")).unwrap();
+        assert!(closed.closed && closed.pinned);
+        assert_eq!(closed.index, CLOSED_PINNED_INDEX);
+        for label in ["a closed regular row", "a selected closed row"] {
+            let rejected = TAB_ROW_REJECTED
+                .iter()
+                .find(|r| r.label == label)
+                .expect("rejected rule registered");
+            assert!(build_tab_row_fixture(&rejected.case).is_none(), "{label}");
+        }
     }
 
     #[test]
@@ -434,6 +503,8 @@ mod tests {
                 "selected+dragging without the drag state machine",
                 "S-density pinned with a title",
                 "a real favicon bitmap",
+                "a closed regular row",
+                "a selected closed row",
             ]
         );
         for rejected in TAB_ROW_REJECTED {

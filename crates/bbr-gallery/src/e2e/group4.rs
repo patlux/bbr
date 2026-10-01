@@ -59,7 +59,7 @@ fn group4_stories_render_the_matrix_families_with_stable_ids() {
         assert_eq!(snap.selected_story_label, "Favorites grid");
         assert!(snap.group4.favorite_activations.is_empty());
         let family_count = window.read(|_| FAVORITES_VALID.len());
-        assert_eq!(family_count, 6);
+        assert_eq!(family_count, 8);
         for index in 0..family_count {
             let bounds = bounds_of(
                 window,
@@ -73,8 +73,11 @@ fn group4_stories_render_the_matrix_families_with_stable_ids() {
         // The production tile ids render (the E2E targets `bbr-fav-0`).
         assert!(window.debug_bounds("bbr-fav-0").is_some());
         assert!(window.debug_bounds("bbr-fav-icon-0").is_some());
+        // The selected (bbr-fav-61) and closed (bbr-fav-71) tiles render.
+        assert!(window.debug_bounds("bbr-fav-61").is_some());
+        assert!(window.debug_bounds("bbr-fav-71").is_some());
         let rejected_count = window.read(|_| FAVORITES_REJECTED.len());
-        assert_eq!(rejected_count, 2);
+        assert_eq!(rejected_count, 3);
 
         // §11.11 Folders: every valid family renders; the expanded family
         // exposes the stable nested ids (bbr-folder-item-10-0 …).
@@ -83,7 +86,7 @@ fn group4_stories_render_the_matrix_families_with_stable_ids() {
         assert_eq!(snap.selected_story_label, "Folders");
         assert!(snap.group4.folder_toggles.is_empty());
         let family_count = window.read(|_| FOLDERS_VALID.len());
-        assert_eq!(family_count, 6);
+        assert_eq!(family_count, 8);
         for index in 0..family_count {
             let bounds = bounds_of(
                 window,
@@ -100,6 +103,10 @@ fn group4_stories_render_the_matrix_families_with_stable_ids() {
         assert!(bounds_of(window, "bbr-folder-item-10-0-close").size.width > px(0.0));
         // Blueprint D20: the inline-rename family paints the field.
         assert!(bounds_of(window, "bbr-folder-rename").size.width > px(0.0));
+        // §10.12: the closed member draws its row without a close control.
+        assert!(bounds_of(window, "bbr-folder-item-70-1").size.height > px(0.0));
+        assert!(window.debug_bounds("bbr-folder-item-70-1-close").is_none());
+        assert!(window.debug_bounds("bbr-folder-item-70-0-close").is_some());
         let rejected_count = window.read(|_| FOLDERS_REJECTED.len());
         assert_eq!(rejected_count, 2);
 

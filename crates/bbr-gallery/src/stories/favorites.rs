@@ -6,15 +6,16 @@
 //! matrix authority [`crate::favorites_matrix`] with recorder callbacks
 //! proving which production callback fired (`on_activate`). Rejected
 //! combinations (reorder during selection; a tile without a resolved
-//! tab/space/profile identity) refuse fixture construction and are shown
-//! with their DESIGN reasons. No gallery-local reimplementation of
+//! tab/space/profile identity; a selected closed tile) refuse fixture
+//! construction and are shown with their DESIGN reasons. No gallery-local reimplementation of
 //! anatomy, no copied tokens, no fake engine/controller/portal.
 //!
 //! The §11.10 affordances (zero-favorites drop band, glyph slot, drag-time
 //! drop cell) and the §11.2 ghost row render through their production
-//! components at rest and as §10.9 drag targets. The §10 tile states
-//! (default/hover/active/focused) are not expressible through the current
-//! production component (`FavoriteTileSpec` carries no state field) — the
+//! components at rest and as §10.9 drag targets. The tile carries the
+//! selection and the closed-in-place state (§10.12) through
+//! `FavoriteTileSpec`; the other §10 tile states (hover/active/focused)
+//! are not expressible through the current production component — the
 //! story documents them rather than inventing families.
 
 use std::rc::Rc;

@@ -15,13 +15,14 @@
 //! empty collapsible folder (a folder whose tabs were all closed remains
 //! as an empty collapsible row); the count `tnum` column; the inline
 //! rename field (blueprint D20); hairlines between folder groups (two
-//! folder rows in one family). Rejected:
-//! nested rows in a collapsed folder (they render only when expanded,
-//! §11.11) and persisted folders (session-local only, §11.11).
+//! folder rows in one family); a nested row that carries the selection
+//! (§10.4) and a nested row closed in place (greyed, no close control,
+//! §10.12). Rejected: nested rows in a collapsed folder (they render only
+//! when expanded, §11.11) and a selected closed member (§10.12: the
+//! selection never lands on a closed tab).
 //!
-//! Folder rows stay **session-local** in the gallery exactly like the
-//! production model: the fixture carries no persistence claim, and the
-//! rejected combination names the §11.11 no-persistence rule.
+//! Folders persist with the browser structure (schema v5); the gallery
+//! fixture is presentation only and makes no persistence claim.
 
 use bbr_domain::FolderId;
 use bbr_ui::components::{FolderMemberVisual, FolderRowSpec};
@@ -48,9 +49,11 @@ pub struct FolderCase {
     /// expanded rows may carry members (§11.11 — nested rows render only
     /// when expanded).
     pub members: &'static [(usize, &'static str)],
-    /// Matrix-only: this case claims persisted folders (§11.11 — folders
-    /// are session-local in v1, never persisted).
-    pub claims_persisted: bool,
+    /// The member position (index into `members`) that carries the
+    /// selection (§10.4), if any.
+    pub selected_member: Option<usize>,
+    /// The member position whose tab is closed in place (§10.12), if any.
+    pub closed_member: Option<usize>,
     /// Matrix-only: this case claims nested rows inside a collapsed
     /// folder (§11.11 — nested rows render only when expanded).
     pub claims_nested_in_collapsed: bool,
@@ -67,7 +70,8 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         rows: &[("Work", 2)],
         expanded: &[],
         members: &[],
-        claims_persisted: false,
+        selected_member: None,
+        closed_member: None,
         claims_nested_in_collapsed: false,
         rename: None,
     },
@@ -76,7 +80,8 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         rows: &[("Work", 2)],
         expanded: &[0],
         members: &[(0, "Example"), (0, "Local")],
-        claims_persisted: false,
+        selected_member: None,
+        closed_member: None,
         claims_nested_in_collapsed: false,
         rename: None,
     },
@@ -85,7 +90,8 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         rows: &[("Archive", 0)],
         expanded: &[],
         members: &[],
-        claims_persisted: false,
+        selected_member: None,
+        closed_member: None,
         claims_nested_in_collapsed: false,
         rename: None,
     },
@@ -94,7 +100,8 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         rows: &[("Reading", 12)],
         expanded: &[],
         members: &[],
-        claims_persisted: false,
+        selected_member: None,
+        closed_member: None,
         claims_nested_in_collapsed: false,
         rename: None,
     },
@@ -103,7 +110,8 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         rows: &[("New Folder", 0)],
         expanded: &[],
         members: &[],
-        claims_persisted: false,
+        selected_member: None,
+        closed_member: None,
         claims_nested_in_collapsed: false,
         rename: Some((0, "Review Tools")),
     },
@@ -112,7 +120,28 @@ pub const FOLDERS_VALID: &[FolderCase] = &[
         rows: &[("Work", 2), ("Personal", 1)],
         expanded: &[0],
         members: &[(0, "Example")],
-        claims_persisted: false,
+        selected_member: None,
+        closed_member: None,
+        claims_nested_in_collapsed: false,
+        rename: None,
+    },
+    FolderCase {
+        label: "selected member",
+        rows: &[("Work", 2)],
+        expanded: &[0],
+        members: &[(0, "Example"), (0, "Local")],
+        selected_member: Some(0),
+        closed_member: None,
+        claims_nested_in_collapsed: false,
+        rename: None,
+    },
+    FolderCase {
+        label: "member closed in place",
+        rows: &[("Work", 2)],
+        expanded: &[0],
+        members: &[(0, "Example"), (0, "Local")],
+        selected_member: None,
+        closed_member: Some(1),
         claims_nested_in_collapsed: false,
         rename: None,
     },
@@ -139,24 +168,26 @@ pub const FOLDERS_REJECTED: &[RejectedFolder] = &[
             rows: &[("Work", 2)],
             expanded: &[],
             members: &[(0, "Example")],
-            claims_persisted: false,
+            selected_member: None,
+            closed_member: None,
             claims_nested_in_collapsed: true,
             rename: None,
         },
         reason: "§11.11: nested rows render only when the folder is expanded — a collapsed folder exposes no nested rows",
     },
     RejectedFolder {
-        label: "persisted folders",
+        label: "a selected closed member",
         case: FolderCase {
-            label: "persisted folders",
+            label: "a selected closed member",
             rows: &[("Work", 2)],
-            expanded: &[],
-            members: &[],
-            claims_persisted: true,
+            expanded: &[0],
+            members: &[(0, "Example"), (0, "Local")],
+            selected_member: Some(1),
+            closed_member: Some(1),
             claims_nested_in_collapsed: false,
             rename: None,
         },
-        reason: "§11.11: a folder is a session-local container of tab identities — in-memory in v1, never persisted (Phase 7 owns restoration)",
+        reason: "§10.12: the selection never lands on a closed tab; selecting the member reopens it",
     },
 ];
 
@@ -164,8 +195,16 @@ pub const FOLDERS_REJECTED: &[RejectedFolder] = &[
 /// the matrix forbids. The fixture builder refuses (`None`) any case this
 /// rejects, so the story can never render a rejected folder list.
 pub fn folder_case_valid(case: &FolderCase) -> bool {
-    // §11.11: folders are session-local, never persisted.
-    if case.claims_persisted {
+    // §10.12: a closed member is never the selected tab, and both marks
+    // name an existing member.
+    if case.selected_member.is_some() && case.selected_member == case.closed_member {
+        return false;
+    }
+    if [case.selected_member, case.closed_member]
+        .into_iter()
+        .flatten()
+        .any(|member| member >= case.members.len())
+    {
         return false;
     }
     // §11.11: nested rows render only when the folder is expanded.
@@ -233,7 +272,7 @@ pub fn build_folders_fixture(
         })
         .collect();
     let mut members = Vec::new();
-    for (folder_pos, title) in case.members {
+    for (position, (folder_pos, title)) in case.members.iter().enumerate() {
         let folder_row = rows
             .iter()
             .find(|row| row.index == offset + folder_pos)
@@ -255,8 +294,8 @@ pub fn build_folders_fixture(
             letter,
             hue: member_pos % 6,
             image: None,
-            selected: false,
-            closed: false,
+            selected: case.selected_member == Some(position),
+            closed: case.closed_member == Some(position),
         });
     }
     Some((rows, members))
@@ -319,6 +358,8 @@ mod tests {
                 "count tnum",
                 "inline rename",
                 "hairlines between groups",
+                "selected member",
+                "member closed in place",
             ]
         );
         let mut seen = BTreeSet::new();
@@ -397,6 +438,27 @@ mod tests {
     }
 
     #[test]
+    fn selected_and_closed_members_mark_exactly_one_nested_row() {
+        let by_label = |label: &str| {
+            FOLDERS_VALID
+                .iter()
+                .find(|c| c.label == label)
+                .unwrap_or_else(|| panic!("family {label}"))
+        };
+        let (_, selected) = build_folders_fixture(by_label("selected member")).unwrap();
+        let marks: Vec<(bool, bool)> = selected.iter().map(|m| (m.selected, m.closed)).collect();
+        assert_eq!(marks, vec![(true, false), (false, false)]);
+        let (rows, closed) = build_folders_fixture(by_label("member closed in place")).unwrap();
+        let marks: Vec<(bool, bool)> = closed.iter().map(|m| (m.selected, m.closed)).collect();
+        assert_eq!(marks, vec![(false, false), (false, true)]);
+        // §10.12: the closed nested row draws no close control.
+        let ids = folders_ids(&rows, &closed);
+        assert!(ids.contains(&"bbr-folder-item-70-1".to_string()));
+        assert!(!ids.contains(&"bbr-folder-item-70-1-close".to_string()));
+        assert!(ids.contains(&"bbr-folder-item-70-0-close".to_string()));
+    }
+
+    #[test]
     fn counts_carry_the_tnum_and_the_empty_folder_stays_collapsible() {
         let by_label = |label: &str| {
             FOLDERS_VALID
@@ -419,7 +481,10 @@ mod tests {
         let labels: Vec<&str> = FOLDERS_REJECTED.iter().map(|r| r.label).collect();
         assert_eq!(
             labels,
-            vec!["nested rows in a collapsed folder", "persisted folders"]
+            vec![
+                "nested rows in a collapsed folder",
+                "a selected closed member"
+            ]
         );
         for rejected in FOLDERS_REJECTED {
             assert!(!rejected.reason.is_empty());

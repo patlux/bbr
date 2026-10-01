@@ -7,15 +7,15 @@
 //! authority [`crate::folders_matrix`] with recorder callbacks proving
 //! which production callback fired (`on_toggle`, `on_select`,
 //! `on_close`). Rejected combinations (nested rows in a collapsed folder;
-//! persisted folders) refuse fixture construction and are shown with
+//! a selected closed member) refuse fixture construction and are shown with
 //! their DESIGN reasons. No gallery-local reimplementation of anatomy, no
 //! copied tokens, no fake engine/controller/portal.
 //!
-//! The full §10 vocabulary on nested rows is a DESIGN state the current
-//! `FolderMemberVisual` carries no field for (the module renders the
-//! §11.1 monogram/title/close anatomy) — the story documents it rather
-//! than inventing families (packet rule: the matrix derives from DESIGN
-//! and the current render modules).
+//! Nested rows carry the selection (§10.4) and the closed-in-place state
+//! (§10.12) through `FolderMemberVisual`; the rest of the §10 vocabulary
+//! is a DESIGN state the current visual carries no field for — the story
+//! documents it rather than inventing families (packet rule: the matrix
+//! derives from DESIGN and the current render modules).
 
 use std::rc::Rc;
 
@@ -162,7 +162,7 @@ pub fn render_folders(ctx: &StoryContext) -> AnyElement {
         value_row(
             theme,
             "persistence",
-            "session-local in v1 — folders are never persisted (§11.11; Phase 7 owns restoration)",
+            "folders and their members persist with the browser structure (schema v5); only the disclosure state is session-local",
         ),
         value_row(
             theme,

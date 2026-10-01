@@ -20,9 +20,9 @@ use crate::fixtures::{status_model, STATUS_VARIANTS};
 use crate::registry::StoryContext;
 use crate::stories::{section_heading, story_page, value_row};
 use crate::tab_row_matrix::{
-    build_tab_row_fixture, tab_row_case_valid, DRAG_TICK_INVALID_ID, DRAG_TICK_INVALID_INDEX,
-    DRAG_TICK_LEGAL_ID, DRAG_TICK_LEGAL_INDEX, PINNED_S_ROW_ID, REVEAL_CLOSE_CLOSE_ID,
-    TAB_ROW_REJECTED, TAB_ROW_VALID,
+    build_tab_row_fixture, tab_row_case_valid, CLOSED_PINNED_ROW_ID, DRAG_TICK_INVALID_ID,
+    DRAG_TICK_INVALID_INDEX, DRAG_TICK_LEGAL_ID, DRAG_TICK_LEGAL_INDEX, PINNED_S_ROW_ID,
+    REVEAL_CLOSE_CLOSE_ID, TAB_ROW_REJECTED, TAB_ROW_VALID,
 };
 
 /// §11.4 status line: the production `bbr-ui` component with fixture
@@ -217,6 +217,11 @@ pub fn render_tab_row(ctx: &StoryContext) -> AnyElement {
         REVEAL_CLOSE_CLOSE_ID,
     ));
     children.push(value_row(theme, "pinned-S icon-only row", PINNED_S_ROW_ID));
+    children.push(value_row(
+        theme,
+        "closed pinned row (§10.12, no close control)",
+        CLOSED_PINNED_ROW_ID,
+    ));
     children.push(section_heading(
         theme,
         "Rejected combinations (matrix contract)",

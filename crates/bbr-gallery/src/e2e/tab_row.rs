@@ -13,8 +13,8 @@ use gpui::{point, px, Entity, VisualTestContext};
 use crate::app::GalleryApp;
 use crate::harness::{bounds_of, click_selector, flush, move_to_story, run_scenario, snapshot};
 use crate::tab_row_matrix::{
-    DRAG_TICK_INVALID_ID, DRAG_TICK_LEGAL_ID, PINNED_S_ROW_ID, REVEAL_CLOSE_CLOSE_ID,
-    TAB_ROW_REJECTED, TAB_ROW_VALID,
+    CLOSED_PINNED_INDEX, CLOSED_PINNED_ROW_ID, DRAG_TICK_INVALID_ID, DRAG_TICK_LEGAL_ID,
+    PINNED_S_ROW_ID, REVEAL_CLOSE_CLOSE_ID, TAB_ROW_REJECTED, TAB_ROW_VALID,
 };
 
 /// Navigate to the Tab Row story (found by its stable label).
@@ -45,7 +45,7 @@ fn tab_row_story_renders_the_matrix_families_with_stable_ids() {
         assert_eq!(snap.tab_drag_begins, 0);
         // Every valid family is registered — the story renders them all.
         let family_count = window.read(|_| TAB_ROW_VALID.len());
-        assert_eq!(family_count, 18);
+        assert_eq!(family_count, 19);
         // The first family (default, N) renders the stable §11.1 ids.
         flush(window);
         let row = bounds_of(window, "bbr-tab-row-0");
@@ -59,9 +59,17 @@ fn tab_row_story_renders_the_matrix_families_with_stable_ids() {
         assert!(bounds_of(window, PINNED_S_ROW_ID).size.height > px(0.0));
         assert!(bounds_of(window, DRAG_TICK_LEGAL_ID).size.width > px(0.0));
         assert!(bounds_of(window, DRAG_TICK_INVALID_ID).size.width > px(0.0));
+        // §10.12: the closed pinned family draws its row without a close
+        // control.
+        assert!(bounds_of(window, CLOSED_PINNED_ROW_ID).size.height > px(0.0));
+        assert_eq!(CLOSED_PINNED_INDEX, 18);
+        assert!(
+            window.debug_bounds("bbr-tab-close-18").is_none(),
+            "a closed row offers no close control"
+        );
         // The rejected combinations are declared and refused.
         let rejected_count = window.read(|_| TAB_ROW_REJECTED.len());
-        assert_eq!(rejected_count, 4);
+        assert_eq!(rejected_count, 6);
         // Mode/state fields are untouched by story selection.
         assert_eq!(snap.theme, ThemeMode::Dark);
         assert_eq!(snap.contrast, ContrastMode::Standard);

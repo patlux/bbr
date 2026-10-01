@@ -16,15 +16,18 @@
 //! `TabId + SpaceId + ProfileId` identity of every tile (a favorite is an
 //! additional presentation of one exact tab — the semantic name includes
 //! the owning space/profile when they differ from the current context);
-//! and the empty region (the §11.10 drop band). Rejected:
-//! reorder during selection (tiles never reorder, §11.10) and a tile
-//! without a resolved tab/space/profile identity (§11.10 data source).
+//! the empty region (the §11.10 drop band); the tile that carries the
+//! selection (its tab is the selected tab, §11.10); and the tile of a tab
+//! closed in place (greyed, §10.12). Rejected: reorder during selection
+//! (tiles never reorder, §11.10), a tile without a resolved
+//! tab/space/profile identity (§11.10 data source), and a selected closed
+//! tile (§10.12: the selection never lands on a closed tab).
 //!
-//! The §10 tile states (default/hover/active/focused) and the §10.9
-//! drag-target wash are **not expressible through the current production
-//! component**: `FavoriteTileSpec` carries no state field (the module
-//! renders default tiles only) and the drag-target wash is the app's
-//! composition wrap (`bbr-app`'s `favorites_surface` border). Per the
+//! The §10 tile states hover/active/focused and the §10.9 drag-target
+//! wash are **not expressible through the current production component**:
+//! `FavoriteTileSpec` carries only the selection and the closed state, and
+//! the drag-target wash is the app's composition wrap (`bbr-app`'s
+//! `favorites_surface` border). Per the
 //! packet's no-invented-variants rule, those DESIGN states are documented
 //! in the story rather than fabricated as families.
 
@@ -60,6 +63,11 @@ pub struct FavoriteCase {
     /// Matrix-only: this case claims a tile without a resolved
     /// `TabId + SpaceId + ProfileId` semantic name (§11.10 data source).
     pub missing_identity: bool,
+    /// The family's second tile carries the selection (its tab is the
+    /// selected tab, §11.10).
+    pub selected: bool,
+    /// The family's second tile's tab is closed in place (§10.12).
+    pub closed: bool,
 }
 
 impl FavoriteCase {
@@ -79,7 +87,21 @@ impl FavoriteCase {
             cross_context,
             claims_reorder: false,
             missing_identity: false,
+            selected: false,
+            closed: false,
         }
+    }
+
+    /// The family whose second tile carries the selection.
+    const fn selected(mut self) -> Self {
+        self.selected = true;
+        self
+    }
+
+    /// The family whose second tile's tab is closed in place.
+    const fn closed(mut self) -> Self {
+        self.closed = true;
+        self
     }
 }
 
@@ -96,6 +118,8 @@ pub const FAVORITES_VALID: &[FavoriteCase] = &[
     FavoriteCase::new("tile — default monogram + hue", Density::Normal, 3, false),
     FavoriteCase::new("tile — resolved tab/space/profile identity", Density::Normal, 2, true),
     FavoriteCase::new("empty region — drop band", Density::Normal, 0, false),
+    FavoriteCase::new("tile — selected tab", Density::Normal, 3, false).selected(),
+    FavoriteCase::new("tile — closed in place", Density::Normal, 3, false).closed(),
 ];
 
 /// A rejected combination with the exact DESIGN/packet reason (the matrix
@@ -121,6 +145,8 @@ pub const FAVORITES_REJECTED: &[RejectedFavorite] = &[
             cross_context: false,
             claims_reorder: true,
             missing_identity: false,
+            selected: false,
+            closed: false,
         },
         reason: "§11.10: tiles never reorder during selection — the grid is a deterministic destination grid, not a draggable list",
     },
@@ -133,8 +159,15 @@ pub const FAVORITES_REJECTED: &[RejectedFavorite] = &[
             cross_context: false,
             claims_reorder: false,
             missing_identity: true,
+            selected: false,
+            closed: false,
         },
         reason: "§11.10 data source: every tile resolves TabId + SpaceId + ProfileId — a favorite is an additional presentation of one exact tab, and the semantic name includes the owning space/profile when they differ from the current context",
+    },
+    RejectedFavorite {
+        label: "a selected closed tile",
+        case: FavoriteCase::new("a selected closed tile", Density::Normal, 3, false).selected().closed(),
+        reason: "§10.12: the selection never lands on a closed tab; activating the tile reopens it",
     },
 ];
 
@@ -148,6 +181,10 @@ pub fn favorite_case_valid(case: &FavoriteCase) -> bool {
     }
     // §11.10 data source: every tile resolves TabId + SpaceId + ProfileId.
     if case.missing_identity {
+        return false;
+    }
+    // §10.12: a closed tab is never the selected tab.
+    if case.selected && case.closed {
         return false;
     }
     true
@@ -186,8 +223,8 @@ pub fn build_favorites_fixture(case: &FavoriteCase) -> Option<Vec<FavoriteTileSp
             letter,
             hue: tile % 6,
             image: None,
-            closed: false,
-            selected: false,
+            closed: case.closed && tile == 1,
+            selected: case.selected && tile == 1,
         });
     }
     Some(tiles)
@@ -248,6 +285,8 @@ mod tests {
                 "tile — default monogram + hue",
                 "tile — resolved tab/space/profile identity",
                 "empty region — drop band",
+                "tile — selected tab",
+                "tile — closed in place",
             ]
         );
         let mut seen = BTreeSet::new();
@@ -328,6 +367,24 @@ mod tests {
     }
 
     #[test]
+    fn selected_and_closed_families_mark_exactly_their_second_tile() {
+        let by_label = |label: &str| {
+            FAVORITES_VALID
+                .iter()
+                .find(|c| c.label == label)
+                .unwrap_or_else(|| panic!("family {label}"))
+        };
+        let selected = build_favorites_fixture(by_label("tile — selected tab")).unwrap();
+        let marks: Vec<(bool, bool)> = selected.iter().map(|t| (t.selected, t.closed)).collect();
+        assert_eq!(marks, vec![(false, false), (true, false), (false, false)]);
+        let closed = build_favorites_fixture(by_label("tile — closed in place")).unwrap();
+        let marks: Vec<(bool, bool)> = closed.iter().map(|t| (t.selected, t.closed)).collect();
+        assert_eq!(marks, vec![(false, false), (false, true), (false, false)]);
+        // The closed family's second tile renders at its stable id.
+        assert_eq!(closed[1].index, 7 * FAVORITES_FAMILY_OFFSET + 1);
+    }
+
+    #[test]
     fn empty_region_renders_the_drop_band() {
         // §11.10: the region is always present — with zero favorites it
         // renders the drop band (region name + gesture), never a grid.
@@ -356,6 +413,7 @@ mod tests {
             vec![
                 "reorder during selection",
                 "a tile without a resolved TabId+SpaceId+ProfileId semantic name",
+                "a selected closed tile",
             ]
         );
         for rejected in FAVORITES_REJECTED {
