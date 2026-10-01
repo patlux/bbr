@@ -202,6 +202,23 @@ and command ordering with local fixtures; actual host checks are prerequisite
 proof only, not guest availability, pixel or teardown evidence. Runtime transfer/
 realization and source-bound bootstrap/SSH/return integration remain open.
 
+### Bounded source-bound bootstrap slice
+
+Generate the fixed guest bootstrap only from a hash-verified staged payload,
+including its pinned runtime lock and guest helper bytes. Refuse arbitrary shell
+arguments, destination remapping and unbound imports. Before any guest mutation,
+require actual admin/VirtualMac identity; verify every pinned NAR and interpreter
+byte offline, with no realization, repair, download or Python fallback. Mount only
+the existing read-only Tart payload share, create a fresh compiled-path ancestor
+without recursive ownership changes, then execute verified helper bytes in memory
+under isolated Python with a cleared deterministic environment. Reuse the fixed
+Rust producer and receipt/return modules; do not introduce another renderer or
+comparison/process authority. Exercise local fixtures, malformed payload/helper
+tripwires, strict path/quoting and shell syntax/host-refusal contracts only.
+This slice does not launch SSH/Tart, grant network permission, open capture or
+prove real guest runtime/mount compatibility. Supervised transport/return wiring
+and real pilot remain mandatory subsequent evidence.
+
 ## Iteration policy
 
 Run targeted contracts first, diagnose failures before changing code, and

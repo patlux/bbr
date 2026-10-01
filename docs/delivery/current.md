@@ -589,6 +589,64 @@ SSH/return wiring and independent Gallery coverage/selection. No migration or
 baseline acceptance claim; performance remains deferred. Implementation/review
 wall time was not instrumented. Parallelism audit: no additional lane authorized.
 
+### Source-bound guest bootstrap checkpoint
+
+Preflight: clean `main@55f13a9`, no Git lock or visual/Tart process; ROADMAP and
+complete delivery document re-read. Only this session's bounded visual work is
+runnable here. Other product lanes, worktrees, ordinary app and unrelated builds
+remain untouched; no workflow/subagent/new lane authorized. Actual VM/network
+and Checkbox asset approvals remain pending, not bypassed.
+
+Implemented pure/read-only bootstrap generation from the verified staged payload
+and current helper bytes. Generated zsh uses fixed destinations/commands, a cleared
+UTC/C environment and actual UID/admin/VirtualMac checks before mutation. It hashes
+the complete pinned NAR closure offline and the interpreter executable, then
+mounts the existing share read-only. No download/realization/repair/fallback. The
+inline isolated loader validates all helper hashes before executing any helper,
+compiles them in memory and intercepts only the exact helper module names. It
+never imports mutable source filenames or adds the share to `sys.path`.
+
+Verified guest tail repeats actual guest identity, preflights the payload and
+creates only a fresh compiled-path ancestor with nonrecursive bounded commands.
+Existing paths fail without takeover; partial preparation is never resumed. The
+existing guest installer/receipt chain and Rust native-process owner remain
+unchanged. This is still a prerequisite, not connected SSH/return execution.
+
+Evidence:
+- **16 new Python contracts**: fixed generation and shell syntax; actual local
+  host refusal before runtime/mount/mutations; stale/missing/linked helpers and
+  payload rejection; writable mount refusal; verify-all-before-execute; real
+  helper imports followed by host refusal; frozen-byte imports after shared file
+  mutation; strict parent ordering/no recursive ownership changes; shell heredoc
+  delimiter collision rejection. Mocks are limited to local fixtures/resource
+  calls; no native producer, Nix install, key, mount, SSH or VM ran.
+- `just visual-test`: **128 Python units** plus separate real-CLI integration,
+  unchanged upstream and **47 consumer tests** plus signal fixtures pass. Strict
+  all-target consumer Clippy/fmt pass. Logs:
+  `/tmp/bbr-visual-bootstrap-focused-final.log`,
+  `/tmp/bbr-visual-bootstrap-final-visual-test.log`,
+  `/tmp/bbr-visual-bootstrap-final-clippy.log`. Roadmap, whitespace and all 49
+  shared script contracts also pass (`/tmp/bbr-visual-bootstrap-final-roadmap.log`,
+  `/tmp/bbr-visual-bootstrap-final-script-tests.log`). Initial test red was the
+  missing generator module (`/tmp/bbr-visual-bootstrap-red.log`).
+- Actual host-only two-suite preparation and read-only plan generation at
+  `/private/tmp/bbr-visual-bootstrap-prepare.h97eML`: 1,475 sources, Gallery 1,477
+  files / 43,884,287 bytes, browser 1,478 / 61,658,575 bytes. Runtime prerequisite
+  checks pass. Generated 17,631-byte per-suite scripts pass actual `zsh -n`; they
+  were not executed or sent over SSH. Exact manifests/script hashes and counts:
+  `/tmp/bbr-visual-bootstrap-actual-plan.log`. Additional test and delimiter-guard
+  edits afterward supersede these payloads; they remain diagnostic, not seals.
+
+Self-review added observed read-only mount enforcement, verification-before-any-
+import, source-freezing, current planner/runtime-source binding, disjoint work
+preflight and shell delimiter rejection. Required next steps remain supervised
+SSH/return integration (including unavailable pinned guest runtime handling),
+Gallery independent coverage/selection and approved real pilot. No guest/NAR
+availability, mounting, pixels, cleanup, visual review, baseline or product gate
+is proven by these local tests. Performance remains deferred; implementation/
+review wall time was not instrumented. Parallelism audit: no other lane authorized;
+portable transport and coverage work remain runnable.
+
 ## Status vocabulary
 
 | Status | Meaning |

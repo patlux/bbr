@@ -236,6 +236,32 @@ rendering evidence. Guest runtime availability/transfer, source-bound bootstrap,
 SSH execution/return and approved VM pilot remain unproven. Baseline/environment
 adoption and the native capture guard are unchanged.
 
+### Source-bound guest bootstrap (not yet launched)
+
+The bootstrap planner generates one fixed zsh input from a verified staged
+payload. It refuses different compiled destinations and helper bytes that do not
+match current source. The generated command clears the environment, suppresses
+interactive zsh configuration, requires actual UID 501/admin/VirtualMac before
+mutation, hashes every pinned NAR offline, checks the interpreter executable and
+mounts only the existing Tart payload share with `mount_virtiofs -r`. No runtime
+realization, repair, download or Xcode Python fallback is generated.
+
+Before any helper code runs, isolated Python requires an observed read-only mount
+and validates the independently supplied payload/helper hashes with bounded
+single-link regular-file reads. All helpers are compiled in memory first and
+loaded from those frozen bytes, not by adding shared directories to `sys.path`.
+The verified guest tail repeats actual guest identity, preflights the payload,
+then creates only a **fresh** `/Users/patwoz` ancestor and its compiled repository
+parents. It never recursively changes ownership or reuses an existing tree.
+The existing guest runner remains the only installation/receipt composition;
+its Rust consumer retains native producer process ownership.
+
+Local tests prove generation, shell syntax, host refusal, source/mount/path
+rejection, import ordering and frozen-byte execution using inert fixtures.
+Actual guest NAR availability, VirtioFS layout/mounting and compiled-parent setup
+remain unproven. No SSH/Tart call or capture entrypoint invokes this planner yet;
+supervised transport/return integration and network approval are still required.
+
 ## Capture contract
 
 `visual.toml` delegates PNG production to `scripts/visual/capture.py`. It builds
